@@ -1,0 +1,10 @@
+go 1.21
+
+use (
+	./main
+	./modules/core
+	./modules/idp
+	./modules/oauth2
+	./modules/shared
+	./utility
+)
