@@ -1,8 +1,8 @@
 package config
 
 import (
-	. "github.com/sky-as-code/nikki-erp/modules/core/config/loader"
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	. "github.com/sky-as-code/nikki-erp/modules/shared/config/loader"
+	"github.com/sky-as-code/nikki-erp/modules/shared/logging"
 )
 
 var configService *configServiceImpl

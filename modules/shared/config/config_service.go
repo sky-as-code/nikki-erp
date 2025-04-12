@@ -8,7 +8,7 @@ import (
 
 	"github.com/xgfone/go-cast"
 
-	// . "github.com/sky-as-code/nikki-erp/modules/core/config/types"
+	// . "github.com/sky-as-code/nikki-erp/modules/shared/config/types"
 	. "github.com/sky-as-code/nikki-erp/utility/fault"
 )
 

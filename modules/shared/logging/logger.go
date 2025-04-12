@@ -7,7 +7,8 @@ import (
 	"path"
 	"runtime"
 
-	. "github.com/sky-as-code/nikki-erp/modules/shared"
+	"github.com/sky-as-code/nikki-erp/modules"
+	. "github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/utility/json"
 )
 
@@ -47,7 +48,7 @@ func (this *loggerImpl) Debugf(format string, args ...any) {
 	this.writeLog(LVL_DEBUG, format, args...)
 }
 
-func (this *loggerImpl) Debugj(j JSON) {
+func (this *loggerImpl) Debugj(j modules.JSON) {
 	this.writeLog(LVL_DEBUG, FORMAT_JSON, j)
 }
 

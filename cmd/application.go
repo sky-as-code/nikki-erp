@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/shared"
+	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/shared/config"
+	"github.com/sky-as-code/nikki-erp/modules/shared/logging"
 	. "github.com/sky-as-code/nikki-erp/utility/fault"
 )
 
@@ -17,7 +17,7 @@ func NewApplication(logger logging.LoggerService) *Application {
 }
 
 type Application struct {
-	modules []shared.NikkiModule
+	modules []modules.NikkiModule
 	config  config.ConfigService
 	logger  logging.LoggerService
 }
@@ -27,7 +27,7 @@ func (thisApp *Application) Config() config.ConfigService {
 }
 
 func (thisApp *Application) Start() {
-	var modules []shared.NikkiModule
+	var modules []modules.NikkiModule
 	var err AppError
 
 	modules, err = thisApp.getModules()
@@ -60,15 +60,15 @@ func (thisApp *Application) initModules() AppError {
 	return thisApp.initializeInOrder(moduleMap, depGraph)
 }
 
-func (thisApp *Application) buildModuleMap() map[string]shared.NikkiModule {
-	moduleMap := make(map[string]shared.NikkiModule)
+func (thisApp *Application) buildModuleMap() map[string]modules.NikkiModule {
+	moduleMap := make(map[string]modules.NikkiModule)
 	for _, mod := range thisApp.modules {
 		moduleMap[mod.Name()] = mod
 	}
 	return moduleMap
 }
 
-func (thisApp *Application) buildDependencyGraph(moduleMap map[string]shared.NikkiModule) (map[string][]string, AppError) {
+func (thisApp *Application) buildDependencyGraph(moduleMap map[string]modules.NikkiModule) (map[string][]string, AppError) {
 	depGraph := make(map[string][]string)
 
 	for _, mod := range thisApp.modules {
@@ -91,7 +91,7 @@ func (thisApp *Application) validateDependencies(depGraph map[string][]string) A
 	return nil
 }
 
-func (thisApp *Application) initializeInOrder(moduleMap map[string]shared.NikkiModule, depGraph map[string][]string) AppError {
+func (thisApp *Application) initializeInOrder(moduleMap map[string]modules.NikkiModule, depGraph map[string][]string) AppError {
 	initOrder, err := topologicalSort(depGraph)
 	if err != nil {
 		return WrapTechnicalError(err, "Failed to determine module initialization order")

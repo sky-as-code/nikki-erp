@@ -8,24 +8,25 @@ import (
 	"path/filepath"
 	"plugin"
 
-	"github.com/sky-as-code/nikki-erp/modules/shared"
+	mods "github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/utility/env"
 	. "github.com/sky-as-code/nikki-erp/utility/fault"
 )
 
-func (thisApp *Application) getModules() ([]shared.NikkiModule, AppError) {
+func (thisApp *Application) getModules() ([]mods.NikkiModule, AppError) {
 	return thisApp.getDynamicModules()
 }
 
-func (thisApp *Application) getDynamicModules() ([]shared.NikkiModule, AppError) {
-	modules := []shared.NikkiModule{}
-	pluginsDir := "./app/modules"
+func (thisApp *Application) getDynamicModules() ([]mods.NikkiModule, AppError) {
+	modules := []mods.NikkiModule{}
+	pluginsDir := filepath.Join(env.Cwd(), "modules")
 	entries, err := os.ReadDir(pluginsDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			thisApp.logger.Warn("Plugins directory not found, skipping plugin loading")
 			return modules, nil
 		}
-		return nil, NewTechnicalError("failed to read plugins directory: %w", err)
+		return nil, NewTechnicalError("failed to read plugins directory: %v", err)
 	}
 
 	for _, entry := range entries {
@@ -43,7 +44,7 @@ func (thisApp *Application) getDynamicModules() ([]shared.NikkiModule, AppError)
 				continue
 			}
 
-			if module, ok := moduleSymbol.(shared.NikkiModule); ok {
+			if module, ok := moduleSymbol.(mods.NikkiModule); ok {
 				modules = append(modules, module)
 				thisApp.logger.Infof("Successfully loaded plugin: %s", module.Name())
 			} else {

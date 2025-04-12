@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/shared/logging"
 	util "github.com/sky-as-code/nikki-erp/utility"
 )
 

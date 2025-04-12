@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/shared/logging"
 	"github.com/sky-as-code/nikki-erp/utility/env"
 	. "github.com/sky-as-code/nikki-erp/utility/fault"
 )

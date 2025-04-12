@@ -1,7 +1,7 @@
 package logging
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/shared"
+	"github.com/sky-as-code/nikki-erp/modules"
 )
 
 type Lvl int8
@@ -38,20 +38,20 @@ type LoggerService interface {
 	SetLevel(level Lvl)
 	Debug(i ...interface{})
 	Debugf(format string, args ...interface{})
-	Debugj(j shared.JSON)
+	Debugj(j modules.JSON)
 	Info(i ...interface{})
 	Infof(format string, args ...interface{})
-	Infoj(j shared.JSON)
+	Infoj(j modules.JSON)
 	Warn(i ...interface{})
 	Warnf(format string, args ...interface{})
-	Warnj(j shared.JSON)
+	Warnj(j modules.JSON)
 	Error(i ...interface{})
 	Errorf(format string, args ...interface{})
-	Errorj(j shared.JSON)
+	Errorj(j modules.JSON)
 	IfError(err error, i ...interface{})
 	IfErrorf(err error, format string, args ...interface{})
 	Fatal(i ...interface{})
-	Fatalj(j shared.JSON)
+	Fatalj(j modules.JSON)
 	Fatalf(format string, args ...interface{})
 	WithRequestId(requestId string)
 }

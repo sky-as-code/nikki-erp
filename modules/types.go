@@ -1,4 +1,4 @@
-package shared
+package modules
 
 type JSON map[string]any
 
