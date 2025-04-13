@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17.4-alpine3.21
+    container_name: nikki_postgres
+    environment:
+      POSTGRES_DB: nikki_erp
+      POSTGRES_USER: nikki_admin
+      POSTGRES_PASSWORD: nikki_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nikki_admin -d nikki_erp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nikki_net
+
+  pgadmin:
+    image: dpage/pgadmin4:9.2.0
+    container_name: nikki_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@nikki-erp.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - nikki_net
+
+  keydb:
+    image: eqalpha/keydb:x86_64_v6.3.4
+    container_name: nikki_keydb
+    environment:
+      KEYDB_PASSWORD: nikki_password
+    command: keydb-server --appendonly yes
+    volumes:
+      - keydb_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "keydb-cli -a nikki_password ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nikki_net
+
+networks:
+  nikki_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  keydb_data:

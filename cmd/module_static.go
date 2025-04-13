@@ -4,9 +4,9 @@
 package main
 
 import (
+	"github.com/sky-as-code/nikki-erp/common"
+	. "github.com/sky-as-code/nikki-erp/common/util/fault"
 	"github.com/sky-as-code/nikki-erp/modules"
-	"github.com/sky-as-code/nikki-erp/modules/shared"
-	. "github.com/sky-as-code/nikki-erp/utility/fault"
 )
 
 func (thisApp *Application) getModules() ([]modules.NikkiModule, AppError) {
@@ -15,7 +15,7 @@ func (thisApp *Application) getModules() ([]modules.NikkiModule, AppError) {
 
 func (thisApp *Application) getStaticModules() []modules.NikkiModule {
 	modules := []modules.NikkiModule{
-		shared.ModuleSingleton,
+		common.ModuleSingleton,
 	}
 
 	return modules

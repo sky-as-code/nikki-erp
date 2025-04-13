@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sky-as-code/nikki-erp/common/config"
+	"github.com/sky-as-code/nikki-erp/common/logging"
+	. "github.com/sky-as-code/nikki-erp/common/util/fault"
 	"github.com/sky-as-code/nikki-erp/modules"
-	"github.com/sky-as-code/nikki-erp/modules/shared/config"
-	"github.com/sky-as-code/nikki-erp/modules/shared/logging"
-	. "github.com/sky-as-code/nikki-erp/utility/fault"
 )
 
 func NewApplication(logger logging.LoggerService) *Application {

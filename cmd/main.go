@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 
-	"github.com/sky-as-code/nikki-erp/modules/shared/logging"
-	util "github.com/sky-as-code/nikki-erp/utility"
+	"github.com/sky-as-code/nikki-erp/common/logging"
+	util "github.com/sky-as-code/nikki-erp/common/util"
 )
 
 func main() {
