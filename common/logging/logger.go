@@ -3,191 +3,145 @@ package logging
 import (
 	"context"
 	"fmt"
-	"log"
-	"path"
+	"log/slog"
+	"os"
 	"runtime"
-
-	"github.com/sky-as-code/nikki-erp/common/util/json"
-	"github.com/sky-as-code/nikki-erp/modules"
-	. "github.com/sky-as-code/nikki-erp/modules"
 )
 
-const (
-	FORMAT_NONE = ""
-	FORMAT_JSON = "json"
-)
+func NewLogger(levels ...Level) *loggerImpl {
+	level := LevelInfo // default level
+	if len(levels) > 0 {
+		level = levels[0]
+	}
 
-func NewLogger(level Lvl) *loggerImpl {
-	return &loggerImpl{level: level}
+	levelVar := new(slog.LevelVar)
+	levelVar.Set(slogLevelMap[level])
+	slogger := NewSloggerWithCorrectCallDepth(levelVar, 1)
+	return &loggerImpl{
+		level:    level,
+		levelVar: levelVar,
+		slogger:  slogger,
+	}
 }
 
 type loggerImpl struct {
-	level     Lvl
-	requestId string
+	level    Level
+	levelVar *slog.LevelVar
+	slogger  *slog.Logger
 }
 
-func (this *loggerImpl) Level() Lvl {
+func (this *loggerImpl) Level() Level {
 	return this.level
 }
 
-func (this *loggerImpl) SetLevel(level Lvl) {
-	this.level = level
+func (this *loggerImpl) SetLevel(lvl Level) {
+	this.levelVar.Set(slogLevelMap[lvl])
 }
 
-func (this *loggerImpl) Debug(i ...any) {
-	if this.requestId != "" {
-		i = append([]any{fmt.Sprintf("requestId: %s ", this.requestId)}, i...)
-	}
-	this.writeLog(LVL_DEBUG, FORMAT_NONE, i...)
+func (this *loggerImpl) InnerLogger() any {
+	return this.slogger
+}
+
+func (this *loggerImpl) Debug(message string, data any) {
+	this.writeLogData(LevelDebug, message, data)
 }
 
 func (this *loggerImpl) Debugf(format string, args ...any) {
-	if this.requestId != "" {
-		format = fmt.Sprintf("requestId: %s %s", this.requestId, format)
-	}
-	this.writeLog(LVL_DEBUG, format, args...)
+	this.writeLogFormat(LevelDebug, format, args...)
 }
 
-func (this *loggerImpl) Debugj(j modules.JSON) {
-	this.writeLog(LVL_DEBUG, FORMAT_JSON, j)
-}
-
-func (this *loggerImpl) Info(i ...any) {
-	if this.requestId != "" {
-		i = append([]any{fmt.Sprintf("requestId: %s ", this.requestId)}, i...)
-	}
-	this.writeLog(LVL_INFO, FORMAT_NONE, i...)
+func (this *loggerImpl) Info(message string, data any) {
+	this.writeLogData(LevelInfo, message, data)
 }
 
 func (this *loggerImpl) Infof(format string, args ...any) {
-	if this.requestId != "" {
-		format = fmt.Sprintf("requestId: %s %s", this.requestId, format)
-	}
-	this.writeLog(LVL_INFO, format, args...)
+	this.writeLogFormat(LevelInfo, format, args...)
 }
 
-func (this *loggerImpl) Infoj(j JSON) {
-	this.writeLog(LVL_INFO, FORMAT_JSON, j)
-}
-
-func (this *loggerImpl) Warn(i ...any) {
-	if this.requestId != "" {
-		i = append([]any{fmt.Sprintf("requestId: %s ", this.requestId)}, i...)
-	}
-	this.writeLog(LVL_WARN, FORMAT_NONE, i...)
+func (this *loggerImpl) Warn(message string, data any) {
+	this.writeLogData(LevelWarn, message, data)
 }
 
 func (this *loggerImpl) Warnf(format string, args ...any) {
-	if this.requestId != "" {
-		format = fmt.Sprintf("requestId: %s %s", this.requestId, format)
-	}
-	this.writeLog(LVL_WARN, format, args...)
+	this.writeLogFormat(LevelWarn, format, args...)
 }
 
-func (this *loggerImpl) Warnj(j JSON) {
-	this.writeLog(LVL_WARN, FORMAT_JSON, j)
-}
-
-func (this *loggerImpl) Error(i ...any) {
-	if this.requestId != "" {
-		i = append([]any{fmt.Sprintf("requestId: %s ", this.requestId)}, i...)
-	}
-	this.writeLog(LVL_ERROR, FORMAT_NONE, i...)
+func (this *loggerImpl) Error(message string, data any) {
+	this.writeLogData(LevelError, message, data)
 }
 
 func (this *loggerImpl) Errorf(format string, args ...any) {
-	if this.requestId != "" {
-		format = fmt.Sprintf("requestId: %s %s", this.requestId, format)
-	}
-	this.writeLog(LVL_ERROR, format, args...)
+	this.writeLogFormat(LevelError, format, args...)
 }
 
-func (this *loggerImpl) Errorj(j JSON) {
-	this.writeLog(LVL_ERROR, FORMAT_JSON, j)
-}
-
-func (this *loggerImpl) IfError(err error, i ...any) {
+func (this *loggerImpl) IfError(err error, message string, data any) {
 	if err != nil {
-		this.writeLog(LVL_ERROR, FORMAT_NONE, i...)
+		this.Error(message, data)
 	}
 }
 
 func (this *loggerImpl) IfErrorf(err error, format string, args ...any) {
 	if err != nil {
-		this.writeLog(LVL_ERROR, format, args...)
+		this.Errorf(format, args...)
 	}
 }
 
-func (this *loggerImpl) Fatal(i ...any) {
-	this.writeLog(LVL_FATAL, FORMAT_NONE, i...)
+func (this *loggerImpl) writeLogData(level Level, message string, data any) {
+	this.slogger.Log(context.Background(), slogLevelMap[level], message, slog.Any("data", data))
 }
 
-func (this *loggerImpl) Fatalj(j JSON) {
-	this.writeLog(LVL_FATAL, FORMAT_JSON, j)
+func (this *loggerImpl) writeLogFormat(level Level, format string, args ...any) {
+	this.slogger.Log(context.Background(), slogLevelMap[level], format, args...)
 }
 
-func (this *loggerImpl) Fatalf(format string, args ...any) {
-	this.writeLog(LVL_FATAL, format, args...)
+func NewSloggerWithCorrectCallDepth(level slog.Leveler, callDepth int) *slog.Logger {
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level:     level,
+		AddSource: false, // we’ll manually inject source
+	})
+
+	return slog.New(&HandlerWithCorrectCallDepth{
+		inner:     handler,
+		callDepth: callDepth,
+	})
 }
 
-func (this *loggerImpl) WithRequestId(requestId string) {
-	this.requestId = requestId
+type HandlerWithCorrectCallDepth struct {
+	inner     slog.Handler
+	callDepth int
 }
 
-func (this *loggerImpl) writeLog(level Lvl, format string, args ...any) {
-	if level > this.Level() {
-		return
+func (this *HandlerWithCorrectCallDepth) Enabled(ctx context.Context, level slog.Level) bool {
+	return this.inner.Enabled(ctx, level)
+}
+
+func (this *HandlerWithCorrectCallDepth) Handle(ctx context.Context, r slog.Record) error {
+	// Copy record and inject the real source location
+	pcs := make([]uintptr, 1)
+	runtime.Callers(this.callDepth, pcs)
+	frames := runtime.CallersFrames(pcs)
+	frame, _ := frames.Next()
+
+	r = slog.NewRecord(r.Time, r.Level, r.Message, 0)
+	r.AddAttrs(slog.String("source", fmt.Sprintf("%s:%d", frame.File, frame.Line)))
+
+	return this.inner.Handle(ctx, r)
+}
+
+func (this *HandlerWithCorrectCallDepth) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &HandlerWithCorrectCallDepth{
+		inner:     this.inner.WithAttrs(attrs),
+		callDepth: this.callDepth,
 	}
+}
 
-	message := ""
-
-	switch format {
-	case FORMAT_NONE:
-		message = fmt.Sprint(args...)
-	case FORMAT_JSON:
-		b, err := json.Marshal(args[0])
-		if err != nil {
-			panic(err)
-		}
-		message = string(b)
-	default:
-		message = fmt.Sprintf(format, args...)
+func (this *HandlerWithCorrectCallDepth) WithGroup(name string) slog.Handler {
+	return &HandlerWithCorrectCallDepth{
+		inner:     this.inner.WithGroup(name),
+		callDepth: this.callDepth,
 	}
-
-	// If some day you see all the logs with "logger.go(<line number>)",
-	// try increasing this value until you see the correct file name :)
-	skippedCallStackDepth := 3
-	log.Println(LvlName[level], getFileName(skippedCallStackDepth), message)
 }
 
-func getFileName(depth int) string {
-	_, file, line, _ := runtime.Caller(depth)
-	return fmt.Sprintf("%s(%d)", path.Base(file), line)
-}
-
-var loggerKey = "logger"
-
-// IntoContext return a new context with the logger injected
-func IntoContext(ctx context.Context, logger LoggerService) {
-	ctx = context.WithValue(ctx, loggerKey, logger)
-}
-
-// FromContext return the logger from a context if any,
-// if no logger in the context, it returns a default Logger
-func FromContext(ctx context.Context) LoggerService {
-	if l, ok := ctx.Value(loggerKey).(LoggerService); ok {
-		return l
-	}
-
-	return Logger()
-}
-
-func WithRequestId(ctx context.Context, requestId string) LoggerService {
-	logger := FromContext(ctx)
-	logger.WithRequestId(requestId)
-	return logger
-}
-
-func Copy(dst context.Context, src context.Context) {
-	IntoContext(dst, FromContext(src))
+func itoa(i int) string {
+	return fmt.Sprintf("%d", i)
 }

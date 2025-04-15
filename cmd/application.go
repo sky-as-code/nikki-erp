@@ -39,7 +39,7 @@ func (thisApp *Application) Start() {
 
 	err = thisApp.initModules()
 	if err != nil {
-		thisApp.logger.Fatal(err)
+		thisApp.logger.Error("Failed to initialize modules", err)
 		os.Exit(1)
 	}
 	thisApp.config = config.ConfigSvcSingleton()

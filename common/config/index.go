@@ -15,11 +15,11 @@ var configService *configServiceImpl
 // 2) Look for environment variable with name DB_PASSWORD, if not empty, return it.
 // 3) Read in config/config.json, look for this key in current environment name group.
 func InitSubModule() error {
-	loggingSvc := logging.Logger()
+	logger := logging.Logger()
 
-	jsonLoader := NewJsonConfigLoader(loggingSvc)
-	envVarLoader := NewEnvVarConfigLoader(jsonLoader, loggingSvc)
-	secretFileLoader := NewSecretFileConfigLoader(envVarLoader, loggingSvc)
+	jsonLoader := NewJsonConfigLoader(logger)
+	envVarLoader := NewEnvVarConfigLoader(jsonLoader, logger)
+	secretFileLoader := NewSecretFileConfigLoader(envVarLoader, logger)
 	configService = NewConfigService(secretFileLoader)
 
 	err := configService.Init()

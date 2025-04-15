@@ -10,7 +10,7 @@ import (
 func main() {
 	isDbMigrate := flag.Bool("migrate", false, "Whether to start in database auto migration mode")
 	flag.Parse()
-	logging.InitLogger()
+	logging.InitSubModule()
 	util.Unused(isDbMigrate)
 	// mainHttpServer := SetupMainHttpServer()
 

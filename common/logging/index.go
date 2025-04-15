@@ -2,25 +2,27 @@ package logging
 
 import (
 	"os"
+
+	c "github.com/sky-as-code/nikki-erp/common/constants"
 )
 
-var logLevelEnvName = "LIVE_LOG_LEVEL"
 var logger LoggerService
 
-func InitLogger() {
-	logger = NewLogger(LVL_INFO)
-	levelEnv := os.Getenv(logLevelEnvName)
-	logLevel, ok := LvlMap[levelEnv]
+func InitSubModule() {
+	defaultLvl := LevelWarn
+	logger = NewLogger(defaultLvl)
+	levelEnv := os.Getenv(string(c.LogLevel))
+	logLevel, ok := levelNameMap[levelEnv]
 	if !ok {
-		logLevel = LVL_INFO
-		logger.Warnf("Value '%s' of the env var %s is not a valid log level. Fallback to level '%s'", levelEnv, logLevelEnvName, LvlName[logLevel])
+		logLevel = defaultLvl
+		logger.Warnf("Value '%s' of the env var %s is not a valid log level. Fallback to level '%s'", levelEnv, c.LogLevel, defaultLvl)
 	}
 	logger.SetLevel(logLevel)
 }
 
 func Logger() LoggerService {
 	if logger == nil {
-		InitLogger()
+		InitSubModule()
 	}
 	return logger
 }

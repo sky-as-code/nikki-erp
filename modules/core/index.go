@@ -1,4 +1,4 @@
-package common
+package core
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/config"

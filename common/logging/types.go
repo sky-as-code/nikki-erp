@@ -1,57 +1,44 @@
 package logging
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules"
+	"log/slog"
 )
 
-type Lvl int8
+type Level string
 
 const (
-	LVL_WARN  Lvl = 0
-	LVL_INFO  Lvl = 1
-	LVL_DEBUG Lvl = 2
-	LVL_TRACE Lvl = 3
-	LVL_ERROR Lvl = -1
-	LVL_FATAL Lvl = -2
+	LevelDebug Level = "debug"
+	LevelInfo  Level = "info"
+	LevelWarn  Level = "warn"
+	LevelError Level = "error"
 )
 
-var LvlName = map[Lvl]string{
-	LVL_WARN:  "WARN",
-	LVL_INFO:  "INFO",
-	LVL_DEBUG: "DEBUG",
-	LVL_TRACE: "TRACE",
-	LVL_ERROR: "ERROR",
-	LVL_FATAL: "FATAL",
+var levelNameMap = map[string]Level{
+	"debug": LevelDebug,
+	"info":  LevelInfo,
+	"warn":  LevelWarn,
+	"error": LevelError,
 }
 
-var LvlMap = map[string]Lvl{
-	"WARN":  LVL_WARN,
-	"INFO":  LVL_INFO,
-	"DEBUG": LVL_DEBUG,
-	"TRACE": LVL_TRACE,
-	"ERROR": LVL_ERROR,
-	"FATAL": LVL_FATAL,
+var slogLevelMap = map[Level]slog.Level{
+	LevelDebug: slog.LevelDebug,
+	LevelInfo:  slog.LevelInfo,
+	LevelWarn:  slog.LevelWarn,
+	LevelError: slog.LevelError,
 }
 
 type LoggerService interface {
-	Level() Lvl
-	SetLevel(level Lvl)
-	Debug(i ...interface{})
-	Debugf(format string, args ...interface{})
-	Debugj(j modules.JSON)
-	Info(i ...interface{})
-	Infof(format string, args ...interface{})
-	Infoj(j modules.JSON)
-	Warn(i ...interface{})
-	Warnf(format string, args ...interface{})
-	Warnj(j modules.JSON)
-	Error(i ...interface{})
-	Errorf(format string, args ...interface{})
-	Errorj(j modules.JSON)
-	IfError(err error, i ...interface{})
-	IfErrorf(err error, format string, args ...interface{})
-	Fatal(i ...interface{})
-	Fatalj(j modules.JSON)
-	Fatalf(format string, args ...interface{})
-	WithRequestId(requestId string)
+	Level() Level
+	SetLevel(lvl Level)
+	InnerLogger() any
+	Debug(message string, data any)
+	Debugf(format string, args ...any)
+	Info(message string, data any)
+	Infof(format string, args ...any)
+	Warn(message string, data any)
+	Warnf(format string, args ...any)
+	Error(message string, data any)
+	Errorf(format string, args ...any)
+	IfError(err error, message string, data any)
+	IfErrorf(err error, format string, args ...any)
 }
