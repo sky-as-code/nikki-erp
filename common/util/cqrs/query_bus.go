@@ -97,7 +97,6 @@ func (this QueryBusConfig) Validate() error {
 	return err
 }
 
-type QueryEventMarshaler = cqrs.CommandEventMarshaler
 type QueryBusGenerateQueryTopicFn func(QueryBusGeneratePublishTopicParams) (string, error)
 
 type QueryBusGeneratePublishTopicParams struct {
@@ -110,7 +109,7 @@ type QueryBusOnSendParams struct {
 	Query     any
 
 	// Message is the raw message before marshaling to Query.
-	// Message is never nil and can be modified.
+	// It is never nil and can be modified.
 	Message *message.Message
 }
 
@@ -123,9 +122,6 @@ type QueryBusOnRespondParams struct {
 	// Message is never nil and can be modified.
 	Message *message.Message
 }
-
-const MetaCorrelationId = "correlation_id"
-const MetaResponseTopic = "response_topic"
 
 // NewQueryBusWithConfig creates a new QueryBus.
 func NewQueryBusWithConfig(config QueryBusConfig) (*QueryBus, error) {

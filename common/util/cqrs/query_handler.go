@@ -2,8 +2,6 @@ package cqrs
 
 import (
 	"context"
-
-	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 )
 
 // QueryHandler receives a query and handles it with the Handle method.
@@ -24,16 +22,38 @@ type QueryHandler interface {
 	// it may result with **reconsuming all messages**!
 	HandlerName() string
 
-	NewCommand() any
+	NewQuery() any
 
-	Handle(ctx context.Context, cmd any) error
+	Handle(ctx context.Context, cmd any) (Reply, error)
 }
 
 // NewQueryHandler creates a new QueryHandler implementation based on provided function
 // and query type inferred from function argument.
 func NewQueryHandler[Query any](
 	handlerName string,
-	handleFunc func(ctx context.Context, query *Query) error,
+	handleFunc func(ctx context.Context, query *Query) (Reply, error),
 ) QueryHandler {
-	return cqrs.NewCommandHandler(handlerName, handleFunc)
+	return &genericQueryHandler[Query]{
+		handleFunc:  handleFunc,
+		handlerName: handlerName,
+	}
+}
+
+type genericQueryHandler[Query any] struct {
+	handleFunc  func(ctx context.Context, query *Query) (Reply, error)
+	handlerName string
+}
+
+func (this genericQueryHandler[Query]) HandlerName() string {
+	return this.handlerName
+}
+
+func (this genericQueryHandler[Query]) NewQuery() any {
+	tVar := new(Query)
+	return tVar
+}
+
+func (this genericQueryHandler[Query]) Handle(ctx context.Context, query any) (Reply, error) {
+	q := query.(*Query)
+	return this.handleFunc(ctx, q)
 }
