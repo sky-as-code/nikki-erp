@@ -4,6 +4,7 @@ import (
 	"os"
 
 	c "github.com/sky-as-code/nikki-erp/common/constants"
+	deps "github.com/sky-as-code/nikki-erp/common/util/deps_inject"
 )
 
 var logger LoggerService
@@ -18,6 +19,12 @@ func InitSubModule() {
 		logger.Warnf("Value '%s' of the env var %s is not a valid log level. Fallback to level '%s'", levelEnv, c.LogLevel, defaultLvl)
 	}
 	logger.SetLevel(logLevel)
+	err := deps.Provide(func() LoggerService {
+		return logger
+	})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func Logger() LoggerService {

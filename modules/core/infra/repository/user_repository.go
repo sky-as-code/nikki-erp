@@ -24,7 +24,7 @@ func (r *UserRepository) Create(ctx context.Context, cmd *user.CreateUserCommand
 		SetEmail(cmd.Email).
 		SetDisplayName(cmd.DisplayName).
 		SetPasswordHash(cmd.Password). // Note: Hash password before storing
-		SetAvatarURL(cmd.AvatarURL).
+		SetAvatarURL(cmd.AvatarUrl).
 		SetStatus(entUser.Status(cmd.Status)).
 		SetMustChangePassword(cmd.MustChangePassword).
 		SetCreatedBy(cmd.CreatedBy).
@@ -34,9 +34,9 @@ func (r *UserRepository) Create(ctx context.Context, cmd *user.CreateUserCommand
 }
 
 func (r *UserRepository) Update(ctx context.Context, cmd *user.UpdateUserCommand) error {
-	return r.client.User.UpdateOneID(cmd.ID).
+	return r.client.User.UpdateOneID(cmd.Id).
 		SetDisplayName(cmd.DisplayName).
-		SetAvatarURL(cmd.AvatarURL).
+		SetAvatarURL(cmd.AvatarUrl).
 		SetStatus(entUser.Status(cmd.Status)).
 		SetMustChangePassword(cmd.MustChangePassword).
 		Exec(ctx)
@@ -84,7 +84,7 @@ func mapEntToUser(u *ent.User) *user.User {
 		Email:               u.Email,
 		DisplayName:         u.DisplayName,
 		PasswordHash:        u.PasswordHash,
-		AvatarURL:           u.AvatarURL,
+		AvatarUrl:           u.AvatarURL,
 		Status:              string(u.Status),
 		CreatedAt:           u.CreatedAt.String(),
 		UpdatedAt:           u.UpdatedAt.String(),

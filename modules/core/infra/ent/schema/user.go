@@ -88,10 +88,7 @@ func (UserMixin) Fields() []ent.Field {
 }
 
 func (UserMixin) Edges() []ent.Edge {
-	return []ent.Edge{
-		edge.To("groups", Group.Type).
-			Through("user_groups", UserGroup.Type),
-	}
+	return nil
 }
 
 type User struct {
@@ -109,7 +106,10 @@ func (User) Fields() []ent.Field {
 }
 
 func (User) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.To("groups", Group.Type).
+			Through("user_groups", UserGroup.Type),
+	}
 }
 
 func (User) Mixin() []ent.Mixin {

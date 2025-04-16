@@ -1,4 +1,4 @@
-package utility
+package util
 
 var mime map[string]string = map[string]string{
 	"aac":  "audio/x-aac",

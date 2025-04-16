@@ -6,7 +6,7 @@ type User struct {
 	Email               string
 	DisplayName         string
 	PasswordHash        string
-	AvatarURL           string
+	AvatarUrl           string
 	Status              string
 	LastLoginAt         *string
 	CreatedAt           string

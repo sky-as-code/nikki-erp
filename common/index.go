@@ -1,7 +1,10 @@
 package common
 
 import (
+	"errors"
+
 	"github.com/sky-as-code/nikki-erp/common/config"
+	"github.com/sky-as-code/nikki-erp/common/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules"
 )
 
@@ -22,8 +25,13 @@ func (*SharedModule) Deps() []string {
 }
 
 // Init implements NikkiModule.
-func (*SharedModule) Init() error {
-	err := config.InitSubModule()
+func (*SharedModule) Init() (err error) {
+	err = errors.Join(
+		err,
+		config.InitSubModule(),
+		cqrs.InitSubModule(),
+	)
+
 	if err != nil {
 		return err
 	}

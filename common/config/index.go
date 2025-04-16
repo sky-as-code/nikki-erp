@@ -1,11 +1,12 @@
 package config
 
 import (
+	"errors"
+
 	. "github.com/sky-as-code/nikki-erp/common/config/loader"
 	"github.com/sky-as-code/nikki-erp/common/logging"
+	deps "github.com/sky-as-code/nikki-erp/common/util/deps_inject"
 )
-
-var configService *configServiceImpl
 
 // Config loading priority, for example with key=DB_PASSWORD
 // 1) Look for secret file path in key=DB_PASSWORD_FILE
@@ -14,18 +15,18 @@ var configService *configServiceImpl
 //
 // 2) Look for environment variable with name DB_PASSWORD, if not empty, return it.
 // 3) Read in config/config.json, look for this key in current environment name group.
-func InitSubModule() error {
-	logger := logging.Logger()
+func InitSubModule() (modErr error) {
+	err := deps.Provide(func(logger logging.LoggerService) ConfigService {
+		var configService *configServiceImpl
+		jsonLoader := NewJsonConfigLoader(logger)
+		envVarLoader := NewEnvVarConfigLoader(jsonLoader, logger)
+		secretFileLoader := NewSecretFileConfigLoader(envVarLoader, logger)
+		configService = NewConfigService(secretFileLoader)
+		modErr = configService.Init()
+		return configService
+	})
 
-	jsonLoader := NewJsonConfigLoader(logger)
-	envVarLoader := NewEnvVarConfigLoader(jsonLoader, logger)
-	secretFileLoader := NewSecretFileConfigLoader(envVarLoader, logger)
-	configService = NewConfigService(secretFileLoader)
+	modErr = errors.Join(modErr, err)
 
-	err := configService.Init()
-	return err
-}
-
-func ConfigSvcSingleton() ConfigService {
-	return configService
+	return modErr
 }

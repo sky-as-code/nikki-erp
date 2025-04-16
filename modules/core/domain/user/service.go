@@ -26,14 +26,14 @@ func (thisSvc *Service) UpdateUser(ctx context.Context, cmd *UpdateUserCommand) 
 
 func (thisSvc *Service) DeleteUser(ctx context.Context, id string, deletedBy string) error {
 	cmd := &DeleteUserCommand{
-		ID:        id,
+		Id:        id,
 		DeletedBy: deletedBy,
 	}
 	return thisSvc.commandBus.Send(ctx, cmd)
 }
 
 func (thisSvc *Service) GetUserByID(ctx context.Context, id string) (*User, error) {
-	query := &GetUserByIDQuery{ID: id}
+	query := &GetUserByIdQuery{Id: id}
 	user, err := thisSvc.commandBus.Send(ctx, query)
 	if err != nil {
 		return nil, err

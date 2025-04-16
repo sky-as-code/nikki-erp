@@ -27,6 +27,7 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	github.com/xgfone/go-cast v0.9.0
 	go.bryk.io/pkg v0.0.0-20250411182835-130bbccf42ad
+	go.uber.org/dig v1.18.1
 	gopkg.in/jeevatkm/go-model.v1 v1.1.0
 	gorm.io/gorm v1.25.12
 )

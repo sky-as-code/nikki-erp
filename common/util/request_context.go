@@ -1,7 +1,8 @@
-package utility
+package util
 
 import (
 	"context"
+
 	"gorm.io/gorm"
 )
 

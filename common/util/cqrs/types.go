@@ -5,9 +5,6 @@ import (
 	"go.bryk.io/pkg/ulid"
 )
 
-const MetaCorrelationId = "correlation_id"
-const MetaResponseTopic = "response_topic"
-
 type QueryEventMarshaler = cqrs.CommandEventMarshaler
 
 type QueryPacket struct {

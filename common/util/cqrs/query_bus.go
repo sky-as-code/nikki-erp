@@ -16,6 +16,8 @@ import (
 )
 
 const DefaultQueryTimeoutSecs = 50 * time.Second
+const MetaCorrelationId = "correlation_id"
+const MetaResponseTopic = "response_topic"
 
 type QueryBusConfig struct {
 	// MessagePublisher message.Publisher

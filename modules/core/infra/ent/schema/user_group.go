@@ -26,16 +26,7 @@ func (UserGroupMixin) Fields() []ent.Field {
 }
 
 func (UserGroupMixin) Edges() []ent.Edge {
-	return []ent.Edge{
-		edge.To("user", User.Type).
-			Field("user_id").
-			Unique().
-			Required(),
-		edge.To("group", Group.Type).
-			Field("group_id").
-			Unique().
-			Required(),
-	}
+	return nil
 }
 
 type UserGroup struct {
@@ -47,7 +38,16 @@ func (UserGroup) Fields() []ent.Field {
 }
 
 func (UserGroup) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.To("user", User.Type).
+			Field("user_id").
+			Unique().
+			Required(),
+		edge.To("group", Group.Type).
+			Field("group_id").
+			Unique().
+			Required(),
+	}
 }
 
 func (UserGroup) Annotations() []schema.Annotation {
