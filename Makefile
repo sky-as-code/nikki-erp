@@ -5,6 +5,8 @@ outfile ?= nikki-erp.exe
 
 cwd := $(dir $(lastword $(MAKEFILE_LIST)))
 
+# START: Go builds
+
 clean:
 	@echo "Cleaning dist directory..."
 	@rm -rf dist
@@ -41,13 +43,28 @@ build: build-dynamic
 	@cp cmd/config/config.json dist/config/config.json
 	@echo "Build completed successfully"
 
-nikki:
-	@[ -f cmd/config/local.env ] || cp cmd/config/local.env.sample cmd/config/local.env
-	APP_ENV=$(env) WORKING_DIR="$(cwd)/app" go run cmd/main.go
+# END: Go builds
 
-gen-ent:
+# START: ORM & Database
+migration_dir := file://./scripts/migrations
+
+ent-init:
 	@if [ -z "$(module)" ]; then \
-		echo "Error: module parameter is required. Usage: make gen-ent module=<module_name>"; \
+		echo "Error: module folder is required. Usage: make ent-init module=<module_name> name=<schema_name>"; \
+		exit 1; \
+	fi
+	@if [ -z "$(name)" ]; then \
+		echo "Error: Entity name (in PascalCase) is required. Usage: make ent-init module=<module_name> name=<schema_name>"; \
+		exit 1; \
+	fi
+	@module_path="./modules/$(module)/infra/ent/schema"; \
+	echo "Initializing ent schema '$(name)' in '$$module_path'..."; \
+	go run -mod=mod entgo.io/ent/cmd/ent new $(name) --target $$module_path; \
+	printf "package ent\n\n//go:generate go run -mod=mod entgo.io/ent/cmd/ent generate ./schema\n" > "./modules/$(module)/infra/ent/generate.go"
+
+ent-gen:
+	@if [ -z "$(module)" ]; then \
+		echo "Error: module parameter is required. Usage: make ent-gen module=<module_name>"; \
 		exit 1; \
 	fi
 	@if [ ! -d "./modules/$(module)/infra/ent" ]; then \
@@ -57,34 +74,55 @@ gen-ent:
 	@echo "Generating ent code for module '$(module)'..."
 	go generate ./modules/$(module)/infra/ent
 
-gen-migration:
-	@if [ -z "$(module)" ]; then \
-		echo "Error: module parameter is required. Usage: make gen-migration module=<module_name>"; \
-		exit 1; \
-	fi
-	@if [ ! -d "./modules/$(module)/infra/ent" ]; then \
-		echo "Error: ent schema directory not found for module '$(module)'"; \
-		exit 1; \
-	fi
-	@echo "Generating migration for module '$(module)'..."
-	atlas migrate diff migration_name \
-		--dir "file://modules/$(module)/migration" \
-		--to "ent://modules/$(module)/infra/ent/schema" \
-		--dev-url "docker://postgres/17/test?search_path=public"
+ent-current:
+	@echo "Generating script of current state to '$(migration_dir)'..."
+	atlas migrate diff current_state.tmp \
+		--dir "$(migration_dir)" \
+		--to "postgres://nikki_admin:nikki_password@localhost:5432/nikki_erp?sslmode=disable" \
+		--config file://./scripts/atlas.hcl \
+		--env local
 
-apply-migration:
+ent-hash:
+	@echo "Hashing migrations in '$(migration_dir)'..."
+	@atlas migrate hash --dir "$(migration_dir)"
+
+ent-migration:
 	@if [ -z "$(module)" ]; then \
-		echo "Error: module parameter is required. Usage: make gen-migration module=<module_name>"; \
+		echo "Error: module parameter is required. Usage: make ent-migration module=<module_name> name=<name>"; \
+		exit 1; \
+	fi
+	@if [ -z "$(name)" ]; then \
+		echo "Error: name parameter is required. Usage: make ent-migration module=<module_name> name=<name>"; \
 		exit 1; \
 	fi
 	@if [ ! -d "./modules/$(module)/infra/ent" ]; then \
 		echo "Error: ent schema directory not found for module '$(module)'"; \
 		exit 1; \
 	fi
-	@echo "Applying migration for module '$(module)'..."
+	@echo "Generating migration named '$(name)' for module '$(module)' to '$(migration_dir)'..."
+	atlas migrate diff $(name) \
+		--dir "$(migration_dir)" \
+		--to "ent://modules/$(module)/infra/ent/schema" \
+		--config file://./scripts/atlas.hcl \
+		--env local
+
+ent-apply:
+	@echo "Applying migration files in '$(migration_dir)'..."
 	atlas migrate apply \
-		--dir "file://modules/$(module)/migration" \
+		--dir "$(migration_dir)" \
 		--url "postgres://nikki_admin:nikki_password@localhost:5432/nikki_erp?search_path=public&sslmode=disable"
+
+ent-revert:
+	@echo "Undoing the LATEST APPLIED migration file in '$(migration_dir)'..."
+	atlas migrate down \
+		--dir "$(migration_dir)" \
+		--url "postgres://nikki_admin:nikki_password@localhost:5432/nikki_erp?search_path=public&sslmode=disable" \
+		--config file://./scripts/atlas.hcl \
+		--env local
+
+# END: ORM & Database
+
+# START: Local development
 
 infra-up:
 	docker compose -f "${cwd}/scripts/docker/docker-compose.local.yml" up -d
@@ -92,5 +130,10 @@ infra-up:
 infra-down:
 	docker compose -f "${cwd}/scripts/docker/docker-compose.local.yml" down
 
+nikki:
+	@[ -f cmd/config/local.env ] || cp cmd/config/local.env.sample cmd/config/local.env
+	APP_ENV=$(env) WORKING_DIR="$(cwd)/app" go run cmd/main.go
 
-.PHONY: build build-mods build-static build-dynamic gen-ent gen-migration
+# END: Local development
+
+.PHONY: build build-mods build-static build-dynamic clean ent-init ent-gen ent-current ent-hash ent-migration ent-apply infra-up infra-down nikki

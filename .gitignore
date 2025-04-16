@@ -21,4 +21,7 @@
 # env file
 *.env
 
+# Temporary SQL file for local development only
+*.tmp.sql
+
 dist
