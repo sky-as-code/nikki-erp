@@ -12,7 +12,7 @@ func Container() *dig.Container {
 	return container
 }
 
-func Provide(constructors ...any) error {
+func Register(constructors ...any) error {
 	var err error
 	err = nil
 	for _, constructor := range constructors {

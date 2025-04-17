@@ -16,7 +16,7 @@ func NewLogger(levels ...Level) *loggerImpl {
 
 	levelVar := new(slog.LevelVar)
 	levelVar.Set(slogLevelMap[level])
-	slogger := NewSloggerWithCorrectCallDepth(levelVar, 1)
+	slogger := NewSloggerWithCorrectCallDepth(levelVar, 6)
 	return &loggerImpl{
 		level:    level,
 		levelVar: levelVar,
@@ -91,7 +91,7 @@ func (this *loggerImpl) writeLogData(level Level, message string, data any) {
 }
 
 func (this *loggerImpl) writeLogFormat(level Level, format string, args ...any) {
-	this.slogger.Log(context.Background(), slogLevelMap[level], format, args...)
+	this.slogger.Log(context.Background(), slogLevelMap[level], fmt.Sprintf(format, args...))
 }
 
 func NewSloggerWithCorrectCallDepth(level slog.Leveler, callDepth int) *slog.Logger {

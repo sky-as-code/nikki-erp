@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sky-as-code/nikki-erp/cmd/loader"
 	"github.com/sky-as-code/nikki-erp/common/config"
 	"github.com/sky-as-code/nikki-erp/common/logging"
 	. "github.com/sky-as-code/nikki-erp/common/util/fault"
 	"github.com/sky-as-code/nikki-erp/modules"
 )
 
-func NewApplication(logger logging.LoggerService) *Application {
+func newApplication(logger logging.LoggerService) *Application {
 	return &Application{
 		logger: logger,
 	}
@@ -30,16 +31,16 @@ func (thisApp *Application) Start() {
 	var modules []modules.NikkiModule
 	var err AppError
 
-	modules, err = thisApp.getModules()
+	modules, err = loader.LoadModules()
 	if err != nil {
-		thisApp.logger.Errorf("Failed to load modules: %v", err)
+		thisApp.logger.Errorf("failed to load modules: %v", err)
 	}
 
 	thisApp.modules = append(thisApp.modules, modules...)
 
 	err = thisApp.initModules()
 	if err != nil {
-		thisApp.logger.Error("Failed to initialize modules", err)
+		thisApp.logger.Error("failed to initialize modules", err)
 		os.Exit(1)
 	}
 	thisApp.config = config.ConfigSvcSingleton()
@@ -161,7 +162,8 @@ func topologicalSort(graph map[string][]string) ([]string, error) {
 			}
 			visited[node] = true
 			temp[node] = false
-			order = append([]string{node}, order...)
+			// Changed: append to end instead of prepending
+			order = append(order, node)
 		}
 		return nil
 	}

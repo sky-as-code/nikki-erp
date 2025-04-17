@@ -8,6 +8,8 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/util/deps_inject"
 )
 
+var configSvc ConfigService
+
 // Config loading priority, for example with key=DB_PASSWORD
 // 1) Look for secret file path in key=DB_PASSWORD_FILE
 //   - If there is a file mapped by K8s or Docker at this path, return the file content.
@@ -16,7 +18,7 @@ import (
 // 2) Look for environment variable with name DB_PASSWORD, if not empty, return it.
 // 3) Read in config/config.json, look for this key in current environment name group.
 func InitSubModule() (modErr error) {
-	err := deps.Provide(func(logger logging.LoggerService) ConfigService {
+	err := deps.Register(func(logger logging.LoggerService) ConfigService {
 		var configService *configServiceImpl
 		jsonLoader := NewJsonConfigLoader(logger)
 		envVarLoader := NewEnvVarConfigLoader(jsonLoader, logger)
@@ -25,8 +27,18 @@ func InitSubModule() (modErr error) {
 		modErr = configService.Init()
 		return configService
 	})
-
 	modErr = errors.Join(modErr, err)
+	if modErr != nil {
+		return
+	}
+
+	modErr = deps.Invoke(func(svc ConfigService) {
+		configSvc = svc
+	})
 
 	return modErr
+}
+
+func ConfigSvcSingleton() ConfigService {
+	return configSvc
 }

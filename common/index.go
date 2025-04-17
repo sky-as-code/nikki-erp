@@ -5,6 +5,9 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/config"
 	"github.com/sky-as-code/nikki-erp/common/cqrs"
+	db "github.com/sky-as-code/nikki-erp/common/database"
+	http "github.com/sky-as-code/nikki-erp/common/httpserver"
+	deps "github.com/sky-as-code/nikki-erp/common/util/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules"
 )
 
@@ -25,15 +28,19 @@ func (*SharedModule) Deps() []string {
 }
 
 // Init implements NikkiModule.
-func (*SharedModule) Init() (err error) {
-	err = errors.Join(
-		err,
-		config.InitSubModule(),
-		cqrs.InitSubModule(),
+func (*SharedModule) Init() error {
+	err := errors.Join(
+		deps.Invoke(config.InitSubModule),
+		deps.Invoke(cqrs.InitSubModule),
+		deps.Register(db.InitSubModule),
+		deps.Register(http.InitSubModule),
 	)
 
 	if err != nil {
 		return err
 	}
-	return nil
+	err = errors.Join(
+		deps.Invoke(db.InitSubModule),
+	)
+	return err
 }

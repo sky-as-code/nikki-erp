@@ -29,62 +29,6 @@ func (uu *UserUpdate) Where(ps ...predicate.User) *UserUpdate {
 	return uu
 }
 
-// SetUsername sets the "username" field.
-func (uu *UserUpdate) SetUsername(s string) *UserUpdate {
-	uu.mutation.SetUsername(s)
-	return uu
-}
-
-// SetNillableUsername sets the "username" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableUsername(s *string) *UserUpdate {
-	if s != nil {
-		uu.SetUsername(*s)
-	}
-	return uu
-}
-
-// SetEmail sets the "email" field.
-func (uu *UserUpdate) SetEmail(s string) *UserUpdate {
-	uu.mutation.SetEmail(s)
-	return uu
-}
-
-// SetNillableEmail sets the "email" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableEmail(s *string) *UserUpdate {
-	if s != nil {
-		uu.SetEmail(*s)
-	}
-	return uu
-}
-
-// SetDisplayName sets the "display_name" field.
-func (uu *UserUpdate) SetDisplayName(s string) *UserUpdate {
-	uu.mutation.SetDisplayName(s)
-	return uu
-}
-
-// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableDisplayName(s *string) *UserUpdate {
-	if s != nil {
-		uu.SetDisplayName(*s)
-	}
-	return uu
-}
-
-// SetPasswordHash sets the "password_hash" field.
-func (uu *UserUpdate) SetPasswordHash(s string) *UserUpdate {
-	uu.mutation.SetPasswordHash(s)
-	return uu
-}
-
-// SetNillablePasswordHash sets the "password_hash" field if the given value is not nil.
-func (uu *UserUpdate) SetNillablePasswordHash(s *string) *UserUpdate {
-	if s != nil {
-		uu.SetPasswordHash(*s)
-	}
-	return uu
-}
-
 // SetAvatarURL sets the "avatar_url" field.
 func (uu *UserUpdate) SetAvatarURL(s string) *UserUpdate {
 	uu.mutation.SetAvatarURL(s)
@@ -105,63 +49,31 @@ func (uu *UserUpdate) ClearAvatarURL() *UserUpdate {
 	return uu
 }
 
-// SetStatus sets the "status" field.
-func (uu *UserUpdate) SetStatus(u user.Status) *UserUpdate {
-	uu.mutation.SetStatus(u)
+// SetDisplayName sets the "display_name" field.
+func (uu *UserUpdate) SetDisplayName(s string) *UserUpdate {
+	uu.mutation.SetDisplayName(s)
 	return uu
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableStatus(u *user.Status) *UserUpdate {
-	if u != nil {
-		uu.SetStatus(*u)
-	}
-	return uu
-}
-
-// SetLastLoginAt sets the "last_login_at" field.
-func (uu *UserUpdate) SetLastLoginAt(t time.Time) *UserUpdate {
-	uu.mutation.SetLastLoginAt(t)
-	return uu
-}
-
-// SetNillableLastLoginAt sets the "last_login_at" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableLastLoginAt(t *time.Time) *UserUpdate {
-	if t != nil {
-		uu.SetLastLoginAt(*t)
-	}
-	return uu
-}
-
-// ClearLastLoginAt clears the value of the "last_login_at" field.
-func (uu *UserUpdate) ClearLastLoginAt() *UserUpdate {
-	uu.mutation.ClearLastLoginAt()
-	return uu
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (uu *UserUpdate) SetUpdatedAt(t time.Time) *UserUpdate {
-	uu.mutation.SetUpdatedAt(t)
-	return uu
-}
-
-// SetCreatedBy sets the "created_by" field.
-func (uu *UserUpdate) SetCreatedBy(s string) *UserUpdate {
-	uu.mutation.SetCreatedBy(s)
-	return uu
-}
-
-// SetNillableCreatedBy sets the "created_by" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableCreatedBy(s *string) *UserUpdate {
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableDisplayName(s *string) *UserUpdate {
 	if s != nil {
-		uu.SetCreatedBy(*s)
+		uu.SetDisplayName(*s)
 	}
 	return uu
 }
 
-// ClearCreatedBy clears the value of the "created_by" field.
-func (uu *UserUpdate) ClearCreatedBy() *UserUpdate {
-	uu.mutation.ClearCreatedBy()
+// SetEmail sets the "email" field.
+func (uu *UserUpdate) SetEmail(s string) *UserUpdate {
+	uu.mutation.SetEmail(s)
+	return uu
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableEmail(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetEmail(*s)
+	}
 	return uu
 }
 
@@ -176,46 +88,6 @@ func (uu *UserUpdate) SetNillableEtag(s *string) *UserUpdate {
 	if s != nil {
 		uu.SetEtag(*s)
 	}
-	return uu
-}
-
-// ClearEtag clears the value of the "etag" field.
-func (uu *UserUpdate) ClearEtag() *UserUpdate {
-	uu.mutation.ClearEtag()
-	return uu
-}
-
-// SetMustChangePassword sets the "must_change_password" field.
-func (uu *UserUpdate) SetMustChangePassword(b bool) *UserUpdate {
-	uu.mutation.SetMustChangePassword(b)
-	return uu
-}
-
-// SetNillableMustChangePassword sets the "must_change_password" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableMustChangePassword(b *bool) *UserUpdate {
-	if b != nil {
-		uu.SetMustChangePassword(*b)
-	}
-	return uu
-}
-
-// SetPasswordChangedAt sets the "password_changed_at" field.
-func (uu *UserUpdate) SetPasswordChangedAt(t time.Time) *UserUpdate {
-	uu.mutation.SetPasswordChangedAt(t)
-	return uu
-}
-
-// SetNillablePasswordChangedAt sets the "password_changed_at" field if the given value is not nil.
-func (uu *UserUpdate) SetNillablePasswordChangedAt(t *time.Time) *UserUpdate {
-	if t != nil {
-		uu.SetPasswordChangedAt(*t)
-	}
-	return uu
-}
-
-// ClearPasswordChangedAt clears the value of the "password_changed_at" field.
-func (uu *UserUpdate) ClearPasswordChangedAt() *UserUpdate {
-	uu.mutation.ClearPasswordChangedAt()
 	return uu
 }
 
@@ -240,6 +112,26 @@ func (uu *UserUpdate) AddFailedLoginAttempts(i int) *UserUpdate {
 	return uu
 }
 
+// SetLastLoginAt sets the "last_login_at" field.
+func (uu *UserUpdate) SetLastLoginAt(t time.Time) *UserUpdate {
+	uu.mutation.SetLastLoginAt(t)
+	return uu
+}
+
+// SetNillableLastLoginAt sets the "last_login_at" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableLastLoginAt(t *time.Time) *UserUpdate {
+	if t != nil {
+		uu.SetLastLoginAt(*t)
+	}
+	return uu
+}
+
+// ClearLastLoginAt clears the value of the "last_login_at" field.
+func (uu *UserUpdate) ClearLastLoginAt() *UserUpdate {
+	uu.mutation.ClearLastLoginAt()
+	return uu
+}
+
 // SetLockedUntil sets the "locked_until" field.
 func (uu *UserUpdate) SetLockedUntil(t time.Time) *UserUpdate {
 	uu.mutation.SetLockedUntil(t)
@@ -257,6 +149,82 @@ func (uu *UserUpdate) SetNillableLockedUntil(t *time.Time) *UserUpdate {
 // ClearLockedUntil clears the value of the "locked_until" field.
 func (uu *UserUpdate) ClearLockedUntil() *UserUpdate {
 	uu.mutation.ClearLockedUntil()
+	return uu
+}
+
+// SetMustChangePassword sets the "must_change_password" field.
+func (uu *UserUpdate) SetMustChangePassword(b bool) *UserUpdate {
+	uu.mutation.SetMustChangePassword(b)
+	return uu
+}
+
+// SetNillableMustChangePassword sets the "must_change_password" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableMustChangePassword(b *bool) *UserUpdate {
+	if b != nil {
+		uu.SetMustChangePassword(*b)
+	}
+	return uu
+}
+
+// SetPasswordHash sets the "password_hash" field.
+func (uu *UserUpdate) SetPasswordHash(s string) *UserUpdate {
+	uu.mutation.SetPasswordHash(s)
+	return uu
+}
+
+// SetNillablePasswordHash sets the "password_hash" field if the given value is not nil.
+func (uu *UserUpdate) SetNillablePasswordHash(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetPasswordHash(*s)
+	}
+	return uu
+}
+
+// SetPasswordChangedAt sets the "password_changed_at" field.
+func (uu *UserUpdate) SetPasswordChangedAt(t time.Time) *UserUpdate {
+	uu.mutation.SetPasswordChangedAt(t)
+	return uu
+}
+
+// SetNillablePasswordChangedAt sets the "password_changed_at" field if the given value is not nil.
+func (uu *UserUpdate) SetNillablePasswordChangedAt(t *time.Time) *UserUpdate {
+	if t != nil {
+		uu.SetPasswordChangedAt(*t)
+	}
+	return uu
+}
+
+// SetStatus sets the "status" field.
+func (uu *UserUpdate) SetStatus(u user.Status) *UserUpdate {
+	uu.mutation.SetStatus(u)
+	return uu
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableStatus(u *user.Status) *UserUpdate {
+	if u != nil {
+		uu.SetStatus(*u)
+	}
+	return uu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (uu *UserUpdate) SetUpdatedAt(t time.Time) *UserUpdate {
+	uu.mutation.SetUpdatedAt(t)
+	return uu
+}
+
+// SetUsername sets the "username" field.
+func (uu *UserUpdate) SetUsername(s string) *UserUpdate {
+	uu.mutation.SetUsername(s)
+	return uu
+}
+
+// SetNillableUsername sets the "username" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableUsername(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetUsername(*s)
+	}
 	return uu
 }
 
@@ -339,14 +307,9 @@ func (uu *UserUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (uu *UserUpdate) check() error {
-	if v, ok := uu.mutation.Username(); ok {
-		if err := user.UsernameValidator(v); err != nil {
-			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "User.username": %w`, err)}
-		}
-	}
-	if v, ok := uu.mutation.Email(); ok {
-		if err := user.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
+	if v, ok := uu.mutation.AvatarURL(); ok {
+		if err := user.AvatarURLValidator(v); err != nil {
+			return &ValidationError{Name: "avatar_url", err: fmt.Errorf(`ent: validator failed for field "User.avatar_url": %w`, err)}
 		}
 	}
 	if v, ok := uu.mutation.DisplayName(); ok {
@@ -354,19 +317,29 @@ func (uu *UserUpdate) check() error {
 			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "User.display_name": %w`, err)}
 		}
 	}
+	if v, ok := uu.mutation.Email(); ok {
+		if err := user.EmailValidator(v); err != nil {
+			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
+		}
+	}
+	if v, ok := uu.mutation.Etag(); ok {
+		if err := user.EtagValidator(v); err != nil {
+			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "User.etag": %w`, err)}
+		}
+	}
 	if v, ok := uu.mutation.PasswordHash(); ok {
 		if err := user.PasswordHashValidator(v); err != nil {
 			return &ValidationError{Name: "password_hash", err: fmt.Errorf(`ent: validator failed for field "User.password_hash": %w`, err)}
 		}
 	}
-	if v, ok := uu.mutation.AvatarURL(); ok {
-		if err := user.AvatarURLValidator(v); err != nil {
-			return &ValidationError{Name: "avatar_url", err: fmt.Errorf(`ent: validator failed for field "User.avatar_url": %w`, err)}
-		}
-	}
 	if v, ok := uu.mutation.Status(); ok {
 		if err := user.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "User.status": %w`, err)}
+		}
+	}
+	if v, ok := uu.mutation.Username(); ok {
+		if err := user.UsernameValidator(v); err != nil {
+			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "User.username": %w`, err)}
 		}
 	}
 	return nil
@@ -384,56 +357,20 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := uu.mutation.Username(); ok {
-		_spec.SetField(user.FieldUsername, field.TypeString, value)
-	}
-	if value, ok := uu.mutation.Email(); ok {
-		_spec.SetField(user.FieldEmail, field.TypeString, value)
-	}
-	if value, ok := uu.mutation.DisplayName(); ok {
-		_spec.SetField(user.FieldDisplayName, field.TypeString, value)
-	}
-	if value, ok := uu.mutation.PasswordHash(); ok {
-		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
-	}
 	if value, ok := uu.mutation.AvatarURL(); ok {
 		_spec.SetField(user.FieldAvatarURL, field.TypeString, value)
 	}
 	if uu.mutation.AvatarURLCleared() {
 		_spec.ClearField(user.FieldAvatarURL, field.TypeString)
 	}
-	if value, ok := uu.mutation.Status(); ok {
-		_spec.SetField(user.FieldStatus, field.TypeEnum, value)
+	if value, ok := uu.mutation.DisplayName(); ok {
+		_spec.SetField(user.FieldDisplayName, field.TypeString, value)
 	}
-	if value, ok := uu.mutation.LastLoginAt(); ok {
-		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
-	}
-	if uu.mutation.LastLoginAtCleared() {
-		_spec.ClearField(user.FieldLastLoginAt, field.TypeTime)
-	}
-	if value, ok := uu.mutation.UpdatedAt(); ok {
-		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if value, ok := uu.mutation.CreatedBy(); ok {
-		_spec.SetField(user.FieldCreatedBy, field.TypeString, value)
-	}
-	if uu.mutation.CreatedByCleared() {
-		_spec.ClearField(user.FieldCreatedBy, field.TypeString)
+	if value, ok := uu.mutation.Email(); ok {
+		_spec.SetField(user.FieldEmail, field.TypeString, value)
 	}
 	if value, ok := uu.mutation.Etag(); ok {
 		_spec.SetField(user.FieldEtag, field.TypeString, value)
-	}
-	if uu.mutation.EtagCleared() {
-		_spec.ClearField(user.FieldEtag, field.TypeString)
-	}
-	if value, ok := uu.mutation.MustChangePassword(); ok {
-		_spec.SetField(user.FieldMustChangePassword, field.TypeBool, value)
-	}
-	if value, ok := uu.mutation.PasswordChangedAt(); ok {
-		_spec.SetField(user.FieldPasswordChangedAt, field.TypeTime, value)
-	}
-	if uu.mutation.PasswordChangedAtCleared() {
-		_spec.ClearField(user.FieldPasswordChangedAt, field.TypeTime)
 	}
 	if value, ok := uu.mutation.FailedLoginAttempts(); ok {
 		_spec.SetField(user.FieldFailedLoginAttempts, field.TypeInt, value)
@@ -441,11 +378,35 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uu.mutation.AddedFailedLoginAttempts(); ok {
 		_spec.AddField(user.FieldFailedLoginAttempts, field.TypeInt, value)
 	}
+	if value, ok := uu.mutation.LastLoginAt(); ok {
+		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
+	}
+	if uu.mutation.LastLoginAtCleared() {
+		_spec.ClearField(user.FieldLastLoginAt, field.TypeTime)
+	}
 	if value, ok := uu.mutation.LockedUntil(); ok {
 		_spec.SetField(user.FieldLockedUntil, field.TypeTime, value)
 	}
 	if uu.mutation.LockedUntilCleared() {
 		_spec.ClearField(user.FieldLockedUntil, field.TypeTime)
+	}
+	if value, ok := uu.mutation.MustChangePassword(); ok {
+		_spec.SetField(user.FieldMustChangePassword, field.TypeBool, value)
+	}
+	if value, ok := uu.mutation.PasswordHash(); ok {
+		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
+	}
+	if value, ok := uu.mutation.PasswordChangedAt(); ok {
+		_spec.SetField(user.FieldPasswordChangedAt, field.TypeTime, value)
+	}
+	if value, ok := uu.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := uu.mutation.UpdatedAt(); ok {
+		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := uu.mutation.Username(); ok {
+		_spec.SetField(user.FieldUsername, field.TypeString, value)
 	}
 	if uu.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -512,62 +473,6 @@ type UserUpdateOne struct {
 	mutation *UserMutation
 }
 
-// SetUsername sets the "username" field.
-func (uuo *UserUpdateOne) SetUsername(s string) *UserUpdateOne {
-	uuo.mutation.SetUsername(s)
-	return uuo
-}
-
-// SetNillableUsername sets the "username" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableUsername(s *string) *UserUpdateOne {
-	if s != nil {
-		uuo.SetUsername(*s)
-	}
-	return uuo
-}
-
-// SetEmail sets the "email" field.
-func (uuo *UserUpdateOne) SetEmail(s string) *UserUpdateOne {
-	uuo.mutation.SetEmail(s)
-	return uuo
-}
-
-// SetNillableEmail sets the "email" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableEmail(s *string) *UserUpdateOne {
-	if s != nil {
-		uuo.SetEmail(*s)
-	}
-	return uuo
-}
-
-// SetDisplayName sets the "display_name" field.
-func (uuo *UserUpdateOne) SetDisplayName(s string) *UserUpdateOne {
-	uuo.mutation.SetDisplayName(s)
-	return uuo
-}
-
-// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableDisplayName(s *string) *UserUpdateOne {
-	if s != nil {
-		uuo.SetDisplayName(*s)
-	}
-	return uuo
-}
-
-// SetPasswordHash sets the "password_hash" field.
-func (uuo *UserUpdateOne) SetPasswordHash(s string) *UserUpdateOne {
-	uuo.mutation.SetPasswordHash(s)
-	return uuo
-}
-
-// SetNillablePasswordHash sets the "password_hash" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillablePasswordHash(s *string) *UserUpdateOne {
-	if s != nil {
-		uuo.SetPasswordHash(*s)
-	}
-	return uuo
-}
-
 // SetAvatarURL sets the "avatar_url" field.
 func (uuo *UserUpdateOne) SetAvatarURL(s string) *UserUpdateOne {
 	uuo.mutation.SetAvatarURL(s)
@@ -588,63 +493,31 @@ func (uuo *UserUpdateOne) ClearAvatarURL() *UserUpdateOne {
 	return uuo
 }
 
-// SetStatus sets the "status" field.
-func (uuo *UserUpdateOne) SetStatus(u user.Status) *UserUpdateOne {
-	uuo.mutation.SetStatus(u)
+// SetDisplayName sets the "display_name" field.
+func (uuo *UserUpdateOne) SetDisplayName(s string) *UserUpdateOne {
+	uuo.mutation.SetDisplayName(s)
 	return uuo
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableStatus(u *user.Status) *UserUpdateOne {
-	if u != nil {
-		uuo.SetStatus(*u)
-	}
-	return uuo
-}
-
-// SetLastLoginAt sets the "last_login_at" field.
-func (uuo *UserUpdateOne) SetLastLoginAt(t time.Time) *UserUpdateOne {
-	uuo.mutation.SetLastLoginAt(t)
-	return uuo
-}
-
-// SetNillableLastLoginAt sets the "last_login_at" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableLastLoginAt(t *time.Time) *UserUpdateOne {
-	if t != nil {
-		uuo.SetLastLoginAt(*t)
-	}
-	return uuo
-}
-
-// ClearLastLoginAt clears the value of the "last_login_at" field.
-func (uuo *UserUpdateOne) ClearLastLoginAt() *UserUpdateOne {
-	uuo.mutation.ClearLastLoginAt()
-	return uuo
-}
-
-// SetUpdatedAt sets the "updated_at" field.
-func (uuo *UserUpdateOne) SetUpdatedAt(t time.Time) *UserUpdateOne {
-	uuo.mutation.SetUpdatedAt(t)
-	return uuo
-}
-
-// SetCreatedBy sets the "created_by" field.
-func (uuo *UserUpdateOne) SetCreatedBy(s string) *UserUpdateOne {
-	uuo.mutation.SetCreatedBy(s)
-	return uuo
-}
-
-// SetNillableCreatedBy sets the "created_by" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableCreatedBy(s *string) *UserUpdateOne {
+// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableDisplayName(s *string) *UserUpdateOne {
 	if s != nil {
-		uuo.SetCreatedBy(*s)
+		uuo.SetDisplayName(*s)
 	}
 	return uuo
 }
 
-// ClearCreatedBy clears the value of the "created_by" field.
-func (uuo *UserUpdateOne) ClearCreatedBy() *UserUpdateOne {
-	uuo.mutation.ClearCreatedBy()
+// SetEmail sets the "email" field.
+func (uuo *UserUpdateOne) SetEmail(s string) *UserUpdateOne {
+	uuo.mutation.SetEmail(s)
+	return uuo
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableEmail(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetEmail(*s)
+	}
 	return uuo
 }
 
@@ -659,46 +532,6 @@ func (uuo *UserUpdateOne) SetNillableEtag(s *string) *UserUpdateOne {
 	if s != nil {
 		uuo.SetEtag(*s)
 	}
-	return uuo
-}
-
-// ClearEtag clears the value of the "etag" field.
-func (uuo *UserUpdateOne) ClearEtag() *UserUpdateOne {
-	uuo.mutation.ClearEtag()
-	return uuo
-}
-
-// SetMustChangePassword sets the "must_change_password" field.
-func (uuo *UserUpdateOne) SetMustChangePassword(b bool) *UserUpdateOne {
-	uuo.mutation.SetMustChangePassword(b)
-	return uuo
-}
-
-// SetNillableMustChangePassword sets the "must_change_password" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableMustChangePassword(b *bool) *UserUpdateOne {
-	if b != nil {
-		uuo.SetMustChangePassword(*b)
-	}
-	return uuo
-}
-
-// SetPasswordChangedAt sets the "password_changed_at" field.
-func (uuo *UserUpdateOne) SetPasswordChangedAt(t time.Time) *UserUpdateOne {
-	uuo.mutation.SetPasswordChangedAt(t)
-	return uuo
-}
-
-// SetNillablePasswordChangedAt sets the "password_changed_at" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillablePasswordChangedAt(t *time.Time) *UserUpdateOne {
-	if t != nil {
-		uuo.SetPasswordChangedAt(*t)
-	}
-	return uuo
-}
-
-// ClearPasswordChangedAt clears the value of the "password_changed_at" field.
-func (uuo *UserUpdateOne) ClearPasswordChangedAt() *UserUpdateOne {
-	uuo.mutation.ClearPasswordChangedAt()
 	return uuo
 }
 
@@ -723,6 +556,26 @@ func (uuo *UserUpdateOne) AddFailedLoginAttempts(i int) *UserUpdateOne {
 	return uuo
 }
 
+// SetLastLoginAt sets the "last_login_at" field.
+func (uuo *UserUpdateOne) SetLastLoginAt(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetLastLoginAt(t)
+	return uuo
+}
+
+// SetNillableLastLoginAt sets the "last_login_at" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableLastLoginAt(t *time.Time) *UserUpdateOne {
+	if t != nil {
+		uuo.SetLastLoginAt(*t)
+	}
+	return uuo
+}
+
+// ClearLastLoginAt clears the value of the "last_login_at" field.
+func (uuo *UserUpdateOne) ClearLastLoginAt() *UserUpdateOne {
+	uuo.mutation.ClearLastLoginAt()
+	return uuo
+}
+
 // SetLockedUntil sets the "locked_until" field.
 func (uuo *UserUpdateOne) SetLockedUntil(t time.Time) *UserUpdateOne {
 	uuo.mutation.SetLockedUntil(t)
@@ -740,6 +593,82 @@ func (uuo *UserUpdateOne) SetNillableLockedUntil(t *time.Time) *UserUpdateOne {
 // ClearLockedUntil clears the value of the "locked_until" field.
 func (uuo *UserUpdateOne) ClearLockedUntil() *UserUpdateOne {
 	uuo.mutation.ClearLockedUntil()
+	return uuo
+}
+
+// SetMustChangePassword sets the "must_change_password" field.
+func (uuo *UserUpdateOne) SetMustChangePassword(b bool) *UserUpdateOne {
+	uuo.mutation.SetMustChangePassword(b)
+	return uuo
+}
+
+// SetNillableMustChangePassword sets the "must_change_password" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableMustChangePassword(b *bool) *UserUpdateOne {
+	if b != nil {
+		uuo.SetMustChangePassword(*b)
+	}
+	return uuo
+}
+
+// SetPasswordHash sets the "password_hash" field.
+func (uuo *UserUpdateOne) SetPasswordHash(s string) *UserUpdateOne {
+	uuo.mutation.SetPasswordHash(s)
+	return uuo
+}
+
+// SetNillablePasswordHash sets the "password_hash" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillablePasswordHash(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetPasswordHash(*s)
+	}
+	return uuo
+}
+
+// SetPasswordChangedAt sets the "password_changed_at" field.
+func (uuo *UserUpdateOne) SetPasswordChangedAt(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetPasswordChangedAt(t)
+	return uuo
+}
+
+// SetNillablePasswordChangedAt sets the "password_changed_at" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillablePasswordChangedAt(t *time.Time) *UserUpdateOne {
+	if t != nil {
+		uuo.SetPasswordChangedAt(*t)
+	}
+	return uuo
+}
+
+// SetStatus sets the "status" field.
+func (uuo *UserUpdateOne) SetStatus(u user.Status) *UserUpdateOne {
+	uuo.mutation.SetStatus(u)
+	return uuo
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableStatus(u *user.Status) *UserUpdateOne {
+	if u != nil {
+		uuo.SetStatus(*u)
+	}
+	return uuo
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (uuo *UserUpdateOne) SetUpdatedAt(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetUpdatedAt(t)
+	return uuo
+}
+
+// SetUsername sets the "username" field.
+func (uuo *UserUpdateOne) SetUsername(s string) *UserUpdateOne {
+	uuo.mutation.SetUsername(s)
+	return uuo
+}
+
+// SetNillableUsername sets the "username" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableUsername(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetUsername(*s)
+	}
 	return uuo
 }
 
@@ -835,14 +764,9 @@ func (uuo *UserUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (uuo *UserUpdateOne) check() error {
-	if v, ok := uuo.mutation.Username(); ok {
-		if err := user.UsernameValidator(v); err != nil {
-			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "User.username": %w`, err)}
-		}
-	}
-	if v, ok := uuo.mutation.Email(); ok {
-		if err := user.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
+	if v, ok := uuo.mutation.AvatarURL(); ok {
+		if err := user.AvatarURLValidator(v); err != nil {
+			return &ValidationError{Name: "avatar_url", err: fmt.Errorf(`ent: validator failed for field "User.avatar_url": %w`, err)}
 		}
 	}
 	if v, ok := uuo.mutation.DisplayName(); ok {
@@ -850,19 +774,29 @@ func (uuo *UserUpdateOne) check() error {
 			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "User.display_name": %w`, err)}
 		}
 	}
+	if v, ok := uuo.mutation.Email(); ok {
+		if err := user.EmailValidator(v); err != nil {
+			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
+		}
+	}
+	if v, ok := uuo.mutation.Etag(); ok {
+		if err := user.EtagValidator(v); err != nil {
+			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "User.etag": %w`, err)}
+		}
+	}
 	if v, ok := uuo.mutation.PasswordHash(); ok {
 		if err := user.PasswordHashValidator(v); err != nil {
 			return &ValidationError{Name: "password_hash", err: fmt.Errorf(`ent: validator failed for field "User.password_hash": %w`, err)}
 		}
 	}
-	if v, ok := uuo.mutation.AvatarURL(); ok {
-		if err := user.AvatarURLValidator(v); err != nil {
-			return &ValidationError{Name: "avatar_url", err: fmt.Errorf(`ent: validator failed for field "User.avatar_url": %w`, err)}
-		}
-	}
 	if v, ok := uuo.mutation.Status(); ok {
 		if err := user.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "User.status": %w`, err)}
+		}
+	}
+	if v, ok := uuo.mutation.Username(); ok {
+		if err := user.UsernameValidator(v); err != nil {
+			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "User.username": %w`, err)}
 		}
 	}
 	return nil
@@ -897,56 +831,20 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			}
 		}
 	}
-	if value, ok := uuo.mutation.Username(); ok {
-		_spec.SetField(user.FieldUsername, field.TypeString, value)
-	}
-	if value, ok := uuo.mutation.Email(); ok {
-		_spec.SetField(user.FieldEmail, field.TypeString, value)
-	}
-	if value, ok := uuo.mutation.DisplayName(); ok {
-		_spec.SetField(user.FieldDisplayName, field.TypeString, value)
-	}
-	if value, ok := uuo.mutation.PasswordHash(); ok {
-		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
-	}
 	if value, ok := uuo.mutation.AvatarURL(); ok {
 		_spec.SetField(user.FieldAvatarURL, field.TypeString, value)
 	}
 	if uuo.mutation.AvatarURLCleared() {
 		_spec.ClearField(user.FieldAvatarURL, field.TypeString)
 	}
-	if value, ok := uuo.mutation.Status(); ok {
-		_spec.SetField(user.FieldStatus, field.TypeEnum, value)
+	if value, ok := uuo.mutation.DisplayName(); ok {
+		_spec.SetField(user.FieldDisplayName, field.TypeString, value)
 	}
-	if value, ok := uuo.mutation.LastLoginAt(); ok {
-		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
-	}
-	if uuo.mutation.LastLoginAtCleared() {
-		_spec.ClearField(user.FieldLastLoginAt, field.TypeTime)
-	}
-	if value, ok := uuo.mutation.UpdatedAt(); ok {
-		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if value, ok := uuo.mutation.CreatedBy(); ok {
-		_spec.SetField(user.FieldCreatedBy, field.TypeString, value)
-	}
-	if uuo.mutation.CreatedByCleared() {
-		_spec.ClearField(user.FieldCreatedBy, field.TypeString)
+	if value, ok := uuo.mutation.Email(); ok {
+		_spec.SetField(user.FieldEmail, field.TypeString, value)
 	}
 	if value, ok := uuo.mutation.Etag(); ok {
 		_spec.SetField(user.FieldEtag, field.TypeString, value)
-	}
-	if uuo.mutation.EtagCleared() {
-		_spec.ClearField(user.FieldEtag, field.TypeString)
-	}
-	if value, ok := uuo.mutation.MustChangePassword(); ok {
-		_spec.SetField(user.FieldMustChangePassword, field.TypeBool, value)
-	}
-	if value, ok := uuo.mutation.PasswordChangedAt(); ok {
-		_spec.SetField(user.FieldPasswordChangedAt, field.TypeTime, value)
-	}
-	if uuo.mutation.PasswordChangedAtCleared() {
-		_spec.ClearField(user.FieldPasswordChangedAt, field.TypeTime)
 	}
 	if value, ok := uuo.mutation.FailedLoginAttempts(); ok {
 		_spec.SetField(user.FieldFailedLoginAttempts, field.TypeInt, value)
@@ -954,11 +852,35 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	if value, ok := uuo.mutation.AddedFailedLoginAttempts(); ok {
 		_spec.AddField(user.FieldFailedLoginAttempts, field.TypeInt, value)
 	}
+	if value, ok := uuo.mutation.LastLoginAt(); ok {
+		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
+	}
+	if uuo.mutation.LastLoginAtCleared() {
+		_spec.ClearField(user.FieldLastLoginAt, field.TypeTime)
+	}
 	if value, ok := uuo.mutation.LockedUntil(); ok {
 		_spec.SetField(user.FieldLockedUntil, field.TypeTime, value)
 	}
 	if uuo.mutation.LockedUntilCleared() {
 		_spec.ClearField(user.FieldLockedUntil, field.TypeTime)
+	}
+	if value, ok := uuo.mutation.MustChangePassword(); ok {
+		_spec.SetField(user.FieldMustChangePassword, field.TypeBool, value)
+	}
+	if value, ok := uuo.mutation.PasswordHash(); ok {
+		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
+	}
+	if value, ok := uuo.mutation.PasswordChangedAt(); ok {
+		_spec.SetField(user.FieldPasswordChangedAt, field.TypeTime, value)
+	}
+	if value, ok := uuo.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeEnum, value)
+	}
+	if value, ok := uuo.mutation.UpdatedAt(); ok {
+		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if value, ok := uuo.mutation.Username(); ok {
+		_spec.SetField(user.FieldUsername, field.TypeString, value)
 	}
 	if uuo.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{

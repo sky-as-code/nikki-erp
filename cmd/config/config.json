@@ -1,56 +1,28 @@
 {
 	"default": {
-		"HTTP_PORT_MAIN": "8080",
-		"HTTP_PORT_PROMETHEUS": "8081",
-		"LOG_LEVEL": "INFO",
+		"APP_NAME": "Nikki ERP",
+		
+		"DB_DRIVER": "postgres",
+		"DB_HOST_PORT": "localhost:5432",
+		"DB_NAME": "nikki_erp",
+		"DB_PASSWORD": "nikki_password",
+		"DB_USER": "nikki_admin",
+		"DB_PG_SSL_MODE": "disable",
 
-		"AWS_REGION": "ap-southeast-1",
-		"FILEMETA_STORE": "stub",
-		"STORAGE_TYPE": "filesystem",
-		"STORAGE_FS_BASEPATH": "../wopisvc-legacy/data",
-
-		"STORAGE_S3_URL": "http://localhost:4566",
-		"STORAGE_S3_ACCESS_KEY_ID": "gjwdocsadmin",
-		"STORAGE_S3_ACCESS_KEY_SECRET": "gjwdocsadmin",
-		"STORAGE_S3_REGION": "us-west-1",
-		"STORAGE_S3_USE_CUSTOM_URL": true,
-
-		"STORAGE_DRIVE_URL": "http://localhost:8085",
-		"STORAGE_DRIVE_TIMEOUT_MILISEC": 100000,
-		"STORAGE_DRIVE_MAX_IDLE_CONS": 100,
-		"STORAGE_DRIVE_MAX_IDLE_CONS_PER_HOST": 100,
-		"STORAGE_DRIVE_MAX_CONNS_PER_HOST": 100,
-		"STORAGE_DRIVE_BODY_CHUNK_SIZE": 1048576,
-
-		"OAUTH2_CLIENT_ID": "79970858679958387",
-		"OAUTH2_TOKEN_URL": "https://web.ganjingworld.dev/v1/oauth2/token",
-		"OAUTH2_PROFILE_URL": "https://web.ganjingworld.dev/v1/oauth2/users/me",
-		"OAUTH2_REDIRECT_URL": "http://localhost:3000/",
-
-		"COOL_URL": "http://cool.gjwdocs-local.com:9980",
-		"WOPI_TOKEN_EXPIRY_SEC": 3600,
-		"WOPI_TOKEN_ISSUER": "docs.ganjing.dev",
-		"WOPI_TOKEN_PRIVATE_KEY": "./config/auth-keypair-local.key",
-		"WOPI_TOKEN_PUBLIC_KEY": "./config/auth-keypair-local.pub"
+		"HTTP_PORT": "8080"
 	},
 	"local": {
-		"COOL_URL": "http://cool.gjwdocs-local.com:9980"
 	},
-	"localcontainer": {
-		"COOL_URL": "http://cool.gjwdocs-local.com:9980",
-		"STORAGE_FS_BASEPATH": "./data",
-		"STORAGE_S3_URL": "http://gjwdocs-localstack:4566/"
+	"container": {
+		"APP_NAME": "Nikki ERP (Local container)",
+		"DB_HOST_PORT": "nikki_postgres:5432"
 	},
 	"dev": {
-		"COOL_URL": "https://docscool-dev.ganjing.click",
-		"STORAGE_FS_BASEPATH": "./data"
+		"APP_NAME": "Nikki ERP (Dev)"
 	},
 	"uat": {
-		"OAUTH2_CLIENT_ID": "79971021788032220"
+		"APP_NAME": "Nikki ERP (UAT)"
 	},
 	"prod": {
-		"OAUTH2_CLIENT_ID": "",
-		"OAUTH2_TOKEN_URL": "https://www.ganjingworld.com/v1/oauth2/token",
-		"OAUTH2_PROFILE_URL": "https://www.ganjingworld.com/v1/oauth2/users/me"
 	}
 }

@@ -2,9 +2,14 @@ package main
 
 import (
 	"flag"
+	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/sky-as-code/nikki-erp/common/httpserver"
 	"github.com/sky-as-code/nikki-erp/common/logging"
 	util "github.com/sky-as-code/nikki-erp/common/util"
+	deps "github.com/sky-as-code/nikki-erp/common/util/deps_inject"
 )
 
 func main() {
@@ -12,24 +17,28 @@ func main() {
 	flag.Parse()
 	logging.InitSubModule()
 	util.Unused(isDbMigrate)
-	// mainHttpServer := SetupMainHttpServer()
 
-	// startService(mainHttpServer)
+	app := newApplication(logging.Logger())
+	app.Start()
+
+	var server *httpserver.HttpServer
+	go func() {
+		err := deps.Invoke(func(s *httpserver.HttpServer) error {
+			server = s
+			return server.Start()
+		})
+		if err != nil {
+			app.logger.Error("failed to start HTTP server", err)
+			os.Exit(1)
+		}
+	}()
+
+	<-awaitOsTerminateSignal()
+	server.Shutdown()
 }
 
-func startService() {
-	// application := pkg.NewWebApp(logging.Logger())
-	// application.Start()
-
-	// pkg.SetupMainRoutes(mainHttpServer)
-	// prometheusHttpServer := pkg.SetupPrometheusHttpServer(mainHttpServer)
-
-	// config := application.Config()
-	// go mainHttpServer.Start(config.GetInt32(c.HttpPortMain))
-	// go prometheusHttpServer.Start(config.GetInt32(c.HttpPortPrometheus))
-
-	// <-pkg.AwaitOsTerminateSignal()
-
-	// mainHttpServer.Shutdown()
-	// prometheusHttpServer.Shutdown()
+func awaitOsTerminateSignal() chan os.Signal {
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	return signalChan
 }

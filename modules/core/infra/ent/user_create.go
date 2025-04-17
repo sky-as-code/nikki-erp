@@ -21,30 +21,6 @@ type UserCreate struct {
 	hooks    []Hook
 }
 
-// SetUsername sets the "username" field.
-func (uc *UserCreate) SetUsername(s string) *UserCreate {
-	uc.mutation.SetUsername(s)
-	return uc
-}
-
-// SetEmail sets the "email" field.
-func (uc *UserCreate) SetEmail(s string) *UserCreate {
-	uc.mutation.SetEmail(s)
-	return uc
-}
-
-// SetDisplayName sets the "display_name" field.
-func (uc *UserCreate) SetDisplayName(s string) *UserCreate {
-	uc.mutation.SetDisplayName(s)
-	return uc
-}
-
-// SetPasswordHash sets the "password_hash" field.
-func (uc *UserCreate) SetPasswordHash(s string) *UserCreate {
-	uc.mutation.SetPasswordHash(s)
-	return uc
-}
-
 // SetAvatarURL sets the "avatar_url" field.
 func (uc *UserCreate) SetAvatarURL(s string) *UserCreate {
 	uc.mutation.SetAvatarURL(s)
@@ -55,34 +31,6 @@ func (uc *UserCreate) SetAvatarURL(s string) *UserCreate {
 func (uc *UserCreate) SetNillableAvatarURL(s *string) *UserCreate {
 	if s != nil {
 		uc.SetAvatarURL(*s)
-	}
-	return uc
-}
-
-// SetStatus sets the "status" field.
-func (uc *UserCreate) SetStatus(u user.Status) *UserCreate {
-	uc.mutation.SetStatus(u)
-	return uc
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (uc *UserCreate) SetNillableStatus(u *user.Status) *UserCreate {
-	if u != nil {
-		uc.SetStatus(*u)
-	}
-	return uc
-}
-
-// SetLastLoginAt sets the "last_login_at" field.
-func (uc *UserCreate) SetLastLoginAt(t time.Time) *UserCreate {
-	uc.mutation.SetLastLoginAt(t)
-	return uc
-}
-
-// SetNillableLastLoginAt sets the "last_login_at" field if the given value is not nil.
-func (uc *UserCreate) SetNillableLastLoginAt(t *time.Time) *UserCreate {
-	if t != nil {
-		uc.SetLastLoginAt(*t)
 	}
 	return uc
 }
@@ -101,31 +49,21 @@ func (uc *UserCreate) SetNillableCreatedAt(t *time.Time) *UserCreate {
 	return uc
 }
 
-// SetUpdatedAt sets the "updated_at" field.
-func (uc *UserCreate) SetUpdatedAt(t time.Time) *UserCreate {
-	uc.mutation.SetUpdatedAt(t)
-	return uc
-}
-
-// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
-func (uc *UserCreate) SetNillableUpdatedAt(t *time.Time) *UserCreate {
-	if t != nil {
-		uc.SetUpdatedAt(*t)
-	}
-	return uc
-}
-
 // SetCreatedBy sets the "created_by" field.
 func (uc *UserCreate) SetCreatedBy(s string) *UserCreate {
 	uc.mutation.SetCreatedBy(s)
 	return uc
 }
 
-// SetNillableCreatedBy sets the "created_by" field if the given value is not nil.
-func (uc *UserCreate) SetNillableCreatedBy(s *string) *UserCreate {
-	if s != nil {
-		uc.SetCreatedBy(*s)
-	}
+// SetDisplayName sets the "display_name" field.
+func (uc *UserCreate) SetDisplayName(s string) *UserCreate {
+	uc.mutation.SetDisplayName(s)
+	return uc
+}
+
+// SetEmail sets the "email" field.
+func (uc *UserCreate) SetEmail(s string) *UserCreate {
+	uc.mutation.SetEmail(s)
 	return uc
 }
 
@@ -139,34 +77,6 @@ func (uc *UserCreate) SetEtag(s string) *UserCreate {
 func (uc *UserCreate) SetNillableEtag(s *string) *UserCreate {
 	if s != nil {
 		uc.SetEtag(*s)
-	}
-	return uc
-}
-
-// SetMustChangePassword sets the "must_change_password" field.
-func (uc *UserCreate) SetMustChangePassword(b bool) *UserCreate {
-	uc.mutation.SetMustChangePassword(b)
-	return uc
-}
-
-// SetNillableMustChangePassword sets the "must_change_password" field if the given value is not nil.
-func (uc *UserCreate) SetNillableMustChangePassword(b *bool) *UserCreate {
-	if b != nil {
-		uc.SetMustChangePassword(*b)
-	}
-	return uc
-}
-
-// SetPasswordChangedAt sets the "password_changed_at" field.
-func (uc *UserCreate) SetPasswordChangedAt(t time.Time) *UserCreate {
-	uc.mutation.SetPasswordChangedAt(t)
-	return uc
-}
-
-// SetNillablePasswordChangedAt sets the "password_changed_at" field if the given value is not nil.
-func (uc *UserCreate) SetNillablePasswordChangedAt(t *time.Time) *UserCreate {
-	if t != nil {
-		uc.SetPasswordChangedAt(*t)
 	}
 	return uc
 }
@@ -185,6 +95,20 @@ func (uc *UserCreate) SetNillableFailedLoginAttempts(i *int) *UserCreate {
 	return uc
 }
 
+// SetLastLoginAt sets the "last_login_at" field.
+func (uc *UserCreate) SetLastLoginAt(t time.Time) *UserCreate {
+	uc.mutation.SetLastLoginAt(t)
+	return uc
+}
+
+// SetNillableLastLoginAt sets the "last_login_at" field if the given value is not nil.
+func (uc *UserCreate) SetNillableLastLoginAt(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetLastLoginAt(*t)
+	}
+	return uc
+}
+
 // SetLockedUntil sets the "locked_until" field.
 func (uc *UserCreate) SetLockedUntil(t time.Time) *UserCreate {
 	uc.mutation.SetLockedUntil(t)
@@ -196,6 +120,74 @@ func (uc *UserCreate) SetNillableLockedUntil(t *time.Time) *UserCreate {
 	if t != nil {
 		uc.SetLockedUntil(*t)
 	}
+	return uc
+}
+
+// SetMustChangePassword sets the "must_change_password" field.
+func (uc *UserCreate) SetMustChangePassword(b bool) *UserCreate {
+	uc.mutation.SetMustChangePassword(b)
+	return uc
+}
+
+// SetNillableMustChangePassword sets the "must_change_password" field if the given value is not nil.
+func (uc *UserCreate) SetNillableMustChangePassword(b *bool) *UserCreate {
+	if b != nil {
+		uc.SetMustChangePassword(*b)
+	}
+	return uc
+}
+
+// SetPasswordHash sets the "password_hash" field.
+func (uc *UserCreate) SetPasswordHash(s string) *UserCreate {
+	uc.mutation.SetPasswordHash(s)
+	return uc
+}
+
+// SetPasswordChangedAt sets the "password_changed_at" field.
+func (uc *UserCreate) SetPasswordChangedAt(t time.Time) *UserCreate {
+	uc.mutation.SetPasswordChangedAt(t)
+	return uc
+}
+
+// SetNillablePasswordChangedAt sets the "password_changed_at" field if the given value is not nil.
+func (uc *UserCreate) SetNillablePasswordChangedAt(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetPasswordChangedAt(*t)
+	}
+	return uc
+}
+
+// SetStatus sets the "status" field.
+func (uc *UserCreate) SetStatus(u user.Status) *UserCreate {
+	uc.mutation.SetStatus(u)
+	return uc
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (uc *UserCreate) SetNillableStatus(u *user.Status) *UserCreate {
+	if u != nil {
+		uc.SetStatus(*u)
+	}
+	return uc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (uc *UserCreate) SetUpdatedAt(t time.Time) *UserCreate {
+	uc.mutation.SetUpdatedAt(t)
+	return uc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (uc *UserCreate) SetNillableUpdatedAt(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetUpdatedAt(*t)
+	}
+	return uc
+}
+
+// SetUsername sets the "username" field.
+func (uc *UserCreate) SetUsername(s string) *UserCreate {
+	uc.mutation.SetUsername(s)
 	return uc
 }
 
@@ -255,44 +247,52 @@ func (uc *UserCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (uc *UserCreate) defaults() {
-	if _, ok := uc.mutation.Status(); !ok {
-		v := user.DefaultStatus
-		uc.mutation.SetStatus(v)
-	}
 	if _, ok := uc.mutation.CreatedAt(); !ok {
 		v := user.DefaultCreatedAt()
 		uc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := uc.mutation.UpdatedAt(); !ok {
-		v := user.DefaultUpdatedAt()
-		uc.mutation.SetUpdatedAt(v)
-	}
-	if _, ok := uc.mutation.MustChangePassword(); !ok {
-		v := user.DefaultMustChangePassword
-		uc.mutation.SetMustChangePassword(v)
+	if _, ok := uc.mutation.Etag(); !ok {
+		v := user.DefaultEtag()
+		uc.mutation.SetEtag(v)
 	}
 	if _, ok := uc.mutation.FailedLoginAttempts(); !ok {
 		v := user.DefaultFailedLoginAttempts
 		uc.mutation.SetFailedLoginAttempts(v)
 	}
+	if _, ok := uc.mutation.MustChangePassword(); !ok {
+		v := user.DefaultMustChangePassword
+		uc.mutation.SetMustChangePassword(v)
+	}
+	if _, ok := uc.mutation.PasswordChangedAt(); !ok {
+		v := user.DefaultPasswordChangedAt()
+		uc.mutation.SetPasswordChangedAt(v)
+	}
+	if _, ok := uc.mutation.Status(); !ok {
+		v := user.DefaultStatus
+		uc.mutation.SetStatus(v)
+	}
+	if _, ok := uc.mutation.UpdatedAt(); !ok {
+		v := user.DefaultUpdatedAt()
+		uc.mutation.SetUpdatedAt(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (uc *UserCreate) check() error {
-	if _, ok := uc.mutation.Username(); !ok {
-		return &ValidationError{Name: "username", err: errors.New(`ent: missing required field "User.username"`)}
-	}
-	if v, ok := uc.mutation.Username(); ok {
-		if err := user.UsernameValidator(v); err != nil {
-			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "User.username": %w`, err)}
+	if v, ok := uc.mutation.AvatarURL(); ok {
+		if err := user.AvatarURLValidator(v); err != nil {
+			return &ValidationError{Name: "avatar_url", err: fmt.Errorf(`ent: validator failed for field "User.avatar_url": %w`, err)}
 		}
 	}
-	if _, ok := uc.mutation.Email(); !ok {
-		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "User.email"`)}
+	if _, ok := uc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "User.created_at"`)}
 	}
-	if v, ok := uc.mutation.Email(); ok {
-		if err := user.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
+	if _, ok := uc.mutation.CreatedBy(); !ok {
+		return &ValidationError{Name: "created_by", err: errors.New(`ent: missing required field "User.created_by"`)}
+	}
+	if v, ok := uc.mutation.CreatedBy(); ok {
+		if err := user.CreatedByValidator(v); err != nil {
+			return &ValidationError{Name: "created_by", err: fmt.Errorf(`ent: validator failed for field "User.created_by": %w`, err)}
 		}
 	}
 	if _, ok := uc.mutation.DisplayName(); !ok {
@@ -303,6 +303,28 @@ func (uc *UserCreate) check() error {
 			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "User.display_name": %w`, err)}
 		}
 	}
+	if _, ok := uc.mutation.Email(); !ok {
+		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "User.email"`)}
+	}
+	if v, ok := uc.mutation.Email(); ok {
+		if err := user.EmailValidator(v); err != nil {
+			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
+		}
+	}
+	if _, ok := uc.mutation.Etag(); !ok {
+		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "User.etag"`)}
+	}
+	if v, ok := uc.mutation.Etag(); ok {
+		if err := user.EtagValidator(v); err != nil {
+			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "User.etag": %w`, err)}
+		}
+	}
+	if _, ok := uc.mutation.FailedLoginAttempts(); !ok {
+		return &ValidationError{Name: "failed_login_attempts", err: errors.New(`ent: missing required field "User.failed_login_attempts"`)}
+	}
+	if _, ok := uc.mutation.MustChangePassword(); !ok {
+		return &ValidationError{Name: "must_change_password", err: errors.New(`ent: missing required field "User.must_change_password"`)}
+	}
 	if _, ok := uc.mutation.PasswordHash(); !ok {
 		return &ValidationError{Name: "password_hash", err: errors.New(`ent: missing required field "User.password_hash"`)}
 	}
@@ -311,10 +333,8 @@ func (uc *UserCreate) check() error {
 			return &ValidationError{Name: "password_hash", err: fmt.Errorf(`ent: validator failed for field "User.password_hash": %w`, err)}
 		}
 	}
-	if v, ok := uc.mutation.AvatarURL(); ok {
-		if err := user.AvatarURLValidator(v); err != nil {
-			return &ValidationError{Name: "avatar_url", err: fmt.Errorf(`ent: validator failed for field "User.avatar_url": %w`, err)}
-		}
+	if _, ok := uc.mutation.PasswordChangedAt(); !ok {
+		return &ValidationError{Name: "password_changed_at", err: errors.New(`ent: missing required field "User.password_changed_at"`)}
 	}
 	if _, ok := uc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "User.status"`)}
@@ -324,17 +344,16 @@ func (uc *UserCreate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "User.status": %w`, err)}
 		}
 	}
-	if _, ok := uc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "User.created_at"`)}
-	}
 	if _, ok := uc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "User.updated_at"`)}
 	}
-	if _, ok := uc.mutation.MustChangePassword(); !ok {
-		return &ValidationError{Name: "must_change_password", err: errors.New(`ent: missing required field "User.must_change_password"`)}
+	if _, ok := uc.mutation.Username(); !ok {
+		return &ValidationError{Name: "username", err: errors.New(`ent: missing required field "User.username"`)}
 	}
-	if _, ok := uc.mutation.FailedLoginAttempts(); !ok {
-		return &ValidationError{Name: "failed_login_attempts", err: errors.New(`ent: missing required field "User.failed_login_attempts"`)}
+	if v, ok := uc.mutation.Username(); ok {
+		if err := user.UsernameValidator(v); err != nil {
+			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "User.username": %w`, err)}
+		}
 	}
 	if v, ok := uc.mutation.ID(); ok {
 		if err := user.IDValidator(v); err != nil {
@@ -376,65 +395,65 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := uc.mutation.Username(); ok {
-		_spec.SetField(user.FieldUsername, field.TypeString, value)
-		_node.Username = value
-	}
-	if value, ok := uc.mutation.Email(); ok {
-		_spec.SetField(user.FieldEmail, field.TypeString, value)
-		_node.Email = value
-	}
-	if value, ok := uc.mutation.DisplayName(); ok {
-		_spec.SetField(user.FieldDisplayName, field.TypeString, value)
-		_node.DisplayName = value
-	}
-	if value, ok := uc.mutation.PasswordHash(); ok {
-		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
-		_node.PasswordHash = value
-	}
 	if value, ok := uc.mutation.AvatarURL(); ok {
 		_spec.SetField(user.FieldAvatarURL, field.TypeString, value)
-		_node.AvatarURL = value
-	}
-	if value, ok := uc.mutation.Status(); ok {
-		_spec.SetField(user.FieldStatus, field.TypeEnum, value)
-		_node.Status = value
-	}
-	if value, ok := uc.mutation.LastLoginAt(); ok {
-		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
-		_node.LastLoginAt = value
+		_node.AvatarURL = &value
 	}
 	if value, ok := uc.mutation.CreatedAt(); ok {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := uc.mutation.UpdatedAt(); ok {
-		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
-	}
 	if value, ok := uc.mutation.CreatedBy(); ok {
 		_spec.SetField(user.FieldCreatedBy, field.TypeString, value)
 		_node.CreatedBy = value
+	}
+	if value, ok := uc.mutation.DisplayName(); ok {
+		_spec.SetField(user.FieldDisplayName, field.TypeString, value)
+		_node.DisplayName = value
+	}
+	if value, ok := uc.mutation.Email(); ok {
+		_spec.SetField(user.FieldEmail, field.TypeString, value)
+		_node.Email = value
 	}
 	if value, ok := uc.mutation.Etag(); ok {
 		_spec.SetField(user.FieldEtag, field.TypeString, value)
 		_node.Etag = value
 	}
+	if value, ok := uc.mutation.FailedLoginAttempts(); ok {
+		_spec.SetField(user.FieldFailedLoginAttempts, field.TypeInt, value)
+		_node.FailedLoginAttempts = value
+	}
+	if value, ok := uc.mutation.LastLoginAt(); ok {
+		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
+		_node.LastLoginAt = &value
+	}
+	if value, ok := uc.mutation.LockedUntil(); ok {
+		_spec.SetField(user.FieldLockedUntil, field.TypeTime, value)
+		_node.LockedUntil = &value
+	}
 	if value, ok := uc.mutation.MustChangePassword(); ok {
 		_spec.SetField(user.FieldMustChangePassword, field.TypeBool, value)
 		_node.MustChangePassword = value
+	}
+	if value, ok := uc.mutation.PasswordHash(); ok {
+		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
+		_node.PasswordHash = value
 	}
 	if value, ok := uc.mutation.PasswordChangedAt(); ok {
 		_spec.SetField(user.FieldPasswordChangedAt, field.TypeTime, value)
 		_node.PasswordChangedAt = value
 	}
-	if value, ok := uc.mutation.FailedLoginAttempts(); ok {
-		_spec.SetField(user.FieldFailedLoginAttempts, field.TypeInt, value)
-		_node.FailedLoginAttempts = value
+	if value, ok := uc.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeEnum, value)
+		_node.Status = value
 	}
-	if value, ok := uc.mutation.LockedUntil(); ok {
-		_spec.SetField(user.FieldLockedUntil, field.TypeTime, value)
-		_node.LockedUntil = &value
+	if value, ok := uc.mutation.UpdatedAt(); ok {
+		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
+	if value, ok := uc.mutation.Username(); ok {
+		_spec.SetField(user.FieldUsername, field.TypeString, value)
+		_node.Username = value
 	}
 	if nodes := uc.mutation.GroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

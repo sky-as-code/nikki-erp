@@ -15,36 +15,36 @@ const (
 	Label = "user"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldUsername holds the string denoting the username field in the database.
-	FieldUsername = "username"
-	// FieldEmail holds the string denoting the email field in the database.
-	FieldEmail = "email"
-	// FieldDisplayName holds the string denoting the display_name field in the database.
-	FieldDisplayName = "display_name"
-	// FieldPasswordHash holds the string denoting the password_hash field in the database.
-	FieldPasswordHash = "password_hash"
 	// FieldAvatarURL holds the string denoting the avatar_url field in the database.
 	FieldAvatarURL = "avatar_url"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
-	// FieldLastLoginAt holds the string denoting the last_login_at field in the database.
-	FieldLastLoginAt = "last_login_at"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
-	FieldUpdatedAt = "updated_at"
 	// FieldCreatedBy holds the string denoting the created_by field in the database.
 	FieldCreatedBy = "created_by"
+	// FieldDisplayName holds the string denoting the display_name field in the database.
+	FieldDisplayName = "display_name"
+	// FieldEmail holds the string denoting the email field in the database.
+	FieldEmail = "email"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
-	// FieldMustChangePassword holds the string denoting the must_change_password field in the database.
-	FieldMustChangePassword = "must_change_password"
-	// FieldPasswordChangedAt holds the string denoting the password_changed_at field in the database.
-	FieldPasswordChangedAt = "password_changed_at"
 	// FieldFailedLoginAttempts holds the string denoting the failed_login_attempts field in the database.
 	FieldFailedLoginAttempts = "failed_login_attempts"
+	// FieldLastLoginAt holds the string denoting the last_login_at field in the database.
+	FieldLastLoginAt = "last_login_at"
 	// FieldLockedUntil holds the string denoting the locked_until field in the database.
 	FieldLockedUntil = "locked_until"
+	// FieldMustChangePassword holds the string denoting the must_change_password field in the database.
+	FieldMustChangePassword = "must_change_password"
+	// FieldPasswordHash holds the string denoting the password_hash field in the database.
+	FieldPasswordHash = "password_hash"
+	// FieldPasswordChangedAt holds the string denoting the password_changed_at field in the database.
+	FieldPasswordChangedAt = "password_changed_at"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
+	// FieldUsername holds the string denoting the username field in the database.
+	FieldUsername = "username"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
@@ -68,21 +68,21 @@ const (
 // Columns holds all SQL columns for user fields.
 var Columns = []string{
 	FieldID,
-	FieldUsername,
-	FieldEmail,
-	FieldDisplayName,
-	FieldPasswordHash,
 	FieldAvatarURL,
-	FieldStatus,
-	FieldLastLoginAt,
 	FieldCreatedAt,
-	FieldUpdatedAt,
 	FieldCreatedBy,
+	FieldDisplayName,
+	FieldEmail,
 	FieldEtag,
-	FieldMustChangePassword,
-	FieldPasswordChangedAt,
 	FieldFailedLoginAttempts,
+	FieldLastLoginAt,
 	FieldLockedUntil,
+	FieldMustChangePassword,
+	FieldPasswordHash,
+	FieldPasswordChangedAt,
+	FieldStatus,
+	FieldUpdatedAt,
+	FieldUsername,
 }
 
 var (
@@ -102,26 +102,34 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
-	UsernameValidator func(string) error
-	// EmailValidator is a validator for the "email" field. It is called by the builders before save.
-	EmailValidator func(string) error
-	// DisplayNameValidator is a validator for the "display_name" field. It is called by the builders before save.
-	DisplayNameValidator func(string) error
-	// PasswordHashValidator is a validator for the "password_hash" field. It is called by the builders before save.
-	PasswordHashValidator func(string) error
 	// AvatarURLValidator is a validator for the "avatar_url" field. It is called by the builders before save.
 	AvatarURLValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// CreatedByValidator is a validator for the "created_by" field. It is called by the builders before save.
+	CreatedByValidator func(string) error
+	// DisplayNameValidator is a validator for the "display_name" field. It is called by the builders before save.
+	DisplayNameValidator func(string) error
+	// EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	EmailValidator func(string) error
+	// DefaultEtag holds the default value on creation for the "etag" field.
+	DefaultEtag func() string
+	// EtagValidator is a validator for the "etag" field. It is called by the builders before save.
+	EtagValidator func(string) error
+	// DefaultFailedLoginAttempts holds the default value on creation for the "failed_login_attempts" field.
+	DefaultFailedLoginAttempts int
+	// DefaultMustChangePassword holds the default value on creation for the "must_change_password" field.
+	DefaultMustChangePassword bool
+	// PasswordHashValidator is a validator for the "password_hash" field. It is called by the builders before save.
+	PasswordHashValidator func(string) error
+	// DefaultPasswordChangedAt holds the default value on creation for the "password_changed_at" field.
+	DefaultPasswordChangedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
-	// DefaultMustChangePassword holds the default value on creation for the "must_change_password" field.
-	DefaultMustChangePassword bool
-	// DefaultFailedLoginAttempts holds the default value on creation for the "failed_login_attempts" field.
-	DefaultFailedLoginAttempts int
+	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
+	UsernameValidator func(string) error
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
@@ -162,39 +170,9 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByUsername orders the results by the username field.
-func ByUsername(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUsername, opts...).ToFunc()
-}
-
-// ByEmail orders the results by the email field.
-func ByEmail(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldEmail, opts...).ToFunc()
-}
-
-// ByDisplayName orders the results by the display_name field.
-func ByDisplayName(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDisplayName, opts...).ToFunc()
-}
-
-// ByPasswordHash orders the results by the password_hash field.
-func ByPasswordHash(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldPasswordHash, opts...).ToFunc()
-}
-
 // ByAvatarURL orders the results by the avatar_url field.
 func ByAvatarURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAvatarURL, opts...).ToFunc()
-}
-
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
-}
-
-// ByLastLoginAt orders the results by the last_login_at field.
-func ByLastLoginAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldLastLoginAt, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.
@@ -202,14 +180,19 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByUpdatedAt orders the results by the updated_at field.
-func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
-}
-
 // ByCreatedBy orders the results by the created_by field.
 func ByCreatedBy(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedBy, opts...).ToFunc()
+}
+
+// ByDisplayName orders the results by the display_name field.
+func ByDisplayName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDisplayName, opts...).ToFunc()
+}
+
+// ByEmail orders the results by the email field.
+func ByEmail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEmail, opts...).ToFunc()
 }
 
 // ByEtag orders the results by the etag field.
@@ -217,9 +200,29 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEtag, opts...).ToFunc()
 }
 
+// ByFailedLoginAttempts orders the results by the failed_login_attempts field.
+func ByFailedLoginAttempts(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFailedLoginAttempts, opts...).ToFunc()
+}
+
+// ByLastLoginAt orders the results by the last_login_at field.
+func ByLastLoginAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastLoginAt, opts...).ToFunc()
+}
+
+// ByLockedUntil orders the results by the locked_until field.
+func ByLockedUntil(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLockedUntil, opts...).ToFunc()
+}
+
 // ByMustChangePassword orders the results by the must_change_password field.
 func ByMustChangePassword(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMustChangePassword, opts...).ToFunc()
+}
+
+// ByPasswordHash orders the results by the password_hash field.
+func ByPasswordHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPasswordHash, opts...).ToFunc()
 }
 
 // ByPasswordChangedAt orders the results by the password_changed_at field.
@@ -227,14 +230,19 @@ func ByPasswordChangedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPasswordChangedAt, opts...).ToFunc()
 }
 
-// ByFailedLoginAttempts orders the results by the failed_login_attempts field.
-func ByFailedLoginAttempts(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldFailedLoginAttempts, opts...).ToFunc()
+// ByStatus orders the results by the status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
-// ByLockedUntil orders the results by the locked_until field.
-func ByLockedUntil(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldLockedUntil, opts...).ToFunc()
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByUsername orders the results by the username field.
+func ByUsername(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsername, opts...).ToFunc()
 }
 
 // ByGroupsCount orders the results by groups count.

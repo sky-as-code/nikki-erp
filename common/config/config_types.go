@@ -3,10 +3,9 @@ package config
 import (
 	"time"
 
+	c "github.com/sky-as-code/nikki-erp/common/constants"
 	. "github.com/sky-as-code/nikki-erp/common/util/fault"
 )
-
-type ConfigName string
 
 //go:generate mockgen -package mock -destination ../mock/config_loader_mock.go gitlab.cloudokyo.dev/backcommon/pkg/core/config/types ConfigLoader
 type ConfigLoader interface {
@@ -23,16 +22,16 @@ type ConfigService interface {
 	Init() AppError
 	// Returns Git commit ID that this app is built
 	GetAppVersion() string
-	GetStr(name ConfigName, defaultVal ...interface{}) string
-	GetStrArr(name ConfigName, defaultVal ...interface{}) []string
-	GetDuration(configName ConfigName, defaultVal ...interface{}) time.Duration
-	GetBool(configName ConfigName, defaultVal ...interface{}) bool
-	GetUint(configName ConfigName, defaultVal ...interface{}) uint
-	GetUint64(configName ConfigName, defaultVal ...interface{}) uint64
-	GetInt(configName ConfigName, defaultVal ...interface{}) int
-	GetInt32(configName ConfigName, defaultVal ...interface{}) int32
-	GetInt64(configName ConfigName, defaultVal ...interface{}) int64
-	GetFloat32(configName ConfigName, defaultVal ...interface{}) float32
+	GetStr(configName c.ConfigName, defaultVal ...any) string
+	GetStrArr(configName c.ConfigName, defaultVal ...any) []string
+	GetDuration(configName c.ConfigName, defaultVal ...any) time.Duration
+	GetBool(configName c.ConfigName, defaultVal ...any) bool
+	GetUint(configName c.ConfigName, defaultVal ...any) uint
+	GetUint64(configName c.ConfigName, defaultVal ...any) uint64
+	GetInt(configName c.ConfigName, defaultVal ...any) int
+	GetInt32(configName c.ConfigName, defaultVal ...any) int32
+	GetInt64(configName c.ConfigName, defaultVal ...any) int64
+	GetFloat32(configName c.ConfigName, defaultVal ...any) float32
 }
 
 type MapConfig struct {

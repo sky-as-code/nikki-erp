@@ -41,21 +41,21 @@ var (
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Size: 36},
-		{Name: "username", Type: field.TypeString, Unique: true, Size: 20},
-		{Name: "email", Type: field.TypeString, Unique: true, Size: 100},
-		{Name: "display_name", Type: field.TypeString, Size: 50},
-		{Name: "password_hash", Type: field.TypeString, Size: 100},
 		{Name: "avatar_url", Type: field.TypeString, Nullable: true, Size: 255},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive", "suspended", "pending"}, Default: "pending"},
-		{Name: "last_login_at", Type: field.TypeTime, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "created_by", Type: field.TypeString, Nullable: true},
-		{Name: "etag", Type: field.TypeString, Nullable: true},
-		{Name: "must_change_password", Type: field.TypeBool, Default: true},
-		{Name: "password_changed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "created_by", Type: field.TypeString},
+		{Name: "display_name", Type: field.TypeString, Size: 50},
+		{Name: "email", Type: field.TypeString, Unique: true, Size: 100},
+		{Name: "etag", Type: field.TypeString, Size: 100},
 		{Name: "failed_login_attempts", Type: field.TypeInt, Default: 0},
+		{Name: "last_login_at", Type: field.TypeTime, Nullable: true},
 		{Name: "locked_until", Type: field.TypeTime, Nullable: true},
+		{Name: "must_change_password", Type: field.TypeBool, Default: true},
+		{Name: "password_hash", Type: field.TypeString, Size: 1000},
+		{Name: "password_changed_at", Type: field.TypeTime},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive", "suspended", "pending"}, Default: "pending"},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "username", Type: field.TypeString, Unique: true, Size: 50},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{

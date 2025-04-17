@@ -14,7 +14,7 @@ clean:
 
 build-static: clean
 	@echo "Building static binary..."
-	GOOS=$(goos) GOARCH=$(goarch) go build -work -o dist/$(outfile) cmd/main.go
+	GOOS=$(goos) GOARCH=$(goarch) go build -tags staticmods -work -o dist/$(outfile) cmd/main.go
 	@echo "Static build completed"
 
 # Build all modules as plugins
@@ -32,7 +32,7 @@ build-mods:
 
 build-dynamic: build-mods clean
 	@echo "Building dynamic binary..."
-	GOOS=$(goos) GOARCH=$(goarch) go build -work -tags dynamicmods -o dist/$(outfile) cmd/main.go
+	GOOS=$(goos) GOARCH=$(goarch) go build -tags dynamicmods -work -tags dynamicmods -o dist/$(outfile) cmd/main.go
 	@cp -rf cmd/modules dist/
 	@echo "Dynamic build completed"
 
@@ -132,7 +132,7 @@ infra-down:
 
 nikki:
 	@[ -f cmd/config/local.env ] || cp cmd/config/local.env.sample cmd/config/local.env
-	APP_ENV=$(env) WORKING_DIR="$(cwd)/app" go run cmd/main.go
+	APP_ENV=$(env) WORKING_DIR="$(cwd)/cmd" LOG_LEVEL="info" go run -tags=staticmods cmd/*.go
 
 # END: Local development
 

@@ -20,7 +20,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/labstack/gommon v0.4.2
-	github.com/pkg/errors v0.9.1
+	github.com/lib/pq v1.10.9
 	github.com/scylladb/gocqlx/v2 v2.8.0
 	github.com/stretchr/testify v1.10.0
 	github.com/thoas/go-funk v0.9.3
@@ -28,6 +28,7 @@ require (
 	github.com/xgfone/go-cast v0.9.0
 	go.bryk.io/pkg v0.0.0-20250411182835-130bbccf42ad
 	go.uber.org/dig v1.18.1
+	golang.org/x/crypto v0.37.0
 	gopkg.in/jeevatkm/go-model.v1 v1.1.0
 	gorm.io/gorm v1.25.12
 )
@@ -39,7 +40,6 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200108200545-475eaeb16496 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
-	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/go-openapi/inflect v0.19.0 // indirect
@@ -63,10 +63,10 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/scylladb/go-reflectx v1.0.1 // indirect
-	github.com/sony/gobreaker v1.0.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
@@ -74,7 +74,6 @@ require (
 	github.com/xgfone/go-defaults v0.14.0 // indirect
 	github.com/zclconf/go-cty v1.14.4 // indirect
 	github.com/zclconf/go-cty-yaml v1.1.0 // indirect
-	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect

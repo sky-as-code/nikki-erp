@@ -17,36 +17,36 @@ type User struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
-	// Login username
-	Username string `json:"username,omitempty"`
-	// Email holds the value of the "email" field.
-	Email string `json:"email,omitempty"`
-	// DisplayName holds the value of the "display_name" field.
-	DisplayName string `json:"display_name,omitempty"`
-	// PasswordHash holds the value of the "password_hash" field.
-	PasswordHash string `json:"-"`
 	// URL to user's profile picture
-	AvatarURL string `json:"avatar_url,omitempty"`
-	// Status holds the value of the "status" field.
-	Status user.Status `json:"status,omitempty"`
-	// LastLoginAt holds the value of the "last_login_at" field.
-	LastLoginAt time.Time `json:"last_login_at,omitempty"`
+	AvatarURL *string `json:"avatar_url,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
-	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
 	CreatedBy string `json:"created_by,omitempty"`
+	// DisplayName holds the value of the "display_name" field.
+	DisplayName string `json:"display_name,omitempty"`
+	// Email holds the value of the "email" field.
+	Email string `json:"email,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
-	// Force password change on next login
-	MustChangePassword bool `json:"must_change_password,omitempty"`
-	// Last password change timestamp
-	PasswordChangedAt time.Time `json:"password_changed_at,omitempty"`
 	// Count of consecutive failed login attempts
 	FailedLoginAttempts int `json:"failed_login_attempts,omitempty"`
+	// LastLoginAt holds the value of the "last_login_at" field.
+	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
 	// Account locked until this timestamp
 	LockedUntil *time.Time `json:"locked_until,omitempty"`
+	// Force password change on next login
+	MustChangePassword bool `json:"must_change_password,omitempty"`
+	// PasswordHash holds the value of the "password_hash" field.
+	PasswordHash string `json:"-"`
+	// Last password change timestamp
+	PasswordChangedAt time.Time `json:"password_changed_at,omitempty"`
+	// Status holds the value of the "status" field.
+	Status user.Status `json:"status,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// Login username
+	Username string `json:"username,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges        UserEdges `json:"edges"`
@@ -91,9 +91,9 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case user.FieldFailedLoginAttempts:
 			values[i] = new(sql.NullInt64)
-		case user.FieldID, user.FieldUsername, user.FieldEmail, user.FieldDisplayName, user.FieldPasswordHash, user.FieldAvatarURL, user.FieldStatus, user.FieldCreatedBy, user.FieldEtag:
+		case user.FieldID, user.FieldAvatarURL, user.FieldCreatedBy, user.FieldDisplayName, user.FieldEmail, user.FieldEtag, user.FieldPasswordHash, user.FieldStatus, user.FieldUsername:
 			values[i] = new(sql.NullString)
-		case user.FieldLastLoginAt, user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldPasswordChangedAt, user.FieldLockedUntil:
+		case user.FieldCreatedAt, user.FieldLastLoginAt, user.FieldLockedUntil, user.FieldPasswordChangedAt, user.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -116,47 +116,12 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.ID = value.String
 			}
-		case user.FieldUsername:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field username", values[i])
-			} else if value.Valid {
-				u.Username = value.String
-			}
-		case user.FieldEmail:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field email", values[i])
-			} else if value.Valid {
-				u.Email = value.String
-			}
-		case user.FieldDisplayName:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field display_name", values[i])
-			} else if value.Valid {
-				u.DisplayName = value.String
-			}
-		case user.FieldPasswordHash:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field password_hash", values[i])
-			} else if value.Valid {
-				u.PasswordHash = value.String
-			}
 		case user.FieldAvatarURL:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field avatar_url", values[i])
 			} else if value.Valid {
-				u.AvatarURL = value.String
-			}
-		case user.FieldStatus:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value.Valid {
-				u.Status = user.Status(value.String)
-			}
-		case user.FieldLastLoginAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field last_login_at", values[i])
-			} else if value.Valid {
-				u.LastLoginAt = value.Time
+				u.AvatarURL = new(string)
+				*u.AvatarURL = value.String
 			}
 		case user.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -164,17 +129,23 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.CreatedAt = value.Time
 			}
-		case user.FieldUpdatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
-			} else if value.Valid {
-				u.UpdatedAt = value.Time
-			}
 		case user.FieldCreatedBy:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field created_by", values[i])
 			} else if value.Valid {
 				u.CreatedBy = value.String
+			}
+		case user.FieldDisplayName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field display_name", values[i])
+			} else if value.Valid {
+				u.DisplayName = value.String
+			}
+		case user.FieldEmail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field email", values[i])
+			} else if value.Valid {
+				u.Email = value.String
 			}
 		case user.FieldEtag:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -182,23 +153,18 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.Etag = value.String
 			}
-		case user.FieldMustChangePassword:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field must_change_password", values[i])
-			} else if value.Valid {
-				u.MustChangePassword = value.Bool
-			}
-		case user.FieldPasswordChangedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field password_changed_at", values[i])
-			} else if value.Valid {
-				u.PasswordChangedAt = value.Time
-			}
 		case user.FieldFailedLoginAttempts:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field failed_login_attempts", values[i])
 			} else if value.Valid {
 				u.FailedLoginAttempts = int(value.Int64)
+			}
+		case user.FieldLastLoginAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field last_login_at", values[i])
+			} else if value.Valid {
+				u.LastLoginAt = new(time.Time)
+				*u.LastLoginAt = value.Time
 			}
 		case user.FieldLockedUntil:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -206,6 +172,42 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.LockedUntil = new(time.Time)
 				*u.LockedUntil = value.Time
+			}
+		case user.FieldMustChangePassword:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field must_change_password", values[i])
+			} else if value.Valid {
+				u.MustChangePassword = value.Bool
+			}
+		case user.FieldPasswordHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field password_hash", values[i])
+			} else if value.Valid {
+				u.PasswordHash = value.String
+			}
+		case user.FieldPasswordChangedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field password_changed_at", values[i])
+			} else if value.Valid {
+				u.PasswordChangedAt = value.Time
+			}
+		case user.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status", values[i])
+			} else if value.Valid {
+				u.Status = user.Status(value.String)
+			}
+		case user.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				u.UpdatedAt = value.Time
+			}
+		case user.FieldUsername:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field username", values[i])
+			} else if value.Valid {
+				u.Username = value.String
 			}
 		default:
 			u.selectValues.Set(columns[i], values[i])
@@ -253,51 +255,55 @@ func (u *User) String() string {
 	var builder strings.Builder
 	builder.WriteString("User(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", u.ID))
-	builder.WriteString("username=")
-	builder.WriteString(u.Username)
-	builder.WriteString(", ")
-	builder.WriteString("email=")
-	builder.WriteString(u.Email)
-	builder.WriteString(", ")
-	builder.WriteString("display_name=")
-	builder.WriteString(u.DisplayName)
-	builder.WriteString(", ")
-	builder.WriteString("password_hash=<sensitive>")
-	builder.WriteString(", ")
-	builder.WriteString("avatar_url=")
-	builder.WriteString(u.AvatarURL)
-	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", u.Status))
-	builder.WriteString(", ")
-	builder.WriteString("last_login_at=")
-	builder.WriteString(u.LastLoginAt.Format(time.ANSIC))
+	if v := u.AvatarURL; v != nil {
+		builder.WriteString("avatar_url=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(u.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("updated_at=")
-	builder.WriteString(u.UpdatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
 	builder.WriteString("created_by=")
 	builder.WriteString(u.CreatedBy)
+	builder.WriteString(", ")
+	builder.WriteString("display_name=")
+	builder.WriteString(u.DisplayName)
+	builder.WriteString(", ")
+	builder.WriteString("email=")
+	builder.WriteString(u.Email)
 	builder.WriteString(", ")
 	builder.WriteString("etag=")
 	builder.WriteString(u.Etag)
 	builder.WriteString(", ")
-	builder.WriteString("must_change_password=")
-	builder.WriteString(fmt.Sprintf("%v", u.MustChangePassword))
-	builder.WriteString(", ")
-	builder.WriteString("password_changed_at=")
-	builder.WriteString(u.PasswordChangedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
 	builder.WriteString("failed_login_attempts=")
 	builder.WriteString(fmt.Sprintf("%v", u.FailedLoginAttempts))
+	builder.WriteString(", ")
+	if v := u.LastLoginAt; v != nil {
+		builder.WriteString("last_login_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	if v := u.LockedUntil; v != nil {
 		builder.WriteString("locked_until=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("must_change_password=")
+	builder.WriteString(fmt.Sprintf("%v", u.MustChangePassword))
+	builder.WriteString(", ")
+	builder.WriteString("password_hash=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("password_changed_at=")
+	builder.WriteString(u.PasswordChangedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("status=")
+	builder.WriteString(fmt.Sprintf("%v", u.Status))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(u.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("username=")
+	builder.WriteString(u.Username)
 	builder.WriteByte(')')
 	return builder.String()
 }

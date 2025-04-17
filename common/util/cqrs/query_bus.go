@@ -10,7 +10,7 @@ import (
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 	"github.com/ThreeDotsLabs/watermill/message"
-	"github.com/pkg/errors"
+	"go.bryk.io/pkg/errors"
 
 	ft "github.com/sky-as-code/nikki-erp/common/util/fault"
 )
