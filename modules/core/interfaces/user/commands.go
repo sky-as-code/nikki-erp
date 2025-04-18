@@ -39,10 +39,12 @@ func (CreateUserCommand) Type() cqrs.RequestType {
 }
 
 type CreateUserResult struct {
-	Id        string    `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	Etag      string    `json:"etag"`
-	Status    string    `json:"status"`
+	Errors []string `json:"errors"`
+
+	Id        *string    `json:"id,omitempty"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	Etag      *string    `json:"etag,omitempty"`
+	Status    *string    `json:"status,omitempty"`
 }
 
 var updateUserCommandType = cqrs.RequestType{

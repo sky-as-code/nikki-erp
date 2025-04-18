@@ -9,6 +9,8 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
+
+	"github.com/sky-as-code/nikki-erp/common/util/model"
 )
 
 type GroupMixin struct {
@@ -21,8 +23,7 @@ func (GroupMixin) Fields() []ent.Field {
 			MaxLen(36).
 			NotEmpty().
 			Immutable().
-			Unique().
-			Comment("Primary key using UUID format").
+			DefaultFunc(model.MustNewULID).
 			StorageKey("id"),
 
 		field.String("name").

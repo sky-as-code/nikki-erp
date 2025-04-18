@@ -6,6 +6,7 @@ import (
 	"go.bryk.io/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 
+	util "github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent"
 	entUser "github.com/sky-as-code/nikki-erp/modules/core/infra/ent/user"
 	it "github.com/sky-as-code/nikki-erp/modules/core/interfaces/user"
@@ -41,14 +42,15 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd *it.CreateUserC
 
 	user, err := creation.Save(ctx)
 	if err != nil {
-		errors.Wrap(err, "failed to persist user")
+		err = errors.Wrap(err, "failed to persist user")
+		return nil, err
 	}
 
 	return &it.CreateUserResult{
-		Id:        user.ID,
-		CreatedAt: user.CreatedAt,
-		Etag:      user.Etag,
-		Status:    string(user.Status),
+		Id:        &user.ID,
+		CreatedAt: &user.CreatedAt,
+		Etag:      &user.Etag,
+		Status:    util.ToPtr(string(user.Status)),
 	}, err
 }
 

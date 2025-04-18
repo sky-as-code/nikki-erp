@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path"
 	"runtime"
 )
+
+const skippedCallStackDepth = 3
 
 func NewLogger(levels ...Level) *loggerImpl {
 	level := LevelInfo // default level
@@ -87,11 +90,22 @@ func (this *loggerImpl) IfErrorf(err error, format string, args ...any) {
 }
 
 func (this *loggerImpl) writeLogData(level Level, message string, data any) {
-	this.slogger.Log(context.Background(), slogLevelMap[level], message, slog.Any("data", data))
+	fileNameLine := getFileName(skippedCallStackDepth)
+	this.slogger.Log(context.Background(), slogLevelMap[level], message, slog.Any("data", data), slog.String("source", fileNameLine))
 }
 
 func (this *loggerImpl) writeLogFormat(level Level, format string, args ...any) {
-	this.slogger.Log(context.Background(), slogLevelMap[level], fmt.Sprintf(format, args...))
+	fileNameLine := getFileName(skippedCallStackDepth)
+	this.slogger.Log(context.Background(), slogLevelMap[level], fmt.Sprintf(format, args...), slog.String("source", fileNameLine))
+}
+
+func getFileName(depth int) string {
+	pc, file, line, _ := runtime.Caller(depth)
+	fn := runtime.FuncForPC(pc)
+	if fn != nil {
+		return fmt.Sprintf("%s:%d %s", file, line, path.Base(fn.Name()))
+	}
+	return fmt.Sprintf("%s:%d", file, line)
 }
 
 func NewSloggerWithCorrectCallDepth(level slog.Leveler, callDepth int) *slog.Logger {
@@ -100,10 +114,11 @@ func NewSloggerWithCorrectCallDepth(level slog.Leveler, callDepth int) *slog.Log
 		AddSource: false, // we’ll manually inject source
 	})
 
-	return slog.New(&HandlerWithCorrectCallDepth{
-		inner:     handler,
-		callDepth: callDepth,
-	})
+	return slog.New(handler)
+	// return slog.New(&HandlerWithCorrectCallDepth{
+	// 	inner:     handler,
+	// 	callDepth: callDepth,
+	// })
 }
 
 type HandlerWithCorrectCallDepth struct {
@@ -140,8 +155,4 @@ func (this *HandlerWithCorrectCallDepth) WithGroup(name string) slog.Handler {
 		inner:     this.inner.WithGroup(name),
 		callDepth: this.callDepth,
 	}
-}
-
-func itoa(i int) string {
-	return fmt.Sprintf("%d", i)
 }

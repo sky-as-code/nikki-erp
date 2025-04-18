@@ -20,6 +20,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/config"
 	c "github.com/sky-as-code/nikki-erp/common/constants"
 	"github.com/sky-as-code/nikki-erp/common/logging"
+	util "github.com/sky-as-code/nikki-erp/common/util"
 	ft "github.com/sky-as-code/nikki-erp/common/util/fault"
 )
 
@@ -38,7 +39,7 @@ type CqrsBusParams struct {
 
 func NewWatermillCqrsBus(params CqrsBusParams) (CqrsBus, error) {
 	pubSub := goChannelPubSub(params.Logger)
-	marshaler := cqrs.ProtoMarshaler{
+	marshaler := cqrs.JSONMarshaler{
 		GenerateName: cqrs.NamedStruct(cqrs.StructName),
 	}
 	maxTimeoutSec := params.Config.GetInt(c.CqrsRequestTimeoutSecs, DefaultQueryTimeoutSecs)
@@ -63,6 +64,20 @@ func goChannelPubSub(logger logging.LoggerService) *gochannel.GoChannel {
 
 	return gochannel.NewGoChannel(gochannel.Config{}, watermill.NewSlogLogger(slogger))
 }
+
+// SendRequest is a function wrapping CqrsBus.SendRequest() but with generic type.
+// func SendRequest[TReq Request, TResult any](ctx context.Context, bus CqrsBus, request TReq) (*Reply[TResult], error) {
+// 	replyChan, err := bus.Request(ctx, request)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	reply := <-replyChan
+// 	typedReply := &Reply[TResult]{
+// 		Result: reply.Result.(TResult),
+// 		Error:  reply.Error,
+// 	}
+// 	return typedReply, nil
+// }
 
 type WatermillCqrsBus struct {
 	logger        logging.LoggerService
@@ -93,7 +108,7 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 		}
 	}()
 
-	sampleRequest := handler.NewRequest()
+	sampleRequest := handler.NewRequest().(Request)
 
 	requestType := sampleRequest.Type().String()
 
@@ -127,18 +142,19 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 			case msg := <-msgChan:
 				request := handler.NewRequest()
 				reply := handler.NewReply()
-				reqPacket, err := newIncomingRequestPacket(msg, this.marshaler, request.(Request))
+				reqPacket, err := newIncomingRequestPacket(msg, this.marshaler, request)
+				msg.Ack()
 				if err != nil {
 					this.logger.Error(
 						fmt.Sprintf("failed to parse request from topic %s", topicName),
 						err,
 					)
+					continue
 				}
-				msg.Ack()
 				c, _ := context.WithTimeout(context.Background(), this.maxTimeout)
 				r, err := handler.Handle(c, reqPacket)
 				if err != nil {
-					reply.Error = err
+					reply.Error = util.ToPtr(err.Error())
 				} else {
 					reply = *r
 				}
@@ -147,7 +163,7 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 				if err != nil {
 					this.logger.Error(
 						fmt.Sprintf("failed to publish reply to topic %s", reqPacket.replyTopic),
-						err,
+						err.Error(),
 					)
 				}
 			case <-ctx.Done():
@@ -177,7 +193,7 @@ func (this *WatermillCqrsBus) RequestNoReply(ctx context.Context, request Reques
 	return nil
 }
 
-func (this *WatermillCqrsBus) Request(ctx context.Context, request Request) (_ <-chan Reply[any], err error) {
+func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, result any) (err error) {
 	ctx, cancelSubscription := context.WithCancel(ctx)
 
 	defer func() {
@@ -190,44 +206,75 @@ func (this *WatermillCqrsBus) Request(ctx context.Context, request Request) (_ <
 	packet, err := this.newRequestPacket(ctx, request)
 	ft.PanicOnErr(err)
 
-	replyChan := make(chan Reply[any], 1)
-	err = this.subscribeReply(ctx, packet, replyChan, cancelSubscription)
+	replyChan, errChan := this.subscribeReply(ctx, packet, result, cancelSubscription)
 	ft.PanicOnErr(err)
 
 	err = this.publisher.Publish(packet.requestTopic, packet.message)
 	ft.PanicOnErr(err)
 
-	return replyChan, nil
+	select {
+	case reply := <-replyChan:
+		if reply.Error != nil {
+			return errors.New(reply.Error)
+		}
+		return nil
+	case err := <-errChan:
+		return err
+	}
 }
 
-func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *RequestPacket[Request], replyChan chan Reply[any], cancelSubscription context.CancelFunc) error {
+func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *RequestPacket[Request], result any, cancelSubscription context.CancelFunc) (<-chan *Reply[any], <-chan error) {
+	replyChan := make(chan *Reply[any])
+	errChan := make(chan error)
+
+	handleErr := func() {
+		if r := recover(); r != nil {
+			err := errors.Wrap(r.(error), fmt.Sprintf("failed to subscribe for reply from topic %s", packet.replyTopic))
+			errChan <- err
+			close(errChan)
+			close(replyChan)
+		}
+	}
+
+	defer handleErr()
+
 	msgChan, err := this.subscriber.Subscribe(ctx, packet.replyTopic)
 	if err != nil {
-		return err
+		errChan <- err
+		return replyChan, errChan
 	}
 
 	go func() {
-		defer close(replyChan)
 		defer cancelSubscription()
+		defer handleErr()
 
 		select {
 		case msg := <-msgChan:
-			var reply Reply[any]
-			err = this.marshaler.Unmarshal(msg, &reply)
-			if err != nil {
-				replyChan <- Reply[any]{Error: err}
+			msg.Ack()
+			reply := &Reply[any]{
+				Result: result,
+			}
+			err = this.marshaler.Unmarshal(msg, reply)
+			if err == nil {
+				replyChan <- reply
+				close(replyChan)
+				close(errChan)
 				return
 			}
-			replyChan <- reply
-			msg.Ack()
 		case <-ctx.Done():
 			err = ctx.Err()
 		case <-time.After(this.maxTimeout):
 			err = errors.Errorf("timeout for request %s (%s)", packet.correlationId, packet.requestTopic)
 		}
+
+		// If we reach here, it means we have an error,
+		// close error channel first to follow the failure path
+		errChan <- err
+		close(errChan)
+		close(replyChan)
 	}()
 
-	return nil
+	return replyChan, errChan
 }
 
 func (this *WatermillCqrsBus) newRequestPacket(ctx context.Context, request Request) (packet *RequestPacket[Request], err error) {
@@ -251,7 +298,7 @@ func genReplyTopic(requestTopic string, correlationId string) string {
 }
 
 func newOutgoingRequestPacket(request Request, marshaler cqrs.CommandEventMarshaler) *RequestPacket[Request] {
-	msg, err := marshaler.Marshal(request)
+	msg, err := marshaler.Marshal(&request)
 	ft.PanicOnErr(err)
 
 	packet := &RequestPacket[Request]{
@@ -262,11 +309,12 @@ func newOutgoingRequestPacket(request Request, marshaler cqrs.CommandEventMarsha
 	ft.PanicOnErr(err)
 
 	packet.correlationId = newUlid.String()
-	requestType := marshaler.Name(request)
+	requestType := request.Type().String()
 	packet.requestTopic = genRequestTopic(requestType)
+	packet.replyTopic = genReplyTopic(packet.requestTopic, packet.correlationId)
 	msg.Metadata.Set(MetaCorrelationId, packet.correlationId)
 	msg.Metadata.Set(MetaRequestTopic, packet.requestTopic)
-	msg.Metadata.Set(MetaReplyTopic, genReplyTopic(packet.requestTopic, packet.correlationId))
+	msg.Metadata.Set(MetaReplyTopic, packet.replyTopic)
 
 	return packet
 }
@@ -274,7 +322,7 @@ func newOutgoingRequestPacket(request Request, marshaler cqrs.CommandEventMarsha
 func newIncomingRequestPacket(
 	msg *message.Message,
 	marshaler cqrs.CommandEventMarshaler,
-	request Request,
+	request any,
 ) (*RequestPacket[Request], error) {
 	packet := &RequestPacket[Request]{
 		message: msg,
@@ -285,7 +333,7 @@ func newIncomingRequestPacket(
 		return nil, err
 	}
 
-	packet.request = request
+	packet.request = request.(Request)
 	packet.correlationId = msg.Metadata.Get(MetaCorrelationId)
 	packet.requestTopic = msg.Metadata.Get(MetaRequestTopic)
 	packet.replyTopic = msg.Metadata.Get(MetaReplyTopic)
@@ -327,9 +375,9 @@ type genericRequestHandler[TReq Request, TResult any] struct {
 	handleFunc func(ctx context.Context, packet *RequestPacket[TReq]) (*Reply[TResult], error)
 }
 
-func (c genericRequestHandler[TReq, TResult]) NewRequest() Request {
+func (c genericRequestHandler[TReq, TResult]) NewRequest() any {
 	var val TReq
-	return val
+	return &val
 }
 
 func (c genericRequestHandler[TReq, TResult]) NewReply() Reply[any] {
@@ -340,7 +388,9 @@ func (c genericRequestHandler[TReq, TResult]) NewReply() Reply[any] {
 }
 
 func (c genericRequestHandler[TReq, TResult]) Handle(ctx context.Context, packet *RequestPacket[Request]) (*Reply[any], error) {
-	packet.request = packet.request.(TReq)
+	var req any = packet.request
+	typedReq := req.(*TReq)
+	packet.request = *typedReq
 	typedPacket := &RequestPacket[TReq]{
 		correlationId: packet.correlationId,
 		requestTopic:  packet.requestTopic,
@@ -349,6 +399,9 @@ func (c genericRequestHandler[TReq, TResult]) Handle(ctx context.Context, packet
 		request:       packet.request.(TReq),
 	}
 	typedReply, err := c.handleFunc(ctx, typedPacket)
+	if err != nil {
+		return nil, err
+	}
 
 	reply := Reply[any]{
 		Result: typedReply.Result,

@@ -4,20 +4,26 @@ import (
 	"context"
 
 	"github.com/sky-as-code/nikki-erp/common/cqrs"
+	"github.com/sky-as-code/nikki-erp/common/logging"
 	it "github.com/sky-as-code/nikki-erp/modules/core/interfaces/user"
 )
 
-func NewUserHandler(userSvc it.UserService) *UserHandler {
-	return &UserHandler{}
+func NewUserHandler(userSvc it.UserService, logger logging.LoggerService) *UserHandler {
+	return &UserHandler{
+		Logger:  logger,
+		UserSvc: userSvc,
+	}
 }
 
 type UserHandler struct {
-	userSvc it.UserService
+	Logger  logging.LoggerService
+	UserSvc it.UserService
 }
 
 func (this *UserHandler) Create(ctx context.Context, packet *cqrs.RequestPacket[it.CreateUserCommand]) (*cqrs.Reply[it.CreateUserResult], error) {
-	result, err := this.userSvc.CreateUser(ctx, packet.Request())
+	result, err := this.UserSvc.CreateUser(ctx, packet.Request())
 	if err != nil {
+		this.Logger.Error("failed to create user", err)
 		return nil, err
 	}
 	reply := &cqrs.Reply[it.CreateUserResult]{

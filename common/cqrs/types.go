@@ -7,9 +7,9 @@ import (
 )
 
 type CqrsBus interface {
-	SubscribeRequests(ctx context.Context, handlers ...RequestHandler) (err error)
-	RequestNoReply(ctx context.Context, request Request) (err error)
-	Request(ctx context.Context, request Request) (_ <-chan Reply[any], err error)
+	SubscribeRequests(ctx context.Context, handlers ...RequestHandler) error
+	RequestNoReply(ctx context.Context, request Request) error
+	Request(ctx context.Context, request Request, result any) error
 }
 
 // Deprecated: Not used
@@ -18,9 +18,9 @@ type CqrsBus interface {
 // }
 
 type RequestType struct {
-	Module    string
-	Submodule string
-	Action    string
+	Module    string `json:"module"`
+	Submodule string `json:"submodule"`
+	Action    string `json:"action"`
 }
 
 func (this RequestType) String() string {
@@ -48,8 +48,8 @@ func (this RequestPacket[TReq]) Request() *TReq {
 }
 
 type Reply[TResult any] struct {
-	Result TResult
-	Error  error
+	Result TResult `json:"result"`
+	Error  *string `json:"error"`
 }
 
 type ReplyPacket[TResult any] struct {
@@ -73,7 +73,7 @@ type RequestHandler interface {
 	// Type() RequestType
 
 	// NewRequest returns a new instance of the request type handled by this handler
-	NewRequest() Request
+	NewRequest() any
 
 	// NewReply returns a new instance of the reply type returned by this handler
 	NewReply() Reply[any]

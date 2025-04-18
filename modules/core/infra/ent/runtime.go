@@ -54,6 +54,8 @@ func init() {
 	group.UpdateDefaultUpdatedAt = groupDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// groupDescID is the schema descriptor for id field.
 	groupDescID := groupMixinFields0[0].Descriptor()
+	// group.DefaultID holds the default value on creation for the id field.
+	group.DefaultID = groupDescID.Default.(func() string)
 	// group.IDValidator is a validator for the "id" field. It is called by the builders before save.
 	group.IDValidator = func() func(string) error {
 		validators := groupDescID.Validators
@@ -185,6 +187,8 @@ func init() {
 	}()
 	// userDescID is the schema descriptor for id field.
 	userDescID := userMixinFields0[0].Descriptor()
+	// user.DefaultID holds the default value on creation for the id field.
+	user.DefaultID = userDescID.Default.(func() string)
 	// user.IDValidator is a validator for the "id" field. It is called by the builders before save.
 	user.IDValidator = func() func(string) error {
 		validators := userDescID.Validators

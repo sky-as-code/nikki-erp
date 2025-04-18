@@ -145,6 +145,14 @@ func (gc *GroupCreate) SetID(s string) *GroupCreate {
 	return gc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (gc *GroupCreate) SetNillableID(s *string) *GroupCreate {
+	if s != nil {
+		gc.SetID(*s)
+	}
+	return gc
+}
+
 // AddUserIDs adds the "users" edge to the User entity by IDs.
 func (gc *GroupCreate) AddUserIDs(ids ...string) *GroupCreate {
 	gc.mutation.AddUserIDs(ids...)
@@ -206,6 +214,10 @@ func (gc *GroupCreate) defaults() {
 	if _, ok := gc.mutation.UpdatedAt(); !ok {
 		v := group.DefaultUpdatedAt()
 		gc.mutation.SetUpdatedAt(v)
+	}
+	if _, ok := gc.mutation.ID(); !ok {
+		v := group.DefaultID()
+		gc.mutation.SetID(v)
 	}
 }
 

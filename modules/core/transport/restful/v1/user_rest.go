@@ -7,40 +7,47 @@ import (
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/common/config"
+	"github.com/sky-as-code/nikki-erp/common/cqrs"
+
 	// c "github.com/sky-as-code/nikki-erp/common/constants"
 	"github.com/sky-as-code/nikki-erp/common/logging"
+	it "github.com/sky-as-code/nikki-erp/modules/core/interfaces/user"
 )
 
 type userRestParams struct {
 	dig.In
 
-	Config config.ConfigService
-	Logger logging.LoggerService
+	Config  config.ConfigService
+	Logger  logging.LoggerService
+	CqrsBus cqrs.CqrsBus
 }
 
 func NewUserRest(params userRestParams) *UserRest {
 	return &UserRest{
 		ConfigSvc: params.Config,
 		Logger:    params.Logger,
+		CqrsBus:   params.CqrsBus,
 	}
 }
 
 type UserRest struct {
 	ConfigSvc config.ConfigService
 	Logger    logging.LoggerService
+	CqrsBus   cqrs.CqrsBus
 }
 
-func (h UserRest) CreateUser(echoCtx echo.Context) (err error) {
-	// request := &PrepareFileAccessRequest{}
-	// if err = echoCtx.Bind(request); err != nil {
-	// 	return err
-	// }
+func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
+	request := &CreateUserRequest{}
+	if err = echoCtx.Bind(request); err != nil {
+		return err
+	}
 
-	// result, fileErr := h.wopiSvc.PrepareFileAccess(request.FileId, "")
+	result := it.CreateUserResult{}
+	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
 
-	// if fileErr != nil {
-	// 	return fileErr
-	// }
+	if err != nil {
+		return err
+	}
 
 	// response := PrepareFileAccessResponse{
 	// 	Token: result.Token,
@@ -49,5 +56,8 @@ func (h UserRest) CreateUser(echoCtx echo.Context) (err error) {
 	// }
 	// h.logger.Infof("[PrepareFileAccess] response: %v", response)
 	// echoCtx.Response().Header().Set("Content-Type", "application/json")
-	return echoCtx.String(http.StatusOK, "OK")
+	return echoCtx.JSON(http.StatusOK, CreateUserResponse{
+		Data:   result,
+		Errors: result.Errors,
+	})
 }

@@ -11,7 +11,7 @@ import (
 var (
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString, Unique: true, Size: 36},
+		{Name: "id", Type: field.TypeString, Size: 36},
 		{Name: "name", Type: field.TypeString, Unique: true, Size: 50},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive"}, Default: "active"},

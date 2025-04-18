@@ -5,8 +5,6 @@
 		"DB_DRIVER": "postgres",
 		"DB_HOST_PORT": "localhost:5432",
 		"DB_NAME": "nikki_erp",
-		"DB_PASSWORD": "nikki_password",
-		"DB_USER": "nikki_admin",
 		"DB_PG_SSL_MODE": "disable",
 
 		"HTTP_PORT": "8080"

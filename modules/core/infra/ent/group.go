@@ -16,7 +16,6 @@ import (
 type Group struct {
 	config `json:"-"`
 	// ID of the ent.
-	// Primary key using UUID format
 	ID string `json:"id,omitempty"`
 	// Group name
 	Name string `json:"name,omitempty"`
