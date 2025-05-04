@@ -1,0 +1,26 @@
+{
+	"default": {
+		"APP_NAME": "Nikki ERP",
+		
+		"DB_DRIVER": "postgres",
+		"DB_HOST_PORT": "localhost:5432",
+		"DB_NAME": "nikki_erp",
+		"DB_PG_SSL_MODE": "disable",
+
+		"HTTP_PORT": "8080"
+	},
+	"local": {
+	},
+	"container": {
+		"APP_NAME": "Nikki ERP (Local container)",
+		"DB_HOST_PORT": "nikki_postgres:5432"
+	},
+	"dev": {
+		"APP_NAME": "Nikki ERP (Dev)"
+	},
+	"uat": {
+		"APP_NAME": "Nikki ERP (UAT)"
+	},
+	"prod": {
+	}
+}
