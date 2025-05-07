@@ -6,10 +6,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/sky-as-code/nikki-erp/common/httpserver"
-	"github.com/sky-as-code/nikki-erp/common/logging"
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	util "github.com/sky-as-code/nikki-erp/common/util"
-	deps "github.com/sky-as-code/nikki-erp/common/util/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
 func main() {

@@ -1,61 +1,46 @@
 package core
 
 import (
-	"context"
 	"errors"
 
-	"github.com/sky-as-code/nikki-erp/common"
-	"github.com/sky-as-code/nikki-erp/common/cqrs"
-	deps "github.com/sky-as-code/nikki-erp/common/util/deps_inject"
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules"
-	"github.com/sky-as-code/nikki-erp/modules/core/domain/user"
-	"github.com/sky-as-code/nikki-erp/modules/core/transport"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	db "github.com/sky-as-code/nikki-erp/modules/core/database"
+	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 )
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
-var ModuleSingleton modules.NikkiModule = &SharedModule{}
+var ModuleSingleton modules.NikkiModule = &CoreModule{}
 
-type SharedModule struct {
+type CoreModule struct {
 }
 
 // Name implements NikkiModule.
-func (*SharedModule) Name() string {
+func (*CoreModule) Name() string {
 	return "core"
 }
 
 // Deps implements NikkiModule.
-func (*SharedModule) Deps() []string {
-	return []string{common.ModuleSingleton.Name()}
-}
-
-// Init implements NikkiModule.
-func (*SharedModule) Init() error {
-	err := errors.Join(
-		deps.Invoke(initUserSubModule),
-		deps.Invoke(transport.InitTransport),
-	)
-
-	if err != nil {
-		return err
-	}
+func (*CoreModule) Deps() []string {
 	return nil
 }
 
-func initUserSubModule() error {
+// Init implements NikkiModule.
+func (*CoreModule) Init() error {
 	err := errors.Join(
-		deps.Register(user.NewUserHandler),
-		deps.Register(user.NewUserServiceImpl),
+		deps.Invoke(config.InitSubModule),
+		deps.Invoke(cqrs.InitSubModule),
+		deps.Register(db.InitSubModule),
+		deps.Register(http.InitSubModule),
 	)
+
 	if err != nil {
 		return err
 	}
-	return deps.Invoke(initUserHandlers)
-}
-
-func initUserHandlers(cqrsBus cqrs.CqrsBus, handler *user.UserHandler) error {
-	ctx := context.Background()
-	return cqrsBus.SubscribeRequests(
-		ctx,
-		cqrs.NewHandler(handler.Create),
+	err = errors.Join(
+		deps.Invoke(db.InitSubModule),
 	)
+	return err
 }

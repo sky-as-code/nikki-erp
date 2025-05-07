@@ -5,10 +5,10 @@ import (
 	"os"
 
 	"github.com/sky-as-code/nikki-erp/cmd/loader"
-	"github.com/sky-as-code/nikki-erp/common/config"
-	"github.com/sky-as-code/nikki-erp/common/logging"
-	. "github.com/sky-as-code/nikki-erp/common/util/fault"
+	. "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
 func newApplication(logger logging.LoggerService) *Application {
@@ -29,7 +29,7 @@ func (thisApp *Application) Config() config.ConfigService {
 
 func (thisApp *Application) Start() {
 	var modules []modules.NikkiModule
-	var err AppError
+	var err error
 
 	modules, err = loader.LoadModules()
 	if err != nil {
@@ -46,7 +46,7 @@ func (thisApp *Application) Start() {
 	thisApp.config = config.ConfigSvcSingleton()
 }
 
-func (thisApp *Application) initModules() AppError {
+func (thisApp *Application) initModules() error {
 	moduleMap := thisApp.buildModuleMap()
 
 	depGraph, err := thisApp.buildDependencyGraph(moduleMap)
@@ -69,7 +69,7 @@ func (thisApp *Application) buildModuleMap() map[string]modules.NikkiModule {
 	return moduleMap
 }
 
-func (thisApp *Application) buildDependencyGraph(moduleMap map[string]modules.NikkiModule) (map[string][]string, AppError) {
+func (thisApp *Application) buildDependencyGraph(moduleMap map[string]modules.NikkiModule) (map[string][]string, error) {
 	depGraph := make(map[string][]string)
 
 	for _, mod := range thisApp.modules {
@@ -85,14 +85,14 @@ func (thisApp *Application) buildDependencyGraph(moduleMap map[string]modules.Ni
 	return depGraph, nil
 }
 
-func (thisApp *Application) validateDependencies(depGraph map[string][]string) AppError {
+func (thisApp *Application) validateDependencies(depGraph map[string][]string) error {
 	if hasCycle := detectCycle(depGraph); hasCycle {
 		return NewTechnicalError("Modules have circular dependencies")
 	}
 	return nil
 }
 
-func (thisApp *Application) initializeInOrder(moduleMap map[string]modules.NikkiModule, depGraph map[string][]string) AppError {
+func (thisApp *Application) initializeInOrder(moduleMap map[string]modules.NikkiModule, depGraph map[string][]string) error {
 	initOrder, err := topologicalSort(depGraph)
 	if err != nil {
 		return WrapTechnicalError(err, "Failed to determine module initialization order")

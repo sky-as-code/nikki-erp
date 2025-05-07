@@ -11,6 +11,11 @@ func IsArrayType(target reflect.Type) bool {
 	return kind == reflect.Array || kind == reflect.Slice
 }
 
+func IsConvertible(sourceValue any, targetType reflect.Type) bool {
+	val := reflect.ValueOf(sourceValue)
+	return val.Type().ConvertibleTo(targetType)
+}
+
 func IsErrorObj(target interface{}) bool {
 	_, isErr := target.(error)
 	return isErr
