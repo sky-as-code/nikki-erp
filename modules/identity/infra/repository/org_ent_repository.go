@@ -31,11 +31,7 @@ func (this *OrganizationEntRepository) Create(ctx context.Context, org domain.Or
 		SetStatus(entOrg.Status(*org.Status)).
 		SetCreatedBy(org.CreatedBy.String())
 
-	entOrg, err := creation.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return entToOrganization(entOrg), nil
+	return Mutate(ctx, creation, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Organization) (*domain.Organization, error) {
@@ -45,35 +41,19 @@ func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Or
 		SetStatus(entOrg.Status(*org.Status)).
 		SetUpdatedBy(org.UpdatedBy.String())
 
-	entOrg, err := update.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return entToOrganization(entOrg), nil
+	return Mutate(ctx, update, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) Delete(ctx context.Context, id model.Id) error {
-	err := this.client.Organization.DeleteOneID(id.String()).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
+	return Delete[ent.Organization](ctx, this.client.Organization.DeleteOneID(id.String()))
 }
 
 func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id) (*domain.Organization, error) {
-	org, err := this.client.Organization.Query().
+	query := this.client.Organization.Query().
 		Where(entOrg.ID(id.String())).
-		WithUsers().
-		Only(ctx)
+		WithUsers()
 
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return entToOrganization(org), nil
+	return FindOne(ctx, query, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, slug string) (*domain.Organization, error) {
@@ -94,31 +74,14 @@ func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, slug stri
 func (this *OrganizationEntRepository) Search(
 	ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions,
 ) (*crud.PagedResult[*domain.Organization], error) {
-	predicate, err := criteria.ToPredicate()
-	if err != nil {
-		return nil, err
-	}
-
-	wholeQuery := this.client.Organization.Query().
-		Where(predicate)
-	pagedQuery := wholeQuery.
-		Offset(opts.Page * opts.Size).
-		Limit(opts.Size)
-
-	total, err := wholeQuery.Clone().Count(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	dbOrgs, err := pagedQuery.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return &crud.PagedResult[*domain.Organization]{
-		Items: entToOrganizations(dbOrgs),
-		Total: total,
-	}, nil
+	return Search(
+		ctx,
+		criteria,
+		opts,
+		entOrg.Label,
+		this.client.Organization.Query(),
+		entToOrganizations,
+	)
 }
 
 func BuildOrganizationDescriptor() *orm.EntityDescriptor {

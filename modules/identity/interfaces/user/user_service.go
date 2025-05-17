@@ -12,5 +12,5 @@ type UserService interface {
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	GetUserByID(ctx context.Context, id string) (*domain.User, error)
 	GetUserByUsername(ctx context.Context, username string) (*domain.User, error)
-	UpdateUser(ctx context.Context, cmd UpdateUserCommand) error
+	UpdateUser(ctx context.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)
 }

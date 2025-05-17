@@ -3,8 +3,9 @@ package orm
 import (
 	"reflect"
 
-	"github.com/sky-as-code/nikki-erp/common/util"
 	"go.bryk.io/pkg/errors"
+
+	"github.com/sky-as-code/nikki-erp/common/util"
 )
 
 var registry = &entityRegistry{
@@ -45,10 +46,19 @@ type EntityDescriptor struct {
 	Fields map[string]reflect.Type
 }
 
-func (this *EntityDescriptor) MatchFieldType(field string, value any) (reflect.Type, error) {
+func (this *EntityDescriptor) FieldType(field string) (reflect.Type, error) {
 	fieldType, ok := this.Fields[field]
 	if !ok {
 		return nil, errors.Errorf("invalid field '%s' of entity '%s'", field, this.Entity)
+	}
+
+	return fieldType, nil
+}
+
+func (this *EntityDescriptor) MatchFieldType(field string, value any) (reflect.Type, error) {
+	fieldType, err := this.FieldType(field)
+	if err != nil {
+		return nil, err
 	}
 
 	if !util.IsConvertible(value, fieldType) {
@@ -63,21 +73,7 @@ type EntityDescriptorBuilder struct {
 }
 
 func (this *EntityDescriptorBuilder) Field(name string, field any) *EntityDescriptorBuilder {
-	var fieldType reflect.Type
-
-	// Get the type of the field
-	fieldValue := reflect.ValueOf(field)
-
-	// Check if field is a pointer
-	if fieldValue.Kind() == reflect.Ptr {
-		// Get the type the pointer points to
-		fieldType = fieldValue.Elem().Type()
-	} else {
-		// Get the type directly
-		fieldType = fieldValue.Type()
-	}
-
-	this.descriptor.Fields[name] = fieldType
+	this.descriptor.Fields[name] = reflect.TypeOf(field)
 	return this
 }
 

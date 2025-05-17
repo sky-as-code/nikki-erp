@@ -37,8 +37,6 @@ type LoggerService interface {
 	Infof(format string, args ...any)
 	Warn(message string, data any)
 	Warnf(format string, args ...any)
-	Error(message string, data any)
+	Error(message string, err error)
 	Errorf(format string, args ...any)
-	IfError(err error, message string, data any)
-	IfErrorf(err error, format string, args ...any)
 }

@@ -6,6 +6,8 @@ import (
 
 type Predicate = func(*sql.Selector)
 type EdgePredicate = func(Predicate) Predicate
+type OrderOption = func(*sql.Selector)
+
 type AnyOperator = func(string, any) Predicate
 type CollectionOperator = func(string, ...any) Predicate
 type NullOperator = func(string) Predicate

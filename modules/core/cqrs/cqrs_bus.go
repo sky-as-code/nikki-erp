@@ -18,7 +18,7 @@ import (
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	util "github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
@@ -154,6 +154,10 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 				c, _ := context.WithTimeout(context.Background(), this.maxTimeout)
 				r, err := handler.Handle(c, reqPacket)
 				if err != nil {
+					this.logger.Error(
+						fmt.Sprintf("error occured from topic %s", topicName),
+						err,
+					)
 					reply.Error = util.ToPtr(err.Error())
 				} else {
 					reply = *r
@@ -163,7 +167,7 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 				if err != nil {
 					this.logger.Error(
 						fmt.Sprintf("failed to publish reply to topic %s", reqPacket.replyTopic),
-						err.Error(),
+						err,
 					)
 				}
 			case <-ctx.Done():
@@ -215,7 +219,7 @@ func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, resu
 	select {
 	case reply := <-replyChan:
 		if reply.Error != nil {
-			return errors.New(reply.Error)
+			return errors.New(*reply.Error)
 		}
 		return nil
 	case err := <-errChan:
@@ -387,7 +391,13 @@ func (c genericRequestHandler[TReq, TResult]) NewReply() Reply[any] {
 	return val
 }
 
-func (c genericRequestHandler[TReq, TResult]) Handle(ctx context.Context, packet *RequestPacket[Request]) (*Reply[any], error) {
+func (c genericRequestHandler[TReq, TResult]) Handle(ctx context.Context, packet *RequestPacket[Request]) (reply *Reply[any], err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = r.(error)
+		}
+	}()
+
 	var req any = packet.request
 	typedReq := req.(*TReq)
 	packet.request = *typedReq
@@ -403,9 +413,9 @@ func (c genericRequestHandler[TReq, TResult]) Handle(ctx context.Context, packet
 		return nil, err
 	}
 
-	reply := Reply[any]{
+	reply = &Reply[any]{
 		Result: typedReply.Result,
 		Error:  typedReply.Error,
 	}
-	return &reply, err
+	return reply, err
 }

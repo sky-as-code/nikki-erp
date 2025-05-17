@@ -13,16 +13,20 @@ type Organization struct {
 	model.ModelBase
 	model.AuditableBase
 
-	DisplayName *string
-	Slug        *model.Slug
-	Etag        *model.Etag
-	Status      *OrgStatus
+	DisplayName *string     `json:"displayName,omitempty"`
+	Slug        *model.Slug `json:"slug,omitempty"`
+	Etag        *model.Etag `json:"etag,omitempty"`
+	Status      *OrgStatus  `json:"status,omitempty"`
 }
 
-func (this *Organization) SetDefaults() {
-	this.ModelBase.SetDefaults()
+func (this *Organization) SetDefaults() error {
+	err := this.ModelBase.SetDefaults()
+	if err != nil {
+		return err
+	}
 	util.SetDefaultValue(this.Status, OrgDefaultStatus)
-	*this.Etag = model.NewEtag()
+	this.Etag = model.NewEtag()
+	return nil
 }
 
 func (this *Organization) Validate(forEdit bool) error {

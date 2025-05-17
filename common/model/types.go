@@ -7,6 +7,7 @@ import (
 
 	"go.bryk.io/pkg/ulid"
 
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
 
@@ -16,8 +17,13 @@ func (this Id) String() string {
 	return string(this)
 }
 
-func NewId() Id {
-	return Id(MustNewULID())
+func NewId() (*Id, error) {
+	newUlid, err := ulid.New()
+	if err != nil {
+		return nil, err
+	}
+	id := Id(newUlid.String())
+	return &id, nil
 }
 
 func WrapId(s string) *Id {
@@ -33,18 +39,10 @@ func WrapNillableId(s *string) *Id {
 	return &id
 }
 
-func MustNewULID() string {
-	newUlid, err := ulid.New()
-	if err != nil {
-		panic(err)
-	}
-	return newUlid.String()
-}
-
 func IdValidateRule(field any, isRequired bool) *val.FieldRules {
 	return val.Field(field,
 		val.RequiredWhen(isRequired),
-		val.Length(36, 36),
+		val.Length(26, 26),
 	)
 }
 
@@ -54,8 +52,9 @@ func (this Etag) String() string {
 	return string(this)
 }
 
-func NewEtag() Etag {
-	return Etag(fmt.Sprintf("%d", time.Now().UnixNano()))
+func NewEtag() *Etag {
+	etag := Etag(fmt.Sprintf("%d", time.Now().UnixNano()))
+	return &etag
 }
 
 func WrapEtag(s string) *Etag {
@@ -87,4 +86,9 @@ func SlugValidateRule(field any, isRequired bool) *val.FieldRules {
 		val.Length(1, 50),
 		val.RegExp(regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)),
 	)
+}
+
+type OpResult[TData any] struct {
+	Data        TData           `json:"data"`
+	ClientError *ft.ClientError `json:"error,omitempty"`
 }

@@ -1,8 +1,9 @@
-package app
+package cqrs
 
 import (
 	"context"
 
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
@@ -23,42 +24,23 @@ type UserHandler struct {
 func (this *UserHandler) Create(ctx context.Context, packet *cqrs.RequestPacket[it.CreateUserCommand]) (*cqrs.Reply[it.CreateUserResult], error) {
 	cmd := packet.Request()
 	result, err := this.UserSvc.CreateUser(ctx, *cmd)
-	if err != nil {
-		this.Logger.Error("failed to create user", err)
-		return nil, err
-	}
+	ft.PanicOnErr(err)
+
 	reply := &cqrs.Reply[it.CreateUserResult]{
 		Result: *result,
 	}
-	return reply, err
-
-	// event := &UserCreatedEvent{
-	// 	ID:          packet.Id,
-	// 	Username:    packet.Username,
-	// 	Email:       packet.Email,
-	// 	DisplayName: packet.DisplayName,
-	// 	AvatarURL:   packet.AvatarUrl,
-	// 	Status:      packet.Status,
-	// 	CreatedBy:   packet.CreatedBy,
-	// 	EventID:     NewEventID(),
-	// }
-
-	// return this.eventBus.Publish(ctx, event)
+	return reply, nil
 }
 
-func (this *UserHandler) Update(ctx context.Context, packet *cqrs.RequestPacket[it.UpdateUserCommand]) error {
-	return nil
+func (this *UserHandler) Update(ctx context.Context, packet *cqrs.RequestPacket[it.UpdateUserCommand]) (*cqrs.Reply[it.UpdateUserResult], error) {
+	cmd := packet.Request()
+	result, err := this.UserSvc.UpdateUser(ctx, *cmd)
+	ft.PanicOnErr(err)
 
-	// event := &UserUpdatedEvent{
-	// 	ID:          cmd.Id,
-	// 	DisplayName: cmd.DisplayName,
-	// 	AvatarURL:   cmd.AvatarUrl,
-	// 	Status:      cmd.Status,
-	// 	UpdatedBy:   cmd.UpdatedBy,
-	// 	EventID:     NewEventID(),
-	// }
-
-	// return this.eventBus.Publish(ctx, event)
+	reply := &cqrs.Reply[it.UpdateUserResult]{
+		Result: *result,
+	}
+	return reply, nil
 }
 
 func (this *UserHandler) Delete(ctx context.Context, packet *cqrs.RequestPacket[it.DeleteUserCommand]) error {

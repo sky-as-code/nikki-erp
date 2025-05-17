@@ -35,7 +35,6 @@ var (
 )
 
 func newApiBasedValidator() ApiBasedValidator {
-	apiVal.ErrorTag = "label"
 	return ApiBasedValidator{}
 }
 
@@ -50,12 +49,12 @@ type WhenRule = apiVal.WhenRule
 type ApiBasedValidator struct {
 }
 
-func (v ApiBasedValidator) ValidateStruct(structPtr interface{}, fields ...*apiVal.FieldRules) error {
+func (v ApiBasedValidator) ValidateStruct(structPtr interface{}, fields ...*apiVal.FieldRules) ValidationErrors {
 	err := apiVal.ValidateStruct(structPtr, fields...)
 	if err != nil {
-		return NewValidationErrorFromOzzo(err.(apiVal.Errors))
+		return NewValidationErrorsFromInvopop(err.(apiVal.Errors))
 	}
-	return nil
+	return NewValidationErrors()
 }
 
 func Field(fieldPtr interface{}, rules ...Rule) *FieldRules {

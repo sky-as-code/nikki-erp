@@ -6,14 +6,15 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"go.bryk.io/pkg/errors"
 )
 
-func NewConditionExpr(field string, operator Operator, values ...any) ConditionExpr {
+func NewCondition(field string, operator Operator, values ...any) Condition {
 	arr := make([]any, 0, 2+len(values))
 	arr = append(arr, field, operator)
 	arr = append(arr, values...)
-	return ConditionExpr(arr)
+	return Condition(arr)
 }
 
 // Condition expression is made of at least 3 parts:
@@ -23,25 +24,25 @@ func NewConditionExpr(field string, operator Operator, values ...any) ConditionE
 // 3,4,5,6: Values for collection operators
 //
 // Eg: ["name", "ilike", "nikki"], ["age", ">", "30"], ["age", "in", "30", "40", "50"]
-type ConditionExpr []any
+type Condition []any
 
-func (this ConditionExpr) Field() string {
+func (this Condition) Field() string {
 	return this[0].(string)
 }
 
-func (this ConditionExpr) Operator() Operator {
+func (this Condition) Operator() Operator {
 	return Operator(this[1].(string))
 }
 
-func (this ConditionExpr) Value() any {
+func (this Condition) Value() any {
 	return this[2]
 }
 
-func (this ConditionExpr) Values() []any {
+func (this Condition) Values() []any {
 	return this[2:]
 }
 
-func (this ConditionExpr) Validate() error {
+func (this Condition) Validate() error {
 	if len(this) < 3 {
 		return errors.Errorf("condition '%s' must have at least 3 parts", this)
 	}
@@ -61,12 +62,53 @@ func (this ConditionExpr) Validate() error {
 //	["first_name", "contains", "nikki"] => sql.FieldContainsFold(entUser.FieldFirstName, "nikki")
 //
 //	["age", ">", "30"] => sql.FieldGT(entUser.FieldAge, "30")
-func (this ConditionExpr) ToPredicate(entity *EntityDescriptor) (Predicate, error) {
+func (this Condition) ToPredicate(entityName string) (Predicate, error) {
 	err := this.Validate()
 	if err != nil {
 		return nil, err
 	}
 
+	entity, ok := GetEntity(entityName)
+	if !ok {
+		return nil, errors.Errorf("unregistered entity '%s' in expression '%s'", entityName, this)
+	}
+
+	rawField := this.Field()
+	fields := strings.Split(rawField, ".")
+	noEdge := len(fields) == 0
+
+	if noEdge {
+		// Expr: ["first_name", "^", "admin"]
+		// Result: sql.FieldHasPrefixFold(entUser.FieldFirstName, "admin")
+		return this.toSimplePredicate(entity)
+	}
+
+	edgeName := fields[0]
+
+	// Can be "name", but can also "parent.name" or "parent.leader.name"
+	edgeField := fields[1]
+
+	subCond := NewCondition(
+		edgeField,
+		this.Operator(),
+		this.Values()...,
+	)
+
+	hasEdgeWithFn := entity.Edges[edgeName]
+	if hasEdgeWithFn == nil {
+		return nil, errors.Errorf("no Has<EdgeName>With() found in Descriptor for edge entity '%s' in expression '%s'", edgeName, this)
+	}
+
+	// ToPredicate() will continue processing more nested edges.
+	edgePred, err := subCond.ToPredicate(edgeName)
+	if err != nil {
+		return nil, err
+	}
+
+	return hasEdgeWithFn(edgePred), nil
+}
+
+func (this Condition) toSimplePredicate(entity *EntityDescriptor) (Predicate, error) {
 	field := this.Field()
 	operator := this.Operator()
 	value := this.Value()
@@ -78,8 +120,11 @@ func (this ConditionExpr) ToPredicate(entity *EntityDescriptor) (Predicate, erro
 	}
 
 	if anyOp, ok := AnyOperators[operator]; ok {
-		convertedValue := reflect.ValueOf(value).Convert(fieldType).Interface()
-		return anyOp(field, convertedValue), nil
+		converted, err := util.ConvertType(value, fieldType)
+		if err != nil {
+			return nil, err
+		}
+		return anyOp(field, converted), nil
 	}
 
 	if collectionOp, ok := CollectionOperators[operator]; ok {
@@ -99,85 +144,66 @@ func (this ConditionExpr) ToPredicate(entity *EntityDescriptor) (Predicate, erro
 	return nil, errors.Errorf("invalid operator '%s' in expression '%s'", operator, this)
 }
 
-func NewCondition(expr []any, rootEntity *EntityDescriptor) (*Condition, error) {
-	condExpr := ConditionExpr(expr)
-	if err := condExpr.Validate(); err != nil {
-		return nil, err
-	}
+type OrderDirection string
 
-	return &Condition{
-		Expression: condExpr,
-		Entity:     rootEntity,
-	}, nil
+const (
+	Asc  OrderDirection = "asc"
+	Desc OrderDirection = "desc"
+)
+
+var orderTermMap = map[OrderDirection]sql.OrderTermOption{
+	Asc:  sql.OrderAsc(),
+	Desc: sql.OrderDesc(),
 }
 
-type Condition struct {
-	Expression ConditionExpr `json:"expression"`
-	Entity     *EntityDescriptor
+type SearchOrder struct {
+	Field     string         `json:"field"`
+	Direction OrderDirection `json:"direction"`
 }
 
-// ToPredicate converts a declarative condition to Ent API Predicate.
-//
-//	Expr: ["first_name", "^", "admin"]
-//	Result: sql.FieldHasPrefixFold(entUser.FieldFirstName, "admin")
-//
-//	Expr: ["groups.leader.age", ">=", "30"]
-//	Result: HasGroupsWith(HasLeaderWith(sql.FieldGT(entUser.FieldAge, "30")))
-func (this Condition) ToPredicate() (pred Predicate, err error) {
-	fields := strings.Split(this.Expression.Field(), ".")
-	noEdge := len(fields) == 0
-
-	if noEdge {
-		// Expr: ["first_name", "^", "admin"]
-		// Result: sql.FieldHasPrefixFold(entUser.FieldFirstName, "admin")
-		return this.Expression.ToPredicate(this.Entity)
+func (this SearchOrder) Validate(entityName string) error {
+	if this.Direction != Asc && this.Direction != Desc {
+		return errors.Errorf("invalid order direction '%s'", this.Direction)
 	}
 
-	edgeName := fields[0]
-	if len(edgeName) == 0 {
-		return nil, errors.Errorf("invalid edge name in expression '%s'", this.Expression)
-	}
-
-	edgeEntity, ok := GetEntity(edgeName)
+	entity, ok := GetEntity(entityName)
 	if !ok {
-		return nil, errors.Errorf("unregistered edge entity '%s' in expression '%s'", edgeName, this.Expression)
+		return errors.Errorf("unregistered entity '%s'", entityName)
 	}
 
-	// Can be "groups.name" or "groups.leader.age"
-	edgeField := fields[1]
-
-	cond := &Condition{
-		Expression: NewConditionExpr(
-			edgeField,
-			this.Expression.Operator(),
-			this.Expression.Values()...,
-		),
-		Entity: edgeEntity,
-	}
-	hasEdgeWithFn := this.Entity.Edges[edgeName]
-	if hasEdgeWithFn == nil {
-		return nil, errors.Errorf("no Has<EdgeName>With() found in Descriptor for edge entity '%s' in expression '%s'", edgeName, this.Expression)
-	}
-
-	// ToPredicate() will continue processing edge field names if there are more.
-	edgePred, err := cond.ToPredicate()
+	_, err := entity.FieldType(this.Field)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return hasEdgeWithFn(edgePred), nil
+	return nil
+}
+
+func (this SearchOrder) ToOrderOption(entityName string) (OrderOption, error) {
+	term := orderTermMap[this.Direction]
+	return sql.OrderByField(this.Field, term).ToFunc(), nil
+}
+
+func ValidateSearchOrders(orders []SearchOrder, entityName string) error {
+	for _, order := range orders {
+		if err := order.Validate(entityName); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type SearchGraph struct {
-	And []SearchNode `json:"and"`
-	Or  []SearchNode `json:"or"`
+	And   []SearchNode  `json:"and"`
+	Or    []SearchNode  `json:"or"`
+	Order []SearchOrder `json:"order"`
 }
 
-func (this SearchGraph) ToPredicate() (Predicate, error) {
+func (this SearchGraph) ToPredicate(entityName string) (Predicate, error) {
 	if len(this.And) > 0 {
 		preds := make([]Predicate, 0, len(this.And))
 		for _, node := range this.And {
-			pred, err := node.ToPredicate()
+			pred, err := node.ToPredicate(entityName)
 			if err != nil {
 				return nil, err
 			}
@@ -190,7 +216,7 @@ func (this SearchGraph) ToPredicate() (Predicate, error) {
 	if len(this.Or) > 0 {
 		preds := make([]Predicate, 0, len(this.Or))
 		for _, node := range this.Or {
-			pred, err := node.ToPredicate()
+			pred, err := node.ToPredicate(entityName)
 			if err != nil {
 				return nil, err
 			}
@@ -200,6 +226,23 @@ func (this SearchGraph) ToPredicate() (Predicate, error) {
 	}
 
 	return NoopPredicate, nil
+}
+
+func ToOrder[TOpt ~OrderOption](entityName string, graph *SearchGraph) ([]TOpt, error) {
+	if err := ValidateSearchOrders(graph.Order, entityName); err != nil {
+		return nil, err
+	}
+
+	orders := make([]TOpt, 0, len(graph.Order))
+	for _, order := range graph.Order {
+		orderOpt, err := order.ToOrderOption(entityName)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, orderOpt)
+	}
+
+	return orders, nil
 }
 
 // SearchNode represents a complex search criteria, its fields are mutually exclusive,
@@ -212,13 +255,13 @@ type SearchNode struct {
 	Or           []SearchNode `json:"or"`
 }
 
-func (this SearchNode) ToPredicate() (Predicate, error) {
+func (this SearchNode) ToPredicate(entityName string) (Predicate, error) {
 	if this.Condition != nil {
-		return this.Condition.ToPredicate()
+		return this.Condition.ToPredicate(entityName)
 	}
 
 	if this.NotCondition != nil {
-		p, err := this.NotCondition.ToPredicate()
+		p, err := this.NotCondition.ToPredicate(entityName)
 		if err != nil {
 			return nil, err
 		}
@@ -228,7 +271,7 @@ func (this SearchNode) ToPredicate() (Predicate, error) {
 	if len(this.And) > 0 {
 		preds := make([]Predicate, 0, len(this.And))
 		for _, node := range this.And {
-			pred, err := node.ToPredicate()
+			pred, err := node.ToPredicate(entityName)
 			if err != nil {
 				return nil, err
 			}
@@ -241,7 +284,7 @@ func (this SearchNode) ToPredicate() (Predicate, error) {
 	if len(this.Or) > 0 {
 		preds := make([]Predicate, 0, len(this.Or))
 		for _, node := range this.Or {
-			pred, err := node.ToPredicate()
+			pred, err := node.ToPredicate(entityName)
 			if err != nil {
 				return nil, err
 			}

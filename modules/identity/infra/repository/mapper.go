@@ -59,7 +59,8 @@ func entToOrganizations(entOrgs []*ent.Organization) []*domain.Organization {
 func entToUser(entUser *ent.User) *domain.User {
 	return &domain.User{
 		ModelBase: model.ModelBase{
-			Id: model.WrapId(entUser.ID),
+			Id:   model.WrapId(entUser.ID),
+			Etag: model.WrapEtag(entUser.Etag),
 		},
 		AuditableBase: model.AuditableBase{
 			CreatedAt: &entUser.CreatedAt,

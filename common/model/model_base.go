@@ -12,9 +12,14 @@ type ModelBase struct {
 	Etag *Etag `json:"etag,omitempty"`
 }
 
-func (this *ModelBase) SetDefaults() {
-	util.SetDefaultValue(this.Id, NewId())
-	*this.Etag = NewEtag()
+func (this *ModelBase) SetDefaults() error {
+	id, err := NewId()
+	if err != nil {
+		return err
+	}
+	util.SetDefaultValue(this.Id, *id)
+	this.Etag = NewEtag()
+	return nil
 }
 
 func (this *ModelBase) ValidateRules(forEdit bool) []*val.FieldRules {

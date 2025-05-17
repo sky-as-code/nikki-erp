@@ -7,19 +7,19 @@ import (
 )
 
 // Group is the predicate function for group builders.
-type Group func(*sql.Selector)
+type Group = func(*sql.Selector)
 
 // HierarchyLevel is the predicate function for hierarchylevel builders.
-type HierarchyLevel func(*sql.Selector)
+type HierarchyLevel = func(*sql.Selector)
 
 // Organization is the predicate function for organization builders.
-type Organization func(*sql.Selector)
+type Organization = func(*sql.Selector)
 
 // User is the predicate function for user builders.
-type User func(*sql.Selector)
+type User = func(*sql.Selector)
 
 // UserGroup is the predicate function for usergroup builders.
-type UserGroup func(*sql.Selector)
+type UserGroup = func(*sql.Selector)
 
 // UserOrg is the predicate function for userorg builders.
-type UserOrg func(*sql.Selector)
+type UserOrg = func(*sql.Selector)

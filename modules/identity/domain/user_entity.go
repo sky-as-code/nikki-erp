@@ -5,6 +5,7 @@ import (
 
 	"go.bryk.io/pkg/errors"
 
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	util "github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
@@ -16,24 +17,27 @@ type User struct {
 	model.AuditableBase
 	// model.OrgBase
 
-	AvatarUrl           *string
-	DisplayName         *string
-	Email               *string
-	FailedLoginAttempts *int
-	LastLoginAt         *time.Time
-	LockedUntil         *time.Time
-	MustChangePassword  *bool
-	PasswordRaw         *string
-	PasswordChangedAt   *time.Time
-	PasswordHash        *string
-	Status              *UserStatus
+	AvatarUrl           *string     `json:"avatarUrl,omitempty"`
+	DisplayName         *string     `json:"displayName,omitempty"`
+	Email               *string     `json:"email,omitempty"`
+	FailedLoginAttempts *int        `json:"failedLoginAttempts,omitempty"`
+	LastLoginAt         *time.Time  `json:"lastLoginAt,omitempty"`
+	LockedUntil         *time.Time  `json:"lockedUntil,omitempty"`
+	MustChangePassword  *bool       `json:"mustChangePassword,omitempty"`
+	PasswordRaw         *string     `json:"passwordRaw,omitempty"`
+	PasswordChangedAt   *time.Time  `json:"passwordChangedAt,omitempty"`
+	PasswordHash        *string     `json:"passwordHash,omitempty"`
+	Status              *UserStatus `json:"status,omitempty"`
 
-	Groups []*Group
-	Orgs   []*Organization
+	Groups []*Group        `json:"groups,omitempty"`
+	Orgs   []*Organization `json:"orgs,omitempty"`
 }
 
-func (this *User) SetDefaults() {
-	this.ModelBase.SetDefaults()
+func (this *User) SetDefaults() error {
+	err := this.ModelBase.SetDefaults()
+	if err != nil {
+		return err
+	}
 
 	util.SetDefaultValue(this.Status, UserDefaultStatus)
 
@@ -48,9 +52,11 @@ func (this *User) SetDefaults() {
 	}
 
 	util.SetDefaultValue(this.MustChangePassword, true)
+
+	return nil
 }
 
-func (this *User) Validate(forEdit bool) error {
+func (this *User) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.AvatarUrl, val.When(this.AvatarUrl != nil,
 			val.Length(1, 255),
@@ -95,6 +101,10 @@ func (this UserStatus) Validate() error {
 	default:
 		return errors.Errorf("invalid status value: %s", this)
 	}
+}
+
+func (this UserStatus) String() string {
+	return string(this)
 }
 
 func WrapUserStatus(s string) *UserStatus {

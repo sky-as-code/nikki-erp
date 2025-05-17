@@ -32,11 +32,13 @@ type httpServerResult struct {
 func initHttpServer(params httpServerParams) httpServerResult {
 	echoServer := newEchoServer()
 
+	httpHost := params.Config.GetStr(c.HttpHost, "127.0.0.1")
 	httpPort := params.Config.GetInt32(c.HttpPort, "80")
 	httpServer := HttpServer{
 		Name:       params.Config.GetStr(c.AppName),
 		EchoServer: echoServer,
 		Logger:     params.Logger,
+		Host:       httpHost,
 		Port:       httpPort,
 	}
 
@@ -79,7 +81,7 @@ func newEchoServer() *echo.Echo {
 	echoServer := echo.New()
 	echoServer.HideBanner = true // Not logging startup banner on start
 	echoServer.HidePort = true   // Not logging port information on start
-	// echoServer.HTTPErrorHandler = utilMiddleware.CustomHttpErrorHandler(echoServer.DefaultHTTPErrorHandler)
+	echoServer.HTTPErrorHandler = CustomHttpErrorHandler(echoServer.DefaultHTTPErrorHandler)
 	// echoServer.Validator = validator.TagBased
 	return echoServer
 }
@@ -88,11 +90,12 @@ type HttpServer struct {
 	Name       string
 	EchoServer *echo.Echo
 	Logger     logging.LoggerService
+	Host       string
 	Port       int32
 }
 
 func (this HttpServer) Start() error {
-	address := fmt.Sprintf(":%d", this.Port)
+	address := fmt.Sprintf("%s:%d", this.Host, this.Port)
 	this.Logger.Infof("Starting HTTP server %s at %s", this.Name, address)
 	err := this.EchoServer.Start(address)
 

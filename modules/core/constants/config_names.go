@@ -21,6 +21,7 @@ const (
 
 	// HTTP Server
 	HttpBasePath    ConfigName = "HTTP_BASE_PATH"
+	HttpHost        ConfigName = "HTTP_HOST"
 	HttpPort        ConfigName = "HTTP_PORT"
 	HttpCorsOrigins ConfigName = "HTTP_CORS_ORIGINS"
 	HttpCorsHeaders ConfigName = "HTTP_CORS_HEADERS"

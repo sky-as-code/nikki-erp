@@ -10,19 +10,19 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/fault"
 )
 
-func CustomHttpErrorHandler(defaultHandler echo.HTTPErrorHandler) echo.HTTPErrorHandler {
-	return func(err error, ctx echo.Context) {
-		if ctx.Response().Committed {
-			// Response already sent
-			return
-		}
-		// transErr := transformError(err)
-		// handleHttpError(transErr, ctx)
-		if !handleerror(err, ctx) {
-			defaultHandler(err, ctx)
-		}
-	}
-}
+// func CustomHttpErrorHandler(defaultHandler echo.HTTPErrorHandler) echo.HTTPErrorHandler {
+// 	return func(err error, ctx echo.Context) {
+// 		if ctx.Response().Committed {
+// 			// Response already sent
+// 			return
+// 		}
+// 		// transErr := transformError(err)
+// 		// handleHttpError(transErr, ctx)
+// 		if !handleerror(err, ctx) {
+// 			defaultHandler(err, ctx)
+// 		}
+// 	}
+// }
 
 /*
 func transformError(err error) error {
@@ -52,29 +52,29 @@ func handleHttpError(err error, ctx echo.Context) {
 }
 */
 
-func handleerror(err error, ctx echo.Context) bool {
-	var bizErr fault.BusinessError
-	var techErr fault.TechnicalError
-	var valErr fault.ValidationError
-	logger := ctx.Logger()
+// func handleerror(err error, ctx echo.Context) bool {
+// 	var bizErr fault.BusinessError
+// 	var techErr fault.TechnicalError
+// 	var valErr fault.ClientError
+// 	logger := ctx.Logger()
 
-	if errors.As(err, &valErr) {
-		logger.Warnf("ValidationError: %s", err.Error())
-		clientHttpErr := fault.WrapClientHttpError(valErr)
-		fault.PanicOnErr(ctx.JSON(http.StatusUnprocessableEntity, clientHttpErr))
-		return true
-	}
-	if errors.As(err, &bizErr) {
-		logger.Warnf("BusinessError: %s", err.Error())
-		clientHttpErr := fault.WrapClientHttpError(bizErr)
-		fault.PanicOnErr(ctx.JSON(http.StatusUnprocessableEntity, clientHttpErr))
-		return true
-	}
-	if errors.As(err, &techErr) && env.IsLocal() {
-		logger.Errorf("TechnicalError: %s", err.Error())
-		serverHttpErr := fault.WrapInternalServerHttpError(techErr)
-		fault.PanicOnErr(ctx.JSON(http.StatusInternalServerError, serverHttpErr))
-		return true
-	}
-	return false
-}
+// 	if errors.As(err, &valErr) {
+// 		logger.Warnf("ValidationError: %s", err.Error())
+// 		clientHttpErr := fault.WrapClientHttpError(valErr)
+// 		fault.PanicOnErr(ctx.JSON(http.StatusUnprocessableEntity, clientHttpErr))
+// 		return true
+// 	}
+// 	if errors.As(err, &bizErr) {
+// 		logger.Warnf("BusinessError: %s", err.Error())
+// 		clientHttpErr := fault.WrapClientHttpError(bizErr)
+// 		fault.PanicOnErr(ctx.JSON(http.StatusUnprocessableEntity, clientHttpErr))
+// 		return true
+// 	}
+// 	if errors.As(err, &techErr) && env.IsLocal() {
+// 		logger.Errorf("TechnicalError: %s", err.Error())
+// 		serverHttpErr := fault.WrapInternalServerHttpError(techErr)
+// 		fault.PanicOnErr(ctx.JSON(http.StatusInternalServerError, serverHttpErr))
+// 		return true
+// 	}
+// 	return false
+// }

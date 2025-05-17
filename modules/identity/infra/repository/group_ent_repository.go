@@ -33,11 +33,7 @@ func (this *GroupEntRepository) Create(ctx context.Context, group domain.Group) 
 		creation.SetParentID(group.ParentId.String())
 	}
 
-	entGroup, err := creation.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return entToGroup(entGroup), nil
+	return Mutate(ctx, creation, entToGroup)
 }
 
 func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group) (*domain.Group, error) {
@@ -52,67 +48,32 @@ func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group) 
 		update.ClearParentID()
 	}
 
-	entGroup, err := update.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return entToGroup(entGroup), nil
+	return Mutate(ctx, update, entToGroup)
 }
 
 func (this *GroupEntRepository) Delete(ctx context.Context, id model.Id) error {
-	err := this.client.Group.DeleteOneID(id.String()).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
+	return Delete[ent.Group](ctx, this.client.Group.DeleteOneID(id.String()))
 }
 
 func (this *GroupEntRepository) FindById(ctx context.Context, id model.Id) (*domain.Group, error) {
-	group, err := this.client.Group.Query().
+	query := this.client.Group.Query().
 		Where(entGroup.ID(id.String())).
-		WithParent().
-		WithSubgroups().
-		WithUsers().
-		Only(ctx)
+		WithParent()
 
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return entToGroup(group), nil
+	return FindOne(ctx, query, entToGroup)
 }
 
 func (this *GroupEntRepository) Search(
 	ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions,
 ) (*crud.PagedResult[*domain.Group], error) {
-	predicate, err := criteria.ToPredicate()
-	if err != nil {
-		return nil, err
-	}
-
-	wholeQuery := this.client.Group.Query().
-		Where(predicate)
-	pagedQuery := wholeQuery.
-		Offset(opts.Page * opts.Size).
-		Limit(opts.Size)
-
-	total, err := wholeQuery.Clone().Count(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	dbGroups, err := pagedQuery.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return &crud.PagedResult[*domain.Group]{
-		Items: entToGroups(dbGroups),
-		Total: total,
-	}, nil
+	return Search(
+		ctx,
+		criteria,
+		opts,
+		entGroup.Label,
+		this.client.Group.Query(),
+		entToGroups,
+	)
 }
 
 func BuildGroupDescriptor() *orm.EntityDescriptor {

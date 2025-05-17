@@ -1,10 +1,10 @@
 package user
 
 import (
-	"time"
-
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
 func init() {
@@ -19,67 +19,52 @@ func init() {
 }
 
 var createUserCommandType = cqrs.RequestType{
-	Module:    "core",
+	Module:    "identity",
 	Submodule: "user",
 	Action:    "create",
 }
 
 type CreateUserCommand struct {
-	CreatedBy          string `json:"created_by"`
-	DisplayName        string `json:"display_name"`
+	CreatedBy          string `json:"createdBy"`
+	DisplayName        string `json:"displayName"`
 	Email              string `json:"email"`
-	IsEnabled          bool   `json:"is_enabled"`
-	MustChangePassword bool   `json:"must_change_password"`
+	IsEnabled          bool   `json:"isEnabled"`
+	MustChangePassword bool   `json:"mustChangePassword"`
 	Password           string `json:"password"`
-	Username           string `json:"username"`
 }
 
 func (CreateUserCommand) Type() cqrs.RequestType {
 	return createUserCommandType
 }
 
-type CreateUserResult struct {
-	Errors []string `json:"errors"`
-
-	Id        *string    `json:"id,omitempty"`
-	CreatedAt *time.Time `json:"created_at,omitempty"`
-	Etag      *string    `json:"etag,omitempty"`
-	Status    *string    `json:"status,omitempty"`
-}
+type CreateUserResult model.OpResult[*domain.User]
 
 var updateUserCommandType = cqrs.RequestType{
-	Module:    "core",
+	Module:    "identity",
 	Submodule: "user",
 	Action:    "update",
 }
 
 type UpdateUserCommand struct {
-	Id                  string  `json:"id"`
-	AvatarUrl           *string `json:"avatar_url,omitempty"`
-	CreatedAt           string  `json:"created_at"`
-	CreatedBy           string  `json:"created_by"`
-	DeletedAt           *string `json:"deleted_at,omitempty"`
-	DeletedBy           *string `json:"deleted_by,omitempty"`
-	DisplayName         *string `json:"display_name,omitempty"`
-	Email               *string `json:"email,omitempty"`
-	FailedLoginAttempts *int    `json:"failed_login_attempts,omitempty"`
-	LastLoginAt         *string `json:"last_login_at,omitempty"`
-	LockedUntil         *string `json:"locked_until,omitempty"`
-	MustChangePassword  *bool   `json:"must_change_password,omitempty"`
-	PasswordChangedAt   *string `json:"password_changed_at,omitempty"`
-	PasswordHash        *string `json:"password_hash,omitempty"`
-	Status              *string `json:"status,omitempty"`
-	UpdatedAt           *string `json:"updated_at,omitempty"`
-	UpdatedBy           *string `json:"updated_by,omitempty"`
-	Username            *string `json:"username,omitempty"`
+	Id                 string  `param:"id" query:"id" json:"id"`
+	AvatarUrl          *string `json:"avatarUrl,omitempty"`
+	DisplayName        *string `json:"displayName,omitempty"`
+	Email              *string `json:"email,omitempty"`
+	MustChangePassword *bool   `json:"mustChangePassword,omitempty"`
+	Password           *string `json:"password,omitempty"`
+	IsEnabled          *bool   `json:"isEnabled,omitempty"`
+	UpdatedBy          string  `json:"updatedBy,omitempty"`
+	Username           *string `json:"username,omitempty"`
 }
 
 func (UpdateUserCommand) Type() cqrs.RequestType {
 	return updateUserCommandType
 }
 
+type UpdateUserResult model.OpResult[*domain.User]
+
 var deleteUserCommandType = cqrs.RequestType{
-	Module:    "core",
+	Module:    "identity",
 	Submodule: "user",
 	Action:    "delete",
 }
@@ -94,7 +79,7 @@ func (DeleteUserCommand) Type() cqrs.RequestType {
 }
 
 var getUserByIdQueryType = cqrs.RequestType{
-	Module:    "core",
+	Module:    "identity",
 	Submodule: "user",
 	Action:    "getUserById",
 }
@@ -108,7 +93,7 @@ func (GetUserByIdQuery) Type() cqrs.RequestType {
 }
 
 var getUserByUsernameQueryType = cqrs.RequestType{
-	Module:    "core",
+	Module:    "identity",
 	Submodule: "user",
 	Action:    "getUserByUsername",
 }

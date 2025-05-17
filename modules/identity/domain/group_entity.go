@@ -10,14 +10,14 @@ type Group struct {
 	model.AuditableBase
 	model.OrgBase
 
-	Name        *string
-	Description *string
+	Name        *string `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
 
-	ParentId *model.Id
+	ParentId *model.Id `json:"parentId,omitempty"`
 }
 
-func (this *Group) SetDefaults() {
-	this.ModelBase.SetDefaults()
+func (this *Group) SetDefaults() error {
+	return this.ModelBase.SetDefaults()
 }
 
 func (this *Group) Validate(forEdit bool) error {

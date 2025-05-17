@@ -2,6 +2,8 @@ package util
 
 import (
 	"reflect"
+
+	"go.bryk.io/pkg/errors"
 )
 
 var errorInterface = reflect.TypeOf((*error)(nil)).Elem()
@@ -14,6 +16,15 @@ func IsArrayType(target reflect.Type) bool {
 func IsConvertible(sourceValue any, targetType reflect.Type) bool {
 	val := reflect.ValueOf(sourceValue)
 	return val.Type().ConvertibleTo(targetType)
+}
+
+func ConvertType(sourceValue any, targetType reflect.Type) (any, error) {
+	val := reflect.ValueOf(sourceValue)
+	if !val.Type().ConvertibleTo(targetType) {
+		return nil, errors.Errorf("cannot convert %v to %v", sourceValue, targetType)
+	}
+	converted := val.Convert(targetType).Interface()
+	return converted, nil
 }
 
 func IsErrorObj(target interface{}) bool {

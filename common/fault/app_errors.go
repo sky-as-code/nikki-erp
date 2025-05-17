@@ -2,9 +2,6 @@ package fault
 
 import (
 	"fmt"
-	"strings"
-
-	apiVal "github.com/invopop/validation"
 )
 
 // type error interface {
@@ -201,63 +198,3 @@ func WrapBusinessError(err error, message string, formatValues ...interface{}) e
 		errorBase: base,
 	}
 }
-
-type ValidationError struct {
-	BusinessError
-}
-
-func (ValidationError) Name() string {
-	return "ValidationError"
-}
-
-func NewValidationError(message string, formatValues ...interface{}) ValidationError {
-	base := errorBase{
-		errorCode: "ValidationError",
-		message:   fmt.Sprintf(message, formatValues...),
-	}
-
-	return ValidationError{
-		BusinessError{
-			errorBase: base,
-		},
-	}
-}
-
-func NewValidationErrorFromOzzo(raw error) ValidationError {
-	ozzoErrors, isOk := raw.(apiVal.Errors)
-	if !isOk {
-		panic(NewTechnicalError("Not an Ozzo validation error"))
-	}
-
-	var messages []string
-	for _, ozzoErr := range ozzoErrors {
-		err := ozzoErr.(apiVal.ErrorObject)
-		messages = append(messages, err.Message())
-	}
-
-	base := errorBase{
-		errorCode: "ValidationError",
-		message:   strings.Join(messages, ", "),
-	}
-	return ValidationError{
-		BusinessError{
-			errorBase: base,
-		},
-	}
-}
-
-// func WrapValidationError(err error) error {
-// 	validationErr, isOk := err.(tagVal.ValidationErrors)
-// 	if !isOk {
-// 		return nil
-// 	}
-// 	base := errorBase{
-// 		errorCode: errorCode,
-// 		internal:  err,
-// 		message:   fmt.Sprintf(message, formatValues...),
-// 		name:      "BusinessError",
-// 	}
-// 	return BusinessError{
-// 		errorBase: base,
-// 	}
-// }

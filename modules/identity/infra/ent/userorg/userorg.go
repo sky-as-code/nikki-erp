@@ -64,7 +64,7 @@ var (
 )
 
 // OrderOption defines the ordering options for the UserOrg queries.
-type OrderOption func(*sql.Selector)
+type OrderOption = func(*sql.Selector)
 
 // ByUserID orders the results by the user_id field.
 func ByUserID(opts ...sql.OrderTermOption) OrderOption {

@@ -7,6 +7,8 @@ import (
 	"os"
 	"path"
 	"runtime"
+
+	"go.bryk.io/pkg/errors"
 )
 
 const skippedCallStackDepth = 3
@@ -69,24 +71,12 @@ func (this *loggerImpl) Warnf(format string, args ...any) {
 	this.writeLogFormat(LevelWarn, format, args...)
 }
 
-func (this *loggerImpl) Error(message string, data any) {
-	this.writeLogData(LevelError, message, data)
+func (this *loggerImpl) Error(message string, err error) {
+	this.writeErrorData(message, err)
 }
 
 func (this *loggerImpl) Errorf(format string, args ...any) {
 	this.writeLogFormat(LevelError, format, args...)
-}
-
-func (this *loggerImpl) IfError(err error, message string, data any) {
-	if err != nil {
-		this.Error(message, data)
-	}
-}
-
-func (this *loggerImpl) IfErrorf(err error, format string, args ...any) {
-	if err != nil {
-		this.Errorf(format, args...)
-	}
 }
 
 func (this *loggerImpl) writeLogData(level Level, message string, data any) {
@@ -97,6 +87,21 @@ func (this *loggerImpl) writeLogData(level Level, message string, data any) {
 func (this *loggerImpl) writeLogFormat(level Level, format string, args ...any) {
 	fileNameLine := getFileName(skippedCallStackDepth)
 	this.slogger.Log(context.Background(), slogLevelMap[level], fmt.Sprintf(format, args...), slog.String("source", fileNameLine))
+}
+
+func (this *loggerImpl) writeErrorData(message string, err error) {
+	var typedErr *errors.Error
+	var data any
+	if errors.As(err, &typedErr) {
+		js, _ := errors.Report(typedErr, NewJsonCodec(false))
+		data = fmt.Sprintf("%s", js)
+	} else {
+		data = err
+	}
+
+	// Copy writeLogData implementation here so the stackDepth is correct
+	fileNameLine := getFileName(skippedCallStackDepth)
+	this.slogger.Log(context.Background(), slog.LevelError, message, slog.Any("data", data), slog.String("source", fileNameLine))
 }
 
 func getFileName(depth int) string {

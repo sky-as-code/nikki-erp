@@ -35,13 +35,7 @@ func (this *UserEntRepository) Create(ctx context.Context, user domain.User) (*d
 		SetPasswordChangedAt(*user.PasswordChangedAt).
 		SetStatus(entUser.Status(*user.Status))
 
-	entUser, err := creation.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	newUser := entToUser(entUser)
-
-	return newUser, nil
+	return Mutate(ctx, creation, entToUser)
 }
 
 func (this *UserEntRepository) Update(ctx context.Context, user domain.User) (*domain.User, error) {
@@ -55,83 +49,42 @@ func (this *UserEntRepository) Update(ctx context.Context, user domain.User) (*d
 		SetNillableStatus((*entUser.Status)(user.Status)).
 		SetUpdatedBy(user.UpdatedBy.String())
 
-	entUser, err := update.Save(ctx)
-	if err != nil {
-		return nil, err
-	}
-	modifiedUser := entToUser(entUser)
-	return modifiedUser, nil
+	return Mutate(ctx, update, entToUser)
 }
 
 func (this *UserEntRepository) Delete(ctx context.Context, id model.Id) error {
-	err := this.client.User.DeleteOneID(id.String()).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
+	return Delete[ent.User](ctx, this.client.User.DeleteOneID(id.String()))
 }
 
 func (this *UserEntRepository) FindById(ctx context.Context, id model.Id) (*domain.User, error) {
-	user, err := this.client.User.Query().
+	query := this.client.User.Query().
 		Where(entUser.ID(id.String())).
 		WithGroups().
-		WithOrgs().
-		Only(ctx)
+		WithOrgs()
 
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return entToUser(user), nil
+	return FindOne(ctx, query, entToUser)
 }
 
 func (this *UserEntRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
-	user, err := this.client.User.Query().
+	query := this.client.User.Query().
 		Where(entUser.EmailEQ(email)).
 		WithGroups().
-		WithOrgs().
-		Only(ctx)
+		WithOrgs()
 
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return entToUser(user), nil
+	return FindOne(ctx, query, entToUser)
 }
 
 func (this *UserEntRepository) Search(
 	ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions,
 ) (*crud.PagedResult[*domain.User], error) {
-	predicate, err := criteria.ToPredicate()
-	if err != nil {
-		return nil, err
-	}
-
-	wholeQuery := this.client.User.Query().
-		Where(predicate)
-	pagedQuery := wholeQuery.
-		Offset(opts.Page * opts.Size).
-		Limit(opts.Size)
-
-	total, err := wholeQuery.Clone().Count(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	dbUsers, err := pagedQuery.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return &crud.PagedResult[*domain.User]{
-		Items: entToUsers(dbUsers),
-		Total: total,
-	}, nil
+	return Search(
+		ctx,
+		criteria,
+		opts,
+		entUser.Label,
+		this.client.User.Query(),
+		entToUsers,
+	)
 }
 
 func BuildUserDescriptor() *orm.EntityDescriptor {
