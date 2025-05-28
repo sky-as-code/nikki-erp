@@ -9,7 +9,7 @@ type CreateUserRequest = it.CreateUserCommand
 
 type CreateUserResponse struct {
 	Id        string `json:"id,omitempty"`
-	CreatedAt int64  `json:"created_at,omitempty"`
+	CreatedAt int64  `json:"createdAt,omitempty"`
 	Etag      string `json:"etag,omitempty"`
 	Status    string `json:"status,omitempty"`
 }
@@ -25,7 +25,7 @@ type UpdateUserRequest = it.UpdateUserCommand
 
 type UpdateUserResponse struct {
 	Id        string `json:"id,omitempty"`
-	UpdatedAt int64  `json:"updated_at,omitempty"`
+	UpdatedAt int64  `json:"updatedAt,omitempty"`
 	Etag      string `json:"etag,omitempty"`
 }
 
@@ -33,4 +33,32 @@ func (this *UpdateUserResponse) FromUser(user domain.User) {
 	this.Id = user.Id.String()
 	this.UpdatedAt = user.UpdatedAt.Unix()
 	this.Etag = user.Etag.String()
+}
+
+type DeleteUserRequest = it.DeleteUserCommand
+
+type DeleteUserResponse struct {
+	DeletedAt int64 `json:"deletedAt,omitempty"`
+}
+
+type GetUserByIdRequest = it.GetUserByIdQuery
+
+type GetUserByIdResponse struct {
+	Id          string `json:"id,omitempty"`
+	CreatedAt   int64  `json:"createdAt,omitempty"`
+	Etag        string `json:"etag,omitempty"`
+	DisplayName string `json:"displayName,omitempty"`
+	Email       string `json:"email,omitempty"`
+	AvatarUrl   string `json:"avatarUrl,omitempty"`
+	Status      string `json:"status,omitempty"`
+}
+
+func (this *GetUserByIdResponse) FromUser(user domain.User) {
+	this.Id = user.Id.String()
+	this.CreatedAt = user.CreatedAt.Unix()
+	this.Etag = user.Etag.String()
+	// this.DisplayName = *user.DisplayName
+	// this.Email = *user.Email
+	// this.AvatarUrl = *user.AvatarUrl
+	this.Status = user.Status.String()
 }

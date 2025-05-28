@@ -12,7 +12,7 @@ import (
 	util "github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 
-	// entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
+	// ent "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -116,12 +116,74 @@ func (this *UserServiceImpl) encrypt(str *string) *string {
 	return util.ToPtr(string(hashedBytes))
 }
 
-func (thisSvc *UserServiceImpl) DeleteUser(ctx context.Context, id string, deletedBy string) error {
-	return nil
+func (thisSvc *UserServiceImpl) DeleteUser(ctx context.Context, id string, deletedBy string) (result *it.DeleteUserResult, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.Wrap(r.(error), "failed to update user")
+		}
+	}()
+
+	user, err := thisSvc.userRepo.FindById(ctx, model.Id(id))
+	ft.PanicOnErr(err)
+
+	if user == nil {
+		vErrors := ft.NewValidationErrors()
+		vErrors.Append(ft.ValidationErrorItem{
+			Field: "id",
+			Error: "user not found",
+		})
+		return &it.DeleteUserResult{
+			ClientError: ft.WrapValidationErrors(vErrors),
+		}, nil
+	}
+
+	err = thisSvc.userRepo.Delete(ctx, model.Id(id))
+	ft.PanicOnErr(err)
+
+	return &it.DeleteUserResult{
+		Data: it.DeleteUserResultData{
+			DeletedAt: time.Now(),
+		},
+	}, nil
 }
 
-func (thisSvc *UserServiceImpl) GetUserByID(ctx context.Context, id string) (*domain.User, error) {
-	return nil, nil
+func (thisSvc *UserServiceImpl) GetUserByID(ctx context.Context, id string) (result *it.GetUserByIdResult, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.Wrap(r.(error), "failed to update user")
+		}
+	}()
+
+	vErrors := ft.NewValidationErrors()
+	if id == "" {
+		vErrors.Append(ft.ValidationErrorItem{
+			Field: "id",
+			Error: "user ID cannot be empty",
+		})
+	}
+
+	if vErrors.Count() > 0 {
+		return &it.GetUserByIdResult{
+			ClientError: ft.WrapValidationErrors(vErrors),
+		}, nil
+	}
+
+	user, err := thisSvc.userRepo.FindById(ctx, model.Id(id))
+	if user == nil && err == nil {
+		vErrors.Append(ft.ValidationErrorItem{
+			Field: "id",
+			Error: "user not found",
+		})
+		return &it.GetUserByIdResult{
+			ClientError: ft.WrapValidationErrors(vErrors),
+		}, nil
+	}
+
+	ft.PanicOnErr(err)
+
+	return &it.GetUserByIdResult{
+		Data: user,
+	}, nil
 }
 
 func (thisSvc *UserServiceImpl) GetUserByUsername(ctx context.Context, username string) (*domain.User, error) {

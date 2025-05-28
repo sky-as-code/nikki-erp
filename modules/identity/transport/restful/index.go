@@ -26,5 +26,7 @@ func initUserRest() error {
 
 func initV1(route *echo.Group, userRest *v1.UserRest) {
 	route.POST("/users", userRest.CreateUser)
+	route.DELETE("/users/:id", userRest.DeleteUser)
+	route.GET("/users/:id", userRest.GetUserById)
 	route.PUT("/users/:id", userRest.UpdateUser)
 }

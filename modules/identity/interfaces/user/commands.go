@@ -1,6 +1,8 @@
 package user
 
 import (
+	"time"
+
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
@@ -46,7 +48,7 @@ var updateUserCommandType = cqrs.RequestType{
 }
 
 type UpdateUserCommand struct {
-	Id                 string  `param:"id" query:"id" json:"id"`
+	Id                 string  `param:"id" json:"id"`
 	AvatarUrl          *string `json:"avatarUrl,omitempty"`
 	DisplayName        *string `json:"displayName,omitempty"`
 	Email              *string `json:"email,omitempty"`
@@ -70,13 +72,19 @@ var deleteUserCommandType = cqrs.RequestType{
 }
 
 type DeleteUserCommand struct {
-	Id        string `json:"id"`
-	DeletedBy string `json:"deleted_by"`
+	Id        string `json:"id" param:"id"`
+	DeletedBy string `json:"deletedBy"`
 }
 
 func (DeleteUserCommand) Type() cqrs.RequestType {
 	return deleteUserCommandType
 }
+
+type DeleteUserResultData struct {
+	DeletedAt time.Time `json:"deletedAt"`
+}
+
+type DeleteUserResult model.OpResult[DeleteUserResultData]
 
 var getUserByIdQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -85,12 +93,14 @@ var getUserByIdQueryType = cqrs.RequestType{
 }
 
 type GetUserByIdQuery struct {
-	Id string `json:"id"`
+	Id string `param:"id" json:"id"`
 }
 
 func (GetUserByIdQuery) Type() cqrs.RequestType {
 	return getUserByIdQueryType
 }
+
+type GetUserByIdResult model.OpResult[*domain.User]
 
 var getUserByUsernameQueryType = cqrs.RequestType{
 	Module:    "identity",
