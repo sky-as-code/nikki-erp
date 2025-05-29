@@ -65,20 +65,6 @@ func goChannelPubSub(logger logging.LoggerService) *gochannel.GoChannel {
 	return gochannel.NewGoChannel(gochannel.Config{}, watermill.NewSlogLogger(slogger))
 }
 
-// SendRequest is a function wrapping CqrsBus.SendRequest() but with generic type.
-// func SendRequest[TReq Request, TResult any](ctx context.Context, bus CqrsBus, request TReq) (*Reply[TResult], error) {
-// 	replyChan, err := bus.Request(ctx, request)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	reply := <-replyChan
-// 	typedReply := &Reply[TResult]{
-// 		Result: reply.Result.(TResult),
-// 		Error:  reply.Error,
-// 	}
-// 	return typedReply, nil
-// }
-
 type WatermillCqrsBus struct {
 	logger        logging.LoggerService
 	marshaler     cqrs.CommandEventMarshaler
