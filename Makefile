@@ -128,7 +128,7 @@ infra-up:
 	docker compose -f "${cwd}/scripts/docker/docker-compose.local.yml" up -d
 
 infra-down:
-	docker compose -f "${cwd}/scripts/docker/docker-compose.local.yml" down
+	docker compose -f "${cwd}/scripts/docker/docker-compose.local.yml" down -v
 
 nikki:
 	@[ -f cmd/config/local.env ] || cp cmd/config/local.env.sample cmd/config/local.env

@@ -9,13 +9,13 @@ import (
 	"plugin"
 
 	"github.com/sky-as-code/nikki-erp/common"
-	"github.com/sky-as-code/nikki-erp/common/logging"
-	"github.com/sky-as-code/nikki-erp/common/util/env"
-	. "github.com/sky-as-code/nikki-erp/common/util/fault"
+	"github.com/sky-as-code/nikki-erp/common/env"
+	. "github.com/sky-as-code/nikki-erp/common/fault"
 	mods "github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
-func LoadModules(logger logging.LoggerService) ([]mods.NikkiModule, AppError) {
+func LoadModules(logger logging.LoggerService) ([]mods.NikkiModule, error) {
 	// Common module is always loaded
 	allMods := []mods.NikkiModule{
 		common.ModuleSingleton,
@@ -29,7 +29,7 @@ func LoadModules(logger logging.LoggerService) ([]mods.NikkiModule, AppError) {
 }
 
 // getDynamicModules loads .so files from modules directory
-func getDynamicModules(logger logging.LoggerService) ([]mods.NikkiModule, AppError) {
+func getDynamicModules(logger logging.LoggerService) ([]mods.NikkiModule, error) {
 	entries, err := os.ReadDir(getPluginsDir())
 	if err != nil {
 		return handleReadDirError(err, logger)
@@ -38,7 +38,7 @@ func getDynamicModules(logger logging.LoggerService) ([]mods.NikkiModule, AppErr
 	return loadGoPlugins(entries, logger)
 }
 
-func handleReadDirError(err error, logger logging.LoggerService) ([]mods.NikkiModule, AppError) {
+func handleReadDirError(err error, logger logging.LoggerService) ([]mods.NikkiModule, error) {
 	if os.IsNotExist(err) {
 		logger.Warn("Plugins directory not found, skipping plugin loading", err)
 		return []mods.NikkiModule{}, nil
@@ -46,7 +46,7 @@ func handleReadDirError(err error, logger logging.LoggerService) ([]mods.NikkiMo
 	return nil, NewTechnicalError("failed to read plugins directory: %v", err)
 }
 
-func loadGoPlugins(entries []os.DirEntry, logger logging.LoggerService) ([]mods.NikkiModule, AppError) {
+func loadGoPlugins(entries []os.DirEntry, logger logging.LoggerService) ([]mods.NikkiModule, error) {
 	modules := []mods.NikkiModule{}
 	for _, entry := range entries {
 		if isValidPlugin(entry) {

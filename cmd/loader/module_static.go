@@ -4,20 +4,19 @@
 package loader
 
 import (
-	"github.com/sky-as-code/nikki-erp/common"
-	. "github.com/sky-as-code/nikki-erp/common/util/fault"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core"
+	"github.com/sky-as-code/nikki-erp/modules/identity"
 )
 
-func LoadModules() ([]modules.NikkiModule, AppError) {
+func LoadModules() ([]modules.NikkiModule, error) {
 	return getStaticModules(), nil
 }
 
 func getStaticModules() []modules.NikkiModule {
 	modules := []modules.NikkiModule{
-		common.ModuleSingleton,
 		core.ModuleSingleton,
+		identity.ModuleSingleton,
 	}
 
 	return modules

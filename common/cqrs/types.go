@@ -1,80 +1,48 @@
 package cqrs
 
 import (
-	"context"
-
-	"github.com/ThreeDotsLabs/watermill/message"
+	"github.com/ThreeDotsLabs/watermill/components/cqrs"
+	"go.bryk.io/pkg/ulid"
 )
 
-type CqrsBus interface {
-	SubscribeRequests(ctx context.Context, handlers ...RequestHandler) error
-	RequestNoReply(ctx context.Context, request Request) error
-	Request(ctx context.Context, request Request, result any) error
-}
+type QueryEventMarshaler = cqrs.CommandEventMarshaler
 
-// Deprecated: Not used
-// type Namer interface {
-// 	Name() string
-// }
-
-type RequestType struct {
-	Module    string `json:"module"`
-	Submodule string `json:"submodule"`
-	Action    string `json:"action"`
-}
-
-func (this RequestType) String() string {
-	return this.Module + "_" + this.Submodule + "." + this.Action
-}
-
-type Request interface {
-	Type() RequestType
-}
-
-type RequestPacket[TReq Request] struct {
+type QueryPacket struct {
 	correlationId string
-	requestTopic  string
-	replyTopic    string
-	message       *message.Message
-	request       TReq
+	query         any
 }
 
-func (this RequestPacket[TReq]) CorrelationId() string {
+func NewQueryPacket(query any) QueryPacket {
+	corId, err := ulid.New()
+	if err != nil {
+		panic(err)
+	}
+	return QueryPacket{
+		correlationId: corId.String(),
+		query:         query,
+	}
+}
+
+func (this QueryPacket) CorrelationId() string {
 	return this.correlationId
 }
 
-func (this RequestPacket[TReq]) Request() *TReq {
-	return &this.request
+func (this QueryPacket) GetQuery() any {
+	return this.query
 }
 
-type Reply[TResult any] struct {
-	Result TResult `json:"result"`
-	Error  *string `json:"error"`
-}
+type Reply struct {
+	// HandlerResult contains the handler result.
+	// It's preset only when NewCommandHandlerWithResult is used. If NewCommandHandler is used, HandlerResult is empty.
+	//
+	// Result is sent even if the handler returns an error.
+	Result any
 
-type ReplyPacket[TResult any] struct {
-	correlationId string
-	message       *message.Message
-	reply         Reply[TResult]
-}
-
-func (this ReplyPacket[TResult]) CorrelationId() string {
-	return this.correlationId
-}
-
-func (this ReplyPacket[TResult]) Reply() *Reply[TResult] {
-	return &this.reply
-}
-
-type RequestHandler interface {
-	Handle(ctx context.Context, packet *RequestPacket[Request]) (*Reply[any], error)
-
-	// Type returns the type of request handled by this handler
-	// Type() RequestType
-
-	// NewRequest returns a new instance of the request type handled by this handler
-	NewRequest() any
-
-	// NewReply returns a new instance of the reply type returned by this handler
-	NewReply() Reply[any]
+	// Error contains the error returned by the command handler or the Backend when handling notification fails.
+	// Handling the notification can fail, for example, when unmarshaling the message or if there's a timeout.
+	// If listening for a reply times out or the context is canceled, the Error is ReplyTimeoutError.
+	//
+	// If an error from the handler is returned, CommandHandlerError is returned.
+	// If processing was successful, Error is nil.
+	Error error
 }
