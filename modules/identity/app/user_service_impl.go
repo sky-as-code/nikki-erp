@@ -86,13 +86,8 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 	}()
 
 	user := cmd.ToUser()
-	user.Etag = model.NewEtag()
 
 	valErr := user.Validate(true)
-
-	if user.Email != nil {
-		this.assertUserUnique(ctx, user, &valErr)
-	}
 
 	if valErr.Count() > 0 {
 		return &it.UpdateUserResult{
@@ -100,6 +95,33 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 		}, nil
 	}
 
+	userFromDb, err := this.userRepo.FindById(ctx, model.Id(user.Id.String()))
+	ft.PanicOnErr(err)
+
+	if userFromDb == nil {
+		vErrors := ft.NewValidationErrors()
+		vErrors.Append(ft.ValidationErrorItem{
+			Field: "id",
+			Error: "user not found",
+		})
+
+		return &it.UpdateUserResult{
+			ClientError: ft.WrapValidationErrors(vErrors),
+		}, nil
+
+	} else if userFromDb.Etag != user.Etag {
+		vErrors := ft.NewValidationErrors()
+		vErrors.Append(ft.ValidationErrorItem{
+			Field: "etag",
+			Error: "user has been modified by another process",
+		})
+
+		return &it.UpdateUserResult{
+			ClientError: ft.WrapValidationErrors(vErrors),
+		}, nil
+	}
+
+	user.Etag = model.NewEtag()
 	user.PasswordHash = this.encrypt(user.PasswordRaw)
 	user, err = this.userRepo.Update(ctx, *user)
 	ft.PanicOnErr(err)
@@ -160,16 +182,15 @@ func (thisSvc *UserServiceImpl) GetUserByID(ctx context.Context, id string) (res
 			Field: "id",
 			Error: "user ID cannot be empty",
 		})
-	}
-
-	if vErrors.Count() > 0 {
 		return &it.GetUserByIdResult{
 			ClientError: ft.WrapValidationErrors(vErrors),
 		}, nil
 	}
 
 	user, err := thisSvc.userRepo.FindById(ctx, model.Id(id))
-	if user == nil && err == nil {
+	ft.PanicOnErr(err)
+
+	if user == nil {
 		vErrors.Append(ft.ValidationErrorItem{
 			Field: "id",
 			Error: "user not found",
@@ -178,8 +199,6 @@ func (thisSvc *UserServiceImpl) GetUserByID(ctx context.Context, id string) (res
 			ClientError: ft.WrapValidationErrors(vErrors),
 		}, nil
 	}
-
-	ft.PanicOnErr(err)
 
 	return &it.GetUserByIdResult{
 		Data: user,

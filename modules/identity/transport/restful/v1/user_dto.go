@@ -45,11 +45,11 @@ type GetUserByIdRequest = it.GetUserByIdQuery
 
 type GetUserByIdResponse struct {
 	Id          string `json:"id,omitempty"`
+	AvatarUrl   string `json:"avatarUrl,omitempty"`
 	CreatedAt   int64  `json:"createdAt,omitempty"`
-	Etag        string `json:"etag,omitempty"`
 	DisplayName string `json:"displayName,omitempty"`
 	Email       string `json:"email,omitempty"`
-	AvatarUrl   string `json:"avatarUrl,omitempty"`
+	Etag        string `json:"etag,omitempty"`
 	Status      string `json:"status,omitempty"`
 }
 
