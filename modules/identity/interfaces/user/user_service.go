@@ -8,9 +8,9 @@ import (
 
 type UserService interface {
 	CreateUser(ctx context.Context, cmd CreateUserCommand) (*CreateUserResult, error)
-	DeleteUser(ctx context.Context, id string, deletedBy string) error
+	DeleteUser(ctx context.Context, id string, deletedBy string) (*DeleteUserResult, error)
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
-	GetUserByID(ctx context.Context, id string) (*domain.User, error)
+	GetUserByID(ctx context.Context, id string) (*GetUserByIdResult, error)
 	GetUserByUsername(ctx context.Context, username string) (*domain.User, error)
 	UpdateUser(ctx context.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)
 }

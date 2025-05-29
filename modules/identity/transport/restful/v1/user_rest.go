@@ -78,3 +78,50 @@ func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
 
 	return httpserver.JsonOk(echoCtx, response)
 }
+
+func (this UserRest) GetUserById(echoCtx echo.Context) (err error) {
+	request := &GetUserByIdRequest{}
+	if err = echoCtx.Bind(request); err != nil {
+		return err
+	}
+
+	result := it.GetUserByIdResult{}
+	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+
+	if err != nil {
+		return err
+	}
+
+	if result.ClientError != nil {
+		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
+	}
+
+	response := GetUserByIdResponse{}
+	response.FromUser(*result.Data)
+
+	return httpserver.JsonOk(echoCtx, response)
+}
+
+func (this UserRest) DeleteUser(echoCtx echo.Context) (err error) {
+	request := &DeleteUserRequest{}
+	if err = echoCtx.Bind(request); err != nil {
+		return err
+	}
+
+	result := it.DeleteUserResult{}
+	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+
+	if err != nil {
+		return err
+	}
+
+	if result.ClientError != nil {
+		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
+	}
+
+	response := DeleteUserResponse{
+		DeletedAt: result.Data.DeletedAt.Unix(),
+	}
+
+	return httpserver.JsonOk(echoCtx, response)
+}

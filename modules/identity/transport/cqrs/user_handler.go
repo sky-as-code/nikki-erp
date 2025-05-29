@@ -43,21 +43,26 @@ func (this *UserHandler) Update(ctx context.Context, packet *cqrs.RequestPacket[
 	return reply, nil
 }
 
-func (this *UserHandler) Delete(ctx context.Context, packet *cqrs.RequestPacket[it.DeleteUserCommand]) error {
-	return nil
+func (this *UserHandler) Delete(ctx context.Context, packet *cqrs.RequestPacket[it.DeleteUserCommand]) (*cqrs.Reply[it.DeleteUserResult], error) {
+	cmd := packet.Request()
+	result, err := this.UserSvc.DeleteUser(ctx, cmd.Id, cmd.DeletedBy)
+	ft.PanicOnErr(err)
 
-	// event := &UserDeletedEvent{
-	// 	ID:        cmd.Id,
-	// 	DeletedBy: cmd.DeletedBy,
-	// 	EventID:   NewEventID(),
-	// }
-
-	// return this.eventBus.Publish(ctx, event)
+	return &cqrs.Reply[it.DeleteUserResult]{
+		Result: *result,
+	}, nil
 }
 
-// func (this *UserCommandHandler) HandleGetUserByID(ctx context.Context, query *GetUserByIdQuery) (*User, error) {
-// 	return this.repo.FindByID(ctx, query.Id)
-// }
+func (this *UserHandler) GetUserByID(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserByIdQuery]) (*cqrs.Reply[it.GetUserByIdResult], error) {
+	cmd := packet.Request()
+	result, err := this.UserSvc.GetUserByID(ctx, cmd.Id)
+	ft.PanicOnErr(err)
+
+	reply := &cqrs.Reply[it.GetUserByIdResult]{
+		Result: *result,
+	}
+	return reply, nil
+}
 
 // func (this *UserCommandHandler) HandleGetUserByUsername(ctx context.Context, query *GetUserByUsernameQuery) (*User, error) {
 // 	return this.repo.FindByUsername(ctx, query.Username)

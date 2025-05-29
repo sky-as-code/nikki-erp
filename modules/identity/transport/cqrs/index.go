@@ -23,6 +23,8 @@ func initUserHandlers() error {
 		return cqrsBus.SubscribeRequests(
 			ctx,
 			cqrs.NewHandler(handler.Create),
+			cqrs.NewHandler(handler.Delete),
+			cqrs.NewHandler(handler.GetUserByID),
 			cqrs.NewHandler(handler.Update),
 		)
 	})
