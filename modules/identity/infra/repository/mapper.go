@@ -18,7 +18,7 @@ func entToGroup(entGroup *ent.Group) *domain.GroupWithOrg {
 			AuditableBase: model.AuditableBase{
 				CreatedAt: &entGroup.CreatedAt,
 				CreatedBy: model.WrapId(entGroup.CreatedBy),
-				UpdatedAt: &entGroup.UpdatedAt,
+				UpdatedAt: entGroup.UpdatedAt,
 				UpdatedBy: model.WrapNillableId(entGroup.UpdatedBy),
 			},
 
@@ -35,12 +35,14 @@ func entToGroup(entGroup *ent.Group) *domain.GroupWithOrg {
 	return group
 }
 
-func entToGroups(entGroups []*ent.Group) []*domain.Group {
+func entToGroups(entGroups []ent.Group) []domain.Group {
 	if entGroups == nil {
 		return nil
 	}
-	groups := funk.Map(entGroups, entToGroup)
-	return groups.([]*domain.Group)
+	groups := funk.Map(entGroups, func(entGroup *ent.Group) domain.Group {
+		return entToGroup(entGroup)
+	})
+	return groups.([]domain.Group)
 }
 
 func entToOrganization(entOrg *ent.Organization) *domain.Organization {
@@ -51,7 +53,7 @@ func entToOrganization(entOrg *ent.Organization) *domain.Organization {
 		AuditableBase: model.AuditableBase{
 			CreatedAt: &entOrg.CreatedAt,
 			CreatedBy: model.WrapId(entOrg.CreatedBy),
-			UpdatedAt: &entOrg.UpdatedAt,
+			UpdatedAt: entOrg.UpdatedAt,
 			UpdatedBy: model.WrapNillableId(entOrg.UpdatedBy),
 		},
 		DisplayName: &entOrg.DisplayName,
@@ -59,12 +61,14 @@ func entToOrganization(entOrg *ent.Organization) *domain.Organization {
 	}
 }
 
-func entToOrganizations(entOrgs []*ent.Organization) []*domain.Organization {
+func entToOrganizations(entOrgs []*ent.Organization) []domain.Organization {
 	if entOrgs == nil {
 		return nil
 	}
-	orgs := funk.Map(entOrgs, entToOrganization)
-	return orgs.([]*domain.Organization)
+	orgs := funk.Map(entOrgs, func(entOrg ent.Organization) domain.Organization {
+		return *entToOrganization(&entOrg)
+	})
+	return orgs.([]domain.Organization)
 }
 
 func entToUser(entUser *ent.User) *domain.User {
@@ -76,7 +80,7 @@ func entToUser(entUser *ent.User) *domain.User {
 		AuditableBase: model.AuditableBase{
 			CreatedAt: &entUser.CreatedAt,
 			CreatedBy: model.WrapId(entUser.CreatedBy),
-			UpdatedAt: &entUser.UpdatedAt,
+			UpdatedAt: entUser.UpdatedAt,
 			UpdatedBy: model.WrapNillableId(entUser.UpdatedBy),
 		},
 		AvatarUrl:           entUser.AvatarURL,
@@ -95,10 +99,12 @@ func entToUser(entUser *ent.User) *domain.User {
 	}
 }
 
-func entToUsers(entUsers []*ent.User) []*domain.User {
+func entToUsers(entUsers []*ent.User) []domain.User {
 	if entUsers == nil {
 		return nil
 	}
-	users := funk.Map(entUsers, entToUser)
-	return users.([]*domain.User)
+	users := funk.Map(entUsers, func(entUser *ent.User) domain.User {
+		return *entToUser(entUser)
+	})
+	return users.([]domain.User)
 }

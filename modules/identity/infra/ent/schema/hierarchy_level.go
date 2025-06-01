@@ -17,16 +17,15 @@ type HierarchyLevelMixin struct {
 func (HierarchyLevelMixin) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").
-			NotEmpty().
 			Immutable().
 			StorageKey("id"),
 
 		field.String("org_id").
-			NotEmpty().
 			Immutable(),
 
+		field.String("etag"),
+
 		field.String("name").
-			NotEmpty().
 			Unique(),
 
 		field.String("parent_id").
@@ -45,7 +44,7 @@ type HierarchyLevel struct {
 
 func (HierarchyLevel) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entsql.Annotation{Table: "hierarchy_levels"},
+		entsql.Annotation{Table: "ident_hierarchy_levels"},
 	}
 }
 

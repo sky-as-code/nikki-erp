@@ -24,7 +24,7 @@ func (this *Organization) SetDefaults() error {
 	if err != nil {
 		return err
 	}
-	util.SetDefaultValue(this.Status, OrgDefaultStatus)
+	util.SetDefaultValue(this.Status, OrgStatusInactive)
 	this.Etag = model.NewEtag()
 	return nil
 }
@@ -46,8 +46,6 @@ func (this *Organization) Validate(forEdit bool) error {
 }
 
 type OrgStatus ent.Status
-
-const OrgDefaultStatus = OrgStatus(ent.DefaultStatus)
 
 const (
 	OrgStatusActive   = OrgStatus(ent.StatusActive)

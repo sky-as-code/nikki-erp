@@ -15,11 +15,9 @@ type UserGroupMixin struct {
 
 func (UserGroupMixin) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("user_id").
-			NotEmpty(),
+		field.String("user_id").Immutable(),
 
-		field.String("group_id").
-			NotEmpty(),
+		field.String("group_id").Immutable(),
 	}
 }
 
@@ -39,15 +37,17 @@ func (UserGroup) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("user", User.Type).
 			Field("user_id").
-			Unique().
+			Immutable().
 			Required().
+			Unique().
 			Annotations(entsql.Annotation{
 				OnDelete: entsql.Cascade,
 			}),
 		edge.To("group", Group.Type).
 			Field("group_id").
-			Unique().
+			Immutable().
 			Required().
+			Unique().
 			Annotations(entsql.Annotation{
 				OnDelete: entsql.Cascade,
 			}),
@@ -57,7 +57,7 @@ func (UserGroup) Edges() []ent.Edge {
 func (UserGroup) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		field.ID("user_id", "group_id"),
-		entsql.Annotation{Table: "user_groups"},
+		entsql.Annotation{Table: "ident_user_group"},
 	}
 }
 

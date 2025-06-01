@@ -31,7 +31,7 @@ type Organization struct {
 	// URL-safe organization name
 	Slug string `json:"slug,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// UpdatedBy holds the value of the "updated_by" field.
 	UpdatedBy *string `json:"updated_by,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -152,7 +152,8 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				o.UpdatedAt = value.Time
+				o.UpdatedAt = new(time.Time)
+				*o.UpdatedAt = value.Time
 			}
 		case organization.FieldUpdatedBy:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -230,8 +231,10 @@ func (o *Organization) String() string {
 	builder.WriteString("slug=")
 	builder.WriteString(o.Slug)
 	builder.WriteString(", ")
-	builder.WriteString("updated_at=")
-	builder.WriteString(o.UpdatedAt.Format(time.ANSIC))
+	if v := o.UpdatedAt; v != nil {
+		builder.WriteString("updated_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	if v := o.UpdatedBy; v != nil {
 		builder.WriteString("updated_by=")

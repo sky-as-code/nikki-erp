@@ -18,6 +18,8 @@ type HierarchyLevel struct {
 	ID string `json:"id,omitempty"`
 	// OrgID holds the value of the "org_id" field.
 	OrgID string `json:"org_id,omitempty"`
+	// Etag holds the value of the "etag" field.
+	Etag string `json:"etag,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// ParentID holds the value of the "parent_id" field.
@@ -64,7 +66,7 @@ func (*HierarchyLevel) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case hierarchylevel.FieldID, hierarchylevel.FieldOrgID, hierarchylevel.FieldName, hierarchylevel.FieldParentID:
+		case hierarchylevel.FieldID, hierarchylevel.FieldOrgID, hierarchylevel.FieldEtag, hierarchylevel.FieldName, hierarchylevel.FieldParentID:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -92,6 +94,12 @@ func (hl *HierarchyLevel) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field org_id", values[i])
 			} else if value.Valid {
 				hl.OrgID = value.String
+			}
+		case hierarchylevel.FieldEtag:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field etag", values[i])
+			} else if value.Valid {
+				hl.Etag = value.String
 			}
 		case hierarchylevel.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -154,6 +162,9 @@ func (hl *HierarchyLevel) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", hl.ID))
 	builder.WriteString("org_id=")
 	builder.WriteString(hl.OrgID)
+	builder.WriteString(", ")
+	builder.WriteString("etag=")
+	builder.WriteString(hl.Etag)
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(hl.Name)

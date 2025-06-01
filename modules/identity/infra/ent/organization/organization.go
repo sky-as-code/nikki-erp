@@ -38,24 +38,17 @@ const (
 	// EdgeUserOrgs holds the string denoting the user_orgs edge name in mutations.
 	EdgeUserOrgs = "user_orgs"
 	// Table holds the table name of the organization in the database.
-	Table = "organizations"
+	Table = "ident_organizations"
 	// UsersTable is the table that holds the users relation/edge. The primary key declared below.
-	UsersTable = "user_orgs"
+	UsersTable = "ident_user_org"
 	// UsersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
-	UsersInverseTable = "users"
-	// GroupsTable is the table that holds the groups relation/edge.
-	GroupsTable = "groups"
-	// GroupsInverseTable is the table name for the Group entity.
-	// It exists in this package in order to avoid circular dependency with the "group" package.
-	GroupsInverseTable = "groups"
-	// GroupsColumn is the table column denoting the groups relation/edge.
-	GroupsColumn = "org_id"
+	UsersInverseTable = "ident_users"
 	// UserOrgsTable is the table that holds the user_orgs relation/edge.
-	UserOrgsTable = "user_orgs"
+	UserOrgsTable = "ident_user_org"
 	// UserOrgsInverseTable is the table name for the UserOrg entity.
 	// It exists in this package in order to avoid circular dependency with the "userorg" package.
-	UserOrgsInverseTable = "user_orgs"
+	UserOrgsInverseTable = "ident_user_org"
 	// UserOrgsColumn is the table column denoting the user_orgs relation/edge.
 	UserOrgsColumn = "org_id"
 )
@@ -92,27 +85,12 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
-	// CreatedByValidator is a validator for the "created_by" field. It is called by the builders before save.
-	CreatedByValidator func(string) error
-	// DisplayNameValidator is a validator for the "display_name" field. It is called by the builders before save.
-	DisplayNameValidator func(string) error
-	// EtagValidator is a validator for the "etag" field. It is called by the builders before save.
-	EtagValidator func(string) error
-	// SlugValidator is a validator for the "slug" field. It is called by the builders before save.
-	SlugValidator func(string) error
-	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
-	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
-	// IDValidator is a validator for the "id" field. It is called by the builders before save.
-	IDValidator func(string) error
 )
 
 // Status defines the type for the "status" enum field.
 type Status string
-
-// StatusInactive is the default value of the Status enum.
-const DefaultStatus = StatusInactive
 
 // Status values.
 const (

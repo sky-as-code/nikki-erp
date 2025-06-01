@@ -27,6 +27,20 @@ func (hlu *HierarchyLevelUpdate) Where(ps ...predicate.HierarchyLevel) *Hierarch
 	return hlu
 }
 
+// SetEtag sets the "etag" field.
+func (hlu *HierarchyLevelUpdate) SetEtag(s string) *HierarchyLevelUpdate {
+	hlu.mutation.SetEtag(s)
+	return hlu
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (hlu *HierarchyLevelUpdate) SetNillableEtag(s *string) *HierarchyLevelUpdate {
+	if s != nil {
+		hlu.SetEtag(*s)
+	}
+	return hlu
+}
+
 // SetName sets the "name" field.
 func (hlu *HierarchyLevelUpdate) SetName(s string) *HierarchyLevelUpdate {
 	hlu.mutation.SetName(s)
@@ -140,20 +154,7 @@ func (hlu *HierarchyLevelUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (hlu *HierarchyLevelUpdate) check() error {
-	if v, ok := hlu.mutation.Name(); ok {
-		if err := hierarchylevel.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "HierarchyLevel.name": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := hlu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(hierarchylevel.Table, hierarchylevel.Columns, sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString))
 	if ps := hlu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -161,6 +162,9 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := hlu.mutation.Etag(); ok {
+		_spec.SetField(hierarchylevel.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := hlu.mutation.Name(); ok {
 		_spec.SetField(hierarchylevel.FieldName, field.TypeString, value)
@@ -257,6 +261,20 @@ type HierarchyLevelUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *HierarchyLevelMutation
+}
+
+// SetEtag sets the "etag" field.
+func (hluo *HierarchyLevelUpdateOne) SetEtag(s string) *HierarchyLevelUpdateOne {
+	hluo.mutation.SetEtag(s)
+	return hluo
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (hluo *HierarchyLevelUpdateOne) SetNillableEtag(s *string) *HierarchyLevelUpdateOne {
+	if s != nil {
+		hluo.SetEtag(*s)
+	}
+	return hluo
 }
 
 // SetName sets the "name" field.
@@ -385,20 +403,7 @@ func (hluo *HierarchyLevelUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (hluo *HierarchyLevelUpdateOne) check() error {
-	if v, ok := hluo.mutation.Name(); ok {
-		if err := hierarchylevel.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "HierarchyLevel.name": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *HierarchyLevel, err error) {
-	if err := hluo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(hierarchylevel.Table, hierarchylevel.Columns, sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString))
 	id, ok := hluo.mutation.ID()
 	if !ok {
@@ -423,6 +428,9 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := hluo.mutation.Etag(); ok {
+		_spec.SetField(hierarchylevel.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := hluo.mutation.Name(); ok {
 		_spec.SetField(hierarchylevel.FieldName, field.TypeString, value)

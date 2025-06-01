@@ -31,6 +31,8 @@ type User struct {
 	Etag string `json:"etag,omitempty"`
 	// Count of consecutive failed login attempts
 	FailedLoginAttempts int `json:"failed_login_attempts,omitempty"`
+	// Whether the user is an owner with root privileges in this deployment
+	IsOwner bool `json:"is_owner,omitempty"`
 	// LastLoginAt holds the value of the "last_login_at" field.
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
 	// Account locked until this timestamp
@@ -44,7 +46,7 @@ type User struct {
 	// Status holds the value of the "status" field.
 	Status user.Status `json:"status,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// UpdatedBy holds the value of the "updated_by" field.
 	UpdatedBy *string `json:"updated_by,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -109,7 +111,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldMustChangePassword:
+		case user.FieldIsOwner, user.FieldMustChangePassword:
 			values[i] = new(sql.NullBool)
 		case user.FieldFailedLoginAttempts:
 			values[i] = new(sql.NullInt64)
@@ -181,6 +183,12 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.FailedLoginAttempts = int(value.Int64)
 			}
+		case user.FieldIsOwner:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field is_owner", values[i])
+			} else if value.Valid {
+				u.IsOwner = value.Bool
+			}
 		case user.FieldLastLoginAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field last_login_at", values[i])
@@ -223,7 +231,8 @@ func (u *User) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				u.UpdatedAt = value.Time
+				u.UpdatedAt = new(time.Time)
+				*u.UpdatedAt = value.Time
 			}
 		case user.FieldUpdatedBy:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -311,6 +320,9 @@ func (u *User) String() string {
 	builder.WriteString("failed_login_attempts=")
 	builder.WriteString(fmt.Sprintf("%v", u.FailedLoginAttempts))
 	builder.WriteString(", ")
+	builder.WriteString("is_owner=")
+	builder.WriteString(fmt.Sprintf("%v", u.IsOwner))
+	builder.WriteString(", ")
 	if v := u.LastLoginAt; v != nil {
 		builder.WriteString("last_login_at=")
 		builder.WriteString(v.Format(time.ANSIC))
@@ -332,8 +344,10 @@ func (u *User) String() string {
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", u.Status))
 	builder.WriteString(", ")
-	builder.WriteString("updated_at=")
-	builder.WriteString(u.UpdatedAt.Format(time.ANSIC))
+	if v := u.UpdatedAt; v != nil {
+		builder.WriteString("updated_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	if v := u.UpdatedBy; v != nil {
 		builder.WriteString("updated_by=")

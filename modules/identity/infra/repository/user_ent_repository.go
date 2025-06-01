@@ -76,7 +76,7 @@ func (this *UserEntRepository) FindByEmail(ctx context.Context, email string) (*
 
 func (this *UserEntRepository) Search(
 	ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions,
-) (*crud.PagedResult[*domain.User], error) {
+) (*crud.PagedResult[domain.User], error) {
 	return Search(
 		ctx,
 		criteria,

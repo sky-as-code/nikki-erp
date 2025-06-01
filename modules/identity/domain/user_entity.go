@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	util "github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
-	ent "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
+	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
 type User struct {
@@ -29,8 +29,8 @@ type User struct {
 	PasswordHash        *string     `json:"passwordHash,omitempty"`
 	Status              *UserStatus `json:"status,omitempty"`
 
-	Groups []*Group        `json:"groups,omitempty"`
-	Orgs   []*Organization `json:"orgs,omitempty"`
+	Groups []Group        `json:"groups,omitempty"`
+	Orgs   []Organization `json:"orgs,omitempty"`
 }
 
 func (this *User) SetDefaults() error {
@@ -39,7 +39,7 @@ func (this *User) SetDefaults() error {
 		return err
 	}
 
-	util.SetDefaultValue(this.Status, UserDefaultStatus)
+	util.SetDefaultValue(this.Status, UserStatusInactive)
 
 	now := time.Now()
 
@@ -84,14 +84,12 @@ func (this *User) Validate(forEdit bool) ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(this, rules...)
 }
 
-type UserStatus ent.Status
-
-const UserDefaultStatus = UserStatus(ent.DefaultStatus)
+type UserStatus entUser.Status
 
 const (
-	UserStatusActive   = UserStatus(ent.StatusActive)
-	UserStatusInactive = UserStatus(ent.StatusInactive)
-	UserStatusLocked   = UserStatus(ent.StatusLocked)
+	UserStatusActive   = UserStatus(entUser.StatusActive)
+	UserStatusInactive = UserStatus(entUser.StatusInactive)
+	UserStatusLocked   = UserStatus(entUser.StatusLocked)
 )
 
 func (this UserStatus) Validate() error {
@@ -112,7 +110,7 @@ func WrapUserStatus(s string) *UserStatus {
 	return &st
 }
 
-func WrapUserStatusEnt(s ent.Status) *UserStatus {
+func WrapUserStatusEnt(s entUser.Status) *UserStatus {
 	st := UserStatus(s)
 	return &st
 }

@@ -56,6 +56,26 @@ func (gc *GroupCreate) SetNillableDescription(s *string) *GroupCreate {
 	return gc
 }
 
+// SetEmail sets the "email" field.
+func (gc *GroupCreate) SetEmail(s string) *GroupCreate {
+	gc.mutation.SetEmail(s)
+	return gc
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (gc *GroupCreate) SetNillableEmail(s *string) *GroupCreate {
+	if s != nil {
+		gc.SetEmail(*s)
+	}
+	return gc
+}
+
+// SetEtag sets the "etag" field.
+func (gc *GroupCreate) SetEtag(s string) *GroupCreate {
+	gc.mutation.SetEtag(s)
+	return gc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (gc *GroupCreate) SetCreatedAt(t time.Time) *GroupCreate {
 	gc.mutation.SetCreatedAt(t)
@@ -189,10 +209,6 @@ func (gc *GroupCreate) defaults() {
 		v := group.DefaultCreatedAt()
 		gc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := gc.mutation.UpdatedAt(); !ok {
-		v := group.DefaultUpdatedAt()
-		gc.mutation.SetUpdatedAt(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -200,27 +216,14 @@ func (gc *GroupCreate) check() error {
 	if _, ok := gc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Group.name"`)}
 	}
-	if v, ok := gc.mutation.Name(); ok {
-		if err := group.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
-		}
+	if _, ok := gc.mutation.Etag(); !ok {
+		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Group.etag"`)}
 	}
 	if _, ok := gc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Group.created_at"`)}
 	}
 	if _, ok := gc.mutation.CreatedBy(); !ok {
 		return &ValidationError{Name: "created_by", err: errors.New(`ent: missing required field "Group.created_by"`)}
-	}
-	if _, ok := gc.mutation.Etag(); !ok {
-		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Group.etag"`)}
-	}
-	if _, ok := gc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Group.updated_at"`)}
-	}
-	if v, ok := gc.mutation.ID(); ok {
-		if err := group.IDValidator(v); err != nil {
-			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Group.id": %w`, err)}
-		}
 	}
 	return nil
 }
@@ -265,6 +268,14 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_spec.SetField(group.FieldDescription, field.TypeString, value)
 		_node.Description = &value
 	}
+	if value, ok := gc.mutation.Email(); ok {
+		_spec.SetField(group.FieldEmail, field.TypeString, value)
+		_node.Email = &value
+	}
+	if value, ok := gc.mutation.Etag(); ok {
+		_spec.SetField(group.FieldEtag, field.TypeString, value)
+		_node.Etag = value
+	}
 	if value, ok := gc.mutation.CreatedAt(); ok {
 		_spec.SetField(group.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
@@ -279,7 +290,7 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := gc.mutation.UpdatedAt(); ok {
 		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
+		_node.UpdatedAt = &value
 	}
 	if value, ok := gc.mutation.UpdatedBy(); ok {
 		_spec.SetField(group.FieldUpdatedBy, field.TypeString, value)

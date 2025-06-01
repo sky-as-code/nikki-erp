@@ -1,0 +1,75 @@
+package schema
+
+// import (
+// 	"entgo.io/ent"
+// 	"entgo.io/ent/dialect/entsql"
+// 	"entgo.io/ent/schema"
+// 	"entgo.io/ent/schema/edge"
+// 	"entgo.io/ent/schema/field"
+// 	"entgo.io/ent/schema/mixin"
+// )
+
+// type EntitlementMixin struct {
+// 	mixin.Schema
+// }
+
+// func (EntitlementMixin) Fields() []ent.Field {
+// 	return []ent.Field{
+// 		field.String("id").
+// 			Immutable().
+// 			StorageKey("id"),
+
+// 		field.Enum("subject_type").
+// 			Values("nikki_user", "custom").
+// 			Immutable(),
+
+// 		field.String("subject_ref").
+// 			Immutable(),
+
+// 		field.String("scope_ref").
+// 			Immutable(),
+
+// 		field.String("action_id").
+// 			Immutable(),
+
+// 		field.String("resource_id").
+// 			Immutable(),
+// 	}
+// }
+
+// type Entitlement struct {
+// 	ent.Schema
+// }
+
+// func (Entitlement) Annotations() []schema.Annotation {
+// 	return []schema.Annotation{
+// 		entsql.Annotation{Table: "authz_entitlements"},
+// 	}
+// }
+
+// func (Entitlement) Edges() []ent.Edge {
+// 	return []ent.Edge{
+// 		edge.From("permission_histories", PermissionHistory.Type).
+// 			Ref("entitlement"),
+// 		edge.From("roles", Role.Type).
+// 			Ref("entitlements").
+// 			Through("role_entitlement", RoleEntitlement.Type),
+
+// 		edge.To("action", Action.Type).
+// 			Field("action_id").
+// 			Immutable().
+// 			Required().
+// 			Unique(),
+// 		edge.To("resource", Resource.Type).
+// 			Field("resource_id").
+// 			Immutable().
+// 			Required().
+// 			Unique(),
+// 	}
+// }
+
+// func (Entitlement) Mixin() []ent.Mixin {
+// 	return []ent.Mixin{
+// 		EntitlementMixin{},
+// 	}
+// }

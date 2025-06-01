@@ -92,6 +92,12 @@ func (ou *OrganizationUpdate) SetUpdatedAt(t time.Time) *OrganizationUpdate {
 	return ou
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (ou *OrganizationUpdate) ClearUpdatedAt() *OrganizationUpdate {
+	ou.mutation.ClearUpdatedAt()
+	return ou
+}
+
 // SetUpdatedBy sets the "updated_by" field.
 func (ou *OrganizationUpdate) SetUpdatedBy(s string) *OrganizationUpdate {
 	ou.mutation.SetUpdatedBy(s)
@@ -208,7 +214,7 @@ func (ou *OrganizationUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ou *OrganizationUpdate) defaults() {
-	if _, ok := ou.mutation.UpdatedAt(); !ok {
+	if _, ok := ou.mutation.UpdatedAt(); !ok && !ou.mutation.UpdatedAtCleared() {
 		v := organization.UpdateDefaultUpdatedAt()
 		ou.mutation.SetUpdatedAt(v)
 	}
@@ -216,24 +222,9 @@ func (ou *OrganizationUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ou *OrganizationUpdate) check() error {
-	if v, ok := ou.mutation.DisplayName(); ok {
-		if err := organization.DisplayNameValidator(v); err != nil {
-			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "Organization.display_name": %w`, err)}
-		}
-	}
-	if v, ok := ou.mutation.Etag(); ok {
-		if err := organization.EtagValidator(v); err != nil {
-			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "Organization.etag": %w`, err)}
-		}
-	}
 	if v, ok := ou.mutation.Status(); ok {
 		if err := organization.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Organization.status": %w`, err)}
-		}
-	}
-	if v, ok := ou.mutation.Slug(); ok {
-		if err := organization.SlugValidator(v); err != nil {
-			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Organization.slug": %w`, err)}
 		}
 	}
 	return nil
@@ -265,6 +256,9 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ou.mutation.UpdatedAt(); ok {
 		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if ou.mutation.UpdatedAtCleared() {
+		_spec.ClearField(organization.FieldUpdatedAt, field.TypeTime)
 	}
 	if value, ok := ou.mutation.UpdatedBy(); ok {
 		_spec.SetField(organization.FieldUpdatedBy, field.TypeString, value)
@@ -428,6 +422,12 @@ func (ouo *OrganizationUpdateOne) SetUpdatedAt(t time.Time) *OrganizationUpdateO
 	return ouo
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (ouo *OrganizationUpdateOne) ClearUpdatedAt() *OrganizationUpdateOne {
+	ouo.mutation.ClearUpdatedAt()
+	return ouo
+}
+
 // SetUpdatedBy sets the "updated_by" field.
 func (ouo *OrganizationUpdateOne) SetUpdatedBy(s string) *OrganizationUpdateOne {
 	ouo.mutation.SetUpdatedBy(s)
@@ -557,7 +557,7 @@ func (ouo *OrganizationUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (ouo *OrganizationUpdateOne) defaults() {
-	if _, ok := ouo.mutation.UpdatedAt(); !ok {
+	if _, ok := ouo.mutation.UpdatedAt(); !ok && !ouo.mutation.UpdatedAtCleared() {
 		v := organization.UpdateDefaultUpdatedAt()
 		ouo.mutation.SetUpdatedAt(v)
 	}
@@ -565,24 +565,9 @@ func (ouo *OrganizationUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (ouo *OrganizationUpdateOne) check() error {
-	if v, ok := ouo.mutation.DisplayName(); ok {
-		if err := organization.DisplayNameValidator(v); err != nil {
-			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "Organization.display_name": %w`, err)}
-		}
-	}
-	if v, ok := ouo.mutation.Etag(); ok {
-		if err := organization.EtagValidator(v); err != nil {
-			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "Organization.etag": %w`, err)}
-		}
-	}
 	if v, ok := ouo.mutation.Status(); ok {
 		if err := organization.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Organization.status": %w`, err)}
-		}
-	}
-	if v, ok := ouo.mutation.Slug(); ok {
-		if err := organization.SlugValidator(v); err != nil {
-			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Organization.slug": %w`, err)}
 		}
 	}
 	return nil
@@ -631,6 +616,9 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 	}
 	if value, ok := ouo.mutation.UpdatedAt(); ok {
 		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if ouo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(organization.FieldUpdatedAt, field.TypeTime)
 	}
 	if value, ok := ouo.mutation.UpdatedBy(); ok {
 		_spec.SetField(organization.FieldUpdatedBy, field.TypeString, value)

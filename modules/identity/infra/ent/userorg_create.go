@@ -80,18 +80,8 @@ func (uoc *UserOrgCreate) check() error {
 	if _, ok := uoc.mutation.UserID(); !ok {
 		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "UserOrg.user_id"`)}
 	}
-	if v, ok := uoc.mutation.UserID(); ok {
-		if err := userorg.UserIDValidator(v); err != nil {
-			return &ValidationError{Name: "user_id", err: fmt.Errorf(`ent: validator failed for field "UserOrg.user_id": %w`, err)}
-		}
-	}
 	if _, ok := uoc.mutation.OrgID(); !ok {
 		return &ValidationError{Name: "org_id", err: errors.New(`ent: missing required field "UserOrg.org_id"`)}
-	}
-	if v, ok := uoc.mutation.OrgID(); ok {
-		if err := userorg.OrgIDValidator(v); err != nil {
-			return &ValidationError{Name: "org_id", err: fmt.Errorf(`ent: validator failed for field "UserOrg.org_id": %w`, err)}
-		}
 	}
 	if len(uoc.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "UserOrg.user"`)}

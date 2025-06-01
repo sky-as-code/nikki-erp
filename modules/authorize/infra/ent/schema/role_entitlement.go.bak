@@ -1,0 +1,64 @@
+package schema
+
+// import (
+// 	"entgo.io/ent"
+// 	"entgo.io/ent/dialect/entsql"
+// 	"entgo.io/ent/schema"
+// 	"entgo.io/ent/schema/edge"
+// 	"entgo.io/ent/schema/field"
+// 	"entgo.io/ent/schema/mixin"
+// )
+
+// type RoleEntitlementMixin struct {
+// 	mixin.Schema
+// }
+
+// func (RoleEntitlementMixin) Fields() []ent.Field {
+// 	return []ent.Field{
+// 		field.String("role_id").Immutable(),
+
+// 		field.String("entitlement_id").Immutable(),
+// 	}
+// }
+
+// type RoleEntitlement struct {
+// 	ent.Schema
+// }
+
+// func (RoleEntitlement) Fields() []ent.Field {
+// 	return nil
+// }
+
+// func (RoleEntitlement) Edges() []ent.Edge {
+// 	return []ent.Edge{
+// 		edge.To("role", Role.Type).
+// 			Field("role_id").
+// 			Immutable().
+// 			Required().
+// 			Unique().
+// 			Annotations(entsql.Annotation{
+// 				OnDelete: entsql.Cascade,
+// 			}),
+// 		edge.To("entitlement", Entitlement.Type).
+// 			Field("entitlement_id").
+// 			Immutable().
+// 			Required().
+// 			Unique().
+// 			Annotations(entsql.Annotation{
+// 				OnDelete: entsql.Cascade,
+// 			}),
+// 	}
+// }
+
+// func (RoleEntitlement) Annotations() []schema.Annotation {
+// 	return []schema.Annotation{
+// 		field.ID("role_id", "entitlement_id"),
+// 		entsql.Annotation{Table: "authz_role_entitlements"},
+// 	}
+// }
+
+// func (RoleEntitlement) Mixin() []ent.Mixin {
+// 	return []ent.Mixin{
+// 		RoleEntitlementMixin{},
+// 	}
+// }

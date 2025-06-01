@@ -60,14 +60,6 @@ func (oc *OrganizationCreate) SetStatus(o organization.Status) *OrganizationCrea
 	return oc
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillableStatus(o *organization.Status) *OrganizationCreate {
-	if o != nil {
-		oc.SetStatus(*o)
-	}
-	return oc
-}
-
 // SetSlug sets the "slug" field.
 func (oc *OrganizationCreate) SetSlug(s string) *OrganizationCreate {
 	oc.mutation.SetSlug(s)
@@ -181,14 +173,6 @@ func (oc *OrganizationCreate) defaults() {
 		v := organization.DefaultCreatedAt()
 		oc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := oc.mutation.Status(); !ok {
-		v := organization.DefaultStatus
-		oc.mutation.SetStatus(v)
-	}
-	if _, ok := oc.mutation.UpdatedAt(); !ok {
-		v := organization.DefaultUpdatedAt()
-		oc.mutation.SetUpdatedAt(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -199,26 +183,11 @@ func (oc *OrganizationCreate) check() error {
 	if _, ok := oc.mutation.CreatedBy(); !ok {
 		return &ValidationError{Name: "created_by", err: errors.New(`ent: missing required field "Organization.created_by"`)}
 	}
-	if v, ok := oc.mutation.CreatedBy(); ok {
-		if err := organization.CreatedByValidator(v); err != nil {
-			return &ValidationError{Name: "created_by", err: fmt.Errorf(`ent: validator failed for field "Organization.created_by": %w`, err)}
-		}
-	}
 	if _, ok := oc.mutation.DisplayName(); !ok {
 		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "Organization.display_name"`)}
 	}
-	if v, ok := oc.mutation.DisplayName(); ok {
-		if err := organization.DisplayNameValidator(v); err != nil {
-			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "Organization.display_name": %w`, err)}
-		}
-	}
 	if _, ok := oc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Organization.etag"`)}
-	}
-	if v, ok := oc.mutation.Etag(); ok {
-		if err := organization.EtagValidator(v); err != nil {
-			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "Organization.etag": %w`, err)}
-		}
 	}
 	if _, ok := oc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Organization.status"`)}
@@ -230,19 +199,6 @@ func (oc *OrganizationCreate) check() error {
 	}
 	if _, ok := oc.mutation.Slug(); !ok {
 		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "Organization.slug"`)}
-	}
-	if v, ok := oc.mutation.Slug(); ok {
-		if err := organization.SlugValidator(v); err != nil {
-			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Organization.slug": %w`, err)}
-		}
-	}
-	if _, ok := oc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Organization.updated_at"`)}
-	}
-	if v, ok := oc.mutation.ID(); ok {
-		if err := organization.IDValidator(v); err != nil {
-			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Organization.id": %w`, err)}
-		}
 	}
 	return nil
 }
@@ -305,7 +261,7 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	}
 	if value, ok := oc.mutation.UpdatedAt(); ok {
 		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
+		_node.UpdatedAt = &value
 	}
 	if value, ok := oc.mutation.UpdatedBy(); ok {
 		_spec.SetField(organization.FieldUpdatedBy, field.TypeString, value)

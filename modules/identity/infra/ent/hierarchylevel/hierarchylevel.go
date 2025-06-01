@@ -14,6 +14,8 @@ const (
 	FieldID = "id"
 	// FieldOrgID holds the string denoting the org_id field in the database.
 	FieldOrgID = "org_id"
+	// FieldEtag holds the string denoting the etag field in the database.
+	FieldEtag = "etag"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldParentID holds the string denoting the parent_id field in the database.
@@ -23,13 +25,13 @@ const (
 	// EdgeChild holds the string denoting the child edge name in mutations.
 	EdgeChild = "child"
 	// Table holds the table name of the hierarchylevel in the database.
-	Table = "hierarchy_levels"
+	Table = "ident_hierarchy_levels"
 	// ParentTable is the table that holds the parent relation/edge.
-	ParentTable = "hierarchy_levels"
+	ParentTable = "ident_hierarchy_levels"
 	// ParentColumn is the table column denoting the parent relation/edge.
 	ParentColumn = "parent_id"
 	// ChildTable is the table that holds the child relation/edge.
-	ChildTable = "hierarchy_levels"
+	ChildTable = "ident_hierarchy_levels"
 	// ChildColumn is the table column denoting the child relation/edge.
 	ChildColumn = "parent_id"
 )
@@ -38,6 +40,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldOrgID,
+	FieldEtag,
 	FieldName,
 	FieldParentID,
 }
@@ -52,15 +55,6 @@ func ValidColumn(column string) bool {
 	return false
 }
 
-var (
-	// OrgIDValidator is a validator for the "org_id" field. It is called by the builders before save.
-	OrgIDValidator func(string) error
-	// NameValidator is a validator for the "name" field. It is called by the builders before save.
-	NameValidator func(string) error
-	// IDValidator is a validator for the "id" field. It is called by the builders before save.
-	IDValidator func(string) error
-)
-
 // OrderOption defines the ordering options for the HierarchyLevel queries.
 type OrderOption = func(*sql.Selector)
 
@@ -72,6 +66,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByOrgID orders the results by the org_id field.
 func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
+}
+
+// ByEtag orders the results by the etag field.
+func ByEtag(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEtag, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.

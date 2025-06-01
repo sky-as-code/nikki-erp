@@ -18,7 +18,6 @@ type GroupMixin struct {
 func (GroupMixin) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").
-			NotEmpty().
 			Immutable().
 			StorageKey("id"),
 
@@ -37,16 +36,25 @@ func (GroupMixin) Fields() []ent.Field {
 			Nillable().
 			Comment("Group description"),
 
+		field.String("email").
+			Optional().
+			Nillable().
+			Comment("Group email"),
+
+		field.String("etag"),
+
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),
 
-		field.String("created_by"),
+		field.String("created_by").
+			Immutable(),
 
 		field.String("etag"),
 
 		field.Time("updated_at").
-			Default(time.Now).
+			Optional().
+			Nillable().
 			UpdateDefault(time.Now),
 
 		field.String("updated_by").
@@ -65,7 +73,7 @@ type Group struct {
 
 func (Group) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entsql.Annotation{Table: "groups"},
+		entsql.Annotation{Table: "ident_groups"},
 	}
 }
 

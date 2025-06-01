@@ -68,6 +68,11 @@ func OrgID(v string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldEQ(FieldOrgID, v))
 }
 
+// Etag applies equality check predicate on the "etag" field. It's identical to EtagEQ.
+func Etag(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldEtag, v))
+}
+
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldEQ(FieldName, v))
@@ -141,6 +146,71 @@ func OrgIDEqualFold(v string) predicate.HierarchyLevel {
 // OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
 func OrgIDContainsFold(v string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldContainsFold(FieldOrgID, v))
+}
+
+// EtagEQ applies the EQ predicate on the "etag" field.
+func EtagEQ(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldEtag, v))
+}
+
+// EtagNEQ applies the NEQ predicate on the "etag" field.
+func EtagNEQ(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNEQ(FieldEtag, v))
+}
+
+// EtagIn applies the In predicate on the "etag" field.
+func EtagIn(vs ...string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIn(FieldEtag, vs...))
+}
+
+// EtagNotIn applies the NotIn predicate on the "etag" field.
+func EtagNotIn(vs ...string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotIn(FieldEtag, vs...))
+}
+
+// EtagGT applies the GT predicate on the "etag" field.
+func EtagGT(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGT(FieldEtag, v))
+}
+
+// EtagGTE applies the GTE predicate on the "etag" field.
+func EtagGTE(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGTE(FieldEtag, v))
+}
+
+// EtagLT applies the LT predicate on the "etag" field.
+func EtagLT(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLT(FieldEtag, v))
+}
+
+// EtagLTE applies the LTE predicate on the "etag" field.
+func EtagLTE(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLTE(FieldEtag, v))
+}
+
+// EtagContains applies the Contains predicate on the "etag" field.
+func EtagContains(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldContains(FieldEtag, v))
+}
+
+// EtagHasPrefix applies the HasPrefix predicate on the "etag" field.
+func EtagHasPrefix(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldHasPrefix(FieldEtag, v))
+}
+
+// EtagHasSuffix applies the HasSuffix predicate on the "etag" field.
+func EtagHasSuffix(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldHasSuffix(FieldEtag, v))
+}
+
+// EtagEqualFold applies the EqualFold predicate on the "etag" field.
+func EtagEqualFold(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEqualFold(FieldEtag, v))
+}
+
+// EtagContainsFold applies the ContainsFold predicate on the "etag" field.
+func EtagContainsFold(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldContainsFold(FieldEtag, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.

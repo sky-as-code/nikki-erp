@@ -130,8 +130,8 @@ func Search[TDb any, TDomain any, TQuery interface {
 	opts *crud.PagingOptions,
 	entityName string,
 	query TQuery,
-	convertFn func([]*TDb) []*TDomain,
-) (*crud.PagedResult[*TDomain], error) {
+	convertFn func([]*TDb) []TDomain,
+) (*crud.PagedResult[TDomain], error) {
 	var errs error
 	predicate, err := criteria.ToPredicate(entityName)
 	errs = stdErr.Join(errs, err)
@@ -159,7 +159,7 @@ func Search[TDb any, TDomain any, TQuery interface {
 		return nil, err
 	}
 
-	return &crud.PagedResult[*TDomain]{
+	return &crud.PagedResult[TDomain]{
 		Items: convertFn(dbEntities),
 		Total: total,
 	}, nil

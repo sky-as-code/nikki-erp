@@ -66,7 +66,7 @@ func (this *GroupEntRepository) FindByName(ctx context.Context, name string) (*d
 
 func (this *GroupEntRepository) Search(
 	ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions,
-) (*crud.PagedResult[*domain.Group], error) {
+) (*crud.PagedResult[domain.Group], error) {
 	return Search(
 		ctx,
 		criteria,

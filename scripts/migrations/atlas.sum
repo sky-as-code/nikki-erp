@@ -1,3 +1,5 @@
-h1:vBVutqORKBqu08vmmqej8HwawKO7fGeL1w/lJ/nic9o=
-20250517055410_init.sql h1:964hYAyUzaAIwbtS79COWDeRZOnEYQ+hfWSPf84XFWQ=
-20250606090229_init.sql h1:hF5ukJPnLkXywnn8AXsW2N/U+zo/oWdkVOnYeuNLIzA=
+h1:isj6yiHBPzmgbVG1cZKc4fHYj/lAMLOuWNqQyHF6Ir4=
+00000000000011_identity_schema.sql h1:PrQ1n8c6FH78Oq71VMp7XsXIyoS6gP5QitTZ2fz1lTY=
+00000000000012_identity_seeds.sql h1:xemOiO2dDBmwPsCRwcBD+YU8GORCjeBqL+drs6H/Afc=
+00000000000021_authorize_schema.sql h1:cCl3UxNr5iaywe/KkD0FHyJJ5D6jSoB3UhCBIIr4osE=
+00000000000022_authorize_seeds.sql h1:25yJOoqDNQ63X1M6RKZy2vM+ELNWFWLqknU6afekyYY=

@@ -25,6 +25,12 @@ func (hlc *HierarchyLevelCreate) SetOrgID(s string) *HierarchyLevelCreate {
 	return hlc
 }
 
+// SetEtag sets the "etag" field.
+func (hlc *HierarchyLevelCreate) SetEtag(s string) *HierarchyLevelCreate {
+	hlc.mutation.SetEtag(s)
+	return hlc
+}
+
 // SetName sets the "name" field.
 func (hlc *HierarchyLevelCreate) SetName(s string) *HierarchyLevelCreate {
 	hlc.mutation.SetName(s)
@@ -108,23 +114,11 @@ func (hlc *HierarchyLevelCreate) check() error {
 	if _, ok := hlc.mutation.OrgID(); !ok {
 		return &ValidationError{Name: "org_id", err: errors.New(`ent: missing required field "HierarchyLevel.org_id"`)}
 	}
-	if v, ok := hlc.mutation.OrgID(); ok {
-		if err := hierarchylevel.OrgIDValidator(v); err != nil {
-			return &ValidationError{Name: "org_id", err: fmt.Errorf(`ent: validator failed for field "HierarchyLevel.org_id": %w`, err)}
-		}
+	if _, ok := hlc.mutation.Etag(); !ok {
+		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "HierarchyLevel.etag"`)}
 	}
 	if _, ok := hlc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "HierarchyLevel.name"`)}
-	}
-	if v, ok := hlc.mutation.Name(); ok {
-		if err := hierarchylevel.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "HierarchyLevel.name": %w`, err)}
-		}
-	}
-	if v, ok := hlc.mutation.ID(); ok {
-		if err := hierarchylevel.IDValidator(v); err != nil {
-			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "HierarchyLevel.id": %w`, err)}
-		}
 	}
 	return nil
 }
@@ -164,6 +158,10 @@ func (hlc *HierarchyLevelCreate) createSpec() (*HierarchyLevel, *sqlgraph.Create
 	if value, ok := hlc.mutation.OrgID(); ok {
 		_spec.SetField(hierarchylevel.FieldOrgID, field.TypeString, value)
 		_node.OrgID = value
+	}
+	if value, ok := hlc.mutation.Etag(); ok {
+		_spec.SetField(hierarchylevel.FieldEtag, field.TypeString, value)
+		_node.Etag = value
 	}
 	if value, ok := hlc.mutation.Name(); ok {
 		_spec.SetField(hierarchylevel.FieldName, field.TypeString, value)

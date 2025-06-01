@@ -15,7 +15,7 @@ type UserRepository interface {
 	Delete(ctx context.Context, id model.Id) error
 	FindById(ctx context.Context, id model.Id) (*domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
-	Search(ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions) (*crud.PagedResult[*domain.User], error)
+	Search(ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions) (*crud.PagedResult[domain.User], error)
 }
 
 type OrganizationRepository interface {
@@ -24,5 +24,5 @@ type OrganizationRepository interface {
 	Delete(ctx context.Context, id model.Id) error
 	FindById(ctx context.Context, id model.Id) (*domain.Organization, error)
 	FindBySlug(ctx context.Context, slug string) (*domain.Organization, error)
-	Search(ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions) (*crud.PagedResult[*domain.Organization], error)
+	Search(ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions) (*crud.PagedResult[domain.Organization], error)
 }

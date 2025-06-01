@@ -100,6 +100,11 @@ func FailedLoginAttempts(v int) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldFailedLoginAttempts, v))
 }
 
+// IsOwner applies equality check predicate on the "is_owner" field. It's identical to IsOwnerEQ.
+func IsOwner(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldIsOwner, v))
+}
+
 // LastLoginAt applies equality check predicate on the "last_login_at" field. It's identical to LastLoginAtEQ.
 func LastLoginAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldLastLoginAt, v))
@@ -550,6 +555,26 @@ func FailedLoginAttemptsLTE(v int) predicate.User {
 	return predicate.User(sql.FieldLTE(FieldFailedLoginAttempts, v))
 }
 
+// IsOwnerEQ applies the EQ predicate on the "is_owner" field.
+func IsOwnerEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldIsOwner, v))
+}
+
+// IsOwnerNEQ applies the NEQ predicate on the "is_owner" field.
+func IsOwnerNEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldIsOwner, v))
+}
+
+// IsOwnerIsNil applies the IsNil predicate on the "is_owner" field.
+func IsOwnerIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldIsOwner))
+}
+
+// IsOwnerNotNil applies the NotNil predicate on the "is_owner" field.
+func IsOwnerNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldIsOwner))
+}
+
 // LastLoginAtEQ applies the EQ predicate on the "last_login_at" field.
 func LastLoginAtEQ(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldLastLoginAt, v))
@@ -823,6 +848,16 @@ func UpdatedAtLT(v time.Time) predicate.User {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.User {
 	return predicate.User(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // UpdatedByEQ applies the EQ predicate on the "updated_by" field.

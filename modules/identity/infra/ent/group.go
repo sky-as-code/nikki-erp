@@ -24,6 +24,10 @@ type Group struct {
 	Name string `json:"name,omitempty"`
 	// Group description
 	Description *string `json:"description,omitempty"`
+	// Group email
+	Email *string `json:"email,omitempty"`
+	// Etag holds the value of the "etag" field.
+	Etag string `json:"etag,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
@@ -31,7 +35,7 @@ type Group struct {
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// UpdatedBy holds the value of the "updated_by" field.
 	UpdatedBy *string `json:"updated_by,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -87,7 +91,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldID, group.FieldOrgID, group.FieldName, group.FieldDescription, group.FieldCreatedBy, group.FieldEtag, group.FieldUpdatedBy:
+		case group.FieldID, group.FieldName, group.FieldDescription, group.FieldEmail, group.FieldEtag, group.FieldCreatedBy, group.FieldUpdatedBy, group.FieldParentID:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -132,6 +136,19 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 				gr.Description = new(string)
 				*gr.Description = value.String
 			}
+		case group.FieldEmail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field email", values[i])
+			} else if value.Valid {
+				gr.Email = new(string)
+				*gr.Email = value.String
+			}
+		case group.FieldEtag:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field etag", values[i])
+			} else if value.Valid {
+				gr.Etag = value.String
+			}
 		case group.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
@@ -154,7 +171,8 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				gr.UpdatedAt = value.Time
+				gr.UpdatedAt = new(time.Time)
+				*gr.UpdatedAt = value.Time
 			}
 		case group.FieldUpdatedBy:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -227,17 +245,24 @@ func (gr *Group) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
+	if v := gr.Email; v != nil {
+		builder.WriteString("email=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	builder.WriteString("etag=")
+	builder.WriteString(gr.Etag)
+	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(gr.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("created_by=")
 	builder.WriteString(gr.CreatedBy)
 	builder.WriteString(", ")
-	builder.WriteString("etag=")
-	builder.WriteString(gr.Etag)
-	builder.WriteString(", ")
-	builder.WriteString("updated_at=")
-	builder.WriteString(gr.UpdatedAt.Format(time.ANSIC))
+	if v := gr.UpdatedAt; v != nil {
+		builder.WriteString("updated_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	if v := gr.UpdatedBy; v != nil {
 		builder.WriteString("updated_by=")

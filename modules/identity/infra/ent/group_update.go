@@ -84,16 +84,36 @@ func (gu *GroupUpdate) ClearDescription() *GroupUpdate {
 	return gu
 }
 
-// SetCreatedBy sets the "created_by" field.
-func (gu *GroupUpdate) SetCreatedBy(s string) *GroupUpdate {
-	gu.mutation.SetCreatedBy(s)
+// SetEmail sets the "email" field.
+func (gu *GroupUpdate) SetEmail(s string) *GroupUpdate {
+	gu.mutation.SetEmail(s)
 	return gu
 }
 
-// SetNillableCreatedBy sets the "created_by" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableCreatedBy(s *string) *GroupUpdate {
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (gu *GroupUpdate) SetNillableEmail(s *string) *GroupUpdate {
 	if s != nil {
-		gu.SetCreatedBy(*s)
+		gu.SetEmail(*s)
+	}
+	return gu
+}
+
+// ClearEmail clears the value of the "email" field.
+func (gu *GroupUpdate) ClearEmail() *GroupUpdate {
+	gu.mutation.ClearEmail()
+	return gu
+}
+
+// SetEtag sets the "etag" field.
+func (gu *GroupUpdate) SetEtag(s string) *GroupUpdate {
+	gu.mutation.SetEtag(s)
+	return gu
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (gu *GroupUpdate) SetNillableEtag(s *string) *GroupUpdate {
+	if s != nil {
+		gu.SetEtag(*s)
 	}
 	return gu
 }
@@ -115,6 +135,12 @@ func (gu *GroupUpdate) SetNillableEtag(s *string) *GroupUpdate {
 // SetUpdatedAt sets the "updated_at" field.
 func (gu *GroupUpdate) SetUpdatedAt(t time.Time) *GroupUpdate {
 	gu.mutation.SetUpdatedAt(t)
+	return gu
+}
+
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (gu *GroupUpdate) ClearUpdatedAt() *GroupUpdate {
+	gu.mutation.ClearUpdatedAt()
 	return gu
 }
 
@@ -234,26 +260,13 @@ func (gu *GroupUpdate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (gu *GroupUpdate) defaults() {
-	if _, ok := gu.mutation.UpdatedAt(); !ok {
+	if _, ok := gu.mutation.UpdatedAt(); !ok && !gu.mutation.UpdatedAtCleared() {
 		v := group.UpdateDefaultUpdatedAt()
 		gu.mutation.SetUpdatedAt(v)
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (gu *GroupUpdate) check() error {
-	if v, ok := gu.mutation.Name(); ok {
-		if err := group.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := gu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(group.Table, group.Columns, sqlgraph.NewFieldSpec(group.FieldID, field.TypeString))
 	if ps := gu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -271,14 +284,23 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if gu.mutation.DescriptionCleared() {
 		_spec.ClearField(group.FieldDescription, field.TypeString)
 	}
-	if value, ok := gu.mutation.CreatedBy(); ok {
-		_spec.SetField(group.FieldCreatedBy, field.TypeString, value)
+	if value, ok := gu.mutation.Email(); ok {
+		_spec.SetField(group.FieldEmail, field.TypeString, value)
+	}
+	if gu.mutation.EmailCleared() {
+		_spec.ClearField(group.FieldEmail, field.TypeString)
+	}
+	if value, ok := gu.mutation.Etag(); ok {
+		_spec.SetField(group.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := gu.mutation.Etag(); ok {
 		_spec.SetField(group.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := gu.mutation.UpdatedAt(); ok {
 		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if gu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(group.FieldUpdatedAt, field.TypeTime)
 	}
 	if value, ok := gu.mutation.UpdatedBy(); ok {
 		_spec.SetField(group.FieldUpdatedBy, field.TypeString, value)
@@ -434,16 +456,36 @@ func (guo *GroupUpdateOne) ClearDescription() *GroupUpdateOne {
 	return guo
 }
 
-// SetCreatedBy sets the "created_by" field.
-func (guo *GroupUpdateOne) SetCreatedBy(s string) *GroupUpdateOne {
-	guo.mutation.SetCreatedBy(s)
+// SetEmail sets the "email" field.
+func (guo *GroupUpdateOne) SetEmail(s string) *GroupUpdateOne {
+	guo.mutation.SetEmail(s)
 	return guo
 }
 
-// SetNillableCreatedBy sets the "created_by" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableCreatedBy(s *string) *GroupUpdateOne {
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (guo *GroupUpdateOne) SetNillableEmail(s *string) *GroupUpdateOne {
 	if s != nil {
-		guo.SetCreatedBy(*s)
+		guo.SetEmail(*s)
+	}
+	return guo
+}
+
+// ClearEmail clears the value of the "email" field.
+func (guo *GroupUpdateOne) ClearEmail() *GroupUpdateOne {
+	guo.mutation.ClearEmail()
+	return guo
+}
+
+// SetEtag sets the "etag" field.
+func (guo *GroupUpdateOne) SetEtag(s string) *GroupUpdateOne {
+	guo.mutation.SetEtag(s)
+	return guo
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (guo *GroupUpdateOne) SetNillableEtag(s *string) *GroupUpdateOne {
+	if s != nil {
+		guo.SetEtag(*s)
 	}
 	return guo
 }
@@ -465,6 +507,12 @@ func (guo *GroupUpdateOne) SetNillableEtag(s *string) *GroupUpdateOne {
 // SetUpdatedAt sets the "updated_at" field.
 func (guo *GroupUpdateOne) SetUpdatedAt(t time.Time) *GroupUpdateOne {
 	guo.mutation.SetUpdatedAt(t)
+	return guo
+}
+
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (guo *GroupUpdateOne) ClearUpdatedAt() *GroupUpdateOne {
+	guo.mutation.ClearUpdatedAt()
 	return guo
 }
 
@@ -597,26 +645,13 @@ func (guo *GroupUpdateOne) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (guo *GroupUpdateOne) defaults() {
-	if _, ok := guo.mutation.UpdatedAt(); !ok {
+	if _, ok := guo.mutation.UpdatedAt(); !ok && !guo.mutation.UpdatedAtCleared() {
 		v := group.UpdateDefaultUpdatedAt()
 		guo.mutation.SetUpdatedAt(v)
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (guo *GroupUpdateOne) check() error {
-	if v, ok := guo.mutation.Name(); ok {
-		if err := group.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error) {
-	if err := guo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(group.Table, group.Columns, sqlgraph.NewFieldSpec(group.FieldID, field.TypeString))
 	id, ok := guo.mutation.ID()
 	if !ok {
@@ -651,14 +686,23 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 	if guo.mutation.DescriptionCleared() {
 		_spec.ClearField(group.FieldDescription, field.TypeString)
 	}
-	if value, ok := guo.mutation.CreatedBy(); ok {
-		_spec.SetField(group.FieldCreatedBy, field.TypeString, value)
+	if value, ok := guo.mutation.Email(); ok {
+		_spec.SetField(group.FieldEmail, field.TypeString, value)
+	}
+	if guo.mutation.EmailCleared() {
+		_spec.ClearField(group.FieldEmail, field.TypeString)
+	}
+	if value, ok := guo.mutation.Etag(); ok {
+		_spec.SetField(group.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := guo.mutation.Etag(); ok {
 		_spec.SetField(group.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := guo.mutation.UpdatedAt(); ok {
 		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if guo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(group.FieldUpdatedAt, field.TypeTime)
 	}
 	if value, ok := guo.mutation.UpdatedBy(); ok {
 		_spec.SetField(group.FieldUpdatedBy, field.TypeString, value)

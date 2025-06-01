@@ -10,9 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/usergroup"
 )
 
@@ -29,59 +27,9 @@ func (ugu *UserGroupUpdate) Where(ps ...predicate.UserGroup) *UserGroupUpdate {
 	return ugu
 }
 
-// SetUserID sets the "user_id" field.
-func (ugu *UserGroupUpdate) SetUserID(s string) *UserGroupUpdate {
-	ugu.mutation.SetUserID(s)
-	return ugu
-}
-
-// SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (ugu *UserGroupUpdate) SetNillableUserID(s *string) *UserGroupUpdate {
-	if s != nil {
-		ugu.SetUserID(*s)
-	}
-	return ugu
-}
-
-// SetGroupID sets the "group_id" field.
-func (ugu *UserGroupUpdate) SetGroupID(s string) *UserGroupUpdate {
-	ugu.mutation.SetGroupID(s)
-	return ugu
-}
-
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (ugu *UserGroupUpdate) SetNillableGroupID(s *string) *UserGroupUpdate {
-	if s != nil {
-		ugu.SetGroupID(*s)
-	}
-	return ugu
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (ugu *UserGroupUpdate) SetUser(u *User) *UserGroupUpdate {
-	return ugu.SetUserID(u.ID)
-}
-
-// SetGroup sets the "group" edge to the Group entity.
-func (ugu *UserGroupUpdate) SetGroup(g *Group) *UserGroupUpdate {
-	return ugu.SetGroupID(g.ID)
-}
-
 // Mutation returns the UserGroupMutation object of the builder.
 func (ugu *UserGroupUpdate) Mutation() *UserGroupMutation {
 	return ugu.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (ugu *UserGroupUpdate) ClearUser() *UserGroupUpdate {
-	ugu.mutation.ClearUser()
-	return ugu
-}
-
-// ClearGroup clears the "group" edge to the Group entity.
-func (ugu *UserGroupUpdate) ClearGroup() *UserGroupUpdate {
-	ugu.mutation.ClearGroup()
-	return ugu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -113,16 +61,6 @@ func (ugu *UserGroupUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (ugu *UserGroupUpdate) check() error {
-	if v, ok := ugu.mutation.UserID(); ok {
-		if err := usergroup.UserIDValidator(v); err != nil {
-			return &ValidationError{Name: "user_id", err: fmt.Errorf(`ent: validator failed for field "UserGroup.user_id": %w`, err)}
-		}
-	}
-	if v, ok := ugu.mutation.GroupID(); ok {
-		if err := usergroup.GroupIDValidator(v); err != nil {
-			return &ValidationError{Name: "group_id", err: fmt.Errorf(`ent: validator failed for field "UserGroup.group_id": %w`, err)}
-		}
-	}
 	if ugu.mutation.UserCleared() && len(ugu.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "UserGroup.user"`)
 	}
@@ -144,64 +82,6 @@ func (ugu *UserGroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if ugu.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   usergroup.UserTable,
-			Columns: []string{usergroup.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ugu.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   usergroup.UserTable,
-			Columns: []string{usergroup.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ugu.mutation.GroupCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   usergroup.GroupTable,
-			Columns: []string{usergroup.GroupColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ugu.mutation.GroupIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   usergroup.GroupTable,
-			Columns: []string{usergroup.GroupColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ugu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{usergroup.Label}
@@ -222,59 +102,9 @@ type UserGroupUpdateOne struct {
 	mutation *UserGroupMutation
 }
 
-// SetUserID sets the "user_id" field.
-func (uguo *UserGroupUpdateOne) SetUserID(s string) *UserGroupUpdateOne {
-	uguo.mutation.SetUserID(s)
-	return uguo
-}
-
-// SetNillableUserID sets the "user_id" field if the given value is not nil.
-func (uguo *UserGroupUpdateOne) SetNillableUserID(s *string) *UserGroupUpdateOne {
-	if s != nil {
-		uguo.SetUserID(*s)
-	}
-	return uguo
-}
-
-// SetGroupID sets the "group_id" field.
-func (uguo *UserGroupUpdateOne) SetGroupID(s string) *UserGroupUpdateOne {
-	uguo.mutation.SetGroupID(s)
-	return uguo
-}
-
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (uguo *UserGroupUpdateOne) SetNillableGroupID(s *string) *UserGroupUpdateOne {
-	if s != nil {
-		uguo.SetGroupID(*s)
-	}
-	return uguo
-}
-
-// SetUser sets the "user" edge to the User entity.
-func (uguo *UserGroupUpdateOne) SetUser(u *User) *UserGroupUpdateOne {
-	return uguo.SetUserID(u.ID)
-}
-
-// SetGroup sets the "group" edge to the Group entity.
-func (uguo *UserGroupUpdateOne) SetGroup(g *Group) *UserGroupUpdateOne {
-	return uguo.SetGroupID(g.ID)
-}
-
 // Mutation returns the UserGroupMutation object of the builder.
 func (uguo *UserGroupUpdateOne) Mutation() *UserGroupMutation {
 	return uguo.mutation
-}
-
-// ClearUser clears the "user" edge to the User entity.
-func (uguo *UserGroupUpdateOne) ClearUser() *UserGroupUpdateOne {
-	uguo.mutation.ClearUser()
-	return uguo
-}
-
-// ClearGroup clears the "group" edge to the Group entity.
-func (uguo *UserGroupUpdateOne) ClearGroup() *UserGroupUpdateOne {
-	uguo.mutation.ClearGroup()
-	return uguo
 }
 
 // Where appends a list predicates to the UserGroupUpdate builder.
@@ -319,16 +149,6 @@ func (uguo *UserGroupUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (uguo *UserGroupUpdateOne) check() error {
-	if v, ok := uguo.mutation.UserID(); ok {
-		if err := usergroup.UserIDValidator(v); err != nil {
-			return &ValidationError{Name: "user_id", err: fmt.Errorf(`ent: validator failed for field "UserGroup.user_id": %w`, err)}
-		}
-	}
-	if v, ok := uguo.mutation.GroupID(); ok {
-		if err := usergroup.GroupIDValidator(v); err != nil {
-			return &ValidationError{Name: "group_id", err: fmt.Errorf(`ent: validator failed for field "UserGroup.group_id": %w`, err)}
-		}
-	}
 	if uguo.mutation.UserCleared() && len(uguo.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "UserGroup.user"`)
 	}
@@ -368,64 +188,6 @@ func (uguo *UserGroupUpdateOne) sqlSave(ctx context.Context) (_node *UserGroup, 
 				ps[i](selector)
 			}
 		}
-	}
-	if uguo.mutation.UserCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   usergroup.UserTable,
-			Columns: []string{usergroup.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uguo.mutation.UserIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   usergroup.UserTable,
-			Columns: []string{usergroup.UserColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if uguo.mutation.GroupCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   usergroup.GroupTable,
-			Columns: []string{usergroup.GroupColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uguo.mutation.GroupIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   usergroup.GroupTable,
-			Columns: []string{usergroup.GroupColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &UserGroup{config: uguo.config}
 	_spec.Assign = _node.assignValues

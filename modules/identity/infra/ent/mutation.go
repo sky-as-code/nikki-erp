@@ -40,25 +40,29 @@ const (
 // GroupMutation represents an operation that mutates the Group nodes in the graph.
 type GroupMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *string
-	name                *string
-	description         *string
-	created_at          *time.Time
-	created_by          *string
-	etag                *string
-	updated_at          *time.Time
-	updated_by          *string
-	clearedFields       map[string]struct{}
-	organization        *string
-	clearedorganization bool
-	users               map[string]struct{}
-	removedusers        map[string]struct{}
-	clearedusers        bool
-	done                bool
-	oldValue            func(context.Context) (*Group, error)
-	predicates          []predicate.Group
+	op               Op
+	typ              string
+	id               *string
+	name             *string
+	description      *string
+	email            *string
+	etag             *string
+	created_at       *time.Time
+	created_by       *string
+	updated_at       *time.Time
+	updated_by       *string
+	clearedFields    map[string]struct{}
+	parent           *string
+	clearedparent    bool
+	subgroups        map[string]struct{}
+	removedsubgroups map[string]struct{}
+	clearedsubgroups bool
+	users            map[string]struct{}
+	removedusers     map[string]struct{}
+	clearedusers     bool
+	done             bool
+	oldValue         func(context.Context) (*Group, error)
+	predicates       []predicate.Group
 }
 
 var _ ent.Mutation = (*GroupMutation)(nil)
@@ -299,6 +303,91 @@ func (m *GroupMutation) ResetDescription() {
 	delete(m.clearedFields, group.FieldDescription)
 }
 
+// SetEmail sets the "email" field.
+func (m *GroupMutation) SetEmail(s string) {
+	m.email = &s
+}
+
+// Email returns the value of the "email" field in the mutation.
+func (m *GroupMutation) Email() (r string, exists bool) {
+	v := m.email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmail returns the old "email" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldEmail(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmail: %w", err)
+	}
+	return oldValue.Email, nil
+}
+
+// ClearEmail clears the value of the "email" field.
+func (m *GroupMutation) ClearEmail() {
+	m.email = nil
+	m.clearedFields[group.FieldEmail] = struct{}{}
+}
+
+// EmailCleared returns if the "email" field was cleared in this mutation.
+func (m *GroupMutation) EmailCleared() bool {
+	_, ok := m.clearedFields[group.FieldEmail]
+	return ok
+}
+
+// ResetEmail resets all changes to the "email" field.
+func (m *GroupMutation) ResetEmail() {
+	m.email = nil
+	delete(m.clearedFields, group.FieldEmail)
+}
+
+// SetEtag sets the "etag" field.
+func (m *GroupMutation) SetEtag(s string) {
+	m.etag = &s
+}
+
+// Etag returns the value of the "etag" field in the mutation.
+func (m *GroupMutation) Etag() (r string, exists bool) {
+	v := m.etag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEtag returns the old "etag" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldEtag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEtag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEtag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEtag: %w", err)
+	}
+	return oldValue.Etag, nil
+}
+
+// ResetEtag resets all changes to the "etag" field.
+func (m *GroupMutation) ResetEtag() {
+	m.etag = nil
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (m *GroupMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -424,7 +513,7 @@ func (m *GroupMutation) UpdatedAt() (r time.Time, exists bool) {
 // OldUpdatedAt returns the old "updated_at" field's value of the Group entity.
 // If the Group object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GroupMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+func (m *GroupMutation) OldUpdatedAt(ctx context.Context) (v *time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
 	}
@@ -438,9 +527,22 @@ func (m *GroupMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err erro
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *GroupMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[group.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *GroupMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[group.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *GroupMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, group.FieldUpdatedAt)
 }
 
 // SetUpdatedBy sets the "updated_by" field.
@@ -620,15 +722,18 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 8)
-	if m.organization != nil {
-		fields = append(fields, group.FieldOrgID)
-	}
+	fields := make([]string, 0, 9)
 	if m.name != nil {
 		fields = append(fields, group.FieldName)
 	}
 	if m.description != nil {
 		fields = append(fields, group.FieldDescription)
+	}
+	if m.email != nil {
+		fields = append(fields, group.FieldEmail)
+	}
+	if m.etag != nil {
+		fields = append(fields, group.FieldEtag)
 	}
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
@@ -659,6 +764,10 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case group.FieldDescription:
 		return m.Description()
+	case group.FieldEmail:
+		return m.Email()
+	case group.FieldEtag:
+		return m.Etag()
 	case group.FieldCreatedAt:
 		return m.CreatedAt()
 	case group.FieldCreatedBy:
@@ -684,6 +793,10 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldName(ctx)
 	case group.FieldDescription:
 		return m.OldDescription(ctx)
+	case group.FieldEmail:
+		return m.OldEmail(ctx)
+	case group.FieldEtag:
+		return m.OldEtag(ctx)
 	case group.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case group.FieldCreatedBy:
@@ -723,6 +836,20 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDescription(v)
+		return nil
+	case group.FieldEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmail(v)
+		return nil
+	case group.FieldEtag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEtag(v)
 		return nil
 	case group.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -795,6 +922,12 @@ func (m *GroupMutation) ClearedFields() []string {
 	if m.FieldCleared(group.FieldDescription) {
 		fields = append(fields, group.FieldDescription)
 	}
+	if m.FieldCleared(group.FieldEmail) {
+		fields = append(fields, group.FieldEmail)
+	}
+	if m.FieldCleared(group.FieldUpdatedAt) {
+		fields = append(fields, group.FieldUpdatedAt)
+	}
 	if m.FieldCleared(group.FieldUpdatedBy) {
 		fields = append(fields, group.FieldUpdatedBy)
 	}
@@ -818,6 +951,12 @@ func (m *GroupMutation) ClearField(name string) error {
 	case group.FieldDescription:
 		m.ClearDescription()
 		return nil
+	case group.FieldEmail:
+		m.ClearEmail()
+		return nil
+	case group.FieldUpdatedAt:
+		m.ClearUpdatedAt()
+		return nil
 	case group.FieldUpdatedBy:
 		m.ClearUpdatedBy()
 		return nil
@@ -837,6 +976,12 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldDescription:
 		m.ResetDescription()
+		return nil
+	case group.FieldEmail:
+		m.ResetEmail()
+		return nil
+	case group.FieldEtag:
+		m.ResetEtag()
 		return nil
 	case group.FieldCreatedAt:
 		m.ResetCreatedAt()
@@ -966,6 +1111,7 @@ type HierarchyLevelMutation struct {
 	typ           string
 	id            *string
 	org_id        *string
+	etag          *string
 	name          *string
 	clearedFields map[string]struct{}
 	parent        *string
@@ -1116,6 +1262,42 @@ func (m *HierarchyLevelMutation) OldOrgID(ctx context.Context) (v string, err er
 // ResetOrgID resets all changes to the "org_id" field.
 func (m *HierarchyLevelMutation) ResetOrgID() {
 	m.org_id = nil
+}
+
+// SetEtag sets the "etag" field.
+func (m *HierarchyLevelMutation) SetEtag(s string) {
+	m.etag = &s
+}
+
+// Etag returns the value of the "etag" field in the mutation.
+func (m *HierarchyLevelMutation) Etag() (r string, exists bool) {
+	v := m.etag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEtag returns the old "etag" field's value of the HierarchyLevel entity.
+// If the HierarchyLevel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HierarchyLevelMutation) OldEtag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEtag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEtag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEtag: %w", err)
+	}
+	return oldValue.Etag, nil
+}
+
+// ResetEtag resets all changes to the "etag" field.
+func (m *HierarchyLevelMutation) ResetEtag() {
+	m.etag = nil
 }
 
 // SetName sets the "name" field.
@@ -1318,9 +1500,12 @@ func (m *HierarchyLevelMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *HierarchyLevelMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.org_id != nil {
 		fields = append(fields, hierarchylevel.FieldOrgID)
+	}
+	if m.etag != nil {
+		fields = append(fields, hierarchylevel.FieldEtag)
 	}
 	if m.name != nil {
 		fields = append(fields, hierarchylevel.FieldName)
@@ -1338,6 +1523,8 @@ func (m *HierarchyLevelMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case hierarchylevel.FieldOrgID:
 		return m.OrgID()
+	case hierarchylevel.FieldEtag:
+		return m.Etag()
 	case hierarchylevel.FieldName:
 		return m.Name()
 	case hierarchylevel.FieldParentID:
@@ -1353,6 +1540,8 @@ func (m *HierarchyLevelMutation) OldField(ctx context.Context, name string) (ent
 	switch name {
 	case hierarchylevel.FieldOrgID:
 		return m.OldOrgID(ctx)
+	case hierarchylevel.FieldEtag:
+		return m.OldEtag(ctx)
 	case hierarchylevel.FieldName:
 		return m.OldName(ctx)
 	case hierarchylevel.FieldParentID:
@@ -1372,6 +1561,13 @@ func (m *HierarchyLevelMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetOrgID(v)
+		return nil
+	case hierarchylevel.FieldEtag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEtag(v)
 		return nil
 	case hierarchylevel.FieldName:
 		v, ok := value.(string)
@@ -1447,6 +1643,9 @@ func (m *HierarchyLevelMutation) ResetField(name string) error {
 	switch name {
 	case hierarchylevel.FieldOrgID:
 		m.ResetOrgID()
+		return nil
+	case hierarchylevel.FieldEtag:
+		m.ResetEtag()
 		return nil
 	case hierarchylevel.FieldName:
 		m.ResetName()
@@ -1922,7 +2121,7 @@ func (m *OrganizationMutation) UpdatedAt() (r time.Time, exists bool) {
 // OldUpdatedAt returns the old "updated_at" field's value of the Organization entity.
 // If the Organization object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OrganizationMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+func (m *OrganizationMutation) OldUpdatedAt(ctx context.Context) (v *time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
 	}
@@ -1936,9 +2135,22 @@ func (m *OrganizationMutation) OldUpdatedAt(ctx context.Context) (v time.Time, e
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *OrganizationMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[organization.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *OrganizationMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[organization.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *OrganizationMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, organization.FieldUpdatedAt)
 }
 
 // SetUpdatedBy sets the "updated_by" field.
@@ -2286,6 +2498,9 @@ func (m *OrganizationMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *OrganizationMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(organization.FieldUpdatedAt) {
+		fields = append(fields, organization.FieldUpdatedAt)
+	}
 	if m.FieldCleared(organization.FieldUpdatedBy) {
 		fields = append(fields, organization.FieldUpdatedBy)
 	}
@@ -2303,6 +2518,9 @@ func (m *OrganizationMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *OrganizationMutation) ClearField(name string) error {
 	switch name {
+	case organization.FieldUpdatedAt:
+		m.ClearUpdatedAt()
+		return nil
 	case organization.FieldUpdatedBy:
 		m.ClearUpdatedBy()
 		return nil
@@ -2458,6 +2676,7 @@ type UserMutation struct {
 	etag                     *string
 	failed_login_attempts    *int
 	addfailed_login_attempts *int
+	is_owner                 *bool
 	last_login_at            *time.Time
 	locked_until             *time.Time
 	must_change_password     *bool
@@ -2867,6 +3086,55 @@ func (m *UserMutation) ResetFailedLoginAttempts() {
 	m.addfailed_login_attempts = nil
 }
 
+// SetIsOwner sets the "is_owner" field.
+func (m *UserMutation) SetIsOwner(b bool) {
+	m.is_owner = &b
+}
+
+// IsOwner returns the value of the "is_owner" field in the mutation.
+func (m *UserMutation) IsOwner() (r bool, exists bool) {
+	v := m.is_owner
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsOwner returns the old "is_owner" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldIsOwner(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsOwner is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsOwner requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsOwner: %w", err)
+	}
+	return oldValue.IsOwner, nil
+}
+
+// ClearIsOwner clears the value of the "is_owner" field.
+func (m *UserMutation) ClearIsOwner() {
+	m.is_owner = nil
+	m.clearedFields[user.FieldIsOwner] = struct{}{}
+}
+
+// IsOwnerCleared returns if the "is_owner" field was cleared in this mutation.
+func (m *UserMutation) IsOwnerCleared() bool {
+	_, ok := m.clearedFields[user.FieldIsOwner]
+	return ok
+}
+
+// ResetIsOwner resets all changes to the "is_owner" field.
+func (m *UserMutation) ResetIsOwner() {
+	m.is_owner = nil
+	delete(m.clearedFields, user.FieldIsOwner)
+}
+
 // SetLastLoginAt sets the "last_login_at" field.
 func (m *UserMutation) SetLastLoginAt(t time.Time) {
 	m.last_login_at = &t
@@ -3126,7 +3394,7 @@ func (m *UserMutation) UpdatedAt() (r time.Time, exists bool) {
 // OldUpdatedAt returns the old "updated_at" field's value of the User entity.
 // If the User object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+func (m *UserMutation) OldUpdatedAt(ctx context.Context) (v *time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
 	}
@@ -3140,9 +3408,22 @@ func (m *UserMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error
 	return oldValue.UpdatedAt, nil
 }
 
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *UserMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[user.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *UserMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[user.FieldUpdatedAt]
+	return ok
+}
+
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *UserMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+	delete(m.clearedFields, user.FieldUpdatedAt)
 }
 
 // SetUpdatedBy sets the "updated_by" field.
@@ -3336,7 +3617,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 16)
 	if m.avatar_url != nil {
 		fields = append(fields, user.FieldAvatarURL)
 	}
@@ -3357,6 +3638,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.failed_login_attempts != nil {
 		fields = append(fields, user.FieldFailedLoginAttempts)
+	}
+	if m.is_owner != nil {
+		fields = append(fields, user.FieldIsOwner)
 	}
 	if m.last_login_at != nil {
 		fields = append(fields, user.FieldLastLoginAt)
@@ -3404,6 +3688,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Etag()
 	case user.FieldFailedLoginAttempts:
 		return m.FailedLoginAttempts()
+	case user.FieldIsOwner:
+		return m.IsOwner()
 	case user.FieldLastLoginAt:
 		return m.LastLoginAt()
 	case user.FieldLockedUntil:
@@ -3443,6 +3729,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldEtag(ctx)
 	case user.FieldFailedLoginAttempts:
 		return m.OldFailedLoginAttempts(ctx)
+	case user.FieldIsOwner:
+		return m.OldIsOwner(ctx)
 	case user.FieldLastLoginAt:
 		return m.OldLastLoginAt(ctx)
 	case user.FieldLockedUntil:
@@ -3516,6 +3804,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetFailedLoginAttempts(v)
+		return nil
+	case user.FieldIsOwner:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsOwner(v)
 		return nil
 	case user.FieldLastLoginAt:
 		v, ok := value.(time.Time)
@@ -3621,11 +3916,17 @@ func (m *UserMutation) ClearedFields() []string {
 	if m.FieldCleared(user.FieldAvatarURL) {
 		fields = append(fields, user.FieldAvatarURL)
 	}
+	if m.FieldCleared(user.FieldIsOwner) {
+		fields = append(fields, user.FieldIsOwner)
+	}
 	if m.FieldCleared(user.FieldLastLoginAt) {
 		fields = append(fields, user.FieldLastLoginAt)
 	}
 	if m.FieldCleared(user.FieldLockedUntil) {
 		fields = append(fields, user.FieldLockedUntil)
+	}
+	if m.FieldCleared(user.FieldUpdatedAt) {
+		fields = append(fields, user.FieldUpdatedAt)
 	}
 	if m.FieldCleared(user.FieldUpdatedBy) {
 		fields = append(fields, user.FieldUpdatedBy)
@@ -3647,11 +3948,17 @@ func (m *UserMutation) ClearField(name string) error {
 	case user.FieldAvatarURL:
 		m.ClearAvatarURL()
 		return nil
+	case user.FieldIsOwner:
+		m.ClearIsOwner()
+		return nil
 	case user.FieldLastLoginAt:
 		m.ClearLastLoginAt()
 		return nil
 	case user.FieldLockedUntil:
 		m.ClearLockedUntil()
+		return nil
+	case user.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	case user.FieldUpdatedBy:
 		m.ClearUpdatedBy()
@@ -3684,6 +3991,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldFailedLoginAttempts:
 		m.ResetFailedLoginAttempts()
+		return nil
+	case user.FieldIsOwner:
+		m.ResetIsOwner()
 		return nil
 	case user.FieldLastLoginAt:
 		m.ResetLastLoginAt()

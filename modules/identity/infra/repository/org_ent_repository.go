@@ -73,7 +73,7 @@ func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, slug stri
 
 func (this *OrganizationEntRepository) Search(
 	ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions,
-) (*crud.PagedResult[*domain.Organization], error) {
+) (*crud.PagedResult[domain.Organization], error) {
 	return Search(
 		ctx,
 		criteria,
