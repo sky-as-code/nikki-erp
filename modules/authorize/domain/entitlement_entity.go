@@ -1,37 +1,49 @@
 package domain
 
 import (
+	"go.bryk.io/pkg/errors"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	entEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
-	"go.bryk.io/pkg/errors"
 )
 
 type Entitlement struct {
 	model.ModelBase
+	model.AuditableBase
 
+	ActionId    *model.Id               `json:"actionId,omitempty"`
+	ActionExpr  *string                 `json:"actionExpr,omitempty"`
+	ResourceId  *model.Id               `json:"resourceId,omitempty"`
 	SubjectType *EntitlementSubjectType `json:"subjectType,omitempty"`
 	SubjectRef  *string                 `json:"subjectRef,omitempty"`
 	ScopeRef    *string                 `json:"scopeRef,omitempty"`
-	ActionId    *model.Id               `json:"actionId,omitempty"`
-	ResourceId  *model.Id               `json:"resourceId,omitempty"`
+
+	Action   *Action   `json:"action,omitempty"`
+	Resource *Resource `json:"resource,omitempty"`
 }
 
 func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.ActionId, true),
+		val.Field(&this.ActionExpr,
+			val.Required,
+		),
+		model.IdValidateRule(&this.ResourceId, true),
 		EntitlementSubjectTypeValidateRule(&this.SubjectType),
+
 		val.Field(&this.SubjectRef,
 			val.Required,
-			val.Length(1, 100),
+			val.Length(1, model.MODEL_RULE_NON_NIKKI_ID_LENGTH),
 		),
 		val.Field(&this.ScopeRef,
 			val.Required,
-			val.Length(1, 100),
+			val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
 		),
-		model.IdValidateRule(&this.ActionId, true),
-		model.IdValidateRule(&this.ResourceId, true),
 	}
+	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
+	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
 
 	return val.ApiBased.ValidateStruct(this, rules...)
 }

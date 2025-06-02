@@ -27,6 +27,40 @@ func (rc *ResourceCreate) SetName(s string) *ResourceCreate {
 	return rc
 }
 
+// SetDescription sets the "description" field.
+func (rc *ResourceCreate) SetDescription(s string) *ResourceCreate {
+	rc.mutation.SetDescription(s)
+	return rc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (rc *ResourceCreate) SetNillableDescription(s *string) *ResourceCreate {
+	if s != nil {
+		rc.SetDescription(*s)
+	}
+	return rc
+}
+
+// SetResourceType sets the "resource_type" field.
+func (rc *ResourceCreate) SetResourceType(rt resource.ResourceType) *ResourceCreate {
+	rc.mutation.SetResourceType(rt)
+	return rc
+}
+
+// SetResourceRef sets the "resource_ref" field.
+func (rc *ResourceCreate) SetResourceRef(s string) *ResourceCreate {
+	rc.mutation.SetResourceRef(s)
+	return rc
+}
+
+// SetNillableResourceRef sets the "resource_ref" field if the given value is not nil.
+func (rc *ResourceCreate) SetNillableResourceRef(s *string) *ResourceCreate {
+	if s != nil {
+		rc.SetResourceRef(*s)
+	}
+	return rc
+}
+
 // SetScopeType sets the "scope_type" field.
 func (rc *ResourceCreate) SetScopeType(rt resource.ScopeType) *ResourceCreate {
 	rc.mutation.SetScopeType(rt)
@@ -106,6 +140,14 @@ func (rc *ResourceCreate) check() error {
 	if _, ok := rc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Resource.name"`)}
 	}
+	if _, ok := rc.mutation.ResourceType(); !ok {
+		return &ValidationError{Name: "resource_type", err: errors.New(`ent: missing required field "Resource.resource_type"`)}
+	}
+	if v, ok := rc.mutation.ResourceType(); ok {
+		if err := resource.ResourceTypeValidator(v); err != nil {
+			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Resource.resource_type": %w`, err)}
+		}
+	}
 	if _, ok := rc.mutation.ScopeType(); !ok {
 		return &ValidationError{Name: "scope_type", err: errors.New(`ent: missing required field "Resource.scope_type"`)}
 	}
@@ -152,6 +194,18 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.Name(); ok {
 		_spec.SetField(resource.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if value, ok := rc.mutation.Description(); ok {
+		_spec.SetField(resource.FieldDescription, field.TypeString, value)
+		_node.Description = value
+	}
+	if value, ok := rc.mutation.ResourceType(); ok {
+		_spec.SetField(resource.FieldResourceType, field.TypeEnum, value)
+		_node.ResourceType = value
+	}
+	if value, ok := rc.mutation.ResourceRef(); ok {
+		_spec.SetField(resource.FieldResourceRef, field.TypeString, value)
+		_node.ResourceRef = value
 	}
 	if value, ok := rc.mutation.ScopeType(); ok {
 		_spec.SetField(resource.FieldScopeType, field.TypeEnum, value)

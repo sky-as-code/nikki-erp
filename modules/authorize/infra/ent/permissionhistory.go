@@ -22,32 +22,36 @@ type PermissionHistory struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
-	// ApproverID holds the value of the "approver_id" field.
-	ApproverID string `json:"approver_id,omitempty"`
-	// ApproverEmail holds the value of the "approver_email" field.
+	// Must be set NULL before the approver account is deleted
+	ApproverID *string `json:"approver_id,omitempty"`
+	// Approver email must be copied here before the approver account is deleted
 	ApproverEmail string `json:"approver_email,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Effect holds the value of the "effect" field.
 	Effect permissionhistory.Effect `json:"effect,omitempty"`
-	// EntitlementID holds the value of the "entitlement_id" field.
+	// Permission is granted, revoked because entitlement, role or role suite is added, removed or deleted
+	Reason permissionhistory.Reason `json:"reason,omitempty"`
+	// Must be set NULL before the entitlement is deleted
 	EntitlementID *string `json:"entitlement_id,omitempty"`
-	// EntitlementExpr holds the value of the "entitlement_expr" field.
-	EntitlementExpr *string `json:"entitlement_expr,omitempty"`
-	// ReceiverID holds the value of the "receiver_id" field.
-	ReceiverID string `json:"receiver_id,omitempty"`
+	// Entitlement expression must be copied here before the entitlement is deleted
+	EntitlementExpr string `json:"entitlement_expr,omitempty"`
+	// Must be set NULL before the receiver account is deleted
+	ReceiverID *string `json:"receiver_id,omitempty"`
+	// Receiver email must be copied here before the receiver account is deleted
+	ReceiverEmail string `json:"receiver_email,omitempty"`
 	// GrantRequestID holds the value of the "grant_request_id" field.
 	GrantRequestID *string `json:"grant_request_id,omitempty"`
 	// RevokeRequestID holds the value of the "revoke_request_id" field.
 	RevokeRequestID *string `json:"revoke_request_id,omitempty"`
-	// RoleID holds the value of the "role_id" field.
+	// Must be set NULL before the role is deleted
 	RoleID *string `json:"role_id,omitempty"`
-	// RoleName holds the value of the "role_name" field.
-	RoleName *string `json:"role_name,omitempty"`
-	// RoleSuiteID holds the value of the "role_suite_id" field.
+	// Role name must be copied here before the role is deleted
+	RoleName string `json:"role_name,omitempty"`
+	// Must be set NULL before the role suite is deleted
 	RoleSuiteID *string `json:"role_suite_id,omitempty"`
-	// RoleSuiteName holds the value of the "role_suite_name" field.
-	RoleSuiteName *string `json:"role_suite_name,omitempty"`
+	// Role suite name must be copied here before the role suite is deleted
+	RoleSuiteName string `json:"role_suite_name,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PermissionHistoryQuery when eager-loading is set.
 	Edges        PermissionHistoryEdges `json:"edges"`
@@ -131,7 +135,7 @@ func (*PermissionHistory) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case permissionhistory.FieldID, permissionhistory.FieldApproverID, permissionhistory.FieldApproverEmail, permissionhistory.FieldEffect, permissionhistory.FieldEntitlementID, permissionhistory.FieldEntitlementExpr, permissionhistory.FieldReceiverID, permissionhistory.FieldGrantRequestID, permissionhistory.FieldRevokeRequestID, permissionhistory.FieldRoleID, permissionhistory.FieldRoleName, permissionhistory.FieldRoleSuiteID, permissionhistory.FieldRoleSuiteName:
+		case permissionhistory.FieldID, permissionhistory.FieldApproverID, permissionhistory.FieldApproverEmail, permissionhistory.FieldEffect, permissionhistory.FieldReason, permissionhistory.FieldEntitlementID, permissionhistory.FieldEntitlementExpr, permissionhistory.FieldReceiverID, permissionhistory.FieldReceiverEmail, permissionhistory.FieldGrantRequestID, permissionhistory.FieldRevokeRequestID, permissionhistory.FieldRoleID, permissionhistory.FieldRoleName, permissionhistory.FieldRoleSuiteID, permissionhistory.FieldRoleSuiteName:
 			values[i] = new(sql.NullString)
 		case permissionhistory.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -160,7 +164,8 @@ func (ph *PermissionHistory) assignValues(columns []string, values []any) error 
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field approver_id", values[i])
 			} else if value.Valid {
-				ph.ApproverID = value.String
+				ph.ApproverID = new(string)
+				*ph.ApproverID = value.String
 			}
 		case permissionhistory.FieldApproverEmail:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -180,6 +185,12 @@ func (ph *PermissionHistory) assignValues(columns []string, values []any) error 
 			} else if value.Valid {
 				ph.Effect = permissionhistory.Effect(value.String)
 			}
+		case permissionhistory.FieldReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field reason", values[i])
+			} else if value.Valid {
+				ph.Reason = permissionhistory.Reason(value.String)
+			}
 		case permissionhistory.FieldEntitlementID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field entitlement_id", values[i])
@@ -191,14 +202,20 @@ func (ph *PermissionHistory) assignValues(columns []string, values []any) error 
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field entitlement_expr", values[i])
 			} else if value.Valid {
-				ph.EntitlementExpr = new(string)
-				*ph.EntitlementExpr = value.String
+				ph.EntitlementExpr = value.String
 			}
 		case permissionhistory.FieldReceiverID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field receiver_id", values[i])
 			} else if value.Valid {
-				ph.ReceiverID = value.String
+				ph.ReceiverID = new(string)
+				*ph.ReceiverID = value.String
+			}
+		case permissionhistory.FieldReceiverEmail:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field receiver_email", values[i])
+			} else if value.Valid {
+				ph.ReceiverEmail = value.String
 			}
 		case permissionhistory.FieldGrantRequestID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -225,8 +242,7 @@ func (ph *PermissionHistory) assignValues(columns []string, values []any) error 
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field role_name", values[i])
 			} else if value.Valid {
-				ph.RoleName = new(string)
-				*ph.RoleName = value.String
+				ph.RoleName = value.String
 			}
 		case permissionhistory.FieldRoleSuiteID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -239,8 +255,7 @@ func (ph *PermissionHistory) assignValues(columns []string, values []any) error 
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field role_suite_name", values[i])
 			} else if value.Valid {
-				ph.RoleSuiteName = new(string)
-				*ph.RoleSuiteName = value.String
+				ph.RoleSuiteName = value.String
 			}
 		default:
 			ph.selectValues.Set(columns[i], values[i])
@@ -303,8 +318,10 @@ func (ph *PermissionHistory) String() string {
 	var builder strings.Builder
 	builder.WriteString("PermissionHistory(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", ph.ID))
-	builder.WriteString("approver_id=")
-	builder.WriteString(ph.ApproverID)
+	if v := ph.ApproverID; v != nil {
+		builder.WriteString("approver_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("approver_email=")
 	builder.WriteString(ph.ApproverEmail)
@@ -315,18 +332,24 @@ func (ph *PermissionHistory) String() string {
 	builder.WriteString("effect=")
 	builder.WriteString(fmt.Sprintf("%v", ph.Effect))
 	builder.WriteString(", ")
+	builder.WriteString("reason=")
+	builder.WriteString(fmt.Sprintf("%v", ph.Reason))
+	builder.WriteString(", ")
 	if v := ph.EntitlementID; v != nil {
 		builder.WriteString("entitlement_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	if v := ph.EntitlementExpr; v != nil {
-		builder.WriteString("entitlement_expr=")
+	builder.WriteString("entitlement_expr=")
+	builder.WriteString(ph.EntitlementExpr)
+	builder.WriteString(", ")
+	if v := ph.ReceiverID; v != nil {
+		builder.WriteString("receiver_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("receiver_id=")
-	builder.WriteString(ph.ReceiverID)
+	builder.WriteString("receiver_email=")
+	builder.WriteString(ph.ReceiverEmail)
 	builder.WriteString(", ")
 	if v := ph.GrantRequestID; v != nil {
 		builder.WriteString("grant_request_id=")
@@ -343,20 +366,16 @@ func (ph *PermissionHistory) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	if v := ph.RoleName; v != nil {
-		builder.WriteString("role_name=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("role_name=")
+	builder.WriteString(ph.RoleName)
 	builder.WriteString(", ")
 	if v := ph.RoleSuiteID; v != nil {
 		builder.WriteString("role_suite_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	if v := ph.RoleSuiteName; v != nil {
-		builder.WriteString("role_suite_name=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("role_suite_name=")
+	builder.WriteString(ph.RoleSuiteName)
 	builder.WriteByte(')')
 	return builder.String()
 }

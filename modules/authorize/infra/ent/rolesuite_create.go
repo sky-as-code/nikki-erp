@@ -57,6 +57,14 @@ func (rsc *RoleSuiteCreate) SetDescription(s string) *RoleSuiteCreate {
 	return rsc
 }
 
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (rsc *RoleSuiteCreate) SetNillableDescription(s *string) *RoleSuiteCreate {
+	if s != nil {
+		rsc.SetDescription(*s)
+	}
+	return rsc
+}
+
 // SetEtag sets the "etag" field.
 func (rsc *RoleSuiteCreate) SetEtag(s string) *RoleSuiteCreate {
 	rsc.mutation.SetEtag(s)
@@ -69,9 +77,9 @@ func (rsc *RoleSuiteCreate) SetOwnerType(rt rolesuite.OwnerType) *RoleSuiteCreat
 	return rsc
 }
 
-// SetOwnerID sets the "owner_id" field.
-func (rsc *RoleSuiteCreate) SetOwnerID(s string) *RoleSuiteCreate {
-	rsc.mutation.SetOwnerID(s)
+// SetOwnerRef sets the "owner_ref" field.
+func (rsc *RoleSuiteCreate) SetOwnerRef(s string) *RoleSuiteCreate {
+	rsc.mutation.SetOwnerRef(s)
 	return rsc
 }
 
@@ -226,9 +234,6 @@ func (rsc *RoleSuiteCreate) check() error {
 	if _, ok := rsc.mutation.DisplayName(); !ok {
 		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "RoleSuite.display_name"`)}
 	}
-	if _, ok := rsc.mutation.Description(); !ok {
-		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "RoleSuite.description"`)}
-	}
 	if _, ok := rsc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "RoleSuite.etag"`)}
 	}
@@ -240,8 +245,8 @@ func (rsc *RoleSuiteCreate) check() error {
 			return &ValidationError{Name: "owner_type", err: fmt.Errorf(`ent: validator failed for field "RoleSuite.owner_type": %w`, err)}
 		}
 	}
-	if _, ok := rsc.mutation.OwnerID(); !ok {
-		return &ValidationError{Name: "owner_id", err: errors.New(`ent: missing required field "RoleSuite.owner_id"`)}
+	if _, ok := rsc.mutation.OwnerRef(); !ok {
+		return &ValidationError{Name: "owner_ref", err: errors.New(`ent: missing required field "RoleSuite.owner_ref"`)}
 	}
 	if _, ok := rsc.mutation.IsRequestable(); !ok {
 		return &ValidationError{Name: "is_requestable", err: errors.New(`ent: missing required field "RoleSuite.is_requestable"`)}
@@ -311,9 +316,9 @@ func (rsc *RoleSuiteCreate) createSpec() (*RoleSuite, *sqlgraph.CreateSpec) {
 		_spec.SetField(rolesuite.FieldOwnerType, field.TypeEnum, value)
 		_node.OwnerType = value
 	}
-	if value, ok := rsc.mutation.OwnerID(); ok {
-		_spec.SetField(rolesuite.FieldOwnerID, field.TypeString, value)
-		_node.OwnerID = value
+	if value, ok := rsc.mutation.OwnerRef(); ok {
+		_spec.SetField(rolesuite.FieldOwnerRef, field.TypeString, value)
+		_node.OwnerRef = value
 	}
 	if value, ok := rsc.mutation.IsRequestable(); ok {
 		_spec.SetField(rolesuite.FieldIsRequestable, field.TypeBool, value)

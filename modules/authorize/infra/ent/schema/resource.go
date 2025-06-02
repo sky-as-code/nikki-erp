@@ -21,8 +21,23 @@ func (ResourceMixin) Fields() []ent.Field {
 
 		field.String("name"),
 
+		field.String("description").
+			Optional(),
+
+		field.Enum("resource_type").
+			Values("nikki_application", "custom").
+			Immutable().
+			Comment("A resource can be a Nikki Application (lifecycle and access managed by Nikki) or a custom string"),
+
+		field.String("resource_ref").
+			Optional().
+			Immutable().
+			Comment("Some resource type requires identifier (ID)"),
+
 		field.Enum("scope_type").
-			Values("domain", "org", "hierarchy", "private"),
+			Values("domain", "org", "hierarchy", "private").
+			Immutable().
+			Comment("This field cannot be changed to avoid breaking existing entitlements"),
 	}
 }
 

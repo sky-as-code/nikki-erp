@@ -23,12 +23,16 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldEffect holds the string denoting the effect field in the database.
 	FieldEffect = "effect"
+	// FieldReason holds the string denoting the reason field in the database.
+	FieldReason = "reason"
 	// FieldEntitlementID holds the string denoting the entitlement_id field in the database.
 	FieldEntitlementID = "entitlement_id"
 	// FieldEntitlementExpr holds the string denoting the entitlement_expr field in the database.
 	FieldEntitlementExpr = "entitlement_expr"
 	// FieldReceiverID holds the string denoting the receiver_id field in the database.
 	FieldReceiverID = "receiver_id"
+	// FieldReceiverEmail holds the string denoting the receiver_email field in the database.
+	FieldReceiverEmail = "receiver_email"
 	// FieldGrantRequestID holds the string denoting the grant_request_id field in the database.
 	FieldGrantRequestID = "grant_request_id"
 	// FieldRevokeRequestID holds the string denoting the revoke_request_id field in the database.
@@ -97,9 +101,11 @@ var Columns = []string{
 	FieldApproverEmail,
 	FieldCreatedAt,
 	FieldEffect,
+	FieldReason,
 	FieldEntitlementID,
 	FieldEntitlementExpr,
 	FieldReceiverID,
+	FieldReceiverEmail,
 	FieldGrantRequestID,
 	FieldRevokeRequestID,
 	FieldRoleID,
@@ -128,11 +134,8 @@ type Effect string
 
 // Effect values.
 const (
-	EffectGRANT         Effect = "GRANT"
-	EffectREVOKE        Effect = "REVOKE"
-	EffectENT_DELETED   Effect = "ENT_DELETED"
-	EffectROLE_DELETED  Effect = "ROLE_DELETED"
-	EffectSUITE_DELETED Effect = "SUITE_DELETED"
+	EffectGrant  Effect = "grant"
+	EffectRevoke Effect = "revoke"
 )
 
 func (e Effect) String() string {
@@ -142,10 +145,60 @@ func (e Effect) String() string {
 // EffectValidator is a validator for the "effect" field enum values. It is called by the builders before save.
 func EffectValidator(e Effect) error {
 	switch e {
-	case EffectGRANT, EffectREVOKE, EffectENT_DELETED, EffectROLE_DELETED, EffectSUITE_DELETED:
+	case EffectGrant, EffectRevoke:
 		return nil
 	default:
 		return fmt.Errorf("permissionhistory: invalid enum value for effect field: %q", e)
+	}
+}
+
+// Reason defines the type for the "reason" enum field.
+type Reason string
+
+// Reason values.
+const (
+	ReasonEntAdded             Reason = "ent_added"
+	ReasonEntRemoved           Reason = "ent_removed"
+	ReasonEntDeleted           Reason = "ent_deleted"
+	ReasonEntAddedGroup        Reason = "ent_added_group"
+	ReasonEntRemovedGroup      Reason = "ent_removed_group"
+	ReasonEntDeletedGroup      Reason = "ent_deleted_group"
+	ReasonEntAddedRole         Reason = "ent_added_role"
+	ReasonEntRemovedRole       Reason = "ent_removed_role"
+	ReasonEntDeletedRole       Reason = "ent_deleted_role"
+	ReasonEntAddedRoleGroup    Reason = "ent_added_role_group"
+	ReasonEntRemovedRoleGroup  Reason = "ent_removed_role_group"
+	ReasonEntDeletedRoleGroup  Reason = "ent_deleted_role_group"
+	ReasonEntDeletedSuiteGroup Reason = "ent_deleted_suite_group"
+	ReasonRoleAdded            Reason = "role_added"
+	ReasonRoleRemoved          Reason = "role_removed"
+	ReasonRoleDeleted          Reason = "role_deleted"
+	ReasonRoleAddedGroup       Reason = "role_added_group"
+	ReasonRoleRemovedGroup     Reason = "role_removed_group"
+	ReasonRoleDeletedGroup     Reason = "role_deleted_group"
+	ReasonSuiteAdded           Reason = "suite_added"
+	ReasonSuiteRemoved         Reason = "suite_removed"
+	ReasonSuiteDeleted         Reason = "suite_deleted"
+	ReasonSuiteMoreRole        Reason = "suite_more_role"
+	ReasonSuiteLessRole        Reason = "suite_less_role"
+	ReasonSuiteMoreRoleGroup   Reason = "suite_more_role_group"
+	ReasonSuiteLessRoleGroup   Reason = "suite_less_role_group"
+	ReasonSuiteAddedGroup      Reason = "suite_added_group"
+	ReasonSuiteRemovedGroup    Reason = "suite_removed_group"
+	ReasonSuiteDeletedGroup    Reason = "suite_deleted_group"
+)
+
+func (r Reason) String() string {
+	return string(r)
+}
+
+// ReasonValidator is a validator for the "reason" field enum values. It is called by the builders before save.
+func ReasonValidator(r Reason) error {
+	switch r {
+	case ReasonEntAdded, ReasonEntRemoved, ReasonEntDeleted, ReasonEntAddedGroup, ReasonEntRemovedGroup, ReasonEntDeletedGroup, ReasonEntAddedRole, ReasonEntRemovedRole, ReasonEntDeletedRole, ReasonEntAddedRoleGroup, ReasonEntRemovedRoleGroup, ReasonEntDeletedRoleGroup, ReasonEntDeletedSuiteGroup, ReasonRoleAdded, ReasonRoleRemoved, ReasonRoleDeleted, ReasonRoleAddedGroup, ReasonRoleRemovedGroup, ReasonRoleDeletedGroup, ReasonSuiteAdded, ReasonSuiteRemoved, ReasonSuiteDeleted, ReasonSuiteMoreRole, ReasonSuiteLessRole, ReasonSuiteMoreRoleGroup, ReasonSuiteLessRoleGroup, ReasonSuiteAddedGroup, ReasonSuiteRemovedGroup, ReasonSuiteDeletedGroup:
+		return nil
+	default:
+		return fmt.Errorf("permissionhistory: invalid enum value for reason field: %q", r)
 	}
 }
 
@@ -177,6 +230,11 @@ func ByEffect(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEffect, opts...).ToFunc()
 }
 
+// ByReason orders the results by the reason field.
+func ByReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReason, opts...).ToFunc()
+}
+
 // ByEntitlementID orders the results by the entitlement_id field.
 func ByEntitlementID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEntitlementID, opts...).ToFunc()
@@ -190,6 +248,11 @@ func ByEntitlementExpr(opts ...sql.OrderTermOption) OrderOption {
 // ByReceiverID orders the results by the receiver_id field.
 func ByReceiverID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReceiverID, opts...).ToFunc()
+}
+
+// ByReceiverEmail orders the results by the receiver_email field.
+func ByReceiverEmail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReceiverEmail, opts...).ToFunc()
 }
 
 // ByGrantRequestID orders the results by the grant_request_id field.

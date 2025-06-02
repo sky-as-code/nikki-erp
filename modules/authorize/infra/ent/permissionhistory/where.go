@@ -95,6 +95,11 @@ func ReceiverID(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEQ(FieldReceiverID, v))
 }
 
+// ReceiverEmail applies equality check predicate on the "receiver_email" field. It's identical to ReceiverEmailEQ.
+func ReceiverEmail(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldEQ(FieldReceiverEmail, v))
+}
+
 // GrantRequestID applies equality check predicate on the "grant_request_id" field. It's identical to GrantRequestIDEQ.
 func GrantRequestID(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEQ(FieldGrantRequestID, v))
@@ -178,6 +183,16 @@ func ApproverIDHasPrefix(v string) predicate.PermissionHistory {
 // ApproverIDHasSuffix applies the HasSuffix predicate on the "approver_id" field.
 func ApproverIDHasSuffix(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldApproverID, v))
+}
+
+// ApproverIDIsNil applies the IsNil predicate on the "approver_id" field.
+func ApproverIDIsNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIsNull(FieldApproverID))
+}
+
+// ApproverIDNotNil applies the NotNil predicate on the "approver_id" field.
+func ApproverIDNotNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotNull(FieldApproverID))
 }
 
 // ApproverIDEqualFold applies the EqualFold predicate on the "approver_id" field.
@@ -315,6 +330,26 @@ func EffectNotIn(vs ...Effect) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldNotIn(FieldEffect, vs...))
 }
 
+// ReasonEQ applies the EQ predicate on the "reason" field.
+func ReasonEQ(v Reason) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldEQ(FieldReason, v))
+}
+
+// ReasonNEQ applies the NEQ predicate on the "reason" field.
+func ReasonNEQ(v Reason) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNEQ(FieldReason, v))
+}
+
+// ReasonIn applies the In predicate on the "reason" field.
+func ReasonIn(vs ...Reason) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIn(FieldReason, vs...))
+}
+
+// ReasonNotIn applies the NotIn predicate on the "reason" field.
+func ReasonNotIn(vs ...Reason) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotIn(FieldReason, vs...))
+}
+
 // EntitlementIDEQ applies the EQ predicate on the "entitlement_id" field.
 func EntitlementIDEQ(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEQ(FieldEntitlementID, v))
@@ -445,16 +480,6 @@ func EntitlementExprHasSuffix(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldEntitlementExpr, v))
 }
 
-// EntitlementExprIsNil applies the IsNil predicate on the "entitlement_expr" field.
-func EntitlementExprIsNil() predicate.PermissionHistory {
-	return predicate.PermissionHistory(sql.FieldIsNull(FieldEntitlementExpr))
-}
-
-// EntitlementExprNotNil applies the NotNil predicate on the "entitlement_expr" field.
-func EntitlementExprNotNil() predicate.PermissionHistory {
-	return predicate.PermissionHistory(sql.FieldNotNull(FieldEntitlementExpr))
-}
-
 // EntitlementExprEqualFold applies the EqualFold predicate on the "entitlement_expr" field.
 func EntitlementExprEqualFold(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEqualFold(FieldEntitlementExpr, v))
@@ -520,6 +545,16 @@ func ReceiverIDHasSuffix(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldReceiverID, v))
 }
 
+// ReceiverIDIsNil applies the IsNil predicate on the "receiver_id" field.
+func ReceiverIDIsNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIsNull(FieldReceiverID))
+}
+
+// ReceiverIDNotNil applies the NotNil predicate on the "receiver_id" field.
+func ReceiverIDNotNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotNull(FieldReceiverID))
+}
+
 // ReceiverIDEqualFold applies the EqualFold predicate on the "receiver_id" field.
 func ReceiverIDEqualFold(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEqualFold(FieldReceiverID, v))
@@ -528,6 +563,71 @@ func ReceiverIDEqualFold(v string) predicate.PermissionHistory {
 // ReceiverIDContainsFold applies the ContainsFold predicate on the "receiver_id" field.
 func ReceiverIDContainsFold(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldContainsFold(FieldReceiverID, v))
+}
+
+// ReceiverEmailEQ applies the EQ predicate on the "receiver_email" field.
+func ReceiverEmailEQ(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldEQ(FieldReceiverEmail, v))
+}
+
+// ReceiverEmailNEQ applies the NEQ predicate on the "receiver_email" field.
+func ReceiverEmailNEQ(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNEQ(FieldReceiverEmail, v))
+}
+
+// ReceiverEmailIn applies the In predicate on the "receiver_email" field.
+func ReceiverEmailIn(vs ...string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIn(FieldReceiverEmail, vs...))
+}
+
+// ReceiverEmailNotIn applies the NotIn predicate on the "receiver_email" field.
+func ReceiverEmailNotIn(vs ...string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotIn(FieldReceiverEmail, vs...))
+}
+
+// ReceiverEmailGT applies the GT predicate on the "receiver_email" field.
+func ReceiverEmailGT(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldGT(FieldReceiverEmail, v))
+}
+
+// ReceiverEmailGTE applies the GTE predicate on the "receiver_email" field.
+func ReceiverEmailGTE(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldGTE(FieldReceiverEmail, v))
+}
+
+// ReceiverEmailLT applies the LT predicate on the "receiver_email" field.
+func ReceiverEmailLT(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldLT(FieldReceiverEmail, v))
+}
+
+// ReceiverEmailLTE applies the LTE predicate on the "receiver_email" field.
+func ReceiverEmailLTE(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldLTE(FieldReceiverEmail, v))
+}
+
+// ReceiverEmailContains applies the Contains predicate on the "receiver_email" field.
+func ReceiverEmailContains(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldContains(FieldReceiverEmail, v))
+}
+
+// ReceiverEmailHasPrefix applies the HasPrefix predicate on the "receiver_email" field.
+func ReceiverEmailHasPrefix(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldHasPrefix(FieldReceiverEmail, v))
+}
+
+// ReceiverEmailHasSuffix applies the HasSuffix predicate on the "receiver_email" field.
+func ReceiverEmailHasSuffix(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldReceiverEmail, v))
+}
+
+// ReceiverEmailEqualFold applies the EqualFold predicate on the "receiver_email" field.
+func ReceiverEmailEqualFold(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldEqualFold(FieldReceiverEmail, v))
+}
+
+// ReceiverEmailContainsFold applies the ContainsFold predicate on the "receiver_email" field.
+func ReceiverEmailContainsFold(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldContainsFold(FieldReceiverEmail, v))
 }
 
 // GrantRequestIDEQ applies the EQ predicate on the "grant_request_id" field.
@@ -810,16 +910,6 @@ func RoleNameHasSuffix(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldRoleName, v))
 }
 
-// RoleNameIsNil applies the IsNil predicate on the "role_name" field.
-func RoleNameIsNil() predicate.PermissionHistory {
-	return predicate.PermissionHistory(sql.FieldIsNull(FieldRoleName))
-}
-
-// RoleNameNotNil applies the NotNil predicate on the "role_name" field.
-func RoleNameNotNil() predicate.PermissionHistory {
-	return predicate.PermissionHistory(sql.FieldNotNull(FieldRoleName))
-}
-
 // RoleNameEqualFold applies the EqualFold predicate on the "role_name" field.
 func RoleNameEqualFold(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEqualFold(FieldRoleName, v))
@@ -958,16 +1048,6 @@ func RoleSuiteNameHasPrefix(v string) predicate.PermissionHistory {
 // RoleSuiteNameHasSuffix applies the HasSuffix predicate on the "role_suite_name" field.
 func RoleSuiteNameHasSuffix(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldRoleSuiteName, v))
-}
-
-// RoleSuiteNameIsNil applies the IsNil predicate on the "role_suite_name" field.
-func RoleSuiteNameIsNil() predicate.PermissionHistory {
-	return predicate.PermissionHistory(sql.FieldIsNull(FieldRoleSuiteName))
-}
-
-// RoleSuiteNameNotNil applies the NotNil predicate on the "role_suite_name" field.
-func RoleSuiteNameNotNil() predicate.PermissionHistory {
-	return predicate.PermissionHistory(sql.FieldNotNull(FieldRoleSuiteName))
 }
 
 // RoleSuiteNameEqualFold applies the EqualFold predicate on the "role_suite_name" field.

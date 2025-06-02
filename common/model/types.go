@@ -42,7 +42,7 @@ func WrapNillableId(s *string) *Id {
 func IdValidateRule(field any, isRequired bool) *val.FieldRules {
 	return val.Field(field,
 		val.RequiredWhen(isRequired),
-		val.Length(26, 26),
+		val.Length(MODEL_RULE_ULID_LENGTH, MODEL_RULE_ULID_LENGTH),
 	)
 }
 
@@ -65,7 +65,7 @@ func WrapEtag(s string) *Etag {
 func EtagValidateRule(field any, isRequired bool) *val.FieldRules {
 	return val.Field(field,
 		val.RequiredWhen(isRequired),
-		val.Length(19, 30),
+		val.Length(MODEL_RULE_ETAG_MIN_LENGTH, MODEL_RULE_ETAG_MAX_LENGTH),
 	)
 }
 
@@ -83,7 +83,7 @@ func WrapSlug(s string) *Slug {
 func SlugValidateRule(field any, isRequired bool) *val.FieldRules {
 	return val.Field(field,
 		val.RequiredWhen(isRequired),
-		val.Length(1, 50),
+		val.Length(1, MODEL_RULE_SHORT_NAME_LENGTH),
 		val.RegExp(regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)),
 	)
 }

@@ -60,6 +60,12 @@ func (rsu *RoleSuiteUpdate) SetNillableDescription(s *string) *RoleSuiteUpdate {
 	return rsu
 }
 
+// ClearDescription clears the value of the "description" field.
+func (rsu *RoleSuiteUpdate) ClearDescription() *RoleSuiteUpdate {
+	rsu.mutation.ClearDescription()
+	return rsu
+}
+
 // SetEtag sets the "etag" field.
 func (rsu *RoleSuiteUpdate) SetEtag(s string) *RoleSuiteUpdate {
 	rsu.mutation.SetEtag(s)
@@ -88,16 +94,16 @@ func (rsu *RoleSuiteUpdate) SetNillableOwnerType(rt *rolesuite.OwnerType) *RoleS
 	return rsu
 }
 
-// SetOwnerID sets the "owner_id" field.
-func (rsu *RoleSuiteUpdate) SetOwnerID(s string) *RoleSuiteUpdate {
-	rsu.mutation.SetOwnerID(s)
+// SetOwnerRef sets the "owner_ref" field.
+func (rsu *RoleSuiteUpdate) SetOwnerRef(s string) *RoleSuiteUpdate {
+	rsu.mutation.SetOwnerRef(s)
 	return rsu
 }
 
-// SetNillableOwnerID sets the "owner_id" field if the given value is not nil.
-func (rsu *RoleSuiteUpdate) SetNillableOwnerID(s *string) *RoleSuiteUpdate {
+// SetNillableOwnerRef sets the "owner_ref" field if the given value is not nil.
+func (rsu *RoleSuiteUpdate) SetNillableOwnerRef(s *string) *RoleSuiteUpdate {
 	if s != nil {
-		rsu.SetOwnerID(*s)
+		rsu.SetOwnerRef(*s)
 	}
 	return rsu
 }
@@ -384,14 +390,17 @@ func (rsu *RoleSuiteUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := rsu.mutation.Description(); ok {
 		_spec.SetField(rolesuite.FieldDescription, field.TypeString, value)
 	}
+	if rsu.mutation.DescriptionCleared() {
+		_spec.ClearField(rolesuite.FieldDescription, field.TypeString)
+	}
 	if value, ok := rsu.mutation.Etag(); ok {
 		_spec.SetField(rolesuite.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := rsu.mutation.OwnerType(); ok {
 		_spec.SetField(rolesuite.FieldOwnerType, field.TypeEnum, value)
 	}
-	if value, ok := rsu.mutation.OwnerID(); ok {
-		_spec.SetField(rolesuite.FieldOwnerID, field.TypeString, value)
+	if value, ok := rsu.mutation.OwnerRef(); ok {
+		_spec.SetField(rolesuite.FieldOwnerRef, field.TypeString, value)
 	}
 	if value, ok := rsu.mutation.IsRequestable(); ok {
 		_spec.SetField(rolesuite.FieldIsRequestable, field.TypeBool, value)
@@ -675,6 +684,12 @@ func (rsuo *RoleSuiteUpdateOne) SetNillableDescription(s *string) *RoleSuiteUpda
 	return rsuo
 }
 
+// ClearDescription clears the value of the "description" field.
+func (rsuo *RoleSuiteUpdateOne) ClearDescription() *RoleSuiteUpdateOne {
+	rsuo.mutation.ClearDescription()
+	return rsuo
+}
+
 // SetEtag sets the "etag" field.
 func (rsuo *RoleSuiteUpdateOne) SetEtag(s string) *RoleSuiteUpdateOne {
 	rsuo.mutation.SetEtag(s)
@@ -703,16 +718,16 @@ func (rsuo *RoleSuiteUpdateOne) SetNillableOwnerType(rt *rolesuite.OwnerType) *R
 	return rsuo
 }
 
-// SetOwnerID sets the "owner_id" field.
-func (rsuo *RoleSuiteUpdateOne) SetOwnerID(s string) *RoleSuiteUpdateOne {
-	rsuo.mutation.SetOwnerID(s)
+// SetOwnerRef sets the "owner_ref" field.
+func (rsuo *RoleSuiteUpdateOne) SetOwnerRef(s string) *RoleSuiteUpdateOne {
+	rsuo.mutation.SetOwnerRef(s)
 	return rsuo
 }
 
-// SetNillableOwnerID sets the "owner_id" field if the given value is not nil.
-func (rsuo *RoleSuiteUpdateOne) SetNillableOwnerID(s *string) *RoleSuiteUpdateOne {
+// SetNillableOwnerRef sets the "owner_ref" field if the given value is not nil.
+func (rsuo *RoleSuiteUpdateOne) SetNillableOwnerRef(s *string) *RoleSuiteUpdateOne {
 	if s != nil {
-		rsuo.SetOwnerID(*s)
+		rsuo.SetOwnerRef(*s)
 	}
 	return rsuo
 }
@@ -1029,14 +1044,17 @@ func (rsuo *RoleSuiteUpdateOne) sqlSave(ctx context.Context) (_node *RoleSuite, 
 	if value, ok := rsuo.mutation.Description(); ok {
 		_spec.SetField(rolesuite.FieldDescription, field.TypeString, value)
 	}
+	if rsuo.mutation.DescriptionCleared() {
+		_spec.ClearField(rolesuite.FieldDescription, field.TypeString)
+	}
 	if value, ok := rsuo.mutation.Etag(); ok {
 		_spec.SetField(rolesuite.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := rsuo.mutation.OwnerType(); ok {
 		_spec.SetField(rolesuite.FieldOwnerType, field.TypeEnum, value)
 	}
-	if value, ok := rsuo.mutation.OwnerID(); ok {
-		_spec.SetField(rolesuite.FieldOwnerID, field.TypeString, value)
+	if value, ok := rsuo.mutation.OwnerRef(); ok {
+		_spec.SetField(rolesuite.FieldOwnerRef, field.TypeString, value)
 	}
 	if value, ok := rsuo.mutation.IsRequestable(); ok {
 		_spec.SetField(rolesuite.FieldIsRequestable, field.TypeBool, value)

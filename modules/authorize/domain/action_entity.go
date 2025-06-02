@@ -10,6 +10,7 @@ import (
 
 type Action struct {
 	model.ModelBase
+	model.AuditableBase
 
 	Name       *string   `json:"name,omitempty"`
 	ResourceId *model.Id `json:"resourceId,omitempty"`
@@ -20,10 +21,12 @@ func (this *Action) Validate(forEdit bool) ft.ValidationErrors {
 		val.Field(&this.Name,
 			val.Required,
 			val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9_\-\s]+$`)), // alphanumeric, underscore, dash and space
-			val.Length(1, 50),
+			val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
 		),
 		model.IdValidateRule(&this.ResourceId, true),
 	}
+	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
+	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
 
 	return val.ApiBased.ValidateStruct(this, rules...)
 }

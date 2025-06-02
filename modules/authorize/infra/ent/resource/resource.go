@@ -16,6 +16,12 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
+	// FieldResourceType holds the string denoting the resource_type field in the database.
+	FieldResourceType = "resource_type"
+	// FieldResourceRef holds the string denoting the resource_ref field in the database.
+	FieldResourceRef = "resource_ref"
 	// FieldScopeType holds the string denoting the scope_type field in the database.
 	FieldScopeType = "scope_type"
 	// EdgeActions holds the string denoting the actions edge name in mutations.
@@ -44,6 +50,9 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldDescription,
+	FieldResourceType,
+	FieldResourceRef,
 	FieldScopeType,
 }
 
@@ -55,6 +64,29 @@ func ValidColumn(column string) bool {
 		}
 	}
 	return false
+}
+
+// ResourceType defines the type for the "resource_type" enum field.
+type ResourceType string
+
+// ResourceType values.
+const (
+	ResourceTypeNikkiApplication ResourceType = "nikki_application"
+	ResourceTypeCustom           ResourceType = "custom"
+)
+
+func (rt ResourceType) String() string {
+	return string(rt)
+}
+
+// ResourceTypeValidator is a validator for the "resource_type" field enum values. It is called by the builders before save.
+func ResourceTypeValidator(rt ResourceType) error {
+	switch rt {
+	case ResourceTypeNikkiApplication, ResourceTypeCustom:
+		return nil
+	default:
+		return fmt.Errorf("resource: invalid enum value for resource_type field: %q", rt)
+	}
 }
 
 // ScopeType defines the type for the "scope_type" enum field.
@@ -93,6 +125,21 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByResourceType orders the results by the resource_type field.
+func ByResourceType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldResourceType, opts...).ToFunc()
+}
+
+// ByResourceRef orders the results by the resource_ref field.
+func ByResourceRef(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldResourceRef, opts...).ToFunc()
 }
 
 // ByScopeType orders the results by the scope_type field.

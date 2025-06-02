@@ -29,8 +29,8 @@ type RoleSuite struct {
 	Etag string `json:"etag,omitempty"`
 	// OwnerType holds the value of the "owner_type" field.
 	OwnerType rolesuite.OwnerType `json:"owner_type,omitempty"`
-	// OwnerID holds the value of the "owner_id" field.
-	OwnerID string `json:"owner_id,omitempty"`
+	// OwnerRef holds the value of the "owner_ref" field.
+	OwnerRef string `json:"owner_ref,omitempty"`
 	// IsRequestable holds the value of the "is_requestable" field.
 	IsRequestable bool `json:"is_requestable,omitempty"`
 	// IsRequiredAttachment holds the value of the "is_required_attachment" field.
@@ -123,7 +123,7 @@ func (*RoleSuite) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case rolesuite.FieldIsRequestable, rolesuite.FieldIsRequiredAttachment, rolesuite.FieldIsRequiredComment:
 			values[i] = new(sql.NullBool)
-		case rolesuite.FieldID, rolesuite.FieldCreatedBy, rolesuite.FieldDisplayName, rolesuite.FieldDescription, rolesuite.FieldEtag, rolesuite.FieldOwnerType, rolesuite.FieldOwnerID:
+		case rolesuite.FieldID, rolesuite.FieldCreatedBy, rolesuite.FieldDisplayName, rolesuite.FieldDescription, rolesuite.FieldEtag, rolesuite.FieldOwnerType, rolesuite.FieldOwnerRef:
 			values[i] = new(sql.NullString)
 		case rolesuite.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -184,11 +184,11 @@ func (rs *RoleSuite) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				rs.OwnerType = rolesuite.OwnerType(value.String)
 			}
-		case rolesuite.FieldOwnerID:
+		case rolesuite.FieldOwnerRef:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field owner_id", values[i])
+				return fmt.Errorf("unexpected type %T for field owner_ref", values[i])
 			} else if value.Valid {
-				rs.OwnerID = value.String
+				rs.OwnerRef = value.String
 			}
 		case rolesuite.FieldIsRequestable:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -292,8 +292,8 @@ func (rs *RoleSuite) String() string {
 	builder.WriteString("owner_type=")
 	builder.WriteString(fmt.Sprintf("%v", rs.OwnerType))
 	builder.WriteString(", ")
-	builder.WriteString("owner_id=")
-	builder.WriteString(rs.OwnerID)
+	builder.WriteString("owner_ref=")
+	builder.WriteString(rs.OwnerRef)
 	builder.WriteString(", ")
 	builder.WriteString("is_requestable=")
 	builder.WriteString(fmt.Sprintf("%v", rs.IsRequestable))

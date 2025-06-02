@@ -4,16 +4,16 @@ BEGIN
 		SELECT FROM information_schema.tables 
 		WHERE table_schema = 'public' AND table_name = 'authz_resources'
 	) THEN
-		INSERT INTO "authz_resources" ("id", "name", "scope_type") VALUES
-		('01JWNX10DN9E2PVZTVPJNTWR7D', 'AuthzEntitlement', 'domain'),
-		('01JWNYWE9FBX2WTMYZMR9XHHX6', 'AuthzResource', 'domain'),
-		('01JWNYV4RQ1ZKWG8RE0RMFTVCM', 'AuthzRole', 'domain'),
-		('01JWNYW23X8CMREJ2Y9349BAE4', 'AuthzRoleSuite', 'domain'),
-		('01JWNYQ2A04PPV4135QGXX7W0M', 'IdentityUser', 'domain'),
-		('01JWNYQNN68RKN62TNG5K0CPCE', 'IdentityGroup', 'domain'),
-		('01JWNYQTHN6JTRNWKJ1BMCYB80', 'IdentityOrganization', 'domain'),
-		('01JWNYRSKZ56EAE2QRFHJWRZPT', 'IdentityHierarchyLevel', 'org'),
-		('01JWP5S7KJF8T3RSA8WDZVSZWA', 'IdentityProfile', 'private');
+		INSERT INTO "authz_resources" ("id", "name", "resource_type", "scope_type") VALUES
+		('01JWNX10DN9E2PVZTVPJNTWR7D', 'AuthzEntitlement', 'custom', 'domain'),
+		('01JWNYWE9FBX2WTMYZMR9XHHX6', 'AuthzResource', 'custom', 'domain'),
+		('01JWNYV4RQ1ZKWG8RE0RMFTVCM', 'AuthzRole', 'custom', 'domain'),
+		('01JWNYW23X8CMREJ2Y9349BAE4', 'AuthzRoleSuite', 'custom', 'domain'),
+		('01JWNYQ2A04PPV4135QGXX7W0M', 'IdentityUser', 'custom', 'domain'),
+		('01JWNYQNN68RKN62TNG5K0CPCE', 'IdentityGroup', 'custom', 'domain'),
+		('01JWNYQTHN6JTRNWKJ1BMCYB80', 'IdentityOrganization', 'custom', 'domain'),
+		('01JWNYRSKZ56EAE2QRFHJWRZPT', 'IdentityHierarchyLevel', 'custom', 'org'),
+		('01JWP5S7KJF8T3RSA8WDZVSZWA', 'IdentityProfile', 'custom', 'private');
 	END IF;
 
 	IF EXISTS (
@@ -67,7 +67,7 @@ BEGIN
 		SELECT FROM information_schema.tables 
 		WHERE table_schema = 'public' AND table_name = 'authz_roles'
 	) THEN
-		INSERT INTO "authz_roles" ("id", "display_name", "description", "owner_type", "owner_id", "is_requestable", "is_required_attachment", "is_required_comment", "created_at", "created_by", "etag") VALUES
+		INSERT INTO "authz_roles" ("id", "display_name", "description", "owner_type", "owner_ref", "is_requestable", "is_required_attachment", "is_required_comment", "created_at", "created_by", "etag") VALUES
 		('01JWP72JJCDT4M0J8MSS51MN3T', 'Domain Administrator', 'Granted with all actions on all resources regardless of scope', 'user', '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, NOW(), '01JWNNJGS70Y07MBEV3AQ0M526', EXTRACT(EPOCH FROM clock_timestamp()) * 1e9::bigint),
 		('01JWP80E084MTYF2C882WNR6MJ', 'Identity module Readonly', 'Granted with view action on Users and Groups in Identity module, except with Owner user', 'user', '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, NOW(), '01JWNNJGS70Y07MBEV3AQ0M526', EXTRACT(EPOCH FROM clock_timestamp()) * 1e9::bigint),
 		('01JWP80NHTHXSZDB1MZJXQ0MGQ', 'Identity module Administrator', 'Granted with all actions on all resources in Identity module, except with Owner user', 'user', '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, NOW(), '01JWNNJGS70Y07MBEV3AQ0M526', EXTRACT(EPOCH FROM clock_timestamp()) * 1e9::bigint),
@@ -83,7 +83,7 @@ BEGIN
 		SELECT FROM information_schema.tables 
 		WHERE table_schema = 'public' AND table_name = 'authz_role_suites'
 	) THEN
-		INSERT INTO "authz_role_suites" ("id", "display_name", "description", "owner_type", "owner_id", "is_requestable", "is_required_attachment", "is_required_comment", "created_at", "created_by", "etag") VALUES
+		INSERT INTO "authz_role_suites" ("id", "display_name", "description", "owner_type", "owner_ref", "is_requestable", "is_required_attachment", "is_required_comment", "created_at", "created_by", "etag") VALUES
 		('01JWP9MVYX0K24R9H81SZEM7CE', 'Domain User Suite', 'Grant basic privileges to all users in the domain', 'user', '01JWNMZ36QHC7CQQ748H9NQ6J6', false, false, false, NOW(), '01JWNNJGS70Y07MBEV3AQ0M526', EXTRACT(EPOCH FROM clock_timestamp()) * 1e9::bigint);
 	END IF;
 

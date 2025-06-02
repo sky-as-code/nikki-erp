@@ -43,17 +43,23 @@ func (ru *ResourceUpdate) SetNillableName(s *string) *ResourceUpdate {
 	return ru
 }
 
-// SetScopeType sets the "scope_type" field.
-func (ru *ResourceUpdate) SetScopeType(rt resource.ScopeType) *ResourceUpdate {
-	ru.mutation.SetScopeType(rt)
+// SetDescription sets the "description" field.
+func (ru *ResourceUpdate) SetDescription(s string) *ResourceUpdate {
+	ru.mutation.SetDescription(s)
 	return ru
 }
 
-// SetNillableScopeType sets the "scope_type" field if the given value is not nil.
-func (ru *ResourceUpdate) SetNillableScopeType(rt *resource.ScopeType) *ResourceUpdate {
-	if rt != nil {
-		ru.SetScopeType(*rt)
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (ru *ResourceUpdate) SetNillableDescription(s *string) *ResourceUpdate {
+	if s != nil {
+		ru.SetDescription(*s)
 	}
+	return ru
+}
+
+// ClearDescription clears the value of the "description" field.
+func (ru *ResourceUpdate) ClearDescription() *ResourceUpdate {
+	ru.mutation.ClearDescription()
 	return ru
 }
 
@@ -161,20 +167,7 @@ func (ru *ResourceUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (ru *ResourceUpdate) check() error {
-	if v, ok := ru.mutation.ScopeType(); ok {
-		if err := resource.ScopeTypeValidator(v); err != nil {
-			return &ValidationError{Name: "scope_type", err: fmt.Errorf(`ent: validator failed for field "Resource.scope_type": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := ru.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(resource.Table, resource.Columns, sqlgraph.NewFieldSpec(resource.FieldID, field.TypeString))
 	if ps := ru.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -186,8 +179,14 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ru.mutation.Name(); ok {
 		_spec.SetField(resource.FieldName, field.TypeString, value)
 	}
-	if value, ok := ru.mutation.ScopeType(); ok {
-		_spec.SetField(resource.FieldScopeType, field.TypeEnum, value)
+	if value, ok := ru.mutation.Description(); ok {
+		_spec.SetField(resource.FieldDescription, field.TypeString, value)
+	}
+	if ru.mutation.DescriptionCleared() {
+		_spec.ClearField(resource.FieldDescription, field.TypeString)
+	}
+	if ru.mutation.ResourceRefCleared() {
+		_spec.ClearField(resource.FieldResourceRef, field.TypeString)
 	}
 	if ru.mutation.ActionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -313,17 +312,23 @@ func (ruo *ResourceUpdateOne) SetNillableName(s *string) *ResourceUpdateOne {
 	return ruo
 }
 
-// SetScopeType sets the "scope_type" field.
-func (ruo *ResourceUpdateOne) SetScopeType(rt resource.ScopeType) *ResourceUpdateOne {
-	ruo.mutation.SetScopeType(rt)
+// SetDescription sets the "description" field.
+func (ruo *ResourceUpdateOne) SetDescription(s string) *ResourceUpdateOne {
+	ruo.mutation.SetDescription(s)
 	return ruo
 }
 
-// SetNillableScopeType sets the "scope_type" field if the given value is not nil.
-func (ruo *ResourceUpdateOne) SetNillableScopeType(rt *resource.ScopeType) *ResourceUpdateOne {
-	if rt != nil {
-		ruo.SetScopeType(*rt)
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (ruo *ResourceUpdateOne) SetNillableDescription(s *string) *ResourceUpdateOne {
+	if s != nil {
+		ruo.SetDescription(*s)
 	}
+	return ruo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (ruo *ResourceUpdateOne) ClearDescription() *ResourceUpdateOne {
+	ruo.mutation.ClearDescription()
 	return ruo
 }
 
@@ -444,20 +449,7 @@ func (ruo *ResourceUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (ruo *ResourceUpdateOne) check() error {
-	if v, ok := ruo.mutation.ScopeType(); ok {
-		if err := resource.ScopeTypeValidator(v); err != nil {
-			return &ValidationError{Name: "scope_type", err: fmt.Errorf(`ent: validator failed for field "Resource.scope_type": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (_node *Resource, err error) {
-	if err := ruo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(resource.Table, resource.Columns, sqlgraph.NewFieldSpec(resource.FieldID, field.TypeString))
 	id, ok := ruo.mutation.ID()
 	if !ok {
@@ -486,8 +478,14 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (_node *Resource, err
 	if value, ok := ruo.mutation.Name(); ok {
 		_spec.SetField(resource.FieldName, field.TypeString, value)
 	}
-	if value, ok := ruo.mutation.ScopeType(); ok {
-		_spec.SetField(resource.FieldScopeType, field.TypeEnum, value)
+	if value, ok := ruo.mutation.Description(); ok {
+		_spec.SetField(resource.FieldDescription, field.TypeString, value)
+	}
+	if ruo.mutation.DescriptionCleared() {
+		_spec.ClearField(resource.FieldDescription, field.TypeString)
+	}
+	if ruo.mutation.ResourceRefCleared() {
+		_spec.ClearField(resource.FieldResourceRef, field.TypeString)
 	}
 	if ruo.mutation.ActionsCleared() {
 		edge := &sqlgraph.EdgeSpec{

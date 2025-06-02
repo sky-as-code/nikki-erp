@@ -14,8 +14,13 @@ import (
 type Resource struct {
 	model.ModelBase
 
-	Name      *string            `json:"name,omitempty"`
-	ScopeType *ResourceScopeType `json:"scopeType,omitempty"`
+	Name         *string            `json:"name,omitempty"`
+	Description  *string            `json:"description,omitempty"`
+	ResourceType *ResourceType      `json:"resourceType,omitempty"`
+	ResourceRef  *string            `json:"resourceRef,omitempty"`
+	ScopeType    *ResourceScopeType `json:"scopeType,omitempty"`
+
+	Actions []Action `json:"actions,omitempty"`
 }
 
 func (this *Resource) Validate(forEdit bool) ft.ValidationErrors {
@@ -29,6 +34,43 @@ func (this *Resource) Validate(forEdit bool) ft.ValidationErrors {
 	}
 
 	return val.ApiBased.ValidateStruct(this, rules...)
+}
+
+type ResourceType entResource.ResourceType
+
+const (
+	ResourceTypeNikkiApplication = ResourceType(entResource.ResourceTypeNikkiApplication)
+	ResourceTypeCustom           = ResourceType(entResource.ResourceTypeCustom)
+)
+
+func (this ResourceType) Validate() error {
+	switch this {
+	case ResourceTypeNikkiApplication, ResourceTypeCustom:
+		return nil
+	default:
+		return errors.Errorf("invalid resource type value: %s", this)
+	}
+}
+
+func (this ResourceType) String() string {
+	return string(this)
+}
+
+func WrapResourceType(s string) *ResourceType {
+	st := ResourceType(s)
+	return &st
+}
+
+func WrapResourceTypeEnt(s entResource.ResourceType) *ResourceType {
+	st := ResourceType(s)
+	return &st
+}
+
+func ResourceTypeValidateRule(field any) *val.FieldRules {
+	return val.Field(field,
+		val.Required,
+		val.OneOf(ResourceTypeNikkiApplication, ResourceTypeCustom),
+	)
 }
 
 type ResourceScopeType entResource.ScopeType

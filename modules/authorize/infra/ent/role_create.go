@@ -57,6 +57,14 @@ func (rc *RoleCreate) SetDescription(s string) *RoleCreate {
 	return rc
 }
 
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (rc *RoleCreate) SetNillableDescription(s *string) *RoleCreate {
+	if s != nil {
+		rc.SetDescription(*s)
+	}
+	return rc
+}
+
 // SetEtag sets the "etag" field.
 func (rc *RoleCreate) SetEtag(s string) *RoleCreate {
 	rc.mutation.SetEtag(s)
@@ -69,9 +77,9 @@ func (rc *RoleCreate) SetOwnerType(rt role.OwnerType) *RoleCreate {
 	return rc
 }
 
-// SetOwnerID sets the "owner_id" field.
-func (rc *RoleCreate) SetOwnerID(s string) *RoleCreate {
-	rc.mutation.SetOwnerID(s)
+// SetOwnerRef sets the "owner_ref" field.
+func (rc *RoleCreate) SetOwnerRef(s string) *RoleCreate {
+	rc.mutation.SetOwnerRef(s)
 	return rc
 }
 
@@ -226,9 +234,6 @@ func (rc *RoleCreate) check() error {
 	if _, ok := rc.mutation.DisplayName(); !ok {
 		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "Role.display_name"`)}
 	}
-	if _, ok := rc.mutation.Description(); !ok {
-		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "Role.description"`)}
-	}
 	if _, ok := rc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Role.etag"`)}
 	}
@@ -240,8 +245,8 @@ func (rc *RoleCreate) check() error {
 			return &ValidationError{Name: "owner_type", err: fmt.Errorf(`ent: validator failed for field "Role.owner_type": %w`, err)}
 		}
 	}
-	if _, ok := rc.mutation.OwnerID(); !ok {
-		return &ValidationError{Name: "owner_id", err: errors.New(`ent: missing required field "Role.owner_id"`)}
+	if _, ok := rc.mutation.OwnerRef(); !ok {
+		return &ValidationError{Name: "owner_ref", err: errors.New(`ent: missing required field "Role.owner_ref"`)}
 	}
 	if _, ok := rc.mutation.IsRequestable(); !ok {
 		return &ValidationError{Name: "is_requestable", err: errors.New(`ent: missing required field "Role.is_requestable"`)}
@@ -311,9 +316,9 @@ func (rc *RoleCreate) createSpec() (*Role, *sqlgraph.CreateSpec) {
 		_spec.SetField(role.FieldOwnerType, field.TypeEnum, value)
 		_node.OwnerType = value
 	}
-	if value, ok := rc.mutation.OwnerID(); ok {
-		_spec.SetField(role.FieldOwnerID, field.TypeString, value)
-		_node.OwnerID = value
+	if value, ok := rc.mutation.OwnerRef(); ok {
+		_spec.SetField(role.FieldOwnerRef, field.TypeString, value)
+		_node.OwnerRef = value
 	}
 	if value, ok := rc.mutation.IsRequestable(); ok {
 		_spec.SetField(role.FieldIsRequestable, field.TypeBool, value)

@@ -10,8 +10,13 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
 )
 
 // PermissionHistoryUpdate is the builder for updating PermissionHistory entities.
@@ -27,9 +32,274 @@ func (phu *PermissionHistoryUpdate) Where(ps ...predicate.PermissionHistory) *Pe
 	return phu
 }
 
+// SetApproverID sets the "approver_id" field.
+func (phu *PermissionHistoryUpdate) SetApproverID(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetApproverID(s)
+	return phu
+}
+
+// SetNillableApproverID sets the "approver_id" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableApproverID(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetApproverID(*s)
+	}
+	return phu
+}
+
+// ClearApproverID clears the value of the "approver_id" field.
+func (phu *PermissionHistoryUpdate) ClearApproverID() *PermissionHistoryUpdate {
+	phu.mutation.ClearApproverID()
+	return phu
+}
+
+// SetApproverEmail sets the "approver_email" field.
+func (phu *PermissionHistoryUpdate) SetApproverEmail(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetApproverEmail(s)
+	return phu
+}
+
+// SetNillableApproverEmail sets the "approver_email" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableApproverEmail(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetApproverEmail(*s)
+	}
+	return phu
+}
+
+// SetEntitlementID sets the "entitlement_id" field.
+func (phu *PermissionHistoryUpdate) SetEntitlementID(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetEntitlementID(s)
+	return phu
+}
+
+// SetNillableEntitlementID sets the "entitlement_id" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableEntitlementID(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetEntitlementID(*s)
+	}
+	return phu
+}
+
+// ClearEntitlementID clears the value of the "entitlement_id" field.
+func (phu *PermissionHistoryUpdate) ClearEntitlementID() *PermissionHistoryUpdate {
+	phu.mutation.ClearEntitlementID()
+	return phu
+}
+
+// SetEntitlementExpr sets the "entitlement_expr" field.
+func (phu *PermissionHistoryUpdate) SetEntitlementExpr(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetEntitlementExpr(s)
+	return phu
+}
+
+// SetNillableEntitlementExpr sets the "entitlement_expr" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableEntitlementExpr(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetEntitlementExpr(*s)
+	}
+	return phu
+}
+
+// SetReceiverID sets the "receiver_id" field.
+func (phu *PermissionHistoryUpdate) SetReceiverID(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetReceiverID(s)
+	return phu
+}
+
+// SetNillableReceiverID sets the "receiver_id" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableReceiverID(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetReceiverID(*s)
+	}
+	return phu
+}
+
+// ClearReceiverID clears the value of the "receiver_id" field.
+func (phu *PermissionHistoryUpdate) ClearReceiverID() *PermissionHistoryUpdate {
+	phu.mutation.ClearReceiverID()
+	return phu
+}
+
+// SetReceiverEmail sets the "receiver_email" field.
+func (phu *PermissionHistoryUpdate) SetReceiverEmail(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetReceiverEmail(s)
+	return phu
+}
+
+// SetNillableReceiverEmail sets the "receiver_email" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableReceiverEmail(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetReceiverEmail(*s)
+	}
+	return phu
+}
+
+// SetGrantRequestID sets the "grant_request_id" field.
+func (phu *PermissionHistoryUpdate) SetGrantRequestID(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetGrantRequestID(s)
+	return phu
+}
+
+// SetNillableGrantRequestID sets the "grant_request_id" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableGrantRequestID(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetGrantRequestID(*s)
+	}
+	return phu
+}
+
+// ClearGrantRequestID clears the value of the "grant_request_id" field.
+func (phu *PermissionHistoryUpdate) ClearGrantRequestID() *PermissionHistoryUpdate {
+	phu.mutation.ClearGrantRequestID()
+	return phu
+}
+
+// SetRevokeRequestID sets the "revoke_request_id" field.
+func (phu *PermissionHistoryUpdate) SetRevokeRequestID(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetRevokeRequestID(s)
+	return phu
+}
+
+// SetNillableRevokeRequestID sets the "revoke_request_id" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableRevokeRequestID(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetRevokeRequestID(*s)
+	}
+	return phu
+}
+
+// ClearRevokeRequestID clears the value of the "revoke_request_id" field.
+func (phu *PermissionHistoryUpdate) ClearRevokeRequestID() *PermissionHistoryUpdate {
+	phu.mutation.ClearRevokeRequestID()
+	return phu
+}
+
+// SetRoleID sets the "role_id" field.
+func (phu *PermissionHistoryUpdate) SetRoleID(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetRoleID(s)
+	return phu
+}
+
+// SetNillableRoleID sets the "role_id" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableRoleID(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetRoleID(*s)
+	}
+	return phu
+}
+
+// ClearRoleID clears the value of the "role_id" field.
+func (phu *PermissionHistoryUpdate) ClearRoleID() *PermissionHistoryUpdate {
+	phu.mutation.ClearRoleID()
+	return phu
+}
+
+// SetRoleName sets the "role_name" field.
+func (phu *PermissionHistoryUpdate) SetRoleName(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetRoleName(s)
+	return phu
+}
+
+// SetNillableRoleName sets the "role_name" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableRoleName(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetRoleName(*s)
+	}
+	return phu
+}
+
+// SetRoleSuiteID sets the "role_suite_id" field.
+func (phu *PermissionHistoryUpdate) SetRoleSuiteID(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetRoleSuiteID(s)
+	return phu
+}
+
+// SetNillableRoleSuiteID sets the "role_suite_id" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableRoleSuiteID(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetRoleSuiteID(*s)
+	}
+	return phu
+}
+
+// ClearRoleSuiteID clears the value of the "role_suite_id" field.
+func (phu *PermissionHistoryUpdate) ClearRoleSuiteID() *PermissionHistoryUpdate {
+	phu.mutation.ClearRoleSuiteID()
+	return phu
+}
+
+// SetRoleSuiteName sets the "role_suite_name" field.
+func (phu *PermissionHistoryUpdate) SetRoleSuiteName(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetRoleSuiteName(s)
+	return phu
+}
+
+// SetNillableRoleSuiteName sets the "role_suite_name" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableRoleSuiteName(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetRoleSuiteName(*s)
+	}
+	return phu
+}
+
+// SetEntitlement sets the "entitlement" edge to the Entitlement entity.
+func (phu *PermissionHistoryUpdate) SetEntitlement(e *Entitlement) *PermissionHistoryUpdate {
+	return phu.SetEntitlementID(e.ID)
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (phu *PermissionHistoryUpdate) SetRole(r *Role) *PermissionHistoryUpdate {
+	return phu.SetRoleID(r.ID)
+}
+
+// SetRoleSuite sets the "role_suite" edge to the RoleSuite entity.
+func (phu *PermissionHistoryUpdate) SetRoleSuite(r *RoleSuite) *PermissionHistoryUpdate {
+	return phu.SetRoleSuiteID(r.ID)
+}
+
+// SetGrantRequest sets the "grant_request" edge to the GrantRequest entity.
+func (phu *PermissionHistoryUpdate) SetGrantRequest(g *GrantRequest) *PermissionHistoryUpdate {
+	return phu.SetGrantRequestID(g.ID)
+}
+
+// SetRevokeRequest sets the "revoke_request" edge to the RevokeRequest entity.
+func (phu *PermissionHistoryUpdate) SetRevokeRequest(r *RevokeRequest) *PermissionHistoryUpdate {
+	return phu.SetRevokeRequestID(r.ID)
+}
+
 // Mutation returns the PermissionHistoryMutation object of the builder.
 func (phu *PermissionHistoryUpdate) Mutation() *PermissionHistoryMutation {
 	return phu.mutation
+}
+
+// ClearEntitlement clears the "entitlement" edge to the Entitlement entity.
+func (phu *PermissionHistoryUpdate) ClearEntitlement() *PermissionHistoryUpdate {
+	phu.mutation.ClearEntitlement()
+	return phu
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (phu *PermissionHistoryUpdate) ClearRole() *PermissionHistoryUpdate {
+	phu.mutation.ClearRole()
+	return phu
+}
+
+// ClearRoleSuite clears the "role_suite" edge to the RoleSuite entity.
+func (phu *PermissionHistoryUpdate) ClearRoleSuite() *PermissionHistoryUpdate {
+	phu.mutation.ClearRoleSuite()
+	return phu
+}
+
+// ClearGrantRequest clears the "grant_request" edge to the GrantRequest entity.
+func (phu *PermissionHistoryUpdate) ClearGrantRequest() *PermissionHistoryUpdate {
+	phu.mutation.ClearGrantRequest()
+	return phu
+}
+
+// ClearRevokeRequest clears the "revoke_request" edge to the RevokeRequest entity.
+func (phu *PermissionHistoryUpdate) ClearRevokeRequest() *PermissionHistoryUpdate {
+	phu.mutation.ClearRevokeRequest()
+	return phu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -68,14 +338,177 @@ func (phu *PermissionHistoryUpdate) sqlSave(ctx context.Context) (n int, err err
 			}
 		}
 	}
-	if phu.mutation.EntitlementExprCleared() {
-		_spec.ClearField(permissionhistory.FieldEntitlementExpr, field.TypeString)
+	if value, ok := phu.mutation.ApproverID(); ok {
+		_spec.SetField(permissionhistory.FieldApproverID, field.TypeString, value)
 	}
-	if phu.mutation.RoleNameCleared() {
-		_spec.ClearField(permissionhistory.FieldRoleName, field.TypeString)
+	if phu.mutation.ApproverIDCleared() {
+		_spec.ClearField(permissionhistory.FieldApproverID, field.TypeString)
 	}
-	if phu.mutation.RoleSuiteNameCleared() {
-		_spec.ClearField(permissionhistory.FieldRoleSuiteName, field.TypeString)
+	if value, ok := phu.mutation.ApproverEmail(); ok {
+		_spec.SetField(permissionhistory.FieldApproverEmail, field.TypeString, value)
+	}
+	if value, ok := phu.mutation.EntitlementExpr(); ok {
+		_spec.SetField(permissionhistory.FieldEntitlementExpr, field.TypeString, value)
+	}
+	if value, ok := phu.mutation.ReceiverID(); ok {
+		_spec.SetField(permissionhistory.FieldReceiverID, field.TypeString, value)
+	}
+	if phu.mutation.ReceiverIDCleared() {
+		_spec.ClearField(permissionhistory.FieldReceiverID, field.TypeString)
+	}
+	if value, ok := phu.mutation.ReceiverEmail(); ok {
+		_spec.SetField(permissionhistory.FieldReceiverEmail, field.TypeString, value)
+	}
+	if value, ok := phu.mutation.RoleName(); ok {
+		_spec.SetField(permissionhistory.FieldRoleName, field.TypeString, value)
+	}
+	if value, ok := phu.mutation.RoleSuiteName(); ok {
+		_spec.SetField(permissionhistory.FieldRoleSuiteName, field.TypeString, value)
+	}
+	if phu.mutation.EntitlementCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.EntitlementTable,
+			Columns: []string{permissionhistory.EntitlementColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlement.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phu.mutation.EntitlementIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.EntitlementTable,
+			Columns: []string{permissionhistory.EntitlementColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlement.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if phu.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RoleTable,
+			Columns: []string{permissionhistory.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phu.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RoleTable,
+			Columns: []string{permissionhistory.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if phu.mutation.RoleSuiteCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RoleSuiteTable,
+			Columns: []string{permissionhistory.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phu.mutation.RoleSuiteIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RoleSuiteTable,
+			Columns: []string{permissionhistory.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if phu.mutation.GrantRequestCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.GrantRequestTable,
+			Columns: []string{permissionhistory.GrantRequestColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grantrequest.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phu.mutation.GrantRequestIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.GrantRequestTable,
+			Columns: []string{permissionhistory.GrantRequestColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grantrequest.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if phu.mutation.RevokeRequestCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RevokeRequestTable,
+			Columns: []string{permissionhistory.RevokeRequestColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revokerequest.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phu.mutation.RevokeRequestIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RevokeRequestTable,
+			Columns: []string{permissionhistory.RevokeRequestColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revokerequest.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, phu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -97,9 +530,274 @@ type PermissionHistoryUpdateOne struct {
 	mutation *PermissionHistoryMutation
 }
 
+// SetApproverID sets the "approver_id" field.
+func (phuo *PermissionHistoryUpdateOne) SetApproverID(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetApproverID(s)
+	return phuo
+}
+
+// SetNillableApproverID sets the "approver_id" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableApproverID(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetApproverID(*s)
+	}
+	return phuo
+}
+
+// ClearApproverID clears the value of the "approver_id" field.
+func (phuo *PermissionHistoryUpdateOne) ClearApproverID() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearApproverID()
+	return phuo
+}
+
+// SetApproverEmail sets the "approver_email" field.
+func (phuo *PermissionHistoryUpdateOne) SetApproverEmail(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetApproverEmail(s)
+	return phuo
+}
+
+// SetNillableApproverEmail sets the "approver_email" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableApproverEmail(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetApproverEmail(*s)
+	}
+	return phuo
+}
+
+// SetEntitlementID sets the "entitlement_id" field.
+func (phuo *PermissionHistoryUpdateOne) SetEntitlementID(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetEntitlementID(s)
+	return phuo
+}
+
+// SetNillableEntitlementID sets the "entitlement_id" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableEntitlementID(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetEntitlementID(*s)
+	}
+	return phuo
+}
+
+// ClearEntitlementID clears the value of the "entitlement_id" field.
+func (phuo *PermissionHistoryUpdateOne) ClearEntitlementID() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearEntitlementID()
+	return phuo
+}
+
+// SetEntitlementExpr sets the "entitlement_expr" field.
+func (phuo *PermissionHistoryUpdateOne) SetEntitlementExpr(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetEntitlementExpr(s)
+	return phuo
+}
+
+// SetNillableEntitlementExpr sets the "entitlement_expr" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableEntitlementExpr(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetEntitlementExpr(*s)
+	}
+	return phuo
+}
+
+// SetReceiverID sets the "receiver_id" field.
+func (phuo *PermissionHistoryUpdateOne) SetReceiverID(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetReceiverID(s)
+	return phuo
+}
+
+// SetNillableReceiverID sets the "receiver_id" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableReceiverID(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetReceiverID(*s)
+	}
+	return phuo
+}
+
+// ClearReceiverID clears the value of the "receiver_id" field.
+func (phuo *PermissionHistoryUpdateOne) ClearReceiverID() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearReceiverID()
+	return phuo
+}
+
+// SetReceiverEmail sets the "receiver_email" field.
+func (phuo *PermissionHistoryUpdateOne) SetReceiverEmail(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetReceiverEmail(s)
+	return phuo
+}
+
+// SetNillableReceiverEmail sets the "receiver_email" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableReceiverEmail(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetReceiverEmail(*s)
+	}
+	return phuo
+}
+
+// SetGrantRequestID sets the "grant_request_id" field.
+func (phuo *PermissionHistoryUpdateOne) SetGrantRequestID(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetGrantRequestID(s)
+	return phuo
+}
+
+// SetNillableGrantRequestID sets the "grant_request_id" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableGrantRequestID(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetGrantRequestID(*s)
+	}
+	return phuo
+}
+
+// ClearGrantRequestID clears the value of the "grant_request_id" field.
+func (phuo *PermissionHistoryUpdateOne) ClearGrantRequestID() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearGrantRequestID()
+	return phuo
+}
+
+// SetRevokeRequestID sets the "revoke_request_id" field.
+func (phuo *PermissionHistoryUpdateOne) SetRevokeRequestID(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetRevokeRequestID(s)
+	return phuo
+}
+
+// SetNillableRevokeRequestID sets the "revoke_request_id" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableRevokeRequestID(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetRevokeRequestID(*s)
+	}
+	return phuo
+}
+
+// ClearRevokeRequestID clears the value of the "revoke_request_id" field.
+func (phuo *PermissionHistoryUpdateOne) ClearRevokeRequestID() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearRevokeRequestID()
+	return phuo
+}
+
+// SetRoleID sets the "role_id" field.
+func (phuo *PermissionHistoryUpdateOne) SetRoleID(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetRoleID(s)
+	return phuo
+}
+
+// SetNillableRoleID sets the "role_id" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableRoleID(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetRoleID(*s)
+	}
+	return phuo
+}
+
+// ClearRoleID clears the value of the "role_id" field.
+func (phuo *PermissionHistoryUpdateOne) ClearRoleID() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearRoleID()
+	return phuo
+}
+
+// SetRoleName sets the "role_name" field.
+func (phuo *PermissionHistoryUpdateOne) SetRoleName(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetRoleName(s)
+	return phuo
+}
+
+// SetNillableRoleName sets the "role_name" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableRoleName(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetRoleName(*s)
+	}
+	return phuo
+}
+
+// SetRoleSuiteID sets the "role_suite_id" field.
+func (phuo *PermissionHistoryUpdateOne) SetRoleSuiteID(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetRoleSuiteID(s)
+	return phuo
+}
+
+// SetNillableRoleSuiteID sets the "role_suite_id" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableRoleSuiteID(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetRoleSuiteID(*s)
+	}
+	return phuo
+}
+
+// ClearRoleSuiteID clears the value of the "role_suite_id" field.
+func (phuo *PermissionHistoryUpdateOne) ClearRoleSuiteID() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearRoleSuiteID()
+	return phuo
+}
+
+// SetRoleSuiteName sets the "role_suite_name" field.
+func (phuo *PermissionHistoryUpdateOne) SetRoleSuiteName(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetRoleSuiteName(s)
+	return phuo
+}
+
+// SetNillableRoleSuiteName sets the "role_suite_name" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableRoleSuiteName(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetRoleSuiteName(*s)
+	}
+	return phuo
+}
+
+// SetEntitlement sets the "entitlement" edge to the Entitlement entity.
+func (phuo *PermissionHistoryUpdateOne) SetEntitlement(e *Entitlement) *PermissionHistoryUpdateOne {
+	return phuo.SetEntitlementID(e.ID)
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (phuo *PermissionHistoryUpdateOne) SetRole(r *Role) *PermissionHistoryUpdateOne {
+	return phuo.SetRoleID(r.ID)
+}
+
+// SetRoleSuite sets the "role_suite" edge to the RoleSuite entity.
+func (phuo *PermissionHistoryUpdateOne) SetRoleSuite(r *RoleSuite) *PermissionHistoryUpdateOne {
+	return phuo.SetRoleSuiteID(r.ID)
+}
+
+// SetGrantRequest sets the "grant_request" edge to the GrantRequest entity.
+func (phuo *PermissionHistoryUpdateOne) SetGrantRequest(g *GrantRequest) *PermissionHistoryUpdateOne {
+	return phuo.SetGrantRequestID(g.ID)
+}
+
+// SetRevokeRequest sets the "revoke_request" edge to the RevokeRequest entity.
+func (phuo *PermissionHistoryUpdateOne) SetRevokeRequest(r *RevokeRequest) *PermissionHistoryUpdateOne {
+	return phuo.SetRevokeRequestID(r.ID)
+}
+
 // Mutation returns the PermissionHistoryMutation object of the builder.
 func (phuo *PermissionHistoryUpdateOne) Mutation() *PermissionHistoryMutation {
 	return phuo.mutation
+}
+
+// ClearEntitlement clears the "entitlement" edge to the Entitlement entity.
+func (phuo *PermissionHistoryUpdateOne) ClearEntitlement() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearEntitlement()
+	return phuo
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (phuo *PermissionHistoryUpdateOne) ClearRole() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearRole()
+	return phuo
+}
+
+// ClearRoleSuite clears the "role_suite" edge to the RoleSuite entity.
+func (phuo *PermissionHistoryUpdateOne) ClearRoleSuite() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearRoleSuite()
+	return phuo
+}
+
+// ClearGrantRequest clears the "grant_request" edge to the GrantRequest entity.
+func (phuo *PermissionHistoryUpdateOne) ClearGrantRequest() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearGrantRequest()
+	return phuo
+}
+
+// ClearRevokeRequest clears the "revoke_request" edge to the RevokeRequest entity.
+func (phuo *PermissionHistoryUpdateOne) ClearRevokeRequest() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearRevokeRequest()
+	return phuo
 }
 
 // Where appends a list predicates to the PermissionHistoryUpdate builder.
@@ -168,14 +866,177 @@ func (phuo *PermissionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *Per
 			}
 		}
 	}
-	if phuo.mutation.EntitlementExprCleared() {
-		_spec.ClearField(permissionhistory.FieldEntitlementExpr, field.TypeString)
+	if value, ok := phuo.mutation.ApproverID(); ok {
+		_spec.SetField(permissionhistory.FieldApproverID, field.TypeString, value)
 	}
-	if phuo.mutation.RoleNameCleared() {
-		_spec.ClearField(permissionhistory.FieldRoleName, field.TypeString)
+	if phuo.mutation.ApproverIDCleared() {
+		_spec.ClearField(permissionhistory.FieldApproverID, field.TypeString)
 	}
-	if phuo.mutation.RoleSuiteNameCleared() {
-		_spec.ClearField(permissionhistory.FieldRoleSuiteName, field.TypeString)
+	if value, ok := phuo.mutation.ApproverEmail(); ok {
+		_spec.SetField(permissionhistory.FieldApproverEmail, field.TypeString, value)
+	}
+	if value, ok := phuo.mutation.EntitlementExpr(); ok {
+		_spec.SetField(permissionhistory.FieldEntitlementExpr, field.TypeString, value)
+	}
+	if value, ok := phuo.mutation.ReceiverID(); ok {
+		_spec.SetField(permissionhistory.FieldReceiverID, field.TypeString, value)
+	}
+	if phuo.mutation.ReceiverIDCleared() {
+		_spec.ClearField(permissionhistory.FieldReceiverID, field.TypeString)
+	}
+	if value, ok := phuo.mutation.ReceiverEmail(); ok {
+		_spec.SetField(permissionhistory.FieldReceiverEmail, field.TypeString, value)
+	}
+	if value, ok := phuo.mutation.RoleName(); ok {
+		_spec.SetField(permissionhistory.FieldRoleName, field.TypeString, value)
+	}
+	if value, ok := phuo.mutation.RoleSuiteName(); ok {
+		_spec.SetField(permissionhistory.FieldRoleSuiteName, field.TypeString, value)
+	}
+	if phuo.mutation.EntitlementCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.EntitlementTable,
+			Columns: []string{permissionhistory.EntitlementColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlement.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phuo.mutation.EntitlementIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.EntitlementTable,
+			Columns: []string{permissionhistory.EntitlementColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlement.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if phuo.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RoleTable,
+			Columns: []string{permissionhistory.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phuo.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RoleTable,
+			Columns: []string{permissionhistory.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if phuo.mutation.RoleSuiteCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RoleSuiteTable,
+			Columns: []string{permissionhistory.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phuo.mutation.RoleSuiteIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RoleSuiteTable,
+			Columns: []string{permissionhistory.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if phuo.mutation.GrantRequestCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.GrantRequestTable,
+			Columns: []string{permissionhistory.GrantRequestColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grantrequest.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phuo.mutation.GrantRequestIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.GrantRequestTable,
+			Columns: []string{permissionhistory.GrantRequestColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grantrequest.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if phuo.mutation.RevokeRequestCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RevokeRequestTable,
+			Columns: []string{permissionhistory.RevokeRequestColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revokerequest.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phuo.mutation.RevokeRequestIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.RevokeRequestTable,
+			Columns: []string{permissionhistory.RevokeRequestColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(revokerequest.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &PermissionHistory{config: phuo.config}
 	_spec.Assign = _node.assignValues

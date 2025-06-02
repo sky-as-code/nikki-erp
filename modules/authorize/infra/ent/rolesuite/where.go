@@ -90,9 +90,9 @@ func Etag(v string) predicate.RoleSuite {
 	return predicate.RoleSuite(sql.FieldEQ(FieldEtag, v))
 }
 
-// OwnerID applies equality check predicate on the "owner_id" field. It's identical to OwnerIDEQ.
-func OwnerID(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldEQ(FieldOwnerID, v))
+// OwnerRef applies equality check predicate on the "owner_ref" field. It's identical to OwnerRefEQ.
+func OwnerRef(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldEQ(FieldOwnerRef, v))
 }
 
 // IsRequestable applies equality check predicate on the "is_requestable" field. It's identical to IsRequestableEQ.
@@ -335,6 +335,16 @@ func DescriptionHasSuffix(v string) predicate.RoleSuite {
 	return predicate.RoleSuite(sql.FieldHasSuffix(FieldDescription, v))
 }
 
+// DescriptionIsNil applies the IsNil predicate on the "description" field.
+func DescriptionIsNil() predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldIsNull(FieldDescription))
+}
+
+// DescriptionNotNil applies the NotNil predicate on the "description" field.
+func DescriptionNotNil() predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldNotNull(FieldDescription))
+}
+
 // DescriptionEqualFold applies the EqualFold predicate on the "description" field.
 func DescriptionEqualFold(v string) predicate.RoleSuite {
 	return predicate.RoleSuite(sql.FieldEqualFold(FieldDescription, v))
@@ -430,69 +440,69 @@ func OwnerTypeNotIn(vs ...OwnerType) predicate.RoleSuite {
 	return predicate.RoleSuite(sql.FieldNotIn(FieldOwnerType, vs...))
 }
 
-// OwnerIDEQ applies the EQ predicate on the "owner_id" field.
-func OwnerIDEQ(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldEQ(FieldOwnerID, v))
+// OwnerRefEQ applies the EQ predicate on the "owner_ref" field.
+func OwnerRefEQ(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldEQ(FieldOwnerRef, v))
 }
 
-// OwnerIDNEQ applies the NEQ predicate on the "owner_id" field.
-func OwnerIDNEQ(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldNEQ(FieldOwnerID, v))
+// OwnerRefNEQ applies the NEQ predicate on the "owner_ref" field.
+func OwnerRefNEQ(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldNEQ(FieldOwnerRef, v))
 }
 
-// OwnerIDIn applies the In predicate on the "owner_id" field.
-func OwnerIDIn(vs ...string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldIn(FieldOwnerID, vs...))
+// OwnerRefIn applies the In predicate on the "owner_ref" field.
+func OwnerRefIn(vs ...string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldIn(FieldOwnerRef, vs...))
 }
 
-// OwnerIDNotIn applies the NotIn predicate on the "owner_id" field.
-func OwnerIDNotIn(vs ...string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldNotIn(FieldOwnerID, vs...))
+// OwnerRefNotIn applies the NotIn predicate on the "owner_ref" field.
+func OwnerRefNotIn(vs ...string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldNotIn(FieldOwnerRef, vs...))
 }
 
-// OwnerIDGT applies the GT predicate on the "owner_id" field.
-func OwnerIDGT(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldGT(FieldOwnerID, v))
+// OwnerRefGT applies the GT predicate on the "owner_ref" field.
+func OwnerRefGT(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldGT(FieldOwnerRef, v))
 }
 
-// OwnerIDGTE applies the GTE predicate on the "owner_id" field.
-func OwnerIDGTE(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldGTE(FieldOwnerID, v))
+// OwnerRefGTE applies the GTE predicate on the "owner_ref" field.
+func OwnerRefGTE(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldGTE(FieldOwnerRef, v))
 }
 
-// OwnerIDLT applies the LT predicate on the "owner_id" field.
-func OwnerIDLT(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldLT(FieldOwnerID, v))
+// OwnerRefLT applies the LT predicate on the "owner_ref" field.
+func OwnerRefLT(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldLT(FieldOwnerRef, v))
 }
 
-// OwnerIDLTE applies the LTE predicate on the "owner_id" field.
-func OwnerIDLTE(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldLTE(FieldOwnerID, v))
+// OwnerRefLTE applies the LTE predicate on the "owner_ref" field.
+func OwnerRefLTE(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldLTE(FieldOwnerRef, v))
 }
 
-// OwnerIDContains applies the Contains predicate on the "owner_id" field.
-func OwnerIDContains(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldContains(FieldOwnerID, v))
+// OwnerRefContains applies the Contains predicate on the "owner_ref" field.
+func OwnerRefContains(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldContains(FieldOwnerRef, v))
 }
 
-// OwnerIDHasPrefix applies the HasPrefix predicate on the "owner_id" field.
-func OwnerIDHasPrefix(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldHasPrefix(FieldOwnerID, v))
+// OwnerRefHasPrefix applies the HasPrefix predicate on the "owner_ref" field.
+func OwnerRefHasPrefix(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldHasPrefix(FieldOwnerRef, v))
 }
 
-// OwnerIDHasSuffix applies the HasSuffix predicate on the "owner_id" field.
-func OwnerIDHasSuffix(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldHasSuffix(FieldOwnerID, v))
+// OwnerRefHasSuffix applies the HasSuffix predicate on the "owner_ref" field.
+func OwnerRefHasSuffix(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldHasSuffix(FieldOwnerRef, v))
 }
 
-// OwnerIDEqualFold applies the EqualFold predicate on the "owner_id" field.
-func OwnerIDEqualFold(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldEqualFold(FieldOwnerID, v))
+// OwnerRefEqualFold applies the EqualFold predicate on the "owner_ref" field.
+func OwnerRefEqualFold(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldEqualFold(FieldOwnerRef, v))
 }
 
-// OwnerIDContainsFold applies the ContainsFold predicate on the "owner_id" field.
-func OwnerIDContainsFold(v string) predicate.RoleSuite {
-	return predicate.RoleSuite(sql.FieldContainsFold(FieldOwnerID, v))
+// OwnerRefContainsFold applies the ContainsFold predicate on the "owner_ref" field.
+func OwnerRefContainsFold(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldContainsFold(FieldOwnerRef, v))
 }
 
 // IsRequestableEQ applies the EQ predicate on the "is_requestable" field.

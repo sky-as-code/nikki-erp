@@ -30,14 +30,15 @@ func (RoleSuiteMixin) Fields() []ent.Field {
 
 		field.String("display_name"),
 
-		field.String("description"),
+		field.String("description").
+			Optional(),
 
 		field.String("etag"),
 
 		field.Enum("owner_type").
 			Values("user", "group"),
 
-		field.String("owner_id"),
+		field.String("owner_ref"),
 
 		field.Bool("is_requestable"),
 

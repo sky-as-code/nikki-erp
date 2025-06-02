@@ -18,7 +18,13 @@ type Resource struct {
 	ID string `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// ScopeType holds the value of the "scope_type" field.
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
+	// A resource can be a Nikki Application (lifecycle and access managed by Nikki) or a custom string
+	ResourceType resource.ResourceType `json:"resource_type,omitempty"`
+	// Some resource type requires identifier (ID)
+	ResourceRef string `json:"resource_ref,omitempty"`
+	// This field cannot be changed to avoid breaking existing entitlements
 	ScopeType resource.ScopeType `json:"scope_type,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ResourceQuery when eager-loading is set.
@@ -60,7 +66,7 @@ func (*Resource) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case resource.FieldID, resource.FieldName, resource.FieldScopeType:
+		case resource.FieldID, resource.FieldName, resource.FieldDescription, resource.FieldResourceType, resource.FieldResourceRef, resource.FieldScopeType:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -88,6 +94,24 @@ func (r *Resource) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				r.Name = value.String
+			}
+		case resource.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				r.Description = value.String
+			}
+		case resource.FieldResourceType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field resource_type", values[i])
+			} else if value.Valid {
+				r.ResourceType = resource.ResourceType(value.String)
+			}
+		case resource.FieldResourceRef:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field resource_ref", values[i])
+			} else if value.Valid {
+				r.ResourceRef = value.String
 			}
 		case resource.FieldScopeType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -143,6 +167,15 @@ func (r *Resource) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", r.ID))
 	builder.WriteString("name=")
 	builder.WriteString(r.Name)
+	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(r.Description)
+	builder.WriteString(", ")
+	builder.WriteString("resource_type=")
+	builder.WriteString(fmt.Sprintf("%v", r.ResourceType))
+	builder.WriteString(", ")
+	builder.WriteString("resource_ref=")
+	builder.WriteString(r.ResourceRef)
 	builder.WriteString(", ")
 	builder.WriteString("scope_type=")
 	builder.WriteString(fmt.Sprintf("%v", r.ScopeType))

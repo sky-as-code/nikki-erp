@@ -60,6 +60,12 @@ func (ru *RoleUpdate) SetNillableDescription(s *string) *RoleUpdate {
 	return ru
 }
 
+// ClearDescription clears the value of the "description" field.
+func (ru *RoleUpdate) ClearDescription() *RoleUpdate {
+	ru.mutation.ClearDescription()
+	return ru
+}
+
 // SetEtag sets the "etag" field.
 func (ru *RoleUpdate) SetEtag(s string) *RoleUpdate {
 	ru.mutation.SetEtag(s)
@@ -88,16 +94,16 @@ func (ru *RoleUpdate) SetNillableOwnerType(rt *role.OwnerType) *RoleUpdate {
 	return ru
 }
 
-// SetOwnerID sets the "owner_id" field.
-func (ru *RoleUpdate) SetOwnerID(s string) *RoleUpdate {
-	ru.mutation.SetOwnerID(s)
+// SetOwnerRef sets the "owner_ref" field.
+func (ru *RoleUpdate) SetOwnerRef(s string) *RoleUpdate {
+	ru.mutation.SetOwnerRef(s)
 	return ru
 }
 
-// SetNillableOwnerID sets the "owner_id" field if the given value is not nil.
-func (ru *RoleUpdate) SetNillableOwnerID(s *string) *RoleUpdate {
+// SetNillableOwnerRef sets the "owner_ref" field if the given value is not nil.
+func (ru *RoleUpdate) SetNillableOwnerRef(s *string) *RoleUpdate {
 	if s != nil {
-		ru.SetOwnerID(*s)
+		ru.SetOwnerRef(*s)
 	}
 	return ru
 }
@@ -384,14 +390,17 @@ func (ru *RoleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ru.mutation.Description(); ok {
 		_spec.SetField(role.FieldDescription, field.TypeString, value)
 	}
+	if ru.mutation.DescriptionCleared() {
+		_spec.ClearField(role.FieldDescription, field.TypeString)
+	}
 	if value, ok := ru.mutation.Etag(); ok {
 		_spec.SetField(role.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := ru.mutation.OwnerType(); ok {
 		_spec.SetField(role.FieldOwnerType, field.TypeEnum, value)
 	}
-	if value, ok := ru.mutation.OwnerID(); ok {
-		_spec.SetField(role.FieldOwnerID, field.TypeString, value)
+	if value, ok := ru.mutation.OwnerRef(); ok {
+		_spec.SetField(role.FieldOwnerRef, field.TypeString, value)
 	}
 	if value, ok := ru.mutation.IsRequestable(); ok {
 		_spec.SetField(role.FieldIsRequestable, field.TypeBool, value)
@@ -675,6 +684,12 @@ func (ruo *RoleUpdateOne) SetNillableDescription(s *string) *RoleUpdateOne {
 	return ruo
 }
 
+// ClearDescription clears the value of the "description" field.
+func (ruo *RoleUpdateOne) ClearDescription() *RoleUpdateOne {
+	ruo.mutation.ClearDescription()
+	return ruo
+}
+
 // SetEtag sets the "etag" field.
 func (ruo *RoleUpdateOne) SetEtag(s string) *RoleUpdateOne {
 	ruo.mutation.SetEtag(s)
@@ -703,16 +718,16 @@ func (ruo *RoleUpdateOne) SetNillableOwnerType(rt *role.OwnerType) *RoleUpdateOn
 	return ruo
 }
 
-// SetOwnerID sets the "owner_id" field.
-func (ruo *RoleUpdateOne) SetOwnerID(s string) *RoleUpdateOne {
-	ruo.mutation.SetOwnerID(s)
+// SetOwnerRef sets the "owner_ref" field.
+func (ruo *RoleUpdateOne) SetOwnerRef(s string) *RoleUpdateOne {
+	ruo.mutation.SetOwnerRef(s)
 	return ruo
 }
 
-// SetNillableOwnerID sets the "owner_id" field if the given value is not nil.
-func (ruo *RoleUpdateOne) SetNillableOwnerID(s *string) *RoleUpdateOne {
+// SetNillableOwnerRef sets the "owner_ref" field if the given value is not nil.
+func (ruo *RoleUpdateOne) SetNillableOwnerRef(s *string) *RoleUpdateOne {
 	if s != nil {
-		ruo.SetOwnerID(*s)
+		ruo.SetOwnerRef(*s)
 	}
 	return ruo
 }
@@ -1029,14 +1044,17 @@ func (ruo *RoleUpdateOne) sqlSave(ctx context.Context) (_node *Role, err error) 
 	if value, ok := ruo.mutation.Description(); ok {
 		_spec.SetField(role.FieldDescription, field.TypeString, value)
 	}
+	if ruo.mutation.DescriptionCleared() {
+		_spec.ClearField(role.FieldDescription, field.TypeString)
+	}
 	if value, ok := ruo.mutation.Etag(); ok {
 		_spec.SetField(role.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := ruo.mutation.OwnerType(); ok {
 		_spec.SetField(role.FieldOwnerType, field.TypeEnum, value)
 	}
-	if value, ok := ruo.mutation.OwnerID(); ok {
-		_spec.SetField(role.FieldOwnerID, field.TypeString, value)
+	if value, ok := ruo.mutation.OwnerRef(); ok {
+		_spec.SetField(role.FieldOwnerRef, field.TypeString, value)
 	}
 	if value, ok := ruo.mutation.IsRequestable(); ok {
 		_spec.SetField(role.FieldIsRequestable, field.TypeBool, value)

@@ -27,8 +27,8 @@ const (
 	FieldEtag = "etag"
 	// FieldOwnerType holds the string denoting the owner_type field in the database.
 	FieldOwnerType = "owner_type"
-	// FieldOwnerID holds the string denoting the owner_id field in the database.
-	FieldOwnerID = "owner_id"
+	// FieldOwnerRef holds the string denoting the owner_ref field in the database.
+	FieldOwnerRef = "owner_ref"
 	// FieldIsRequestable holds the string denoting the is_requestable field in the database.
 	FieldIsRequestable = "is_requestable"
 	// FieldIsRequiredAttachment holds the string denoting the is_required_attachment field in the database.
@@ -100,7 +100,7 @@ var Columns = []string{
 	FieldDescription,
 	FieldEtag,
 	FieldOwnerType,
-	FieldOwnerID,
+	FieldOwnerRef,
 	FieldIsRequestable,
 	FieldIsRequiredAttachment,
 	FieldIsRequiredComment,
@@ -188,9 +188,9 @@ func ByOwnerType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOwnerType, opts...).ToFunc()
 }
 
-// ByOwnerID orders the results by the owner_id field.
-func ByOwnerID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldOwnerID, opts...).ToFunc()
+// ByOwnerRef orders the results by the owner_ref field.
+func ByOwnerRef(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOwnerRef, opts...).ToFunc()
 }
 
 // ByIsRequestable orders the results by the is_requestable field.

@@ -1,10 +1,12 @@
 package domain
 
 import (
+	"go.bryk.io/pkg/errors"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"go.bryk.io/pkg/errors"
+	entRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
 )
 
 type RoleSuite struct {
@@ -13,8 +15,9 @@ type RoleSuite struct {
 
 	DisplayName          *string   `json:"displayName,omitempty"`
 	Description          *string   `json:"description,omitempty"`
+	Etag                 *string   `json:"etag,omitempty"`
 	OwnerType            *string   `json:"ownerType,omitempty"`
-	OwnerId              *model.Id `json:"ownerId,omitempty"`
+	OwnerRef             *model.Id `json:"ownerRef,omitempty"`
 	IsRequestable        *bool     `json:"isRequestable,omitempty"`
 	IsRequiredAttachment *bool     `json:"isRequiredAttachment,omitempty"`
 	IsRequiredComment    *bool     `json:"isRequiredComment,omitempty"`
@@ -33,7 +36,7 @@ func (this *RoleSuite) Validate(forEdit bool) ft.ValidationErrors {
 			val.Length(1, 3000),
 		),
 		RoleSuiteOwnerTypeValidateRule(&this.OwnerType, !forEdit),
-		model.IdValidateRule(&this.OwnerId, !forEdit),
+		model.IdValidateRule(&this.OwnerRef, !forEdit),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
@@ -44,8 +47,8 @@ func (this *RoleSuite) Validate(forEdit bool) ft.ValidationErrors {
 type RoleSuiteOwnerType string
 
 const (
-	RoleSuiteOwnerTypeUser  RoleSuiteOwnerType = "user"
-	RoleSuiteOwnerTypeGroup RoleSuiteOwnerType = "group"
+	RoleSuiteOwnerTypeUser  = RoleSuiteOwnerType(entRoleSuite.OwnerTypeUser)
+	RoleSuiteOwnerTypeGroup = RoleSuiteOwnerType(entRoleSuite.OwnerTypeGroup)
 )
 
 func (this RoleSuiteOwnerType) Validate() error {
