@@ -100,3 +100,10 @@ func (this *OrgBase) GetOrgId() Id {
 func (this *OrgBase) SetOrgId(orgId Id) {
 	this.OrgId = orgId
 }
+func (this *OrgBase) IsOrgIdEmpty() *string {
+	if this.OrgId == "" {
+		return nil
+	}
+	orgStr := this.OrgId.String()
+	return &orgStr
+}

@@ -18,14 +18,6 @@ type UserRepository interface {
 	Search(ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions) (*crud.PagedResult[*domain.User], error)
 }
 
-type GroupRepository interface {
-	Create(ctx context.Context, group domain.Group) (*domain.Group, error)
-	Update(ctx context.Context, group domain.Group) (*domain.Group, error)
-	Delete(ctx context.Context, id model.Id) error
-	FindById(ctx context.Context, id model.Id) (*domain.Group, error)
-	Search(ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions) (*crud.PagedResult[*domain.Group], error)
-}
-
 type OrganizationRepository interface {
 	Create(ctx context.Context, organization domain.Organization) (*domain.Organization, error)
 	Update(ctx context.Context, organization domain.Organization) (*domain.Organization, error)

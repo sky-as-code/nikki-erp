@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	entGroup "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
-	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
+	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
 )
 
 func NewGroupEntRepository(client *ent.Client) it.GroupRepository {
@@ -27,11 +27,9 @@ func (this *GroupEntRepository) Create(ctx context.Context, group domain.Group) 
 		SetID(group.Id.String()).
 		SetName(*group.Name).
 		SetNillableDescription(group.Description).
-		SetCreatedBy(group.CreatedBy.String())
-
-	if group.ParentId != nil {
-		creation.SetParentID(group.ParentId.String())
-	}
+		SetCreatedBy(group.CreatedBy.String()).
+		SetNillableOrgID(group.IsOrgIdEmpty()).
+		SetEtag(group.Etag.String())
 
 	return Mutate(ctx, creation, entToGroup)
 }
@@ -40,13 +38,9 @@ func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group) 
 	update := this.client.Group.UpdateOneID(group.Id.String()).
 		SetName(*group.Name).
 		SetNillableDescription(group.Description).
+		SetEtag(group.Etag.String()).
+		SetNillableOrgID(group.IsOrgIdEmpty()).
 		SetUpdatedBy(group.UpdatedBy.String())
-
-	if group.ParentId != nil {
-		update.SetParentID(group.ParentId.String())
-	} else {
-		update.ClearParentID()
-	}
 
 	return Mutate(ctx, update, entToGroup)
 }
@@ -57,9 +51,20 @@ func (this *GroupEntRepository) Delete(ctx context.Context, id model.Id) error {
 
 func (this *GroupEntRepository) FindById(ctx context.Context, id model.Id) (*domain.Group, error) {
 	query := this.client.Group.Query().
-		Where(entGroup.ID(id.String())).
-		WithParent()
+		Where(entGroup.ID(id.String()))
+	return FindOne(ctx, query, entToGroup)
+}
 
+func (this *GroupEntRepository) FindByIdWitOrganization(ctx context.Context, id model.Id) (*domain.GroupWithOrg, error) {
+	query := this.client.Group.Query().
+		Where(entGroup.ID(id.String())).
+		WithOrganization()
+	return FindOne(ctx, query, entToGroupWithOrg)
+}
+
+func (this *GroupEntRepository) FindByName(ctx context.Context, name string) (*domain.Group, error) {
+	query := this.client.Group.Query().
+		Where(entGroup.Name(name))
 	return FindOne(ctx, query, entToGroup)
 }
 
@@ -84,11 +89,9 @@ func BuildGroupDescriptor() *orm.EntityDescriptor {
 		Field(entGroup.FieldDescription, entity.Description).
 		Field(entGroup.FieldID, entity.ID).
 		Field(entGroup.FieldName, entity.Name).
-		Field(entGroup.FieldParentID, entity.ParentID).
 		Field(entGroup.FieldUpdatedAt, entity.UpdatedAt).
 		Field(entGroup.FieldUpdatedBy, entity.UpdatedBy).
 		Edge(entGroup.EdgeUsers, orm.ToEdgePredicate(entGroup.HasUsersWith)).
-		Edge(entGroup.EdgeParent, orm.ToEdgePredicate(entGroup.HasParentWith)).
 		Edge(entGroup.EdgeSubgroups, orm.ToEdgePredicate(entGroup.HasSubgroupsWith))
 
 	return builder.Descriptor()

@@ -1,6 +1,7 @@
 package domain
 
 import (
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
@@ -12,15 +13,13 @@ type Group struct {
 
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
-
-	ParentId *model.Id `json:"parentId,omitempty"`
 }
 
 func (this *Group) SetDefaults() error {
 	return this.ModelBase.SetDefaults()
 }
 
-func (this *Group) Validate(forEdit bool) error {
+func (this *Group) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Name,
 			val.RequiredWhen(!forEdit),
@@ -29,11 +28,15 @@ func (this *Group) Validate(forEdit bool) error {
 		val.Field(&this.Description,
 			val.Length(0, 255),
 		),
-		model.IdValidateRule(&this.ParentId, !forEdit),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
-	rules = append(rules, this.OrgBase.ValidateRules(forEdit)...)
+	// rules = append(rules, this.OrgBase.ValidateRules(forEdit)...)
 
 	return val.ApiBased.ValidateStruct(this, rules...)
+}
+
+type GroupWithOrg struct {
+	Group        Group         `json:"group"`
+	Organization *Organization `json:"organization,omitempty"`
 }

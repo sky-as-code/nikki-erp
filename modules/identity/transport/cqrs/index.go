@@ -11,6 +11,7 @@ import (
 func InitCqrsHandlers() error {
 	err := errors.Join(
 		initUserHandlers(),
+		initGroupHandlers(),
 	)
 	return err
 }
@@ -26,6 +27,21 @@ func initUserHandlers() error {
 			cqrs.NewHandler(handler.Delete),
 			cqrs.NewHandler(handler.GetUserByID),
 			cqrs.NewHandler(handler.Update),
+		)
+	})
+}
+
+func initGroupHandlers() error {
+	deps.Register(NewGroupHandler)
+
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *GroupHandler) error {
+		ctx := context.Background()
+		return cqrsBus.SubscribeRequests(
+			ctx,
+			cqrs.NewHandler(handler.CreateGroup),
+			cqrs.NewHandler(handler.DeleteGroup),
+			cqrs.NewHandler(handler.GetGroupByID),
+			cqrs.NewHandler(handler.UpdateGroup),
 		)
 	})
 }

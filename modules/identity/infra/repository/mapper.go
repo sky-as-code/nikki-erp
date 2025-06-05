@@ -9,9 +9,10 @@ import (
 )
 
 func entToGroup(entGroup *ent.Group) *domain.Group {
-	return &domain.Group{
+	d := &domain.Group{
 		ModelBase: model.ModelBase{
-			Id: model.WrapId(entGroup.ID),
+			Id:   model.WrapId(entGroup.ID),
+			Etag: model.WrapEtag(entGroup.Etag),
 		},
 		AuditableBase: model.AuditableBase{
 			CreatedAt: &entGroup.CreatedAt,
@@ -19,8 +20,25 @@ func entToGroup(entGroup *ent.Group) *domain.Group {
 			UpdatedAt: &entGroup.UpdatedAt,
 			UpdatedBy: model.WrapNillableId(entGroup.UpdatedBy),
 		},
+
 		Name:        &entGroup.Name,
 		Description: entGroup.Description,
+	}
+
+	if entGroup.OrgID == nil {
+		d.OrgBase.OrgId = ""
+	} else {
+		d.OrgBase.OrgId = *model.WrapId(*entGroup.OrgID)
+	}
+
+	return d
+}
+
+func entToGroupWithOrg(entGroup *ent.Group) *domain.GroupWithOrg {
+	d := entToGroup(entGroup)
+	return &domain.GroupWithOrg{
+		Group:        *d,
+		Organization: entToOrganization(entGroup.Edges.Organization),
 	}
 }
 
