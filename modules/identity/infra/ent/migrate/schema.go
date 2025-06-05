@@ -16,9 +16,10 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "created_by", Type: field.TypeString},
+		{Name: "etag", Type: field.TypeString, Size: 100},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "updated_by", Type: field.TypeString, Nullable: true},
-		{Name: "parent_id", Type: field.TypeString, Nullable: true},
+		{Name: "org_id", Type: field.TypeString, Unique: true, Nullable: true},
 	}
 	// GroupsTable holds the schema information for the "groups" table.
 	GroupsTable = &schema.Table{
@@ -27,9 +28,9 @@ var (
 		PrimaryKey: []*schema.Column{GroupsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "groups_groups_subgroups",
-				Columns:    []*schema.Column{GroupsColumns[7]},
-				RefColumns: []*schema.Column{GroupsColumns[0]},
+				Symbol:     "groups_organizations_groups",
+				Columns:    []*schema.Column{GroupsColumns[8]},
+				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -148,6 +149,31 @@ var (
 			},
 		},
 	}
+	// GroupSubgroupsColumns holds the columns for the "group_subgroups" table.
+	GroupSubgroupsColumns = []*schema.Column{
+		{Name: "group_id", Type: field.TypeString},
+		{Name: "subgroup_id", Type: field.TypeString},
+	}
+	// GroupSubgroupsTable holds the schema information for the "group_subgroups" table.
+	GroupSubgroupsTable = &schema.Table{
+		Name:       "group_subgroups",
+		Columns:    GroupSubgroupsColumns,
+		PrimaryKey: []*schema.Column{GroupSubgroupsColumns[0], GroupSubgroupsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "group_subgroups_group_id",
+				Columns:    []*schema.Column{GroupSubgroupsColumns[0]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "group_subgroups_subgroup_id",
+				Columns:    []*schema.Column{GroupSubgroupsColumns[1]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		GroupsTable,
@@ -156,11 +182,12 @@ var (
 		UsersTable,
 		UserGroupsTable,
 		UserOrgsTable,
+		GroupSubgroupsTable,
 	}
 )
 
 func init() {
-	GroupsTable.ForeignKeys[0].RefTable = GroupsTable
+	GroupsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	GroupsTable.Annotation = &entsql.Annotation{
 		Table: "groups",
 	}
@@ -184,4 +211,6 @@ func init() {
 	UserOrgsTable.Annotation = &entsql.Annotation{
 		Table: "user_orgs",
 	}
+	GroupSubgroupsTable.ForeignKeys[0].RefTable = GroupsTable
+	GroupSubgroupsTable.ForeignKeys[1].RefTable = GroupsTable
 }

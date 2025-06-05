@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -126,6 +127,25 @@ func (ou *OrganizationUpdate) AddUsers(u ...*User) *OrganizationUpdate {
 	return ou.AddUserIDs(ids...)
 }
 
+// SetGroupsID sets the "groups" edge to the Group entity by ID.
+func (ou *OrganizationUpdate) SetGroupsID(id string) *OrganizationUpdate {
+	ou.mutation.SetGroupsID(id)
+	return ou
+}
+
+// SetNillableGroupsID sets the "groups" edge to the Group entity by ID if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableGroupsID(id *string) *OrganizationUpdate {
+	if id != nil {
+		ou = ou.SetGroupsID(*id)
+	}
+	return ou
+}
+
+// SetGroups sets the "groups" edge to the Group entity.
+func (ou *OrganizationUpdate) SetGroups(g *Group) *OrganizationUpdate {
+	return ou.SetGroupsID(g.ID)
+}
+
 // Mutation returns the OrganizationMutation object of the builder.
 func (ou *OrganizationUpdate) Mutation() *OrganizationMutation {
 	return ou.mutation
@@ -150,6 +170,12 @@ func (ou *OrganizationUpdate) RemoveUsers(u ...*User) *OrganizationUpdate {
 		ids[i] = u[i].ID
 	}
 	return ou.RemoveUserIDs(ids...)
+}
+
+// ClearGroups clears the "groups" edge to the Group entity.
+func (ou *OrganizationUpdate) ClearGroups() *OrganizationUpdate {
+	ou.mutation.ClearGroups()
+	return ou
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -291,6 +317,35 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ou.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   organization.GroupsTable,
+			Columns: []string{organization.GroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ou.mutation.GroupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   organization.GroupsTable,
+			Columns: []string{organization.GroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ou.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{organization.Label}
@@ -408,6 +463,25 @@ func (ouo *OrganizationUpdateOne) AddUsers(u ...*User) *OrganizationUpdateOne {
 	return ouo.AddUserIDs(ids...)
 }
 
+// SetGroupsID sets the "groups" edge to the Group entity by ID.
+func (ouo *OrganizationUpdateOne) SetGroupsID(id string) *OrganizationUpdateOne {
+	ouo.mutation.SetGroupsID(id)
+	return ouo
+}
+
+// SetNillableGroupsID sets the "groups" edge to the Group entity by ID if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableGroupsID(id *string) *OrganizationUpdateOne {
+	if id != nil {
+		ouo = ouo.SetGroupsID(*id)
+	}
+	return ouo
+}
+
+// SetGroups sets the "groups" edge to the Group entity.
+func (ouo *OrganizationUpdateOne) SetGroups(g *Group) *OrganizationUpdateOne {
+	return ouo.SetGroupsID(g.ID)
+}
+
 // Mutation returns the OrganizationMutation object of the builder.
 func (ouo *OrganizationUpdateOne) Mutation() *OrganizationMutation {
 	return ouo.mutation
@@ -432,6 +506,12 @@ func (ouo *OrganizationUpdateOne) RemoveUsers(u ...*User) *OrganizationUpdateOne
 		ids[i] = u[i].ID
 	}
 	return ouo.RemoveUserIDs(ids...)
+}
+
+// ClearGroups clears the "groups" edge to the Group entity.
+func (ouo *OrganizationUpdateOne) ClearGroups() *OrganizationUpdateOne {
+	ouo.mutation.ClearGroups()
+	return ouo
 }
 
 // Where appends a list predicates to the OrganizationUpdate builder.
@@ -596,6 +676,35 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ouo.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   organization.GroupsTable,
+			Columns: []string{organization.GroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ouo.mutation.GroupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   organization.GroupsTable,
+			Columns: []string{organization.GroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

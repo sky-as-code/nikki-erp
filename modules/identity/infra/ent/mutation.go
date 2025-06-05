@@ -40,27 +40,28 @@ const (
 // GroupMutation represents an operation that mutates the Group nodes in the graph.
 type GroupMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *string
-	name             *string
-	description      *string
-	created_at       *time.Time
-	created_by       *string
-	updated_at       *time.Time
-	updated_by       *string
-	clearedFields    map[string]struct{}
-	parent           *string
-	clearedparent    bool
-	subgroups        map[string]struct{}
-	removedsubgroups map[string]struct{}
-	clearedsubgroups bool
-	users            map[string]struct{}
-	removedusers     map[string]struct{}
-	clearedusers     bool
-	done             bool
-	oldValue         func(context.Context) (*Group, error)
-	predicates       []predicate.Group
+	op                  Op
+	typ                 string
+	id                  *string
+	name                *string
+	description         *string
+	created_at          *time.Time
+	created_by          *string
+	etag                *string
+	updated_at          *time.Time
+	updated_by          *string
+	clearedFields       map[string]struct{}
+	organization        *string
+	clearedorganization bool
+	subgroups           map[string]struct{}
+	removedsubgroups    map[string]struct{}
+	clearedsubgroups    bool
+	users               map[string]struct{}
+	removedusers        map[string]struct{}
+	clearedusers        bool
+	done                bool
+	oldValue            func(context.Context) (*Group, error)
+	predicates          []predicate.Group
 }
 
 var _ ent.Mutation = (*GroupMutation)(nil)
@@ -165,6 +166,55 @@ func (m *GroupMutation) IDs(ctx context.Context) ([]string, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetOrgID sets the "org_id" field.
+func (m *GroupMutation) SetOrgID(s string) {
+	m.organization = &s
+}
+
+// OrgID returns the value of the "org_id" field in the mutation.
+func (m *GroupMutation) OrgID() (r string, exists bool) {
+	v := m.organization
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrgID returns the old "org_id" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldOrgID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrgID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrgID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrgID: %w", err)
+	}
+	return oldValue.OrgID, nil
+}
+
+// ClearOrgID clears the value of the "org_id" field.
+func (m *GroupMutation) ClearOrgID() {
+	m.organization = nil
+	m.clearedFields[group.FieldOrgID] = struct{}{}
+}
+
+// OrgIDCleared returns if the "org_id" field was cleared in this mutation.
+func (m *GroupMutation) OrgIDCleared() bool {
+	_, ok := m.clearedFields[group.FieldOrgID]
+	return ok
+}
+
+// ResetOrgID resets all changes to the "org_id" field.
+func (m *GroupMutation) ResetOrgID() {
+	m.organization = nil
+	delete(m.clearedFields, group.FieldOrgID)
 }
 
 // SetName sets the "name" field.
@@ -324,6 +374,42 @@ func (m *GroupMutation) ResetCreatedBy() {
 	m.created_by = nil
 }
 
+// SetEtag sets the "etag" field.
+func (m *GroupMutation) SetEtag(s string) {
+	m.etag = &s
+}
+
+// Etag returns the value of the "etag" field in the mutation.
+func (m *GroupMutation) Etag() (r string, exists bool) {
+	v := m.etag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEtag returns the old "etag" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldEtag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEtag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEtag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEtag: %w", err)
+	}
+	return oldValue.Etag, nil
+}
+
+// ResetEtag resets all changes to the "etag" field.
+func (m *GroupMutation) ResetEtag() {
+	m.etag = nil
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (m *GroupMutation) SetUpdatedAt(t time.Time) {
 	m.updated_at = &t
@@ -409,80 +495,44 @@ func (m *GroupMutation) ResetUpdatedBy() {
 	delete(m.clearedFields, group.FieldUpdatedBy)
 }
 
-// SetParentID sets the "parent_id" field.
-func (m *GroupMutation) SetParentID(s string) {
-	m.parent = &s
+// SetOrganizationID sets the "organization" edge to the Organization entity by id.
+func (m *GroupMutation) SetOrganizationID(id string) {
+	m.organization = &id
 }
 
-// ParentID returns the value of the "parent_id" field in the mutation.
-func (m *GroupMutation) ParentID() (r string, exists bool) {
-	v := m.parent
-	if v == nil {
-		return
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (m *GroupMutation) ClearOrganization() {
+	m.clearedorganization = true
+	m.clearedFields[group.FieldOrgID] = struct{}{}
+}
+
+// OrganizationCleared reports if the "organization" edge to the Organization entity was cleared.
+func (m *GroupMutation) OrganizationCleared() bool {
+	return m.OrgIDCleared() || m.clearedorganization
+}
+
+// OrganizationID returns the "organization" edge ID in the mutation.
+func (m *GroupMutation) OrganizationID() (id string, exists bool) {
+	if m.organization != nil {
+		return *m.organization, true
 	}
-	return *v, true
+	return
 }
 
-// OldParentID returns the old "parent_id" field's value of the Group entity.
-// If the Group object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GroupMutation) OldParentID(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldParentID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldParentID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldParentID: %w", err)
-	}
-	return oldValue.ParentID, nil
-}
-
-// ClearParentID clears the value of the "parent_id" field.
-func (m *GroupMutation) ClearParentID() {
-	m.parent = nil
-	m.clearedFields[group.FieldParentID] = struct{}{}
-}
-
-// ParentIDCleared returns if the "parent_id" field was cleared in this mutation.
-func (m *GroupMutation) ParentIDCleared() bool {
-	_, ok := m.clearedFields[group.FieldParentID]
-	return ok
-}
-
-// ResetParentID resets all changes to the "parent_id" field.
-func (m *GroupMutation) ResetParentID() {
-	m.parent = nil
-	delete(m.clearedFields, group.FieldParentID)
-}
-
-// ClearParent clears the "parent" edge to the Group entity.
-func (m *GroupMutation) ClearParent() {
-	m.clearedparent = true
-	m.clearedFields[group.FieldParentID] = struct{}{}
-}
-
-// ParentCleared reports if the "parent" edge to the Group entity was cleared.
-func (m *GroupMutation) ParentCleared() bool {
-	return m.ParentIDCleared() || m.clearedparent
-}
-
-// ParentIDs returns the "parent" edge IDs in the mutation.
+// OrganizationIDs returns the "organization" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// ParentID instead. It exists only for internal usage by the builders.
-func (m *GroupMutation) ParentIDs() (ids []string) {
-	if id := m.parent; id != nil {
+// OrganizationID instead. It exists only for internal usage by the builders.
+func (m *GroupMutation) OrganizationIDs() (ids []string) {
+	if id := m.organization; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetParent resets all changes to the "parent" edge.
-func (m *GroupMutation) ResetParent() {
-	m.parent = nil
-	m.clearedparent = false
+// ResetOrganization resets all changes to the "organization" edge.
+func (m *GroupMutation) ResetOrganization() {
+	m.organization = nil
+	m.clearedorganization = false
 }
 
 // AddSubgroupIDs adds the "subgroups" edge to the Group entity by ids.
@@ -627,7 +677,10 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
+	if m.organization != nil {
+		fields = append(fields, group.FieldOrgID)
+	}
 	if m.name != nil {
 		fields = append(fields, group.FieldName)
 	}
@@ -640,14 +693,14 @@ func (m *GroupMutation) Fields() []string {
 	if m.created_by != nil {
 		fields = append(fields, group.FieldCreatedBy)
 	}
+	if m.etag != nil {
+		fields = append(fields, group.FieldEtag)
+	}
 	if m.updated_at != nil {
 		fields = append(fields, group.FieldUpdatedAt)
 	}
 	if m.updated_by != nil {
 		fields = append(fields, group.FieldUpdatedBy)
-	}
-	if m.parent != nil {
-		fields = append(fields, group.FieldParentID)
 	}
 	return fields
 }
@@ -657,6 +710,8 @@ func (m *GroupMutation) Fields() []string {
 // schema.
 func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case group.FieldOrgID:
+		return m.OrgID()
 	case group.FieldName:
 		return m.Name()
 	case group.FieldDescription:
@@ -665,12 +720,12 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case group.FieldCreatedBy:
 		return m.CreatedBy()
+	case group.FieldEtag:
+		return m.Etag()
 	case group.FieldUpdatedAt:
 		return m.UpdatedAt()
 	case group.FieldUpdatedBy:
 		return m.UpdatedBy()
-	case group.FieldParentID:
-		return m.ParentID()
 	}
 	return nil, false
 }
@@ -680,6 +735,8 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case group.FieldOrgID:
+		return m.OldOrgID(ctx)
 	case group.FieldName:
 		return m.OldName(ctx)
 	case group.FieldDescription:
@@ -688,12 +745,12 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldCreatedAt(ctx)
 	case group.FieldCreatedBy:
 		return m.OldCreatedBy(ctx)
+	case group.FieldEtag:
+		return m.OldEtag(ctx)
 	case group.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
 	case group.FieldUpdatedBy:
 		return m.OldUpdatedBy(ctx)
-	case group.FieldParentID:
-		return m.OldParentID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Group field %s", name)
 }
@@ -703,6 +760,13 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 // type.
 func (m *GroupMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case group.FieldOrgID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrgID(v)
+		return nil
 	case group.FieldName:
 		v, ok := value.(string)
 		if !ok {
@@ -731,6 +795,13 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCreatedBy(v)
 		return nil
+	case group.FieldEtag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEtag(v)
+		return nil
 	case group.FieldUpdatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -744,13 +815,6 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedBy(v)
-		return nil
-	case group.FieldParentID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetParentID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)
@@ -782,14 +846,14 @@ func (m *GroupMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *GroupMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(group.FieldOrgID) {
+		fields = append(fields, group.FieldOrgID)
+	}
 	if m.FieldCleared(group.FieldDescription) {
 		fields = append(fields, group.FieldDescription)
 	}
 	if m.FieldCleared(group.FieldUpdatedBy) {
 		fields = append(fields, group.FieldUpdatedBy)
-	}
-	if m.FieldCleared(group.FieldParentID) {
-		fields = append(fields, group.FieldParentID)
 	}
 	return fields
 }
@@ -805,14 +869,14 @@ func (m *GroupMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *GroupMutation) ClearField(name string) error {
 	switch name {
+	case group.FieldOrgID:
+		m.ClearOrgID()
+		return nil
 	case group.FieldDescription:
 		m.ClearDescription()
 		return nil
 	case group.FieldUpdatedBy:
 		m.ClearUpdatedBy()
-		return nil
-	case group.FieldParentID:
-		m.ClearParentID()
 		return nil
 	}
 	return fmt.Errorf("unknown Group nullable field %s", name)
@@ -822,6 +886,9 @@ func (m *GroupMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *GroupMutation) ResetField(name string) error {
 	switch name {
+	case group.FieldOrgID:
+		m.ResetOrgID()
+		return nil
 	case group.FieldName:
 		m.ResetName()
 		return nil
@@ -834,14 +901,14 @@ func (m *GroupMutation) ResetField(name string) error {
 	case group.FieldCreatedBy:
 		m.ResetCreatedBy()
 		return nil
+	case group.FieldEtag:
+		m.ResetEtag()
+		return nil
 	case group.FieldUpdatedAt:
 		m.ResetUpdatedAt()
 		return nil
 	case group.FieldUpdatedBy:
 		m.ResetUpdatedBy()
-		return nil
-	case group.FieldParentID:
-		m.ResetParentID()
 		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)
@@ -850,8 +917,8 @@ func (m *GroupMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GroupMutation) AddedEdges() []string {
 	edges := make([]string, 0, 3)
-	if m.parent != nil {
-		edges = append(edges, group.EdgeParent)
+	if m.organization != nil {
+		edges = append(edges, group.EdgeOrganization)
 	}
 	if m.subgroups != nil {
 		edges = append(edges, group.EdgeSubgroups)
@@ -866,8 +933,8 @@ func (m *GroupMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case group.EdgeParent:
-		if id := m.parent; id != nil {
+	case group.EdgeOrganization:
+		if id := m.organization; id != nil {
 			return []ent.Value{*id}
 		}
 	case group.EdgeSubgroups:
@@ -921,8 +988,8 @@ func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GroupMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 3)
-	if m.clearedparent {
-		edges = append(edges, group.EdgeParent)
+	if m.clearedorganization {
+		edges = append(edges, group.EdgeOrganization)
 	}
 	if m.clearedsubgroups {
 		edges = append(edges, group.EdgeSubgroups)
@@ -937,8 +1004,8 @@ func (m *GroupMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *GroupMutation) EdgeCleared(name string) bool {
 	switch name {
-	case group.EdgeParent:
-		return m.clearedparent
+	case group.EdgeOrganization:
+		return m.clearedorganization
 	case group.EdgeSubgroups:
 		return m.clearedsubgroups
 	case group.EdgeUsers:
@@ -951,8 +1018,8 @@ func (m *GroupMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *GroupMutation) ClearEdge(name string) error {
 	switch name {
-	case group.EdgeParent:
-		m.ClearParent()
+	case group.EdgeOrganization:
+		m.ClearOrganization()
 		return nil
 	}
 	return fmt.Errorf("unknown Group unique edge %s", name)
@@ -962,8 +1029,8 @@ func (m *GroupMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *GroupMutation) ResetEdge(name string) error {
 	switch name {
-	case group.EdgeParent:
-		m.ResetParent()
+	case group.EdgeOrganization:
+		m.ResetOrganization()
 		return nil
 	case group.EdgeSubgroups:
 		m.ResetSubgroups()
@@ -1594,6 +1661,8 @@ type OrganizationMutation struct {
 	users         map[string]struct{}
 	removedusers  map[string]struct{}
 	clearedusers  bool
+	groups        *string
+	clearedgroups bool
 	done          bool
 	oldValue      func(context.Context) (*Organization, error)
 	predicates    []predicate.Organization
@@ -2058,6 +2127,45 @@ func (m *OrganizationMutation) ResetUsers() {
 	m.removedusers = nil
 }
 
+// SetGroupsID sets the "groups" edge to the Group entity by id.
+func (m *OrganizationMutation) SetGroupsID(id string) {
+	m.groups = &id
+}
+
+// ClearGroups clears the "groups" edge to the Group entity.
+func (m *OrganizationMutation) ClearGroups() {
+	m.clearedgroups = true
+}
+
+// GroupsCleared reports if the "groups" edge to the Group entity was cleared.
+func (m *OrganizationMutation) GroupsCleared() bool {
+	return m.clearedgroups
+}
+
+// GroupsID returns the "groups" edge ID in the mutation.
+func (m *OrganizationMutation) GroupsID() (id string, exists bool) {
+	if m.groups != nil {
+		return *m.groups, true
+	}
+	return
+}
+
+// GroupsIDs returns the "groups" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GroupsID instead. It exists only for internal usage by the builders.
+func (m *OrganizationMutation) GroupsIDs() (ids []string) {
+	if id := m.groups; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGroups resets all changes to the "groups" edge.
+func (m *OrganizationMutation) ResetGroups() {
+	m.groups = nil
+	m.clearedgroups = false
+}
+
 // Where appends a list predicates to the OrganizationMutation builder.
 func (m *OrganizationMutation) Where(ps ...predicate.Organization) {
 	m.predicates = append(m.predicates, ps...)
@@ -2319,9 +2427,12 @@ func (m *OrganizationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *OrganizationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.users != nil {
 		edges = append(edges, organization.EdgeUsers)
+	}
+	if m.groups != nil {
+		edges = append(edges, organization.EdgeGroups)
 	}
 	return edges
 }
@@ -2336,13 +2447,17 @@ func (m *OrganizationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case organization.EdgeGroups:
+		if id := m.groups; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *OrganizationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedusers != nil {
 		edges = append(edges, organization.EdgeUsers)
 	}
@@ -2365,9 +2480,12 @@ func (m *OrganizationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *OrganizationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedusers {
 		edges = append(edges, organization.EdgeUsers)
+	}
+	if m.clearedgroups {
+		edges = append(edges, organization.EdgeGroups)
 	}
 	return edges
 }
@@ -2378,6 +2496,8 @@ func (m *OrganizationMutation) EdgeCleared(name string) bool {
 	switch name {
 	case organization.EdgeUsers:
 		return m.clearedusers
+	case organization.EdgeGroups:
+		return m.clearedgroups
 	}
 	return false
 }
@@ -2386,6 +2506,9 @@ func (m *OrganizationMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *OrganizationMutation) ClearEdge(name string) error {
 	switch name {
+	case organization.EdgeGroups:
+		m.ClearGroups()
+		return nil
 	}
 	return fmt.Errorf("unknown Organization unique edge %s", name)
 }
@@ -2396,6 +2519,9 @@ func (m *OrganizationMutation) ResetEdge(name string) error {
 	switch name {
 	case organization.EdgeUsers:
 		m.ResetUsers()
+		return nil
+	case organization.EdgeGroups:
+		m.ResetGroups()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization edge %s", name)

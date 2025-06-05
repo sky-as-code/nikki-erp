@@ -33,6 +33,8 @@ const (
 	FieldUpdatedBy = "updated_by"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
+	// EdgeGroups holds the string denoting the groups edge name in mutations.
+	EdgeGroups = "groups"
 	// EdgeUserOrgs holds the string denoting the user_orgs edge name in mutations.
 	EdgeUserOrgs = "user_orgs"
 	// Table holds the table name of the organization in the database.
@@ -42,6 +44,13 @@ const (
 	// UsersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UsersInverseTable = "users"
+	// GroupsTable is the table that holds the groups relation/edge.
+	GroupsTable = "groups"
+	// GroupsInverseTable is the table name for the Group entity.
+	// It exists in this package in order to avoid circular dependency with the "group" package.
+	GroupsInverseTable = "groups"
+	// GroupsColumn is the table column denoting the groups relation/edge.
+	GroupsColumn = "org_id"
 	// UserOrgsTable is the table that holds the user_orgs relation/edge.
 	UserOrgsTable = "user_orgs"
 	// UserOrgsInverseTable is the table name for the UserOrg entity.
@@ -187,6 +196,13 @@ func ByUsers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByGroupsField orders the results by groups field.
+func ByGroupsField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupsStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByUserOrgsCount orders the results by user_orgs count.
 func ByUserOrgsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -205,6 +221,13 @@ func newUsersStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, true, UsersTable, UsersPrimaryKey...),
+	)
+}
+func newGroupsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, GroupsTable, GroupsColumn),
 	)
 }
 func newUserOrgsStep() *sqlgraph.Step {

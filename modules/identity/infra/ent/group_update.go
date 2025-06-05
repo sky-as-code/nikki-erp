@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
@@ -26,6 +27,26 @@ type GroupUpdate struct {
 // Where appends a list predicates to the GroupUpdate builder.
 func (gu *GroupUpdate) Where(ps ...predicate.Group) *GroupUpdate {
 	gu.mutation.Where(ps...)
+	return gu
+}
+
+// SetOrgID sets the "org_id" field.
+func (gu *GroupUpdate) SetOrgID(s string) *GroupUpdate {
+	gu.mutation.SetOrgID(s)
+	return gu
+}
+
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (gu *GroupUpdate) SetNillableOrgID(s *string) *GroupUpdate {
+	if s != nil {
+		gu.SetOrgID(*s)
+	}
+	return gu
+}
+
+// ClearOrgID clears the value of the "org_id" field.
+func (gu *GroupUpdate) ClearOrgID() *GroupUpdate {
+	gu.mutation.ClearOrgID()
 	return gu
 }
 
@@ -77,6 +98,20 @@ func (gu *GroupUpdate) SetNillableCreatedBy(s *string) *GroupUpdate {
 	return gu
 }
 
+// SetEtag sets the "etag" field.
+func (gu *GroupUpdate) SetEtag(s string) *GroupUpdate {
+	gu.mutation.SetEtag(s)
+	return gu
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (gu *GroupUpdate) SetNillableEtag(s *string) *GroupUpdate {
+	if s != nil {
+		gu.SetEtag(*s)
+	}
+	return gu
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (gu *GroupUpdate) SetUpdatedAt(t time.Time) *GroupUpdate {
 	gu.mutation.SetUpdatedAt(t)
@@ -103,29 +138,23 @@ func (gu *GroupUpdate) ClearUpdatedBy() *GroupUpdate {
 	return gu
 }
 
-// SetParentID sets the "parent_id" field.
-func (gu *GroupUpdate) SetParentID(s string) *GroupUpdate {
-	gu.mutation.SetParentID(s)
+// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
+func (gu *GroupUpdate) SetOrganizationID(id string) *GroupUpdate {
+	gu.mutation.SetOrganizationID(id)
 	return gu
 }
 
-// SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableParentID(s *string) *GroupUpdate {
-	if s != nil {
-		gu.SetParentID(*s)
+// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
+func (gu *GroupUpdate) SetNillableOrganizationID(id *string) *GroupUpdate {
+	if id != nil {
+		gu = gu.SetOrganizationID(*id)
 	}
 	return gu
 }
 
-// ClearParentID clears the value of the "parent_id" field.
-func (gu *GroupUpdate) ClearParentID() *GroupUpdate {
-	gu.mutation.ClearParentID()
-	return gu
-}
-
-// SetParent sets the "parent" edge to the Group entity.
-func (gu *GroupUpdate) SetParent(g *Group) *GroupUpdate {
-	return gu.SetParentID(g.ID)
+// SetOrganization sets the "organization" edge to the Organization entity.
+func (gu *GroupUpdate) SetOrganization(o *Organization) *GroupUpdate {
+	return gu.SetOrganizationID(o.ID)
 }
 
 // AddSubgroupIDs adds the "subgroups" edge to the Group entity by IDs.
@@ -163,9 +192,9 @@ func (gu *GroupUpdate) Mutation() *GroupMutation {
 	return gu.mutation
 }
 
-// ClearParent clears the "parent" edge to the Group entity.
-func (gu *GroupUpdate) ClearParent() *GroupUpdate {
-	gu.mutation.ClearParent()
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (gu *GroupUpdate) ClearOrganization() *GroupUpdate {
+	gu.mutation.ClearOrganization()
 	return gu
 }
 
@@ -249,6 +278,11 @@ func (gu *GroupUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (gu *GroupUpdate) check() error {
+	if v, ok := gu.mutation.OrgID(); ok {
+		if err := group.OrgIDValidator(v); err != nil {
+			return &ValidationError{Name: "org_id", err: fmt.Errorf(`ent: validator failed for field "Group.org_id": %w`, err)}
+		}
+	}
 	if v, ok := gu.mutation.Name(); ok {
 		if err := group.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
@@ -257,6 +291,11 @@ func (gu *GroupUpdate) check() error {
 	if v, ok := gu.mutation.Description(); ok {
 		if err := group.DescriptionValidator(v); err != nil {
 			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "Group.description": %w`, err)}
+		}
+	}
+	if v, ok := gu.mutation.Etag(); ok {
+		if err := group.EtagValidator(v); err != nil {
+			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "Group.etag": %w`, err)}
 		}
 	}
 	return nil
@@ -286,6 +325,9 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := gu.mutation.CreatedBy(); ok {
 		_spec.SetField(group.FieldCreatedBy, field.TypeString, value)
 	}
+	if value, ok := gu.mutation.Etag(); ok {
+		_spec.SetField(group.FieldEtag, field.TypeString, value)
+	}
 	if value, ok := gu.mutation.UpdatedAt(); ok {
 		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
 	}
@@ -295,28 +337,28 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if gu.mutation.UpdatedByCleared() {
 		_spec.ClearField(group.FieldUpdatedBy, field.TypeString)
 	}
-	if gu.mutation.ParentCleared() {
+	if gu.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2O,
 			Inverse: true,
-			Table:   group.ParentTable,
-			Columns: []string{group.ParentColumn},
+			Table:   group.OrganizationTable,
+			Columns: []string{group.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := gu.mutation.ParentIDs(); len(nodes) > 0 {
+	if nodes := gu.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2O,
 			Inverse: true,
-			Table:   group.ParentTable,
-			Columns: []string{group.ParentColumn},
+			Table:   group.OrganizationTable,
+			Columns: []string{group.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -326,11 +368,11 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if gu.mutation.SubgroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   group.SubgroupsTable,
-			Columns: []string{group.SubgroupsColumn},
-			Bidi:    false,
+			Columns: group.SubgroupsPrimaryKey,
+			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
@@ -339,11 +381,11 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := gu.mutation.RemovedSubgroupsIDs(); len(nodes) > 0 && !gu.mutation.SubgroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   group.SubgroupsTable,
-			Columns: []string{group.SubgroupsColumn},
-			Bidi:    false,
+			Columns: group.SubgroupsPrimaryKey,
+			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
@@ -355,11 +397,11 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := gu.mutation.SubgroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   group.SubgroupsTable,
-			Columns: []string{group.SubgroupsColumn},
-			Bidi:    false,
+			Columns: group.SubgroupsPrimaryKey,
+			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
@@ -434,6 +476,26 @@ type GroupUpdateOne struct {
 	mutation *GroupMutation
 }
 
+// SetOrgID sets the "org_id" field.
+func (guo *GroupUpdateOne) SetOrgID(s string) *GroupUpdateOne {
+	guo.mutation.SetOrgID(s)
+	return guo
+}
+
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (guo *GroupUpdateOne) SetNillableOrgID(s *string) *GroupUpdateOne {
+	if s != nil {
+		guo.SetOrgID(*s)
+	}
+	return guo
+}
+
+// ClearOrgID clears the value of the "org_id" field.
+func (guo *GroupUpdateOne) ClearOrgID() *GroupUpdateOne {
+	guo.mutation.ClearOrgID()
+	return guo
+}
+
 // SetName sets the "name" field.
 func (guo *GroupUpdateOne) SetName(s string) *GroupUpdateOne {
 	guo.mutation.SetName(s)
@@ -482,6 +544,20 @@ func (guo *GroupUpdateOne) SetNillableCreatedBy(s *string) *GroupUpdateOne {
 	return guo
 }
 
+// SetEtag sets the "etag" field.
+func (guo *GroupUpdateOne) SetEtag(s string) *GroupUpdateOne {
+	guo.mutation.SetEtag(s)
+	return guo
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (guo *GroupUpdateOne) SetNillableEtag(s *string) *GroupUpdateOne {
+	if s != nil {
+		guo.SetEtag(*s)
+	}
+	return guo
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (guo *GroupUpdateOne) SetUpdatedAt(t time.Time) *GroupUpdateOne {
 	guo.mutation.SetUpdatedAt(t)
@@ -508,29 +584,23 @@ func (guo *GroupUpdateOne) ClearUpdatedBy() *GroupUpdateOne {
 	return guo
 }
 
-// SetParentID sets the "parent_id" field.
-func (guo *GroupUpdateOne) SetParentID(s string) *GroupUpdateOne {
-	guo.mutation.SetParentID(s)
+// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
+func (guo *GroupUpdateOne) SetOrganizationID(id string) *GroupUpdateOne {
+	guo.mutation.SetOrganizationID(id)
 	return guo
 }
 
-// SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableParentID(s *string) *GroupUpdateOne {
-	if s != nil {
-		guo.SetParentID(*s)
+// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
+func (guo *GroupUpdateOne) SetNillableOrganizationID(id *string) *GroupUpdateOne {
+	if id != nil {
+		guo = guo.SetOrganizationID(*id)
 	}
 	return guo
 }
 
-// ClearParentID clears the value of the "parent_id" field.
-func (guo *GroupUpdateOne) ClearParentID() *GroupUpdateOne {
-	guo.mutation.ClearParentID()
-	return guo
-}
-
-// SetParent sets the "parent" edge to the Group entity.
-func (guo *GroupUpdateOne) SetParent(g *Group) *GroupUpdateOne {
-	return guo.SetParentID(g.ID)
+// SetOrganization sets the "organization" edge to the Organization entity.
+func (guo *GroupUpdateOne) SetOrganization(o *Organization) *GroupUpdateOne {
+	return guo.SetOrganizationID(o.ID)
 }
 
 // AddSubgroupIDs adds the "subgroups" edge to the Group entity by IDs.
@@ -568,9 +638,9 @@ func (guo *GroupUpdateOne) Mutation() *GroupMutation {
 	return guo.mutation
 }
 
-// ClearParent clears the "parent" edge to the Group entity.
-func (guo *GroupUpdateOne) ClearParent() *GroupUpdateOne {
-	guo.mutation.ClearParent()
+// ClearOrganization clears the "organization" edge to the Organization entity.
+func (guo *GroupUpdateOne) ClearOrganization() *GroupUpdateOne {
+	guo.mutation.ClearOrganization()
 	return guo
 }
 
@@ -667,6 +737,11 @@ func (guo *GroupUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (guo *GroupUpdateOne) check() error {
+	if v, ok := guo.mutation.OrgID(); ok {
+		if err := group.OrgIDValidator(v); err != nil {
+			return &ValidationError{Name: "org_id", err: fmt.Errorf(`ent: validator failed for field "Group.org_id": %w`, err)}
+		}
+	}
 	if v, ok := guo.mutation.Name(); ok {
 		if err := group.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
@@ -675,6 +750,11 @@ func (guo *GroupUpdateOne) check() error {
 	if v, ok := guo.mutation.Description(); ok {
 		if err := group.DescriptionValidator(v); err != nil {
 			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "Group.description": %w`, err)}
+		}
+	}
+	if v, ok := guo.mutation.Etag(); ok {
+		if err := group.EtagValidator(v); err != nil {
+			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "Group.etag": %w`, err)}
 		}
 	}
 	return nil
@@ -721,6 +801,9 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 	if value, ok := guo.mutation.CreatedBy(); ok {
 		_spec.SetField(group.FieldCreatedBy, field.TypeString, value)
 	}
+	if value, ok := guo.mutation.Etag(); ok {
+		_spec.SetField(group.FieldEtag, field.TypeString, value)
+	}
 	if value, ok := guo.mutation.UpdatedAt(); ok {
 		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
 	}
@@ -730,28 +813,28 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 	if guo.mutation.UpdatedByCleared() {
 		_spec.ClearField(group.FieldUpdatedBy, field.TypeString)
 	}
-	if guo.mutation.ParentCleared() {
+	if guo.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2O,
 			Inverse: true,
-			Table:   group.ParentTable,
-			Columns: []string{group.ParentColumn},
+			Table:   group.OrganizationTable,
+			Columns: []string{group.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := guo.mutation.ParentIDs(); len(nodes) > 0 {
+	if nodes := guo.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2O,
 			Inverse: true,
-			Table:   group.ParentTable,
-			Columns: []string{group.ParentColumn},
+			Table:   group.OrganizationTable,
+			Columns: []string{group.OrganizationColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -761,11 +844,11 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 	}
 	if guo.mutation.SubgroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   group.SubgroupsTable,
-			Columns: []string{group.SubgroupsColumn},
-			Bidi:    false,
+			Columns: group.SubgroupsPrimaryKey,
+			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
@@ -774,11 +857,11 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 	}
 	if nodes := guo.mutation.RemovedSubgroupsIDs(); len(nodes) > 0 && !guo.mutation.SubgroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   group.SubgroupsTable,
-			Columns: []string{group.SubgroupsColumn},
-			Bidi:    false,
+			Columns: group.SubgroupsPrimaryKey,
+			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
@@ -790,11 +873,11 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 	}
 	if nodes := guo.mutation.SubgroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   group.SubgroupsTable,
-			Columns: []string{group.SubgroupsColumn},
-			Bidi:    false,
+			Columns: group.SubgroupsPrimaryKey,
+			Bidi:    true,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
