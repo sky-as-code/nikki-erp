@@ -6,8 +6,9 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"github.com/sky-as-code/nikki-erp/common/util"
 	"go.bryk.io/pkg/errors"
+
+	"github.com/sky-as-code/nikki-erp/common/util"
 )
 
 func NewCondition(field string, operator Operator, values ...any) Condition {
@@ -23,7 +24,7 @@ func NewCondition(field string, operator Operator, values ...any) Condition {
 // 3. Value: the value to search for
 // 3,4,5,6: Values for collection operators
 //
-// Eg: ["name", "ilike", "nikki"], ["age", ">", "30"], ["age", "in", "30", "40", "50"]
+// Eg: ["name", "*", "nikki"], ["age", ">", "30"], ["age", "in", "30", "40", "50"]
 type Condition []any
 
 func (this Condition) Field() string {
@@ -158,7 +159,7 @@ var orderTermMap = map[OrderDirection]sql.OrderTermOption{
 
 type SearchOrder struct {
 	Field     string         `json:"field"`
-	Direction OrderDirection `json:"direction"`
+	Direction OrderDirection `json:"dir"`
 }
 
 func (this SearchOrder) Validate(entityName string) error {
@@ -194,12 +195,17 @@ func ValidateSearchOrders(orders []SearchOrder, entityName string) error {
 }
 
 type SearchGraph struct {
-	And   []SearchNode  `json:"and"`
-	Or    []SearchNode  `json:"or"`
-	Order []SearchOrder `json:"order"`
+	Condition *Condition    `json:"if"`
+	And       []SearchNode  `json:"and"`
+	Or        []SearchNode  `json:"or"`
+	Order     []SearchOrder `json:"order"`
 }
 
 func (this SearchGraph) ToPredicate(entityName string) (Predicate, error) {
+	if this.Condition != nil {
+		return this.Condition.ToPredicate(entityName)
+	}
+
 	if len(this.And) > 0 {
 		preds := make([]Predicate, 0, len(this.And))
 		for _, node := range this.And {
@@ -249,23 +255,14 @@ func ToOrder[TOpt ~OrderOption](entityName string, graph *SearchGraph) ([]TOpt, 
 // which means only one field can be set at a time, the precedence is:
 // Condition > NotCondition > And > Or
 type SearchNode struct {
-	Condition    *Condition   `json:"if"`
-	NotCondition *Condition   `json:"ifnot"`
-	And          []SearchNode `json:"and"`
-	Or           []SearchNode `json:"or"`
+	Condition *Condition   `json:"if"`
+	And       []SearchNode `json:"and"`
+	Or        []SearchNode `json:"or"`
 }
 
 func (this SearchNode) ToPredicate(entityName string) (Predicate, error) {
 	if this.Condition != nil {
 		return this.Condition.ToPredicate(entityName)
-	}
-
-	if this.NotCondition != nil {
-		p, err := this.NotCondition.ToPredicate(entityName)
-		if err != nil {
-			return nil, err
-		}
-		return sql.NotPredicates(p), nil
 	}
 
 	if len(this.And) > 0 {

@@ -29,20 +29,6 @@ func (ru *ResourceUpdate) Where(ps ...predicate.Resource) *ResourceUpdate {
 	return ru
 }
 
-// SetName sets the "name" field.
-func (ru *ResourceUpdate) SetName(s string) *ResourceUpdate {
-	ru.mutation.SetName(s)
-	return ru
-}
-
-// SetNillableName sets the "name" field if the given value is not nil.
-func (ru *ResourceUpdate) SetNillableName(s *string) *ResourceUpdate {
-	if s != nil {
-		ru.SetName(*s)
-	}
-	return ru
-}
-
 // SetDescription sets the "description" field.
 func (ru *ResourceUpdate) SetDescription(s string) *ResourceUpdate {
 	ru.mutation.SetDescription(s)
@@ -60,6 +46,20 @@ func (ru *ResourceUpdate) SetNillableDescription(s *string) *ResourceUpdate {
 // ClearDescription clears the value of the "description" field.
 func (ru *ResourceUpdate) ClearDescription() *ResourceUpdate {
 	ru.mutation.ClearDescription()
+	return ru
+}
+
+// SetEtag sets the "etag" field.
+func (ru *ResourceUpdate) SetEtag(s string) *ResourceUpdate {
+	ru.mutation.SetEtag(s)
+	return ru
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (ru *ResourceUpdate) SetNillableEtag(s *string) *ResourceUpdate {
+	if s != nil {
+		ru.SetEtag(*s)
+	}
 	return ru
 }
 
@@ -176,14 +176,14 @@ func (ru *ResourceUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := ru.mutation.Name(); ok {
-		_spec.SetField(resource.FieldName, field.TypeString, value)
-	}
 	if value, ok := ru.mutation.Description(); ok {
 		_spec.SetField(resource.FieldDescription, field.TypeString, value)
 	}
 	if ru.mutation.DescriptionCleared() {
 		_spec.ClearField(resource.FieldDescription, field.TypeString)
+	}
+	if value, ok := ru.mutation.Etag(); ok {
+		_spec.SetField(resource.FieldEtag, field.TypeString, value)
 	}
 	if ru.mutation.ResourceRefCleared() {
 		_spec.ClearField(resource.FieldResourceRef, field.TypeString)
@@ -298,20 +298,6 @@ type ResourceUpdateOne struct {
 	mutation *ResourceMutation
 }
 
-// SetName sets the "name" field.
-func (ruo *ResourceUpdateOne) SetName(s string) *ResourceUpdateOne {
-	ruo.mutation.SetName(s)
-	return ruo
-}
-
-// SetNillableName sets the "name" field if the given value is not nil.
-func (ruo *ResourceUpdateOne) SetNillableName(s *string) *ResourceUpdateOne {
-	if s != nil {
-		ruo.SetName(*s)
-	}
-	return ruo
-}
-
 // SetDescription sets the "description" field.
 func (ruo *ResourceUpdateOne) SetDescription(s string) *ResourceUpdateOne {
 	ruo.mutation.SetDescription(s)
@@ -329,6 +315,20 @@ func (ruo *ResourceUpdateOne) SetNillableDescription(s *string) *ResourceUpdateO
 // ClearDescription clears the value of the "description" field.
 func (ruo *ResourceUpdateOne) ClearDescription() *ResourceUpdateOne {
 	ruo.mutation.ClearDescription()
+	return ruo
+}
+
+// SetEtag sets the "etag" field.
+func (ruo *ResourceUpdateOne) SetEtag(s string) *ResourceUpdateOne {
+	ruo.mutation.SetEtag(s)
+	return ruo
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (ruo *ResourceUpdateOne) SetNillableEtag(s *string) *ResourceUpdateOne {
+	if s != nil {
+		ruo.SetEtag(*s)
+	}
 	return ruo
 }
 
@@ -475,14 +475,14 @@ func (ruo *ResourceUpdateOne) sqlSave(ctx context.Context) (_node *Resource, err
 			}
 		}
 	}
-	if value, ok := ruo.mutation.Name(); ok {
-		_spec.SetField(resource.FieldName, field.TypeString, value)
-	}
 	if value, ok := ruo.mutation.Description(); ok {
 		_spec.SetField(resource.FieldDescription, field.TypeString, value)
 	}
 	if ruo.mutation.DescriptionCleared() {
 		_spec.ClearField(resource.FieldDescription, field.TypeString)
+	}
+	if value, ok := ruo.mutation.Etag(); ok {
+		_spec.SetField(resource.FieldEtag, field.TypeString, value)
 	}
 	if ruo.mutation.ResourceRefCleared() {
 		_spec.ClearField(resource.FieldResourceRef, field.TypeString)

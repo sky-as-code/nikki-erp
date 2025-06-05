@@ -45,9 +45,9 @@ func (rsc *RoleSuiteCreate) SetCreatedBy(s string) *RoleSuiteCreate {
 	return rsc
 }
 
-// SetDisplayName sets the "display_name" field.
-func (rsc *RoleSuiteCreate) SetDisplayName(s string) *RoleSuiteCreate {
-	rsc.mutation.SetDisplayName(s)
+// SetName sets the "name" field.
+func (rsc *RoleSuiteCreate) SetName(s string) *RoleSuiteCreate {
+	rsc.mutation.SetName(s)
 	return rsc
 }
 
@@ -231,8 +231,8 @@ func (rsc *RoleSuiteCreate) check() error {
 	if _, ok := rsc.mutation.CreatedBy(); !ok {
 		return &ValidationError{Name: "created_by", err: errors.New(`ent: missing required field "RoleSuite.created_by"`)}
 	}
-	if _, ok := rsc.mutation.DisplayName(); !ok {
-		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "RoleSuite.display_name"`)}
+	if _, ok := rsc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "RoleSuite.name"`)}
 	}
 	if _, ok := rsc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "RoleSuite.etag"`)}
@@ -300,9 +300,9 @@ func (rsc *RoleSuiteCreate) createSpec() (*RoleSuite, *sqlgraph.CreateSpec) {
 		_spec.SetField(rolesuite.FieldCreatedBy, field.TypeString, value)
 		_node.CreatedBy = value
 	}
-	if value, ok := rsc.mutation.DisplayName(); ok {
-		_spec.SetField(rolesuite.FieldDisplayName, field.TypeString, value)
-		_node.DisplayName = value
+	if value, ok := rsc.mutation.Name(); ok {
+		_spec.SetField(rolesuite.FieldName, field.TypeString, value)
+		_node.Name = value
 	}
 	if value, ok := rsc.mutation.Description(); ok {
 		_spec.SetField(rolesuite.FieldDescription, field.TypeString, value)

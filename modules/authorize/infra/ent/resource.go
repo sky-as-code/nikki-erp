@@ -20,6 +20,8 @@ type Resource struct {
 	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
+	// Etag holds the value of the "etag" field.
+	Etag string `json:"etag,omitempty"`
 	// A resource can be a Nikki Application (lifecycle and access managed by Nikki) or a custom string
 	ResourceType resource.ResourceType `json:"resource_type,omitempty"`
 	// Some resource type requires identifier (ID)
@@ -66,7 +68,7 @@ func (*Resource) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case resource.FieldID, resource.FieldName, resource.FieldDescription, resource.FieldResourceType, resource.FieldResourceRef, resource.FieldScopeType:
+		case resource.FieldID, resource.FieldName, resource.FieldDescription, resource.FieldEtag, resource.FieldResourceType, resource.FieldResourceRef, resource.FieldScopeType:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -100,6 +102,12 @@ func (r *Resource) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
 				r.Description = value.String
+			}
+		case resource.FieldEtag:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field etag", values[i])
+			} else if value.Valid {
+				r.Etag = value.String
 			}
 		case resource.FieldResourceType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -170,6 +178,9 @@ func (r *Resource) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(r.Description)
+	builder.WriteString(", ")
+	builder.WriteString("etag=")
+	builder.WriteString(r.Etag)
 	builder.WriteString(", ")
 	builder.WriteString("resource_type=")
 	builder.WriteString(fmt.Sprintf("%v", r.ResourceType))

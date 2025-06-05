@@ -58,9 +58,9 @@ func ApproverID(v string) predicate.RoleSuiteUser {
 	return predicate.RoleSuiteUser(sql.FieldEQ(FieldApproverID, v))
 }
 
-// ReceiverID applies equality check predicate on the "receiver_id" field. It's identical to ReceiverIDEQ.
-func ReceiverID(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldEQ(FieldReceiverID, v))
+// ReceiverRef applies equality check predicate on the "receiver_ref" field. It's identical to ReceiverRefEQ.
+func ReceiverRef(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldEQ(FieldReceiverRef, v))
 }
 
 // RoleSuiteID applies equality check predicate on the "role_suite_id" field. It's identical to RoleSuiteIDEQ.
@@ -133,69 +133,69 @@ func ApproverIDContainsFold(v string) predicate.RoleSuiteUser {
 	return predicate.RoleSuiteUser(sql.FieldContainsFold(FieldApproverID, v))
 }
 
-// ReceiverIDEQ applies the EQ predicate on the "receiver_id" field.
-func ReceiverIDEQ(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldEQ(FieldReceiverID, v))
+// ReceiverRefEQ applies the EQ predicate on the "receiver_ref" field.
+func ReceiverRefEQ(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldEQ(FieldReceiverRef, v))
 }
 
-// ReceiverIDNEQ applies the NEQ predicate on the "receiver_id" field.
-func ReceiverIDNEQ(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldNEQ(FieldReceiverID, v))
+// ReceiverRefNEQ applies the NEQ predicate on the "receiver_ref" field.
+func ReceiverRefNEQ(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldNEQ(FieldReceiverRef, v))
 }
 
-// ReceiverIDIn applies the In predicate on the "receiver_id" field.
-func ReceiverIDIn(vs ...string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldIn(FieldReceiverID, vs...))
+// ReceiverRefIn applies the In predicate on the "receiver_ref" field.
+func ReceiverRefIn(vs ...string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldIn(FieldReceiverRef, vs...))
 }
 
-// ReceiverIDNotIn applies the NotIn predicate on the "receiver_id" field.
-func ReceiverIDNotIn(vs ...string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldNotIn(FieldReceiverID, vs...))
+// ReceiverRefNotIn applies the NotIn predicate on the "receiver_ref" field.
+func ReceiverRefNotIn(vs ...string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldNotIn(FieldReceiverRef, vs...))
 }
 
-// ReceiverIDGT applies the GT predicate on the "receiver_id" field.
-func ReceiverIDGT(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldGT(FieldReceiverID, v))
+// ReceiverRefGT applies the GT predicate on the "receiver_ref" field.
+func ReceiverRefGT(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldGT(FieldReceiverRef, v))
 }
 
-// ReceiverIDGTE applies the GTE predicate on the "receiver_id" field.
-func ReceiverIDGTE(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldGTE(FieldReceiverID, v))
+// ReceiverRefGTE applies the GTE predicate on the "receiver_ref" field.
+func ReceiverRefGTE(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldGTE(FieldReceiverRef, v))
 }
 
-// ReceiverIDLT applies the LT predicate on the "receiver_id" field.
-func ReceiverIDLT(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldLT(FieldReceiverID, v))
+// ReceiverRefLT applies the LT predicate on the "receiver_ref" field.
+func ReceiverRefLT(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldLT(FieldReceiverRef, v))
 }
 
-// ReceiverIDLTE applies the LTE predicate on the "receiver_id" field.
-func ReceiverIDLTE(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldLTE(FieldReceiverID, v))
+// ReceiverRefLTE applies the LTE predicate on the "receiver_ref" field.
+func ReceiverRefLTE(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldLTE(FieldReceiverRef, v))
 }
 
-// ReceiverIDContains applies the Contains predicate on the "receiver_id" field.
-func ReceiverIDContains(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldContains(FieldReceiverID, v))
+// ReceiverRefContains applies the Contains predicate on the "receiver_ref" field.
+func ReceiverRefContains(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldContains(FieldReceiverRef, v))
 }
 
-// ReceiverIDHasPrefix applies the HasPrefix predicate on the "receiver_id" field.
-func ReceiverIDHasPrefix(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldHasPrefix(FieldReceiverID, v))
+// ReceiverRefHasPrefix applies the HasPrefix predicate on the "receiver_ref" field.
+func ReceiverRefHasPrefix(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldHasPrefix(FieldReceiverRef, v))
 }
 
-// ReceiverIDHasSuffix applies the HasSuffix predicate on the "receiver_id" field.
-func ReceiverIDHasSuffix(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldHasSuffix(FieldReceiverID, v))
+// ReceiverRefHasSuffix applies the HasSuffix predicate on the "receiver_ref" field.
+func ReceiverRefHasSuffix(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldHasSuffix(FieldReceiverRef, v))
 }
 
-// ReceiverIDEqualFold applies the EqualFold predicate on the "receiver_id" field.
-func ReceiverIDEqualFold(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldEqualFold(FieldReceiverID, v))
+// ReceiverRefEqualFold applies the EqualFold predicate on the "receiver_ref" field.
+func ReceiverRefEqualFold(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldEqualFold(FieldReceiverRef, v))
 }
 
-// ReceiverIDContainsFold applies the ContainsFold predicate on the "receiver_id" field.
-func ReceiverIDContainsFold(v string) predicate.RoleSuiteUser {
-	return predicate.RoleSuiteUser(sql.FieldContainsFold(FieldReceiverID, v))
+// ReceiverRefContainsFold applies the ContainsFold predicate on the "receiver_ref" field.
+func ReceiverRefContainsFold(v string) predicate.RoleSuiteUser {
+	return predicate.RoleSuiteUser(sql.FieldContainsFold(FieldReceiverRef, v))
 }
 
 // ReceiverTypeEQ applies the EQ predicate on the "receiver_type" field.

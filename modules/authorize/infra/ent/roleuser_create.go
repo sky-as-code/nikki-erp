@@ -26,9 +26,9 @@ func (ruc *RoleUserCreate) SetApproverID(s string) *RoleUserCreate {
 	return ruc
 }
 
-// SetReceiverID sets the "receiver_id" field.
-func (ruc *RoleUserCreate) SetReceiverID(s string) *RoleUserCreate {
-	ruc.mutation.SetReceiverID(s)
+// SetReceiverRef sets the "receiver_ref" field.
+func (ruc *RoleUserCreate) SetReceiverRef(s string) *RoleUserCreate {
+	ruc.mutation.SetReceiverRef(s)
 	return ruc
 }
 
@@ -86,8 +86,8 @@ func (ruc *RoleUserCreate) check() error {
 	if _, ok := ruc.mutation.ApproverID(); !ok {
 		return &ValidationError{Name: "approver_id", err: errors.New(`ent: missing required field "RoleUser.approver_id"`)}
 	}
-	if _, ok := ruc.mutation.ReceiverID(); !ok {
-		return &ValidationError{Name: "receiver_id", err: errors.New(`ent: missing required field "RoleUser.receiver_id"`)}
+	if _, ok := ruc.mutation.ReceiverRef(); !ok {
+		return &ValidationError{Name: "receiver_ref", err: errors.New(`ent: missing required field "RoleUser.receiver_ref"`)}
 	}
 	if _, ok := ruc.mutation.ReceiverType(); !ok {
 		return &ValidationError{Name: "receiver_type", err: errors.New(`ent: missing required field "RoleUser.receiver_type"`)}
@@ -133,9 +133,9 @@ func (ruc *RoleUserCreate) createSpec() (*RoleUser, *sqlgraph.CreateSpec) {
 		_spec.SetField(roleuser.FieldApproverID, field.TypeString, value)
 		_node.ApproverID = value
 	}
-	if value, ok := ruc.mutation.ReceiverID(); ok {
-		_spec.SetField(roleuser.FieldReceiverID, field.TypeString, value)
-		_node.ReceiverID = value
+	if value, ok := ruc.mutation.ReceiverRef(); ok {
+		_spec.SetField(roleuser.FieldReceiverRef, field.TypeString, value)
+		_node.ReceiverRef = value
 	}
 	if value, ok := ruc.mutation.ReceiverType(); ok {
 		_spec.SetField(roleuser.FieldReceiverType, field.TypeEnum, value)

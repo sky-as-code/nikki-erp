@@ -20,8 +20,8 @@ func (this *Action) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Name,
 			val.Required,
-			val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9_\-\s]+$`)), // alphanumeric, underscore, dash and space
-			val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
+			val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)), // alphanumeric, underscore, dash
+			val.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
 		),
 		model.IdValidateRule(&this.ResourceId, true),
 	}

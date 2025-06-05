@@ -15,6 +15,8 @@ type Entitlement struct {
 
 	ActionId    *model.Id               `json:"actionId,omitempty"`
 	ActionExpr  *string                 `json:"actionExpr,omitempty"`
+	Description *string                 `json:"description,omitempty"`
+	Name        *string                 `json:"name,omitempty"`
 	ResourceId  *model.Id               `json:"resourceId,omitempty"`
 	SubjectType *EntitlementSubjectType `json:"subjectType,omitempty"`
 	SubjectRef  *string                 `json:"subjectRef,omitempty"`
@@ -29,6 +31,13 @@ func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {
 		model.IdValidateRule(&this.ActionId, true),
 		val.Field(&this.ActionExpr,
 			val.Required,
+		),
+		val.Field(&this.Name,
+			val.RequiredWhen(!forEdit),
+			val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
+		),
+		val.Field(&this.Description,
+			val.Length(1, model.MODEL_RULE_DESC_LENGTH),
 		),
 		model.IdValidateRule(&this.ResourceId, true),
 		EntitlementSubjectTypeValidateRule(&this.SubjectType),
@@ -51,13 +60,15 @@ func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {
 type EntitlementSubjectType entEntitlement.SubjectType
 
 const (
-	EntitlementSubjectTypeNikkiUser = EntitlementSubjectType(entEntitlement.SubjectTypeNikkiUser)
-	EntitlementSubjectTypeCustom    = EntitlementSubjectType(entEntitlement.SubjectTypeCustom)
+	EntitlementSubjectTypeNikkiUser  = EntitlementSubjectType(entEntitlement.SubjectTypeNikkiUser)
+	EntitlementSubjectTypeNikkiGroup = EntitlementSubjectType(entEntitlement.SubjectTypeNikkiGroup)
+	EntitlementSubjectTypeNikkiRole  = EntitlementSubjectType(entEntitlement.SubjectTypeNikkiRole)
+	EntitlementSubjectTypeCustom     = EntitlementSubjectType(entEntitlement.SubjectTypeCustom)
 )
 
 func (this EntitlementSubjectType) Validate() error {
 	switch this {
-	case EntitlementSubjectTypeNikkiUser, EntitlementSubjectTypeCustom:
+	case EntitlementSubjectTypeNikkiUser, EntitlementSubjectTypeNikkiGroup, EntitlementSubjectTypeNikkiRole, EntitlementSubjectTypeCustom:
 		return nil
 	default:
 		return errors.Errorf("invalid subject type value: %s", this)

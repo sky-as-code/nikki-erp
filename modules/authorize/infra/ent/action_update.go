@@ -28,16 +28,16 @@ func (au *ActionUpdate) Where(ps ...predicate.Action) *ActionUpdate {
 	return au
 }
 
-// SetName sets the "name" field.
-func (au *ActionUpdate) SetName(s string) *ActionUpdate {
-	au.mutation.SetName(s)
+// SetEtag sets the "etag" field.
+func (au *ActionUpdate) SetEtag(s string) *ActionUpdate {
+	au.mutation.SetEtag(s)
 	return au
 }
 
-// SetNillableName sets the "name" field if the given value is not nil.
-func (au *ActionUpdate) SetNillableName(s *string) *ActionUpdate {
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (au *ActionUpdate) SetNillableEtag(s *string) *ActionUpdate {
 	if s != nil {
-		au.SetName(*s)
+		au.SetEtag(*s)
 	}
 	return au
 }
@@ -130,8 +130,8 @@ func (au *ActionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := au.mutation.Name(); ok {
-		_spec.SetField(action.FieldName, field.TypeString, value)
+	if value, ok := au.mutation.Etag(); ok {
+		_spec.SetField(action.FieldEtag, field.TypeString, value)
 	}
 	if au.mutation.EntitlementsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -198,16 +198,16 @@ type ActionUpdateOne struct {
 	mutation *ActionMutation
 }
 
-// SetName sets the "name" field.
-func (auo *ActionUpdateOne) SetName(s string) *ActionUpdateOne {
-	auo.mutation.SetName(s)
+// SetEtag sets the "etag" field.
+func (auo *ActionUpdateOne) SetEtag(s string) *ActionUpdateOne {
+	auo.mutation.SetEtag(s)
 	return auo
 }
 
-// SetNillableName sets the "name" field if the given value is not nil.
-func (auo *ActionUpdateOne) SetNillableName(s *string) *ActionUpdateOne {
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (auo *ActionUpdateOne) SetNillableEtag(s *string) *ActionUpdateOne {
 	if s != nil {
-		auo.SetName(*s)
+		auo.SetEtag(*s)
 	}
 	return auo
 }
@@ -330,8 +330,8 @@ func (auo *ActionUpdateOne) sqlSave(ctx context.Context) (_node *Action, err err
 			}
 		}
 	}
-	if value, ok := auo.mutation.Name(); ok {
-		_spec.SetField(action.FieldName, field.TypeString, value)
+	if value, ok := auo.mutation.Etag(); ok {
+		_spec.SetField(action.FieldEtag, field.TypeString, value)
 	}
 	if auo.mutation.EntitlementsCleared() {
 		edge := &sqlgraph.EdgeSpec{

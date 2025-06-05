@@ -48,6 +48,12 @@ func (ac *ActionCreate) SetName(s string) *ActionCreate {
 	return ac
 }
 
+// SetEtag sets the "etag" field.
+func (ac *ActionCreate) SetEtag(s string) *ActionCreate {
+	ac.mutation.SetEtag(s)
+	return ac
+}
+
 // SetResourceID sets the "resource_id" field.
 func (ac *ActionCreate) SetResourceID(s string) *ActionCreate {
 	ac.mutation.SetResourceID(s)
@@ -132,6 +138,9 @@ func (ac *ActionCreate) check() error {
 	if _, ok := ac.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Action.name"`)}
 	}
+	if _, ok := ac.mutation.Etag(); !ok {
+		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Action.etag"`)}
+	}
 	if _, ok := ac.mutation.ResourceID(); !ok {
 		return &ValidationError{Name: "resource_id", err: errors.New(`ent: missing required field "Action.resource_id"`)}
 	}
@@ -184,6 +193,10 @@ func (ac *ActionCreate) createSpec() (*Action, *sqlgraph.CreateSpec) {
 	if value, ok := ac.mutation.Name(); ok {
 		_spec.SetField(action.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if value, ok := ac.mutation.Etag(); ok {
+		_spec.SetField(action.FieldEtag, field.TypeString, value)
+		_node.Etag = value
 	}
 	if nodes := ac.mutation.EntitlementsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -6,6 +6,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"entgo.io/ent/schema/mixin"
 )
 
@@ -19,10 +20,13 @@ func (ResourceMixin) Fields() []ent.Field {
 			Immutable().
 			StorageKey("id"),
 
-		field.String("name"),
+		field.String("name").
+			Immutable(),
 
 		field.String("description").
 			Optional(),
+
+		field.String("etag"),
 
 		field.Enum("resource_type").
 			Values("nikki_application", "custom").
@@ -60,6 +64,12 @@ func (Resource) Edges() []ent.Edge {
 			}),
 		edge.From("entitlements", Entitlement.Type).
 			Ref("resource"),
+	}
+}
+
+func (Resource) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name").Unique(),
 	}
 }
 

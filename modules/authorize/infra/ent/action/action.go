@@ -20,6 +20,8 @@ const (
 	FieldCreatedBy = "created_by"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldEtag holds the string denoting the etag field in the database.
+	FieldEtag = "etag"
 	// FieldResourceID holds the string denoting the resource_id field in the database.
 	FieldResourceID = "resource_id"
 	// EdgeEntitlements holds the string denoting the entitlements edge name in mutations.
@@ -50,6 +52,7 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldCreatedBy,
 	FieldName,
+	FieldEtag,
 	FieldResourceID,
 }
 
@@ -89,6 +92,11 @@ func ByCreatedBy(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByEtag orders the results by the etag field.
+func ByEtag(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEtag, opts...).ToFunc()
 }
 
 // ByResourceID orders the results by the resource_id field.

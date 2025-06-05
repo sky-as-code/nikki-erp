@@ -19,8 +19,8 @@ type RoleUser struct {
 	ID int `json:"id,omitempty"`
 	// ApproverID holds the value of the "approver_id" field.
 	ApproverID string `json:"approver_id,omitempty"`
-	// ReceiverID holds the value of the "receiver_id" field.
-	ReceiverID string `json:"receiver_id,omitempty"`
+	// ReceiverRef holds the value of the "receiver_ref" field.
+	ReceiverRef string `json:"receiver_ref,omitempty"`
 	// ReceiverType holds the value of the "receiver_type" field.
 	ReceiverType roleuser.ReceiverType `json:"receiver_type,omitempty"`
 	// RoleID holds the value of the "role_id" field.
@@ -58,7 +58,7 @@ func (*RoleUser) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case roleuser.FieldID:
 			values[i] = new(sql.NullInt64)
-		case roleuser.FieldApproverID, roleuser.FieldReceiverID, roleuser.FieldReceiverType, roleuser.FieldRoleID:
+		case roleuser.FieldApproverID, roleuser.FieldReceiverRef, roleuser.FieldReceiverType, roleuser.FieldRoleID:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -87,11 +87,11 @@ func (ru *RoleUser) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				ru.ApproverID = value.String
 			}
-		case roleuser.FieldReceiverID:
+		case roleuser.FieldReceiverRef:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field receiver_id", values[i])
+				return fmt.Errorf("unexpected type %T for field receiver_ref", values[i])
 			} else if value.Valid {
-				ru.ReceiverID = value.String
+				ru.ReceiverRef = value.String
 			}
 		case roleuser.FieldReceiverType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -149,8 +149,8 @@ func (ru *RoleUser) String() string {
 	builder.WriteString("approver_id=")
 	builder.WriteString(ru.ApproverID)
 	builder.WriteString(", ")
-	builder.WriteString("receiver_id=")
-	builder.WriteString(ru.ReceiverID)
+	builder.WriteString("receiver_ref=")
+	builder.WriteString(ru.ReceiverRef)
 	builder.WriteString(", ")
 	builder.WriteString("receiver_type=")
 	builder.WriteString(fmt.Sprintf("%v", ru.ReceiverType))

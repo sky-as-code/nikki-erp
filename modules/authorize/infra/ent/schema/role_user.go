@@ -16,10 +16,9 @@ type RoleUserMixin struct {
 
 func (RoleUserMixin) Fields() []ent.Field {
 	return []ent.Field{
-		// If request_id is NULL, that means the approver assigned this role manually to receiving user.
 		field.String("approver_id").Immutable(),
 
-		field.String("receiver_id").Immutable(),
+		field.String("receiver_ref").Immutable(),
 
 		field.Enum("receiver_type").
 			Values("user", "group").
@@ -57,7 +56,7 @@ func (RoleUser) Annotations() []schema.Annotation {
 
 func (RoleUser) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("role_id", "receiver_id").Unique(),
+		index.Fields("role_id", "receiver_ref").Unique(),
 	}
 }
 

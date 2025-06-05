@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"entgo.io/ent/schema/mixin"
 )
 
@@ -28,9 +29,10 @@ func (RoleMixin) Fields() []ent.Field {
 		field.String("created_by").
 			Immutable(),
 
-		field.String("display_name"),
+		field.String("name"),
 
 		field.String("description").
+			Nillable().
 			Optional(),
 
 		field.String("etag"),
@@ -71,6 +73,12 @@ func (Role) Edges() []ent.Edge {
 			Ref("role"),
 		edge.From("permission_histories", PermissionHistory.Type).
 			Ref("role"),
+	}
+}
+
+func (Role) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name").Unique(),
 	}
 }
 

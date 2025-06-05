@@ -39,6 +39,16 @@ func (EntitlementMixin) Fields() []ent.Field {
 		field.String("created_by").
 			Immutable(),
 
+		field.String("name").
+			Optional().
+			Nillable(),
+
+		field.String("description").
+			Optional().
+			Nillable(),
+
+		field.String("etag"),
+
 		// If NULL, grant specified action on all resources
 		field.String("resource_id").
 			Optional().

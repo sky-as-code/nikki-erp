@@ -16,8 +16,8 @@ const (
 	FieldID = "id"
 	// FieldApproverID holds the string denoting the approver_id field in the database.
 	FieldApproverID = "approver_id"
-	// FieldReceiverID holds the string denoting the receiver_id field in the database.
-	FieldReceiverID = "receiver_id"
+	// FieldReceiverRef holds the string denoting the receiver_ref field in the database.
+	FieldReceiverRef = "receiver_ref"
 	// FieldReceiverType holds the string denoting the receiver_type field in the database.
 	FieldReceiverType = "receiver_type"
 	// FieldRoleSuiteID holds the string denoting the role_suite_id field in the database.
@@ -39,7 +39,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldApproverID,
-	FieldReceiverID,
+	FieldReceiverRef,
 	FieldReceiverType,
 	FieldRoleSuiteID,
 }
@@ -90,9 +90,9 @@ func ByApproverID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldApproverID, opts...).ToFunc()
 }
 
-// ByReceiverID orders the results by the receiver_id field.
-func ByReceiverID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldReceiverID, opts...).ToFunc()
+// ByReceiverRef orders the results by the receiver_ref field.
+func ByReceiverRef(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReceiverRef, opts...).ToFunc()
 }
 
 // ByReceiverType orders the results by the receiver_type field.

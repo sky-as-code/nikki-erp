@@ -80,6 +80,11 @@ func Name(v string) predicate.Action {
 	return predicate.Action(sql.FieldEQ(FieldName, v))
 }
 
+// Etag applies equality check predicate on the "etag" field. It's identical to EtagEQ.
+func Etag(v string) predicate.Action {
+	return predicate.Action(sql.FieldEQ(FieldEtag, v))
+}
+
 // ResourceID applies equality check predicate on the "resource_id" field. It's identical to ResourceIDEQ.
 func ResourceID(v string) predicate.Action {
 	return predicate.Action(sql.FieldEQ(FieldResourceID, v))
@@ -253,6 +258,71 @@ func NameEqualFold(v string) predicate.Action {
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.Action {
 	return predicate.Action(sql.FieldContainsFold(FieldName, v))
+}
+
+// EtagEQ applies the EQ predicate on the "etag" field.
+func EtagEQ(v string) predicate.Action {
+	return predicate.Action(sql.FieldEQ(FieldEtag, v))
+}
+
+// EtagNEQ applies the NEQ predicate on the "etag" field.
+func EtagNEQ(v string) predicate.Action {
+	return predicate.Action(sql.FieldNEQ(FieldEtag, v))
+}
+
+// EtagIn applies the In predicate on the "etag" field.
+func EtagIn(vs ...string) predicate.Action {
+	return predicate.Action(sql.FieldIn(FieldEtag, vs...))
+}
+
+// EtagNotIn applies the NotIn predicate on the "etag" field.
+func EtagNotIn(vs ...string) predicate.Action {
+	return predicate.Action(sql.FieldNotIn(FieldEtag, vs...))
+}
+
+// EtagGT applies the GT predicate on the "etag" field.
+func EtagGT(v string) predicate.Action {
+	return predicate.Action(sql.FieldGT(FieldEtag, v))
+}
+
+// EtagGTE applies the GTE predicate on the "etag" field.
+func EtagGTE(v string) predicate.Action {
+	return predicate.Action(sql.FieldGTE(FieldEtag, v))
+}
+
+// EtagLT applies the LT predicate on the "etag" field.
+func EtagLT(v string) predicate.Action {
+	return predicate.Action(sql.FieldLT(FieldEtag, v))
+}
+
+// EtagLTE applies the LTE predicate on the "etag" field.
+func EtagLTE(v string) predicate.Action {
+	return predicate.Action(sql.FieldLTE(FieldEtag, v))
+}
+
+// EtagContains applies the Contains predicate on the "etag" field.
+func EtagContains(v string) predicate.Action {
+	return predicate.Action(sql.FieldContains(FieldEtag, v))
+}
+
+// EtagHasPrefix applies the HasPrefix predicate on the "etag" field.
+func EtagHasPrefix(v string) predicate.Action {
+	return predicate.Action(sql.FieldHasPrefix(FieldEtag, v))
+}
+
+// EtagHasSuffix applies the HasSuffix predicate on the "etag" field.
+func EtagHasSuffix(v string) predicate.Action {
+	return predicate.Action(sql.FieldHasSuffix(FieldEtag, v))
+}
+
+// EtagEqualFold applies the EqualFold predicate on the "etag" field.
+func EtagEqualFold(v string) predicate.Action {
+	return predicate.Action(sql.FieldEqualFold(FieldEtag, v))
+}
+
+// EtagContainsFold applies the ContainsFold predicate on the "etag" field.
+func EtagContainsFold(v string) predicate.Action {
+	return predicate.Action(sql.FieldContainsFold(FieldEtag, v))
 }
 
 // ResourceIDEQ applies the EQ predicate on the "resource_id" field.

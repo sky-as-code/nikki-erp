@@ -77,7 +77,6 @@ func (this *EntityDescriptorBuilder) Field(name string, field any) *EntityDescri
 	return this
 }
 
-// func (this *EntityDescriptorBuilder) Edge(name string, predicate EdgePredicate) *EntityDescriptorBuilder {
 func (this *EntityDescriptorBuilder) Edge(
 	name string,
 	predicate EdgePredicate,

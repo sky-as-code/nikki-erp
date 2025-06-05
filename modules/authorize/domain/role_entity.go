@@ -13,7 +13,7 @@ type Role struct {
 	model.ModelBase
 	model.AuditableBase
 
-	DisplayName          *string        `json:"displayName,omitempty"`
+	Name                 *string        `json:"displayName,omitempty"`
 	Description          *string        `json:"description,omitempty"`
 	Etag                 *string        `json:"etag,omitempty"`
 	OwnerType            *RoleOwnerType `json:"ownerType,omitempty"`
@@ -27,12 +27,12 @@ type Role struct {
 
 func (this *Role) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		val.Field(&this.DisplayName,
+		val.Field(&this.Name,
 			val.RequiredWhen(!forEdit),
-			val.Length(1, 200),
+			val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
 		),
 		val.Field(&this.Description,
-			val.Length(1, 3000),
+			val.Length(1, model.MODEL_RULE_DESC_LENGTH),
 		),
 		RoleOwnerTypeValidateRule(&this.OwnerType, !forEdit),
 		model.IdValidateRule(&this.OwnerRef, !forEdit),

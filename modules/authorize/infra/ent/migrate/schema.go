@@ -15,6 +15,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "created_by", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
+		{Name: "etag", Type: field.TypeString},
 		{Name: "resource_id", Type: field.TypeString},
 	}
 	// AuthzActionsTable holds the schema information for the "authz_actions" table.
@@ -25,9 +26,21 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_actions_authz_resources_resource",
-				Columns:    []*schema.Column{AuthzActionsColumns[4]},
+				Columns:    []*schema.Column{AuthzActionsColumns[5]},
 				RefColumns: []*schema.Column{AuthzResourcesColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "action_id_resource_id",
+				Unique:  true,
+				Columns: []*schema.Column{AuthzActionsColumns[0], AuthzActionsColumns[5]},
+			},
+			{
+				Name:    "action_name_resource_id",
+				Unique:  true,
+				Columns: []*schema.Column{AuthzActionsColumns[3], AuthzActionsColumns[5]},
 			},
 		},
 	}
@@ -37,6 +50,9 @@ var (
 		{Name: "action_expr", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "created_by", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString, Nullable: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "etag", Type: field.TypeString},
 		{Name: "subject_type", Type: field.TypeEnum, Enums: []string{"nikki_user", "nikki_group", "nikki_role", "custom"}},
 		{Name: "subject_ref", Type: field.TypeString},
 		{Name: "scope_ref", Type: field.TypeString, Nullable: true},
@@ -51,13 +67,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_entitlements_authz_actions_action",
-				Columns:    []*schema.Column{AuthzEntitlementsColumns[7]},
+				Columns:    []*schema.Column{AuthzEntitlementsColumns[10]},
 				RefColumns: []*schema.Column{AuthzActionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "authz_entitlements_authz_resources_resource",
-				Columns:    []*schema.Column{AuthzEntitlementsColumns[8]},
+				Columns:    []*schema.Column{AuthzEntitlementsColumns[11]},
 				RefColumns: []*schema.Column{AuthzResourcesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -166,6 +182,7 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "etag", Type: field.TypeString},
 		{Name: "resource_type", Type: field.TypeEnum, Enums: []string{"nikki_application", "custom"}},
 		{Name: "resource_ref", Type: field.TypeString, Nullable: true},
 		{Name: "scope_type", Type: field.TypeEnum, Enums: []string{"domain", "org", "hierarchy", "private"}},
@@ -175,6 +192,13 @@ var (
 		Name:       "authz_resources",
 		Columns:    AuthzResourcesColumns,
 		PrimaryKey: []*schema.Column{AuthzResourcesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "resource_name",
+				Unique:  true,
+				Columns: []*schema.Column{AuthzResourcesColumns[1]},
+			},
+		},
 	}
 	// AuthzRevokeRequestsColumns holds the columns for the "authz_revoke_requests" table.
 	AuthzRevokeRequestsColumns = []*schema.Column{
@@ -215,7 +239,7 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "created_by", Type: field.TypeString},
-		{Name: "display_name", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "owner_type", Type: field.TypeEnum, Enums: []string{"user", "group"}},
@@ -229,6 +253,13 @@ var (
 		Name:       "authz_roles",
 		Columns:    AuthzRolesColumns,
 		PrimaryKey: []*schema.Column{AuthzRolesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "role_name",
+				Unique:  true,
+				Columns: []*schema.Column{AuthzRolesColumns[3]},
+			},
+		},
 	}
 	// AuthzRoleRolesuiteColumns holds the columns for the "authz_role_rolesuite" table.
 	AuthzRoleRolesuiteColumns = []*schema.Column{
@@ -260,7 +291,7 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "created_by", Type: field.TypeString},
-		{Name: "display_name", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "owner_type", Type: field.TypeEnum, Enums: []string{"user", "group"}},
@@ -274,12 +305,19 @@ var (
 		Name:       "authz_role_suites",
 		Columns:    AuthzRoleSuitesColumns,
 		PrimaryKey: []*schema.Column{AuthzRoleSuitesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rolesuite_name",
+				Unique:  true,
+				Columns: []*schema.Column{AuthzRoleSuitesColumns[3]},
+			},
+		},
 	}
 	// AuthzRoleSuiteUserColumns holds the columns for the "authz_role_suite_user" table.
 	AuthzRoleSuiteUserColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "approver_id", Type: field.TypeString},
-		{Name: "receiver_id", Type: field.TypeString},
+		{Name: "receiver_ref", Type: field.TypeString},
 		{Name: "receiver_type", Type: field.TypeEnum, Enums: []string{"user", "group"}},
 		{Name: "role_suite_id", Type: field.TypeString},
 	}
@@ -298,7 +336,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "rolesuiteuser_role_suite_id_receiver_id",
+				Name:    "rolesuiteuser_role_suite_id_receiver_ref",
 				Unique:  true,
 				Columns: []*schema.Column{AuthzRoleSuiteUserColumns[4], AuthzRoleSuiteUserColumns[2]},
 			},
@@ -308,7 +346,7 @@ var (
 	AuthzRoleUserColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "approver_id", Type: field.TypeString},
-		{Name: "receiver_id", Type: field.TypeString},
+		{Name: "receiver_ref", Type: field.TypeString},
 		{Name: "receiver_type", Type: field.TypeEnum, Enums: []string{"user", "group"}},
 		{Name: "role_id", Type: field.TypeString},
 	}
@@ -327,7 +365,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "roleuser_role_id_receiver_id",
+				Name:    "roleuser_role_id_receiver_ref",
 				Unique:  true,
 				Columns: []*schema.Column{AuthzRoleUserColumns[4], AuthzRoleUserColumns[2]},
 			},

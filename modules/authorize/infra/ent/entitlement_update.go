@@ -28,6 +28,60 @@ func (eu *EntitlementUpdate) Where(ps ...predicate.Entitlement) *EntitlementUpda
 	return eu
 }
 
+// SetName sets the "name" field.
+func (eu *EntitlementUpdate) SetName(s string) *EntitlementUpdate {
+	eu.mutation.SetName(s)
+	return eu
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (eu *EntitlementUpdate) SetNillableName(s *string) *EntitlementUpdate {
+	if s != nil {
+		eu.SetName(*s)
+	}
+	return eu
+}
+
+// ClearName clears the value of the "name" field.
+func (eu *EntitlementUpdate) ClearName() *EntitlementUpdate {
+	eu.mutation.ClearName()
+	return eu
+}
+
+// SetDescription sets the "description" field.
+func (eu *EntitlementUpdate) SetDescription(s string) *EntitlementUpdate {
+	eu.mutation.SetDescription(s)
+	return eu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (eu *EntitlementUpdate) SetNillableDescription(s *string) *EntitlementUpdate {
+	if s != nil {
+		eu.SetDescription(*s)
+	}
+	return eu
+}
+
+// ClearDescription clears the value of the "description" field.
+func (eu *EntitlementUpdate) ClearDescription() *EntitlementUpdate {
+	eu.mutation.ClearDescription()
+	return eu
+}
+
+// SetEtag sets the "etag" field.
+func (eu *EntitlementUpdate) SetEtag(s string) *EntitlementUpdate {
+	eu.mutation.SetEtag(s)
+	return eu
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (eu *EntitlementUpdate) SetNillableEtag(s *string) *EntitlementUpdate {
+	if s != nil {
+		eu.SetEtag(*s)
+	}
+	return eu
+}
+
 // AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by IDs.
 func (eu *EntitlementUpdate) AddPermissionHistoryIDs(ids ...string) *EntitlementUpdate {
 	eu.mutation.AddPermissionHistoryIDs(ids...)
@@ -105,6 +159,21 @@ func (eu *EntitlementUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := eu.mutation.Name(); ok {
+		_spec.SetField(entitlement.FieldName, field.TypeString, value)
+	}
+	if eu.mutation.NameCleared() {
+		_spec.ClearField(entitlement.FieldName, field.TypeString)
+	}
+	if value, ok := eu.mutation.Description(); ok {
+		_spec.SetField(entitlement.FieldDescription, field.TypeString, value)
+	}
+	if eu.mutation.DescriptionCleared() {
+		_spec.ClearField(entitlement.FieldDescription, field.TypeString)
+	}
+	if value, ok := eu.mutation.Etag(); ok {
+		_spec.SetField(entitlement.FieldEtag, field.TypeString, value)
+	}
 	if eu.mutation.ScopeRefCleared() {
 		_spec.ClearField(entitlement.FieldScopeRef, field.TypeString)
 	}
@@ -171,6 +240,60 @@ type EntitlementUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *EntitlementMutation
+}
+
+// SetName sets the "name" field.
+func (euo *EntitlementUpdateOne) SetName(s string) *EntitlementUpdateOne {
+	euo.mutation.SetName(s)
+	return euo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (euo *EntitlementUpdateOne) SetNillableName(s *string) *EntitlementUpdateOne {
+	if s != nil {
+		euo.SetName(*s)
+	}
+	return euo
+}
+
+// ClearName clears the value of the "name" field.
+func (euo *EntitlementUpdateOne) ClearName() *EntitlementUpdateOne {
+	euo.mutation.ClearName()
+	return euo
+}
+
+// SetDescription sets the "description" field.
+func (euo *EntitlementUpdateOne) SetDescription(s string) *EntitlementUpdateOne {
+	euo.mutation.SetDescription(s)
+	return euo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (euo *EntitlementUpdateOne) SetNillableDescription(s *string) *EntitlementUpdateOne {
+	if s != nil {
+		euo.SetDescription(*s)
+	}
+	return euo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (euo *EntitlementUpdateOne) ClearDescription() *EntitlementUpdateOne {
+	euo.mutation.ClearDescription()
+	return euo
+}
+
+// SetEtag sets the "etag" field.
+func (euo *EntitlementUpdateOne) SetEtag(s string) *EntitlementUpdateOne {
+	euo.mutation.SetEtag(s)
+	return euo
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (euo *EntitlementUpdateOne) SetNillableEtag(s *string) *EntitlementUpdateOne {
+	if s != nil {
+		euo.SetEtag(*s)
+	}
+	return euo
 }
 
 // AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by IDs.
@@ -279,6 +402,21 @@ func (euo *EntitlementUpdateOne) sqlSave(ctx context.Context) (_node *Entitlemen
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := euo.mutation.Name(); ok {
+		_spec.SetField(entitlement.FieldName, field.TypeString, value)
+	}
+	if euo.mutation.NameCleared() {
+		_spec.ClearField(entitlement.FieldName, field.TypeString)
+	}
+	if value, ok := euo.mutation.Description(); ok {
+		_spec.SetField(entitlement.FieldDescription, field.TypeString, value)
+	}
+	if euo.mutation.DescriptionCleared() {
+		_spec.ClearField(entitlement.FieldDescription, field.TypeString)
+	}
+	if value, ok := euo.mutation.Etag(); ok {
+		_spec.SetField(entitlement.FieldEtag, field.TypeString, value)
 	}
 	if euo.mutation.ScopeRefCleared() {
 		_spec.ClearField(entitlement.FieldScopeRef, field.TypeString)

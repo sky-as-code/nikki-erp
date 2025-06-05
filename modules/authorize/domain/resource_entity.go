@@ -27,8 +27,11 @@ func (this *Resource) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Name,
 			val.Required,
-			val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9_\-\s]+$`)), // alphanumeric, underscore, dash and space
-			val.Length(1, 50),
+			val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9]+$`)), // alphanumeric
+			val.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
+		),
+		val.Field(&this.Description,
+			val.Length(1, model.MODEL_RULE_DESC_LENGTH),
 		),
 		ResourceScopeTypeValidateRule(&this.ScopeType),
 	}

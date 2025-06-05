@@ -21,8 +21,8 @@ type RoleSuite struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
 	CreatedBy string `json:"created_by,omitempty"`
-	// DisplayName holds the value of the "display_name" field.
-	DisplayName string `json:"display_name,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Etag holds the value of the "etag" field.
@@ -123,7 +123,7 @@ func (*RoleSuite) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case rolesuite.FieldIsRequestable, rolesuite.FieldIsRequiredAttachment, rolesuite.FieldIsRequiredComment:
 			values[i] = new(sql.NullBool)
-		case rolesuite.FieldID, rolesuite.FieldCreatedBy, rolesuite.FieldDisplayName, rolesuite.FieldDescription, rolesuite.FieldEtag, rolesuite.FieldOwnerType, rolesuite.FieldOwnerRef:
+		case rolesuite.FieldID, rolesuite.FieldCreatedBy, rolesuite.FieldName, rolesuite.FieldDescription, rolesuite.FieldEtag, rolesuite.FieldOwnerType, rolesuite.FieldOwnerRef:
 			values[i] = new(sql.NullString)
 		case rolesuite.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -160,11 +160,11 @@ func (rs *RoleSuite) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				rs.CreatedBy = value.String
 			}
-		case rolesuite.FieldDisplayName:
+		case rolesuite.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field display_name", values[i])
+				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				rs.DisplayName = value.String
+				rs.Name = value.String
 			}
 		case rolesuite.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -280,8 +280,8 @@ func (rs *RoleSuite) String() string {
 	builder.WriteString("created_by=")
 	builder.WriteString(rs.CreatedBy)
 	builder.WriteString(", ")
-	builder.WriteString("display_name=")
-	builder.WriteString(rs.DisplayName)
+	builder.WriteString("name=")
+	builder.WriteString(rs.Name)
 	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(rs.Description)

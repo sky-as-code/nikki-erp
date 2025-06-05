@@ -41,6 +41,12 @@ func (rc *ResourceCreate) SetNillableDescription(s *string) *ResourceCreate {
 	return rc
 }
 
+// SetEtag sets the "etag" field.
+func (rc *ResourceCreate) SetEtag(s string) *ResourceCreate {
+	rc.mutation.SetEtag(s)
+	return rc
+}
+
 // SetResourceType sets the "resource_type" field.
 func (rc *ResourceCreate) SetResourceType(rt resource.ResourceType) *ResourceCreate {
 	rc.mutation.SetResourceType(rt)
@@ -140,6 +146,9 @@ func (rc *ResourceCreate) check() error {
 	if _, ok := rc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Resource.name"`)}
 	}
+	if _, ok := rc.mutation.Etag(); !ok {
+		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Resource.etag"`)}
+	}
 	if _, ok := rc.mutation.ResourceType(); !ok {
 		return &ValidationError{Name: "resource_type", err: errors.New(`ent: missing required field "Resource.resource_type"`)}
 	}
@@ -198,6 +207,10 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.Description(); ok {
 		_spec.SetField(resource.FieldDescription, field.TypeString, value)
 		_node.Description = value
+	}
+	if value, ok := rc.mutation.Etag(); ok {
+		_spec.SetField(resource.FieldEtag, field.TypeString, value)
+		_node.Etag = value
 	}
 	if value, ok := rc.mutation.ResourceType(); ok {
 		_spec.SetField(resource.FieldResourceType, field.TypeEnum, value)

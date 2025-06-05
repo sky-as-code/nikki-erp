@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"entgo.io/ent/schema/mixin"
 )
 
@@ -28,7 +29,7 @@ func (RoleSuiteMixin) Fields() []ent.Field {
 		field.String("created_by").
 			Immutable(),
 
-		field.String("display_name"),
+		field.String("name"),
 
 		field.String("description").
 			Optional(),
@@ -71,6 +72,12 @@ func (RoleSuite) Edges() []ent.Edge {
 
 		edge.To("roles", Role.Type).
 			Through("role_rolesuite", RoleRoleSuite.Type),
+	}
+}
+
+func (RoleSuite) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name").Unique(),
 	}
 }
 

@@ -9,6 +9,9 @@ import (
 // Action is the predicate function for action builders.
 type Action = func(*sql.Selector)
 
+// EffectiveEntitlement is the predicate function for effectiveentitlement builders.
+type EffectiveEntitlement = func(*sql.Selector)
+
 // Entitlement is the predicate function for entitlement builders.
 type Entitlement = func(*sql.Selector)
 

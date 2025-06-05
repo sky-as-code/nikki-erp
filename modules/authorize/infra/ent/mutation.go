@@ -34,17 +34,18 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAction            = "Action"
-	TypeEntitlement       = "Entitlement"
-	TypeGrantRequest      = "GrantRequest"
-	TypePermissionHistory = "PermissionHistory"
-	TypeResource          = "Resource"
-	TypeRevokeRequest     = "RevokeRequest"
-	TypeRole              = "Role"
-	TypeRoleRoleSuite     = "RoleRoleSuite"
-	TypeRoleSuite         = "RoleSuite"
-	TypeRoleSuiteUser     = "RoleSuiteUser"
-	TypeRoleUser          = "RoleUser"
+	TypeAction               = "Action"
+	TypeEffectiveEntitlement = "EffectiveEntitlement"
+	TypeEntitlement          = "Entitlement"
+	TypeGrantRequest         = "GrantRequest"
+	TypePermissionHistory    = "PermissionHistory"
+	TypeResource             = "Resource"
+	TypeRevokeRequest        = "RevokeRequest"
+	TypeRole                 = "Role"
+	TypeRoleRoleSuite        = "RoleRoleSuite"
+	TypeRoleSuite            = "RoleSuite"
+	TypeRoleSuiteUser        = "RoleSuiteUser"
+	TypeRoleUser             = "RoleUser"
 )
 
 // ActionMutation represents an operation that mutates the Action nodes in the graph.
@@ -56,6 +57,7 @@ type ActionMutation struct {
 	created_at          *time.Time
 	created_by          *string
 	name                *string
+	etag                *string
 	clearedFields       map[string]struct{}
 	entitlements        map[string]struct{}
 	removedentitlements map[string]struct{}
@@ -279,6 +281,42 @@ func (m *ActionMutation) ResetName() {
 	m.name = nil
 }
 
+// SetEtag sets the "etag" field.
+func (m *ActionMutation) SetEtag(s string) {
+	m.etag = &s
+}
+
+// Etag returns the value of the "etag" field in the mutation.
+func (m *ActionMutation) Etag() (r string, exists bool) {
+	v := m.etag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEtag returns the old "etag" field's value of the Action entity.
+// If the Action object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionMutation) OldEtag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEtag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEtag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEtag: %w", err)
+	}
+	return oldValue.Etag, nil
+}
+
+// ResetEtag resets all changes to the "etag" field.
+func (m *ActionMutation) ResetEtag() {
+	m.etag = nil
+}
+
 // SetResourceID sets the "resource_id" field.
 func (m *ActionMutation) SetResourceID(s string) {
 	m.resource = &s
@@ -430,7 +468,7 @@ func (m *ActionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ActionMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 5)
 	if m.created_at != nil {
 		fields = append(fields, action.FieldCreatedAt)
 	}
@@ -439,6 +477,9 @@ func (m *ActionMutation) Fields() []string {
 	}
 	if m.name != nil {
 		fields = append(fields, action.FieldName)
+	}
+	if m.etag != nil {
+		fields = append(fields, action.FieldEtag)
 	}
 	if m.resource != nil {
 		fields = append(fields, action.FieldResourceID)
@@ -457,6 +498,8 @@ func (m *ActionMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedBy()
 	case action.FieldName:
 		return m.Name()
+	case action.FieldEtag:
+		return m.Etag()
 	case action.FieldResourceID:
 		return m.ResourceID()
 	}
@@ -474,6 +517,8 @@ func (m *ActionMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldCreatedBy(ctx)
 	case action.FieldName:
 		return m.OldName(ctx)
+	case action.FieldEtag:
+		return m.OldEtag(ctx)
 	case action.FieldResourceID:
 		return m.OldResourceID(ctx)
 	}
@@ -505,6 +550,13 @@ func (m *ActionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case action.FieldEtag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEtag(v)
 		return nil
 	case action.FieldResourceID:
 		v, ok := value.(string)
@@ -570,6 +622,9 @@ func (m *ActionMutation) ResetField(name string) error {
 		return nil
 	case action.FieldName:
 		m.ResetName()
+		return nil
+	case action.FieldEtag:
+		m.ResetEtag()
 		return nil
 	case action.FieldResourceID:
 		m.ResetResourceID()
@@ -689,6 +744,9 @@ type EntitlementMutation struct {
 	action_expr                 *string
 	created_at                  *time.Time
 	created_by                  *string
+	name                        *string
+	description                 *string
+	etag                        *string
 	subject_type                *entitlement.SubjectType
 	subject_ref                 *string
 	scope_ref                   *string
@@ -964,6 +1022,140 @@ func (m *EntitlementMutation) OldCreatedBy(ctx context.Context) (v string, err e
 // ResetCreatedBy resets all changes to the "created_by" field.
 func (m *EntitlementMutation) ResetCreatedBy() {
 	m.created_by = nil
+}
+
+// SetName sets the "name" field.
+func (m *EntitlementMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *EntitlementMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Entitlement entity.
+// If the Entitlement object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntitlementMutation) OldName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ClearName clears the value of the "name" field.
+func (m *EntitlementMutation) ClearName() {
+	m.name = nil
+	m.clearedFields[entitlement.FieldName] = struct{}{}
+}
+
+// NameCleared returns if the "name" field was cleared in this mutation.
+func (m *EntitlementMutation) NameCleared() bool {
+	_, ok := m.clearedFields[entitlement.FieldName]
+	return ok
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *EntitlementMutation) ResetName() {
+	m.name = nil
+	delete(m.clearedFields, entitlement.FieldName)
+}
+
+// SetDescription sets the "description" field.
+func (m *EntitlementMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *EntitlementMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Entitlement entity.
+// If the Entitlement object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntitlementMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *EntitlementMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[entitlement.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *EntitlementMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[entitlement.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *EntitlementMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, entitlement.FieldDescription)
+}
+
+// SetEtag sets the "etag" field.
+func (m *EntitlementMutation) SetEtag(s string) {
+	m.etag = &s
+}
+
+// Etag returns the value of the "etag" field in the mutation.
+func (m *EntitlementMutation) Etag() (r string, exists bool) {
+	v := m.etag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEtag returns the old "etag" field's value of the Entitlement entity.
+// If the Entitlement object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntitlementMutation) OldEtag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEtag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEtag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEtag: %w", err)
+	}
+	return oldValue.Etag, nil
+}
+
+// ResetEtag resets all changes to the "etag" field.
+func (m *EntitlementMutation) ResetEtag() {
+	m.etag = nil
 }
 
 // SetResourceID sets the "resource_id" field.
@@ -1278,7 +1470,7 @@ func (m *EntitlementMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EntitlementMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 11)
 	if m.action != nil {
 		fields = append(fields, entitlement.FieldActionID)
 	}
@@ -1290,6 +1482,15 @@ func (m *EntitlementMutation) Fields() []string {
 	}
 	if m.created_by != nil {
 		fields = append(fields, entitlement.FieldCreatedBy)
+	}
+	if m.name != nil {
+		fields = append(fields, entitlement.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, entitlement.FieldDescription)
+	}
+	if m.etag != nil {
+		fields = append(fields, entitlement.FieldEtag)
 	}
 	if m.resource != nil {
 		fields = append(fields, entitlement.FieldResourceID)
@@ -1319,6 +1520,12 @@ func (m *EntitlementMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case entitlement.FieldCreatedBy:
 		return m.CreatedBy()
+	case entitlement.FieldName:
+		return m.Name()
+	case entitlement.FieldDescription:
+		return m.Description()
+	case entitlement.FieldEtag:
+		return m.Etag()
 	case entitlement.FieldResourceID:
 		return m.ResourceID()
 	case entitlement.FieldSubjectType:
@@ -1344,6 +1551,12 @@ func (m *EntitlementMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldCreatedAt(ctx)
 	case entitlement.FieldCreatedBy:
 		return m.OldCreatedBy(ctx)
+	case entitlement.FieldName:
+		return m.OldName(ctx)
+	case entitlement.FieldDescription:
+		return m.OldDescription(ctx)
+	case entitlement.FieldEtag:
+		return m.OldEtag(ctx)
 	case entitlement.FieldResourceID:
 		return m.OldResourceID(ctx)
 	case entitlement.FieldSubjectType:
@@ -1388,6 +1601,27 @@ func (m *EntitlementMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedBy(v)
+		return nil
+	case entitlement.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case entitlement.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case entitlement.FieldEtag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEtag(v)
 		return nil
 	case entitlement.FieldResourceID:
 		v, ok := value.(string)
@@ -1450,6 +1684,12 @@ func (m *EntitlementMutation) ClearedFields() []string {
 	if m.FieldCleared(entitlement.FieldActionID) {
 		fields = append(fields, entitlement.FieldActionID)
 	}
+	if m.FieldCleared(entitlement.FieldName) {
+		fields = append(fields, entitlement.FieldName)
+	}
+	if m.FieldCleared(entitlement.FieldDescription) {
+		fields = append(fields, entitlement.FieldDescription)
+	}
 	if m.FieldCleared(entitlement.FieldResourceID) {
 		fields = append(fields, entitlement.FieldResourceID)
 	}
@@ -1472,6 +1712,12 @@ func (m *EntitlementMutation) ClearField(name string) error {
 	switch name {
 	case entitlement.FieldActionID:
 		m.ClearActionID()
+		return nil
+	case entitlement.FieldName:
+		m.ClearName()
+		return nil
+	case entitlement.FieldDescription:
+		m.ClearDescription()
 		return nil
 	case entitlement.FieldResourceID:
 		m.ClearResourceID()
@@ -1498,6 +1744,15 @@ func (m *EntitlementMutation) ResetField(name string) error {
 		return nil
 	case entitlement.FieldCreatedBy:
 		m.ResetCreatedBy()
+		return nil
+	case entitlement.FieldName:
+		m.ResetName()
+		return nil
+	case entitlement.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case entitlement.FieldEtag:
+		m.ResetEtag()
 		return nil
 	case entitlement.FieldResourceID:
 		m.ResetResourceID()
@@ -4213,6 +4468,7 @@ type ResourceMutation struct {
 	id                  *string
 	name                *string
 	description         *string
+	etag                *string
 	resource_type       *resource.ResourceType
 	resource_ref        *string
 	scope_type          *resource.ScopeType
@@ -4415,6 +4671,42 @@ func (m *ResourceMutation) DescriptionCleared() bool {
 func (m *ResourceMutation) ResetDescription() {
 	m.description = nil
 	delete(m.clearedFields, resource.FieldDescription)
+}
+
+// SetEtag sets the "etag" field.
+func (m *ResourceMutation) SetEtag(s string) {
+	m.etag = &s
+}
+
+// Etag returns the value of the "etag" field in the mutation.
+func (m *ResourceMutation) Etag() (r string, exists bool) {
+	v := m.etag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEtag returns the old "etag" field's value of the Resource entity.
+// If the Resource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ResourceMutation) OldEtag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEtag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEtag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEtag: %w", err)
+	}
+	return oldValue.Etag, nil
+}
+
+// ResetEtag resets all changes to the "etag" field.
+func (m *ResourceMutation) ResetEtag() {
+	m.etag = nil
 }
 
 // SetResourceType sets the "resource_type" field.
@@ -4680,12 +4972,15 @@ func (m *ResourceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ResourceMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.name != nil {
 		fields = append(fields, resource.FieldName)
 	}
 	if m.description != nil {
 		fields = append(fields, resource.FieldDescription)
+	}
+	if m.etag != nil {
+		fields = append(fields, resource.FieldEtag)
 	}
 	if m.resource_type != nil {
 		fields = append(fields, resource.FieldResourceType)
@@ -4708,6 +5003,8 @@ func (m *ResourceMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case resource.FieldDescription:
 		return m.Description()
+	case resource.FieldEtag:
+		return m.Etag()
 	case resource.FieldResourceType:
 		return m.ResourceType()
 	case resource.FieldResourceRef:
@@ -4727,6 +5024,8 @@ func (m *ResourceMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldName(ctx)
 	case resource.FieldDescription:
 		return m.OldDescription(ctx)
+	case resource.FieldEtag:
+		return m.OldEtag(ctx)
 	case resource.FieldResourceType:
 		return m.OldResourceType(ctx)
 	case resource.FieldResourceRef:
@@ -4755,6 +5054,13 @@ func (m *ResourceMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDescription(v)
+		return nil
+	case resource.FieldEtag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEtag(v)
 		return nil
 	case resource.FieldResourceType:
 		v, ok := value.(resource.ResourceType)
@@ -4846,6 +5152,9 @@ func (m *ResourceMutation) ResetField(name string) error {
 		return nil
 	case resource.FieldDescription:
 		m.ResetDescription()
+		return nil
+	case resource.FieldEtag:
+		m.ResetEtag()
 		return nil
 	case resource.FieldResourceType:
 		m.ResetResourceType()
@@ -6086,7 +6395,7 @@ type RoleMutation struct {
 	id                          *string
 	created_at                  *time.Time
 	created_by                  *string
-	display_name                *string
+	name                        *string
 	description                 *string
 	etag                        *string
 	owner_type                  *role.OwnerType
@@ -6291,40 +6600,40 @@ func (m *RoleMutation) ResetCreatedBy() {
 	m.created_by = nil
 }
 
-// SetDisplayName sets the "display_name" field.
-func (m *RoleMutation) SetDisplayName(s string) {
-	m.display_name = &s
+// SetName sets the "name" field.
+func (m *RoleMutation) SetName(s string) {
+	m.name = &s
 }
 
-// DisplayName returns the value of the "display_name" field in the mutation.
-func (m *RoleMutation) DisplayName() (r string, exists bool) {
-	v := m.display_name
+// Name returns the value of the "name" field in the mutation.
+func (m *RoleMutation) Name() (r string, exists bool) {
+	v := m.name
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldDisplayName returns the old "display_name" field's value of the Role entity.
+// OldName returns the old "name" field's value of the Role entity.
 // If the Role object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RoleMutation) OldDisplayName(ctx context.Context) (v string, err error) {
+func (m *RoleMutation) OldName(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDisplayName is only allowed on UpdateOne operations")
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDisplayName requires an ID field in the mutation")
+		return v, errors.New("OldName requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDisplayName: %w", err)
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
 	}
-	return oldValue.DisplayName, nil
+	return oldValue.Name, nil
 }
 
-// ResetDisplayName resets all changes to the "display_name" field.
-func (m *RoleMutation) ResetDisplayName() {
-	m.display_name = nil
+// ResetName resets all changes to the "name" field.
+func (m *RoleMutation) ResetName() {
+	m.name = nil
 }
 
 // SetDescription sets the "description" field.
@@ -6344,7 +6653,7 @@ func (m *RoleMutation) Description() (r string, exists bool) {
 // OldDescription returns the old "description" field's value of the Role entity.
 // If the Role object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RoleMutation) OldDescription(ctx context.Context) (v string, err error) {
+func (m *RoleMutation) OldDescription(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
 	}
@@ -6903,8 +7212,8 @@ func (m *RoleMutation) Fields() []string {
 	if m.created_by != nil {
 		fields = append(fields, role.FieldCreatedBy)
 	}
-	if m.display_name != nil {
-		fields = append(fields, role.FieldDisplayName)
+	if m.name != nil {
+		fields = append(fields, role.FieldName)
 	}
 	if m.description != nil {
 		fields = append(fields, role.FieldDescription)
@@ -6939,8 +7248,8 @@ func (m *RoleMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case role.FieldCreatedBy:
 		return m.CreatedBy()
-	case role.FieldDisplayName:
-		return m.DisplayName()
+	case role.FieldName:
+		return m.Name()
 	case role.FieldDescription:
 		return m.Description()
 	case role.FieldEtag:
@@ -6968,8 +7277,8 @@ func (m *RoleMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldCreatedAt(ctx)
 	case role.FieldCreatedBy:
 		return m.OldCreatedBy(ctx)
-	case role.FieldDisplayName:
-		return m.OldDisplayName(ctx)
+	case role.FieldName:
+		return m.OldName(ctx)
 	case role.FieldDescription:
 		return m.OldDescription(ctx)
 	case role.FieldEtag:
@@ -7007,12 +7316,12 @@ func (m *RoleMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCreatedBy(v)
 		return nil
-	case role.FieldDisplayName:
+	case role.FieldName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDisplayName(v)
+		m.SetName(v)
 		return nil
 	case role.FieldDescription:
 		v, ok := value.(string)
@@ -7127,8 +7436,8 @@ func (m *RoleMutation) ResetField(name string) error {
 	case role.FieldCreatedBy:
 		m.ResetCreatedBy()
 		return nil
-	case role.FieldDisplayName:
-		m.ResetDisplayName()
+	case role.FieldName:
+		m.ResetName()
 		return nil
 	case role.FieldDescription:
 		m.ResetDescription()
@@ -7730,7 +8039,7 @@ type RoleSuiteMutation struct {
 	id                          *string
 	created_at                  *time.Time
 	created_by                  *string
-	display_name                *string
+	name                        *string
 	description                 *string
 	etag                        *string
 	owner_type                  *rolesuite.OwnerType
@@ -7935,40 +8244,40 @@ func (m *RoleSuiteMutation) ResetCreatedBy() {
 	m.created_by = nil
 }
 
-// SetDisplayName sets the "display_name" field.
-func (m *RoleSuiteMutation) SetDisplayName(s string) {
-	m.display_name = &s
+// SetName sets the "name" field.
+func (m *RoleSuiteMutation) SetName(s string) {
+	m.name = &s
 }
 
-// DisplayName returns the value of the "display_name" field in the mutation.
-func (m *RoleSuiteMutation) DisplayName() (r string, exists bool) {
-	v := m.display_name
+// Name returns the value of the "name" field in the mutation.
+func (m *RoleSuiteMutation) Name() (r string, exists bool) {
+	v := m.name
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldDisplayName returns the old "display_name" field's value of the RoleSuite entity.
+// OldName returns the old "name" field's value of the RoleSuite entity.
 // If the RoleSuite object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RoleSuiteMutation) OldDisplayName(ctx context.Context) (v string, err error) {
+func (m *RoleSuiteMutation) OldName(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDisplayName is only allowed on UpdateOne operations")
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDisplayName requires an ID field in the mutation")
+		return v, errors.New("OldName requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDisplayName: %w", err)
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
 	}
-	return oldValue.DisplayName, nil
+	return oldValue.Name, nil
 }
 
-// ResetDisplayName resets all changes to the "display_name" field.
-func (m *RoleSuiteMutation) ResetDisplayName() {
-	m.display_name = nil
+// ResetName resets all changes to the "name" field.
+func (m *RoleSuiteMutation) ResetName() {
+	m.name = nil
 }
 
 // SetDescription sets the "description" field.
@@ -8547,8 +8856,8 @@ func (m *RoleSuiteMutation) Fields() []string {
 	if m.created_by != nil {
 		fields = append(fields, rolesuite.FieldCreatedBy)
 	}
-	if m.display_name != nil {
-		fields = append(fields, rolesuite.FieldDisplayName)
+	if m.name != nil {
+		fields = append(fields, rolesuite.FieldName)
 	}
 	if m.description != nil {
 		fields = append(fields, rolesuite.FieldDescription)
@@ -8583,8 +8892,8 @@ func (m *RoleSuiteMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case rolesuite.FieldCreatedBy:
 		return m.CreatedBy()
-	case rolesuite.FieldDisplayName:
-		return m.DisplayName()
+	case rolesuite.FieldName:
+		return m.Name()
 	case rolesuite.FieldDescription:
 		return m.Description()
 	case rolesuite.FieldEtag:
@@ -8612,8 +8921,8 @@ func (m *RoleSuiteMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldCreatedAt(ctx)
 	case rolesuite.FieldCreatedBy:
 		return m.OldCreatedBy(ctx)
-	case rolesuite.FieldDisplayName:
-		return m.OldDisplayName(ctx)
+	case rolesuite.FieldName:
+		return m.OldName(ctx)
 	case rolesuite.FieldDescription:
 		return m.OldDescription(ctx)
 	case rolesuite.FieldEtag:
@@ -8651,12 +8960,12 @@ func (m *RoleSuiteMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCreatedBy(v)
 		return nil
-	case rolesuite.FieldDisplayName:
+	case rolesuite.FieldName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDisplayName(v)
+		m.SetName(v)
 		return nil
 	case rolesuite.FieldDescription:
 		v, ok := value.(string)
@@ -8771,8 +9080,8 @@ func (m *RoleSuiteMutation) ResetField(name string) error {
 	case rolesuite.FieldCreatedBy:
 		m.ResetCreatedBy()
 		return nil
-	case rolesuite.FieldDisplayName:
-		m.ResetDisplayName()
+	case rolesuite.FieldName:
+		m.ResetName()
 		return nil
 	case rolesuite.FieldDescription:
 		m.ResetDescription()
@@ -8994,7 +9303,7 @@ type RoleSuiteUserMutation struct {
 	typ               string
 	id                *int
 	approver_id       *string
-	receiver_id       *string
+	receiver_ref      *string
 	receiver_type     *rolesuiteuser.ReceiverType
 	clearedFields     map[string]struct{}
 	role_suite        *string
@@ -9138,40 +9447,40 @@ func (m *RoleSuiteUserMutation) ResetApproverID() {
 	m.approver_id = nil
 }
 
-// SetReceiverID sets the "receiver_id" field.
-func (m *RoleSuiteUserMutation) SetReceiverID(s string) {
-	m.receiver_id = &s
+// SetReceiverRef sets the "receiver_ref" field.
+func (m *RoleSuiteUserMutation) SetReceiverRef(s string) {
+	m.receiver_ref = &s
 }
 
-// ReceiverID returns the value of the "receiver_id" field in the mutation.
-func (m *RoleSuiteUserMutation) ReceiverID() (r string, exists bool) {
-	v := m.receiver_id
+// ReceiverRef returns the value of the "receiver_ref" field in the mutation.
+func (m *RoleSuiteUserMutation) ReceiverRef() (r string, exists bool) {
+	v := m.receiver_ref
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldReceiverID returns the old "receiver_id" field's value of the RoleSuiteUser entity.
+// OldReceiverRef returns the old "receiver_ref" field's value of the RoleSuiteUser entity.
 // If the RoleSuiteUser object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RoleSuiteUserMutation) OldReceiverID(ctx context.Context) (v string, err error) {
+func (m *RoleSuiteUserMutation) OldReceiverRef(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldReceiverID is only allowed on UpdateOne operations")
+		return v, errors.New("OldReceiverRef is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldReceiverID requires an ID field in the mutation")
+		return v, errors.New("OldReceiverRef requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldReceiverID: %w", err)
+		return v, fmt.Errorf("querying old value for OldReceiverRef: %w", err)
 	}
-	return oldValue.ReceiverID, nil
+	return oldValue.ReceiverRef, nil
 }
 
-// ResetReceiverID resets all changes to the "receiver_id" field.
-func (m *RoleSuiteUserMutation) ResetReceiverID() {
-	m.receiver_id = nil
+// ResetReceiverRef resets all changes to the "receiver_ref" field.
+func (m *RoleSuiteUserMutation) ResetReceiverRef() {
+	m.receiver_ref = nil
 }
 
 // SetReceiverType sets the "receiver_type" field.
@@ -9311,8 +9620,8 @@ func (m *RoleSuiteUserMutation) Fields() []string {
 	if m.approver_id != nil {
 		fields = append(fields, rolesuiteuser.FieldApproverID)
 	}
-	if m.receiver_id != nil {
-		fields = append(fields, rolesuiteuser.FieldReceiverID)
+	if m.receiver_ref != nil {
+		fields = append(fields, rolesuiteuser.FieldReceiverRef)
 	}
 	if m.receiver_type != nil {
 		fields = append(fields, rolesuiteuser.FieldReceiverType)
@@ -9330,8 +9639,8 @@ func (m *RoleSuiteUserMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case rolesuiteuser.FieldApproverID:
 		return m.ApproverID()
-	case rolesuiteuser.FieldReceiverID:
-		return m.ReceiverID()
+	case rolesuiteuser.FieldReceiverRef:
+		return m.ReceiverRef()
 	case rolesuiteuser.FieldReceiverType:
 		return m.ReceiverType()
 	case rolesuiteuser.FieldRoleSuiteID:
@@ -9347,8 +9656,8 @@ func (m *RoleSuiteUserMutation) OldField(ctx context.Context, name string) (ent.
 	switch name {
 	case rolesuiteuser.FieldApproverID:
 		return m.OldApproverID(ctx)
-	case rolesuiteuser.FieldReceiverID:
-		return m.OldReceiverID(ctx)
+	case rolesuiteuser.FieldReceiverRef:
+		return m.OldReceiverRef(ctx)
 	case rolesuiteuser.FieldReceiverType:
 		return m.OldReceiverType(ctx)
 	case rolesuiteuser.FieldRoleSuiteID:
@@ -9369,12 +9678,12 @@ func (m *RoleSuiteUserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetApproverID(v)
 		return nil
-	case rolesuiteuser.FieldReceiverID:
+	case rolesuiteuser.FieldReceiverRef:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetReceiverID(v)
+		m.SetReceiverRef(v)
 		return nil
 	case rolesuiteuser.FieldReceiverType:
 		v, ok := value.(rolesuiteuser.ReceiverType)
@@ -9442,8 +9751,8 @@ func (m *RoleSuiteUserMutation) ResetField(name string) error {
 	case rolesuiteuser.FieldApproverID:
 		m.ResetApproverID()
 		return nil
-	case rolesuiteuser.FieldReceiverID:
-		m.ResetReceiverID()
+	case rolesuiteuser.FieldReceiverRef:
+		m.ResetReceiverRef()
 		return nil
 	case rolesuiteuser.FieldReceiverType:
 		m.ResetReceiverType()
@@ -9536,7 +9845,7 @@ type RoleUserMutation struct {
 	typ           string
 	id            *int
 	approver_id   *string
-	receiver_id   *string
+	receiver_ref  *string
 	receiver_type *roleuser.ReceiverType
 	clearedFields map[string]struct{}
 	role          *string
@@ -9680,40 +9989,40 @@ func (m *RoleUserMutation) ResetApproverID() {
 	m.approver_id = nil
 }
 
-// SetReceiverID sets the "receiver_id" field.
-func (m *RoleUserMutation) SetReceiverID(s string) {
-	m.receiver_id = &s
+// SetReceiverRef sets the "receiver_ref" field.
+func (m *RoleUserMutation) SetReceiverRef(s string) {
+	m.receiver_ref = &s
 }
 
-// ReceiverID returns the value of the "receiver_id" field in the mutation.
-func (m *RoleUserMutation) ReceiverID() (r string, exists bool) {
-	v := m.receiver_id
+// ReceiverRef returns the value of the "receiver_ref" field in the mutation.
+func (m *RoleUserMutation) ReceiverRef() (r string, exists bool) {
+	v := m.receiver_ref
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldReceiverID returns the old "receiver_id" field's value of the RoleUser entity.
+// OldReceiverRef returns the old "receiver_ref" field's value of the RoleUser entity.
 // If the RoleUser object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RoleUserMutation) OldReceiverID(ctx context.Context) (v string, err error) {
+func (m *RoleUserMutation) OldReceiverRef(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldReceiverID is only allowed on UpdateOne operations")
+		return v, errors.New("OldReceiverRef is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldReceiverID requires an ID field in the mutation")
+		return v, errors.New("OldReceiverRef requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldReceiverID: %w", err)
+		return v, fmt.Errorf("querying old value for OldReceiverRef: %w", err)
 	}
-	return oldValue.ReceiverID, nil
+	return oldValue.ReceiverRef, nil
 }
 
-// ResetReceiverID resets all changes to the "receiver_id" field.
-func (m *RoleUserMutation) ResetReceiverID() {
-	m.receiver_id = nil
+// ResetReceiverRef resets all changes to the "receiver_ref" field.
+func (m *RoleUserMutation) ResetReceiverRef() {
+	m.receiver_ref = nil
 }
 
 // SetReceiverType sets the "receiver_type" field.
@@ -9853,8 +10162,8 @@ func (m *RoleUserMutation) Fields() []string {
 	if m.approver_id != nil {
 		fields = append(fields, roleuser.FieldApproverID)
 	}
-	if m.receiver_id != nil {
-		fields = append(fields, roleuser.FieldReceiverID)
+	if m.receiver_ref != nil {
+		fields = append(fields, roleuser.FieldReceiverRef)
 	}
 	if m.receiver_type != nil {
 		fields = append(fields, roleuser.FieldReceiverType)
@@ -9872,8 +10181,8 @@ func (m *RoleUserMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case roleuser.FieldApproverID:
 		return m.ApproverID()
-	case roleuser.FieldReceiverID:
-		return m.ReceiverID()
+	case roleuser.FieldReceiverRef:
+		return m.ReceiverRef()
 	case roleuser.FieldReceiverType:
 		return m.ReceiverType()
 	case roleuser.FieldRoleID:
@@ -9889,8 +10198,8 @@ func (m *RoleUserMutation) OldField(ctx context.Context, name string) (ent.Value
 	switch name {
 	case roleuser.FieldApproverID:
 		return m.OldApproverID(ctx)
-	case roleuser.FieldReceiverID:
-		return m.OldReceiverID(ctx)
+	case roleuser.FieldReceiverRef:
+		return m.OldReceiverRef(ctx)
 	case roleuser.FieldReceiverType:
 		return m.OldReceiverType(ctx)
 	case roleuser.FieldRoleID:
@@ -9911,12 +10220,12 @@ func (m *RoleUserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetApproverID(v)
 		return nil
-	case roleuser.FieldReceiverID:
+	case roleuser.FieldReceiverRef:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetReceiverID(v)
+		m.SetReceiverRef(v)
 		return nil
 	case roleuser.FieldReceiverType:
 		v, ok := value.(roleuser.ReceiverType)
@@ -9984,8 +10293,8 @@ func (m *RoleUserMutation) ResetField(name string) error {
 	case roleuser.FieldApproverID:
 		m.ResetApproverID()
 		return nil
-	case roleuser.FieldReceiverID:
-		m.ResetReceiverID()
+	case roleuser.FieldReceiverRef:
+		m.ResetReceiverRef()
 		return nil
 	case roleuser.FieldReceiverType:
 		m.ResetReceiverType()

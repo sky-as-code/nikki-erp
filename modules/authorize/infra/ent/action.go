@@ -24,6 +24,8 @@ type Action struct {
 	CreatedBy string `json:"created_by,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Etag holds the value of the "etag" field.
+	Etag string `json:"etag,omitempty"`
 	// ResourceID holds the value of the "resource_id" field.
 	ResourceID string `json:"resource_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -68,7 +70,7 @@ func (*Action) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case action.FieldID, action.FieldCreatedBy, action.FieldName, action.FieldResourceID:
+		case action.FieldID, action.FieldCreatedBy, action.FieldName, action.FieldEtag, action.FieldResourceID:
 			values[i] = new(sql.NullString)
 		case action.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -110,6 +112,12 @@ func (a *Action) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				a.Name = value.String
+			}
+		case action.FieldEtag:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field etag", values[i])
+			} else if value.Valid {
+				a.Etag = value.String
 			}
 		case action.FieldResourceID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -171,6 +179,9 @@ func (a *Action) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(a.Name)
+	builder.WriteString(", ")
+	builder.WriteString("etag=")
+	builder.WriteString(a.Etag)
 	builder.WriteString(", ")
 	builder.WriteString("resource_id=")
 	builder.WriteString(a.ResourceID)

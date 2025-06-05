@@ -32,16 +32,16 @@ func (rsu *RoleSuiteUpdate) Where(ps ...predicate.RoleSuite) *RoleSuiteUpdate {
 	return rsu
 }
 
-// SetDisplayName sets the "display_name" field.
-func (rsu *RoleSuiteUpdate) SetDisplayName(s string) *RoleSuiteUpdate {
-	rsu.mutation.SetDisplayName(s)
+// SetName sets the "name" field.
+func (rsu *RoleSuiteUpdate) SetName(s string) *RoleSuiteUpdate {
+	rsu.mutation.SetName(s)
 	return rsu
 }
 
-// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
-func (rsu *RoleSuiteUpdate) SetNillableDisplayName(s *string) *RoleSuiteUpdate {
+// SetNillableName sets the "name" field if the given value is not nil.
+func (rsu *RoleSuiteUpdate) SetNillableName(s *string) *RoleSuiteUpdate {
 	if s != nil {
-		rsu.SetDisplayName(*s)
+		rsu.SetName(*s)
 	}
 	return rsu
 }
@@ -384,8 +384,8 @@ func (rsu *RoleSuiteUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := rsu.mutation.DisplayName(); ok {
-		_spec.SetField(rolesuite.FieldDisplayName, field.TypeString, value)
+	if value, ok := rsu.mutation.Name(); ok {
+		_spec.SetField(rolesuite.FieldName, field.TypeString, value)
 	}
 	if value, ok := rsu.mutation.Description(); ok {
 		_spec.SetField(rolesuite.FieldDescription, field.TypeString, value)
@@ -656,16 +656,16 @@ type RoleSuiteUpdateOne struct {
 	mutation *RoleSuiteMutation
 }
 
-// SetDisplayName sets the "display_name" field.
-func (rsuo *RoleSuiteUpdateOne) SetDisplayName(s string) *RoleSuiteUpdateOne {
-	rsuo.mutation.SetDisplayName(s)
+// SetName sets the "name" field.
+func (rsuo *RoleSuiteUpdateOne) SetName(s string) *RoleSuiteUpdateOne {
+	rsuo.mutation.SetName(s)
 	return rsuo
 }
 
-// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
-func (rsuo *RoleSuiteUpdateOne) SetNillableDisplayName(s *string) *RoleSuiteUpdateOne {
+// SetNillableName sets the "name" field if the given value is not nil.
+func (rsuo *RoleSuiteUpdateOne) SetNillableName(s *string) *RoleSuiteUpdateOne {
 	if s != nil {
-		rsuo.SetDisplayName(*s)
+		rsuo.SetName(*s)
 	}
 	return rsuo
 }
@@ -1038,8 +1038,8 @@ func (rsuo *RoleSuiteUpdateOne) sqlSave(ctx context.Context) (_node *RoleSuite, 
 			}
 		}
 	}
-	if value, ok := rsuo.mutation.DisplayName(); ok {
-		_spec.SetField(rolesuite.FieldDisplayName, field.TypeString, value)
+	if value, ok := rsuo.mutation.Name(); ok {
+		_spec.SetField(rolesuite.FieldName, field.TypeString, value)
 	}
 	if value, ok := rsuo.mutation.Description(); ok {
 		_spec.SetField(rolesuite.FieldDescription, field.TypeString, value)

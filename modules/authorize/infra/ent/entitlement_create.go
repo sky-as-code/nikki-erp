@@ -63,6 +63,40 @@ func (ec *EntitlementCreate) SetCreatedBy(s string) *EntitlementCreate {
 	return ec
 }
 
+// SetName sets the "name" field.
+func (ec *EntitlementCreate) SetName(s string) *EntitlementCreate {
+	ec.mutation.SetName(s)
+	return ec
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (ec *EntitlementCreate) SetNillableName(s *string) *EntitlementCreate {
+	if s != nil {
+		ec.SetName(*s)
+	}
+	return ec
+}
+
+// SetDescription sets the "description" field.
+func (ec *EntitlementCreate) SetDescription(s string) *EntitlementCreate {
+	ec.mutation.SetDescription(s)
+	return ec
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (ec *EntitlementCreate) SetNillableDescription(s *string) *EntitlementCreate {
+	if s != nil {
+		ec.SetDescription(*s)
+	}
+	return ec
+}
+
+// SetEtag sets the "etag" field.
+func (ec *EntitlementCreate) SetEtag(s string) *EntitlementCreate {
+	ec.mutation.SetEtag(s)
+	return ec
+}
+
 // SetResourceID sets the "resource_id" field.
 func (ec *EntitlementCreate) SetResourceID(s string) *EntitlementCreate {
 	ec.mutation.SetResourceID(s)
@@ -186,6 +220,9 @@ func (ec *EntitlementCreate) check() error {
 	if _, ok := ec.mutation.CreatedBy(); !ok {
 		return &ValidationError{Name: "created_by", err: errors.New(`ent: missing required field "Entitlement.created_by"`)}
 	}
+	if _, ok := ec.mutation.Etag(); !ok {
+		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Entitlement.etag"`)}
+	}
 	if _, ok := ec.mutation.SubjectType(); !ok {
 		return &ValidationError{Name: "subject_type", err: errors.New(`ent: missing required field "Entitlement.subject_type"`)}
 	}
@@ -243,6 +280,18 @@ func (ec *EntitlementCreate) createSpec() (*Entitlement, *sqlgraph.CreateSpec) {
 	if value, ok := ec.mutation.CreatedBy(); ok {
 		_spec.SetField(entitlement.FieldCreatedBy, field.TypeString, value)
 		_node.CreatedBy = value
+	}
+	if value, ok := ec.mutation.Name(); ok {
+		_spec.SetField(entitlement.FieldName, field.TypeString, value)
+		_node.Name = &value
+	}
+	if value, ok := ec.mutation.Description(); ok {
+		_spec.SetField(entitlement.FieldDescription, field.TypeString, value)
+		_node.Description = &value
+	}
+	if value, ok := ec.mutation.Etag(); ok {
+		_spec.SetField(entitlement.FieldEtag, field.TypeString, value)
+		_node.Etag = value
 	}
 	if value, ok := ec.mutation.SubjectType(); ok {
 		_spec.SetField(entitlement.FieldSubjectType, field.TypeEnum, value)

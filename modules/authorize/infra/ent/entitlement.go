@@ -27,6 +27,12 @@ type Entitlement struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
 	CreatedBy string `json:"created_by,omitempty"`
+	// Name holds the value of the "name" field.
+	Name *string `json:"name,omitempty"`
+	// Description holds the value of the "description" field.
+	Description *string `json:"description,omitempty"`
+	// Etag holds the value of the "etag" field.
+	Etag string `json:"etag,omitempty"`
 	// ResourceID holds the value of the "resource_id" field.
 	ResourceID *string `json:"resource_id,omitempty"`
 	// SubjectType holds the value of the "subject_type" field.
@@ -90,7 +96,7 @@ func (*Entitlement) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case entitlement.FieldID, entitlement.FieldActionID, entitlement.FieldActionExpr, entitlement.FieldCreatedBy, entitlement.FieldResourceID, entitlement.FieldSubjectType, entitlement.FieldSubjectRef, entitlement.FieldScopeRef:
+		case entitlement.FieldID, entitlement.FieldActionID, entitlement.FieldActionExpr, entitlement.FieldCreatedBy, entitlement.FieldName, entitlement.FieldDescription, entitlement.FieldEtag, entitlement.FieldResourceID, entitlement.FieldSubjectType, entitlement.FieldSubjectRef, entitlement.FieldScopeRef:
 			values[i] = new(sql.NullString)
 		case entitlement.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -139,6 +145,26 @@ func (e *Entitlement) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field created_by", values[i])
 			} else if value.Valid {
 				e.CreatedBy = value.String
+			}
+		case entitlement.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				e.Name = new(string)
+				*e.Name = value.String
+			}
+		case entitlement.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				e.Description = new(string)
+				*e.Description = value.String
+			}
+		case entitlement.FieldEtag:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field etag", values[i])
+			} else if value.Valid {
+				e.Etag = value.String
 			}
 		case entitlement.FieldResourceID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -230,6 +256,19 @@ func (e *Entitlement) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_by=")
 	builder.WriteString(e.CreatedBy)
+	builder.WriteString(", ")
+	if v := e.Name; v != nil {
+		builder.WriteString("name=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := e.Description; v != nil {
+		builder.WriteString("description=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	builder.WriteString("etag=")
+	builder.WriteString(e.Etag)
 	builder.WriteString(", ")
 	if v := e.ResourceID; v != nil {
 		builder.WriteString("resource_id=")

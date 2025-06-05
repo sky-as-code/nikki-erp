@@ -32,16 +32,16 @@ func (ru *RoleUpdate) Where(ps ...predicate.Role) *RoleUpdate {
 	return ru
 }
 
-// SetDisplayName sets the "display_name" field.
-func (ru *RoleUpdate) SetDisplayName(s string) *RoleUpdate {
-	ru.mutation.SetDisplayName(s)
+// SetName sets the "name" field.
+func (ru *RoleUpdate) SetName(s string) *RoleUpdate {
+	ru.mutation.SetName(s)
 	return ru
 }
 
-// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
-func (ru *RoleUpdate) SetNillableDisplayName(s *string) *RoleUpdate {
+// SetNillableName sets the "name" field if the given value is not nil.
+func (ru *RoleUpdate) SetNillableName(s *string) *RoleUpdate {
 	if s != nil {
-		ru.SetDisplayName(*s)
+		ru.SetName(*s)
 	}
 	return ru
 }
@@ -384,8 +384,8 @@ func (ru *RoleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := ru.mutation.DisplayName(); ok {
-		_spec.SetField(role.FieldDisplayName, field.TypeString, value)
+	if value, ok := ru.mutation.Name(); ok {
+		_spec.SetField(role.FieldName, field.TypeString, value)
 	}
 	if value, ok := ru.mutation.Description(); ok {
 		_spec.SetField(role.FieldDescription, field.TypeString, value)
@@ -656,16 +656,16 @@ type RoleUpdateOne struct {
 	mutation *RoleMutation
 }
 
-// SetDisplayName sets the "display_name" field.
-func (ruo *RoleUpdateOne) SetDisplayName(s string) *RoleUpdateOne {
-	ruo.mutation.SetDisplayName(s)
+// SetName sets the "name" field.
+func (ruo *RoleUpdateOne) SetName(s string) *RoleUpdateOne {
+	ruo.mutation.SetName(s)
 	return ruo
 }
 
-// SetNillableDisplayName sets the "display_name" field if the given value is not nil.
-func (ruo *RoleUpdateOne) SetNillableDisplayName(s *string) *RoleUpdateOne {
+// SetNillableName sets the "name" field if the given value is not nil.
+func (ruo *RoleUpdateOne) SetNillableName(s *string) *RoleUpdateOne {
 	if s != nil {
-		ruo.SetDisplayName(*s)
+		ruo.SetName(*s)
 	}
 	return ruo
 }
@@ -1038,8 +1038,8 @@ func (ruo *RoleUpdateOne) sqlSave(ctx context.Context) (_node *Role, err error) 
 			}
 		}
 	}
-	if value, ok := ruo.mutation.DisplayName(); ok {
-		_spec.SetField(role.FieldDisplayName, field.TypeString, value)
+	if value, ok := ruo.mutation.Name(); ok {
+		_spec.SetField(role.FieldName, field.TypeString, value)
 	}
 	if value, ok := ruo.mutation.Description(); ok {
 		_spec.SetField(role.FieldDescription, field.TypeString, value)

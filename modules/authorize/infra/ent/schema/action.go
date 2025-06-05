@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"entgo.io/ent/schema/mixin"
 )
 
@@ -28,7 +29,10 @@ func (ActionMixin) Fields() []ent.Field {
 		field.String("created_by").
 			Immutable(),
 
-		field.String("name"),
+		field.String("name").
+			Immutable(),
+
+		field.String("etag"),
 
 		field.String("resource_id").
 			Immutable(),
@@ -55,6 +59,13 @@ func (Action) Edges() []ent.Edge {
 			Immutable().
 			Required().
 			Unique(),
+	}
+}
+
+func (Action) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("id", "resource_id").Unique(),
+		index.Fields("name", "resource_id").Unique(),
 	}
 }
 

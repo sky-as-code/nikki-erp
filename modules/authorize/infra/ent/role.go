@@ -21,10 +21,10 @@ type Role struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
 	CreatedBy string `json:"created_by,omitempty"`
-	// DisplayName holds the value of the "display_name" field.
-	DisplayName string `json:"display_name,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
-	Description string `json:"description,omitempty"`
+	Description *string `json:"description,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// OwnerType holds the value of the "owner_type" field.
@@ -123,7 +123,7 @@ func (*Role) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case role.FieldIsRequestable, role.FieldIsRequiredAttachment, role.FieldIsRequiredComment:
 			values[i] = new(sql.NullBool)
-		case role.FieldID, role.FieldCreatedBy, role.FieldDisplayName, role.FieldDescription, role.FieldEtag, role.FieldOwnerType, role.FieldOwnerRef:
+		case role.FieldID, role.FieldCreatedBy, role.FieldName, role.FieldDescription, role.FieldEtag, role.FieldOwnerType, role.FieldOwnerRef:
 			values[i] = new(sql.NullString)
 		case role.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -160,17 +160,18 @@ func (r *Role) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				r.CreatedBy = value.String
 			}
-		case role.FieldDisplayName:
+		case role.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field display_name", values[i])
+				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				r.DisplayName = value.String
+				r.Name = value.String
 			}
 		case role.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
-				r.Description = value.String
+				r.Description = new(string)
+				*r.Description = value.String
 			}
 		case role.FieldEtag:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -280,11 +281,13 @@ func (r *Role) String() string {
 	builder.WriteString("created_by=")
 	builder.WriteString(r.CreatedBy)
 	builder.WriteString(", ")
-	builder.WriteString("display_name=")
-	builder.WriteString(r.DisplayName)
+	builder.WriteString("name=")
+	builder.WriteString(r.Name)
 	builder.WriteString(", ")
-	builder.WriteString("description=")
-	builder.WriteString(r.Description)
+	if v := r.Description; v != nil {
+		builder.WriteString("description=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("etag=")
 	builder.WriteString(r.Etag)

@@ -45,9 +45,9 @@ func (rc *RoleCreate) SetCreatedBy(s string) *RoleCreate {
 	return rc
 }
 
-// SetDisplayName sets the "display_name" field.
-func (rc *RoleCreate) SetDisplayName(s string) *RoleCreate {
-	rc.mutation.SetDisplayName(s)
+// SetName sets the "name" field.
+func (rc *RoleCreate) SetName(s string) *RoleCreate {
+	rc.mutation.SetName(s)
 	return rc
 }
 
@@ -231,8 +231,8 @@ func (rc *RoleCreate) check() error {
 	if _, ok := rc.mutation.CreatedBy(); !ok {
 		return &ValidationError{Name: "created_by", err: errors.New(`ent: missing required field "Role.created_by"`)}
 	}
-	if _, ok := rc.mutation.DisplayName(); !ok {
-		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "Role.display_name"`)}
+	if _, ok := rc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Role.name"`)}
 	}
 	if _, ok := rc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Role.etag"`)}
@@ -300,13 +300,13 @@ func (rc *RoleCreate) createSpec() (*Role, *sqlgraph.CreateSpec) {
 		_spec.SetField(role.FieldCreatedBy, field.TypeString, value)
 		_node.CreatedBy = value
 	}
-	if value, ok := rc.mutation.DisplayName(); ok {
-		_spec.SetField(role.FieldDisplayName, field.TypeString, value)
-		_node.DisplayName = value
+	if value, ok := rc.mutation.Name(); ok {
+		_spec.SetField(role.FieldName, field.TypeString, value)
+		_node.Name = value
 	}
 	if value, ok := rc.mutation.Description(); ok {
 		_spec.SetField(role.FieldDescription, field.TypeString, value)
-		_node.Description = value
+		_node.Description = &value
 	}
 	if value, ok := rc.mutation.Etag(); ok {
 		_spec.SetField(role.FieldEtag, field.TypeString, value)
