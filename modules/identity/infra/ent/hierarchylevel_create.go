@@ -6,10 +6,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
 // HierarchyLevelCreate is the builder for creating a HierarchyLevel entity.
@@ -19,9 +22,31 @@ type HierarchyLevelCreate struct {
 	hooks    []Hook
 }
 
-// SetOrgID sets the "org_id" field.
-func (hlc *HierarchyLevelCreate) SetOrgID(s string) *HierarchyLevelCreate {
-	hlc.mutation.SetOrgID(s)
+// SetDeletedAt sets the "deleted_at" field.
+func (hlc *HierarchyLevelCreate) SetDeletedAt(t time.Time) *HierarchyLevelCreate {
+	hlc.mutation.SetDeletedAt(t)
+	return hlc
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (hlc *HierarchyLevelCreate) SetNillableDeletedAt(t *time.Time) *HierarchyLevelCreate {
+	if t != nil {
+		hlc.SetDeletedAt(*t)
+	}
+	return hlc
+}
+
+// SetDeletedBy sets the "deleted_by" field.
+func (hlc *HierarchyLevelCreate) SetDeletedBy(s string) *HierarchyLevelCreate {
+	hlc.mutation.SetDeletedBy(s)
+	return hlc
+}
+
+// SetNillableDeletedBy sets the "deleted_by" field if the given value is not nil.
+func (hlc *HierarchyLevelCreate) SetNillableDeletedBy(s *string) *HierarchyLevelCreate {
+	if s != nil {
+		hlc.SetDeletedBy(*s)
+	}
 	return hlc
 }
 
@@ -34,6 +59,12 @@ func (hlc *HierarchyLevelCreate) SetEtag(s string) *HierarchyLevelCreate {
 // SetName sets the "name" field.
 func (hlc *HierarchyLevelCreate) SetName(s string) *HierarchyLevelCreate {
 	hlc.mutation.SetName(s)
+	return hlc
+}
+
+// SetOrgID sets the "org_id" field.
+func (hlc *HierarchyLevelCreate) SetOrgID(s string) *HierarchyLevelCreate {
+	hlc.mutation.SetOrgID(s)
 	return hlc
 }
 
@@ -57,24 +88,63 @@ func (hlc *HierarchyLevelCreate) SetID(s string) *HierarchyLevelCreate {
 	return hlc
 }
 
-// SetParent sets the "parent" edge to the HierarchyLevel entity.
-func (hlc *HierarchyLevelCreate) SetParent(h *HierarchyLevel) *HierarchyLevelCreate {
-	return hlc.SetParentID(h.ID)
-}
-
-// AddChildIDs adds the "child" edge to the HierarchyLevel entity by IDs.
+// AddChildIDs adds the "children" edge to the HierarchyLevel entity by IDs.
 func (hlc *HierarchyLevelCreate) AddChildIDs(ids ...string) *HierarchyLevelCreate {
 	hlc.mutation.AddChildIDs(ids...)
 	return hlc
 }
 
-// AddChild adds the "child" edges to the HierarchyLevel entity.
-func (hlc *HierarchyLevelCreate) AddChild(h ...*HierarchyLevel) *HierarchyLevelCreate {
+// AddChildren adds the "children" edges to the HierarchyLevel entity.
+func (hlc *HierarchyLevelCreate) AddChildren(h ...*HierarchyLevel) *HierarchyLevelCreate {
 	ids := make([]string, len(h))
 	for i := range h {
 		ids[i] = h[i].ID
 	}
 	return hlc.AddChildIDs(ids...)
+}
+
+// AddUserIDs adds the "users" edge to the User entity by IDs.
+func (hlc *HierarchyLevelCreate) AddUserIDs(ids ...string) *HierarchyLevelCreate {
+	hlc.mutation.AddUserIDs(ids...)
+	return hlc
+}
+
+// AddUsers adds the "users" edges to the User entity.
+func (hlc *HierarchyLevelCreate) AddUsers(u ...*User) *HierarchyLevelCreate {
+	ids := make([]string, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return hlc.AddUserIDs(ids...)
+}
+
+// SetDeleterID sets the "deleter" edge to the User entity by ID.
+func (hlc *HierarchyLevelCreate) SetDeleterID(id string) *HierarchyLevelCreate {
+	hlc.mutation.SetDeleterID(id)
+	return hlc
+}
+
+// SetNillableDeleterID sets the "deleter" edge to the User entity by ID if the given value is not nil.
+func (hlc *HierarchyLevelCreate) SetNillableDeleterID(id *string) *HierarchyLevelCreate {
+	if id != nil {
+		hlc = hlc.SetDeleterID(*id)
+	}
+	return hlc
+}
+
+// SetDeleter sets the "deleter" edge to the User entity.
+func (hlc *HierarchyLevelCreate) SetDeleter(u *User) *HierarchyLevelCreate {
+	return hlc.SetDeleterID(u.ID)
+}
+
+// SetParent sets the "parent" edge to the HierarchyLevel entity.
+func (hlc *HierarchyLevelCreate) SetParent(h *HierarchyLevel) *HierarchyLevelCreate {
+	return hlc.SetParentID(h.ID)
+}
+
+// SetOrg sets the "org" edge to the Organization entity.
+func (hlc *HierarchyLevelCreate) SetOrg(o *Organization) *HierarchyLevelCreate {
+	return hlc.SetOrgID(o.ID)
 }
 
 // Mutation returns the HierarchyLevelMutation object of the builder.
@@ -111,14 +181,17 @@ func (hlc *HierarchyLevelCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (hlc *HierarchyLevelCreate) check() error {
-	if _, ok := hlc.mutation.OrgID(); !ok {
-		return &ValidationError{Name: "org_id", err: errors.New(`ent: missing required field "HierarchyLevel.org_id"`)}
-	}
 	if _, ok := hlc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "HierarchyLevel.etag"`)}
 	}
 	if _, ok := hlc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "HierarchyLevel.name"`)}
+	}
+	if _, ok := hlc.mutation.OrgID(); !ok {
+		return &ValidationError{Name: "org_id", err: errors.New(`ent: missing required field "HierarchyLevel.org_id"`)}
+	}
+	if len(hlc.mutation.OrgIDs()) == 0 {
+		return &ValidationError{Name: "org", err: errors.New(`ent: missing required edge "HierarchyLevel.org"`)}
 	}
 	return nil
 }
@@ -155,9 +228,9 @@ func (hlc *HierarchyLevelCreate) createSpec() (*HierarchyLevel, *sqlgraph.Create
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := hlc.mutation.OrgID(); ok {
-		_spec.SetField(hierarchylevel.FieldOrgID, field.TypeString, value)
-		_node.OrgID = value
+	if value, ok := hlc.mutation.DeletedAt(); ok {
+		_spec.SetField(hierarchylevel.FieldDeletedAt, field.TypeTime, value)
+		_node.DeletedAt = &value
 	}
 	if value, ok := hlc.mutation.Etag(); ok {
 		_spec.SetField(hierarchylevel.FieldEtag, field.TypeString, value)
@@ -167,10 +240,59 @@ func (hlc *HierarchyLevelCreate) createSpec() (*HierarchyLevel, *sqlgraph.Create
 		_spec.SetField(hierarchylevel.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if nodes := hlc.mutation.ChildrenIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.ChildrenTable,
+			Columns: []string{hierarchylevel.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := hlc.mutation.UsersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.UsersTable,
+			Columns: []string{hierarchylevel.UsersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := hlc.mutation.DeleterIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   hierarchylevel.DeleterTable,
+			Columns: []string{hierarchylevel.DeleterColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.DeletedBy = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := hlc.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   hierarchylevel.ParentTable,
 			Columns: []string{hierarchylevel.ParentColumn},
 			Bidi:    false,
@@ -184,20 +306,21 @@ func (hlc *HierarchyLevelCreate) createSpec() (*HierarchyLevel, *sqlgraph.Create
 		_node.ParentID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := hlc.mutation.ChildIDs(); len(nodes) > 0 {
+	if nodes := hlc.mutation.OrgIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   hierarchylevel.ChildTable,
-			Columns: []string{hierarchylevel.ChildColumn},
+			Table:   hierarchylevel.OrgTable,
+			Columns: []string{hierarchylevel.OrgColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.OrgID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

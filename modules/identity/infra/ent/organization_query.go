@@ -637,6 +637,9 @@ func (oq *OrganizationQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
+		if oq.withDeleter != nil {
+			_spec.Node.AddColumnOnce(organization.FieldDeletedBy)
+		}
 	}
 	if ps := oq.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {

@@ -125,3 +125,27 @@ func (this UserRest) DeleteUser(echoCtx echo.Context) (err error) {
 
 	return httpserver.JsonOk(echoCtx, response)
 }
+
+func (this UserRest) ListUsers(echoCtx echo.Context) (err error) {
+	request := &DeleteUserRequest{}
+	if err = echoCtx.Bind(request); err != nil {
+		return err
+	}
+
+	result := it.DeleteUserResult{}
+	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+
+	if err != nil {
+		return err
+	}
+
+	if result.ClientError != nil {
+		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
+	}
+
+	response := DeleteUserResponse{
+		DeletedAt: result.Data.DeletedAt.Unix(),
+	}
+
+	return httpserver.JsonOk(echoCtx, response)
+}

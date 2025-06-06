@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
@@ -84,6 +85,20 @@ func (uc *UserCreate) SetFailedLoginAttempts(i int) *UserCreate {
 func (uc *UserCreate) SetNillableFailedLoginAttempts(i *int) *UserCreate {
 	if i != nil {
 		uc.SetFailedLoginAttempts(*i)
+	}
+	return uc
+}
+
+// SetHierarchyID sets the "hierarchy_id" field.
+func (uc *UserCreate) SetHierarchyID(s string) *UserCreate {
+	uc.mutation.SetHierarchyID(s)
+	return uc
+}
+
+// SetNillableHierarchyID sets the "hierarchy_id" field if the given value is not nil.
+func (uc *UserCreate) SetNillableHierarchyID(s *string) *UserCreate {
+	if s != nil {
+		uc.SetHierarchyID(*s)
 	}
 	return uc
 }
@@ -209,6 +224,11 @@ func (uc *UserCreate) AddGroups(g ...*Group) *UserCreate {
 		ids[i] = g[i].ID
 	}
 	return uc.AddGroupIDs(ids...)
+}
+
+// SetHierarchy sets the "hierarchy" edge to the HierarchyLevel entity.
+func (uc *UserCreate) SetHierarchy(h *HierarchyLevel) *UserCreate {
+	return uc.SetHierarchyID(h.ID)
 }
 
 // AddOrgIDs adds the "orgs" edge to the Organization entity by IDs.
@@ -425,6 +445,23 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.HierarchyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   user.HierarchyTable,
+			Columns: []string{user.HierarchyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.HierarchyID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := uc.mutation.OrgsIDs(); len(nodes) > 0 {

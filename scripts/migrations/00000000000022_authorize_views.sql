@@ -1,8 +1,10 @@
 DO $$
 BEGIN
-	IF EXISTS (
-		SELECT FROM information_schema.tables 
-		WHERE table_schema = 'public' AND table_name = 'authz_entitlements'
+	IF 2 = (
+		SELECT COUNT(*) FROM information_schema.tables 
+		WHERE table_schema = 'public' AND (
+			table_name = 'authz_entitlements' OR table_name = 'ident_user_group'
+		)
 	) THEN
 
 		CREATE OR REPLACE VIEW authz_effective_user_entitlements AS

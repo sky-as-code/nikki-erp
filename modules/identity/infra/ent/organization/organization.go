@@ -19,6 +19,10 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldCreatedBy holds the string denoting the created_by field in the database.
 	FieldCreatedBy = "created_by"
+	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
+	FieldDeletedAt = "deleted_at"
+	// FieldDeletedBy holds the string denoting the deleted_by field in the database.
+	FieldDeletedBy = "deleted_by"
 	// FieldDisplayName holds the string denoting the display_name field in the database.
 	FieldDisplayName = "display_name"
 	// FieldEtag holds the string denoting the etag field in the database.
@@ -44,6 +48,20 @@ const (
 	// UsersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UsersInverseTable = "ident_users"
+	// HierarchiesTable is the table that holds the hierarchies relation/edge.
+	HierarchiesTable = "ident_hierarchy_levels"
+	// HierarchiesInverseTable is the table name for the HierarchyLevel entity.
+	// It exists in this package in order to avoid circular dependency with the "hierarchylevel" package.
+	HierarchiesInverseTable = "ident_hierarchy_levels"
+	// HierarchiesColumn is the table column denoting the hierarchies relation/edge.
+	HierarchiesColumn = "org_id"
+	// DeleterTable is the table that holds the deleter relation/edge.
+	DeleterTable = "ident_organizations"
+	// DeleterInverseTable is the table name for the User entity.
+	// It exists in this package in order to avoid circular dependency with the "user" package.
+	DeleterInverseTable = "ident_users"
+	// DeleterColumn is the table column denoting the deleter relation/edge.
+	DeleterColumn = "deleted_by"
 	// UserOrgsTable is the table that holds the user_orgs relation/edge.
 	UserOrgsTable = "ident_user_org"
 	// UserOrgsInverseTable is the table name for the UserOrg entity.
@@ -58,6 +76,8 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldCreatedBy,
+	FieldDeletedAt,
+	FieldDeletedBy,
 	FieldDisplayName,
 	FieldEtag,
 	FieldStatus,
@@ -128,6 +148,16 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedBy orders the results by the created_by field.
 func ByCreatedBy(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedBy, opts...).ToFunc()
+}
+
+// ByDeletedAt orders the results by the deleted_at field.
+func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
+}
+
+// ByDeletedBy orders the results by the deleted_by field.
+func ByDeletedBy(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDeletedBy, opts...).ToFunc()
 }
 
 // ByDisplayName orders the results by the display_name field.

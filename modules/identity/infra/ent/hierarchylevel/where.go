@@ -3,6 +3,8 @@
 package hierarchylevel
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
@@ -63,9 +65,14 @@ func IDContainsFold(id string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldContainsFold(FieldID, id))
 }
 
-// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
-func OrgID(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldEQ(FieldOrgID, v))
+// DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
+func DeletedAt(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldDeletedAt, v))
+}
+
+// DeletedBy applies equality check predicate on the "deleted_by" field. It's identical to DeletedByEQ.
+func DeletedBy(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldDeletedBy, v))
 }
 
 // Etag applies equality check predicate on the "etag" field. It's identical to EtagEQ.
@@ -78,74 +85,139 @@ func Name(v string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldEQ(FieldName, v))
 }
 
+// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
+func OrgID(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldOrgID, v))
+}
+
 // ParentID applies equality check predicate on the "parent_id" field. It's identical to ParentIDEQ.
 func ParentID(v string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldEQ(FieldParentID, v))
 }
 
-// OrgIDEQ applies the EQ predicate on the "org_id" field.
-func OrgIDEQ(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldEQ(FieldOrgID, v))
+// DeletedAtEQ applies the EQ predicate on the "deleted_at" field.
+func DeletedAtEQ(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldDeletedAt, v))
 }
 
-// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
-func OrgIDNEQ(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldNEQ(FieldOrgID, v))
+// DeletedAtNEQ applies the NEQ predicate on the "deleted_at" field.
+func DeletedAtNEQ(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNEQ(FieldDeletedAt, v))
 }
 
-// OrgIDIn applies the In predicate on the "org_id" field.
-func OrgIDIn(vs ...string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldIn(FieldOrgID, vs...))
+// DeletedAtIn applies the In predicate on the "deleted_at" field.
+func DeletedAtIn(vs ...time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIn(FieldDeletedAt, vs...))
 }
 
-// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
-func OrgIDNotIn(vs ...string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldNotIn(FieldOrgID, vs...))
+// DeletedAtNotIn applies the NotIn predicate on the "deleted_at" field.
+func DeletedAtNotIn(vs ...time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotIn(FieldDeletedAt, vs...))
 }
 
-// OrgIDGT applies the GT predicate on the "org_id" field.
-func OrgIDGT(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldGT(FieldOrgID, v))
+// DeletedAtGT applies the GT predicate on the "deleted_at" field.
+func DeletedAtGT(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGT(FieldDeletedAt, v))
 }
 
-// OrgIDGTE applies the GTE predicate on the "org_id" field.
-func OrgIDGTE(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldGTE(FieldOrgID, v))
+// DeletedAtGTE applies the GTE predicate on the "deleted_at" field.
+func DeletedAtGTE(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGTE(FieldDeletedAt, v))
 }
 
-// OrgIDLT applies the LT predicate on the "org_id" field.
-func OrgIDLT(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldLT(FieldOrgID, v))
+// DeletedAtLT applies the LT predicate on the "deleted_at" field.
+func DeletedAtLT(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLT(FieldDeletedAt, v))
 }
 
-// OrgIDLTE applies the LTE predicate on the "org_id" field.
-func OrgIDLTE(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldLTE(FieldOrgID, v))
+// DeletedAtLTE applies the LTE predicate on the "deleted_at" field.
+func DeletedAtLTE(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLTE(FieldDeletedAt, v))
 }
 
-// OrgIDContains applies the Contains predicate on the "org_id" field.
-func OrgIDContains(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldContains(FieldOrgID, v))
+// DeletedAtIsNil applies the IsNil predicate on the "deleted_at" field.
+func DeletedAtIsNil() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIsNull(FieldDeletedAt))
 }
 
-// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
-func OrgIDHasPrefix(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldHasPrefix(FieldOrgID, v))
+// DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
+func DeletedAtNotNil() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotNull(FieldDeletedAt))
 }
 
-// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
-func OrgIDHasSuffix(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldHasSuffix(FieldOrgID, v))
+// DeletedByEQ applies the EQ predicate on the "deleted_by" field.
+func DeletedByEQ(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldDeletedBy, v))
 }
 
-// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
-func OrgIDEqualFold(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldEqualFold(FieldOrgID, v))
+// DeletedByNEQ applies the NEQ predicate on the "deleted_by" field.
+func DeletedByNEQ(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNEQ(FieldDeletedBy, v))
 }
 
-// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
-func OrgIDContainsFold(v string) predicate.HierarchyLevel {
-	return predicate.HierarchyLevel(sql.FieldContainsFold(FieldOrgID, v))
+// DeletedByIn applies the In predicate on the "deleted_by" field.
+func DeletedByIn(vs ...string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIn(FieldDeletedBy, vs...))
+}
+
+// DeletedByNotIn applies the NotIn predicate on the "deleted_by" field.
+func DeletedByNotIn(vs ...string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotIn(FieldDeletedBy, vs...))
+}
+
+// DeletedByGT applies the GT predicate on the "deleted_by" field.
+func DeletedByGT(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGT(FieldDeletedBy, v))
+}
+
+// DeletedByGTE applies the GTE predicate on the "deleted_by" field.
+func DeletedByGTE(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGTE(FieldDeletedBy, v))
+}
+
+// DeletedByLT applies the LT predicate on the "deleted_by" field.
+func DeletedByLT(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLT(FieldDeletedBy, v))
+}
+
+// DeletedByLTE applies the LTE predicate on the "deleted_by" field.
+func DeletedByLTE(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLTE(FieldDeletedBy, v))
+}
+
+// DeletedByContains applies the Contains predicate on the "deleted_by" field.
+func DeletedByContains(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldContains(FieldDeletedBy, v))
+}
+
+// DeletedByHasPrefix applies the HasPrefix predicate on the "deleted_by" field.
+func DeletedByHasPrefix(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldHasPrefix(FieldDeletedBy, v))
+}
+
+// DeletedByHasSuffix applies the HasSuffix predicate on the "deleted_by" field.
+func DeletedByHasSuffix(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldHasSuffix(FieldDeletedBy, v))
+}
+
+// DeletedByIsNil applies the IsNil predicate on the "deleted_by" field.
+func DeletedByIsNil() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIsNull(FieldDeletedBy))
+}
+
+// DeletedByNotNil applies the NotNil predicate on the "deleted_by" field.
+func DeletedByNotNil() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotNull(FieldDeletedBy))
+}
+
+// DeletedByEqualFold applies the EqualFold predicate on the "deleted_by" field.
+func DeletedByEqualFold(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEqualFold(FieldDeletedBy, v))
+}
+
+// DeletedByContainsFold applies the ContainsFold predicate on the "deleted_by" field.
+func DeletedByContainsFold(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldContainsFold(FieldDeletedBy, v))
 }
 
 // EtagEQ applies the EQ predicate on the "etag" field.
@@ -278,6 +350,71 @@ func NameContainsFold(v string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldContainsFold(FieldName, v))
 }
 
+// OrgIDEQ applies the EQ predicate on the "org_id" field.
+func OrgIDEQ(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldOrgID, v))
+}
+
+// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
+func OrgIDNEQ(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNEQ(FieldOrgID, v))
+}
+
+// OrgIDIn applies the In predicate on the "org_id" field.
+func OrgIDIn(vs ...string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIn(FieldOrgID, vs...))
+}
+
+// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
+func OrgIDNotIn(vs ...string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotIn(FieldOrgID, vs...))
+}
+
+// OrgIDGT applies the GT predicate on the "org_id" field.
+func OrgIDGT(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGT(FieldOrgID, v))
+}
+
+// OrgIDGTE applies the GTE predicate on the "org_id" field.
+func OrgIDGTE(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGTE(FieldOrgID, v))
+}
+
+// OrgIDLT applies the LT predicate on the "org_id" field.
+func OrgIDLT(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLT(FieldOrgID, v))
+}
+
+// OrgIDLTE applies the LTE predicate on the "org_id" field.
+func OrgIDLTE(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLTE(FieldOrgID, v))
+}
+
+// OrgIDContains applies the Contains predicate on the "org_id" field.
+func OrgIDContains(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldContains(FieldOrgID, v))
+}
+
+// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
+func OrgIDHasPrefix(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldHasPrefix(FieldOrgID, v))
+}
+
+// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
+func OrgIDHasSuffix(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldHasSuffix(FieldOrgID, v))
+}
+
+// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
+func OrgIDEqualFold(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEqualFold(FieldOrgID, v))
+}
+
+// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
+func OrgIDContainsFold(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldContainsFold(FieldOrgID, v))
+}
+
 // ParentIDEQ applies the EQ predicate on the "parent_id" field.
 func ParentIDEQ(v string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldEQ(FieldParentID, v))
@@ -353,12 +490,81 @@ func ParentIDContainsFold(v string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldContainsFold(FieldParentID, v))
 }
 
+// HasChildren applies the HasEdge predicate on the "children" edge.
+func HasChildren() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ChildrenTable, ChildrenColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasChildrenWith applies the HasEdge predicate on the "children" edge with a given conditions (other predicates).
+func HasChildrenWith(preds ...predicate.HierarchyLevel) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(func(s *sql.Selector) {
+		step := newChildrenStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasUsers applies the HasEdge predicate on the "users" edge.
+func HasUsers() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, UsersTable, UsersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasUsersWith applies the HasEdge predicate on the "users" edge with a given conditions (other predicates).
+func HasUsersWith(preds ...predicate.User) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(func(s *sql.Selector) {
+		step := newUsersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasDeleter applies the HasEdge predicate on the "deleter" edge.
+func HasDeleter() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, DeleterTable, DeleterColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDeleterWith applies the HasEdge predicate on the "deleter" edge with a given conditions (other predicates).
+func HasDeleterWith(preds ...predicate.User) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(func(s *sql.Selector) {
+		step := newDeleterStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasParent applies the HasEdge predicate on the "parent" edge.
 func HasParent() predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, ParentTable, ParentColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, ParentTable, ParentColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -376,21 +582,21 @@ func HasParentWith(preds ...predicate.HierarchyLevel) predicate.HierarchyLevel {
 	})
 }
 
-// HasChild applies the HasEdge predicate on the "child" edge.
-func HasChild() predicate.HierarchyLevel {
+// HasOrg applies the HasEdge predicate on the "org" edge.
+func HasOrg() predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, ChildTable, ChildColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, OrgTable, OrgColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasChildWith applies the HasEdge predicate on the "child" edge with a given conditions (other predicates).
-func HasChildWith(preds ...predicate.HierarchyLevel) predicate.HierarchyLevel {
+// HasOrgWith applies the HasEdge predicate on the "org" edge with a given conditions (other predicates).
+func HasOrgWith(preds ...predicate.Organization) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(func(s *sql.Selector) {
-		step := newChildStep()
+		step := newOrgStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

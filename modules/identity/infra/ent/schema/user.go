@@ -45,6 +45,10 @@ func (UserMixin) Fields() []ent.Field {
 			Default(0).
 			Comment("Count of consecutive failed login attempts"),
 
+		field.String("hierarchy_id").
+			Optional().
+			Nillable(),
+
 		field.Bool("is_owner").
 			Optional().
 			Immutable().
@@ -103,6 +107,12 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("groups", Group.Type).
 			Through("user_groups", UserGroup.Type),
+		edge.To("hierarchy", HierarchyLevel.Type).
+			Field("hierarchy_id").
+			Unique().
+			Annotations(entsql.Annotation{
+				OnDelete: entsql.SetNull,
+			}),
 		edge.To("orgs", Organization.Type).
 			Through("user_orgs", UserOrg.Type),
 	}

@@ -39,10 +39,12 @@ var (
 	// IdentHierarchyLevelsColumns holds the columns for the "ident_hierarchy_levels" table.
 	IdentHierarchyLevelsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "org_id", Type: field.TypeString},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "deleted_by", Type: field.TypeString, Nullable: true},
 		{Name: "parent_id", Type: field.TypeString, Nullable: true},
+		{Name: "org_id", Type: field.TypeString},
 	}
 	// IdentHierarchyLevelsTable holds the schema information for the "ident_hierarchy_levels" table.
 	IdentHierarchyLevelsTable = &schema.Table{
@@ -51,10 +53,22 @@ var (
 		PrimaryKey: []*schema.Column{IdentHierarchyLevelsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "ident_hierarchy_levels_ident_hierarchy_levels_child",
+				Symbol:     "ident_hierarchy_levels_ident_users_deleter",
 				Columns:    []*schema.Column{IdentHierarchyLevelsColumns[4]},
+				RefColumns: []*schema.Column{IdentUsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "ident_hierarchy_levels_ident_hierarchy_levels_parent",
+				Columns:    []*schema.Column{IdentHierarchyLevelsColumns[5]},
 				RefColumns: []*schema.Column{IdentHierarchyLevelsColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "ident_hierarchy_levels_ident_organizations_org",
+				Columns:    []*schema.Column{IdentHierarchyLevelsColumns[6]},
+				RefColumns: []*schema.Column{IdentOrganizationsColumns[0]},
+				OnDelete:   schema.NoAction,
 			},
 		},
 	}
@@ -63,18 +77,28 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "created_by", Type: field.TypeString},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "display_name", Type: field.TypeString},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive"}},
 		{Name: "slug", Type: field.TypeString, Unique: true},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "updated_by", Type: field.TypeString, Nullable: true},
+		{Name: "deleted_by", Type: field.TypeString, Nullable: true},
 	}
 	// IdentOrganizationsTable holds the schema information for the "ident_organizations" table.
 	IdentOrganizationsTable = &schema.Table{
 		Name:       "ident_organizations",
 		Columns:    IdentOrganizationsColumns,
 		PrimaryKey: []*schema.Column{IdentOrganizationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "ident_organizations_ident_users_deleter",
+				Columns:    []*schema.Column{IdentOrganizationsColumns[10]},
+				RefColumns: []*schema.Column{IdentUsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// IdentUsersColumns holds the columns for the "ident_users" table.
 	IdentUsersColumns = []*schema.Column{
@@ -95,12 +119,21 @@ var (
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive", "locked"}},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "updated_by", Type: field.TypeString, Nullable: true},
+		{Name: "hierarchy_id", Type: field.TypeString, Nullable: true},
 	}
 	// IdentUsersTable holds the schema information for the "ident_users" table.
 	IdentUsersTable = &schema.Table{
 		Name:       "ident_users",
 		Columns:    IdentUsersColumns,
 		PrimaryKey: []*schema.Column{IdentUsersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "ident_users_ident_hierarchy_levels_hierarchy",
+				Columns:    []*schema.Column{IdentUsersColumns[17]},
+				RefColumns: []*schema.Column{IdentHierarchyLevelsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "user_is_owner",
@@ -175,13 +208,17 @@ func init() {
 	IdentGroupsTable.Annotation = &entsql.Annotation{
 		Table: "ident_groups",
 	}
-	IdentHierarchyLevelsTable.ForeignKeys[0].RefTable = IdentHierarchyLevelsTable
+	IdentHierarchyLevelsTable.ForeignKeys[0].RefTable = IdentUsersTable
+	IdentHierarchyLevelsTable.ForeignKeys[1].RefTable = IdentHierarchyLevelsTable
+	IdentHierarchyLevelsTable.ForeignKeys[2].RefTable = IdentOrganizationsTable
 	IdentHierarchyLevelsTable.Annotation = &entsql.Annotation{
 		Table: "ident_hierarchy_levels",
 	}
+	IdentOrganizationsTable.ForeignKeys[0].RefTable = IdentUsersTable
 	IdentOrganizationsTable.Annotation = &entsql.Annotation{
 		Table: "ident_organizations",
 	}
+	IdentUsersTable.ForeignKeys[0].RefTable = IdentHierarchyLevelsTable
 	IdentUsersTable.Annotation = &entsql.Annotation{
 		Table: "ident_users",
 	}

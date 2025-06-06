@@ -38,7 +38,7 @@ func init() {
 	// organization.DefaultCreatedAt holds the default value on creation for the created_at field.
 	organization.DefaultCreatedAt = organizationDescCreatedAt.Default.(func() time.Time)
 	// organizationDescUpdatedAt is the schema descriptor for updated_at field.
-	organizationDescUpdatedAt := organizationMixinFields0[7].Descriptor()
+	organizationDescUpdatedAt := organizationMixinFields0[9].Descriptor()
 	// organization.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	organization.UpdateDefaultUpdatedAt = organizationDescUpdatedAt.UpdateDefault.(func() time.Time)
 	userMixin := schema.User{}.Mixin()
@@ -55,11 +55,11 @@ func init() {
 	// user.DefaultFailedLoginAttempts holds the default value on creation for the failed_login_attempts field.
 	user.DefaultFailedLoginAttempts = userDescFailedLoginAttempts.Default.(int)
 	// userDescMustChangePassword is the schema descriptor for must_change_password field.
-	userDescMustChangePassword := userMixinFields0[11].Descriptor()
+	userDescMustChangePassword := userMixinFields0[12].Descriptor()
 	// user.DefaultMustChangePassword holds the default value on creation for the must_change_password field.
 	user.DefaultMustChangePassword = userDescMustChangePassword.Default.(bool)
 	// userDescUpdatedAt is the schema descriptor for updated_at field.
-	userDescUpdatedAt := userMixinFields0[15].Descriptor()
+	userDescUpdatedAt := userMixinFields0[16].Descriptor()
 	// user.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	user.UpdateDefaultUpdatedAt = userDescUpdatedAt.UpdateDefault.(func() time.Time)
 }

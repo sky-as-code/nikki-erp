@@ -30,6 +30,46 @@ func (ou *OrganizationUpdate) Where(ps ...predicate.Organization) *OrganizationU
 	return ou
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (ou *OrganizationUpdate) SetDeletedAt(t time.Time) *OrganizationUpdate {
+	ou.mutation.SetDeletedAt(t)
+	return ou
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableDeletedAt(t *time.Time) *OrganizationUpdate {
+	if t != nil {
+		ou.SetDeletedAt(*t)
+	}
+	return ou
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (ou *OrganizationUpdate) ClearDeletedAt() *OrganizationUpdate {
+	ou.mutation.ClearDeletedAt()
+	return ou
+}
+
+// SetDeletedBy sets the "deleted_by" field.
+func (ou *OrganizationUpdate) SetDeletedBy(s string) *OrganizationUpdate {
+	ou.mutation.SetDeletedBy(s)
+	return ou
+}
+
+// SetNillableDeletedBy sets the "deleted_by" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableDeletedBy(s *string) *OrganizationUpdate {
+	if s != nil {
+		ou.SetDeletedBy(*s)
+	}
+	return ou
+}
+
+// ClearDeletedBy clears the value of the "deleted_by" field.
+func (ou *OrganizationUpdate) ClearDeletedBy() *OrganizationUpdate {
+	ou.mutation.ClearDeletedBy()
+	return ou
+}
+
 // SetDisplayName sets the "display_name" field.
 func (ou *OrganizationUpdate) SetDisplayName(s string) *OrganizationUpdate {
 	ou.mutation.SetDisplayName(s)
@@ -242,6 +282,12 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := ou.mutation.DeletedAt(); ok {
+		_spec.SetField(organization.FieldDeletedAt, field.TypeTime, value)
+	}
+	if ou.mutation.DeletedAtCleared() {
+		_spec.ClearField(organization.FieldDeletedAt, field.TypeTime)
+	}
 	if value, ok := ou.mutation.DisplayName(); ok {
 		_spec.SetField(organization.FieldDisplayName, field.TypeString, value)
 	}
@@ -358,6 +404,46 @@ type OrganizationUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *OrganizationMutation
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (ouo *OrganizationUpdateOne) SetDeletedAt(t time.Time) *OrganizationUpdateOne {
+	ouo.mutation.SetDeletedAt(t)
+	return ouo
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableDeletedAt(t *time.Time) *OrganizationUpdateOne {
+	if t != nil {
+		ouo.SetDeletedAt(*t)
+	}
+	return ouo
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (ouo *OrganizationUpdateOne) ClearDeletedAt() *OrganizationUpdateOne {
+	ouo.mutation.ClearDeletedAt()
+	return ouo
+}
+
+// SetDeletedBy sets the "deleted_by" field.
+func (ouo *OrganizationUpdateOne) SetDeletedBy(s string) *OrganizationUpdateOne {
+	ouo.mutation.SetDeletedBy(s)
+	return ouo
+}
+
+// SetNillableDeletedBy sets the "deleted_by" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableDeletedBy(s *string) *OrganizationUpdateOne {
+	if s != nil {
+		ouo.SetDeletedBy(*s)
+	}
+	return ouo
+}
+
+// ClearDeletedBy clears the value of the "deleted_by" field.
+func (ouo *OrganizationUpdateOne) ClearDeletedBy() *OrganizationUpdateOne {
+	ouo.mutation.ClearDeletedBy()
+	return ouo
 }
 
 // SetDisplayName sets the "display_name" field.
@@ -601,6 +687,12 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := ouo.mutation.DeletedAt(); ok {
+		_spec.SetField(organization.FieldDeletedAt, field.TypeTime, value)
+	}
+	if ouo.mutation.DeletedAtCleared() {
+		_spec.ClearField(organization.FieldDeletedAt, field.TypeTime)
 	}
 	if value, ok := ouo.mutation.DisplayName(); ok {
 		_spec.SetField(organization.FieldDisplayName, field.TypeString, value)

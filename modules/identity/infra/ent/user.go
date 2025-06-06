@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
@@ -31,6 +32,8 @@ type User struct {
 	Etag string `json:"etag,omitempty"`
 	// Count of consecutive failed login attempts
 	FailedLoginAttempts int `json:"failed_login_attempts,omitempty"`
+	// HierarchyID holds the value of the "hierarchy_id" field.
+	HierarchyID *string `json:"hierarchy_id,omitempty"`
 	// Whether the user is an owner with root privileges in this deployment
 	IsOwner bool `json:"is_owner,omitempty"`
 	// LastLoginAt holds the value of the "last_login_at" field.
@@ -59,6 +62,8 @@ type User struct {
 type UserEdges struct {
 	// Groups holds the value of the groups edge.
 	Groups []*Group `json:"groups,omitempty"`
+	// Hierarchy holds the value of the hierarchy edge.
+	Hierarchy *HierarchyLevel `json:"hierarchy,omitempty"`
 	// Orgs holds the value of the orgs edge.
 	Orgs []*Organization `json:"orgs,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
@@ -67,7 +72,7 @@ type UserEdges struct {
 	UserOrgs []*UserOrg `json:"user_orgs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // GroupsOrErr returns the Groups value or an error if the edge
@@ -79,10 +84,21 @@ func (e UserEdges) GroupsOrErr() ([]*Group, error) {
 	return nil, &NotLoadedError{edge: "groups"}
 }
 
+// HierarchyOrErr returns the Hierarchy value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) HierarchyOrErr() (*HierarchyLevel, error) {
+	if e.Hierarchy != nil {
+		return e.Hierarchy, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: hierarchylevel.Label}
+	}
+	return nil, &NotLoadedError{edge: "hierarchy"}
+}
+
 // OrgsOrErr returns the Orgs value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) OrgsOrErr() ([]*Organization, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Orgs, nil
 	}
 	return nil, &NotLoadedError{edge: "orgs"}
@@ -91,7 +107,7 @@ func (e UserEdges) OrgsOrErr() ([]*Organization, error) {
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserGroupsOrErr() ([]*UserGroup, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.UserGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_groups"}
@@ -100,7 +116,7 @@ func (e UserEdges) UserGroupsOrErr() ([]*UserGroup, error) {
 // UserOrgsOrErr returns the UserOrgs value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserOrgsOrErr() ([]*UserOrg, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[4] {
 		return e.UserOrgs, nil
 	}
 	return nil, &NotLoadedError{edge: "user_orgs"}
@@ -115,7 +131,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case user.FieldFailedLoginAttempts:
 			values[i] = new(sql.NullInt64)
-		case user.FieldID, user.FieldAvatarURL, user.FieldCreatedBy, user.FieldDisplayName, user.FieldEmail, user.FieldEtag, user.FieldPasswordHash, user.FieldStatus, user.FieldUpdatedBy:
+		case user.FieldID, user.FieldAvatarURL, user.FieldCreatedBy, user.FieldDisplayName, user.FieldEmail, user.FieldEtag, user.FieldHierarchyID, user.FieldPasswordHash, user.FieldStatus, user.FieldUpdatedBy:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt, user.FieldLastLoginAt, user.FieldLockedUntil, user.FieldPasswordChangedAt, user.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -182,6 +198,13 @@ func (u *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field failed_login_attempts", values[i])
 			} else if value.Valid {
 				u.FailedLoginAttempts = int(value.Int64)
+			}
+		case user.FieldHierarchyID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field hierarchy_id", values[i])
+			} else if value.Valid {
+				u.HierarchyID = new(string)
+				*u.HierarchyID = value.String
 			}
 		case user.FieldIsOwner:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -259,6 +282,11 @@ func (u *User) QueryGroups() *GroupQuery {
 	return NewUserClient(u.config).QueryGroups(u)
 }
 
+// QueryHierarchy queries the "hierarchy" edge of the User entity.
+func (u *User) QueryHierarchy() *HierarchyLevelQuery {
+	return NewUserClient(u.config).QueryHierarchy(u)
+}
+
 // QueryOrgs queries the "orgs" edge of the User entity.
 func (u *User) QueryOrgs() *OrganizationQuery {
 	return NewUserClient(u.config).QueryOrgs(u)
@@ -319,6 +347,11 @@ func (u *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("failed_login_attempts=")
 	builder.WriteString(fmt.Sprintf("%v", u.FailedLoginAttempts))
+	builder.WriteString(", ")
+	if v := u.HierarchyID; v != nil {
+		builder.WriteString("hierarchy_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("is_owner=")
 	builder.WriteString(fmt.Sprintf("%v", u.IsOwner))

@@ -29,6 +29,8 @@ const (
 	FieldEtag = "etag"
 	// FieldFailedLoginAttempts holds the string denoting the failed_login_attempts field in the database.
 	FieldFailedLoginAttempts = "failed_login_attempts"
+	// FieldHierarchyID holds the string denoting the hierarchy_id field in the database.
+	FieldHierarchyID = "hierarchy_id"
 	// FieldIsOwner holds the string denoting the is_owner field in the database.
 	FieldIsOwner = "is_owner"
 	// FieldLastLoginAt holds the string denoting the last_login_at field in the database.
@@ -49,6 +51,8 @@ const (
 	FieldUpdatedBy = "updated_by"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
+	// EdgeHierarchy holds the string denoting the hierarchy edge name in mutations.
+	EdgeHierarchy = "hierarchy"
 	// EdgeOrgs holds the string denoting the orgs edge name in mutations.
 	EdgeOrgs = "orgs"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
@@ -62,6 +66,13 @@ const (
 	// GroupsInverseTable is the table name for the Group entity.
 	// It exists in this package in order to avoid circular dependency with the "group" package.
 	GroupsInverseTable = "ident_groups"
+	// HierarchyTable is the table that holds the hierarchy relation/edge.
+	HierarchyTable = "ident_users"
+	// HierarchyInverseTable is the table name for the HierarchyLevel entity.
+	// It exists in this package in order to avoid circular dependency with the "hierarchylevel" package.
+	HierarchyInverseTable = "ident_hierarchy_levels"
+	// HierarchyColumn is the table column denoting the hierarchy relation/edge.
+	HierarchyColumn = "hierarchy_id"
 	// OrgsTable is the table that holds the orgs relation/edge. The primary key declared below.
 	OrgsTable = "ident_user_org"
 	// OrgsInverseTable is the table name for the Organization entity.
@@ -93,6 +104,7 @@ var Columns = []string{
 	FieldEmail,
 	FieldEtag,
 	FieldFailedLoginAttempts,
+	FieldHierarchyID,
 	FieldIsOwner,
 	FieldLastLoginAt,
 	FieldLockedUntil,
@@ -201,6 +213,11 @@ func ByFailedLoginAttempts(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFailedLoginAttempts, opts...).ToFunc()
 }
 
+// ByHierarchyID orders the results by the hierarchy_id field.
+func ByHierarchyID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHierarchyID, opts...).ToFunc()
+}
+
 // ByIsOwner orders the results by the is_owner field.
 func ByIsOwner(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsOwner, opts...).ToFunc()
@@ -260,6 +277,13 @@ func ByGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByHierarchyField orders the results by hierarchy field.
+func ByHierarchyField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newHierarchyStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByOrgsCount orders the results by orgs count.
 func ByOrgsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -306,6 +330,13 @@ func newGroupsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GroupsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, GroupsTable, GroupsPrimaryKey...),
+	)
+}
+func newHierarchyStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(HierarchyInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, HierarchyTable, HierarchyColumn),
 	)
 }
 func newOrgsStep() *sqlgraph.Step {

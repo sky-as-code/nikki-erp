@@ -29,8 +29,9 @@ type User struct {
 	PasswordHash        *string     `json:"passwordHash,omitempty"`
 	Status              *UserStatus `json:"status,omitempty"`
 
-	Groups []Group        `json:"groups,omitempty"`
-	Orgs   []Organization `json:"orgs,omitempty"`
+	Groups      []Group          `json:"groups,omitempty"`
+	Hierarchies []HierarchyLevel `json:"hierarchies,omitempty"`
+	Orgs        []Organization   `json:"orgs,omitempty"`
 }
 
 func (this *User) SetDefaults() error {

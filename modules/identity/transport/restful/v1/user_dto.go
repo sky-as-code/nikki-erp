@@ -62,3 +62,37 @@ func (this *GetUserByIdResponse) FromUser(user domain.User) {
 	// this.AvatarUrl = *user.AvatarUrl
 	this.Status = user.Status.String()
 }
+
+type ListUsersRequest = it.ListUsersCommand
+
+type ListUsersResponseItem struct {
+	Id          string                     `json:"id"`
+	DisplayName string                     `json:"displayName"`
+	Email       string                     `json:"email"`
+	LockedUntil int64                      `json:"lockedUntil"`
+	Status      domain.UserStatus          `json:"status"`
+	Groups      []ListUsersRespGroups      `json:"groups"`
+	Hierarchies []ListUsersRespHierarchies `json:"hierarchies"`
+	Orgs        []ListUsersRespOrgs        `json:"orgs"`
+}
+
+type ListUsersRespGroups struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type ListUsersRespHierarchies struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type ListUsersRespOrgs struct {
+	Id          string `json:"id"`
+	DisplayName string `json:"displayName"`
+	Slug        string `json:"slug"`
+}
+
+type ListUsersResponse struct {
+	Items []ListUsersResponseItem `json:"items"`
+	Total int                     `json:"total"`
+}

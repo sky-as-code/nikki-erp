@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
 // Organization is the model entity for the Organization schema.
@@ -22,6 +23,10 @@ type Organization struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
 	CreatedBy string `json:"created_by,omitempty"`
+	// Set value for this column when the process is running to delete all resources under this hierarchy level
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	// Set value for this column when the process is running to delete all resources under this hierarchy level
+	DeletedBy *string `json:"deleted_by,omitempty"`
 	// Human-friendly-readable organization name
 	DisplayName string `json:"display_name,omitempty"`
 	// Etag holds the value of the "etag" field.
@@ -87,9 +92,9 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case organization.FieldID, organization.FieldCreatedBy, organization.FieldDisplayName, organization.FieldEtag, organization.FieldStatus, organization.FieldSlug, organization.FieldUpdatedBy:
+		case organization.FieldID, organization.FieldCreatedBy, organization.FieldDeletedBy, organization.FieldDisplayName, organization.FieldEtag, organization.FieldStatus, organization.FieldSlug, organization.FieldUpdatedBy:
 			values[i] = new(sql.NullString)
-		case organization.FieldCreatedAt, organization.FieldUpdatedAt:
+		case organization.FieldCreatedAt, organization.FieldDeletedAt, organization.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -123,6 +128,20 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field created_by", values[i])
 			} else if value.Valid {
 				o.CreatedBy = value.String
+			}
+		case organization.FieldDeletedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
+			} else if value.Valid {
+				o.DeletedAt = new(time.Time)
+				*o.DeletedAt = value.Time
+			}
+		case organization.FieldDeletedBy:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_by", values[i])
+			} else if value.Valid {
+				o.DeletedBy = new(string)
+				*o.DeletedBy = value.String
 			}
 		case organization.FieldDisplayName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -218,6 +237,16 @@ func (o *Organization) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_by=")
 	builder.WriteString(o.CreatedBy)
+	builder.WriteString(", ")
+	if v := o.DeletedAt; v != nil {
+		builder.WriteString("deleted_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := o.DeletedBy; v != nil {
+		builder.WriteString("deleted_by=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("display_name=")
 	builder.WriteString(o.DisplayName)

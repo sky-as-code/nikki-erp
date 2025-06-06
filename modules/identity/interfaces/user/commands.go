@@ -3,7 +3,9 @@ package user
 import (
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
@@ -115,3 +117,25 @@ type GetUserByUsernameQuery struct {
 func (GetUserByUsernameQuery) Type() cqrs.RequestType {
 	return getUserByUsernameQueryType
 }
+
+var listUsersCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "list",
+}
+
+type ListUsersCommand struct {
+	Page            int             `json:"page" query:"page"`
+	Size            int             `json:"size" query:"size"`
+	Query           orm.SearchGraph `json:"query" query:"query"`
+	WithGroups      bool            `json:"withGroups" query:"withGroups"`
+	WithOrgs        bool            `json:"withOrgs" query:"withOrgs"`
+	WithHierarchies bool            `json:"withHierarchies" query:"withHierarchies"`
+}
+
+func (ListUsersCommand) Type() cqrs.RequestType {
+	return listUsersCommandType
+}
+
+type ListUsersResultData crud.PagedResult[domain.User]
+type ListUsersResult model.OpResult[ListUsersResultData]
