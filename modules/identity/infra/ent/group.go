@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 )
 
 // Group is the model entity for the Group schema.
@@ -17,6 +18,8 @@ type Group struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
+	// Organization ID (optional)
+	OrgID *string `json:"org_id,omitempty"`
 	// Group name
 	Name string `json:"name,omitempty"`
 	// Group description
@@ -25,12 +28,12 @@ type Group struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// CreatedBy holds the value of the "created_by" field.
 	CreatedBy string `json:"created_by,omitempty"`
+	// Etag holds the value of the "etag" field.
+	Etag string `json:"etag,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// UpdatedBy holds the value of the "updated_by" field.
 	UpdatedBy *string `json:"updated_by,omitempty"`
-	// ParentID holds the value of the "parent_id" field.
-	ParentID *string `json:"parent_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupQuery when eager-loading is set.
 	Edges        GroupEdges `json:"edges"`
@@ -39,43 +42,32 @@ type Group struct {
 
 // GroupEdges holds the relations/edges for other nodes in the graph.
 type GroupEdges struct {
-	// Parent holds the value of the parent edge.
-	Parent *Group `json:"parent,omitempty"`
-	// Subgroups holds the value of the subgroups edge.
-	Subgroups []*Group `json:"subgroups,omitempty"`
+	// Organization holds the value of the organization edge.
+	Organization *Organization `json:"organization,omitempty"`
 	// Users holds the value of the users edge.
 	Users []*User `json:"users,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [3]bool
 }
 
-// ParentOrErr returns the Parent value or an error if the edge
+// OrganizationOrErr returns the Organization value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e GroupEdges) ParentOrErr() (*Group, error) {
-	if e.Parent != nil {
-		return e.Parent, nil
+func (e GroupEdges) OrganizationOrErr() (*Organization, error) {
+	if e.Organization != nil {
+		return e.Organization, nil
 	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: group.Label}
+		return nil, &NotFoundError{label: organization.Label}
 	}
-	return nil, &NotLoadedError{edge: "parent"}
-}
-
-// SubgroupsOrErr returns the Subgroups value or an error if the edge
-// was not loaded in eager-loading.
-func (e GroupEdges) SubgroupsOrErr() ([]*Group, error) {
-	if e.loadedTypes[1] {
-		return e.Subgroups, nil
-	}
-	return nil, &NotLoadedError{edge: "subgroups"}
+	return nil, &NotLoadedError{edge: "organization"}
 }
 
 // UsersOrErr returns the Users value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) UsersOrErr() ([]*User, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Users, nil
 	}
 	return nil, &NotLoadedError{edge: "users"}
@@ -84,7 +76,7 @@ func (e GroupEdges) UsersOrErr() ([]*User, error) {
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) UserGroupsOrErr() ([]*UserGroup, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[2] {
 		return e.UserGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_groups"}
@@ -95,7 +87,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldID, group.FieldName, group.FieldDescription, group.FieldCreatedBy, group.FieldUpdatedBy, group.FieldParentID:
+		case group.FieldID, group.FieldOrgID, group.FieldName, group.FieldDescription, group.FieldCreatedBy, group.FieldEtag, group.FieldUpdatedBy:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -119,6 +111,13 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
 				gr.ID = value.String
+			}
+		case group.FieldOrgID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field org_id", values[i])
+			} else if value.Valid {
+				gr.OrgID = new(string)
+				*gr.OrgID = value.String
 			}
 		case group.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -145,6 +144,12 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				gr.CreatedBy = value.String
 			}
+		case group.FieldEtag:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field etag", values[i])
+			} else if value.Valid {
+				gr.Etag = value.String
+			}
 		case group.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
@@ -157,13 +162,6 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				gr.UpdatedBy = new(string)
 				*gr.UpdatedBy = value.String
-			}
-		case group.FieldParentID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field parent_id", values[i])
-			} else if value.Valid {
-				gr.ParentID = new(string)
-				*gr.ParentID = value.String
 			}
 		default:
 			gr.selectValues.Set(columns[i], values[i])
@@ -178,14 +176,9 @@ func (gr *Group) Value(name string) (ent.Value, error) {
 	return gr.selectValues.Get(name)
 }
 
-// QueryParent queries the "parent" edge of the Group entity.
-func (gr *Group) QueryParent() *GroupQuery {
-	return NewGroupClient(gr.config).QueryParent(gr)
-}
-
-// QuerySubgroups queries the "subgroups" edge of the Group entity.
-func (gr *Group) QuerySubgroups() *GroupQuery {
-	return NewGroupClient(gr.config).QuerySubgroups(gr)
+// QueryOrganization queries the "organization" edge of the Group entity.
+func (gr *Group) QueryOrganization() *OrganizationQuery {
+	return NewGroupClient(gr.config).QueryOrganization(gr)
 }
 
 // QueryUsers queries the "users" edge of the Group entity.
@@ -221,6 +214,11 @@ func (gr *Group) String() string {
 	var builder strings.Builder
 	builder.WriteString("Group(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", gr.ID))
+	if v := gr.OrgID; v != nil {
+		builder.WriteString("org_id=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(gr.Name)
 	builder.WriteString(", ")
@@ -235,16 +233,14 @@ func (gr *Group) String() string {
 	builder.WriteString("created_by=")
 	builder.WriteString(gr.CreatedBy)
 	builder.WriteString(", ")
+	builder.WriteString("etag=")
+	builder.WriteString(gr.Etag)
+	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(gr.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	if v := gr.UpdatedBy; v != nil {
 		builder.WriteString("updated_by=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	if v := gr.ParentID; v != nil {
-		builder.WriteString("parent_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteByte(')')

@@ -81,6 +81,12 @@ func (Organization) Edges() []ent.Edge {
 		edge.From("users", User.Type).
 			Ref("orgs").
 			Through("user_orgs", UserOrg.Type),
+
+		edge.To("groups", Group.Type).
+			Unique().
+			Annotations(entsql.Annotation{
+				OnDelete: entsql.Cascade,
+			}),
 		// edge.To("orgs", Organization.Type). // Self-referential parent org (NULL for top-level)
 		// 	Annotations(entsql.Annotation{
 		// 		OnDelete: entsql.Cascade,

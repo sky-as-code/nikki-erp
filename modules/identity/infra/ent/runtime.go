@@ -24,33 +24,15 @@ func init() {
 	groupFields := schema.Group{}.Fields()
 	_ = groupFields
 	// groupDescName is the schema descriptor for name field.
-	groupDescName := groupMixinFields0[1].Descriptor()
+	groupDescName := groupMixinFields0[2].Descriptor()
 	// group.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	group.NameValidator = func() func(string) error {
-		validators := groupDescName.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(name string) error {
-			for _, fn := range fns {
-				if err := fn(name); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// groupDescDescription is the schema descriptor for description field.
-	groupDescDescription := groupMixinFields0[2].Descriptor()
-	// group.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
-	group.DescriptionValidator = groupDescDescription.Validators[0].(func(string) error)
+	group.NameValidator = groupDescName.Validators[0].(func(string) error)
 	// groupDescCreatedAt is the schema descriptor for created_at field.
-	groupDescCreatedAt := groupMixinFields0[3].Descriptor()
+	groupDescCreatedAt := groupMixinFields0[4].Descriptor()
 	// group.DefaultCreatedAt holds the default value on creation for the created_at field.
 	group.DefaultCreatedAt = groupDescCreatedAt.Default.(func() time.Time)
 	// groupDescUpdatedAt is the schema descriptor for updated_at field.
-	groupDescUpdatedAt := groupMixinFields0[5].Descriptor()
+	groupDescUpdatedAt := groupMixinFields0[7].Descriptor()
 	// group.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	group.DefaultUpdatedAt = groupDescUpdatedAt.Default.(func() time.Time)
 	// group.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

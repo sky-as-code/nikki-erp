@@ -12,13 +12,14 @@ var (
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "name", Type: field.TypeString, Unique: true, Size: 50},
-		{Name: "description", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "created_by", Type: field.TypeString},
+		{Name: "etag", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "updated_by", Type: field.TypeString, Nullable: true},
-		{Name: "parent_id", Type: field.TypeString, Nullable: true},
+		{Name: "org_id", Type: field.TypeString, Unique: true, Nullable: true},
 	}
 	// GroupsTable holds the schema information for the "groups" table.
 	GroupsTable = &schema.Table{
@@ -27,9 +28,9 @@ var (
 		PrimaryKey: []*schema.Column{GroupsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "groups_groups_subgroups",
-				Columns:    []*schema.Column{GroupsColumns[7]},
-				RefColumns: []*schema.Column{GroupsColumns[0]},
+				Symbol:     "groups_organizations_groups",
+				Columns:    []*schema.Column{GroupsColumns[8]},
+				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -160,7 +161,7 @@ var (
 )
 
 func init() {
-	GroupsTable.ForeignKeys[0].RefTable = GroupsTable
+	GroupsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	GroupsTable.Annotation = &entsql.Annotation{
 		Table: "groups",
 	}

@@ -8,20 +8,31 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 )
 
-func entToGroup(entGroup *ent.Group) *domain.Group {
-	return &domain.Group{
-		ModelBase: model.ModelBase{
-			Id: model.WrapId(entGroup.ID),
+func entToGroup(entGroup *ent.Group) *domain.GroupWithOrg {
+	group := &domain.GroupWithOrg{
+		Group: &domain.Group{
+			ModelBase: model.ModelBase{
+				Id:   model.WrapId(entGroup.ID),
+				Etag: model.WrapEtag(entGroup.Etag),
+			},
+			AuditableBase: model.AuditableBase{
+				CreatedAt: &entGroup.CreatedAt,
+				CreatedBy: model.WrapId(entGroup.CreatedBy),
+				UpdatedAt: &entGroup.UpdatedAt,
+				UpdatedBy: model.WrapNillableId(entGroup.UpdatedBy),
+			},
+
+			Name:        entGroup.Name,
+			Description: entGroup.Description,
+			OrgId:       entGroup.OrgID,
 		},
-		AuditableBase: model.AuditableBase{
-			CreatedAt: &entGroup.CreatedAt,
-			CreatedBy: model.WrapId(entGroup.CreatedBy),
-			UpdatedAt: &entGroup.UpdatedAt,
-			UpdatedBy: model.WrapNillableId(entGroup.UpdatedBy),
-		},
-		Name:        &entGroup.Name,
-		Description: entGroup.Description,
 	}
+
+	if entGroup.Edges.Organization != nil {
+		group.Organization = entToOrganization(entGroup.Edges.Organization)
+	}
+
+	return group
 }
 
 func entToGroups(entGroups []*ent.Group) []*domain.Group {
