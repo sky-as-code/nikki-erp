@@ -26,17 +26,17 @@ var createGroupCommandType = cqrs.RequestType{
 }
 
 type CreateGroupCommand struct {
-	CreatedBy   string `json:"createdBy"`
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	OrgId       string `json:"orgId"`
+	CreatedBy   string  `json:"createdBy"`
+	Name        string  `json:"name"`
+	Description *string `json:"description,omitempty"`
+	OrgId       *string `json:"orgId,omitempty"`
 }
 
 func (CreateGroupCommand) Type() cqrs.RequestType {
 	return createGroupCommandType
 }
 
-type CreateGroupResult model.OpResult[*domain.Group]
+type CreateGroupResult model.OpResult[*domain.GroupWithOrg]
 
 var updateGroupCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -45,19 +45,19 @@ var updateGroupCommandType = cqrs.RequestType{
 }
 
 type UpdateGroupCommand struct {
-	Id          string `param:"id" json:"id"`
-	Name        string `json:"name,omitempty"`
-	Description string `json:"description,omitempty"`
-	Etag        string `json:"etag,omitempty"`
-	OrgId       string `json:"orgId,omitempty"`
-	UpdatedBy   string `json:"updatedBy,omitempty"`
+	Id          string  `param:"id" json:"id"`
+	Name        string  `json:"name"`
+	Description *string `json:"description,omitempty"`
+	Etag        string  `json:"etag"`
+	OrgId       *string `json:"orgId,omitempty"`
+	UpdatedBy   string  `json:"updatedBy"`
 }
 
 func (UpdateGroupCommand) Type() cqrs.RequestType {
 	return updateGroupCommandType
 }
 
-type UpdateGroupResult model.OpResult[*domain.Group]
+type UpdateGroupResult model.OpResult[*domain.GroupWithOrg]
 
 var deleteGroupCommandType = cqrs.RequestType{
 	Module:    "identity",

@@ -25,19 +25,16 @@ func (GroupMixin) Fields() []ent.Field {
 		field.String("org_id").
 			Optional().
 			Nillable().
-			MaxLen(255).
 			Comment("Organization ID (optional)"),
 
 		field.String("name").
 			Unique().
 			NotEmpty().
-			MaxLen(50).
 			Comment("Group name"),
 
 		field.String("description").
 			Optional().
 			Nillable().
-			MaxLen(255).
 			Comment("Group description"),
 
 		field.Time("created_at").
@@ -46,8 +43,7 @@ func (GroupMixin) Fields() []ent.Field {
 
 		field.String("created_by"),
 
-		field.String("etag").
-			MaxLen(100),
+		field.String("etag"),
 
 		field.Time("updated_at").
 			Default(time.Now).
@@ -56,10 +52,6 @@ func (GroupMixin) Fields() []ent.Field {
 		field.String("updated_by").
 			Optional().
 			Nillable(),
-
-		// field.String("parent_id").
-		// 	Optional().
-		// 	Nillable(),
 	}
 }
 
@@ -88,17 +80,6 @@ func (Group) Edges() []ent.Edge {
 			Ref("groups").
 			Unique().
 			Field("org_id"),
-		// A group may belong to a parent group (NULL for top-level)
-		// edge.From("parent", Group.Type).
-		// 	Ref("subgroups").
-		// 	Unique(). // O2M relationship
-		// 	Field("parent_id"),
-
-		// A group can have multiple subgroups
-		edge.To("subgroups", Group.Type).
-			Annotations(entsql.Annotation{
-				OnDelete: entsql.Cascade,
-			}),
 
 		edge.From("users", User.Type).
 			Ref("groups").

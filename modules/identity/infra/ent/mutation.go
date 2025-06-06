@@ -53,9 +53,6 @@ type GroupMutation struct {
 	clearedFields       map[string]struct{}
 	organization        *string
 	clearedorganization bool
-	subgroups           map[string]struct{}
-	removedsubgroups    map[string]struct{}
-	clearedsubgroups    bool
 	users               map[string]struct{}
 	removedusers        map[string]struct{}
 	clearedusers        bool
@@ -535,60 +532,6 @@ func (m *GroupMutation) ResetOrganization() {
 	m.clearedorganization = false
 }
 
-// AddSubgroupIDs adds the "subgroups" edge to the Group entity by ids.
-func (m *GroupMutation) AddSubgroupIDs(ids ...string) {
-	if m.subgroups == nil {
-		m.subgroups = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.subgroups[ids[i]] = struct{}{}
-	}
-}
-
-// ClearSubgroups clears the "subgroups" edge to the Group entity.
-func (m *GroupMutation) ClearSubgroups() {
-	m.clearedsubgroups = true
-}
-
-// SubgroupsCleared reports if the "subgroups" edge to the Group entity was cleared.
-func (m *GroupMutation) SubgroupsCleared() bool {
-	return m.clearedsubgroups
-}
-
-// RemoveSubgroupIDs removes the "subgroups" edge to the Group entity by IDs.
-func (m *GroupMutation) RemoveSubgroupIDs(ids ...string) {
-	if m.removedsubgroups == nil {
-		m.removedsubgroups = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.subgroups, ids[i])
-		m.removedsubgroups[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedSubgroups returns the removed IDs of the "subgroups" edge to the Group entity.
-func (m *GroupMutation) RemovedSubgroupsIDs() (ids []string) {
-	for id := range m.removedsubgroups {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// SubgroupsIDs returns the "subgroups" edge IDs in the mutation.
-func (m *GroupMutation) SubgroupsIDs() (ids []string) {
-	for id := range m.subgroups {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetSubgroups resets all changes to the "subgroups" edge.
-func (m *GroupMutation) ResetSubgroups() {
-	m.subgroups = nil
-	m.clearedsubgroups = false
-	m.removedsubgroups = nil
-}
-
 // AddUserIDs adds the "users" edge to the User entity by ids.
 func (m *GroupMutation) AddUserIDs(ids ...string) {
 	if m.users == nil {
@@ -916,12 +859,9 @@ func (m *GroupMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GroupMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.organization != nil {
 		edges = append(edges, group.EdgeOrganization)
-	}
-	if m.subgroups != nil {
-		edges = append(edges, group.EdgeSubgroups)
 	}
 	if m.users != nil {
 		edges = append(edges, group.EdgeUsers)
@@ -937,12 +877,6 @@ func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 		if id := m.organization; id != nil {
 			return []ent.Value{*id}
 		}
-	case group.EdgeSubgroups:
-		ids := make([]ent.Value, 0, len(m.subgroups))
-		for id := range m.subgroups {
-			ids = append(ids, id)
-		}
-		return ids
 	case group.EdgeUsers:
 		ids := make([]ent.Value, 0, len(m.users))
 		for id := range m.users {
@@ -955,10 +889,7 @@ func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GroupMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.removedsubgroups != nil {
-		edges = append(edges, group.EdgeSubgroups)
-	}
+	edges := make([]string, 0, 2)
 	if m.removedusers != nil {
 		edges = append(edges, group.EdgeUsers)
 	}
@@ -969,12 +900,6 @@ func (m *GroupMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case group.EdgeSubgroups:
-		ids := make([]ent.Value, 0, len(m.removedsubgroups))
-		for id := range m.removedsubgroups {
-			ids = append(ids, id)
-		}
-		return ids
 	case group.EdgeUsers:
 		ids := make([]ent.Value, 0, len(m.removedusers))
 		for id := range m.removedusers {
@@ -987,12 +912,9 @@ func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GroupMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.clearedorganization {
 		edges = append(edges, group.EdgeOrganization)
-	}
-	if m.clearedsubgroups {
-		edges = append(edges, group.EdgeSubgroups)
 	}
 	if m.clearedusers {
 		edges = append(edges, group.EdgeUsers)
@@ -1006,8 +928,6 @@ func (m *GroupMutation) EdgeCleared(name string) bool {
 	switch name {
 	case group.EdgeOrganization:
 		return m.clearedorganization
-	case group.EdgeSubgroups:
-		return m.clearedsubgroups
 	case group.EdgeUsers:
 		return m.clearedusers
 	}
@@ -1031,9 +951,6 @@ func (m *GroupMutation) ResetEdge(name string) error {
 	switch name {
 	case group.EdgeOrganization:
 		m.ResetOrganization()
-		return nil
-	case group.EdgeSubgroups:
-		m.ResetSubgroups()
 		return nil
 	case group.EdgeUsers:
 		m.ResetUsers()

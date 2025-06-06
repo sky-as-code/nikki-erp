@@ -44,15 +44,13 @@ type Group struct {
 type GroupEdges struct {
 	// Organization holds the value of the organization edge.
 	Organization *Organization `json:"organization,omitempty"`
-	// Subgroups holds the value of the subgroups edge.
-	Subgroups []*Group `json:"subgroups,omitempty"`
 	// Users holds the value of the users edge.
 	Users []*User `json:"users,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [3]bool
 }
 
 // OrganizationOrErr returns the Organization value or an error if the edge
@@ -66,19 +64,10 @@ func (e GroupEdges) OrganizationOrErr() (*Organization, error) {
 	return nil, &NotLoadedError{edge: "organization"}
 }
 
-// SubgroupsOrErr returns the Subgroups value or an error if the edge
-// was not loaded in eager-loading.
-func (e GroupEdges) SubgroupsOrErr() ([]*Group, error) {
-	if e.loadedTypes[1] {
-		return e.Subgroups, nil
-	}
-	return nil, &NotLoadedError{edge: "subgroups"}
-}
-
 // UsersOrErr returns the Users value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) UsersOrErr() ([]*User, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Users, nil
 	}
 	return nil, &NotLoadedError{edge: "users"}
@@ -87,7 +76,7 @@ func (e GroupEdges) UsersOrErr() ([]*User, error) {
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) UserGroupsOrErr() ([]*UserGroup, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[2] {
 		return e.UserGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_groups"}
@@ -190,11 +179,6 @@ func (gr *Group) Value(name string) (ent.Value, error) {
 // QueryOrganization queries the "organization" edge of the Group entity.
 func (gr *Group) QueryOrganization() *OrganizationQuery {
 	return NewGroupClient(gr.config).QueryOrganization(gr)
-}
-
-// QuerySubgroups queries the "subgroups" edge of the Group entity.
-func (gr *Group) QuerySubgroups() *GroupQuery {
-	return NewGroupClient(gr.config).QuerySubgroups(gr)
 }
 
 // QueryUsers queries the "users" edge of the Group entity.

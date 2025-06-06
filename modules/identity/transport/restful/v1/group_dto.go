@@ -12,15 +12,15 @@ type CreateGroupResponse struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
 	Etag        string  `json:"etag"`
-	OrgId       string  `json:"orgId"`
+	OrgId       *string `json:"orgId,omitempty"`
 }
 
-func (this *CreateGroupResponse) FromGroup(group domain.Group) {
-	this.Id = group.Id.String()
-	this.Name = *group.Name
-	this.Description = group.Description
-	this.Etag = group.Etag.String()
-	this.OrgId = group.OrgId.String()
+func (this *CreateGroupResponse) FromGroup(group domain.GroupWithOrg) {
+	this.Id = group.Group.Id.String()
+	this.Name = group.Group.Name
+	this.Description = group.Group.Description
+	this.Etag = group.Group.Etag.String()
+	this.OrgId = group.Group.OrgId
 }
 
 type DeleteGroupRequest = it.DeleteGroupCommand
@@ -32,45 +32,45 @@ type DeleteGroupResponse struct {
 type UpdateGroupRequest = it.UpdateGroupCommand
 
 type UpdateGroupResponse struct {
-	Id          string `param:"id" json:"id"`
-	Name        string `json:"name,omitempty"`
-	Description string `json:"description,omitempty"`
-	Etag        string `json:"etag,omitempty"`
-	OrgId       string `json:"orgId,omitempty"`
+	Id          string  `param:"id" json:"id"`
+	Name        string  `json:"name,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Etag        string  `json:"etag,omitempty"`
+	OrgId       *string `json:"orgId,omitempty"`
 }
 
-func (this *UpdateGroupResponse) FromGroup(group domain.Group) {
-	this.Id = group.Id.String()
-	this.Name = *group.Name
-	this.Etag = group.Etag.String()
-	this.Description = *group.Description
-	this.OrgId = group.OrgId.String()
+func (this *UpdateGroupResponse) FromGroup(group domain.GroupWithOrg) {
+	this.Id = group.Group.Id.String()
+	this.Name = group.Group.Name
+	this.Etag = group.Group.Etag.String()
+	this.Description = group.Group.Description
+	this.OrgId = group.Group.OrgId
 }
 
 type GetGroupByIdRequest = it.GetGroupByIdQuery
+
+type OrganizationResponseWithGroup struct {
+	Id          string `json:"Id"`
+	DisplayName string `json:"displayName"`
+	Slug        string `json:"slug"`
+}
 
 type GetGroupByIdResponse struct {
 	Id          string  `json:"id"`
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
 	Etag        string  `json:"etag"`
-	OrgId       string  `json:"orgId,omitempty"`
-	DisplayName string  `json:"displayName,omitempty"`
-	Slug        string  `json:"slug,omitempty"`
+	Org         OrganizationResponseWithGroup
 }
 
 func (this *GetGroupByIdResponse) FromGroup(group domain.GroupWithOrg) {
 	this.Id = group.Group.Id.String()
-	this.Name = *group.Group.Name
+	this.Name = group.Group.Name
 	this.Description = group.Group.Description
 	this.Etag = group.Group.Etag.String()
 	if group.Organization != nil {
-		this.OrgId = group.Organization.Id.String()
-		this.DisplayName = *group.Organization.DisplayName
-		this.Slug = group.Organization.Slug.String()
-	} else {
-		this.OrgId = ""
-		this.DisplayName = ""
-		this.Slug = ""
+		this.Org.Id = *group.Group.OrgId
+		this.Org.DisplayName = *group.Organization.DisplayName
+		this.Org.Slug = group.Organization.Slug.String()
 	}
 }

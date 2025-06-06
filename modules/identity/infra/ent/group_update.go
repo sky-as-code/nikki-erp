@@ -157,21 +157,6 @@ func (gu *GroupUpdate) SetOrganization(o *Organization) *GroupUpdate {
 	return gu.SetOrganizationID(o.ID)
 }
 
-// AddSubgroupIDs adds the "subgroups" edge to the Group entity by IDs.
-func (gu *GroupUpdate) AddSubgroupIDs(ids ...string) *GroupUpdate {
-	gu.mutation.AddSubgroupIDs(ids...)
-	return gu
-}
-
-// AddSubgroups adds the "subgroups" edges to the Group entity.
-func (gu *GroupUpdate) AddSubgroups(g ...*Group) *GroupUpdate {
-	ids := make([]string, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return gu.AddSubgroupIDs(ids...)
-}
-
 // AddUserIDs adds the "users" edge to the User entity by IDs.
 func (gu *GroupUpdate) AddUserIDs(ids ...string) *GroupUpdate {
 	gu.mutation.AddUserIDs(ids...)
@@ -196,27 +181,6 @@ func (gu *GroupUpdate) Mutation() *GroupMutation {
 func (gu *GroupUpdate) ClearOrganization() *GroupUpdate {
 	gu.mutation.ClearOrganization()
 	return gu
-}
-
-// ClearSubgroups clears all "subgroups" edges to the Group entity.
-func (gu *GroupUpdate) ClearSubgroups() *GroupUpdate {
-	gu.mutation.ClearSubgroups()
-	return gu
-}
-
-// RemoveSubgroupIDs removes the "subgroups" edge to Group entities by IDs.
-func (gu *GroupUpdate) RemoveSubgroupIDs(ids ...string) *GroupUpdate {
-	gu.mutation.RemoveSubgroupIDs(ids...)
-	return gu
-}
-
-// RemoveSubgroups removes "subgroups" edges to Group entities.
-func (gu *GroupUpdate) RemoveSubgroups(g ...*Group) *GroupUpdate {
-	ids := make([]string, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return gu.RemoveSubgroupIDs(ids...)
 }
 
 // ClearUsers clears all "users" edges to the User entity.
@@ -278,24 +242,9 @@ func (gu *GroupUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (gu *GroupUpdate) check() error {
-	if v, ok := gu.mutation.OrgID(); ok {
-		if err := group.OrgIDValidator(v); err != nil {
-			return &ValidationError{Name: "org_id", err: fmt.Errorf(`ent: validator failed for field "Group.org_id": %w`, err)}
-		}
-	}
 	if v, ok := gu.mutation.Name(); ok {
 		if err := group.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
-		}
-	}
-	if v, ok := gu.mutation.Description(); ok {
-		if err := group.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "Group.description": %w`, err)}
-		}
-	}
-	if v, ok := gu.mutation.Etag(); ok {
-		if err := group.EtagValidator(v); err != nil {
-			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "Group.etag": %w`, err)}
 		}
 	}
 	return nil
@@ -359,51 +308,6 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if gu.mutation.SubgroupsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   group.SubgroupsTable,
-			Columns: group.SubgroupsPrimaryKey,
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := gu.mutation.RemovedSubgroupsIDs(); len(nodes) > 0 && !gu.mutation.SubgroupsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   group.SubgroupsTable,
-			Columns: group.SubgroupsPrimaryKey,
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := gu.mutation.SubgroupsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   group.SubgroupsTable,
-			Columns: group.SubgroupsPrimaryKey,
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -603,21 +507,6 @@ func (guo *GroupUpdateOne) SetOrganization(o *Organization) *GroupUpdateOne {
 	return guo.SetOrganizationID(o.ID)
 }
 
-// AddSubgroupIDs adds the "subgroups" edge to the Group entity by IDs.
-func (guo *GroupUpdateOne) AddSubgroupIDs(ids ...string) *GroupUpdateOne {
-	guo.mutation.AddSubgroupIDs(ids...)
-	return guo
-}
-
-// AddSubgroups adds the "subgroups" edges to the Group entity.
-func (guo *GroupUpdateOne) AddSubgroups(g ...*Group) *GroupUpdateOne {
-	ids := make([]string, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return guo.AddSubgroupIDs(ids...)
-}
-
 // AddUserIDs adds the "users" edge to the User entity by IDs.
 func (guo *GroupUpdateOne) AddUserIDs(ids ...string) *GroupUpdateOne {
 	guo.mutation.AddUserIDs(ids...)
@@ -642,27 +531,6 @@ func (guo *GroupUpdateOne) Mutation() *GroupMutation {
 func (guo *GroupUpdateOne) ClearOrganization() *GroupUpdateOne {
 	guo.mutation.ClearOrganization()
 	return guo
-}
-
-// ClearSubgroups clears all "subgroups" edges to the Group entity.
-func (guo *GroupUpdateOne) ClearSubgroups() *GroupUpdateOne {
-	guo.mutation.ClearSubgroups()
-	return guo
-}
-
-// RemoveSubgroupIDs removes the "subgroups" edge to Group entities by IDs.
-func (guo *GroupUpdateOne) RemoveSubgroupIDs(ids ...string) *GroupUpdateOne {
-	guo.mutation.RemoveSubgroupIDs(ids...)
-	return guo
-}
-
-// RemoveSubgroups removes "subgroups" edges to Group entities.
-func (guo *GroupUpdateOne) RemoveSubgroups(g ...*Group) *GroupUpdateOne {
-	ids := make([]string, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return guo.RemoveSubgroupIDs(ids...)
 }
 
 // ClearUsers clears all "users" edges to the User entity.
@@ -737,24 +605,9 @@ func (guo *GroupUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (guo *GroupUpdateOne) check() error {
-	if v, ok := guo.mutation.OrgID(); ok {
-		if err := group.OrgIDValidator(v); err != nil {
-			return &ValidationError{Name: "org_id", err: fmt.Errorf(`ent: validator failed for field "Group.org_id": %w`, err)}
-		}
-	}
 	if v, ok := guo.mutation.Name(); ok {
 		if err := group.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
-		}
-	}
-	if v, ok := guo.mutation.Description(); ok {
-		if err := group.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "Group.description": %w`, err)}
-		}
-	}
-	if v, ok := guo.mutation.Etag(); ok {
-		if err := group.EtagValidator(v); err != nil {
-			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "Group.etag": %w`, err)}
 		}
 	}
 	return nil
@@ -835,51 +688,6 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if guo.mutation.SubgroupsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   group.SubgroupsTable,
-			Columns: group.SubgroupsPrimaryKey,
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := guo.mutation.RemovedSubgroupsIDs(); len(nodes) > 0 && !guo.mutation.SubgroupsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   group.SubgroupsTable,
-			Columns: group.SubgroupsPrimaryKey,
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := guo.mutation.SubgroupsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   group.SubgroupsTable,
-			Columns: group.SubgroupsPrimaryKey,
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

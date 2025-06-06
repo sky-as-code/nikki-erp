@@ -27,7 +27,6 @@ type GroupQuery struct {
 	inters           []Interceptor
 	predicates       []predicate.Group
 	withOrganization *OrganizationQuery
-	withSubgroups    *GroupQuery
 	withUsers        *UserQuery
 	withUserGroups   *UserGroupQuery
 	// intermediate query (i.e. traversal path).
@@ -81,28 +80,6 @@ func (gq *GroupQuery) QueryOrganization() *OrganizationQuery {
 			sqlgraph.From(group.Table, group.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.O2O, true, group.OrganizationTable, group.OrganizationColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QuerySubgroups chains the current query on the "subgroups" edge.
-func (gq *GroupQuery) QuerySubgroups() *GroupQuery {
-	query := (&GroupClient{config: gq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := gq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := gq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(group.Table, group.FieldID, selector),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, group.SubgroupsTable, group.SubgroupsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(gq.driver.Dialect(), step)
 		return fromU, nil
@@ -347,7 +324,6 @@ func (gq *GroupQuery) Clone() *GroupQuery {
 		inters:           append([]Interceptor{}, gq.inters...),
 		predicates:       append([]predicate.Group{}, gq.predicates...),
 		withOrganization: gq.withOrganization.Clone(),
-		withSubgroups:    gq.withSubgroups.Clone(),
 		withUsers:        gq.withUsers.Clone(),
 		withUserGroups:   gq.withUserGroups.Clone(),
 		// clone intermediate query.
@@ -364,17 +340,6 @@ func (gq *GroupQuery) WithOrganization(opts ...func(*OrganizationQuery)) *GroupQ
 		opt(query)
 	}
 	gq.withOrganization = query
-	return gq
-}
-
-// WithSubgroups tells the query-builder to eager-load the nodes that are connected to
-// the "subgroups" edge. The optional arguments are used to configure the query builder of the edge.
-func (gq *GroupQuery) WithSubgroups(opts ...func(*GroupQuery)) *GroupQuery {
-	query := (&GroupClient{config: gq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	gq.withSubgroups = query
 	return gq
 }
 
@@ -478,9 +443,8 @@ func (gq *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 	var (
 		nodes       = []*Group{}
 		_spec       = gq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [3]bool{
 			gq.withOrganization != nil,
-			gq.withSubgroups != nil,
 			gq.withUsers != nil,
 			gq.withUserGroups != nil,
 		}
@@ -506,13 +470,6 @@ func (gq *GroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Group,
 	if query := gq.withOrganization; query != nil {
 		if err := gq.loadOrganization(ctx, query, nodes, nil,
 			func(n *Group, e *Organization) { n.Edges.Organization = e }); err != nil {
-			return nil, err
-		}
-	}
-	if query := gq.withSubgroups; query != nil {
-		if err := gq.loadSubgroups(ctx, query, nodes,
-			func(n *Group) { n.Edges.Subgroups = []*Group{} },
-			func(n *Group, e *Group) { n.Edges.Subgroups = append(n.Edges.Subgroups, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -561,67 +518,6 @@ func (gq *GroupQuery) loadOrganization(ctx context.Context, query *OrganizationQ
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
-func (gq *GroupQuery) loadSubgroups(ctx context.Context, query *GroupQuery, nodes []*Group, init func(*Group), assign func(*Group, *Group)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[string]*Group)
-	nids := make(map[string]map[*Group]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
-		if init != nil {
-			init(node)
-		}
-	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(group.SubgroupsTable)
-		s.Join(joinT).On(s.C(group.FieldID), joinT.C(group.SubgroupsPrimaryKey[1]))
-		s.Where(sql.InValues(joinT.C(group.SubgroupsPrimaryKey[0]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(group.SubgroupsPrimaryKey[0]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
-	}
-	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
-		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-			assign := spec.Assign
-			values := spec.ScanValues
-			spec.ScanValues = func(columns []string) ([]any, error) {
-				values, err := values(columns[1:])
-				if err != nil {
-					return nil, err
-				}
-				return append([]any{new(sql.NullString)}, values...), nil
-			}
-			spec.Assign = func(columns []string, values []any) error {
-				outValue := values[0].(*sql.NullString).String
-				inValue := values[1].(*sql.NullString).String
-				if nids[inValue] == nil {
-					nids[inValue] = map[*Group]struct{}{byID[outValue]: {}}
-					return assign(columns[1:], values[1:])
-				}
-				nids[inValue][byID[outValue]] = struct{}{}
-				return nil
-			}
-		})
-	})
-	neighbors, err := withInterceptors[[]*Group](ctx, query, qr, query.inters)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected "subgroups" node returned %v`, n.ID)
-		}
-		for kn := range nodes {
-			assign(kn, n)
 		}
 	}
 	return nil

@@ -22,24 +22,24 @@ type GroupEntRepository struct {
 	client *ent.Client
 }
 
-func (this *GroupEntRepository) Create(ctx context.Context, group domain.Group) (*domain.Group, error) {
+func (this *GroupEntRepository) Create(ctx context.Context, group domain.Group) (*domain.GroupWithOrg, error) {
 	creation := this.client.Group.Create().
 		SetID(group.Id.String()).
-		SetName(*group.Name).
+		SetName(group.Name).
 		SetNillableDescription(group.Description).
 		SetCreatedBy(group.CreatedBy.String()).
-		SetNillableOrgID(group.IsOrgIdEmpty()).
+		SetNillableOrgID(group.OrgId).
 		SetEtag(group.Etag.String())
 
 	return Mutate(ctx, creation, entToGroup)
 }
 
-func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group) (*domain.Group, error) {
+func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group) (*domain.GroupWithOrg, error) {
 	update := this.client.Group.UpdateOneID(group.Id.String()).
-		SetName(*group.Name).
+		SetName(group.Name).
 		SetNillableDescription(group.Description).
 		SetEtag(group.Etag.String()).
-		SetNillableOrgID(group.IsOrgIdEmpty()).
+		SetNillableOrgID(group.OrgId).
 		SetUpdatedBy(group.UpdatedBy.String())
 
 	return Mutate(ctx, update, entToGroup)
@@ -49,20 +49,16 @@ func (this *GroupEntRepository) Delete(ctx context.Context, id model.Id) error {
 	return Delete[ent.Group](ctx, this.client.Group.DeleteOneID(id.String()))
 }
 
-func (this *GroupEntRepository) FindById(ctx context.Context, id model.Id) (*domain.Group, error) {
+func (this *GroupEntRepository) FindById(ctx context.Context, id model.Id, withOrg bool) (*domain.GroupWithOrg, error) {
 	query := this.client.Group.Query().
 		Where(entGroup.ID(id.String()))
+	if withOrg {
+		query = query.WithOrganization()
+	}
 	return FindOne(ctx, query, entToGroup)
 }
 
-func (this *GroupEntRepository) FindByIdWitOrganization(ctx context.Context, id model.Id) (*domain.GroupWithOrg, error) {
-	query := this.client.Group.Query().
-		Where(entGroup.ID(id.String())).
-		WithOrganization()
-	return FindOne(ctx, query, entToGroupWithOrg)
-}
-
-func (this *GroupEntRepository) FindByName(ctx context.Context, name string) (*domain.Group, error) {
+func (this *GroupEntRepository) FindByName(ctx context.Context, name string) (*domain.GroupWithOrg, error) {
 	query := this.client.Group.Query().
 		Where(entGroup.Name(name))
 	return FindOne(ctx, query, entToGroup)
@@ -91,8 +87,7 @@ func BuildGroupDescriptor() *orm.EntityDescriptor {
 		Field(entGroup.FieldName, entity.Name).
 		Field(entGroup.FieldUpdatedAt, entity.UpdatedAt).
 		Field(entGroup.FieldUpdatedBy, entity.UpdatedBy).
-		Edge(entGroup.EdgeUsers, orm.ToEdgePredicate(entGroup.HasUsersWith)).
-		Edge(entGroup.EdgeSubgroups, orm.ToEdgePredicate(entGroup.HasSubgroupsWith))
+		Edge(entGroup.EdgeUsers, orm.ToEdgePredicate(entGroup.HasUsersWith))
 
 	return builder.Descriptor()
 }

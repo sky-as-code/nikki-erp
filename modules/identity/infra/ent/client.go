@@ -369,22 +369,6 @@ func (c *GroupClient) QueryOrganization(gr *Group) *OrganizationQuery {
 	return query
 }
 
-// QuerySubgroups queries the subgroups edge of a Group.
-func (c *GroupClient) QuerySubgroups(gr *Group) *GroupQuery {
-	query := (&GroupClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(group.Table, group.FieldID, id),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, group.SubgroupsTable, group.SubgroupsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryUsers queries the users edge of a Group.
 func (c *GroupClient) QueryUsers(gr *Group) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()

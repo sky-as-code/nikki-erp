@@ -12,11 +12,11 @@ var (
 	// GroupsColumns holds the columns for the "groups" table.
 	GroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "name", Type: field.TypeString, Unique: true, Size: 50},
-		{Name: "description", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "created_by", Type: field.TypeString},
-		{Name: "etag", Type: field.TypeString, Size: 100},
+		{Name: "etag", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "updated_by", Type: field.TypeString, Nullable: true},
 		{Name: "org_id", Type: field.TypeString, Unique: true, Nullable: true},
@@ -149,31 +149,6 @@ var (
 			},
 		},
 	}
-	// GroupSubgroupsColumns holds the columns for the "group_subgroups" table.
-	GroupSubgroupsColumns = []*schema.Column{
-		{Name: "group_id", Type: field.TypeString},
-		{Name: "subgroup_id", Type: field.TypeString},
-	}
-	// GroupSubgroupsTable holds the schema information for the "group_subgroups" table.
-	GroupSubgroupsTable = &schema.Table{
-		Name:       "group_subgroups",
-		Columns:    GroupSubgroupsColumns,
-		PrimaryKey: []*schema.Column{GroupSubgroupsColumns[0], GroupSubgroupsColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "group_subgroups_group_id",
-				Columns:    []*schema.Column{GroupSubgroupsColumns[0]},
-				RefColumns: []*schema.Column{GroupsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "group_subgroups_subgroup_id",
-				Columns:    []*schema.Column{GroupSubgroupsColumns[1]},
-				RefColumns: []*schema.Column{GroupsColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		GroupsTable,
@@ -182,7 +157,6 @@ var (
 		UsersTable,
 		UserGroupsTable,
 		UserOrgsTable,
-		GroupSubgroupsTable,
 	}
 )
 
@@ -211,6 +185,4 @@ func init() {
 	UserOrgsTable.Annotation = &entsql.Annotation{
 		Table: "user_orgs",
 	}
-	GroupSubgroupsTable.ForeignKeys[0].RefTable = GroupsTable
-	GroupSubgroupsTable.ForeignKeys[1].RefTable = GroupsTable
 }

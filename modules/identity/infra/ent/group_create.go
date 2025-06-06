@@ -135,21 +135,6 @@ func (gc *GroupCreate) SetOrganization(o *Organization) *GroupCreate {
 	return gc.SetOrganizationID(o.ID)
 }
 
-// AddSubgroupIDs adds the "subgroups" edge to the Group entity by IDs.
-func (gc *GroupCreate) AddSubgroupIDs(ids ...string) *GroupCreate {
-	gc.mutation.AddSubgroupIDs(ids...)
-	return gc
-}
-
-// AddSubgroups adds the "subgroups" edges to the Group entity.
-func (gc *GroupCreate) AddSubgroups(g ...*Group) *GroupCreate {
-	ids := make([]string, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return gc.AddSubgroupIDs(ids...)
-}
-
 // AddUserIDs adds the "users" edge to the User entity by IDs.
 func (gc *GroupCreate) AddUserIDs(ids ...string) *GroupCreate {
 	gc.mutation.AddUserIDs(ids...)
@@ -212,22 +197,12 @@ func (gc *GroupCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (gc *GroupCreate) check() error {
-	if v, ok := gc.mutation.OrgID(); ok {
-		if err := group.OrgIDValidator(v); err != nil {
-			return &ValidationError{Name: "org_id", err: fmt.Errorf(`ent: validator failed for field "Group.org_id": %w`, err)}
-		}
-	}
 	if _, ok := gc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Group.name"`)}
 	}
 	if v, ok := gc.mutation.Name(); ok {
 		if err := group.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
-		}
-	}
-	if v, ok := gc.mutation.Description(); ok {
-		if err := group.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "Group.description": %w`, err)}
 		}
 	}
 	if _, ok := gc.mutation.CreatedAt(); !ok {
@@ -238,11 +213,6 @@ func (gc *GroupCreate) check() error {
 	}
 	if _, ok := gc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Group.etag"`)}
-	}
-	if v, ok := gc.mutation.Etag(); ok {
-		if err := group.EtagValidator(v); err != nil {
-			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "Group.etag": %w`, err)}
-		}
 	}
 	if _, ok := gc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Group.updated_at"`)}
@@ -330,22 +300,6 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.OrgID = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := gc.mutation.SubgroupsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   group.SubgroupsTable,
-			Columns: group.SubgroupsPrimaryKey,
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := gc.mutation.UsersIDs(); len(nodes) > 0 {

@@ -32,8 +32,6 @@ const (
 	FieldUpdatedBy = "updated_by"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
-	// EdgeSubgroups holds the string denoting the subgroups edge name in mutations.
-	EdgeSubgroups = "subgroups"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
@@ -47,8 +45,6 @@ const (
 	OrganizationInverseTable = "organizations"
 	// OrganizationColumn is the table column denoting the organization relation/edge.
 	OrganizationColumn = "org_id"
-	// SubgroupsTable is the table that holds the subgroups relation/edge. The primary key declared below.
-	SubgroupsTable = "group_subgroups"
 	// UsersTable is the table that holds the users relation/edge. The primary key declared below.
 	UsersTable = "user_groups"
 	// UsersInverseTable is the table name for the User entity.
@@ -77,9 +73,6 @@ var Columns = []string{
 }
 
 var (
-	// SubgroupsPrimaryKey and SubgroupsColumn2 are the table columns denoting the
-	// primary key for the subgroups relation (M2M).
-	SubgroupsPrimaryKey = []string{"group_id", "subgroup_id"}
 	// UsersPrimaryKey and UsersColumn2 are the table columns denoting the
 	// primary key for the users relation (M2M).
 	UsersPrimaryKey = []string{"user_id", "group_id"}
@@ -96,16 +89,10 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// OrgIDValidator is a validator for the "org_id" field. It is called by the builders before save.
-	OrgIDValidator func(string) error
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
-	// DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
-	DescriptionValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
-	// EtagValidator is a validator for the "etag" field. It is called by the builders before save.
-	EtagValidator func(string) error
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
@@ -169,20 +156,6 @@ func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption 
 	}
 }
 
-// BySubgroupsCount orders the results by subgroups count.
-func BySubgroupsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newSubgroupsStep(), opts...)
-	}
-}
-
-// BySubgroups orders the results by subgroups terms.
-func BySubgroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newSubgroupsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByUsersCount orders the results by users count.
 func ByUsersCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -215,13 +188,6 @@ func newOrganizationStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OrganizationInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2O, true, OrganizationTable, OrganizationColumn),
-	)
-}
-func newSubgroupsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(Table, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, false, SubgroupsTable, SubgroupsPrimaryKey...),
 	)
 }
 func newUsersStep() *sqlgraph.Step {
