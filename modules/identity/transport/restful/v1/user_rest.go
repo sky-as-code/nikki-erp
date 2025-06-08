@@ -129,8 +129,7 @@ func (this UserRest) GetUserById(echoCtx echo.Context) (err error) {
 
 func (this UserRest) SearchUsers(echoCtx echo.Context) (err error) {
 	defer func() {
-		e := ft.RecoverPanic(recover(), "failed to search users")
-		if e != nil {
+		if e := ft.RecoverPanic(recover(), "failed to search users"); e != nil {
 			err = e
 		}
 	}()

@@ -27,12 +27,11 @@ func (this *Group) Validate(forEdit bool) ft.ValidationErrors {
 			val.NotEmptyWhen(!forEdit),
 			val.Length(1, 50),
 		),
-		val.Field(&this.Description,
-			val.Length(0, 255),
-		),
-		val.Field(&this.OrgId,
-			val.Length(0, 50),
-		),
+		val.Field(&this.Description, val.When(this.Description != nil,
+			val.NotEmpty,
+			val.Length(1, 255),
+		)),
+		model.IdPtrValidateRule(&this.OrgId, false),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)

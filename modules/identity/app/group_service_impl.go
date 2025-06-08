@@ -24,7 +24,9 @@ type GroupServiceImpl struct {
 
 func (this *GroupServiceImpl) CreateGroup(ctx context.Context, cmd it.CreateGroupCommand) (result *it.CreateGroupResult, err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to create group")
+		if e := ft.RecoverPanic(recover(), "failed to create group"); e != nil {
+			err = e
+		}
 	}()
 
 	group := cmd.ToGroup()
@@ -63,7 +65,9 @@ func (this *GroupServiceImpl) setGroupDefaults(group *domain.Group) {
 
 func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd it.UpdateGroupCommand) (result *it.UpdateGroupResult, err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to update group")
+		if e := ft.RecoverPanic(recover(), "failed to update group"); e != nil {
+			err = e
+		}
 	}()
 
 	group := cmd.ToGroup()
@@ -118,7 +122,9 @@ func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd it.UpdateGrou
 
 func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd it.DeleteGroupCommand) (result *it.DeleteGroupResult, err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to delete group")
+		if e := ft.RecoverPanic(recover(), "failed to delete group"); e != nil {
+			err = e
+		}
 	}()
 
 	dbGroup, err := this.groupRepo.FindById(ctx, it.FindByIdParam{
@@ -146,7 +152,9 @@ func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd it.DeleteGrou
 
 func (this *GroupServiceImpl) GetGroupById(ctx context.Context, query it.GetGroupByIdQuery) (result *it.GetGroupByIdResult, err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to get group")
+		if e := ft.RecoverPanic(recover(), "failed to get group"); e != nil {
+			err = e
+		}
 	}()
 
 	vErrs := query.Validate()

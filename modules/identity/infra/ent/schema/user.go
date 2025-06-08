@@ -31,7 +31,11 @@ func (UserMixin) Fields() []ent.Field {
 			Default(time.Now).
 			Immutable(),
 
-		field.String("display_name"),
+		field.String("display_name").Annotations(
+			entsql.Annotation{
+				Collation: "vi-x-icu",
+			},
+		),
 
 		field.String("email").
 			Unique(),

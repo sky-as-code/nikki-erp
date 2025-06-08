@@ -73,7 +73,9 @@ func (loader *JsonConfigLoader) Get(name string) (string, error) {
 
 func (loader *JsonConfigLoader) load() (result gjson.Result, appErr error) {
 	defer func() {
-		appErr = ft.RecoverPanic(recover(), "JsonConfigLoader.load()")
+		if e := ft.RecoverPanic(recover(), "JsonConfigLoader.load()"); e != nil {
+			appErr = e
+		}
 	}()
 
 	result = gjson.Result{}

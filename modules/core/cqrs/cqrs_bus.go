@@ -183,8 +183,8 @@ func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, resu
 	ctx, cancelSubscription := context.WithCancel(ctx)
 
 	defer func() {
-		err = ft.RecoverPanicf(recover(), "failed to send request of type %s", request.Type().String())
-		if err != nil {
+		if e := ft.RecoverPanicf(recover(), "failed to send request of type %s", request.Type().String()); e != nil {
+			err = e
 			cancelSubscription()
 		}
 	}()
@@ -373,7 +373,9 @@ func (c genericRequestHandler[TReq, TResult]) NewReply() Reply[any] {
 
 func (c genericRequestHandler[TReq, TResult]) Handle(ctx context.Context, packet *RequestPacket[Request]) (reply *Reply[any], err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to handle request")
+		if e := ft.RecoverPanic(recover(), "failed to handle request"); e != nil {
+			err = e
+		}
 	}()
 
 	var req any = packet.request

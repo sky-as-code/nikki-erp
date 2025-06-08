@@ -7,6 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	entOrg "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
@@ -31,7 +32,7 @@ func (this *OrganizationEntRepository) Create(ctx context.Context, org domain.Or
 		SetEtag(org.Etag.String()).
 		SetStatus(entOrg.Status(*org.Status))
 
-	return Mutate(ctx, creation, entToOrganization)
+	return db.Mutate(ctx, creation, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Organization) (*domain.Organization, error) {
@@ -40,11 +41,11 @@ func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Or
 		SetEtag(org.Etag.String()).
 		SetStatus(entOrg.Status(*org.Status))
 
-	return Mutate(ctx, update, entToOrganization)
+	return db.Mutate(ctx, update, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) Delete(ctx context.Context, id model.Id) error {
-	return Delete[ent.Organization](ctx, this.client.Organization.DeleteOneID(id.String()))
+	return db.Delete[ent.Organization](ctx, this.client.Organization.DeleteOneID(id.String()))
 }
 
 func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id) (*domain.Organization, error) {
@@ -52,7 +53,7 @@ func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id
 		Where(entOrg.ID(id.String())).
 		WithUsers()
 
-	return FindOne(ctx, query, entToOrganization)
+	return db.FindOne(ctx, query, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, slug string) (*domain.Organization, error) {
@@ -71,7 +72,7 @@ func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, slug stri
 }
 
 func (this *OrganizationEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return ParseSearchGraphStr[ent.Organization, domain.Organization](criteria)
+	return db.ParseSearchGraphStr[ent.Organization, domain.Organization](criteria)
 }
 
 func (this *OrganizationEntRepository) Search(
@@ -80,7 +81,7 @@ func (this *OrganizationEntRepository) Search(
 	order []orm.OrderOption,
 	opts crud.PagingOptions,
 ) (*crud.PagedResult[domain.Organization], error) {
-	return Search(
+	return db.Search(
 		ctx,
 		predicate,
 		order,

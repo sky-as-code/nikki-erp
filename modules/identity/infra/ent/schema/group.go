@@ -38,7 +38,12 @@ func (GroupMixin) Fields() []ent.Field {
 
 		field.String("name").
 			Unique().
-			NotEmpty(),
+			NotEmpty().
+			Annotations(
+				entsql.Annotation{
+					Collation: "vi-x-icu",
+				},
+			),
 
 		field.String("org_id").
 			Optional().

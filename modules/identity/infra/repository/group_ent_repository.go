@@ -7,6 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	entGroup "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
@@ -31,7 +32,7 @@ func (this *GroupEntRepository) Create(ctx context.Context, group domain.Group) 
 		SetNillableOrgID(model.IdToNillableStr(group.OrgId)).
 		SetEtag(group.Etag.String())
 
-	return Mutate(ctx, creation, entToGroup)
+	return db.Mutate(ctx, creation, entToGroup)
 }
 
 func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group) (*domain.Group, error) {
@@ -41,11 +42,11 @@ func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group) 
 		SetEtag(group.Etag.String()).
 		SetNillableOrgID(model.IdToNillableStr(group.OrgId))
 
-	return Mutate(ctx, update, entToGroup)
+	return db.Mutate(ctx, update, entToGroup)
 }
 
 func (this *GroupEntRepository) Delete(ctx context.Context, id model.Id) error {
-	return Delete[ent.Group](ctx, this.client.Group.DeleteOneID(id.String()))
+	return db.Delete[ent.Group](ctx, this.client.Group.DeleteOneID(id.String()))
 }
 
 func (this *GroupEntRepository) FindById(ctx context.Context, param it.GetGroupByIdQuery) (*domain.Group, error) {
@@ -54,11 +55,11 @@ func (this *GroupEntRepository) FindById(ctx context.Context, param it.GetGroupB
 	if *param.WithOrg {
 		dbQuery = dbQuery.WithOrg()
 	}
-	return FindOne(ctx, dbQuery, entToGroup)
+	return db.FindOne(ctx, dbQuery, entToGroup)
 }
 
 func (this *GroupEntRepository) FindByName(ctx context.Context, name string) (*domain.Group, error) {
-	return FindOne(
+	return db.FindOne(
 		ctx,
 		this.client.Group.Query().Where(entGroup.Name(name)),
 		entToGroup,
@@ -66,7 +67,7 @@ func (this *GroupEntRepository) FindByName(ctx context.Context, name string) (*d
 }
 
 func (this *GroupEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return ParseSearchGraphStr[ent.Group, domain.Group](criteria)
+	return db.ParseSearchGraphStr[ent.Group, domain.Group](criteria)
 }
 
 func (this *GroupEntRepository) Search(
@@ -75,7 +76,7 @@ func (this *GroupEntRepository) Search(
 	order []orm.OrderOption,
 	opts crud.PagingOptions,
 ) (*crud.PagedResult[domain.Group], error) {
-	return Search(
+	return db.Search(
 		ctx,
 		predicate,
 		order,

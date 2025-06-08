@@ -67,7 +67,9 @@ func (this *UserHandler) GetUserById(ctx context.Context, packet *cqrs.RequestPa
 func (this *UserHandler) SearchUsers(ctx context.Context, packet *cqrs.RequestPacket[it.SearchUsersCommand]) (*cqrs.Reply[it.SearchUsersResult], error) {
 	cmd := packet.Request()
 	result, err := this.UserSvc.SearchUsers(ctx, *cmd)
-	ft.PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 
 	reply := &cqrs.Reply[it.SearchUsersResult]{
 		Result: *result,

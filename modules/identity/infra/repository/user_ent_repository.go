@@ -7,6 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -35,7 +36,7 @@ func (this *UserEntRepository) Create(ctx context.Context, user domain.User) (*d
 		SetPasswordChangedAt(*user.PasswordChangedAt).
 		SetStatus(entUser.Status(*user.Status))
 
-	return Mutate(ctx, creation, entToUser)
+	return db.Mutate(ctx, creation, entToUser)
 }
 
 func (this *UserEntRepository) Update(ctx context.Context, user domain.User) (*domain.User, error) {
@@ -53,11 +54,11 @@ func (this *UserEntRepository) Update(ctx context.Context, user domain.User) (*d
 			SetUpdatedAt(time.Now())
 	}
 
-	return Mutate(ctx, update, entToUser)
+	return db.Mutate(ctx, update, entToUser)
 }
 
 func (this *UserEntRepository) Delete(ctx context.Context, param it.DeleteUserParam) error {
-	return Delete[ent.User](ctx, this.client.User.DeleteOneID(param.Id.String()))
+	return db.Delete[ent.User](ctx, this.client.User.DeleteOneID(param.Id.String()))
 }
 
 func (this *UserEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.User, error) {
@@ -66,7 +67,7 @@ func (this *UserEntRepository) FindById(ctx context.Context, param it.FindByIdPa
 		WithGroups().
 		WithOrgs()
 
-	return FindOne(ctx, query, entToUser)
+	return db.FindOne(ctx, query, entToUser)
 }
 
 func (this *UserEntRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
@@ -75,11 +76,11 @@ func (this *UserEntRepository) FindByEmail(ctx context.Context, email string) (*
 		WithGroups().
 		WithOrgs()
 
-	return FindOne(ctx, query, entToUser)
+	return db.FindOne(ctx, query, entToUser)
 }
 
 func (this *UserEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return ParseSearchGraphStr[ent.User, domain.User](criteria)
+	return db.ParseSearchGraphStr[ent.User, domain.User](criteria)
 }
 
 func (this *UserEntRepository) Search(
@@ -89,7 +90,7 @@ func (this *UserEntRepository) Search(
 	opts crud.PagingOptions,
 ) (*crud.PagedResult[domain.User], error) {
 
-	return Search(
+	return db.Search(
 		ctx,
 		predicate,
 		order,

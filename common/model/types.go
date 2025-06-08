@@ -47,12 +47,18 @@ func IdToNillableStr(id *Id) *string {
 	return util.ToPtr(id.String())
 }
 
-func IdValidateRule(field any, isRequired bool) *val.FieldRules {
+func IdPtrValidateRule(field **Id, isRequired bool) *val.FieldRules {
 	return val.Field(field,
 		val.NotNilWhen(isRequired),
-		val.NotEmpty,
-		val.Length(MODEL_RULE_ULID_LENGTH, MODEL_RULE_ULID_LENGTH),
+		val.When(*field != nil,
+			val.NotEmpty,
+			val.Length(MODEL_RULE_ULID_LENGTH, MODEL_RULE_ULID_LENGTH),
+		),
 	)
+}
+
+func IdValidateRule(field *Id, isRequired bool) *val.FieldRules {
+	return IdPtrValidateRule(&field, isRequired)
 }
 
 type Etag string

@@ -26,7 +26,9 @@ type UserServiceImpl struct {
 
 func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCommand) (result *it.CreateUserResult, err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to create user")
+		if e := ft.RecoverPanic(recover(), "failed to create user"); e != nil {
+			err = e
+		}
 	}()
 
 	user := cmd.ToUser()
@@ -75,7 +77,9 @@ func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.
 
 func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCommand) (result *it.UpdateUserResult, err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to update user")
+		if e := ft.RecoverPanic(recover(), "failed to update user"); e != nil {
+			err = e
+		}
 	}()
 
 	user := cmd.ToUser()
@@ -130,7 +134,9 @@ func (this *UserServiceImpl) encrypt(str *string) *string {
 
 func (thisSvc *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCommand) (result *it.DeleteUserResult, err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to update user")
+		if e := ft.RecoverPanic(recover(), "failed to update user"); e != nil {
+			err = e
+		}
 	}()
 
 	vErrs := cmd.Validate()
@@ -163,7 +169,9 @@ func (thisSvc *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUse
 
 func (thisSvc *UserServiceImpl) GetUserById(ctx context.Context, query it.GetUserByIdQuery) (result *it.GetUserByIdResult, err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to get user")
+		if e := ft.RecoverPanic(recover(), "failed to get user"); e != nil {
+			err = e
+		}
 	}()
 
 	vErrs := query.Validate()
@@ -190,7 +198,9 @@ func (thisSvc *UserServiceImpl) GetUserById(ctx context.Context, query it.GetUse
 
 func (thisSvc *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUsersCommand) (result *it.SearchUsersResult, err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to list users")
+		if e := ft.RecoverPanic(recover(), "failed to list users"); e != nil {
+			err = e
+		}
 	}()
 
 	vErrsModel := query.Validate()

@@ -25,7 +25,7 @@ func (this *HierarchyLevel) Validate(forEdit bool) ft.ValidationErrors {
 			val.NotEmptyWhen(!forEdit),
 			val.Length(1, 50),
 		),
-		model.IdValidateRule(&this.ParentId, false),
+		model.IdPtrValidateRule(&this.ParentId, false),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)

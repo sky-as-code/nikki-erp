@@ -1,4 +1,4 @@
-package repository
+package database
 
 import (
 	"context"
@@ -140,7 +140,8 @@ func ParseSearchGraph[TDb any, TDomain any](criteria *orm.SearchGraph) (*orm.Pre
 	}
 
 	predicate, vErrsPre := criteria.ToPredicate(entUser.Label)
-	order, vErrsOrd := orm.ToOrder(entUser.Label, *criteria)
+	// order, vErrsOrd := orm.ToOrder(entUser.Label, *criteria)
+	order, vErrsOrd := criteria.Order.ToOrderOptions(entUser.Label)
 	vErrsPre.Merge(vErrsOrd)
 
 	return &predicate, order, vErrsPre
