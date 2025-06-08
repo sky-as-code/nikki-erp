@@ -40,7 +40,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"displayName\": \"Rein Chau\",\r\n    \"email\": \"rein.chau@corevision.vn\",\r\n    \"password\": \"p@sswo0rd\",\r\n    \"isEnabled\": true\r\n}",
+									"raw": "{\r\n    \"displayName\": \"John Doe\",\r\n    \"email\": \"john.doe@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\",\r\n    \"isActive\": true\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -67,7 +67,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\r\n    \"displayName\": \"Rein Chau\",\r\n    \"email\": \"rein.chau@corevision.vn\",\r\n    \"password\": \"p@sswo0rd\",\r\n    \"isEnabled\": true\r\n}",
+											"raw": "{\r\n    \"displayName\": \"John Doe\",\r\n    \"email\": \"john.doe@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\",\r\n    \"isActive\": true\r\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -93,7 +93,6 @@
 										{
 											"key": "Content-Type",
 											"value": "application/json",
-											"name": "Content-Type",
 											"description": "",
 											"type": "text"
 										}
@@ -108,7 +107,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\r\n    \"email\": \"nobody@\",\r\n    \"password\": \"\",\r\n    \"isEnabled\": true\r\n}",
+											"raw": "{\r\n    \"email\": \"nobody@\",\r\n    \"password\": \"\"\r\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -148,7 +147,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\r\n    \"displayName\": \"John Doe\",\r\n    \"email\": \"john.doe@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\",\r\n    \"isEnabled\": true\r\n}",
+											"raw": "{\r\n    \"displayName\": \"John Doe\",\r\n    \"email\": \"john.doe@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -185,6 +184,26 @@
 						},
 						{
 							"name": "User - Update",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const body = pm.response.text();\r",
+											"try {\r",
+											"    const payload = JSON.parse(body);\r",
+											"    const etag = payload.etag;\r",
+											"    etag && pm.environment.set('etag', etag);\r",
+											"} catch (err) {\r",
+											"    console.error(err)\r",
+											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
 							"request": {
 								"method": "PUT",
 								"header": [],
@@ -218,7 +237,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"isEnabled\": true\r\n}\r\n",
+											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"isActive\": true\r\n}\r\n",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -245,7 +264,6 @@
 										{
 											"key": "Content-Type",
 											"value": "application/json",
-											"name": "Content-Type",
 											"description": "",
 											"type": "text"
 										}
@@ -260,7 +278,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\r\n    \"avatarUrl\": \"\",\r\n    \"displayName\": \"\",\r\n    \"email\": \"nobody@nikkierp.\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"password\": \"12\",\r\n    \"isEnabled\": true\r\n}",
+											"raw": "{\r\n    \"avatarUrl\": \"\",\r\n    \"displayName\": \"\",\r\n    \"email\": \"\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"password\": \"\",\r\n    \"isActive\": true\r\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -292,7 +310,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"avatarUrl\": \"cannot be blank\",\n        \"displayName\": \"cannot be blank\",\n        \"email\": \"must be a valid email address\",\n        \"passwordRaw\": \"the length must be between 8 and 1000\"\n    }\n}"
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"displayName\": \"cannot be blank\",\n        \"email\": \"cannot be blank\",\n        \"passwordRaw\": \"cannot be blank\"\n    }\n}"
 								},
 								{
 									"name": "Client error - Unmatched etag",
@@ -301,7 +319,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"isEnabled\": true\r\n}\r\n",
+											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"isActive\": true\r\n}\r\n",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -328,7 +346,6 @@
 										{
 											"key": "Content-Type",
 											"value": "application/json",
-											"name": "Content-Type",
 											"description": "",
 											"type": "text"
 										}
@@ -402,7 +419,6 @@
 										{
 											"key": "Content-Type",
 											"value": "application/json",
-											"name": "Content-Type",
 											"description": "",
 											"type": "text"
 										}
@@ -441,6 +457,423 @@
 									],
 									"cookie": [],
 									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/1000000000000000000000000A",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"1000000000000000000000000A"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"user not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "User - Search",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/users",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"users"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - No criteria, No paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"displayName\": \"System\",\n            \"email\": \"system\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"displayName\": \"Owner\",\n            \"email\": \"owner\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNXT3EY7FG47VDJTEPTDC98\",\n            \"displayName\": \"Lạc Long Quân\",\n            \"email\": \"dragon@domain.com\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNXXTF8958VVYAV33MVVMDN\",\n            \"displayName\": \"Âu Cơ\",\n            \"email\": \"fairy@domain.com\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JX2THMS38ZFVZT88XBAXMXXB\",\n            \"displayName\": \"Rein Chau 2\",\n            \"email\": \"rein.chau@corevision.vn\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JX333DHEJW68EKNBMZS1SKPJ\",\n            \"displayName\": \"Another Doe\",\n            \"email\": \"john.doe@nikkierp.com\",\n            \"status\": \"inactive\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 6,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - No criteria, With paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?page=0&size=3",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "3"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"displayName\": \"System\",\n            \"email\": \"system\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"displayName\": \"Owner\",\n            \"email\": \"owner\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNXT3EY7FG47VDJTEPTDC98\",\n            \"displayName\": \"Lạc Long Quân\",\n            \"email\": \"dragon@domain.com\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 6,\n    \"page\": 0,\n    \"size\": 3\n}"
+								},
+								{
+									"name": "Success - No result",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?page=0&size=3",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "3"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"displayName\": \"System\",\n            \"email\": \"system\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"displayName\": \"Owner\",\n            \"email\": \"owner\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNXT3EY7FG47VDJTEPTDC98\",\n            \"displayName\": \"Lạc Long Quân\",\n            \"email\": \"dragon@domain.com\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 6,\n    \"page\": 0,\n    \"size\": 3\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?page=-1&size=999999999999999999",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "-1"
+												},
+												{
+													"key": "size",
+													"value": "999999999999999999"
+												}
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"page\": \"must be no less than 0\",\n        \"size\": \"must be no greater than 500\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/1000000000000000000000000A",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"1000000000000000000000000A"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"user not found\"\n    }\n}"
+								},
+								{
+									"name": "Success - 1-level criteria",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?graph={\"if\":[\"display_name\", \"=\", \"Owner\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"display_name\", \"=\", \"Owner\"]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"displayName\": \"Owner\",\n            \"email\": \"owner\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 1,\n    \"page\": 0,\n    \"size\": 50\n}"
+								}
+							]
+						},
+						{
+							"name": "User - Delete",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"users",
+										"{{user_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"deletedAt\": 1749224227\n}"
+								},
+								{
+									"name": "Client error - Invalid ID",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/10000000000",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"10000000000"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/1000000000000000000000000A",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"1000000000000000000000000A"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"user not found\"\n    }\n}"
 								}
 							]
 						}
