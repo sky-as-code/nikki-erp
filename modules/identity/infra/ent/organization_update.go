@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -47,26 +48,6 @@ func (ou *OrganizationUpdate) SetNillableDeletedAt(t *time.Time) *OrganizationUp
 // ClearDeletedAt clears the value of the "deleted_at" field.
 func (ou *OrganizationUpdate) ClearDeletedAt() *OrganizationUpdate {
 	ou.mutation.ClearDeletedAt()
-	return ou
-}
-
-// SetDeletedBy sets the "deleted_by" field.
-func (ou *OrganizationUpdate) SetDeletedBy(s string) *OrganizationUpdate {
-	ou.mutation.SetDeletedBy(s)
-	return ou
-}
-
-// SetNillableDeletedBy sets the "deleted_by" field if the given value is not nil.
-func (ou *OrganizationUpdate) SetNillableDeletedBy(s *string) *OrganizationUpdate {
-	if s != nil {
-		ou.SetDeletedBy(*s)
-	}
-	return ou
-}
-
-// ClearDeletedBy clears the value of the "deleted_by" field.
-func (ou *OrganizationUpdate) ClearDeletedBy() *OrganizationUpdate {
-	ou.mutation.ClearDeletedBy()
 	return ou
 }
 
@@ -138,26 +119,6 @@ func (ou *OrganizationUpdate) ClearUpdatedAt() *OrganizationUpdate {
 	return ou
 }
 
-// SetUpdatedBy sets the "updated_by" field.
-func (ou *OrganizationUpdate) SetUpdatedBy(s string) *OrganizationUpdate {
-	ou.mutation.SetUpdatedBy(s)
-	return ou
-}
-
-// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
-func (ou *OrganizationUpdate) SetNillableUpdatedBy(s *string) *OrganizationUpdate {
-	if s != nil {
-		ou.SetUpdatedBy(*s)
-	}
-	return ou
-}
-
-// ClearUpdatedBy clears the value of the "updated_by" field.
-func (ou *OrganizationUpdate) ClearUpdatedBy() *OrganizationUpdate {
-	ou.mutation.ClearUpdatedBy()
-	return ou
-}
-
 // AddUserIDs adds the "users" edge to the User entity by IDs.
 func (ou *OrganizationUpdate) AddUserIDs(ids ...string) *OrganizationUpdate {
 	ou.mutation.AddUserIDs(ids...)
@@ -173,23 +134,34 @@ func (ou *OrganizationUpdate) AddUsers(u ...*User) *OrganizationUpdate {
 	return ou.AddUserIDs(ids...)
 }
 
-// SetGroupsID sets the "groups" edge to the Group entity by ID.
-func (ou *OrganizationUpdate) SetGroupsID(id string) *OrganizationUpdate {
-	ou.mutation.SetGroupsID(id)
+// AddHierarchyIDs adds the "hierarchies" edge to the HierarchyLevel entity by IDs.
+func (ou *OrganizationUpdate) AddHierarchyIDs(ids ...string) *OrganizationUpdate {
+	ou.mutation.AddHierarchyIDs(ids...)
 	return ou
 }
 
-// SetNillableGroupsID sets the "groups" edge to the Group entity by ID if the given value is not nil.
-func (ou *OrganizationUpdate) SetNillableGroupsID(id *string) *OrganizationUpdate {
-	if id != nil {
-		ou = ou.SetGroupsID(*id)
+// AddHierarchies adds the "hierarchies" edges to the HierarchyLevel entity.
+func (ou *OrganizationUpdate) AddHierarchies(h ...*HierarchyLevel) *OrganizationUpdate {
+	ids := make([]string, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
 	}
+	return ou.AddHierarchyIDs(ids...)
+}
+
+// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
+func (ou *OrganizationUpdate) AddGroupIDs(ids ...string) *OrganizationUpdate {
+	ou.mutation.AddGroupIDs(ids...)
 	return ou
 }
 
-// SetGroups sets the "groups" edge to the Group entity.
-func (ou *OrganizationUpdate) SetGroups(g *Group) *OrganizationUpdate {
-	return ou.SetGroupsID(g.ID)
+// AddGroups adds the "groups" edges to the Group entity.
+func (ou *OrganizationUpdate) AddGroups(g ...*Group) *OrganizationUpdate {
+	ids := make([]string, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return ou.AddGroupIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -218,10 +190,46 @@ func (ou *OrganizationUpdate) RemoveUsers(u ...*User) *OrganizationUpdate {
 	return ou.RemoveUserIDs(ids...)
 }
 
-// ClearGroups clears the "groups" edge to the Group entity.
+// ClearHierarchies clears all "hierarchies" edges to the HierarchyLevel entity.
+func (ou *OrganizationUpdate) ClearHierarchies() *OrganizationUpdate {
+	ou.mutation.ClearHierarchies()
+	return ou
+}
+
+// RemoveHierarchyIDs removes the "hierarchies" edge to HierarchyLevel entities by IDs.
+func (ou *OrganizationUpdate) RemoveHierarchyIDs(ids ...string) *OrganizationUpdate {
+	ou.mutation.RemoveHierarchyIDs(ids...)
+	return ou
+}
+
+// RemoveHierarchies removes "hierarchies" edges to HierarchyLevel entities.
+func (ou *OrganizationUpdate) RemoveHierarchies(h ...*HierarchyLevel) *OrganizationUpdate {
+	ids := make([]string, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return ou.RemoveHierarchyIDs(ids...)
+}
+
+// ClearGroups clears all "groups" edges to the Group entity.
 func (ou *OrganizationUpdate) ClearGroups() *OrganizationUpdate {
 	ou.mutation.ClearGroups()
 	return ou
+}
+
+// RemoveGroupIDs removes the "groups" edge to Group entities by IDs.
+func (ou *OrganizationUpdate) RemoveGroupIDs(ids ...string) *OrganizationUpdate {
+	ou.mutation.RemoveGroupIDs(ids...)
+	return ou
+}
+
+// RemoveGroups removes "groups" edges to Group entities.
+func (ou *OrganizationUpdate) RemoveGroups(g ...*Group) *OrganizationUpdate {
+	ids := make([]string, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return ou.RemoveGroupIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -306,12 +314,6 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if ou.mutation.UpdatedAtCleared() {
 		_spec.ClearField(organization.FieldUpdatedAt, field.TypeTime)
 	}
-	if value, ok := ou.mutation.UpdatedBy(); ok {
-		_spec.SetField(organization.FieldUpdatedBy, field.TypeString, value)
-	}
-	if ou.mutation.UpdatedByCleared() {
-		_spec.ClearField(organization.FieldUpdatedBy, field.TypeString)
-	}
 	if ou.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -357,10 +359,55 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ou.mutation.HierarchiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   organization.HierarchiesTable,
+			Columns: []string{organization.HierarchiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ou.mutation.RemovedHierarchiesIDs(); len(nodes) > 0 && !ou.mutation.HierarchiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   organization.HierarchiesTable,
+			Columns: []string{organization.HierarchiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ou.mutation.HierarchiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   organization.HierarchiesTable,
+			Columns: []string{organization.HierarchiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if ou.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
 			Table:   organization.GroupsTable,
 			Columns: []string{organization.GroupsColumn},
 			Bidi:    false,
@@ -370,10 +417,26 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := ou.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !ou.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   organization.GroupsTable,
+			Columns: []string{organization.GroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := ou.mutation.GroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
 			Table:   organization.GroupsTable,
 			Columns: []string{organization.GroupsColumn},
 			Bidi:    false,
@@ -423,26 +486,6 @@ func (ouo *OrganizationUpdateOne) SetNillableDeletedAt(t *time.Time) *Organizati
 // ClearDeletedAt clears the value of the "deleted_at" field.
 func (ouo *OrganizationUpdateOne) ClearDeletedAt() *OrganizationUpdateOne {
 	ouo.mutation.ClearDeletedAt()
-	return ouo
-}
-
-// SetDeletedBy sets the "deleted_by" field.
-func (ouo *OrganizationUpdateOne) SetDeletedBy(s string) *OrganizationUpdateOne {
-	ouo.mutation.SetDeletedBy(s)
-	return ouo
-}
-
-// SetNillableDeletedBy sets the "deleted_by" field if the given value is not nil.
-func (ouo *OrganizationUpdateOne) SetNillableDeletedBy(s *string) *OrganizationUpdateOne {
-	if s != nil {
-		ouo.SetDeletedBy(*s)
-	}
-	return ouo
-}
-
-// ClearDeletedBy clears the value of the "deleted_by" field.
-func (ouo *OrganizationUpdateOne) ClearDeletedBy() *OrganizationUpdateOne {
-	ouo.mutation.ClearDeletedBy()
 	return ouo
 }
 
@@ -514,26 +557,6 @@ func (ouo *OrganizationUpdateOne) ClearUpdatedAt() *OrganizationUpdateOne {
 	return ouo
 }
 
-// SetUpdatedBy sets the "updated_by" field.
-func (ouo *OrganizationUpdateOne) SetUpdatedBy(s string) *OrganizationUpdateOne {
-	ouo.mutation.SetUpdatedBy(s)
-	return ouo
-}
-
-// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
-func (ouo *OrganizationUpdateOne) SetNillableUpdatedBy(s *string) *OrganizationUpdateOne {
-	if s != nil {
-		ouo.SetUpdatedBy(*s)
-	}
-	return ouo
-}
-
-// ClearUpdatedBy clears the value of the "updated_by" field.
-func (ouo *OrganizationUpdateOne) ClearUpdatedBy() *OrganizationUpdateOne {
-	ouo.mutation.ClearUpdatedBy()
-	return ouo
-}
-
 // AddUserIDs adds the "users" edge to the User entity by IDs.
 func (ouo *OrganizationUpdateOne) AddUserIDs(ids ...string) *OrganizationUpdateOne {
 	ouo.mutation.AddUserIDs(ids...)
@@ -549,23 +572,34 @@ func (ouo *OrganizationUpdateOne) AddUsers(u ...*User) *OrganizationUpdateOne {
 	return ouo.AddUserIDs(ids...)
 }
 
-// SetGroupsID sets the "groups" edge to the Group entity by ID.
-func (ouo *OrganizationUpdateOne) SetGroupsID(id string) *OrganizationUpdateOne {
-	ouo.mutation.SetGroupsID(id)
+// AddHierarchyIDs adds the "hierarchies" edge to the HierarchyLevel entity by IDs.
+func (ouo *OrganizationUpdateOne) AddHierarchyIDs(ids ...string) *OrganizationUpdateOne {
+	ouo.mutation.AddHierarchyIDs(ids...)
 	return ouo
 }
 
-// SetNillableGroupsID sets the "groups" edge to the Group entity by ID if the given value is not nil.
-func (ouo *OrganizationUpdateOne) SetNillableGroupsID(id *string) *OrganizationUpdateOne {
-	if id != nil {
-		ouo = ouo.SetGroupsID(*id)
+// AddHierarchies adds the "hierarchies" edges to the HierarchyLevel entity.
+func (ouo *OrganizationUpdateOne) AddHierarchies(h ...*HierarchyLevel) *OrganizationUpdateOne {
+	ids := make([]string, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
 	}
+	return ouo.AddHierarchyIDs(ids...)
+}
+
+// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
+func (ouo *OrganizationUpdateOne) AddGroupIDs(ids ...string) *OrganizationUpdateOne {
+	ouo.mutation.AddGroupIDs(ids...)
 	return ouo
 }
 
-// SetGroups sets the "groups" edge to the Group entity.
-func (ouo *OrganizationUpdateOne) SetGroups(g *Group) *OrganizationUpdateOne {
-	return ouo.SetGroupsID(g.ID)
+// AddGroups adds the "groups" edges to the Group entity.
+func (ouo *OrganizationUpdateOne) AddGroups(g ...*Group) *OrganizationUpdateOne {
+	ids := make([]string, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return ouo.AddGroupIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -594,10 +628,46 @@ func (ouo *OrganizationUpdateOne) RemoveUsers(u ...*User) *OrganizationUpdateOne
 	return ouo.RemoveUserIDs(ids...)
 }
 
-// ClearGroups clears the "groups" edge to the Group entity.
+// ClearHierarchies clears all "hierarchies" edges to the HierarchyLevel entity.
+func (ouo *OrganizationUpdateOne) ClearHierarchies() *OrganizationUpdateOne {
+	ouo.mutation.ClearHierarchies()
+	return ouo
+}
+
+// RemoveHierarchyIDs removes the "hierarchies" edge to HierarchyLevel entities by IDs.
+func (ouo *OrganizationUpdateOne) RemoveHierarchyIDs(ids ...string) *OrganizationUpdateOne {
+	ouo.mutation.RemoveHierarchyIDs(ids...)
+	return ouo
+}
+
+// RemoveHierarchies removes "hierarchies" edges to HierarchyLevel entities.
+func (ouo *OrganizationUpdateOne) RemoveHierarchies(h ...*HierarchyLevel) *OrganizationUpdateOne {
+	ids := make([]string, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return ouo.RemoveHierarchyIDs(ids...)
+}
+
+// ClearGroups clears all "groups" edges to the Group entity.
 func (ouo *OrganizationUpdateOne) ClearGroups() *OrganizationUpdateOne {
 	ouo.mutation.ClearGroups()
 	return ouo
+}
+
+// RemoveGroupIDs removes the "groups" edge to Group entities by IDs.
+func (ouo *OrganizationUpdateOne) RemoveGroupIDs(ids ...string) *OrganizationUpdateOne {
+	ouo.mutation.RemoveGroupIDs(ids...)
+	return ouo
+}
+
+// RemoveGroups removes "groups" edges to Group entities.
+func (ouo *OrganizationUpdateOne) RemoveGroups(g ...*Group) *OrganizationUpdateOne {
+	ids := make([]string, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return ouo.RemoveGroupIDs(ids...)
 }
 
 // Where appends a list predicates to the OrganizationUpdate builder.
@@ -712,12 +782,6 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 	if ouo.mutation.UpdatedAtCleared() {
 		_spec.ClearField(organization.FieldUpdatedAt, field.TypeTime)
 	}
-	if value, ok := ouo.mutation.UpdatedBy(); ok {
-		_spec.SetField(organization.FieldUpdatedBy, field.TypeString, value)
-	}
-	if ouo.mutation.UpdatedByCleared() {
-		_spec.ClearField(organization.FieldUpdatedBy, field.TypeString)
-	}
 	if ouo.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -763,10 +827,55 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ouo.mutation.HierarchiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   organization.HierarchiesTable,
+			Columns: []string{organization.HierarchiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ouo.mutation.RemovedHierarchiesIDs(); len(nodes) > 0 && !ouo.mutation.HierarchiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   organization.HierarchiesTable,
+			Columns: []string{organization.HierarchiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ouo.mutation.HierarchiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   organization.HierarchiesTable,
+			Columns: []string{organization.HierarchiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if ouo.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
 			Table:   organization.GroupsTable,
 			Columns: []string{organization.GroupsColumn},
 			Bidi:    false,
@@ -776,10 +885,26 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := ouo.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !ouo.mutation.GroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   organization.GroupsTable,
+			Columns: []string{organization.GroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := ouo.mutation.GroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
 			Table:   organization.GroupsTable,
 			Columns: []string{organization.GroupsColumn},
 			Bidi:    false,

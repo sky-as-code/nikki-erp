@@ -1,12 +1,14 @@
 package config
 
 import (
+	"fmt"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/xgfone/go-cast"
+	"go.bryk.io/pkg/errors"
 
 	. "github.com/sky-as-code/nikki-erp/common/fault"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
@@ -118,9 +120,5 @@ func (this *configServiceImpl) GetFloat32(name c.ConfigName, defaultVal ...inter
 }
 
 func (*configServiceImpl) panicOnConversionError(funcName string, name c.ConfigName, err error) {
-	PanicOnErr(WrapTechnicalError(
-		err,
-		"configServiceImpl.%s failed to convert config '%s'",
-		funcName, name,
-	))
+	PanicOnErr(errors.Wrap(err, fmt.Sprintf("configServiceImpl.%s failed to convert config '%s'", funcName, name)))
 }

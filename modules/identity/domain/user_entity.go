@@ -7,6 +7,7 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	util "github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -40,7 +41,7 @@ func (this *User) SetDefaults() error {
 		return err
 	}
 
-	util.SetDefaultValue(this.Status, UserStatusInactive)
+	safe.SetDefaultValue(&this.Status, UserStatusInactive)
 
 	now := time.Now()
 
@@ -49,38 +50,51 @@ func (this *User) SetDefaults() error {
 	}
 
 	if this.FailedLoginAttempts == nil || *this.FailedLoginAttempts < 0 {
-		*this.FailedLoginAttempts = 0
+		this.FailedLoginAttempts = util.ToPtr(0)
 	}
 
-	util.SetDefaultValue(this.MustChangePassword, true)
+	safe.SetDefaultValue(&this.MustChangePassword, true)
 
 	return nil
 }
 
 func (this *User) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		val.Field(&this.AvatarUrl, val.When(this.AvatarUrl != nil,
-			val.Length(1, 255),
-			val.IsUrl,
-		)),
+		val.Field(&this.AvatarUrl,
+			val.When(this.AvatarUrl != nil,
+				val.Length(1, model.MODEL_RULE_URL_LENGTH),
+				val.IsUrl,
+			),
+		),
 		val.Field(&this.DisplayName,
-			val.RequiredWhen(!forEdit),
-			val.Length(1, 50),
+			val.NotNilWhen(!forEdit),
+			val.When(this.DisplayName != nil,
+				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
+			),
 		),
 		val.Field(&this.Email,
-			val.RequiredWhen(!forEdit),
-			val.IsEmail,
-			val.Length(5, 100),
+			val.NotNilWhen(!forEdit),
+			val.When(this.Email != nil,
+				val.NotEmpty,
+				val.IsEmail,
+				val.Length(5, model.MODEL_RULE_EMAIL_LENGTH),
+			),
+		),
+		val.Field(&this.FailedLoginAttempts,
+			val.Min(0),
+			val.Max(model.MODEL_RULE_MAX_INT16),
 		),
 		val.Field(&this.PasswordRaw,
-			val.RequiredWhen(!forEdit),
-			val.Length(8, 100),
+			val.NotNilWhen(!forEdit),
+			val.When(this.PasswordRaw != nil,
+				val.NotEmpty,
+				val.Length(model.MODEL_RULE_PASSWORD_MIN_LENGTH, model.MODEL_RULE_PASSWORD_MAX_LENGTH),
+			),
 		),
 		UserStatusValidateRule(&this.Status),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
-	// rules = append(rules, this.OrgBase.ValidateRules(forEdit)...)
 
 	return val.ApiBased.ValidateStruct(this, rules...)
 }

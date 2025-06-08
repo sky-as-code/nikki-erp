@@ -353,22 +353,6 @@ func (c *GroupClient) GetX(ctx context.Context, id string) *Group {
 	return obj
 }
 
-// QueryOrganization queries the organization edge of a Group.
-func (c *GroupClient) QueryOrganization(gr *Group) *OrganizationQuery {
-	query := (&OrganizationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(group.Table, group.FieldID, id),
-			sqlgraph.To(organization.Table, organization.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, group.OrganizationTable, group.OrganizationColumn),
-		)
-		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryUsers queries the users edge of a Group.
 func (c *GroupClient) QueryUsers(gr *Group) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
@@ -378,6 +362,22 @@ func (c *GroupClient) QueryUsers(gr *Group) *UserQuery {
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, group.UsersTable, group.UsersPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOrg queries the org edge of a Group.
+func (c *GroupClient) QueryOrg(gr *Group) *OrganizationQuery {
+	query := (&OrganizationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, group.OrgTable, group.OrgColumn),
 		)
 		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
 		return fromV, nil
@@ -566,22 +566,6 @@ func (c *HierarchyLevelClient) QueryUsers(hl *HierarchyLevel) *UserQuery {
 	return query
 }
 
-// QueryDeleter queries the deleter edge of a HierarchyLevel.
-func (c *HierarchyLevelClient) QueryDeleter(hl *HierarchyLevel) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := hl.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, hierarchylevel.DeleterTable, hierarchylevel.DeleterColumn),
-		)
-		fromV = sqlgraph.Neighbors(hl.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryParent queries the parent edge of a HierarchyLevel.
 func (c *HierarchyLevelClient) QueryParent(hl *HierarchyLevel) *HierarchyLevelQuery {
 	query := (&HierarchyLevelClient{config: c.config}).Query()
@@ -763,6 +747,22 @@ func (c *OrganizationClient) QueryUsers(o *Organization) *UserQuery {
 	return query
 }
 
+// QueryHierarchies queries the hierarchies edge of a Organization.
+func (c *OrganizationClient) QueryHierarchies(o *Organization) *HierarchyLevelQuery {
+	query := (&HierarchyLevelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := o.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(organization.Table, organization.FieldID, id),
+			sqlgraph.To(hierarchylevel.Table, hierarchylevel.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, organization.HierarchiesTable, organization.HierarchiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryGroups queries the groups edge of a Organization.
 func (c *OrganizationClient) QueryGroups(o *Organization) *GroupQuery {
 	query := (&GroupClient{config: c.config}).Query()
@@ -771,7 +771,7 @@ func (c *OrganizationClient) QueryGroups(o *Organization) *GroupQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, organization.GroupsTable, organization.GroupsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, organization.GroupsTable, organization.GroupsColumn),
 		)
 		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
 		return fromV, nil

@@ -45,7 +45,7 @@ func (this *GroupHandler) UpdateGroup(ctx context.Context, packet *cqrs.RequestP
 
 func (this *GroupHandler) DeleteGroup(ctx context.Context, packet *cqrs.RequestPacket[it.DeleteGroupCommand]) (*cqrs.Reply[it.DeleteGroupResult], error) {
 	cmd := packet.Request()
-	result, err := this.GroupSvc.DeleteGroup(ctx, cmd.Id, cmd.DeletedBy)
+	result, err := this.GroupSvc.DeleteGroup(ctx, *cmd)
 	ft.PanicOnErr(err)
 
 	return &cqrs.Reply[it.DeleteGroupResult]{
@@ -53,9 +53,9 @@ func (this *GroupHandler) DeleteGroup(ctx context.Context, packet *cqrs.RequestP
 	}, nil
 }
 
-func (this *GroupHandler) GetGroupByID(ctx context.Context, packet *cqrs.RequestPacket[it.GetGroupByIdQuery]) (*cqrs.Reply[it.GetGroupByIdResult], error) {
+func (this *GroupHandler) GetGroupById(ctx context.Context, packet *cqrs.RequestPacket[it.GetGroupByIdQuery]) (*cqrs.Reply[it.GetGroupByIdResult], error) {
 	cmd := packet.Request()
-	result, err := this.GroupSvc.GetGroupByID(ctx, cmd.Id, cmd.WithOrg)
+	result, err := this.GroupSvc.GetGroupById(ctx, *cmd)
 	ft.PanicOnErr(err)
 
 	reply := &cqrs.Reply[it.GetGroupByIdResult]{

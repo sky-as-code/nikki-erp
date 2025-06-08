@@ -1,0 +1,452 @@
+{
+	"info": {
+		"_postman_id": "86e0d870-3ae7-41fb-9d8b-53feb85b5dbd",
+		"name": "NikkiERP - API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "602425"
+	},
+	"item": [
+		{
+			"name": "Identity",
+			"item": [
+				{
+					"name": "User",
+					"item": [
+						{
+							"name": "User - Create",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const body = pm.response.text();\r",
+											"try {\r",
+											"    const payload = JSON.parse(body);\r",
+											"    const { id, etag } = payload;\r",
+											"    id && pm.environment.set('user_id', id);\r",
+											"    etag && pm.environment.set('etag', etag);\r",
+											"} catch (err) {\r",
+											"    console.error(err)\r",
+											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"displayName\": \"Rein Chau\",\r\n    \"email\": \"rein.chau@corevision.vn\",\r\n    \"password\": \"p@sswo0rd\",\r\n    \"isEnabled\": true\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/users",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"users"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"displayName\": \"Rein Chau\",\r\n    \"email\": \"rein.chau@corevision.vn\",\r\n    \"password\": \"p@sswo0rd\",\r\n    \"isEnabled\": true\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JX2THMS38ZFVZT88XBAXMXXB\",\n    \"createdAt\": 1749220381,\n    \"etag\": \"1749220381475025300\",\n    \"status\": \"active\"\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"email\": \"nobody@\",\r\n    \"password\": \"\",\r\n    \"isEnabled\": true\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"avatarUrl\": \"cannot be blank\",\n        \"displayName\": \"cannot be blank\",\n        \"email\": \"must be a valid email address\",\n        \"passwordRaw\": \"cannot be blank\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Existing email",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"displayName\": \"John Doe\",\r\n    \"email\": \"john.doe@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\",\r\n    \"isEnabled\": true\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"email\": \"email already exists\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "User - Update",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"isEnabled\": true\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"users",
+										"{{user_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"isEnabled\": true\r\n}\r\n",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JX2V9CGPA5VSM2H1AD9QYD0A\",\n    \"updatedAt\": 1749221297,\n    \"etag\": \"1749221297409804700\"\n}"
+								},
+								{
+									"name": "Client error - Invalid fields Copy",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"avatarUrl\": \"\",\r\n    \"displayName\": \"\",\r\n    \"email\": \"nobody@nikkierp.\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"password\": \"12\",\r\n    \"isEnabled\": true\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"avatarUrl\": \"cannot be blank\",\n        \"displayName\": \"cannot be blank\",\n        \"email\": \"must be a valid email address\",\n        \"passwordRaw\": \"the length must be between 8 and 1000\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Unmatched etag",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"isEnabled\": true\r\n}\r\n",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"user has been modified by another process\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "User - Get by ID",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const body = pm.response.text();\r",
+											"try {\r",
+											"    const payload = JSON.parse(body);\r",
+											"    const etag = payload.etag;\r",
+											"    etag && pm.environment.set('etag', etag);\r",
+											"} catch (err) {\r",
+											"    console.error(err)\r",
+											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"users",
+										"{{user_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JX2V9CGPA5VSM2H1AD9QYD0A\",\n    \"createdAt\": 1749221159,\n    \"etag\": \"1749221297409804700\",\n    \"status\": \"active\"\n}"
+								},
+								{
+									"name": "Client error - Invalid ID",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/01JX2V9CGPA5",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"01JX2V9CGPA5"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
+}

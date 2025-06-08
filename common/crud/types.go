@@ -8,4 +8,6 @@ type PagingOptions struct {
 type PagedResult[T any] struct {
 	Items []T `json:"items"`
 	Total int `json:"total"`
+	Page  int `json:"page"`
+	Size  int `json:"size"`
 }

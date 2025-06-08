@@ -2,15 +2,12 @@ package user
 
 import (
 	"context"
-
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
 type UserService interface {
 	CreateUser(ctx context.Context, cmd CreateUserCommand) (*CreateUserResult, error)
-	DeleteUser(ctx context.Context, id string, deletedBy string) (*DeleteUserResult, error)
-	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
-	GetUserByID(ctx context.Context, id string) (*GetUserByIdResult, error)
-	GetUserByUsername(ctx context.Context, username string) (*domain.User, error)
+	DeleteUser(ctx context.Context, cmd DeleteUserCommand) (*DeleteUserResult, error)
+	GetUserById(ctx context.Context, query GetUserByIdQuery) (*GetUserByIdResult, error)
+	SearchUsers(ctx context.Context, query SearchUsersCommand) (*SearchUsersResult, error)
 	UpdateUser(ctx context.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)
 }

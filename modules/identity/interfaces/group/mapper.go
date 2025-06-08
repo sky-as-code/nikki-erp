@@ -7,13 +7,9 @@ import (
 
 func (cmd CreateGroupCommand) ToGroup() *domain.Group {
 	return &domain.Group{
-		Name:        cmd.Name,
+		Name:        &cmd.Name,
 		Description: cmd.Description,
 		OrgId:       cmd.OrgId,
-
-		AuditableBase: model.AuditableBase{
-			CreatedBy: model.WrapId(cmd.CreatedBy),
-		},
 	}
 }
 
@@ -23,13 +19,9 @@ func (cmd UpdateGroupCommand) ToGroup() *domain.Group {
 		Description: cmd.Description,
 		OrgId:       cmd.OrgId,
 
-		AuditableBase: model.AuditableBase{
-			UpdatedBy: model.WrapId(cmd.UpdatedBy),
-		},
-
 		ModelBase: model.ModelBase{
-			Id:   model.WrapId(cmd.Id),
-			Etag: model.WrapEtag(cmd.Etag),
+			Id:   &cmd.Id,
+			Etag: &cmd.Etag,
 		},
 	}
 }

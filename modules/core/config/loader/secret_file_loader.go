@@ -5,8 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"go.bryk.io/pkg/errors"
+
 	"github.com/sky-as-code/nikki-erp/common/env"
-	. "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -41,9 +42,9 @@ func (fileLoader *SecretFileConfigLoader) Get(name string) (string, error) {
 	bytes, err := os.ReadFile(filepath.Join(workDir, secretFilePath))
 
 	if err != nil {
-		return "", WrapTechnicalError(
+		return "", errors.Wrap(
 			err,
-			"SecretFileConfigLoader.Get('%s') failed to read secret from file %s", name, secretFilePath,
+			fmt.Sprintf("SecretFileConfigLoader.Get('%s') failed to read secret from file %s", name, secretFilePath),
 		)
 	}
 	return string(bytes), nil

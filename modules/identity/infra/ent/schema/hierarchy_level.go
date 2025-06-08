@@ -2,11 +2,14 @@
 package schema
 
 import (
+	"time"
+
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"entgo.io/ent/schema/mixin"
 )
 
@@ -20,20 +23,13 @@ func (HierarchyLevelMixin) Fields() []ent.Field {
 			Immutable().
 			StorageKey("id"),
 
-		field.Time("deleted_at").
-			Optional().
-			Nillable().
-			Comment("Set value for this column when the process is running to delete all resources under this hierarchy level"),
-
-		field.String("deleted_by").
-			Optional().
-			Nillable().
-			Comment("Set value for this column when the process is running to delete all resources under this hierarchy level"),
+		field.Time("created_at").
+			Default(time.Now).
+			Immutable(),
 
 		field.String("etag"),
 
-		field.String("name").
-			Unique(),
+		field.String("name"),
 
 		field.String("org_id").
 			Immutable(),
@@ -71,10 +67,6 @@ func (HierarchyLevel) Edges() []ent.Edge {
 		edge.From("users", User.Type).
 			Ref("hierarchy"),
 
-		edge.To("deleter", User.Type).
-			Field("deleted_by").
-			Unique(),
-
 		edge.To("parent", HierarchyLevel.Type).
 			Field("parent_id").
 			Unique(), // O2M relationship
@@ -84,6 +76,12 @@ func (HierarchyLevel) Edges() []ent.Edge {
 			Immutable().
 			Required().
 			Unique(), // O2M relationship
+	}
+}
+
+func (HierarchyLevel) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name", "org_id").Unique(),
 	}
 }
 

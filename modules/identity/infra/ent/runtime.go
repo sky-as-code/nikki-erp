@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/schema"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -21,13 +22,26 @@ func init() {
 	groupFields := schema.Group{}.Fields()
 	_ = groupFields
 	// groupDescCreatedAt is the schema descriptor for created_at field.
-	groupDescCreatedAt := groupMixinFields0[5].Descriptor()
+	groupDescCreatedAt := groupMixinFields0[1].Descriptor()
 	// group.DefaultCreatedAt holds the default value on creation for the created_at field.
 	group.DefaultCreatedAt = groupDescCreatedAt.Default.(func() time.Time)
+	// groupDescName is the schema descriptor for name field.
+	groupDescName := groupMixinFields0[5].Descriptor()
+	// group.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	group.NameValidator = groupDescName.Validators[0].(func(string) error)
 	// groupDescUpdatedAt is the schema descriptor for updated_at field.
 	groupDescUpdatedAt := groupMixinFields0[7].Descriptor()
 	// group.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	group.UpdateDefaultUpdatedAt = groupDescUpdatedAt.UpdateDefault.(func() time.Time)
+	hierarchylevelMixin := schema.HierarchyLevel{}.Mixin()
+	hierarchylevelMixinFields0 := hierarchylevelMixin[0].Fields()
+	_ = hierarchylevelMixinFields0
+	hierarchylevelFields := schema.HierarchyLevel{}.Fields()
+	_ = hierarchylevelFields
+	// hierarchylevelDescCreatedAt is the schema descriptor for created_at field.
+	hierarchylevelDescCreatedAt := hierarchylevelMixinFields0[1].Descriptor()
+	// hierarchylevel.DefaultCreatedAt holds the default value on creation for the created_at field.
+	hierarchylevel.DefaultCreatedAt = hierarchylevelDescCreatedAt.Default.(func() time.Time)
 	organizationMixin := schema.Organization{}.Mixin()
 	organizationMixinFields0 := organizationMixin[0].Fields()
 	_ = organizationMixinFields0
@@ -38,7 +52,7 @@ func init() {
 	// organization.DefaultCreatedAt holds the default value on creation for the created_at field.
 	organization.DefaultCreatedAt = organizationDescCreatedAt.Default.(func() time.Time)
 	// organizationDescUpdatedAt is the schema descriptor for updated_at field.
-	organizationDescUpdatedAt := organizationMixinFields0[9].Descriptor()
+	organizationDescUpdatedAt := organizationMixinFields0[7].Descriptor()
 	// organization.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	organization.UpdateDefaultUpdatedAt = organizationDescUpdatedAt.UpdateDefault.(func() time.Time)
 	userMixin := schema.User{}.Mixin()
@@ -51,15 +65,11 @@ func init() {
 	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
 	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
 	// userDescFailedLoginAttempts is the schema descriptor for failed_login_attempts field.
-	userDescFailedLoginAttempts := userMixinFields0[7].Descriptor()
+	userDescFailedLoginAttempts := userMixinFields0[6].Descriptor()
 	// user.DefaultFailedLoginAttempts holds the default value on creation for the failed_login_attempts field.
 	user.DefaultFailedLoginAttempts = userDescFailedLoginAttempts.Default.(int)
 	// userDescMustChangePassword is the schema descriptor for must_change_password field.
-	userDescMustChangePassword := userMixinFields0[12].Descriptor()
+	userDescMustChangePassword := userMixinFields0[11].Descriptor()
 	// user.DefaultMustChangePassword holds the default value on creation for the must_change_password field.
 	user.DefaultMustChangePassword = userDescMustChangePassword.Default.(bool)
-	// userDescUpdatedAt is the schema descriptor for updated_at field.
-	userDescUpdatedAt := userMixinFields0[16].Descriptor()
-	// user.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	user.UpdateDefaultUpdatedAt = userDescUpdatedAt.UpdateDefault.(func() time.Time)
 }

@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"go.bryk.io/pkg/errors"
-
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 
@@ -26,9 +24,7 @@ type GroupServiceImpl struct {
 
 func (this *GroupServiceImpl) CreateGroup(ctx context.Context, cmd it.CreateGroupCommand) (result *it.CreateGroupResult, err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), "failed to create group")
-		}
+		err = ft.RecoverPanic(recover(), "failed to create group")
 	}()
 
 	group := cmd.ToGroup()
@@ -37,28 +33,25 @@ func (this *GroupServiceImpl) CreateGroup(ctx context.Context, cmd it.CreateGrou
 	valErr := group.Validate(false)
 	if valErr.Count() > 0 {
 		return &it.CreateGroupResult{
-			ClientError: ft.WrapValidationErrors(valErr),
+			ClientError: valErr.ToClientError(),
 		}, nil
 	}
 
-	groupFromDb, err := this.groupRepo.FindByName(ctx, group.Name)
+	dbGroup, err := this.groupRepo.FindByName(ctx, *group.Name)
 	ft.PanicOnErr(err)
 
-	if groupFromDb != nil {
-		vErrors := ft.NewValidationErrors()
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "name",
-			Error: "group name already exists",
-		})
+	if dbGroup != nil {
+		vErrs := ft.NewValidationErrors()
+		vErrs.Append("name", "group name already exists")
 		return &it.CreateGroupResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	groupWithOrg, err := this.groupRepo.Create(ctx, *group)
+	createdGroup, err := this.groupRepo.Create(ctx, *group)
 	ft.PanicOnErr(err)
 
-	return &it.CreateGroupResult{Data: groupWithOrg}, err
+	return &it.CreateGroupResult{Data: createdGroup}, err
 }
 
 func (this *GroupServiceImpl) setGroupDefaults(group *domain.Group) {
@@ -70,9 +63,7 @@ func (this *GroupServiceImpl) setGroupDefaults(group *domain.Group) {
 
 func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd it.UpdateGroupCommand) (result *it.UpdateGroupResult, err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), "failed to update group")
-		}
+		err = ft.RecoverPanic(recover(), "failed to update group")
 	}()
 
 	group := cmd.ToGroup()
@@ -80,48 +71,41 @@ func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd it.UpdateGrou
 	valErr := group.Validate(true)
 	if valErr.Count() > 0 {
 		return &it.UpdateGroupResult{
-			ClientError: ft.WrapValidationErrors(valErr),
+			ClientError: valErr.ToClientError(),
 		}, nil
 	}
 
-	groupFromDb, err := this.groupRepo.FindById(ctx, model.Id(cmd.Id), false)
+	dbGroup, err := this.groupRepo.FindById(ctx, it.FindByIdParam{
+		Id: cmd.Id,
+	})
 	ft.PanicOnErr(err)
 
-	if groupFromDb == nil {
+	if dbGroup == nil {
 		vErrors := ft.NewValidationErrors()
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "id",
-			Error: "group not found",
-		})
+		vErrors.Append("id", "group not found")
 
 		return &it.UpdateGroupResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrors.ToClientError(),
 		}, nil
 
 	}
 
-	if *groupFromDb.Group.Etag != *group.Etag {
+	if dbGroup.Etag.String() != group.Etag.String() {
 		vErrors := ft.NewValidationErrors()
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "etag",
-			Error: "group has been modified by another user",
-		})
+		vErrors.Append("etag", "group has been modified by another user")
 		return &it.UpdateGroupResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrors.ToClientError(),
 		}, nil
 	}
 
-	groupFromDb, err = this.groupRepo.FindByName(ctx, group.Name)
+	dbGroup, err = this.groupRepo.FindByName(ctx, *group.Name)
 	ft.PanicOnErr(err)
 
-	if groupFromDb != nil {
+	if dbGroup != nil {
 		vErrors := ft.NewValidationErrors()
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "name",
-			Error: "group with this name already exists",
-		})
+		vErrors.Append("name", "group with this name already exists")
 		return &it.UpdateGroupResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrors.ToClientError(),
 		}, nil
 	}
 
@@ -132,28 +116,25 @@ func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd it.UpdateGrou
 	return &it.UpdateGroupResult{Data: groupWithOrg}, err
 }
 
-func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, Id string, deletedBy string) (result *it.DeleteGroupResult, err error) {
+func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd it.DeleteGroupCommand) (result *it.DeleteGroupResult, err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), "failed to delete group")
-		}
+		err = ft.RecoverPanic(recover(), "failed to delete group")
 	}()
 
-	group, err := this.groupRepo.FindById(ctx, model.Id(Id), false)
+	dbGroup, err := this.groupRepo.FindById(ctx, it.FindByIdParam{
+		Id: cmd.Id,
+	})
 	ft.PanicOnErr(err)
 
-	if group == nil {
+	if dbGroup == nil {
 		vErrors := ft.NewValidationErrors()
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "id",
-			Error: "group not found",
-		})
+		vErrors.Append("id", "group not found")
 		return &it.DeleteGroupResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrors.ToClientError(),
 		}, nil
 	}
 
-	err = this.groupRepo.Delete(ctx, model.Id(Id))
+	err = this.groupRepo.Delete(ctx, model.Id(cmd.Id))
 	ft.PanicOnErr(err)
 
 	return &it.DeleteGroupResult{
@@ -163,39 +144,30 @@ func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, Id string, delete
 	}, nil
 }
 
-func (this *GroupServiceImpl) GetGroupByID(ctx context.Context, Id string, withOrg bool) (result *it.GetGroupByIdResult, err error) {
+func (this *GroupServiceImpl) GetGroupById(ctx context.Context, query it.GetGroupByIdQuery) (result *it.GetGroupByIdResult, err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), "failed to get group")
-		}
+		err = ft.RecoverPanic(recover(), "failed to get group")
 	}()
 
-	vErrors := ft.NewValidationErrors()
-	if Id == "" {
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "id",
-			Error: "group ID cannot be empty",
-		})
+	vErrs := query.Validate()
+	if vErrs.Count() > 0 {
 		return &it.GetGroupByIdResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	group, err := this.groupRepo.FindById(ctx, model.Id(Id), withOrg)
+	dbGroup, err := this.groupRepo.FindById(ctx, query)
 	ft.PanicOnErr(err)
 
-	if group == nil {
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "id",
-			Error: "group not found",
-		})
+	if dbGroup == nil {
+		vErrs.Append("id", "group not found")
 		return &it.GetGroupByIdResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
 	return &it.GetGroupByIdResult{
-		Data: group,
+		Data: dbGroup,
 	}, nil
 
 }

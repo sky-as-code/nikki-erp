@@ -1,110 +1,98 @@
 package repository
 
 import (
-	"github.com/thoas/go-funk"
-
+	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 )
 
-func entToGroup(entGroup *ent.Group) *domain.GroupWithOrg {
-	group := &domain.GroupWithOrg{
-		Group: &domain.Group{
-			ModelBase: model.ModelBase{
-				Id:   model.WrapId(entGroup.ID),
-				Etag: model.WrapEtag(entGroup.Etag),
-			},
-			AuditableBase: model.AuditableBase{
-				CreatedAt: &entGroup.CreatedAt,
-				CreatedBy: model.WrapId(entGroup.CreatedBy),
-				UpdatedAt: entGroup.UpdatedAt,
-				UpdatedBy: model.WrapNillableId(entGroup.UpdatedBy),
-			},
-
-			Name:        entGroup.Name,
-			Description: entGroup.Description,
-			OrgId:       entGroup.OrgID,
+func entToGroup(dbGroup *ent.Group) *domain.Group {
+	group := &domain.Group{
+		ModelBase: model.ModelBase{
+			Id:   model.WrapId(dbGroup.ID),
+			Etag: model.WrapEtag(dbGroup.Etag),
 		},
+		AuditableBase: model.AuditableBase{
+			CreatedAt: &dbGroup.CreatedAt,
+			UpdatedAt: dbGroup.UpdatedAt,
+		},
+
+		Name:        &dbGroup.Name,
+		Description: dbGroup.Description,
+		OrgId:       model.WrapNillableId(dbGroup.OrgID),
 	}
 
-	if entGroup.Edges.Organization != nil {
-		group.Organization = entToOrganization(entGroup.Edges.Organization)
+	if dbGroup.Edges.Org != nil {
+		group.Org = entToOrganization(dbGroup.Edges.Org)
 	}
 
 	return group
 }
 
-func entToGroups(entGroups []ent.Group) []domain.Group {
-	if entGroups == nil {
+func entToGroups(dbGroups []*ent.Group) []domain.Group {
+	if dbGroups == nil {
 		return nil
 	}
-	groups := funk.Map(entGroups, func(entGroup *ent.Group) domain.Group {
-		return entToGroup(entGroup)
+	return array.Map(dbGroups, func(entGroup *ent.Group) domain.Group {
+		return *entToGroup(entGroup)
 	})
-	return groups.([]domain.Group)
 }
 
-func entToOrganization(entOrg *ent.Organization) *domain.Organization {
+func entToOrganization(dbOrg *ent.Organization) *domain.Organization {
 	return &domain.Organization{
 		ModelBase: model.ModelBase{
-			Id: model.WrapId(entOrg.ID),
+			Id: model.WrapId(dbOrg.ID),
 		},
 		AuditableBase: model.AuditableBase{
-			CreatedAt: &entOrg.CreatedAt,
-			CreatedBy: model.WrapId(entOrg.CreatedBy),
-			UpdatedAt: entOrg.UpdatedAt,
-			UpdatedBy: model.WrapNillableId(entOrg.UpdatedBy),
+			CreatedAt: &dbOrg.CreatedAt,
+			UpdatedAt: dbOrg.UpdatedAt,
 		},
-		DisplayName: &entOrg.DisplayName,
-		Slug:        model.WrapSlug(entOrg.Slug),
+		DisplayName: &dbOrg.DisplayName,
+		Slug:        model.WrapSlug(dbOrg.Slug),
 	}
 }
 
-func entToOrganizations(entOrgs []*ent.Organization) []domain.Organization {
-	if entOrgs == nil {
+func entToOrganizations(dbOrgs []*ent.Organization) []domain.Organization {
+	if dbOrgs == nil {
 		return nil
 	}
-	orgs := funk.Map(entOrgs, func(entOrg ent.Organization) domain.Organization {
-		return *entToOrganization(&entOrg)
+	return array.Map(dbOrgs, func(entOrg *ent.Organization) domain.Organization {
+		return *entToOrganization(entOrg)
 	})
-	return orgs.([]domain.Organization)
 }
 
-func entToUser(entUser *ent.User) *domain.User {
+func entToUser(dbUser *ent.User) *domain.User {
 	return &domain.User{
 		ModelBase: model.ModelBase{
-			Id:   model.WrapId(entUser.ID),
-			Etag: model.WrapEtag(entUser.Etag),
+			Id:   model.WrapId(dbUser.ID),
+			Etag: model.WrapEtag(dbUser.Etag),
 		},
 		AuditableBase: model.AuditableBase{
-			CreatedAt: &entUser.CreatedAt,
-			CreatedBy: model.WrapId(entUser.CreatedBy),
-			UpdatedAt: entUser.UpdatedAt,
-			UpdatedBy: model.WrapNillableId(entUser.UpdatedBy),
+			CreatedAt: &dbUser.CreatedAt,
+			UpdatedAt: dbUser.UpdatedAt,
 		},
-		AvatarUrl:           entUser.AvatarURL,
-		DisplayName:         &entUser.DisplayName,
-		Email:               &entUser.Email,
-		FailedLoginAttempts: &entUser.FailedLoginAttempts,
-		LastLoginAt:         entUser.LastLoginAt,
-		LockedUntil:         entUser.LockedUntil,
-		MustChangePassword:  &entUser.MustChangePassword,
-		PasswordChangedAt:   &entUser.PasswordChangedAt,
-		PasswordHash:        &entUser.PasswordHash,
-		Status:              domain.WrapUserStatusEnt(entUser.Status),
+		AvatarUrl:           dbUser.AvatarURL,
+		DisplayName:         &dbUser.DisplayName,
+		Email:               &dbUser.Email,
+		FailedLoginAttempts: &dbUser.FailedLoginAttempts,
+		LastLoginAt:         dbUser.LastLoginAt,
+		LockedUntil:         dbUser.LockedUntil,
+		MustChangePassword:  &dbUser.MustChangePassword,
+		PasswordChangedAt:   &dbUser.PasswordChangedAt,
+		PasswordHash:        &dbUser.PasswordHash,
+		Status:              domain.WrapUserStatusEnt(dbUser.Status),
 
-		Groups: entToGroups(entUser.Edges.Groups),
-		Orgs:   entToOrganizations(entUser.Edges.Orgs),
+		Groups: entToGroups(dbUser.Edges.Groups),
+		Orgs:   entToOrganizations(dbUser.Edges.Orgs),
 	}
 }
 
-func entToUsers(entUsers []*ent.User) []domain.User {
-	if entUsers == nil {
+func entToUsers(dbUsers []*ent.User) []domain.User {
+	if dbUsers == nil {
 		return nil
 	}
-	users := funk.Map(entUsers, func(entUser *ent.User) domain.User {
+	return array.Map(dbUsers, func(entUser *ent.User) domain.User {
 		return *entToUser(entUser)
 	})
-	return users.([]domain.User)
 }

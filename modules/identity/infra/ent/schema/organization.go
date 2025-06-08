@@ -25,15 +25,7 @@ func (OrganizationMixin) Fields() []ent.Field {
 			Default(time.Now).
 			Immutable(),
 
-		field.String("created_by").
-			Immutable(),
-
 		field.Time("deleted_at").
-			Optional().
-			Nillable().
-			Comment("Set value for this column when the process is running to delete all resources under this hierarchy level"),
-
-		field.String("deleted_by").
 			Optional().
 			Nillable().
 			Comment("Set value for this column when the process is running to delete all resources under this hierarchy level"),
@@ -54,10 +46,6 @@ func (OrganizationMixin) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			UpdateDefault(time.Now),
-
-		field.String("updated_by").
-			Optional().
-			Nillable(),
 	}
 }
 
@@ -88,15 +76,8 @@ func (Organization) Edges() []ent.Edge {
 		edge.From("hierarchies", HierarchyLevel.Type).
 			Ref("org"),
 
-		edge.To("deleter", User.Type).
-			Field("deleted_by").
-			Unique(),
-
-		edge.To("groups", Group.Type).
-			Unique().
-			Annotations(entsql.Annotation{
-				OnDelete: entsql.Cascade,
-			}),
+		edge.From("groups", Group.Type).
+			Ref("org"),
 	}
 }
 

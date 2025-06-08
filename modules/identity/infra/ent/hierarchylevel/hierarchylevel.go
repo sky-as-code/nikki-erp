@@ -3,6 +3,8 @@
 package hierarchylevel
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 )
@@ -12,10 +14,8 @@ const (
 	Label = "hierarchy_level"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
-	FieldDeletedAt = "deleted_at"
-	// FieldDeletedBy holds the string denoting the deleted_by field in the database.
-	FieldDeletedBy = "deleted_by"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
 	// FieldName holds the string denoting the name field in the database.
@@ -28,8 +28,6 @@ const (
 	EdgeChildren = "children"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
-	// EdgeDeleter holds the string denoting the deleter edge name in mutations.
-	EdgeDeleter = "deleter"
 	// EdgeParent holds the string denoting the parent edge name in mutations.
 	EdgeParent = "parent"
 	// EdgeOrg holds the string denoting the org edge name in mutations.
@@ -47,13 +45,6 @@ const (
 	UsersInverseTable = "ident_users"
 	// UsersColumn is the table column denoting the users relation/edge.
 	UsersColumn = "hierarchy_id"
-	// DeleterTable is the table that holds the deleter relation/edge.
-	DeleterTable = "ident_hierarchy_levels"
-	// DeleterInverseTable is the table name for the User entity.
-	// It exists in this package in order to avoid circular dependency with the "user" package.
-	DeleterInverseTable = "ident_users"
-	// DeleterColumn is the table column denoting the deleter relation/edge.
-	DeleterColumn = "deleted_by"
 	// ParentTable is the table that holds the parent relation/edge.
 	ParentTable = "ident_hierarchy_levels"
 	// ParentColumn is the table column denoting the parent relation/edge.
@@ -70,8 +61,7 @@ const (
 // Columns holds all SQL columns for hierarchylevel fields.
 var Columns = []string{
 	FieldID,
-	FieldDeletedAt,
-	FieldDeletedBy,
+	FieldCreatedAt,
 	FieldEtag,
 	FieldName,
 	FieldOrgID,
@@ -88,6 +78,11 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
+)
+
 // OrderOption defines the ordering options for the HierarchyLevel queries.
 type OrderOption = func(*sql.Selector)
 
@@ -96,14 +91,9 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByDeletedAt orders the results by the deleted_at field.
-func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
-}
-
-// ByDeletedBy orders the results by the deleted_by field.
-func ByDeletedBy(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDeletedBy, opts...).ToFunc()
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
 // ByEtag orders the results by the etag field.
@@ -154,13 +144,6 @@ func ByUsers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByDeleterField orders the results by deleter field.
-func ByDeleterField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newDeleterStep(), sql.OrderByField(field, opts...))
-	}
-}
-
 // ByParentField orders the results by parent field.
 func ByParentField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -186,13 +169,6 @@ func newUsersStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, UsersTable, UsersColumn),
-	)
-}
-func newDeleterStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(DeleterInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, DeleterTable, DeleterColumn),
 	)
 }
 func newParentStep() *sqlgraph.Step {

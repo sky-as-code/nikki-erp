@@ -10,9 +10,11 @@ type Group struct {
 	model.ModelBase
 	model.AuditableBase
 
-	Name        string  `json:"name"`
-	Description *string `json:"description,omitempty"`
-	OrgId       *string `json:"orgId,omitempty"`
+	Name        *string   `json:"name"`
+	Description *string   `json:"description,omitempty"`
+	OrgId       *model.Id `json:"orgId,omitempty"`
+
+	Org *Organization `json:"organization,omitempty"`
 }
 
 func (this *Group) SetDefaults() error {
@@ -22,7 +24,7 @@ func (this *Group) SetDefaults() error {
 func (this *Group) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Name,
-			val.RequiredWhen(!forEdit),
+			val.NotEmptyWhen(!forEdit),
 			val.Length(1, 50),
 		),
 		val.Field(&this.Description,
@@ -36,9 +38,4 @@ func (this *Group) Validate(forEdit bool) ft.ValidationErrors {
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
 
 	return val.ApiBased.ValidateStruct(this, rules...)
-}
-
-type GroupWithOrg struct {
-	Group        *Group        `json:"group"`
-	Organization *Organization `json:"organization,omitempty"`
 }

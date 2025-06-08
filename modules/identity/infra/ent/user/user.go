@@ -19,8 +19,6 @@ const (
 	FieldAvatarURL = "avatar_url"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// FieldCreatedBy holds the string denoting the created_by field in the database.
-	FieldCreatedBy = "created_by"
 	// FieldDisplayName holds the string denoting the display_name field in the database.
 	FieldDisplayName = "display_name"
 	// FieldEmail holds the string denoting the email field in the database.
@@ -47,8 +45,6 @@ const (
 	FieldStatus = "status"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// FieldUpdatedBy holds the string denoting the updated_by field in the database.
-	FieldUpdatedBy = "updated_by"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
 	// EdgeHierarchy holds the string denoting the hierarchy edge name in mutations.
@@ -99,7 +95,6 @@ var Columns = []string{
 	FieldID,
 	FieldAvatarURL,
 	FieldCreatedAt,
-	FieldCreatedBy,
 	FieldDisplayName,
 	FieldEmail,
 	FieldEtag,
@@ -113,7 +108,6 @@ var Columns = []string{
 	FieldPasswordChangedAt,
 	FieldStatus,
 	FieldUpdatedAt,
-	FieldUpdatedBy,
 }
 
 var (
@@ -142,8 +136,6 @@ var (
 	DefaultFailedLoginAttempts int
 	// DefaultMustChangePassword holds the default value on creation for the "must_change_password" field.
 	DefaultMustChangePassword bool
-	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
-	UpdateDefaultUpdatedAt func() time.Time
 )
 
 // Status defines the type for the "status" enum field.
@@ -186,11 +178,6 @@ func ByAvatarURL(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
-}
-
-// ByCreatedBy orders the results by the created_by field.
-func ByCreatedBy(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatedBy, opts...).ToFunc()
 }
 
 // ByDisplayName orders the results by the display_name field.
@@ -256,11 +243,6 @@ func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
-}
-
-// ByUpdatedBy orders the results by the updated_by field.
-func ByUpdatedBy(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUpdatedBy, opts...).ToFunc()
 }
 
 // ByGroupsCount orders the results by groups count.

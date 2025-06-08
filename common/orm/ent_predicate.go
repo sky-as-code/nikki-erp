@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
-	"go.bryk.io/pkg/errors"
 
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/util"
 )
 
@@ -43,18 +43,21 @@ func (this Condition) Values() []any {
 	return this[2:]
 }
 
-func (this Condition) Validate() error {
+func (this Condition) Validate() ft.ValidationErrors {
+	vErr := ft.NewValidationErrors()
 	if len(this) < 3 {
-		return errors.Errorf("condition '%s' must have at least 3 parts", this)
+		vErr.Appendf("query.condition", "condition '%s' must have at least 3 parts", this)
+		return vErr
 	}
 
 	for _, part := range this {
 		if len(fmt.Sprint(part)) == 0 {
-			return errors.Errorf("condition '%s' must have all non-empty parts", this)
+			vErr.Appendf("query.condition", "condition '%s' must have all non-empty parts", this)
+			return vErr
 		}
 	}
 
-	return nil
+	return vErr
 }
 
 // ToPredicate converts a condition expression to a Predicate instance.
@@ -63,20 +66,21 @@ func (this Condition) Validate() error {
 //	["first_name", "contains", "nikki"] => sql.FieldContainsFold(entUser.FieldFirstName, "nikki")
 //
 //	["age", ">", "30"] => sql.FieldGT(entUser.FieldAge, "30")
-func (this Condition) ToPredicate(entityName string) (Predicate, error) {
-	err := this.Validate()
-	if err != nil {
-		return nil, err
+func (this Condition) ToPredicate(entityName string) (Predicate, ft.ValidationErrors) {
+	vErr := this.Validate()
+	if vErr.Count() > 0 {
+		return nil, vErr
 	}
 
 	entity, ok := GetEntity(entityName)
 	if !ok {
-		return nil, errors.Errorf("unregistered entity '%s' in expression '%s'", entityName, this)
+		vErr.Appendf("query.condition", "unrecognized entity '%s'", entityName)
+		return nil, vErr
 	}
 
 	rawField := this.Field()
 	fields := strings.Split(rawField, ".")
-	noEdge := len(fields) == 0
+	noEdge := len(fields) == 1
 
 	if noEdge {
 		// Expr: ["first_name", "^", "admin"]
@@ -97,7 +101,8 @@ func (this Condition) ToPredicate(entityName string) (Predicate, error) {
 
 	hasEdgeWithFn := entity.Edges[edgeName]
 	if hasEdgeWithFn == nil {
-		return nil, errors.Errorf("no Has<EdgeName>With() found in Descriptor for edge entity '%s' in expression '%s'", edgeName, this)
+		vErr.Appendf("query.condition", "unrecognized relationship '%s' in condition '%s'", edgeName, this)
+		return nil, vErr
 	}
 
 	// ToPredicate() will continue processing more nested edges.
@@ -109,21 +114,24 @@ func (this Condition) ToPredicate(entityName string) (Predicate, error) {
 	return hasEdgeWithFn(edgePred), nil
 }
 
-func (this Condition) toSimplePredicate(entity *EntityDescriptor) (Predicate, error) {
+func (this Condition) toSimplePredicate(entity *EntityDescriptor) (Predicate, ft.ValidationErrors) {
 	field := this.Field()
 	operator := this.Operator()
 	value := this.Value()
 	values := this.Values()
 
+	vErr := ft.NewValidationErrors()
 	fieldType, err := entity.MatchFieldType(field, value)
 	if err != nil {
-		return nil, err
+		vErr.Appendf("query.condition", "%s in condition '%s'", err.Error(), this)
+		return nil, vErr
 	}
 
 	if anyOp, ok := AnyOperators[operator]; ok {
 		converted, err := util.ConvertType(value, fieldType)
 		if err != nil {
-			return nil, err
+			vErr.Appendf("query.condition", "%s in condition '%s'", err.Error(), this)
+			return nil, vErr
 		}
 		return anyOp(field, converted), nil
 	}
@@ -142,7 +150,8 @@ func (this Condition) toSimplePredicate(entity *EntityDescriptor) (Predicate, er
 		return stringOp(field, fmt.Sprint(value)), nil
 	}
 
-	return nil, errors.Errorf("invalid operator '%s' in expression '%s'", operator, this)
+	vErr.Appendf("query.condition", "invalid operator '%s' in condition '%s'", operator, this)
+	return nil, vErr
 }
 
 type OrderDirection string
@@ -162,46 +171,51 @@ type SearchOrder struct {
 	Direction OrderDirection `json:"dir"`
 }
 
-func (this SearchOrder) Validate(entityName string) error {
+func (this SearchOrder) Validate(entityName string) ft.ValidationErrors {
+	vErr := ft.NewValidationErrors()
 	if this.Direction != Asc && this.Direction != Desc {
-		return errors.Errorf("invalid order direction '%s'", this.Direction)
+		vErr.Appendf("query.order", "invalid order direction '%s'", this.Direction)
+		return vErr
 	}
 
 	entity, ok := GetEntity(entityName)
 	if !ok {
-		return errors.Errorf("unregistered entity '%s'", entityName)
+		vErr.Appendf("query.condition", "unrecognized entity '%s'", entityName)
+		return vErr
 	}
 
 	_, err := entity.FieldType(this.Field)
 	if err != nil {
-		return err
+		vErr.Appendf("query.condition", "%s in condition '%s'", err.Error(), this)
+		return vErr
 	}
 
-	return nil
+	return vErr
 }
 
-func (this SearchOrder) ToOrderOption(entityName string) (OrderOption, error) {
+func (this SearchOrder) ToOrderOption(entityName string) OrderOption {
 	term := orderTermMap[this.Direction]
-	return sql.OrderByField(this.Field, term).ToFunc(), nil
+	return sql.OrderByField(this.Field, term).ToFunc()
 }
 
-func ValidateSearchOrders(orders []SearchOrder, entityName string) error {
+func ValidateSearchOrders(orders []SearchOrder, entityName string) ft.ValidationErrors {
+	vErr := ft.NewValidationErrors()
 	for _, order := range orders {
 		if err := order.Validate(entityName); err != nil {
-			return err
+			vErr.Appendf("query.order", "%s in order '%s'", err.Error(), order)
 		}
 	}
-	return nil
+	return vErr
 }
 
 type SearchGraph struct {
-	Condition *Condition    `json:"if"`
-	And       []SearchNode  `json:"and"`
-	Or        []SearchNode  `json:"or"`
-	Order     []SearchOrder `json:"order"`
+	Condition *Condition    `json:"if,omitempty"`
+	And       []SearchNode  `json:"and,omitempty"`
+	Or        []SearchNode  `json:"or,omitempty"`
+	Order     []SearchOrder `json:"order,omitempty"`
 }
 
-func (this SearchGraph) ToPredicate(entityName string) (Predicate, error) {
+func (this SearchGraph) ToPredicate(entityName string) (Predicate, ft.ValidationErrors) {
 	if this.Condition != nil {
 		return this.Condition.ToPredicate(entityName)
 	}
@@ -234,17 +248,14 @@ func (this SearchGraph) ToPredicate(entityName string) (Predicate, error) {
 	return NoopPredicate, nil
 }
 
-func ToOrder[TOpt ~OrderOption](entityName string, graph *SearchGraph) ([]TOpt, error) {
-	if err := ValidateSearchOrders(graph.Order, entityName); err != nil {
-		return nil, err
+func ToOrder(entityName string, graph SearchGraph) ([]OrderOption, ft.ValidationErrors) {
+	if vErr := ValidateSearchOrders(graph.Order, entityName); vErr != nil {
+		return nil, vErr
 	}
 
-	orders := make([]TOpt, 0, len(graph.Order))
+	orders := make([]OrderOption, 0, len(graph.Order))
 	for _, order := range graph.Order {
-		orderOpt, err := order.ToOrderOption(entityName)
-		if err != nil {
-			return nil, err
-		}
+		orderOpt := order.ToOrderOption(entityName)
 		orders = append(orders, orderOpt)
 	}
 
@@ -255,12 +266,12 @@ func ToOrder[TOpt ~OrderOption](entityName string, graph *SearchGraph) ([]TOpt, 
 // which means only one field can be set at a time, the precedence is:
 // Condition > NotCondition > And > Or
 type SearchNode struct {
-	Condition *Condition   `json:"if"`
-	And       []SearchNode `json:"and"`
-	Or        []SearchNode `json:"or"`
+	Condition *Condition   `json:"if,omitempty"`
+	And       []SearchNode `json:"and,omitempty"`
+	Or        []SearchNode `json:"or,omitempty"`
 }
 
-func (this SearchNode) ToPredicate(entityName string) (Predicate, error) {
+func (this SearchNode) ToPredicate(entityName string) (Predicate, ft.ValidationErrors) {
 	if this.Condition != nil {
 		return this.Condition.ToPredicate(entityName)
 	}

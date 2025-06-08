@@ -36,7 +36,7 @@ func InitSubModule(params InitParams) (*ent.Client, error) {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=%s",
 		user, escapedPassword, host, dbname, sslmode)
 
-	client, err := ent.Open("postgres", dsn)
+	client, err := ent.Open("postgres", dsn, ent.Debug())
 	if err != nil {
 		logger.Errorf("failed opening connection to postgres: %v", err)
 		return nil, err

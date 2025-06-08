@@ -27,7 +27,6 @@ type HierarchyLevelQuery struct {
 	predicates   []predicate.HierarchyLevel
 	withChildren *HierarchyLevelQuery
 	withUsers    *UserQuery
-	withDeleter  *UserQuery
 	withParent   *HierarchyLevelQuery
 	withOrg      *OrganizationQuery
 	// intermediate query (i.e. traversal path).
@@ -103,28 +102,6 @@ func (hlq *HierarchyLevelQuery) QueryUsers() *UserQuery {
 			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, hierarchylevel.UsersTable, hierarchylevel.UsersColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(hlq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryDeleter chains the current query on the "deleter" edge.
-func (hlq *HierarchyLevelQuery) QueryDeleter() *UserQuery {
-	query := (&UserClient{config: hlq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := hlq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := hlq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, selector),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, hierarchylevel.DeleterTable, hierarchylevel.DeleterColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(hlq.driver.Dialect(), step)
 		return fromU, nil
@@ -370,7 +347,6 @@ func (hlq *HierarchyLevelQuery) Clone() *HierarchyLevelQuery {
 		predicates:   append([]predicate.HierarchyLevel{}, hlq.predicates...),
 		withChildren: hlq.withChildren.Clone(),
 		withUsers:    hlq.withUsers.Clone(),
-		withDeleter:  hlq.withDeleter.Clone(),
 		withParent:   hlq.withParent.Clone(),
 		withOrg:      hlq.withOrg.Clone(),
 		// clone intermediate query.
@@ -398,17 +374,6 @@ func (hlq *HierarchyLevelQuery) WithUsers(opts ...func(*UserQuery)) *HierarchyLe
 		opt(query)
 	}
 	hlq.withUsers = query
-	return hlq
-}
-
-// WithDeleter tells the query-builder to eager-load the nodes that are connected to
-// the "deleter" edge. The optional arguments are used to configure the query builder of the edge.
-func (hlq *HierarchyLevelQuery) WithDeleter(opts ...func(*UserQuery)) *HierarchyLevelQuery {
-	query := (&UserClient{config: hlq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	hlq.withDeleter = query
 	return hlq
 }
 
@@ -440,12 +405,12 @@ func (hlq *HierarchyLevelQuery) WithOrg(opts ...func(*OrganizationQuery)) *Hiera
 // Example:
 //
 //	var v []struct {
-//		DeletedAt time.Time `json:"deleted_at,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.HierarchyLevel.Query().
-//		GroupBy(hierarchylevel.FieldDeletedAt).
+//		GroupBy(hierarchylevel.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (hlq *HierarchyLevelQuery) GroupBy(field string, fields ...string) *HierarchyLevelGroupBy {
@@ -463,11 +428,11 @@ func (hlq *HierarchyLevelQuery) GroupBy(field string, fields ...string) *Hierarc
 // Example:
 //
 //	var v []struct {
-//		DeletedAt time.Time `json:"deleted_at,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.HierarchyLevel.Query().
-//		Select(hierarchylevel.FieldDeletedAt).
+//		Select(hierarchylevel.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (hlq *HierarchyLevelQuery) Select(fields ...string) *HierarchyLevelSelect {
 	hlq.ctx.Fields = append(hlq.ctx.Fields, fields...)
@@ -512,10 +477,9 @@ func (hlq *HierarchyLevelQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 	var (
 		nodes       = []*HierarchyLevel{}
 		_spec       = hlq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [4]bool{
 			hlq.withChildren != nil,
 			hlq.withUsers != nil,
-			hlq.withDeleter != nil,
 			hlq.withParent != nil,
 			hlq.withOrg != nil,
 		}
@@ -549,12 +513,6 @@ func (hlq *HierarchyLevelQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 		if err := hlq.loadUsers(ctx, query, nodes,
 			func(n *HierarchyLevel) { n.Edges.Users = []*User{} },
 			func(n *HierarchyLevel, e *User) { n.Edges.Users = append(n.Edges.Users, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := hlq.withDeleter; query != nil {
-		if err := hlq.loadDeleter(ctx, query, nodes, nil,
-			func(n *HierarchyLevel, e *User) { n.Edges.Deleter = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -636,38 +594,6 @@ func (hlq *HierarchyLevelQuery) loadUsers(ctx context.Context, query *UserQuery,
 			return fmt.Errorf(`unexpected referenced foreign-key "hierarchy_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
-	}
-	return nil
-}
-func (hlq *HierarchyLevelQuery) loadDeleter(ctx context.Context, query *UserQuery, nodes []*HierarchyLevel, init func(*HierarchyLevel), assign func(*HierarchyLevel, *User)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*HierarchyLevel)
-	for i := range nodes {
-		if nodes[i].DeletedBy == nil {
-			continue
-		}
-		fk := *nodes[i].DeletedBy
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(user.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "deleted_by" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
 	}
 	return nil
 }
@@ -757,9 +683,6 @@ func (hlq *HierarchyLevelQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != hierarchylevel.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if hlq.withDeleter != nil {
-			_spec.Node.AddColumnOnce(hierarchylevel.FieldDeletedBy)
 		}
 		if hlq.withParent != nil {
 			_spec.Node.AddColumnOnce(hierarchylevel.FieldParentID)

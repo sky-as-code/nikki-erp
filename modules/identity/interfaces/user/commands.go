@@ -4,9 +4,11 @@ import (
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
+	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
@@ -18,7 +20,6 @@ func init() {
 	req = (*UpdateUserCommand)(nil)
 	req = (*DeleteUserCommand)(nil)
 	req = (*GetUserByIdQuery)(nil)
-	req = (*GetUserByUsernameQuery)(nil)
 	util.Unused(req)
 }
 
@@ -29,12 +30,12 @@ var createUserCommandType = cqrs.RequestType{
 }
 
 type CreateUserCommand struct {
-	CreatedBy          string `json:"createdBy"`
-	DisplayName        string `json:"displayName"`
-	Email              string `json:"email"`
-	IsEnabled          bool   `json:"isEnabled"`
-	MustChangePassword bool   `json:"mustChangePassword"`
-	Password           string `json:"password"`
+	DisplayName        string    `json:"displayName"`
+	Email              string    `json:"email"`
+	IsActive           bool      `json:"isActive"`
+	MustChangePassword bool      `json:"mustChangePassword"`
+	Password           string    `json:"password"`
+	OrgId              *model.Id `json:"orgId,omitempty"`
 }
 
 func (CreateUserCommand) Type() cqrs.RequestType {
@@ -50,15 +51,15 @@ var updateUserCommandType = cqrs.RequestType{
 }
 
 type UpdateUserCommand struct {
-	Id                 string  `param:"id" json:"id"`
-	AvatarUrl          *string `json:"avatarUrl,omitempty"`
-	DisplayName        *string `json:"displayName,omitempty"`
-	Email              *string `json:"email,omitempty"`
-	MustChangePassword *bool   `json:"mustChangePassword,omitempty"`
-	Password           *string `json:"password,omitempty"`
-	IsEnabled          *bool   `json:"isEnabled,omitempty"`
-	UpdatedBy          string  `json:"updatedBy,omitempty"`
-	Username           *string `json:"username,omitempty"`
+	Id                 model.Id   `param:"id" json:"id"`
+	AvatarUrl          *string    `json:"avatarUrl,omitempty"`
+	DisplayName        *string    `json:"displayName,omitempty"`
+	Email              *string    `json:"email,omitempty"`
+	Etag               model.Etag `json:"etag,omitempty"`
+	IsActive           *bool      `json:"isActive,omitempty"`
+	MustChangePassword *bool      `json:"mustChangePassword,omitempty"`
+	Password           *string    `json:"password,omitempty"`
+	OrgId              *model.Id  `json:"orgId,omitempty"`
 }
 
 func (UpdateUserCommand) Type() cqrs.RequestType {
@@ -74,12 +75,19 @@ var deleteUserCommandType = cqrs.RequestType{
 }
 
 type DeleteUserCommand struct {
-	Id        string `json:"id" param:"id"`
-	DeletedBy string `json:"deletedBy"`
+	Id model.Id `json:"id" param:"id"`
 }
 
 func (DeleteUserCommand) Type() cqrs.RequestType {
 	return deleteUserCommandType
+}
+
+func (this DeleteUserCommand) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type DeleteUserResultData struct {
@@ -95,47 +103,55 @@ var getUserByIdQueryType = cqrs.RequestType{
 }
 
 type GetUserByIdQuery struct {
-	Id string `param:"id" json:"id"`
+	Id model.Id `param:"id" json:"id"`
 }
 
 func (GetUserByIdQuery) Type() cqrs.RequestType {
 	return getUserByIdQueryType
 }
 
+func (this GetUserByIdQuery) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
 type GetUserByIdResult model.OpResult[*domain.User]
 
-var getUserByUsernameQueryType = cqrs.RequestType{
+var searchUsersCommandType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "user",
-	Action:    "getUserByUsername",
+	Action:    "search",
 }
 
-type GetUserByUsernameQuery struct {
-	Username string `json:"username"`
+type SearchUsersCommand struct {
+	Page            *int    `json:"page" query:"page"`
+	Size            *int    `json:"size" query:"size"`
+	Graph           *string `json:"graph" query:"graph"`
+	WithGroups      bool    `json:"withGroups" query:"withGroups"`
+	WithOrgs        bool    `json:"withOrgs" query:"withOrgs"`
+	WithHierarchies bool    `json:"withHierarchies" query:"withHierarchies"`
 }
 
-func (GetUserByUsernameQuery) Type() cqrs.RequestType {
-	return getUserByUsernameQueryType
+func (SearchUsersCommand) Type() cqrs.RequestType {
+	return searchUsersCommandType
 }
 
-var listUsersCommandType = cqrs.RequestType{
-	Module:    "identity",
-	Submodule: "user",
-	Action:    "list",
+func (this *SearchUsersCommand) SetDefaults() {
+	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
+	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
 }
 
-type ListUsersCommand struct {
-	Page            int             `json:"page" query:"page"`
-	Size            int             `json:"size" query:"size"`
-	Query           orm.SearchGraph `json:"query" query:"query"`
-	WithGroups      bool            `json:"withGroups" query:"withGroups"`
-	WithOrgs        bool            `json:"withOrgs" query:"withOrgs"`
-	WithHierarchies bool            `json:"withHierarchies" query:"withHierarchies"`
+func (this SearchUsersCommand) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.PageIndexValidateRule(&this.Page),
+		model.PageSizeValidateRule(&this.Size),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-func (ListUsersCommand) Type() cqrs.RequestType {
-	return listUsersCommandType
-}
-
-type ListUsersResultData crud.PagedResult[domain.User]
-type ListUsersResult model.OpResult[ListUsersResultData]
+type SearchUsersResultData = crud.PagedResult[domain.User]
+type SearchUsersResult model.OpResult[*SearchUsersResultData]

@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -26,46 +25,6 @@ type HierarchyLevelUpdate struct {
 // Where appends a list predicates to the HierarchyLevelUpdate builder.
 func (hlu *HierarchyLevelUpdate) Where(ps ...predicate.HierarchyLevel) *HierarchyLevelUpdate {
 	hlu.mutation.Where(ps...)
-	return hlu
-}
-
-// SetDeletedAt sets the "deleted_at" field.
-func (hlu *HierarchyLevelUpdate) SetDeletedAt(t time.Time) *HierarchyLevelUpdate {
-	hlu.mutation.SetDeletedAt(t)
-	return hlu
-}
-
-// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (hlu *HierarchyLevelUpdate) SetNillableDeletedAt(t *time.Time) *HierarchyLevelUpdate {
-	if t != nil {
-		hlu.SetDeletedAt(*t)
-	}
-	return hlu
-}
-
-// ClearDeletedAt clears the value of the "deleted_at" field.
-func (hlu *HierarchyLevelUpdate) ClearDeletedAt() *HierarchyLevelUpdate {
-	hlu.mutation.ClearDeletedAt()
-	return hlu
-}
-
-// SetDeletedBy sets the "deleted_by" field.
-func (hlu *HierarchyLevelUpdate) SetDeletedBy(s string) *HierarchyLevelUpdate {
-	hlu.mutation.SetDeletedBy(s)
-	return hlu
-}
-
-// SetNillableDeletedBy sets the "deleted_by" field if the given value is not nil.
-func (hlu *HierarchyLevelUpdate) SetNillableDeletedBy(s *string) *HierarchyLevelUpdate {
-	if s != nil {
-		hlu.SetDeletedBy(*s)
-	}
-	return hlu
-}
-
-// ClearDeletedBy clears the value of the "deleted_by" field.
-func (hlu *HierarchyLevelUpdate) ClearDeletedBy() *HierarchyLevelUpdate {
-	hlu.mutation.ClearDeletedBy()
 	return hlu
 }
 
@@ -147,25 +106,6 @@ func (hlu *HierarchyLevelUpdate) AddUsers(u ...*User) *HierarchyLevelUpdate {
 	return hlu.AddUserIDs(ids...)
 }
 
-// SetDeleterID sets the "deleter" edge to the User entity by ID.
-func (hlu *HierarchyLevelUpdate) SetDeleterID(id string) *HierarchyLevelUpdate {
-	hlu.mutation.SetDeleterID(id)
-	return hlu
-}
-
-// SetNillableDeleterID sets the "deleter" edge to the User entity by ID if the given value is not nil.
-func (hlu *HierarchyLevelUpdate) SetNillableDeleterID(id *string) *HierarchyLevelUpdate {
-	if id != nil {
-		hlu = hlu.SetDeleterID(*id)
-	}
-	return hlu
-}
-
-// SetDeleter sets the "deleter" edge to the User entity.
-func (hlu *HierarchyLevelUpdate) SetDeleter(u *User) *HierarchyLevelUpdate {
-	return hlu.SetDeleterID(u.ID)
-}
-
 // SetParent sets the "parent" edge to the HierarchyLevel entity.
 func (hlu *HierarchyLevelUpdate) SetParent(h *HierarchyLevel) *HierarchyLevelUpdate {
 	return hlu.SetParentID(h.ID)
@@ -216,12 +156,6 @@ func (hlu *HierarchyLevelUpdate) RemoveUsers(u ...*User) *HierarchyLevelUpdate {
 		ids[i] = u[i].ID
 	}
 	return hlu.RemoveUserIDs(ids...)
-}
-
-// ClearDeleter clears the "deleter" edge to the User entity.
-func (hlu *HierarchyLevelUpdate) ClearDeleter() *HierarchyLevelUpdate {
-	hlu.mutation.ClearDeleter()
-	return hlu
 }
 
 // ClearParent clears the "parent" edge to the HierarchyLevel entity.
@@ -276,12 +210,6 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := hlu.mutation.DeletedAt(); ok {
-		_spec.SetField(hierarchylevel.FieldDeletedAt, field.TypeTime, value)
-	}
-	if hlu.mutation.DeletedAtCleared() {
-		_spec.ClearField(hierarchylevel.FieldDeletedAt, field.TypeTime)
 	}
 	if value, ok := hlu.mutation.Etag(); ok {
 		_spec.SetField(hierarchylevel.FieldEtag, field.TypeString, value)
@@ -379,35 +307,6 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if hlu.mutation.DeleterCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   hierarchylevel.DeleterTable,
-			Columns: []string{hierarchylevel.DeleterColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := hlu.mutation.DeleterIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   hierarchylevel.DeleterTable,
-			Columns: []string{hierarchylevel.DeleterColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if hlu.mutation.ParentCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -455,46 +354,6 @@ type HierarchyLevelUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *HierarchyLevelMutation
-}
-
-// SetDeletedAt sets the "deleted_at" field.
-func (hluo *HierarchyLevelUpdateOne) SetDeletedAt(t time.Time) *HierarchyLevelUpdateOne {
-	hluo.mutation.SetDeletedAt(t)
-	return hluo
-}
-
-// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
-func (hluo *HierarchyLevelUpdateOne) SetNillableDeletedAt(t *time.Time) *HierarchyLevelUpdateOne {
-	if t != nil {
-		hluo.SetDeletedAt(*t)
-	}
-	return hluo
-}
-
-// ClearDeletedAt clears the value of the "deleted_at" field.
-func (hluo *HierarchyLevelUpdateOne) ClearDeletedAt() *HierarchyLevelUpdateOne {
-	hluo.mutation.ClearDeletedAt()
-	return hluo
-}
-
-// SetDeletedBy sets the "deleted_by" field.
-func (hluo *HierarchyLevelUpdateOne) SetDeletedBy(s string) *HierarchyLevelUpdateOne {
-	hluo.mutation.SetDeletedBy(s)
-	return hluo
-}
-
-// SetNillableDeletedBy sets the "deleted_by" field if the given value is not nil.
-func (hluo *HierarchyLevelUpdateOne) SetNillableDeletedBy(s *string) *HierarchyLevelUpdateOne {
-	if s != nil {
-		hluo.SetDeletedBy(*s)
-	}
-	return hluo
-}
-
-// ClearDeletedBy clears the value of the "deleted_by" field.
-func (hluo *HierarchyLevelUpdateOne) ClearDeletedBy() *HierarchyLevelUpdateOne {
-	hluo.mutation.ClearDeletedBy()
-	return hluo
 }
 
 // SetEtag sets the "etag" field.
@@ -575,25 +434,6 @@ func (hluo *HierarchyLevelUpdateOne) AddUsers(u ...*User) *HierarchyLevelUpdateO
 	return hluo.AddUserIDs(ids...)
 }
 
-// SetDeleterID sets the "deleter" edge to the User entity by ID.
-func (hluo *HierarchyLevelUpdateOne) SetDeleterID(id string) *HierarchyLevelUpdateOne {
-	hluo.mutation.SetDeleterID(id)
-	return hluo
-}
-
-// SetNillableDeleterID sets the "deleter" edge to the User entity by ID if the given value is not nil.
-func (hluo *HierarchyLevelUpdateOne) SetNillableDeleterID(id *string) *HierarchyLevelUpdateOne {
-	if id != nil {
-		hluo = hluo.SetDeleterID(*id)
-	}
-	return hluo
-}
-
-// SetDeleter sets the "deleter" edge to the User entity.
-func (hluo *HierarchyLevelUpdateOne) SetDeleter(u *User) *HierarchyLevelUpdateOne {
-	return hluo.SetDeleterID(u.ID)
-}
-
 // SetParent sets the "parent" edge to the HierarchyLevel entity.
 func (hluo *HierarchyLevelUpdateOne) SetParent(h *HierarchyLevel) *HierarchyLevelUpdateOne {
 	return hluo.SetParentID(h.ID)
@@ -644,12 +484,6 @@ func (hluo *HierarchyLevelUpdateOne) RemoveUsers(u ...*User) *HierarchyLevelUpda
 		ids[i] = u[i].ID
 	}
 	return hluo.RemoveUserIDs(ids...)
-}
-
-// ClearDeleter clears the "deleter" edge to the User entity.
-func (hluo *HierarchyLevelUpdateOne) ClearDeleter() *HierarchyLevelUpdateOne {
-	hluo.mutation.ClearDeleter()
-	return hluo
 }
 
 // ClearParent clears the "parent" edge to the HierarchyLevel entity.
@@ -734,12 +568,6 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := hluo.mutation.DeletedAt(); ok {
-		_spec.SetField(hierarchylevel.FieldDeletedAt, field.TypeTime, value)
-	}
-	if hluo.mutation.DeletedAtCleared() {
-		_spec.ClearField(hierarchylevel.FieldDeletedAt, field.TypeTime)
 	}
 	if value, ok := hluo.mutation.Etag(); ok {
 		_spec.SetField(hierarchylevel.FieldEtag, field.TypeString, value)
@@ -827,35 +655,6 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
 			Columns: []string{hierarchylevel.UsersColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if hluo.mutation.DeleterCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   hierarchylevel.DeleterTable,
-			Columns: []string{hierarchylevel.DeleterColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := hluo.mutation.DeleterIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   hierarchylevel.DeleterTable,
-			Columns: []string{hierarchylevel.DeleterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),

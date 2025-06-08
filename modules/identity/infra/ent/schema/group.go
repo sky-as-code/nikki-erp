@@ -21,15 +21,9 @@ func (GroupMixin) Fields() []ent.Field {
 			Immutable().
 			StorageKey("id"),
 
-		field.String("org_id").
-			Optional().
-			Nillable().
-			Comment("Organization ID (optional)"),
-
-		field.String("name").
-			Unique().
-			NotEmpty().
-			Comment("Group name"),
+		field.Time("created_at").
+			Default(time.Now).
+			Immutable(),
 
 		field.String("description").
 			Optional().
@@ -38,28 +32,22 @@ func (GroupMixin) Fields() []ent.Field {
 
 		field.String("email").
 			Optional().
-			Nillable().
-			Comment("Group email"),
+			Nillable(),
 
 		field.String("etag"),
 
-		field.Time("created_at").
-			Default(time.Now).
-			Immutable(),
+		field.String("name").
+			Unique().
+			NotEmpty(),
 
-		field.String("created_by").
-			Immutable(),
-
-		field.String("etag"),
+		field.String("org_id").
+			Optional().
+			Nillable(),
 
 		field.Time("updated_at").
 			Optional().
 			Nillable().
 			UpdateDefault(time.Now),
-
-		field.String("updated_by").
-			Optional().
-			Nillable(),
 	}
 }
 
@@ -83,15 +71,17 @@ func (Group) Fields() []ent.Field {
 
 func (Group) Edges() []ent.Edge {
 	return []ent.Edge{
-		// A group may belong to an organization (optional)
-		edge.From("organization", Organization.Type).
-			Ref("groups").
-			Unique().
-			Field("org_id"),
-
 		edge.From("users", User.Type).
 			Ref("groups").
 			Through("user_groups", UserGroup.Type),
+
+		// A group may belong to an organization (optional)
+		edge.To("org", Organization.Type).
+			Field("org_id").
+			Unique().
+			Annotations(entsql.Annotation{
+				OnDelete: entsql.Cascade,
+			}),
 	}
 }
 

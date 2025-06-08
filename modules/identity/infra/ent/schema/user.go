@@ -31,9 +31,6 @@ func (UserMixin) Fields() []ent.Field {
 			Default(time.Now).
 			Immutable(),
 
-		field.String("created_by").
-			Immutable(),
-
 		field.String("display_name"),
 
 		field.String("email").
@@ -78,11 +75,6 @@ func (UserMixin) Fields() []ent.Field {
 
 		field.Time("updated_at").
 			Optional().
-			Nillable().
-			UpdateDefault(time.Now),
-
-		field.String("updated_by").
-			Optional().
 			Nillable(),
 	}
 }
@@ -107,12 +99,14 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("groups", Group.Type).
 			Through("user_groups", UserGroup.Type),
+
 		edge.To("hierarchy", HierarchyLevel.Type).
 			Field("hierarchy_id").
 			Unique().
 			Annotations(entsql.Annotation{
 				OnDelete: entsql.SetNull,
 			}),
+
 		edge.To("orgs", Organization.Type).
 			Through("user_orgs", UserOrg.Type),
 	}

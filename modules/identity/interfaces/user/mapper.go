@@ -8,10 +8,8 @@ import (
 
 func (this CreateUserCommand) ToUser() *domain.User {
 	var status *domain.UserStatus
-	if this.IsEnabled {
+	if this.IsActive {
 		status = util.ToPtr(domain.UserStatusActive)
-	} else {
-		status = util.ToPtr(domain.UserStatusInactive)
 	}
 
 	return &domain.User{
@@ -20,28 +18,22 @@ func (this CreateUserCommand) ToUser() *domain.User {
 		MustChangePassword: &this.MustChangePassword,
 		PasswordRaw:        &this.Password,
 		Status:             status,
-
-		AuditableBase: model.AuditableBase{
-			CreatedBy: util.ToPtr(model.Id(this.CreatedBy)),
-		},
 	}
 }
 
 func (this UpdateUserCommand) ToUser() *domain.User {
 	var status *domain.UserStatus
 	status = nil
-	if this.IsEnabled != nil && *this.IsEnabled {
+	if this.IsActive != nil && *this.IsActive {
 		status = util.ToPtr(domain.UserStatusActive)
-	} else if this.IsEnabled != nil {
+	} else if this.IsActive != nil {
 		status = util.ToPtr(domain.UserStatusInactive)
 	}
 
 	return &domain.User{
 		ModelBase: model.ModelBase{
-			Id: model.WrapId(this.Id),
-		},
-		AuditableBase: model.AuditableBase{
-			UpdatedBy: util.ToPtr(model.Id(this.UpdatedBy)),
+			Id:   &this.Id,
+			Etag: &this.Etag,
 		},
 		AvatarUrl:          this.AvatarUrl,
 		DisplayName:        this.DisplayName,

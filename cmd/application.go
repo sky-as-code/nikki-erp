@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"go.bryk.io/pkg/errors"
+
 	"github.com/sky-as-code/nikki-erp/cmd/loader"
-	. "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
@@ -76,7 +77,7 @@ func (thisApp *Application) buildDependencyGraph(moduleMap map[string]modules.Ni
 		deps := mod.Deps()
 		for _, dep := range deps {
 			if _, exists := moduleMap[dep]; !exists {
-				return nil, NewTechnicalError("Module '%s' requires '%s' but it's not loaded", mod.Name(), dep)
+				return nil, errors.New(fmt.Errorf("Module '%s' requires '%s' but it's not loaded", mod.Name(), dep))
 			}
 		}
 		depGraph[mod.Name()] = deps
@@ -87,7 +88,7 @@ func (thisApp *Application) buildDependencyGraph(moduleMap map[string]modules.Ni
 
 func (thisApp *Application) validateDependencies(depGraph map[string][]string) error {
 	if hasCycle := detectCycle(depGraph); hasCycle {
-		return NewTechnicalError("Modules have circular dependencies")
+		return errors.New("Modules have circular dependencies")
 	}
 	return nil
 }
@@ -95,17 +96,13 @@ func (thisApp *Application) validateDependencies(depGraph map[string][]string) e
 func (thisApp *Application) initializeInOrder(moduleMap map[string]modules.NikkiModule, depGraph map[string][]string) error {
 	initOrder, err := topologicalSort(depGraph)
 	if err != nil {
-		return WrapTechnicalError(err, "Failed to determine module initialization order")
+		return errors.Wrap(err, "Failed to determine module initialization order")
 	}
 
 	for _, modName := range initOrder {
 		mod := moduleMap[modName]
 		if err := mod.Init(); err != nil {
-			return WrapTechnicalError(
-				err,
-				"Failed to initialize module '%s'",
-				mod.Name(),
-			)
+			return errors.Wrap(err, fmt.Sprintf("Failed to initialize module '%s'", mod.Name()))
 		}
 		thisApp.logger.Infof("Initialized module %s done", mod.Name())
 	}

@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
 // HierarchyLevel is the model entity for the HierarchyLevel schema.
@@ -19,10 +18,8 @@ type HierarchyLevel struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
-	// Set value for this column when the process is running to delete all resources under this hierarchy level
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
-	// Set value for this column when the process is running to delete all resources under this hierarchy level
-	DeletedBy *string `json:"deleted_by,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// Name holds the value of the "name" field.
@@ -43,15 +40,13 @@ type HierarchyLevelEdges struct {
 	Children []*HierarchyLevel `json:"children,omitempty"`
 	// Users holds the value of the users edge.
 	Users []*User `json:"users,omitempty"`
-	// Deleter holds the value of the deleter edge.
-	Deleter *User `json:"deleter,omitempty"`
 	// Parent holds the value of the parent edge.
 	Parent *HierarchyLevel `json:"parent,omitempty"`
 	// Org holds the value of the org edge.
 	Org *Organization `json:"org,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [4]bool
 }
 
 // ChildrenOrErr returns the Children value or an error if the edge
@@ -72,23 +67,12 @@ func (e HierarchyLevelEdges) UsersOrErr() ([]*User, error) {
 	return nil, &NotLoadedError{edge: "users"}
 }
 
-// DeleterOrErr returns the Deleter value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e HierarchyLevelEdges) DeleterOrErr() (*User, error) {
-	if e.Deleter != nil {
-		return e.Deleter, nil
-	} else if e.loadedTypes[2] {
-		return nil, &NotFoundError{label: user.Label}
-	}
-	return nil, &NotLoadedError{edge: "deleter"}
-}
-
 // ParentOrErr returns the Parent value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e HierarchyLevelEdges) ParentOrErr() (*HierarchyLevel, error) {
 	if e.Parent != nil {
 		return e.Parent, nil
-	} else if e.loadedTypes[3] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: hierarchylevel.Label}
 	}
 	return nil, &NotLoadedError{edge: "parent"}
@@ -99,7 +83,7 @@ func (e HierarchyLevelEdges) ParentOrErr() (*HierarchyLevel, error) {
 func (e HierarchyLevelEdges) OrgOrErr() (*Organization, error) {
 	if e.Org != nil {
 		return e.Org, nil
-	} else if e.loadedTypes[4] {
+	} else if e.loadedTypes[3] {
 		return nil, &NotFoundError{label: organization.Label}
 	}
 	return nil, &NotLoadedError{edge: "org"}
@@ -110,9 +94,9 @@ func (*HierarchyLevel) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case hierarchylevel.FieldID, hierarchylevel.FieldDeletedBy, hierarchylevel.FieldEtag, hierarchylevel.FieldName, hierarchylevel.FieldOrgID, hierarchylevel.FieldParentID:
+		case hierarchylevel.FieldID, hierarchylevel.FieldEtag, hierarchylevel.FieldName, hierarchylevel.FieldOrgID, hierarchylevel.FieldParentID:
 			values[i] = new(sql.NullString)
-		case hierarchylevel.FieldDeletedAt:
+		case hierarchylevel.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -135,19 +119,11 @@ func (hl *HierarchyLevel) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				hl.ID = value.String
 			}
-		case hierarchylevel.FieldDeletedAt:
+		case hierarchylevel.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				hl.DeletedAt = new(time.Time)
-				*hl.DeletedAt = value.Time
-			}
-		case hierarchylevel.FieldDeletedBy:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field deleted_by", values[i])
-			} else if value.Valid {
-				hl.DeletedBy = new(string)
-				*hl.DeletedBy = value.String
+				hl.CreatedAt = value.Time
 			}
 		case hierarchylevel.FieldEtag:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -197,11 +173,6 @@ func (hl *HierarchyLevel) QueryUsers() *UserQuery {
 	return NewHierarchyLevelClient(hl.config).QueryUsers(hl)
 }
 
-// QueryDeleter queries the "deleter" edge of the HierarchyLevel entity.
-func (hl *HierarchyLevel) QueryDeleter() *UserQuery {
-	return NewHierarchyLevelClient(hl.config).QueryDeleter(hl)
-}
-
 // QueryParent queries the "parent" edge of the HierarchyLevel entity.
 func (hl *HierarchyLevel) QueryParent() *HierarchyLevelQuery {
 	return NewHierarchyLevelClient(hl.config).QueryParent(hl)
@@ -235,15 +206,8 @@ func (hl *HierarchyLevel) String() string {
 	var builder strings.Builder
 	builder.WriteString("HierarchyLevel(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", hl.ID))
-	if v := hl.DeletedAt; v != nil {
-		builder.WriteString("deleted_at=")
-		builder.WriteString(v.Format(time.ANSIC))
-	}
-	builder.WriteString(", ")
-	if v := hl.DeletedBy; v != nil {
-		builder.WriteString("deleted_by=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("created_at=")
+	builder.WriteString(hl.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("etag=")
 	builder.WriteString(hl.Etag)

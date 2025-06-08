@@ -3,7 +3,7 @@ package model
 import (
 	"time"
 
-	util "github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
 
@@ -17,7 +17,7 @@ func (this *ModelBase) SetDefaults() error {
 	if err != nil {
 		return err
 	}
-	util.SetDefaultValue(this.Id, *id)
+	safe.SetDefaultValue(&this.Id, *id)
 	this.Etag = NewEtag()
 	return nil
 }
@@ -47,16 +47,11 @@ func (this *ModelBase) SetEtag(etag Etag) {
 
 type AuditableBase struct {
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
-	CreatedBy *Id        `json:"createdBy,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
-	UpdatedBy *Id        `json:"updatedBy,omitempty"`
 }
 
 func (this *AuditableBase) ValidateRules(forEdit bool) []*val.FieldRules {
-	return []*val.FieldRules{
-		IdValidateRule(&this.CreatedBy, !forEdit),
-		IdValidateRule(&this.UpdatedBy, forEdit),
-	}
+	return []*val.FieldRules{}
 }
 
 func (this *AuditableBase) GetCreatedAt() *time.Time {
@@ -65,23 +60,11 @@ func (this *AuditableBase) GetCreatedAt() *time.Time {
 func (this *AuditableBase) SetCreatedAt(createdAt time.Time) {
 	this.CreatedAt = &createdAt
 }
-func (this *AuditableBase) GetCreatedBy() *Id {
-	return this.CreatedBy
-}
-func (this *AuditableBase) SetCreatedBy(createdBy Id) {
-	this.CreatedBy = &createdBy
-}
 func (this *AuditableBase) GetUpdatedAt() *time.Time {
 	return this.UpdatedAt
 }
 func (this *AuditableBase) SetUpdatedAt(updatedAt time.Time) {
 	this.UpdatedAt = &updatedAt
-}
-func (this *AuditableBase) GetUpdatedBy() *Id {
-	return this.UpdatedBy
-}
-func (this *AuditableBase) SetUpdatedBy(updatedBy Id) {
-	this.UpdatedBy = &updatedBy
 }
 
 type OrgBase struct {

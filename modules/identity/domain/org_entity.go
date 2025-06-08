@@ -3,8 +3,9 @@ package domain
 import (
 	"go.bryk.io/pkg/errors"
 
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	util "github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	ent "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 )
@@ -24,15 +25,15 @@ func (this *Organization) SetDefaults() error {
 	if err != nil {
 		return err
 	}
-	util.SetDefaultValue(this.Status, OrgStatusInactive)
+	safe.SetDefaultValue(&this.Status, OrgStatusInactive)
 	this.Etag = model.NewEtag()
 	return nil
 }
 
-func (this *Organization) Validate(forEdit bool) error {
+func (this *Organization) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.DisplayName,
-			val.RequiredWhen(!forEdit),
+			val.NotEmptyWhen(!forEdit),
 			val.Length(1, 50),
 		),
 		model.EtagValidateRule(&this.Etag, forEdit),

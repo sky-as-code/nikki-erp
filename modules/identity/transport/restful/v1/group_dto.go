@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
 )
@@ -8,19 +9,19 @@ import (
 type CreateGroupRequest = it.CreateGroupCommand
 
 type CreateGroupResponse struct {
-	Id          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description *string `json:"description,omitempty"`
-	Etag        string  `json:"etag"`
-	OrgId       *string `json:"orgId,omitempty"`
+	Id          model.Id   `json:"id"`
+	Name        string     `json:"name"`
+	Description *string    `json:"description,omitempty"`
+	Etag        model.Etag `json:"etag"`
+	OrgId       *model.Id  `json:"orgId,omitempty"`
 }
 
-func (this *CreateGroupResponse) FromGroup(group domain.GroupWithOrg) {
-	this.Id = group.Group.Id.String()
-	this.Name = group.Group.Name
-	this.Description = group.Group.Description
-	this.Etag = group.Group.Etag.String()
-	this.OrgId = group.Group.OrgId
+func (this *CreateGroupResponse) FromGroup(group domain.Group) {
+	this.Id = *group.Id
+	this.Name = *group.Name
+	this.Description = group.Description
+	this.Etag = *group.Etag
+	this.OrgId = group.OrgId
 }
 
 type DeleteGroupRequest = it.DeleteGroupCommand
@@ -32,45 +33,45 @@ type DeleteGroupResponse struct {
 type UpdateGroupRequest = it.UpdateGroupCommand
 
 type UpdateGroupResponse struct {
-	Id          string  `param:"id" json:"id"`
-	Name        string  `json:"name,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Etag        string  `json:"etag,omitempty"`
-	OrgId       *string `json:"orgId,omitempty"`
+	Id          model.Id   `param:"id" json:"id"`
+	Name        string     `json:"name,omitempty"`
+	Description *string    `json:"description,omitempty"`
+	Etag        model.Etag `json:"etag,omitempty"`
+	OrgId       *model.Id  `json:"orgId,omitempty"`
 }
 
-func (this *UpdateGroupResponse) FromGroup(group domain.GroupWithOrg) {
-	this.Id = group.Group.Id.String()
-	this.Name = group.Group.Name
-	this.Etag = group.Group.Etag.String()
-	this.Description = group.Group.Description
-	this.OrgId = group.Group.OrgId
+func (this *UpdateGroupResponse) FromGroup(group domain.Group) {
+	this.Id = *group.Id
+	this.Name = *group.Name
+	this.Etag = *group.Etag
+	this.Description = group.Description
+	this.OrgId = group.OrgId
 }
 
 type GetGroupByIdRequest = it.GetGroupByIdQuery
 
-type OrganizationResponseWithGroup struct {
-	Id          string `json:"Id"`
-	DisplayName string `json:"displayName"`
-	Slug        string `json:"slug"`
+type GetGroupRespWithOrg struct {
+	Id          model.Id `json:"Id"`
+	DisplayName string   `json:"displayName"`
+	Slug        string   `json:"slug"`
 }
 
 type GetGroupByIdResponse struct {
-	Id          string  `json:"id"`
-	Name        string  `json:"name"`
-	Description *string `json:"description,omitempty"`
-	Etag        string  `json:"etag"`
-	Org         OrganizationResponseWithGroup
+	Id          model.Id             `json:"id"`
+	Name        string               `json:"name"`
+	Description *string              `json:"description,omitempty"`
+	Etag        model.Etag           `json:"etag"`
+	Org         *GetGroupRespWithOrg `json:"org,omitempty"`
 }
 
-func (this *GetGroupByIdResponse) FromGroup(group domain.GroupWithOrg) {
-	this.Id = group.Group.Id.String()
-	this.Name = group.Group.Name
-	this.Description = group.Group.Description
-	this.Etag = group.Group.Etag.String()
-	if group.Organization != nil {
-		this.Org.Id = *group.Group.OrgId
-		this.Org.DisplayName = *group.Organization.DisplayName
-		this.Org.Slug = group.Organization.Slug.String()
+func (this *GetGroupByIdResponse) FromGroup(group domain.Group) {
+	this.Id = *group.Id
+	this.Name = *group.Name
+	this.Description = group.Description
+	this.Etag = *group.Etag
+	if group.Org != nil {
+		this.Org.Id = *group.OrgId
+		this.Org.DisplayName = *group.Org.DisplayName
+		this.Org.Slug = group.Org.Slug.String()
 	}
 }

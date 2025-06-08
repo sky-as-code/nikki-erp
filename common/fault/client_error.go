@@ -7,12 +7,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 )
 
-func WrapValidationErrors(err ValidationErrors) *ClientError {
-	return &ClientError{
-		Code:    "validation_error",
-		Details: err,
-	}
-}
+// func WrapValidationErrors(err ValidationErrors) *ClientError {
+// 	return &ClientError{
+// 		Code:    "validation_error",
+// 		Details: err,
+// 	}
+// }
 
 type ClientError struct {
 	Code    string `json:"code"`
@@ -26,25 +26,46 @@ type ValidationErrorItem struct {
 
 type ValidationErrors map[string]string
 
-func (this *ValidationErrors) Append(item ValidationErrorItem) {
+func (this *ValidationErrors) Append(field string, err string) {
+	(*this)[field] = err
+}
+
+func (this *ValidationErrors) Appendf(field string, err string, args ...any) {
+	(*this)[field] = fmt.Sprintf(err, args...)
+}
+
+func (this *ValidationErrors) AppendItem(item ValidationErrorItem) {
 	(*this)[item.Field] = item.Error
 }
 
-func (this ValidationErrors) Count() int {
-	return len(this)
+func (this *ValidationErrors) Count() int {
+	return len(*this)
 }
 
-func (this ValidationErrors) Has(field string) bool {
-	_, ok := this[field]
+func (this *ValidationErrors) Has(field string) bool {
+	_, ok := (*this)[field]
 	return ok
 }
 
-func (this ValidationErrors) Error() string {
+func (this *ValidationErrors) Merge(other ValidationErrors) {
+	for field, err := range other {
+		(*this)[field] = err
+	}
+}
+
+func (this *ValidationErrors) Error() string {
 	str := ""
-	for field, err := range this {
+	for field, err := range *this {
 		str += fmt.Sprintf("%s: %s;", field, err)
 	}
 	return str
+}
+
+func (this *ValidationErrors) ToClientError() *ClientError {
+	return &ClientError{
+		Code:    "validation_error",
+		Details: this,
+	}
 }
 
 func NewValidationErrors() ValidationErrors {
@@ -56,10 +77,7 @@ func NewValidationErrorsFromInvopop(rawErrors invopop.Errors) ValidationErrors {
 	util.Unused(invopop.ErrorTag)
 	for field, err := range rawErrors {
 		e := err.(invopop.ErrorObject)
-		errors.Append(ValidationErrorItem{
-			Field: field,
-			Error: e.Error(),
-		})
+		errors.Append(field, e.Error())
 	}
 	return errors
 }

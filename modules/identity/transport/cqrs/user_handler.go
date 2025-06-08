@@ -45,7 +45,7 @@ func (this *UserHandler) Update(ctx context.Context, packet *cqrs.RequestPacket[
 
 func (this *UserHandler) Delete(ctx context.Context, packet *cqrs.RequestPacket[it.DeleteUserCommand]) (*cqrs.Reply[it.DeleteUserResult], error) {
 	cmd := packet.Request()
-	result, err := this.UserSvc.DeleteUser(ctx, cmd.Id, cmd.DeletedBy)
+	result, err := this.UserSvc.DeleteUser(ctx, *cmd)
 	ft.PanicOnErr(err)
 
 	return &cqrs.Reply[it.DeleteUserResult]{
@@ -53,12 +53,23 @@ func (this *UserHandler) Delete(ctx context.Context, packet *cqrs.RequestPacket[
 	}, nil
 }
 
-func (this *UserHandler) GetUserByID(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserByIdQuery]) (*cqrs.Reply[it.GetUserByIdResult], error) {
+func (this *UserHandler) GetUserById(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserByIdQuery]) (*cqrs.Reply[it.GetUserByIdResult], error) {
 	cmd := packet.Request()
-	result, err := this.UserSvc.GetUserByID(ctx, cmd.Id)
+	result, err := this.UserSvc.GetUserById(ctx, *cmd)
 	ft.PanicOnErr(err)
 
 	reply := &cqrs.Reply[it.GetUserByIdResult]{
+		Result: *result,
+	}
+	return reply, nil
+}
+
+func (this *UserHandler) SearchUsers(ctx context.Context, packet *cqrs.RequestPacket[it.SearchUsersCommand]) (*cqrs.Reply[it.SearchUsersResult], error) {
+	cmd := packet.Request()
+	result, err := this.UserSvc.SearchUsers(ctx, *cmd)
+	ft.PanicOnErr(err)
+
+	reply := &cqrs.Reply[it.SearchUsersResult]{
 		Result: *result,
 	}
 	return reply, nil
