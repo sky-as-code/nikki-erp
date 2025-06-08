@@ -89,9 +89,7 @@ func (this *WatermillCqrsBus) SubscribeRequests(ctx context.Context, handlers ..
 
 func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestHandler) (err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), fmt.Sprintf("failed to subscribe with handler %s", structName(handler)))
-		}
+		err = ft.RecoverPanicf(recover(), "failed to subscribe with handler %s", structName(handler))
 	}()
 
 	sampleRequest := handler.NewRequest().(Request)
@@ -168,9 +166,7 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 
 func (this *WatermillCqrsBus) RequestNoReply(ctx context.Context, request Request) (err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), "failed to send request")
-		}
+		err = ft.RecoverPanic(recover(), "failed to send request")
 	}()
 
 	packet, err := this.newRequestPacket(ctx, request)
@@ -187,8 +183,8 @@ func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, resu
 	ctx, cancelSubscription := context.WithCancel(ctx)
 
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), fmt.Sprintf("failed to send request of type %s", request.Type().String()))
+		err = ft.RecoverPanicf(recover(), "failed to send request of type %s", request.Type().String())
+		if err != nil {
 			cancelSubscription()
 		}
 	}()
@@ -269,9 +265,7 @@ func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *Reques
 
 func (this *WatermillCqrsBus) newRequestPacket(ctx context.Context, request Request) (packet *RequestPacket[Request], err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), fmt.Sprintf("failed to create request packet for %s", request.Type().String()))
-		}
+		err = ft.RecoverPanicf(recover(), "failed to create request packet for %s", request.Type().String())
 	}()
 	packet = newOutgoingRequestPacket(request, this.marshaler)
 	packet.message.SetContext(ctx)
@@ -379,9 +373,7 @@ func (c genericRequestHandler[TReq, TResult]) NewReply() Reply[any] {
 
 func (c genericRequestHandler[TReq, TResult]) Handle(ctx context.Context, packet *RequestPacket[Request]) (reply *Reply[any], err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = r.(error)
-		}
+		err = ft.RecoverPanic(recover(), "failed to handle request")
 	}()
 
 	var req any = packet.request

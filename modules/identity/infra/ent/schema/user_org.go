@@ -15,13 +15,8 @@ type UserOrgMixin struct {
 
 func (UserOrgMixin) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("user_id").
-			NotEmpty().
-			Immutable(),
-
-		field.String("org_id").
-			NotEmpty().
-			Immutable(),
+		field.String("user_id").Immutable(),
+		field.String("org_id").Immutable(),
 	}
 }
 
@@ -61,7 +56,7 @@ func (UserOrg) Edges() []ent.Edge {
 func (UserOrg) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		field.ID("user_id", "org_id"),
-		entsql.Annotation{Table: "user_orgs"},
+		entsql.Annotation{Table: "ident_user_org"},
 	}
 }
 

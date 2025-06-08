@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"entgo.io/ent/schema/mixin"
 )
 
@@ -18,44 +19,37 @@ type UserMixin struct {
 func (UserMixin) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").
-			NotEmpty().
 			Immutable().
 			StorageKey("id"),
-
-		// field.String("org_id").
-		// 	NotEmpty().
-		// 	Immutable(),
 
 		field.String("avatar_url").
 			Optional().
 			Nillable().
-			MaxLen(255).
 			Comment("URL to user's profile picture"),
 
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),
 
-		field.String("created_by").
-			NotEmpty().
-			MaxLen(36).
-			Immutable(),
-
-		field.String("display_name").
-			NotEmpty().
-			MaxLen(50),
+		field.String("display_name"),
 
 		field.String("email").
-			Unique().
-			NotEmpty().
-			MaxLen(100),
+			Unique(),
 
-		field.String("etag").
-			MaxLen(100),
+		field.String("etag"),
 
 		field.Int("failed_login_attempts").
 			Default(0).
 			Comment("Count of consecutive failed login attempts"),
+
+		field.String("hierarchy_id").
+			Optional().
+			Nillable(),
+
+		field.Bool("is_owner").
+			Optional().
+			Immutable().
+			Comment("Whether the user is an owner with root privileges in this deployment"),
 
 		field.Time("last_login_at").
 			Optional().
@@ -71,28 +65,18 @@ func (UserMixin) Fields() []ent.Field {
 			Comment("Force password change on next login"),
 
 		field.String("password_hash").
-			Sensitive().
-			NotEmpty(),
+			Sensitive(),
 
 		field.Time("password_changed_at").
 			Comment("Last password change timestamp"),
 
 		field.Enum("status").
-			Values("active", "inactive", "locked").
-			Default("inactive"),
+			Values("active", "inactive", "locked"),
 
 		field.Time("updated_at").
-			Default(time.Now).
-			UpdateDefault(time.Now),
-
-		field.String("updated_by").
 			Optional().
 			Nillable(),
 	}
-}
-
-func (UserMixin) Edges() []ent.Edge {
-	return nil
 }
 
 type User struct {
@@ -101,26 +85,30 @@ type User struct {
 
 func (User) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entsql.Annotation{Table: "users"},
+		entsql.Annotation{Table: "ident_users"},
 	}
 }
 
-func (User) Fields() []ent.Field {
-	return nil
+func (User) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("is_owner").Unique(),
+	}
 }
 
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("groups", Group.Type).
 			Through("user_groups", UserGroup.Type),
+
+		edge.To("hierarchy", HierarchyLevel.Type).
+			Field("hierarchy_id").
+			Unique().
+			Annotations(entsql.Annotation{
+				OnDelete: entsql.SetNull,
+			}),
+
 		edge.To("orgs", Organization.Type).
 			Through("user_orgs", UserOrg.Type),
-		// edge.From("organization", Organization.Type).
-		// 	Ref("users").
-		// 	Required().
-		// 	Unique(). // O2M relationship
-		// 	Immutable().
-		// 	Field("org_id"),
 	}
 }
 

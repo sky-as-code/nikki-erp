@@ -23,19 +23,19 @@ const (
 	// OrganizationFieldID holds the string denoting the ID field of the Organization.
 	OrganizationFieldID = "id"
 	// Table holds the table name of the userorg in the database.
-	Table = "user_orgs"
+	Table = "ident_user_org"
 	// UserTable is the table that holds the user relation/edge.
-	UserTable = "user_orgs"
+	UserTable = "ident_user_org"
 	// UserInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
-	UserInverseTable = "users"
+	UserInverseTable = "ident_users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "user_id"
 	// OrgTable is the table that holds the org relation/edge.
-	OrgTable = "user_orgs"
+	OrgTable = "ident_user_org"
 	// OrgInverseTable is the table name for the Organization entity.
 	// It exists in this package in order to avoid circular dependency with the "organization" package.
-	OrgInverseTable = "organizations"
+	OrgInverseTable = "ident_organizations"
 	// OrgColumn is the table column denoting the org relation/edge.
 	OrgColumn = "org_id"
 )
@@ -55,13 +55,6 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
-
-var (
-	// UserIDValidator is a validator for the "user_id" field. It is called by the builders before save.
-	UserIDValidator func(string) error
-	// OrgIDValidator is a validator for the "org_id" field. It is called by the builders before save.
-	OrgIDValidator func(string) error
-)
 
 // OrderOption defines the ordering options for the UserOrg queries.
 type OrderOption = func(*sql.Selector)

@@ -9,7 +9,6 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 )
 
@@ -20,8 +19,8 @@ type Organization struct {
 	ID string `json:"id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
-	// CreatedBy holds the value of the "created_by" field.
-	CreatedBy string `json:"created_by,omitempty"`
+	// Set value for this column when the process is running to delete all resources under this hierarchy level
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 	// Human-friendly-readable organization name
 	DisplayName string `json:"display_name,omitempty"`
 	// Etag holds the value of the "etag" field.
@@ -31,9 +30,7 @@ type Organization struct {
 	// URL-safe organization name
 	Slug string `json:"slug,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	// UpdatedBy holds the value of the "updated_by" field.
-	UpdatedBy *string `json:"updated_by,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the OrganizationQuery when eager-loading is set.
 	Edges        OrganizationEdges `json:"edges"`
@@ -44,13 +41,15 @@ type Organization struct {
 type OrganizationEdges struct {
 	// Users holds the value of the users edge.
 	Users []*User `json:"users,omitempty"`
+	// Hierarchies holds the value of the hierarchies edge.
+	Hierarchies []*HierarchyLevel `json:"hierarchies,omitempty"`
 	// Groups holds the value of the groups edge.
-	Groups *Group `json:"groups,omitempty"`
+	Groups []*Group `json:"groups,omitempty"`
 	// UserOrgs holds the value of the user_orgs edge.
 	UserOrgs []*UserOrg `json:"user_orgs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // UsersOrErr returns the Users value or an error if the edge
@@ -62,13 +61,20 @@ func (e OrganizationEdges) UsersOrErr() ([]*User, error) {
 	return nil, &NotLoadedError{edge: "users"}
 }
 
+// HierarchiesOrErr returns the Hierarchies value or an error if the edge
+// was not loaded in eager-loading.
+func (e OrganizationEdges) HierarchiesOrErr() ([]*HierarchyLevel, error) {
+	if e.loadedTypes[1] {
+		return e.Hierarchies, nil
+	}
+	return nil, &NotLoadedError{edge: "hierarchies"}
+}
+
 // GroupsOrErr returns the Groups value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e OrganizationEdges) GroupsOrErr() (*Group, error) {
-	if e.Groups != nil {
+// was not loaded in eager-loading.
+func (e OrganizationEdges) GroupsOrErr() ([]*Group, error) {
+	if e.loadedTypes[2] {
 		return e.Groups, nil
-	} else if e.loadedTypes[1] {
-		return nil, &NotFoundError{label: group.Label}
 	}
 	return nil, &NotLoadedError{edge: "groups"}
 }
@@ -76,7 +82,7 @@ func (e OrganizationEdges) GroupsOrErr() (*Group, error) {
 // UserOrgsOrErr returns the UserOrgs value or an error if the edge
 // was not loaded in eager-loading.
 func (e OrganizationEdges) UserOrgsOrErr() ([]*UserOrg, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.UserOrgs, nil
 	}
 	return nil, &NotLoadedError{edge: "user_orgs"}
@@ -87,9 +93,9 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case organization.FieldID, organization.FieldCreatedBy, organization.FieldDisplayName, organization.FieldEtag, organization.FieldStatus, organization.FieldSlug, organization.FieldUpdatedBy:
+		case organization.FieldID, organization.FieldDisplayName, organization.FieldEtag, organization.FieldStatus, organization.FieldSlug:
 			values[i] = new(sql.NullString)
-		case organization.FieldCreatedAt, organization.FieldUpdatedAt:
+		case organization.FieldCreatedAt, organization.FieldDeletedAt, organization.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -118,11 +124,12 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				o.CreatedAt = value.Time
 			}
-		case organization.FieldCreatedBy:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field created_by", values[i])
+		case organization.FieldDeletedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				o.CreatedBy = value.String
+				o.DeletedAt = new(time.Time)
+				*o.DeletedAt = value.Time
 			}
 		case organization.FieldDisplayName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -152,14 +159,8 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				o.UpdatedAt = value.Time
-			}
-		case organization.FieldUpdatedBy:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field updated_by", values[i])
-			} else if value.Valid {
-				o.UpdatedBy = new(string)
-				*o.UpdatedBy = value.String
+				o.UpdatedAt = new(time.Time)
+				*o.UpdatedAt = value.Time
 			}
 		default:
 			o.selectValues.Set(columns[i], values[i])
@@ -177,6 +178,11 @@ func (o *Organization) Value(name string) (ent.Value, error) {
 // QueryUsers queries the "users" edge of the Organization entity.
 func (o *Organization) QueryUsers() *UserQuery {
 	return NewOrganizationClient(o.config).QueryUsers(o)
+}
+
+// QueryHierarchies queries the "hierarchies" edge of the Organization entity.
+func (o *Organization) QueryHierarchies() *HierarchyLevelQuery {
+	return NewOrganizationClient(o.config).QueryHierarchies(o)
 }
 
 // QueryGroups queries the "groups" edge of the Organization entity.
@@ -215,8 +221,10 @@ func (o *Organization) String() string {
 	builder.WriteString("created_at=")
 	builder.WriteString(o.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("created_by=")
-	builder.WriteString(o.CreatedBy)
+	if v := o.DeletedAt; v != nil {
+		builder.WriteString("deleted_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("display_name=")
 	builder.WriteString(o.DisplayName)
@@ -230,12 +238,9 @@ func (o *Organization) String() string {
 	builder.WriteString("slug=")
 	builder.WriteString(o.Slug)
 	builder.WriteString(", ")
-	builder.WriteString("updated_at=")
-	builder.WriteString(o.UpdatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	if v := o.UpdatedBy; v != nil {
-		builder.WriteString("updated_by=")
-		builder.WriteString(*v)
+	if v := o.UpdatedAt; v != nil {
+		builder.WriteString("updated_at=")
+		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteByte(')')
 	return builder.String()

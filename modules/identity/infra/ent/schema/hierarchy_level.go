@@ -2,11 +2,14 @@
 package schema
 
 import (
+	"time"
+
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"entgo.io/ent/schema/mixin"
 )
 
@@ -17,17 +20,19 @@ type HierarchyLevelMixin struct {
 func (HierarchyLevelMixin) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").
-			NotEmpty().
 			Immutable().
 			StorageKey("id"),
 
-		field.String("org_id").
-			NotEmpty().
+		field.Time("created_at").
+			Default(time.Now).
 			Immutable(),
 
-		field.String("name").
-			NotEmpty().
-			Unique(),
+		field.String("etag"),
+
+		field.String("name"),
+
+		field.String("org_id").
+			Immutable(),
 
 		field.String("parent_id").
 			Optional().
@@ -45,7 +50,7 @@ type HierarchyLevel struct {
 
 func (HierarchyLevel) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entsql.Annotation{Table: "hierarchy_levels"},
+		entsql.Annotation{Table: "ident_hierarchy_levels"},
 	}
 }
 
@@ -56,12 +61,27 @@ func (HierarchyLevel) Fields() []ent.Field {
 func (HierarchyLevel) Edges() []ent.Edge {
 	return []ent.Edge{
 		// Self-referential parent level
-		edge.From("parent", HierarchyLevel.Type).
-			Ref("child").
-			Unique(). // O2M relationship
-			Field("parent_id"),
+		edge.From("children", HierarchyLevel.Type).
+			Ref("parent"),
 
-		edge.To("child", HierarchyLevel.Type),
+		edge.From("users", User.Type).
+			Ref("hierarchy"),
+
+		edge.To("parent", HierarchyLevel.Type).
+			Field("parent_id").
+			Unique(), // O2M relationship
+
+		edge.To("org", Organization.Type).
+			Field("org_id").
+			Immutable().
+			Required().
+			Unique(), // O2M relationship
+	}
+}
+
+func (HierarchyLevel) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name", "org_id").Unique(),
 	}
 }
 

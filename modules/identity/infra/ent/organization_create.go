@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
@@ -36,9 +37,17 @@ func (oc *OrganizationCreate) SetNillableCreatedAt(t *time.Time) *OrganizationCr
 	return oc
 }
 
-// SetCreatedBy sets the "created_by" field.
-func (oc *OrganizationCreate) SetCreatedBy(s string) *OrganizationCreate {
-	oc.mutation.SetCreatedBy(s)
+// SetDeletedAt sets the "deleted_at" field.
+func (oc *OrganizationCreate) SetDeletedAt(t time.Time) *OrganizationCreate {
+	oc.mutation.SetDeletedAt(t)
+	return oc
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableDeletedAt(t *time.Time) *OrganizationCreate {
+	if t != nil {
+		oc.SetDeletedAt(*t)
+	}
 	return oc
 }
 
@@ -60,14 +69,6 @@ func (oc *OrganizationCreate) SetStatus(o organization.Status) *OrganizationCrea
 	return oc
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillableStatus(o *organization.Status) *OrganizationCreate {
-	if o != nil {
-		oc.SetStatus(*o)
-	}
-	return oc
-}
-
 // SetSlug sets the "slug" field.
 func (oc *OrganizationCreate) SetSlug(s string) *OrganizationCreate {
 	oc.mutation.SetSlug(s)
@@ -84,20 +85,6 @@ func (oc *OrganizationCreate) SetUpdatedAt(t time.Time) *OrganizationCreate {
 func (oc *OrganizationCreate) SetNillableUpdatedAt(t *time.Time) *OrganizationCreate {
 	if t != nil {
 		oc.SetUpdatedAt(*t)
-	}
-	return oc
-}
-
-// SetUpdatedBy sets the "updated_by" field.
-func (oc *OrganizationCreate) SetUpdatedBy(s string) *OrganizationCreate {
-	oc.mutation.SetUpdatedBy(s)
-	return oc
-}
-
-// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
-func (oc *OrganizationCreate) SetNillableUpdatedBy(s *string) *OrganizationCreate {
-	if s != nil {
-		oc.SetUpdatedBy(*s)
 	}
 	return oc
 }
@@ -123,23 +110,34 @@ func (oc *OrganizationCreate) AddUsers(u ...*User) *OrganizationCreate {
 	return oc.AddUserIDs(ids...)
 }
 
-// SetGroupsID sets the "groups" edge to the Group entity by ID.
-func (oc *OrganizationCreate) SetGroupsID(id string) *OrganizationCreate {
-	oc.mutation.SetGroupsID(id)
+// AddHierarchyIDs adds the "hierarchies" edge to the HierarchyLevel entity by IDs.
+func (oc *OrganizationCreate) AddHierarchyIDs(ids ...string) *OrganizationCreate {
+	oc.mutation.AddHierarchyIDs(ids...)
 	return oc
 }
 
-// SetNillableGroupsID sets the "groups" edge to the Group entity by ID if the given value is not nil.
-func (oc *OrganizationCreate) SetNillableGroupsID(id *string) *OrganizationCreate {
-	if id != nil {
-		oc = oc.SetGroupsID(*id)
+// AddHierarchies adds the "hierarchies" edges to the HierarchyLevel entity.
+func (oc *OrganizationCreate) AddHierarchies(h ...*HierarchyLevel) *OrganizationCreate {
+	ids := make([]string, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
 	}
+	return oc.AddHierarchyIDs(ids...)
+}
+
+// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
+func (oc *OrganizationCreate) AddGroupIDs(ids ...string) *OrganizationCreate {
+	oc.mutation.AddGroupIDs(ids...)
 	return oc
 }
 
-// SetGroups sets the "groups" edge to the Group entity.
-func (oc *OrganizationCreate) SetGroups(g *Group) *OrganizationCreate {
-	return oc.SetGroupsID(g.ID)
+// AddGroups adds the "groups" edges to the Group entity.
+func (oc *OrganizationCreate) AddGroups(g ...*Group) *OrganizationCreate {
+	ids := make([]string, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return oc.AddGroupIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -181,14 +179,6 @@ func (oc *OrganizationCreate) defaults() {
 		v := organization.DefaultCreatedAt()
 		oc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := oc.mutation.Status(); !ok {
-		v := organization.DefaultStatus
-		oc.mutation.SetStatus(v)
-	}
-	if _, ok := oc.mutation.UpdatedAt(); !ok {
-		v := organization.DefaultUpdatedAt()
-		oc.mutation.SetUpdatedAt(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -196,29 +186,11 @@ func (oc *OrganizationCreate) check() error {
 	if _, ok := oc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Organization.created_at"`)}
 	}
-	if _, ok := oc.mutation.CreatedBy(); !ok {
-		return &ValidationError{Name: "created_by", err: errors.New(`ent: missing required field "Organization.created_by"`)}
-	}
-	if v, ok := oc.mutation.CreatedBy(); ok {
-		if err := organization.CreatedByValidator(v); err != nil {
-			return &ValidationError{Name: "created_by", err: fmt.Errorf(`ent: validator failed for field "Organization.created_by": %w`, err)}
-		}
-	}
 	if _, ok := oc.mutation.DisplayName(); !ok {
 		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "Organization.display_name"`)}
 	}
-	if v, ok := oc.mutation.DisplayName(); ok {
-		if err := organization.DisplayNameValidator(v); err != nil {
-			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "Organization.display_name": %w`, err)}
-		}
-	}
 	if _, ok := oc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Organization.etag"`)}
-	}
-	if v, ok := oc.mutation.Etag(); ok {
-		if err := organization.EtagValidator(v); err != nil {
-			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "Organization.etag": %w`, err)}
-		}
 	}
 	if _, ok := oc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Organization.status"`)}
@@ -230,19 +202,6 @@ func (oc *OrganizationCreate) check() error {
 	}
 	if _, ok := oc.mutation.Slug(); !ok {
 		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "Organization.slug"`)}
-	}
-	if v, ok := oc.mutation.Slug(); ok {
-		if err := organization.SlugValidator(v); err != nil {
-			return &ValidationError{Name: "slug", err: fmt.Errorf(`ent: validator failed for field "Organization.slug": %w`, err)}
-		}
-	}
-	if _, ok := oc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Organization.updated_at"`)}
-	}
-	if v, ok := oc.mutation.ID(); ok {
-		if err := organization.IDValidator(v); err != nil {
-			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Organization.id": %w`, err)}
-		}
 	}
 	return nil
 }
@@ -283,9 +242,9 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		_spec.SetField(organization.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := oc.mutation.CreatedBy(); ok {
-		_spec.SetField(organization.FieldCreatedBy, field.TypeString, value)
-		_node.CreatedBy = value
+	if value, ok := oc.mutation.DeletedAt(); ok {
+		_spec.SetField(organization.FieldDeletedAt, field.TypeTime, value)
+		_node.DeletedAt = &value
 	}
 	if value, ok := oc.mutation.DisplayName(); ok {
 		_spec.SetField(organization.FieldDisplayName, field.TypeString, value)
@@ -305,11 +264,7 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 	}
 	if value, ok := oc.mutation.UpdatedAt(); ok {
 		_spec.SetField(organization.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
-	}
-	if value, ok := oc.mutation.UpdatedBy(); ok {
-		_spec.SetField(organization.FieldUpdatedBy, field.TypeString, value)
-		_node.UpdatedBy = &value
+		_node.UpdatedAt = &value
 	}
 	if nodes := oc.mutation.UsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -327,10 +282,26 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := oc.mutation.HierarchiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   organization.HierarchiesTable,
+			Columns: []string{organization.HierarchiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := oc.mutation.GroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
 			Table:   organization.GroupsTable,
 			Columns: []string{organization.GroupsColumn},
 			Bidi:    false,

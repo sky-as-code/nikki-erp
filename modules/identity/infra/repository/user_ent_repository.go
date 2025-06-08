@@ -2,9 +2,10 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
-	"github.com/sky-as-code/nikki-erp/common/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
@@ -26,7 +27,6 @@ func (this *UserEntRepository) Create(ctx context.Context, user domain.User) (*d
 	creation := this.client.User.Create().
 		SetID(user.Id.String()).
 		SetNillableAvatarURL(user.AvatarUrl).
-		SetCreatedBy(user.CreatedBy.String()).
 		SetDisplayName(*user.DisplayName).
 		SetEtag(user.Etag.String()).
 		SetEmail(*user.Email).
@@ -42,23 +42,27 @@ func (this *UserEntRepository) Update(ctx context.Context, user domain.User) (*d
 	update := this.client.User.UpdateOneID(user.Id.String()).
 		SetNillableAvatarURL(user.AvatarUrl).
 		SetNillableDisplayName(user.DisplayName).
-		SetEtag(user.Etag.String()).
 		SetNillableEmail(user.Email).
 		SetNillablePasswordHash(user.PasswordHash).
 		SetNillablePasswordChangedAt(user.PasswordChangedAt).
-		SetNillableStatus((*entUser.Status)(user.Status)).
-		SetUpdatedBy(user.UpdatedBy.String())
+		SetNillableStatus((*entUser.Status)(user.Status))
+
+	if len(update.Mutation().Fields()) > 0 {
+		update.
+			SetEtag(user.Etag.String()).
+			SetUpdatedAt(time.Now())
+	}
 
 	return Mutate(ctx, update, entToUser)
 }
 
-func (this *UserEntRepository) Delete(ctx context.Context, id model.Id) error {
-	return Delete[ent.User](ctx, this.client.User.DeleteOneID(id.String()))
+func (this *UserEntRepository) Delete(ctx context.Context, param it.DeleteUserParam) error {
+	return Delete[ent.User](ctx, this.client.User.DeleteOneID(param.Id.String()))
 }
 
-func (this *UserEntRepository) FindById(ctx context.Context, id model.Id) (*domain.User, error) {
+func (this *UserEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.User, error) {
 	query := this.client.User.Query().
-		Where(entUser.ID(id.String())).
+		Where(entUser.ID(param.Id.String())).
 		WithGroups().
 		WithOrgs()
 
@@ -74,14 +78,22 @@ func (this *UserEntRepository) FindByEmail(ctx context.Context, email string) (*
 	return FindOne(ctx, query, entToUser)
 }
 
+func (this *UserEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
+	return ParseSearchGraphStr[ent.User, domain.User](criteria)
+}
+
 func (this *UserEntRepository) Search(
-	ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions,
-) (*crud.PagedResult[*domain.User], error) {
+	ctx context.Context,
+	predicate *orm.Predicate,
+	order []orm.OrderOption,
+	opts crud.PagingOptions,
+) (*crud.PagedResult[domain.User], error) {
+
 	return Search(
 		ctx,
-		criteria,
+		predicate,
+		order,
 		opts,
-		entUser.Label,
 		this.client.User.Query(),
 		entToUsers,
 	)
@@ -92,7 +104,6 @@ func BuildUserDescriptor() *orm.EntityDescriptor {
 	builder := orm.DescribeEntity(entUser.Label).
 		Field(entUser.FieldAvatarURL, entity.AvatarURL).
 		Field(entUser.FieldCreatedAt, entity.CreatedAt).
-		Field(entUser.FieldCreatedBy, entity.CreatedBy).
 		Field(entUser.FieldDisplayName, entity.DisplayName).
 		Field(entUser.FieldEmail, entity.Email).
 		Field(entUser.FieldEtag, entity.Etag).
@@ -103,7 +114,6 @@ func BuildUserDescriptor() *orm.EntityDescriptor {
 		Field(entUser.FieldMustChangePassword, entity.MustChangePassword).
 		Field(entUser.FieldStatus, entity.Status).
 		Field(entUser.FieldUpdatedAt, entity.UpdatedAt).
-		Field(entUser.FieldUpdatedBy, entity.UpdatedBy).
 		Edge(entUser.EdgeGroups, orm.ToEdgePredicate(entUser.HasGroupsWith)).
 		Edge(entUser.EdgeOrgs, orm.ToEdgePredicate(entUser.HasOrgsWith))
 

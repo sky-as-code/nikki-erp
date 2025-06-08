@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/env"
-	. "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -57,5 +57,5 @@ func (this *EnvVarConfigLoader) loadLocalEnvFile() error {
 			"for local development to store passwords and other secrets")
 		return nil
 	}
-	return WrapTechnicalError(err, "EnvVarConfigLoader.loadLocalEnvFile()")
+	return errors.Wrap(err, "EnvVarConfigLoader.loadLocalEnvFile()")
 }

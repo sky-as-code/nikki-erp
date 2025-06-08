@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
 // HierarchyLevelUpdate is the builder for updating HierarchyLevel entities.
@@ -24,6 +25,20 @@ type HierarchyLevelUpdate struct {
 // Where appends a list predicates to the HierarchyLevelUpdate builder.
 func (hlu *HierarchyLevelUpdate) Where(ps ...predicate.HierarchyLevel) *HierarchyLevelUpdate {
 	hlu.mutation.Where(ps...)
+	return hlu
+}
+
+// SetEtag sets the "etag" field.
+func (hlu *HierarchyLevelUpdate) SetEtag(s string) *HierarchyLevelUpdate {
+	hlu.mutation.SetEtag(s)
+	return hlu
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (hlu *HierarchyLevelUpdate) SetNillableEtag(s *string) *HierarchyLevelUpdate {
+	if s != nil {
+		hlu.SetEtag(*s)
+	}
 	return hlu
 }
 
@@ -61,19 +76,14 @@ func (hlu *HierarchyLevelUpdate) ClearParentID() *HierarchyLevelUpdate {
 	return hlu
 }
 
-// SetParent sets the "parent" edge to the HierarchyLevel entity.
-func (hlu *HierarchyLevelUpdate) SetParent(h *HierarchyLevel) *HierarchyLevelUpdate {
-	return hlu.SetParentID(h.ID)
-}
-
-// AddChildIDs adds the "child" edge to the HierarchyLevel entity by IDs.
+// AddChildIDs adds the "children" edge to the HierarchyLevel entity by IDs.
 func (hlu *HierarchyLevelUpdate) AddChildIDs(ids ...string) *HierarchyLevelUpdate {
 	hlu.mutation.AddChildIDs(ids...)
 	return hlu
 }
 
-// AddChild adds the "child" edges to the HierarchyLevel entity.
-func (hlu *HierarchyLevelUpdate) AddChild(h ...*HierarchyLevel) *HierarchyLevelUpdate {
+// AddChildren adds the "children" edges to the HierarchyLevel entity.
+func (hlu *HierarchyLevelUpdate) AddChildren(h ...*HierarchyLevel) *HierarchyLevelUpdate {
 	ids := make([]string, len(h))
 	for i := range h {
 		ids[i] = h[i].ID
@@ -81,36 +91,77 @@ func (hlu *HierarchyLevelUpdate) AddChild(h ...*HierarchyLevel) *HierarchyLevelU
 	return hlu.AddChildIDs(ids...)
 }
 
+// AddUserIDs adds the "users" edge to the User entity by IDs.
+func (hlu *HierarchyLevelUpdate) AddUserIDs(ids ...string) *HierarchyLevelUpdate {
+	hlu.mutation.AddUserIDs(ids...)
+	return hlu
+}
+
+// AddUsers adds the "users" edges to the User entity.
+func (hlu *HierarchyLevelUpdate) AddUsers(u ...*User) *HierarchyLevelUpdate {
+	ids := make([]string, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return hlu.AddUserIDs(ids...)
+}
+
+// SetParent sets the "parent" edge to the HierarchyLevel entity.
+func (hlu *HierarchyLevelUpdate) SetParent(h *HierarchyLevel) *HierarchyLevelUpdate {
+	return hlu.SetParentID(h.ID)
+}
+
 // Mutation returns the HierarchyLevelMutation object of the builder.
 func (hlu *HierarchyLevelUpdate) Mutation() *HierarchyLevelMutation {
 	return hlu.mutation
+}
+
+// ClearChildren clears all "children" edges to the HierarchyLevel entity.
+func (hlu *HierarchyLevelUpdate) ClearChildren() *HierarchyLevelUpdate {
+	hlu.mutation.ClearChildren()
+	return hlu
+}
+
+// RemoveChildIDs removes the "children" edge to HierarchyLevel entities by IDs.
+func (hlu *HierarchyLevelUpdate) RemoveChildIDs(ids ...string) *HierarchyLevelUpdate {
+	hlu.mutation.RemoveChildIDs(ids...)
+	return hlu
+}
+
+// RemoveChildren removes "children" edges to HierarchyLevel entities.
+func (hlu *HierarchyLevelUpdate) RemoveChildren(h ...*HierarchyLevel) *HierarchyLevelUpdate {
+	ids := make([]string, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return hlu.RemoveChildIDs(ids...)
+}
+
+// ClearUsers clears all "users" edges to the User entity.
+func (hlu *HierarchyLevelUpdate) ClearUsers() *HierarchyLevelUpdate {
+	hlu.mutation.ClearUsers()
+	return hlu
+}
+
+// RemoveUserIDs removes the "users" edge to User entities by IDs.
+func (hlu *HierarchyLevelUpdate) RemoveUserIDs(ids ...string) *HierarchyLevelUpdate {
+	hlu.mutation.RemoveUserIDs(ids...)
+	return hlu
+}
+
+// RemoveUsers removes "users" edges to User entities.
+func (hlu *HierarchyLevelUpdate) RemoveUsers(u ...*User) *HierarchyLevelUpdate {
+	ids := make([]string, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return hlu.RemoveUserIDs(ids...)
 }
 
 // ClearParent clears the "parent" edge to the HierarchyLevel entity.
 func (hlu *HierarchyLevelUpdate) ClearParent() *HierarchyLevelUpdate {
 	hlu.mutation.ClearParent()
 	return hlu
-}
-
-// ClearChild clears all "child" edges to the HierarchyLevel entity.
-func (hlu *HierarchyLevelUpdate) ClearChild() *HierarchyLevelUpdate {
-	hlu.mutation.ClearChild()
-	return hlu
-}
-
-// RemoveChildIDs removes the "child" edge to HierarchyLevel entities by IDs.
-func (hlu *HierarchyLevelUpdate) RemoveChildIDs(ids ...string) *HierarchyLevelUpdate {
-	hlu.mutation.RemoveChildIDs(ids...)
-	return hlu
-}
-
-// RemoveChild removes "child" edges to HierarchyLevel entities.
-func (hlu *HierarchyLevelUpdate) RemoveChild(h ...*HierarchyLevel) *HierarchyLevelUpdate {
-	ids := make([]string, len(h))
-	for i := range h {
-		ids[i] = h[i].ID
-	}
-	return hlu.RemoveChildIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -142,10 +193,8 @@ func (hlu *HierarchyLevelUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (hlu *HierarchyLevelUpdate) check() error {
-	if v, ok := hlu.mutation.Name(); ok {
-		if err := hierarchylevel.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "HierarchyLevel.name": %w`, err)}
-		}
+	if hlu.mutation.OrgCleared() && len(hlu.mutation.OrgIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "HierarchyLevel.org"`)
 	}
 	return nil
 }
@@ -162,13 +211,106 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 			}
 		}
 	}
+	if value, ok := hlu.mutation.Etag(); ok {
+		_spec.SetField(hierarchylevel.FieldEtag, field.TypeString, value)
+	}
 	if value, ok := hlu.mutation.Name(); ok {
 		_spec.SetField(hierarchylevel.FieldName, field.TypeString, value)
+	}
+	if hlu.mutation.ChildrenCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.ChildrenTable,
+			Columns: []string{hierarchylevel.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := hlu.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !hlu.mutation.ChildrenCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.ChildrenTable,
+			Columns: []string{hierarchylevel.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := hlu.mutation.ChildrenIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.ChildrenTable,
+			Columns: []string{hierarchylevel.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if hlu.mutation.UsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.UsersTable,
+			Columns: []string{hierarchylevel.UsersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := hlu.mutation.RemovedUsersIDs(); len(nodes) > 0 && !hlu.mutation.UsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.UsersTable,
+			Columns: []string{hierarchylevel.UsersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := hlu.mutation.UsersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.UsersTable,
+			Columns: []string{hierarchylevel.UsersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if hlu.mutation.ParentCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   hierarchylevel.ParentTable,
 			Columns: []string{hierarchylevel.ParentColumn},
 			Bidi:    false,
@@ -181,54 +323,9 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 	if nodes := hlu.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   hierarchylevel.ParentTable,
 			Columns: []string{hierarchylevel.ParentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if hlu.mutation.ChildCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   hierarchylevel.ChildTable,
-			Columns: []string{hierarchylevel.ChildColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := hlu.mutation.RemovedChildIDs(); len(nodes) > 0 && !hlu.mutation.ChildCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   hierarchylevel.ChildTable,
-			Columns: []string{hierarchylevel.ChildColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := hlu.mutation.ChildIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   hierarchylevel.ChildTable,
-			Columns: []string{hierarchylevel.ChildColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
@@ -257,6 +354,20 @@ type HierarchyLevelUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *HierarchyLevelMutation
+}
+
+// SetEtag sets the "etag" field.
+func (hluo *HierarchyLevelUpdateOne) SetEtag(s string) *HierarchyLevelUpdateOne {
+	hluo.mutation.SetEtag(s)
+	return hluo
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (hluo *HierarchyLevelUpdateOne) SetNillableEtag(s *string) *HierarchyLevelUpdateOne {
+	if s != nil {
+		hluo.SetEtag(*s)
+	}
+	return hluo
 }
 
 // SetName sets the "name" field.
@@ -293,19 +404,14 @@ func (hluo *HierarchyLevelUpdateOne) ClearParentID() *HierarchyLevelUpdateOne {
 	return hluo
 }
 
-// SetParent sets the "parent" edge to the HierarchyLevel entity.
-func (hluo *HierarchyLevelUpdateOne) SetParent(h *HierarchyLevel) *HierarchyLevelUpdateOne {
-	return hluo.SetParentID(h.ID)
-}
-
-// AddChildIDs adds the "child" edge to the HierarchyLevel entity by IDs.
+// AddChildIDs adds the "children" edge to the HierarchyLevel entity by IDs.
 func (hluo *HierarchyLevelUpdateOne) AddChildIDs(ids ...string) *HierarchyLevelUpdateOne {
 	hluo.mutation.AddChildIDs(ids...)
 	return hluo
 }
 
-// AddChild adds the "child" edges to the HierarchyLevel entity.
-func (hluo *HierarchyLevelUpdateOne) AddChild(h ...*HierarchyLevel) *HierarchyLevelUpdateOne {
+// AddChildren adds the "children" edges to the HierarchyLevel entity.
+func (hluo *HierarchyLevelUpdateOne) AddChildren(h ...*HierarchyLevel) *HierarchyLevelUpdateOne {
 	ids := make([]string, len(h))
 	for i := range h {
 		ids[i] = h[i].ID
@@ -313,36 +419,77 @@ func (hluo *HierarchyLevelUpdateOne) AddChild(h ...*HierarchyLevel) *HierarchyLe
 	return hluo.AddChildIDs(ids...)
 }
 
+// AddUserIDs adds the "users" edge to the User entity by IDs.
+func (hluo *HierarchyLevelUpdateOne) AddUserIDs(ids ...string) *HierarchyLevelUpdateOne {
+	hluo.mutation.AddUserIDs(ids...)
+	return hluo
+}
+
+// AddUsers adds the "users" edges to the User entity.
+func (hluo *HierarchyLevelUpdateOne) AddUsers(u ...*User) *HierarchyLevelUpdateOne {
+	ids := make([]string, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return hluo.AddUserIDs(ids...)
+}
+
+// SetParent sets the "parent" edge to the HierarchyLevel entity.
+func (hluo *HierarchyLevelUpdateOne) SetParent(h *HierarchyLevel) *HierarchyLevelUpdateOne {
+	return hluo.SetParentID(h.ID)
+}
+
 // Mutation returns the HierarchyLevelMutation object of the builder.
 func (hluo *HierarchyLevelUpdateOne) Mutation() *HierarchyLevelMutation {
 	return hluo.mutation
+}
+
+// ClearChildren clears all "children" edges to the HierarchyLevel entity.
+func (hluo *HierarchyLevelUpdateOne) ClearChildren() *HierarchyLevelUpdateOne {
+	hluo.mutation.ClearChildren()
+	return hluo
+}
+
+// RemoveChildIDs removes the "children" edge to HierarchyLevel entities by IDs.
+func (hluo *HierarchyLevelUpdateOne) RemoveChildIDs(ids ...string) *HierarchyLevelUpdateOne {
+	hluo.mutation.RemoveChildIDs(ids...)
+	return hluo
+}
+
+// RemoveChildren removes "children" edges to HierarchyLevel entities.
+func (hluo *HierarchyLevelUpdateOne) RemoveChildren(h ...*HierarchyLevel) *HierarchyLevelUpdateOne {
+	ids := make([]string, len(h))
+	for i := range h {
+		ids[i] = h[i].ID
+	}
+	return hluo.RemoveChildIDs(ids...)
+}
+
+// ClearUsers clears all "users" edges to the User entity.
+func (hluo *HierarchyLevelUpdateOne) ClearUsers() *HierarchyLevelUpdateOne {
+	hluo.mutation.ClearUsers()
+	return hluo
+}
+
+// RemoveUserIDs removes the "users" edge to User entities by IDs.
+func (hluo *HierarchyLevelUpdateOne) RemoveUserIDs(ids ...string) *HierarchyLevelUpdateOne {
+	hluo.mutation.RemoveUserIDs(ids...)
+	return hluo
+}
+
+// RemoveUsers removes "users" edges to User entities.
+func (hluo *HierarchyLevelUpdateOne) RemoveUsers(u ...*User) *HierarchyLevelUpdateOne {
+	ids := make([]string, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return hluo.RemoveUserIDs(ids...)
 }
 
 // ClearParent clears the "parent" edge to the HierarchyLevel entity.
 func (hluo *HierarchyLevelUpdateOne) ClearParent() *HierarchyLevelUpdateOne {
 	hluo.mutation.ClearParent()
 	return hluo
-}
-
-// ClearChild clears all "child" edges to the HierarchyLevel entity.
-func (hluo *HierarchyLevelUpdateOne) ClearChild() *HierarchyLevelUpdateOne {
-	hluo.mutation.ClearChild()
-	return hluo
-}
-
-// RemoveChildIDs removes the "child" edge to HierarchyLevel entities by IDs.
-func (hluo *HierarchyLevelUpdateOne) RemoveChildIDs(ids ...string) *HierarchyLevelUpdateOne {
-	hluo.mutation.RemoveChildIDs(ids...)
-	return hluo
-}
-
-// RemoveChild removes "child" edges to HierarchyLevel entities.
-func (hluo *HierarchyLevelUpdateOne) RemoveChild(h ...*HierarchyLevel) *HierarchyLevelUpdateOne {
-	ids := make([]string, len(h))
-	for i := range h {
-		ids[i] = h[i].ID
-	}
-	return hluo.RemoveChildIDs(ids...)
 }
 
 // Where appends a list predicates to the HierarchyLevelUpdate builder.
@@ -387,10 +534,8 @@ func (hluo *HierarchyLevelUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (hluo *HierarchyLevelUpdateOne) check() error {
-	if v, ok := hluo.mutation.Name(); ok {
-		if err := hierarchylevel.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "HierarchyLevel.name": %w`, err)}
-		}
+	if hluo.mutation.OrgCleared() && len(hluo.mutation.OrgIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "HierarchyLevel.org"`)
 	}
 	return nil
 }
@@ -424,13 +569,106 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 			}
 		}
 	}
+	if value, ok := hluo.mutation.Etag(); ok {
+		_spec.SetField(hierarchylevel.FieldEtag, field.TypeString, value)
+	}
 	if value, ok := hluo.mutation.Name(); ok {
 		_spec.SetField(hierarchylevel.FieldName, field.TypeString, value)
+	}
+	if hluo.mutation.ChildrenCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.ChildrenTable,
+			Columns: []string{hierarchylevel.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := hluo.mutation.RemovedChildrenIDs(); len(nodes) > 0 && !hluo.mutation.ChildrenCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.ChildrenTable,
+			Columns: []string{hierarchylevel.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := hluo.mutation.ChildrenIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.ChildrenTable,
+			Columns: []string{hierarchylevel.ChildrenColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if hluo.mutation.UsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.UsersTable,
+			Columns: []string{hierarchylevel.UsersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := hluo.mutation.RemovedUsersIDs(); len(nodes) > 0 && !hluo.mutation.UsersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.UsersTable,
+			Columns: []string{hierarchylevel.UsersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := hluo.mutation.UsersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.UsersTable,
+			Columns: []string{hierarchylevel.UsersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if hluo.mutation.ParentCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   hierarchylevel.ParentTable,
 			Columns: []string{hierarchylevel.ParentColumn},
 			Bidi:    false,
@@ -443,54 +681,9 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 	if nodes := hluo.mutation.ParentIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
-			Inverse: true,
+			Inverse: false,
 			Table:   hierarchylevel.ParentTable,
 			Columns: []string{hierarchylevel.ParentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if hluo.mutation.ChildCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   hierarchylevel.ChildTable,
-			Columns: []string{hierarchylevel.ChildColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := hluo.mutation.RemovedChildIDs(); len(nodes) > 0 && !hluo.mutation.ChildCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   hierarchylevel.ChildTable,
-			Columns: []string{hierarchylevel.ChildColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := hluo.mutation.ChildIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   hierarchylevel.ChildTable,
-			Columns: []string{hierarchylevel.ChildColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),

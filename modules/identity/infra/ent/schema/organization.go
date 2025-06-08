@@ -18,7 +18,6 @@ type OrganizationMixin struct {
 func (OrganizationMixin) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").
-			NotEmpty().
 			Immutable().
 			StorageKey("id"),
 
@@ -26,35 +25,27 @@ func (OrganizationMixin) Fields() []ent.Field {
 			Default(time.Now).
 			Immutable(),
 
-		field.String("created_by").
-			NotEmpty().
-			Immutable(),
+		field.Time("deleted_at").
+			Optional().
+			Nillable().
+			Comment("Set value for this column when the process is running to delete all resources under this hierarchy level"),
 
 		field.String("display_name").
-			NotEmpty().
-			MaxLen(50).
 			Comment("Human-friendly-readable organization name"),
 
-		field.String("etag").
-			MaxLen(100),
+		field.String("etag"),
 
 		field.Enum("status").
-			Values("active", "inactive").
-			Default("inactive"),
+			Values("active", "inactive"),
 
 		field.String("slug").
-			NotEmpty().
-			MaxLen(50).
 			Unique().
 			Comment("URL-safe organization name"),
 
 		field.Time("updated_at").
-			Default(time.Now).
-			UpdateDefault(time.Now),
-
-		field.String("updated_by").
 			Optional().
-			Nillable(),
+			Nillable().
+			UpdateDefault(time.Now),
 	}
 }
 
@@ -68,7 +59,7 @@ type Organization struct {
 
 func (Organization) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entsql.Annotation{Table: "organizations"},
+		entsql.Annotation{Table: "ident_organizations"},
 	}
 }
 
@@ -82,19 +73,11 @@ func (Organization) Edges() []ent.Edge {
 			Ref("orgs").
 			Through("user_orgs", UserOrg.Type),
 
-		edge.To("groups", Group.Type).
-			Unique().
-			Annotations(entsql.Annotation{
-				OnDelete: entsql.Cascade,
-			}),
-		// edge.To("orgs", Organization.Type). // Self-referential parent org (NULL for top-level)
-		// 	Annotations(entsql.Annotation{
-		// 		OnDelete: entsql.Cascade,
-		// 	}),
-		// edge.To("users", User.Type).
-		// 	Annotations(entsql.Annotation{
-		// 		OnDelete: entsql.Cascade,
-		// 	}),
+		edge.From("hierarchies", HierarchyLevel.Type).
+			Ref("org"),
+
+		edge.From("groups", Group.Type).
+			Ref("org"),
 	}
 }
 

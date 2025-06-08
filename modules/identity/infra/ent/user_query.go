@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -28,6 +29,7 @@ type UserQuery struct {
 	inters         []Interceptor
 	predicates     []predicate.User
 	withGroups     *GroupQuery
+	withHierarchy  *HierarchyLevelQuery
 	withOrgs       *OrganizationQuery
 	withUserGroups *UserGroupQuery
 	withUserOrgs   *UserOrgQuery
@@ -82,6 +84,28 @@ func (uq *UserQuery) QueryGroups() *GroupQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(group.Table, group.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, user.GroupsTable, user.GroupsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryHierarchy chains the current query on the "hierarchy" edge.
+func (uq *UserQuery) QueryHierarchy() *HierarchyLevelQuery {
+	query := (&HierarchyLevelClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(hierarchylevel.Table, hierarchylevel.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, user.HierarchyTable, user.HierarchyColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -348,6 +372,7 @@ func (uq *UserQuery) Clone() *UserQuery {
 		inters:         append([]Interceptor{}, uq.inters...),
 		predicates:     append([]predicate.User{}, uq.predicates...),
 		withGroups:     uq.withGroups.Clone(),
+		withHierarchy:  uq.withHierarchy.Clone(),
 		withOrgs:       uq.withOrgs.Clone(),
 		withUserGroups: uq.withUserGroups.Clone(),
 		withUserOrgs:   uq.withUserOrgs.Clone(),
@@ -365,6 +390,17 @@ func (uq *UserQuery) WithGroups(opts ...func(*GroupQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withGroups = query
+	return uq
+}
+
+// WithHierarchy tells the query-builder to eager-load the nodes that are connected to
+// the "hierarchy" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithHierarchy(opts ...func(*HierarchyLevelQuery)) *UserQuery {
+	query := (&HierarchyLevelClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withHierarchy = query
 	return uq
 }
 
@@ -479,8 +515,9 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			uq.withGroups != nil,
+			uq.withHierarchy != nil,
 			uq.withOrgs != nil,
 			uq.withUserGroups != nil,
 			uq.withUserOrgs != nil,
@@ -508,6 +545,12 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := uq.loadGroups(ctx, query, nodes,
 			func(n *User) { n.Edges.Groups = []*Group{} },
 			func(n *User, e *Group) { n.Edges.Groups = append(n.Edges.Groups, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withHierarchy; query != nil {
+		if err := uq.loadHierarchy(ctx, query, nodes, nil,
+			func(n *User, e *HierarchyLevel) { n.Edges.Hierarchy = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -592,6 +635,38 @@ func (uq *UserQuery) loadGroups(ctx context.Context, query *GroupQuery, nodes []
 		}
 		for kn := range nodes {
 			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (uq *UserQuery) loadHierarchy(ctx context.Context, query *HierarchyLevelQuery, nodes []*User, init func(*User), assign func(*User, *HierarchyLevel)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*User)
+	for i := range nodes {
+		if nodes[i].HierarchyID == nil {
+			continue
+		}
+		fk := *nodes[i].HierarchyID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(hierarchylevel.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "hierarchy_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
 		}
 	}
 	return nil
@@ -742,6 +817,9 @@ func (uq *UserQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != user.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if uq.withHierarchy != nil {
+			_spec.Node.AddColumnOnce(user.FieldHierarchyID)
 		}
 	}
 	if ps := uq.predicates; len(ps) > 0 {

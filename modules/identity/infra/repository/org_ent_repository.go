@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
@@ -28,8 +29,7 @@ func (this *OrganizationEntRepository) Create(ctx context.Context, org domain.Or
 		SetDisplayName(*org.DisplayName).
 		SetSlug(org.Slug.String()).
 		SetEtag(org.Etag.String()).
-		SetStatus(entOrg.Status(*org.Status)).
-		SetCreatedBy(org.CreatedBy.String())
+		SetStatus(entOrg.Status(*org.Status))
 
 	return Mutate(ctx, creation, entToOrganization)
 }
@@ -38,8 +38,7 @@ func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Or
 	update := this.client.Organization.UpdateOneID(org.Id.String()).
 		SetDisplayName(*org.DisplayName).
 		SetEtag(org.Etag.String()).
-		SetStatus(entOrg.Status(*org.Status)).
-		SetUpdatedBy(org.UpdatedBy.String())
+		SetStatus(entOrg.Status(*org.Status))
 
 	return Mutate(ctx, update, entToOrganization)
 }
@@ -71,14 +70,21 @@ func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, slug stri
 	return entToOrganization(org), nil
 }
 
+func (this *OrganizationEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
+	return ParseSearchGraphStr[ent.Organization, domain.Organization](criteria)
+}
+
 func (this *OrganizationEntRepository) Search(
-	ctx context.Context, criteria *orm.SearchGraph, opts *crud.PagingOptions,
-) (*crud.PagedResult[*domain.Organization], error) {
+	ctx context.Context,
+	predicate *orm.Predicate,
+	order []orm.OrderOption,
+	opts crud.PagingOptions,
+) (*crud.PagedResult[domain.Organization], error) {
 	return Search(
 		ctx,
-		criteria,
+		predicate,
+		order,
 		opts,
-		entOrg.Label,
 		this.client.Organization.Query(),
 		entToOrganizations,
 	)
@@ -88,14 +94,12 @@ func BuildOrganizationDescriptor() *orm.EntityDescriptor {
 	entity := ent.Organization{}
 	builder := orm.DescribeEntity(entOrg.Label).
 		Field(entOrg.FieldCreatedAt, entity.CreatedAt).
-		Field(entOrg.FieldCreatedBy, entity.CreatedBy).
 		Field(entOrg.FieldDisplayName, entity.DisplayName).
 		Field(entOrg.FieldEtag, entity.Etag).
 		Field(entOrg.FieldID, entity.ID).
 		Field(entOrg.FieldSlug, entity.Slug).
 		Field(entOrg.FieldStatus, entity.Status).
 		Field(entOrg.FieldUpdatedAt, entity.UpdatedAt).
-		Field(entOrg.FieldUpdatedBy, entity.UpdatedBy).
 		Edge(entOrg.EdgeUsers, orm.ToEdgePredicate(entOrg.HasUsersWith))
 
 	return builder.Descriptor()

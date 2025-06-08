@@ -8,6 +8,7 @@ import (
 	"go.bryk.io/pkg/ulid"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	util "github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
 
@@ -39,10 +40,18 @@ func WrapNillableId(s *string) *Id {
 	return &id
 }
 
+func IdToNillableStr(id *Id) *string {
+	if id == nil {
+		return nil
+	}
+	return util.ToPtr(id.String())
+}
+
 func IdValidateRule(field any, isRequired bool) *val.FieldRules {
 	return val.Field(field,
-		val.RequiredWhen(isRequired),
-		val.Length(26, 26),
+		val.NotNilWhen(isRequired),
+		val.NotEmpty,
+		val.Length(MODEL_RULE_ULID_LENGTH, MODEL_RULE_ULID_LENGTH),
 	)
 }
 
@@ -64,8 +73,9 @@ func WrapEtag(s string) *Etag {
 
 func EtagValidateRule(field any, isRequired bool) *val.FieldRules {
 	return val.Field(field,
-		val.RequiredWhen(isRequired),
-		val.Length(19, 30),
+		val.NotNilWhen(isRequired),
+		val.NotEmpty,
+		val.Length(MODEL_RULE_ETAG_MIN_LENGTH, MODEL_RULE_ETAG_MAX_LENGTH),
 	)
 }
 
@@ -82,8 +92,9 @@ func WrapSlug(s string) *Slug {
 
 func SlugValidateRule(field any, isRequired bool) *val.FieldRules {
 	return val.Field(field,
-		val.RequiredWhen(isRequired),
-		val.Length(1, 50),
+		val.NotNilWhen(isRequired),
+		val.NotEmpty,
+		val.Length(1, MODEL_RULE_SHORT_NAME_LENGTH),
 		val.RegExp(regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)),
 	)
 }
@@ -91,4 +102,19 @@ func SlugValidateRule(field any, isRequired bool) *val.FieldRules {
 type OpResult[TData any] struct {
 	Data        TData           `json:"data"`
 	ClientError *ft.ClientError `json:"error,omitempty"`
+}
+
+func PageIndexValidateRule(field **int) *val.FieldRules {
+	return val.Field(field,
+		val.Min(MODEL_RULE_PAGE_INDEX_START),
+		val.Max(MODEL_RULE_PAGE_INDEX_END),
+	)
+}
+
+func PageSizeValidateRule(field **int) *val.FieldRules {
+	return val.Field(field, val.When(*field != nil,
+		val.NotEmpty,
+		val.Min(MODEL_RULE_PAGE_MIN_SIZE),
+		val.Max(MODEL_RULE_PAGE_MAX_SIZE),
+	))
 }

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -110,6 +111,26 @@ func (uu *UserUpdate) SetNillableFailedLoginAttempts(i *int) *UserUpdate {
 // AddFailedLoginAttempts adds i to the "failed_login_attempts" field.
 func (uu *UserUpdate) AddFailedLoginAttempts(i int) *UserUpdate {
 	uu.mutation.AddFailedLoginAttempts(i)
+	return uu
+}
+
+// SetHierarchyID sets the "hierarchy_id" field.
+func (uu *UserUpdate) SetHierarchyID(s string) *UserUpdate {
+	uu.mutation.SetHierarchyID(s)
+	return uu
+}
+
+// SetNillableHierarchyID sets the "hierarchy_id" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableHierarchyID(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetHierarchyID(*s)
+	}
+	return uu
+}
+
+// ClearHierarchyID clears the value of the "hierarchy_id" field.
+func (uu *UserUpdate) ClearHierarchyID() *UserUpdate {
+	uu.mutation.ClearHierarchyID()
 	return uu
 }
 
@@ -215,23 +236,17 @@ func (uu *UserUpdate) SetUpdatedAt(t time.Time) *UserUpdate {
 	return uu
 }
 
-// SetUpdatedBy sets the "updated_by" field.
-func (uu *UserUpdate) SetUpdatedBy(s string) *UserUpdate {
-	uu.mutation.SetUpdatedBy(s)
-	return uu
-}
-
-// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableUpdatedBy(s *string) *UserUpdate {
-	if s != nil {
-		uu.SetUpdatedBy(*s)
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableUpdatedAt(t *time.Time) *UserUpdate {
+	if t != nil {
+		uu.SetUpdatedAt(*t)
 	}
 	return uu
 }
 
-// ClearUpdatedBy clears the value of the "updated_by" field.
-func (uu *UserUpdate) ClearUpdatedBy() *UserUpdate {
-	uu.mutation.ClearUpdatedBy()
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (uu *UserUpdate) ClearUpdatedAt() *UserUpdate {
+	uu.mutation.ClearUpdatedAt()
 	return uu
 }
 
@@ -248,6 +263,11 @@ func (uu *UserUpdate) AddGroups(g ...*Group) *UserUpdate {
 		ids[i] = g[i].ID
 	}
 	return uu.AddGroupIDs(ids...)
+}
+
+// SetHierarchy sets the "hierarchy" edge to the HierarchyLevel entity.
+func (uu *UserUpdate) SetHierarchy(h *HierarchyLevel) *UserUpdate {
+	return uu.SetHierarchyID(h.ID)
 }
 
 // AddOrgIDs adds the "orgs" edge to the Organization entity by IDs.
@@ -291,6 +311,12 @@ func (uu *UserUpdate) RemoveGroups(g ...*Group) *UserUpdate {
 	return uu.RemoveGroupIDs(ids...)
 }
 
+// ClearHierarchy clears the "hierarchy" edge to the HierarchyLevel entity.
+func (uu *UserUpdate) ClearHierarchy() *UserUpdate {
+	uu.mutation.ClearHierarchy()
+	return uu
+}
+
 // ClearOrgs clears all "orgs" edges to the Organization entity.
 func (uu *UserUpdate) ClearOrgs() *UserUpdate {
 	uu.mutation.ClearOrgs()
@@ -314,7 +340,6 @@ func (uu *UserUpdate) RemoveOrgs(o ...*Organization) *UserUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (uu *UserUpdate) Save(ctx context.Context) (int, error) {
-	uu.defaults()
 	return withHooks(ctx, uu.sqlSave, uu.mutation, uu.hooks)
 }
 
@@ -340,41 +365,8 @@ func (uu *UserUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (uu *UserUpdate) defaults() {
-	if _, ok := uu.mutation.UpdatedAt(); !ok {
-		v := user.UpdateDefaultUpdatedAt()
-		uu.mutation.SetUpdatedAt(v)
-	}
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (uu *UserUpdate) check() error {
-	if v, ok := uu.mutation.AvatarURL(); ok {
-		if err := user.AvatarURLValidator(v); err != nil {
-			return &ValidationError{Name: "avatar_url", err: fmt.Errorf(`ent: validator failed for field "User.avatar_url": %w`, err)}
-		}
-	}
-	if v, ok := uu.mutation.DisplayName(); ok {
-		if err := user.DisplayNameValidator(v); err != nil {
-			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "User.display_name": %w`, err)}
-		}
-	}
-	if v, ok := uu.mutation.Email(); ok {
-		if err := user.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
-		}
-	}
-	if v, ok := uu.mutation.Etag(); ok {
-		if err := user.EtagValidator(v); err != nil {
-			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "User.etag": %w`, err)}
-		}
-	}
-	if v, ok := uu.mutation.PasswordHash(); ok {
-		if err := user.PasswordHashValidator(v); err != nil {
-			return &ValidationError{Name: "password_hash", err: fmt.Errorf(`ent: validator failed for field "User.password_hash": %w`, err)}
-		}
-	}
 	if v, ok := uu.mutation.Status(); ok {
 		if err := user.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "User.status": %w`, err)}
@@ -416,6 +408,9 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uu.mutation.AddedFailedLoginAttempts(); ok {
 		_spec.AddField(user.FieldFailedLoginAttempts, field.TypeInt, value)
 	}
+	if uu.mutation.IsOwnerCleared() {
+		_spec.ClearField(user.FieldIsOwner, field.TypeBool)
+	}
 	if value, ok := uu.mutation.LastLoginAt(); ok {
 		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
 	}
@@ -443,11 +438,8 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uu.mutation.UpdatedAt(); ok {
 		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := uu.mutation.UpdatedBy(); ok {
-		_spec.SetField(user.FieldUpdatedBy, field.TypeString, value)
-	}
-	if uu.mutation.UpdatedByCleared() {
-		_spec.ClearField(user.FieldUpdatedBy, field.TypeString)
+	if uu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(user.FieldUpdatedAt, field.TypeTime)
 	}
 	if uu.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -487,6 +479,35 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.HierarchyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   user.HierarchyTable,
+			Columns: []string{user.HierarchyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.HierarchyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   user.HierarchyTable,
+			Columns: []string{user.HierarchyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -642,6 +663,26 @@ func (uuo *UserUpdateOne) AddFailedLoginAttempts(i int) *UserUpdateOne {
 	return uuo
 }
 
+// SetHierarchyID sets the "hierarchy_id" field.
+func (uuo *UserUpdateOne) SetHierarchyID(s string) *UserUpdateOne {
+	uuo.mutation.SetHierarchyID(s)
+	return uuo
+}
+
+// SetNillableHierarchyID sets the "hierarchy_id" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableHierarchyID(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetHierarchyID(*s)
+	}
+	return uuo
+}
+
+// ClearHierarchyID clears the value of the "hierarchy_id" field.
+func (uuo *UserUpdateOne) ClearHierarchyID() *UserUpdateOne {
+	uuo.mutation.ClearHierarchyID()
+	return uuo
+}
+
 // SetLastLoginAt sets the "last_login_at" field.
 func (uuo *UserUpdateOne) SetLastLoginAt(t time.Time) *UserUpdateOne {
 	uuo.mutation.SetLastLoginAt(t)
@@ -744,23 +785,17 @@ func (uuo *UserUpdateOne) SetUpdatedAt(t time.Time) *UserUpdateOne {
 	return uuo
 }
 
-// SetUpdatedBy sets the "updated_by" field.
-func (uuo *UserUpdateOne) SetUpdatedBy(s string) *UserUpdateOne {
-	uuo.mutation.SetUpdatedBy(s)
-	return uuo
-}
-
-// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableUpdatedBy(s *string) *UserUpdateOne {
-	if s != nil {
-		uuo.SetUpdatedBy(*s)
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableUpdatedAt(t *time.Time) *UserUpdateOne {
+	if t != nil {
+		uuo.SetUpdatedAt(*t)
 	}
 	return uuo
 }
 
-// ClearUpdatedBy clears the value of the "updated_by" field.
-func (uuo *UserUpdateOne) ClearUpdatedBy() *UserUpdateOne {
-	uuo.mutation.ClearUpdatedBy()
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (uuo *UserUpdateOne) ClearUpdatedAt() *UserUpdateOne {
+	uuo.mutation.ClearUpdatedAt()
 	return uuo
 }
 
@@ -777,6 +812,11 @@ func (uuo *UserUpdateOne) AddGroups(g ...*Group) *UserUpdateOne {
 		ids[i] = g[i].ID
 	}
 	return uuo.AddGroupIDs(ids...)
+}
+
+// SetHierarchy sets the "hierarchy" edge to the HierarchyLevel entity.
+func (uuo *UserUpdateOne) SetHierarchy(h *HierarchyLevel) *UserUpdateOne {
+	return uuo.SetHierarchyID(h.ID)
 }
 
 // AddOrgIDs adds the "orgs" edge to the Organization entity by IDs.
@@ -820,6 +860,12 @@ func (uuo *UserUpdateOne) RemoveGroups(g ...*Group) *UserUpdateOne {
 	return uuo.RemoveGroupIDs(ids...)
 }
 
+// ClearHierarchy clears the "hierarchy" edge to the HierarchyLevel entity.
+func (uuo *UserUpdateOne) ClearHierarchy() *UserUpdateOne {
+	uuo.mutation.ClearHierarchy()
+	return uuo
+}
+
 // ClearOrgs clears all "orgs" edges to the Organization entity.
 func (uuo *UserUpdateOne) ClearOrgs() *UserUpdateOne {
 	uuo.mutation.ClearOrgs()
@@ -856,7 +902,6 @@ func (uuo *UserUpdateOne) Select(field string, fields ...string) *UserUpdateOne 
 
 // Save executes the query and returns the updated User entity.
 func (uuo *UserUpdateOne) Save(ctx context.Context) (*User, error) {
-	uuo.defaults()
 	return withHooks(ctx, uuo.sqlSave, uuo.mutation, uuo.hooks)
 }
 
@@ -882,41 +927,8 @@ func (uuo *UserUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (uuo *UserUpdateOne) defaults() {
-	if _, ok := uuo.mutation.UpdatedAt(); !ok {
-		v := user.UpdateDefaultUpdatedAt()
-		uuo.mutation.SetUpdatedAt(v)
-	}
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (uuo *UserUpdateOne) check() error {
-	if v, ok := uuo.mutation.AvatarURL(); ok {
-		if err := user.AvatarURLValidator(v); err != nil {
-			return &ValidationError{Name: "avatar_url", err: fmt.Errorf(`ent: validator failed for field "User.avatar_url": %w`, err)}
-		}
-	}
-	if v, ok := uuo.mutation.DisplayName(); ok {
-		if err := user.DisplayNameValidator(v); err != nil {
-			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "User.display_name": %w`, err)}
-		}
-	}
-	if v, ok := uuo.mutation.Email(); ok {
-		if err := user.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
-		}
-	}
-	if v, ok := uuo.mutation.Etag(); ok {
-		if err := user.EtagValidator(v); err != nil {
-			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "User.etag": %w`, err)}
-		}
-	}
-	if v, ok := uuo.mutation.PasswordHash(); ok {
-		if err := user.PasswordHashValidator(v); err != nil {
-			return &ValidationError{Name: "password_hash", err: fmt.Errorf(`ent: validator failed for field "User.password_hash": %w`, err)}
-		}
-	}
 	if v, ok := uuo.mutation.Status(); ok {
 		if err := user.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "User.status": %w`, err)}
@@ -975,6 +987,9 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	if value, ok := uuo.mutation.AddedFailedLoginAttempts(); ok {
 		_spec.AddField(user.FieldFailedLoginAttempts, field.TypeInt, value)
 	}
+	if uuo.mutation.IsOwnerCleared() {
+		_spec.ClearField(user.FieldIsOwner, field.TypeBool)
+	}
 	if value, ok := uuo.mutation.LastLoginAt(); ok {
 		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
 	}
@@ -1002,11 +1017,8 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	if value, ok := uuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := uuo.mutation.UpdatedBy(); ok {
-		_spec.SetField(user.FieldUpdatedBy, field.TypeString, value)
-	}
-	if uuo.mutation.UpdatedByCleared() {
-		_spec.ClearField(user.FieldUpdatedBy, field.TypeString)
+	if uuo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(user.FieldUpdatedAt, field.TypeTime)
 	}
 	if uuo.mutation.GroupsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1046,6 +1058,35 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.HierarchyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   user.HierarchyTable,
+			Columns: []string{user.HierarchyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.HierarchyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   user.HierarchyTable,
+			Columns: []string{user.HierarchyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -5,10 +5,12 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 )
 
 // HierarchyLevel is the model entity for the HierarchyLevel schema.
@@ -16,10 +18,14 @@ type HierarchyLevel struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
-	// OrgID holds the value of the "org_id" field.
-	OrgID string `json:"org_id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// Etag holds the value of the "etag" field.
+	Etag string `json:"etag,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// OrgID holds the value of the "org_id" field.
+	OrgID string `json:"org_id,omitempty"`
 	// ParentID holds the value of the "parent_id" field.
 	ParentID *string `json:"parent_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -30,13 +36,35 @@ type HierarchyLevel struct {
 
 // HierarchyLevelEdges holds the relations/edges for other nodes in the graph.
 type HierarchyLevelEdges struct {
+	// Children holds the value of the children edge.
+	Children []*HierarchyLevel `json:"children,omitempty"`
+	// Users holds the value of the users edge.
+	Users []*User `json:"users,omitempty"`
 	// Parent holds the value of the parent edge.
 	Parent *HierarchyLevel `json:"parent,omitempty"`
-	// Child holds the value of the child edge.
-	Child []*HierarchyLevel `json:"child,omitempty"`
+	// Org holds the value of the org edge.
+	Org *Organization `json:"org,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
+}
+
+// ChildrenOrErr returns the Children value or an error if the edge
+// was not loaded in eager-loading.
+func (e HierarchyLevelEdges) ChildrenOrErr() ([]*HierarchyLevel, error) {
+	if e.loadedTypes[0] {
+		return e.Children, nil
+	}
+	return nil, &NotLoadedError{edge: "children"}
+}
+
+// UsersOrErr returns the Users value or an error if the edge
+// was not loaded in eager-loading.
+func (e HierarchyLevelEdges) UsersOrErr() ([]*User, error) {
+	if e.loadedTypes[1] {
+		return e.Users, nil
+	}
+	return nil, &NotLoadedError{edge: "users"}
 }
 
 // ParentOrErr returns the Parent value or an error if the edge
@@ -44,19 +72,21 @@ type HierarchyLevelEdges struct {
 func (e HierarchyLevelEdges) ParentOrErr() (*HierarchyLevel, error) {
 	if e.Parent != nil {
 		return e.Parent, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: hierarchylevel.Label}
 	}
 	return nil, &NotLoadedError{edge: "parent"}
 }
 
-// ChildOrErr returns the Child value or an error if the edge
-// was not loaded in eager-loading.
-func (e HierarchyLevelEdges) ChildOrErr() ([]*HierarchyLevel, error) {
-	if e.loadedTypes[1] {
-		return e.Child, nil
+// OrgOrErr returns the Org value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e HierarchyLevelEdges) OrgOrErr() (*Organization, error) {
+	if e.Org != nil {
+		return e.Org, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: organization.Label}
 	}
-	return nil, &NotLoadedError{edge: "child"}
+	return nil, &NotLoadedError{edge: "org"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -64,8 +94,10 @@ func (*HierarchyLevel) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case hierarchylevel.FieldID, hierarchylevel.FieldOrgID, hierarchylevel.FieldName, hierarchylevel.FieldParentID:
+		case hierarchylevel.FieldID, hierarchylevel.FieldEtag, hierarchylevel.FieldName, hierarchylevel.FieldOrgID, hierarchylevel.FieldParentID:
 			values[i] = new(sql.NullString)
+		case hierarchylevel.FieldCreatedAt:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -87,17 +119,29 @@ func (hl *HierarchyLevel) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				hl.ID = value.String
 			}
-		case hierarchylevel.FieldOrgID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field org_id", values[i])
+		case hierarchylevel.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				hl.OrgID = value.String
+				hl.CreatedAt = value.Time
+			}
+		case hierarchylevel.FieldEtag:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field etag", values[i])
+			} else if value.Valid {
+				hl.Etag = value.String
 			}
 		case hierarchylevel.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				hl.Name = value.String
+			}
+		case hierarchylevel.FieldOrgID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field org_id", values[i])
+			} else if value.Valid {
+				hl.OrgID = value.String
 			}
 		case hierarchylevel.FieldParentID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -119,14 +163,24 @@ func (hl *HierarchyLevel) Value(name string) (ent.Value, error) {
 	return hl.selectValues.Get(name)
 }
 
+// QueryChildren queries the "children" edge of the HierarchyLevel entity.
+func (hl *HierarchyLevel) QueryChildren() *HierarchyLevelQuery {
+	return NewHierarchyLevelClient(hl.config).QueryChildren(hl)
+}
+
+// QueryUsers queries the "users" edge of the HierarchyLevel entity.
+func (hl *HierarchyLevel) QueryUsers() *UserQuery {
+	return NewHierarchyLevelClient(hl.config).QueryUsers(hl)
+}
+
 // QueryParent queries the "parent" edge of the HierarchyLevel entity.
 func (hl *HierarchyLevel) QueryParent() *HierarchyLevelQuery {
 	return NewHierarchyLevelClient(hl.config).QueryParent(hl)
 }
 
-// QueryChild queries the "child" edge of the HierarchyLevel entity.
-func (hl *HierarchyLevel) QueryChild() *HierarchyLevelQuery {
-	return NewHierarchyLevelClient(hl.config).QueryChild(hl)
+// QueryOrg queries the "org" edge of the HierarchyLevel entity.
+func (hl *HierarchyLevel) QueryOrg() *OrganizationQuery {
+	return NewHierarchyLevelClient(hl.config).QueryOrg(hl)
 }
 
 // Update returns a builder for updating this HierarchyLevel.
@@ -152,11 +206,17 @@ func (hl *HierarchyLevel) String() string {
 	var builder strings.Builder
 	builder.WriteString("HierarchyLevel(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", hl.ID))
-	builder.WriteString("org_id=")
-	builder.WriteString(hl.OrgID)
+	builder.WriteString("created_at=")
+	builder.WriteString(hl.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("etag=")
+	builder.WriteString(hl.Etag)
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(hl.Name)
+	builder.WriteString(", ")
+	builder.WriteString("org_id=")
+	builder.WriteString(hl.OrgID)
 	builder.WriteString(", ")
 	if v := hl.ParentID; v != nil {
 		builder.WriteString("parent_id=")

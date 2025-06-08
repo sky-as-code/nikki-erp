@@ -13,7 +13,7 @@
 			"env": {
 				"APP_ENV": "local",
 				"WORKING_DIR": "${workspaceRoot}/cmd",
-				"LOG_LEVEL": "info"
+				"LOG_LEVEL": "debug",
 			}
 		}
 	]

@@ -65,14 +65,9 @@ func IDContainsFold(id string) predicate.Group {
 	return predicate.Group(sql.FieldContainsFold(FieldID, id))
 }
 
-// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
-func OrgID(v string) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldOrgID, v))
-}
-
-// Name applies equality check predicate on the "name" field. It's identical to NameEQ.
-func Name(v string) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldName, v))
+// CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
+func CreatedAt(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldCreatedAt, v))
 }
 
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
@@ -80,14 +75,9 @@ func Description(v string) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldDescription, v))
 }
 
-// CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
-func CreatedAt(v time.Time) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldCreatedAt, v))
-}
-
-// CreatedBy applies equality check predicate on the "created_by" field. It's identical to CreatedByEQ.
-func CreatedBy(v string) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldCreatedBy, v))
+// Email applies equality check predicate on the "email" field. It's identical to EmailEQ.
+func Email(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldEmail, v))
 }
 
 // Etag applies equality check predicate on the "etag" field. It's identical to EtagEQ.
@@ -95,154 +85,59 @@ func Etag(v string) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldEtag, v))
 }
 
+// Name applies equality check predicate on the "name" field. It's identical to NameEQ.
+func Name(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldName, v))
+}
+
+// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
+func OrgID(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldOrgID, v))
+}
+
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
-// UpdatedBy applies equality check predicate on the "updated_by" field. It's identical to UpdatedByEQ.
-func UpdatedBy(v string) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldUpdatedBy, v))
+// CreatedAtEQ applies the EQ predicate on the "created_at" field.
+func CreatedAtEQ(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldCreatedAt, v))
 }
 
-// OrgIDEQ applies the EQ predicate on the "org_id" field.
-func OrgIDEQ(v string) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldOrgID, v))
+// CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
+func CreatedAtNEQ(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldCreatedAt, v))
 }
 
-// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
-func OrgIDNEQ(v string) predicate.Group {
-	return predicate.Group(sql.FieldNEQ(FieldOrgID, v))
+// CreatedAtIn applies the In predicate on the "created_at" field.
+func CreatedAtIn(vs ...time.Time) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldCreatedAt, vs...))
 }
 
-// OrgIDIn applies the In predicate on the "org_id" field.
-func OrgIDIn(vs ...string) predicate.Group {
-	return predicate.Group(sql.FieldIn(FieldOrgID, vs...))
+// CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
+func CreatedAtNotIn(vs ...time.Time) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldCreatedAt, vs...))
 }
 
-// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
-func OrgIDNotIn(vs ...string) predicate.Group {
-	return predicate.Group(sql.FieldNotIn(FieldOrgID, vs...))
+// CreatedAtGT applies the GT predicate on the "created_at" field.
+func CreatedAtGT(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldCreatedAt, v))
 }
 
-// OrgIDGT applies the GT predicate on the "org_id" field.
-func OrgIDGT(v string) predicate.Group {
-	return predicate.Group(sql.FieldGT(FieldOrgID, v))
+// CreatedAtGTE applies the GTE predicate on the "created_at" field.
+func CreatedAtGTE(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldCreatedAt, v))
 }
 
-// OrgIDGTE applies the GTE predicate on the "org_id" field.
-func OrgIDGTE(v string) predicate.Group {
-	return predicate.Group(sql.FieldGTE(FieldOrgID, v))
+// CreatedAtLT applies the LT predicate on the "created_at" field.
+func CreatedAtLT(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldCreatedAt, v))
 }
 
-// OrgIDLT applies the LT predicate on the "org_id" field.
-func OrgIDLT(v string) predicate.Group {
-	return predicate.Group(sql.FieldLT(FieldOrgID, v))
-}
-
-// OrgIDLTE applies the LTE predicate on the "org_id" field.
-func OrgIDLTE(v string) predicate.Group {
-	return predicate.Group(sql.FieldLTE(FieldOrgID, v))
-}
-
-// OrgIDContains applies the Contains predicate on the "org_id" field.
-func OrgIDContains(v string) predicate.Group {
-	return predicate.Group(sql.FieldContains(FieldOrgID, v))
-}
-
-// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
-func OrgIDHasPrefix(v string) predicate.Group {
-	return predicate.Group(sql.FieldHasPrefix(FieldOrgID, v))
-}
-
-// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
-func OrgIDHasSuffix(v string) predicate.Group {
-	return predicate.Group(sql.FieldHasSuffix(FieldOrgID, v))
-}
-
-// OrgIDIsNil applies the IsNil predicate on the "org_id" field.
-func OrgIDIsNil() predicate.Group {
-	return predicate.Group(sql.FieldIsNull(FieldOrgID))
-}
-
-// OrgIDNotNil applies the NotNil predicate on the "org_id" field.
-func OrgIDNotNil() predicate.Group {
-	return predicate.Group(sql.FieldNotNull(FieldOrgID))
-}
-
-// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
-func OrgIDEqualFold(v string) predicate.Group {
-	return predicate.Group(sql.FieldEqualFold(FieldOrgID, v))
-}
-
-// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
-func OrgIDContainsFold(v string) predicate.Group {
-	return predicate.Group(sql.FieldContainsFold(FieldOrgID, v))
-}
-
-// NameEQ applies the EQ predicate on the "name" field.
-func NameEQ(v string) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldName, v))
-}
-
-// NameNEQ applies the NEQ predicate on the "name" field.
-func NameNEQ(v string) predicate.Group {
-	return predicate.Group(sql.FieldNEQ(FieldName, v))
-}
-
-// NameIn applies the In predicate on the "name" field.
-func NameIn(vs ...string) predicate.Group {
-	return predicate.Group(sql.FieldIn(FieldName, vs...))
-}
-
-// NameNotIn applies the NotIn predicate on the "name" field.
-func NameNotIn(vs ...string) predicate.Group {
-	return predicate.Group(sql.FieldNotIn(FieldName, vs...))
-}
-
-// NameGT applies the GT predicate on the "name" field.
-func NameGT(v string) predicate.Group {
-	return predicate.Group(sql.FieldGT(FieldName, v))
-}
-
-// NameGTE applies the GTE predicate on the "name" field.
-func NameGTE(v string) predicate.Group {
-	return predicate.Group(sql.FieldGTE(FieldName, v))
-}
-
-// NameLT applies the LT predicate on the "name" field.
-func NameLT(v string) predicate.Group {
-	return predicate.Group(sql.FieldLT(FieldName, v))
-}
-
-// NameLTE applies the LTE predicate on the "name" field.
-func NameLTE(v string) predicate.Group {
-	return predicate.Group(sql.FieldLTE(FieldName, v))
-}
-
-// NameContains applies the Contains predicate on the "name" field.
-func NameContains(v string) predicate.Group {
-	return predicate.Group(sql.FieldContains(FieldName, v))
-}
-
-// NameHasPrefix applies the HasPrefix predicate on the "name" field.
-func NameHasPrefix(v string) predicate.Group {
-	return predicate.Group(sql.FieldHasPrefix(FieldName, v))
-}
-
-// NameHasSuffix applies the HasSuffix predicate on the "name" field.
-func NameHasSuffix(v string) predicate.Group {
-	return predicate.Group(sql.FieldHasSuffix(FieldName, v))
-}
-
-// NameEqualFold applies the EqualFold predicate on the "name" field.
-func NameEqualFold(v string) predicate.Group {
-	return predicate.Group(sql.FieldEqualFold(FieldName, v))
-}
-
-// NameContainsFold applies the ContainsFold predicate on the "name" field.
-func NameContainsFold(v string) predicate.Group {
-	return predicate.Group(sql.FieldContainsFold(FieldName, v))
+// CreatedAtLTE applies the LTE predicate on the "created_at" field.
+func CreatedAtLTE(v time.Time) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldCreatedAt, v))
 }
 
 // DescriptionEQ applies the EQ predicate on the "description" field.
@@ -320,109 +215,79 @@ func DescriptionContainsFold(v string) predicate.Group {
 	return predicate.Group(sql.FieldContainsFold(FieldDescription, v))
 }
 
-// CreatedAtEQ applies the EQ predicate on the "created_at" field.
-func CreatedAtEQ(v time.Time) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldCreatedAt, v))
+// EmailEQ applies the EQ predicate on the "email" field.
+func EmailEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldEmail, v))
 }
 
-// CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
-func CreatedAtNEQ(v time.Time) predicate.Group {
-	return predicate.Group(sql.FieldNEQ(FieldCreatedAt, v))
+// EmailNEQ applies the NEQ predicate on the "email" field.
+func EmailNEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldEmail, v))
 }
 
-// CreatedAtIn applies the In predicate on the "created_at" field.
-func CreatedAtIn(vs ...time.Time) predicate.Group {
-	return predicate.Group(sql.FieldIn(FieldCreatedAt, vs...))
+// EmailIn applies the In predicate on the "email" field.
+func EmailIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldEmail, vs...))
 }
 
-// CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
-func CreatedAtNotIn(vs ...time.Time) predicate.Group {
-	return predicate.Group(sql.FieldNotIn(FieldCreatedAt, vs...))
+// EmailNotIn applies the NotIn predicate on the "email" field.
+func EmailNotIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldEmail, vs...))
 }
 
-// CreatedAtGT applies the GT predicate on the "created_at" field.
-func CreatedAtGT(v time.Time) predicate.Group {
-	return predicate.Group(sql.FieldGT(FieldCreatedAt, v))
+// EmailGT applies the GT predicate on the "email" field.
+func EmailGT(v string) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldEmail, v))
 }
 
-// CreatedAtGTE applies the GTE predicate on the "created_at" field.
-func CreatedAtGTE(v time.Time) predicate.Group {
-	return predicate.Group(sql.FieldGTE(FieldCreatedAt, v))
+// EmailGTE applies the GTE predicate on the "email" field.
+func EmailGTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldEmail, v))
 }
 
-// CreatedAtLT applies the LT predicate on the "created_at" field.
-func CreatedAtLT(v time.Time) predicate.Group {
-	return predicate.Group(sql.FieldLT(FieldCreatedAt, v))
+// EmailLT applies the LT predicate on the "email" field.
+func EmailLT(v string) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldEmail, v))
 }
 
-// CreatedAtLTE applies the LTE predicate on the "created_at" field.
-func CreatedAtLTE(v time.Time) predicate.Group {
-	return predicate.Group(sql.FieldLTE(FieldCreatedAt, v))
+// EmailLTE applies the LTE predicate on the "email" field.
+func EmailLTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldEmail, v))
 }
 
-// CreatedByEQ applies the EQ predicate on the "created_by" field.
-func CreatedByEQ(v string) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldCreatedBy, v))
+// EmailContains applies the Contains predicate on the "email" field.
+func EmailContains(v string) predicate.Group {
+	return predicate.Group(sql.FieldContains(FieldEmail, v))
 }
 
-// CreatedByNEQ applies the NEQ predicate on the "created_by" field.
-func CreatedByNEQ(v string) predicate.Group {
-	return predicate.Group(sql.FieldNEQ(FieldCreatedBy, v))
+// EmailHasPrefix applies the HasPrefix predicate on the "email" field.
+func EmailHasPrefix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasPrefix(FieldEmail, v))
 }
 
-// CreatedByIn applies the In predicate on the "created_by" field.
-func CreatedByIn(vs ...string) predicate.Group {
-	return predicate.Group(sql.FieldIn(FieldCreatedBy, vs...))
+// EmailHasSuffix applies the HasSuffix predicate on the "email" field.
+func EmailHasSuffix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasSuffix(FieldEmail, v))
 }
 
-// CreatedByNotIn applies the NotIn predicate on the "created_by" field.
-func CreatedByNotIn(vs ...string) predicate.Group {
-	return predicate.Group(sql.FieldNotIn(FieldCreatedBy, vs...))
+// EmailIsNil applies the IsNil predicate on the "email" field.
+func EmailIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldEmail))
 }
 
-// CreatedByGT applies the GT predicate on the "created_by" field.
-func CreatedByGT(v string) predicate.Group {
-	return predicate.Group(sql.FieldGT(FieldCreatedBy, v))
+// EmailNotNil applies the NotNil predicate on the "email" field.
+func EmailNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldEmail))
 }
 
-// CreatedByGTE applies the GTE predicate on the "created_by" field.
-func CreatedByGTE(v string) predicate.Group {
-	return predicate.Group(sql.FieldGTE(FieldCreatedBy, v))
+// EmailEqualFold applies the EqualFold predicate on the "email" field.
+func EmailEqualFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldEqualFold(FieldEmail, v))
 }
 
-// CreatedByLT applies the LT predicate on the "created_by" field.
-func CreatedByLT(v string) predicate.Group {
-	return predicate.Group(sql.FieldLT(FieldCreatedBy, v))
-}
-
-// CreatedByLTE applies the LTE predicate on the "created_by" field.
-func CreatedByLTE(v string) predicate.Group {
-	return predicate.Group(sql.FieldLTE(FieldCreatedBy, v))
-}
-
-// CreatedByContains applies the Contains predicate on the "created_by" field.
-func CreatedByContains(v string) predicate.Group {
-	return predicate.Group(sql.FieldContains(FieldCreatedBy, v))
-}
-
-// CreatedByHasPrefix applies the HasPrefix predicate on the "created_by" field.
-func CreatedByHasPrefix(v string) predicate.Group {
-	return predicate.Group(sql.FieldHasPrefix(FieldCreatedBy, v))
-}
-
-// CreatedByHasSuffix applies the HasSuffix predicate on the "created_by" field.
-func CreatedByHasSuffix(v string) predicate.Group {
-	return predicate.Group(sql.FieldHasSuffix(FieldCreatedBy, v))
-}
-
-// CreatedByEqualFold applies the EqualFold predicate on the "created_by" field.
-func CreatedByEqualFold(v string) predicate.Group {
-	return predicate.Group(sql.FieldEqualFold(FieldCreatedBy, v))
-}
-
-// CreatedByContainsFold applies the ContainsFold predicate on the "created_by" field.
-func CreatedByContainsFold(v string) predicate.Group {
-	return predicate.Group(sql.FieldContainsFold(FieldCreatedBy, v))
+// EmailContainsFold applies the ContainsFold predicate on the "email" field.
+func EmailContainsFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldContainsFold(FieldEmail, v))
 }
 
 // EtagEQ applies the EQ predicate on the "etag" field.
@@ -490,6 +355,146 @@ func EtagContainsFold(v string) predicate.Group {
 	return predicate.Group(sql.FieldContainsFold(FieldEtag, v))
 }
 
+// NameEQ applies the EQ predicate on the "name" field.
+func NameEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldName, v))
+}
+
+// NameNEQ applies the NEQ predicate on the "name" field.
+func NameNEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldName, v))
+}
+
+// NameIn applies the In predicate on the "name" field.
+func NameIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldName, vs...))
+}
+
+// NameNotIn applies the NotIn predicate on the "name" field.
+func NameNotIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldName, vs...))
+}
+
+// NameGT applies the GT predicate on the "name" field.
+func NameGT(v string) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldName, v))
+}
+
+// NameGTE applies the GTE predicate on the "name" field.
+func NameGTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldName, v))
+}
+
+// NameLT applies the LT predicate on the "name" field.
+func NameLT(v string) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldName, v))
+}
+
+// NameLTE applies the LTE predicate on the "name" field.
+func NameLTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldName, v))
+}
+
+// NameContains applies the Contains predicate on the "name" field.
+func NameContains(v string) predicate.Group {
+	return predicate.Group(sql.FieldContains(FieldName, v))
+}
+
+// NameHasPrefix applies the HasPrefix predicate on the "name" field.
+func NameHasPrefix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasPrefix(FieldName, v))
+}
+
+// NameHasSuffix applies the HasSuffix predicate on the "name" field.
+func NameHasSuffix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasSuffix(FieldName, v))
+}
+
+// NameEqualFold applies the EqualFold predicate on the "name" field.
+func NameEqualFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldEqualFold(FieldName, v))
+}
+
+// NameContainsFold applies the ContainsFold predicate on the "name" field.
+func NameContainsFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldContainsFold(FieldName, v))
+}
+
+// OrgIDEQ applies the EQ predicate on the "org_id" field.
+func OrgIDEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldOrgID, v))
+}
+
+// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
+func OrgIDNEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldOrgID, v))
+}
+
+// OrgIDIn applies the In predicate on the "org_id" field.
+func OrgIDIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldOrgID, vs...))
+}
+
+// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
+func OrgIDNotIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldOrgID, vs...))
+}
+
+// OrgIDGT applies the GT predicate on the "org_id" field.
+func OrgIDGT(v string) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldOrgID, v))
+}
+
+// OrgIDGTE applies the GTE predicate on the "org_id" field.
+func OrgIDGTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldOrgID, v))
+}
+
+// OrgIDLT applies the LT predicate on the "org_id" field.
+func OrgIDLT(v string) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldOrgID, v))
+}
+
+// OrgIDLTE applies the LTE predicate on the "org_id" field.
+func OrgIDLTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldOrgID, v))
+}
+
+// OrgIDContains applies the Contains predicate on the "org_id" field.
+func OrgIDContains(v string) predicate.Group {
+	return predicate.Group(sql.FieldContains(FieldOrgID, v))
+}
+
+// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
+func OrgIDHasPrefix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasPrefix(FieldOrgID, v))
+}
+
+// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
+func OrgIDHasSuffix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasSuffix(FieldOrgID, v))
+}
+
+// OrgIDIsNil applies the IsNil predicate on the "org_id" field.
+func OrgIDIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldOrgID))
+}
+
+// OrgIDNotNil applies the NotNil predicate on the "org_id" field.
+func OrgIDNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldOrgID))
+}
+
+// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
+func OrgIDEqualFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldEqualFold(FieldOrgID, v))
+}
+
+// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
+func OrgIDContainsFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldContainsFold(FieldOrgID, v))
+}
+
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldUpdatedAt, v))
@@ -530,102 +535,14 @@ func UpdatedAtLTE(v time.Time) predicate.Group {
 	return predicate.Group(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// UpdatedByEQ applies the EQ predicate on the "updated_by" field.
-func UpdatedByEQ(v string) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldUpdatedBy, v))
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldUpdatedAt))
 }
 
-// UpdatedByNEQ applies the NEQ predicate on the "updated_by" field.
-func UpdatedByNEQ(v string) predicate.Group {
-	return predicate.Group(sql.FieldNEQ(FieldUpdatedBy, v))
-}
-
-// UpdatedByIn applies the In predicate on the "updated_by" field.
-func UpdatedByIn(vs ...string) predicate.Group {
-	return predicate.Group(sql.FieldIn(FieldUpdatedBy, vs...))
-}
-
-// UpdatedByNotIn applies the NotIn predicate on the "updated_by" field.
-func UpdatedByNotIn(vs ...string) predicate.Group {
-	return predicate.Group(sql.FieldNotIn(FieldUpdatedBy, vs...))
-}
-
-// UpdatedByGT applies the GT predicate on the "updated_by" field.
-func UpdatedByGT(v string) predicate.Group {
-	return predicate.Group(sql.FieldGT(FieldUpdatedBy, v))
-}
-
-// UpdatedByGTE applies the GTE predicate on the "updated_by" field.
-func UpdatedByGTE(v string) predicate.Group {
-	return predicate.Group(sql.FieldGTE(FieldUpdatedBy, v))
-}
-
-// UpdatedByLT applies the LT predicate on the "updated_by" field.
-func UpdatedByLT(v string) predicate.Group {
-	return predicate.Group(sql.FieldLT(FieldUpdatedBy, v))
-}
-
-// UpdatedByLTE applies the LTE predicate on the "updated_by" field.
-func UpdatedByLTE(v string) predicate.Group {
-	return predicate.Group(sql.FieldLTE(FieldUpdatedBy, v))
-}
-
-// UpdatedByContains applies the Contains predicate on the "updated_by" field.
-func UpdatedByContains(v string) predicate.Group {
-	return predicate.Group(sql.FieldContains(FieldUpdatedBy, v))
-}
-
-// UpdatedByHasPrefix applies the HasPrefix predicate on the "updated_by" field.
-func UpdatedByHasPrefix(v string) predicate.Group {
-	return predicate.Group(sql.FieldHasPrefix(FieldUpdatedBy, v))
-}
-
-// UpdatedByHasSuffix applies the HasSuffix predicate on the "updated_by" field.
-func UpdatedByHasSuffix(v string) predicate.Group {
-	return predicate.Group(sql.FieldHasSuffix(FieldUpdatedBy, v))
-}
-
-// UpdatedByIsNil applies the IsNil predicate on the "updated_by" field.
-func UpdatedByIsNil() predicate.Group {
-	return predicate.Group(sql.FieldIsNull(FieldUpdatedBy))
-}
-
-// UpdatedByNotNil applies the NotNil predicate on the "updated_by" field.
-func UpdatedByNotNil() predicate.Group {
-	return predicate.Group(sql.FieldNotNull(FieldUpdatedBy))
-}
-
-// UpdatedByEqualFold applies the EqualFold predicate on the "updated_by" field.
-func UpdatedByEqualFold(v string) predicate.Group {
-	return predicate.Group(sql.FieldEqualFold(FieldUpdatedBy, v))
-}
-
-// UpdatedByContainsFold applies the ContainsFold predicate on the "updated_by" field.
-func UpdatedByContainsFold(v string) predicate.Group {
-	return predicate.Group(sql.FieldContainsFold(FieldUpdatedBy, v))
-}
-
-// HasOrganization applies the HasEdge predicate on the "organization" edge.
-func HasOrganization() predicate.Group {
-	return predicate.Group(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, OrganizationTable, OrganizationColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasOrganizationWith applies the HasEdge predicate on the "organization" edge with a given conditions (other predicates).
-func HasOrganizationWith(preds ...predicate.Organization) predicate.Group {
-	return predicate.Group(func(s *sql.Selector) {
-		step := newOrganizationStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasUsers applies the HasEdge predicate on the "users" edge.
@@ -643,6 +560,29 @@ func HasUsers() predicate.Group {
 func HasUsersWith(preds ...predicate.User) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
 		step := newUsersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasOrg applies the HasEdge predicate on the "org" edge.
+func HasOrg() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, OrgTable, OrgColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOrgWith applies the HasEdge predicate on the "org" edge with a given conditions (other predicates).
+func HasOrgWith(preds ...predicate.Organization) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newOrgStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

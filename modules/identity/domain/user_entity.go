@@ -7,9 +7,10 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	util "github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
-	ent "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
+	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
 type User struct {
@@ -29,8 +30,9 @@ type User struct {
 	PasswordHash        *string     `json:"passwordHash,omitempty"`
 	Status              *UserStatus `json:"status,omitempty"`
 
-	Groups []*Group        `json:"groups,omitempty"`
-	Orgs   []*Organization `json:"orgs,omitempty"`
+	Groups      []Group          `json:"groups,omitempty"`
+	Hierarchies []HierarchyLevel `json:"hierarchies,omitempty"`
+	Orgs        []Organization   `json:"orgs,omitempty"`
 }
 
 func (this *User) SetDefaults() error {
@@ -39,7 +41,7 @@ func (this *User) SetDefaults() error {
 		return err
 	}
 
-	util.SetDefaultValue(this.Status, UserDefaultStatus)
+	safe.SetDefaultValue(&this.Status, UserStatusInactive)
 
 	now := time.Now()
 
@@ -48,50 +50,61 @@ func (this *User) SetDefaults() error {
 	}
 
 	if this.FailedLoginAttempts == nil || *this.FailedLoginAttempts < 0 {
-		*this.FailedLoginAttempts = 0
+		this.FailedLoginAttempts = util.ToPtr(0)
 	}
 
-	util.SetDefaultValue(this.MustChangePassword, true)
+	safe.SetDefaultValue(&this.MustChangePassword, true)
 
 	return nil
 }
 
 func (this *User) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		val.Field(&this.AvatarUrl, val.When(this.AvatarUrl != nil,
-			val.Length(1, 255),
-			val.IsUrl,
-		)),
+		val.Field(&this.AvatarUrl,
+			val.When(this.AvatarUrl != nil,
+				val.Length(1, model.MODEL_RULE_URL_LENGTH),
+				val.IsUrl,
+			),
+		),
 		val.Field(&this.DisplayName,
-			val.RequiredWhen(!forEdit),
-			val.Length(1, 50),
+			val.NotNilWhen(!forEdit),
+			val.When(this.DisplayName != nil,
+				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
+			),
 		),
 		val.Field(&this.Email,
-			val.RequiredWhen(!forEdit),
-			val.IsEmail,
-			val.Length(5, 100),
+			val.NotNilWhen(!forEdit),
+			val.When(this.Email != nil,
+				val.NotEmpty,
+				val.IsEmail,
+				val.Length(5, model.MODEL_RULE_EMAIL_LENGTH),
+			),
+		),
+		val.Field(&this.FailedLoginAttempts,
+			val.Min(0),
+			val.Max(model.MODEL_RULE_MAX_INT16),
 		),
 		val.Field(&this.PasswordRaw,
-			val.RequiredWhen(!forEdit),
-			val.Length(8, 100),
+			val.NotNilWhen(!forEdit),
+			val.When(this.PasswordRaw != nil,
+				val.NotEmpty,
+				val.Length(model.MODEL_RULE_PASSWORD_MIN_LENGTH, model.MODEL_RULE_PASSWORD_MAX_LENGTH),
+			),
 		),
 		UserStatusValidateRule(&this.Status),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
-	// rules = append(rules, this.OrgBase.ValidateRules(forEdit)...)
 
 	return val.ApiBased.ValidateStruct(this, rules...)
 }
 
-type UserStatus ent.Status
-
-const UserDefaultStatus = UserStatus(ent.DefaultStatus)
+type UserStatus entUser.Status
 
 const (
-	UserStatusActive   = UserStatus(ent.StatusActive)
-	UserStatusInactive = UserStatus(ent.StatusInactive)
-	UserStatusLocked   = UserStatus(ent.StatusLocked)
+	UserStatusActive   = UserStatus(entUser.StatusActive)
+	UserStatusInactive = UserStatus(entUser.StatusInactive)
+	UserStatusLocked   = UserStatus(entUser.StatusLocked)
 )
 
 func (this UserStatus) Validate() error {
@@ -112,7 +125,7 @@ func WrapUserStatus(s string) *UserStatus {
 	return &st
 }
 
-func WrapUserStatusEnt(s ent.Status) *UserStatus {
+func WrapUserStatusEnt(s entUser.Status) *UserStatus {
 	st := UserStatus(s)
 	return &st
 }

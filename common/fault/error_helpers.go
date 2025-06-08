@@ -4,6 +4,8 @@ import (
 	goerr "errors"
 	"fmt"
 	"reflect"
+
+	"go.bryk.io/pkg/errors"
 )
 
 func PanicOnErr(err error) {
@@ -23,6 +25,23 @@ func isNil(input interface{}) bool {
 	default:
 		return false
 	}
+}
+
+func RecoverPanicf(err any, errMsg string, args ...any) error {
+	return RecoverPanic(err, fmt.Sprintf(errMsg, args...))
+}
+
+func RecoverPanic(err any, errMsg string) error {
+	if err != nil {
+		originErr, isOk := err.(error)
+		if isOk {
+			return errors.Wrap(originErr, errMsg)
+		} else {
+			originErr = fmt.Errorf("%v", err)
+			return errors.Wrap(originErr, errMsg)
+		}
+	}
+	return nil
 }
 
 func JoinErrors(errArr []error) error {

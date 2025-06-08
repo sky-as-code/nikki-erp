@@ -14,47 +14,45 @@ const (
 	Label = "group"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldOrgID holds the string denoting the org_id field in the database.
-	FieldOrgID = "org_id"
-	// FieldName holds the string denoting the name field in the database.
-	FieldName = "name"
-	// FieldDescription holds the string denoting the description field in the database.
-	FieldDescription = "description"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// FieldCreatedBy holds the string denoting the created_by field in the database.
-	FieldCreatedBy = "created_by"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
+	// FieldEmail holds the string denoting the email field in the database.
+	FieldEmail = "email"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
+	// FieldOrgID holds the string denoting the org_id field in the database.
+	FieldOrgID = "org_id"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// FieldUpdatedBy holds the string denoting the updated_by field in the database.
-	FieldUpdatedBy = "updated_by"
-	// EdgeOrganization holds the string denoting the organization edge name in mutations.
-	EdgeOrganization = "organization"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
+	// EdgeOrg holds the string denoting the org edge name in mutations.
+	EdgeOrg = "org"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
 	EdgeUserGroups = "user_groups"
 	// Table holds the table name of the group in the database.
-	Table = "groups"
-	// OrganizationTable is the table that holds the organization relation/edge.
-	OrganizationTable = "groups"
-	// OrganizationInverseTable is the table name for the Organization entity.
-	// It exists in this package in order to avoid circular dependency with the "organization" package.
-	OrganizationInverseTable = "organizations"
-	// OrganizationColumn is the table column denoting the organization relation/edge.
-	OrganizationColumn = "org_id"
+	Table = "ident_groups"
 	// UsersTable is the table that holds the users relation/edge. The primary key declared below.
-	UsersTable = "user_groups"
+	UsersTable = "ident_user_group"
 	// UsersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
-	UsersInverseTable = "users"
+	UsersInverseTable = "ident_users"
+	// OrgTable is the table that holds the org relation/edge.
+	OrgTable = "ident_groups"
+	// OrgInverseTable is the table name for the Organization entity.
+	// It exists in this package in order to avoid circular dependency with the "organization" package.
+	OrgInverseTable = "ident_organizations"
+	// OrgColumn is the table column denoting the org relation/edge.
+	OrgColumn = "org_id"
 	// UserGroupsTable is the table that holds the user_groups relation/edge.
-	UserGroupsTable = "user_groups"
+	UserGroupsTable = "ident_user_group"
 	// UserGroupsInverseTable is the table name for the UserGroup entity.
 	// It exists in this package in order to avoid circular dependency with the "usergroup" package.
-	UserGroupsInverseTable = "user_groups"
+	UserGroupsInverseTable = "ident_user_group"
 	// UserGroupsColumn is the table column denoting the user_groups relation/edge.
 	UserGroupsColumn = "group_id"
 )
@@ -62,14 +60,13 @@ const (
 // Columns holds all SQL columns for group fields.
 var Columns = []string{
 	FieldID,
-	FieldOrgID,
-	FieldName,
-	FieldDescription,
 	FieldCreatedAt,
-	FieldCreatedBy,
+	FieldDescription,
+	FieldEmail,
 	FieldEtag,
+	FieldName,
+	FieldOrgID,
 	FieldUpdatedAt,
-	FieldUpdatedBy,
 }
 
 var (
@@ -89,16 +86,12 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// NameValidator is a validator for the "name" field. It is called by the builders before save.
-	NameValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
-	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
-	DefaultUpdatedAt func() time.Time
+	// NameValidator is a validator for the "name" field. It is called by the builders before save.
+	NameValidator func(string) error
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
-	// IDValidator is a validator for the "id" field. It is called by the builders before save.
-	IDValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the Group queries.
@@ -109,14 +102,9 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByOrgID orders the results by the org_id field.
-func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
-}
-
-// ByName orders the results by the name field.
-func ByName(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldName, opts...).ToFunc()
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
 // ByDescription orders the results by the description field.
@@ -124,14 +112,9 @@ func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
-// ByCreatedAt orders the results by the created_at field.
-func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
-}
-
-// ByCreatedBy orders the results by the created_by field.
-func ByCreatedBy(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatedBy, opts...).ToFunc()
+// ByEmail orders the results by the email field.
+func ByEmail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEmail, opts...).ToFunc()
 }
 
 // ByEtag orders the results by the etag field.
@@ -139,21 +122,19 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEtag, opts...).ToFunc()
 }
 
+// ByName orders the results by the name field.
+func ByName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// ByOrgID orders the results by the org_id field.
+func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
+}
+
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
-}
-
-// ByUpdatedBy orders the results by the updated_by field.
-func ByUpdatedBy(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUpdatedBy, opts...).ToFunc()
-}
-
-// ByOrganizationField orders the results by organization field.
-func ByOrganizationField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newOrganizationStep(), sql.OrderByField(field, opts...))
-	}
 }
 
 // ByUsersCount orders the results by users count.
@@ -170,6 +151,13 @@ func ByUsers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByOrgField orders the results by org field.
+func ByOrgField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOrgStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByUserGroupsCount orders the results by user_groups count.
 func ByUserGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -183,18 +171,18 @@ func ByUserGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUserGroupsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newOrganizationStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(OrganizationInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, true, OrganizationTable, OrganizationColumn),
-	)
-}
 func newUsersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, true, UsersTable, UsersPrimaryKey...),
+	)
+}
+func newOrgStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OrgInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, OrgTable, OrgColumn),
 	)
 }
 func newUserGroupsStep() *sqlgraph.Step {

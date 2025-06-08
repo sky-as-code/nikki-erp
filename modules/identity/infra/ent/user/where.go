@@ -75,11 +75,6 @@ func CreatedAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
 }
 
-// CreatedBy applies equality check predicate on the "created_by" field. It's identical to CreatedByEQ.
-func CreatedBy(v string) predicate.User {
-	return predicate.User(sql.FieldEQ(FieldCreatedBy, v))
-}
-
 // DisplayName applies equality check predicate on the "display_name" field. It's identical to DisplayNameEQ.
 func DisplayName(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldDisplayName, v))
@@ -98,6 +93,16 @@ func Etag(v string) predicate.User {
 // FailedLoginAttempts applies equality check predicate on the "failed_login_attempts" field. It's identical to FailedLoginAttemptsEQ.
 func FailedLoginAttempts(v int) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldFailedLoginAttempts, v))
+}
+
+// HierarchyID applies equality check predicate on the "hierarchy_id" field. It's identical to HierarchyIDEQ.
+func HierarchyID(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldHierarchyID, v))
+}
+
+// IsOwner applies equality check predicate on the "is_owner" field. It's identical to IsOwnerEQ.
+func IsOwner(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldIsOwner, v))
 }
 
 // LastLoginAt applies equality check predicate on the "last_login_at" field. It's identical to LastLoginAtEQ.
@@ -128,11 +133,6 @@ func PasswordChangedAt(v time.Time) predicate.User {
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldUpdatedAt, v))
-}
-
-// UpdatedBy applies equality check predicate on the "updated_by" field. It's identical to UpdatedByEQ.
-func UpdatedBy(v string) predicate.User {
-	return predicate.User(sql.FieldEQ(FieldUpdatedBy, v))
 }
 
 // AvatarURLEQ applies the EQ predicate on the "avatar_url" field.
@@ -248,71 +248,6 @@ func CreatedAtLT(v time.Time) predicate.User {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.User {
 	return predicate.User(sql.FieldLTE(FieldCreatedAt, v))
-}
-
-// CreatedByEQ applies the EQ predicate on the "created_by" field.
-func CreatedByEQ(v string) predicate.User {
-	return predicate.User(sql.FieldEQ(FieldCreatedBy, v))
-}
-
-// CreatedByNEQ applies the NEQ predicate on the "created_by" field.
-func CreatedByNEQ(v string) predicate.User {
-	return predicate.User(sql.FieldNEQ(FieldCreatedBy, v))
-}
-
-// CreatedByIn applies the In predicate on the "created_by" field.
-func CreatedByIn(vs ...string) predicate.User {
-	return predicate.User(sql.FieldIn(FieldCreatedBy, vs...))
-}
-
-// CreatedByNotIn applies the NotIn predicate on the "created_by" field.
-func CreatedByNotIn(vs ...string) predicate.User {
-	return predicate.User(sql.FieldNotIn(FieldCreatedBy, vs...))
-}
-
-// CreatedByGT applies the GT predicate on the "created_by" field.
-func CreatedByGT(v string) predicate.User {
-	return predicate.User(sql.FieldGT(FieldCreatedBy, v))
-}
-
-// CreatedByGTE applies the GTE predicate on the "created_by" field.
-func CreatedByGTE(v string) predicate.User {
-	return predicate.User(sql.FieldGTE(FieldCreatedBy, v))
-}
-
-// CreatedByLT applies the LT predicate on the "created_by" field.
-func CreatedByLT(v string) predicate.User {
-	return predicate.User(sql.FieldLT(FieldCreatedBy, v))
-}
-
-// CreatedByLTE applies the LTE predicate on the "created_by" field.
-func CreatedByLTE(v string) predicate.User {
-	return predicate.User(sql.FieldLTE(FieldCreatedBy, v))
-}
-
-// CreatedByContains applies the Contains predicate on the "created_by" field.
-func CreatedByContains(v string) predicate.User {
-	return predicate.User(sql.FieldContains(FieldCreatedBy, v))
-}
-
-// CreatedByHasPrefix applies the HasPrefix predicate on the "created_by" field.
-func CreatedByHasPrefix(v string) predicate.User {
-	return predicate.User(sql.FieldHasPrefix(FieldCreatedBy, v))
-}
-
-// CreatedByHasSuffix applies the HasSuffix predicate on the "created_by" field.
-func CreatedByHasSuffix(v string) predicate.User {
-	return predicate.User(sql.FieldHasSuffix(FieldCreatedBy, v))
-}
-
-// CreatedByEqualFold applies the EqualFold predicate on the "created_by" field.
-func CreatedByEqualFold(v string) predicate.User {
-	return predicate.User(sql.FieldEqualFold(FieldCreatedBy, v))
-}
-
-// CreatedByContainsFold applies the ContainsFold predicate on the "created_by" field.
-func CreatedByContainsFold(v string) predicate.User {
-	return predicate.User(sql.FieldContainsFold(FieldCreatedBy, v))
 }
 
 // DisplayNameEQ applies the EQ predicate on the "display_name" field.
@@ -548,6 +483,101 @@ func FailedLoginAttemptsLT(v int) predicate.User {
 // FailedLoginAttemptsLTE applies the LTE predicate on the "failed_login_attempts" field.
 func FailedLoginAttemptsLTE(v int) predicate.User {
 	return predicate.User(sql.FieldLTE(FieldFailedLoginAttempts, v))
+}
+
+// HierarchyIDEQ applies the EQ predicate on the "hierarchy_id" field.
+func HierarchyIDEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldHierarchyID, v))
+}
+
+// HierarchyIDNEQ applies the NEQ predicate on the "hierarchy_id" field.
+func HierarchyIDNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldHierarchyID, v))
+}
+
+// HierarchyIDIn applies the In predicate on the "hierarchy_id" field.
+func HierarchyIDIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldHierarchyID, vs...))
+}
+
+// HierarchyIDNotIn applies the NotIn predicate on the "hierarchy_id" field.
+func HierarchyIDNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldHierarchyID, vs...))
+}
+
+// HierarchyIDGT applies the GT predicate on the "hierarchy_id" field.
+func HierarchyIDGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldHierarchyID, v))
+}
+
+// HierarchyIDGTE applies the GTE predicate on the "hierarchy_id" field.
+func HierarchyIDGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldHierarchyID, v))
+}
+
+// HierarchyIDLT applies the LT predicate on the "hierarchy_id" field.
+func HierarchyIDLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldHierarchyID, v))
+}
+
+// HierarchyIDLTE applies the LTE predicate on the "hierarchy_id" field.
+func HierarchyIDLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldHierarchyID, v))
+}
+
+// HierarchyIDContains applies the Contains predicate on the "hierarchy_id" field.
+func HierarchyIDContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldHierarchyID, v))
+}
+
+// HierarchyIDHasPrefix applies the HasPrefix predicate on the "hierarchy_id" field.
+func HierarchyIDHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldHierarchyID, v))
+}
+
+// HierarchyIDHasSuffix applies the HasSuffix predicate on the "hierarchy_id" field.
+func HierarchyIDHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldHierarchyID, v))
+}
+
+// HierarchyIDIsNil applies the IsNil predicate on the "hierarchy_id" field.
+func HierarchyIDIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldHierarchyID))
+}
+
+// HierarchyIDNotNil applies the NotNil predicate on the "hierarchy_id" field.
+func HierarchyIDNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldHierarchyID))
+}
+
+// HierarchyIDEqualFold applies the EqualFold predicate on the "hierarchy_id" field.
+func HierarchyIDEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldHierarchyID, v))
+}
+
+// HierarchyIDContainsFold applies the ContainsFold predicate on the "hierarchy_id" field.
+func HierarchyIDContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldHierarchyID, v))
+}
+
+// IsOwnerEQ applies the EQ predicate on the "is_owner" field.
+func IsOwnerEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldIsOwner, v))
+}
+
+// IsOwnerNEQ applies the NEQ predicate on the "is_owner" field.
+func IsOwnerNEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldIsOwner, v))
+}
+
+// IsOwnerIsNil applies the IsNil predicate on the "is_owner" field.
+func IsOwnerIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldIsOwner))
+}
+
+// IsOwnerNotNil applies the NotNil predicate on the "is_owner" field.
+func IsOwnerNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldIsOwner))
 }
 
 // LastLoginAtEQ applies the EQ predicate on the "last_login_at" field.
@@ -825,79 +855,14 @@ func UpdatedAtLTE(v time.Time) predicate.User {
 	return predicate.User(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// UpdatedByEQ applies the EQ predicate on the "updated_by" field.
-func UpdatedByEQ(v string) predicate.User {
-	return predicate.User(sql.FieldEQ(FieldUpdatedBy, v))
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldUpdatedAt))
 }
 
-// UpdatedByNEQ applies the NEQ predicate on the "updated_by" field.
-func UpdatedByNEQ(v string) predicate.User {
-	return predicate.User(sql.FieldNEQ(FieldUpdatedBy, v))
-}
-
-// UpdatedByIn applies the In predicate on the "updated_by" field.
-func UpdatedByIn(vs ...string) predicate.User {
-	return predicate.User(sql.FieldIn(FieldUpdatedBy, vs...))
-}
-
-// UpdatedByNotIn applies the NotIn predicate on the "updated_by" field.
-func UpdatedByNotIn(vs ...string) predicate.User {
-	return predicate.User(sql.FieldNotIn(FieldUpdatedBy, vs...))
-}
-
-// UpdatedByGT applies the GT predicate on the "updated_by" field.
-func UpdatedByGT(v string) predicate.User {
-	return predicate.User(sql.FieldGT(FieldUpdatedBy, v))
-}
-
-// UpdatedByGTE applies the GTE predicate on the "updated_by" field.
-func UpdatedByGTE(v string) predicate.User {
-	return predicate.User(sql.FieldGTE(FieldUpdatedBy, v))
-}
-
-// UpdatedByLT applies the LT predicate on the "updated_by" field.
-func UpdatedByLT(v string) predicate.User {
-	return predicate.User(sql.FieldLT(FieldUpdatedBy, v))
-}
-
-// UpdatedByLTE applies the LTE predicate on the "updated_by" field.
-func UpdatedByLTE(v string) predicate.User {
-	return predicate.User(sql.FieldLTE(FieldUpdatedBy, v))
-}
-
-// UpdatedByContains applies the Contains predicate on the "updated_by" field.
-func UpdatedByContains(v string) predicate.User {
-	return predicate.User(sql.FieldContains(FieldUpdatedBy, v))
-}
-
-// UpdatedByHasPrefix applies the HasPrefix predicate on the "updated_by" field.
-func UpdatedByHasPrefix(v string) predicate.User {
-	return predicate.User(sql.FieldHasPrefix(FieldUpdatedBy, v))
-}
-
-// UpdatedByHasSuffix applies the HasSuffix predicate on the "updated_by" field.
-func UpdatedByHasSuffix(v string) predicate.User {
-	return predicate.User(sql.FieldHasSuffix(FieldUpdatedBy, v))
-}
-
-// UpdatedByIsNil applies the IsNil predicate on the "updated_by" field.
-func UpdatedByIsNil() predicate.User {
-	return predicate.User(sql.FieldIsNull(FieldUpdatedBy))
-}
-
-// UpdatedByNotNil applies the NotNil predicate on the "updated_by" field.
-func UpdatedByNotNil() predicate.User {
-	return predicate.User(sql.FieldNotNull(FieldUpdatedBy))
-}
-
-// UpdatedByEqualFold applies the EqualFold predicate on the "updated_by" field.
-func UpdatedByEqualFold(v string) predicate.User {
-	return predicate.User(sql.FieldEqualFold(FieldUpdatedBy, v))
-}
-
-// UpdatedByContainsFold applies the ContainsFold predicate on the "updated_by" field.
-func UpdatedByContainsFold(v string) predicate.User {
-	return predicate.User(sql.FieldContainsFold(FieldUpdatedBy, v))
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasGroups applies the HasEdge predicate on the "groups" edge.
@@ -915,6 +880,29 @@ func HasGroups() predicate.User {
 func HasGroupsWith(preds ...predicate.Group) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newGroupsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasHierarchy applies the HasEdge predicate on the "hierarchy" edge.
+func HasHierarchy() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, HierarchyTable, HierarchyColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasHierarchyWith applies the HasEdge predicate on the "hierarchy" edge with a given conditions (other predicates).
+func HasHierarchyWith(preds ...predicate.HierarchyLevel) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newHierarchyStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

@@ -1,6 +1,7 @@
 package domain
 
 import (
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
@@ -18,10 +19,10 @@ func (this *HierarchyLevel) SetDefaults() error {
 	return this.ModelBase.SetDefaults()
 }
 
-func (this *HierarchyLevel) Validate(forEdit bool) error {
+func (this *HierarchyLevel) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Name,
-			val.RequiredWhen(!forEdit),
+			val.NotEmptyWhen(!forEdit),
 			val.Length(1, 50),
 		),
 		model.IdValidateRule(&this.ParentId, false),

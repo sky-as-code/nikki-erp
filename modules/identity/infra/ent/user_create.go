@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
@@ -50,12 +51,6 @@ func (uc *UserCreate) SetNillableCreatedAt(t *time.Time) *UserCreate {
 	return uc
 }
 
-// SetCreatedBy sets the "created_by" field.
-func (uc *UserCreate) SetCreatedBy(s string) *UserCreate {
-	uc.mutation.SetCreatedBy(s)
-	return uc
-}
-
 // SetDisplayName sets the "display_name" field.
 func (uc *UserCreate) SetDisplayName(s string) *UserCreate {
 	uc.mutation.SetDisplayName(s)
@@ -84,6 +79,34 @@ func (uc *UserCreate) SetFailedLoginAttempts(i int) *UserCreate {
 func (uc *UserCreate) SetNillableFailedLoginAttempts(i *int) *UserCreate {
 	if i != nil {
 		uc.SetFailedLoginAttempts(*i)
+	}
+	return uc
+}
+
+// SetHierarchyID sets the "hierarchy_id" field.
+func (uc *UserCreate) SetHierarchyID(s string) *UserCreate {
+	uc.mutation.SetHierarchyID(s)
+	return uc
+}
+
+// SetNillableHierarchyID sets the "hierarchy_id" field if the given value is not nil.
+func (uc *UserCreate) SetNillableHierarchyID(s *string) *UserCreate {
+	if s != nil {
+		uc.SetHierarchyID(*s)
+	}
+	return uc
+}
+
+// SetIsOwner sets the "is_owner" field.
+func (uc *UserCreate) SetIsOwner(b bool) *UserCreate {
+	uc.mutation.SetIsOwner(b)
+	return uc
+}
+
+// SetNillableIsOwner sets the "is_owner" field if the given value is not nil.
+func (uc *UserCreate) SetNillableIsOwner(b *bool) *UserCreate {
+	if b != nil {
+		uc.SetIsOwner(*b)
 	}
 	return uc
 }
@@ -148,14 +171,6 @@ func (uc *UserCreate) SetStatus(u user.Status) *UserCreate {
 	return uc
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (uc *UserCreate) SetNillableStatus(u *user.Status) *UserCreate {
-	if u != nil {
-		uc.SetStatus(*u)
-	}
-	return uc
-}
-
 // SetUpdatedAt sets the "updated_at" field.
 func (uc *UserCreate) SetUpdatedAt(t time.Time) *UserCreate {
 	uc.mutation.SetUpdatedAt(t)
@@ -166,20 +181,6 @@ func (uc *UserCreate) SetUpdatedAt(t time.Time) *UserCreate {
 func (uc *UserCreate) SetNillableUpdatedAt(t *time.Time) *UserCreate {
 	if t != nil {
 		uc.SetUpdatedAt(*t)
-	}
-	return uc
-}
-
-// SetUpdatedBy sets the "updated_by" field.
-func (uc *UserCreate) SetUpdatedBy(s string) *UserCreate {
-	uc.mutation.SetUpdatedBy(s)
-	return uc
-}
-
-// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
-func (uc *UserCreate) SetNillableUpdatedBy(s *string) *UserCreate {
-	if s != nil {
-		uc.SetUpdatedBy(*s)
 	}
 	return uc
 }
@@ -203,6 +204,11 @@ func (uc *UserCreate) AddGroups(g ...*Group) *UserCreate {
 		ids[i] = g[i].ID
 	}
 	return uc.AddGroupIDs(ids...)
+}
+
+// SetHierarchy sets the "hierarchy" edge to the HierarchyLevel entity.
+func (uc *UserCreate) SetHierarchy(h *HierarchyLevel) *UserCreate {
+	return uc.SetHierarchyID(h.ID)
 }
 
 // AddOrgIDs adds the "orgs" edge to the Organization entity by IDs.
@@ -267,57 +273,21 @@ func (uc *UserCreate) defaults() {
 		v := user.DefaultMustChangePassword
 		uc.mutation.SetMustChangePassword(v)
 	}
-	if _, ok := uc.mutation.Status(); !ok {
-		v := user.DefaultStatus
-		uc.mutation.SetStatus(v)
-	}
-	if _, ok := uc.mutation.UpdatedAt(); !ok {
-		v := user.DefaultUpdatedAt()
-		uc.mutation.SetUpdatedAt(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (uc *UserCreate) check() error {
-	if v, ok := uc.mutation.AvatarURL(); ok {
-		if err := user.AvatarURLValidator(v); err != nil {
-			return &ValidationError{Name: "avatar_url", err: fmt.Errorf(`ent: validator failed for field "User.avatar_url": %w`, err)}
-		}
-	}
 	if _, ok := uc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "User.created_at"`)}
-	}
-	if _, ok := uc.mutation.CreatedBy(); !ok {
-		return &ValidationError{Name: "created_by", err: errors.New(`ent: missing required field "User.created_by"`)}
-	}
-	if v, ok := uc.mutation.CreatedBy(); ok {
-		if err := user.CreatedByValidator(v); err != nil {
-			return &ValidationError{Name: "created_by", err: fmt.Errorf(`ent: validator failed for field "User.created_by": %w`, err)}
-		}
 	}
 	if _, ok := uc.mutation.DisplayName(); !ok {
 		return &ValidationError{Name: "display_name", err: errors.New(`ent: missing required field "User.display_name"`)}
 	}
-	if v, ok := uc.mutation.DisplayName(); ok {
-		if err := user.DisplayNameValidator(v); err != nil {
-			return &ValidationError{Name: "display_name", err: fmt.Errorf(`ent: validator failed for field "User.display_name": %w`, err)}
-		}
-	}
 	if _, ok := uc.mutation.Email(); !ok {
 		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "User.email"`)}
 	}
-	if v, ok := uc.mutation.Email(); ok {
-		if err := user.EmailValidator(v); err != nil {
-			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
-		}
-	}
 	if _, ok := uc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "User.etag"`)}
-	}
-	if v, ok := uc.mutation.Etag(); ok {
-		if err := user.EtagValidator(v); err != nil {
-			return &ValidationError{Name: "etag", err: fmt.Errorf(`ent: validator failed for field "User.etag": %w`, err)}
-		}
 	}
 	if _, ok := uc.mutation.FailedLoginAttempts(); !ok {
 		return &ValidationError{Name: "failed_login_attempts", err: errors.New(`ent: missing required field "User.failed_login_attempts"`)}
@@ -328,11 +298,6 @@ func (uc *UserCreate) check() error {
 	if _, ok := uc.mutation.PasswordHash(); !ok {
 		return &ValidationError{Name: "password_hash", err: errors.New(`ent: missing required field "User.password_hash"`)}
 	}
-	if v, ok := uc.mutation.PasswordHash(); ok {
-		if err := user.PasswordHashValidator(v); err != nil {
-			return &ValidationError{Name: "password_hash", err: fmt.Errorf(`ent: validator failed for field "User.password_hash": %w`, err)}
-		}
-	}
 	if _, ok := uc.mutation.PasswordChangedAt(); !ok {
 		return &ValidationError{Name: "password_changed_at", err: errors.New(`ent: missing required field "User.password_changed_at"`)}
 	}
@@ -342,14 +307,6 @@ func (uc *UserCreate) check() error {
 	if v, ok := uc.mutation.Status(); ok {
 		if err := user.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "User.status": %w`, err)}
-		}
-	}
-	if _, ok := uc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "User.updated_at"`)}
-	}
-	if v, ok := uc.mutation.ID(); ok {
-		if err := user.IDValidator(v); err != nil {
-			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "User.id": %w`, err)}
 		}
 	}
 	return nil
@@ -395,10 +352,6 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := uc.mutation.CreatedBy(); ok {
-		_spec.SetField(user.FieldCreatedBy, field.TypeString, value)
-		_node.CreatedBy = value
-	}
 	if value, ok := uc.mutation.DisplayName(); ok {
 		_spec.SetField(user.FieldDisplayName, field.TypeString, value)
 		_node.DisplayName = value
@@ -414,6 +367,10 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := uc.mutation.FailedLoginAttempts(); ok {
 		_spec.SetField(user.FieldFailedLoginAttempts, field.TypeInt, value)
 		_node.FailedLoginAttempts = value
+	}
+	if value, ok := uc.mutation.IsOwner(); ok {
+		_spec.SetField(user.FieldIsOwner, field.TypeBool, value)
+		_node.IsOwner = value
 	}
 	if value, ok := uc.mutation.LastLoginAt(); ok {
 		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
@@ -441,11 +398,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := uc.mutation.UpdatedAt(); ok {
 		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
-	}
-	if value, ok := uc.mutation.UpdatedBy(); ok {
-		_spec.SetField(user.FieldUpdatedBy, field.TypeString, value)
-		_node.UpdatedBy = &value
+		_node.UpdatedAt = &value
 	}
 	if nodes := uc.mutation.GroupsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -461,6 +414,23 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.HierarchyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   user.HierarchyTable,
+			Columns: []string{user.HierarchyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.HierarchyID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := uc.mutation.OrgsIDs(); len(nodes) > 0 {

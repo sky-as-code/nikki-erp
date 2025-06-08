@@ -22,23 +22,17 @@ type GroupCreate struct {
 	hooks    []Hook
 }
 
-// SetOrgID sets the "org_id" field.
-func (gc *GroupCreate) SetOrgID(s string) *GroupCreate {
-	gc.mutation.SetOrgID(s)
+// SetCreatedAt sets the "created_at" field.
+func (gc *GroupCreate) SetCreatedAt(t time.Time) *GroupCreate {
+	gc.mutation.SetCreatedAt(t)
 	return gc
 }
 
-// SetNillableOrgID sets the "org_id" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableOrgID(s *string) *GroupCreate {
-	if s != nil {
-		gc.SetOrgID(*s)
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (gc *GroupCreate) SetNillableCreatedAt(t *time.Time) *GroupCreate {
+	if t != nil {
+		gc.SetCreatedAt(*t)
 	}
-	return gc
-}
-
-// SetName sets the "name" field.
-func (gc *GroupCreate) SetName(s string) *GroupCreate {
-	gc.mutation.SetName(s)
 	return gc
 }
 
@@ -56,29 +50,43 @@ func (gc *GroupCreate) SetNillableDescription(s *string) *GroupCreate {
 	return gc
 }
 
-// SetCreatedAt sets the "created_at" field.
-func (gc *GroupCreate) SetCreatedAt(t time.Time) *GroupCreate {
-	gc.mutation.SetCreatedAt(t)
+// SetEmail sets the "email" field.
+func (gc *GroupCreate) SetEmail(s string) *GroupCreate {
+	gc.mutation.SetEmail(s)
 	return gc
 }
 
-// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableCreatedAt(t *time.Time) *GroupCreate {
-	if t != nil {
-		gc.SetCreatedAt(*t)
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (gc *GroupCreate) SetNillableEmail(s *string) *GroupCreate {
+	if s != nil {
+		gc.SetEmail(*s)
 	}
-	return gc
-}
-
-// SetCreatedBy sets the "created_by" field.
-func (gc *GroupCreate) SetCreatedBy(s string) *GroupCreate {
-	gc.mutation.SetCreatedBy(s)
 	return gc
 }
 
 // SetEtag sets the "etag" field.
 func (gc *GroupCreate) SetEtag(s string) *GroupCreate {
 	gc.mutation.SetEtag(s)
+	return gc
+}
+
+// SetName sets the "name" field.
+func (gc *GroupCreate) SetName(s string) *GroupCreate {
+	gc.mutation.SetName(s)
+	return gc
+}
+
+// SetOrgID sets the "org_id" field.
+func (gc *GroupCreate) SetOrgID(s string) *GroupCreate {
+	gc.mutation.SetOrgID(s)
+	return gc
+}
+
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (gc *GroupCreate) SetNillableOrgID(s *string) *GroupCreate {
+	if s != nil {
+		gc.SetOrgID(*s)
+	}
 	return gc
 }
 
@@ -96,43 +104,10 @@ func (gc *GroupCreate) SetNillableUpdatedAt(t *time.Time) *GroupCreate {
 	return gc
 }
 
-// SetUpdatedBy sets the "updated_by" field.
-func (gc *GroupCreate) SetUpdatedBy(s string) *GroupCreate {
-	gc.mutation.SetUpdatedBy(s)
-	return gc
-}
-
-// SetNillableUpdatedBy sets the "updated_by" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableUpdatedBy(s *string) *GroupCreate {
-	if s != nil {
-		gc.SetUpdatedBy(*s)
-	}
-	return gc
-}
-
 // SetID sets the "id" field.
 func (gc *GroupCreate) SetID(s string) *GroupCreate {
 	gc.mutation.SetID(s)
 	return gc
-}
-
-// SetOrganizationID sets the "organization" edge to the Organization entity by ID.
-func (gc *GroupCreate) SetOrganizationID(id string) *GroupCreate {
-	gc.mutation.SetOrganizationID(id)
-	return gc
-}
-
-// SetNillableOrganizationID sets the "organization" edge to the Organization entity by ID if the given value is not nil.
-func (gc *GroupCreate) SetNillableOrganizationID(id *string) *GroupCreate {
-	if id != nil {
-		gc = gc.SetOrganizationID(*id)
-	}
-	return gc
-}
-
-// SetOrganization sets the "organization" edge to the Organization entity.
-func (gc *GroupCreate) SetOrganization(o *Organization) *GroupCreate {
-	return gc.SetOrganizationID(o.ID)
 }
 
 // AddUserIDs adds the "users" edge to the User entity by IDs.
@@ -148,6 +123,11 @@ func (gc *GroupCreate) AddUsers(u ...*User) *GroupCreate {
 		ids[i] = u[i].ID
 	}
 	return gc.AddUserIDs(ids...)
+}
+
+// SetOrg sets the "org" edge to the Organization entity.
+func (gc *GroupCreate) SetOrg(o *Organization) *GroupCreate {
+	return gc.SetOrgID(o.ID)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -189,37 +169,22 @@ func (gc *GroupCreate) defaults() {
 		v := group.DefaultCreatedAt()
 		gc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := gc.mutation.UpdatedAt(); !ok {
-		v := group.DefaultUpdatedAt()
-		gc.mutation.SetUpdatedAt(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (gc *GroupCreate) check() error {
+	if _, ok := gc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Group.created_at"`)}
+	}
+	if _, ok := gc.mutation.Etag(); !ok {
+		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Group.etag"`)}
+	}
 	if _, ok := gc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Group.name"`)}
 	}
 	if v, ok := gc.mutation.Name(); ok {
 		if err := group.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
-		}
-	}
-	if _, ok := gc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Group.created_at"`)}
-	}
-	if _, ok := gc.mutation.CreatedBy(); !ok {
-		return &ValidationError{Name: "created_by", err: errors.New(`ent: missing required field "Group.created_by"`)}
-	}
-	if _, ok := gc.mutation.Etag(); !ok {
-		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Group.etag"`)}
-	}
-	if _, ok := gc.mutation.UpdatedAt(); !ok {
-		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Group.updated_at"`)}
-	}
-	if v, ok := gc.mutation.ID(); ok {
-		if err := group.IDValidator(v); err != nil {
-			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Group.id": %w`, err)}
 		}
 	}
 	return nil
@@ -257,50 +222,29 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := gc.mutation.Name(); ok {
-		_spec.SetField(group.FieldName, field.TypeString, value)
-		_node.Name = value
+	if value, ok := gc.mutation.CreatedAt(); ok {
+		_spec.SetField(group.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
 	}
 	if value, ok := gc.mutation.Description(); ok {
 		_spec.SetField(group.FieldDescription, field.TypeString, value)
 		_node.Description = &value
 	}
-	if value, ok := gc.mutation.CreatedAt(); ok {
-		_spec.SetField(group.FieldCreatedAt, field.TypeTime, value)
-		_node.CreatedAt = value
-	}
-	if value, ok := gc.mutation.CreatedBy(); ok {
-		_spec.SetField(group.FieldCreatedBy, field.TypeString, value)
-		_node.CreatedBy = value
+	if value, ok := gc.mutation.Email(); ok {
+		_spec.SetField(group.FieldEmail, field.TypeString, value)
+		_node.Email = &value
 	}
 	if value, ok := gc.mutation.Etag(); ok {
 		_spec.SetField(group.FieldEtag, field.TypeString, value)
 		_node.Etag = value
 	}
+	if value, ok := gc.mutation.Name(); ok {
+		_spec.SetField(group.FieldName, field.TypeString, value)
+		_node.Name = value
+	}
 	if value, ok := gc.mutation.UpdatedAt(); ok {
 		_spec.SetField(group.FieldUpdatedAt, field.TypeTime, value)
-		_node.UpdatedAt = value
-	}
-	if value, ok := gc.mutation.UpdatedBy(); ok {
-		_spec.SetField(group.FieldUpdatedBy, field.TypeString, value)
-		_node.UpdatedBy = &value
-	}
-	if nodes := gc.mutation.OrganizationIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: true,
-			Table:   group.OrganizationTable,
-			Columns: []string{group.OrganizationColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.OrgID = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
+		_node.UpdatedAt = &value
 	}
 	if nodes := gc.mutation.UsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -316,6 +260,23 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := gc.mutation.OrgIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   group.OrgTable,
+			Columns: []string{group.OrgColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.OrgID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

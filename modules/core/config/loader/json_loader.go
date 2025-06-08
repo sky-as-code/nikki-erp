@@ -5,8 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"go.bryk.io/pkg/errors"
+
 	"github.com/sky-as-code/nikki-erp/common/env"
-	. "github.com/sky-as-code/nikki-erp/common/fault"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/json"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/tidwall/gjson"
@@ -35,7 +37,7 @@ func (loader *JsonConfigLoader) Init() (err error) {
 func (loader *JsonConfigLoader) CreateConfigDB(mapCfg interface{}) error {
 	// logging.Logger().Infof("JsonConfigLoader.CreateConfigDB mapCfg: %+v", mapCfg)
 	if mapCfg == nil {
-		return WrapTechnicalError(fmt.Errorf("mapCfg nil"), "JsonConfigLoader.CreateConfigDB()")
+		return errors.New("mapCfg nil")
 	}
 	currentEnv := env.AppEnv()
 	if len(currentEnv) == 0 {
@@ -44,7 +46,7 @@ func (loader *JsonConfigLoader) CreateConfigDB(mapCfg interface{}) error {
 
 	dataBase, err := json.Marshal(mapCfg)
 	if err != nil {
-		return WrapTechnicalError(err, "JsonConfigLoader.CreateConfigDB Marshal()")
+		return errors.Wrap(err, "JsonConfigLoader.CreateConfigDB Marshal()")
 	}
 	data := fmt.Sprintf(`{"%s":%s}`, currentEnv, dataBase)
 	// logging.Logger().Infof("JsonConfigLoader.CreateConfigDB: %v", string(data))
@@ -63,7 +65,7 @@ func (loader *JsonConfigLoader) Get(name string) (string, error) {
 
 	noDefaultConfig := (!val.Exists() || len(val.String()) == 0)
 	if noDefaultConfig {
-		return "", NewTechnicalError("JsonConfigLoader.Get('%s') found nothing", name)
+		return "", errors.New(fmt.Errorf("JsonConfigLoader.Get('%s') found nothing", name))
 	}
 
 	return val.String(), nil
@@ -71,15 +73,13 @@ func (loader *JsonConfigLoader) Get(name string) (string, error) {
 
 func (loader *JsonConfigLoader) load() (result gjson.Result, appErr error) {
 	defer func() {
-		if err := recover(); err != nil {
-			appErr = WrapTechnicalError(err.(error), "JsonConfigLoader.readJsonFile()")
-		}
+		appErr = ft.RecoverPanic(recover(), "JsonConfigLoader.load()")
 	}()
 
 	result = gjson.Result{}
 	workDir := env.Cwd()
 	bytes, err := os.ReadFile(filepath.Join(workDir, jsonPath))
-	PanicOnErr(err)
+	ft.PanicOnErr(err)
 
 	if !json.IsValidBytes(bytes) {
 		panic(fmt.Errorf("Content of %s is invalid JSON", jsonPath))

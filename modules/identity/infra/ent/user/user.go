@@ -19,8 +19,6 @@ const (
 	FieldAvatarURL = "avatar_url"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// FieldCreatedBy holds the string denoting the created_by field in the database.
-	FieldCreatedBy = "created_by"
 	// FieldDisplayName holds the string denoting the display_name field in the database.
 	FieldDisplayName = "display_name"
 	// FieldEmail holds the string denoting the email field in the database.
@@ -29,6 +27,10 @@ const (
 	FieldEtag = "etag"
 	// FieldFailedLoginAttempts holds the string denoting the failed_login_attempts field in the database.
 	FieldFailedLoginAttempts = "failed_login_attempts"
+	// FieldHierarchyID holds the string denoting the hierarchy_id field in the database.
+	FieldHierarchyID = "hierarchy_id"
+	// FieldIsOwner holds the string denoting the is_owner field in the database.
+	FieldIsOwner = "is_owner"
 	// FieldLastLoginAt holds the string denoting the last_login_at field in the database.
 	FieldLastLoginAt = "last_login_at"
 	// FieldLockedUntil holds the string denoting the locked_until field in the database.
@@ -43,10 +45,10 @@ const (
 	FieldStatus = "status"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// FieldUpdatedBy holds the string denoting the updated_by field in the database.
-	FieldUpdatedBy = "updated_by"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
+	// EdgeHierarchy holds the string denoting the hierarchy edge name in mutations.
+	EdgeHierarchy = "hierarchy"
 	// EdgeOrgs holds the string denoting the orgs edge name in mutations.
 	EdgeOrgs = "orgs"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
@@ -54,29 +56,36 @@ const (
 	// EdgeUserOrgs holds the string denoting the user_orgs edge name in mutations.
 	EdgeUserOrgs = "user_orgs"
 	// Table holds the table name of the user in the database.
-	Table = "users"
+	Table = "ident_users"
 	// GroupsTable is the table that holds the groups relation/edge. The primary key declared below.
-	GroupsTable = "user_groups"
+	GroupsTable = "ident_user_group"
 	// GroupsInverseTable is the table name for the Group entity.
 	// It exists in this package in order to avoid circular dependency with the "group" package.
-	GroupsInverseTable = "groups"
+	GroupsInverseTable = "ident_groups"
+	// HierarchyTable is the table that holds the hierarchy relation/edge.
+	HierarchyTable = "ident_users"
+	// HierarchyInverseTable is the table name for the HierarchyLevel entity.
+	// It exists in this package in order to avoid circular dependency with the "hierarchylevel" package.
+	HierarchyInverseTable = "ident_hierarchy_levels"
+	// HierarchyColumn is the table column denoting the hierarchy relation/edge.
+	HierarchyColumn = "hierarchy_id"
 	// OrgsTable is the table that holds the orgs relation/edge. The primary key declared below.
-	OrgsTable = "user_orgs"
+	OrgsTable = "ident_user_org"
 	// OrgsInverseTable is the table name for the Organization entity.
 	// It exists in this package in order to avoid circular dependency with the "organization" package.
-	OrgsInverseTable = "organizations"
+	OrgsInverseTable = "ident_organizations"
 	// UserGroupsTable is the table that holds the user_groups relation/edge.
-	UserGroupsTable = "user_groups"
+	UserGroupsTable = "ident_user_group"
 	// UserGroupsInverseTable is the table name for the UserGroup entity.
 	// It exists in this package in order to avoid circular dependency with the "usergroup" package.
-	UserGroupsInverseTable = "user_groups"
+	UserGroupsInverseTable = "ident_user_group"
 	// UserGroupsColumn is the table column denoting the user_groups relation/edge.
 	UserGroupsColumn = "user_id"
 	// UserOrgsTable is the table that holds the user_orgs relation/edge.
-	UserOrgsTable = "user_orgs"
+	UserOrgsTable = "ident_user_org"
 	// UserOrgsInverseTable is the table name for the UserOrg entity.
 	// It exists in this package in order to avoid circular dependency with the "userorg" package.
-	UserOrgsInverseTable = "user_orgs"
+	UserOrgsInverseTable = "ident_user_org"
 	// UserOrgsColumn is the table column denoting the user_orgs relation/edge.
 	UserOrgsColumn = "user_id"
 )
@@ -86,11 +95,12 @@ var Columns = []string{
 	FieldID,
 	FieldAvatarURL,
 	FieldCreatedAt,
-	FieldCreatedBy,
 	FieldDisplayName,
 	FieldEmail,
 	FieldEtag,
 	FieldFailedLoginAttempts,
+	FieldHierarchyID,
+	FieldIsOwner,
 	FieldLastLoginAt,
 	FieldLockedUntil,
 	FieldMustChangePassword,
@@ -98,7 +108,6 @@ var Columns = []string{
 	FieldPasswordChangedAt,
 	FieldStatus,
 	FieldUpdatedAt,
-	FieldUpdatedBy,
 }
 
 var (
@@ -121,37 +130,16 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// AvatarURLValidator is a validator for the "avatar_url" field. It is called by the builders before save.
-	AvatarURLValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
-	// CreatedByValidator is a validator for the "created_by" field. It is called by the builders before save.
-	CreatedByValidator func(string) error
-	// DisplayNameValidator is a validator for the "display_name" field. It is called by the builders before save.
-	DisplayNameValidator func(string) error
-	// EmailValidator is a validator for the "email" field. It is called by the builders before save.
-	EmailValidator func(string) error
-	// EtagValidator is a validator for the "etag" field. It is called by the builders before save.
-	EtagValidator func(string) error
 	// DefaultFailedLoginAttempts holds the default value on creation for the "failed_login_attempts" field.
 	DefaultFailedLoginAttempts int
 	// DefaultMustChangePassword holds the default value on creation for the "must_change_password" field.
 	DefaultMustChangePassword bool
-	// PasswordHashValidator is a validator for the "password_hash" field. It is called by the builders before save.
-	PasswordHashValidator func(string) error
-	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
-	DefaultUpdatedAt func() time.Time
-	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
-	UpdateDefaultUpdatedAt func() time.Time
-	// IDValidator is a validator for the "id" field. It is called by the builders before save.
-	IDValidator func(string) error
 )
 
 // Status defines the type for the "status" enum field.
 type Status string
-
-// StatusInactive is the default value of the Status enum.
-const DefaultStatus = StatusInactive
 
 // Status values.
 const (
@@ -192,11 +180,6 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByCreatedBy orders the results by the created_by field.
-func ByCreatedBy(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatedBy, opts...).ToFunc()
-}
-
 // ByDisplayName orders the results by the display_name field.
 func ByDisplayName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDisplayName, opts...).ToFunc()
@@ -215,6 +198,16 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 // ByFailedLoginAttempts orders the results by the failed_login_attempts field.
 func ByFailedLoginAttempts(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFailedLoginAttempts, opts...).ToFunc()
+}
+
+// ByHierarchyID orders the results by the hierarchy_id field.
+func ByHierarchyID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHierarchyID, opts...).ToFunc()
+}
+
+// ByIsOwner orders the results by the is_owner field.
+func ByIsOwner(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldIsOwner, opts...).ToFunc()
 }
 
 // ByLastLoginAt orders the results by the last_login_at field.
@@ -252,11 +245,6 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// ByUpdatedBy orders the results by the updated_by field.
-func ByUpdatedBy(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUpdatedBy, opts...).ToFunc()
-}
-
 // ByGroupsCount orders the results by groups count.
 func ByGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -268,6 +256,13 @@ func ByGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 func ByGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newGroupsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByHierarchyField orders the results by hierarchy field.
+func ByHierarchyField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newHierarchyStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -317,6 +312,13 @@ func newGroupsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GroupsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, GroupsTable, GroupsPrimaryKey...),
+	)
+}
+func newHierarchyStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(HierarchyInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, HierarchyTable, HierarchyColumn),
 	)
 }
 func newOrgsStep() *sqlgraph.Step {

@@ -18,40 +18,36 @@ type GroupMixin struct {
 func (GroupMixin) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").
-			NotEmpty().
 			Immutable().
 			StorageKey("id"),
 
-		field.String("org_id").
-			Optional().
-			Nillable().
-			Comment("Organization ID (optional)"),
-
-		field.String("name").
-			Unique().
-			NotEmpty().
-			Comment("Group name"),
+		field.Time("created_at").
+			Default(time.Now).
+			Immutable(),
 
 		field.String("description").
 			Optional().
 			Nillable().
 			Comment("Group description"),
 
-		field.Time("created_at").
-			Default(time.Now).
-			Immutable(),
-
-		field.String("created_by"),
+		field.String("email").
+			Optional().
+			Nillable(),
 
 		field.String("etag"),
 
-		field.Time("updated_at").
-			Default(time.Now).
-			UpdateDefault(time.Now),
+		field.String("name").
+			Unique().
+			NotEmpty(),
 
-		field.String("updated_by").
+		field.String("org_id").
 			Optional().
 			Nillable(),
+
+		field.Time("updated_at").
+			Optional().
+			Nillable().
+			UpdateDefault(time.Now),
 	}
 }
 
@@ -65,7 +61,7 @@ type Group struct {
 
 func (Group) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entsql.Annotation{Table: "groups"},
+		entsql.Annotation{Table: "ident_groups"},
 	}
 }
 
@@ -75,15 +71,17 @@ func (Group) Fields() []ent.Field {
 
 func (Group) Edges() []ent.Edge {
 	return []ent.Edge{
-		// A group may belong to an organization (optional)
-		edge.From("organization", Organization.Type).
-			Ref("groups").
-			Unique().
-			Field("org_id"),
-
 		edge.From("users", User.Type).
 			Ref("groups").
 			Through("user_groups", UserGroup.Type),
+
+		// A group may belong to an organization (optional)
+		edge.To("org", Organization.Type).
+			Field("org_id").
+			Unique().
+			Annotations(entsql.Annotation{
+				OnDelete: entsql.Cascade,
+			}),
 	}
 }
 

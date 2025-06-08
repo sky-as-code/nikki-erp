@@ -25,7 +25,8 @@ func initUserHandlers() error {
 			ctx,
 			cqrs.NewHandler(handler.Create),
 			cqrs.NewHandler(handler.Delete),
-			cqrs.NewHandler(handler.GetUserByID),
+			cqrs.NewHandler(handler.GetUserById),
+			cqrs.NewHandler(handler.SearchUsers),
 			cqrs.NewHandler(handler.Update),
 		)
 	})
@@ -40,7 +41,7 @@ func initGroupHandlers() error {
 			ctx,
 			cqrs.NewHandler(handler.CreateGroup),
 			cqrs.NewHandler(handler.DeleteGroup),
-			cqrs.NewHandler(handler.GetGroupByID),
+			cqrs.NewHandler(handler.GetGroupById),
 			cqrs.NewHandler(handler.UpdateGroup),
 		)
 	})

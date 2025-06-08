@@ -23,19 +23,19 @@ const (
 	// GroupFieldID holds the string denoting the ID field of the Group.
 	GroupFieldID = "id"
 	// Table holds the table name of the usergroup in the database.
-	Table = "user_groups"
+	Table = "ident_user_group"
 	// UserTable is the table that holds the user relation/edge.
-	UserTable = "user_groups"
+	UserTable = "ident_user_group"
 	// UserInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
-	UserInverseTable = "users"
+	UserInverseTable = "ident_users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "user_id"
 	// GroupTable is the table that holds the group relation/edge.
-	GroupTable = "user_groups"
+	GroupTable = "ident_user_group"
 	// GroupInverseTable is the table name for the Group entity.
 	// It exists in this package in order to avoid circular dependency with the "group" package.
-	GroupInverseTable = "groups"
+	GroupInverseTable = "ident_groups"
 	// GroupColumn is the table column denoting the group relation/edge.
 	GroupColumn = "group_id"
 )
@@ -55,13 +55,6 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
-
-var (
-	// UserIDValidator is a validator for the "user_id" field. It is called by the builders before save.
-	UserIDValidator func(string) error
-	// GroupIDValidator is a validator for the "group_id" field. It is called by the builders before save.
-	GroupIDValidator func(string) error
-)
 
 // OrderOption defines the ordering options for the UserGroup queries.
 type OrderOption = func(*sql.Selector)

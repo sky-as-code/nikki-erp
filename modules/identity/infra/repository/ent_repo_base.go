@@ -2,12 +2,14 @@ package repository
 
 import (
 	"context"
-	stdErr "errors"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/json"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
+	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
 type MutationBuilder[TDb any] interface {
@@ -116,6 +118,34 @@ func FindOne[TDb any, TDomain any](
 // 	}, nil
 // }
 
+func ParseSearchGraphStr[TDb any, TDomain any](criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
+	if criteria == nil {
+		return nil, nil, nil
+	}
+
+	var graph orm.SearchGraph
+	err := json.Unmarshal([]byte(*criteria), &graph)
+	if err != nil {
+		vErr := ft.NewValidationErrors()
+		vErr.Appendf("graph", "invalid search graph: %s", err.Error())
+		return nil, nil, vErr
+	}
+
+	return ParseSearchGraph[TDb, TDomain](&graph)
+}
+
+func ParseSearchGraph[TDb any, TDomain any](criteria *orm.SearchGraph) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
+	if criteria == nil {
+		return nil, nil, nil
+	}
+
+	predicate, vErrsPre := criteria.ToPredicate(entUser.Label)
+	order, vErrsOrd := orm.ToOrder(entUser.Label, *criteria)
+	vErrsPre.Merge(vErrsOrd)
+
+	return &predicate, order, vErrsPre
+}
+
 func Search[TDb any, TDomain any, TQuery interface {
 	Where(...orm.Predicate) TQuery
 	Clone() TQuery
@@ -126,30 +156,26 @@ func Search[TDb any, TDomain any, TQuery interface {
 	All(context.Context) ([]*TDb, error)
 }](
 	ctx context.Context,
-	criteria *orm.SearchGraph,
-	opts *crud.PagingOptions,
-	entityName string,
+	predicate *orm.Predicate,
+	order []orm.OrderOption,
+	opts crud.PagingOptions,
 	query TQuery,
-	convertFn func([]*TDb) []*TDomain,
-) (*crud.PagedResult[*TDomain], error) {
-	var errs error
-	predicate, err := criteria.ToPredicate(entityName)
-	errs = stdErr.Join(errs, err)
-
-	order, err := orm.ToOrder[orm.OrderOption](entityName, criteria)
-	errs = stdErr.Join(errs, err)
-
-	if errs != nil {
-		return nil, errs
+	convertFn func([]*TDb) []TDomain,
+) (*crud.PagedResult[TDomain], error) {
+	wholeQuery := query
+	if predicate != nil {
+		wholeQuery = wholeQuery.Where(*predicate)
 	}
 
-	wholeQuery := query.Where(predicate)
-	pagedQuery := wholeQuery.
-		Offset(opts.Page * opts.Size).
-		Limit(opts.Size).
-		Order(order...)
+	if len(order) > 0 {
+		wholeQuery = wholeQuery.Order(order...)
+	}
 
-	total, err := wholeQuery.Clone().Count(ctx)
+	pagedQuery := wholeQuery.Clone().
+		Offset(opts.Page * opts.Size).
+		Limit(opts.Size)
+
+	total, err := wholeQuery.Count(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -159,8 +185,10 @@ func Search[TDb any, TDomain any, TQuery interface {
 		return nil, err
 	}
 
-	return &crud.PagedResult[*TDomain]{
+	return &crud.PagedResult[TDomain]{
 		Items: convertFn(dbEntities),
 		Total: total,
+		Page:  opts.Page,
+		Size:  opts.Size,
 	}, nil
 }

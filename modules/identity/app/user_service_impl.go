@@ -4,15 +4,13 @@ import (
 	"context"
 	"time"
 
-	"go.bryk.io/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	util "github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
-
-	// ent "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -28,19 +26,19 @@ type UserServiceImpl struct {
 
 func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCommand) (result *it.CreateUserResult, err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), "failed to create user")
-		}
+		err = ft.RecoverPanic(recover(), "failed to create user")
 	}()
 
 	user := cmd.ToUser()
-	this.setUserDefaults(user)
+	err = user.SetDefaults()
+	ft.PanicOnErr(err)
+	// this.setUserDefaults(user)
 
-	valErr := user.Validate(false)
-	this.assertUserUnique(ctx, user, &valErr)
-	if valErr.Count() > 0 {
+	vErrs := user.Validate(false)
+	this.assertUserUnique(ctx, user, &vErrs)
+	if vErrs.Count() > 0 {
 		return &it.CreateUserResult{
-			ClientError: ft.WrapValidationErrors(valErr),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
@@ -51,78 +49,70 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCo
 	return &it.CreateUserResult{Data: user}, err
 }
 
-func (this *UserServiceImpl) setUserDefaults(user *domain.User) {
-	id, err := model.NewId()
-	ft.PanicOnErr(err)
-	user.Id = id
-	user.Etag = model.NewEtag()
-	user.PasswordChangedAt = util.ToPtr(time.Now())
+// func (this *UserServiceImpl) setUserDefaults(user *domain.User) {
+// 	id, err := model.NewId()
+// 	ft.PanicOnErr(err)
+// 	user.Id = id
+// 	user.Etag = model.NewEtag()
+// 	user.PasswordChangedAt = util.ToPtr(time.Now())
 
-	if user.Status == nil {
-		user.Status = util.ToPtr(domain.UserStatusInactive)
-	}
-}
+// 	if user.Status == nil {
+// 		user.Status = util.ToPtr(domain.UserStatusInactive)
+// 	}
+// }
 
 func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.User, errors *ft.ValidationErrors) {
 	if errors.Has("email") {
 		return
 	}
-	existingUser, err := this.userRepo.FindByEmail(ctx, *user.Email)
+	dbUser, err := this.userRepo.FindByEmail(ctx, *user.Email)
 	ft.PanicOnErr(err)
 
-	if existingUser != nil {
-		errors.Append(ft.ValidationErrorItem{
-			Field: "email",
-			Error: "email already exists",
-		})
+	if dbUser != nil {
+		errors.Append("email", "email already exists")
 	}
 }
 
 func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCommand) (result *it.UpdateUserResult, err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), "failed to update user")
-		}
+		err = ft.RecoverPanic(recover(), "failed to update user")
 	}()
 
 	user := cmd.ToUser()
 
-	valErr := user.Validate(true)
+	vErrs := user.Validate(true)
 
-	if valErr.Count() > 0 {
+	if vErrs.Count() > 0 {
 		return &it.UpdateUserResult{
-			ClientError: ft.WrapValidationErrors(valErr),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	userFromDb, err := this.userRepo.FindById(ctx, model.Id(user.Id.String()))
+	dbUser, err := this.userRepo.FindById(ctx, it.FindByIdParam{Id: *user.Id})
 	ft.PanicOnErr(err)
 
-	if userFromDb == nil {
-		vErrors := ft.NewValidationErrors()
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "id",
-			Error: "user not found",
-		})
+	if dbUser == nil {
+		vErrs = ft.NewValidationErrors()
+		vErrs.Append("id", "user not found")
 
 		return &it.UpdateUserResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 
-	} else if userFromDb.Etag != user.Etag {
-		vErrors := ft.NewValidationErrors()
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "etag",
-			Error: "user has been modified by another process",
-		})
+	} else if dbUser.Etag.String() != user.Etag.String() {
+		vErrs = ft.NewValidationErrors()
+		vErrs.Append("etag", "user has been modified by another process")
 
 		return &it.UpdateUserResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrs.ToClientError(),
 		}, nil
+	}
+
+	if user.PasswordRaw != nil {
+		user.PasswordHash = this.encrypt(user.PasswordRaw)
 	}
 
 	user.Etag = model.NewEtag()
-	user.PasswordHash = this.encrypt(user.PasswordRaw)
 	user, err = this.userRepo.Update(ctx, *user)
 	ft.PanicOnErr(err)
 
@@ -138,28 +128,30 @@ func (this *UserServiceImpl) encrypt(str *string) *string {
 	return util.ToPtr(string(hashedBytes))
 }
 
-func (thisSvc *UserServiceImpl) DeleteUser(ctx context.Context, id string, deletedBy string) (result *it.DeleteUserResult, err error) {
+func (thisSvc *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCommand) (result *it.DeleteUserResult, err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), "failed to update user")
-		}
+		err = ft.RecoverPanic(recover(), "failed to update user")
 	}()
 
-	user, err := thisSvc.userRepo.FindById(ctx, model.Id(id))
-	ft.PanicOnErr(err)
-
-	if user == nil {
-		vErrors := ft.NewValidationErrors()
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "id",
-			Error: "user not found",
-		})
+	vErrs := cmd.Validate()
+	if vErrs.Count() > 0 {
 		return &it.DeleteUserResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	err = thisSvc.userRepo.Delete(ctx, model.Id(id))
+	user, err := thisSvc.userRepo.FindById(ctx, it.FindByIdParam{Id: cmd.Id})
+	ft.PanicOnErr(err)
+
+	if user == nil {
+		vErrs = ft.NewValidationErrors()
+		vErrs.Append("id", "user not found")
+		return &it.DeleteUserResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	err = thisSvc.userRepo.Delete(ctx, it.DeleteUserParam{Id: cmd.Id})
 	ft.PanicOnErr(err)
 
 	return &it.DeleteUserResult{
@@ -169,34 +161,25 @@ func (thisSvc *UserServiceImpl) DeleteUser(ctx context.Context, id string, delet
 	}, nil
 }
 
-func (thisSvc *UserServiceImpl) GetUserByID(ctx context.Context, id string) (result *it.GetUserByIdResult, err error) {
+func (thisSvc *UserServiceImpl) GetUserById(ctx context.Context, query it.GetUserByIdQuery) (result *it.GetUserByIdResult, err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Wrap(r.(error), "failed to update user")
-		}
+		err = ft.RecoverPanic(recover(), "failed to get user")
 	}()
 
-	vErrors := ft.NewValidationErrors()
-	if id == "" {
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "id",
-			Error: "user ID cannot be empty",
-		})
+	vErrs := query.Validate()
+	if vErrs.Count() > 0 {
 		return &it.GetUserByIdResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	user, err := thisSvc.userRepo.FindById(ctx, model.Id(id))
+	user, err := thisSvc.userRepo.FindById(ctx, query)
 	ft.PanicOnErr(err)
 
 	if user == nil {
-		vErrors.Append(ft.ValidationErrorItem{
-			Field: "id",
-			Error: "user not found",
-		})
+		vErrs.Append("id", "user not found")
 		return &it.GetUserByIdResult{
-			ClientError: ft.WrapValidationErrors(vErrors),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
@@ -205,10 +188,30 @@ func (thisSvc *UserServiceImpl) GetUserByID(ctx context.Context, id string) (res
 	}, nil
 }
 
-func (thisSvc *UserServiceImpl) GetUserByUsername(ctx context.Context, username string) (*domain.User, error) {
-	return nil, nil
-}
+func (thisSvc *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUsersCommand) (result *it.SearchUsersResult, err error) {
+	defer func() {
+		err = ft.RecoverPanic(recover(), "failed to list users")
+	}()
 
-func (thisSvc *UserServiceImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
-	return nil, nil
+	vErrsModel := query.Validate()
+	predicate, order, vErrsGraph := thisSvc.userRepo.ParseSearchGraph(query.Graph)
+
+	vErrsModel.Merge(vErrsGraph)
+
+	if vErrsModel.Count() > 0 {
+		return &it.SearchUsersResult{
+			ClientError: vErrsModel.ToClientError(),
+		}, nil
+	}
+	query.SetDefaults()
+
+	users, err := thisSvc.userRepo.Search(ctx, predicate, order, crud.PagingOptions{
+		Page: *query.Page,
+		Size: *query.Size,
+	})
+	ft.PanicOnErr(err)
+
+	return &it.SearchUsersResult{
+		Data: users,
+	}, nil
 }

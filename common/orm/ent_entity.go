@@ -40,6 +40,33 @@ func DescribeEntity(entity string) *EntityDescriptorBuilder {
 	}
 }
 
+func AllEntities() []string {
+	entities := make([]string, 0, len(registry.entities))
+	for entityName := range registry.entities {
+		entities = append(entities, entityName)
+	}
+	return entities
+}
+
+func AllFields(entityName string) (fields []string, edges []string, isOK bool) {
+	entity, ok := GetEntity(entityName)
+	if !ok {
+		return nil, nil, false
+	}
+
+	fields = make([]string, 0, len(entity.Fields))
+	for fieldName := range entity.Fields {
+		fields = append(fields, fieldName)
+	}
+
+	edges = make([]string, 0, len(entity.Edges))
+	for edgeName := range entity.Edges {
+		edges = append(edges, edgeName)
+	}
+
+	return fields, edges, true
+}
+
 type EntityDescriptor struct {
 	Entity string
 	Edges  map[string]EdgePredicate
@@ -77,7 +104,6 @@ func (this *EntityDescriptorBuilder) Field(name string, field any) *EntityDescri
 	return this
 }
 
-// func (this *EntityDescriptorBuilder) Edge(name string, predicate EdgePredicate) *EntityDescriptorBuilder {
 func (this *EntityDescriptorBuilder) Edge(
 	name string,
 	predicate EdgePredicate,

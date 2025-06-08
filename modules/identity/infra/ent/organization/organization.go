@@ -17,8 +17,8 @@ const (
 	FieldID = "id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// FieldCreatedBy holds the string denoting the created_by field in the database.
-	FieldCreatedBy = "created_by"
+	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
+	FieldDeletedAt = "deleted_at"
 	// FieldDisplayName holds the string denoting the display_name field in the database.
 	FieldDisplayName = "display_name"
 	// FieldEtag holds the string denoting the etag field in the database.
@@ -29,33 +29,40 @@ const (
 	FieldSlug = "slug"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// FieldUpdatedBy holds the string denoting the updated_by field in the database.
-	FieldUpdatedBy = "updated_by"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
+	// EdgeHierarchies holds the string denoting the hierarchies edge name in mutations.
+	EdgeHierarchies = "hierarchies"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
 	// EdgeUserOrgs holds the string denoting the user_orgs edge name in mutations.
 	EdgeUserOrgs = "user_orgs"
 	// Table holds the table name of the organization in the database.
-	Table = "organizations"
+	Table = "ident_organizations"
 	// UsersTable is the table that holds the users relation/edge. The primary key declared below.
-	UsersTable = "user_orgs"
+	UsersTable = "ident_user_org"
 	// UsersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
-	UsersInverseTable = "users"
+	UsersInverseTable = "ident_users"
+	// HierarchiesTable is the table that holds the hierarchies relation/edge.
+	HierarchiesTable = "ident_hierarchy_levels"
+	// HierarchiesInverseTable is the table name for the HierarchyLevel entity.
+	// It exists in this package in order to avoid circular dependency with the "hierarchylevel" package.
+	HierarchiesInverseTable = "ident_hierarchy_levels"
+	// HierarchiesColumn is the table column denoting the hierarchies relation/edge.
+	HierarchiesColumn = "org_id"
 	// GroupsTable is the table that holds the groups relation/edge.
-	GroupsTable = "groups"
+	GroupsTable = "ident_groups"
 	// GroupsInverseTable is the table name for the Group entity.
 	// It exists in this package in order to avoid circular dependency with the "group" package.
-	GroupsInverseTable = "groups"
+	GroupsInverseTable = "ident_groups"
 	// GroupsColumn is the table column denoting the groups relation/edge.
 	GroupsColumn = "org_id"
 	// UserOrgsTable is the table that holds the user_orgs relation/edge.
-	UserOrgsTable = "user_orgs"
+	UserOrgsTable = "ident_user_org"
 	// UserOrgsInverseTable is the table name for the UserOrg entity.
 	// It exists in this package in order to avoid circular dependency with the "userorg" package.
-	UserOrgsInverseTable = "user_orgs"
+	UserOrgsInverseTable = "ident_user_org"
 	// UserOrgsColumn is the table column denoting the user_orgs relation/edge.
 	UserOrgsColumn = "org_id"
 )
@@ -64,13 +71,12 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
-	FieldCreatedBy,
+	FieldDeletedAt,
 	FieldDisplayName,
 	FieldEtag,
 	FieldStatus,
 	FieldSlug,
 	FieldUpdatedAt,
-	FieldUpdatedBy,
 }
 
 var (
@@ -92,27 +98,12 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
-	// CreatedByValidator is a validator for the "created_by" field. It is called by the builders before save.
-	CreatedByValidator func(string) error
-	// DisplayNameValidator is a validator for the "display_name" field. It is called by the builders before save.
-	DisplayNameValidator func(string) error
-	// EtagValidator is a validator for the "etag" field. It is called by the builders before save.
-	EtagValidator func(string) error
-	// SlugValidator is a validator for the "slug" field. It is called by the builders before save.
-	SlugValidator func(string) error
-	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
-	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
-	// IDValidator is a validator for the "id" field. It is called by the builders before save.
-	IDValidator func(string) error
 )
 
 // Status defines the type for the "status" enum field.
 type Status string
-
-// StatusInactive is the default value of the Status enum.
-const DefaultStatus = StatusInactive
 
 // Status values.
 const (
@@ -147,9 +138,9 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByCreatedBy orders the results by the created_by field.
-func ByCreatedBy(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatedBy, opts...).ToFunc()
+// ByDeletedAt orders the results by the deleted_at field.
+func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
 }
 
 // ByDisplayName orders the results by the display_name field.
@@ -177,11 +168,6 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// ByUpdatedBy orders the results by the updated_by field.
-func ByUpdatedBy(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUpdatedBy, opts...).ToFunc()
-}
-
 // ByUsersCount orders the results by users count.
 func ByUsersCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -196,10 +182,31 @@ func ByUsers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByGroupsField orders the results by groups field.
-func ByGroupsField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByHierarchiesCount orders the results by hierarchies count.
+func ByHierarchiesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newGroupsStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newHierarchiesStep(), opts...)
+	}
+}
+
+// ByHierarchies orders the results by hierarchies terms.
+func ByHierarchies(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newHierarchiesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGroupsCount orders the results by groups count.
+func ByGroupsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroupsStep(), opts...)
+	}
+}
+
+// ByGroups orders the results by groups terms.
+func ByGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -223,11 +230,18 @@ func newUsersStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2M, true, UsersTable, UsersPrimaryKey...),
 	)
 }
+func newHierarchiesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(HierarchiesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, HierarchiesTable, HierarchiesColumn),
+	)
+}
 func newGroupsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GroupsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, GroupsTable, GroupsColumn),
+		sqlgraph.Edge(sqlgraph.O2M, true, GroupsTable, GroupsColumn),
 	)
 }
 func newUserOrgsStep() *sqlgraph.Step {

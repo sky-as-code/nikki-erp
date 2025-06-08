@@ -353,22 +353,6 @@ func (c *GroupClient) GetX(ctx context.Context, id string) *Group {
 	return obj
 }
 
-// QueryOrganization queries the organization edge of a Group.
-func (c *GroupClient) QueryOrganization(gr *Group) *OrganizationQuery {
-	query := (&OrganizationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := gr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(group.Table, group.FieldID, id),
-			sqlgraph.To(organization.Table, organization.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, group.OrganizationTable, group.OrganizationColumn),
-		)
-		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryUsers queries the users edge of a Group.
 func (c *GroupClient) QueryUsers(gr *Group) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
@@ -378,6 +362,22 @@ func (c *GroupClient) QueryUsers(gr *Group) *UserQuery {
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, true, group.UsersTable, group.UsersPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOrg queries the org edge of a Group.
+func (c *GroupClient) QueryOrg(gr *Group) *OrganizationQuery {
+	query := (&OrganizationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, group.OrgTable, group.OrgColumn),
 		)
 		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
 		return fromV, nil
@@ -534,6 +534,38 @@ func (c *HierarchyLevelClient) GetX(ctx context.Context, id string) *HierarchyLe
 	return obj
 }
 
+// QueryChildren queries the children edge of a HierarchyLevel.
+func (c *HierarchyLevelClient) QueryChildren(hl *HierarchyLevel) *HierarchyLevelQuery {
+	query := (&HierarchyLevelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := hl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, id),
+			sqlgraph.To(hierarchylevel.Table, hierarchylevel.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, hierarchylevel.ChildrenTable, hierarchylevel.ChildrenColumn),
+		)
+		fromV = sqlgraph.Neighbors(hl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUsers queries the users edge of a HierarchyLevel.
+func (c *HierarchyLevelClient) QueryUsers(hl *HierarchyLevel) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := hl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, hierarchylevel.UsersTable, hierarchylevel.UsersColumn),
+		)
+		fromV = sqlgraph.Neighbors(hl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryParent queries the parent edge of a HierarchyLevel.
 func (c *HierarchyLevelClient) QueryParent(hl *HierarchyLevel) *HierarchyLevelQuery {
 	query := (&HierarchyLevelClient{config: c.config}).Query()
@@ -542,7 +574,7 @@ func (c *HierarchyLevelClient) QueryParent(hl *HierarchyLevel) *HierarchyLevelQu
 		step := sqlgraph.NewStep(
 			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, id),
 			sqlgraph.To(hierarchylevel.Table, hierarchylevel.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, hierarchylevel.ParentTable, hierarchylevel.ParentColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, hierarchylevel.ParentTable, hierarchylevel.ParentColumn),
 		)
 		fromV = sqlgraph.Neighbors(hl.driver.Dialect(), step)
 		return fromV, nil
@@ -550,15 +582,15 @@ func (c *HierarchyLevelClient) QueryParent(hl *HierarchyLevel) *HierarchyLevelQu
 	return query
 }
 
-// QueryChild queries the child edge of a HierarchyLevel.
-func (c *HierarchyLevelClient) QueryChild(hl *HierarchyLevel) *HierarchyLevelQuery {
-	query := (&HierarchyLevelClient{config: c.config}).Query()
+// QueryOrg queries the org edge of a HierarchyLevel.
+func (c *HierarchyLevelClient) QueryOrg(hl *HierarchyLevel) *OrganizationQuery {
+	query := (&OrganizationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := hl.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, id),
-			sqlgraph.To(hierarchylevel.Table, hierarchylevel.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, hierarchylevel.ChildTable, hierarchylevel.ChildColumn),
+			sqlgraph.To(organization.Table, organization.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, hierarchylevel.OrgTable, hierarchylevel.OrgColumn),
 		)
 		fromV = sqlgraph.Neighbors(hl.driver.Dialect(), step)
 		return fromV, nil
@@ -715,6 +747,22 @@ func (c *OrganizationClient) QueryUsers(o *Organization) *UserQuery {
 	return query
 }
 
+// QueryHierarchies queries the hierarchies edge of a Organization.
+func (c *OrganizationClient) QueryHierarchies(o *Organization) *HierarchyLevelQuery {
+	query := (&HierarchyLevelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := o.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(organization.Table, organization.FieldID, id),
+			sqlgraph.To(hierarchylevel.Table, hierarchylevel.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, organization.HierarchiesTable, organization.HierarchiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryGroups queries the groups edge of a Organization.
 func (c *OrganizationClient) QueryGroups(o *Organization) *GroupQuery {
 	query := (&GroupClient{config: c.config}).Query()
@@ -723,7 +771,7 @@ func (c *OrganizationClient) QueryGroups(o *Organization) *GroupQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, organization.GroupsTable, organization.GroupsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, organization.GroupsTable, organization.GroupsColumn),
 		)
 		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
 		return fromV, nil
@@ -889,6 +937,22 @@ func (c *UserClient) QueryGroups(u *User) *GroupQuery {
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(group.Table, group.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, user.GroupsTable, user.GroupsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryHierarchy queries the hierarchy edge of a User.
+func (c *UserClient) QueryHierarchy(u *User) *HierarchyLevelQuery {
+	query := (&HierarchyLevelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(hierarchylevel.Table, hierarchylevel.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, user.HierarchyTable, user.HierarchyColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

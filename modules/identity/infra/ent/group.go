@@ -18,22 +18,20 @@ type Group struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
-	// Organization ID (optional)
-	OrgID *string `json:"org_id,omitempty"`
-	// Group name
-	Name string `json:"name,omitempty"`
-	// Group description
-	Description *string `json:"description,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
-	// CreatedBy holds the value of the "created_by" field.
-	CreatedBy string `json:"created_by,omitempty"`
+	// Group description
+	Description *string `json:"description,omitempty"`
+	// Email holds the value of the "email" field.
+	Email *string `json:"email,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
+	// Name holds the value of the "name" field.
+	Name string `json:"name,omitempty"`
+	// OrgID holds the value of the "org_id" field.
+	OrgID *string `json:"org_id,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	// UpdatedBy holds the value of the "updated_by" field.
-	UpdatedBy *string `json:"updated_by,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupQuery when eager-loading is set.
 	Edges        GroupEdges `json:"edges"`
@@ -42,10 +40,10 @@ type Group struct {
 
 // GroupEdges holds the relations/edges for other nodes in the graph.
 type GroupEdges struct {
-	// Organization holds the value of the organization edge.
-	Organization *Organization `json:"organization,omitempty"`
 	// Users holds the value of the users edge.
 	Users []*User `json:"users,omitempty"`
+	// Org holds the value of the org edge.
+	Org *Organization `json:"org,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -53,24 +51,24 @@ type GroupEdges struct {
 	loadedTypes [3]bool
 }
 
-// OrganizationOrErr returns the Organization value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e GroupEdges) OrganizationOrErr() (*Organization, error) {
-	if e.Organization != nil {
-		return e.Organization, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: organization.Label}
-	}
-	return nil, &NotLoadedError{edge: "organization"}
-}
-
 // UsersOrErr returns the Users value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) UsersOrErr() ([]*User, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Users, nil
 	}
 	return nil, &NotLoadedError{edge: "users"}
+}
+
+// OrgOrErr returns the Org value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e GroupEdges) OrgOrErr() (*Organization, error) {
+	if e.Org != nil {
+		return e.Org, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: organization.Label}
+	}
+	return nil, &NotLoadedError{edge: "org"}
 }
 
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
@@ -87,7 +85,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldID, group.FieldOrgID, group.FieldName, group.FieldDescription, group.FieldCreatedBy, group.FieldEtag, group.FieldUpdatedBy:
+		case group.FieldID, group.FieldDescription, group.FieldEmail, group.FieldEtag, group.FieldName, group.FieldOrgID:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -112,18 +110,11 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				gr.ID = value.String
 			}
-		case group.FieldOrgID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field org_id", values[i])
+		case group.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
-				gr.OrgID = new(string)
-				*gr.OrgID = value.String
-			}
-		case group.FieldName:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field name", values[i])
-			} else if value.Valid {
-				gr.Name = value.String
+				gr.CreatedAt = value.Time
 			}
 		case group.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -132,17 +123,12 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 				gr.Description = new(string)
 				*gr.Description = value.String
 			}
-		case group.FieldCreatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field created_at", values[i])
-			} else if value.Valid {
-				gr.CreatedAt = value.Time
-			}
-		case group.FieldCreatedBy:
+		case group.FieldEmail:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field created_by", values[i])
+				return fmt.Errorf("unexpected type %T for field email", values[i])
 			} else if value.Valid {
-				gr.CreatedBy = value.String
+				gr.Email = new(string)
+				*gr.Email = value.String
 			}
 		case group.FieldEtag:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -150,18 +136,25 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				gr.Etag = value.String
 			}
+		case group.FieldName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value.Valid {
+				gr.Name = value.String
+			}
+		case group.FieldOrgID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field org_id", values[i])
+			} else if value.Valid {
+				gr.OrgID = new(string)
+				*gr.OrgID = value.String
+			}
 		case group.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
-				gr.UpdatedAt = value.Time
-			}
-		case group.FieldUpdatedBy:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field updated_by", values[i])
-			} else if value.Valid {
-				gr.UpdatedBy = new(string)
-				*gr.UpdatedBy = value.String
+				gr.UpdatedAt = new(time.Time)
+				*gr.UpdatedAt = value.Time
 			}
 		default:
 			gr.selectValues.Set(columns[i], values[i])
@@ -176,14 +169,14 @@ func (gr *Group) Value(name string) (ent.Value, error) {
 	return gr.selectValues.Get(name)
 }
 
-// QueryOrganization queries the "organization" edge of the Group entity.
-func (gr *Group) QueryOrganization() *OrganizationQuery {
-	return NewGroupClient(gr.config).QueryOrganization(gr)
-}
-
 // QueryUsers queries the "users" edge of the Group entity.
 func (gr *Group) QueryUsers() *UserQuery {
 	return NewGroupClient(gr.config).QueryUsers(gr)
+}
+
+// QueryOrg queries the "org" edge of the Group entity.
+func (gr *Group) QueryOrg() *OrganizationQuery {
+	return NewGroupClient(gr.config).QueryOrg(gr)
 }
 
 // QueryUserGroups queries the "user_groups" edge of the Group entity.
@@ -214,34 +207,33 @@ func (gr *Group) String() string {
 	var builder strings.Builder
 	builder.WriteString("Group(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", gr.ID))
-	if v := gr.OrgID; v != nil {
-		builder.WriteString("org_id=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	builder.WriteString("name=")
-	builder.WriteString(gr.Name)
+	builder.WriteString("created_at=")
+	builder.WriteString(gr.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	if v := gr.Description; v != nil {
 		builder.WriteString("description=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("created_at=")
-	builder.WriteString(gr.CreatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("created_by=")
-	builder.WriteString(gr.CreatedBy)
+	if v := gr.Email; v != nil {
+		builder.WriteString("email=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("etag=")
 	builder.WriteString(gr.Etag)
 	builder.WriteString(", ")
-	builder.WriteString("updated_at=")
-	builder.WriteString(gr.UpdatedAt.Format(time.ANSIC))
+	builder.WriteString("name=")
+	builder.WriteString(gr.Name)
 	builder.WriteString(", ")
-	if v := gr.UpdatedBy; v != nil {
-		builder.WriteString("updated_by=")
+	if v := gr.OrgID; v != nil {
+		builder.WriteString("org_id=")
 		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := gr.UpdatedAt; v != nil {
+		builder.WriteString("updated_at=")
+		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteByte(')')
 	return builder.String()

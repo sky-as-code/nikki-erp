@@ -9,180 +9,210 @@ import (
 )
 
 var (
-	// GroupsColumns holds the columns for the "groups" table.
-	GroupsColumns = []*schema.Column{
+	// IdentGroupsColumns holds the columns for the "ident_groups" table.
+	IdentGroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "name", Type: field.TypeString, Unique: true},
-		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "created_by", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "email", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "updated_by", Type: field.TypeString, Nullable: true},
-		{Name: "org_id", Type: field.TypeString, Unique: true, Nullable: true},
+		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "org_id", Type: field.TypeString, Nullable: true},
 	}
-	// GroupsTable holds the schema information for the "groups" table.
-	GroupsTable = &schema.Table{
-		Name:       "groups",
-		Columns:    GroupsColumns,
-		PrimaryKey: []*schema.Column{GroupsColumns[0]},
+	// IdentGroupsTable holds the schema information for the "ident_groups" table.
+	IdentGroupsTable = &schema.Table{
+		Name:       "ident_groups",
+		Columns:    IdentGroupsColumns,
+		PrimaryKey: []*schema.Column{IdentGroupsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "groups_organizations_groups",
-				Columns:    []*schema.Column{GroupsColumns[8]},
-				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				Symbol:     "ident_groups_ident_organizations_org",
+				Columns:    []*schema.Column{IdentGroupsColumns[7]},
+				RefColumns: []*schema.Column{IdentOrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
 	}
-	// HierarchyLevelsColumns holds the columns for the "hierarchy_levels" table.
-	HierarchyLevelsColumns = []*schema.Column{
+	// IdentHierarchyLevelsColumns holds the columns for the "ident_hierarchy_levels" table.
+	IdentHierarchyLevelsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "org_id", Type: field.TypeString},
-		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "etag", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
 		{Name: "parent_id", Type: field.TypeString, Nullable: true},
+		{Name: "org_id", Type: field.TypeString},
 	}
-	// HierarchyLevelsTable holds the schema information for the "hierarchy_levels" table.
-	HierarchyLevelsTable = &schema.Table{
-		Name:       "hierarchy_levels",
-		Columns:    HierarchyLevelsColumns,
-		PrimaryKey: []*schema.Column{HierarchyLevelsColumns[0]},
+	// IdentHierarchyLevelsTable holds the schema information for the "ident_hierarchy_levels" table.
+	IdentHierarchyLevelsTable = &schema.Table{
+		Name:       "ident_hierarchy_levels",
+		Columns:    IdentHierarchyLevelsColumns,
+		PrimaryKey: []*schema.Column{IdentHierarchyLevelsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "hierarchy_levels_hierarchy_levels_child",
-				Columns:    []*schema.Column{HierarchyLevelsColumns[3]},
-				RefColumns: []*schema.Column{HierarchyLevelsColumns[0]},
+				Symbol:     "ident_hierarchy_levels_ident_hierarchy_levels_parent",
+				Columns:    []*schema.Column{IdentHierarchyLevelsColumns[4]},
+				RefColumns: []*schema.Column{IdentHierarchyLevelsColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "ident_hierarchy_levels_ident_organizations_org",
+				Columns:    []*schema.Column{IdentHierarchyLevelsColumns[5]},
+				RefColumns: []*schema.Column{IdentOrganizationsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "hierarchylevel_name_org_id",
+				Unique:  true,
+				Columns: []*schema.Column{IdentHierarchyLevelsColumns[3], IdentHierarchyLevelsColumns[5]},
 			},
 		},
 	}
-	// OrganizationsColumns holds the columns for the "organizations" table.
-	OrganizationsColumns = []*schema.Column{
+	// IdentOrganizationsColumns holds the columns for the "ident_organizations" table.
+	IdentOrganizationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "created_by", Type: field.TypeString},
-		{Name: "display_name", Type: field.TypeString, Size: 50},
-		{Name: "etag", Type: field.TypeString, Size: 100},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive"}, Default: "inactive"},
-		{Name: "slug", Type: field.TypeString, Unique: true, Size: 50},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "updated_by", Type: field.TypeString, Nullable: true},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "display_name", Type: field.TypeString},
+		{Name: "etag", Type: field.TypeString},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive"}},
+		{Name: "slug", Type: field.TypeString, Unique: true},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 	}
-	// OrganizationsTable holds the schema information for the "organizations" table.
-	OrganizationsTable = &schema.Table{
-		Name:       "organizations",
-		Columns:    OrganizationsColumns,
-		PrimaryKey: []*schema.Column{OrganizationsColumns[0]},
+	// IdentOrganizationsTable holds the schema information for the "ident_organizations" table.
+	IdentOrganizationsTable = &schema.Table{
+		Name:       "ident_organizations",
+		Columns:    IdentOrganizationsColumns,
+		PrimaryKey: []*schema.Column{IdentOrganizationsColumns[0]},
 	}
-	// UsersColumns holds the columns for the "users" table.
-	UsersColumns = []*schema.Column{
+	// IdentUsersColumns holds the columns for the "ident_users" table.
+	IdentUsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "avatar_url", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "avatar_url", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "created_by", Type: field.TypeString, Size: 36},
-		{Name: "display_name", Type: field.TypeString, Size: 50},
-		{Name: "email", Type: field.TypeString, Unique: true, Size: 100},
-		{Name: "etag", Type: field.TypeString, Size: 100},
+		{Name: "display_name", Type: field.TypeString},
+		{Name: "email", Type: field.TypeString, Unique: true},
+		{Name: "etag", Type: field.TypeString},
 		{Name: "failed_login_attempts", Type: field.TypeInt, Default: 0},
+		{Name: "is_owner", Type: field.TypeBool, Nullable: true},
 		{Name: "last_login_at", Type: field.TypeTime, Nullable: true},
 		{Name: "locked_until", Type: field.TypeTime, Nullable: true},
 		{Name: "must_change_password", Type: field.TypeBool, Default: true},
 		{Name: "password_hash", Type: field.TypeString},
 		{Name: "password_changed_at", Type: field.TypeTime},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive", "locked"}, Default: "inactive"},
-		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "updated_by", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive", "locked"}},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "hierarchy_id", Type: field.TypeString, Nullable: true},
 	}
-	// UsersTable holds the schema information for the "users" table.
-	UsersTable = &schema.Table{
-		Name:       "users",
-		Columns:    UsersColumns,
-		PrimaryKey: []*schema.Column{UsersColumns[0]},
+	// IdentUsersTable holds the schema information for the "ident_users" table.
+	IdentUsersTable = &schema.Table{
+		Name:       "ident_users",
+		Columns:    IdentUsersColumns,
+		PrimaryKey: []*schema.Column{IdentUsersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "ident_users_ident_hierarchy_levels_hierarchy",
+				Columns:    []*schema.Column{IdentUsersColumns[15]},
+				RefColumns: []*schema.Column{IdentHierarchyLevelsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "user_is_owner",
+				Unique:  true,
+				Columns: []*schema.Column{IdentUsersColumns[7]},
+			},
+		},
 	}
-	// UserGroupsColumns holds the columns for the "user_groups" table.
-	UserGroupsColumns = []*schema.Column{
+	// IdentUserGroupColumns holds the columns for the "ident_user_group" table.
+	IdentUserGroupColumns = []*schema.Column{
 		{Name: "user_id", Type: field.TypeString},
 		{Name: "group_id", Type: field.TypeString},
 	}
-	// UserGroupsTable holds the schema information for the "user_groups" table.
-	UserGroupsTable = &schema.Table{
-		Name:       "user_groups",
-		Columns:    UserGroupsColumns,
-		PrimaryKey: []*schema.Column{UserGroupsColumns[0], UserGroupsColumns[1]},
+	// IdentUserGroupTable holds the schema information for the "ident_user_group" table.
+	IdentUserGroupTable = &schema.Table{
+		Name:       "ident_user_group",
+		Columns:    IdentUserGroupColumns,
+		PrimaryKey: []*schema.Column{IdentUserGroupColumns[0], IdentUserGroupColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "user_groups_users_user",
-				Columns:    []*schema.Column{UserGroupsColumns[0]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
+				Symbol:     "ident_user_group_ident_users_user",
+				Columns:    []*schema.Column{IdentUserGroupColumns[0]},
+				RefColumns: []*schema.Column{IdentUsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "user_groups_groups_group",
-				Columns:    []*schema.Column{UserGroupsColumns[1]},
-				RefColumns: []*schema.Column{GroupsColumns[0]},
+				Symbol:     "ident_user_group_ident_groups_group",
+				Columns:    []*schema.Column{IdentUserGroupColumns[1]},
+				RefColumns: []*schema.Column{IdentGroupsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
 	}
-	// UserOrgsColumns holds the columns for the "user_orgs" table.
-	UserOrgsColumns = []*schema.Column{
+	// IdentUserOrgColumns holds the columns for the "ident_user_org" table.
+	IdentUserOrgColumns = []*schema.Column{
 		{Name: "user_id", Type: field.TypeString},
 		{Name: "org_id", Type: field.TypeString},
 	}
-	// UserOrgsTable holds the schema information for the "user_orgs" table.
-	UserOrgsTable = &schema.Table{
-		Name:       "user_orgs",
-		Columns:    UserOrgsColumns,
-		PrimaryKey: []*schema.Column{UserOrgsColumns[0], UserOrgsColumns[1]},
+	// IdentUserOrgTable holds the schema information for the "ident_user_org" table.
+	IdentUserOrgTable = &schema.Table{
+		Name:       "ident_user_org",
+		Columns:    IdentUserOrgColumns,
+		PrimaryKey: []*schema.Column{IdentUserOrgColumns[0], IdentUserOrgColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "user_orgs_users_user",
-				Columns:    []*schema.Column{UserOrgsColumns[0]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
+				Symbol:     "ident_user_org_ident_users_user",
+				Columns:    []*schema.Column{IdentUserOrgColumns[0]},
+				RefColumns: []*schema.Column{IdentUsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "user_orgs_organizations_org",
-				Columns:    []*schema.Column{UserOrgsColumns[1]},
-				RefColumns: []*schema.Column{OrganizationsColumns[0]},
+				Symbol:     "ident_user_org_ident_organizations_org",
+				Columns:    []*schema.Column{IdentUserOrgColumns[1]},
+				RefColumns: []*schema.Column{IdentOrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
-		GroupsTable,
-		HierarchyLevelsTable,
-		OrganizationsTable,
-		UsersTable,
-		UserGroupsTable,
-		UserOrgsTable,
+		IdentGroupsTable,
+		IdentHierarchyLevelsTable,
+		IdentOrganizationsTable,
+		IdentUsersTable,
+		IdentUserGroupTable,
+		IdentUserOrgTable,
 	}
 )
 
 func init() {
-	GroupsTable.ForeignKeys[0].RefTable = OrganizationsTable
-	GroupsTable.Annotation = &entsql.Annotation{
-		Table: "groups",
+	IdentGroupsTable.ForeignKeys[0].RefTable = IdentOrganizationsTable
+	IdentGroupsTable.Annotation = &entsql.Annotation{
+		Table: "ident_groups",
 	}
-	HierarchyLevelsTable.ForeignKeys[0].RefTable = HierarchyLevelsTable
-	HierarchyLevelsTable.Annotation = &entsql.Annotation{
-		Table: "hierarchy_levels",
+	IdentHierarchyLevelsTable.ForeignKeys[0].RefTable = IdentHierarchyLevelsTable
+	IdentHierarchyLevelsTable.ForeignKeys[1].RefTable = IdentOrganizationsTable
+	IdentHierarchyLevelsTable.Annotation = &entsql.Annotation{
+		Table: "ident_hierarchy_levels",
 	}
-	OrganizationsTable.Annotation = &entsql.Annotation{
-		Table: "organizations",
+	IdentOrganizationsTable.Annotation = &entsql.Annotation{
+		Table: "ident_organizations",
 	}
-	UsersTable.Annotation = &entsql.Annotation{
-		Table: "users",
+	IdentUsersTable.ForeignKeys[0].RefTable = IdentHierarchyLevelsTable
+	IdentUsersTable.Annotation = &entsql.Annotation{
+		Table: "ident_users",
 	}
-	UserGroupsTable.ForeignKeys[0].RefTable = UsersTable
-	UserGroupsTable.ForeignKeys[1].RefTable = GroupsTable
-	UserGroupsTable.Annotation = &entsql.Annotation{
-		Table: "user_groups",
+	IdentUserGroupTable.ForeignKeys[0].RefTable = IdentUsersTable
+	IdentUserGroupTable.ForeignKeys[1].RefTable = IdentGroupsTable
+	IdentUserGroupTable.Annotation = &entsql.Annotation{
+		Table: "ident_user_group",
 	}
-	UserOrgsTable.ForeignKeys[0].RefTable = UsersTable
-	UserOrgsTable.ForeignKeys[1].RefTable = OrganizationsTable
-	UserOrgsTable.Annotation = &entsql.Annotation{
-		Table: "user_orgs",
+	IdentUserOrgTable.ForeignKeys[0].RefTable = IdentUsersTable
+	IdentUserOrgTable.ForeignKeys[1].RefTable = IdentOrganizationsTable
+	IdentUserOrgTable.Annotation = &entsql.Annotation{
+		Table: "ident_user_org",
 	}
 }
