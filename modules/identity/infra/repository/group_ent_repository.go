@@ -36,7 +36,7 @@ func (this *GroupEntRepository) Create(ctx context.Context, group domain.Group) 
 
 func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group) (*domain.Group, error) {
 	update := this.client.Group.UpdateOneID(*group.Id).
-		SetName(*group.Name).
+		SetNillableName(group.Name).
 		SetNillableDescription(group.Description).
 		SetEtag(*group.Etag).
 		SetNillableOrgID(group.OrgId)
@@ -74,13 +74,19 @@ func (this *GroupEntRepository) Search(
 	predicate *orm.Predicate,
 	order []orm.OrderOption,
 	opts crud.PagingOptions,
+	param it.GetGroupByIdQuery,
 ) (*crud.PagedResult[domain.Group], error) {
-	return db.Search(
+	query := this.client.Group.Query()
+	if param.WithOrg != nil && *param.WithOrg {
+		query = query.WithOrg()
+	}
+
+	return Search(
 		ctx,
 		predicate,
 		order,
 		opts,
-		this.client.Group.Query(),
+		query,
 		entToGroups,
 	)
 }

@@ -47,6 +47,7 @@ func initGroupHandlers() error {
 			cqrs.NewHandler(handler.GetGroupById),
 			cqrs.NewHandler(handler.SearchGroups),
 			cqrs.NewHandler(handler.UpdateGroup),
+			cqrs.NewHandler(handler.SearchGroups),
 		)
 	})
 }

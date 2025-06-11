@@ -21,6 +21,16 @@ type GroupHandler struct {
 	GroupSvc it.GroupService
 }
 
+func (this *GroupHandler) AddRemoveUsers(ctx context.Context, packet *cqrs.RequestPacket[it.AddRemoveUsersCommand]) (*cqrs.Reply[it.AddRemoveUsersResult], error) {
+	cmd := packet.Request()
+	result, err := this.GroupSvc.AddRemoveUsers(ctx, *cmd)
+	ft.PanicOnErr(err)
+
+	return &cqrs.Reply[it.AddRemoveUsersResult]{
+		Result: *result,
+	}, nil
+}
+
 func (this *GroupHandler) CreateGroup(ctx context.Context, packet *cqrs.RequestPacket[it.CreateGroupCommand]) (*cqrs.Reply[it.CreateGroupResult], error) {
 	cmd := packet.Request()
 	result, err := this.GroupSvc.CreateGroup(ctx, *cmd)
@@ -75,14 +85,4 @@ func (this *GroupHandler) SearchGroups(ctx context.Context, packet *cqrs.Request
 		Result: *result,
 	}
 	return reply, nil
-}
-
-func (this *GroupHandler) AddRemoveUsers(ctx context.Context, packet *cqrs.RequestPacket[it.AddRemoveUsersCommand]) (*cqrs.Reply[it.AddRemoveUsersResult], error) {
-	cmd := packet.Request()
-	result, err := this.GroupSvc.AddRemoveUsers(ctx, *cmd)
-	ft.PanicOnErr(err)
-
-	return &cqrs.Reply[it.AddRemoveUsersResult]{
-		Result: *result,
-	}, nil
 }

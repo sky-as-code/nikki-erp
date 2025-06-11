@@ -16,7 +16,7 @@ type GroupRepository interface {
 	FindById(ctx context.Context, param FindByIdParam) (*domain.Group, error)
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Group, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx context.Context, predicate *orm.Predicate, order []orm.OrderOption, opts crud.PagingOptions) (*crud.PagedResult[domain.Group], error)
+	Search(ctx context.Context, predicate *orm.Predicate, order []orm.OrderOption, opts crud.PagingOptions, param FindByIdParam) (*crud.PagedResult[domain.Group], error)
 	Update(ctx context.Context, group domain.Group) (*domain.Group, error)
 }
 

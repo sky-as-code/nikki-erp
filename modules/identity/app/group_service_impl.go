@@ -273,3 +273,33 @@ func (this *GroupServiceImpl) assertUniqueGroupName(ctx context.Context, valErrs
 		valErrs.Append("name", "group name already exists")
 	}
 }
+
+func (this *GroupServiceImpl) SearchGroups(ctx context.Context, query it.SearchGroupsCommand) (result *it.SearchGroupsResult, err error) {
+	defer func() {
+		err = ft.RecoverPanic(recover(), "failed to list groups")
+	}()
+
+	vErrsModel := query.Validate()
+	predicate, order, vErrsGraph := this.groupRepo.ParseSearchGraph(query.Graph)
+
+	vErrsModel.Merge(vErrsGraph)
+
+	if vErrsModel.Count() > 0 {
+		return &it.SearchGroupsResult{
+			ClientError: vErrsModel.ToClientError(),
+		}, nil
+	}
+	query.SetDefaults()
+
+	groups, err := this.groupRepo.Search(ctx, predicate, order, crud.PagingOptions{
+		Page: *query.Page,
+		Size: *query.Size,
+	}, it.GetGroupByIdQuery{
+		WithOrg: query.WithOrgs,
+	})
+	ft.PanicOnErr(err)
+
+	return &it.SearchGroupsResult{
+		Data: groups,
+	}, nil
+}
