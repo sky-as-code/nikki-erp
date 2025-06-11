@@ -53,6 +53,15 @@ func (this *ValidationErrors) Merge(other ValidationErrors) {
 	}
 }
 
+func (this *ValidationErrors) MergeClientError(other *ClientError) {
+	if other != nil {
+		otherErrs, isOk := other.Details.(ValidationErrors)
+		if isOk {
+			this.Merge(otherErrs)
+		}
+	}
+}
+
 func (this *ValidationErrors) Error() string {
 	str := ""
 	for field, err := range *this {

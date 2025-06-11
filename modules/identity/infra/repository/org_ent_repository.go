@@ -26,31 +26,30 @@ type OrganizationEntRepository struct {
 
 func (this *OrganizationEntRepository) Create(ctx context.Context, org domain.Organization) (*domain.Organization, error) {
 	creation := this.client.Organization.Create().
-		SetID(org.Id.String()).
+		SetID(*org.Id).
 		SetDisplayName(*org.DisplayName).
-		SetSlug(org.Slug.String()).
-		SetEtag(org.Etag.String()).
+		SetSlug(*org.Slug).
 		SetStatus(entOrg.Status(*org.Status))
 
 	return db.Mutate(ctx, creation, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Organization) (*domain.Organization, error) {
-	update := this.client.Organization.UpdateOneID(org.Id.String()).
+	update := this.client.Organization.UpdateOneID(*org.Id).
 		SetDisplayName(*org.DisplayName).
-		SetEtag(org.Etag.String()).
+		SetEtag(*org.Etag).
 		SetStatus(entOrg.Status(*org.Status))
 
 	return db.Mutate(ctx, update, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) Delete(ctx context.Context, id model.Id) error {
-	return db.Delete[ent.Organization](ctx, this.client.Organization.DeleteOneID(id.String()))
+	return db.Delete[ent.Organization](ctx, this.client.Organization.DeleteOneID(id))
 }
 
 func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id) (*domain.Organization, error) {
 	query := this.client.Organization.Query().
-		Where(entOrg.ID(id.String())).
+		Where(entOrg.ID(id)).
 		WithUsers()
 
 	return db.FindOne(ctx, query, entToOrganization)
@@ -72,7 +71,7 @@ func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, slug stri
 }
 
 func (this *OrganizationEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return db.ParseSearchGraphStr[ent.Organization, domain.Organization](criteria)
+	return db.ParseSearchGraphStr[ent.Organization, domain.Organization](criteria, entOrg.Label)
 }
 
 func (this *OrganizationEntRepository) Search(
@@ -94,6 +93,7 @@ func (this *OrganizationEntRepository) Search(
 func BuildOrganizationDescriptor() *orm.EntityDescriptor {
 	entity := ent.Organization{}
 	builder := orm.DescribeEntity(entOrg.Label).
+		Aliases("orgs").
 		Field(entOrg.FieldCreatedAt, entity.CreatedAt).
 		Field(entOrg.FieldDisplayName, entity.DisplayName).
 		Field(entOrg.FieldEtag, entity.Etag).

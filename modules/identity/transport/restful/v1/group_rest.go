@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -120,8 +121,60 @@ func (this GroupRest) DeleteGroup(echoCtx echo.Context) (err error) {
 	}
 
 	response := DeleteGroupResponse{
-		DeletedAt: result.Data.DeletedAt.Unix(),
+		DeletedAt: result.Data.DeletedAt.UnixMilli(),
 	}
 
 	return httpserver.JsonOk(echoCtx, response)
-} 
+}
+
+func (this GroupRest) SearchGroups(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanic(recover(), "failed to search users"); e != nil {
+			err = e
+		}
+	}()
+
+	request := &SearchGroupsRequest{}
+	if err = echoCtx.Bind(request); err != nil {
+		return err
+	}
+
+	result := it.SearchGroupsResult{}
+	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+
+	if err != nil {
+		return err
+	}
+
+	if result.ClientError != nil {
+		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
+	}
+
+	response := SearchGroupsResponse{}
+	response.FromResult(result.Data)
+
+	return httpserver.JsonOk(echoCtx, response)
+}
+
+func (this GroupRest) ManageUsers(echoCtx echo.Context) (err error) {
+	request := &ManageUsersRequest{}
+	if err = echoCtx.Bind(request); err != nil {
+		return err
+	}
+
+	result := it.AddRemoveUsersResult{}
+	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+
+	if err != nil {
+		return err
+	}
+
+	if result.ClientError != nil {
+		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
+	}
+
+	response := ManageUsersResponse{}
+	response.FromResult(result.Data)
+
+	return httpserver.JsonOk(echoCtx, response)
+}

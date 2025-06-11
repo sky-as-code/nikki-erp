@@ -13,14 +13,14 @@ type RoleSuite struct {
 	model.ModelBase
 	model.AuditableBase
 
-	Name                 *string   `json:"displayName,omitempty"`
-	Description          *string   `json:"description,omitempty"`
-	Etag                 *string   `json:"etag,omitempty"`
-	OwnerType            *string   `json:"ownerType,omitempty"`
-	OwnerRef             *model.Id `json:"ownerRef,omitempty"`
-	IsRequestable        *bool     `json:"isRequestable,omitempty"`
-	IsRequiredAttachment *bool     `json:"isRequiredAttachment,omitempty"`
-	IsRequiredComment    *bool     `json:"isRequiredComment,omitempty"`
+	Name                 *string             `json:"displayName,omitempty"`
+	Description          *string             `json:"description,omitempty"`
+	Etag                 *string             `json:"etag,omitempty"`
+	OwnerType            *RoleSuiteOwnerType `json:"ownerType,omitempty"`
+	OwnerRef             *model.Id           `json:"ownerRef,omitempty"`
+	IsRequestable        *bool               `json:"isRequestable,omitempty"`
+	IsRequiredAttachment *bool               `json:"isRequiredAttachment,omitempty"`
+	IsRequiredComment    *bool               `json:"isRequiredComment,omitempty"`
 
 	Roles []Role `json:"roles,omitempty"`
 }
@@ -28,15 +28,20 @@ type RoleSuite struct {
 func (this *RoleSuite) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Name,
-			val.RequiredWhen(!forEdit),
-			val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
+			val.NotNilWhen(!forEdit),
+			val.When(this.Name != nil,
+				val.NotEmpty,
+				val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
+			),
 		),
 		val.Field(&this.Description,
-			val.Required,
-			val.Length(1, model.MODEL_RULE_DESC_LENGTH),
+			val.When(this.Description != nil,
+				val.NotEmpty,
+				val.Length(1, model.MODEL_RULE_DESC_LENGTH),
+			),
 		),
 		RoleSuiteOwnerTypeValidateRule(&this.OwnerType, !forEdit),
-		model.IdValidateRule(&this.OwnerRef, !forEdit),
+		model.IdPtrValidateRule(&this.OwnerRef, !forEdit),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
@@ -69,9 +74,12 @@ func WrapRoleSuiteOwnerType(s string) *RoleSuiteOwnerType {
 	return &ot
 }
 
-func RoleSuiteOwnerTypeValidateRule(field any, isRequired bool) *val.FieldRules {
+func RoleSuiteOwnerTypeValidateRule(field **RoleSuiteOwnerType, isRequired bool) *val.FieldRules {
 	return val.Field(field,
-		val.RequiredWhen(isRequired),
-		val.OneOf(RoleSuiteOwnerTypeUser, RoleSuiteOwnerTypeGroup),
+		val.NotNilWhen(isRequired),
+		val.When(*field != nil,
+			val.NotEmpty,
+			val.OneOf(RoleSuiteOwnerTypeUser, RoleSuiteOwnerTypeGroup),
+		),
 	)
 }

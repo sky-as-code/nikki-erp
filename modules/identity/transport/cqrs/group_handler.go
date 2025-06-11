@@ -63,3 +63,26 @@ func (this *GroupHandler) GetGroupById(ctx context.Context, packet *cqrs.Request
 	}
 	return reply, nil
 }
+
+func (this *GroupHandler) SearchGroups(ctx context.Context, packet *cqrs.RequestPacket[it.SearchGroupsQuery]) (*cqrs.Reply[it.SearchGroupsResult], error) {
+	cmd := packet.Request()
+	result, err := this.GroupSvc.SearchGroups(ctx, *cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	reply := &cqrs.Reply[it.SearchGroupsResult]{
+		Result: *result,
+	}
+	return reply, nil
+}
+
+func (this *GroupHandler) AddRemoveUsers(ctx context.Context, packet *cqrs.RequestPacket[it.AddRemoveUsersCommand]) (*cqrs.Reply[it.AddRemoveUsersResult], error) {
+	cmd := packet.Request()
+	result, err := this.GroupSvc.AddRemoveUsers(ctx, *cmd)
+	ft.PanicOnErr(err)
+
+	return &cqrs.Reply[it.AddRemoveUsersResult]{
+		Result: *result,
+	}, nil
+}

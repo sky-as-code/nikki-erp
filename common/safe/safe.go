@@ -30,3 +30,11 @@ func GetTimeUnix(source *time.Time) *int64 {
 	}
 	return nil
 }
+
+func GetTimeUnixMilli(source *time.Time) *int64 {
+	if source != nil {
+		unix := source.UnixMilli()
+		return &unix
+	}
+	return nil
+}

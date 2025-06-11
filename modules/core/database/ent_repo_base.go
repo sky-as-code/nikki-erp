@@ -9,7 +9,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
-	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
 type MutationBuilder[TDb any] interface {
@@ -77,48 +76,7 @@ func FindOne[TDb any, TDomain any](
 	return convertFn(entEntity), nil
 }
 
-// func Search[TDb any, TDomain any, TQuery any](
-// 	ctx context.Context,
-// 	criteria *orm.SearchGraph,
-// 	opts *crud.PagingOptions,
-// 	entityName string,
-// 	searchBuilder SearchBuilder[TDb, TQuery],
-// 	convertFn EntToDomainArrFn[TDb, TDomain],
-// ) (*crud.PagedResult[*TDomain], error) {
-// 	var errs error
-// 	predicate, err := criteria.ToPredicate(entityName)
-// 	errs = stdErr.Join(errs, err)
-
-// 	order, err := orm.ToOrder[orm.OrderOption](entityName, criteria)
-// 	errs = stdErr.Join(errs, err)
-
-// 	if errs != nil {
-// 		return nil, errs
-// 	}
-
-// 	wholeQuery := searchBuilder.Where(predicate)
-// 	pagedQuery := searchBuilder.
-// 		Offset(opts.Page * opts.Size).
-// 		Limit(opts.Size).
-// 		Order(order...)
-
-// 	total, err := wholeQuery.Count(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	dbUsers, err := pagedQuery.All(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return &crud.PagedResult[*TDomain]{
-// 		Items: convertFn(dbUsers),
-// 		Total: total,
-// 	}, nil
-// }
-
-func ParseSearchGraphStr[TDb any, TDomain any](criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
+func ParseSearchGraphStr[TDb any, TDomain any](criteria *string, entityName string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
 	if criteria == nil {
 		return nil, nil, nil
 	}
@@ -131,17 +89,16 @@ func ParseSearchGraphStr[TDb any, TDomain any](criteria *string) (*orm.Predicate
 		return nil, nil, vErr
 	}
 
-	return ParseSearchGraph[TDb, TDomain](&graph)
+	return ParseSearchGraph[TDb, TDomain](&graph, entityName)
 }
 
-func ParseSearchGraph[TDb any, TDomain any](criteria *orm.SearchGraph) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
+func ParseSearchGraph[TDb any, TDomain any](criteria *orm.SearchGraph, entityName string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
 	if criteria == nil {
 		return nil, nil, nil
 	}
 
-	predicate, vErrsPre := criteria.ToPredicate(entUser.Label)
-	// order, vErrsOrd := orm.ToOrder(entUser.Label, *criteria)
-	order, vErrsOrd := criteria.Order.ToOrderOptions(entUser.Label)
+	predicate, vErrsPre := criteria.ToPredicate(entityName)
+	order, vErrsOrd := criteria.Order.ToOrderOptions(entityName)
 	vErrsPre.Merge(vErrsOrd)
 
 	return &predicate, order, vErrsPre

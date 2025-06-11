@@ -24,13 +24,15 @@ func (this *Group) SetDefaults() error {
 func (this *Group) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Name,
-			val.NotEmptyWhen(!forEdit),
-			val.Length(1, 50),
+			val.NotNilWhen(!forEdit),
+			val.When(this.Name != nil,
+				val.NotEmpty,
+				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
+			),
 		),
-		val.Field(&this.Description, val.When(this.Description != nil,
-			val.NotEmpty,
-			val.Length(1, 255),
-		)),
+		val.Field(&this.Description,
+			val.Length(0, model.MODEL_RULE_DESC_LENGTH),
+		),
 		model.IdPtrValidateRule(&this.OrgId, false),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)

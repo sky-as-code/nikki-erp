@@ -28,6 +28,8 @@ func initUserHandlers() error {
 			cqrs.NewHandler(handler.GetUserById),
 			cqrs.NewHandler(handler.SearchUsers),
 			cqrs.NewHandler(handler.Update),
+			cqrs.NewHandler(handler.UserExists),
+			cqrs.NewHandler(handler.UserExistsMulti),
 		)
 	})
 }
@@ -39,9 +41,11 @@ func initGroupHandlers() error {
 		ctx := context.Background()
 		return cqrsBus.SubscribeRequests(
 			ctx,
+			cqrs.NewHandler(handler.AddRemoveUsers),
 			cqrs.NewHandler(handler.CreateGroup),
 			cqrs.NewHandler(handler.DeleteGroup),
 			cqrs.NewHandler(handler.GetGroupById),
+			cqrs.NewHandler(handler.SearchGroups),
 			cqrs.NewHandler(handler.UpdateGroup),
 		)
 	})

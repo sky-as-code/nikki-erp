@@ -16,12 +16,18 @@ type entityRegistry struct {
 	entities map[string]*EntityDescriptor
 }
 
-func RegisterEntity(entity string, descriptor *EntityDescriptor) error {
-	if _, ok := registry.entities[entity]; ok {
-		return errors.Errorf("entity '%s' already registered", entity)
-	}
+func RegisterEntity(descriptor *EntityDescriptor) error {
+	return registerEntityAliases(descriptor)
+}
 
-	registry.entities[entity] = descriptor
+func registerEntityAliases(descriptor *EntityDescriptor) error {
+	for _, alias := range descriptor.EntityAliases {
+		if _, ok := registry.entities[alias]; ok {
+			return errors.Errorf("entity '%s' already registered", alias)
+		}
+
+		registry.entities[alias] = descriptor
+	}
 	return nil
 }
 
@@ -33,9 +39,9 @@ func GetEntity(entity string) (*EntityDescriptor, bool) {
 func DescribeEntity(entity string) *EntityDescriptorBuilder {
 	return &EntityDescriptorBuilder{
 		descriptor: &EntityDescriptor{
-			Entity: entity,
-			Edges:  make(map[string]EdgePredicate),
-			Fields: make(map[string]reflect.Type),
+			EntityAliases: []string{entity},
+			Edges:         make(map[string]EdgePredicate),
+			Fields:        make(map[string]reflect.Type),
 		},
 	}
 }
@@ -68,9 +74,17 @@ func AllFields(entityName string) (fields []string, edges []string, isOK bool) {
 }
 
 type EntityDescriptor struct {
-	Entity string
-	Edges  map[string]EdgePredicate
-	Fields map[string]reflect.Type
+	EntityAliases []string
+	Edges         map[string]EdgePredicate
+	Fields        map[string]reflect.Type
+}
+
+func (this *EntityDescriptor) Entity() string {
+	return this.EntityAliases[0]
+}
+
+func (this *EntityDescriptor) Aliases() []string {
+	return this.EntityAliases
 }
 
 func (this *EntityDescriptor) FieldType(field string) (reflect.Type, error) {
@@ -97,6 +111,11 @@ func (this *EntityDescriptor) MatchFieldType(field string, value any) (reflect.T
 
 type EntityDescriptorBuilder struct {
 	descriptor *EntityDescriptor
+}
+
+func (this *EntityDescriptorBuilder) Aliases(aliases ...string) *EntityDescriptorBuilder {
+	this.descriptor.EntityAliases = append(this.descriptor.EntityAliases, aliases...)
+	return this
 }
 
 func (this *EntityDescriptorBuilder) Field(name string, field any) *EntityDescriptorBuilder {

@@ -32,7 +32,7 @@ func (this Condition) Field() string {
 }
 
 func (this Condition) Operator() Operator {
-	return Operator(this[1].(string))
+	return this[1].(Operator)
 }
 
 func (this Condition) Value() any {

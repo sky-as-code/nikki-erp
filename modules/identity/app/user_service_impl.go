@@ -51,18 +51,6 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCo
 	return &it.CreateUserResult{Data: user}, err
 }
 
-// func (this *UserServiceImpl) setUserDefaults(user *domain.User) {
-// 	id, err := model.NewId()
-// 	ft.PanicOnErr(err)
-// 	user.Id = id
-// 	user.Etag = model.NewEtag()
-// 	user.PasswordChangedAt = util.ToPtr(time.Now())
-
-// 	if user.Status == nil {
-// 		user.Status = util.ToPtr(domain.UserStatusInactive)
-// 	}
-// }
-
 func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.User, errors *ft.ValidationErrors) {
 	if errors.Has("email") {
 		return
@@ -103,7 +91,7 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 			ClientError: vErrs.ToClientError(),
 		}, nil
 
-	} else if dbUser.Etag.String() != user.Etag.String() {
+	} else if *dbUser.Etag != *user.Etag {
 		vErrs = ft.NewValidationErrors()
 		vErrs.Append("etag", "user has been modified by another process")
 
@@ -157,12 +145,39 @@ func (thisSvc *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUse
 		}, nil
 	}
 
-	err = thisSvc.userRepo.Delete(ctx, it.DeleteUserParam{Id: cmd.Id})
+	err = thisSvc.userRepo.Delete(ctx, it.DeleteParam{Id: cmd.Id})
 	ft.PanicOnErr(err)
 
 	return &it.DeleteUserResult{
-		Data: it.DeleteUserResultData{
+		Data: &it.DeleteUserResultData{
 			DeletedAt: time.Now(),
+		},
+	}, nil
+}
+
+func (thisSvc *UserServiceImpl) Exists(ctx context.Context, cmd it.UserExistsCommand) (result *it.UserExistsResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanic(recover(), "failed to check if user exists"); e != nil {
+			err = e
+		}
+	}()
+
+	exists, err := thisSvc.userRepo.Exists(ctx, cmd.Id)
+	ft.PanicOnErr(err)
+
+	return &it.UserExistsResult{
+		Data: exists,
+	}, nil
+}
+
+func (thisSvc *UserServiceImpl) ExistsMulti(ctx context.Context, cmd it.UserExistsMultiCommand) (result *it.UserExistsMultiResult, err error) {
+	exists, notExisting, err := thisSvc.userRepo.ExistsMulti(ctx, cmd.Ids)
+	ft.PanicOnErr(err)
+
+	return &it.UserExistsMultiResult{
+		Data: &it.ExistsMultiResultData{
+			Existing:    exists,
+			NotExisting: notExisting,
 		},
 	}, nil
 }

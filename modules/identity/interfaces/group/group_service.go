@@ -5,8 +5,10 @@ import (
 )
 
 type GroupService interface {
+	AddRemoveUsers(ctx context.Context, cmd AddRemoveUsersCommand) (*AddRemoveUsersResult, error)
 	CreateGroup(ctx context.Context, cmd CreateGroupCommand) (*CreateGroupResult, error)
-	UpdateGroup(ctx context.Context, cmd UpdateGroupCommand) (*UpdateGroupResult, error)
 	DeleteGroup(ctx context.Context, cmd DeleteGroupCommand) (*DeleteGroupResult, error)
-	GetGroupById(ctx context.Context, cmd GetGroupByIdQuery) (*GetGroupByIdResult, error)
+	GetGroupById(ctx context.Context, query GetGroupByIdQuery) (*GetGroupByIdResult, error)
+	SearchGroups(ctx context.Context, query SearchGroupsQuery) (*SearchGroupsResult, error)
+	UpdateGroup(ctx context.Context, cmd UpdateGroupCommand) (*UpdateGroupResult, error)
 }
