@@ -733,7 +733,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{api_host}}/v1/identity/users?graph={\"if\":[\"groups.id\", \"=\", \"{{group_id}}\"]}&withGroup=true",
+									"raw": "{{api_host}}/v1/identity/users?graph={\"if\":[\"groups.id\", \"=\", \"{{group_id}}\"]}&withGroups=true",
 									"host": [
 										"{{api_host}}"
 									],
@@ -748,7 +748,7 @@
 											"value": "{\"if\":[\"groups.id\", \"=\", \"{{group_id}}\"]}"
 										},
 										{
-											"key": "withGroup",
+											"key": "withGroups",
 											"value": "true"
 										}
 									]

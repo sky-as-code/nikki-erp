@@ -18,7 +18,7 @@ type UserRepository interface {
 	FindById(ctx context.Context, param FindByIdParam) (*domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx context.Context, predicate *orm.Predicate, order []orm.OrderOption, opts crud.PagingOptions) (*crud.PagedResult[domain.User], error)
+	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.User], error)
 	Update(ctx context.Context, user domain.User) (*domain.User, error)
 }
 
@@ -26,6 +26,13 @@ type DeleteParam = DeleteUserCommand
 type ExistsParam = UserExistsCommand
 type ExistsMultiParam = UserExistsMultiCommand
 type FindByIdParam = GetUserByIdQuery
+type SearchParam struct {
+	Predicate  *orm.Predicate
+	Order      []orm.OrderOption
+	Page       int
+	Size       int
+	WithGroups bool
+}
 
 type OrganizationRepository interface {
 	Create(ctx context.Context, organization domain.Organization) (*domain.Organization, error)

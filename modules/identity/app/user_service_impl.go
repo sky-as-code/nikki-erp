@@ -6,7 +6,6 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	util "github.com/sky-as-code/nikki-erp/common/util"
@@ -230,9 +229,12 @@ func (thisSvc *UserServiceImpl) SearchUsers(ctx context.Context, query it.Search
 	}
 	query.SetDefaults()
 
-	users, err := thisSvc.userRepo.Search(ctx, predicate, order, crud.PagingOptions{
-		Page: *query.Page,
-		Size: *query.Size,
+	users, err := thisSvc.userRepo.Search(ctx, it.SearchParam{
+		Predicate:  predicate,
+		Order:      order,
+		Page:       *query.Page,
+		Size:       *query.Size,
+		WithGroups: query.WithGroups,
 	})
 	ft.PanicOnErr(err)
 

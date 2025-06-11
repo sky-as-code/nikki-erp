@@ -41,7 +41,7 @@ func (this *GetGroupByIdResponse) FromGroup(group domain.Group) {
 	this.UpdatedAt = safe.GetTimeUnixMilli(group.UpdatedAt)
 	if group.Org != nil {
 		this.Org = &GetGroupRespOrg{}
-		this.Org.From(*group.Org)
+		this.Org.FromOrg(group.Org)
 	}
 }
 
@@ -51,7 +51,10 @@ type GetGroupRespOrg struct {
 	Slug        model.Slug `json:"slug"`
 }
 
-func (this *GetGroupRespOrg) From(org domain.Organization) {
+func (this *GetGroupRespOrg) FromOrg(org *domain.Organization) {
+	if org == nil {
+		return
+	}
 	this.Id = *org.Id
 	this.DisplayName = *org.DisplayName
 	this.Slug = *org.Slug
@@ -72,7 +75,7 @@ func (this *SearchGroupsResponseItem) FromGroup(group domain.Group) {
 	this.Description = group.Description
 	if group.Org != nil {
 		this.Org = &GetGroupRespOrg{}
-		this.Org.From(*group.Org)
+		this.Org.FromOrg(group.Org)
 	}
 }
 

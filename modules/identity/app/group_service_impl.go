@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 
@@ -220,9 +219,12 @@ func (thisSvc *GroupServiceImpl) SearchGroups(ctx context.Context, query itGrp.S
 	}
 	query.SetDefaults()
 
-	groups, err := thisSvc.groupRepo.Search(ctx, predicate, order, crud.PagingOptions{
-		Page: *query.Page,
-		Size: *query.Size,
+	groups, err := thisSvc.groupRepo.Search(ctx, itGrp.SearchParam{
+		Predicate: predicate,
+		Order:     order,
+		Page:      *query.Page,
+		Size:      *query.Size,
+		WithOrg:   query.WithOrg,
 	})
 	ft.PanicOnErr(err)
 

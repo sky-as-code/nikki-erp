@@ -36,7 +36,7 @@ func (this *GroupEntRepository) Create(ctx context.Context, group domain.Group) 
 
 func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group) (*domain.Group, error) {
 	update := this.client.Group.UpdateOneID(*group.Id).
-		SetName(*group.Name).
+		SetNillableName(group.Name).
 		SetNillableDescription(group.Description).
 		SetEtag(*group.Etag).
 		SetNillableOrgID(group.OrgId)
@@ -71,16 +71,22 @@ func (this *GroupEntRepository) ParseSearchGraph(criteria *string) (*orm.Predica
 
 func (this *GroupEntRepository) Search(
 	ctx context.Context,
-	predicate *orm.Predicate,
-	order []orm.OrderOption,
-	opts crud.PagingOptions,
+	param it.SearchParam,
 ) (*crud.PagedResult[domain.Group], error) {
+	query := this.client.Group.Query()
+	if param.WithOrg {
+		query = query.WithOrg()
+	}
+
 	return db.Search(
 		ctx,
-		predicate,
-		order,
-		opts,
-		this.client.Group.Query(),
+		param.Predicate,
+		param.Order,
+		crud.PagingOptions{
+			Page: param.Page,
+			Size: param.Size,
+		},
+		query,
 		entToGroups,
 	)
 }

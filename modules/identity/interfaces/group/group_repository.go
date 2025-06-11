@@ -16,13 +16,20 @@ type GroupRepository interface {
 	FindById(ctx context.Context, param FindByIdParam) (*domain.Group, error)
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Group, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx context.Context, predicate *orm.Predicate, order []orm.OrderOption, opts crud.PagingOptions) (*crud.PagedResult[domain.Group], error)
+	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.Group], error)
 	Update(ctx context.Context, group domain.Group) (*domain.Group, error)
 }
 
+type AddRemoveUsersParam = AddRemoveUsersCommand
 type DeleteParam = DeleteGroupCommand
 type FindByIdParam = GetGroupByIdQuery
 type FindByNameParam struct {
 	Name string
 }
-type AddRemoveUsersParam = AddRemoveUsersCommand
+type SearchParam struct {
+	Predicate *orm.Predicate
+	Order     []orm.OrderOption
+	Page      int
+	Size      int
+	WithOrg   bool
+}

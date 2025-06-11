@@ -23,6 +23,39 @@ func init() {
 	util.Unused(req)
 }
 
+var addRemoveUsersCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "group",
+	Action:    "addRemoveUsers",
+}
+
+type AddRemoveUsersCommand struct {
+	GroupId model.Id   `param:"groupId" json:"groupId"`
+	Add     []model.Id `json:"add"`
+	Remove  []model.Id `json:"remove"`
+	Etag    model.Etag `json:"etag"`
+}
+
+func (AddRemoveUsersCommand) Type() cqrs.RequestType {
+	return addRemoveUsersCommandType
+}
+
+func (this *AddRemoveUsersCommand) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.GroupId, true),
+		model.IdValidateRuleMulti(&this.Add, false, 0, model.MODEL_RULE_ID_ARR_MAX),
+		model.IdValidateRuleMulti(&this.Remove, false, 0, model.MODEL_RULE_ID_ARR_MAX),
+	}
+
+	return val.ApiBased.ValidateStruct(this, rules...)
+}
+
+type AddRemoveUsersResultData struct {
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type AddRemoveUsersResult model.OpResult[*AddRemoveUsersResultData]
+
 var createGroupCommandType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "group",
@@ -141,42 +174,8 @@ func (this SearchGroupsQuery) Validate() ft.ValidationErrors {
 		model.PageIndexValidateRule(&this.Page),
 		model.PageSizeValidateRule(&this.Size),
 	}
-
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type SearchGroupsResultData = crud.PagedResult[domain.Group]
 type SearchGroupsResult model.OpResult[*SearchGroupsResultData]
-
-var addRemoveUsersCommandType = cqrs.RequestType{
-	Module:    "identity",
-	Submodule: "group",
-	Action:    "addRemoveUsers",
-}
-
-type AddRemoveUsersCommand struct {
-	GroupId model.Id   `param:"groupId" json:"groupId"`
-	Add     []model.Id `json:"add"`
-	Remove  []model.Id `json:"remove"`
-	Etag    model.Etag `json:"etag"`
-}
-
-func (AddRemoveUsersCommand) Type() cqrs.RequestType {
-	return addRemoveUsersCommandType
-}
-
-func (this *AddRemoveUsersCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.GroupId, true),
-		model.IdValidateRuleMulti(&this.Add, false, 0, model.MODEL_RULE_ID_ARR_MAX),
-		model.IdValidateRuleMulti(&this.Remove, false, 0, model.MODEL_RULE_ID_ARR_MAX),
-	}
-
-	return val.ApiBased.ValidateStruct(this, rules...)
-}
-
-type AddRemoveUsersResultData struct {
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-type AddRemoveUsersResult model.OpResult[*AddRemoveUsersResultData]

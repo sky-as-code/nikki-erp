@@ -79,7 +79,7 @@ func (this *SearchUsersResponseItem) FromUser(user domain.User) {
 
 	this.Orgs = array.Map(user.Orgs, func(org domain.Organization) GetGroupRespOrg {
 		orgResp := GetGroupRespOrg{}
-		orgResp.FromOrg(org)
+		orgResp.FromOrg(&org)
 		return orgResp
 	})
 }
@@ -110,7 +110,7 @@ type SearchUsersRespOrgs struct {
 	Slug        model.Slug `json:"slug"`
 }
 
-func (this *GetGroupRespOrg) FromOrg(org domain.Organization) {
+func (this *SearchUsersRespOrgs) FromOrg(org domain.Organization) {
 	this.Id = *org.Id
 	this.DisplayName = *org.DisplayName
 	this.Slug = *org.Slug
