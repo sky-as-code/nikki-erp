@@ -36,15 +36,16 @@ type History struct {
 
 func (this *History) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.ApproverId, true),
-		model.IdValidateRule(&this.EntitlementId, true),
-		model.IdValidateRule(&this.GrantRequestId, true),
-		model.IdValidateRule(&this.RevokeRequestId, true),
-		model.IdValidateRule(&this.ReceiverId, true),
-		model.IdValidateRule(&this.ResourceId, true),
-		model.IdValidateRule(&this.RoleId, true),
-		model.IdValidateRule(&this.RoleSuiteId, true),
+		model.IdPtrValidateRule(&this.ApproverId, true),
+		model.IdPtrValidateRule(&this.EntitlementId, true),
+		model.IdPtrValidateRule(&this.GrantRequestId, true),
+		model.IdPtrValidateRule(&this.RevokeRequestId, true),
+		model.IdPtrValidateRule(&this.ReceiverId, true),
+		model.IdPtrValidateRule(&this.ResourceId, true),
+		model.IdPtrValidateRule(&this.RoleId, true),
+		model.IdPtrValidateRule(&this.RoleSuiteId, true),
 		HistoryEffectValidateRule(&this.Effect),
+		HistoryReasonValidateRule(&this.Reason),
 	}
 
 	return val.ApiBased.ValidateStruct(this, rules...)
@@ -80,9 +81,9 @@ func WrapHistoryEffectEnt(s entHistory.Effect) *HistoryEffect {
 	return &st
 }
 
-func HistoryEffectValidateRule(field any) *val.FieldRules {
+func HistoryEffectValidateRule(field **HistoryEffect) *val.FieldRules {
 	return val.Field(field,
-		val.Required,
+		val.NotEmpty,
 		val.OneOf(HistoryEffectGrant, HistoryEffectRevoke),
 	)
 }
@@ -162,9 +163,9 @@ func WrapHistoryReasonEnt(s entHistory.Reason) *HistoryReason {
 	return &st
 }
 
-func HistoryReasonValidateRule(field any) *val.FieldRules {
+func HistoryReasonValidateRule(field **HistoryReason) *val.FieldRules {
 	return val.Field(field,
-		val.Required,
+		val.NotEmpty,
 		val.OneOf(reasonValues...),
 	)
 }

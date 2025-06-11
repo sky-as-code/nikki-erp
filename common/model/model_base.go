@@ -24,7 +24,7 @@ func (this *ModelBase) SetDefaults() error {
 
 func (this *ModelBase) ValidateRules(forEdit bool) []*val.FieldRules {
 	return []*val.FieldRules{
-		IdValidateRule(&this.Id, forEdit),
+		IdPtrValidateRule(&this.Id, forEdit),
 		EtagValidateRule(&this.Etag, forEdit),
 	}
 }

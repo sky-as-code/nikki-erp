@@ -30,9 +30,12 @@ func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest) {
 	route.GET("/users/:id", userRest.GetUserById)
 	route.GET("/users", userRest.SearchUsers)
 	route.PUT("/users/:id", userRest.UpdateUser)
+	route.POST("/users/exists", userRest.UserExistsMulti)
 
 	route.POST("/groups", groupRest.CreateGroup)
 	route.DELETE("/groups/:id", groupRest.DeleteGroup)
 	route.GET("/groups/:id", groupRest.GetGroupById)
+	route.GET("/groups", groupRest.SearchGroups)
 	route.PUT("/groups/:id", groupRest.UpdateGroup)
+	route.POST("/groups/:groupId/manage-users", groupRest.ManageUsers)
 }

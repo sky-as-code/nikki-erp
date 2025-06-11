@@ -94,7 +94,60 @@ type DeleteUserResultData struct {
 	DeletedAt time.Time `json:"deletedAt"`
 }
 
-type DeleteUserResult model.OpResult[DeleteUserResultData]
+type DeleteUserResult model.OpResult[*DeleteUserResultData]
+
+var existsCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "exists",
+}
+
+type UserExistsCommand struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (UserExistsCommand) Type() cqrs.RequestType {
+	return existsCommandType
+}
+
+func (this UserExistsCommand) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type UserExistsResult model.OpResult[bool]
+
+var existsMultiCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "existsMulti",
+}
+
+type UserExistsMultiCommand struct {
+	Ids []model.Id `json:"ids"`
+}
+
+func (UserExistsMultiCommand) Type() cqrs.RequestType {
+	return existsMultiCommandType
+}
+
+func (this UserExistsMultiCommand) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRuleMulti(&this.Ids, true, 1, model.MODEL_RULE_ID_ARR_MAX),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type ExistsMultiResultData struct {
+	Existing    []model.Id `json:"existing"`
+	NotExisting []model.Id `json:"notExisting"`
+}
+
+type UserExistsMultiResult model.OpResult[*ExistsMultiResultData]
 
 var getUserByIdQueryType = cqrs.RequestType{
 	Module:    "identity",

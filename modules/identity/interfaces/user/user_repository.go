@@ -12,7 +12,9 @@ import (
 
 type UserRepository interface {
 	Create(ctx context.Context, user domain.User) (*domain.User, error)
-	Delete(ctx context.Context, param DeleteUserCommand) error
+	Delete(ctx context.Context, param DeleteParam) error
+	Exists(ctx context.Context, id model.Id) (bool, error)
+	ExistsMulti(ctx context.Context, ids []model.Id) (existing []model.Id, notExisting []model.Id, err error)
 	FindById(ctx context.Context, param FindByIdParam) (*domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
@@ -20,7 +22,9 @@ type UserRepository interface {
 	Update(ctx context.Context, user domain.User) (*domain.User, error)
 }
 
-type DeleteUserParam = DeleteUserCommand
+type DeleteParam = DeleteUserCommand
+type ExistsParam = UserExistsCommand
+type ExistsMultiParam = UserExistsMultiCommand
 type FindByIdParam = GetUserByIdQuery
 
 type OrganizationRepository interface {

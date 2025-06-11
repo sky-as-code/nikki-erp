@@ -10,8 +10,8 @@ import (
 func entToGroup(dbGroup *ent.Group) *domain.Group {
 	group := &domain.Group{
 		ModelBase: model.ModelBase{
-			Id:   model.WrapId(dbGroup.ID),
-			Etag: model.WrapEtag(dbGroup.Etag),
+			Id:   &dbGroup.ID,
+			Etag: &dbGroup.Etag,
 		},
 		AuditableBase: model.AuditableBase{
 			CreatedAt: &dbGroup.CreatedAt,
@@ -20,7 +20,7 @@ func entToGroup(dbGroup *ent.Group) *domain.Group {
 
 		Name:        &dbGroup.Name,
 		Description: dbGroup.Description,
-		OrgId:       model.WrapNillableId(dbGroup.OrgID),
+		OrgId:       dbGroup.OrgID,
 	}
 
 	if dbGroup.Edges.Org != nil {
@@ -42,14 +42,14 @@ func entToGroups(dbGroups []*ent.Group) []domain.Group {
 func entToOrganization(dbOrg *ent.Organization) *domain.Organization {
 	return &domain.Organization{
 		ModelBase: model.ModelBase{
-			Id: model.WrapId(dbOrg.ID),
+			Id: &dbOrg.ID,
 		},
 		AuditableBase: model.AuditableBase{
 			CreatedAt: &dbOrg.CreatedAt,
 			UpdatedAt: dbOrg.UpdatedAt,
 		},
 		DisplayName: &dbOrg.DisplayName,
-		Slug:        model.WrapSlug(dbOrg.Slug),
+		Slug:        &dbOrg.Slug,
 	}
 }
 
@@ -65,8 +65,8 @@ func entToOrganizations(dbOrgs []*ent.Organization) []domain.Organization {
 func entToUser(dbUser *ent.User) *domain.User {
 	return &domain.User{
 		ModelBase: model.ModelBase{
-			Id:   model.WrapId(dbUser.ID),
-			Etag: model.WrapEtag(dbUser.Etag),
+			Id:   &dbUser.ID,
+			Etag: &dbUser.Etag,
 		},
 		AuditableBase: model.AuditableBase{
 			CreatedAt: &dbUser.CreatedAt,

@@ -41,6 +41,7 @@ func newApiBasedValidator() ApiBasedValidator {
 	return ApiBasedValidator{}
 }
 
+type EachRule = apiVal.EachRule
 type FieldRules = apiVal.FieldRules
 type LengthRule = apiVal.LengthRule
 type MatchRule = apiVal.MatchRule
@@ -50,6 +51,17 @@ type ThresholdRule = apiVal.ThresholdRule
 type WhenRule = apiVal.WhenRule
 
 type ApiBasedValidator struct {
+}
+
+func (v ApiBasedValidator) Validate(value any) ft.ValidationErrors {
+	err := apiVal.Validate(value)
+	if err != nil {
+		invopopErr, isOk := err.(apiVal.Errors)
+		if isOk {
+			return ft.NewValidationErrorsFromInvopop(invopopErr)
+		}
+	}
+	return ft.NewValidationErrors()
 }
 
 func (v ApiBasedValidator) ValidateStruct(structPtr any, fields ...*apiVal.FieldRules) ft.ValidationErrors {
@@ -63,6 +75,10 @@ func (v ApiBasedValidator) ValidateStruct(structPtr any, fields ...*apiVal.Field
 		}
 	}
 	return ft.NewValidationErrors()
+}
+
+func Each(rules ...Rule) EachRule {
+	return apiVal.Each(rules...)
 }
 
 func Field(fieldPtr any, rules ...Rule) *FieldRules {

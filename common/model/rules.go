@@ -3,6 +3,7 @@ package model
 import "math"
 
 const (
+	MODEL_RULE_ID_ARR_MAX          = 100
 	MODEL_RULE_DESC_LENGTH         = 3000
 	MODEL_RULE_EMAIL_LENGTH        = 254
 	MODEL_RULE_ETAG_MIN_LENGTH     = 7

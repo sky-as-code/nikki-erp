@@ -28,14 +28,20 @@ type Role struct {
 func (this *Role) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Name,
-			val.RequiredWhen(!forEdit),
-			val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
+			val.NotNilWhen(!forEdit),
+			val.When(this.Name != nil,
+				val.NotEmpty,
+				val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
+			),
 		),
 		val.Field(&this.Description,
-			val.Length(1, model.MODEL_RULE_DESC_LENGTH),
+			val.When(this.Description != nil,
+				val.NotEmpty,
+				val.Length(1, model.MODEL_RULE_DESC_LENGTH),
+			),
 		),
 		RoleOwnerTypeValidateRule(&this.OwnerType, !forEdit),
-		model.IdValidateRule(&this.OwnerRef, !forEdit),
+		model.IdPtrValidateRule(&this.OwnerRef, !forEdit),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
@@ -68,9 +74,12 @@ func WrapRoleOwnerType(s string) *RoleOwnerType {
 	return &ot
 }
 
-func RoleOwnerTypeValidateRule(field any, isRequired bool) *val.FieldRules {
+func RoleOwnerTypeValidateRule(field **RoleOwnerType, isRequired bool) *val.FieldRules {
 	return val.Field(field,
-		val.RequiredWhen(isRequired),
-		val.OneOf(RoleOwnerTypeUser, RoleOwnerTypeGroup),
+		val.NotNilWhen(isRequired),
+		val.When(*field != nil,
+			val.NotEmpty,
+			val.OneOf(RoleOwnerTypeUser, RoleOwnerTypeGroup),
+		),
 	)
 }

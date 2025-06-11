@@ -67,7 +67,9 @@ func (this *UserHandler) GetUserById(ctx context.Context, packet *cqrs.RequestPa
 func (this *UserHandler) SearchUsers(ctx context.Context, packet *cqrs.RequestPacket[it.SearchUsersCommand]) (*cqrs.Reply[it.SearchUsersResult], error) {
 	cmd := packet.Request()
 	result, err := this.UserSvc.SearchUsers(ctx, *cmd)
-	ft.PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 
 	reply := &cqrs.Reply[it.SearchUsersResult]{
 		Result: *result,
@@ -75,10 +77,22 @@ func (this *UserHandler) SearchUsers(ctx context.Context, packet *cqrs.RequestPa
 	return reply, nil
 }
 
-// func (this *UserCommandHandler) HandleGetUserByUsername(ctx context.Context, query *GetUserByUsernameQuery) (*User, error) {
-// 	return this.repo.FindByUsername(ctx, query.Username)
-// }
+func (this *UserHandler) UserExists(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsCommand]) (*cqrs.Reply[it.UserExistsResult], error) {
+	cmd := packet.Request()
+	result, err := this.UserSvc.Exists(ctx, *cmd)
+	ft.PanicOnErr(err)
 
-// func (this *UserCommandHandler) HandleGetUserByEmail(ctx context.Context, query *GetUserByEmailQuery) (*User, error) {
-// 	return this.repo.FindByEmail(ctx, query.Email)
-// }
+	return &cqrs.Reply[it.UserExistsResult]{
+		Result: *result,
+	}, nil
+}
+
+func (this *UserHandler) UserExistsMulti(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsMultiCommand]) (*cqrs.Reply[it.UserExistsMultiResult], error) {
+	cmd := packet.Request()
+	result, err := this.UserSvc.ExistsMulti(ctx, *cmd)
+	ft.PanicOnErr(err)
+
+	return &cqrs.Reply[it.UserExistsMultiResult]{
+		Result: *result,
+	}, nil
+}

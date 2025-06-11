@@ -12,7 +12,7 @@ type AnyOperator = func(string, any) Predicate
 type CollectionOperator = func(string, ...any) Predicate
 type NullOperator = func(string) Predicate
 type StringOperator = func(string, string) Predicate
-type Operator string
+type Operator = string
 
 const (
 	// Basic operators

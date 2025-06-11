@@ -28,26 +28,32 @@ type Entitlement struct {
 
 func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.ActionId, true),
+		model.IdPtrValidateRule(&this.ActionId, true),
 		val.Field(&this.ActionExpr,
-			val.Required,
+			val.NotEmpty,
 		),
 		val.Field(&this.Name,
-			val.RequiredWhen(!forEdit),
-			val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
+			val.NotNilWhen(!forEdit),
+			val.When(this.Name != nil,
+				val.NotEmpty,
+				val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
+			),
 		),
 		val.Field(&this.Description,
-			val.Length(1, model.MODEL_RULE_DESC_LENGTH),
+			val.When(this.Description != nil,
+				val.NotEmpty,
+				val.Length(1, model.MODEL_RULE_DESC_LENGTH),
+			),
 		),
-		model.IdValidateRule(&this.ResourceId, true),
+		model.IdPtrValidateRule(&this.ResourceId, true),
 		EntitlementSubjectTypeValidateRule(&this.SubjectType),
 
 		val.Field(&this.SubjectRef,
-			val.Required,
+			val.NotEmpty,
 			val.Length(1, model.MODEL_RULE_NON_NIKKI_ID_LENGTH),
 		),
 		val.Field(&this.ScopeRef,
-			val.Required,
+			val.NotEmpty,
 			val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
 		),
 	}
@@ -89,9 +95,9 @@ func WrapEntitlementSubjectTypeEnt(s entEntitlement.SubjectType) *EntitlementSub
 	return &st
 }
 
-func EntitlementSubjectTypeValidateRule(field any) *val.FieldRules {
+func EntitlementSubjectTypeValidateRule(field **EntitlementSubjectType) *val.FieldRules {
 	return val.Field(field,
-		val.Required,
+		val.NotEmpty,
 		val.OneOf(EntitlementSubjectTypeNikkiUser, EntitlementSubjectTypeCustom),
 	)
 }

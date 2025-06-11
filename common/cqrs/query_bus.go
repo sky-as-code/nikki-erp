@@ -171,7 +171,9 @@ func (this *QueryBus) InvocationsCount() int {
 // Send sends command to the command bus.
 func (this QueryBus) Send(ctx context.Context, query any) (_ <-chan Reply, err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "QueryBus.Send")
+		if e := ft.RecoverPanic(recover(), "QueryBus.Send"); e != nil {
+			err = e
+		}
 	}()
 
 	packet := NewQueryPacket(query)

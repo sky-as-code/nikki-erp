@@ -16,7 +16,7 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "email", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString, Unique: true, Collation: "vi-x-icu"},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "org_id", Type: field.TypeString, Nullable: true},
 	}
@@ -92,7 +92,7 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "avatar_url", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "display_name", Type: field.TypeString},
+		{Name: "display_name", Type: field.TypeString, Collation: "vi-x-icu"},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "failed_login_attempts", Type: field.TypeInt, Default: 0},

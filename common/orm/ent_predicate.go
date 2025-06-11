@@ -32,7 +32,7 @@ func (this Condition) Field() string {
 }
 
 func (this Condition) Operator() Operator {
-	return Operator(this[1].(string))
+	return this[1].(Operator)
 }
 
 func (this Condition) Value() any {
@@ -46,13 +46,13 @@ func (this Condition) Values() []any {
 func (this Condition) Validate() ft.ValidationErrors {
 	vErr := ft.NewValidationErrors()
 	if len(this) < 3 {
-		vErr.Appendf("query.condition", "condition '%s' must have at least 3 parts", this)
+		vErr.Appendf("graph.condition", "condition '%s' must have at least 3 parts", this)
 		return vErr
 	}
 
 	for _, part := range this {
 		if len(fmt.Sprint(part)) == 0 {
-			vErr.Appendf("query.condition", "condition '%s' must have all non-empty parts", this)
+			vErr.Appendf("graph.condition", "condition '%s' must have all non-empty parts", this)
 			return vErr
 		}
 	}
@@ -74,7 +74,7 @@ func (this Condition) ToPredicate(entityName string) (Predicate, ft.ValidationEr
 
 	entity, ok := GetEntity(entityName)
 	if !ok {
-		vErr.Appendf("query.condition", "unrecognized entity '%s'", entityName)
+		vErr.Appendf("graph.condition", "unrecognized entity '%s'", entityName)
 		return nil, vErr
 	}
 
@@ -101,7 +101,7 @@ func (this Condition) ToPredicate(entityName string) (Predicate, ft.ValidationEr
 
 	hasEdgeWithFn := entity.Edges[edgeName]
 	if hasEdgeWithFn == nil {
-		vErr.Appendf("query.condition", "unrecognized relationship '%s' in condition '%s'", edgeName, this)
+		vErr.Appendf("graph.condition", "unrecognized relationship '%s' in condition '%s'", edgeName, this)
 		return nil, vErr
 	}
 
@@ -123,14 +123,14 @@ func (this Condition) toSimplePredicate(entity *EntityDescriptor) (Predicate, ft
 	vErr := ft.NewValidationErrors()
 	fieldType, err := entity.MatchFieldType(field, value)
 	if err != nil {
-		vErr.Appendf("query.condition", "%s in condition '%s'", err.Error(), this)
+		vErr.Appendf("graph.condition", "%s in condition '%s'", err.Error(), this)
 		return nil, vErr
 	}
 
 	if anyOp, ok := AnyOperators[operator]; ok {
 		converted, err := util.ConvertType(value, fieldType)
 		if err != nil {
-			vErr.Appendf("query.condition", "%s in condition '%s'", err.Error(), this)
+			vErr.Appendf("graph.condition", "%s in condition '%s'", err.Error(), this)
 			return nil, vErr
 		}
 		return anyOp(field, converted), nil
@@ -150,7 +150,7 @@ func (this Condition) toSimplePredicate(entity *EntityDescriptor) (Predicate, ft
 		return stringOp(field, fmt.Sprint(value)), nil
 	}
 
-	vErr.Appendf("query.condition", "invalid operator '%s' in condition '%s'", operator, this)
+	vErr.Appendf("graph.condition", "invalid operator '%s' in condition '%s'", operator, this)
 	return nil, vErr
 }
 
@@ -166,53 +166,112 @@ var orderTermMap = map[OrderDirection]sql.OrderTermOption{
 	Desc: sql.OrderDesc(),
 }
 
-type SearchOrder struct {
-	Field     string         `json:"field"`
-	Direction OrderDirection `json:"dir"`
+// type SearchOrder struct {
+// 	Field     string         `json:"field"`
+// 	Direction OrderDirection `json:"dir"`
+// }
+
+type SearchOrderItem []string
+
+func (this SearchOrderItem) Field() string {
+	return this[0]
 }
 
-func (this SearchOrder) Validate(entityName string) ft.ValidationErrors {
-	vErr := ft.NewValidationErrors()
-	if this.Direction != Asc && this.Direction != Desc {
-		vErr.Appendf("query.order", "invalid order direction '%s'", this.Direction)
-		return vErr
+func (this SearchOrderItem) Direction() OrderDirection {
+	if len(this) == 2 {
+		return OrderDirection(strings.ToLower(this[1]))
+	}
+	return Asc
+}
+
+func (this SearchOrderItem) Validate(entityName string) *ft.ValidationErrorItem {
+	var field string
+	var direction *OrderDirection
+	length := len(this)
+	if length == 2 {
+		direction = util.ToPtr(OrderDirection(strings.ToLower(this[1])))
+	} else if length == 1 {
+		direction = nil
+	} else {
+		return &ft.ValidationErrorItem{
+			Field: "graph.order",
+			Error: fmt.Sprintf("invalid order '%s'", this),
+		}
+	}
+
+	field = this[0]
+
+	if direction != nil && *direction != Asc && *direction != Desc {
+		return &ft.ValidationErrorItem{
+			Field: "graph.order",
+			Error: fmt.Sprintf("invalid order direction '%s'", *direction),
+		}
 	}
 
 	entity, ok := GetEntity(entityName)
 	if !ok {
-		vErr.Appendf("query.condition", "unrecognized entity '%s'", entityName)
-		return vErr
-	}
-
-	_, err := entity.FieldType(this.Field)
-	if err != nil {
-		vErr.Appendf("query.condition", "%s in condition '%s'", err.Error(), this)
-		return vErr
-	}
-
-	return vErr
-}
-
-func (this SearchOrder) ToOrderOption(entityName string) OrderOption {
-	term := orderTermMap[this.Direction]
-	return sql.OrderByField(this.Field, term).ToFunc()
-}
-
-func ValidateSearchOrders(orders []SearchOrder, entityName string) ft.ValidationErrors {
-	vErr := ft.NewValidationErrors()
-	for _, order := range orders {
-		if err := order.Validate(entityName); err != nil {
-			vErr.Appendf("query.order", "%s in order '%s'", err.Error(), order)
+		return &ft.ValidationErrorItem{
+			Field: "graph.order",
+			Error: fmt.Sprintf("unrecognized entity '%s'", entityName),
 		}
 	}
+
+	_, err := entity.FieldType(field)
+	if err != nil {
+		return &ft.ValidationErrorItem{
+			Field: "graph.order",
+			Error: fmt.Sprintf("%s in order '%s'", err.Error(), this),
+		}
+	}
+
+	return nil
+}
+
+type SearchOrder []SearchOrderItem
+
+func (this SearchOrder) Validate(entityName string) ft.ValidationErrors {
+	vErr := ft.NewValidationErrors()
+
+	for i, item := range this {
+		if err := item.Validate(entityName); err != nil {
+			vErr.Appendf(
+				fmt.Sprintf("graph.order.%d", i),
+				"%s in order '%s'", err.Error, item,
+			)
+		}
+	}
+
 	return vErr
 }
 
+func (this SearchOrder) ToOrderOptions(entityName string) ([]OrderOption, ft.ValidationErrors) {
+	if vErr := this.Validate(entityName); vErr.Count() > 0 {
+		return nil, vErr
+	}
+
+	opts := make([]OrderOption, 0, len(this))
+	for _, item := range this {
+		term := orderTermMap[item.Direction()]
+		opts = append(opts, sql.OrderByField(item.Field(), term).ToFunc())
+	}
+	return opts, nil
+}
+
+// func ValidateSearchOrders(orders []SearchOrder, entityName string) ft.ValidationErrors {
+// 	vErr := ft.NewValidationErrors()
+// 	for _, order := range orders {
+// 		if err := order.Validate(entityName); err != nil {
+// 			vErr.Appendf("graph.order", "%s in order '%s'", err.Error(), order)
+// 		}
+// 	}
+// 	return vErr
+// }
+
 type SearchGraph struct {
-	Condition *Condition    `json:"if,omitempty"`
-	And       []SearchNode  `json:"and,omitempty"`
-	Or        []SearchNode  `json:"or,omitempty"`
-	Order     []SearchOrder `json:"order,omitempty"`
+	Condition *Condition   `json:"if,omitempty"`
+	And       []SearchNode `json:"and,omitempty"`
+	Or        []SearchNode `json:"or,omitempty"`
+	Order     SearchOrder  `json:"order,omitempty"`
 }
 
 func (this SearchGraph) ToPredicate(entityName string) (Predicate, ft.ValidationErrors) {
@@ -248,19 +307,14 @@ func (this SearchGraph) ToPredicate(entityName string) (Predicate, ft.Validation
 	return NoopPredicate, nil
 }
 
-func ToOrder(entityName string, graph SearchGraph) ([]OrderOption, ft.ValidationErrors) {
-	if vErr := ValidateSearchOrders(graph.Order, entityName); vErr != nil {
-		return nil, vErr
-	}
+// func ToOrder(entityName string, graph SearchGraph) ([]OrderOption, ft.ValidationErrors) {
+// 	if vErr := graph.Order.Validate(entityName); vErr != nil {
+// 		return nil, vErr
+// 	}
 
-	orders := make([]OrderOption, 0, len(graph.Order))
-	for _, order := range graph.Order {
-		orderOpt := order.ToOrderOption(entityName)
-		orders = append(orders, orderOpt)
-	}
-
-	return orders, nil
-}
+// 	orders := graph.Order.ToOrderOptions(entityName)
+// 	return orders, nil
+// }
 
 // SearchNode represents a complex search criteria, its fields are mutually exclusive,
 // which means only one field can be set at a time, the precedence is:

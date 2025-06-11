@@ -5,8 +5,8 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	entGroup "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
@@ -25,48 +25,48 @@ type GroupEntRepository struct {
 
 func (this *GroupEntRepository) Create(ctx context.Context, group domain.Group) (*domain.Group, error) {
 	creation := this.client.Group.Create().
-		SetID(group.Id.String()).
+		SetID(*group.Id).
 		SetName(*group.Name).
 		SetNillableDescription(group.Description).
-		SetNillableOrgID(model.IdToNillableStr(group.OrgId)).
-		SetEtag(group.Etag.String())
+		SetNillableOrgID(group.OrgId).
+		SetEtag(*group.Etag)
 
-	return Mutate(ctx, creation, entToGroup)
+	return db.Mutate(ctx, creation, entToGroup)
 }
 
 func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group) (*domain.Group, error) {
-	update := this.client.Group.UpdateOneID(group.Id.String()).
+	update := this.client.Group.UpdateOneID(*group.Id).
 		SetName(*group.Name).
 		SetNillableDescription(group.Description).
-		SetEtag(group.Etag.String()).
-		SetNillableOrgID(model.IdToNillableStr(group.OrgId))
+		SetEtag(*group.Etag).
+		SetNillableOrgID(group.OrgId)
 
-	return Mutate(ctx, update, entToGroup)
+	return db.Mutate(ctx, update, entToGroup)
 }
 
-func (this *GroupEntRepository) Delete(ctx context.Context, id model.Id) error {
-	return Delete[ent.Group](ctx, this.client.Group.DeleteOneID(id.String()))
+func (this *GroupEntRepository) Delete(ctx context.Context, param it.DeleteParam) error {
+	return db.Delete[ent.Group](ctx, this.client.Group.DeleteOneID(param.Id))
 }
 
 func (this *GroupEntRepository) FindById(ctx context.Context, param it.GetGroupByIdQuery) (*domain.Group, error) {
 	dbQuery := this.client.Group.Query().
-		Where(entGroup.ID(param.Id.String()))
-	if *param.WithOrg {
+		Where(entGroup.ID(param.Id))
+	if param.WithOrg != nil && *param.WithOrg {
 		dbQuery = dbQuery.WithOrg()
 	}
-	return FindOne(ctx, dbQuery, entToGroup)
+	return db.FindOne(ctx, dbQuery, entToGroup)
 }
 
-func (this *GroupEntRepository) FindByName(ctx context.Context, name string) (*domain.Group, error) {
-	return FindOne(
+func (this *GroupEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Group, error) {
+	return db.FindOne(
 		ctx,
-		this.client.Group.Query().Where(entGroup.Name(name)),
+		this.client.Group.Query().Where(entGroup.Name(param.Name)),
 		entToGroup,
 	)
 }
 
 func (this *GroupEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return ParseSearchGraphStr[ent.Group, domain.Group](criteria)
+	return db.ParseSearchGraphStr[ent.Group, domain.Group](criteria, entGroup.Label)
 }
 
 func (this *GroupEntRepository) Search(
@@ -75,7 +75,7 @@ func (this *GroupEntRepository) Search(
 	order []orm.OrderOption,
 	opts crud.PagingOptions,
 ) (*crud.PagedResult[domain.Group], error) {
-	return Search(
+	return db.Search(
 		ctx,
 		predicate,
 		order,
@@ -85,9 +85,30 @@ func (this *GroupEntRepository) Search(
 	)
 }
 
+func (this *GroupEntRepository) AddRemoveUsers(ctx context.Context, param it.AddRemoveUsersParam) (*ft.ClientError, error) {
+	err := this.client.Group.UpdateOneID(param.GroupId).
+		AddUserIDs(param.Add...).
+		RemoveUserIDs(param.Remove...).
+		SetEtag(param.Etag).
+		Exec(ctx)
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return &ft.ClientError{
+				Code:    "not_found",
+				Details: "some resource doesn't exist",
+			}, nil
+		}
+		return nil, err
+	}
+
+	return nil, nil
+}
+
 func BuildGroupDescriptor() *orm.EntityDescriptor {
 	entity := ent.Group{}
 	builder := orm.DescribeEntity(entGroup.Label).
+		Aliases("groups").
 		Field(entGroup.FieldCreatedAt, entity.CreatedAt).
 		Field(entGroup.FieldDescription, entity.Description).
 		Field(entGroup.FieldID, entity.ID).

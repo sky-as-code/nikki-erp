@@ -26,12 +26,15 @@ type Resource struct {
 func (this *Resource) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Name,
-			val.Required,
+			val.NotEmpty,
 			val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9]+$`)), // alphanumeric
 			val.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
 		),
 		val.Field(&this.Description,
-			val.Length(1, model.MODEL_RULE_DESC_LENGTH),
+			val.When(this.Description != nil,
+				val.NotEmpty,
+				val.Length(1, model.MODEL_RULE_DESC_LENGTH),
+			),
 		),
 		ResourceScopeTypeValidateRule(&this.ScopeType),
 	}
@@ -71,7 +74,7 @@ func WrapResourceTypeEnt(s entResource.ResourceType) *ResourceType {
 
 func ResourceTypeValidateRule(field any) *val.FieldRules {
 	return val.Field(field,
-		val.Required,
+		val.NotEmpty,
 		val.OneOf(ResourceTypeNikkiApplication, ResourceTypeCustom),
 	)
 }
@@ -109,7 +112,7 @@ func WrapResourceScopeTypeEnt(s entResource.ScopeType) *ResourceScopeType {
 
 func ResourceScopeTypeValidateRule(field any) *val.FieldRules {
 	return val.Field(field,
-		val.Required,
+		val.NotEmpty,
 		val.OneOf(ResourceScopeTypeOrg, ResourceScopeTypeHierarchy, ResourceScopeTypePrivate),
 	)
 }

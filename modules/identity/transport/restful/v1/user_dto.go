@@ -10,34 +10,10 @@ import (
 )
 
 type CreateUserRequest = it.CreateUserCommand
-
-type CreateUserResponse struct {
-	Id        string `json:"id,omitempty"`
-	CreatedAt int64  `json:"createdAt,omitempty"`
-	Etag      string `json:"etag,omitempty"`
-	Status    string `json:"status,omitempty"`
-}
-
-func (this *CreateUserResponse) FromUser(user domain.User) {
-	this.Id = user.Id.String()
-	this.CreatedAt = user.CreatedAt.Unix()
-	this.Etag = user.Etag.String()
-	this.Status = user.Status.String()
-}
+type CreateUserResponse = GetUserByIdResponse
 
 type UpdateUserRequest = it.UpdateUserCommand
-
-type UpdateUserResponse struct {
-	Id        string `json:"id,omitempty"`
-	UpdatedAt int64  `json:"updatedAt,omitempty"`
-	Etag      string `json:"etag,omitempty"`
-}
-
-func (this *UpdateUserResponse) FromUser(user domain.User) {
-	this.Id = user.Id.String()
-	this.UpdatedAt = user.UpdatedAt.Unix()
-	this.Etag = user.Etag.String()
-}
+type UpdateUserResponse = GetUserByIdResponse
 
 type DeleteUserRequest = it.DeleteUserCommand
 
@@ -48,23 +24,25 @@ type DeleteUserResponse struct {
 type GetUserByIdRequest = it.GetUserByIdQuery
 
 type GetUserByIdResponse struct {
-	Id          string `json:"id,omitempty"`
-	AvatarUrl   string `json:"avatarUrl,omitempty"`
-	CreatedAt   int64  `json:"createdAt,omitempty"`
-	DisplayName string `json:"displayName,omitempty"`
-	Email       string `json:"email,omitempty"`
-	Etag        string `json:"etag,omitempty"`
-	Status      string `json:"status,omitempty"`
+	Id          model.Id   `json:"id,omitempty"`
+	AvatarUrl   *string    `json:"avatarUrl,omitempty"`
+	CreatedAt   int64      `json:"createdAt,omitempty"`
+	DisplayName string     `json:"displayName,omitempty"`
+	Email       string     `json:"email,omitempty"`
+	Etag        model.Etag `json:"etag,omitempty"`
+	Status      string     `json:"status,omitempty"`
+	UpdatedAt   *int64     `json:"updatedAt,omitempty"`
 }
 
 func (this *GetUserByIdResponse) FromUser(user domain.User) {
-	this.Id = user.Id.String()
-	this.CreatedAt = user.CreatedAt.Unix()
-	this.Etag = user.Etag.String()
-	// this.DisplayName = *user.DisplayName
-	// this.Email = *user.Email
-	// this.AvatarUrl = *user.AvatarUrl
+	this.Id = *user.Id
+	this.AvatarUrl = user.AvatarUrl
+	this.CreatedAt = user.CreatedAt.UnixMilli()
+	this.DisplayName = *user.DisplayName
+	this.Email = *user.Email
+	this.Etag = *user.Etag
 	this.Status = user.Status.String()
+	this.UpdatedAt = safe.GetTimeUnixMilli(user.UpdatedAt)
 }
 
 type SearchUsersRequest = it.SearchUsersCommand
@@ -77,7 +55,7 @@ type SearchUsersResponseItem struct {
 	Status      domain.UserStatus            `json:"status"`
 	Groups      []SearchUsersRespGroups      `json:"groups"`
 	Hierarchies []SearchUsersRespHierarchies `json:"hierarchies"`
-	Orgs        []SearchUsersRespOrgs        `json:"orgs"`
+	Orgs        []GetGroupRespOrg            `json:"orgs"`
 }
 
 func (this *SearchUsersResponseItem) FromUser(user domain.User) {
@@ -99,8 +77,8 @@ func (this *SearchUsersResponseItem) FromUser(user domain.User) {
 		return hierarhyResp
 	})
 
-	this.Orgs = array.Map(user.Orgs, func(org domain.Organization) SearchUsersRespOrgs {
-		orgResp := SearchUsersRespOrgs{}
+	this.Orgs = array.Map(user.Orgs, func(org domain.Organization) GetGroupRespOrg {
+		orgResp := GetGroupRespOrg{}
 		orgResp.FromOrg(org)
 		return orgResp
 	})
@@ -132,7 +110,7 @@ type SearchUsersRespOrgs struct {
 	Slug        model.Slug `json:"slug"`
 }
 
-func (this *SearchUsersRespOrgs) FromOrg(org domain.Organization) {
+func (this *GetGroupRespOrg) FromOrg(org domain.Organization) {
 	this.Id = *org.Id
 	this.DisplayName = *org.DisplayName
 	this.Slug = *org.Slug
@@ -155,3 +133,6 @@ func (this *SearchUsersResponse) FromResult(result *it.SearchUsersResultData) {
 		return item
 	}).([]SearchUsersResponseItem)
 }
+
+type UserExistsMultiRequest = it.UserExistsMultiCommand
+type UserExistsMultiResponse = it.ExistsMultiResultData

@@ -8,15 +8,10 @@ import (
 	"go.bryk.io/pkg/ulid"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	util "github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
 
-type Id string
-
-func (this Id) String() string {
-	return string(this)
-}
+type Id = string
 
 func NewId() (*Id, error) {
 	newUlid, err := ulid.New()
@@ -27,47 +22,43 @@ func NewId() (*Id, error) {
 	return &id, nil
 }
 
-func WrapId(s string) *Id {
-	id := Id(s)
-	return &id
-}
-
-func WrapNillableId(s *string) *Id {
-	if s == nil {
-		return nil
-	}
-	id := Id(*s)
-	return &id
-}
-
-func IdToNillableStr(id *Id) *string {
-	if id == nil {
-		return nil
-	}
-	return util.ToPtr(id.String())
-}
-
-func IdValidateRule(field any, isRequired bool) *val.FieldRules {
+func IdPtrValidateRule(field **Id, isRequired bool) *val.FieldRules {
 	return val.Field(field,
 		val.NotNilWhen(isRequired),
-		val.NotEmpty,
+		val.When(*field != nil,
+			val.NotEmpty,
+			val.Length(MODEL_RULE_ULID_LENGTH, MODEL_RULE_ULID_LENGTH),
+		),
+	)
+}
+
+func IdValidateRule(field *Id, isRequired bool) *val.FieldRules {
+	return val.Field(field,
+		val.NotEmptyWhen(isRequired),
 		val.Length(MODEL_RULE_ULID_LENGTH, MODEL_RULE_ULID_LENGTH),
 	)
 }
 
-type Etag string
-
-func (this Etag) String() string {
-	return string(this)
+func IdValidateRuleMulti(field *[]Id, isRequired bool, minLength int, maxLength int) *val.FieldRules {
+	return val.Field(field,
+		val.NotNilWhen(isRequired),
+		val.When(*field != nil,
+			val.When(minLength > 0,
+				val.NotEmpty,
+			),
+			val.Length(minLength, maxLength),
+			val.Each(
+				val.NotEmpty,
+				val.Length(MODEL_RULE_ULID_LENGTH, MODEL_RULE_ULID_LENGTH),
+			),
+		),
+	)
 }
+
+type Etag = string
 
 func NewEtag() *Etag {
 	etag := Etag(fmt.Sprintf("%d", time.Now().UnixNano()))
-	return &etag
-}
-
-func WrapEtag(s string) *Etag {
-	etag := Etag(s)
 	return &etag
 }
 
@@ -79,16 +70,7 @@ func EtagValidateRule(field any, isRequired bool) *val.FieldRules {
 	)
 }
 
-type Slug string
-
-func (this Slug) String() string {
-	return string(this)
-}
-
-func WrapSlug(s string) *Slug {
-	slug := Slug(s)
-	return &slug
-}
+type Slug = string
 
 func SlugValidateRule(field any, isRequired bool) *val.FieldRules {
 	return val.Field(field,
