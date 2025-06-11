@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 
@@ -220,9 +219,12 @@ func (thisSvc *GroupServiceImpl) SearchGroups(ctx context.Context, query itGrp.S
 	}
 	query.SetDefaults()
 
-	groups, err := thisSvc.groupRepo.Search(ctx, predicate, order, crud.PagingOptions{
-		Page: *query.Page,
-		Size: *query.Size,
+	groups, err := thisSvc.groupRepo.Search(ctx, itGrp.SearchParam{
+		Predicate: predicate,
+		Order:     order,
+		Page:      *query.Page,
+		Size:      *query.Size,
+		WithOrg:   query.WithOrg,
 	})
 	ft.PanicOnErr(err)
 
@@ -272,34 +274,4 @@ func (this *GroupServiceImpl) assertUniqueGroupName(ctx context.Context, valErrs
 	if dbGroup != nil {
 		valErrs.Append("name", "group name already exists")
 	}
-}
-
-func (this *GroupServiceImpl) SearchGroups(ctx context.Context, query it.SearchGroupsCommand) (result *it.SearchGroupsResult, err error) {
-	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to list groups")
-	}()
-
-	vErrsModel := query.Validate()
-	predicate, order, vErrsGraph := this.groupRepo.ParseSearchGraph(query.Graph)
-
-	vErrsModel.Merge(vErrsGraph)
-
-	if vErrsModel.Count() > 0 {
-		return &it.SearchGroupsResult{
-			ClientError: vErrsModel.ToClientError(),
-		}, nil
-	}
-	query.SetDefaults()
-
-	groups, err := this.groupRepo.Search(ctx, predicate, order, crud.PagingOptions{
-		Page: *query.Page,
-		Size: *query.Size,
-	}, it.GetGroupByIdQuery{
-		WithOrg: query.WithOrgs,
-	})
-	ft.PanicOnErr(err)
-
-	return &it.SearchGroupsResult{
-		Data: groups,
-	}, nil
 }

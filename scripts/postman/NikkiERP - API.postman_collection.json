@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "190566ea-05e1-4897-9663-b11a73d6c1bb",
+		"_postman_id": "86e0d870-3ae7-41fb-9d8b-53feb85b5dbd",
 		"name": "NikkiERP - API",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "33688214"
+		"_exporter_id": "602425"
 	},
 	"item": [
 		{
@@ -733,7 +733,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{api_host}}/v1/identity/users?graph={\"if\":[\"groups.id\", \"=\", \"{{group_id}}\"]}&withGroup=true",
+									"raw": "{{api_host}}/v1/identity/users?graph={\"if\":[\"groups.id\", \"=\", \"{{group_id}}\"]}&withGroups=true",
 									"host": [
 										"{{api_host}}"
 									],
@@ -748,7 +748,7 @@
 											"value": "{\"if\":[\"groups.id\", \"=\", \"{{group_id}}\"]}"
 										},
 										{
-											"key": "withGroup",
+											"key": "withGroups",
 											"value": "true"
 										}
 									]

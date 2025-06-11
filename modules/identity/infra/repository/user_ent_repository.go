@@ -114,17 +114,22 @@ func (this *UserEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicat
 
 func (this *UserEntRepository) Search(
 	ctx context.Context,
-	predicate *orm.Predicate,
-	order []orm.OrderOption,
-	opts crud.PagingOptions,
+	param it.SearchParam,
 ) (*crud.PagedResult[domain.User], error) {
+	query := this.client.User.Query()
+	if param.WithGroups {
+		query = query.WithGroups()
+	}
 
 	return db.Search(
 		ctx,
-		predicate,
-		order,
-		opts,
-		this.client.User.Query(),
+		param.Predicate,
+		param.Order,
+		crud.PagingOptions{
+			Page: param.Page,
+			Size: param.Size,
+		},
+		query,
 		entToUsers,
 	)
 }

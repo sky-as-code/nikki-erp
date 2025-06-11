@@ -71,21 +71,21 @@ func (this *GroupEntRepository) ParseSearchGraph(criteria *string) (*orm.Predica
 
 func (this *GroupEntRepository) Search(
 	ctx context.Context,
-	predicate *orm.Predicate,
-	order []orm.OrderOption,
-	opts crud.PagingOptions,
-	param it.GetGroupByIdQuery,
+	param it.SearchParam,
 ) (*crud.PagedResult[domain.Group], error) {
 	query := this.client.Group.Query()
-	if param.WithOrg != nil && *param.WithOrg {
+	if param.WithOrg {
 		query = query.WithOrg()
 	}
 
-	return Search(
+	return db.Search(
 		ctx,
-		predicate,
-		order,
-		opts,
+		param.Predicate,
+		param.Order,
+		crud.PagingOptions{
+			Page: param.Page,
+			Size: param.Size,
+		},
 		query,
 		entToGroups,
 	)
