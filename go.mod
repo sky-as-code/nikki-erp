@@ -34,7 +34,17 @@ require (
 )
 
 require (
+	github.com/Rican7/retry v0.3.1 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
+	google.golang.org/appengine v1.6.8 // indirect
+)
+
+require (
 	ariga.io/atlas v0.31.1-0.20250212144724-069be8033e83 // indirect
+	github.com/ThreeDotsLabs/watermill-redisstream v1.4.3
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
@@ -65,6 +75,7 @@ require (
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/redis/go-redis/v9 v9.10.0
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/scylladb/go-reflectx v1.0.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
