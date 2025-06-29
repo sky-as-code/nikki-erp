@@ -39,10 +39,15 @@ type EventBusParams struct {
 }
 
 func NewRedisEventBus(params EventBusParams) (EventBus, error) {
+	host := params.Config.GetStr(c.EventBusRedisHost)
+	port := params.Config.GetStr(c.EventBusRedisPort)
+	password := params.Config.GetStr(c.EventBusRedisPassword)
+	db := params.Config.GetInt(c.EventBusRedisDB)
+
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", params.Config.GetStr(c.EventBusRedisHost, "localhost"), params.Config.GetStr(c.EventBusRedisPort, "7379")),
-		Password: params.Config.GetStr(c.EventBusRedisPassword, "nikki_password"),
-		DB:       params.Config.GetInt(c.EventBusRedisDB, "0"),
+		Addr:     fmt.Sprintf("%s:%s", host, port),
+		Password: password,
+		DB:       db,
 	})
 
 	publisher, err := redisstream.NewPublisher(

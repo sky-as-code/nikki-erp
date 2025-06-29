@@ -7,6 +7,10 @@
 		"DB_NAME": "nikki_erp",
 		"DB_PG_SSL_MODE": "disable",
 
+		"EVENT_BUS_REDIS_HOST": "localhost",
+		"EVENT_BUS_REDIS_PORT": "6379",
+		"EVENT_BUS_REDIS_DB": "1",
+
 		"HTTP_PORT": "8080"
 	},
 	"local": {
