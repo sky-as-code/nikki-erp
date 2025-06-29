@@ -19,6 +19,15 @@ const (
 	// CQRS pubsub
 	CqrsRequestTimeoutSecs ConfigName = "CQRS_REQUEST_TIMEOUT_SECS"
 
+	// Event Bus
+	EventRequestTimeoutSecs ConfigName = "EVENT_REQUEST_TIMEOUT_SECS"
+
+	// Event Bus Redis
+	EventBusRedisHost     ConfigName = "EVENT_BUS_REDIS_HOST"
+	EventBusRedisPort     ConfigName = "EVENT_BUS_REDIS_PORT"
+	EventBusRedisPassword ConfigName = "EVENT_BUS_REDIS_PASSWORD"
+	EventBusRedisDB       ConfigName = "EVENT_BUS_REDIS_DB"
+
 	// HTTP Server
 	HttpBasePath    ConfigName = "HTTP_BASE_PATH"
 	HttpHost        ConfigName = "HTTP_HOST"

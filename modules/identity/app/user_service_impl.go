@@ -4,23 +4,27 @@ import (
 	"context"
 	"time"
 
+	"go.bryk.io/pkg/ulid"
 	"golang.org/x/crypto/bcrypt"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	util "github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
-func NewUserServiceImpl(userRepo it.UserRepository) it.UserService {
+func NewUserServiceImpl(userRepo it.UserRepository, eventBus event.EventBus) it.UserService {
 	return &UserServiceImpl{
 		userRepo: userRepo,
+		eventBus: eventBus,
 	}
 }
 
 type UserServiceImpl struct {
 	userRepo it.UserRepository
+	eventBus event.EventBus
 }
 
 func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCommand) (result *it.CreateUserResult, err error) {
@@ -121,7 +125,7 @@ func (this *UserServiceImpl) encrypt(str *string) *string {
 
 func (thisSvc *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCommand) (result *it.DeleteUserResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to update user"); e != nil {
+		if e := ft.RecoverPanic(recover(), "failed to delete user"); e != nil {
 			err = e
 		}
 	}()
@@ -146,12 +150,34 @@ func (thisSvc *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUse
 
 	err = thisSvc.userRepo.Delete(ctx, it.DeleteParam{Id: cmd.Id})
 	ft.PanicOnErr(err)
+	// Publish user deleted event
+	err = thisSvc.publishUserDeletedEvent(ctx, user)
+	ft.PanicOnErr(err)
 
 	return &it.DeleteUserResult{
 		Data: &it.DeleteUserResultData{
 			DeletedAt: time.Now(),
 		},
 	}, nil
+}
+
+// publishUserDeletedEvent publishes a "user.deleted.done" event
+func (thisSvc *UserServiceImpl) publishUserDeletedEvent(ctx context.Context, user *domain.User) error {
+	// Generate event ID
+	eventId, err := ulid.New()
+	if err != nil {
+		return err
+	}
+
+	// Create the event payload
+	userDeletedEvent := &it.UserDeletedEvent{
+		ID:        *user.Id,
+		DeletedBy: "", // You might want to get this from context or pass it as parameter
+		EventID:   eventId.String(),
+	}
+
+	// Use the interface method to publish the event
+	return thisSvc.eventBus.PublishEvent(ctx, "user.deleted.done", userDeletedEvent)
 }
 
 func (thisSvc *UserServiceImpl) Exists(ctx context.Context, cmd it.UserExistsCommand) (result *it.UserExistsResult, err error) {

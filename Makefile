@@ -130,6 +130,10 @@ infra-up:
 infra-down:
 	docker compose -f "${cwd}/scripts/docker/docker-compose.local.yml" down -v
 
+install-tools:
+	go install go.uber.org/mock/mockgen@latest
+# curl -sSf https://atlasgo.sh | sh
+
 nikki:
 	@[ -f cmd/config/local.env ] || cp cmd/config/local.env.sample cmd/config/local.env
 	APP_ENV=$(env) WORKING_DIR="$(cwd)/cmd" LOG_LEVEL="info" go run -tags=staticmods cmd/*.go
