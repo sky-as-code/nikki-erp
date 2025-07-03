@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ThreeDotsLabs/watermill/message"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
@@ -20,13 +21,18 @@ func (cfg *TestConfig) Init() error           { return nil }
 func (cfg *TestConfig) GetAppVersion() string { return "test" }
 func (cfg *TestConfig) GetStr(configName c.ConfigName, defaultVal ...any) string {
 	switch configName {
-	case "EVENT_BUS_REDIS_HOST":
+	case c.EventBusRedisHost:
 		return "localhost"
-	case "EVENT_BUS_REDIS_PORT":
+	case c.EventBusRedisPort:
 		return "7379"
-	case "EVENT_BUS_REDIS_PASSWORD":
+	case c.EventBusRedisPassword:
 		return "nikki_password"
 	default:
+		if len(defaultVal) > 0 {
+			if str, ok := defaultVal[0].(string); ok {
+				return str
+			}
+		}
 		return ""
 	}
 }
@@ -34,10 +40,24 @@ func (cfg *TestConfig) GetStrArr(configName c.ConfigName, defaultVal ...any) []s
 func (cfg *TestConfig) GetDuration(configName c.ConfigName, defaultVal ...any) time.Duration {
 	return 0
 }
-func (cfg *TestConfig) GetBool(configName c.ConfigName, defaultVal ...any) bool       { return false }
-func (cfg *TestConfig) GetUint(configName c.ConfigName, defaultVal ...any) uint       { return 0 }
-func (cfg *TestConfig) GetUint64(configName c.ConfigName, defaultVal ...any) uint64   { return 0 }
-func (cfg *TestConfig) GetInt(configName c.ConfigName, defaultVal ...any) int         { return 0 }
+func (cfg *TestConfig) GetBool(configName c.ConfigName, defaultVal ...any) bool     { return false }
+func (cfg *TestConfig) GetUint(configName c.ConfigName, defaultVal ...any) uint     { return 0 }
+func (cfg *TestConfig) GetUint64(configName c.ConfigName, defaultVal ...any) uint64 { return 0 }
+func (cfg *TestConfig) GetInt(configName c.ConfigName, defaultVal ...any) int {
+	switch configName {
+	case c.EventBusRedisDB:
+		return 0
+	case c.EventRequestTimeoutSecs:
+		return 5
+	default:
+		if len(defaultVal) > 0 {
+			if val, ok := defaultVal[0].(int); ok {
+				return val
+			}
+		}
+		return 0
+	}
+}
 func (cfg *TestConfig) GetInt32(configName c.ConfigName, defaultVal ...any) int32     { return 0 }
 func (cfg *TestConfig) GetInt64(configName c.ConfigName, defaultVal ...any) int64     { return 0 }
 func (cfg *TestConfig) GetFloat32(configName c.ConfigName, defaultVal ...any) float32 { return 0 }
@@ -74,15 +94,15 @@ type TestHandler struct {
 	messages     []string
 }
 
-func (h *TestHandler) Handle(ctx context.Context, packet *event.EventPacket) error {
+func (h *TestHandler) Handle(ctx context.Context, msg *message.Message) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	correlationId := packet.CorrelationId()
+	correlationId := msg.Metadata.Get("correlation_id")
 	h.messageCount++
 	h.messages = append(h.messages, correlationId)
 
-	fmt.Printf("📨 [%d] Received message: %s (at %s)\n",
+	fmt.Printf("[%d] Received message: %s (at %s)\n",
 		h.messageCount, correlationId, time.Now().Format("15:04:05"))
 	return nil
 }
@@ -101,8 +121,6 @@ func (h *TestHandler) GetStats() (int, []string) {
 }
 
 func TestRedisEventBusSubscribe(t *testing.T) {
-	handler := &TestHandler{}
-
 	eventBus, err := event.NewRedisEventBus(event.EventBusParams{
 		Config: &TestConfig{},
 		Logger: NewTestLogger(),
@@ -112,17 +130,127 @@ func TestRedisEventBusSubscribe(t *testing.T) {
 	}
 	defer eventBus.Close()
 
-	err = eventBus.Subscribe(context.Background(), "user.deleted.done", handler)
+	ctx := context.Background()
+
+	// Create a subscription request
+	result := &message.Payload{}
+	eventRequest := event.NewEventRequest(
+		"",
+		"user.deleted.done",
+		"user.deleted.reply",
+		nil,
+	)
+
+	requestChan, err := eventBus.SubscribeRequest(ctx, *eventRequest, result)
 	if err != nil {
 		t.Fatalf("failed to subscribe to event: %v", err)
 	}
 
-	currentCountMessages := 0
-	for {
-		count, messages := handler.GetStats()
-		if count != currentCountMessages {
-			currentCountMessages = count
-			fmt.Printf("Current message count: %d, Messages: %v\n", count, messages)
+	// Listen for messages in a goroutine
+	go func() {
+		for {
+			select {
+			case request := <-requestChan:
+				if request != nil {
+					fmt.Printf("Received request: %v (at %s)\n",
+						request, time.Now().Format("15:04:05"))
+				}
+			case <-time.After(10 * time.Minute): // Timeout after 10 minutes
+				fmt.Println("Subscription timed out after 10 minutes")
+				return
+			}
 		}
+	}()
+
+	// Wait for a few seconds to test subscription
+	time.Sleep(20 * time.Minute)
+
+	fmt.Printf("Subscription test completed\n")
+}
+
+func TestRedisEventBusPublish(t *testing.T) {
+	eventBus, err := event.NewRedisEventBus(event.EventBusParams{
+		Config: &TestConfig{},
+		Logger: NewTestLogger(),
+	})
+	if err != nil {
+		t.Fatalf("failed to create event bus: %v", err)
+	}
+	defer eventBus.Close()
+
+	ctx := context.Background()
+
+	// Publish a few test messages
+	for messageCount := 1; messageCount <= 3; messageCount++ {
+		correlationId := fmt.Sprintf("test-message-%d", messageCount)
+
+		payload := []byte(fmt.Sprintf(`{"message": "Message payload for %d"}`, messageCount))
+		eventRequest := event.NewEventRequest(
+			correlationId,
+			"user.deleted.done",
+			"user.deleted.reply",
+			&message.Message{
+				Payload: payload,
+			},
+		)
+
+		fmt.Printf("[%d] Publishing message: %s (at %s)\n",
+			messageCount, correlationId, time.Now().Format("15:04:05"))
+
+		err = eventBus.PublishRequest(ctx, *eventRequest)
+		if err != nil {
+			fmt.Printf("Failed to publish message %d: %v\n", messageCount, err)
+		} else {
+			fmt.Printf("[%d] Published successfully: %s\n", messageCount, correlationId)
+		}
+
+		time.Sleep(1 * time.Second) // Wait 1 second between messages
 	}
 }
+
+// func TestRedisEventBusPublishWaitReply(t *testing.T) {
+// 	eventBus, err := event.NewRedisEventBus(event.EventBusParams{
+// 		Config: &TestConfig{},
+// 		Logger: NewTestLogger(),
+// 	})
+// 	if err != nil {
+// 		t.Fatalf("failed to create event bus: %v", err)
+// 	}
+// 	defer eventBus.Close()
+
+// 	ctx := context.Background()
+
+// 	// Publish a few messages with wait for reply
+// 	for messageCount := 1; messageCount <= 3; messageCount++ {
+// 		correlationId := fmt.Sprintf("wait-reply-message-%d", messageCount)
+
+// 		payload := []byte(fmt.Sprintf(`{"message": "Wait reply message payload for %d"}`, messageCount))
+// 		msg := message.NewMessage(correlationId, payload)
+
+// 		eventRequest := event.NewEventRequest(
+// 			correlationId,
+// 			"identity.organization.deleted",
+// 			"identity.organization.deleted.reply",
+// 			msg,
+// 		)
+
+// 		fmt.Printf("[%d] Publishing message with wait reply: %s (at %s)\n",
+// 			messageCount, correlationId, time.Now().Format("15:04:05"))
+
+// 		// Create a timeout context for each request
+// 		timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+
+// 		var result interface{}
+// 		reply, err := eventBus.PublishRequestWaitReply(timeoutCtx, *eventRequest, &result)
+
+// 		if err != nil {
+// 			fmt.Printf("Failed to publish wait reply message %d: %v\n", messageCount, err)
+// 		} else {
+// 			fmt.Printf("[%d] Published with reply successfully: %s, Result: %v\n",
+// 				messageCount, correlationId, reply)
+// 		}
+
+// 		cancel()                    // Clean up timeout context
+// 		time.Sleep(1 * time.Second) // Wait 1 second between messages
+// 	}
+// }

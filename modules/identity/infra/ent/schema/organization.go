@@ -30,8 +30,20 @@ func (OrganizationMixin) Fields() []ent.Field {
 			Nillable().
 			Comment("Set value for this column when the process is running to delete all resources under this hierarchy level"),
 
+		field.String("address").
+			Optional().
+			Nillable(),
+
 		field.String("display_name").
 			Comment("Human-friendly-readable organization name"),
+
+		field.String("legal_name").
+			Optional().
+			Nillable(),
+
+		field.String("phone_number").
+			Optional().
+			Nillable(),
 
 		field.String("etag"),
 

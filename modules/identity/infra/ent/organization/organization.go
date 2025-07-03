@@ -19,8 +19,14 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
+	// FieldAddress holds the string denoting the address field in the database.
+	FieldAddress = "address"
 	// FieldDisplayName holds the string denoting the display_name field in the database.
 	FieldDisplayName = "display_name"
+	// FieldLegalName holds the string denoting the legal_name field in the database.
+	FieldLegalName = "legal_name"
+	// FieldPhoneNumber holds the string denoting the phone_number field in the database.
+	FieldPhoneNumber = "phone_number"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -72,7 +78,10 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldDeletedAt,
+	FieldAddress,
 	FieldDisplayName,
+	FieldLegalName,
+	FieldPhoneNumber,
 	FieldEtag,
 	FieldStatus,
 	FieldSlug,
@@ -141,9 +150,24 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
 }
 
+// ByAddress orders the results by the address field.
+func ByAddress(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAddress, opts...).ToFunc()
+}
+
 // ByDisplayName orders the results by the display_name field.
 func ByDisplayName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDisplayName, opts...).ToFunc()
+}
+
+// ByLegalName orders the results by the legal_name field.
+func ByLegalName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLegalName, opts...).ToFunc()
+}
+
+// ByPhoneNumber orders the results by the phone_number field.
+func ByPhoneNumber(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPhoneNumber, opts...).ToFunc()
 }
 
 // ByEtag orders the results by the etag field.

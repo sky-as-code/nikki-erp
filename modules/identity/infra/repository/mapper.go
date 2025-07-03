@@ -43,14 +43,19 @@ func entToGroups(dbGroups []*ent.Group) []domain.Group {
 func entToOrganization(dbOrg *ent.Organization) *domain.Organization {
 	return &domain.Organization{
 		ModelBase: model.ModelBase{
-			Id: &dbOrg.ID,
+			Id:   &dbOrg.ID,
+			Etag: &dbOrg.Etag,
 		},
 		AuditableBase: model.AuditableBase{
 			CreatedAt: &dbOrg.CreatedAt,
 			UpdatedAt: dbOrg.UpdatedAt,
 		},
+		Address:     dbOrg.Address,
 		DisplayName: &dbOrg.DisplayName,
+		LegalName:   dbOrg.LegalName,
+		PhoneNumber: dbOrg.PhoneNumber,
 		Slug:        &dbOrg.Slug,
+		Status:      domain.WrapOrgStatusEnt(dbOrg.Status),
 	}
 }
 

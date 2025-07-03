@@ -51,9 +51,51 @@ func (oc *OrganizationCreate) SetNillableDeletedAt(t *time.Time) *OrganizationCr
 	return oc
 }
 
+// SetAddress sets the "address" field.
+func (oc *OrganizationCreate) SetAddress(s string) *OrganizationCreate {
+	oc.mutation.SetAddress(s)
+	return oc
+}
+
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableAddress(s *string) *OrganizationCreate {
+	if s != nil {
+		oc.SetAddress(*s)
+	}
+	return oc
+}
+
 // SetDisplayName sets the "display_name" field.
 func (oc *OrganizationCreate) SetDisplayName(s string) *OrganizationCreate {
 	oc.mutation.SetDisplayName(s)
+	return oc
+}
+
+// SetLegalName sets the "legal_name" field.
+func (oc *OrganizationCreate) SetLegalName(s string) *OrganizationCreate {
+	oc.mutation.SetLegalName(s)
+	return oc
+}
+
+// SetNillableLegalName sets the "legal_name" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableLegalName(s *string) *OrganizationCreate {
+	if s != nil {
+		oc.SetLegalName(*s)
+	}
+	return oc
+}
+
+// SetPhoneNumber sets the "phone_number" field.
+func (oc *OrganizationCreate) SetPhoneNumber(s string) *OrganizationCreate {
+	oc.mutation.SetPhoneNumber(s)
+	return oc
+}
+
+// SetNillablePhoneNumber sets the "phone_number" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillablePhoneNumber(s *string) *OrganizationCreate {
+	if s != nil {
+		oc.SetPhoneNumber(*s)
+	}
 	return oc
 }
 
@@ -246,9 +288,21 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		_spec.SetField(organization.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = &value
 	}
+	if value, ok := oc.mutation.Address(); ok {
+		_spec.SetField(organization.FieldAddress, field.TypeString, value)
+		_node.Address = &value
+	}
 	if value, ok := oc.mutation.DisplayName(); ok {
 		_spec.SetField(organization.FieldDisplayName, field.TypeString, value)
 		_node.DisplayName = value
+	}
+	if value, ok := oc.mutation.LegalName(); ok {
+		_spec.SetField(organization.FieldLegalName, field.TypeString, value)
+		_node.LegalName = &value
+	}
+	if value, ok := oc.mutation.PhoneNumber(); ok {
+		_spec.SetField(organization.FieldPhoneNumber, field.TypeString, value)
+		_node.PhoneNumber = &value
 	}
 	if value, ok := oc.mutation.Etag(); ok {
 		_spec.SetField(organization.FieldEtag, field.TypeString, value)

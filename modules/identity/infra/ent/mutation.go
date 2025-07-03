@@ -1760,7 +1760,10 @@ type OrganizationMutation struct {
 	id                 *string
 	created_at         *time.Time
 	deleted_at         *time.Time
+	address            *string
 	display_name       *string
+	legal_name         *string
+	phone_number       *string
 	etag               *string
 	status             *organization.Status
 	slug               *string
@@ -1969,6 +1972,55 @@ func (m *OrganizationMutation) ResetDeletedAt() {
 	delete(m.clearedFields, organization.FieldDeletedAt)
 }
 
+// SetAddress sets the "address" field.
+func (m *OrganizationMutation) SetAddress(s string) {
+	m.address = &s
+}
+
+// Address returns the value of the "address" field in the mutation.
+func (m *OrganizationMutation) Address() (r string, exists bool) {
+	v := m.address
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAddress returns the old "address" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldAddress(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAddress is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAddress requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAddress: %w", err)
+	}
+	return oldValue.Address, nil
+}
+
+// ClearAddress clears the value of the "address" field.
+func (m *OrganizationMutation) ClearAddress() {
+	m.address = nil
+	m.clearedFields[organization.FieldAddress] = struct{}{}
+}
+
+// AddressCleared returns if the "address" field was cleared in this mutation.
+func (m *OrganizationMutation) AddressCleared() bool {
+	_, ok := m.clearedFields[organization.FieldAddress]
+	return ok
+}
+
+// ResetAddress resets all changes to the "address" field.
+func (m *OrganizationMutation) ResetAddress() {
+	m.address = nil
+	delete(m.clearedFields, organization.FieldAddress)
+}
+
 // SetDisplayName sets the "display_name" field.
 func (m *OrganizationMutation) SetDisplayName(s string) {
 	m.display_name = &s
@@ -2003,6 +2055,104 @@ func (m *OrganizationMutation) OldDisplayName(ctx context.Context) (v string, er
 // ResetDisplayName resets all changes to the "display_name" field.
 func (m *OrganizationMutation) ResetDisplayName() {
 	m.display_name = nil
+}
+
+// SetLegalName sets the "legal_name" field.
+func (m *OrganizationMutation) SetLegalName(s string) {
+	m.legal_name = &s
+}
+
+// LegalName returns the value of the "legal_name" field in the mutation.
+func (m *OrganizationMutation) LegalName() (r string, exists bool) {
+	v := m.legal_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLegalName returns the old "legal_name" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldLegalName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLegalName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLegalName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLegalName: %w", err)
+	}
+	return oldValue.LegalName, nil
+}
+
+// ClearLegalName clears the value of the "legal_name" field.
+func (m *OrganizationMutation) ClearLegalName() {
+	m.legal_name = nil
+	m.clearedFields[organization.FieldLegalName] = struct{}{}
+}
+
+// LegalNameCleared returns if the "legal_name" field was cleared in this mutation.
+func (m *OrganizationMutation) LegalNameCleared() bool {
+	_, ok := m.clearedFields[organization.FieldLegalName]
+	return ok
+}
+
+// ResetLegalName resets all changes to the "legal_name" field.
+func (m *OrganizationMutation) ResetLegalName() {
+	m.legal_name = nil
+	delete(m.clearedFields, organization.FieldLegalName)
+}
+
+// SetPhoneNumber sets the "phone_number" field.
+func (m *OrganizationMutation) SetPhoneNumber(s string) {
+	m.phone_number = &s
+}
+
+// PhoneNumber returns the value of the "phone_number" field in the mutation.
+func (m *OrganizationMutation) PhoneNumber() (r string, exists bool) {
+	v := m.phone_number
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPhoneNumber returns the old "phone_number" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldPhoneNumber(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPhoneNumber is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPhoneNumber requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPhoneNumber: %w", err)
+	}
+	return oldValue.PhoneNumber, nil
+}
+
+// ClearPhoneNumber clears the value of the "phone_number" field.
+func (m *OrganizationMutation) ClearPhoneNumber() {
+	m.phone_number = nil
+	m.clearedFields[organization.FieldPhoneNumber] = struct{}{}
+}
+
+// PhoneNumberCleared returns if the "phone_number" field was cleared in this mutation.
+func (m *OrganizationMutation) PhoneNumberCleared() bool {
+	_, ok := m.clearedFields[organization.FieldPhoneNumber]
+	return ok
+}
+
+// ResetPhoneNumber resets all changes to the "phone_number" field.
+func (m *OrganizationMutation) ResetPhoneNumber() {
+	m.phone_number = nil
+	delete(m.clearedFields, organization.FieldPhoneNumber)
 }
 
 // SetEtag sets the "etag" field.
@@ -2358,15 +2508,24 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 10)
 	if m.created_at != nil {
 		fields = append(fields, organization.FieldCreatedAt)
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, organization.FieldDeletedAt)
 	}
+	if m.address != nil {
+		fields = append(fields, organization.FieldAddress)
+	}
 	if m.display_name != nil {
 		fields = append(fields, organization.FieldDisplayName)
+	}
+	if m.legal_name != nil {
+		fields = append(fields, organization.FieldLegalName)
+	}
+	if m.phone_number != nil {
+		fields = append(fields, organization.FieldPhoneNumber)
 	}
 	if m.etag != nil {
 		fields = append(fields, organization.FieldEtag)
@@ -2392,8 +2551,14 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case organization.FieldDeletedAt:
 		return m.DeletedAt()
+	case organization.FieldAddress:
+		return m.Address()
 	case organization.FieldDisplayName:
 		return m.DisplayName()
+	case organization.FieldLegalName:
+		return m.LegalName()
+	case organization.FieldPhoneNumber:
+		return m.PhoneNumber()
 	case organization.FieldEtag:
 		return m.Etag()
 	case organization.FieldStatus:
@@ -2415,8 +2580,14 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldCreatedAt(ctx)
 	case organization.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
+	case organization.FieldAddress:
+		return m.OldAddress(ctx)
 	case organization.FieldDisplayName:
 		return m.OldDisplayName(ctx)
+	case organization.FieldLegalName:
+		return m.OldLegalName(ctx)
+	case organization.FieldPhoneNumber:
+		return m.OldPhoneNumber(ctx)
 	case organization.FieldEtag:
 		return m.OldEtag(ctx)
 	case organization.FieldStatus:
@@ -2448,12 +2619,33 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDeletedAt(v)
 		return nil
+	case organization.FieldAddress:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAddress(v)
+		return nil
 	case organization.FieldDisplayName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDisplayName(v)
+		return nil
+	case organization.FieldLegalName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLegalName(v)
+		return nil
+	case organization.FieldPhoneNumber:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPhoneNumber(v)
 		return nil
 	case organization.FieldEtag:
 		v, ok := value.(string)
@@ -2516,6 +2708,15 @@ func (m *OrganizationMutation) ClearedFields() []string {
 	if m.FieldCleared(organization.FieldDeletedAt) {
 		fields = append(fields, organization.FieldDeletedAt)
 	}
+	if m.FieldCleared(organization.FieldAddress) {
+		fields = append(fields, organization.FieldAddress)
+	}
+	if m.FieldCleared(organization.FieldLegalName) {
+		fields = append(fields, organization.FieldLegalName)
+	}
+	if m.FieldCleared(organization.FieldPhoneNumber) {
+		fields = append(fields, organization.FieldPhoneNumber)
+	}
 	if m.FieldCleared(organization.FieldUpdatedAt) {
 		fields = append(fields, organization.FieldUpdatedAt)
 	}
@@ -2536,6 +2737,15 @@ func (m *OrganizationMutation) ClearField(name string) error {
 	case organization.FieldDeletedAt:
 		m.ClearDeletedAt()
 		return nil
+	case organization.FieldAddress:
+		m.ClearAddress()
+		return nil
+	case organization.FieldLegalName:
+		m.ClearLegalName()
+		return nil
+	case organization.FieldPhoneNumber:
+		m.ClearPhoneNumber()
+		return nil
 	case organization.FieldUpdatedAt:
 		m.ClearUpdatedAt()
 		return nil
@@ -2553,8 +2763,17 @@ func (m *OrganizationMutation) ResetField(name string) error {
 	case organization.FieldDeletedAt:
 		m.ResetDeletedAt()
 		return nil
+	case organization.FieldAddress:
+		m.ResetAddress()
+		return nil
 	case organization.FieldDisplayName:
 		m.ResetDisplayName()
+		return nil
+	case organization.FieldLegalName:
+		m.ResetLegalName()
+		return nil
+	case organization.FieldPhoneNumber:
+		m.ResetPhoneNumber()
 		return nil
 	case organization.FieldEtag:
 		m.ResetEtag()

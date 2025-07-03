@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"go.bryk.io/pkg/ulid"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
@@ -225,9 +224,6 @@ func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCo
 
 	err = this.userRepo.Delete(ctx, it.DeleteParam{Id: cmd.Id})
 	ft.PanicOnErr(err)
-	// Publish user deleted event
-	err = this.publishUserDeletedEvent(ctx, user)
-	ft.PanicOnErr(err)
 
 	return &it.DeleteUserResult{
 		Data: &it.DeleteUserResultData{
@@ -236,25 +232,6 @@ func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCo
 		},
 		HasData: true,
 	}, nil
-}
-
-// publishUserDeletedEvent publishes a "user.deleted.done" event
-func (this *UserServiceImpl) publishUserDeletedEvent(ctx context.Context, user *domain.User) error {
-	// Generate event ID
-	eventId, err := ulid.New()
-	if err != nil {
-		return err
-	}
-
-	// Create the event payload
-	userDeletedEvent := &it.UserDeletedEvent{
-		ID:        *user.Id,
-		DeletedBy: "", // You might want to get this from context or pass it as parameter
-		EventID:   eventId.String(),
-	}
-
-	// Use the interface method to publish the event
-	return this.eventBus.PublishEvent(ctx, "user.deleted.done", userDeletedEvent)
 }
 
 func (this *UserServiceImpl) Exists(ctx context.Context, cmd it.UserExistsCommand) (result *it.UserExistsResult, err error) {

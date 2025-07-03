@@ -51,6 +51,26 @@ func (ou *OrganizationUpdate) ClearDeletedAt() *OrganizationUpdate {
 	return ou
 }
 
+// SetAddress sets the "address" field.
+func (ou *OrganizationUpdate) SetAddress(s string) *OrganizationUpdate {
+	ou.mutation.SetAddress(s)
+	return ou
+}
+
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableAddress(s *string) *OrganizationUpdate {
+	if s != nil {
+		ou.SetAddress(*s)
+	}
+	return ou
+}
+
+// ClearAddress clears the value of the "address" field.
+func (ou *OrganizationUpdate) ClearAddress() *OrganizationUpdate {
+	ou.mutation.ClearAddress()
+	return ou
+}
+
 // SetDisplayName sets the "display_name" field.
 func (ou *OrganizationUpdate) SetDisplayName(s string) *OrganizationUpdate {
 	ou.mutation.SetDisplayName(s)
@@ -62,6 +82,46 @@ func (ou *OrganizationUpdate) SetNillableDisplayName(s *string) *OrganizationUpd
 	if s != nil {
 		ou.SetDisplayName(*s)
 	}
+	return ou
+}
+
+// SetLegalName sets the "legal_name" field.
+func (ou *OrganizationUpdate) SetLegalName(s string) *OrganizationUpdate {
+	ou.mutation.SetLegalName(s)
+	return ou
+}
+
+// SetNillableLegalName sets the "legal_name" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableLegalName(s *string) *OrganizationUpdate {
+	if s != nil {
+		ou.SetLegalName(*s)
+	}
+	return ou
+}
+
+// ClearLegalName clears the value of the "legal_name" field.
+func (ou *OrganizationUpdate) ClearLegalName() *OrganizationUpdate {
+	ou.mutation.ClearLegalName()
+	return ou
+}
+
+// SetPhoneNumber sets the "phone_number" field.
+func (ou *OrganizationUpdate) SetPhoneNumber(s string) *OrganizationUpdate {
+	ou.mutation.SetPhoneNumber(s)
+	return ou
+}
+
+// SetNillablePhoneNumber sets the "phone_number" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillablePhoneNumber(s *string) *OrganizationUpdate {
+	if s != nil {
+		ou.SetPhoneNumber(*s)
+	}
+	return ou
+}
+
+// ClearPhoneNumber clears the value of the "phone_number" field.
+func (ou *OrganizationUpdate) ClearPhoneNumber() *OrganizationUpdate {
+	ou.mutation.ClearPhoneNumber()
 	return ou
 }
 
@@ -295,8 +355,26 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if ou.mutation.DeletedAtCleared() {
 		_spec.ClearField(organization.FieldDeletedAt, field.TypeTime)
 	}
+	if value, ok := ou.mutation.Address(); ok {
+		_spec.SetField(organization.FieldAddress, field.TypeString, value)
+	}
+	if ou.mutation.AddressCleared() {
+		_spec.ClearField(organization.FieldAddress, field.TypeString)
+	}
 	if value, ok := ou.mutation.DisplayName(); ok {
 		_spec.SetField(organization.FieldDisplayName, field.TypeString, value)
+	}
+	if value, ok := ou.mutation.LegalName(); ok {
+		_spec.SetField(organization.FieldLegalName, field.TypeString, value)
+	}
+	if ou.mutation.LegalNameCleared() {
+		_spec.ClearField(organization.FieldLegalName, field.TypeString)
+	}
+	if value, ok := ou.mutation.PhoneNumber(); ok {
+		_spec.SetField(organization.FieldPhoneNumber, field.TypeString, value)
+	}
+	if ou.mutation.PhoneNumberCleared() {
+		_spec.ClearField(organization.FieldPhoneNumber, field.TypeString)
 	}
 	if value, ok := ou.mutation.Etag(); ok {
 		_spec.SetField(organization.FieldEtag, field.TypeString, value)
@@ -488,6 +566,26 @@ func (ouo *OrganizationUpdateOne) ClearDeletedAt() *OrganizationUpdateOne {
 	return ouo
 }
 
+// SetAddress sets the "address" field.
+func (ouo *OrganizationUpdateOne) SetAddress(s string) *OrganizationUpdateOne {
+	ouo.mutation.SetAddress(s)
+	return ouo
+}
+
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableAddress(s *string) *OrganizationUpdateOne {
+	if s != nil {
+		ouo.SetAddress(*s)
+	}
+	return ouo
+}
+
+// ClearAddress clears the value of the "address" field.
+func (ouo *OrganizationUpdateOne) ClearAddress() *OrganizationUpdateOne {
+	ouo.mutation.ClearAddress()
+	return ouo
+}
+
 // SetDisplayName sets the "display_name" field.
 func (ouo *OrganizationUpdateOne) SetDisplayName(s string) *OrganizationUpdateOne {
 	ouo.mutation.SetDisplayName(s)
@@ -499,6 +597,46 @@ func (ouo *OrganizationUpdateOne) SetNillableDisplayName(s *string) *Organizatio
 	if s != nil {
 		ouo.SetDisplayName(*s)
 	}
+	return ouo
+}
+
+// SetLegalName sets the "legal_name" field.
+func (ouo *OrganizationUpdateOne) SetLegalName(s string) *OrganizationUpdateOne {
+	ouo.mutation.SetLegalName(s)
+	return ouo
+}
+
+// SetNillableLegalName sets the "legal_name" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableLegalName(s *string) *OrganizationUpdateOne {
+	if s != nil {
+		ouo.SetLegalName(*s)
+	}
+	return ouo
+}
+
+// ClearLegalName clears the value of the "legal_name" field.
+func (ouo *OrganizationUpdateOne) ClearLegalName() *OrganizationUpdateOne {
+	ouo.mutation.ClearLegalName()
+	return ouo
+}
+
+// SetPhoneNumber sets the "phone_number" field.
+func (ouo *OrganizationUpdateOne) SetPhoneNumber(s string) *OrganizationUpdateOne {
+	ouo.mutation.SetPhoneNumber(s)
+	return ouo
+}
+
+// SetNillablePhoneNumber sets the "phone_number" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillablePhoneNumber(s *string) *OrganizationUpdateOne {
+	if s != nil {
+		ouo.SetPhoneNumber(*s)
+	}
+	return ouo
+}
+
+// ClearPhoneNumber clears the value of the "phone_number" field.
+func (ouo *OrganizationUpdateOne) ClearPhoneNumber() *OrganizationUpdateOne {
+	ouo.mutation.ClearPhoneNumber()
 	return ouo
 }
 
@@ -762,8 +900,26 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 	if ouo.mutation.DeletedAtCleared() {
 		_spec.ClearField(organization.FieldDeletedAt, field.TypeTime)
 	}
+	if value, ok := ouo.mutation.Address(); ok {
+		_spec.SetField(organization.FieldAddress, field.TypeString, value)
+	}
+	if ouo.mutation.AddressCleared() {
+		_spec.ClearField(organization.FieldAddress, field.TypeString)
+	}
 	if value, ok := ouo.mutation.DisplayName(); ok {
 		_spec.SetField(organization.FieldDisplayName, field.TypeString, value)
+	}
+	if value, ok := ouo.mutation.LegalName(); ok {
+		_spec.SetField(organization.FieldLegalName, field.TypeString, value)
+	}
+	if ouo.mutation.LegalNameCleared() {
+		_spec.ClearField(organization.FieldLegalName, field.TypeString)
+	}
+	if value, ok := ouo.mutation.PhoneNumber(); ok {
+		_spec.SetField(organization.FieldPhoneNumber, field.TypeString, value)
+	}
+	if ouo.mutation.PhoneNumberCleared() {
+		_spec.ClearField(organization.FieldPhoneNumber, field.TypeString)
 	}
 	if value, ok := ouo.mutation.Etag(); ok {
 		_spec.SetField(organization.FieldEtag, field.TypeString, value)

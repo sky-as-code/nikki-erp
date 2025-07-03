@@ -12,6 +12,7 @@ func InitCqrsHandlers() error {
 	err := errors.Join(
 		initUserHandlers(),
 		initGroupHandlers(),
+		initOrganizationHandlers(),
 	)
 	return err
 }
@@ -49,6 +50,22 @@ func initGroupHandlers() error {
 			cqrs.NewHandler(handler.SearchGroups),
 			cqrs.NewHandler(handler.UpdateGroup),
 			cqrs.NewHandler(handler.SearchGroups),
+		)
+	})
+}
+
+func initOrganizationHandlers() error {
+	deps.Register(NewOrganizationHandler)
+
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *OrganizationHandler) error {
+		ctx := context.Background()
+		return cqrsBus.SubscribeRequests(
+			ctx,
+			cqrs.NewHandler(handler.CreateOrganization),
+			cqrs.NewHandler(handler.UpdateOrganization),
+			cqrs.NewHandler(handler.DeleteOrganization),
+			cqrs.NewHandler(handler.GetOrganizationBySlug),
+			cqrs.NewHandler(handler.SearchOrganizations),
 		)
 	})
 }

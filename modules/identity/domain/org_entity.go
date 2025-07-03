@@ -3,7 +3,6 @@ package domain
 import (
 	"go.bryk.io/pkg/errors"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
@@ -14,31 +13,17 @@ type Organization struct {
 	model.ModelBase
 	model.AuditableBase
 
+	Address     *string     `json:"address,omitempty"`
 	DisplayName *string     `json:"displayName,omitempty"`
+	LegalName   *string     `json:"legalName,omitempty"`
+	PhoneNumber *string     `json:"phoneNumber,omitempty"`
 	Slug        *model.Slug `json:"slug,omitempty"`
-	Etag        *model.Etag `json:"etag,omitempty"`
 	Status      *OrgStatus  `json:"status,omitempty"`
 }
 
 func (this *Organization) SetDefaults() {
 	this.ModelBase.SetDefaults()
 	safe.SetDefaultValue(&this.Status, OrgStatusInactive)
-}
-
-func (this *Organization) Validate(forEdit bool) ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.DisplayName,
-			val.NotEmptyWhen(!forEdit),
-			val.Length(1, 50),
-		),
-		model.EtagValidateRule(&this.Etag, forEdit),
-		model.SlugValidateRule(&this.Slug, !forEdit),
-		OrgStatusValidateRule(&this.Status),
-	}
-	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
-	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
-
-	return val.ApiBased.ValidateStruct(this, rules...)
 }
 
 type OrgStatus ent.Status

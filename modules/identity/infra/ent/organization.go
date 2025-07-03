@@ -21,8 +21,14 @@ type Organization struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Set value for this column when the process is running to delete all resources under this hierarchy level
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	// Address holds the value of the "address" field.
+	Address *string `json:"address,omitempty"`
 	// Human-friendly-readable organization name
 	DisplayName string `json:"display_name,omitempty"`
+	// LegalName holds the value of the "legal_name" field.
+	LegalName *string `json:"legal_name,omitempty"`
+	// PhoneNumber holds the value of the "phone_number" field.
+	PhoneNumber *string `json:"phone_number,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// Status holds the value of the "status" field.
@@ -93,7 +99,7 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case organization.FieldID, organization.FieldDisplayName, organization.FieldEtag, organization.FieldStatus, organization.FieldSlug:
+		case organization.FieldID, organization.FieldAddress, organization.FieldDisplayName, organization.FieldLegalName, organization.FieldPhoneNumber, organization.FieldEtag, organization.FieldStatus, organization.FieldSlug:
 			values[i] = new(sql.NullString)
 		case organization.FieldCreatedAt, organization.FieldDeletedAt, organization.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -131,11 +137,32 @@ func (o *Organization) assignValues(columns []string, values []any) error {
 				o.DeletedAt = new(time.Time)
 				*o.DeletedAt = value.Time
 			}
+		case organization.FieldAddress:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field address", values[i])
+			} else if value.Valid {
+				o.Address = new(string)
+				*o.Address = value.String
+			}
 		case organization.FieldDisplayName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field display_name", values[i])
 			} else if value.Valid {
 				o.DisplayName = value.String
+			}
+		case organization.FieldLegalName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field legal_name", values[i])
+			} else if value.Valid {
+				o.LegalName = new(string)
+				*o.LegalName = value.String
+			}
+		case organization.FieldPhoneNumber:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field phone_number", values[i])
+			} else if value.Valid {
+				o.PhoneNumber = new(string)
+				*o.PhoneNumber = value.String
 			}
 		case organization.FieldEtag:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -226,8 +253,23 @@ func (o *Organization) String() string {
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
+	if v := o.Address; v != nil {
+		builder.WriteString("address=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	builder.WriteString("display_name=")
 	builder.WriteString(o.DisplayName)
+	builder.WriteString(", ")
+	if v := o.LegalName; v != nil {
+		builder.WriteString("legal_name=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := o.PhoneNumber; v != nil {
+		builder.WriteString("phone_number=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("etag=")
 	builder.WriteString(o.Etag)
