@@ -7,8 +7,6 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/json"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 )
 
 type MutationBuilder[TDb any] interface {
@@ -19,25 +17,10 @@ type QueryOneBuilder[TDb any] interface {
 	Only(context.Context) (*TDb, error)
 }
 
-type SearchBuilder[TDb any, TQuery any] interface {
-	All(context.Context) ([]*TDb, error)
-	Count(context.Context) (int, error)
-	Offset(int) *TQuery
-	Limit(int) *TQuery
-	Order(...orm.OrderOption) *TQuery
-	Only(context.Context) (*TDb, error)
-	Where(...predicate.User) *TQuery
-}
-
 type EntToDomainFn[TDb any, TDomain any] func(*TDb) *TDomain
 type EntToDomainArrFn[TDb any, TDomain any] func([]*TDb) []*TDomain
 
 type EntRepositoryBase struct {
-	client *ent.Client
-}
-
-func (this *EntRepositoryBase) Client() *ent.Client {
-	return this.client
 }
 
 func Mutate[TDb any, TDomain any](
@@ -64,11 +47,12 @@ func Delete[TDb any](
 func FindOne[TDb any, TDomain any](
 	ctx context.Context,
 	queryBuilder QueryOneBuilder[TDb],
+	isNotFoundFn func(err error) bool,
 	convertFn EntToDomainFn[TDb, TDomain],
 ) (*TDomain, error) {
 	entEntity, err := queryBuilder.Only(ctx)
 	if err != nil {
-		if ent.IsNotFound(err) {
+		if isNotFoundFn(err) {
 			return nil, nil
 		}
 		return nil, err
