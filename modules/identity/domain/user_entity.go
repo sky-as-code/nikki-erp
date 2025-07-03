@@ -69,6 +69,7 @@ func (this *User) Validate(forEdit bool) ft.ValidationErrors {
 		val.Field(&this.DisplayName,
 			val.NotNilWhen(!forEdit),
 			val.When(this.DisplayName != nil,
+				val.NotEmpty,
 				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
 			),
 		),
@@ -130,8 +131,11 @@ func WrapUserStatusEnt(s entUser.Status) *UserStatus {
 	return &st
 }
 
-func UserStatusValidateRule(field any) *val.FieldRules {
+func UserStatusValidateRule(field **UserStatus) *val.FieldRules {
 	return val.Field(field,
-		val.OneOf(UserStatusActive, UserStatusInactive, UserStatusLocked),
+		val.When(*field != nil,
+			val.NotEmpty,
+			val.OneOf(UserStatusActive, UserStatusInactive, UserStatusLocked),
+		),
 	)
 }
