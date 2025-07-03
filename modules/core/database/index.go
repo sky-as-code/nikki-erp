@@ -1,16 +1,16 @@
 package database
 
 import (
-	"fmt"
-	"net/url"
+	"time"
 
+	entsql "entgo.io/ent/dialect/sql"
 	_ "github.com/lib/pq"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
+	"github.com/sky-as-code/nikki-erp/modules/core/database/dialects"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 )
 
 type InitParams struct {
@@ -20,28 +20,49 @@ type InitParams struct {
 	Logger logging.LoggerService
 }
 
-func InitSubModule(params InitParams) (*ent.Client, error) {
+func InitSubModule(params InitParams) (*EntClientOptions, error) {
 	configSvc := params.Config
 	logger := params.Logger
 
+	dbDialect := configSvc.GetStr(c.DbDialect)
 	user := configSvc.GetStr(c.DbUser)
 	password := configSvc.GetStr(c.DbPassword)
 	host := configSvc.GetStr(c.DbHostPort)
 	dbname := configSvc.GetStr(c.DbName)
-	sslmode := configSvc.GetStr(c.DbPgSslMode)
+	tlsEnabled := configSvc.GetBool(c.DbTlsEnabled)
+	debugEnabled := configSvc.GetBool(c.DbDebugEnabled)
 
-	// Properly encode the password (optional but safer)
-	escapedPassword := url.QueryEscape(password)
+	maxIdleConns := configSvc.GetUint(c.DbMaxIdleConns)
+	maxOpenConns := configSvc.GetUint(c.DbMaxOpenConns)
+	connMaxLifetimeSecs := configSvc.GetUint(c.DbConnMaxLifetimeSecs)
 
-	dsn := fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=%s",
-		user, escapedPassword, host, dbname, sslmode)
+	driver, err := dialects.NewEntDriver(dialects.EntDriverOptions{
+		DialectName:     dbDialect,
+		MaxIdleConns:    maxIdleConns,
+		MaxOpenConns:    maxOpenConns,
+		ConnMaxLifetime: time.Duration(connMaxLifetimeSecs) * time.Second,
 
-	client, err := ent.Open("postgres", dsn, ent.Debug())
+		DialectOptions: dialects.DialectOptions{
+			User:         user,
+			Password:     password,
+			HostPort:     host,
+			Database:     dbname,
+			IsTlsEnabled: tlsEnabled,
+		},
+	})
+
 	if err != nil {
 		logger.Errorf("failed opening connection to postgres: %v", err)
 		return nil, err
 	}
-	// defer client.Close()
 
-	return client, nil
+	return &EntClientOptions{
+		Driver:       driver,
+		DebugEnabled: debugEnabled,
+	}, nil
+}
+
+type EntClientOptions struct {
+	Driver       *entsql.Driver
+	DebugEnabled bool
 }

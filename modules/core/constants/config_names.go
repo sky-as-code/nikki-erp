@@ -7,14 +7,19 @@ const (
 	MigrationDir ConfigName = "MIGRATION_DIR"
 
 	// Database
-	DbDriver   ConfigName = "DB_DRIVER"
-	DbHostPort ConfigName = "DB_HOST_PORT"
-	DbName     ConfigName = "DB_NAME"
-	DbPassword ConfigName = "DB_PASSWORD"
-	DbUser     ConfigName = "DB_USER"
+	DbDialect             ConfigName = "DB_DIALECT"
+	DbHostPort            ConfigName = "DB_HOST_PORT"
+	DbName                ConfigName = "DB_NAME"
+	DbPassword            ConfigName = "DB_PASSWORD"
+	DbUser                ConfigName = "DB_USER"
+	DbDebugEnabled        ConfigName = "DB_DEBUG_ENABLED"
+	DbTlsEnabled          ConfigName = "DB_TLS_ENABLED"
+	DbMaxIdleConns        ConfigName = "DB_MAX_IDLE_CONNS"
+	DbMaxOpenConns        ConfigName = "DB_MAX_OPEN_CONNS"
+	DbConnMaxLifetimeSecs ConfigName = "DB_CONN_MAX_LIFETIME_SECS"
 
 	// Database Postgres-specific
-	DbPgSslMode ConfigName = "DB_PG_SSL_MODE"
+	// DbPgSslMode ConfigName = "DB_PG_SSL_MODE"
 
 	// CQRS pubsub
 	CqrsRequestTimeoutSecs ConfigName = "CQRS_REQUEST_TIMEOUT_SECS"

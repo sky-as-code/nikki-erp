@@ -52,7 +52,7 @@ func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id
 		Where(entOrg.ID(id)).
 		WithUsers()
 
-	return db.FindOne(ctx, query, entToOrganization)
+	return db.FindOne(ctx, query, ent.IsNotFound, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, slug string) (*domain.Organization, error) {

@@ -54,13 +54,14 @@ func (this *GroupEntRepository) FindById(ctx context.Context, param it.GetGroupB
 	if param.WithOrg != nil && *param.WithOrg {
 		dbQuery = dbQuery.WithOrg()
 	}
-	return db.FindOne(ctx, dbQuery, entToGroup)
+	return db.FindOne(ctx, dbQuery, ent.IsNotFound, entToGroup)
 }
 
 func (this *GroupEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Group, error) {
 	return db.FindOne(
 		ctx,
 		this.client.Group.Query().Where(entGroup.Name(param.Name)),
+		ent.IsNotFound,
 		entToGroup,
 	)
 }

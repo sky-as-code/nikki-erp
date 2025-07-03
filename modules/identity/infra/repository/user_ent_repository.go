@@ -96,7 +96,7 @@ func (this *UserEntRepository) FindById(ctx context.Context, param it.FindByIdPa
 		WithGroups().
 		WithOrgs()
 
-	return db.FindOne(ctx, query, entToUser)
+	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
 
 func (this *UserEntRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
@@ -105,7 +105,7 @@ func (this *UserEntRepository) FindByEmail(ctx context.Context, email string) (*
 		WithGroups().
 		WithOrgs()
 
-	return db.FindOne(ctx, query, entToUser)
+	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
 
 func (this *UserEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
