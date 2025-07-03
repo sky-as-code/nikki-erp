@@ -1,0 +1,2043 @@
+{
+	"info": {
+		"_postman_id": "45e3946f-8a6e-4b30-b36a-8e506080b2ea",
+		"name": "NikkiERP - Tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "602425"
+	},
+	"item": [
+		{
+			"name": "Identity",
+			"item": [
+				{
+					"name": "User",
+					"item": [
+						{
+							"name": "User - Create",
+							"item": [
+								{
+									"name": "User Create - Success",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const schema = {\r",
+													"    type: \"object\",\r",
+													"    required: [\"id\", \"createdAt\", \"displayName\", \"email\", \"etag\", \"status\"],\r",
+													"    properties: {\r",
+													"        id: { type: \"string\" },\r",
+													"        createdAt: { type: \"integer\" },\r",
+													"        displayName: { type: \"string\" },\r",
+													"        email: { \r",
+													"            type: \"string\", \r",
+													"            format: \"email\" \r",
+													"        },\r",
+													"        etag: { type: \"string\" },\r",
+													"        status: { \r",
+													"            type: \"string\", \r",
+													"            enum: [\"active\", \"inactive\"]\r",
+													"        }\r",
+													"    },\r",
+													"    additionalProperties: false\r",
+													"};\r",
+													"\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response matches expected JSON schema\", function () {\r",
+													"    pm.response.to.have.jsonSchema(schema);\r",
+													"});\r",
+													"\r",
+													"const body = pm.response.text();\r",
+													"try {\r",
+													"    const payload = JSON.parse(body);\r",
+													"    const { id, etag, email } = payload;\r",
+													"    id && pm.environment.set('user_id', id);\r",
+													"    etag && pm.environment.set('etag', etag);\r",
+													"    email && pm.environment.set('email', email);\r",
+													"} catch (err) {\r",
+													"    console.error(err)\r",
+													"}\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													"// Get original request body as raw text\r",
+													"let rawBody = pm.request.body.raw;\r",
+													"\r",
+													"// Parse it as JSON\r",
+													"let payload;\r",
+													"try {\r",
+													"    payload = JSON.parse(rawBody);\r",
+													"} catch (e) {\r",
+													"    console.error(\"Failed to parse request body as JSON:\", e);\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"// Generate a 6-char alphanumeric string\r",
+													"function randomString(length = 6) {\r",
+													"    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';\r",
+													"    let result = '';\r",
+													"    for (let i = 0; i < length; i++) {\r",
+													"        result += chars.charAt(Math.floor(Math.random() * chars.length));\r",
+													"    }\r",
+													"    return result;\r",
+													"}\r",
+													"\r",
+													"const rand = randomString();\r",
+													"\r",
+													"if (payload.displayName) {\r",
+													"    payload.displayName += ' ' + rand;\r",
+													"}\r",
+													"if (payload.email && payload.email.includes('@')) {\r",
+													"    const [local, domain] = payload.email.split('@');\r",
+													"    payload.email = `${local}-${rand}@${domain}`;\r",
+													"}\r",
+													"\r",
+													"// Write modified payload back to request\r",
+													"pm.request.body.raw = JSON.stringify(payload, null, 2);\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"displayName\": \"John Doe\",\r\n    \"email\": \"john.doe@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\",\r\n    \"isActive\": true\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Create - Missing required fields - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        displayName: \"cannot be blank\",\r",
+													"        email: \"cannot be blank\",\r",
+													"        passwordRaw: \"cannot be blank\",\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Create - Empty strings - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        displayName: \"cannot be blank\",\r",
+													"        email: \"cannot be blank\",\r",
+													"        passwordRaw: \"cannot be blank\",\r",
+													"        // TODO: Validate orgIds\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"displayName\": \"\",\r\n    \"email\": \"\",\r\n    \"password\": \"\",\r\n    \"orgIds\": [\"\"]\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Create - Invalid fields - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        displayName: \"the length must be between 1 and 200\",\r",
+													"        email: \"must be a valid email address\",\r",
+													"        passwordRaw: \"the length must be between 8 and 1000\",\r",
+													"        // TODO: Validate orgIds\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"displayName\": \"too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg\",\r\n    \"email\": \"invalid@\",\r\n    \"password\": \"short\",\r\n    \"orgIds\": [\"\"]\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Create - Existing email",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        email: \"email already exists\"\r",
+													"    }\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													"\r",
+													"const body = pm.response.text();\r",
+													"try {\r",
+													"    const payload = JSON.parse(body);\r",
+													"    const { id, etag } = payload;\r",
+													"    id && pm.environment.set('user_id', id);\r",
+													"    etag && pm.environment.set('etag', etag);\r",
+													"} catch (err) {\r",
+													"    console.error(err)\r",
+													"}\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"displayName\": \"John Doe\",\r\n    \"email\": \"{{email}}\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "User - Update",
+							"item": [
+								{
+									"name": "User Update - Success",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const schema = {\r",
+													"    type: \"object\",\r",
+													"    required: [\"id\", \"avatarUrl\", \"createdAt\", \"displayName\", \"email\", \"etag\", \"status\", \"updatedAt\"],\r",
+													"    properties: {\r",
+													"        id: {\"type\": \"string\"},\r",
+													"        avatarUrl: {\r",
+													"            type: \"string\",\r",
+													"            format: \"uri\"\r",
+													"        },\r",
+													"        createdAt: {\"type\": \"integer\"},\r",
+													"        displayName: {\"type\": \"string\"},\r",
+													"        email: {\r",
+													"            type: \"string\",\r",
+													"            format: \"email\"\r",
+													"        },\r",
+													"        etag: {\"type\": \"string\"},\r",
+													"        status: {\r",
+													"            type: \"string\",\r",
+													"            enum: [\"active\", \"inactive\", \"locked\"]\r",
+													"        },\r",
+													"        updatedAt: {\"type\": \"integer\"}\r",
+													"    },\r",
+													"    additionalProperties: false\r",
+													"};\r",
+													"\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response matches expected JSON schema\", function () {\r",
+													"    pm.response.to.have.jsonSchema(schema);\r",
+													"});\r",
+													"\r",
+													"const body = pm.response.text();\r",
+													"try {\r",
+													"    const payload = JSON.parse(body);\r",
+													"    const { id, etag, email } = payload;\r",
+													"    const previousEtag = pm.environment.get(\"etag\");\r",
+													"\r",
+													"    pm.test(\"Response 'etag' is different from previous\", () => {\r",
+													"        pm.expect(etag).to.not.eql(previousEtag);\r",
+													"    });\r",
+													"\r",
+													"    pm.environment.set('user_id', id);\r",
+													"    pm.environment.set('etag', etag);\r",
+													"    pm.environment.set('email', email);\r",
+													"} catch (err) {\r",
+													"    console.error(err)\r",
+													"}\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													"// Get original request body as raw text\r",
+													"let rawBody = pm.request.body.raw;\r",
+													"\r",
+													"// Parse it as JSON\r",
+													"let payload;\r",
+													"try {\r",
+													"    payload = JSON.parse(rawBody);\r",
+													"} catch (e) {\r",
+													"    console.error(\"Failed to parse request body as JSON:\", e);\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"// Generate a 6-char alphanumeric string\r",
+													"function randomString(length = 6) {\r",
+													"    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';\r",
+													"    let result = '';\r",
+													"    for (let i = 0; i < length; i++) {\r",
+													"        result += chars.charAt(Math.floor(Math.random() * chars.length));\r",
+													"    }\r",
+													"    return result;\r",
+													"}\r",
+													"\r",
+													"const rand = randomString();\r",
+													"\r",
+													"if (payload.displayName) {\r",
+													"    payload.displayName += ' ' + rand;\r",
+													"}\r",
+													"if (payload.email && payload.email.includes('@')) {\r",
+													"    const [local, domain] = payload.email.split('@');\r",
+													"    payload.email = `${local}-${rand}@${domain}`;\r",
+													"}\r",
+													"\r",
+													"// Write modified payload back to request\r",
+													"pm.request.body.raw = JSON.stringify(payload, null, 2);\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"email\": \"another.doe@nikkierp.com\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"isEnabled\": true,\r\n    \"mustChangePassword\": true,\r\n    \"password\": \"t0psecret!\"\r\n}\r\n",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Update - Not found ID - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        id: \"user not found\",\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													"\r",
+													"const body = pm.response.text();\r",
+													"try {\r",
+													"    const payload = JSON.parse(body);\r",
+													"    const { id, etag } = payload;\r",
+													"    id && pm.environment.set('user_id', id);\r",
+													"    etag && pm.environment.set('etag', etag);\r",
+													"} catch (err) {\r",
+													"    console.error(err)\r",
+													"}\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"etag\": \"{{etag}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/not-existing-1234567890123",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"not-existing-1234567890123"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Update - Missing required fields - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        etag: \"cannot be blank\",\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Update - Empty strings - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        displayName: \"cannot be blank\",\r",
+													"        email: \"cannot be blank\",\r",
+													"        etag: \"cannot be blank\",\r",
+													"        passwordRaw: \"cannot be blank\"\r",
+													"        // TODO: Validate orgIds\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"avatarUrl\": \"\",\r\n    \"displayName\": \"\",\r\n    \"email\": \"\",\r\n    \"etag\": \"\",\r\n    \"password\": \"\",\r\n    \"orgIds\": [\"\"]\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Update - Existing email - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        email: \"email already exists\",\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													"\r",
+													"const body = pm.response.text();\r",
+													"try {\r",
+													"    const payload = JSON.parse(body);\r",
+													"    const { id, etag } = payload;\r",
+													"    id && pm.environment.set('user_id', id);\r",
+													"    etag && pm.environment.set('etag', etag);\r",
+													"} catch (err) {\r",
+													"    console.error(err)\r",
+													"}\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"email\": \"{{email}}\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Update - Unmatched etag - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        etag: \"user has been modified by another process\",\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													"\r",
+													"const body = pm.response.text();\r",
+													"try {\r",
+													"    const payload = JSON.parse(body);\r",
+													"    const { id, etag } = payload;\r",
+													"    id && pm.environment.set('user_id', id);\r",
+													"    etag && pm.environment.set('etag', etag);\r",
+													"} catch (err) {\r",
+													"    console.error(err)\r",
+													"}\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"etag\": \"___________________\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "User - Get by ID",
+							"item": [
+								{
+									"name": "User Get - Success",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const schema = {\r",
+													"    type: \"object\",\r",
+													"    required: [\"id\", \"avatarUrl\", \"createdAt\", \"displayName\", \"email\", \"etag\", \"status\", \"updatedAt\"],\r",
+													"    properties: {\r",
+													"        id: {\"type\": \"string\"},\r",
+													"        avatarUrl: {\r",
+													"            type: \"string\",\r",
+													"            format: \"uri\"\r",
+													"        },\r",
+													"        createdAt: {\"type\": \"integer\"},\r",
+													"        displayName: {\"type\": \"string\"},\r",
+													"        email: {\r",
+													"            type: \"string\",\r",
+													"            format: \"email\"\r",
+													"        },\r",
+													"        etag: {\"type\": \"string\"},\r",
+													"        status: {\r",
+													"            type: \"string\",\r",
+													"            enum: [\"active\", \"inactive\", \"locked\"]\r",
+													"        },\r",
+													"        updatedAt: {\"type\": \"integer\"}\r",
+													"    },\r",
+													"    additionalProperties: false\r",
+													"};\r",
+													"\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response matches expected JSON schema\", function () {\r",
+													"    pm.response.to.have.jsonSchema(schema);\r",
+													"});\r",
+													"\r",
+													"const body = pm.response.text();\r",
+													"try {\r",
+													"    const payload = JSON.parse(body);\r",
+													"    const { id, etag, email } = payload;\r",
+													"\r",
+													"    pm.environment.set('user_id', id);\r",
+													"    pm.environment.set('etag', etag);\r",
+													"    pm.environment.set('email', email);\r",
+													"} catch (err) {\r",
+													"    console.error(err)\r",
+													"}\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Get - Not found ID - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        id: \"user not found\",\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													"\r",
+													"const body = pm.response.text();\r",
+													"try {\r",
+													"    const payload = JSON.parse(body);\r",
+													"    const { id, etag } = payload;\r",
+													"    id && pm.environment.set('user_id', id);\r",
+													"    etag && pm.environment.set('etag', etag);\r",
+													"} catch (err) {\r",
+													"    console.error(err)\r",
+													"}\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/not-existing-1234567890123",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"not-existing-1234567890123"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Group",
+					"item": [
+						{
+							"name": "Group - Create",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const body = pm.response.text();\r",
+											"try {\r",
+											"    const payload = JSON.parse(body);\r",
+											"    const { id, etag } = payload;\r",
+											"    id && pm.environment.set('group_id', id);\r",
+											"    etag && pm.environment.set('etag', etag);\r",
+											"} catch (err) {\r",
+											"    console.error(err)\r",
+											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"My Team\",\r\n    \"description\": \"This is my team\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"My Team\",\r\n    \"description\": \"This is my team\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n    \"createdAt\": 1749381803848,\n    \"name\": \"My Team\",\n    \"description\": \"This is my team\",\n    \"etag\": \"1749381803846717000\"\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"description\": \"\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"cannot be blank\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Existing name",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"My Team\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"group name already exists\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Group - Update",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const body = pm.response.text();\r",
+											"try {\r",
+											"    const payload = JSON.parse(body);\r",
+											"    const etag = payload.etag;\r",
+											"    etag && pm.environment.set('etag', etag);\r",
+											"} catch (err) {\r",
+											"    console.error(err)\r",
+											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Your Team\",\r\n    \"description\": \"The people you are working with\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups",
+										"{{group_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"Your Team\",\r\n    \"description\": \"The people you are working with\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n    \"createdAt\": 1749381803848,\n    \"name\": \"Your Team\",\n    \"description\": \"The people you are working with\",\n    \"etag\": \"1749381890052750000\",\n    \"updatedAt\": 1749381890052\n}"
+								},
+								{
+									"name": "Client error - Invalid fields Copy",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"\",\r\n    \"description\": \"\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"cannot be blank\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Unmatched etag",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"Your Team\",\r\n    \"description\": \"The people you are working with\",\r\n    \"etag\": \"fake_etag\"\r\n}\r\n",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"group has been modified by another user\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Group - Get by ID",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const body = pm.response.text();\r",
+											"try {\r",
+											"    const payload = JSON.parse(body);\r",
+											"    const etag = payload.etag;\r",
+											"    etag && pm.environment.set('etag', etag);\r",
+											"} catch (err) {\r",
+											"    console.error(err)\r",
+											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups",
+										"{{group_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n    \"createdAt\": 1749381803848,\n    \"name\": \"Your Team\",\n    \"description\": \"The people you are working with\",\n    \"etag\": \"1749381890052750000\",\n    \"updatedAt\": 1749382124763\n}"
+								},
+								{
+									"name": "Client error - Invalid ID",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/01JX2V9CGPA5",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"01JX2V9CGPA5"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/1000000000000000000000000A",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"1000000000000000000000000A"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"group not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Group - Search",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - No criteria, No paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNXBR5QJBH7PE9PQ9FW746V\",\n            \"name\": \"Domain Users\",\n            \"description\": \"Default group for all domain users\"\n        },\n        {\n            \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n            \"name\": \"Your Team\",\n            \"description\": \"The people you are working with\"\n        }\n    ],\n    \"total\": 2,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - No criteria, With paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups?page=0&size=1",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "1"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNXBR5QJBH7PE9PQ9FW746V\",\n            \"name\": \"Domain Users\",\n            \"description\": \"Default group for all domain users\"\n        }\n    ],\n    \"total\": 2,\n    \"page\": 0,\n    \"size\": 1\n}"
+								},
+								{
+									"name": "Success - No result",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups?graph={\"if\":[\"name\", \"=\", \"blabla\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"blabla\"]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [],\n    \"total\": 0,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups?page=-1&size=999999999999999999&graph={\"if\":[\"fakefield\", \"*\", \"team\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "-1"
+												},
+												{
+													"key": "size",
+													"value": "999999999999999999"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"fakefield\", \"*\", \"team\"]}"
+												}
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"graph.condition\": \"invalid field 'fakefield' of entity 'group' in condition '[fakefield * team]'\",\n        \"page\": \"must be no less than 0\",\n        \"size\": \"must be no greater than 500\"\n    }\n}"
+								},
+								{
+									"name": "Success - 1-level criteria",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups?graph={\"if\":[\"name\", \"*\", \"team\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"*\", \"team\"]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n            \"name\": \"Your Team\",\n            \"description\": \"The people you are working with\"\n        }\n    ],\n    \"total\": 1,\n    \"page\": 0,\n    \"size\": 50\n}"
+								}
+							]
+						},
+						{
+							"name": "Group - Delete",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups",
+										"{{group_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"deletedAt\": 1749382124763\n}"
+								},
+								{
+									"name": "Client error - Invalid ID",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/10000000000",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"10000000000"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/1000000000000000000000000A",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"1000000000000000000000000A"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"group not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Group - Add / Remove Users",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"add\": [\"01JWNXT3EY7FG47VDJTEPTDC98\", \"01JWNXXTF8958VVYAV33MVVMDN\"],\r\n    \"remove\": [],\r\n    \"etag\": \"{{etag}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}/manage-users",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups",
+										"{{group_id}}",
+										"manage-users"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	]
+}

@@ -30,12 +30,12 @@ var createUserCommandType = cqrs.RequestType{
 }
 
 type CreateUserCommand struct {
-	DisplayName        string    `json:"displayName"`
-	Email              string    `json:"email"`
-	IsActive           bool      `json:"isActive"`
-	MustChangePassword bool      `json:"mustChangePassword"`
-	Password           string    `json:"password"`
-	OrgId              *model.Id `json:"orgId,omitempty"`
+	DisplayName        string     `json:"displayName"`
+	Email              string     `json:"email"`
+	IsActive           bool       `json:"isActive"`
+	MustChangePassword bool       `json:"mustChangePassword"`
+	Password           string     `json:"password"`
+	OrgIds             []model.Id `json:"orgIds,omitempty"`
 }
 
 func (CreateUserCommand) Type() cqrs.RequestType {
@@ -59,7 +59,6 @@ type UpdateUserCommand struct {
 	IsActive           *bool      `json:"isActive,omitempty"`
 	MustChangePassword *bool      `json:"mustChangePassword,omitempty"`
 	Password           *string    `json:"password,omitempty"`
-	OrgId              *model.Id  `json:"orgId,omitempty"`
 }
 
 func (UpdateUserCommand) Type() cqrs.RequestType {

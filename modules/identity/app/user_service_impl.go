@@ -51,6 +51,8 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCo
 	user, err = this.userRepo.Create(ctx, *user)
 	ft.PanicOnErr(err)
 
+	// TODO: If OrgIds is specified, add this user to the orgs
+
 	return &it.CreateUserResult{Data: user}, err
 }
 
@@ -76,7 +78,9 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 	user := cmd.ToUser()
 
 	vErrs := user.Validate(true)
-
+	if user.Email != nil {
+		this.assertUserUnique(ctx, user, &vErrs)
+	}
 	if vErrs.Count() > 0 {
 		return &it.UpdateUserResult{
 			ClientError: vErrs.ToClientError(),
