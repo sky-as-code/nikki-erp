@@ -40,7 +40,7 @@ const (
 	// Table holds the table name of the organization in the database.
 	Table = "ident_organizations"
 	// UsersTable is the table that holds the users relation/edge. The primary key declared below.
-	UsersTable = "ident_user_org"
+	UsersTable = "ident_user_org_rel"
 	// UsersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UsersInverseTable = "ident_users"
@@ -59,10 +59,10 @@ const (
 	// GroupsColumn is the table column denoting the groups relation/edge.
 	GroupsColumn = "org_id"
 	// UserOrgsTable is the table that holds the user_orgs relation/edge.
-	UserOrgsTable = "ident_user_org"
+	UserOrgsTable = "ident_user_org_rel"
 	// UserOrgsInverseTable is the table name for the UserOrg entity.
 	// It exists in this package in order to avoid circular dependency with the "userorg" package.
-	UserOrgsInverseTable = "ident_user_org"
+	UserOrgsInverseTable = "ident_user_org_rel"
 	// UserOrgsColumn is the table column denoting the user_orgs relation/edge.
 	UserOrgsColumn = "org_id"
 )
@@ -223,6 +223,12 @@ func ByUserOrgs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUserOrgsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewUsersStepNikki() *sqlgraph.Step {
+	return newUsersStep()
+}
+
 func newUsersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -230,6 +236,12 @@ func newUsersStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2M, true, UsersTable, UsersPrimaryKey...),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewHierarchiesStepNikki() *sqlgraph.Step {
+	return newHierarchiesStep()
+}
+
 func newHierarchiesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -237,6 +249,12 @@ func newHierarchiesStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, HierarchiesTable, HierarchiesColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewGroupsStepNikki() *sqlgraph.Step {
+	return newGroupsStep()
+}
+
 func newGroupsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -244,6 +262,12 @@ func newGroupsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, GroupsTable, GroupsColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewUserOrgsStepNikki() *sqlgraph.Step {
+	return newUserOrgsStep()
+}
+
 func newUserOrgsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),

@@ -1,0 +1,5 @@
+CREATE DATABASE nikki_erp
+	ENCODING = 'UTF8'
+	LOCALE_PROVIDER = 'icu'
+	ICU_LOCALE = 'und'
+	TEMPLATE = template0;

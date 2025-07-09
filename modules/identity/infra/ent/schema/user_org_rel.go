@@ -56,7 +56,7 @@ func (UserOrg) Edges() []ent.Edge {
 func (UserOrg) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		field.ID("user_id", "org_id"),
-		entsql.Annotation{Table: "ident_user_org"},
+		entsql.Annotation{Table: "ident_user_org_rel"},
 	}
 }
 

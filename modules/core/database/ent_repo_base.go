@@ -44,6 +44,15 @@ func Delete[TDb any](
 	return deleteBuilder.Exec(ctx)
 }
 
+func DeleteMulti[TDb any](
+	ctx context.Context,
+	deleteBuilder interface {
+		Exec(context.Context) (int, error)
+	},
+) (int, error) {
+	return deleteBuilder.Exec(ctx)
+}
+
 func FindOne[TDb any, TDomain any](
 	ctx context.Context,
 	queryBuilder QueryOneBuilder[TDb],
@@ -58,6 +67,20 @@ func FindOne[TDb any, TDomain any](
 		return nil, err
 	}
 	return convertFn(entEntity), nil
+}
+
+func List[TDb any, TDomain any, TQuery interface {
+	All(context.Context) ([]*TDb, error)
+}](
+	ctx context.Context,
+	query TQuery,
+	convertFn func([]*TDb) []TDomain,
+) ([]TDomain, error) {
+	entEntities, err := query.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return convertFn(entEntities), nil
 }
 
 func ParseSearchGraphStr[TDb any, TDomain any](criteria *string, entityName string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {

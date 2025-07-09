@@ -5,11 +5,12 @@ services:
     image: postgres:17.4-alpine3.21
     container_name: nikki_postgres
     environment:
-      POSTGRES_DB: nikki_erp
+      POSTGRES_DB: postgres # Prevent creating new database. We create one ourselves in init.sql
       POSTGRES_USER: nikki_admin
       POSTGRES_PASSWORD: nikki_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     healthcheck:

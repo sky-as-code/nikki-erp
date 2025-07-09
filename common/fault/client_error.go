@@ -7,16 +7,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 )
 
-// func WrapValidationErrors(err ValidationErrors) *ClientError {
-// 	return &ClientError{
-// 		Code:    "validation_error",
-// 		Details: err,
-// 	}
-// }
-
 type ClientError struct {
 	Code    string `json:"code"`
 	Details any    `json:"details"`
+}
+
+func (this ClientError) Error() string {
+	return fmt.Sprintf("%s: %v", this.Code, this.Details)
 }
 
 type ValidationErrorItem struct {

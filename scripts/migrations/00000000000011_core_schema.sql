@@ -1,0 +1,4 @@
+-- Create "core_enums" table
+CREATE TABLE "core_enums" ("id" character varying NOT NULL, "etag" character varying NOT NULL, "label" jsonb NOT NULL, "value" character varying NOT NULL, "type" character varying NOT NULL, PRIMARY KEY ("id"));
+-- Create index "enum_value_type" to table: "core_enums"
+CREATE UNIQUE INDEX "enum_value_type" ON "core_enums" ("value", "type");

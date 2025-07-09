@@ -4,7 +4,10 @@ env "local" {
   diff {
     skip {
       drop_schema = true
-	  drop_table  = true
+      drop_table  = true
     }
+  }
+  migration {
+    exclude = [""]
   }
 }

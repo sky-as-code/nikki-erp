@@ -23,16 +23,16 @@ const (
 	// OrganizationFieldID holds the string denoting the ID field of the Organization.
 	OrganizationFieldID = "id"
 	// Table holds the table name of the userorg in the database.
-	Table = "ident_user_org"
+	Table = "ident_user_org_rel"
 	// UserTable is the table that holds the user relation/edge.
-	UserTable = "ident_user_org"
+	UserTable = "ident_user_org_rel"
 	// UserInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UserInverseTable = "ident_users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "user_id"
 	// OrgTable is the table that holds the org relation/edge.
-	OrgTable = "ident_user_org"
+	OrgTable = "ident_user_org_rel"
 	// OrgInverseTable is the table name for the Organization entity.
 	// It exists in this package in order to avoid circular dependency with the "organization" package.
 	OrgInverseTable = "ident_organizations"
@@ -82,6 +82,12 @@ func ByOrgField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newOrgStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewUserStepNikki() *sqlgraph.Step {
+	return newUserStep()
+}
+
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, UserColumn),
@@ -89,6 +95,12 @@ func newUserStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, UserTable, UserColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewOrgStepNikki() *sqlgraph.Step {
+	return newOrgStep()
+}
+
 func newOrgStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, OrgColumn),

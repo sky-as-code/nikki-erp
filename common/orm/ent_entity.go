@@ -3,6 +3,7 @@ package orm
 import (
 	"reflect"
 
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -42,6 +43,7 @@ func DescribeEntity(entity string) *EntityDescriptorBuilder {
 			EntityAliases: []string{entity},
 			Edges:         make(map[string]EdgePredicate),
 			Fields:        make(map[string]reflect.Type),
+			OrderByEdge:   make(map[string]OrderByEdgeFn),
 		},
 	}
 }
@@ -73,10 +75,13 @@ func AllFields(entityName string) (fields []string, edges []string, isOK bool) {
 	return fields, edges, true
 }
 
+type OrderByEdgeFn func() *sqlgraph.Step
+
 type EntityDescriptor struct {
 	EntityAliases []string
 	Edges         map[string]EdgePredicate
 	Fields        map[string]reflect.Type
+	OrderByEdge   map[string]OrderByEdgeFn
 }
 
 func (this *EntityDescriptor) Entity() string {
@@ -90,10 +95,28 @@ func (this *EntityDescriptor) Aliases() []string {
 func (this *EntityDescriptor) FieldType(field string) (reflect.Type, error) {
 	fieldType, ok := this.Fields[field]
 	if !ok {
-		return nil, errors.Errorf("invalid field '%s' of entity '%s'", field, this.Entity)
+		return nil, errors.Errorf("invalid field '%s' of entity '%s'", field, this.Entity())
 	}
 
 	return fieldType, nil
+}
+
+func (this *EntityDescriptor) EdgePredicate(edgeName string) (EdgePredicate, error) {
+	hasEdgeWithFn, ok := this.Edges[edgeName]
+	if !ok {
+		return nil, errors.Errorf("unrecognized relationship '%s' of entity '%s'", edgeName, this.Entity())
+	}
+
+	return hasEdgeWithFn, nil
+}
+
+func (this *EntityDescriptor) OrderByEdgeStep(edgeName string) (OrderByEdgeFn, error) {
+	stepFn, ok := this.OrderByEdge[edgeName]
+	if !ok {
+		return nil, errors.Errorf("unrecognized sortable relationship '%s' of entity '%s'", edgeName, this.Entity())
+	}
+
+	return stepFn, nil
 }
 
 func (this *EntityDescriptor) MatchFieldType(field string, value any) (reflect.Type, error) {
@@ -103,7 +126,7 @@ func (this *EntityDescriptor) MatchFieldType(field string, value any) (reflect.T
 	}
 
 	if !util.IsConvertible(value, fieldType) {
-		return nil, errors.Errorf("invalid value '%s' for field '%s' of entity '%s'", value, field, this.Entity)
+		return nil, errors.Errorf("invalid value '%s' for field '%s' of entity '%s'", value, field, this.Entity())
 	}
 
 	return fieldType, nil
@@ -128,6 +151,14 @@ func (this *EntityDescriptorBuilder) Edge(
 	predicate EdgePredicate,
 ) *EntityDescriptorBuilder {
 	this.descriptor.Edges[name] = predicate
+	return this
+}
+
+func (this *EntityDescriptorBuilder) OrderByEdge(
+	field string,
+	stepFn OrderByEdgeFn,
+) *EntityDescriptorBuilder {
+	this.descriptor.OrderByEdge[field] = stepFn
 	return this
 }
 

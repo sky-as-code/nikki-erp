@@ -3,7 +3,6 @@
 package user
 
 import (
-	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -41,8 +40,8 @@ const (
 	FieldPasswordHash = "password_hash"
 	// FieldPasswordChangedAt holds the string denoting the password_changed_at field in the database.
 	FieldPasswordChangedAt = "password_changed_at"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldStatusID holds the string denoting the status_id field in the database.
+	FieldStatusID = "status_id"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
@@ -51,6 +50,8 @@ const (
 	EdgeHierarchy = "hierarchy"
 	// EdgeOrgs holds the string denoting the orgs edge name in mutations.
 	EdgeOrgs = "orgs"
+	// EdgeUserStatus holds the string denoting the user_status edge name in mutations.
+	EdgeUserStatus = "user_status"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
 	EdgeUserGroups = "user_groups"
 	// EdgeUserOrgs holds the string denoting the user_orgs edge name in mutations.
@@ -58,7 +59,7 @@ const (
 	// Table holds the table name of the user in the database.
 	Table = "ident_users"
 	// GroupsTable is the table that holds the groups relation/edge. The primary key declared below.
-	GroupsTable = "ident_user_group"
+	GroupsTable = "ident_user_group_rel"
 	// GroupsInverseTable is the table name for the Group entity.
 	// It exists in this package in order to avoid circular dependency with the "group" package.
 	GroupsInverseTable = "ident_groups"
@@ -70,22 +71,29 @@ const (
 	// HierarchyColumn is the table column denoting the hierarchy relation/edge.
 	HierarchyColumn = "hierarchy_id"
 	// OrgsTable is the table that holds the orgs relation/edge. The primary key declared below.
-	OrgsTable = "ident_user_org"
+	OrgsTable = "ident_user_org_rel"
 	// OrgsInverseTable is the table name for the Organization entity.
 	// It exists in this package in order to avoid circular dependency with the "organization" package.
 	OrgsInverseTable = "ident_organizations"
+	// UserStatusTable is the table that holds the user_status relation/edge.
+	UserStatusTable = "ident_users"
+	// UserStatusInverseTable is the table name for the UserStatusEnum entity.
+	// It exists in this package in order to avoid circular dependency with the "userstatusenum" package.
+	UserStatusInverseTable = "core_enums"
+	// UserStatusColumn is the table column denoting the user_status relation/edge.
+	UserStatusColumn = "status_id"
 	// UserGroupsTable is the table that holds the user_groups relation/edge.
-	UserGroupsTable = "ident_user_group"
+	UserGroupsTable = "ident_user_group_rel"
 	// UserGroupsInverseTable is the table name for the UserGroup entity.
 	// It exists in this package in order to avoid circular dependency with the "usergroup" package.
-	UserGroupsInverseTable = "ident_user_group"
+	UserGroupsInverseTable = "ident_user_group_rel"
 	// UserGroupsColumn is the table column denoting the user_groups relation/edge.
 	UserGroupsColumn = "user_id"
 	// UserOrgsTable is the table that holds the user_orgs relation/edge.
-	UserOrgsTable = "ident_user_org"
+	UserOrgsTable = "ident_user_org_rel"
 	// UserOrgsInverseTable is the table name for the UserOrg entity.
 	// It exists in this package in order to avoid circular dependency with the "userorg" package.
-	UserOrgsInverseTable = "ident_user_org"
+	UserOrgsInverseTable = "ident_user_org_rel"
 	// UserOrgsColumn is the table column denoting the user_orgs relation/edge.
 	UserOrgsColumn = "user_id"
 )
@@ -106,7 +114,7 @@ var Columns = []string{
 	FieldMustChangePassword,
 	FieldPasswordHash,
 	FieldPasswordChangedAt,
-	FieldStatus,
+	FieldStatusID,
 	FieldUpdatedAt,
 }
 
@@ -137,30 +145,6 @@ var (
 	// DefaultMustChangePassword holds the default value on creation for the "must_change_password" field.
 	DefaultMustChangePassword bool
 )
-
-// Status defines the type for the "status" enum field.
-type Status string
-
-// Status values.
-const (
-	StatusActive   Status = "active"
-	StatusInactive Status = "inactive"
-	StatusLocked   Status = "locked"
-)
-
-func (s Status) String() string {
-	return string(s)
-}
-
-// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
-func StatusValidator(s Status) error {
-	switch s {
-	case StatusActive, StatusInactive, StatusLocked:
-		return nil
-	default:
-		return fmt.Errorf("user: invalid enum value for status field: %q", s)
-	}
-}
 
 // OrderOption defines the ordering options for the User queries.
 type OrderOption = func(*sql.Selector)
@@ -235,9 +219,9 @@ func ByPasswordChangedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPasswordChangedAt, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+// ByStatusID orders the results by the status_id field.
+func ByStatusID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatusID, opts...).ToFunc()
 }
 
 // ByUpdatedAt orders the results by the updated_at field.
@@ -280,6 +264,13 @@ func ByOrgs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByUserStatusField orders the results by user_status field.
+func ByUserStatusField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newUserStatusStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByUserGroupsCount orders the results by user_groups count.
 func ByUserGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -307,6 +298,12 @@ func ByUserOrgs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUserOrgsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewGroupsStepNikki() *sqlgraph.Step {
+	return newGroupsStep()
+}
+
 func newGroupsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -314,6 +311,12 @@ func newGroupsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2M, false, GroupsTable, GroupsPrimaryKey...),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewHierarchyStepNikki() *sqlgraph.Step {
+	return newHierarchyStep()
+}
+
 func newHierarchyStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -321,6 +324,12 @@ func newHierarchyStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, HierarchyTable, HierarchyColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewOrgsStepNikki() *sqlgraph.Step {
+	return newOrgsStep()
+}
+
 func newOrgsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -328,6 +337,25 @@ func newOrgsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2M, false, OrgsTable, OrgsPrimaryKey...),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewUserStatusStepNikki() *sqlgraph.Step {
+	return newUserStatusStep()
+}
+
+func newUserStatusStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(UserStatusInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, UserStatusTable, UserStatusColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewUserGroupsStepNikki() *sqlgraph.Step {
+	return newUserGroupsStep()
+}
+
 func newUserGroupsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -335,6 +363,12 @@ func newUserGroupsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, UserGroupsTable, UserGroupsColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewUserOrgsStepNikki() *sqlgraph.Step {
+	return newUserOrgsStep()
+}
+
 func newUserOrgsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
