@@ -58,6 +58,7 @@ type ActionMutation struct {
 	created_by          *string
 	name                *string
 	etag                *string
+	description         *string
 	clearedFields       map[string]struct{}
 	entitlements        map[string]struct{}
 	removedentitlements map[string]struct{}
@@ -353,6 +354,55 @@ func (m *ActionMutation) ResetResourceID() {
 	m.resource = nil
 }
 
+// SetDescription sets the "description" field.
+func (m *ActionMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *ActionMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Action entity.
+// If the Action object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ActionMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *ActionMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[action.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *ActionMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[action.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *ActionMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, action.FieldDescription)
+}
+
 // AddEntitlementIDs adds the "entitlements" edge to the Entitlement entity by ids.
 func (m *ActionMutation) AddEntitlementIDs(ids ...string) {
 	if m.entitlements == nil {
@@ -468,7 +518,7 @@ func (m *ActionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ActionMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 6)
 	if m.created_at != nil {
 		fields = append(fields, action.FieldCreatedAt)
 	}
@@ -483,6 +533,9 @@ func (m *ActionMutation) Fields() []string {
 	}
 	if m.resource != nil {
 		fields = append(fields, action.FieldResourceID)
+	}
+	if m.description != nil {
+		fields = append(fields, action.FieldDescription)
 	}
 	return fields
 }
@@ -502,6 +555,8 @@ func (m *ActionMutation) Field(name string) (ent.Value, bool) {
 		return m.Etag()
 	case action.FieldResourceID:
 		return m.ResourceID()
+	case action.FieldDescription:
+		return m.Description()
 	}
 	return nil, false
 }
@@ -521,6 +576,8 @@ func (m *ActionMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldEtag(ctx)
 	case action.FieldResourceID:
 		return m.OldResourceID(ctx)
+	case action.FieldDescription:
+		return m.OldDescription(ctx)
 	}
 	return nil, fmt.Errorf("unknown Action field %s", name)
 }
@@ -565,6 +622,13 @@ func (m *ActionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetResourceID(v)
 		return nil
+	case action.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Action field %s", name)
 }
@@ -594,7 +658,11 @@ func (m *ActionMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ActionMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(action.FieldDescription) {
+		fields = append(fields, action.FieldDescription)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -607,6 +675,11 @@ func (m *ActionMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ActionMutation) ClearField(name string) error {
+	switch name {
+	case action.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
 	return fmt.Errorf("unknown Action nullable field %s", name)
 }
 
@@ -628,6 +701,9 @@ func (m *ActionMutation) ResetField(name string) error {
 		return nil
 	case action.FieldResourceID:
 		m.ResetResourceID()
+		return nil
+	case action.FieldDescription:
+		m.ResetDescription()
 		return nil
 	}
 	return fmt.Errorf("unknown Action field %s", name)

@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "86e0d870-3ae7-41fb-9d8b-53feb85b5dbd",
+		"_postman_id": "d037e36f-f955-440e-bc76-a4a69eca1c2d",
 		"name": "NikkiERP - API",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "602425"
+		"_exporter_id": "26697084"
 	},
 	"item": [
 		{
@@ -1943,6 +1943,2305 @@
 								}
 							},
 							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Authorize",
+			"item": [
+				{
+					"name": "Resource",
+					"item": [
+						{
+							"name": "Resource - Create",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 201\", function () {",
+											"    pm.expect(pm.response.code).to.eql(201);",
+											"});",
+											"",
+											"// ✅ Define schema",
+											"const schema = {",
+											"    type: \"object\",",
+											"    required: [\"id\", \"etag\", \"name\", \"resourceType\", \"resourceRef\", \"scopeType\"],",
+											"    properties: {",
+											"        id: { type: \"string\" },",
+											"        etag: { type: \"string\" },",
+											"        name: { type: \"string\" },",
+											"        description: { type: \"string\" },",
+											"        resourceType: { type: \"string\", enum: [\"nikki_application\", \"custom\"] },",
+											"        resourceRef: { type: \"string\" },",
+											"        scopeType: { type: \"string\", enum: [\"org\", \"hierarchy\", \"private\", \"domain\"] }",
+											"    },",
+											"    additionalProperties: true",
+											"};",
+											"",
+											"// ✅ Track schema validity",
+											"let isSchemaValid = false;",
+											"pm.test(\"Response matches expected schema\", function () {",
+											"    pm.response.to.have.jsonSchema(schema);",
+											"    isSchemaValid = true;",
+											"});",
+											"",
+											"// ✅ Parse JSON response safely",
+											"let body;",
+											"let isJsonValid = true;",
+											"try {",
+											"    body = pm.response.json();",
+											"    console.log(\"✅ Resource response body:\", body);",
+											"} catch (err) {",
+											"    isJsonValid = false;",
+											"    console.error(\"❌ Failed to parse response JSON:\", err);",
+											"}",
+											"",
+											"// ✅ Set env vars only if valid",
+											"if (",
+											"    pm.response.code === 201 &&",
+											"    isSchemaValid &&",
+											"    isJsonValid &&",
+											"    body?.id &&",
+											"    body?.etag",
+											") {",
+											"    pm.environment.set(\"resource_id\", body.id);",
+											"    pm.environment.set(\"etag\", body.etag);",
+											"    console.log(\"✅ Set resource_id and etag\");",
+											"} else {",
+											"    console.warn(\"⚠️ Response invalid — environment variables not set\");",
+											"}",
+											"",
+											"// ✅ Additional checks only if body is valid",
+											"if (body) {",
+											"    pm.test(\"Name matches generated\", function () {",
+											"        pm.expect(body.name).to.eql(pm.environment.get(\"resource_name\"));",
+											"    });",
+											"",
+											"    if (body.resourceType === \"nikki_application\") {",
+											"        pm.test(\"resourceRef is 26-char ULID\", function () {",
+											"            pm.expect(body.resourceRef.length).to.eql(26);",
+											"        });",
+											"    } else if (body.resourceType === \"custom\") {",
+											"        pm.test(\"resourceRef is a string for custom type\", function () {",
+											"            pm.expect(typeof body.resourceRef).to.eql(\"string\");",
+											"        });",
+											"    }",
+											"}",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"1123\",\n    \"resourceType\": \"nikki_application\",\n    \"resourceRef\": \"12345678901234567890123456\",\n    \"scopeType\": \"org\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/resources",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"resources"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - type custom",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestResourcde1\",\n    \"resourceType\": \"custom\",\n    \"scopeType\": \"org\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZN7T18JYZNZ46HAB1ZKA2YC\",\n    \"etag\": \"1751985751314106000\",\n    \"name\": \"TestResourcde1\",\n    \"description\": \"\",\n    \"resourceType\": \"custom\",\n    \"resourceRef\": \"\",\n    \"scopeType\": \"org\"\n}"
+								},
+								{
+									"name": "Success - type nikki_application",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestResourcde\",\n    \"resourceType\": \"nikki_application\",\n    \"resourceRef\": \"12345678901234567890123456\",\n    \"scopeType\": \"org\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZN7S2TAW9DYX1WTFSJT7RQF\",\n    \"etag\": \"1751985720138444000\",\n    \"name\": \"TestResourcde\",\n    \"description\": \"\",\n    \"resourceType\": \"nikki_application\",\n    \"resourceRef\": \"12345678901234567890123456\",\n    \"scopeType\": \"org\"\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"resourceType\": \"invalid_type\",\n    \"scopeType\": \"invalid_scope\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"cannot be blank\",\n        \"resourceType\": \"must be a valid value\",\n        \"scopeType\": \"must be a valid value\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Existing name",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"IdentityProfile\",\n    \"resourceType\": \"custom\",\n    \"scopeType\": \"org\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"name already exists\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Resource - Update",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"pm.test(\"Response contains updated resource fields\", function () {",
+											"    let json;",
+											"    try {",
+											"        json = pm.response.json();",
+											"    } catch (err) {",
+											"        pm.expect.fail(\"Response is not valid JSON\");",
+											"    }",
+											"",
+											"    // Required top-level fields",
+											"    pm.expect(json).to.have.property(\"id\").that.is.a(\"string\");",
+											"    pm.expect(json).to.have.property(\"etag\").that.is.a(\"string\");",
+											"    pm.expect(json).to.have.property(\"name\").that.is.a(\"string\");",
+											"    pm.expect(json).to.have.property(\"description\").that.is.a(\"string\");",
+											"    pm.expect(json).to.have.property(\"resourceType\").that.is.a(\"string\");",
+											"    pm.expect(json).to.have.property(\"resourceRef\").that.is.a(\"string\");",
+											"    pm.expect(json).to.have.property(\"scopeType\").that.is.a(\"string\");",
+											"",
+											"    // Optionally store updated etag if needed for further operations",
+											"    pm.environment.set(\"etag\", json.etag);",
+											"    console.log(\"✅ Updated etag saved:\", json.etag);",
+											"});",
+											"",
+											"pm.test(\"Description has been updated\", function () {",
+											"    const body = pm.response.json();",
+											"    pm.expect(body.description).to.eql(\"Description\");",
+											"});",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"{{etag}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/resources/{{resource_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"resources",
+										"{{resource_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"{{etag}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/{{resource_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"{{resource_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZPK8ZE5SWSYRF69RG1BFY9D\",\n    \"etag\": \"1752032294635863000\",\n    \"name\": \"TestResourcde\",\n    \"description\": \"hehe\",\n    \"resourceType\": \"nikki_application\",\n    \"resourceRef\": \"12345678901234567890123456\",\n    \"scopeType\": \"org\"\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/{{resource_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"{{resource_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"cannot be blank\"\n    }\n}"
+								},
+								{
+									"name": "Client error - No match etag",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"1752032294635863001\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/{{resource_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"{{resource_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"resource has been modified by another process\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not Found",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"{{etag}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/01JZQ0R0AF76T1TNZ84CAB8PM1",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"01JZQ0R0AF76T1TNZ84CAB8PM1"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"resource not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Resource - Get by name",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/resources/{{resource_name}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"resources",
+										"{{resource_name}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "text"
+											}
+										],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/{{resource_name}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"{{resource_name}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n    \"etag\": \"1751254425804328000.000000\",\n    \"name\": \"IdentityGroup\",\n    \"description\": \"\",\n    \"resourceType\": \"custom\",\n    \"resourceRef\": \"\",\n    \"scopeType\": \"org\",\n    \"actions\": [\n        {\n            \"id\": \"01JWNZ4QY0ECRHAKR0ERQW97HW\",\n            \"name\": \"Create\"\n        },\n        {\n            \"id\": \"01JWNZ4V0ZDTEEMZPRZF6282SP\",\n            \"name\": \"Delete\"\n        },\n        {\n            \"id\": \"01JWNZ4Y4342HKE30Y4KE8MA8K\",\n            \"name\": \"Update\"\n        },\n        {\n            \"id\": \"01JWNZ516R64X2S8A7STFXTP9B\",\n            \"name\": \"View\"\n        }\n    ]\n}"
+								},
+								{
+									"name": "Client Error - Not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/{{resource_name}}Invalid",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"{{resource_name}}Invalid"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"resource not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Resource - Search",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/resources?page=0&size=3&withActions=true&graph={\"if\":[\"name\", \"=\", \"IdentityUser\"]}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"resources"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "3"
+										},
+										{
+											"key": "withActions",
+											"value": "true"
+										},
+										{
+											"key": "graph",
+											"value": "{\"if\":[\"name\", \"=\", \"IdentityUser\"]}"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - Full params",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources?page=0&size=3&withActions=true&graph={\"if\":[\"name\", \"=\", \"IdentityUser\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "3"
+												},
+												{
+													"key": "withActions",
+													"value": "true"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"IdentityUser\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n            \"etag\": \"1751254425804326000.000000\",\n            \"name\": \"IdentityUser\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"hierarchy\",\n            \"actions\": [\n                {\n                    \"id\": \"01JWNZ3KA0ARGT9DAHQ1E6NZV0\",\n                    \"name\": \"Create\"\n                },\n                {\n                    \"id\": \"01JWNZ3PTQXAWE8R3HDTYVAQEK\",\n                    \"name\": \"Delete\"\n                },\n                {\n                    \"id\": \"01JWNZ3TQ7AVCFDTSS0VHXHCAB\",\n                    \"name\": \"Update\"\n                },\n                {\n                    \"id\": \"01JWNZ3XVWDP73JGHRRBFAHQYJ\",\n                    \"name\": \"View\"\n                }\n            ]\n        }\n    ],\n    \"total\": 1,\n    \"page\": 0,\n    \"size\": 3\n}"
+								},
+								{
+									"name": "Success - No criteria, No paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804243000.000000\",\n            \"name\": \"AuthzEntitlement\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"domain\"\n        },\n        {\n            \"id\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n            \"etag\": \"1751254425804320000.000000\",\n            \"name\": \"AuthzResource\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"domain\"\n        },\n        {\n            \"id\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n            \"etag\": \"1751254425804323000.000000\",\n            \"name\": \"AuthzRole\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"domain\"\n        },\n        {\n            \"id\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n            \"etag\": \"1751254425804325000.000000\",\n            \"name\": \"AuthzRoleSuite\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"domain\"\n        },\n        {\n            \"id\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n            \"etag\": \"1751254425804326000.000000\",\n            \"name\": \"IdentityUser\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"hierarchy\"\n        },\n        {\n            \"id\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n            \"etag\": \"1751254425804328000.000000\",\n            \"name\": \"IdentityGroup\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"org\"\n        },\n        {\n            \"id\": \"01JWNYQTHN6JTRNWKJ1BMCYB80\",\n            \"etag\": \"1751254425804329000.000000\",\n            \"name\": \"IdentityOrganization\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"domain\"\n        },\n        {\n            \"id\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n            \"etag\": \"1751254425804331000.000000\",\n            \"name\": \"IdentityHierarchyLevel\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"org\"\n        },\n        {\n            \"id\": \"01JWP5S7KJF8T3RSA8WDZVSZWA\",\n            \"etag\": \"1751254425804333000.000000\",\n            \"name\": \"IdentityProfile\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"private\"\n        }\n    ],\n    \"total\": 9,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - No criteria, With paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources?page=0&size=3",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "3"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804243000.000000\",\n            \"name\": \"AuthzEntitlement\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"domain\"\n        },\n        {\n            \"id\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n            \"etag\": \"1751254425804320000.000000\",\n            \"name\": \"AuthzResource\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"domain\"\n        },\n        {\n            \"id\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n            \"etag\": \"1751254425804323000.000000\",\n            \"name\": \"AuthzRole\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"domain\"\n        }\n    ],\n    \"total\": 9,\n    \"page\": 0,\n    \"size\": 3\n}"
+								},
+								{
+									"name": "Success - 1 level criteria",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources?graph={\"if\":[\"name\", \"=\", \"IdentityUser\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"IdentityUser\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n            \"etag\": \"1751254425804326000.000000\",\n            \"name\": \"IdentityUser\",\n            \"description\": \"\",\n            \"resourceType\": \"custom\",\n            \"resourceRef\": \"\",\n            \"scopeType\": \"hierarchy\"\n        }\n    ],\n    \"total\": 1,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Client error - Invalid criteria fields",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources?page=-1&size=999999999999&withActions=true&graph={\"if\":[\"name\", \"=\", \"IdentityUser\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "-1"
+												},
+												{
+													"key": "size",
+													"value": "999999999999"
+												},
+												{
+													"key": "withActions",
+													"value": "true"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"IdentityUser\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"graph.condition\": \"invalid field 'invalid_field' of entity '%!s(func() string=0x1027536f0)' in condition '[invalid_field = invalid_value]'\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid paging fields",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources?page=0&size=3&withActions=true&graph={\"if\":[\"name\", \"=\", \"IdentityUser\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "3"
+												},
+												{
+													"key": "withActions",
+													"value": "true"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"IdentityUser\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"page\": \"must be no less than 0\",\n        \"size\": \"must be no greater than 500\"\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Action",
+					"item": [
+						{
+							"name": "Action - Create",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const schema = {",
+											"    type: \"object\",",
+											"    required: [\"id\", \"etag\", \"name\", \"resourceId\", \"createdBy\"],",
+											"    properties: {",
+											"        id: { type: \"string\" },",
+											"        etag: { type: \"string\" },",
+											"        name: { type: \"string\", pattern: \"^[a-zA-Z0-9_-]+$\" },",
+											"        description: { type: [\"string\", \"null\"] },",
+											"        resourceId: { type: \"string\" },",
+											"        createdBy: { type: \"string\" },",
+											"        resource: { type: [\"object\", \"null\"] }",
+											"    },",
+											"    additionalProperties: true",
+											"};",
+											"",
+											"// ✅ Check status code",
+											"pm.test(\"Status code is 200 or 201\", function () {",
+											"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+											"});",
+											"",
+											"let body;",
+											"let isValidJson = true;",
+											"let isSchemaValid = false;",
+											"",
+											"try {",
+											"    body = pm.response.json();",
+											"} catch (err) {",
+											"    isValidJson = false;",
+											"    console.error(\"❌ Failed to parse JSON:\", err);",
+											"}",
+											"",
+											"// ✅ Validate schema if JSON is valid",
+											"if (isValidJson && body) {",
+											"    try {",
+											"        pm.test(\"Response matches expected schema\", function () {",
+											"            pm.response.to.have.jsonSchema(schema);",
+											"        });",
+											"        isSchemaValid = true;",
+											"    } catch (err) {",
+											"        console.error(\"❌ Schema validation failed:\", err);",
+											"    }",
+											"}",
+											"",
+											"// ✅ Only set env if all conditions are good",
+											"if (",
+											"    isValidJson &&",
+											"    isSchemaValid &&",
+											"    body.id &&",
+											"    body.etag &&",
+											"    typeof body.id === \"string\" &&",
+											"    typeof body.etag === \"string\"",
+											") {",
+											"    pm.environment.set(\"action_id\", body.id);",
+											"    pm.environment.set(\"etag\", body.etag);",
+											"    console.log(\"✅ Saved action_id & etag to env:\", body.id, body.etag);",
+											"} else {",
+											"    console.warn(\"⚠️ Skipped saving to env due to invalid body or schema.\");",
+											"}",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"createdBy\": \"{{user_id}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/actions",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"actions"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZP8CPMNFXXQ5SKD2PZTWEPR\",\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"01JWP5S7KJF8T3RSA8WDZVSZWA\",\n    \"etag\": \"1752019917461563000\",\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\",\n    \"resource\": {}\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"createdBy\": \"cannot be blank\",\n        \"name\": \"cannot be blank\",\n        \"resourceId\": \"cannot be blank\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Existing name",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"name already exists\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Action - Update",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// ✅ Check status",
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.expect(pm.response.code).to.eql(200);",
+											"});",
+											"",
+											"const schema = {",
+											"    type: \"object\",",
+											"    required: [\"id\", \"etag\", \"name\", \"resourceId\", \"createdBy\"], ",
+											"    properties: {",
+											"        id: { type: \"string\" },",
+											"        etag: { type: \"string\" },",
+											"        name: { type: \"string\" },",
+											"        description: { type: \"string\" },",
+											"        resourceId: { type: \"string\" },",
+											"        createdBy: { type: \"string\" }",
+											"    },",
+											"    additionalProperties: true",
+											"};",
+											"",
+											"// ✅ Check schema",
+											"let isSchemaValid = false;",
+											"pm.test(\"Response matches schema\", function () {",
+											"    pm.response.to.have.jsonSchema(schema);",
+											"    isSchemaValid = true;",
+											"});",
+											"",
+											"let body;",
+											"let isJsonValid = true;",
+											"",
+											"try {",
+											"    body = pm.response.json();",
+											"    console.log(\"✅ Response body:\", body);",
+											"} catch (e) {",
+											"    isJsonValid = false;",
+											"    console.error(\"❌ Failed to parse response:\", e);",
+											"}",
+											"",
+											"// ✅ Set etag only if everything is valid",
+											"if (",
+											"    pm.response.code === 200 &&",
+											"    isJsonValid &&",
+											"    isSchemaValid &&",
+											"    body &&",
+											"    typeof body.etag === \"string\"",
+											") {",
+											"    pm.environment.set(\"etag\", body.etag);",
+											"    console.log(\"🔁 Updated etag:\", body.etag);",
+											"} else {",
+											"    console.warn(\"⚠️ Etag not updated: either response failed, invalid JSON, or schema mismatch.\");",
+											"}",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"{{etag}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/actions/{{action_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"actions",
+										"{{action_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"{{etag}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/{{action_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"{{action_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZPN7ASRDNXCRTBREWW8B1R2\",\n    \"etag\": \"1752033419175672000\",\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"01JZPK8ZE5SWSYRF69RG1BFY9D\",\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\"\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"invalid_field\": \"invalid_field\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/{{action_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"{{action_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"cannot be blank\"\n    }\n}"
+								},
+								{
+									"name": "Client error - No match etag",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"1752033419175672001\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/{{action_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"{{action_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"action has been modified by another process\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"{{etag}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/01JZQ2A5K04QSBPK2SCYFH4PJ1",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"01JZQ2A5K04QSBPK2SCYFH4PJ1"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"action not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Action - Get by Id",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.response.to.have.status(200);",
+											"});",
+											"",
+											"const schema = {",
+											"    type: \"object\",",
+											"    required: [\"id\", \"etag\", \"name\", \"resourceId\", \"createdBy\"],",
+											"    properties: {",
+											"        id: { type: \"string\" },",
+											"        etag: { type: \"string\" },",
+											"        name: { ",
+											"            type: \"string\",",
+											"            pattern: \"^[a-zA-Z0-9_-]+$\"",
+											"        },",
+											"        description: { type: [\"string\", \"null\"] },",
+											"        resourceId: { type: \"string\" },",
+											"        createdBy: { type: \"string\" },",
+											"        resource: { ",
+											"            type: [\"object\", \"null\"],",
+											"            properties: {",
+											"                id: { type: \"string\" },",
+											"                name: { type: \"string\" }",
+											"            },",
+											"            required: [\"id\", \"name\"],",
+											"            additionalProperties: true",
+											"        }",
+											"    },",
+											"    additionalProperties: true",
+											"};",
+											"",
+											"pm.test(\"Response matches expected schema\", function () {",
+											"    pm.response.to.have.jsonSchema(schema);",
+											"});",
+											"",
+											"let body;",
+											"try {",
+											"    body = pm.response.json();",
+											"    console.log(\"✅ Get Action by ID response:\", body);",
+											"} catch (err) {",
+											"    console.error(\"❌ Failed to parse response JSON:\", err);",
+											"}",
+											"",
+											"if (body && body.id && body.etag) {",
+											"    pm.environment.set(\"action_id\", body.id);",
+											"    pm.environment.set(\"etag\", body.etag);",
+											"}",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/actions/{{action_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"actions",
+										"{{action_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/{{action_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"{{action_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZP9CHXM5Q78PFC4VV74BWT4\",\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"01JWP5S7KJF8T3RSA8WDZVSZWA\",\n    \"etag\": \"1752020961204686000\",\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\",\n    \"resource\": {\n        \"id\": \"01JWP5S7KJF8T3RSA8WDZVSZWA\",\n        \"name\": \"IdentityProfile\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid model.ID",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/01JZFFVT01VPGGZKAHD40Y6FV",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"01JZFFVT01VPGGZKAHD40Y6FV"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not Found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/01JZFFVT01VPGGZKAHD40Y6FV1",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"01JZFFVT01VPGGZKAHD40Y6FV1"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"action not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Action - Search",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/actions?page=0&size=4&graph={\"if\":[\"name\", \"=\", \"Create\"]}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"actions"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "4"
+										},
+										{
+											"key": "graph",
+											"value": "{\"if\":[\"name\", \"=\", \"Create\"]}"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - Full params",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions?page=0&size=4&graph={\"if\":[\"name\", \"=\", \"Create\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "4"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"Create\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNYMG1K2X4N8B3NTHQMDMZB\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804791000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n                \"name\": \"AuthzEntitlement\"\n            }\n        },\n        {\n            \"id\": \"01JWNYZ5EPJJMA3D367XMYEMM2\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n            \"etag\": \"1751254425804905000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n                \"name\": \"AuthzResource\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ14EZ00S2HWZD3Z7VANJK\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n            \"etag\": \"1751254425804913000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n                \"name\": \"AuthzRole\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ29T8K173M5GA3HFXM1ME\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n            \"etag\": \"1751254425804921000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n                \"name\": \"AuthzRoleSuite\"\n            }\n        }\n    ],\n    \"total\": 8,\n    \"page\": 0,\n    \"size\": 4\n}"
+								},
+								{
+									"name": "Success - No criteria, No paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNYMG1K2X4N8B3NTHQMDMZB\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804791000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n                \"name\": \"AuthzEntitlement\"\n            }\n        },\n        {\n            \"id\": \"01JWNYKV61QB9B05AS52GCEPCR\",\n            \"name\": \"Delete\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804889000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n                \"name\": \"AuthzEntitlement\"\n            }\n        },\n        {\n            \"id\": \"01JWNYJGBHZX29Y3C7V1V7QNN3\",\n            \"name\": \"Grant\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804899000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n                \"name\": \"AuthzEntitlement\"\n            }\n        },\n        {\n            \"id\": \"01JWNYJSCK13G16P0Z4BPY1C0A\",\n            \"name\": \"Revoke\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804902000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n                \"name\": \"AuthzEntitlement\"\n            }\n        },\n        {\n            \"id\": \"01JWNYK975JE0PKC1NRAB68D9C\",\n            \"name\": \"View\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804904000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n                \"name\": \"AuthzEntitlement\"\n            }\n        },\n        {\n            \"id\": \"01JWNYZ5EPJJMA3D367XMYEMM2\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n            \"etag\": \"1751254425804905000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n                \"name\": \"AuthzResource\"\n            }\n        },\n        {\n            \"id\": \"01JWNYZ8M3DXV2RNTP510CX9ZG\",\n            \"name\": \"Delete\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n            \"etag\": \"1751254425804907000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n                \"name\": \"AuthzResource\"\n            }\n        },\n        {\n            \"id\": \"01JWY2HF8E72PQM8QHY0CHSVBT\",\n            \"name\": \"Update\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n            \"etag\": \"1751254425804909000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n                \"name\": \"AuthzResource\"\n            }\n        },\n        {\n            \"id\": \"01JWNYZEVSH78T2SH7WP47KDRM\",\n            \"name\": \"View\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n            \"etag\": \"1751254425804911000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n                \"name\": \"AuthzResource\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ14EZ00S2HWZD3Z7VANJK\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n            \"etag\": \"1751254425804913000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n                \"name\": \"AuthzRole\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ177SB70PS1SSKMS676VA\",\n            \"name\": \"Delete\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n            \"etag\": \"1751254425804915000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n                \"name\": \"AuthzRole\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ1A1MNC7X5AVVPM14EC3P\",\n            \"name\": \"Update\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n            \"etag\": \"1751254425804917000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n                \"name\": \"AuthzRole\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ1D53FREVN8WX0Z7GZ1PS\",\n            \"name\": \"View\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n            \"etag\": \"1751254425804919000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n                \"name\": \"AuthzRole\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ29T8K173M5GA3HFXM1ME\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n            \"etag\": \"1751254425804921000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n                \"name\": \"AuthzRoleSuite\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ2CMDCF51YV8KEW8QPQVZ\",\n            \"name\": \"Delete\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n            \"etag\": \"1751254425804923000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n                \"name\": \"AuthzRoleSuite\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ2H9TPQSKEPTZ5KPHRE3H\",\n            \"name\": \"Update\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n            \"etag\": \"1751254425804925000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n                \"name\": \"AuthzRoleSuite\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ2N37F8ZXC6MTC7QYNG6R\",\n            \"name\": \"View\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n            \"etag\": \"1751254425804927000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n                \"name\": \"AuthzRoleSuite\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ3KA0ARGT9DAHQ1E6NZV0\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n            \"etag\": \"1751254425804929000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n                \"name\": \"IdentityUser\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ3PTQXAWE8R3HDTYVAQEK\",\n            \"name\": \"Delete\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n            \"etag\": \"1751254425804931000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n                \"name\": \"IdentityUser\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ3TQ7AVCFDTSS0VHXHCAB\",\n            \"name\": \"Update\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n            \"etag\": \"1751254425804933000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n                \"name\": \"IdentityUser\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ3XVWDP73JGHRRBFAHQYJ\",\n            \"name\": \"View\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n            \"etag\": \"1751254425804935000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n                \"name\": \"IdentityUser\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ4QY0ECRHAKR0ERQW97HW\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n            \"etag\": \"1751254425804937000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n                \"name\": \"IdentityGroup\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ4V0ZDTEEMZPRZF6282SP\",\n            \"name\": \"Delete\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n            \"etag\": \"1751254425804939000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n                \"name\": \"IdentityGroup\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ4Y4342HKE30Y4KE8MA8K\",\n            \"name\": \"Update\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n            \"etag\": \"1751254425804941000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n                \"name\": \"IdentityGroup\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ516R64X2S8A7STFXTP9B\",\n            \"name\": \"View\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n            \"etag\": \"1751254425804943000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n                \"name\": \"IdentityGroup\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ5KW6WC643VXGKV1D0J64\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQTHN6JTRNWKJ1BMCYB80\",\n            \"etag\": \"1751254425804945000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQTHN6JTRNWKJ1BMCYB80\",\n                \"name\": \"IdentityOrganization\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ5PZP72SZVA3GVHRZW3RG\",\n            \"name\": \"Delete\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQTHN6JTRNWKJ1BMCYB80\",\n            \"etag\": \"1751254425804947000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQTHN6JTRNWKJ1BMCYB80\",\n                \"name\": \"IdentityOrganization\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ5SS046J9JVXS6WN316QB\",\n            \"name\": \"Update\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQTHN6JTRNWKJ1BMCYB80\",\n            \"etag\": \"1751254425804949000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQTHN6JTRNWKJ1BMCYB80\",\n                \"name\": \"IdentityOrganization\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ5WJ1TM7P43W7FMENADTR\",\n            \"name\": \"View\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQTHN6JTRNWKJ1BMCYB80\",\n            \"etag\": \"1751254425804951000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQTHN6JTRNWKJ1BMCYB80\",\n                \"name\": \"IdentityOrganization\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ6NSG3ZWY82PEH1ERDZ5C\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n            \"etag\": \"1751254425804954000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n                \"name\": \"IdentityHierarchyLevel\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ6SYC65GEMJJ6BRNTEXFC\",\n            \"name\": \"Delete\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n            \"etag\": \"1751254425804956000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n                \"name\": \"IdentityHierarchyLevel\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ6XAZBQ8D11ETYGAN4N01\",\n            \"name\": \"Update\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n            \"etag\": \"1751254425804958000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n                \"name\": \"IdentityHierarchyLevel\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ70QBW0B0KRMR5CNR56KX\",\n            \"name\": \"View\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n            \"etag\": \"1751254425804960000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n                \"name\": \"IdentityHierarchyLevel\"\n            }\n        },\n        {\n            \"id\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n            \"name\": \"Move\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n            \"etag\": \"1751254425804962000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n                \"name\": \"IdentityHierarchyLevel\"\n            }\n        },\n        {\n            \"id\": \"01JX0PKTPPP5CN780TAPMK846J\",\n            \"name\": \"ManageUsers\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n            \"etag\": \"1751254425804964000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n                \"name\": \"IdentityHierarchyLevel\"\n            }\n        },\n        {\n            \"id\": \"01JZP9CHXM5Q78PFC4VV74BWT4\",\n            \"name\": \"TestAction\",\n            \"description\": \"Description\",\n            \"resourceId\": \"01JWP5S7KJF8T3RSA8WDZVSZWA\",\n            \"etag\": \"1752020961204686000\",\n            \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\",\n            \"resource\": {\n                \"id\": \"01JWP5S7KJF8T3RSA8WDZVSZWA\",\n                \"name\": \"IdentityProfile\"\n            }\n        }\n    ],\n    \"total\": 36,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - No criteria, With paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions?page=0&size=4",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "4"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNYMG1K2X4N8B3NTHQMDMZB\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804791000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n                \"name\": \"AuthzEntitlement\"\n            }\n        },\n        {\n            \"id\": \"01JWNYKV61QB9B05AS52GCEPCR\",\n            \"name\": \"Delete\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804889000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n                \"name\": \"AuthzEntitlement\"\n            }\n        },\n        {\n            \"id\": \"01JWNYJGBHZX29Y3C7V1V7QNN3\",\n            \"name\": \"Grant\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804899000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n                \"name\": \"AuthzEntitlement\"\n            }\n        },\n        {\n            \"id\": \"01JWNYJSCK13G16P0Z4BPY1C0A\",\n            \"name\": \"Revoke\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804902000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n                \"name\": \"AuthzEntitlement\"\n            }\n        }\n    ],\n    \"total\": 36,\n    \"page\": 0,\n    \"size\": 4\n}"
+								},
+								{
+									"name": "Success - 1 level criteria",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions?graph={\"if\":[\"name\", \"=\", \"Create\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"Create\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNYMG1K2X4N8B3NTHQMDMZB\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n            \"etag\": \"1751254425804791000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n                \"name\": \"AuthzEntitlement\"\n            }\n        },\n        {\n            \"id\": \"01JWNYZ5EPJJMA3D367XMYEMM2\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n            \"etag\": \"1751254425804905000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYWE9FBX2WTMYZMR9XHHX6\",\n                \"name\": \"AuthzResource\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ14EZ00S2HWZD3Z7VANJK\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n            \"etag\": \"1751254425804913000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYV4RQ1ZKWG8RE0RMFTVCM\",\n                \"name\": \"AuthzRole\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ29T8K173M5GA3HFXM1ME\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n            \"etag\": \"1751254425804921000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYW23X8CMREJ2Y9349BAE4\",\n                \"name\": \"AuthzRoleSuite\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ3KA0ARGT9DAHQ1E6NZV0\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n            \"etag\": \"1751254425804929000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n                \"name\": \"IdentityUser\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ4QY0ECRHAKR0ERQW97HW\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n            \"etag\": \"1751254425804937000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n                \"name\": \"IdentityGroup\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ5KW6WC643VXGKV1D0J64\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYQTHN6JTRNWKJ1BMCYB80\",\n            \"etag\": \"1751254425804945000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQTHN6JTRNWKJ1BMCYB80\",\n                \"name\": \"IdentityOrganization\"\n            }\n        },\n        {\n            \"id\": \"01JWNZ6NSG3ZWY82PEH1ERDZ5C\",\n            \"name\": \"Create\",\n            \"description\": \"\",\n            \"resourceId\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n            \"etag\": \"1751254425804954000.000000\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYRSKZ56EAE2QRFHJWRZPT\",\n                \"name\": \"IdentityHierarchyLevel\"\n            }\n        }\n    ],\n    \"total\": 8,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Client error - Invalid criteria fields",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions?page=0&size=4&graph={\"if\":[\"invalid_field\", \"=\", \"invalid_value\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "4"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"invalid_field\", \"=\", \"invalid_value\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"graph.condition\": \"invalid field 'invalid_field' of entity '%!s(func() string=0x102e07490)' in condition '[invalid_field = invalid_value]'\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid paging fields",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions?page=-1&size=99999999999&graph={\"if\":[\"name\", \"=\", \"Create\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "-1"
+												},
+												{
+													"key": "size",
+													"value": "99999999999"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"Create\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"page\": \"must be no less than 0\",\n        \"size\": \"must be no greater than 500\"\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Role",
+					"item": [
+						{
+							"name": "Role - Create",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"// ✅ Check status",
+											"pm.test(\"Status code is 200\", function () {",
+											"    pm.expect(pm.response.code).to.eql(200);",
+											"});",
+											"",
+											"// ✅ Schema",
+											"const schema = {",
+											"    type: \"object\",",
+											"    required: [",
+											"        \"id\", \"etag\", \"createdAt\",",
+											"        \"name\", \"ownerType\", \"ownerRef\",",
+											"        \"isRequestable\", \"isRequiredAttachment\",",
+											"        \"isRequiredComment\", \"createdBy\"",
+											"    ],",
+											"    properties: {",
+											"        id: { type: \"string\" },",
+											"        etag: { type: \"string\" },",
+											"        createdAt: { type: \"string\", format: \"date-time\" },",
+											"        name: { type: \"string\" },",
+											"        description: { type: [\"string\", \"null\"] },",
+											"        ownerType: { type: \"string\", enum: [\"user\", \"group\"] },",
+											"        ownerRef: { type: \"string\" },",
+											"        isRequestable: { type: \"boolean\" },",
+											"        isRequiredAttachment: { type: \"boolean\" },",
+											"        isRequiredComment: { type: \"boolean\" },",
+											"        createdBy: { type: \"string\" }",
+											"    },",
+											"    additionalProperties: false",
+											"};",
+											"",
+											"// ✅ Track schema validity",
+											"let isSchemaValid = false;",
+											"pm.test(\"Response matches expected schema\", function () {",
+											"    pm.response.to.have.jsonSchema(schema);",
+											"    isSchemaValid = true;",
+											"});",
+											"",
+											"// ✅ Parse response",
+											"let body;",
+											"let isJsonValid = true;",
+											"",
+											"try {",
+											"    body = pm.response.json();",
+											"    console.log(\"✅ Create Role response:\", body);",
+											"} catch (err) {",
+											"    isJsonValid = false;",
+											"    console.error(\"❌ Failed to parse response JSON:\", err);",
+											"}",
+											"",
+											"// ✅ Save env vars only if everything is correct",
+											"if (",
+											"    pm.response.code === 200 &&",
+											"    isJsonValid &&",
+											"    isSchemaValid &&",
+											"    body?.id &&",
+											"    body?.etag",
+											") {",
+											"    pm.environment.set(\"role_id\", body.id);",
+											"    pm.environment.set(\"etag\", body.etag);",
+											"    console.log(\"✅ Saved role_id and etag to environment\");",
+											"} else {",
+											"    console.warn(\"⚠️ Role not created or response invalid — env vars not set\");",
+											"}",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"TestRole\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/roles",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"roles"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestRole\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZPHBZ7GRNT87Q560QY9NFKR\",\n    \"etag\": \"1752029330672839000\",\n    \"createdAt\": \"2025-07-09T09:48:50.67712+07:00\",\n    \"name\": \"TestRole\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"01JYZZK83XRJXY2YT4HC4GRESN\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\"\n}"
+								},
+								{
+									"name": "Success - Some filed can nil",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestRole\",\n    \"createdBy\": \"{{user_id}}\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZPHERVW9S054MTXRHKN765F\",\n    \"etag\": \"1752029422460207000\",\n    \"createdAt\": \"2025-07-09T09:50:22.462493+07:00\",\n    \"name\": \"TestRole\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"01JYZZK83XRJXY2YT4HC4GRESN\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\"\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"invalid_field\": \"ìnvalid_value\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"createdBy\": \"cannot be blank\",\n        \"name\": \"cannot be blank\",\n        \"ownerRef\": \"cannot be blank\",\n        \"ownerType\": \"cannot be blank\"\n    }\n}"
+								},
+								{
+									"name": "Client erorr - Invalid ownerType",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestRole\",\n    \"ownerType\": \"invalid_type\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"ownerType\": \"must be a valid value\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Existing name",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestRole\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"name already exists\"\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Role Suite",
+					"item": []
+				},
+				{
+					"name": "Entitlement",
+					"item": [
+						{
+							"name": "Entitlement - Create",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"TestEntitlement\",\n\n    \"actionId\": \"{{action_id}}\",\n    \"actionExpr\": \"TestAction:TestResourcde\",\n\n    \"resourceId\": \"{{resource_id}}\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n    \n    \"createdBy\": \"{{user_id}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/entitlements",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"entitlements"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"actionExpr\": \"TestAction:TestResourcde\",\n    \"actionId\": \"{{action_id}}\",\n\n    \"createdBy\": \"{{user_id}}\",\n    \"name\": \"TestEntitlement\",\n    // \"description\": \"\", description is optional\n\n    \"resourceId\": \"{{resource_id}}\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n    \n    \"subjectRef\": \"custom\",\n    \"subjectType\": \"custom\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZPFRE7Q61QYVKXPKVKK6QH9\",\n    \"etag\": \"1752027642103080000\",\n    \"name\": \"TestEntitlement\",\n    \"actionId\": \"01JX0PKTPPP5CN780TAPMK846J\",\n    \"actionExpr\": \"TestAction:TestResourcde\",\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n    \"resourceId\": \"01JWP5S7KJF8T3RSA8WDZVSZWA\",\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\"\n}"
+								},
+								{
+									"name": "Success - Some field can nil",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestEntitlement\",\n\n    // \"actionId\": \"{{action_id}}\",\n    \"actionExpr\": \"TestAction:TestResourcde\",\n\n    // \"resourceId\": \"{{resource_id}}\",\n    // \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZPG1EDKKW53H3D41DJKWDRH\",\n    \"etag\": \"1752027937203269000\",\n    \"name\": \"TestEntitlement\",\n    \"actionExpr\": \"TestAction:TestResourcde\",\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\"\n}"
+								},
+								{
+									"name": "Client error - Existing name",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestEntitlement\",\n\n    \"actionId\": \"{{action_id}}\",\n    \"actionExpr\": \"TestAction:TestResourcde\",\n\n    \"resourceId\": \"{{resource_id}}\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n    \n    \"createdBy\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"name already exists\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid field",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    // \"name\": \"TestEntitlement\",\n\n    // \"actionId\": \"{{action_id}}\",\n    // \"actionExpr\": \"TestAction:TestResourcde\",\n\n    // \"resourceId\": \"{{resource_id}}\",\n    // \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n\n    // \"subjectType\": \"custom\",\n    // \"subjectRef\": \"custom\",\n    \n    // \"createdBy\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"actionExpr\": \"cannot be blank\",\n        \"createdBy\": \"cannot be blank\",\n        \"name\": \"cannot be blank\",\n        \"subjectRef\": \"cannot be blank\",\n        \"subjectType\": \"cannot be blank\"\n    }\n}"
+								}
+							]
 						}
 					]
 				}

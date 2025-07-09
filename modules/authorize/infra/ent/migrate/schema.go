@@ -16,6 +16,7 @@ var (
 		{Name: "created_by", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "etag", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "resource_id", Type: field.TypeString},
 	}
 	// AuthzActionsTable holds the schema information for the "authz_actions" table.
@@ -26,7 +27,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_actions_authz_resources_resource",
-				Columns:    []*schema.Column{AuthzActionsColumns[5]},
+				Columns:    []*schema.Column{AuthzActionsColumns[6]},
 				RefColumns: []*schema.Column{AuthzResourcesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -35,12 +36,12 @@ var (
 			{
 				Name:    "action_id_resource_id",
 				Unique:  true,
-				Columns: []*schema.Column{AuthzActionsColumns[0], AuthzActionsColumns[5]},
+				Columns: []*schema.Column{AuthzActionsColumns[0], AuthzActionsColumns[6]},
 			},
 			{
 				Name:    "action_name_resource_id",
 				Unique:  true,
-				Columns: []*schema.Column{AuthzActionsColumns[3], AuthzActionsColumns[5]},
+				Columns: []*schema.Column{AuthzActionsColumns[3], AuthzActionsColumns[6]},
 			},
 		},
 	}

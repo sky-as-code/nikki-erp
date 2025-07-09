@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"go.bryk.io/pkg/errors"
-
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
@@ -13,14 +11,14 @@ type Role struct {
 	model.ModelBase
 	model.AuditableBase
 
-	Name                 *string        `json:"displayName,omitempty"`
+	Name                 *string        `json:"name,omitempty"`
 	Description          *string        `json:"description,omitempty"`
-	Etag                 *string        `json:"etag,omitempty"`
 	OwnerType            *RoleOwnerType `json:"ownerType,omitempty"`
 	OwnerRef             *model.Id      `json:"ownerRef,omitempty"`
 	IsRequestable        *bool          `json:"isRequestable,omitempty"`
 	IsRequiredAttachment *bool          `json:"isRequiredAttachment,omitempty"`
 	IsRequiredComment    *bool          `json:"isRequiredComment,omitempty"`
+	CreatedBy            *model.Id      `json:"createdBy,omitempty"`
 
 	Entitlements []Entitlement `json:"entitlements,omitempty"`
 }
@@ -40,8 +38,18 @@ func (this *Role) Validate(forEdit bool) ft.ValidationErrors {
 				val.Length(1, model.MODEL_RULE_DESC_LENGTH),
 			),
 		),
+		val.Field(&this.IsRequestable,
+			val.NotNilWhen(!forEdit),
+		),
+		val.Field(&this.IsRequiredAttachment,
+			val.NotNilWhen(!forEdit),
+		),
+		val.Field(&this.IsRequiredComment,
+			val.NotNilWhen(!forEdit),
+		),
 		RoleOwnerTypeValidateRule(&this.OwnerType, !forEdit),
 		model.IdPtrValidateRule(&this.OwnerRef, !forEdit),
+		model.IdPtrValidateRule(&this.CreatedBy, !forEdit),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
@@ -56,20 +64,16 @@ const (
 	RoleOwnerTypeGroup = RoleOwnerType(entRole.OwnerTypeGroup)
 )
 
-func (this RoleOwnerType) Validate() error {
-	switch this {
-	case RoleOwnerTypeUser, RoleOwnerTypeGroup:
-		return nil
-	default:
-		return errors.Errorf("invalid owner type value: %s", this)
-	}
-}
-
 func (this RoleOwnerType) String() string {
 	return string(this)
 }
 
 func WrapRoleOwnerType(s string) *RoleOwnerType {
+	ot := RoleOwnerType(s)
+	return &ot
+}
+
+func WrapRoleOwnerTypeEnt(s entRole.OwnerType) *RoleOwnerType {
 	ot := RoleOwnerType(s)
 	return &ot
 }

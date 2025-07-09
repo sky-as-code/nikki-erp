@@ -36,6 +36,9 @@ func (ActionMixin) Fields() []ent.Field {
 
 		field.String("resource_id").
 			Immutable(),
+
+		field.String("description").
+			Optional(),
 	}
 }
 

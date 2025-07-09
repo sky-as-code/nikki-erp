@@ -5,6 +5,7 @@ package loader
 
 import (
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/authorize"
 	"github.com/sky-as-code/nikki-erp/modules/core"
 	"github.com/sky-as-code/nikki-erp/modules/identity"
 )
@@ -17,6 +18,7 @@ func getStaticModules() []modules.NikkiModule {
 	modules := []modules.NikkiModule{
 		core.ModuleSingleton,
 		identity.ModuleSingleton,
+		authorize.ModuleSingleton,
 	}
 
 	return modules

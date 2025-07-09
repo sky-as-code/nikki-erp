@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "45e3946f-8a6e-4b30-b36a-8e506080b2ea",
+		"_postman_id": "7a9aaabd-ee0b-4cfa-810e-d30c7efbd4c0",
 		"name": "NikkiERP - Tests",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "602425"
+		"_exporter_id": "26697084"
 	},
 	"item": [
 		{
@@ -2034,6 +2034,2042 @@
 								}
 							},
 							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Authorize",
+			"item": [
+				{
+					"name": "Resource",
+					"item": [
+						{
+							"name": "Resource - Create",
+							"item": [
+								{
+									"name": "Resource Create - Success",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													"let rawBody = pm.request.body.raw;",
+													"",
+													"let payload;",
+													"try {",
+													"    payload = JSON.parse(rawBody);",
+													"} catch (e) {",
+													"    console.error(\"❌ Failed to parse JSON body:\", e);",
+													"    return;",
+													"}",
+													"",
+													"// Generate a 6-character alphanumeric string (no spaces)",
+													"function randomString(length = 6) {",
+													"    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';",
+													"    return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');",
+													"}",
+													"",
+													"const rand = randomString();",
+													"",
+													"// Fix name: no spaces or symbols",
+													"if (payload.name) {",
+													"    // Remove non-alphanumeric just in case (safe fallback)",
+													"    payload.name = payload.name.replace(/[^a-zA-Z0-9]/g, '') + rand;",
+													"}",
+													"",
+													"// Generate valid ULID length (26 characters)",
+													"if (payload.resourceType === \"nikki_application\") {",
+													"    payload.resourceRef = \"01\" + randomString(24); // example ULID: total 26",
+													"}",
+													"",
+													"pm.environment.set(\"resource_name\", payload.name);",
+													"pm.request.body.raw = JSON.stringify(payload, null, 2);",
+													"",
+													"console.log(\"✅ Final request payload:\", payload);",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [\"id\", \"etag\", \"name\", \"resourceType\", \"resourceRef\", \"scopeType\"],",
+													"    properties: {",
+													"        id: { type: \"string\" },",
+													"        etag: { type: \"string\" },",
+													"        name: { type: \"string\" },",
+													"        description: { type: \"string\" },",
+													"        resourceType: { type: \"string\", enum: [\"nikki_application\", \"custom\"] },",
+													"        resourceRef: { type: \"string\" },",
+													"        scopeType: { type: \"string\", enum: [\"org\", \"hierarchy\", \"private\", \"domain\"] }",
+													"    },",
+													"    additionalProperties: true",
+													"};",
+													"",
+													"let isStatusValid = false;",
+													"pm.test(\"Status code is 201\", function () {",
+													"    isStatusValid = pm.response.code === 201;",
+													"    pm.expect(isStatusValid).to.be.true;",
+													"});",
+													"",
+													"let isSchemaValid = false;",
+													"pm.test(\"Response matches expected schema\", function () {",
+													"    pm.response.to.have.jsonSchema(schema);",
+													"    isSchemaValid = true;",
+													"});",
+													"",
+													"// ✅ Parse JSON response",
+													"let body;",
+													"let isJsonValid = true;",
+													"try {",
+													"    body = pm.response.json();",
+													"    console.log(\"✅ Response body:\", body);",
+													"} catch (e) {",
+													"    isJsonValid = false;",
+													"    console.error(\"❌ Failed to parse response JSON:\", e);",
+													"}",
+													"",
+													"if (",
+													"    isStatusValid &&",
+													"    isSchemaValid &&",
+													"    isJsonValid &&",
+													"    body?.id &&",
+													"    body?.etag",
+													") {",
+													"    pm.environment.set(\"resource_id\", body.id);",
+													"    pm.environment.set(\"etag\", body.etag);",
+													"    console.log(\"✅ Set resource_id and etag\");",
+													"} else {",
+													"    console.warn(\"⚠️ Response invalid or incomplete — NOT setting env vars\");",
+													"}",
+													"",
+													"if (body) {",
+													"    pm.test(\"Name matches generated\", function () {",
+													"        pm.expect(body.name).to.eql(pm.environment.get(\"resource_name\"));",
+													"    });",
+													"",
+													"    if (body.resourceType === \"nikki_application\") {",
+													"        pm.test(\"resourceRef is 26-char ULID\", function () {",
+													"            pm.expect(body.resourceRef.length).to.eql(26);",
+													"        });",
+													"    } else if (body.resourceType === \"custom\") {",
+													"        pm.test(\"resourceRef is a string for custom type\", function () {",
+													"            pm.expect(typeof body.resourceRef).to.eql(\"string\");",
+													"        });",
+													"    }",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"resource 3UNP9s\",\n    \"resourceType\": \"nikki_application\",\n    \"resourceRef\": \"12345678901234567890123456\",\n    \"scopeType\": \"org\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Resource Create - Invalid fields",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"// ✅ Expected error schema for validation errors",
+													"const errorSchema = {",
+													"    type: \"object\",",
+													"    required: [\"code\", \"details\"],",
+													"    properties: {",
+													"        code: { type: \"string\", enum: [\"validation_error\"] },",
+													"        details: {",
+													"            type: \"object\",",
+													"            additionalProperties: { type: \"string\" }",
+													"        }",
+													"    },",
+													"    additionalProperties: true",
+													"};",
+													"",
+													"// ✅ Test: status code",
+													"let isStatusValid = false;",
+													"pm.test(\"Status code is 400\", function () {",
+													"    isStatusValid = pm.response.code === 400;",
+													"    pm.expect(isStatusValid).to.be.true;",
+													"});",
+													"",
+													"// ✅ Parse response JSON",
+													"let body;",
+													"let isJsonValid = true;",
+													"try {",
+													"    body = pm.response.json();",
+													"    console.log(\"📥 Parsed error response:\", body);",
+													"} catch (err) {",
+													"    isJsonValid = false;",
+													"    console.error(\"❌ Failed to parse JSON response:\", err);",
+													"    pm.expect.fail(\"Response is not valid JSON\");",
+													"}",
+													"",
+													"// ✅ Validate schema",
+													"let isSchemaValid = false;",
+													"if (isJsonValid) {",
+													"    pm.test(\"Error response matches expected schema\", function () {",
+													"        pm.expect(body).to.have.jsonSchema(errorSchema);",
+													"        isSchemaValid = true;",
+													"    });",
+													"}",
+													"",
+													"// ✅ Validate error content only if schema is valid",
+													"if (isJsonValid && isSchemaValid && isStatusValid) {",
+													"    pm.test(\"Validation error fields match expected\", function () {",
+													"        // Check error code",
+													"        pm.expect(body.code).to.eql(\"validation_error\");",
+													"",
+													"        // Check each expected field and message",
+													"        const expectedFields = {",
+													"            name: \"cannot be blank\",",
+													"            resourceType: \"must be a valid value\",",
+													"            scopeType: \"must be a valid value\"",
+													"        };",
+													"",
+													"        Object.entries(expectedFields).forEach(([key, expectedMsg]) => {",
+													"            pm.expect(body.details).to.have.property(key);",
+													"            pm.expect(body.details[key]).to.eql(expectedMsg);",
+													"        });",
+													"",
+													"        console.log(\"✅ Validation error details matched:\", body.details);",
+													"    });",
+													"} else {",
+													"    console.warn(\"⚠️ Invalid error response — skipping validation detail checks and no env will be set\");",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"resourceType\": \"invalid_type\",\n    \"scopeType\": \"invalid_scope\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Resource Create - Existing name",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const errorSchema = {",
+													"    type: \"object\",",
+													"    required: [\"code\", \"details\"],",
+													"    properties: {",
+													"        code: { type: \"string\", enum: [\"validation_error\"] },",
+													"        details: {",
+													"            type: \"object\",",
+													"            additionalProperties: { type: \"string\" }",
+													"        }",
+													"    },",
+													"    additionalProperties: true",
+													"};",
+													"",
+													"let isStatusValid = false;",
+													"pm.test(\"Status code is 400\", function () {",
+													"    isStatusValid = pm.response.code === 400;",
+													"    pm.expect(isStatusValid).to.be.true;",
+													"});",
+													"",
+													"// ✅ Parse JSON body",
+													"let body;",
+													"let isJsonValid = true;",
+													"try {",
+													"    body = pm.response.json();",
+													"    console.log(\"📥 Parsed error response:\", body);",
+													"} catch (e) {",
+													"    isJsonValid = false;",
+													"    console.error(\"❌ Failed to parse JSON:\", e);",
+													"    pm.expect.fail(\"Response body is not valid JSON\");",
+													"}",
+													"",
+													"// ✅ Validate schema",
+													"let isSchemaValid = false;",
+													"if (isJsonValid) {",
+													"    pm.test(\"Error response matches schema\", function () {",
+													"        pm.expect(body).to.have.jsonSchema(errorSchema);",
+													"        isSchemaValid = true;",
+													"    });",
+													"}",
+													"",
+													"if (isStatusValid && isJsonValid && isSchemaValid) {",
+													"    pm.test(\"Response is validation_error due to existing name\", function () {",
+													"        pm.expect(body.code).to.eql(\"validation_error\");",
+													"",
+													"        pm.expect(body.details).to.be.an(\"object\");",
+													"        pm.expect(body.details).to.have.property(\"name\");",
+													"        pm.expect(body.details.name).to.eql(\"name already exists\");",
+													"",
+													"        console.log(\"✅ Correctly failed on existing name:\", body.details.name);",
+													"    });",
+													"} else {",
+													"    console.warn(\"⚠️ Invalid error response — skipping validation and NOT setting any environment variables.\");",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"IdentityProfile\",\n    \"resourceType\": \"custom\",\n    \"scopeType\": \"org\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Resource - Update",
+							"item": [
+								{
+									"name": "Resource Create - Success",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"let isStatusValid = false;",
+													"pm.test(\"Status code is 200\", function () {",
+													"    isStatusValid = pm.response.code === 200;",
+													"    pm.expect(isStatusValid).to.be.true;",
+													"});",
+													"",
+													"let body;",
+													"let isJsonValid = true;",
+													"try {",
+													"    body = pm.response.json();",
+													"    console.log(\"📥 Response body:\", body);",
+													"} catch (err) {",
+													"    isJsonValid = false;",
+													"    pm.expect.fail(\"❌ Response is not valid JSON\");",
+													"}",
+													"",
+													"let isStructureValid = false;",
+													"if (isStatusValid && isJsonValid) {",
+													"    pm.test(\"Response contains updated resource fields\", function () {",
+													"        const requiredFields = [",
+													"            \"id\",",
+													"            \"etag\",",
+													"            \"name\",",
+													"            \"description\",",
+													"            \"resourceType\",",
+													"            \"resourceRef\",",
+													"            \"scopeType\"",
+													"        ];",
+													"",
+													"        requiredFields.forEach(field => {",
+													"            pm.expect(body).to.have.property(field);",
+													"            pm.expect(body[field]).to.be.a(\"string\");",
+													"        });",
+													"",
+													"        isStructureValid = true;",
+													"",
+													"        if (body.etag) {",
+													"            pm.environment.set(\"etag\", body.etag);",
+													"            console.log(\"✅ Updated etag saved:\", body.etag);",
+													"        }",
+													"    });",
+													"} else {",
+													"    console.warn(\"⚠️ Skip env set: Response is invalid or structure not matched.\");",
+													"}",
+													"",
+													"if (isJsonValid && body?.description !== undefined) {",
+													"    pm.test(\"Description has been updated\", function () {",
+													"        pm.expect(body.description).to.eql(\"Description\");",
+													"    });",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"{{etag}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/{{resource_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"{{resource_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Resource Create - Invalid fields",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"let isStatusValid = false;",
+													"pm.test(\"Status code is 400\", function () {",
+													"    isStatusValid = pm.response.code === 400;",
+													"    pm.expect(isStatusValid).to.be.true;",
+													"});",
+													"",
+													"let body;",
+													"let isJsonValid = true;",
+													"try {",
+													"    body = pm.response.json();",
+													"    console.log(\"📥 Parsed response:\", body);",
+													"} catch (e) {",
+													"    isJsonValid = false;",
+													"    pm.expect.fail(\"❌ Response body is not valid JSON\");",
+													"}",
+													"",
+													"let isCodeValid = false;",
+													"if (isStatusValid && isJsonValid) {",
+													"    pm.test(\"Returns validation_error code\", function () {",
+													"        pm.expect(body.code).to.eql(\"validation_error\");",
+													"        isCodeValid = true;",
+													"    });",
+													"}",
+													"",
+													"if (isStatusValid && isJsonValid && isCodeValid) {",
+													"    pm.test(\"Returns etag validation message\", function () {",
+													"        pm.expect(body.details).to.have.property(\"etag\", \"cannot be blank\");",
+													"    });",
+													"",
+													"    pm.test(\"Does not contain unrelated fields\", function () {",
+													"        pm.expect(body.details).to.not.have.property(\"invalid_field\");",
+													"    });",
+													"} else {",
+													"    console.warn(\"⚠️ Skip detailed tests due to invalid response structure\");",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/{{resource_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"{{resource_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Resource Create - No match etag",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 400\", function () {",
+													"    pm.response.to.have.status(400);",
+													"});",
+													"",
+													"pm.test(\"Returns validation_error code\", function () {",
+													"    const json = pm.response.json();",
+													"    pm.expect(json.code).to.eql(\"validation_error\");",
+													"});",
+													"",
+													"pm.test(\"Returns etag conflict message\", function () {",
+													"    const json = pm.response.json();",
+													"    pm.expect(json.details).to.have.property(\"etag\", \"resource has been modified by another process\");",
+													"});",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"1752032294635863001\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/{{resource_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"{{resource_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Resource Create- Not found",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 400\", function () {",
+													"    pm.response.to.have.status(400);",
+													"});",
+													"",
+													"pm.test(\"Returns validation_error code\", function () {",
+													"    const json = pm.response.json();",
+													"    pm.expect(json.code).to.eql(\"validation_error\");",
+													"});",
+													"",
+													"pm.test(\"Returns 'resource not found' on id\", function () {",
+													"    const json = pm.response.json();",
+													"    pm.expect(json.details).to.have.property(\"id\", \"resource not found\");",
+													"});",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"{{etag}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/01JZQ0R0AF76T1TNZ84CAB8PM1",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"01JZQ0R0AF76T1TNZ84CAB8PM1"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Resource - Get by name",
+							"item": [
+								{
+									"name": "Resource Get by name - Success",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [\"id\", \"etag\", \"name\", \"resourceType\", \"resourceRef\", \"scopeType\"],",
+													"    properties: {",
+													"        id: { type: \"string\" },",
+													"        etag: { type: \"string\" },",
+													"        name: { type: \"string\" },",
+													"        description: { type: \"string\" },",
+													"        resourceType: { type: \"string\", enum: [\"nikki_application\", \"custom\"] },",
+													"        resourceRef: { type: \"string\" },",
+													"        scopeType: { type: \"string\", enum: [\"org\", \"hierarchy\", \"private\", \"domain\"] }",
+													"    },",
+													"    additionalProperties: true",
+													"};",
+													"",
+													"pm.test(\"Status code is 400\", function () {",
+													"    pm.response.to.have.status(400);",
+													"});",
+													"",
+													"pm.test(\"Response matches expected error schema\", function () {",
+													"    pm.response.to.have.jsonSchema(schema);",
+													"});",
+													"",
+													"try {",
+													"    const payload = pm.response.json();",
+													"    console.log(\"❌ Resource not found error response:\", payload);",
+													"} catch (err) {",
+													"    console.error(\"❌ Failed to parse error response:\", err);",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/{{resource_name}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"{{resource_name}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Resource Get by name - Not found",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [\"id\", \"etag\", \"name\", \"resourceType\", \"resourceRef\", \"scopeType\"],",
+													"    properties: {",
+													"        id: { type: \"string\" },",
+													"        etag: { type: \"string\" },",
+													"        name: { type: \"string\" },",
+													"        description: { type: \"string\" },",
+													"        resourceType: { type: \"string\", enum: [\"nikki_application\", \"custom\"] },",
+													"        resourceRef: { type: \"string\" },",
+													"        scopeType: { type: \"string\", enum: [\"org\", \"hierarchy\", \"private\", \"domain\"] }",
+													"    },",
+													"    additionalProperties: true",
+													"};",
+													"",
+													"pm.test(\"Status code is 400\", function () {",
+													"    pm.response.to.have.status(400);",
+													"});",
+													"",
+													"pm.test(\"Response matches expected error schema\", function () {",
+													"    pm.response.to.have.jsonSchema(schema);",
+													"});",
+													"",
+													"try {",
+													"    const payload = pm.response.json();",
+													"    console.log(\"❌ Resource not found error response:\", payload);",
+													"} catch (err) {",
+													"    console.error(\"❌ Failed to parse error response:\", err);",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/resources/{{resource_name}}Invalid",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"resources",
+												"{{resource_name}}Invalid"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Action",
+					"item": [
+						{
+							"name": "Action - Create",
+							"item": [
+								{
+									"name": "Action Create - Success",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													"let rawBody = pm.request.body.raw;",
+													"",
+													"let payload;",
+													"try {",
+													"    payload = JSON.parse(rawBody);",
+													"} catch (e) {",
+													"    console.error(\"❌ Failed to parse JSON body:\", e);",
+													"    return;",
+													"}",
+													"",
+													"// ✅ Generate random 6-char string (alphanumeric)",
+													"function randomString(length = 6) {",
+													"    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';",
+													"    return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');",
+													"}",
+													"",
+													"const rand = randomString();",
+													"",
+													"// ✅ Ensure `name` is alphanumeric, no symbols/spaces",
+													"if (payload.name) {",
+													"    payload.name = payload.name.replace(/[^a-zA-Z0-9_-]/g, '') + rand;",
+													"}",
+													"",
+													"// Update request body",
+													"pm.request.body.raw = JSON.stringify(payload, null, 2);",
+													"console.log(\"✅ Final request payload:\", payload);",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"// ✅ Define schema",
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [\"id\", \"etag\", \"name\", \"resourceId\", \"createdBy\"],",
+													"    properties: {",
+													"        id: { type: \"string\" },",
+													"        etag: { type: \"string\" },",
+													"        name: { type: \"string\", pattern: \"^[a-zA-Z0-9_-]+$\" },",
+													"        description: { type: [\"string\", \"null\"] },",
+													"        resourceId: { type: \"string\" },",
+													"        createdBy: { type: \"string\" },",
+													"        resource: { type: [\"object\", \"null\"] }",
+													"    },",
+													"    additionalProperties: true",
+													"};",
+													"",
+													"let isStatusValid = false;",
+													"pm.test(\"Status code is 200 or 201\", function () {",
+													"    isStatusValid = [200, 201].includes(pm.response.code);",
+													"    pm.expect(isStatusValid).to.be.true;",
+													"});",
+													"",
+													"let body;",
+													"let isJsonValid = true;",
+													"try {",
+													"    body = pm.response.json();",
+													"} catch (e) {",
+													"    isJsonValid = false;",
+													"    pm.expect.fail(\"❌ Failed to parse response JSON\");",
+													"}",
+													"",
+													"let isSchemaValid = false;",
+													"if (isStatusValid && isJsonValid) {",
+													"    pm.test(\"Response matches expected schema\", function () {",
+													"        pm.expect(tv4.validate(body, schema)).to.be.true;",
+													"        isSchemaValid = true;",
+													"    });",
+													"} else {",
+													"    console.warn(\"⚠️ Skip schema check due to invalid status or JSON\");",
+													"}",
+													"",
+													"if (isStatusValid && isJsonValid && isSchemaValid) {",
+													"    pm.environment.set(\"action_id\", body.id);",
+													"    pm.environment.set(\"etag\", body.etag);",
+													"    console.log(\"✅ Environment updated with action_id and etag\");",
+													"    console.log(\"📦 Response body:\", body);",
+													"} else {",
+													"    console.warn(\"🚫 Not updating env due to failed validation\");",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Action Create - Invalid fields",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"// ✅ Test status code",
+													"let isStatusValid = false;",
+													"pm.test(\"Status code is 400\", function () {",
+													"    isStatusValid = pm.response.code === 400;",
+													"    pm.expect(isStatusValid).to.be.true;",
+													"});",
+													"",
+													"// ✅ Parse response body safely",
+													"let body;",
+													"let isJsonValid = true;",
+													"try {",
+													"    body = pm.response.json();",
+													"} catch (e) {",
+													"    isJsonValid = false;",
+													"    pm.expect.fail(\"❌ Response body is not valid JSON\");",
+													"}",
+													"",
+													"// ✅ Validate error code",
+													"let isCodeValid = false;",
+													"if (isStatusValid && isJsonValid) {",
+													"    pm.test(\"Error code is validation_error\", function () {",
+													"        pm.expect(body).to.have.property(\"code\", \"validation_error\");",
+													"        isCodeValid = true;",
+													"    });",
+													"} else {",
+													"    console.warn(\"⚠️ Skipping error code test due to invalid status or JSON\");",
+													"}",
+													"",
+													"// ✅ Validate expected invalid fields",
+													"if (isStatusValid && isJsonValid && isCodeValid) {",
+													"    pm.test(\"Contains all expected invalid fields\", function () {",
+													"        const expectedErrors = [\"name\", \"createdBy\", \"resourceId\"];",
+													"        pm.expect(body).to.have.property(\"details\");",
+													"",
+													"        for (const field of expectedErrors) {",
+													"            pm.expect(body.details).to.have.property(field);",
+													"            pm.expect(body.details[field]).to.be.a(\"string\").and.not.empty;",
+													"        }",
+													"    });",
+													"} else {",
+													"    console.warn(\"⚠️ Skipping field validation due to earlier failure\");",
+													"}",
+													"",
+													"// ✅ Debug log",
+													"if (isJsonValid) {",
+													"    console.log(\"🧪 Validation error response:\", body);",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Action Create - Existing name",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 400\", function () {",
+													"    pm.response.to.have.status(400);",
+													"});",
+													"",
+													"let body;",
+													"try {",
+													"    body = pm.response.json();",
+													"} catch (e) {",
+													"    console.error(\"❌ Failed to parse response JSON:\", e);",
+													"}",
+													"",
+													"pm.test(\"Response has validation_error code\", function () {",
+													"    pm.expect(body).to.have.property(\"code\", \"validation_error\");",
+													"});",
+													"",
+													"pm.test(\"Error message should say name already exists\", function () {",
+													"    pm.expect(body.details).to.have.property(\"name\");",
+													"    pm.expect(body.details.name.toLowerCase()).to.include(\"already exists\");",
+													"});",
+													"",
+													"console.log(\"✅ Duplicate name test response:\", body);",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Action - Update",
+							"item": [
+								{
+									"name": "Action Update - Success",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													"let rawBody = pm.request.body.raw;",
+													"",
+													"let payload;",
+													"try {",
+													"    payload = JSON.parse(rawBody);",
+													"} catch (e) {",
+													"    console.error(\"❌ Failed to parse JSON body:\", e);",
+													"    return;",
+													"}",
+													"",
+													"// Optionally randomize description for better coverage",
+													"const randDesc = `Updated description ${Math.floor(Math.random() * 1000)}`;",
+													"payload.description = randDesc;",
+													"",
+													"pm.request.body.raw = JSON.stringify(payload, null, 2);",
+													"",
+													"console.log(\"✅ Final request payload for update:\", payload);",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"let isStatusValid = false;",
+													"pm.test(\"Status code is 200\", function () {",
+													"    isStatusValid = pm.response.code === 200;",
+													"    pm.expect(isStatusValid).to.be.true;",
+													"});",
+													"",
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [\"id\", \"etag\", \"name\", \"resourceId\", \"createdBy\"],",
+													"    properties: {",
+													"        id: { type: \"string\" },",
+													"        etag: { type: \"string\" },",
+													"        name: { type: \"string\" },",
+													"        description: { type: \"string\" },",
+													"        resourceId: { type: \"string\" },",
+													"        createdBy: { type: \"string\" }",
+													"    },",
+													"    additionalProperties: true",
+													"};",
+													"",
+													"let body;",
+													"let isJsonValid = true;",
+													"let isSchemaValid = false;",
+													"",
+													"try {",
+													"    body = pm.response.json();",
+													"} catch (e) {",
+													"    isJsonValid = false;",
+													"    pm.expect.fail(\"❌ JSON parse failed\");",
+													"}",
+													"",
+													"if (isStatusValid && isJsonValid) {",
+													"    pm.test(\"Response matches schema\", function () {",
+													"        pm.expect(tv4.validate(body, schema)).to.be.true;",
+													"        isSchemaValid = true;",
+													"    });",
+													"} else {",
+													"    console.warn(\"⚠️ Skip schema test due to invalid status or JSON\");",
+													"}",
+													"",
+													"if (isStatusValid && isJsonValid && isSchemaValid && body.etag) {",
+													"    pm.environment.set(\"etag\", body.etag);",
+													"    console.log(\"✅ Updated etag:\", body.etag);",
+													"} else {",
+													"    console.warn(\"🚫 Not updating etag due to failed checks\");",
+													"}",
+													"",
+													"if (isJsonValid) {",
+													"    console.log(\"📦 Response body:\", body);",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"{{etag}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/{{action_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"{{action_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Action Update - Invalid fields",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"// ✅ Check status code is 400",
+													"let isStatus400 = false;",
+													"pm.test(\"Status code is 400\", function () {",
+													"    isStatus400 = pm.response.code === 400;",
+													"    pm.expect(isStatus400).to.be.true;",
+													"});",
+													"",
+													"// ✅ Define expected validation error schema",
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [\"code\", \"details\"],",
+													"    properties: {",
+													"        code: { type: \"string\", const: \"validation_error\" },",
+													"        details: {",
+													"            type: \"object\",",
+													"            properties: {",
+													"                etag: { type: \"string\", const: \"cannot be blank\" }",
+													"            },",
+													"            additionalProperties: true",
+													"        }",
+													"    },",
+													"    additionalProperties: true",
+													"};",
+													"",
+													"// ✅ Parse response body",
+													"let body;",
+													"let isJsonValid = true;",
+													"",
+													"try {",
+													"    body = pm.response.json();",
+													"} catch (e) {",
+													"    isJsonValid = false;",
+													"    pm.expect.fail(\"❌ Failed to parse response JSON\");",
+													"}",
+													"",
+													"if (isStatus400 && isJsonValid) {",
+													"    pm.test(\"Response matches expected validation error schema\", function () {",
+													"        pm.expect(tv4.validate(body, schema)).to.be.true;",
+													"    });",
+													"",
+													"    pm.test(\"Error message contains 'etag: cannot be blank'\", function () {",
+													"        pm.expect(body.details).to.have.property(\"etag\", \"cannot be blank\");",
+													"    });",
+													"",
+													"    console.log(\"⚠️ Error response body:\", body);",
+													"}",
+													"",
+													"// ✅ Ensure etag is NOT modified",
+													"pm.test(\"Environment variable 'etag' is NOT updated on error\", function () {",
+													"    const currentEtag = pm.environment.get(\"etag\");",
+													"    pm.expect(currentEtag).to.not.eql(null);",
+													"    pm.expect(currentEtag).to.not.eql(undefined);",
+													"});",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"invalid_field\": \"invalid_field\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/{{action_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"{{action_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Action Update - Not found",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"let isStatus400 = false;",
+													"pm.test(\"Status code is 400\", function () {",
+													"    isStatus400 = pm.response.code === 400;",
+													"    pm.expect(isStatus400).to.be.true;",
+													"});",
+													"",
+													"// ✅ Định nghĩa schema cho lỗi not found",
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [\"code\", \"details\"],",
+													"    properties: {",
+													"        code: { type: \"string\", const: \"validation_error\" },",
+													"        details: {",
+													"            type: \"object\",",
+													"            required: [\"id\"],",
+													"            properties: {",
+													"                id: { type: \"string\", const: \"action not found\" }",
+													"            },",
+													"            additionalProperties: true",
+													"        }",
+													"    },",
+													"    additionalProperties: true",
+													"};",
+													"",
+													"// ✅ Parse response",
+													"let body;",
+													"let isJsonValid = true;",
+													"try {",
+													"    body = pm.response.json();",
+													"} catch (e) {",
+													"    isJsonValid = false;",
+													"    console.error(\"❌ Failed to parse response:\", e);",
+													"    pm.expect.fail(\"Response body is not valid JSON\");",
+													"}",
+													"",
+													"// ✅ Validate response body against schema",
+													"if (isStatus400 && isJsonValid) {",
+													"    pm.test(\"Response matches 'not found' schema\", function () {",
+													"        pm.expect(tv4.validate(body, schema)).to.be.true;",
+													"    });",
+													"",
+													"    pm.test(\"Error message contains 'id: action not found'\", function () {",
+													"        pm.expect(body.details).to.have.property(\"id\", \"action not found\");",
+													"    });",
+													"",
+													"    console.log(\"⚠️ Error response (Not Found):\", body);",
+													"}",
+													"",
+													"pm.test(\"Do not update 'etag' when action is not found\", function () {",
+													"    const etag = pm.environment.get(\"etag\");",
+													"    pm.expect(etag).to.not.eql(null);",
+													"    pm.expect(etag).to.not.eql(undefined);",
+													"});",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"Description\",\n    \"etag\": \"{{etag}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/01JZQ2A5K04QSBPK2SCYFH4PJ1",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"01JZQ2A5K04QSBPK2SCYFH4PJ1"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Action - Get by name",
+							"item": [
+								{
+									"name": "Action Get by Id - Success",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});",
+													"",
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [\"id\", \"etag\", \"name\", \"resourceId\", \"createdBy\"],",
+													"    properties: {",
+													"        id: { type: \"string\" },",
+													"        etag: { type: \"string\" },",
+													"        name: { ",
+													"            type: \"string\",",
+													"            pattern: \"^[a-zA-Z0-9_-]+$\"",
+													"        },",
+													"        description: { type: [\"string\", \"null\"] },",
+													"        resourceId: { type: \"string\" },",
+													"        createdBy: { type: \"string\" },",
+													"        resource: { ",
+													"            type: [\"object\", \"null\"],",
+													"            properties: {",
+													"                id: { type: \"string\" },",
+													"                name: { type: \"string\" }",
+													"            },",
+													"            required: [\"id\", \"name\"],",
+													"            additionalProperties: true",
+													"        }",
+													"    },",
+													"    additionalProperties: true",
+													"};",
+													"",
+													"pm.test(\"Response matches expected schema\", function () {",
+													"    pm.response.to.have.jsonSchema(schema);",
+													"});",
+													"",
+													"let body;",
+													"try {",
+													"    body = pm.response.json();",
+													"    console.log(\"✅ Get Action by ID response:\", body);",
+													"} catch (err) {",
+													"    console.error(\"❌ Failed to parse response JSON:\", err);",
+													"}",
+													"",
+													"if (body && body.id && body.etag) {",
+													"    pm.environment.set(\"action_id\", body.id);",
+													"    pm.environment.set(\"etag\", body.etag);",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/{{action_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"{{action_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Action Get by Id - Not found",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 200\", function () {",
+													"    pm.response.to.have.status(200);",
+													"});",
+													"",
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [\"id\", \"etag\", \"name\", \"resourceId\", \"createdBy\"],",
+													"    properties: {",
+													"        id: { type: \"string\" },",
+													"        etag: { type: \"string\" },",
+													"        name: { ",
+													"            type: \"string\",",
+													"            pattern: \"^[a-zA-Z0-9_-]+$\"",
+													"        },",
+													"        description: { type: [\"string\", \"null\"] },",
+													"        resourceId: { type: \"string\" },",
+													"        createdBy: { type: \"string\" },",
+													"        resource: { ",
+													"            type: [\"object\", \"null\"],",
+													"            properties: {",
+													"                id: { type: \"string\" },",
+													"                name: { type: \"string\" }",
+													"            },",
+													"            required: [\"id\", \"name\"],",
+													"            additionalProperties: true",
+													"        }",
+													"    },",
+													"    additionalProperties: true",
+													"};",
+													"",
+													"pm.test(\"Response matches expected schema\", function () {",
+													"    pm.response.to.have.jsonSchema(schema);",
+													"});",
+													"",
+													"let body;",
+													"try {",
+													"    body = pm.response.json();",
+													"    console.log(\"✅ Get Action by ID response:\", body);",
+													"} catch (err) {",
+													"    console.error(\"❌ Failed to parse response JSON:\", err);",
+													"}",
+													"",
+													"if (body && body.id && body.etag) {",
+													"    pm.environment.set(\"action_id\", body.id);",
+													"    pm.environment.set(\"etag\", body.etag);",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/actions/01JZQ2GPTQ7AYRG8K7B7ZEY661",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"actions",
+												"01JZQ2GPTQ7AYRG8K7B7ZEY661"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Role",
+					"item": [
+						{
+							"name": "Role - Create",
+							"item": [
+								{
+									"name": "Role Create - Success",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"let isStatus200 = false;",
+													"pm.test(\"Status code is 200\", function () {",
+													"    isStatus200 = pm.response.code === 200;",
+													"    pm.expect(isStatus200).to.be.true;",
+													"});",
+													"",
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [",
+													"        \"id\", \"etag\", \"createdAt\",",
+													"        \"name\", \"ownerType\", \"ownerRef\",",
+													"        \"isRequestable\", \"isRequiredAttachment\",",
+													"        \"isRequiredComment\", \"createdBy\"",
+													"    ],",
+													"    properties: {",
+													"        id: { type: \"string\" },",
+													"        etag: { type: \"string\" },",
+													"        createdAt: { type: \"string\", format: \"date-time\" },",
+													"",
+													"        name: { type: \"string\" },",
+													"        description: { type: [\"string\", \"null\"] },",
+													"        ownerType: { type: \"string\", enum: [\"user\", \"group\"] },",
+													"        ownerRef: { type: \"string\" },",
+													"        isRequestable: { type: \"boolean\" },",
+													"        isRequiredAttachment: { type: \"boolean\" },",
+													"        isRequiredComment: { type: \"boolean\" },",
+													"        createdBy: { type: \"string\" }",
+													"    },",
+													"    additionalProperties: false",
+													"};",
+													"",
+													"let isSchemaValid = false;",
+													"pm.test(\"Response matches expected schema\", function () {",
+													"    isSchemaValid = pm.response.to.have.jsonSchema(schema);",
+													"});",
+													"",
+													"// ✅ Parse response",
+													"let body;",
+													"let isJsonValid = true;",
+													"try {",
+													"    body = pm.response.json();",
+													"    console.log(\"✅ Create Role response:\", body);",
+													"} catch (err) {",
+													"    isJsonValid = false;",
+													"    console.error(\"❌ Failed to parse response JSON:\", err);",
+													"}",
+													"",
+													"if (isStatus200 && isJsonValid && body?.id && body?.etag) {",
+													"    pm.environment.set(\"role_id\", body.id);",
+													"    pm.environment.set(\"etag\", body.etag);",
+													"    console.log(\"✅ Saved role_id and etag to environment\");",
+													"} else {",
+													"    console.warn(\"⚠️ Skipped setting role_id and etag due to invalid response or status\");",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													"let rawBody = pm.request.body.raw;",
+													"let payload;",
+													"try {",
+													"    payload = JSON.parse(rawBody);",
+													"} catch (e) {",
+													"    console.error(\"❌ Failed to parse JSON body:\", e);",
+													"    return;",
+													"}",
+													"",
+													"// Utility to generate random alphanumeric string",
+													"function randomString(length = 6) {",
+													"    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';",
+													"    return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');",
+													"}",
+													"",
+													"// Generate ULID-like string (starts with \"01\", total 26 chars)",
+													"function generateULID() {",
+													"    return \"01\" + randomString(24);",
+													"}",
+													"",
+													"// Randomize name (append 6-char string, alphanumeric only)",
+													"if (payload.name) {",
+													"    payload.name = payload.name.replace(/[^a-zA-Z0-9]/g, '') + \"_\" + randomString();",
+													"}",
+													"",
+													"// Random ownerType: \"user\" or \"group\"",
+													"const ownerTypes = [\"user\", \"group\"];",
+													"payload.ownerType = ownerTypes[Math.floor(Math.random() * ownerTypes.length)];",
+													"",
+													"// Fill required fields with dummy ULIDs",
+													"payload.ownerRef = generateULID();",
+													"payload.createdBy = generateULID();",
+													"",
+													"// Optional: set default values if not present",
+													"if (typeof payload.isRequestable !== \"boolean\") {",
+													"    payload.isRequestable = true;",
+													"}",
+													"if (typeof payload.isRequiredAttachment !== \"boolean\") {",
+													"    payload.isRequiredAttachment = false;",
+													"}",
+													"if (typeof payload.isRequiredComment !== \"boolean\") {",
+													"    payload.isRequiredComment = false;",
+													"}",
+													"",
+													"// Save generated name for later use",
+													"pm.environment.set(\"role_name\", payload.name);",
+													"",
+													"pm.request.body.raw = JSON.stringify(payload, null, 2);",
+													"console.log(\"✅ Final payload for create role:\", payload);",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestRole\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Role Create - Invalid Fields",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"// ✅ Check status code",
+													"let isStatus200 = false;",
+													"pm.test(\"Status code is 200\", function () {",
+													"    isStatus200 = pm.response.code === 200;",
+													"    pm.expect(isStatus200).to.be.true;",
+													"});",
+													"",
+													"// ✅ JSON schema check",
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [",
+													"        \"id\", \"etag\", \"createdAt\",",
+													"        \"name\", \"ownerType\", \"ownerRef\",",
+													"        \"isRequestable\", \"isRequiredAttachment\",",
+													"        \"isRequiredComment\", \"createdBy\"",
+													"    ],",
+													"    properties: {",
+													"        id: { type: \"string\" },",
+													"        etag: { type: \"string\" },",
+													"        createdAt: { type: \"string\", format: \"date-time\" },",
+													"        name: { type: \"string\" },",
+													"        description: { type: [\"string\", \"null\"] },",
+													"        ownerType: { type: \"string\", enum: [\"user\", \"group\"] },",
+													"        ownerRef: { type: \"string\" },",
+													"        isRequestable: { type: \"boolean\" },",
+													"        isRequiredAttachment: { type: \"boolean\" },",
+													"        isRequiredComment: { type: \"boolean\" },",
+													"        createdBy: { type: \"string\" }",
+													"    },",
+													"    additionalProperties: false",
+													"};",
+													"",
+													"let isSchemaValid = false;",
+													"pm.test(\"Response matches expected schema\", function () {",
+													"    isSchemaValid = pm.response.to.have.jsonSchema(schema);",
+													"});",
+													"",
+													"// ✅ Parse response safely",
+													"let body;",
+													"let isJsonValid = true;",
+													"try {",
+													"    body = pm.response.json();",
+													"    console.log(\"✅ Create Role response:\", body);",
+													"} catch (err) {",
+													"    isJsonValid = false;",
+													"    console.error(\"❌ Failed to parse response JSON:\", err);",
+													"}",
+													"",
+													"// ✅ Set env only when response is correct and complete",
+													"if (isStatus200 && isJsonValid && isSchemaValid && body?.id && body?.etag) {",
+													"    pm.environment.set(\"role_id\", body.id);",
+													"    pm.environment.set(\"etag\", body.etag);",
+													"    console.log(\"✅ Saved role_id and etag to environment\");",
+													"} else {",
+													"    console.warn(\"⚠️ Role not created or invalid. Environment vars not set.\");",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"invalid_field\": \"ìnvalid_value\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Role Create - Invalid Fields Copy",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const schema = {",
+													"    type: \"object\",",
+													"    required: [",
+													"        \"id\", \"etag\", \"createdAt\",",
+													"        \"name\", \"ownerType\", \"ownerRef\",",
+													"        \"isRequestable\", \"isRequiredAttachment\",",
+													"        \"isRequiredComment\", \"createdBy\"",
+													"    ],",
+													"    properties: {",
+													"        id: { type: \"string\" },",
+													"        etag: { type: \"string\" },",
+													"        createdAt: { type: \"string\", format: \"date-time\" },",
+													"        name: { type: \"string\" },",
+													"        description: { type: [\"string\", \"null\"] },",
+													"        ownerType: { type: \"string\", enum: [\"user\", \"group\"] },",
+													"        ownerRef: { type: \"string\" },",
+													"        isRequestable: { type: \"boolean\" },",
+													"        isRequiredAttachment: { type: \"boolean\" },",
+													"        isRequiredComment: { type: \"boolean\" },",
+													"        createdBy: { type: \"string\" }",
+													"    },",
+													"    additionalProperties: false",
+													"};",
+													"",
+													"let res;",
+													"let parsed = true;",
+													"",
+													"try {",
+													"    res = pm.response.json();",
+													"} catch (e) {",
+													"    parsed = false;",
+													"    console.error(\"❌ Failed to parse response JSON:\", e);",
+													"}",
+													"",
+													"pm.test(\"❌ Should return validation error for existing name\", function () {",
+													"    pm.expect(pm.response.code).to.eql(400);",
+													"    if (parsed) {",
+													"        pm.expect(res).to.have.property(\"code\", \"validation_error\");",
+													"        pm.expect(res.details).to.have.property(\"name\");",
+													"        pm.expect(res.details.name).to.match(/already exists|duplicate/i);",
+													"    }",
+													"});",
+													"",
+													"if (parsed && res?.code === \"validation_error\") {",
+													"    console.warn(\"⛔ Duplicate role name. Env vars not set.\");",
+													"} else if (pm.response.code === 200 && parsed && res?.id && res?.etag) {",
+													"    pm.environment.set(\"role_id\", res.id);",
+													"    pm.environment.set(\"etag\", res.etag);",
+													"    console.log(\"✅ Role created successfully:\", res.name);",
+													"} else {",
+													"    console.warn(\"⚠️ Role not created or response invalid. Env vars not set.\");",
+													"}",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"TestRole\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											]
+										}
+									},
+									"response": []
+								}
+							]
 						}
 					]
 				}

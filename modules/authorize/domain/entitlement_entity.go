@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"go.bryk.io/pkg/errors"
-
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
@@ -21,6 +19,7 @@ type Entitlement struct {
 	SubjectType *EntitlementSubjectType `json:"subjectType,omitempty"`
 	SubjectRef  *string                 `json:"subjectRef,omitempty"`
 	ScopeRef    *string                 `json:"scopeRef,omitempty"`
+	CreatedBy   *string                 `json:"createdBy,omitempty"`
 
 	Action   *Action   `json:"action,omitempty"`
 	Resource *Resource `json:"resource,omitempty"`
@@ -28,7 +27,7 @@ type Entitlement struct {
 
 func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.IdPtrValidateRule(&this.ActionId, true),
+		model.IdPtrValidateRule(&this.ActionId, false),
 		val.Field(&this.ActionExpr,
 			val.NotEmpty,
 		),
@@ -45,17 +44,11 @@ func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {
 				val.Length(1, model.MODEL_RULE_DESC_LENGTH),
 			),
 		),
-		model.IdPtrValidateRule(&this.ResourceId, true),
-		EntitlementSubjectTypeValidateRule(&this.SubjectType),
-
-		val.Field(&this.SubjectRef,
-			val.NotEmpty,
-			val.Length(1, model.MODEL_RULE_NON_NIKKI_ID_LENGTH),
-		),
-		val.Field(&this.ScopeRef,
-			val.NotEmpty,
-			val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
-		),
+		EntitlementSubjectTypeValidateRule(&this.SubjectType, !forEdit),
+		EntitlementSubjectRefValidateRule(&this.SubjectType, &this.SubjectRef, !forEdit),
+		EntitlementScopeRefValidateRule(&this.ScopeRef),
+		model.IdPtrValidateRule(&this.ResourceId, false),
+		model.IdPtrValidateRule(&this.CreatedBy, !forEdit),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
@@ -72,15 +65,6 @@ const (
 	EntitlementSubjectTypeCustom     = EntitlementSubjectType(entEntitlement.SubjectTypeCustom)
 )
 
-func (this EntitlementSubjectType) Validate() error {
-	switch this {
-	case EntitlementSubjectTypeNikkiUser, EntitlementSubjectTypeNikkiGroup, EntitlementSubjectTypeNikkiRole, EntitlementSubjectTypeCustom:
-		return nil
-	default:
-		return errors.Errorf("invalid subject type value: %s", this)
-	}
-}
-
 func (this EntitlementSubjectType) String() string {
 	return string(this)
 }
@@ -95,9 +79,34 @@ func WrapEntitlementSubjectTypeEnt(s entEntitlement.SubjectType) *EntitlementSub
 	return &st
 }
 
-func EntitlementSubjectTypeValidateRule(field **EntitlementSubjectType) *val.FieldRules {
+func EntitlementSubjectTypeValidateRule(field **EntitlementSubjectType, isRequired bool) *val.FieldRules {
 	return val.Field(field,
-		val.NotEmpty,
-		val.OneOf(EntitlementSubjectTypeNikkiUser, EntitlementSubjectTypeCustom),
+		val.NotNilWhen(isRequired),
+		val.When(field != nil,
+			val.NotEmpty,
+			val.OneOf(EntitlementSubjectTypeNikkiUser, EntitlementSubjectTypeNikkiGroup, EntitlementSubjectTypeNikkiRole, EntitlementSubjectTypeCustom),
+		),
+	)
+}
+
+func EntitlementSubjectRefValidateRule(subjectType **EntitlementSubjectType, subjectRef **string, isRequired bool) *val.FieldRules {
+	switch **subjectType {
+	case EntitlementSubjectTypeCustom:
+		return val.Field(subjectRef,
+			val.NotNilWhen(isRequired),
+			val.NotEmpty,
+			val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
+		)
+	default:
+		return model.IdPtrValidateRule(subjectRef, isRequired)
+	}
+}
+
+func EntitlementScopeRefValidateRule(field **string) *val.FieldRules {
+	return val.Field(field,
+		val.When(*field != nil,
+			val.NotEmpty,
+			val.Length(model.MODEL_RULE_ULID_LENGTH, model.MODEL_RULE_ULID_LENGTH),
+		),
 	)
 }
