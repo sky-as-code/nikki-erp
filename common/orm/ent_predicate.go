@@ -91,10 +91,8 @@ func (this Condition) ToPredicate(entityName string) (Predicate, ft.ValidationEr
 	}
 
 	edgeName := fields[0]
-
 	// Can be "name", but can also "parent.name" or "parent.leader.name"
 	edgeField := fields[1]
-
 	subCond := NewCondition(
 		edgeField,
 		this.Operator(),
@@ -107,7 +105,7 @@ func (this Condition) ToPredicate(entityName string) (Predicate, ft.ValidationEr
 		return nil, vErr
 	}
 
-	// ToPredicate() will continue processing more nested edges.
+	// Recursive ToPredicate() will continue processing more nested edges.
 	edgePred, vErrs := subCond.ToPredicate(edgeName)
 	if vErrs.Count() > 0 {
 		return nil, vErrs
@@ -220,84 +218,104 @@ func (this SearchOrderItem) Validate(entityName string) *ft.ValidationErrorItem 
 }
 
 func (this SearchOrderItem) ToOrderOption(entityName string, vErr *ft.ValidationErrors) OrderOption {
-	dir := this.Direction()
-	dirTerm := orderDirMap[dir]
 	columnField, subFields := this.Fields()
 
-	entity, _ := GetEntity(entityName) // No error check, because we already validated.
+	entity, _ := GetEntity(entityName)                      // No error check, because we already validated.
+	orderByEdgeFn, _ := entity.OrderByEdgeStep(columnField) // The error check is covered by entity.EdgePredicate
 	fieldType, errField := entity.FieldType(columnField)
 	_, errEdge := entity.EdgePredicate(columnField)
-	orderByEdgeFn, _ := entity.OrderByEdgeStep(columnField) // The error check is covered by entity.EdgePredicate
 	isOrderByField := errField == nil
 	isOrderByEdge := errEdge == nil
 
 	if isOrderByField {
-		isOrderBySubField := len(subFields) > 0
-		isJsonField := fieldType == reflect.TypeOf(map[string]string{})
-		canOrderBySubField := isJsonField && isOrderBySubField
-		if canOrderBySubField { // For JSON column
-			// TODO: Validate whether subFields really exists in the JSON field
-			return sqljson.OrderValue(columnField, sqljson.Path(subFields...))
-		} else {
-			return sql.OrderByField(columnField, dirTerm).ToFunc()
+		opt, edgeErr := this.toOrderByFieldOption(fieldType, columnField, subFields)
+		if edgeErr.Count() > 0 {
+			vErr.Merge(edgeErr)
 		}
+		return opt
 	} else if isOrderByEdge {
 		entityName = columnField
 		columnField = subFields[0]
 		subFields = subFields[1:]
-
-		edgeEntity, ok := GetEntity(entityName)
-		if !ok {
-			vErr.Appendf("graph.order", "unrecognized entity '%s' in order '%s'", entityName, this)
-			return nil
+		opt, edgeErr := this.toOrderByEdgeOption(entityName, columnField, subFields, orderByEdgeFn)
+		if edgeErr.Count() > 0 {
+			vErr.Merge(edgeErr)
 		}
-		edgeFieldType, err := edgeEntity.FieldType(columnField)
-		if err != nil {
-			vErr.Appendf("graph.order", "%s in order '%s'", err.Error(), this)
-			return nil
-		}
-
-		isOrderBySubField := len(subFields) > 0
-		isJsonField := edgeFieldType == reflect.TypeOf(map[string]string{})
-		canOrderBySubField := isJsonField && isOrderBySubField
-
-		if canOrderBySubField {
-			return func(s *sql.Selector) {
-				opts := []sql.OrderTermOption{
-					sql.OrderAs(fmt.Sprintf("%s_%s", columnField, strings.Join(subFields, "_"))),
-				}
-				if dir == Desc {
-					opts = append(opts, sql.OrderDesc())
-				}
-				term := &sql.OrderExprTerm{
-					Expr: func(s *sql.Selector) sql.Querier {
-						querier := sqljson.ValuePath(columnField, sqljson.Path(subFields...))
-						return querier
-					},
-					OrderTermOptions: *sql.NewOrderTermOptions(opts...),
-				}
-
-				sqlgraph.OrderByNeighborTerms(
-					s,
-					orderByEdgeFn(),
-					term,
-				)
-			}
-		} else if !isOrderBySubField {
-			return func(s *sql.Selector) {
-				sqlgraph.OrderByNeighborTerms(
-					s,
-					orderByEdgeFn(),
-					sql.OrderByField(columnField, dirTerm),
-				)
-			}
-		} else {
-			vErr.Appendf("graph.order", "Field expression not supported for this relationship of order '%s'", this)
-			return nil
-		}
+		return opt
 	}
 	vErr.Appendf("graph.order", "%s in order '%s'", errField.Error(), this)
 	return nil
+}
+
+func (this SearchOrderItem) toOrderByFieldOption(fieldType reflect.Type, columnField string, subFields []string) (OrderOption, ft.ValidationErrors) {
+	vErr := ft.NewValidationErrors()
+	dir := this.Direction()
+	dirTerm := orderDirMap[dir]
+	isOrderBySubField := len(subFields) > 0
+	isJsonField := fieldType == reflect.TypeOf(map[string]string{})
+	canOrderBySubField := isJsonField && isOrderBySubField
+	if canOrderBySubField { // For JSON column
+		// TODO: Validate whether subFields really exists in the JSON field
+		return sqljson.OrderValue(columnField, sqljson.Path(subFields...)), vErr
+	} else {
+		return sql.OrderByField(columnField, dirTerm).ToFunc(), vErr
+	}
+}
+
+func (this SearchOrderItem) toOrderByEdgeOption(
+	entityName string, columnField string, subFields []string, orderByEdgeFn OrderByEdgeFn,
+) (orderOption OrderOption, vErr ft.ValidationErrors) {
+	vErr = ft.NewValidationErrors()
+	dir := this.Direction()
+	dirTerm := orderDirMap[dir]
+
+	edgeEntity, ok := GetEntity(entityName)
+	if !ok {
+		vErr.Appendf("graph.order", "unrecognized entity '%s' in order '%s'", entityName, this)
+		return nil, vErr
+	}
+
+	edgeFieldType, err := edgeEntity.FieldType(columnField)
+	if err != nil {
+		vErr.Appendf("graph.order", "%s in order '%s'", err.Error(), this)
+		return nil, vErr
+	}
+
+	isOrderBySubField := len(subFields) > 0
+	isJsonField := edgeFieldType == reflect.TypeOf(map[string]string{})
+	canOrderBySubField := isJsonField && isOrderBySubField
+
+	var term sql.OrderTerm
+	if canOrderBySubField {
+		this.orderByEdgeJsonField(columnField, subFields, dir, term)
+	} else if !isOrderBySubField {
+		term = sql.OrderByField(columnField, dirTerm)
+	}
+
+	orderOption = func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(
+			s,
+			orderByEdgeFn(),
+			term,
+		)
+	}
+	return
+}
+
+func (SearchOrderItem) orderByEdgeJsonField(columnField string, subFields []string, dir OrderDirection, term sql.OrderTerm) {
+	opts := []sql.OrderTermOption{
+		sql.OrderAs(fmt.Sprintf("%s_%s", columnField, strings.Join(subFields, "_"))),
+	}
+	if dir == Desc {
+		opts = append(opts, sql.OrderDesc())
+	}
+	term = &sql.OrderExprTerm{
+		Expr: func(_ *sql.Selector) sql.Querier {
+			querier := sqljson.ValuePath(columnField, sqljson.Path(subFields...))
+			return querier
+		},
+		OrderTermOptions: *sql.NewOrderTermOptions(opts...),
+	}
 }
 
 type SearchOrder []SearchOrderItem
@@ -342,39 +360,7 @@ type SearchGraph struct {
 }
 
 func (this SearchGraph) ToPredicate(entityName string) (Predicate, ft.ValidationErrors) {
-	vErrs := ft.NewValidationErrors()
-	if this.Condition != nil {
-		return this.Condition.ToPredicate(entityName)
-	}
-
-	if len(this.And) > 0 {
-		preds := make([]Predicate, 0, len(this.And))
-		for _, node := range this.And {
-			pred, err := node.ToPredicate(entityName)
-			if err.Count() > 0 {
-				vErrs.Merge(err)
-				return nil, vErrs
-			}
-			preds = append(preds, pred)
-		}
-		return sql.AndPredicates(preds...), nil
-
-	}
-
-	if len(this.Or) > 0 {
-		preds := make([]Predicate, 0, len(this.Or))
-		for _, node := range this.Or {
-			pred, err := node.ToPredicate(entityName)
-			if err.Count() > 0 {
-				vErrs.Merge(err)
-				return nil, vErrs
-			}
-			preds = append(preds, pred)
-		}
-		return sql.OrPredicates(preds...), nil
-	}
-
-	return NoopPredicate, vErrs
+	return buildPredicate(entityName, this.Condition, this.And, this.Or)
 }
 
 // SearchNode represents a complex search criteria, its fields are mutually exclusive,
@@ -387,38 +373,63 @@ type SearchNode struct {
 }
 
 func (this SearchNode) ToPredicate(entityName string) (Predicate, ft.ValidationErrors) {
+	return buildPredicate(entityName, this.Condition, this.And, this.Or)
+}
+
+func buildPredicate(entityName string, condition *Condition, and []SearchNode, or []SearchNode) (Predicate, ft.ValidationErrors) {
 	vErrs := ft.NewValidationErrors()
 
-	if this.Condition != nil {
-		return this.Condition.ToPredicate(entityName)
+	if condition != nil {
+		return condition.ToPredicate(entityName)
 	}
 
-	if len(this.And) > 0 {
-		preds := make([]Predicate, 0, len(this.And))
-		for _, node := range this.And {
-			pred, err := node.ToPredicate(entityName)
-			if err.Count() > 0 {
-				vErrs.Merge(err)
-				return nil, vErrs
-			}
-			preds = append(preds, pred)
-		}
-		return sql.AndPredicates(preds...), nil
+	if len(and) > 0 {
+		pred := buildLogicalPredicates(and, entityName, &vErrs, sql.AndPredicates)
+		return pred, vErrs
+		// preds := make([]Predicate, 0, len(and))
+		// for _, node := range and {
+		// 	pred, err := node.ToPredicate(entityName)
+		// 	if err.Count() > 0 {
+		// 		vErrs.Merge(err)
+		// 		return nil, vErrs
+		// 	}
+		// 	preds = append(preds, pred)
+		// }
+		// return sql.AndPredicates(preds...), nil
 
 	}
 
-	if len(this.Or) > 0 {
-		preds := make([]Predicate, 0, len(this.Or))
-		for _, node := range this.Or {
-			pred, err := node.ToPredicate(entityName)
-			if err.Count() > 0 {
-				vErrs.Merge(err)
-				return nil, vErrs
-			}
-			preds = append(preds, pred)
-		}
-		return sql.OrPredicates(preds...), nil
+	if len(or) > 0 {
+		pred := buildLogicalPredicates(or, entityName, &vErrs, sql.OrPredicates)
+		return pred, vErrs
+		// preds := make([]Predicate, 0, len(or))
+		// for _, node := range or {
+		// 	pred, err := node.ToPredicate(entityName)
+		// 	if err.Count() > 0 {
+		// 		vErrs.Merge(err)
+		// 		return nil, vErrs
+		// 	}
+		// 	preds = append(preds, pred)
+		// }
+		// return sql.OrPredicates(preds...), nil
 	}
 
 	return NoopPredicate, vErrs
 }
+
+func buildLogicalPredicates(
+	logicalOp []SearchNode, entityName string, vErrs *ft.ValidationErrors, logicalPred LogicalPredicateFn,
+) Predicate {
+	preds := make([]Predicate, 0, len(logicalOp))
+	for _, node := range logicalOp {
+		pred, err := node.ToPredicate(entityName)
+		if err.Count() > 0 {
+			vErrs.Merge(err)
+			return nil
+		}
+		preds = append(preds, pred)
+	}
+	return logicalPred(preds...)
+}
+
+type LogicalPredicateFn func(predicates ...Predicate) Predicate
