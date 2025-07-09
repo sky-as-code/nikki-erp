@@ -13,6 +13,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
+	entUserStatus "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -36,7 +37,7 @@ func (this *UserEntRepository) Create(ctx context.Context, user domain.User) (*d
 		SetMustChangePassword(*user.MustChangePassword).
 		SetPasswordHash(*user.PasswordHash).
 		SetPasswordChangedAt(*user.PasswordChangedAt).
-		SetStatus(entUser.Status(*user.Status))
+		SetStatusID(*user.StatusId)
 
 	return db.Mutate(ctx, creation, entToUser)
 }
@@ -48,7 +49,7 @@ func (this *UserEntRepository) Update(ctx context.Context, user domain.User) (*d
 		SetNillableEmail(user.Email).
 		SetNillablePasswordHash(user.PasswordHash).
 		SetNillablePasswordChangedAt(user.PasswordChangedAt).
-		SetNillableStatus((*entUser.Status)(user.Status))
+		SetNillableStatusID(user.StatusId)
 
 	if len(update.Mutation().Fields()) > 0 {
 		update.
@@ -94,7 +95,8 @@ func (this *UserEntRepository) FindById(ctx context.Context, param it.FindByIdPa
 	query := this.client.User.Query().
 		Where(entUser.ID(param.Id)).
 		WithGroups().
-		WithOrgs()
+		WithOrgs().
+		WithUserStatus()
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
@@ -103,7 +105,8 @@ func (this *UserEntRepository) FindByEmail(ctx context.Context, email string) (*
 	query := this.client.User.Query().
 		Where(entUser.EmailEQ(email)).
 		WithGroups().
-		WithOrgs()
+		WithOrgs().
+		WithUserStatus()
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
@@ -116,7 +119,9 @@ func (this *UserEntRepository) Search(
 	ctx context.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.User], error) {
-	query := this.client.User.Query()
+	query := this.client.User.Query().
+		WithUserStatus()
+
 	if param.WithGroups {
 		query = query.WithGroups()
 	}
@@ -148,10 +153,24 @@ func BuildUserDescriptor() *orm.EntityDescriptor {
 		Field(entUser.FieldLastLoginAt, entity.LastLoginAt).
 		Field(entUser.FieldLockedUntil, entity.LockedUntil).
 		Field(entUser.FieldMustChangePassword, entity.MustChangePassword).
-		Field(entUser.FieldStatus, entity.Status).
+		Field(entUser.FieldStatusID, entity.StatusID).
 		Field(entUser.FieldUpdatedAt, entity.UpdatedAt).
 		Edge(entUser.EdgeGroups, orm.ToEdgePredicate(entUser.HasGroupsWith)).
-		Edge(entUser.EdgeOrgs, orm.ToEdgePredicate(entUser.HasOrgsWith))
+		Edge(entUser.EdgeOrgs, orm.ToEdgePredicate(entUser.HasOrgsWith)).
+		Edge(entUser.EdgeUserStatus, orm.ToEdgePredicate(entUser.HasUserStatusWith)).
+		OrderByEdge(entUser.EdgeUserStatus, entUser.NewUserStatusStepNikki)
+
+	return builder.Descriptor()
+}
+
+func BuildUserStatusDescriptor() *orm.EntityDescriptor {
+	entity := ent.UserStatusEnum{}
+	builder := orm.DescribeEntity(entUser.EdgeUserStatus).
+		Aliases(entUserStatus.Label).
+		Field(entUserStatus.FieldID, entity.ID).
+		Field(entUserStatus.FieldEtag, entity.Etag).
+		Field(entUserStatus.FieldLabel, entity.Label).
+		Field(entUserStatus.FieldValue, entity.Value)
 
 	return builder.Descriptor()
 }

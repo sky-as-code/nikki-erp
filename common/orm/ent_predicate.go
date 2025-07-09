@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -99,16 +101,16 @@ func (this Condition) ToPredicate(entityName string) (Predicate, ft.ValidationEr
 		this.Values()...,
 	)
 
-	hasEdgeWithFn := entity.Edges[edgeName]
-	if hasEdgeWithFn == nil {
-		vErr.Appendf("graph.condition", "unrecognized relationship '%s' in condition '%s'", edgeName, this)
+	hasEdgeWithFn, err := entity.EdgePredicate(edgeName)
+	if err != nil {
+		vErr.Appendf("graph.condition", "%s in condition '%s'", err.Error(), this)
 		return nil, vErr
 	}
 
 	// ToPredicate() will continue processing more nested edges.
-	edgePred, err := subCond.ToPredicate(edgeName)
-	if err != nil {
-		return nil, err
+	edgePred, vErrs := subCond.ToPredicate(edgeName)
+	if vErrs.Count() > 0 {
+		return nil, vErrs
 	}
 
 	return hasEdgeWithFn(edgePred), nil
@@ -161,20 +163,20 @@ const (
 	Desc OrderDirection = "desc"
 )
 
-var orderTermMap = map[OrderDirection]sql.OrderTermOption{
+var orderDirMap = map[OrderDirection]sql.OrderTermOption{
 	Asc:  sql.OrderAsc(),
 	Desc: sql.OrderDesc(),
 }
 
-// type SearchOrder struct {
-// 	Field     string         `json:"field"`
-// 	Direction OrderDirection `json:"dir"`
-// }
-
 type SearchOrderItem []string
 
-func (this SearchOrderItem) Field() string {
-	return this[0]
+func (this SearchOrderItem) Fields() (columnField string, subFields []string) {
+	fieldParts := strings.Split(this[0], ".")
+	partCount := len(fieldParts)
+	if partCount >= 2 {
+		return fieldParts[0], fieldParts[1:]
+	}
+	return fieldParts[0], nil
 }
 
 func (this SearchOrderItem) Direction() OrderDirection {
@@ -185,45 +187,116 @@ func (this SearchOrderItem) Direction() OrderDirection {
 }
 
 func (this SearchOrderItem) Validate(entityName string) *ft.ValidationErrorItem {
-	var field string
 	var direction *OrderDirection
-	length := len(this)
-	if length == 2 {
+
+	switch len(this) {
+	case 2:
 		direction = util.ToPtr(OrderDirection(strings.ToLower(this[1])))
-	} else if length == 1 {
+	case 1:
 		direction = nil
-	} else {
+	default:
 		return &ft.ValidationErrorItem{
 			Field: "graph.order",
 			Error: fmt.Sprintf("invalid order '%s'", this),
 		}
 	}
 
-	field = this[0]
-
 	if direction != nil && *direction != Asc && *direction != Desc {
 		return &ft.ValidationErrorItem{
 			Field: "graph.order",
-			Error: fmt.Sprintf("invalid order direction '%s'", *direction),
+			Error: fmt.Sprintf("invalid order direction '%s' in order '%s'", *direction, this),
 		}
 	}
 
-	entity, ok := GetEntity(entityName)
+	_, ok := GetEntity(entityName)
 	if !ok {
 		return &ft.ValidationErrorItem{
 			Field: "graph.order",
-			Error: fmt.Sprintf("unrecognized entity '%s'", entityName),
+			Error: fmt.Sprintf("unrecognized entity '%s' in order '%s'", entityName, this),
 		}
 	}
 
-	_, err := entity.FieldType(field)
-	if err != nil {
-		return &ft.ValidationErrorItem{
-			Field: "graph.order",
-			Error: fmt.Sprintf("%s in order '%s'", err.Error(), this),
+	return nil
+}
+
+func (this SearchOrderItem) ToOrderOption(entityName string, vErr *ft.ValidationErrors) OrderOption {
+	dir := this.Direction()
+	dirTerm := orderDirMap[dir]
+	columnField, subFields := this.Fields()
+
+	entity, _ := GetEntity(entityName) // No error check, because we already validated.
+	fieldType, errField := entity.FieldType(columnField)
+	_, errEdge := entity.EdgePredicate(columnField)
+	orderByEdgeFn, _ := entity.OrderByEdgeStep(columnField) // The error check is covered by entity.EdgePredicate
+	isOrderByField := errField == nil
+	isOrderByEdge := errEdge == nil
+
+	if isOrderByField {
+		isOrderBySubField := len(subFields) > 0
+		isJsonField := fieldType == reflect.TypeOf(map[string]string{})
+		canOrderBySubField := isJsonField && isOrderBySubField
+		if canOrderBySubField { // For JSON column
+			// TODO: Validate whether subFields really exists in the JSON field
+			return sqljson.OrderValue(columnField, sqljson.Path(subFields...))
+		} else {
+			return sql.OrderByField(columnField, dirTerm).ToFunc()
+		}
+	} else if isOrderByEdge {
+		entityName = columnField
+		columnField = subFields[0]
+		subFields = subFields[1:]
+
+		edgeEntity, ok := GetEntity(entityName)
+		if !ok {
+			vErr.Appendf("graph.order", "unrecognized entity '%s' in order '%s'", entityName, this)
+			return nil
+		}
+		edgeFieldType, err := edgeEntity.FieldType(columnField)
+		if err != nil {
+			vErr.Appendf("graph.order", "%s in order '%s'", err.Error(), this)
+			return nil
+		}
+
+		isOrderBySubField := len(subFields) > 0
+		isJsonField := edgeFieldType == reflect.TypeOf(map[string]string{})
+		canOrderBySubField := isJsonField && isOrderBySubField
+
+		if canOrderBySubField {
+			return func(s *sql.Selector) {
+				opts := []sql.OrderTermOption{
+					sql.OrderAs(fmt.Sprintf("%s_%s", columnField, strings.Join(subFields, "_"))),
+				}
+				if dir == Desc {
+					opts = append(opts, sql.OrderDesc())
+				}
+				term := &sql.OrderExprTerm{
+					Expr: func(s *sql.Selector) sql.Querier {
+						querier := sqljson.ValuePath(columnField, sqljson.Path(subFields...))
+						return querier
+					},
+					OrderTermOptions: *sql.NewOrderTermOptions(opts...),
+				}
+
+				sqlgraph.OrderByNeighborTerms(
+					s,
+					orderByEdgeFn(),
+					term,
+				)
+			}
+		} else if !isOrderBySubField {
+			return func(s *sql.Selector) {
+				sqlgraph.OrderByNeighborTerms(
+					s,
+					orderByEdgeFn(),
+					sql.OrderByField(columnField, dirTerm),
+				)
+			}
+		} else {
+			vErr.Appendf("graph.order", "Field expression not supported for this relationship of order '%s'", this)
+			return nil
 		}
 	}
-
+	vErr.Appendf("graph.order", "%s in order '%s'", errField.Error(), this)
 	return nil
 }
 
@@ -245,27 +318,21 @@ func (this SearchOrder) Validate(entityName string) ft.ValidationErrors {
 }
 
 func (this SearchOrder) ToOrderOptions(entityName string) ([]OrderOption, ft.ValidationErrors) {
-	if vErr := this.Validate(entityName); vErr.Count() > 0 {
+	var vErr ft.ValidationErrors
+	if vErr = this.Validate(entityName); vErr.Count() > 0 {
 		return nil, vErr
 	}
 
 	opts := make([]OrderOption, 0, len(this))
 	for _, item := range this {
-		term := orderTermMap[item.Direction()]
-		opts = append(opts, sql.OrderByField(item.Field(), term).ToFunc())
+		opt := item.ToOrderOption(entityName, &vErr)
+		if opt == nil {
+			return nil, vErr
+		}
+		opts = append(opts, opt)
 	}
-	return opts, nil
+	return opts, vErr
 }
-
-// func ValidateSearchOrders(orders []SearchOrder, entityName string) ft.ValidationErrors {
-// 	vErr := ft.NewValidationErrors()
-// 	for _, order := range orders {
-// 		if err := order.Validate(entityName); err != nil {
-// 			vErr.Appendf("graph.order", "%s in order '%s'", err.Error(), order)
-// 		}
-// 	}
-// 	return vErr
-// }
 
 type SearchGraph struct {
 	Condition *Condition   `json:"if,omitempty"`
@@ -275,6 +342,7 @@ type SearchGraph struct {
 }
 
 func (this SearchGraph) ToPredicate(entityName string) (Predicate, ft.ValidationErrors) {
+	vErrs := ft.NewValidationErrors()
 	if this.Condition != nil {
 		return this.Condition.ToPredicate(entityName)
 	}
@@ -283,8 +351,9 @@ func (this SearchGraph) ToPredicate(entityName string) (Predicate, ft.Validation
 		preds := make([]Predicate, 0, len(this.And))
 		for _, node := range this.And {
 			pred, err := node.ToPredicate(entityName)
-			if err != nil {
-				return nil, err
+			if err.Count() > 0 {
+				vErrs.Merge(err)
+				return nil, vErrs
 			}
 			preds = append(preds, pred)
 		}
@@ -296,25 +365,17 @@ func (this SearchGraph) ToPredicate(entityName string) (Predicate, ft.Validation
 		preds := make([]Predicate, 0, len(this.Or))
 		for _, node := range this.Or {
 			pred, err := node.ToPredicate(entityName)
-			if err != nil {
-				return nil, err
+			if err.Count() > 0 {
+				vErrs.Merge(err)
+				return nil, vErrs
 			}
 			preds = append(preds, pred)
 		}
 		return sql.OrPredicates(preds...), nil
 	}
 
-	return NoopPredicate, nil
+	return NoopPredicate, vErrs
 }
-
-// func ToOrder(entityName string, graph SearchGraph) ([]OrderOption, ft.ValidationErrors) {
-// 	if vErr := graph.Order.Validate(entityName); vErr != nil {
-// 		return nil, vErr
-// 	}
-
-// 	orders := graph.Order.ToOrderOptions(entityName)
-// 	return orders, nil
-// }
 
 // SearchNode represents a complex search criteria, its fields are mutually exclusive,
 // which means only one field can be set at a time, the precedence is:
@@ -326,6 +387,8 @@ type SearchNode struct {
 }
 
 func (this SearchNode) ToPredicate(entityName string) (Predicate, ft.ValidationErrors) {
+	vErrs := ft.NewValidationErrors()
+
 	if this.Condition != nil {
 		return this.Condition.ToPredicate(entityName)
 	}
@@ -334,8 +397,9 @@ func (this SearchNode) ToPredicate(entityName string) (Predicate, ft.ValidationE
 		preds := make([]Predicate, 0, len(this.And))
 		for _, node := range this.And {
 			pred, err := node.ToPredicate(entityName)
-			if err != nil {
-				return nil, err
+			if err.Count() > 0 {
+				vErrs.Merge(err)
+				return nil, vErrs
 			}
 			preds = append(preds, pred)
 		}
@@ -347,13 +411,14 @@ func (this SearchNode) ToPredicate(entityName string) (Predicate, ft.ValidationE
 		preds := make([]Predicate, 0, len(this.Or))
 		for _, node := range this.Or {
 			pred, err := node.ToPredicate(entityName)
-			if err != nil {
-				return nil, err
+			if err.Count() > 0 {
+				vErrs.Merge(err)
+				return nil, vErrs
 			}
 			preds = append(preds, pred)
 		}
 		return sql.OrPredicates(preds...), nil
 	}
 
-	return NoopPredicate, nil
+	return NoopPredicate, vErrs
 }

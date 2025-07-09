@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/core/enum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 )
@@ -81,10 +82,12 @@ func entToUser(dbUser *ent.User) *domain.User {
 		MustChangePassword:  &dbUser.MustChangePassword,
 		PasswordChangedAt:   &dbUser.PasswordChangedAt,
 		PasswordHash:        &dbUser.PasswordHash,
-		Status:              domain.WrapUserStatusEnt(dbUser.Status),
+		StatusId:            &dbUser.StatusID,
+		StatusValue:         &dbUser.Edges.UserStatus.Value,
 
 		Groups: entToGroups(dbUser.Edges.Groups),
 		Orgs:   entToOrganizations(dbUser.Edges.Orgs),
+		Status: entToUserStatus(dbUser.Edges.UserStatus),
 	}
 }
 
@@ -94,5 +97,20 @@ func entToUsers(dbUsers []*ent.User) []domain.User {
 	}
 	return array.Map(dbUsers, func(entUser *ent.User) domain.User {
 		return *entToUser(entUser)
+	})
+}
+
+func entToUserStatus(dbStatus *ent.UserStatusEnum) *domain.UserStatus {
+	return &domain.UserStatus{
+		Enum: *enum.AnyToEnum(dbStatus),
+	}
+}
+
+func entToUserStatuses(dbStatuses []*ent.UserStatusEnum) []domain.UserStatus {
+	if dbStatuses == nil {
+		return nil
+	}
+	return array.Map(dbStatuses, func(entStatus *ent.UserStatusEnum) domain.UserStatus {
+		return *entToUserStatus(entStatus)
 	})
 }

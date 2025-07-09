@@ -10,6 +10,7 @@ type UserService interface {
 	Exists(ctx context.Context, cmd UserExistsCommand) (*UserExistsResult, error)
 	ExistsMulti(ctx context.Context, cmd UserExistsMultiCommand) (*UserExistsMultiResult, error)
 	GetUserById(ctx context.Context, query GetUserByIdQuery) (*GetUserByIdResult, error)
-	SearchUsers(ctx context.Context, query SearchUsersCommand) (*SearchUsersResult, error)
+	ListUserStatuses(ctx context.Context, query ListUserStatusesQuery) (*ListUserStatusesResult, error)
+	SearchUsers(ctx context.Context, query SearchUsersQuery) (*SearchUsersResult, error)
 	UpdateUser(ctx context.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)
 }

@@ -130,6 +130,11 @@ func PasswordChangedAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldPasswordChangedAt, v))
 }
 
+// StatusID applies equality check predicate on the "status_id" field. It's identical to StatusIDEQ.
+func StatusID(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldStatusID, v))
+}
+
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldUpdatedAt, v))
@@ -795,24 +800,69 @@ func PasswordChangedAtLTE(v time.Time) predicate.User {
 	return predicate.User(sql.FieldLTE(FieldPasswordChangedAt, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v Status) predicate.User {
-	return predicate.User(sql.FieldEQ(FieldStatus, v))
+// StatusIDEQ applies the EQ predicate on the "status_id" field.
+func StatusIDEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldStatusID, v))
 }
 
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v Status) predicate.User {
-	return predicate.User(sql.FieldNEQ(FieldStatus, v))
+// StatusIDNEQ applies the NEQ predicate on the "status_id" field.
+func StatusIDNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldStatusID, v))
 }
 
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...Status) predicate.User {
-	return predicate.User(sql.FieldIn(FieldStatus, vs...))
+// StatusIDIn applies the In predicate on the "status_id" field.
+func StatusIDIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldStatusID, vs...))
 }
 
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...Status) predicate.User {
-	return predicate.User(sql.FieldNotIn(FieldStatus, vs...))
+// StatusIDNotIn applies the NotIn predicate on the "status_id" field.
+func StatusIDNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldStatusID, vs...))
+}
+
+// StatusIDGT applies the GT predicate on the "status_id" field.
+func StatusIDGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldStatusID, v))
+}
+
+// StatusIDGTE applies the GTE predicate on the "status_id" field.
+func StatusIDGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldStatusID, v))
+}
+
+// StatusIDLT applies the LT predicate on the "status_id" field.
+func StatusIDLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldStatusID, v))
+}
+
+// StatusIDLTE applies the LTE predicate on the "status_id" field.
+func StatusIDLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldStatusID, v))
+}
+
+// StatusIDContains applies the Contains predicate on the "status_id" field.
+func StatusIDContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldStatusID, v))
+}
+
+// StatusIDHasPrefix applies the HasPrefix predicate on the "status_id" field.
+func StatusIDHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldStatusID, v))
+}
+
+// StatusIDHasSuffix applies the HasSuffix predicate on the "status_id" field.
+func StatusIDHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldStatusID, v))
+}
+
+// StatusIDEqualFold applies the EqualFold predicate on the "status_id" field.
+func StatusIDEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldStatusID, v))
+}
+
+// StatusIDContainsFold applies the ContainsFold predicate on the "status_id" field.
+func StatusIDContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldStatusID, v))
 }
 
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
@@ -926,6 +976,29 @@ func HasOrgs() predicate.User {
 func HasOrgsWith(preds ...predicate.Organization) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newOrgsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasUserStatus applies the HasEdge predicate on the "user_status" edge.
+func HasUserStatus() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, UserStatusTable, UserStatusColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasUserStatusWith applies the HasEdge predicate on the "user_status" edge with a given conditions (other predicates).
+func HasUserStatusWith(preds ...predicate.UserStatusEnum) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newUserStatusStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

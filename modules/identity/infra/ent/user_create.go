@@ -14,6 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 )
 
 // UserCreate is the builder for creating a User entity.
@@ -165,9 +166,9 @@ func (uc *UserCreate) SetPasswordChangedAt(t time.Time) *UserCreate {
 	return uc
 }
 
-// SetStatus sets the "status" field.
-func (uc *UserCreate) SetStatus(u user.Status) *UserCreate {
-	uc.mutation.SetStatus(u)
+// SetStatusID sets the "status_id" field.
+func (uc *UserCreate) SetStatusID(s string) *UserCreate {
+	uc.mutation.SetStatusID(s)
 	return uc
 }
 
@@ -224,6 +225,17 @@ func (uc *UserCreate) AddOrgs(o ...*Organization) *UserCreate {
 		ids[i] = o[i].ID
 	}
 	return uc.AddOrgIDs(ids...)
+}
+
+// SetUserStatusID sets the "user_status" edge to the UserStatusEnum entity by ID.
+func (uc *UserCreate) SetUserStatusID(id string) *UserCreate {
+	uc.mutation.SetUserStatusID(id)
+	return uc
+}
+
+// SetUserStatus sets the "user_status" edge to the UserStatusEnum entity.
+func (uc *UserCreate) SetUserStatus(u *UserStatusEnum) *UserCreate {
+	return uc.SetUserStatusID(u.ID)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -301,13 +313,11 @@ func (uc *UserCreate) check() error {
 	if _, ok := uc.mutation.PasswordChangedAt(); !ok {
 		return &ValidationError{Name: "password_changed_at", err: errors.New(`ent: missing required field "User.password_changed_at"`)}
 	}
-	if _, ok := uc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "User.status"`)}
+	if _, ok := uc.mutation.StatusID(); !ok {
+		return &ValidationError{Name: "status_id", err: errors.New(`ent: missing required field "User.status_id"`)}
 	}
-	if v, ok := uc.mutation.Status(); ok {
-		if err := user.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "User.status": %w`, err)}
-		}
+	if len(uc.mutation.UserStatusIDs()) == 0 {
+		return &ValidationError{Name: "user_status", err: errors.New(`ent: missing required edge "User.user_status"`)}
 	}
 	return nil
 }
@@ -392,10 +402,6 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldPasswordChangedAt, field.TypeTime, value)
 		_node.PasswordChangedAt = value
 	}
-	if value, ok := uc.mutation.Status(); ok {
-		_spec.SetField(user.FieldStatus, field.TypeEnum, value)
-		_node.Status = value
-	}
 	if value, ok := uc.mutation.UpdatedAt(); ok {
 		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = &value
@@ -447,6 +453,23 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.UserStatusIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   user.UserStatusTable,
+			Columns: []string{user.UserStatusColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userstatusenum.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.StatusID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
