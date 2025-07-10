@@ -23,3 +23,6 @@ type UserGroup = func(*sql.Selector)
 
 // UserOrg is the predicate function for userorg builders.
 type UserOrg = func(*sql.Selector)
+
+// UserStatusEnum is the predicate function for userstatusenum builders.
+type UserStatusEnum = func(*sql.Selector)

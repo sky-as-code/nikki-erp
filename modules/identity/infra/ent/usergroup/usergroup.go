@@ -23,16 +23,16 @@ const (
 	// GroupFieldID holds the string denoting the ID field of the Group.
 	GroupFieldID = "id"
 	// Table holds the table name of the usergroup in the database.
-	Table = "ident_user_group"
+	Table = "ident_user_group_rel"
 	// UserTable is the table that holds the user relation/edge.
-	UserTable = "ident_user_group"
+	UserTable = "ident_user_group_rel"
 	// UserInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UserInverseTable = "ident_users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "user_id"
 	// GroupTable is the table that holds the group relation/edge.
-	GroupTable = "ident_user_group"
+	GroupTable = "ident_user_group_rel"
 	// GroupInverseTable is the table name for the Group entity.
 	// It exists in this package in order to avoid circular dependency with the "group" package.
 	GroupInverseTable = "ident_groups"
@@ -82,6 +82,12 @@ func ByGroupField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newGroupStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewUserStepNikki() *sqlgraph.Step {
+	return newUserStep()
+}
+
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, UserColumn),
@@ -89,6 +95,12 @@ func newUserStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, UserTable, UserColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewGroupStepNikki() *sqlgraph.Step {
+	return newGroupStep()
+}
+
 func newGroupStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, GroupColumn),

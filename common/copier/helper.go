@@ -2,11 +2,11 @@ package copier
 
 import (
 	"encoding/json"
+	stdErr "errors"
 	"reflect"
 	"strings"
 
 	"github.com/labstack/gommon/log"
-	"github.com/sky-as-code/nikki-erp/common/fault"
 	"gopkg.in/jeevatkm/go-model.v1"
 )
 
@@ -23,8 +23,8 @@ func (c *cCopier) JSONCopy(dst, src interface{}) (err error) {
 	return JSONCopy(dst, src)
 }
 
-func (c *cCopier) Copy(toValue, fromValue interface{}) (err error) {
-	return Copy(toValue, fromValue)
+func (c *cCopier) Copy(fromValue, toValue interface{}) (err error) {
+	return Copy(fromValue, toValue)
 }
 
 func (c *cCopier) CopyWithJSONTag(toValue, fromValue interface{}) (err error) {
@@ -37,10 +37,10 @@ func (c *cCopier) CopyExWithJSONTag(toValue, fromValue interface{}) (err error) 
 
 var Instance ICopier = &cCopier{}
 
-// Copy things
-func Copy(toValue, fromValue interface{}) (err error) {
+// Copy objects
+func Copy[TSrc any, TDest any](fromValue TSrc, toValue TDest) (err error) {
 	errors := model.Copy(toValue, fromValue)
-	err = fault.JoinErrors(errors)
+	err = stdErr.Join(errors...)
 	return err
 }
 
@@ -155,4 +155,44 @@ func CopyExWithJSONTag(dest interface{}, source interface{}) error {
 	}
 
 	return nil
+}
+
+func init() {
+	// mapType := reflect.TypeOf((map[string]string)(nil)).Elem()
+	mapType := reflect.ValueOf((map[string]string)(nil)).Type()
+	mapPtr := make(map[string]string)
+	// mapPtrType := reflect.TypeOf((*map[string]string)(nil)).Elem()
+	mapPtrType := reflect.ValueOf(&mapPtr).Type()
+	model.AddConversionByType(mapType, mapPtrType, func(in reflect.Value) (reflect.Value, error) {
+		if in.IsNil() {
+			return reflect.ValueOf((*map[string]string)(nil)), nil
+		}
+
+		result := in.Interface().(map[string]string)
+		return reflect.ValueOf(&result), nil
+	})
+
+	model.AddConversionByType(mapPtrType, mapType, func(in reflect.Value) (reflect.Value, error) {
+		if in.IsNil() {
+			return reflect.ValueOf((map[string]string)(nil)), nil
+		}
+
+		result := *in.Interface().(*map[string]string)
+		return reflect.ValueOf(result), nil
+	})
+
+	stringType := reflect.TypeOf("")
+	stringPtrType := reflect.TypeOf((*string)(nil))
+	model.AddConversionByType(stringType, stringPtrType, func(in reflect.Value) (reflect.Value, error) {
+		result := in.Interface().(string)
+		return reflect.ValueOf(&result), nil
+	})
+	model.AddConversionByType(stringPtrType, stringType, func(in reflect.Value) (reflect.Value, error) {
+		if in.IsNil() {
+			return reflect.ValueOf(""), nil
+		}
+
+		result := *in.Interface().(*string)
+		return reflect.ValueOf(result), nil
+	})
 }

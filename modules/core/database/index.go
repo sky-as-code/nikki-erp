@@ -7,6 +7,7 @@ import (
 	_ "github.com/lib/pq"
 	"go.uber.org/dig"
 
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/database/dialects"
@@ -20,7 +21,7 @@ type InitParams struct {
 	Logger logging.LoggerService
 }
 
-func InitSubModule(params InitParams) (*EntClientOptions, error) {
+func InitSubModule(params InitParams) error {
 	configSvc := params.Config
 	logger := params.Logger
 
@@ -52,14 +53,18 @@ func InitSubModule(params InitParams) (*EntClientOptions, error) {
 	})
 
 	if err != nil {
-		logger.Errorf("failed opening connection to postgres: %v", err)
-		return nil, err
+		logger.Error("failed to open database connection", err)
+		return err
 	}
 
-	return &EntClientOptions{
-		Driver:       driver,
-		DebugEnabled: debugEnabled,
-	}, nil
+	err = deps.Register(func() *EntClientOptions {
+		return &EntClientOptions{
+			Driver:       driver,
+			DebugEnabled: debugEnabled,
+		}
+	})
+
+	return err
 }
 
 type EntClientOptions struct {

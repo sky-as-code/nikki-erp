@@ -20,6 +20,10 @@ func init() {
 	req = (*UpdateUserCommand)(nil)
 	req = (*DeleteUserCommand)(nil)
 	req = (*GetUserByIdQuery)(nil)
+	req = (*ListUserStatusesQuery)(nil)
+	req = (*SearchUsersQuery)(nil)
+	req = (*UserExistsCommand)(nil)
+	req = (*UserExistsMultiCommand)(nil)
 	util.Unused(req)
 }
 
@@ -32,7 +36,6 @@ var createUserCommandType = cqrs.RequestType{
 type CreateUserCommand struct {
 	DisplayName        string     `json:"displayName"`
 	Email              string     `json:"email"`
-	IsActive           bool       `json:"isActive"`
 	MustChangePassword bool       `json:"mustChangePassword"`
 	Password           string     `json:"password"`
 	OrgIds             []model.Id `json:"orgIds,omitempty"`
@@ -56,9 +59,9 @@ type UpdateUserCommand struct {
 	DisplayName        *string    `json:"displayName,omitempty"`
 	Email              *string    `json:"email,omitempty"`
 	Etag               model.Etag `json:"etag,omitempty"`
-	IsActive           *bool      `json:"isActive,omitempty"`
 	MustChangePassword *bool      `json:"mustChangePassword,omitempty"`
 	Password           *string    `json:"password,omitempty"`
+	Status             *string    `json:"status,omitempty"`
 }
 
 func (UpdateUserCommand) Type() cqrs.RequestType {
@@ -172,13 +175,13 @@ func (this GetUserByIdQuery) Validate() ft.ValidationErrors {
 
 type GetUserByIdResult model.OpResult[*domain.User]
 
-var searchUsersCommandType = cqrs.RequestType{
+var searchUsersQueryType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "user",
 	Action:    "search",
 }
 
-type SearchUsersCommand struct {
+type SearchUsersQuery struct {
 	Page            *int    `json:"page" query:"page"`
 	Size            *int    `json:"size" query:"size"`
 	Graph           *string `json:"graph" query:"graph"`
@@ -187,16 +190,16 @@ type SearchUsersCommand struct {
 	WithHierarchies bool    `json:"withHierarchies" query:"withHierarchies"`
 }
 
-func (SearchUsersCommand) Type() cqrs.RequestType {
-	return searchUsersCommandType
+func (SearchUsersQuery) Type() cqrs.RequestType {
+	return searchUsersQueryType
 }
 
-func (this *SearchUsersCommand) SetDefaults() {
+func (this *SearchUsersQuery) SetDefaults() {
 	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
 	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
 }
 
-func (this SearchUsersCommand) Validate() ft.ValidationErrors {
+func (this SearchUsersQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.PageIndexValidateRule(&this.Page),
 		model.PageSizeValidateRule(&this.Size),
@@ -207,3 +210,37 @@ func (this SearchUsersCommand) Validate() ft.ValidationErrors {
 
 type SearchUsersResultData = crud.PagedResult[domain.User]
 type SearchUsersResult model.OpResult[*SearchUsersResultData]
+
+var listUserStatusesCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "listUserStatuses",
+}
+
+type ListUserStatusesQuery struct {
+	Page         *int                `json:"page" query:"page"`
+	Size         *int                `json:"size" query:"size"`
+	SortedByLang *model.LanguageCode `json:"sortedByLang" query:"sortedByLang"`
+}
+
+func (ListUserStatusesQuery) Type() cqrs.RequestType {
+	return listUserStatusesCommandType
+}
+
+func (this *ListUserStatusesQuery) SetDefaults() {
+	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
+	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
+}
+
+func (this ListUserStatusesQuery) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.PageIndexValidateRule(&this.Page),
+		model.PageSizeValidateRule(&this.Size),
+		model.LanguageCodeValidateRule(&this.SortedByLang, false),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type ListUserStatusesResultData = crud.PagedResult[domain.UserStatus]
+type ListUserStatusesResult model.OpResult[*ListUserStatusesResultData]

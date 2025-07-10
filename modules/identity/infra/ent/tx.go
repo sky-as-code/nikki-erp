@@ -24,6 +24,8 @@ type Tx struct {
 	UserGroup *UserGroupClient
 	// UserOrg is the client for interacting with the UserOrg builders.
 	UserOrg *UserOrgClient
+	// UserStatusEnum is the client for interacting with the UserStatusEnum builders.
+	UserStatusEnum *UserStatusEnumClient
 
 	// lazily loaded.
 	client     *Client
@@ -161,6 +163,7 @@ func (tx *Tx) init() {
 	tx.User = NewUserClient(tx.config)
 	tx.UserGroup = NewUserGroupClient(tx.config)
 	tx.UserOrg = NewUserOrgClient(tx.config)
+	tx.UserStatusEnum = NewUserStatusEnumClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

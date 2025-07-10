@@ -7,6 +7,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/cmd/loader"
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
@@ -99,13 +100,19 @@ func (thisApp *Application) initializeInOrder(moduleMap map[string]modules.Nikki
 		return errors.Wrap(err, "Failed to determine module initialization order")
 	}
 
+	orderedMods := make([]modules.NikkiModule, 0)
 	for _, modName := range initOrder {
 		mod := moduleMap[modName]
 		if err := mod.Init(); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Failed to initialize module '%s'", mod.Name()))
 		}
+		orderedMods = append(orderedMods, mod)
 		thisApp.logger.Infof("Initialized module %s done", mod.Name())
 	}
+
+	deps.Register(func() []modules.NikkiModule {
+		return orderedMods
+	})
 
 	return nil
 }

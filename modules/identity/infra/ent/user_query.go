@@ -19,6 +19,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/usergroup"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userorg"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 )
 
 // UserQuery is the builder for querying User entities.
@@ -31,6 +32,7 @@ type UserQuery struct {
 	withGroups     *GroupQuery
 	withHierarchy  *HierarchyLevelQuery
 	withOrgs       *OrganizationQuery
+	withUserStatus *UserStatusEnumQuery
 	withUserGroups *UserGroupQuery
 	withUserOrgs   *UserOrgQuery
 	// intermediate query (i.e. traversal path).
@@ -128,6 +130,28 @@ func (uq *UserQuery) QueryOrgs() *OrganizationQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, user.OrgsTable, user.OrgsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryUserStatus chains the current query on the "user_status" edge.
+func (uq *UserQuery) QueryUserStatus() *UserStatusEnumQuery {
+	query := (&UserStatusEnumClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(userstatusenum.Table, userstatusenum.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, user.UserStatusTable, user.UserStatusColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -374,6 +398,7 @@ func (uq *UserQuery) Clone() *UserQuery {
 		withGroups:     uq.withGroups.Clone(),
 		withHierarchy:  uq.withHierarchy.Clone(),
 		withOrgs:       uq.withOrgs.Clone(),
+		withUserStatus: uq.withUserStatus.Clone(),
 		withUserGroups: uq.withUserGroups.Clone(),
 		withUserOrgs:   uq.withUserOrgs.Clone(),
 		// clone intermediate query.
@@ -412,6 +437,17 @@ func (uq *UserQuery) WithOrgs(opts ...func(*OrganizationQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withOrgs = query
+	return uq
+}
+
+// WithUserStatus tells the query-builder to eager-load the nodes that are connected to
+// the "user_status" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithUserStatus(opts ...func(*UserStatusEnumQuery)) *UserQuery {
+	query := (&UserStatusEnumClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withUserStatus = query
 	return uq
 }
 
@@ -515,10 +551,11 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
 			uq.withGroups != nil,
 			uq.withHierarchy != nil,
 			uq.withOrgs != nil,
+			uq.withUserStatus != nil,
 			uq.withUserGroups != nil,
 			uq.withUserOrgs != nil,
 		}
@@ -558,6 +595,12 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := uq.loadOrgs(ctx, query, nodes,
 			func(n *User) { n.Edges.Orgs = []*Organization{} },
 			func(n *User, e *Organization) { n.Edges.Orgs = append(n.Edges.Orgs, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withUserStatus; query != nil {
+		if err := uq.loadUserStatus(ctx, query, nodes, nil,
+			func(n *User, e *UserStatusEnum) { n.Edges.UserStatus = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -732,6 +775,35 @@ func (uq *UserQuery) loadOrgs(ctx context.Context, query *OrganizationQuery, nod
 	}
 	return nil
 }
+func (uq *UserQuery) loadUserStatus(ctx context.Context, query *UserStatusEnumQuery, nodes []*User, init func(*User), assign func(*User, *UserStatusEnum)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*User)
+	for i := range nodes {
+		fk := nodes[i].StatusID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(userstatusenum.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "status_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (uq *UserQuery) loadUserGroups(ctx context.Context, query *UserGroupQuery, nodes []*User, init func(*User), assign func(*User, *UserGroup)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*User)
@@ -820,6 +892,9 @@ func (uq *UserQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if uq.withHierarchy != nil {
 			_spec.Node.AddColumnOnce(user.FieldHierarchyID)
+		}
+		if uq.withUserStatus != nil {
+			_spec.Node.AddColumnOnce(user.FieldStatusID)
 		}
 	}
 	if ps := uq.predicates; len(ps) > 0 {

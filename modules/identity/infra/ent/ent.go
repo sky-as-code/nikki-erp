@@ -18,6 +18,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/usergroup"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userorg"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -84,6 +85,7 @@ func checkColumn(table, column string) error {
 			user.Table:           user.ValidColumn,
 			usergroup.Table:      usergroup.ValidColumn,
 			userorg.Table:        userorg.ValidColumn,
+			userstatusenum.Table: userstatusenum.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

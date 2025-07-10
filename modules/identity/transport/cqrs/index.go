@@ -30,6 +30,7 @@ func initUserHandlers() error {
 			cqrs.NewHandler(handler.Update),
 			cqrs.NewHandler(handler.UserExists),
 			cqrs.NewHandler(handler.UserExistsMulti),
+			cqrs.NewHandler(handler.ListUserStatuses),
 		)
 	})
 }

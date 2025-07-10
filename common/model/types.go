@@ -83,6 +83,7 @@ func SlugValidateRule(field any, isRequired bool) *val.FieldRules {
 
 type OpResult[TData any] struct {
 	Data        TData           `json:"data"`
+	HasData     bool            `json:"hasData"`
 	ClientError *ft.ClientError `json:"error,omitempty"`
 }
 
@@ -99,4 +100,50 @@ func PageSizeValidateRule(field **int) *val.FieldRules {
 		val.Min(MODEL_RULE_PAGE_MIN_SIZE),
 		val.Max(MODEL_RULE_PAGE_MAX_SIZE),
 	))
+}
+
+type LanguageCode = string
+
+var langCodeRules = []val.Rule{
+	val.NotEmpty,
+	val.RegExp(regexp.MustCompile(`^[a-z]{2}_[A-Z]{2}$`)).
+		Error("must be a valid language code"), // Validate if this has format similar to "en_US", "zh_CN"
+}
+
+func LanguageCodeValidateRule(field **LanguageCode, isRequired bool) *val.FieldRules {
+	rules := []val.Rule{
+		val.NotNilWhen(isRequired),
+		val.When(*field != nil, langCodeRules...),
+	}
+	return val.Field(field, rules...)
+}
+
+type LangJson = map[LanguageCode]string
+
+func LangJsonValidateRule(field **LangJson, isRequired bool, minLength int, maxLength int) *val.FieldRules {
+	fieldValue := *field
+	mapRules := []*val.KeyRules{}
+	keyRules := []val.Rule{
+		val.NotEmpty,
+		val.Length(minLength, maxLength),
+	}
+	allKeys := []LanguageCode{}
+
+	if fieldValue != nil {
+		for langCode := range *fieldValue {
+			allKeys = append(allKeys, langCode)
+			mapRules = append(mapRules, val.Key(langCode, keyRules...))
+		}
+	}
+
+	return val.Field(field,
+		val.NotNilWhen(isRequired),
+		val.When(*field != nil,
+			val.NotEmpty,
+			val.Map(mapRules...),
+			val.By(func(_ any) error {
+				return val.ApiBased.ValidateRaw(allKeys, val.Each(langCodeRules...))
+			}),
+		),
+	)
 }

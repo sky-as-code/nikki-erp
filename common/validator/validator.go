@@ -43,6 +43,8 @@ func newApiBasedValidator() ApiBasedValidator {
 
 type EachRule = apiVal.EachRule
 type FieldRules = apiVal.FieldRules
+type KeyRules = apiVal.KeyRules
+type MapRule = apiVal.MapRule
 type LengthRule = apiVal.LengthRule
 type MatchRule = apiVal.MatchRule
 type OneOfRule = apiVal.InRule[any]
@@ -53,15 +55,8 @@ type WhenRule = apiVal.WhenRule
 type ApiBasedValidator struct {
 }
 
-func (v ApiBasedValidator) Validate(value any) ft.ValidationErrors {
-	err := apiVal.Validate(value)
-	if err != nil {
-		invopopErr, isOk := err.(apiVal.Errors)
-		if isOk {
-			return ft.NewValidationErrorsFromInvopop(invopopErr)
-		}
-	}
-	return ft.NewValidationErrors()
+func (v ApiBasedValidator) ValidateRaw(value interface{}, rules ...apiVal.Rule) error {
+	return apiVal.Validate(value, rules...)
 }
 
 func (v ApiBasedValidator) ValidateStruct(structPtr any, fields ...*apiVal.FieldRules) ft.ValidationErrors {
@@ -77,12 +72,24 @@ func (v ApiBasedValidator) ValidateStruct(structPtr any, fields ...*apiVal.Field
 	return ft.NewValidationErrors()
 }
 
+func By(fn func(value any) error) Rule {
+	return apiVal.By(fn)
+}
+
 func Each(rules ...Rule) EachRule {
 	return apiVal.Each(rules...)
 }
 
 func Field(fieldPtr any, rules ...Rule) *FieldRules {
 	return apiVal.Field(fieldPtr, rules...)
+}
+
+func Map(keys ...*KeyRules) MapRule {
+	return apiVal.Map(keys...)
+}
+
+func Key(key any, rules ...Rule) *KeyRules {
+	return apiVal.Key(key, rules...)
 }
 
 func OneOf(values ...any) OneOfRule {

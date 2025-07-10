@@ -16,7 +16,7 @@ var (
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "email", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "name", Type: field.TypeString, Unique: true, Collation: "vi-x-icu"},
+		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "org_id", Type: field.TypeString, Nullable: true},
 	}
@@ -92,7 +92,7 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "avatar_url", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "display_name", Type: field.TypeString, Collation: "vi-x-icu"},
+		{Name: "display_name", Type: field.TypeString},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "failed_login_attempts", Type: field.TypeInt, Default: 0},
@@ -102,9 +102,9 @@ var (
 		{Name: "must_change_password", Type: field.TypeBool, Default: true},
 		{Name: "password_hash", Type: field.TypeString},
 		{Name: "password_changed_at", Type: field.TypeTime},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "inactive", "locked"}},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "hierarchy_id", Type: field.TypeString, Nullable: true},
+		{Name: "status_id", Type: field.TypeString},
 	}
 	// IdentUsersTable holds the schema information for the "ident_users" table.
 	IdentUsersTable = &schema.Table{
@@ -114,9 +114,15 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "ident_users_ident_hierarchy_levels_hierarchy",
-				Columns:    []*schema.Column{IdentUsersColumns[15]},
+				Columns:    []*schema.Column{IdentUsersColumns[14]},
 				RefColumns: []*schema.Column{IdentHierarchyLevelsColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "ident_users_core_enums_user_status",
+				Columns:    []*schema.Column{IdentUsersColumns[15]},
+				RefColumns: []*schema.Column{CoreEnumsColumns[0]},
+				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -127,53 +133,74 @@ var (
 			},
 		},
 	}
-	// IdentUserGroupColumns holds the columns for the "ident_user_group" table.
-	IdentUserGroupColumns = []*schema.Column{
+	// IdentUserGroupRelColumns holds the columns for the "ident_user_group_rel" table.
+	IdentUserGroupRelColumns = []*schema.Column{
 		{Name: "user_id", Type: field.TypeString},
 		{Name: "group_id", Type: field.TypeString},
 	}
-	// IdentUserGroupTable holds the schema information for the "ident_user_group" table.
-	IdentUserGroupTable = &schema.Table{
-		Name:       "ident_user_group",
-		Columns:    IdentUserGroupColumns,
-		PrimaryKey: []*schema.Column{IdentUserGroupColumns[0], IdentUserGroupColumns[1]},
+	// IdentUserGroupRelTable holds the schema information for the "ident_user_group_rel" table.
+	IdentUserGroupRelTable = &schema.Table{
+		Name:       "ident_user_group_rel",
+		Columns:    IdentUserGroupRelColumns,
+		PrimaryKey: []*schema.Column{IdentUserGroupRelColumns[0], IdentUserGroupRelColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "ident_user_group_ident_users_user",
-				Columns:    []*schema.Column{IdentUserGroupColumns[0]},
+				Symbol:     "ident_user_group_rel_ident_users_user",
+				Columns:    []*schema.Column{IdentUserGroupRelColumns[0]},
 				RefColumns: []*schema.Column{IdentUsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "ident_user_group_ident_groups_group",
-				Columns:    []*schema.Column{IdentUserGroupColumns[1]},
+				Symbol:     "ident_user_group_rel_ident_groups_group",
+				Columns:    []*schema.Column{IdentUserGroupRelColumns[1]},
 				RefColumns: []*schema.Column{IdentGroupsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
 	}
-	// IdentUserOrgColumns holds the columns for the "ident_user_org" table.
-	IdentUserOrgColumns = []*schema.Column{
+	// IdentUserOrgRelColumns holds the columns for the "ident_user_org_rel" table.
+	IdentUserOrgRelColumns = []*schema.Column{
 		{Name: "user_id", Type: field.TypeString},
 		{Name: "org_id", Type: field.TypeString},
 	}
-	// IdentUserOrgTable holds the schema information for the "ident_user_org" table.
-	IdentUserOrgTable = &schema.Table{
-		Name:       "ident_user_org",
-		Columns:    IdentUserOrgColumns,
-		PrimaryKey: []*schema.Column{IdentUserOrgColumns[0], IdentUserOrgColumns[1]},
+	// IdentUserOrgRelTable holds the schema information for the "ident_user_org_rel" table.
+	IdentUserOrgRelTable = &schema.Table{
+		Name:       "ident_user_org_rel",
+		Columns:    IdentUserOrgRelColumns,
+		PrimaryKey: []*schema.Column{IdentUserOrgRelColumns[0], IdentUserOrgRelColumns[1]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "ident_user_org_ident_users_user",
-				Columns:    []*schema.Column{IdentUserOrgColumns[0]},
+				Symbol:     "ident_user_org_rel_ident_users_user",
+				Columns:    []*schema.Column{IdentUserOrgRelColumns[0]},
 				RefColumns: []*schema.Column{IdentUsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
-				Symbol:     "ident_user_org_ident_organizations_org",
-				Columns:    []*schema.Column{IdentUserOrgColumns[1]},
+				Symbol:     "ident_user_org_rel_ident_organizations_org",
+				Columns:    []*schema.Column{IdentUserOrgRelColumns[1]},
 				RefColumns: []*schema.Column{IdentOrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// CoreEnumsColumns holds the columns for the "core_enums" table.
+	CoreEnumsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "etag", Type: field.TypeString},
+		{Name: "label", Type: field.TypeJSON},
+		{Name: "value", Type: field.TypeString},
+		{Name: "type", Type: field.TypeString},
+	}
+	// CoreEnumsTable holds the schema information for the "core_enums" table.
+	CoreEnumsTable = &schema.Table{
+		Name:       "core_enums",
+		Columns:    CoreEnumsColumns,
+		PrimaryKey: []*schema.Column{CoreEnumsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "enum_value_type",
+				Unique:  true,
+				Columns: []*schema.Column{CoreEnumsColumns[3], CoreEnumsColumns[4]},
 			},
 		},
 	}
@@ -183,8 +210,9 @@ var (
 		IdentHierarchyLevelsTable,
 		IdentOrganizationsTable,
 		IdentUsersTable,
-		IdentUserGroupTable,
-		IdentUserOrgTable,
+		IdentUserGroupRelTable,
+		IdentUserOrgRelTable,
+		CoreEnumsTable,
 	}
 )
 
@@ -202,17 +230,21 @@ func init() {
 		Table: "ident_organizations",
 	}
 	IdentUsersTable.ForeignKeys[0].RefTable = IdentHierarchyLevelsTable
+	IdentUsersTable.ForeignKeys[1].RefTable = CoreEnumsTable
 	IdentUsersTable.Annotation = &entsql.Annotation{
 		Table: "ident_users",
 	}
-	IdentUserGroupTable.ForeignKeys[0].RefTable = IdentUsersTable
-	IdentUserGroupTable.ForeignKeys[1].RefTable = IdentGroupsTable
-	IdentUserGroupTable.Annotation = &entsql.Annotation{
-		Table: "ident_user_group",
+	IdentUserGroupRelTable.ForeignKeys[0].RefTable = IdentUsersTable
+	IdentUserGroupRelTable.ForeignKeys[1].RefTable = IdentGroupsTable
+	IdentUserGroupRelTable.Annotation = &entsql.Annotation{
+		Table: "ident_user_group_rel",
 	}
-	IdentUserOrgTable.ForeignKeys[0].RefTable = IdentUsersTable
-	IdentUserOrgTable.ForeignKeys[1].RefTable = IdentOrganizationsTable
-	IdentUserOrgTable.Annotation = &entsql.Annotation{
-		Table: "ident_user_org",
+	IdentUserOrgRelTable.ForeignKeys[0].RefTable = IdentUsersTable
+	IdentUserOrgRelTable.ForeignKeys[1].RefTable = IdentOrganizationsTable
+	IdentUserOrgRelTable.Annotation = &entsql.Annotation{
+		Table: "ident_user_org_rel",
+	}
+	CoreEnumsTable.Annotation = &entsql.Annotation{
+		Table: "core_enums",
 	}
 }

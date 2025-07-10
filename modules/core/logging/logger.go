@@ -8,6 +8,7 @@ import (
 	"path"
 	"runtime"
 
+	"github.com/sky-as-code/nikki-erp/common/env"
 	"go.bryk.io/pkg/errors"
 )
 
@@ -92,9 +93,12 @@ func (this *loggerImpl) writeLogFormat(level Level, format string, args ...any) 
 func (this *loggerImpl) writeErrorData(message string, err error) {
 	var typedErr *errors.Error
 	var data any
+	isLocal := env.IsLocal()
+	codec := NewJsonCodec(isLocal)
+
 	if errors.As(err, &typedErr) {
-		js, _ := errors.Report(typedErr, NewJsonCodec(false))
-		data = fmt.Sprintf("%s", js)
+		js, _ := errors.Report(typedErr, codec)
+		data = string(js)
 	} else {
 		data = err
 	}
@@ -102,6 +106,10 @@ func (this *loggerImpl) writeErrorData(message string, err error) {
 	// Copy writeLogData implementation here so the stackDepth is correct
 	fileNameLine := getFileName(skippedCallStackDepth)
 	this.slogger.Log(context.Background(), slog.LevelError, message, slog.Any("data", data), slog.String("source", fileNameLine))
+
+	if isLocal {
+		printStackTrace(err)
+	}
 }
 
 func getFileName(depth int) string {
@@ -120,44 +128,17 @@ func NewSloggerWithCorrectCallDepth(level slog.Leveler, callDepth int) *slog.Log
 	})
 
 	return slog.New(handler)
-	// return slog.New(&HandlerWithCorrectCallDepth{
-	// 	inner:     handler,
-	// 	callDepth: callDepth,
-	// })
 }
 
-type HandlerWithCorrectCallDepth struct {
-	inner     slog.Handler
-	callDepth int
-}
-
-func (this *HandlerWithCorrectCallDepth) Enabled(ctx context.Context, level slog.Level) bool {
-	return this.inner.Enabled(ctx, level)
-}
-
-func (this *HandlerWithCorrectCallDepth) Handle(ctx context.Context, r slog.Record) error {
-	// Copy record and inject the real source location
-	pcs := make([]uintptr, 1)
-	runtime.Callers(this.callDepth, pcs)
-	frames := runtime.CallersFrames(pcs)
-	frame, _ := frames.Next()
-
-	r = slog.NewRecord(r.Time, r.Level, r.Message, 0)
-	r.AddAttrs(slog.String("source", fmt.Sprintf("%s:%d", frame.File, frame.Line)))
-
-	return this.inner.Handle(ctx, r)
-}
-
-func (this *HandlerWithCorrectCallDepth) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &HandlerWithCorrectCallDepth{
-		inner:     this.inner.WithAttrs(attrs),
-		callDepth: this.callDepth,
+func printStackTrace(err error) {
+	rec := NewErrReport(err, false)
+	printRed("Stacktrace:", "")
+	for i, frame := range rec.Stacktrace {
+		// Print in red color
+		printRed(frame, fmt.Sprintf("[%d] ", i))
 	}
 }
 
-func (this *HandlerWithCorrectCallDepth) WithGroup(name string) slog.Handler {
-	return &HandlerWithCorrectCallDepth{
-		inner:     this.inner.WithGroup(name),
-		callDepth: this.callDepth,
-	}
+func printRed(message string, prefix string) {
+	fmt.Printf("\033[31m%s%v\033[0m\n", prefix, message)
 }

@@ -31,11 +31,7 @@ func (UserMixin) Fields() []ent.Field {
 			Default(time.Now).
 			Immutable(),
 
-		field.String("display_name").Annotations(
-			entsql.Annotation{
-				Collation: "vi-x-icu",
-			},
-		),
+		field.String("display_name"),
 
 		field.String("email").
 			Unique(),
@@ -74,8 +70,7 @@ func (UserMixin) Fields() []ent.Field {
 		field.Time("password_changed_at").
 			Comment("Last password change timestamp"),
 
-		field.Enum("status").
-			Values("active", "inactive", "locked"),
+		field.String("status_id"),
 
 		field.Time("updated_at").
 			Optional().
@@ -113,6 +108,11 @@ func (User) Edges() []ent.Edge {
 
 		edge.To("orgs", Organization.Type).
 			Through("user_orgs", UserOrg.Type),
+
+		edge.To("user_status", UserStatusEnum.Type).
+			Field("status_id").
+			Unique().
+			Required(),
 	}
 }
 

@@ -64,7 +64,7 @@ func (this *UserHandler) GetUserById(ctx context.Context, packet *cqrs.RequestPa
 	return reply, nil
 }
 
-func (this *UserHandler) SearchUsers(ctx context.Context, packet *cqrs.RequestPacket[it.SearchUsersCommand]) (*cqrs.Reply[it.SearchUsersResult], error) {
+func (this *UserHandler) SearchUsers(ctx context.Context, packet *cqrs.RequestPacket[it.SearchUsersQuery]) (*cqrs.Reply[it.SearchUsersResult], error) {
 	cmd := packet.Request()
 	result, err := this.UserSvc.SearchUsers(ctx, *cmd)
 	if err != nil {
@@ -95,4 +95,17 @@ func (this *UserHandler) UserExistsMulti(ctx context.Context, packet *cqrs.Reque
 	return &cqrs.Reply[it.UserExistsMultiResult]{
 		Result: *result,
 	}, nil
+}
+
+func (this *UserHandler) ListUserStatuses(ctx context.Context, packet *cqrs.RequestPacket[it.ListUserStatusesQuery]) (*cqrs.Reply[it.ListUserStatusesResult], error) {
+	cmd := packet.Request()
+	result, err := this.UserSvc.ListUserStatuses(ctx, *cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	reply := &cqrs.Reply[it.ListUserStatusesResult]{
+		Result: *result,
+	}
+	return reply, nil
 }

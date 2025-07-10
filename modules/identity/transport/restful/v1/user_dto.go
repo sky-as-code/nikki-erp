@@ -41,18 +41,18 @@ func (this *GetUserByIdResponse) FromUser(user domain.User) {
 	this.DisplayName = *user.DisplayName
 	this.Email = *user.Email
 	this.Etag = *user.Etag
-	this.Status = user.Status.String()
+	this.Status = *user.Status.Value
 	this.UpdatedAt = safe.GetTimeUnixMilli(user.UpdatedAt)
 }
 
-type SearchUsersRequest = it.SearchUsersCommand
+type SearchUsersRequest = it.SearchUsersQuery
 
 type SearchUsersResponseItem struct {
 	Id          model.Id                     `json:"id"`
 	DisplayName string                       `json:"displayName"`
 	Email       string                       `json:"email"`
 	LockedUntil *int64                       `json:"lockedUntil,omitempty"`
-	Status      domain.UserStatus            `json:"status"`
+	Status      string                       `json:"status"`
 	Groups      []SearchUsersRespGroups      `json:"groups"`
 	Hierarchies []SearchUsersRespHierarchies `json:"hierarchies"`
 	Orgs        []GetGroupRespOrg            `json:"orgs"`
@@ -63,7 +63,7 @@ func (this *SearchUsersResponseItem) FromUser(user domain.User) {
 	this.DisplayName = *user.DisplayName
 	this.Email = *user.Email
 	this.LockedUntil = safe.GetTimeUnix(user.LockedUntil)
-	this.Status = *user.Status
+	this.Status = *user.Status.Value
 
 	this.Groups = array.Map(user.Groups, func(group domain.Group) SearchUsersRespGroups {
 		groupResp := SearchUsersRespGroups{}
@@ -136,3 +136,6 @@ func (this *SearchUsersResponse) FromResult(result *it.SearchUsersResultData) {
 
 type UserExistsMultiRequest = it.UserExistsMultiCommand
 type UserExistsMultiResponse = it.ExistsMultiResultData
+
+type ListUserStatusesRequest = it.ListUserStatusesQuery
+type ListUserStatusesResponse = it.ListUserStatusesResultData

@@ -8,8 +8,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
+	"github.com/sky-as-code/nikki-erp/modules/core/enum"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent"
 )
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
@@ -34,15 +36,18 @@ func (*CoreModule) Init() error {
 		deps.Invoke(config.InitSubModule),
 		deps.Invoke(cqrs.InitSubModule),
 		deps.Invoke(event.InitSubModule),
-		deps.Register(db.InitSubModule),
-		deps.Register(http.InitSubModule),
+		deps.Invoke(db.InitSubModule),
+		deps.Invoke(http.InitSubModule),
+		deps.Register(newCoreClient),
+		deps.Invoke(enum.InitSubModule),
 	)
 
-	if err != nil {
-		return err
-	}
-	err = errors.Join(
-		deps.Invoke(db.InitSubModule),
-	)
 	return err
+}
+
+func newCoreClient(clientOpts *db.EntClientOptions) *ent.Client {
+	if clientOpts.DebugEnabled {
+		return ent.NewClient(ent.Driver(clientOpts.Driver), ent.Debug())
+	}
+	return ent.NewClient(ent.Driver(clientOpts.Driver))
 }

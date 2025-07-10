@@ -169,5 +169,29 @@ func (this UserRest) UserExistsMulti(echoCtx echo.Context) (err error) {
 		return err
 	}
 
+	if result.ClientError != nil {
+		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
+	}
+
+	return httpserver.JsonOk(echoCtx, result.Data)
+}
+
+func (this UserRest) ListUserStatuses(echoCtx echo.Context) (err error) {
+	request := &ListUserStatusesRequest{}
+	if err = echoCtx.Bind(request); err != nil {
+		return err
+	}
+
+	result := it.ListUserStatusesResult{}
+	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+
+	if err != nil {
+		return err
+	}
+
+	if result.ClientError != nil {
+		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
+	}
+
 	return httpserver.JsonOk(echoCtx, result.Data)
 }
