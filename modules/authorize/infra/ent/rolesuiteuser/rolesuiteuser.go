@@ -111,6 +111,12 @@ func ByRoleSuiteField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newRoleSuiteStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewRoleSuiteStepNikki() *sqlgraph.Step {
+	return newRoleSuiteStep()
+}
+
 func newRoleSuiteStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),

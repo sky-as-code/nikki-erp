@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
@@ -88,6 +89,26 @@ func (phc *PermissionHistoryCreate) SetNillableEntitlementID(s *string) *Permiss
 // SetEntitlementExpr sets the "entitlement_expr" field.
 func (phc *PermissionHistoryCreate) SetEntitlementExpr(s string) *PermissionHistoryCreate {
 	phc.mutation.SetEntitlementExpr(s)
+	return phc
+}
+
+// SetEntitlementAssignmentID sets the "entitlement_assignment_id" field.
+func (phc *PermissionHistoryCreate) SetEntitlementAssignmentID(s string) *PermissionHistoryCreate {
+	phc.mutation.SetEntitlementAssignmentID(s)
+	return phc
+}
+
+// SetNillableEntitlementAssignmentID sets the "entitlement_assignment_id" field if the given value is not nil.
+func (phc *PermissionHistoryCreate) SetNillableEntitlementAssignmentID(s *string) *PermissionHistoryCreate {
+	if s != nil {
+		phc.SetEntitlementAssignmentID(*s)
+	}
+	return phc
+}
+
+// SetResolvedExpr sets the "resolved_expr" field.
+func (phc *PermissionHistoryCreate) SetResolvedExpr(s string) *PermissionHistoryCreate {
+	phc.mutation.SetResolvedExpr(s)
 	return phc
 }
 
@@ -190,6 +211,11 @@ func (phc *PermissionHistoryCreate) SetEntitlement(e *Entitlement) *PermissionHi
 	return phc.SetEntitlementID(e.ID)
 }
 
+// SetEntitlementAssignment sets the "entitlement_assignment" edge to the EntitlementAssignment entity.
+func (phc *PermissionHistoryCreate) SetEntitlementAssignment(e *EntitlementAssignment) *PermissionHistoryCreate {
+	return phc.SetEntitlementAssignmentID(e.ID)
+}
+
 // SetRole sets the "role" edge to the Role entity.
 func (phc *PermissionHistoryCreate) SetRole(r *Role) *PermissionHistoryCreate {
 	return phc.SetRoleID(r.ID)
@@ -278,6 +304,9 @@ func (phc *PermissionHistoryCreate) check() error {
 	if _, ok := phc.mutation.EntitlementExpr(); !ok {
 		return &ValidationError{Name: "entitlement_expr", err: errors.New(`ent: missing required field "PermissionHistory.entitlement_expr"`)}
 	}
+	if _, ok := phc.mutation.ResolvedExpr(); !ok {
+		return &ValidationError{Name: "resolved_expr", err: errors.New(`ent: missing required field "PermissionHistory.resolved_expr"`)}
+	}
 	if _, ok := phc.mutation.ReceiverEmail(); !ok {
 		return &ValidationError{Name: "receiver_email", err: errors.New(`ent: missing required field "PermissionHistory.receiver_email"`)}
 	}
@@ -346,6 +375,10 @@ func (phc *PermissionHistoryCreate) createSpec() (*PermissionHistory, *sqlgraph.
 		_spec.SetField(permissionhistory.FieldEntitlementExpr, field.TypeString, value)
 		_node.EntitlementExpr = value
 	}
+	if value, ok := phc.mutation.ResolvedExpr(); ok {
+		_spec.SetField(permissionhistory.FieldResolvedExpr, field.TypeString, value)
+		_node.ResolvedExpr = value
+	}
 	if value, ok := phc.mutation.ReceiverID(); ok {
 		_spec.SetField(permissionhistory.FieldReceiverID, field.TypeString, value)
 		_node.ReceiverID = &value
@@ -377,6 +410,23 @@ func (phc *PermissionHistoryCreate) createSpec() (*PermissionHistory, *sqlgraph.
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.EntitlementID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := phc.mutation.EntitlementAssignmentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.EntitlementAssignmentTable,
+			Columns: []string{permissionhistory.EntitlementAssignmentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.EntitlementAssignmentID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := phc.mutation.RoleIDs(); len(nodes) > 0 {

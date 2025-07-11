@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/action"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
@@ -34,18 +35,19 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAction               = "Action"
-	TypeEffectiveEntitlement = "EffectiveEntitlement"
-	TypeEntitlement          = "Entitlement"
-	TypeGrantRequest         = "GrantRequest"
-	TypePermissionHistory    = "PermissionHistory"
-	TypeResource             = "Resource"
-	TypeRevokeRequest        = "RevokeRequest"
-	TypeRole                 = "Role"
-	TypeRoleRoleSuite        = "RoleRoleSuite"
-	TypeRoleSuite            = "RoleSuite"
-	TypeRoleSuiteUser        = "RoleSuiteUser"
-	TypeRoleUser             = "RoleUser"
+	TypeAction                = "Action"
+	TypeEffectiveEntitlement  = "EffectiveEntitlement"
+	TypeEntitlement           = "Entitlement"
+	TypeEntitlementAssignment = "EntitlementAssignment"
+	TypeGrantRequest          = "GrantRequest"
+	TypePermissionHistory     = "PermissionHistory"
+	TypeResource              = "Resource"
+	TypeRevokeRequest         = "RevokeRequest"
+	TypeRole                  = "Role"
+	TypeRoleRoleSuite         = "RoleRoleSuite"
+	TypeRoleSuite             = "RoleSuite"
+	TypeRoleSuiteUser         = "RoleSuiteUser"
+	TypeRoleUser              = "RoleUser"
 )
 
 // ActionMutation represents an operation that mutates the Action nodes in the graph.
@@ -814,29 +816,30 @@ func (m *ActionMutation) ResetEdge(name string) error {
 // EntitlementMutation represents an operation that mutates the Entitlement nodes in the graph.
 type EntitlementMutation struct {
 	config
-	op                          Op
-	typ                         string
-	id                          *string
-	action_expr                 *string
-	created_at                  *time.Time
-	created_by                  *string
-	name                        *string
-	description                 *string
-	etag                        *string
-	subject_type                *entitlement.SubjectType
-	subject_ref                 *string
-	scope_ref                   *string
-	clearedFields               map[string]struct{}
-	permission_histories        map[string]struct{}
-	removedpermission_histories map[string]struct{}
-	clearedpermission_histories bool
-	action                      *string
-	clearedaction               bool
-	resource                    *string
-	clearedresource             bool
-	done                        bool
-	oldValue                    func(context.Context) (*Entitlement, error)
-	predicates                  []predicate.Entitlement
+	op                             Op
+	typ                            string
+	id                             *string
+	action_expr                    *string
+	created_at                     *time.Time
+	created_by                     *string
+	name                           *string
+	description                    *string
+	etag                           *string
+	scope_ref                      *string
+	clearedFields                  map[string]struct{}
+	permission_histories           map[string]struct{}
+	removedpermission_histories    map[string]struct{}
+	clearedpermission_histories    bool
+	entitlement_assignments        map[string]struct{}
+	removedentitlement_assignments map[string]struct{}
+	clearedentitlement_assignments bool
+	action                         *string
+	clearedaction                  bool
+	resource                       *string
+	clearedresource                bool
+	done                           bool
+	oldValue                       func(context.Context) (*Entitlement, error)
+	predicates                     []predicate.Entitlement
 }
 
 var _ ent.Mutation = (*EntitlementMutation)(nil)
@@ -1283,78 +1286,6 @@ func (m *EntitlementMutation) ResetResourceID() {
 	delete(m.clearedFields, entitlement.FieldResourceID)
 }
 
-// SetSubjectType sets the "subject_type" field.
-func (m *EntitlementMutation) SetSubjectType(et entitlement.SubjectType) {
-	m.subject_type = &et
-}
-
-// SubjectType returns the value of the "subject_type" field in the mutation.
-func (m *EntitlementMutation) SubjectType() (r entitlement.SubjectType, exists bool) {
-	v := m.subject_type
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSubjectType returns the old "subject_type" field's value of the Entitlement entity.
-// If the Entitlement object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EntitlementMutation) OldSubjectType(ctx context.Context) (v entitlement.SubjectType, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSubjectType is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSubjectType requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSubjectType: %w", err)
-	}
-	return oldValue.SubjectType, nil
-}
-
-// ResetSubjectType resets all changes to the "subject_type" field.
-func (m *EntitlementMutation) ResetSubjectType() {
-	m.subject_type = nil
-}
-
-// SetSubjectRef sets the "subject_ref" field.
-func (m *EntitlementMutation) SetSubjectRef(s string) {
-	m.subject_ref = &s
-}
-
-// SubjectRef returns the value of the "subject_ref" field in the mutation.
-func (m *EntitlementMutation) SubjectRef() (r string, exists bool) {
-	v := m.subject_ref
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldSubjectRef returns the old "subject_ref" field's value of the Entitlement entity.
-// If the Entitlement object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EntitlementMutation) OldSubjectRef(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldSubjectRef is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldSubjectRef requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldSubjectRef: %w", err)
-	}
-	return oldValue.SubjectRef, nil
-}
-
-// ResetSubjectRef resets all changes to the "subject_ref" field.
-func (m *EntitlementMutation) ResetSubjectRef() {
-	m.subject_ref = nil
-}
-
 // SetScopeRef sets the "scope_ref" field.
 func (m *EntitlementMutation) SetScopeRef(s string) {
 	m.scope_ref = &s
@@ -1458,6 +1389,60 @@ func (m *EntitlementMutation) ResetPermissionHistories() {
 	m.removedpermission_histories = nil
 }
 
+// AddEntitlementAssignmentIDs adds the "entitlement_assignments" edge to the EntitlementAssignment entity by ids.
+func (m *EntitlementMutation) AddEntitlementAssignmentIDs(ids ...string) {
+	if m.entitlement_assignments == nil {
+		m.entitlement_assignments = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.entitlement_assignments[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntitlementAssignments clears the "entitlement_assignments" edge to the EntitlementAssignment entity.
+func (m *EntitlementMutation) ClearEntitlementAssignments() {
+	m.clearedentitlement_assignments = true
+}
+
+// EntitlementAssignmentsCleared reports if the "entitlement_assignments" edge to the EntitlementAssignment entity was cleared.
+func (m *EntitlementMutation) EntitlementAssignmentsCleared() bool {
+	return m.clearedentitlement_assignments
+}
+
+// RemoveEntitlementAssignmentIDs removes the "entitlement_assignments" edge to the EntitlementAssignment entity by IDs.
+func (m *EntitlementMutation) RemoveEntitlementAssignmentIDs(ids ...string) {
+	if m.removedentitlement_assignments == nil {
+		m.removedentitlement_assignments = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.entitlement_assignments, ids[i])
+		m.removedentitlement_assignments[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntitlementAssignments returns the removed IDs of the "entitlement_assignments" edge to the EntitlementAssignment entity.
+func (m *EntitlementMutation) RemovedEntitlementAssignmentsIDs() (ids []string) {
+	for id := range m.removedentitlement_assignments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntitlementAssignmentsIDs returns the "entitlement_assignments" edge IDs in the mutation.
+func (m *EntitlementMutation) EntitlementAssignmentsIDs() (ids []string) {
+	for id := range m.entitlement_assignments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntitlementAssignments resets all changes to the "entitlement_assignments" edge.
+func (m *EntitlementMutation) ResetEntitlementAssignments() {
+	m.entitlement_assignments = nil
+	m.clearedentitlement_assignments = false
+	m.removedentitlement_assignments = nil
+}
+
 // ClearAction clears the "action" edge to the Action entity.
 func (m *EntitlementMutation) ClearAction() {
 	m.clearedaction = true
@@ -1546,7 +1531,7 @@ func (m *EntitlementMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EntitlementMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 9)
 	if m.action != nil {
 		fields = append(fields, entitlement.FieldActionID)
 	}
@@ -1570,12 +1555,6 @@ func (m *EntitlementMutation) Fields() []string {
 	}
 	if m.resource != nil {
 		fields = append(fields, entitlement.FieldResourceID)
-	}
-	if m.subject_type != nil {
-		fields = append(fields, entitlement.FieldSubjectType)
-	}
-	if m.subject_ref != nil {
-		fields = append(fields, entitlement.FieldSubjectRef)
 	}
 	if m.scope_ref != nil {
 		fields = append(fields, entitlement.FieldScopeRef)
@@ -1604,10 +1583,6 @@ func (m *EntitlementMutation) Field(name string) (ent.Value, bool) {
 		return m.Etag()
 	case entitlement.FieldResourceID:
 		return m.ResourceID()
-	case entitlement.FieldSubjectType:
-		return m.SubjectType()
-	case entitlement.FieldSubjectRef:
-		return m.SubjectRef()
 	case entitlement.FieldScopeRef:
 		return m.ScopeRef()
 	}
@@ -1635,10 +1610,6 @@ func (m *EntitlementMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldEtag(ctx)
 	case entitlement.FieldResourceID:
 		return m.OldResourceID(ctx)
-	case entitlement.FieldSubjectType:
-		return m.OldSubjectType(ctx)
-	case entitlement.FieldSubjectRef:
-		return m.OldSubjectRef(ctx)
 	case entitlement.FieldScopeRef:
 		return m.OldScopeRef(ctx)
 	}
@@ -1705,20 +1676,6 @@ func (m *EntitlementMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetResourceID(v)
-		return nil
-	case entitlement.FieldSubjectType:
-		v, ok := value.(entitlement.SubjectType)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSubjectType(v)
-		return nil
-	case entitlement.FieldSubjectRef:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetSubjectRef(v)
 		return nil
 	case entitlement.FieldScopeRef:
 		v, ok := value.(string)
@@ -1833,12 +1790,6 @@ func (m *EntitlementMutation) ResetField(name string) error {
 	case entitlement.FieldResourceID:
 		m.ResetResourceID()
 		return nil
-	case entitlement.FieldSubjectType:
-		m.ResetSubjectType()
-		return nil
-	case entitlement.FieldSubjectRef:
-		m.ResetSubjectRef()
-		return nil
 	case entitlement.FieldScopeRef:
 		m.ResetScopeRef()
 		return nil
@@ -1848,9 +1799,12 @@ func (m *EntitlementMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *EntitlementMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.permission_histories != nil {
 		edges = append(edges, entitlement.EdgePermissionHistories)
+	}
+	if m.entitlement_assignments != nil {
+		edges = append(edges, entitlement.EdgeEntitlementAssignments)
 	}
 	if m.action != nil {
 		edges = append(edges, entitlement.EdgeAction)
@@ -1871,6 +1825,12 @@ func (m *EntitlementMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case entitlement.EdgeEntitlementAssignments:
+		ids := make([]ent.Value, 0, len(m.entitlement_assignments))
+		for id := range m.entitlement_assignments {
+			ids = append(ids, id)
+		}
+		return ids
 	case entitlement.EdgeAction:
 		if id := m.action; id != nil {
 			return []ent.Value{*id}
@@ -1885,9 +1845,12 @@ func (m *EntitlementMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *EntitlementMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedpermission_histories != nil {
 		edges = append(edges, entitlement.EdgePermissionHistories)
+	}
+	if m.removedentitlement_assignments != nil {
+		edges = append(edges, entitlement.EdgeEntitlementAssignments)
 	}
 	return edges
 }
@@ -1902,15 +1865,24 @@ func (m *EntitlementMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case entitlement.EdgeEntitlementAssignments:
+		ids := make([]ent.Value, 0, len(m.removedentitlement_assignments))
+		for id := range m.removedentitlement_assignments {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *EntitlementMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedpermission_histories {
 		edges = append(edges, entitlement.EdgePermissionHistories)
+	}
+	if m.clearedentitlement_assignments {
+		edges = append(edges, entitlement.EdgeEntitlementAssignments)
 	}
 	if m.clearedaction {
 		edges = append(edges, entitlement.EdgeAction)
@@ -1927,6 +1899,8 @@ func (m *EntitlementMutation) EdgeCleared(name string) bool {
 	switch name {
 	case entitlement.EdgePermissionHistories:
 		return m.clearedpermission_histories
+	case entitlement.EdgeEntitlementAssignments:
+		return m.clearedentitlement_assignments
 	case entitlement.EdgeAction:
 		return m.clearedaction
 	case entitlement.EdgeResource:
@@ -1956,6 +1930,9 @@ func (m *EntitlementMutation) ResetEdge(name string) error {
 	case entitlement.EdgePermissionHistories:
 		m.ResetPermissionHistories()
 		return nil
+	case entitlement.EdgeEntitlementAssignments:
+		m.ResetEntitlementAssignments()
+		return nil
 	case entitlement.EdgeAction:
 		m.ResetAction()
 		return nil
@@ -1964,6 +1941,703 @@ func (m *EntitlementMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Entitlement edge %s", name)
+}
+
+// EntitlementAssignmentMutation represents an operation that mutates the EntitlementAssignment nodes in the graph.
+type EntitlementAssignmentMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *string
+	subject_type       *entitlementassignment.SubjectType
+	subject_ref        *string
+	resolved_expr      *string
+	action_name        *string
+	resource_name      *string
+	clearedFields      map[string]struct{}
+	entitlement        *string
+	clearedentitlement bool
+	done               bool
+	oldValue           func(context.Context) (*EntitlementAssignment, error)
+	predicates         []predicate.EntitlementAssignment
+}
+
+var _ ent.Mutation = (*EntitlementAssignmentMutation)(nil)
+
+// entitlementassignmentOption allows management of the mutation configuration using functional options.
+type entitlementassignmentOption func(*EntitlementAssignmentMutation)
+
+// newEntitlementAssignmentMutation creates new mutation for the EntitlementAssignment entity.
+func newEntitlementAssignmentMutation(c config, op Op, opts ...entitlementassignmentOption) *EntitlementAssignmentMutation {
+	m := &EntitlementAssignmentMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeEntitlementAssignment,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withEntitlementAssignmentID sets the ID field of the mutation.
+func withEntitlementAssignmentID(id string) entitlementassignmentOption {
+	return func(m *EntitlementAssignmentMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *EntitlementAssignment
+		)
+		m.oldValue = func(ctx context.Context) (*EntitlementAssignment, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().EntitlementAssignment.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withEntitlementAssignment sets the old EntitlementAssignment of the mutation.
+func withEntitlementAssignment(node *EntitlementAssignment) entitlementassignmentOption {
+	return func(m *EntitlementAssignmentMutation) {
+		m.oldValue = func(context.Context) (*EntitlementAssignment, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m EntitlementAssignmentMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m EntitlementAssignmentMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of EntitlementAssignment entities.
+func (m *EntitlementAssignmentMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *EntitlementAssignmentMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *EntitlementAssignmentMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().EntitlementAssignment.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetEntitlementID sets the "entitlement_id" field.
+func (m *EntitlementAssignmentMutation) SetEntitlementID(s string) {
+	m.entitlement = &s
+}
+
+// EntitlementID returns the value of the "entitlement_id" field in the mutation.
+func (m *EntitlementAssignmentMutation) EntitlementID() (r string, exists bool) {
+	v := m.entitlement
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEntitlementID returns the old "entitlement_id" field's value of the EntitlementAssignment entity.
+// If the EntitlementAssignment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntitlementAssignmentMutation) OldEntitlementID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEntitlementID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEntitlementID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEntitlementID: %w", err)
+	}
+	return oldValue.EntitlementID, nil
+}
+
+// ResetEntitlementID resets all changes to the "entitlement_id" field.
+func (m *EntitlementAssignmentMutation) ResetEntitlementID() {
+	m.entitlement = nil
+}
+
+// SetSubjectType sets the "subject_type" field.
+func (m *EntitlementAssignmentMutation) SetSubjectType(et entitlementassignment.SubjectType) {
+	m.subject_type = &et
+}
+
+// SubjectType returns the value of the "subject_type" field in the mutation.
+func (m *EntitlementAssignmentMutation) SubjectType() (r entitlementassignment.SubjectType, exists bool) {
+	v := m.subject_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubjectType returns the old "subject_type" field's value of the EntitlementAssignment entity.
+// If the EntitlementAssignment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntitlementAssignmentMutation) OldSubjectType(ctx context.Context) (v entitlementassignment.SubjectType, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubjectType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubjectType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubjectType: %w", err)
+	}
+	return oldValue.SubjectType, nil
+}
+
+// ResetSubjectType resets all changes to the "subject_type" field.
+func (m *EntitlementAssignmentMutation) ResetSubjectType() {
+	m.subject_type = nil
+}
+
+// SetSubjectRef sets the "subject_ref" field.
+func (m *EntitlementAssignmentMutation) SetSubjectRef(s string) {
+	m.subject_ref = &s
+}
+
+// SubjectRef returns the value of the "subject_ref" field in the mutation.
+func (m *EntitlementAssignmentMutation) SubjectRef() (r string, exists bool) {
+	v := m.subject_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubjectRef returns the old "subject_ref" field's value of the EntitlementAssignment entity.
+// If the EntitlementAssignment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntitlementAssignmentMutation) OldSubjectRef(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubjectRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubjectRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubjectRef: %w", err)
+	}
+	return oldValue.SubjectRef, nil
+}
+
+// ResetSubjectRef resets all changes to the "subject_ref" field.
+func (m *EntitlementAssignmentMutation) ResetSubjectRef() {
+	m.subject_ref = nil
+}
+
+// SetResolvedExpr sets the "resolved_expr" field.
+func (m *EntitlementAssignmentMutation) SetResolvedExpr(s string) {
+	m.resolved_expr = &s
+}
+
+// ResolvedExpr returns the value of the "resolved_expr" field in the mutation.
+func (m *EntitlementAssignmentMutation) ResolvedExpr() (r string, exists bool) {
+	v := m.resolved_expr
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResolvedExpr returns the old "resolved_expr" field's value of the EntitlementAssignment entity.
+// If the EntitlementAssignment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntitlementAssignmentMutation) OldResolvedExpr(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResolvedExpr is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResolvedExpr requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResolvedExpr: %w", err)
+	}
+	return oldValue.ResolvedExpr, nil
+}
+
+// ResetResolvedExpr resets all changes to the "resolved_expr" field.
+func (m *EntitlementAssignmentMutation) ResetResolvedExpr() {
+	m.resolved_expr = nil
+}
+
+// SetActionName sets the "action_name" field.
+func (m *EntitlementAssignmentMutation) SetActionName(s string) {
+	m.action_name = &s
+}
+
+// ActionName returns the value of the "action_name" field in the mutation.
+func (m *EntitlementAssignmentMutation) ActionName() (r string, exists bool) {
+	v := m.action_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActionName returns the old "action_name" field's value of the EntitlementAssignment entity.
+// If the EntitlementAssignment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntitlementAssignmentMutation) OldActionName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActionName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActionName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActionName: %w", err)
+	}
+	return oldValue.ActionName, nil
+}
+
+// ClearActionName clears the value of the "action_name" field.
+func (m *EntitlementAssignmentMutation) ClearActionName() {
+	m.action_name = nil
+	m.clearedFields[entitlementassignment.FieldActionName] = struct{}{}
+}
+
+// ActionNameCleared returns if the "action_name" field was cleared in this mutation.
+func (m *EntitlementAssignmentMutation) ActionNameCleared() bool {
+	_, ok := m.clearedFields[entitlementassignment.FieldActionName]
+	return ok
+}
+
+// ResetActionName resets all changes to the "action_name" field.
+func (m *EntitlementAssignmentMutation) ResetActionName() {
+	m.action_name = nil
+	delete(m.clearedFields, entitlementassignment.FieldActionName)
+}
+
+// SetResourceName sets the "resource_name" field.
+func (m *EntitlementAssignmentMutation) SetResourceName(s string) {
+	m.resource_name = &s
+}
+
+// ResourceName returns the value of the "resource_name" field in the mutation.
+func (m *EntitlementAssignmentMutation) ResourceName() (r string, exists bool) {
+	v := m.resource_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResourceName returns the old "resource_name" field's value of the EntitlementAssignment entity.
+// If the EntitlementAssignment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntitlementAssignmentMutation) OldResourceName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResourceName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResourceName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResourceName: %w", err)
+	}
+	return oldValue.ResourceName, nil
+}
+
+// ClearResourceName clears the value of the "resource_name" field.
+func (m *EntitlementAssignmentMutation) ClearResourceName() {
+	m.resource_name = nil
+	m.clearedFields[entitlementassignment.FieldResourceName] = struct{}{}
+}
+
+// ResourceNameCleared returns if the "resource_name" field was cleared in this mutation.
+func (m *EntitlementAssignmentMutation) ResourceNameCleared() bool {
+	_, ok := m.clearedFields[entitlementassignment.FieldResourceName]
+	return ok
+}
+
+// ResetResourceName resets all changes to the "resource_name" field.
+func (m *EntitlementAssignmentMutation) ResetResourceName() {
+	m.resource_name = nil
+	delete(m.clearedFields, entitlementassignment.FieldResourceName)
+}
+
+// ClearEntitlement clears the "entitlement" edge to the Entitlement entity.
+func (m *EntitlementAssignmentMutation) ClearEntitlement() {
+	m.clearedentitlement = true
+	m.clearedFields[entitlementassignment.FieldEntitlementID] = struct{}{}
+}
+
+// EntitlementCleared reports if the "entitlement" edge to the Entitlement entity was cleared.
+func (m *EntitlementAssignmentMutation) EntitlementCleared() bool {
+	return m.clearedentitlement
+}
+
+// EntitlementIDs returns the "entitlement" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// EntitlementID instead. It exists only for internal usage by the builders.
+func (m *EntitlementAssignmentMutation) EntitlementIDs() (ids []string) {
+	if id := m.entitlement; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetEntitlement resets all changes to the "entitlement" edge.
+func (m *EntitlementAssignmentMutation) ResetEntitlement() {
+	m.entitlement = nil
+	m.clearedentitlement = false
+}
+
+// Where appends a list predicates to the EntitlementAssignmentMutation builder.
+func (m *EntitlementAssignmentMutation) Where(ps ...predicate.EntitlementAssignment) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the EntitlementAssignmentMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *EntitlementAssignmentMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.EntitlementAssignment, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *EntitlementAssignmentMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *EntitlementAssignmentMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (EntitlementAssignment).
+func (m *EntitlementAssignmentMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *EntitlementAssignmentMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.entitlement != nil {
+		fields = append(fields, entitlementassignment.FieldEntitlementID)
+	}
+	if m.subject_type != nil {
+		fields = append(fields, entitlementassignment.FieldSubjectType)
+	}
+	if m.subject_ref != nil {
+		fields = append(fields, entitlementassignment.FieldSubjectRef)
+	}
+	if m.resolved_expr != nil {
+		fields = append(fields, entitlementassignment.FieldResolvedExpr)
+	}
+	if m.action_name != nil {
+		fields = append(fields, entitlementassignment.FieldActionName)
+	}
+	if m.resource_name != nil {
+		fields = append(fields, entitlementassignment.FieldResourceName)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *EntitlementAssignmentMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case entitlementassignment.FieldEntitlementID:
+		return m.EntitlementID()
+	case entitlementassignment.FieldSubjectType:
+		return m.SubjectType()
+	case entitlementassignment.FieldSubjectRef:
+		return m.SubjectRef()
+	case entitlementassignment.FieldResolvedExpr:
+		return m.ResolvedExpr()
+	case entitlementassignment.FieldActionName:
+		return m.ActionName()
+	case entitlementassignment.FieldResourceName:
+		return m.ResourceName()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *EntitlementAssignmentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case entitlementassignment.FieldEntitlementID:
+		return m.OldEntitlementID(ctx)
+	case entitlementassignment.FieldSubjectType:
+		return m.OldSubjectType(ctx)
+	case entitlementassignment.FieldSubjectRef:
+		return m.OldSubjectRef(ctx)
+	case entitlementassignment.FieldResolvedExpr:
+		return m.OldResolvedExpr(ctx)
+	case entitlementassignment.FieldActionName:
+		return m.OldActionName(ctx)
+	case entitlementassignment.FieldResourceName:
+		return m.OldResourceName(ctx)
+	}
+	return nil, fmt.Errorf("unknown EntitlementAssignment field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EntitlementAssignmentMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case entitlementassignment.FieldEntitlementID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEntitlementID(v)
+		return nil
+	case entitlementassignment.FieldSubjectType:
+		v, ok := value.(entitlementassignment.SubjectType)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubjectType(v)
+		return nil
+	case entitlementassignment.FieldSubjectRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubjectRef(v)
+		return nil
+	case entitlementassignment.FieldResolvedExpr:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResolvedExpr(v)
+		return nil
+	case entitlementassignment.FieldActionName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActionName(v)
+		return nil
+	case entitlementassignment.FieldResourceName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResourceName(v)
+		return nil
+	}
+	return fmt.Errorf("unknown EntitlementAssignment field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *EntitlementAssignmentMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *EntitlementAssignmentMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EntitlementAssignmentMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown EntitlementAssignment numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *EntitlementAssignmentMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(entitlementassignment.FieldActionName) {
+		fields = append(fields, entitlementassignment.FieldActionName)
+	}
+	if m.FieldCleared(entitlementassignment.FieldResourceName) {
+		fields = append(fields, entitlementassignment.FieldResourceName)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *EntitlementAssignmentMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *EntitlementAssignmentMutation) ClearField(name string) error {
+	switch name {
+	case entitlementassignment.FieldActionName:
+		m.ClearActionName()
+		return nil
+	case entitlementassignment.FieldResourceName:
+		m.ClearResourceName()
+		return nil
+	}
+	return fmt.Errorf("unknown EntitlementAssignment nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *EntitlementAssignmentMutation) ResetField(name string) error {
+	switch name {
+	case entitlementassignment.FieldEntitlementID:
+		m.ResetEntitlementID()
+		return nil
+	case entitlementassignment.FieldSubjectType:
+		m.ResetSubjectType()
+		return nil
+	case entitlementassignment.FieldSubjectRef:
+		m.ResetSubjectRef()
+		return nil
+	case entitlementassignment.FieldResolvedExpr:
+		m.ResetResolvedExpr()
+		return nil
+	case entitlementassignment.FieldActionName:
+		m.ResetActionName()
+		return nil
+	case entitlementassignment.FieldResourceName:
+		m.ResetResourceName()
+		return nil
+	}
+	return fmt.Errorf("unknown EntitlementAssignment field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *EntitlementAssignmentMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.entitlement != nil {
+		edges = append(edges, entitlementassignment.EdgeEntitlement)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *EntitlementAssignmentMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case entitlementassignment.EdgeEntitlement:
+		if id := m.entitlement; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *EntitlementAssignmentMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *EntitlementAssignmentMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *EntitlementAssignmentMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedentitlement {
+		edges = append(edges, entitlementassignment.EdgeEntitlement)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *EntitlementAssignmentMutation) EdgeCleared(name string) bool {
+	switch name {
+	case entitlementassignment.EdgeEntitlement:
+		return m.clearedentitlement
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *EntitlementAssignmentMutation) ClearEdge(name string) error {
+	switch name {
+	case entitlementassignment.EdgeEntitlement:
+		m.ClearEntitlement()
+		return nil
+	}
+	return fmt.Errorf("unknown EntitlementAssignment unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *EntitlementAssignmentMutation) ResetEdge(name string) error {
+	switch name {
+	case entitlementassignment.EdgeEntitlement:
+		m.ResetEntitlement()
+		return nil
+	}
+	return fmt.Errorf("unknown EntitlementAssignment edge %s", name)
 }
 
 // GrantRequestMutation represents an operation that mutates the GrantRequest nodes in the graph.
@@ -3077,33 +3751,36 @@ func (m *GrantRequestMutation) ResetEdge(name string) error {
 // PermissionHistoryMutation represents an operation that mutates the PermissionHistory nodes in the graph.
 type PermissionHistoryMutation struct {
 	config
-	op                    Op
-	typ                   string
-	id                    *string
-	approver_id           *string
-	approver_email        *string
-	created_at            *time.Time
-	effect                *permissionhistory.Effect
-	reason                *permissionhistory.Reason
-	entitlement_expr      *string
-	receiver_id           *string
-	receiver_email        *string
-	role_name             *string
-	role_suite_name       *string
-	clearedFields         map[string]struct{}
-	entitlement           *string
-	clearedentitlement    bool
-	role                  *string
-	clearedrole           bool
-	role_suite            *string
-	clearedrole_suite     bool
-	grant_request         *string
-	clearedgrant_request  bool
-	revoke_request        *string
-	clearedrevoke_request bool
-	done                  bool
-	oldValue              func(context.Context) (*PermissionHistory, error)
-	predicates            []predicate.PermissionHistory
+	op                            Op
+	typ                           string
+	id                            *string
+	approver_id                   *string
+	approver_email                *string
+	created_at                    *time.Time
+	effect                        *permissionhistory.Effect
+	reason                        *permissionhistory.Reason
+	entitlement_expr              *string
+	resolved_expr                 *string
+	receiver_id                   *string
+	receiver_email                *string
+	role_name                     *string
+	role_suite_name               *string
+	clearedFields                 map[string]struct{}
+	entitlement                   *string
+	clearedentitlement            bool
+	entitlement_assignment        *string
+	clearedentitlement_assignment bool
+	role                          *string
+	clearedrole                   bool
+	role_suite                    *string
+	clearedrole_suite             bool
+	grant_request                 *string
+	clearedgrant_request          bool
+	revoke_request                *string
+	clearedrevoke_request         bool
+	done                          bool
+	oldValue                      func(context.Context) (*PermissionHistory, error)
+	predicates                    []predicate.PermissionHistory
 }
 
 var _ ent.Mutation = (*PermissionHistoryMutation)(nil)
@@ -3488,6 +4165,91 @@ func (m *PermissionHistoryMutation) ResetEntitlementExpr() {
 	m.entitlement_expr = nil
 }
 
+// SetEntitlementAssignmentID sets the "entitlement_assignment_id" field.
+func (m *PermissionHistoryMutation) SetEntitlementAssignmentID(s string) {
+	m.entitlement_assignment = &s
+}
+
+// EntitlementAssignmentID returns the value of the "entitlement_assignment_id" field in the mutation.
+func (m *PermissionHistoryMutation) EntitlementAssignmentID() (r string, exists bool) {
+	v := m.entitlement_assignment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEntitlementAssignmentID returns the old "entitlement_assignment_id" field's value of the PermissionHistory entity.
+// If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionHistoryMutation) OldEntitlementAssignmentID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEntitlementAssignmentID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEntitlementAssignmentID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEntitlementAssignmentID: %w", err)
+	}
+	return oldValue.EntitlementAssignmentID, nil
+}
+
+// ClearEntitlementAssignmentID clears the value of the "entitlement_assignment_id" field.
+func (m *PermissionHistoryMutation) ClearEntitlementAssignmentID() {
+	m.entitlement_assignment = nil
+	m.clearedFields[permissionhistory.FieldEntitlementAssignmentID] = struct{}{}
+}
+
+// EntitlementAssignmentIDCleared returns if the "entitlement_assignment_id" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) EntitlementAssignmentIDCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldEntitlementAssignmentID]
+	return ok
+}
+
+// ResetEntitlementAssignmentID resets all changes to the "entitlement_assignment_id" field.
+func (m *PermissionHistoryMutation) ResetEntitlementAssignmentID() {
+	m.entitlement_assignment = nil
+	delete(m.clearedFields, permissionhistory.FieldEntitlementAssignmentID)
+}
+
+// SetResolvedExpr sets the "resolved_expr" field.
+func (m *PermissionHistoryMutation) SetResolvedExpr(s string) {
+	m.resolved_expr = &s
+}
+
+// ResolvedExpr returns the value of the "resolved_expr" field in the mutation.
+func (m *PermissionHistoryMutation) ResolvedExpr() (r string, exists bool) {
+	v := m.resolved_expr
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResolvedExpr returns the old "resolved_expr" field's value of the PermissionHistory entity.
+// If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PermissionHistoryMutation) OldResolvedExpr(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResolvedExpr is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResolvedExpr requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResolvedExpr: %w", err)
+	}
+	return oldValue.ResolvedExpr, nil
+}
+
+// ResetResolvedExpr resets all changes to the "resolved_expr" field.
+func (m *PermissionHistoryMutation) ResetResolvedExpr() {
+	m.resolved_expr = nil
+}
+
 // SetReceiverID sets the "receiver_id" field.
 func (m *PermissionHistoryMutation) SetReceiverID(s string) {
 	m.receiver_id = &s
@@ -3868,6 +4630,33 @@ func (m *PermissionHistoryMutation) ResetEntitlement() {
 	m.clearedentitlement = false
 }
 
+// ClearEntitlementAssignment clears the "entitlement_assignment" edge to the EntitlementAssignment entity.
+func (m *PermissionHistoryMutation) ClearEntitlementAssignment() {
+	m.clearedentitlement_assignment = true
+	m.clearedFields[permissionhistory.FieldEntitlementAssignmentID] = struct{}{}
+}
+
+// EntitlementAssignmentCleared reports if the "entitlement_assignment" edge to the EntitlementAssignment entity was cleared.
+func (m *PermissionHistoryMutation) EntitlementAssignmentCleared() bool {
+	return m.EntitlementAssignmentIDCleared() || m.clearedentitlement_assignment
+}
+
+// EntitlementAssignmentIDs returns the "entitlement_assignment" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// EntitlementAssignmentID instead. It exists only for internal usage by the builders.
+func (m *PermissionHistoryMutation) EntitlementAssignmentIDs() (ids []string) {
+	if id := m.entitlement_assignment; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetEntitlementAssignment resets all changes to the "entitlement_assignment" edge.
+func (m *PermissionHistoryMutation) ResetEntitlementAssignment() {
+	m.entitlement_assignment = nil
+	m.clearedentitlement_assignment = false
+}
+
 // ClearRole clears the "role" edge to the Role entity.
 func (m *PermissionHistoryMutation) ClearRole() {
 	m.clearedrole = true
@@ -4010,7 +4799,7 @@ func (m *PermissionHistoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PermissionHistoryMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 17)
 	if m.approver_id != nil {
 		fields = append(fields, permissionhistory.FieldApproverID)
 	}
@@ -4031,6 +4820,12 @@ func (m *PermissionHistoryMutation) Fields() []string {
 	}
 	if m.entitlement_expr != nil {
 		fields = append(fields, permissionhistory.FieldEntitlementExpr)
+	}
+	if m.entitlement_assignment != nil {
+		fields = append(fields, permissionhistory.FieldEntitlementAssignmentID)
+	}
+	if m.resolved_expr != nil {
+		fields = append(fields, permissionhistory.FieldResolvedExpr)
 	}
 	if m.receiver_id != nil {
 		fields = append(fields, permissionhistory.FieldReceiverID)
@@ -4078,6 +4873,10 @@ func (m *PermissionHistoryMutation) Field(name string) (ent.Value, bool) {
 		return m.EntitlementID()
 	case permissionhistory.FieldEntitlementExpr:
 		return m.EntitlementExpr()
+	case permissionhistory.FieldEntitlementAssignmentID:
+		return m.EntitlementAssignmentID()
+	case permissionhistory.FieldResolvedExpr:
+		return m.ResolvedExpr()
 	case permissionhistory.FieldReceiverID:
 		return m.ReceiverID()
 	case permissionhistory.FieldReceiverEmail:
@@ -4117,6 +4916,10 @@ func (m *PermissionHistoryMutation) OldField(ctx context.Context, name string) (
 		return m.OldEntitlementID(ctx)
 	case permissionhistory.FieldEntitlementExpr:
 		return m.OldEntitlementExpr(ctx)
+	case permissionhistory.FieldEntitlementAssignmentID:
+		return m.OldEntitlementAssignmentID(ctx)
+	case permissionhistory.FieldResolvedExpr:
+		return m.OldResolvedExpr(ctx)
 	case permissionhistory.FieldReceiverID:
 		return m.OldReceiverID(ctx)
 	case permissionhistory.FieldReceiverEmail:
@@ -4190,6 +4993,20 @@ func (m *PermissionHistoryMutation) SetField(name string, value ent.Value) error
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetEntitlementExpr(v)
+		return nil
+	case permissionhistory.FieldEntitlementAssignmentID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEntitlementAssignmentID(v)
+		return nil
+	case permissionhistory.FieldResolvedExpr:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResolvedExpr(v)
 		return nil
 	case permissionhistory.FieldReceiverID:
 		v, ok := value.(string)
@@ -4283,6 +5100,9 @@ func (m *PermissionHistoryMutation) ClearedFields() []string {
 	if m.FieldCleared(permissionhistory.FieldEntitlementID) {
 		fields = append(fields, permissionhistory.FieldEntitlementID)
 	}
+	if m.FieldCleared(permissionhistory.FieldEntitlementAssignmentID) {
+		fields = append(fields, permissionhistory.FieldEntitlementAssignmentID)
+	}
 	if m.FieldCleared(permissionhistory.FieldReceiverID) {
 		fields = append(fields, permissionhistory.FieldReceiverID)
 	}
@@ -4317,6 +5137,9 @@ func (m *PermissionHistoryMutation) ClearField(name string) error {
 		return nil
 	case permissionhistory.FieldEntitlementID:
 		m.ClearEntitlementID()
+		return nil
+	case permissionhistory.FieldEntitlementAssignmentID:
+		m.ClearEntitlementAssignmentID()
 		return nil
 	case permissionhistory.FieldReceiverID:
 		m.ClearReceiverID()
@@ -4362,6 +5185,12 @@ func (m *PermissionHistoryMutation) ResetField(name string) error {
 	case permissionhistory.FieldEntitlementExpr:
 		m.ResetEntitlementExpr()
 		return nil
+	case permissionhistory.FieldEntitlementAssignmentID:
+		m.ResetEntitlementAssignmentID()
+		return nil
+	case permissionhistory.FieldResolvedExpr:
+		m.ResetResolvedExpr()
+		return nil
 	case permissionhistory.FieldReceiverID:
 		m.ResetReceiverID()
 		return nil
@@ -4392,9 +5221,12 @@ func (m *PermissionHistoryMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PermissionHistoryMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.entitlement != nil {
 		edges = append(edges, permissionhistory.EdgeEntitlement)
+	}
+	if m.entitlement_assignment != nil {
+		edges = append(edges, permissionhistory.EdgeEntitlementAssignment)
 	}
 	if m.role != nil {
 		edges = append(edges, permissionhistory.EdgeRole)
@@ -4419,6 +5251,10 @@ func (m *PermissionHistoryMutation) AddedIDs(name string) []ent.Value {
 		if id := m.entitlement; id != nil {
 			return []ent.Value{*id}
 		}
+	case permissionhistory.EdgeEntitlementAssignment:
+		if id := m.entitlement_assignment; id != nil {
+			return []ent.Value{*id}
+		}
 	case permissionhistory.EdgeRole:
 		if id := m.role; id != nil {
 			return []ent.Value{*id}
@@ -4441,7 +5277,7 @@ func (m *PermissionHistoryMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PermissionHistoryMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	return edges
 }
 
@@ -4453,9 +5289,12 @@ func (m *PermissionHistoryMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PermissionHistoryMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedentitlement {
 		edges = append(edges, permissionhistory.EdgeEntitlement)
+	}
+	if m.clearedentitlement_assignment {
+		edges = append(edges, permissionhistory.EdgeEntitlementAssignment)
 	}
 	if m.clearedrole {
 		edges = append(edges, permissionhistory.EdgeRole)
@@ -4478,6 +5317,8 @@ func (m *PermissionHistoryMutation) EdgeCleared(name string) bool {
 	switch name {
 	case permissionhistory.EdgeEntitlement:
 		return m.clearedentitlement
+	case permissionhistory.EdgeEntitlementAssignment:
+		return m.clearedentitlement_assignment
 	case permissionhistory.EdgeRole:
 		return m.clearedrole
 	case permissionhistory.EdgeRoleSuite:
@@ -4496,6 +5337,9 @@ func (m *PermissionHistoryMutation) ClearEdge(name string) error {
 	switch name {
 	case permissionhistory.EdgeEntitlement:
 		m.ClearEntitlement()
+		return nil
+	case permissionhistory.EdgeEntitlementAssignment:
+		m.ClearEntitlementAssignment()
 		return nil
 	case permissionhistory.EdgeRole:
 		m.ClearRole()
@@ -4519,6 +5363,9 @@ func (m *PermissionHistoryMutation) ResetEdge(name string) error {
 	switch name {
 	case permissionhistory.EdgeEntitlement:
 		m.ResetEntitlement()
+		return nil
+	case permissionhistory.EdgeEntitlementAssignment:
+		m.ResetEntitlementAssignment()
 		return nil
 	case permissionhistory.EdgeRole:
 		m.ResetRole()

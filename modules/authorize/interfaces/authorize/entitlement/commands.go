@@ -30,8 +30,8 @@ type CreateEntitlementCommand struct {
 	Name        string                        `json:"name"`
 	Description *string                       `json:"description,omitempty"`
 	ResourceId  *model.Id                     `json:"resourceId,omitempty"`
-	SubjectType domain.EntitlementSubjectType `json:"subjectType"`
-	SubjectRef  string                        `json:"subjectRef"`
+	// SubjectType domain.EntitlementSubjectType `json:"subjectType"`
+	// SubjectRef  string                        `json:"subjectRef"`
 	ScopeRef    *model.Id                     `json:"scopeRef,omitempty"`
 	CreatedBy   string                        `json:"createdBy"`
 }

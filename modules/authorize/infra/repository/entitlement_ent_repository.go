@@ -30,8 +30,8 @@ func (this *EntitlementEntRepository) Create(ctx context.Context, entitlement do
 		SetActionExpr(*entitlement.ActionExpr).
 		SetName(*entitlement.Name).
 		SetNillableDescription(entitlement.Description).
-		SetSubjectType(entEntitlement.SubjectType(*entitlement.SubjectType)).
-		SetSubjectRef(*entitlement.SubjectRef).
+		// SetSubjectType(entEntitlement.SubjectType(*entitlement.SubjectType)).
+		// SetSubjectRef(*entitlement.SubjectRef).
 		SetNillableResourceID(entitlement.ResourceId).
 		SetNillableScopeRef(entitlement.ScopeRef).
 		SetCreatedBy(*entitlement.CreatedBy)
@@ -63,8 +63,8 @@ func BuildEntitlementDescriptor() *orm.EntityDescriptor {
 		Field(entEntitlement.FieldActionExpr, entity.ActionExpr).
 		Field(entEntitlement.FieldName, entity.Name).
 		Field(entEntitlement.FieldDescription, entity.Description).
-		Field(entEntitlement.FieldSubjectType, entity.SubjectType).
-		Field(entEntitlement.FieldSubjectRef, entity.SubjectRef).
+		// Field(entEntitlement.FieldSubjectType, entity.SubjectType).
+		// Field(entEntitlement.FieldSubjectRef, entity.SubjectRef).
 		Field(entEntitlement.FieldScopeRef, entity.ScopeRef).
 		Field(entEntitlement.FieldResourceID, entity.ResourceID).
 		Field(entEntitlement.FieldEtag, entity.Etag).

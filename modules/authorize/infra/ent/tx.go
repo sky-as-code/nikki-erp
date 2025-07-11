@@ -18,6 +18,8 @@ type Tx struct {
 	EffectiveEntitlement *EffectiveEntitlementClient
 	// Entitlement is the client for interacting with the Entitlement builders.
 	Entitlement *EntitlementClient
+	// EntitlementAssignment is the client for interacting with the EntitlementAssignment builders.
+	EntitlementAssignment *EntitlementAssignmentClient
 	// GrantRequest is the client for interacting with the GrantRequest builders.
 	GrantRequest *GrantRequestClient
 	// PermissionHistory is the client for interacting with the PermissionHistory builders.
@@ -170,6 +172,7 @@ func (tx *Tx) init() {
 	tx.Action = NewActionClient(tx.config)
 	tx.EffectiveEntitlement = NewEffectiveEntitlementClient(tx.config)
 	tx.Entitlement = NewEntitlementClient(tx.config)
+	tx.EntitlementAssignment = NewEntitlementAssignmentClient(tx.config)
 	tx.GrantRequest = NewGrantRequestClient(tx.config)
 	tx.PermissionHistory = NewPermissionHistoryClient(tx.config)
 	tx.Resource = NewResourceClient(tx.config)

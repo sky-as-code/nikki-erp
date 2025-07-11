@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/action"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
 )
@@ -111,18 +112,6 @@ func (ec *EntitlementCreate) SetNillableResourceID(s *string) *EntitlementCreate
 	return ec
 }
 
-// SetSubjectType sets the "subject_type" field.
-func (ec *EntitlementCreate) SetSubjectType(et entitlement.SubjectType) *EntitlementCreate {
-	ec.mutation.SetSubjectType(et)
-	return ec
-}
-
-// SetSubjectRef sets the "subject_ref" field.
-func (ec *EntitlementCreate) SetSubjectRef(s string) *EntitlementCreate {
-	ec.mutation.SetSubjectRef(s)
-	return ec
-}
-
 // SetScopeRef sets the "scope_ref" field.
 func (ec *EntitlementCreate) SetScopeRef(s string) *EntitlementCreate {
 	ec.mutation.SetScopeRef(s)
@@ -156,6 +145,21 @@ func (ec *EntitlementCreate) AddPermissionHistories(p ...*PermissionHistory) *En
 		ids[i] = p[i].ID
 	}
 	return ec.AddPermissionHistoryIDs(ids...)
+}
+
+// AddEntitlementAssignmentIDs adds the "entitlement_assignments" edge to the EntitlementAssignment entity by IDs.
+func (ec *EntitlementCreate) AddEntitlementAssignmentIDs(ids ...string) *EntitlementCreate {
+	ec.mutation.AddEntitlementAssignmentIDs(ids...)
+	return ec
+}
+
+// AddEntitlementAssignments adds the "entitlement_assignments" edges to the EntitlementAssignment entity.
+func (ec *EntitlementCreate) AddEntitlementAssignments(e ...*EntitlementAssignment) *EntitlementCreate {
+	ids := make([]string, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return ec.AddEntitlementAssignmentIDs(ids...)
 }
 
 // SetAction sets the "action" edge to the Action entity.
@@ -223,17 +227,6 @@ func (ec *EntitlementCreate) check() error {
 	if _, ok := ec.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Entitlement.etag"`)}
 	}
-	if _, ok := ec.mutation.SubjectType(); !ok {
-		return &ValidationError{Name: "subject_type", err: errors.New(`ent: missing required field "Entitlement.subject_type"`)}
-	}
-	if v, ok := ec.mutation.SubjectType(); ok {
-		if err := entitlement.SubjectTypeValidator(v); err != nil {
-			return &ValidationError{Name: "subject_type", err: fmt.Errorf(`ent: validator failed for field "Entitlement.subject_type": %w`, err)}
-		}
-	}
-	if _, ok := ec.mutation.SubjectRef(); !ok {
-		return &ValidationError{Name: "subject_ref", err: errors.New(`ent: missing required field "Entitlement.subject_ref"`)}
-	}
 	return nil
 }
 
@@ -293,14 +286,6 @@ func (ec *EntitlementCreate) createSpec() (*Entitlement, *sqlgraph.CreateSpec) {
 		_spec.SetField(entitlement.FieldEtag, field.TypeString, value)
 		_node.Etag = value
 	}
-	if value, ok := ec.mutation.SubjectType(); ok {
-		_spec.SetField(entitlement.FieldSubjectType, field.TypeEnum, value)
-		_node.SubjectType = value
-	}
-	if value, ok := ec.mutation.SubjectRef(); ok {
-		_spec.SetField(entitlement.FieldSubjectRef, field.TypeString, value)
-		_node.SubjectRef = value
-	}
 	if value, ok := ec.mutation.ScopeRef(); ok {
 		_spec.SetField(entitlement.FieldScopeRef, field.TypeString, value)
 		_node.ScopeRef = &value
@@ -314,6 +299,22 @@ func (ec *EntitlementCreate) createSpec() (*Entitlement, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ec.mutation.EntitlementAssignmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlement.EntitlementAssignmentsTable,
+			Columns: []string{entitlement.EntitlementAssignmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -90,6 +90,16 @@ func EntitlementExpr(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEQ(FieldEntitlementExpr, v))
 }
 
+// EntitlementAssignmentID applies equality check predicate on the "entitlement_assignment_id" field. It's identical to EntitlementAssignmentIDEQ.
+func EntitlementAssignmentID(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldEQ(FieldEntitlementAssignmentID, v))
+}
+
+// ResolvedExpr applies equality check predicate on the "resolved_expr" field. It's identical to ResolvedExprEQ.
+func ResolvedExpr(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldEQ(FieldResolvedExpr, v))
+}
+
 // ReceiverID applies equality check predicate on the "receiver_id" field. It's identical to ReceiverIDEQ.
 func ReceiverID(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEQ(FieldReceiverID, v))
@@ -488,6 +498,146 @@ func EntitlementExprEqualFold(v string) predicate.PermissionHistory {
 // EntitlementExprContainsFold applies the ContainsFold predicate on the "entitlement_expr" field.
 func EntitlementExprContainsFold(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldContainsFold(FieldEntitlementExpr, v))
+}
+
+// EntitlementAssignmentIDEQ applies the EQ predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDEQ(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldEQ(FieldEntitlementAssignmentID, v))
+}
+
+// EntitlementAssignmentIDNEQ applies the NEQ predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDNEQ(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNEQ(FieldEntitlementAssignmentID, v))
+}
+
+// EntitlementAssignmentIDIn applies the In predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDIn(vs ...string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIn(FieldEntitlementAssignmentID, vs...))
+}
+
+// EntitlementAssignmentIDNotIn applies the NotIn predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDNotIn(vs ...string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotIn(FieldEntitlementAssignmentID, vs...))
+}
+
+// EntitlementAssignmentIDGT applies the GT predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDGT(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldGT(FieldEntitlementAssignmentID, v))
+}
+
+// EntitlementAssignmentIDGTE applies the GTE predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDGTE(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldGTE(FieldEntitlementAssignmentID, v))
+}
+
+// EntitlementAssignmentIDLT applies the LT predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDLT(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldLT(FieldEntitlementAssignmentID, v))
+}
+
+// EntitlementAssignmentIDLTE applies the LTE predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDLTE(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldLTE(FieldEntitlementAssignmentID, v))
+}
+
+// EntitlementAssignmentIDContains applies the Contains predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDContains(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldContains(FieldEntitlementAssignmentID, v))
+}
+
+// EntitlementAssignmentIDHasPrefix applies the HasPrefix predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDHasPrefix(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldHasPrefix(FieldEntitlementAssignmentID, v))
+}
+
+// EntitlementAssignmentIDHasSuffix applies the HasSuffix predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDHasSuffix(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldEntitlementAssignmentID, v))
+}
+
+// EntitlementAssignmentIDIsNil applies the IsNil predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDIsNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIsNull(FieldEntitlementAssignmentID))
+}
+
+// EntitlementAssignmentIDNotNil applies the NotNil predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDNotNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotNull(FieldEntitlementAssignmentID))
+}
+
+// EntitlementAssignmentIDEqualFold applies the EqualFold predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDEqualFold(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldEqualFold(FieldEntitlementAssignmentID, v))
+}
+
+// EntitlementAssignmentIDContainsFold applies the ContainsFold predicate on the "entitlement_assignment_id" field.
+func EntitlementAssignmentIDContainsFold(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldContainsFold(FieldEntitlementAssignmentID, v))
+}
+
+// ResolvedExprEQ applies the EQ predicate on the "resolved_expr" field.
+func ResolvedExprEQ(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldEQ(FieldResolvedExpr, v))
+}
+
+// ResolvedExprNEQ applies the NEQ predicate on the "resolved_expr" field.
+func ResolvedExprNEQ(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNEQ(FieldResolvedExpr, v))
+}
+
+// ResolvedExprIn applies the In predicate on the "resolved_expr" field.
+func ResolvedExprIn(vs ...string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIn(FieldResolvedExpr, vs...))
+}
+
+// ResolvedExprNotIn applies the NotIn predicate on the "resolved_expr" field.
+func ResolvedExprNotIn(vs ...string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotIn(FieldResolvedExpr, vs...))
+}
+
+// ResolvedExprGT applies the GT predicate on the "resolved_expr" field.
+func ResolvedExprGT(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldGT(FieldResolvedExpr, v))
+}
+
+// ResolvedExprGTE applies the GTE predicate on the "resolved_expr" field.
+func ResolvedExprGTE(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldGTE(FieldResolvedExpr, v))
+}
+
+// ResolvedExprLT applies the LT predicate on the "resolved_expr" field.
+func ResolvedExprLT(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldLT(FieldResolvedExpr, v))
+}
+
+// ResolvedExprLTE applies the LTE predicate on the "resolved_expr" field.
+func ResolvedExprLTE(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldLTE(FieldResolvedExpr, v))
+}
+
+// ResolvedExprContains applies the Contains predicate on the "resolved_expr" field.
+func ResolvedExprContains(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldContains(FieldResolvedExpr, v))
+}
+
+// ResolvedExprHasPrefix applies the HasPrefix predicate on the "resolved_expr" field.
+func ResolvedExprHasPrefix(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldHasPrefix(FieldResolvedExpr, v))
+}
+
+// ResolvedExprHasSuffix applies the HasSuffix predicate on the "resolved_expr" field.
+func ResolvedExprHasSuffix(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldResolvedExpr, v))
+}
+
+// ResolvedExprEqualFold applies the EqualFold predicate on the "resolved_expr" field.
+func ResolvedExprEqualFold(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldEqualFold(FieldResolvedExpr, v))
+}
+
+// ResolvedExprContainsFold applies the ContainsFold predicate on the "resolved_expr" field.
+func ResolvedExprContainsFold(v string) predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldContainsFold(FieldResolvedExpr, v))
 }
 
 // ReceiverIDEQ applies the EQ predicate on the "receiver_id" field.
@@ -1075,6 +1225,29 @@ func HasEntitlement() predicate.PermissionHistory {
 func HasEntitlementWith(preds ...predicate.Entitlement) predicate.PermissionHistory {
 	return predicate.PermissionHistory(func(s *sql.Selector) {
 		step := newEntitlementStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEntitlementAssignment applies the HasEdge predicate on the "entitlement_assignment" edge.
+func HasEntitlementAssignment() predicate.PermissionHistory {
+	return predicate.PermissionHistory(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, EntitlementAssignmentTable, EntitlementAssignmentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEntitlementAssignmentWith applies the HasEdge predicate on the "entitlement_assignment" edge with a given conditions (other predicates).
+func HasEntitlementAssignmentWith(preds ...predicate.EntitlementAssignment) predicate.PermissionHistory {
+	return predicate.PermissionHistory(func(s *sql.Selector) {
+		step := newEntitlementAssignmentStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

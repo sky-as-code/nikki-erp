@@ -182,6 +182,12 @@ func ByEntitlements(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newEntitlementsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewActionsStepNikki() *sqlgraph.Step {
+	return newActionsStep()
+}
+
 func newActionsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -189,6 +195,12 @@ func newActionsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, ActionsTable, ActionsColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewEntitlementsStepNikki() *sqlgraph.Step {
+	return newEntitlementsStep()
+}
+
 func newEntitlementsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),

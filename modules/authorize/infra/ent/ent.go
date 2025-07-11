@@ -15,6 +15,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/action"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/effectiveentitlement"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
@@ -84,18 +85,19 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			action.Table:               action.ValidColumn,
-			effectiveentitlement.Table: effectiveentitlement.ValidColumn,
-			entitlement.Table:          entitlement.ValidColumn,
-			grantrequest.Table:         grantrequest.ValidColumn,
-			permissionhistory.Table:    permissionhistory.ValidColumn,
-			resource.Table:             resource.ValidColumn,
-			revokerequest.Table:        revokerequest.ValidColumn,
-			role.Table:                 role.ValidColumn,
-			rolerolesuite.Table:        rolerolesuite.ValidColumn,
-			rolesuite.Table:            rolesuite.ValidColumn,
-			rolesuiteuser.Table:        rolesuiteuser.ValidColumn,
-			roleuser.Table:             roleuser.ValidColumn,
+			action.Table:                action.ValidColumn,
+			effectiveentitlement.Table:  effectiveentitlement.ValidColumn,
+			entitlement.Table:           entitlement.ValidColumn,
+			entitlementassignment.Table: entitlementassignment.ValidColumn,
+			grantrequest.Table:          grantrequest.ValidColumn,
+			permissionhistory.Table:     permissionhistory.ValidColumn,
+			resource.Table:              resource.ValidColumn,
+			revokerequest.Table:         revokerequest.ValidColumn,
+			role.Table:                  role.ValidColumn,
+			rolerolesuite.Table:         rolerolesuite.ValidColumn,
+			rolesuite.Table:             rolesuite.ValidColumn,
+			rolesuiteuser.Table:         rolesuiteuser.ValidColumn,
+			roleuser.Table:              roleuser.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

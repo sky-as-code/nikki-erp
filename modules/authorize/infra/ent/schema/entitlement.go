@@ -30,7 +30,7 @@ func (EntitlementMixin) Fields() []ent.Field {
 
 		field.String("action_expr").
 			Immutable().
-			Comment("Format: '{subjectRef}:{actionName}:{scopeRef}:{resourceName}' E.g: '01JWNXT3EY7FG47VDJTEPTDC98:create:01JWNZ5KW6WC643VXGKV1D0J64.user', '01JWNXT3EY7FG47VDJTEPTDC98:*:01JWNZ5KW6WC643VXGKV1D0J64.*'"),
+			Comment("Format: '{actionName}:{scopeRef}:{resourceName}' E.g: 'create:01JWNZ5KW6WC643VXGKV1D0J64.user', '*:01JWNZ5KW6WC643VXGKV1D0J64.*'"),
 
 		field.Time("created_at").
 			Default(time.Now).
@@ -55,13 +55,6 @@ func (EntitlementMixin) Fields() []ent.Field {
 			Nillable().
 			Immutable(),
 
-		field.Enum("subject_type").
-			Values("nikki_user", "nikki_group", "nikki_role", "custom").
-			Immutable(),
-
-		field.String("subject_ref").
-			Immutable(),
-
 		// NULL means regardless of scope
 		field.String("scope_ref").
 			Optional().
@@ -81,6 +74,9 @@ func (Entitlement) Fields() []ent.Field {
 func (Entitlement) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("permission_histories", PermissionHistory.Type).
+			Ref("entitlement"),
+
+		edge.From("entitlement_assignments", EntitlementAssignment.Type).
 			Ref("entitlement"),
 
 		edge.To("action", Action.Type).

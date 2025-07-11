@@ -11,8 +11,8 @@ func (this CreateEntitlementCommand) ToEntitlement() *domain.Entitlement {
 		Name:        &this.Name,
 		Description: this.Description,
 		ResourceId:  this.ResourceId,
-		SubjectType: &this.SubjectType,
-		SubjectRef:  &this.SubjectRef,
+		// SubjectType: &this.SubjectType,
+		// SubjectRef:  &this.SubjectRef,
 		ScopeRef:    this.ScopeRef,
 		CreatedBy:   &this.CreatedBy,
 	}

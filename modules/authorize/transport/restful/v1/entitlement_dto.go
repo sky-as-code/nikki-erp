@@ -17,8 +17,8 @@ type GetEntitlementByIdResponse struct {
 	Description *string   `json:"description,omitempty"`
 	ActionId    *model.Id `json:"actionId,omitempty"`
 	ActionExpr  *string   `json:"actionExpr,omitempty"`
-	SubjectType string    `json:"subjectType"`
-	SubjectRef  *model.Id `json:"subjectRef,omitempty"`
+	// SubjectType string    `json:"subjectType"`
+	// SubjectRef  *model.Id `json:"subjectRef,omitempty"`
 	ScopeRef    *model.Id `json:"scopeRef,omitempty"`
 	ResourceId  *model.Id `json:"resourceId,omitempty"`
 	CreatedBy   model.Id  `json:"createdBy"`
@@ -33,7 +33,7 @@ func (this *GetEntitlementByIdResponse) FromEntitlement(entitlement domain.Entit
 	this.CreatedBy = *entitlement.CreatedBy
 	this.ActionId = entitlement.ActionId
 	this.ActionExpr = entitlement.ActionExpr
-	this.SubjectType = string(*entitlement.SubjectType)
-	this.SubjectRef = entitlement.SubjectRef
+	// this.SubjectType = string(*entitlement.SubjectType)
+	// this.SubjectRef = entitlement.SubjectRef
 	this.ScopeRef = entitlement.ScopeRef
 }

@@ -21,7 +21,7 @@ type Entitlement struct {
 	ID string `json:"id,omitempty"`
 	// ActionID holds the value of the "action_id" field.
 	ActionID *string `json:"action_id,omitempty"`
-	// Format: '{subjectRef}:{actionName}:{scopeRef}:{resourceName}' E.g: '01JWNXT3EY7FG47VDJTEPTDC98:create:01JWNZ5KW6WC643VXGKV1D0J64.user', '01JWNXT3EY7FG47VDJTEPTDC98:*:01JWNZ5KW6WC643VXGKV1D0J64.*'
+	// Format: '{actionName}:{scopeRef}:{resourceName}' E.g: 'create:01JWNZ5KW6WC643VXGKV1D0J64.user', '*:01JWNZ5KW6WC643VXGKV1D0J64.*'
 	ActionExpr string `json:"action_expr,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
@@ -35,10 +35,6 @@ type Entitlement struct {
 	Etag string `json:"etag,omitempty"`
 	// ResourceID holds the value of the "resource_id" field.
 	ResourceID *string `json:"resource_id,omitempty"`
-	// SubjectType holds the value of the "subject_type" field.
-	SubjectType entitlement.SubjectType `json:"subject_type,omitempty"`
-	// SubjectRef holds the value of the "subject_ref" field.
-	SubjectRef string `json:"subject_ref,omitempty"`
 	// ScopeRef holds the value of the "scope_ref" field.
 	ScopeRef *string `json:"scope_ref,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -51,13 +47,15 @@ type Entitlement struct {
 type EntitlementEdges struct {
 	// PermissionHistories holds the value of the permission_histories edge.
 	PermissionHistories []*PermissionHistory `json:"permission_histories,omitempty"`
+	// EntitlementAssignments holds the value of the entitlement_assignments edge.
+	EntitlementAssignments []*EntitlementAssignment `json:"entitlement_assignments,omitempty"`
 	// Action holds the value of the action edge.
 	Action *Action `json:"action,omitempty"`
 	// Resource holds the value of the resource edge.
 	Resource *Resource `json:"resource,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // PermissionHistoriesOrErr returns the PermissionHistories value or an error if the edge
@@ -69,12 +67,21 @@ func (e EntitlementEdges) PermissionHistoriesOrErr() ([]*PermissionHistory, erro
 	return nil, &NotLoadedError{edge: "permission_histories"}
 }
 
+// EntitlementAssignmentsOrErr returns the EntitlementAssignments value or an error if the edge
+// was not loaded in eager-loading.
+func (e EntitlementEdges) EntitlementAssignmentsOrErr() ([]*EntitlementAssignment, error) {
+	if e.loadedTypes[1] {
+		return e.EntitlementAssignments, nil
+	}
+	return nil, &NotLoadedError{edge: "entitlement_assignments"}
+}
+
 // ActionOrErr returns the Action value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e EntitlementEdges) ActionOrErr() (*Action, error) {
 	if e.Action != nil {
 		return e.Action, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: action.Label}
 	}
 	return nil, &NotLoadedError{edge: "action"}
@@ -85,7 +92,7 @@ func (e EntitlementEdges) ActionOrErr() (*Action, error) {
 func (e EntitlementEdges) ResourceOrErr() (*Resource, error) {
 	if e.Resource != nil {
 		return e.Resource, nil
-	} else if e.loadedTypes[2] {
+	} else if e.loadedTypes[3] {
 		return nil, &NotFoundError{label: resource.Label}
 	}
 	return nil, &NotLoadedError{edge: "resource"}
@@ -96,7 +103,7 @@ func (*Entitlement) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case entitlement.FieldID, entitlement.FieldActionID, entitlement.FieldActionExpr, entitlement.FieldCreatedBy, entitlement.FieldName, entitlement.FieldDescription, entitlement.FieldEtag, entitlement.FieldResourceID, entitlement.FieldSubjectType, entitlement.FieldSubjectRef, entitlement.FieldScopeRef:
+		case entitlement.FieldID, entitlement.FieldActionID, entitlement.FieldActionExpr, entitlement.FieldCreatedBy, entitlement.FieldName, entitlement.FieldDescription, entitlement.FieldEtag, entitlement.FieldResourceID, entitlement.FieldScopeRef:
 			values[i] = new(sql.NullString)
 		case entitlement.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -173,18 +180,6 @@ func (e *Entitlement) assignValues(columns []string, values []any) error {
 				e.ResourceID = new(string)
 				*e.ResourceID = value.String
 			}
-		case entitlement.FieldSubjectType:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field subject_type", values[i])
-			} else if value.Valid {
-				e.SubjectType = entitlement.SubjectType(value.String)
-			}
-		case entitlement.FieldSubjectRef:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field subject_ref", values[i])
-			} else if value.Valid {
-				e.SubjectRef = value.String
-			}
 		case entitlement.FieldScopeRef:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field scope_ref", values[i])
@@ -208,6 +203,11 @@ func (e *Entitlement) Value(name string) (ent.Value, error) {
 // QueryPermissionHistories queries the "permission_histories" edge of the Entitlement entity.
 func (e *Entitlement) QueryPermissionHistories() *PermissionHistoryQuery {
 	return NewEntitlementClient(e.config).QueryPermissionHistories(e)
+}
+
+// QueryEntitlementAssignments queries the "entitlement_assignments" edge of the Entitlement entity.
+func (e *Entitlement) QueryEntitlementAssignments() *EntitlementAssignmentQuery {
+	return NewEntitlementClient(e.config).QueryEntitlementAssignments(e)
 }
 
 // QueryAction queries the "action" edge of the Entitlement entity.
@@ -274,12 +274,6 @@ func (e *Entitlement) String() string {
 		builder.WriteString("resource_id=")
 		builder.WriteString(*v)
 	}
-	builder.WriteString(", ")
-	builder.WriteString("subject_type=")
-	builder.WriteString(fmt.Sprintf("%v", e.SubjectType))
-	builder.WriteString(", ")
-	builder.WriteString("subject_ref=")
-	builder.WriteString(e.SubjectRef)
 	builder.WriteString(", ")
 	if v := e.ScopeRef; v != nil {
 		builder.WriteString("scope_ref=")

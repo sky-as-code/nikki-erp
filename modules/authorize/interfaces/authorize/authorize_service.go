@@ -3,7 +3,7 @@ package authorize
 import (
 	"context"
 
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	// "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 type AuthorizeService interface {
@@ -14,7 +14,7 @@ type IsAuthorizedQuery struct {
 	Action      string                         `json:"action"`
 	Resource    string                         `json:"resource"`
 	SubjectRef  string                         `json:"subjectRef"`
-	SubjectType *domain.EntitlementSubjectType `json:"subjectType"`
+	// SubjectType *domain.EntitlementSubjectType `json:"subjectType"`
 	ScopeRef    *string                        `json:"scopeRef"`
 }
 

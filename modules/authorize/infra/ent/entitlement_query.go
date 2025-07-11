@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/action"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
@@ -22,13 +23,14 @@ import (
 // EntitlementQuery is the builder for querying Entitlement entities.
 type EntitlementQuery struct {
 	config
-	ctx                     *QueryContext
-	order                   []entitlement.OrderOption
-	inters                  []Interceptor
-	predicates              []predicate.Entitlement
-	withPermissionHistories *PermissionHistoryQuery
-	withAction              *ActionQuery
-	withResource            *ResourceQuery
+	ctx                        *QueryContext
+	order                      []entitlement.OrderOption
+	inters                     []Interceptor
+	predicates                 []predicate.Entitlement
+	withPermissionHistories    *PermissionHistoryQuery
+	withEntitlementAssignments *EntitlementAssignmentQuery
+	withAction                 *ActionQuery
+	withResource               *ResourceQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -80,6 +82,28 @@ func (eq *EntitlementQuery) QueryPermissionHistories() *PermissionHistoryQuery {
 			sqlgraph.From(entitlement.Table, entitlement.FieldID, selector),
 			sqlgraph.To(permissionhistory.Table, permissionhistory.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, entitlement.PermissionHistoriesTable, entitlement.PermissionHistoriesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(eq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEntitlementAssignments chains the current query on the "entitlement_assignments" edge.
+func (eq *EntitlementQuery) QueryEntitlementAssignments() *EntitlementAssignmentQuery {
+	query := (&EntitlementAssignmentClient{config: eq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := eq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := eq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entitlement.Table, entitlement.FieldID, selector),
+			sqlgraph.To(entitlementassignment.Table, entitlementassignment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, entitlement.EntitlementAssignmentsTable, entitlement.EntitlementAssignmentsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(eq.driver.Dialect(), step)
 		return fromU, nil
@@ -318,14 +342,15 @@ func (eq *EntitlementQuery) Clone() *EntitlementQuery {
 		return nil
 	}
 	return &EntitlementQuery{
-		config:                  eq.config,
-		ctx:                     eq.ctx.Clone(),
-		order:                   append([]entitlement.OrderOption{}, eq.order...),
-		inters:                  append([]Interceptor{}, eq.inters...),
-		predicates:              append([]predicate.Entitlement{}, eq.predicates...),
-		withPermissionHistories: eq.withPermissionHistories.Clone(),
-		withAction:              eq.withAction.Clone(),
-		withResource:            eq.withResource.Clone(),
+		config:                     eq.config,
+		ctx:                        eq.ctx.Clone(),
+		order:                      append([]entitlement.OrderOption{}, eq.order...),
+		inters:                     append([]Interceptor{}, eq.inters...),
+		predicates:                 append([]predicate.Entitlement{}, eq.predicates...),
+		withPermissionHistories:    eq.withPermissionHistories.Clone(),
+		withEntitlementAssignments: eq.withEntitlementAssignments.Clone(),
+		withAction:                 eq.withAction.Clone(),
+		withResource:               eq.withResource.Clone(),
 		// clone intermediate query.
 		sql:  eq.sql.Clone(),
 		path: eq.path,
@@ -340,6 +365,17 @@ func (eq *EntitlementQuery) WithPermissionHistories(opts ...func(*PermissionHist
 		opt(query)
 	}
 	eq.withPermissionHistories = query
+	return eq
+}
+
+// WithEntitlementAssignments tells the query-builder to eager-load the nodes that are connected to
+// the "entitlement_assignments" edge. The optional arguments are used to configure the query builder of the edge.
+func (eq *EntitlementQuery) WithEntitlementAssignments(opts ...func(*EntitlementAssignmentQuery)) *EntitlementQuery {
+	query := (&EntitlementAssignmentClient{config: eq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	eq.withEntitlementAssignments = query
 	return eq
 }
 
@@ -443,8 +479,9 @@ func (eq *EntitlementQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	var (
 		nodes       = []*Entitlement{}
 		_spec       = eq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			eq.withPermissionHistories != nil,
+			eq.withEntitlementAssignments != nil,
 			eq.withAction != nil,
 			eq.withResource != nil,
 		}
@@ -472,6 +509,15 @@ func (eq *EntitlementQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 			func(n *Entitlement) { n.Edges.PermissionHistories = []*PermissionHistory{} },
 			func(n *Entitlement, e *PermissionHistory) {
 				n.Edges.PermissionHistories = append(n.Edges.PermissionHistories, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := eq.withEntitlementAssignments; query != nil {
+		if err := eq.loadEntitlementAssignments(ctx, query, nodes,
+			func(n *Entitlement) { n.Edges.EntitlementAssignments = []*EntitlementAssignment{} },
+			func(n *Entitlement, e *EntitlementAssignment) {
+				n.Edges.EntitlementAssignments = append(n.Edges.EntitlementAssignments, e)
 			}); err != nil {
 			return nil, err
 		}
@@ -519,6 +565,36 @@ func (eq *EntitlementQuery) loadPermissionHistories(ctx context.Context, query *
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "entitlement_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (eq *EntitlementQuery) loadEntitlementAssignments(ctx context.Context, query *EntitlementAssignmentQuery, nodes []*Entitlement, init func(*Entitlement), assign func(*Entitlement, *EntitlementAssignment)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Entitlement)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(entitlementassignment.FieldEntitlementID)
+	}
+	query.Where(predicate.EntitlementAssignment(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(entitlement.EntitlementAssignmentsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.EntitlementID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "entitlement_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

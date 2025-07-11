@@ -228,6 +228,12 @@ func ByPermissionHistories(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpti
 		sqlgraph.OrderByNeighborTerms(s, newPermissionHistoriesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewRoleStepNikki() *sqlgraph.Step {
+	return newRoleStep()
+}
+
 func newRoleStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -235,6 +241,12 @@ func newRoleStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, RoleTable, RoleColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewRoleSuiteStepNikki() *sqlgraph.Step {
+	return newRoleSuiteStep()
+}
+
 func newRoleSuiteStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -242,6 +254,12 @@ func newRoleSuiteStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, RoleSuiteTable, RoleSuiteColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewPermissionHistoriesStepNikki() *sqlgraph.Step {
+	return newPermissionHistoriesStep()
+}
+
 func newPermissionHistoriesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),

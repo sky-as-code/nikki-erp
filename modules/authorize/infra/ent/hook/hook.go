@@ -33,6 +33,18 @@ func (f EntitlementFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EntitlementMutation", m)
 }
 
+// The EntitlementAssignmentFunc type is an adapter to allow the use of ordinary
+// function as EntitlementAssignment mutator.
+type EntitlementAssignmentFunc func(context.Context, *ent.EntitlementAssignmentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EntitlementAssignmentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EntitlementAssignmentMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EntitlementAssignmentMutation", m)
+}
+
 // The GrantRequestFunc type is an adapter to allow the use of ordinary
 // function as GrantRequest mutator.
 type GrantRequestFunc func(context.Context, *ent.GrantRequestMutation) (ent.Value, error)

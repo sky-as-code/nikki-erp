@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
 )
@@ -97,6 +98,21 @@ func (eu *EntitlementUpdate) AddPermissionHistories(p ...*PermissionHistory) *En
 	return eu.AddPermissionHistoryIDs(ids...)
 }
 
+// AddEntitlementAssignmentIDs adds the "entitlement_assignments" edge to the EntitlementAssignment entity by IDs.
+func (eu *EntitlementUpdate) AddEntitlementAssignmentIDs(ids ...string) *EntitlementUpdate {
+	eu.mutation.AddEntitlementAssignmentIDs(ids...)
+	return eu
+}
+
+// AddEntitlementAssignments adds the "entitlement_assignments" edges to the EntitlementAssignment entity.
+func (eu *EntitlementUpdate) AddEntitlementAssignments(e ...*EntitlementAssignment) *EntitlementUpdate {
+	ids := make([]string, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return eu.AddEntitlementAssignmentIDs(ids...)
+}
+
 // Mutation returns the EntitlementMutation object of the builder.
 func (eu *EntitlementUpdate) Mutation() *EntitlementMutation {
 	return eu.mutation
@@ -121,6 +137,27 @@ func (eu *EntitlementUpdate) RemovePermissionHistories(p ...*PermissionHistory) 
 		ids[i] = p[i].ID
 	}
 	return eu.RemovePermissionHistoryIDs(ids...)
+}
+
+// ClearEntitlementAssignments clears all "entitlement_assignments" edges to the EntitlementAssignment entity.
+func (eu *EntitlementUpdate) ClearEntitlementAssignments() *EntitlementUpdate {
+	eu.mutation.ClearEntitlementAssignments()
+	return eu
+}
+
+// RemoveEntitlementAssignmentIDs removes the "entitlement_assignments" edge to EntitlementAssignment entities by IDs.
+func (eu *EntitlementUpdate) RemoveEntitlementAssignmentIDs(ids ...string) *EntitlementUpdate {
+	eu.mutation.RemoveEntitlementAssignmentIDs(ids...)
+	return eu
+}
+
+// RemoveEntitlementAssignments removes "entitlement_assignments" edges to EntitlementAssignment entities.
+func (eu *EntitlementUpdate) RemoveEntitlementAssignments(e ...*EntitlementAssignment) *EntitlementUpdate {
+	ids := make([]string, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return eu.RemoveEntitlementAssignmentIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -222,6 +259,51 @@ func (eu *EntitlementUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if eu.mutation.EntitlementAssignmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlement.EntitlementAssignmentsTable,
+			Columns: []string{entitlement.EntitlementAssignmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := eu.mutation.RemovedEntitlementAssignmentsIDs(); len(nodes) > 0 && !eu.mutation.EntitlementAssignmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlement.EntitlementAssignmentsTable,
+			Columns: []string{entitlement.EntitlementAssignmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := eu.mutation.EntitlementAssignmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlement.EntitlementAssignmentsTable,
+			Columns: []string{entitlement.EntitlementAssignmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, eu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{entitlement.Label}
@@ -311,6 +393,21 @@ func (euo *EntitlementUpdateOne) AddPermissionHistories(p ...*PermissionHistory)
 	return euo.AddPermissionHistoryIDs(ids...)
 }
 
+// AddEntitlementAssignmentIDs adds the "entitlement_assignments" edge to the EntitlementAssignment entity by IDs.
+func (euo *EntitlementUpdateOne) AddEntitlementAssignmentIDs(ids ...string) *EntitlementUpdateOne {
+	euo.mutation.AddEntitlementAssignmentIDs(ids...)
+	return euo
+}
+
+// AddEntitlementAssignments adds the "entitlement_assignments" edges to the EntitlementAssignment entity.
+func (euo *EntitlementUpdateOne) AddEntitlementAssignments(e ...*EntitlementAssignment) *EntitlementUpdateOne {
+	ids := make([]string, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return euo.AddEntitlementAssignmentIDs(ids...)
+}
+
 // Mutation returns the EntitlementMutation object of the builder.
 func (euo *EntitlementUpdateOne) Mutation() *EntitlementMutation {
 	return euo.mutation
@@ -335,6 +432,27 @@ func (euo *EntitlementUpdateOne) RemovePermissionHistories(p ...*PermissionHisto
 		ids[i] = p[i].ID
 	}
 	return euo.RemovePermissionHistoryIDs(ids...)
+}
+
+// ClearEntitlementAssignments clears all "entitlement_assignments" edges to the EntitlementAssignment entity.
+func (euo *EntitlementUpdateOne) ClearEntitlementAssignments() *EntitlementUpdateOne {
+	euo.mutation.ClearEntitlementAssignments()
+	return euo
+}
+
+// RemoveEntitlementAssignmentIDs removes the "entitlement_assignments" edge to EntitlementAssignment entities by IDs.
+func (euo *EntitlementUpdateOne) RemoveEntitlementAssignmentIDs(ids ...string) *EntitlementUpdateOne {
+	euo.mutation.RemoveEntitlementAssignmentIDs(ids...)
+	return euo
+}
+
+// RemoveEntitlementAssignments removes "entitlement_assignments" edges to EntitlementAssignment entities.
+func (euo *EntitlementUpdateOne) RemoveEntitlementAssignments(e ...*EntitlementAssignment) *EntitlementUpdateOne {
+	ids := make([]string, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return euo.RemoveEntitlementAssignmentIDs(ids...)
 }
 
 // Where appends a list predicates to the EntitlementUpdate builder.
@@ -459,6 +577,51 @@ func (euo *EntitlementUpdateOne) sqlSave(ctx context.Context) (_node *Entitlemen
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if euo.mutation.EntitlementAssignmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlement.EntitlementAssignmentsTable,
+			Columns: []string{entitlement.EntitlementAssignmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := euo.mutation.RemovedEntitlementAssignmentsIDs(); len(nodes) > 0 && !euo.mutation.EntitlementAssignmentsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlement.EntitlementAssignmentsTable,
+			Columns: []string{entitlement.EntitlementAssignmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := euo.mutation.EntitlementAssignmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlement.EntitlementAssignmentsTable,
+			Columns: []string{entitlement.EntitlementAssignmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

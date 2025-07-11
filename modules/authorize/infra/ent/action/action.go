@@ -132,6 +132,12 @@ func ByResourceField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newResourceStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewEntitlementsStepNikki() *sqlgraph.Step {
+	return newEntitlementsStep()
+}
+
 func newEntitlementsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -139,6 +145,12 @@ func newEntitlementsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, EntitlementsTable, EntitlementsColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewResourceStepNikki() *sqlgraph.Step {
+	return newResourceStep()
+}
+
 func newResourceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),

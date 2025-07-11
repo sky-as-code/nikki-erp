@@ -54,8 +54,6 @@ var (
 		{Name: "name", Type: field.TypeString, Nullable: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "subject_type", Type: field.TypeEnum, Enums: []string{"nikki_user", "nikki_group", "nikki_role", "custom"}},
-		{Name: "subject_ref", Type: field.TypeString},
 		{Name: "scope_ref", Type: field.TypeString, Nullable: true},
 		{Name: "action_id", Type: field.TypeString, Nullable: true},
 		{Name: "resource_id", Type: field.TypeString, Nullable: true},
@@ -68,13 +66,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_entitlements_authz_actions_action",
-				Columns:    []*schema.Column{AuthzEntitlementsColumns[10]},
+				Columns:    []*schema.Column{AuthzEntitlementsColumns[8]},
 				RefColumns: []*schema.Column{AuthzActionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "authz_entitlements_authz_resources_resource",
-				Columns:    []*schema.Column{AuthzEntitlementsColumns[11]},
+				Columns:    []*schema.Column{AuthzEntitlementsColumns[9]},
 				RefColumns: []*schema.Column{AuthzResourcesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -84,6 +82,52 @@ var (
 				Name:    "entitlement_action_expr",
 				Unique:  true,
 				Columns: []*schema.Column{AuthzEntitlementsColumns[1]},
+			},
+		},
+	}
+	// AuthzEntitlementAssignmentsColumns holds the columns for the "authz_entitlement_assignments" table.
+	AuthzEntitlementAssignmentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "subject_type", Type: field.TypeEnum, Enums: []string{"nikki_user", "nikki_group", "nikki_role", "custom"}},
+		{Name: "subject_ref", Type: field.TypeString},
+		{Name: "resolved_expr", Type: field.TypeString},
+		{Name: "action_name", Type: field.TypeString, Nullable: true},
+		{Name: "resource_name", Type: field.TypeString, Nullable: true},
+		{Name: "entitlement_id", Type: field.TypeString},
+	}
+	// AuthzEntitlementAssignmentsTable holds the schema information for the "authz_entitlement_assignments" table.
+	AuthzEntitlementAssignmentsTable = &schema.Table{
+		Name:       "authz_entitlement_assignments",
+		Columns:    AuthzEntitlementAssignmentsColumns,
+		PrimaryKey: []*schema.Column{AuthzEntitlementAssignmentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "authz_entitlement_assignments_authz_entitlements_entitlement",
+				Columns:    []*schema.Column{AuthzEntitlementAssignmentsColumns[6]},
+				RefColumns: []*schema.Column{AuthzEntitlementsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "entitlementassignment_entitlement_id_subject_type_subject_ref",
+				Unique:  true,
+				Columns: []*schema.Column{AuthzEntitlementAssignmentsColumns[6], AuthzEntitlementAssignmentsColumns[1], AuthzEntitlementAssignmentsColumns[2]},
+			},
+			{
+				Name:    "entitlementassignment_resolved_expr",
+				Unique:  false,
+				Columns: []*schema.Column{AuthzEntitlementAssignmentsColumns[3]},
+			},
+			{
+				Name:    "entitlementassignment_action_name",
+				Unique:  false,
+				Columns: []*schema.Column{AuthzEntitlementAssignmentsColumns[4]},
+			},
+			{
+				Name:    "entitlementassignment_resource_name",
+				Unique:  false,
+				Columns: []*schema.Column{AuthzEntitlementAssignmentsColumns[5]},
 			},
 		},
 	}
@@ -130,11 +174,13 @@ var (
 		{Name: "effect", Type: field.TypeEnum, Enums: []string{"grant", "revoke"}},
 		{Name: "reason", Type: field.TypeEnum, Enums: []string{"ent_added", "ent_removed", "ent_deleted", "ent_added_group", "ent_removed_group", "ent_deleted_group", "ent_added_role", "ent_removed_role", "ent_deleted_role", "ent_added_role_group", "ent_removed_role_group", "ent_deleted_role_group", "ent_deleted_suite_group", "role_added", "role_removed", "role_deleted", "role_added_group", "role_removed_group", "role_deleted_group", "suite_added", "suite_removed", "suite_deleted", "suite_more_role", "suite_less_role", "suite_more_role_group", "suite_less_role_group", "suite_added_group", "suite_removed_group", "suite_deleted_group"}},
 		{Name: "entitlement_expr", Type: field.TypeString},
+		{Name: "resolved_expr", Type: field.TypeString},
 		{Name: "receiver_id", Type: field.TypeString, Nullable: true},
 		{Name: "receiver_email", Type: field.TypeString},
 		{Name: "role_name", Type: field.TypeString},
 		{Name: "role_suite_name", Type: field.TypeString},
 		{Name: "entitlement_id", Type: field.TypeString, Nullable: true},
+		{Name: "entitlement_assignment_id", Type: field.TypeString, Nullable: true},
 		{Name: "role_id", Type: field.TypeString, Nullable: true},
 		{Name: "role_suite_id", Type: field.TypeString, Nullable: true},
 		{Name: "grant_request_id", Type: field.TypeString, Nullable: true},
@@ -148,31 +194,37 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_permission_histories_authz_entitlements_entitlement",
-				Columns:    []*schema.Column{AuthzPermissionHistoriesColumns[11]},
+				Columns:    []*schema.Column{AuthzPermissionHistoriesColumns[12]},
 				RefColumns: []*schema.Column{AuthzEntitlementsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
+				Symbol:     "authz_permission_histories_authz_entitlement_assignments_entitlement_assignment",
+				Columns:    []*schema.Column{AuthzPermissionHistoriesColumns[13]},
+				RefColumns: []*schema.Column{AuthzEntitlementAssignmentsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
 				Symbol:     "authz_permission_histories_authz_roles_role",
-				Columns:    []*schema.Column{AuthzPermissionHistoriesColumns[12]},
+				Columns:    []*schema.Column{AuthzPermissionHistoriesColumns[14]},
 				RefColumns: []*schema.Column{AuthzRolesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "authz_permission_histories_authz_role_suites_role_suite",
-				Columns:    []*schema.Column{AuthzPermissionHistoriesColumns[13]},
+				Columns:    []*schema.Column{AuthzPermissionHistoriesColumns[15]},
 				RefColumns: []*schema.Column{AuthzRoleSuitesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "authz_permission_histories_authz_grant_requests_grant_request",
-				Columns:    []*schema.Column{AuthzPermissionHistoriesColumns[14]},
+				Columns:    []*schema.Column{AuthzPermissionHistoriesColumns[16]},
 				RefColumns: []*schema.Column{AuthzGrantRequestsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "authz_permission_histories_authz_revoke_requests_revoke_request",
-				Columns:    []*schema.Column{AuthzPermissionHistoriesColumns[15]},
+				Columns:    []*schema.Column{AuthzPermissionHistoriesColumns[17]},
 				RefColumns: []*schema.Column{AuthzRevokeRequestsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -376,6 +428,7 @@ var (
 	Tables = []*schema.Table{
 		AuthzActionsTable,
 		AuthzEntitlementsTable,
+		AuthzEntitlementAssignmentsTable,
 		AuthzGrantRequestsTable,
 		AuthzPermissionHistoriesTable,
 		AuthzResourcesTable,
@@ -398,16 +451,21 @@ func init() {
 	AuthzEntitlementsTable.Annotation = &entsql.Annotation{
 		Table: "authz_entitlements",
 	}
+	AuthzEntitlementAssignmentsTable.ForeignKeys[0].RefTable = AuthzEntitlementsTable
+	AuthzEntitlementAssignmentsTable.Annotation = &entsql.Annotation{
+		Table: "authz_entitlement_assignments",
+	}
 	AuthzGrantRequestsTable.ForeignKeys[0].RefTable = AuthzRolesTable
 	AuthzGrantRequestsTable.ForeignKeys[1].RefTable = AuthzRoleSuitesTable
 	AuthzGrantRequestsTable.Annotation = &entsql.Annotation{
 		Table: "authz_grant_requests",
 	}
 	AuthzPermissionHistoriesTable.ForeignKeys[0].RefTable = AuthzEntitlementsTable
-	AuthzPermissionHistoriesTable.ForeignKeys[1].RefTable = AuthzRolesTable
-	AuthzPermissionHistoriesTable.ForeignKeys[2].RefTable = AuthzRoleSuitesTable
-	AuthzPermissionHistoriesTable.ForeignKeys[3].RefTable = AuthzGrantRequestsTable
-	AuthzPermissionHistoriesTable.ForeignKeys[4].RefTable = AuthzRevokeRequestsTable
+	AuthzPermissionHistoriesTable.ForeignKeys[1].RefTable = AuthzEntitlementAssignmentsTable
+	AuthzPermissionHistoriesTable.ForeignKeys[2].RefTable = AuthzRolesTable
+	AuthzPermissionHistoriesTable.ForeignKeys[3].RefTable = AuthzRoleSuitesTable
+	AuthzPermissionHistoriesTable.ForeignKeys[4].RefTable = AuthzGrantRequestsTable
+	AuthzPermissionHistoriesTable.ForeignKeys[5].RefTable = AuthzRevokeRequestsTable
 	AuthzPermissionHistoriesTable.Annotation = &entsql.Annotation{
 		Table: "authz_permission_histories",
 	}

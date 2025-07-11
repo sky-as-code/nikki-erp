@@ -291,6 +291,12 @@ func ByRoleRolesuite(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newRoleRolesuiteStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewRoleSuitesStepNikki() *sqlgraph.Step {
+	return newRoleSuitesStep()
+}
+
 func newRoleSuitesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -298,6 +304,12 @@ func newRoleSuitesStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2M, true, RoleSuitesTable, RoleSuitesPrimaryKey...),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewRoleUsersStepNikki() *sqlgraph.Step {
+	return newRoleUsersStep()
+}
+
 func newRoleUsersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -305,6 +317,12 @@ func newRoleUsersStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, RoleUsersTable, RoleUsersColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewGrantRequestsStepNikki() *sqlgraph.Step {
+	return newGrantRequestsStep()
+}
+
 func newGrantRequestsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -312,6 +330,12 @@ func newGrantRequestsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, GrantRequestsTable, GrantRequestsColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewRevokeRequestsStepNikki() *sqlgraph.Step {
+	return newRevokeRequestsStep()
+}
+
 func newRevokeRequestsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -319,6 +343,12 @@ func newRevokeRequestsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, RevokeRequestsTable, RevokeRequestsColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewPermissionHistoriesStepNikki() *sqlgraph.Step {
+	return newPermissionHistoriesStep()
+}
+
 func newPermissionHistoriesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -326,6 +356,12 @@ func newPermissionHistoriesStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, PermissionHistoriesTable, PermissionHistoriesColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewRoleRolesuiteStepNikki() *sqlgraph.Step {
+	return newRoleRolesuiteStep()
+}
+
 func newRoleRolesuiteStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
