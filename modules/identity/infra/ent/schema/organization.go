@@ -47,8 +47,7 @@ func (OrganizationMixin) Fields() []ent.Field {
 
 		field.String("etag"),
 
-		field.Enum("status").
-			Values("active", "inactive"),
+		field.String("status_id"),
 
 		field.String("slug").
 			Unique().
@@ -74,10 +73,6 @@ func (Organization) Annotations() []schema.Annotation {
 	}
 }
 
-func (Organization) Fields() []ent.Field {
-	return nil
-}
-
 func (Organization) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("users", User.Type).
@@ -89,6 +84,11 @@ func (Organization) Edges() []ent.Edge {
 
 		edge.From("groups", Group.Type).
 			Ref("org"),
+
+		edge.To("org_status", IdentStatusEnum.Type).
+			Field("status_id").
+			Unique().
+			Required(),
 	}
 }
 

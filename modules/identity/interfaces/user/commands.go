@@ -61,7 +61,7 @@ type UpdateUserCommand struct {
 	Etag               model.Etag `json:"etag"`
 	MustChangePassword *bool      `json:"mustChangePassword"`
 	Password           *string    `json:"password"`
-	Status             *string    `json:"status"`
+	Status             *string    `json:"status" model:"-"`
 }
 
 func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
@@ -243,5 +243,5 @@ func (this ListUserStatusesQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type ListUserStatusesResultData = crud.PagedResult[domain.UserStatus]
+type ListUserStatusesResultData = crud.PagedResult[domain.IdentityStatus]
 type ListUserStatusesResult model.OpResult[*ListUserStatusesResultData]

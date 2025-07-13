@@ -164,7 +164,7 @@ func (this *UserServiceImpl) setUserDefaults(ctx context.Context, user *domain.U
 	ft.PanicOnErr(err)
 	ft.PanicOnErr(activeEnum.ClientError)
 
-	user.Status = domain.WrapUserStatus(activeEnum.Data)
+	user.Status = domain.WrapIdentStatus(activeEnum.Data)
 	user.StatusId = activeEnum.Data.Id
 }
 
@@ -370,7 +370,7 @@ func (this *UserServiceImpl) ListUserStatuses(ctx context.Context, query it.List
 	if result.ClientError == nil {
 		result.HasData = userStatuses.HasData
 		result.Data = &it.ListUserStatusesResultData{
-			Items: domain.WrapUserStatuses(userStatuses.Data.Items),
+			Items: domain.WrapIdentStatuses(userStatuses.Data.Items),
 			Total: userStatuses.Data.Total,
 		}
 	}

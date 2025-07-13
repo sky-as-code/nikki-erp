@@ -3,13 +3,11 @@ package domain
 import (
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/array"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	util "github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
-	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 )
 
 type User struct {
@@ -33,7 +31,7 @@ type User struct {
 	Groups      []Group          `json:"groups,omitempty" model:"-"` // TODO: Handle copy
 	Hierarchies []HierarchyLevel `json:"hierarchies,omitempty" model:"-"`
 	Orgs        []Organization   `json:"orgs,omitempty" model:"-"`
-	Status      *UserStatus      `json:"status,omitempty" model:"-"`
+	Status      *IdentityStatus  `json:"status,omitempty"`
 }
 
 func (this *User) SetDefaults() {
@@ -94,26 +92,3 @@ func (this *User) Validate(forEdit bool) ft.ValidationErrors {
 
 	return val.ApiBased.ValidateStruct(this, rules...)
 }
-
-type UserStatus struct {
-	enum.Enum
-}
-
-func WrapUserStatus(status *enum.Enum) *UserStatus {
-	return &UserStatus{
-		Enum: *status,
-	}
-}
-
-func WrapUserStatuses(statuses []enum.Enum) []UserStatus {
-	return array.Map(statuses, func(status enum.Enum) UserStatus {
-		return *WrapUserStatus(&status)
-	})
-}
-
-const (
-	UserStatusActive   = "active"
-	UserStatusArchived = "archived"
-	UserStatusLocked   = "locked"
-	UserStatusEnumType = "ident_user_status"
-)

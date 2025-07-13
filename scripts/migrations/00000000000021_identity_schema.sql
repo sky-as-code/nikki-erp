@@ -1,5 +1,5 @@
 -- Create "ident_organizations" table
-CREATE TABLE "ident_organizations" ("id" character varying NOT NULL, "created_at" timestamptz NOT NULL, "deleted_at" timestamptz NULL, "address" character varying NULL, "display_name" character varying NOT NULL, "legal_name" character varying NULL, "phone_number" character varying NULL, "etag" character varying NOT NULL, "status" character varying NOT NULL, "slug" character varying NOT NULL, "updated_at" timestamptz NULL, PRIMARY KEY ("id"));
+CREATE TABLE "ident_organizations" ("id" character varying NOT NULL, "created_at" timestamptz NOT NULL, "deleted_at" timestamptz NULL, "address" character varying NULL, "display_name" character varying NOT NULL, "legal_name" character varying NULL, "phone_number" character varying NULL, "etag" character varying NOT NULL, "slug" character varying NOT NULL, "updated_at" timestamptz NULL, "status_id" character varying NOT NULL, PRIMARY KEY ("id"), CONSTRAINT "ident_organizations_core_enums_org_status" FOREIGN KEY ("status_id") REFERENCES "core_enums" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION);
 -- Create index "ident_organizations_slug_key" to table: "ident_organizations"
 CREATE UNIQUE INDEX "ident_organizations_slug_key" ON "ident_organizations" ("slug");
 -- Create "ident_groups" table

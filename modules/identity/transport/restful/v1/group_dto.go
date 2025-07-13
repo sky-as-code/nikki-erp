@@ -9,11 +9,11 @@ import (
 )
 
 type GroupDto struct {
-	Id          model.Id         `json:"id"`
+	Id          string           `json:"id"`
 	CreatedAt   int64            `json:"createdAt"`
 	Name        string           `json:"name"`
 	Description *string          `json:"description,omitempty"`
-	Etag        model.Etag       `json:"etag"`
+	Etag        string           `json:"etag"`
 	Org         *GetGroupRespOrg `json:"org,omitempty"`
 	UpdatedAt   *int64           `json:"updatedAt,omitempty"`
 }

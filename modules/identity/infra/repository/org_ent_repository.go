@@ -30,11 +30,11 @@ func (this *OrganizationEntRepository) Create(ctx context.Context, org domain.Or
 		SetID(*org.Id).
 		SetNillableAddress(org.Address).
 		SetDisplayName(*org.DisplayName).
+		SetEtag(*org.Etag).
 		SetNillableLegalName(org.LegalName).
 		SetNillablePhoneNumber(org.PhoneNumber).
 		SetSlug(*org.Slug).
-		SetStatus(entOrg.Status(*org.Status)).
-		SetEtag(*org.Etag)
+		SetStatusID(*org.StatusId)
 
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToOrganization)
 }
@@ -45,7 +45,7 @@ func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Or
 		SetNillableDisplayName(org.DisplayName).
 		SetNillableLegalName(org.LegalName).
 		SetNillablePhoneNumber(org.PhoneNumber).
-		SetNillableStatus((*entOrg.Status)(org.Status)).
+		SetNillableStatusID(org.StatusId).
 		// IMPORTANT: Must have!
 		Where(entOrg.EtagEQ(prevEtag))
 
@@ -72,21 +72,31 @@ func (this *OrganizationEntRepository) DeleteHard(ctx context.Context, id model.
 func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id) (*domain.Organization, error) {
 	query := this.client.Organization.Query().
 		Where(entOrg.ID(id)).
-		WithUsers()
+		WithUsers().
+		WithOrgStatus()
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, query it.GetOrganizationBySlugQuery) (*domain.Organization, error) {
-	builder := this.client.Organization.Query().
-		Where(entOrg.Slug(query.Slug))
+func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, param it.FindBySlugParam) (*domain.Organization, error) {
+	query := this.client.Organization.Query().
+		Where(entOrg.Slug(param.Slug)).
+		WithUsers().
+		WithOrgStatus()
 
-	if !query.IncludeDeleted {
-		builder = builder.Where(entOrg.DeletedAtIsNil())
+	query = this.queryIncludeDeleted(query, param.IncludeDeleted)
+
+	return db.FindOne(ctx, query, ent.IsNotFound, entToOrganization)
+}
+
+func (this *OrganizationEntRepository) queryIncludeDeleted(query *ent.OrganizationQuery, includeDeleted bool) *ent.OrganizationQuery {
+	if includeDeleted {
+		return query.Where(entOrg.Or(
+			entOrg.DeletedAtNotNil(),
+			entOrg.DeletedAtIsNil(),
+		))
 	}
-
-	builder = builder.WithUsers()
-	return db.FindOne(ctx, builder, ent.IsNotFound, entToOrganization)
+	return query.Where(entOrg.DeletedAtIsNil())
 }
 
 func (this *OrganizationEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
@@ -96,10 +106,10 @@ func (this *OrganizationEntRepository) ParseSearchGraph(criteria *string) (*orm.
 func (this *OrganizationEntRepository) Search(
 	ctx context.Context, param it.SearchParam,
 ) (*crud.PagedResult[domain.Organization], error) {
-	query := this.client.Organization.Query()
-	if param.IncludeDeleted {
-		query = query.Where(entOrg.DeletedAtNotNil())
-	}
+	query := this.client.Organization.Query().
+		WithOrgStatus()
+
+	query = this.queryIncludeDeleted(query, param.IncludeDeleted)
 
 	return db.Search(
 		ctx,
@@ -123,7 +133,7 @@ func BuildOrganizationDescriptor() *orm.EntityDescriptor {
 		Field(entOrg.FieldEtag, entity.Etag).
 		Field(entOrg.FieldID, entity.ID).
 		Field(entOrg.FieldSlug, entity.Slug).
-		Field(entOrg.FieldStatus, entity.Status).
+		Field(entOrg.FieldStatusID, entity.StatusID).
 		Field(entOrg.FieldUpdatedAt, entity.UpdatedAt).
 		Edge(entOrg.EdgeUsers, orm.ToEdgePredicate(entOrg.HasUsersWith))
 

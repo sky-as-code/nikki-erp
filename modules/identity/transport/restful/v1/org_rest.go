@@ -52,7 +52,7 @@ func (this OrganizationRest) CreateOrganization(echoCtx echo.Context) (err error
 	}
 
 	response := CreateOrganizationResponse{}
-	response.FromOrganization(*result.Data)
+	response.FromEntity(result.Data)
 
 	return httpserver.JsonCreated(echoCtx, response)
 }
@@ -75,7 +75,7 @@ func (this OrganizationRest) UpdateOrganization(echoCtx echo.Context) (err error
 	}
 
 	response := UpdateOrganizationResponse{}
-	response.FromOrganization(*result.Data)
+	response.FromEntity(result.Data)
 
 	return httpserver.JsonOk(echoCtx, response)
 }
@@ -97,9 +97,8 @@ func (this OrganizationRest) DeleteOrganization(echoCtx echo.Context) (err error
 		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
 	}
 
-	response := DeleteOrganizationResponse{
-		DeletedAt: result.Data.DeletedAt.UnixMilli(),
-	}
+	response := DeleteOrganizationResponse{}
+	response.FromNonEntity(result.Data)
 
 	return httpserver.JsonOk(echoCtx, response)
 }
@@ -122,7 +121,7 @@ func (this OrganizationRest) GetOrganizationBySlug(echoCtx echo.Context) (err er
 	}
 
 	response := GetOrganizationBySlugResponse{}
-	response.FromOrganization(*result.Data)
+	response.FromOrg(*result.Data)
 
 	return httpserver.JsonOk(echoCtx, response)
 }

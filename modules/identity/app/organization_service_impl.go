@@ -9,20 +9,23 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 )
 
-func NewOrganizationServiceImpl(orgRepo itOrg.OrganizationRepository, cqrsBus cqrs.CqrsBus) itOrg.OrganizationService {
+func NewOrganizationServiceImpl(
+	enumSvc enum.EnumService,
+	orgRepo itOrg.OrganizationRepository,
+) itOrg.OrganizationService {
 	return &OrganizationServiceImpl{
-		cqrsBus: cqrsBus,
+		enumSvc: enumSvc,
 		orgRepo: orgRepo,
 	}
 }
 
 type OrganizationServiceImpl struct {
-	cqrsBus cqrs.CqrsBus
+	enumSvc enum.EnumService
 	orgRepo itOrg.OrganizationRepository
 }
 
@@ -34,7 +37,7 @@ func (this *OrganizationServiceImpl) CreateOrganization(ctx context.Context, cmd
 	}()
 
 	org := cmd.ToOrganization()
-	org.SetDefaults()
+	this.setOrgDefaults(ctx, org)
 
 	flow := val.StartValidationFlow()
 	vErrs, err := flow.
@@ -161,6 +164,20 @@ func (this *OrganizationServiceImpl) sanitizeOrg(org *domain.Organization) {
 	}
 }
 
+func (this *OrganizationServiceImpl) setOrgDefaults(ctx context.Context, org *domain.Organization) {
+	org.SetDefaults()
+
+	activeEnum, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
+		Value: util.ToPtr(domain.OrgStatusActive),
+		Type:  util.ToPtr(domain.OrgStatusEnumType),
+	})
+	ft.PanicOnErr(err)
+	ft.PanicOnErr(activeEnum.ClientError)
+
+	org.Status = domain.WrapIdentStatus(activeEnum.Data)
+	org.StatusId = activeEnum.Data.Id
+}
+
 func (this *OrganizationServiceImpl) DeleteOrganization(ctx context.Context, cmd itOrg.DeleteOrganizationCommand) (result *itOrg.DeleteOrganizationResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to delete organization"); e != nil {
@@ -193,6 +210,7 @@ func (this *OrganizationServiceImpl) DeleteOrganization(ctx context.Context, cmd
 
 	return &itOrg.DeleteOrganizationResult{
 		Data: &itOrg.DeleteOrganizationResultData{
+			Id:        *dbOrg.Id,
 			DeletedAt: time.Now(),
 		},
 		HasData: true,

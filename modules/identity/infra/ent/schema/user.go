@@ -109,7 +109,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("orgs", Organization.Type).
 			Through("user_orgs", UserOrg.Type),
 
-		edge.To("user_status", UserStatusEnum.Type).
+		edge.To("user_status", IdentStatusEnum.Type).
 			Field("status_id").
 			Unique().
 			Required(),

@@ -31,12 +31,11 @@ var createOrganizationCommandType = cqrs.RequestType{
 }
 
 type CreateOrganizationCommand struct {
-	Address     *string           `json:"address,omitempty"`
-	DisplayName *string           `json:"displayName"`
-	LegalName   *string           `json:"legalName,omitempty"`
-	PhoneNumber *string           `json:"phoneNumber,omitempty"`
-	Slug        model.Slug        `json:"slug"`
-	Status      *domain.OrgStatus `json:"status,omitempty"`
+	Address     *string    `json:"address,omitempty"`
+	DisplayName *string    `json:"displayName"`
+	LegalName   *string    `json:"legalName,omitempty"`
+	PhoneNumber *string    `json:"phoneNumber,omitempty"`
+	Slug        model.Slug `json:"slug"`
 }
 
 func (CreateOrganizationCommand) CqrsRequestType() cqrs.RequestType {
@@ -54,13 +53,13 @@ var updateOrganizationCommandType = cqrs.RequestType{
 type UpdateOrganizationCommand struct {
 	Slug model.Slug `param:"slug" json:"slug"`
 
-	Address     *string           `json:"address"`
-	DisplayName *string           `json:"displayName"`
-	Etag        model.Etag        `json:"etag"`
-	LegalName   *string           `json:"legalName"`
-	PhoneNumber *string           `json:"phoneNumber"`
-	NewSlug     *model.Slug       `json:"newSlug"`
-	Status      *domain.OrgStatus `json:"status"`
+	Address     *string     `json:"address"`
+	DisplayName *string     `json:"displayName"`
+	Etag        model.Etag  `json:"etag"`
+	LegalName   *string     `json:"legalName"`
+	PhoneNumber *string     `json:"phoneNumber"`
+	NewSlug     *model.Slug `json:"newSlug"`
+	Status      *string     `json:"status" model:"-"`
 }
 
 func (UpdateOrganizationCommand) CqrsRequestType() cqrs.RequestType {
@@ -101,6 +100,7 @@ func (this DeleteOrganizationCommand) Validate() ft.ValidationErrors {
 }
 
 type DeleteOrganizationResultData struct {
+	Id        model.Id  `json:"id"`
 	DeletedAt time.Time `json:"deletedAt"`
 }
 

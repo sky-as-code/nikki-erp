@@ -15,7 +15,7 @@ type OrganizationRepository interface {
 	DeleteHard(ctx context.Context, id model.Id) error
 	DeleteSoft(ctx context.Context, id model.Id) (*domain.Organization, error)
 	FindById(ctx context.Context, id model.Id) (*domain.Organization, error)
-	FindBySlug(ctx context.Context, query GetOrganizationBySlugQuery) (*domain.Organization, error)
+	FindBySlug(ctx context.Context, query FindBySlugParam) (*domain.Organization, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.Organization], error)
 	Update(ctx context.Context, organization domain.Organization, prevEtag model.Etag) (*domain.Organization, error)

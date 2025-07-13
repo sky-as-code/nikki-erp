@@ -7,18 +7,20 @@ import (
 	coreSchema "github.com/sky-as-code/nikki-erp/modules/core/infra/ent/schema"
 )
 
-type UserStatusEnum struct {
+type IdentStatusEnum struct {
 	ent.Schema
 }
 
-func (UserStatusEnum) Edges() []ent.Edge {
+func (IdentStatusEnum) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.From("orgs", Organization.Type).
+			Ref("org_status"),
 		edge.From("users", User.Type).
 			Ref("user_status"),
 	}
 }
 
-func (UserStatusEnum) Mixin() []ent.Mixin {
+func (IdentStatusEnum) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		coreSchema.EnumMixin{},
 	}
