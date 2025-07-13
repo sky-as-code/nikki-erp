@@ -12,9 +12,9 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 )
 
 // UserCreate is the builder for creating a User entity.
@@ -227,15 +227,15 @@ func (uc *UserCreate) AddOrgs(o ...*Organization) *UserCreate {
 	return uc.AddOrgIDs(ids...)
 }
 
-// SetUserStatusID sets the "user_status" edge to the UserStatusEnum entity by ID.
+// SetUserStatusID sets the "user_status" edge to the IdentStatusEnum entity by ID.
 func (uc *UserCreate) SetUserStatusID(id string) *UserCreate {
 	uc.mutation.SetUserStatusID(id)
 	return uc
 }
 
-// SetUserStatus sets the "user_status" edge to the UserStatusEnum entity.
-func (uc *UserCreate) SetUserStatus(u *UserStatusEnum) *UserCreate {
-	return uc.SetUserStatusID(u.ID)
+// SetUserStatus sets the "user_status" edge to the IdentStatusEnum entity.
+func (uc *UserCreate) SetUserStatus(i *IdentStatusEnum) *UserCreate {
+	return uc.SetUserStatusID(i.ID)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -463,7 +463,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.UserStatusColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(userstatusenum.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

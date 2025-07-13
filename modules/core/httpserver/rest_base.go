@@ -86,6 +86,13 @@ func (this *RestDeleteResponse) FromNonEntity(src any) {
 	model.MustCopy(src, this)
 }
 
+type RestSearchResponse[TItem any] struct {
+	Items []TItem `json:"items"`
+	Total int     `json:"total"`
+	Page  int     `json:"page"`
+	Size  int     `json:"size"`
+}
+
 type createdEntity interface {
 	GetId() *model.Id
 	GetCreatedAt() *time.Time

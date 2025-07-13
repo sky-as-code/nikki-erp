@@ -33,13 +33,3 @@ type SearchParam struct {
 	Size       int
 	WithGroups bool
 }
-
-type OrganizationRepository interface {
-	Create(ctx context.Context, organization domain.Organization) (*domain.Organization, error)
-	Update(ctx context.Context, organization domain.Organization, prevEtag model.Etag) (*domain.Organization, error)
-	Delete(ctx context.Context, id model.Id) error
-	FindById(ctx context.Context, id model.Id) (*domain.Organization, error)
-	FindBySlug(ctx context.Context, slug string) (*domain.Organization, error)
-	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx context.Context, predicate *orm.Predicate, order []orm.OrderOption, opts crud.PagingOptions) (*crud.PagedResult[domain.Organization], error)
-}

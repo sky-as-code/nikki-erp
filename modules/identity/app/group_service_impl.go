@@ -48,13 +48,13 @@ func (this *GroupServiceImpl) AddRemoveUsers(ctx context.Context, cmd itGrp.AddR
 		Step(func(vErrs *ft.ValidationErrors) error {
 			*vErrs = cmd.Validate()
 			return nil
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			return this.assertCorrectGroup(ctx, cmd.GroupId, cmd.Etag, vErrs)
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			return this.assertUserIdsExist(ctx, vErrs, "add", cmd.Add)
-		}, true).
+		}).
 		End()
 
 	if vErrs.Count() > 0 {
@@ -123,11 +123,11 @@ func (this *GroupServiceImpl) CreateGroup(ctx context.Context, cmd itGrp.CreateG
 		Step(func(vErrs *ft.ValidationErrors) error {
 			*vErrs = group.Validate(false)
 			return nil
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			this.sanitizeGroup(group)
 			return this.assertUniqueGroupName(ctx, group, vErrs)
-		}, true).
+		}).
 		End()
 	ft.PanicOnErr(err)
 
@@ -165,15 +165,15 @@ func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd itGrp.UpdateG
 		Step(func(vErrs *ft.ValidationErrors) error {
 			*vErrs = group.Validate(true)
 			return nil
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			return this.assertCorrectGroup(ctx, *group.Id, *group.Etag, vErrs)
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			// Sanitize after we've made sure this is the correct group
 			this.sanitizeGroup(group)
 			return this.assertUniqueGroupName(ctx, group, vErrs)
-		}, true).
+		}).
 		End()
 	ft.PanicOnErr(err)
 
@@ -188,7 +188,10 @@ func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd itGrp.UpdateG
 	groupWithOrg, err := this.groupRepo.Update(ctx, *group, *prevEtag)
 	ft.PanicOnErr(err)
 
-	return &itGrp.UpdateGroupResult{Data: groupWithOrg}, err
+	return &itGrp.UpdateGroupResult{
+		Data:    groupWithOrg,
+		HasData: true,
+	}, err
 }
 
 func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd itGrp.DeleteGroupCommand) (result *itGrp.DeleteGroupResult, err error) {

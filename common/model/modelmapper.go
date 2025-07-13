@@ -165,4 +165,17 @@ func init() {
 		millis := result.UnixMilli()
 		return reflect.ValueOf(&millis), nil
 	})
+
+	AddConversion[time.Time, *time.Time](func(in reflect.Value) (reflect.Value, error) {
+		result := in.Interface().(time.Time)
+		return reflect.ValueOf(&result), nil
+	})
+
+	AddConversion[*time.Time, time.Time](func(in reflect.Value) (reflect.Value, error) {
+		if in.IsNil() {
+			return reflect.ValueOf(&time.Time{}), nil
+		}
+		result := in.Interface().(*time.Time)
+		return reflect.ValueOf(*result), nil
+	})
 }

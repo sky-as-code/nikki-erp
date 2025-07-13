@@ -12,8 +12,8 @@ import (
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
+	entStatus "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
-	entUserStatus "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -166,13 +166,13 @@ func BuildUserDescriptor() *orm.EntityDescriptor {
 }
 
 func BuildUserStatusDescriptor() *orm.EntityDescriptor {
-	entity := ent.UserStatusEnum{}
+	entity := ent.IdentStatusEnum{}
 	builder := orm.DescribeEntity(entUser.EdgeUserStatus).
-		Aliases(entUserStatus.Label).
-		Field(entUserStatus.FieldID, entity.ID).
-		Field(entUserStatus.FieldEtag, entity.Etag).
-		Field(entUserStatus.FieldLabel, entity.Label).
-		Field(entUserStatus.FieldValue, entity.Value)
+		Aliases(entStatus.Label).
+		Field(entStatus.FieldID, entity.ID).
+		Field(entStatus.FieldEtag, entity.Etag).
+		Field(entStatus.FieldLabel, entity.Label).
+		Field(entStatus.FieldValue, entity.Value)
 
 	return builder.Descriptor()
 }

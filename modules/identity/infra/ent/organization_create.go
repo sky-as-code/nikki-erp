@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
@@ -51,9 +52,51 @@ func (oc *OrganizationCreate) SetNillableDeletedAt(t *time.Time) *OrganizationCr
 	return oc
 }
 
+// SetAddress sets the "address" field.
+func (oc *OrganizationCreate) SetAddress(s string) *OrganizationCreate {
+	oc.mutation.SetAddress(s)
+	return oc
+}
+
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableAddress(s *string) *OrganizationCreate {
+	if s != nil {
+		oc.SetAddress(*s)
+	}
+	return oc
+}
+
 // SetDisplayName sets the "display_name" field.
 func (oc *OrganizationCreate) SetDisplayName(s string) *OrganizationCreate {
 	oc.mutation.SetDisplayName(s)
+	return oc
+}
+
+// SetLegalName sets the "legal_name" field.
+func (oc *OrganizationCreate) SetLegalName(s string) *OrganizationCreate {
+	oc.mutation.SetLegalName(s)
+	return oc
+}
+
+// SetNillableLegalName sets the "legal_name" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillableLegalName(s *string) *OrganizationCreate {
+	if s != nil {
+		oc.SetLegalName(*s)
+	}
+	return oc
+}
+
+// SetPhoneNumber sets the "phone_number" field.
+func (oc *OrganizationCreate) SetPhoneNumber(s string) *OrganizationCreate {
+	oc.mutation.SetPhoneNumber(s)
+	return oc
+}
+
+// SetNillablePhoneNumber sets the "phone_number" field if the given value is not nil.
+func (oc *OrganizationCreate) SetNillablePhoneNumber(s *string) *OrganizationCreate {
+	if s != nil {
+		oc.SetPhoneNumber(*s)
+	}
 	return oc
 }
 
@@ -63,9 +106,9 @@ func (oc *OrganizationCreate) SetEtag(s string) *OrganizationCreate {
 	return oc
 }
 
-// SetStatus sets the "status" field.
-func (oc *OrganizationCreate) SetStatus(o organization.Status) *OrganizationCreate {
-	oc.mutation.SetStatus(o)
+// SetStatusID sets the "status_id" field.
+func (oc *OrganizationCreate) SetStatusID(s string) *OrganizationCreate {
+	oc.mutation.SetStatusID(s)
 	return oc
 }
 
@@ -140,6 +183,17 @@ func (oc *OrganizationCreate) AddGroups(g ...*Group) *OrganizationCreate {
 	return oc.AddGroupIDs(ids...)
 }
 
+// SetOrgStatusID sets the "org_status" edge to the IdentStatusEnum entity by ID.
+func (oc *OrganizationCreate) SetOrgStatusID(id string) *OrganizationCreate {
+	oc.mutation.SetOrgStatusID(id)
+	return oc
+}
+
+// SetOrgStatus sets the "org_status" edge to the IdentStatusEnum entity.
+func (oc *OrganizationCreate) SetOrgStatus(i *IdentStatusEnum) *OrganizationCreate {
+	return oc.SetOrgStatusID(i.ID)
+}
+
 // Mutation returns the OrganizationMutation object of the builder.
 func (oc *OrganizationCreate) Mutation() *OrganizationMutation {
 	return oc.mutation
@@ -192,16 +246,14 @@ func (oc *OrganizationCreate) check() error {
 	if _, ok := oc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Organization.etag"`)}
 	}
-	if _, ok := oc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Organization.status"`)}
-	}
-	if v, ok := oc.mutation.Status(); ok {
-		if err := organization.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Organization.status": %w`, err)}
-		}
+	if _, ok := oc.mutation.StatusID(); !ok {
+		return &ValidationError{Name: "status_id", err: errors.New(`ent: missing required field "Organization.status_id"`)}
 	}
 	if _, ok := oc.mutation.Slug(); !ok {
 		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "Organization.slug"`)}
+	}
+	if len(oc.mutation.OrgStatusIDs()) == 0 {
+		return &ValidationError{Name: "org_status", err: errors.New(`ent: missing required edge "Organization.org_status"`)}
 	}
 	return nil
 }
@@ -246,17 +298,25 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		_spec.SetField(organization.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = &value
 	}
+	if value, ok := oc.mutation.Address(); ok {
+		_spec.SetField(organization.FieldAddress, field.TypeString, value)
+		_node.Address = &value
+	}
 	if value, ok := oc.mutation.DisplayName(); ok {
 		_spec.SetField(organization.FieldDisplayName, field.TypeString, value)
 		_node.DisplayName = value
 	}
+	if value, ok := oc.mutation.LegalName(); ok {
+		_spec.SetField(organization.FieldLegalName, field.TypeString, value)
+		_node.LegalName = &value
+	}
+	if value, ok := oc.mutation.PhoneNumber(); ok {
+		_spec.SetField(organization.FieldPhoneNumber, field.TypeString, value)
+		_node.PhoneNumber = &value
+	}
 	if value, ok := oc.mutation.Etag(); ok {
 		_spec.SetField(organization.FieldEtag, field.TypeString, value)
 		_node.Etag = value
-	}
-	if value, ok := oc.mutation.Status(); ok {
-		_spec.SetField(organization.FieldStatus, field.TypeEnum, value)
-		_node.Status = value
 	}
 	if value, ok := oc.mutation.Slug(); ok {
 		_spec.SetField(organization.FieldSlug, field.TypeString, value)
@@ -312,6 +372,23 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := oc.mutation.OrgStatusIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   organization.OrgStatusTable,
+			Columns: []string{organization.OrgStatusColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.StatusID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

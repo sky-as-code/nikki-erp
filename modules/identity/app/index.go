@@ -10,6 +10,7 @@ func InitServices() error {
 	err := errors.Join(
 		deps.Register(NewUserServiceImpl),
 		deps.Register(NewGroupServiceImpl),
+		deps.Register(NewOrganizationServiceImpl),
 	)
 	return err
 }

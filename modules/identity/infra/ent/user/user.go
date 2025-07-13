@@ -77,8 +77,8 @@ const (
 	OrgsInverseTable = "ident_organizations"
 	// UserStatusTable is the table that holds the user_status relation/edge.
 	UserStatusTable = "ident_users"
-	// UserStatusInverseTable is the table name for the UserStatusEnum entity.
-	// It exists in this package in order to avoid circular dependency with the "userstatusenum" package.
+	// UserStatusInverseTable is the table name for the IdentStatusEnum entity.
+	// It exists in this package in order to avoid circular dependency with the "identstatusenum" package.
 	UserStatusInverseTable = "core_enums"
 	// UserStatusColumn is the table column denoting the user_status relation/edge.
 	UserStatusColumn = "status_id"

@@ -5,6 +5,7 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'core_enums'
 	) THEN
 		INSERT INTO "core_enums" ("id", "etag", "label", "value", "type") VALUES
+			-- BEGIN User status
 			('01JZK0R9WF30HMABN7XSW4YNFV', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint,
 				'{
 					"en_US": "Active",
@@ -26,6 +27,26 @@ BEGIN
 				}'::jsonb,
 				'archived',
 				'ident_user_status'),
+			-- END User status
+
+			-- BEGIN Organization status
+			('01K02G37PCJAHSTC0AWG5JZ3X4', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint,
+				'{
+					"en_US": "Active",
+					"vi_VN": "Đang hoạt động"
+				}'::jsonb,
+				'active',
+				'ident_org_status'),
+			('01K02G3CQXBQGD6C83WZ835JR2', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint,
+				'{
+					"en_US": "Archived",
+					"vi_VN": "Ngưng hoạt động"
+				}'::jsonb,
+				'archived',
+				'ident_org_status'),
+			-- END Organization status
+
+			-- BEGIN Dummy test status
 			('01JZQF16QGN1YA1R6MKA0W7F0H', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint,
 				'{
 					"en_US": "d. Test status",
@@ -68,6 +89,7 @@ BEGIN
 				}'::jsonb,
 				'ows_test_status',
 				'ident_user_status');
+			-- END Dummy test status
 	END IF;
 	IF (
 		SELECT COUNT(*) FROM information_schema.tables 
@@ -114,12 +136,16 @@ BEGIN
 		('01JWNXXTF8958VVYAV33MVVMDN', '01JWNXBR5QJBH7PE9PQ9FW746V');
 	END IF;
 
-	IF EXISTS (
-		SELECT FROM information_schema.tables 
-		WHERE table_schema = 'public' AND table_name = 'ident_organizations'
-	) THEN
-		INSERT INTO "ident_organizations" ("id", "created_at", "display_name", "etag", "status", "slug") VALUES
-		('01JWNY20G23KD4RV5VWYABQYHD', NOW(), 'My Company', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 'active', 'my-company');
+	IF (
+		SELECT COUNT(*) FROM information_schema.tables 
+		WHERE (table_schema = 'public' AND table_name = 'ident_organizations')
+			OR (table_schema = 'public' AND table_name = 'core_enums')
+	) = 2 THEN
+		INSERT INTO "ident_organizations" ("id", "created_at", "display_name", "etag", "slug", "status_id") VALUES
+		('01JWNY20G23KD4RV5VWYABQYHD', NOW(), 'My Company', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 'my-company',
+			(SELECT "id" FROM "core_enums" WHERE "value" = 'active' AND "type" = 'ident_org_status')),
+		('01K02G6J1CYAN9K8V4PAGSQ5Z8', NOW(), 'Old Company', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 'old-company',
+			(SELECT "id" FROM "core_enums" WHERE "value" = 'archived' AND "type" = 'ident_org_status'));
 	END IF;
 
 	IF EXISTS (

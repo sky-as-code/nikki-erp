@@ -29,6 +29,7 @@ require (
 	go.bryk.io/pkg v0.0.0-20250623171018-8f3f4709eea0
 	go.uber.org/dig v1.19.0
 	golang.org/x/crypto v0.39.0
+	golang.org/x/text v0.26.0
 	gopkg.in/jeevatkm/go-model.v1 v1.1.0
 	gorm.io/gorm v1.30.0
 )
@@ -77,7 +78,6 @@ require (
 	golang.org/x/mod v0.25.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect

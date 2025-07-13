@@ -1031,6 +1031,1701 @@
 			"name": "Identity",
 			"item": [
 				{
+					"name": "Group",
+					"item": [
+						{
+							"name": "Group - Create",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const body = pm.response.text();\r",
+											"try {\r",
+											"    const payload = JSON.parse(body);\r",
+											"    const { id, etag } = payload;\r",
+											"    id && pm.collectionVariables.set('group_id', id);\r",
+											"    etag && pm.collectionVariables.set('etag', etag);\r",
+											"} catch (err) {\r",
+											"    console.error(err)\r",
+											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"const rawBody = pm.request.body.raw;\r",
+											"const payload = JSON.parse(rawBody);\r",
+											"\r",
+											"// Generate a 6-char alphanumeric string\r",
+											"function randomString(length = 6) {\r",
+											"    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';\r",
+											"    let result = '';\r",
+											"    for (let i = 0; i < length; i++) {\r",
+											"        result += chars.charAt(Math.floor(Math.random() * chars.length));\r",
+											"    }\r",
+											"    return result;\r",
+											"}\r",
+											"\r",
+											"const rand = randomString();\r",
+											"\r",
+											"if (payload.name) {\r",
+											"    payload.name += ' ' + rand;\r",
+											"}\r",
+											"if (payload.description) {\r",
+											"    payload.description += ' ' + rand;\r",
+											"}\r",
+											"\r",
+											"// Write modified payload back to request\r",
+											"pm.request.body.raw = JSON.stringify(payload, null, 2);\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"My Team\",\r\n    \"description\": \"This is my team\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"My Team\",\r\n    \"description\": \"This is my team\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n    \"createdAt\": 1749381803848,\n    \"name\": \"My Team\",\n    \"description\": \"This is my team\",\n    \"etag\": \"1749381803846717000\"\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"description\": \"\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"cannot be blank\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Existing name",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"My Team\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"group name already exists\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Group - Update",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const payload = pm.response.json();\r",
+											"payload.etag && pm.collectionVariables.set('etag', payload.etag);\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Your Team\",\r\n    \"description\": \"The people you are working with\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups",
+										"{{group_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"Your Team\",\r\n    \"description\": \"The people you are working with\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n    \"createdAt\": 1749381803848,\n    \"name\": \"Your Team\",\n    \"description\": \"The people you are working with\",\n    \"etag\": \"1749381890052750000\",\n    \"updatedAt\": 1749381890052\n}"
+								},
+								{
+									"name": "Client error - Invalid fields Copy",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"\",\r\n    \"description\": \"\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"cannot be blank\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Unmatched etag",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"Your Team\",\r\n    \"description\": \"The people you are working with\",\r\n    \"etag\": \"fake_etag\"\r\n}\r\n",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"group has been modified by another user\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Group - Get by ID",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const payload = pm.response.json();\r",
+											"payload.etag && pm.collectionVariables.set('etag', payload.etag);\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups",
+										"{{group_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n    \"createdAt\": 1749381803848,\n    \"name\": \"Your Team\",\n    \"description\": \"The people you are working with\",\n    \"etag\": \"1749381890052750000\",\n    \"updatedAt\": 1749382124763\n}"
+								},
+								{
+									"name": "Client error - Invalid ID",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/01JX2V9CGPA5",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"01JX2V9CGPA5"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/1000000000000000000000000A",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"1000000000000000000000000A"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"group not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Group - Search",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - No criteria, No paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNXBR5QJBH7PE9PQ9FW746V\",\n            \"name\": \"Domain Users\",\n            \"description\": \"Default group for all domain users\"\n        },\n        {\n            \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n            \"name\": \"Your Team\",\n            \"description\": \"The people you are working with\"\n        }\n    ],\n    \"total\": 2,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - No criteria, With paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups?page=0&size=1",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "1"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNXBR5QJBH7PE9PQ9FW746V\",\n            \"name\": \"Domain Users\",\n            \"description\": \"Default group for all domain users\"\n        }\n    ],\n    \"total\": 2,\n    \"page\": 0,\n    \"size\": 1\n}"
+								},
+								{
+									"name": "Success - No result",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups?graph={\"if\":[\"name\", \"=\", \"blabla\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"blabla\"]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [],\n    \"total\": 0,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups?page=-1&size=999999999999999999&graph={\"if\":[\"fakefield\", \"*\", \"team\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "-1"
+												},
+												{
+													"key": "size",
+													"value": "999999999999999999"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"fakefield\", \"*\", \"team\"]}"
+												}
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"graph.condition\": \"invalid field 'fakefield' of entity 'group' in condition '[fakefield * team]'\",\n        \"page\": \"must be no less than 0\",\n        \"size\": \"must be no greater than 500\"\n    }\n}"
+								},
+								{
+									"name": "Success - 1-level criteria",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups?graph={\"if\":[\"name\", \"*\", \"team\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"*\", \"team\"]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n            \"name\": \"Your Team\",\n            \"description\": \"The people you are working with\"\n        }\n    ],\n    \"total\": 1,\n    \"page\": 0,\n    \"size\": 50\n}"
+								}
+							]
+						},
+						{
+							"name": "Group - Delete",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups",
+										"{{group_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"deletedAt\": 1749382124763\n}"
+								},
+								{
+									"name": "Client error - Invalid ID",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/10000000000",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"10000000000"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/1000000000000000000000000A",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"1000000000000000000000000A"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"group not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Group - Add / Remove Users",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"add\": [\"01JWNXT3EY7FG47VDJTEPTDC98\", \"01JWNXXTF8958VVYAV33MVVMDN\"],\r\n    \"remove\": [],\r\n    \"etag\": \"{{etag}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}/manage-users",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"groups",
+										"{{group_id}}",
+										"manage-users"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Organization",
+					"item": [
+						{
+							"name": "Organization - Create",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"const payload = JSON.parse(pm.request.body.raw);\r",
+											"\r",
+											"// Generate a 6-char alphanumeric string\r",
+											"function randomString(length = 6) {\r",
+											"    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';\r",
+											"    let result = '';\r",
+											"    for (let i = 0; i < length; i++) {\r",
+											"        result += chars.charAt(Math.floor(Math.random() * chars.length));\r",
+											"    }\r",
+											"    return result;\r",
+											"}\r",
+											"\r",
+											"const rand = randomString();\r",
+											"\r",
+											"if (payload.address) {\r",
+											"    payload.address += ' ' + rand;\r",
+											"}\r",
+											"if (payload.displayName) {\r",
+											"    payload.displayName += ' ' + rand;\r",
+											"}\r",
+											"if (payload.legalName) {\r",
+											"    payload.legalName += ' ' + rand;\r",
+											"}\r",
+											"if (payload.slug) {\r",
+											"    payload.slug = `${payload.slug}-${rand}`.toLowerCase();\r",
+											"}\r",
+											"// Write modified payload back to request\r",
+											"pm.request.body.raw = JSON.stringify(payload, null, 2);\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const requestBody = JSON.parse(pm.request.body.raw);\r",
+											"pm.collectionVariables.set('org_slug', requestBody.slug);\r",
+											"\r",
+											"const payload = pm.response.json();\r",
+											"const { id, etag } = payload;\r",
+											"id && pm.collectionVariables.set('org_id', id);\r",
+											"etag && pm.collectionVariables.set('etag', etag);"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"address\": \"123 <b>Ham Nghi st</b>, <a onclick=\\\"alert()\\\">HCM city</a>\",\r\n    \"displayName\": \"<i>Lone Wolf company<i><script>hacked</script>\",\r\n    \"legalName\": \"Cong ty trach nhiem huu han Mot thanh vien Mot Minh Tui - Lone Wolf Co. Ltd.\",\r\n    \"slug\": \"lone-wolf\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/organizations",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"organizations"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"address\": \"123 <b>Ham Nghi st</b>, <a onclick=\\\"alert()\\\">HCM city</a>\",\r\n    \"displayName\": \"<i>Lone Wolf company<i><script>hacked</script>\",\r\n    \"legalName\": \"Cong ty trach nhiem huu han Mot thanh vien Mot Minh Tui - Lone Wolf Co. Ltd.\",\r\n    \"slug\": \"lone-wolf\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 13 Jul 2025 16:24:32 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "293"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01K029MDN8BH7DK40VBRWK9HZG\",\n    \"address\": \"123 Ham Nghi st, HCM city\",\n    \"createdAt\": 1752423872223,\n    \"displayName\": \"Lone Wolf company\",\n    \"legalName\": \"Cong ty trach nhiem huu han Mot thanh vien Mot Minh Tui - Lone Wolf Co. Ltd.\",\n    \"slug\": \"lone-wolf\",\n    \"status\": \"inactive\",\n    \"etag\": \"1752423872168833500\"\n}"
+								},
+								{
+									"name": "Client error - Existing slug",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"address\": \"123 <b>Ham Nghi st</b>, <a onclick=\\\"alert()\\\">HCM city</a>\",\r\n    \"displayName\": \"<i>Lone Wolf company<i><script>hacked</script>\",\r\n    \"legalName\": \"Cong ty trach nhiem huu han Mot thanh vien Mot Minh Tui - Lone Wolf Co. Ltd.\",\r\n    \"slug\": \"lone-wolf\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 02:25:32 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "77"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"slug\": \"organization slug already exists\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 02:23:11 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "97"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"address\": \"is required\",\n        \"displayName\": \"is required\",\n        \"legalName\": \"is required\",\n        \"slug\": \"cannot be blank\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Organization - Update",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"address\": \"1324dad Duong\",\r\n    \"displayName\": \"dsadasdsa\",\r\n    \"phoneNumber\": \"023424234234\",\r\n    \"etag\": \"1751511021090000600\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/organizations/asd12321",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"organizations",
+										"asd12321"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"address\": \"1324dad Duong\",\r\n    \"displayName\": \"dsadasdsa\",\r\n    \"phoneNumber\": \"023424234234\",\r\n    \"etag\": \"1751511021090000600\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations/asd12321",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations",
+												"asd12321"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 03:03:48 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "236"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZ732DH26QKRS7DMEFHADPWF\",\n    \"createdAt\": 1751511021090,\n    \"displayName\": \"dsadasdsa\",\n    \"address\": \"1324dad Duong\",\n    \"phoneNumber\": \"023424234234\",\n    \"slug\": \"asd12321\",\n    \"status\": \"inactive\",\n    \"etag\": \"1751511021090000600\",\n    \"updatedAt\": 1751511828189\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"address\": \"1324dad Duong\",\r\n    \"displayName\": \"dsadasdsa\",\r\n    \"phoneNumber\": \"023424234234\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations/asd12321",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations",
+												"asd12321"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 02:30:22 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "65"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"cannot be blank\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Etag mismatch",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"address\": \"1324dad Duong\",\r\n    \"displayName\": \"dsadasdsa\",\r\n    \"phoneNumber\": \"023424234234\",\r\n    \"etag\": \"1751509443073888600\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations/asd12321",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations",
+												"asd12321"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 02:35:55 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "63"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"etag mismatch\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not Found",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"address\": \"1324dad Duong\",\r\n    \"displayName\": \"dsadasdsa\",\r\n    \"phoneNumber\": \"023424234234\",\r\n    \"etag\": \"1751511021090000600\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations/asd1232",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations",
+												"asd1232"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 03:04:39 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "72"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"slug\": \"organization not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Organization - Get By Slug",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/organizations/asd1232",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"organizations",
+										"asd1232"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations/asd12321",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations",
+												"asd12321"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 03:06:33 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "236"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZ732DH26QKRS7DMEFHADPWF\",\n    \"createdAt\": 1751511021090,\n    \"displayName\": \"dsadasdsa\",\n    \"address\": \"1324dad Duong\",\n    \"phoneNumber\": \"023424234234\",\n    \"slug\": \"asd12321\",\n    \"status\": \"inactive\",\n    \"etag\": \"1751511021090000600\",\n    \"updatedAt\": 1751511828189\n}"
+								},
+								{
+									"name": "Client error - Not Found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations/asd1232",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations",
+												"asd1232"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 03:07:44 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "72"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"slug\": \"organization not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Organization - Search",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/organizations?page=0&size=3",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"organizations"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "3"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - No criteria, No paging, No Orgs",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 03:25:44 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "1009"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n            \"displayName\": \"My Company\",\n            \"slug\": \"my-company\",\n            \"status\": \"active\",\n            \"createdAt\": 1749530459660\n        },\n        {\n            \"id\": \"org-001\",\n            \"displayName\": \"Appota Group\",\n            \"slug\": \"appota-group\",\n            \"status\": \"active\",\n            \"createdAt\": 1749590566262,\n            \"updatedAt\": 1749590566262\n        },\n        {\n            \"id\": \"01JZ5C4ZGEZKDGT03PNMSVZK86\",\n            \"displayName\": \"dadasde43242\",\n            \"slug\": \"abc123\",\n            \"status\": \"inactive\",\n            \"createdAt\": 1751453433358\n        },\n        {\n            \"id\": \"01JZ5DBEE6JJ6QFZF5E3V8WZ4G\",\n            \"displayName\": \"dadasde4324dsadsa2\",\n            \"slug\": \"abc12dad3\",\n            \"status\": \"inactive\",\n            \"createdAt\": 1751454693830\n        },\n        {\n            \"id\": \"01JZ5DFCD8S8KS7M0A87M2Z0GQ\",\n            \"displayName\": \"dadasddsae4324dsadsa2\",\n            \"slug\": \"abc12dsadad3\",\n            \"status\": \"inactive\",\n            \"createdAt\": 1751454822824\n        },\n        {\n            \"id\": \"01JZ5DJDEA0JDA6ZZZ14QBQZKP\",\n            \"displayName\": \"dadasddsdaae4324dsadsa2\",\n            \"slug\": \"abc12dsadad3sa\",\n            \"status\": \"inactive\",\n            \"createdAt\": 1751454935554\n        },\n        {\n            \"id\": \"01JZ732DH26QKRS7DMEFHADPWF\",\n            \"displayName\": \"dsadasdsa\",\n            \"slug\": \"asd12321\",\n            \"status\": \"inactive\",\n            \"createdAt\": 1751511021090,\n            \"updatedAt\": 1751511828189\n        }\n    ],\n    \"total\": 7,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - No criteria, With paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations?page=0&size=3",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "3"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 03:36:24 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "432"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n            \"displayName\": \"My Company\",\n            \"slug\": \"my-company\",\n            \"status\": \"active\",\n            \"createdAt\": 1749530459660\n        },\n        {\n            \"id\": \"org-001\",\n            \"displayName\": \"Appota Group\",\n            \"slug\": \"appota-group\",\n            \"status\": \"active\",\n            \"createdAt\": 1749590566262,\n            \"updatedAt\": 1749590566262\n        },\n        {\n            \"id\": \"01JZ5C4ZGEZKDGT03PNMSVZK86\",\n            \"displayName\": \"dadasde43242\",\n            \"slug\": \"abc123\",\n            \"status\": \"inactive\",\n            \"createdAt\": 1751453433358\n        }\n    ],\n    \"total\": 7,\n    \"page\": 0,\n    \"size\": 3\n}"
+								}
+							]
+						},
+						{
+							"name": "New Request",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/organizations/asd12321",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"organizations",
+										"asd12321"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations/asd12321",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations",
+												"asd12321"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 03:37:57 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "28"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"deletedAt\": 1751513877506\n}"
+								},
+								{
+									"name": "Client error - Not Found",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/organizations/asd12321",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"organizations",
+												"asd12321"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 03 Jul 2025 03:38:10 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "72"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"slug\": \"organization not found\"\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
 					"name": "User",
 					"item": [
 						{
@@ -1056,17 +2751,7 @@
 									"listen": "prerequest",
 									"script": {
 										"exec": [
-											"// Get original request body as raw text\r",
-											"let rawBody = pm.request.body.raw;\r",
-											"\r",
-											"// Parse it as JSON\r",
-											"let payload;\r",
-											"try {\r",
-											"    payload = JSON.parse(rawBody);\r",
-											"} catch (e) {\r",
-											"    console.error(\"Failed to parse request body as JSON:\", e);\r",
-											"    return;\r",
-											"}\r",
+											"const payload = JSON.parse(rawBody);\r",
 											"\r",
 											"// Generate a 6-char alphanumeric string\r",
 											"function randomString(length = 6) {\r",
@@ -2617,895 +4302,6 @@
 							]
 						}
 					]
-				},
-				{
-					"name": "Group",
-					"item": [
-						{
-							"name": "Group - Create",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"const body = pm.response.text();\r",
-											"try {\r",
-											"    const payload = JSON.parse(body);\r",
-											"    const { id, etag } = payload;\r",
-											"    id && pm.collectionVariables.set('group_id', id);\r",
-											"    etag && pm.collectionVariables.set('etag', etag);\r",
-											"} catch (err) {\r",
-											"    console.error(err)\r",
-											"}\r",
-											""
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								},
-								{
-									"listen": "prerequest",
-									"script": {
-										"exec": [
-											"const rawBody = pm.request.body.raw;\r",
-											"const payload = JSON.parse(rawBody);\r",
-											"\r",
-											"// Generate a 6-char alphanumeric string\r",
-											"function randomString(length = 6) {\r",
-											"    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';\r",
-											"    let result = '';\r",
-											"    for (let i = 0; i < length; i++) {\r",
-											"        result += chars.charAt(Math.floor(Math.random() * chars.length));\r",
-											"    }\r",
-											"    return result;\r",
-											"}\r",
-											"\r",
-											"const rand = randomString();\r",
-											"\r",
-											"if (payload.name) {\r",
-											"    payload.name += ' ' + rand;\r",
-											"}\r",
-											"if (payload.description) {\r",
-											"    payload.description += ' ' + rand;\r",
-											"}\r",
-											"\r",
-											"// Write modified payload back to request\r",
-											"pm.request.body.raw = JSON.stringify(payload, null, 2);\r",
-											""
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n    \"name\": \"My Team\",\r\n    \"description\": \"This is my team\"\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{api_host}}/v1/identity/groups",
-									"host": [
-										"{{api_host}}"
-									],
-									"path": [
-										"v1",
-										"identity",
-										"groups"
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Success",
-									"originalRequest": {
-										"method": "POST",
-										"header": [],
-										"body": {
-											"mode": "raw",
-											"raw": "{\r\n    \"name\": \"My Team\",\r\n    \"description\": \"This is my team\"\r\n}",
-											"options": {
-												"raw": {
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups"
-											]
-										}
-									},
-									"status": "Created",
-									"code": 201,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n    \"createdAt\": 1749381803848,\n    \"name\": \"My Team\",\n    \"description\": \"This is my team\",\n    \"etag\": \"1749381803846717000\"\n}"
-								},
-								{
-									"name": "Client error - Invalid fields",
-									"originalRequest": {
-										"method": "POST",
-										"header": [],
-										"body": {
-											"mode": "raw",
-											"raw": "{\r\n    \"description\": \"\"\r\n}",
-											"options": {
-												"raw": {
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups"
-											]
-										}
-									},
-									"status": "Bad Request",
-									"code": 400,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"cannot be blank\"\n    }\n}"
-								},
-								{
-									"name": "Client error - Existing name",
-									"originalRequest": {
-										"method": "POST",
-										"header": [],
-										"body": {
-											"mode": "raw",
-											"raw": "{\r\n    \"name\": \"My Team\"\r\n}",
-											"options": {
-												"raw": {
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups"
-											]
-										}
-									},
-									"status": "Bad Request",
-									"code": 400,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"group name already exists\"\n    }\n}"
-								}
-							]
-						},
-						{
-							"name": "Group - Update",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"const payload = pm.response.json();\r",
-											"payload.etag && pm.collectionVariables.set('etag', payload.etag);\r",
-											""
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n    \"name\": \"Your Team\",\r\n    \"description\": \"The people you are working with\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
-									"host": [
-										"{{api_host}}"
-									],
-									"path": [
-										"v1",
-										"identity",
-										"groups",
-										"{{group_id}}"
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Success",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [],
-										"body": {
-											"mode": "raw",
-											"raw": "{\r\n    \"name\": \"Your Team\",\r\n    \"description\": \"The people you are working with\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
-											"options": {
-												"raw": {
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups",
-												"{{group_id}}"
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n    \"createdAt\": 1749381803848,\n    \"name\": \"Your Team\",\n    \"description\": \"The people you are working with\",\n    \"etag\": \"1749381890052750000\",\n    \"updatedAt\": 1749381890052\n}"
-								},
-								{
-									"name": "Client error - Invalid fields Copy",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [],
-										"body": {
-											"mode": "raw",
-											"raw": "{\r\n    \"name\": \"\",\r\n    \"description\": \"\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
-											"options": {
-												"raw": {
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups",
-												"{{group_id}}"
-											]
-										}
-									},
-									"status": "Bad Request",
-									"code": 400,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"cannot be blank\"\n    }\n}"
-								},
-								{
-									"name": "Client error - Unmatched etag",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [],
-										"body": {
-											"mode": "raw",
-											"raw": "{\r\n    \"name\": \"Your Team\",\r\n    \"description\": \"The people you are working with\",\r\n    \"etag\": \"fake_etag\"\r\n}\r\n",
-											"options": {
-												"raw": {
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups",
-												"{{group_id}}"
-											]
-										}
-									},
-									"status": "Bad Request",
-									"code": 400,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"group has been modified by another user\"\n    }\n}"
-								}
-							]
-						},
-						{
-							"name": "Group - Get by ID",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"const payload = pm.response.json();\r",
-											"payload.etag && pm.collectionVariables.set('etag', payload.etag);\r",
-											""
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
-									"host": [
-										"{{api_host}}"
-									],
-									"path": [
-										"v1",
-										"identity",
-										"groups",
-										"{{group_id}}"
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Success",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups",
-												"{{group_id}}"
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n    \"createdAt\": 1749381803848,\n    \"name\": \"Your Team\",\n    \"description\": \"The people you are working with\",\n    \"etag\": \"1749381890052750000\",\n    \"updatedAt\": 1749382124763\n}"
-								},
-								{
-									"name": "Client error - Invalid ID",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups/01JX2V9CGPA5",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups",
-												"01JX2V9CGPA5"
-											]
-										}
-									},
-									"status": "Bad Request",
-									"code": 400,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
-								},
-								{
-									"name": "Client error - Not found",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups/1000000000000000000000000A",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups",
-												"1000000000000000000000000A"
-											]
-										}
-									},
-									"status": "Bad Request",
-									"code": 400,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"group not found\"\n    }\n}"
-								}
-							]
-						},
-						{
-							"name": "Group - Search",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											""
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{api_host}}/v1/identity/groups",
-									"host": [
-										"{{api_host}}"
-									],
-									"path": [
-										"v1",
-										"identity",
-										"groups"
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Success - No criteria, No paging",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups"
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNXBR5QJBH7PE9PQ9FW746V\",\n            \"name\": \"Domain Users\",\n            \"description\": \"Default group for all domain users\"\n        },\n        {\n            \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n            \"name\": \"Your Team\",\n            \"description\": \"The people you are working with\"\n        }\n    ],\n    \"total\": 2,\n    \"page\": 0,\n    \"size\": 50\n}"
-								},
-								{
-									"name": "Success - No criteria, With paging",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups?page=0&size=1",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups"
-											],
-											"query": [
-												{
-													"key": "page",
-													"value": "0"
-												},
-												{
-													"key": "size",
-													"value": "1"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNXBR5QJBH7PE9PQ9FW746V\",\n            \"name\": \"Domain Users\",\n            \"description\": \"Default group for all domain users\"\n        }\n    ],\n    \"total\": 2,\n    \"page\": 0,\n    \"size\": 1\n}"
-								},
-								{
-									"name": "Success - No result",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups?graph={\"if\":[\"name\", \"=\", \"blabla\"]}",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups"
-											],
-											"query": [
-												{
-													"key": "graph",
-													"value": "{\"if\":[\"name\", \"=\", \"blabla\"]}"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"items\": [],\n    \"total\": 0,\n    \"page\": 0,\n    \"size\": 50\n}"
-								},
-								{
-									"name": "Client error - Invalid fields",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups?page=-1&size=999999999999999999&graph={\"if\":[\"fakefield\", \"*\", \"team\"]}",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups"
-											],
-											"query": [
-												{
-													"key": "page",
-													"value": "-1"
-												},
-												{
-													"key": "size",
-													"value": "999999999999999999"
-												},
-												{
-													"key": "graph",
-													"value": "{\"if\":[\"fakefield\", \"*\", \"team\"]}"
-												}
-											]
-										}
-									},
-									"status": "Bad Request",
-									"code": 400,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"graph.condition\": \"invalid field 'fakefield' of entity 'group' in condition '[fakefield * team]'\",\n        \"page\": \"must be no less than 0\",\n        \"size\": \"must be no greater than 500\"\n    }\n}"
-								},
-								{
-									"name": "Success - 1-level criteria",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups?graph={\"if\":[\"name\", \"*\", \"team\"]}",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups"
-											],
-											"query": [
-												{
-													"key": "graph",
-													"value": "{\"if\":[\"name\", \"*\", \"team\"]}"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JX7MFVT6VRTHJ5GFYXVWAMHF\",\n            \"name\": \"Your Team\",\n            \"description\": \"The people you are working with\"\n        }\n    ],\n    \"total\": 1,\n    \"page\": 0,\n    \"size\": 50\n}"
-								}
-							]
-						},
-						{
-							"name": "Group - Delete",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											""
-										],
-										"type": "text/javascript",
-										"packages": {}
-									}
-								}
-							],
-							"request": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
-									"host": [
-										"{{api_host}}"
-									],
-									"path": [
-										"v1",
-										"identity",
-										"groups",
-										"{{group_id}}"
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Success",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups",
-												"{{group_id}}"
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"deletedAt\": 1749382124763\n}"
-								},
-								{
-									"name": "Client error - Invalid ID",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups/10000000000",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups",
-												"10000000000"
-											]
-										}
-									},
-									"status": "Bad Request",
-									"code": 400,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
-								},
-								{
-									"name": "Client error - Not found",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/groups/1000000000000000000000000A",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"groups",
-												"1000000000000000000000000A"
-											]
-										}
-									},
-									"status": "Bad Request",
-									"code": 400,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"group not found\"\n    }\n}"
-								}
-							]
-						},
-						{
-							"name": "Group - Add / Remove Users",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n    \"add\": [\"01JWNXT3EY7FG47VDJTEPTDC98\", \"01JWNXXTF8958VVYAV33MVVMDN\"],\r\n    \"remove\": [],\r\n    \"etag\": \"{{etag}}\"\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{api_host}}/v1/identity/groups/{{group_id}}/manage-users",
-									"host": [
-										"{{api_host}}"
-									],
-									"path": [
-										"v1",
-										"identity",
-										"groups",
-										"{{group_id}}",
-										"manage-users"
-									]
-								}
-							},
-							"response": []
-						}
-					]
 				}
 			]
 		}
@@ -3529,6 +4325,14 @@
 		},
 		{
 			"key": "partytag_id",
+			"value": ""
+		},
+		{
+			"key": "org_slug",
+			"value": ""
+		},
+		{
+			"key": "org_id",
 			"value": ""
 		}
 	]

@@ -51,11 +51,11 @@ func (this *EnumServiceImpl) CreateEnum(ctx context.Context, cmd it.CreateEnumCo
 		Step(func(vErrs *ft.ValidationErrors) error {
 			*vErrs = enum.Validate(false)
 			return nil
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			langCodes, err = this.valSanitizeStep(ctx, enum, vErrs)
 			return err
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			this.assertEnumUnique(ctx, enum, *enum.Type, langCodes, vErrs)
 			return nil
@@ -94,14 +94,14 @@ func (this *EnumServiceImpl) UpdateEnum(ctx context.Context, cmd it.UpdateEnumCo
 		Step(func(vErrs *ft.ValidationErrors) error {
 			*vErrs = enum.Validate(true)
 			return nil
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			return this.assertCorrectEnum(ctx, enum, cmd.EntityName, vErrs)
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			langCodes, err = this.valSanitizeStep(ctx, enum, vErrs)
 			return err
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			if enum.Value != nil {
 				this.assertEnumUnique(ctx, enum, *enum.Type, langCodes, vErrs)

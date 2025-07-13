@@ -17,14 +17,14 @@ func InitRestfulHandlers() error {
 }
 
 func initUserRest() error {
-	deps.Register(v1.NewUserRest, v1.NewGroupRest)
-	return deps.Invoke(func(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest) {
+	deps.Register(v1.NewUserRest, v1.NewGroupRest, v1.NewOrganizationRest)
+	return deps.Invoke(func(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, orgRest *v1.OrganizationRest) {
 		v1 := route.Group("/v1/identity")
-		initV1(v1, userRest, groupRest)
+		initV1(v1, userRest, groupRest, orgRest)
 	})
 }
 
-func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest) {
+func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, orgRest *v1.OrganizationRest) {
 	route.POST("/users", userRest.CreateUser)
 	route.DELETE("/users/:id", userRest.DeleteUser)
 	route.GET("/users/:id", userRest.GetUserById)
@@ -39,4 +39,10 @@ func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest) {
 	route.GET("/groups", groupRest.SearchGroups)
 	route.PUT("/groups/:id", groupRest.UpdateGroup)
 	route.POST("/groups/:groupId/manage-users", groupRest.ManageUsers)
+
+	route.POST("/organizations", orgRest.CreateOrganization)
+	route.DELETE("/organizations/:slug", orgRest.DeleteOrganization)
+	route.GET("/organizations/:slug", orgRest.GetOrganizationBySlug)
+	route.GET("/organizations", orgRest.SearchOrganizations)
+	route.PUT("/organizations/:slug", orgRest.UpdateOrganization)
 }

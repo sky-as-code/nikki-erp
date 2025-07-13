@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"go.bryk.io/pkg/ulid"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
@@ -46,9 +45,19 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCo
 
 	user := cmd.ToUser()
 	this.setUserDefaults(ctx, user)
-	vErrs := user.Validate(false)
-	this.sanitizeUser(user)
-	this.assertUserUnique(ctx, user, &vErrs)
+
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = user.Validate(false)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.sanitizeUser(user)
+			return this.assertUserUnique(ctx, user, vErrs)
+		}).
+		End()
+	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.CreateUserResult{
@@ -82,7 +91,7 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 		Step(func(vErrs *ft.ValidationErrors) error {
 			*vErrs = user.Validate(true)
 			return nil
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			return this.assertCorrectUser(ctx, user, vErrs)
 		}).
@@ -91,7 +100,7 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 			this.sanitizeUser(user)
 
 			if user.Email != nil {
-				this.assertUserUnique(ctx, user, vErrs)
+				return this.assertUserUnique(ctx, user, vErrs)
 			}
 			return nil
 		}).
@@ -155,17 +164,20 @@ func (this *UserServiceImpl) setUserDefaults(ctx context.Context, user *domain.U
 	ft.PanicOnErr(err)
 	ft.PanicOnErr(activeEnum.ClientError)
 
-	user.Status = domain.WrapUserStatus(activeEnum.Data)
+	user.Status = domain.WrapIdentStatus(activeEnum.Data)
 	user.StatusId = activeEnum.Data.Id
 }
 
-func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) {
+func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) error {
 	dbUser, err := this.userRepo.FindByEmail(ctx, *user.Email)
-	ft.PanicOnErr(err)
+	if err != nil {
+		return err
+	}
 
 	if dbUser != nil {
 		vErrs.Append("email", "email already exists")
 	}
+	return nil
 }
 
 func (this *UserServiceImpl) assertStatusExists(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) {
@@ -225,9 +237,6 @@ func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCo
 
 	err = this.userRepo.Delete(ctx, it.DeleteParam{Id: cmd.Id})
 	ft.PanicOnErr(err)
-	// Publish user deleted event
-	err = this.publishUserDeletedEvent(ctx, user)
-	ft.PanicOnErr(err)
 
 	return &it.DeleteUserResult{
 		Data: &it.DeleteUserResultData{
@@ -236,25 +245,6 @@ func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCo
 		},
 		HasData: true,
 	}, nil
-}
-
-// publishUserDeletedEvent publishes a "user.deleted.done" event
-func (this *UserServiceImpl) publishUserDeletedEvent(ctx context.Context, user *domain.User) error {
-	// Generate event ID
-	eventId, err := ulid.New()
-	if err != nil {
-		return err
-	}
-
-	// Create the event payload
-	userDeletedEvent := &it.UserDeletedEvent{
-		ID:        *user.Id,
-		DeletedBy: "", // You might want to get this from context or pass it as parameter
-		EventID:   eventId.String(),
-	}
-
-	// Use the interface method to publish the event
-	return this.eventBus.PublishEvent(ctx, "user.deleted.done", userDeletedEvent)
 }
 
 func (this *UserServiceImpl) Exists(ctx context.Context, cmd it.UserExistsCommand) (result *it.UserExistsResult, err error) {
@@ -323,6 +313,7 @@ func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUse
 		}
 	}()
 
+	query.SetDefaults()
 	vErrsModel := query.Validate()
 	predicate, order, vErrsGraph := this.userRepo.ParseSearchGraph(query.Graph)
 
@@ -333,7 +324,6 @@ func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUse
 			ClientError: vErrsModel.ToClientError(),
 		}, nil
 	}
-	query.SetDefaults()
 
 	users, err := this.userRepo.Search(ctx, it.SearchParam{
 		Predicate:  predicate,
@@ -380,7 +370,7 @@ func (this *UserServiceImpl) ListUserStatuses(ctx context.Context, query it.List
 	if result.ClientError == nil {
 		result.HasData = userStatuses.HasData
 		result.Data = &it.ListUserStatusesResultData{
-			Items: domain.WrapUserStatuses(userStatuses.Data.Items),
+			Items: domain.WrapIdentStatuses(userStatuses.Data.Items),
 			Total: userStatuses.Data.Total,
 		}
 	}

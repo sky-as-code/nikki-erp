@@ -9,20 +9,8 @@ import (
 )
 
 func entToGroup(dbGroup *ent.Group) *domain.Group {
-	group := &domain.Group{
-		ModelBase: model.ModelBase{
-			Id:   &dbGroup.ID,
-			Etag: &dbGroup.Etag,
-		},
-		AuditableBase: model.AuditableBase{
-			CreatedAt: &dbGroup.CreatedAt,
-			UpdatedAt: dbGroup.UpdatedAt,
-		},
-
-		Name:        &dbGroup.Name,
-		Description: dbGroup.Description,
-		OrgId:       dbGroup.OrgID,
-	}
+	group := &domain.Group{}
+	model.MustCopy(dbGroup, group)
 
 	if dbGroup.Edges.Org != nil {
 		group.Org = entToOrganization(dbGroup.Edges.Org)
@@ -41,17 +29,15 @@ func entToGroups(dbGroups []*ent.Group) []domain.Group {
 }
 
 func entToOrganization(dbOrg *ent.Organization) *domain.Organization {
-	return &domain.Organization{
-		ModelBase: model.ModelBase{
-			Id: &dbOrg.ID,
-		},
-		AuditableBase: model.AuditableBase{
-			CreatedAt: &dbOrg.CreatedAt,
-			UpdatedAt: dbOrg.UpdatedAt,
-		},
-		DisplayName: &dbOrg.DisplayName,
-		Slug:        &dbOrg.Slug,
+	org := &domain.Organization{}
+	model.MustCopy(dbOrg, org)
+
+	if dbOrg.Edges.OrgStatus != nil {
+		org.StatusValue = dbOrg.Edges.OrgStatus.Value
+		org.Status = entToIdentityStatus(dbOrg.Edges.OrgStatus)
 	}
+
+	return org
 }
 
 func entToOrganizations(dbOrgs []*ent.Organization) []domain.Organization {
@@ -64,26 +50,8 @@ func entToOrganizations(dbOrgs []*ent.Organization) []domain.Organization {
 }
 
 func entToUser(dbUser *ent.User) *domain.User {
-	user := &domain.User{
-		ModelBase: model.ModelBase{
-			Id:   &dbUser.ID,
-			Etag: &dbUser.Etag,
-		},
-		AuditableBase: model.AuditableBase{
-			CreatedAt: &dbUser.CreatedAt,
-			UpdatedAt: dbUser.UpdatedAt,
-		},
-		AvatarUrl:           dbUser.AvatarURL,
-		DisplayName:         &dbUser.DisplayName,
-		Email:               &dbUser.Email,
-		FailedLoginAttempts: &dbUser.FailedLoginAttempts,
-		LastLoginAt:         dbUser.LastLoginAt,
-		LockedUntil:         dbUser.LockedUntil,
-		MustChangePassword:  &dbUser.MustChangePassword,
-		PasswordChangedAt:   &dbUser.PasswordChangedAt,
-		PasswordHash:        &dbUser.PasswordHash,
-		StatusId:            &dbUser.StatusID,
-	}
+	user := &domain.User{}
+	model.MustCopy(dbUser, user)
 
 	if dbUser.Edges.Groups != nil {
 		user.Groups = entToGroups(dbUser.Edges.Groups)
@@ -99,7 +67,7 @@ func entToUser(dbUser *ent.User) *domain.User {
 
 	if dbUser.Edges.UserStatus != nil {
 		user.StatusValue = dbUser.Edges.UserStatus.Value
-		user.Status = entToUserStatus(dbUser.Edges.UserStatus)
+		user.Status = entToIdentityStatus(dbUser.Edges.UserStatus)
 	}
 	return user
 }
@@ -113,8 +81,8 @@ func entToUsers(dbUsers []*ent.User) []domain.User {
 	})
 }
 
-func entToUserStatus(dbStatus *ent.UserStatusEnum) *domain.UserStatus {
-	return &domain.UserStatus{
+func entToIdentityStatus(dbStatus *ent.IdentStatusEnum) *domain.IdentityStatus {
+	return &domain.IdentityStatus{
 		Enum: *enum.AnyToEnum(*dbStatus),
 	}
 }

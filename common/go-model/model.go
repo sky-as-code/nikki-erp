@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -692,6 +693,12 @@ func doCopy(dv, sv reflect.Value) []error {
 
 		// get dst field by name
 		dfv := dv.FieldByName(f.Name)
+
+		// Try converting ID to Id
+		if !dfv.IsValid() {
+			name := strings.ReplaceAll(f.Name, "ID", "Id")
+			dfv = dv.FieldByName(name)
+		}
 
 		// validate field - exists in dst, kind and type
 		err := validateCopyField(f, sfv, dfv)

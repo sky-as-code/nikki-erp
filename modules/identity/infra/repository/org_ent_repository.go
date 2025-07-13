@@ -12,7 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	entOrg "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
-	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
+	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 )
 
 func NewOrganizationEntRepository(client *ent.Client) it.OrganizationRepository {
@@ -28,17 +28,24 @@ type OrganizationEntRepository struct {
 func (this *OrganizationEntRepository) Create(ctx context.Context, org domain.Organization) (*domain.Organization, error) {
 	creation := this.client.Organization.Create().
 		SetID(*org.Id).
+		SetNillableAddress(org.Address).
 		SetDisplayName(*org.DisplayName).
+		SetEtag(*org.Etag).
+		SetNillableLegalName(org.LegalName).
+		SetNillablePhoneNumber(org.PhoneNumber).
 		SetSlug(*org.Slug).
-		SetStatus(entOrg.Status(*org.Status))
+		SetStatusID(*org.StatusId)
 
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Organization, prevEtag model.Etag) (*domain.Organization, error) {
 	update := this.client.Organization.UpdateOneID(*org.Id).
-		SetDisplayName(*org.DisplayName).
-		SetStatus(entOrg.Status(*org.Status)).
+		SetNillableAddress(org.Address).
+		SetNillableDisplayName(org.DisplayName).
+		SetNillableLegalName(org.LegalName).
+		SetNillablePhoneNumber(org.PhoneNumber).
+		SetNillableStatusID(org.StatusId).
 		// IMPORTANT: Must have!
 		Where(entOrg.EtagEQ(prevEtag))
 
@@ -51,31 +58,45 @@ func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Or
 	return db.Mutate(ctx, update, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) Delete(ctx context.Context, id model.Id) error {
+func (this *OrganizationEntRepository) DeleteSoft(ctx context.Context, id model.Id) (*domain.Organization, error) {
+	update := this.client.Organization.UpdateOneID(id).
+		SetDeletedAt(time.Now())
+
+	return db.Mutate(ctx, update, ent.IsNotFound, entToOrganization)
+}
+
+func (this *OrganizationEntRepository) DeleteHard(ctx context.Context, id model.Id) error {
 	return db.Delete[ent.Organization](ctx, this.client.Organization.DeleteOneID(id))
 }
 
 func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id) (*domain.Organization, error) {
 	query := this.client.Organization.Query().
 		Where(entOrg.ID(id)).
-		WithUsers()
+		WithUsers().
+		WithOrgStatus()
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, slug string) (*domain.Organization, error) {
-	org, err := this.client.Organization.Query().
-		Where(entOrg.Slug(slug)).
+func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, param it.FindBySlugParam) (*domain.Organization, error) {
+	query := this.client.Organization.Query().
+		Where(entOrg.Slug(param.Slug)).
 		WithUsers().
-		Only(ctx)
+		WithOrgStatus()
 
-	if err != nil {
-		if ent.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, err
+	query = this.queryIncludeDeleted(query, param.IncludeDeleted)
+
+	return db.FindOne(ctx, query, ent.IsNotFound, entToOrganization)
+}
+
+func (this *OrganizationEntRepository) queryIncludeDeleted(query *ent.OrganizationQuery, includeDeleted bool) *ent.OrganizationQuery {
+	if includeDeleted {
+		return query.Where(entOrg.Or(
+			entOrg.DeletedAtNotNil(),
+			entOrg.DeletedAtIsNil(),
+		))
 	}
-	return entToOrganization(org), nil
+	return query.Where(entOrg.DeletedAtIsNil())
 }
 
 func (this *OrganizationEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
@@ -83,17 +104,22 @@ func (this *OrganizationEntRepository) ParseSearchGraph(criteria *string) (*orm.
 }
 
 func (this *OrganizationEntRepository) Search(
-	ctx context.Context,
-	predicate *orm.Predicate,
-	order []orm.OrderOption,
-	opts crud.PagingOptions,
+	ctx context.Context, param it.SearchParam,
 ) (*crud.PagedResult[domain.Organization], error) {
+	query := this.client.Organization.Query().
+		WithOrgStatus()
+
+	query = this.queryIncludeDeleted(query, param.IncludeDeleted)
+
 	return db.Search(
 		ctx,
-		predicate,
-		order,
-		opts,
-		this.client.Organization.Query(),
+		param.Predicate,
+		param.Order,
+		crud.PagingOptions{
+			Page: param.Page,
+			Size: param.Size,
+		},
+		query,
 		entToOrganizations,
 	)
 }
@@ -107,7 +133,7 @@ func BuildOrganizationDescriptor() *orm.EntityDescriptor {
 		Field(entOrg.FieldEtag, entity.Etag).
 		Field(entOrg.FieldID, entity.ID).
 		Field(entOrg.FieldSlug, entity.Slug).
-		Field(entOrg.FieldStatus, entity.Status).
+		Field(entOrg.FieldStatusID, entity.StatusID).
 		Field(entOrg.FieldUpdatedAt, entity.UpdatedAt).
 		Edge(entOrg.EdgeUsers, orm.ToEdgePredicate(entOrg.HasUsersWith))
 

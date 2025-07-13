@@ -18,9 +18,9 @@ type UserDto struct {
 	Status      string  `json:"status"`
 	UpdatedAt   *int64  `json:"updatedAt,omitempty"`
 
-	Groups      []GroupDto                   `json:"groups,omitempty"`
-	Hierarchies []SearchUsersRespHierarchies `json:"hierarchies,omitempty"`
-	Orgs        []GetGroupRespOrg            `json:"orgs,omitempty"`
+	Groups []GroupDto `json:"groups,omitempty"`
+	// Hierarchies []HierarchyDto    `json:"hierarchies,omitempty"`
+	Orgs []OrganizationDto `json:"orgs,omitempty"`
 }
 
 func (this *UserDto) FromUser(user domain.User) {
@@ -34,20 +34,17 @@ func (this *UserDto) FromUser(user domain.User) {
 		return groupResp
 	})
 
-	this.Hierarchies = array.Map(user.Hierarchies, func(hierarhy domain.HierarchyLevel) SearchUsersRespHierarchies {
-		hierarhyResp := SearchUsersRespHierarchies{}
-		hierarhyResp.FromHierarhy(hierarhy)
-		return hierarhyResp
-	})
+	// this.Hierarchies = array.Map(user.Hierarchies, func(hierarhy domain.HierarchyLevel) SearchUsersRespHierarchies {
+	// 	hierarhyResp := SearchUsersRespHierarchies{}
+	// 	hierarhyResp.FromHierarhy(hierarhy)
+	// 	return hierarhyResp
+	// })
 
-	this.Orgs = array.Map(user.Orgs, func(org domain.Organization) GetGroupRespOrg {
-		orgResp := GetGroupRespOrg{}
-		orgResp.FromOrg(&org)
+	this.Orgs = array.Map(user.Orgs, func(org domain.Organization) OrganizationDto {
+		orgResp := OrganizationDto{}
+		orgResp.FromOrg(org)
 		return orgResp
 	})
-	if user.Status != nil {
-		this.Status = *user.Status.Value
-	}
 }
 
 type CreateUserRequest = it.CreateUserCommand
@@ -64,47 +61,7 @@ type GetUserByIdResponse = UserDto
 
 type SearchUsersRequest = it.SearchUsersQuery
 
-type SearchUsersRespGroups struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-}
-
-func (this *SearchUsersRespGroups) FromGroup(group domain.Group) {
-	this.Id = *group.Id
-	this.Name = *group.Name
-}
-
-// TODO: Replace with HierarchyDto
-type SearchUsersRespHierarchies struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-}
-
-func (this *SearchUsersRespHierarchies) FromHierarhy(hierarhy domain.HierarchyLevel) {
-	this.Id = *hierarhy.Id
-	this.Name = *hierarhy.Name
-}
-
-// TODO: Replace with OrganizationDto
-
-type SearchUsersRespOrgs struct {
-	Id          string `json:"id"`
-	DisplayName string `json:"displayName"`
-	Slug        string `json:"slug"`
-}
-
-func (this *SearchUsersRespOrgs) FromOrg(org domain.Organization) {
-	this.Id = *org.Id
-	this.DisplayName = *org.DisplayName
-	this.Slug = *org.Slug
-}
-
-type SearchUsersResponse struct {
-	Items []UserDto `json:"items"`
-	Total int       `json:"total"`
-	Page  int       `json:"page"`
-	Size  int       `json:"size"`
-}
+type SearchUsersResponse httpserver.RestSearchResponse[UserDto]
 
 func (this *SearchUsersResponse) FromResult(result *it.SearchUsersResultData) {
 	this.Total = result.Total

@@ -996,7 +996,7 @@ func HasUserStatus() predicate.User {
 }
 
 // HasUserStatusWith applies the HasEdge predicate on the "user_status" edge with a given conditions (other predicates).
-func HasUserStatusWith(preds ...predicate.UserStatusEnum) predicate.User {
+func HasUserStatusWith(preds ...predicate.IdentStatusEnum) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newUserStatusStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {

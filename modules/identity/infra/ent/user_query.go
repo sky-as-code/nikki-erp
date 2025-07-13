@@ -14,12 +14,12 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/usergroup"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userorg"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 )
 
 // UserQuery is the builder for querying User entities.
@@ -32,7 +32,7 @@ type UserQuery struct {
 	withGroups     *GroupQuery
 	withHierarchy  *HierarchyLevelQuery
 	withOrgs       *OrganizationQuery
-	withUserStatus *UserStatusEnumQuery
+	withUserStatus *IdentStatusEnumQuery
 	withUserGroups *UserGroupQuery
 	withUserOrgs   *UserOrgQuery
 	// intermediate query (i.e. traversal path).
@@ -138,8 +138,8 @@ func (uq *UserQuery) QueryOrgs() *OrganizationQuery {
 }
 
 // QueryUserStatus chains the current query on the "user_status" edge.
-func (uq *UserQuery) QueryUserStatus() *UserStatusEnumQuery {
-	query := (&UserStatusEnumClient{config: uq.config}).Query()
+func (uq *UserQuery) QueryUserStatus() *IdentStatusEnumQuery {
+	query := (&IdentStatusEnumClient{config: uq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := uq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -150,7 +150,7 @@ func (uq *UserQuery) QueryUserStatus() *UserStatusEnumQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(userstatusenum.Table, userstatusenum.FieldID),
+			sqlgraph.To(identstatusenum.Table, identstatusenum.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, user.UserStatusTable, user.UserStatusColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
@@ -442,8 +442,8 @@ func (uq *UserQuery) WithOrgs(opts ...func(*OrganizationQuery)) *UserQuery {
 
 // WithUserStatus tells the query-builder to eager-load the nodes that are connected to
 // the "user_status" edge. The optional arguments are used to configure the query builder of the edge.
-func (uq *UserQuery) WithUserStatus(opts ...func(*UserStatusEnumQuery)) *UserQuery {
-	query := (&UserStatusEnumClient{config: uq.config}).Query()
+func (uq *UserQuery) WithUserStatus(opts ...func(*IdentStatusEnumQuery)) *UserQuery {
+	query := (&IdentStatusEnumClient{config: uq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -600,7 +600,7 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	}
 	if query := uq.withUserStatus; query != nil {
 		if err := uq.loadUserStatus(ctx, query, nodes, nil,
-			func(n *User, e *UserStatusEnum) { n.Edges.UserStatus = e }); err != nil {
+			func(n *User, e *IdentStatusEnum) { n.Edges.UserStatus = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -775,7 +775,7 @@ func (uq *UserQuery) loadOrgs(ctx context.Context, query *OrganizationQuery, nod
 	}
 	return nil
 }
-func (uq *UserQuery) loadUserStatus(ctx context.Context, query *UserStatusEnumQuery, nodes []*User, init func(*User), assign func(*User, *UserStatusEnum)) error {
+func (uq *UserQuery) loadUserStatus(ctx context.Context, query *IdentStatusEnumQuery, nodes []*User, init func(*User), assign func(*User, *IdentStatusEnum)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*User)
 	for i := range nodes {
@@ -788,7 +788,7 @@ func (uq *UserQuery) loadUserStatus(ctx context.Context, query *UserStatusEnumQu
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(userstatusenum.IDIn(ids...))
+	query.Where(identstatusenum.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
