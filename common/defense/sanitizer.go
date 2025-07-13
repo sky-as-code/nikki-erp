@@ -1,6 +1,8 @@
 package defense
 
 import (
+	"strings"
+
 	"github.com/microcosm-cc/bluemonday"
 )
 
@@ -13,6 +15,9 @@ func SanitizeRichText(input string) string {
 }
 
 // SanitizePlainText strips all HTML tags
-func SanitizePlainText(input string) string {
+func SanitizePlainText(input string, trimSpaces ...bool) string {
+	if len(trimSpaces) > 0 && trimSpaces[0] {
+		input = strings.TrimSpace(input)
+	}
 	return strictPolicy.Sanitize(input)
 }

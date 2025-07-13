@@ -94,23 +94,20 @@ func (this *OrganizationEntRepository) ParseSearchGraph(criteria *string) (*orm.
 }
 
 func (this *OrganizationEntRepository) Search(
-	ctx context.Context,
-	predicate *orm.Predicate,
-	order []orm.OrderOption,
-	opts it.SearchOrganizationsQuery,
+	ctx context.Context, param it.SearchParam,
 ) (*crud.PagedResult[domain.Organization], error) {
 	query := this.client.Organization.Query()
-	if !opts.IncludeDeleted {
-		query = query.Where(entOrg.DeletedAtIsNil())
+	if param.IncludeDeleted {
+		query = query.Where(entOrg.DeletedAtNotNil())
 	}
 
 	return db.Search(
 		ctx,
-		predicate,
-		order,
+		param.Predicate,
+		param.Order,
 		crud.PagingOptions{
-			Page: *opts.Page,
-			Size: *opts.Size,
+			Page: param.Page,
+			Size: param.Size,
 		},
 		query,
 		entToOrganizations,

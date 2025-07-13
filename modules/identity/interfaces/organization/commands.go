@@ -39,21 +39,8 @@ type CreateOrganizationCommand struct {
 	Status      *domain.OrgStatus `json:"status,omitempty"`
 }
 
-func (CreateOrganizationCommand) Type() cqrs.RequestType {
+func (CreateOrganizationCommand) CqrsRequestType() cqrs.RequestType {
 	return createOrganizationCommandType
-}
-
-func (this *CreateOrganizationCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.DisplayName,
-			val.NotEmptyWhen(true),
-			val.Length(1, 50),
-		),
-
-		model.SlugValidateRule(&this.Slug, true),
-	}
-
-	return val.ApiBased.ValidateStruct(this, rules...)
 }
 
 type CreateOrganizationResult model.OpResult[*domain.Organization]
@@ -65,16 +52,18 @@ var updateOrganizationCommandType = cqrs.RequestType{
 }
 
 type UpdateOrganizationCommand struct {
-	Slug        model.Slug        `param:"slug" json:"slug"`
-	Address     *string           `json:"address,omitempty"`
-	DisplayName *string           `json:"displayName,omitempty"`
-	LegalName   *string           `json:"legalName,omitempty"`
-	PhoneNumber *string           `json:"phoneNumber,omitempty"`
-	Status      *domain.OrgStatus `json:"status,omitempty"`
+	Slug model.Slug `param:"slug" json:"slug"`
+
+	Address     *string           `json:"address"`
+	DisplayName *string           `json:"displayName"`
 	Etag        model.Etag        `json:"etag"`
+	LegalName   *string           `json:"legalName"`
+	PhoneNumber *string           `json:"phoneNumber"`
+	NewSlug     *model.Slug       `json:"newSlug"`
+	Status      *domain.OrgStatus `json:"status"`
 }
 
-func (UpdateOrganizationCommand) Type() cqrs.RequestType {
+func (UpdateOrganizationCommand) CqrsRequestType() cqrs.RequestType {
 	return updateOrganizationCommandType
 }
 
@@ -99,7 +88,7 @@ type DeleteOrganizationCommand struct {
 	Slug model.Slug `param:"slug" json:"slug"`
 }
 
-func (DeleteOrganizationCommand) Type() cqrs.RequestType {
+func (DeleteOrganizationCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteOrganizationCommandType
 }
 
@@ -136,7 +125,7 @@ type GetOrganizationBySlugQuery struct {
 	IncludeDeleted bool       `query:"includeDeleted" json:"includeDeleted,omitempty"`
 }
 
-func (GetOrganizationBySlugQuery) Type() cqrs.RequestType {
+func (GetOrganizationBySlugQuery) CqrsRequestType() cqrs.RequestType {
 	return getOrganizationBySlugQueryType
 }
 
@@ -163,7 +152,7 @@ type SearchOrganizationsQuery struct {
 	IncludeDeleted bool    `json:"includeDeleted" query:"includeDeleted"`
 }
 
-func (SearchOrganizationsQuery) Type() cqrs.RequestType {
+func (SearchOrganizationsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchOrganizationsQueryType
 }
 

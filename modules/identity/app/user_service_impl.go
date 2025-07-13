@@ -45,9 +45,19 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCo
 
 	user := cmd.ToUser()
 	this.setUserDefaults(ctx, user)
-	vErrs := user.Validate(false)
-	this.sanitizeUser(user)
-	this.assertUserUnique(ctx, user, &vErrs)
+
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = user.Validate(false)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.sanitizeUser(user)
+			return this.assertUserUnique(ctx, user, vErrs)
+		}).
+		End()
+	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.CreateUserResult{
@@ -81,7 +91,7 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 		Step(func(vErrs *ft.ValidationErrors) error {
 			*vErrs = user.Validate(true)
 			return nil
-		}, true).
+		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			return this.assertCorrectUser(ctx, user, vErrs)
 		}).
@@ -90,7 +100,7 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 			this.sanitizeUser(user)
 
 			if user.Email != nil {
-				this.assertUserUnique(ctx, user, vErrs)
+				return this.assertUserUnique(ctx, user, vErrs)
 			}
 			return nil
 		}).
@@ -158,13 +168,16 @@ func (this *UserServiceImpl) setUserDefaults(ctx context.Context, user *domain.U
 	user.StatusId = activeEnum.Data.Id
 }
 
-func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) {
+func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) error {
 	dbUser, err := this.userRepo.FindByEmail(ctx, *user.Email)
-	ft.PanicOnErr(err)
+	if err != nil {
+		return err
+	}
 
 	if dbUser != nil {
 		vErrs.Append("email", "email already exists")
 	}
+	return nil
 }
 
 func (this *UserServiceImpl) assertStatusExists(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) {
@@ -300,6 +313,7 @@ func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUse
 		}
 	}()
 
+	query.SetDefaults()
 	vErrsModel := query.Validate()
 	predicate, order, vErrsGraph := this.userRepo.ParseSearchGraph(query.Graph)
 
@@ -310,7 +324,6 @@ func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUse
 			ClientError: vErrsModel.ToClientError(),
 		}, nil
 	}
-	query.SetDefaults()
 
 	users, err := this.userRepo.Search(ctx, it.SearchParam{
 		Predicate:  predicate,

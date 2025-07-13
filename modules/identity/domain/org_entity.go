@@ -3,6 +3,7 @@ package domain
 import (
 	"go.bryk.io/pkg/errors"
 
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
@@ -13,17 +14,50 @@ type Organization struct {
 	model.ModelBase
 	model.AuditableBase
 
-	Address     *string     `json:"address,omitempty"`
-	DisplayName *string     `json:"displayName,omitempty"`
-	LegalName   *string     `json:"legalName,omitempty"`
-	PhoneNumber *string     `json:"phoneNumber,omitempty"`
-	Slug        *model.Slug `json:"slug,omitempty"`
-	Status      *OrgStatus  `json:"status,omitempty"`
+	Address     *string     `json:"address"`
+	DisplayName *string     `json:"displayName"`
+	LegalName   *string     `json:"legalName"`
+	PhoneNumber *string     `json:"phoneNumber"`
+	Slug        *model.Slug `json:"slug"`
+	Status      *OrgStatus  `json:"status"`
 }
 
 func (this *Organization) SetDefaults() {
 	this.ModelBase.SetDefaults()
 	safe.SetDefaultValue(&this.Status, OrgStatusInactive)
+}
+
+func (this *Organization) Validate(forEdit bool) ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		val.Field(&this.Address,
+			val.NotNilWhen(!forEdit),
+			val.When(this.Address != nil,
+				val.NotEmpty,
+				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
+			),
+		),
+		val.Field(&this.DisplayName,
+			val.NotNilWhen(!forEdit),
+			val.When(this.DisplayName != nil,
+				val.NotEmpty,
+				val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
+			),
+		),
+		val.Field(&this.LegalName,
+			val.NotNilWhen(!forEdit),
+			val.When(this.LegalName != nil,
+				val.NotEmpty,
+				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
+			),
+		),
+
+		model.IdPtrValidateRule(&this.Id, false), // Id is not required but Slug is mandatory in all cases
+		model.SlugPtrValidateRule(&this.Slug, true),
+		model.EtagPtrValidateRule(&this.Etag, forEdit),
+	}
+	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
+
+	return val.ApiBased.ValidateStruct(this, rules...)
 }
 
 type OrgStatus ent.Status

@@ -22,7 +22,7 @@ func (this *ValidationFlow) Start() *ValidationFlow {
 	return this
 }
 
-func (this *ValidationFlow) Step(fn func(vErrs *ft.ValidationErrors) error, endIfValidationError ...bool) (out *ValidationFlow) {
+func (this *ValidationFlow) Step(fn func(vErrs *ft.ValidationErrors) error, ignoreValidationError ...bool) (out *ValidationFlow) {
 	defer func() {
 		out = this
 		if e := recover(); e != nil {
@@ -41,7 +41,7 @@ func (this *ValidationFlow) Step(fn func(vErrs *ft.ValidationErrors) error, endI
 
 	this.err = fn(this.vErrs)
 
-	if this.vErrs.Count() > 0 && len(endIfValidationError) > 0 && endIfValidationError[0] {
+	if this.vErrs.Count() > 0 && (len(ignoreValidationError) == 0 || !ignoreValidationError[0]) {
 		this.skip = true
 	}
 	return

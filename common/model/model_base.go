@@ -23,7 +23,7 @@ func (this *ModelBase) SetDefaults() {
 func (this *ModelBase) ValidateRules(forEdit bool) []*val.FieldRules {
 	return []*val.FieldRules{
 		IdPtrValidateRule(&this.Id, forEdit),
-		EtagValidateRule(&this.Etag, forEdit),
+		EtagPtrValidateRule(&this.Etag, forEdit),
 	}
 }
 
