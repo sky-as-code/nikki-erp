@@ -124,6 +124,14 @@ func (gu *GroupUpdate) SetUpdatedAt(t time.Time) *GroupUpdate {
 	return gu
 }
 
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (gu *GroupUpdate) SetNillableUpdatedAt(t *time.Time) *GroupUpdate {
+	if t != nil {
+		gu.SetUpdatedAt(*t)
+	}
+	return gu
+}
+
 // ClearUpdatedAt clears the value of the "updated_at" field.
 func (gu *GroupUpdate) ClearUpdatedAt() *GroupUpdate {
 	gu.mutation.ClearUpdatedAt()
@@ -184,7 +192,6 @@ func (gu *GroupUpdate) ClearOrg() *GroupUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gu *GroupUpdate) Save(ctx context.Context) (int, error) {
-	gu.defaults()
 	return withHooks(ctx, gu.sqlSave, gu.mutation, gu.hooks)
 }
 
@@ -207,14 +214,6 @@ func (gu *GroupUpdate) Exec(ctx context.Context) error {
 func (gu *GroupUpdate) ExecX(ctx context.Context) {
 	if err := gu.Exec(ctx); err != nil {
 		panic(err)
-	}
-}
-
-// defaults sets the default values of the builder before save.
-func (gu *GroupUpdate) defaults() {
-	if _, ok := gu.mutation.UpdatedAt(); !ok && !gu.mutation.UpdatedAtCleared() {
-		v := group.UpdateDefaultUpdatedAt()
-		gu.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -452,6 +451,14 @@ func (guo *GroupUpdateOne) SetUpdatedAt(t time.Time) *GroupUpdateOne {
 	return guo
 }
 
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (guo *GroupUpdateOne) SetNillableUpdatedAt(t *time.Time) *GroupUpdateOne {
+	if t != nil {
+		guo.SetUpdatedAt(*t)
+	}
+	return guo
+}
+
 // ClearUpdatedAt clears the value of the "updated_at" field.
 func (guo *GroupUpdateOne) ClearUpdatedAt() *GroupUpdateOne {
 	guo.mutation.ClearUpdatedAt()
@@ -525,7 +532,6 @@ func (guo *GroupUpdateOne) Select(field string, fields ...string) *GroupUpdateOn
 
 // Save executes the query and returns the updated Group entity.
 func (guo *GroupUpdateOne) Save(ctx context.Context) (*Group, error) {
-	guo.defaults()
 	return withHooks(ctx, guo.sqlSave, guo.mutation, guo.hooks)
 }
 
@@ -548,14 +554,6 @@ func (guo *GroupUpdateOne) Exec(ctx context.Context) error {
 func (guo *GroupUpdateOne) ExecX(ctx context.Context) {
 	if err := guo.Exec(ctx); err != nil {
 		panic(err)
-	}
-}
-
-// defaults sets the default values of the builder before save.
-func (guo *GroupUpdateOne) defaults() {
-	if _, ok := guo.mutation.UpdatedAt(); !ok && !guo.mutation.UpdatedAtCleared() {
-		v := group.UpdateDefaultUpdatedAt()
-		guo.mutation.SetUpdatedAt(v)
 	}
 }
 

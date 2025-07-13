@@ -11,7 +11,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/enum"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/core/i18n"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent"
+	"github.com/sky-as-code/nikki-erp/modules/core/tag"
 )
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
@@ -40,6 +42,10 @@ func (*CoreModule) Init() error {
 		deps.Invoke(http.InitSubModule),
 		deps.Register(newCoreClient),
 		deps.Invoke(enum.InitSubModule),
+		deps.Invoke(tag.InitSubModule),
+
+		// These submodules expose network APIs
+		deps.Invoke(i18n.InitSubModule),
 	)
 
 	return err

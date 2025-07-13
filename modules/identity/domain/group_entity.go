@@ -11,14 +11,10 @@ type Group struct {
 	model.AuditableBase
 
 	Name        *string   `json:"name"`
-	Description *string   `json:"description,omitempty"`
-	OrgId       *model.Id `json:"orgId,omitempty"`
+	Description *string   `json:"description"`
+	OrgId       *model.Id `json:"orgId"`
 
-	Org *Organization `json:"organization,omitempty"`
-}
-
-func (this *Group) SetDefaults() error {
-	return this.ModelBase.SetDefaults()
+	Org *Organization `json:"organization,omitempty" model:"-"` // TODO: Handle copy
 }
 
 func (this *Group) Validate(forEdit bool) ft.ValidationErrors {

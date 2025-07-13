@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 )
 
@@ -20,9 +21,9 @@ type UserStatusEnum struct {
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// Label holds the value of the "label" field.
-	Label map[string]string `json:"label,omitempty"`
+	Label model.LangJson `json:"label,omitempty"`
 	// Value holds the value of the "value" field.
-	Value string `json:"value,omitempty"`
+	Value *string `json:"value,omitempty"`
 	// Type holds the value of the "type" field.
 	Type string `json:"type,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -97,7 +98,8 @@ func (use *UserStatusEnum) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field value", values[i])
 			} else if value.Valid {
-				use.Value = value.String
+				use.Value = new(string)
+				*use.Value = value.String
 			}
 		case userstatusenum.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -152,8 +154,10 @@ func (use *UserStatusEnum) String() string {
 	builder.WriteString("label=")
 	builder.WriteString(fmt.Sprintf("%v", use.Label))
 	builder.WriteString(", ")
-	builder.WriteString("value=")
-	builder.WriteString(use.Value)
+	if v := use.Value; v != nil {
+		builder.WriteString("value=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(use.Type)

@@ -8,3 +8,6 @@ import (
 
 // Enum is the predicate function for enum builders.
 type Enum = func(*sql.Selector)
+
+// Tag is the predicate function for tag builders.
+type Tag = func(*sql.Selector)

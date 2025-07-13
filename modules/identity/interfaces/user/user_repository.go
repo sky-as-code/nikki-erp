@@ -19,7 +19,7 @@ type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.User], error)
-	Update(ctx context.Context, user domain.User) (*domain.User, error)
+	Update(ctx context.Context, user domain.User, prevEtag model.Etag) (*domain.User, error)
 }
 
 type DeleteParam = DeleteUserCommand
@@ -36,7 +36,7 @@ type SearchParam struct {
 
 type OrganizationRepository interface {
 	Create(ctx context.Context, organization domain.Organization) (*domain.Organization, error)
-	Update(ctx context.Context, organization domain.Organization) (*domain.Organization, error)
+	Update(ctx context.Context, organization domain.Organization, prevEtag model.Etag) (*domain.Organization, error)
 	Delete(ctx context.Context, id model.Id) error
 	FindById(ctx context.Context, id model.Id) (*domain.Organization, error)
 	FindBySlug(ctx context.Context, slug string) (*domain.Organization, error)

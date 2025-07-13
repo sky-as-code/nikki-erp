@@ -7,13 +7,17 @@
 	},
 	"item": [
 		{
-			"name": "Identity",
+			"name": "Contacts",
 			"item": [
 				{
-					"name": "User",
+					"name": "Party",
+					"item": []
+				},
+				{
+					"name": "Party Tag",
 					"item": [
 						{
-							"name": "User - Create",
+							"name": "Party Tag - Create",
 							"event": [
 								{
 									"listen": "test",
@@ -23,11 +27,51 @@
 											"try {\r",
 											"    const payload = JSON.parse(body);\r",
 											"    const { id, etag } = payload;\r",
-											"    id && pm.environment.set('user_id', id);\r",
-											"    etag && pm.environment.set('etag', etag);\r",
+											"    id && pm.collectionVariables.set('partytag_id', id);\r",
+											"    etag && pm.collectionVariables.set('etag', etag);\r",
 											"} catch (err) {\r",
 											"    console.error(err)\r",
 											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"// Get original request body as raw text\r",
+											"let rawBody = pm.request.body.raw;\r",
+											"\r",
+											"// Parse it as JSON\r",
+											"let payload;\r",
+											"try {\r",
+											"    payload = JSON.parse(rawBody);\r",
+											"} catch (e) {\r",
+											"    console.error(\"Failed to parse request body as JSON:\", e);\r",
+											"    return;\r",
+											"}\r",
+											"\r",
+											"// Generate a 6-char alphanumeric string\r",
+											"function randomString(length = 6) {\r",
+											"    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';\r",
+											"    let result = '';\r",
+											"    for (let i = 0; i < length; i++) {\r",
+											"        result += chars.charAt(Math.floor(Math.random() * chars.length));\r",
+											"    }\r",
+											"    return result;\r",
+											"}\r",
+											"\r",
+											"const rand = randomString();\r",
+											"\r",
+											"for (const lang in payload.label) {\r",
+											"    payload.label[lang] += ' ' + rand\r",
+											"}\r",
+											"\r",
+											"// Write modified payload back to request\r",
+											"pm.request.body.raw = JSON.stringify(payload, null, 2);\r",
 											""
 										],
 										"type": "text/javascript",
@@ -40,7 +84,1025 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"displayName\": \"John Doe\",\r\n    \"email\": \"john.doe@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\",\r\n    \"isActive\": true\r\n}",
+									"raw": "{\r\n    \"label\": {\r\n        \"en-US\": \"Pet\",\r\n        \"vi-VN\": \"<b>Thú nuôi</b><script>'hacked'</script>\"\r\n    }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/contacts/parties/tags",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"contacts",
+										"parties",
+										"tags"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"label\": {\r\n        \"en_US\": \"Pet\",\r\n        \"vi_VI\": \"<b>Thú nuôi</b><script>'hacked'</script>\",\r\n        \"fr-FR\": \"animal familier\"\r\n    }\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/contacts/parties/tags",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"contacts",
+												"parties",
+												"tags"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Fri, 11 Jul 2025 18:28:24 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "148"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZZ8TY0V8DHGNV6P1CZTWJJE\",\n    \"etag\": \"1752322373659197900\",\n    \"label\": {\n        \"en-US\": \"Pet 4EmP5W\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid label content",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"label\": {\r\n        \"en-US\": \"Pet\",\r\n        \"vi-VN\": \"<b>Thú nuôi</b><script>alert('You are hacked')</script>\"\r\n    }\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/contacts/parties/tags",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"contacts",
+												"parties",
+												"tags"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Fri, 11 Jul 2025 18:31:29 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "94"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"label\": \"vi-VN: the length must be between 1 and 50.\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid label lang code",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"label\": {\r\n        \"en_US\": \"Pet\",\r\n        \"viet\": \"<b>Thú nuôi</b><script>'hacked'</script>\"\r\n    }\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/contacts/parties/tags",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"contacts",
+												"parties",
+												"tags"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sat, 12 Jul 2025 05:54:53 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "192"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"label\": \"en_US: must be a valid BCP47-compliant language code with region part; vi_VN: must be a valid BCP47-compliant language code with region part.\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Existing label",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"label\": {\r\n        \"en-US\": \"Pet\",\r\n        \"vi-VN\": \"Thú nuôi\"\r\n    }\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/contacts/parties/tags",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"contacts",
+												"parties",
+												"tags"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Fri, 11 Jul 2025 18:32:44 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "90"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"label.en-US\": \"label already exists in this language\",\n        \"label.vi-VN\": \"label already exists in this language\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Party Tag - Update",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const body = pm.response.text();\r",
+											"try {\r",
+											"    const payload = JSON.parse(body);\r",
+											"    const etag = payload.etag;\r",
+											"    etag && pm.collectionVariables.set('etag', etag);\r",
+											"} catch (err) {\r",
+											"    console.error(err)\r",
+											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"label\": {\r\n        \"en-US\": \"My Supplier\",\r\n        \"vi-VN\": \"<b>Nhà cung cấp</b><script>hacked</script>\"\r\n    },\r\n    \"etag\": \"{{etag}}\"\r\n}\r\n",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/contacts/parties/tags/{{partytag_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"contacts",
+										"parties",
+										"tags",
+										"{{partytag_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"label\": {\r\n        \"en-US\": \"My Supplier\",\r\n        \"vi-VN\": \"<b>Nhà cung cấp</b>\"\r\n    },\r\n    \"etag\": \"{{etag}}\"\r\n}\r\n",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JZZ93CSF6J6HKMWJX929QM5J\",\n    \"etag\": \"1752325861208067100\",\n    \"label\": {\n        \"en-US\": \"My Supplier\",\n        \"vi-VN\": \"Nhà cung cấp\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"label\": {\r\n        \"en-US\": \"My Supplier\",\r\n        \"vi-VN\": \"<b>Nhà cung cấp</b><script>alert('You are hacked')</script>\"\r\n    },\r\n    \"etag\": \"{{etag}}\"\r\n}\r\n",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"label\": \"vi-VN: the length must be between 1 and 50.\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Unmatched etag",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"fake_etag\",\r\n    \"isActive\": true\r\n}\r\n",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"user has been modified by another process\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Party Tag - Get by ID",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const body = pm.response.text();\r",
+											"try {\r",
+											"    const payload = JSON.parse(body);\r",
+											"    const etag = payload.etag;\r",
+											"    etag && pm.collectionVariables.set('etag', etag);\r",
+											"} catch (err) {\r",
+											"    console.error(err)\r",
+											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/contacts/parties/tags/{{partytag_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"contacts",
+										"parties",
+										"tags",
+										"{{partytag_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JX7M99AQBTXW6ZW590YHNJMK\",\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\n    \"createdAt\": 1749381588402,\n    \"displayName\": \"Another Doe\",\n    \"email\": \"john.doe@nikkierp.com\",\n    \"etag\": \"1749381616327913600\",\n    \"status\": \"active\",\n    \"updatedAt\": 1749381616327\n}"
+								},
+								{
+									"name": "Client error - Invalid ID",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/01JX2V9CGPA5",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"01JX2V9CGPA5"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/1000000000000000000000000A",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"1000000000000000000000000A"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"user not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Party Tag - List",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/contacts/parties/tags",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"contacts",
+										"parties",
+										"tags"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - No filter, No paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/contacts/parties/tags",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"contacts",
+												"parties",
+												"tags"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Fri, 11 Jul 2025 18:34:18 GMT"
+										},
+										{
+											"key": "Transfer-Encoding",
+											"value": "chunked"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JZXBXSJCPYRVZP4H283WH1XK\",\n            \"etag\": \"1752258504268163800\",\n            \"label\": {\n                \"en_US\": \"Pet hZCvXX\",\n                \"vi_VN\": \"Thú nuôi hZCvXX\"\n            }\n        },\n        {\n            \"id\": \"01JZXC5MVS7K67ZXWXWDB7YKEK\",\n            \"etag\": \"1752258761593385800\",\n            \"label\": {\n                \"en_US\": \"Pet\",\n                \"vi_VN\": \"Thú nuôi\"\n            }\n        },\n        {\n            \"id\": \"01JZXC6VYY5HSMHYQYNMJBD9K4\",\n            \"etag\": \"1752258801630332700\",\n            \"label\": {\n                \"en_US\": \"Pet gsAeXp\",\n                \"vi_VN\": \"Thú nuôi gsAeXp\"\n            }\n        },\n        {\n            \"id\": \"01JZXC863M5067SY51NB8F42ZP\",\n            \"etag\": \"1752258844788769500\",\n            \"label\": {\n                \"en_US\": \"Pet u8xBXP\",\n                \"vi_VN\": \"Thú nuôi u8xBXP\"\n            }\n        },\n        {\n            \"id\": \"01JZXC86KJEVBWJH5W46RYCHG6\",\n            \"etag\": \"1752258845298886000\",\n            \"label\": {\n                \"en_US\": \"Pet lWDUWA\",\n                \"vi_VN\": \"Thú nuôi lWDUWA\"\n            }\n        },\n        {\n            \"id\": \"01JZXC872V8Q9981FND6T2D8CB\",\n            \"etag\": \"1752258845787244200\",\n            \"label\": {\n                \"en_US\": \"Pet C4LeNy\",\n                \"vi_VN\": \"Thú nuôi C4LeNy\"\n            }\n        },\n        {\n            \"id\": \"01JZXC87NAAS2MVAW6Q2Y614XJ\",\n            \"etag\": \"1752258846378421400\",\n            \"label\": {\n                \"en_US\": \"Pet uSSVmS\",\n                \"vi_VN\": \"Thú nuôi uSSVmS\"\n            }\n        },\n        {\n            \"id\": \"01JZXC886WJM0MM1JY4NYXRYS5\",\n            \"etag\": \"1752258846940460300\",\n            \"label\": {\n                \"en_US\": \"Pet xspcrn\",\n                \"vi_VN\": \"Thú nuôi xspcrn\"\n            }\n        },\n        {\n            \"id\": \"01JZXC88RCJNQKGZN70R25905X\",\n            \"etag\": \"1752258847500195600\",\n            \"label\": {\n                \"en_US\": \"Pet aCgozk\",\n                \"vi_VN\": \"Thú nuôi aCgozk\"\n            }\n        },\n        {\n            \"id\": \"01JZXC89B746A7KGCRY5SYXWEG\",\n            \"etag\": \"1752258848103180500\",\n            \"label\": {\n                \"en_US\": \"Pet NgCp2I\",\n                \"vi_VN\": \"Thú nuôi NgCp2I\"\n            }\n        },\n        {\n            \"id\": \"01JZXC89VQ4EYG9E0QN0GCQACK\",\n            \"etag\": \"1752258848631780600\",\n            \"label\": {\n                \"en_US\": \"Pet UM4eM8\",\n                \"vi_VN\": \"Thú nuôi UM4eM8\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8AD5XR332VGV1G329H76\",\n            \"etag\": \"1752258849189680600\",\n            \"label\": {\n                \"en_US\": \"Pet iEufkA\",\n                \"vi_VN\": \"Thú nuôi iEufkA\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8AZP60P81YD0FTX0B89V\",\n            \"etag\": \"1752258849782705600\",\n            \"label\": {\n                \"en_US\": \"Pet OPBGto\",\n                \"vi_VN\": \"Thú nuôi OPBGto\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8BGKJDGSB88G4NKNEN8Z\",\n            \"etag\": \"1752258850323276900\",\n            \"label\": {\n                \"en_US\": \"Pet p5OzTk\",\n                \"vi_VN\": \"Thú nuôi p5OzTk\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8C2PGMEHKMC4X3SNF4W4\",\n            \"etag\": \"1752258850902952900\",\n            \"label\": {\n                \"en_US\": \"Pet aRAzdt\",\n                \"vi_VN\": \"Thú nuôi aRAzdt\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8CMG3F58YCFJMCW5NCT8\",\n            \"etag\": \"1752258851472046100\",\n            \"label\": {\n                \"en_US\": \"Pet 9bhmRd\",\n                \"vi_VN\": \"Thú nuôi 9bhmRd\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8D7KZQWHDN5P883PD7ZF\",\n            \"etag\": \"1752258852083326000\",\n            \"label\": {\n                \"en_US\": \"Pet KiAt1K\",\n                \"vi_VN\": \"Thú nuôi KiAt1K\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8DSJQ6Z408XRPFS9BV04\",\n            \"etag\": \"1752258852658230800\",\n            \"label\": {\n                \"en_US\": \"Pet DtyZCS\",\n                \"vi_VN\": \"Thú nuôi DtyZCS\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8EA1FRE9R9CJGGN4BF8H\",\n            \"etag\": \"1752258853185252900\",\n            \"label\": {\n                \"en_US\": \"Pet 7T3360\",\n                \"vi_VN\": \"Thú nuôi 7T3360\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8EW0NK6SW0XPXBHT1E17\",\n            \"etag\": \"1752258853760453100\",\n            \"label\": {\n                \"en_US\": \"Pet e3SQPC\",\n                \"vi_VN\": \"Thú nuôi e3SQPC\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8FEG71ER4EGN25GG620C\",\n            \"etag\": \"1752258854352822400\",\n            \"label\": {\n                \"en_US\": \"Pet XNFZuF\",\n                \"vi_VN\": \"Thú nuôi XNFZuF\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8G0C414SYWWTN7HB8QN1\",\n            \"etag\": \"1752258854924176900\",\n            \"label\": {\n                \"en_US\": \"Pet jP9kwf\",\n                \"vi_VN\": \"Thú nuôi jP9kwf\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8GG2NV1V11SMMGTMTF5R\",\n            \"etag\": \"1752258855426741200\",\n            \"label\": {\n                \"en_US\": \"Pet wgqT90\",\n                \"vi_VN\": \"Thú nuôi wgqT90\"\n            }\n        },\n        {\n            \"id\": \"01JZXC8H1MBFK0VD911HE6CYDJ\",\n            \"etag\": \"1752258855988838000\",\n            \"label\": {\n                \"en_US\": \"Pet WwWOWx\",\n                \"vi_VN\": \"Thú nuôi WwWOWx\"\n            }\n        },\n        {\n            \"id\": \"01JZXCZFHTPBZ9M29XCWCFE8Z2\",\n            \"etag\": \"1752259608122876000\",\n            \"label\": {\n                \"en_US\": \"Pet SzEEY7\",\n                \"vi_VN\": \"Thú nuôi SzEEY7\"\n            }\n        },\n        {\n            \"id\": \"01JZXCZH6TPNH54KX5E4V64AE9\",\n            \"etag\": \"1752259609818302900\",\n            \"label\": {\n                \"en_US\": \"Pet izvLXW\",\n                \"vi_VN\": \"Thú nuôi izvLXW\"\n            }\n        },\n        {\n            \"id\": \"01JZXCZHVTNA5T4M9FJNV8ND8A\",\n            \"etag\": \"1752259610490109500\",\n            \"label\": {\n                \"en_US\": \"Pet 6M20KV\",\n                \"vi_VN\": \"Thú nuôi 6M20KV\"\n            }\n        },\n        {\n            \"id\": \"01JZXD32YFQG99SK83TZY1JCNT\",\n            \"etag\": \"1752259726287719900\",\n            \"label\": {\n                \"en_US\": \"Pet WRaGLN\",\n                \"vi_VN\": \"Thú nuôi WRaGLN\"\n            }\n        },\n        {\n            \"id\": \"01JZXD5NB1TC95T1XE87EE5V7R\",\n            \"etag\": \"1752259810657945500\",\n            \"label\": {\n                \"en_US\": \"Pet oxSClm\",\n                \"vi_VN\": \"Thú nuôi oxSClm\"\n            }\n        },\n        {\n            \"id\": \"01JZY51PM9ZMVHVTPTWVJD2CHV\",\n            \"etag\": \"1752284846729496100\",\n            \"label\": {\n                \"en_US\": \"Pet NXRAzl\",\n                \"vi_VN\": \"Thú nuôi NXRAzl\"\n            }\n        },\n        {\n            \"id\": \"01JZY7P67ZPC2M4P3HE01RBK3X\",\n            \"etag\": \"1752287615231564600\",\n            \"label\": {\n                \"en_US\": \"Pet OFLXzr\",\n                \"vi_VN\": \"Thú nuôi OFLXzr\"\n            }\n        },\n        {\n            \"id\": \"01JZY7ZY1J0J5DHMQ184V6TV18\",\n            \"etag\": \"1752287986827506100\",\n            \"label\": {\n                \"en_US\": \"My Supplier\",\n                \"vi_VN\": \"Nhà cung cấp\"\n            }\n        }\n    ],\n    \"total\": 32,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - No filter, With paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/contacts/parties/tags?page=1&size=10",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"contacts",
+												"parties",
+												"tags"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "1"
+												},
+												{
+													"key": "size",
+													"value": "10"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Fri, 11 Jul 2025 18:35:34 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "1306"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"data\": {\n        \"items\": [\n            {\n                \"id\": \"01JZXC89B746A7KGCRY5SYXWEG\",\n                \"etag\": \"1752258848103180500\",\n                \"label\": {\n                    \"en_US\": \"Pet NgCp2I\",\n                    \"vi_VN\": \"Thú nuôi NgCp2I\"\n                }\n            },\n            {\n                \"id\": \"01JZXC89VQ4EYG9E0QN0GCQACK\",\n                \"etag\": \"1752258848631780600\",\n                \"label\": {\n                    \"en_US\": \"Pet UM4eM8\",\n                    \"vi_VN\": \"Thú nuôi UM4eM8\"\n                }\n            },\n            {\n                \"id\": \"01JZXC8AD5XR332VGV1G329H76\",\n                \"etag\": \"1752258849189680600\",\n                \"label\": {\n                    \"en_US\": \"Pet iEufkA\",\n                    \"vi_VN\": \"Thú nuôi iEufkA\"\n                }\n            },\n            {\n                \"id\": \"01JZXC8AZP60P81YD0FTX0B89V\",\n                \"etag\": \"1752258849782705600\",\n                \"label\": {\n                    \"en_US\": \"Pet OPBGto\",\n                    \"vi_VN\": \"Thú nuôi OPBGto\"\n                }\n            },\n            {\n                \"id\": \"01JZXC8BGKJDGSB88G4NKNEN8Z\",\n                \"etag\": \"1752258850323276900\",\n                \"label\": {\n                    \"en_US\": \"Pet p5OzTk\",\n                    \"vi_VN\": \"Thú nuôi p5OzTk\"\n                }\n            },\n            {\n                \"id\": \"01JZXC8C2PGMEHKMC4X3SNF4W4\",\n                \"etag\": \"1752258850902952900\",\n                \"label\": {\n                    \"en_US\": \"Pet aRAzdt\",\n                    \"vi_VN\": \"Thú nuôi aRAzdt\"\n                }\n            },\n            {\n                \"id\": \"01JZXC8CMG3F58YCFJMCW5NCT8\",\n                \"etag\": \"1752258851472046100\",\n                \"label\": {\n                    \"en_US\": \"Pet 9bhmRd\",\n                    \"vi_VN\": \"Thú nuôi 9bhmRd\"\n                }\n            },\n            {\n                \"id\": \"01JZXC8D7KZQWHDN5P883PD7ZF\",\n                \"etag\": \"1752258852083326000\",\n                \"label\": {\n                    \"en_US\": \"Pet KiAt1K\",\n                    \"vi_VN\": \"Thú nuôi KiAt1K\"\n                }\n            },\n            {\n                \"id\": \"01JZXC8DSJQ6Z408XRPFS9BV04\",\n                \"etag\": \"1752258852658230800\",\n                \"label\": {\n                    \"en_US\": \"Pet DtyZCS\",\n                    \"vi_VN\": \"Thú nuôi DtyZCS\"\n                }\n            },\n            {\n                \"id\": \"01JZXC8EA1FRE9R9CJGGN4BF8H\",\n                \"etag\": \"1752258853185252900\",\n                \"label\": {\n                    \"en_US\": \"Pet 7T3360\",\n                    \"vi_VN\": \"Thú nuôi 7T3360\"\n                }\n            }\n        ],\n        \"total\": 25,\n        \"page\": 1,\n        \"size\": 10\n    },\n    \"hasData\": true\n}"
+								},
+								{
+									"name": "Success - With filter, No paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/contacts/parties/tags?partialLabel=pet",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"contacts",
+												"parties",
+												"tags"
+											],
+											"query": [
+												{
+													"key": "partialLabel",
+													"value": "pet"
+												}
+											]
+										}
+									},
+									"status": "Internal Server Error",
+									"code": 500,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Fri, 11 Jul 2025 18:41:05 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "36"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Internal Server Error\"\n}"
+								},
+								{
+									"name": "Success - No result",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?graph={\"if\":[\"display_name\", \"=\", \"blabla\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"display_name\", \"=\", \"blabla\"]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [],\n    \"total\": 0,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?page=-1&size=999999999999999999&graph={\"if\":[\"fake-field\", \"=\", \"Owner\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "-1"
+												},
+												{
+													"key": "size",
+													"value": "999999999999999999"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"fake-field\", \"=\", \"Owner\"]}"
+												}
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"graph.condition\": \"invalid field 'fake-field' of entity 'user' in condition '[fake-field = Owner]'\",\n        \"page\": \"must be no less than 0\",\n        \"size\": \"must be no greater than 500\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Party Tag - Delete",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/contacts/parties/tags/{{partytag_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"contacts",
+										"parties",
+										"tags",
+										"{{partytag_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/contacts/parties/tags/{{partytag_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"contacts",
+												"parties",
+												"tags",
+												"{{partytag_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sat, 12 Jul 2025 02:41:55 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "28"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"deletedAt\": 1752288115907\n}"
+								},
+								{
+									"name": "Client error - Invalid ID",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/contacts/parties/tags/10000000000",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"contacts",
+												"parties",
+												"tags",
+												"10000000000"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/contacts/parties/tags/1000000000000000000000000A",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"contacts",
+												"parties",
+												"tags",
+												"1000000000000000000000000A"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"user not found\"\n    }\n}"
+								}
+							]
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Identity",
+			"item": [
+				{
+					"name": "User",
+					"item": [
+						{
+							"name": "User - Create",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const requestBody = JSON.parse(pm.request.body.raw);\r",
+											"pm.collectionVariables.set('email', requestBody.email);\r",
+											"\r",
+											"const payload = pm.response.json();\r",
+											"const { id, etag } = payload;\r",
+											"id && pm.collectionVariables.set('user_id', id);\r",
+											"etag && pm.collectionVariables.set('etag', etag);"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"// Get original request body as raw text\r",
+											"let rawBody = pm.request.body.raw;\r",
+											"\r",
+											"// Parse it as JSON\r",
+											"let payload;\r",
+											"try {\r",
+											"    payload = JSON.parse(rawBody);\r",
+											"} catch (e) {\r",
+											"    console.error(\"Failed to parse request body as JSON:\", e);\r",
+											"    return;\r",
+											"}\r",
+											"\r",
+											"// Generate a 6-char alphanumeric string\r",
+											"function randomString(length = 6) {\r",
+											"    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';\r",
+											"    let result = '';\r",
+											"    for (let i = 0; i < length; i++) {\r",
+											"        result += chars.charAt(Math.floor(Math.random() * chars.length));\r",
+											"    }\r",
+											"    return result;\r",
+											"}\r",
+											"\r",
+											"const rand = randomString();\r",
+											"\r",
+											"if (payload.displayName) {\r",
+											"    payload.displayName += ' ' + rand;\r",
+											"}\r",
+											"if (payload.email && payload.email.includes('@')) {\r",
+											"    const [local, domain] = payload.email.split('@');\r",
+											"    payload.email = `${local}-${rand}@${domain}`;\r",
+											"}\r",
+											"\r",
+											"// Write modified payload back to request\r",
+											"pm.request.body.raw = JSON.stringify(payload, null, 2);\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"displayName\": \"John Doe\",\r\n    \"email\": \"john.doe@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -67,7 +1129,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\r\n    \"displayName\": \"John Doe\",\r\n    \"email\": \"john.doe@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\",\r\n    \"isActive\": true\r\n}",
+											"raw": "{\r\n    \"displayName\": \"John Doe\",\r\n    \"email\": \"john.doe@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -138,7 +1200,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"avatarUrl\": \"cannot be blank\",\n        \"displayName\": \"cannot be blank\",\n        \"email\": \"must be a valid email address\",\n        \"passwordRaw\": \"cannot be blank\"\n    }\n}"
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"displayName\": \"cannot be blank\",\n        \"email\": \"must be a valid email address\",\n        \"passwordRaw\": \"cannot be blank\"\n    }\n}"
 								},
 								{
 									"name": "Client error - Existing email",
@@ -189,15 +1251,9 @@
 									"listen": "test",
 									"script": {
 										"exec": [
-											"const body = pm.response.text();\r",
-											"try {\r",
-											"    const payload = JSON.parse(body);\r",
-											"    const etag = payload.etag;\r",
-											"    etag && pm.environment.set('etag', etag);\r",
-											"} catch (err) {\r",
-											"    console.error(err)\r",
-											"}\r",
-											""
+											"const payload = pm.response.json();\r",
+											"const { etag } = payload;\r",
+											"etag && pm.collectionVariables.set('etag', etag);"
 										],
 										"type": "text/javascript",
 										"packages": {}
@@ -209,7 +1265,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"isEnabled\": true\r\n}\r\n",
+									"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"{{etag}}\"\r\n}\r\n",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -237,7 +1293,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"isActive\": true\r\n}\r\n",
+											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"etag\": \"{{etag}}\"\r\n}\r\n",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -272,7 +1328,7 @@
 									"body": "{\n    \"id\": \"01JX7M99AQBTXW6ZW590YHNJMK\",\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\n    \"createdAt\": 1749381588402,\n    \"displayName\": \"Another Doe\",\n    \"email\": \"john.doe@nikkierp.com\",\n    \"etag\": \"1749381616327913600\",\n    \"status\": \"active\",\n    \"updatedAt\": 1749381616327\n}"
 								},
 								{
-									"name": "Client error - Invalid fields Copy",
+									"name": "Client error - Invalid fields",
 									"originalRequest": {
 										"method": "PUT",
 										"header": [],
@@ -351,7 +1407,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"user has been modified by another process\"\n    }\n}"
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"user has been modified by another user\"\n    }\n}"
 								}
 							]
 						},
@@ -362,14 +1418,9 @@
 									"listen": "test",
 									"script": {
 										"exec": [
-											"const body = pm.response.text();\r",
-											"try {\r",
-											"    const payload = JSON.parse(body);\r",
-											"    const etag = payload.etag;\r",
-											"    etag && pm.environment.set('etag', etag);\r",
-											"} catch (err) {\r",
-											"    console.error(err)\r",
-											"}\r",
+											"const payload = pm.response.json();\r",
+											"const { etag } = payload;\r",
+											"etag && pm.collectionVariables.set('etag', etag);\r",
 											""
 										],
 										"type": "text/javascript",
@@ -677,7 +1728,7 @@
 									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"graph.condition\": \"invalid field 'fake-field' of entity 'user' in condition '[fake-field = Owner]'\",\n        \"page\": \"must be no less than 0\",\n        \"size\": \"must be no greater than 500\"\n    }\n}"
 								},
 								{
-									"name": "Success - 1-level criteria",
+									"name": "Success - If root field",
 									"originalRequest": {
 										"method": "GET",
 										"header": [],
@@ -712,6 +1763,335 @@
 									],
 									"cookie": [],
 									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"displayName\": \"Owner\",\n            \"email\": \"owner\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 1,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - If edge root field",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?graph={\"if\": [\"user_status.value\", \"!=\", \"active\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"if\": [\"user_status.value\", \"!=\", \"active\"]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Wed, 09 Jul 2025 10:50:33 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "341"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNXT3EY7FG47VDJTEPTDC98\",\n            \"displayName\": \"Lạc Long Quân\",\n            \"email\": \"dragon@domain.com\",\n            \"status\": \"locked\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNXXTF8958VVYAV33MVVMDN\",\n            \"displayName\": \"Âu Cơ\",\n            \"email\": \"fairy@domain.com\",\n            \"status\": \"archived\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 2,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - If and",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?graph={\"and\":[{\"if\":[\"display_name\", \"!=\", \"Owner\"]},{\"if\": [\"user_status.value\", \"^\", \"a\"]}]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"and\":[{\"if\":[\"display_name\", \"!=\", \"Owner\"]},{\"if\": [\"user_status.value\", \"^\", \"a\"]}]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Wed, 09 Jul 2025 16:58:35 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "491"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"displayName\": \"System\",\n            \"email\": \"system\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNXXTF8958VVYAV33MVVMDN\",\n            \"displayName\": \"Gấu ngủ đông\",\n            \"email\": \"bear@nikki.com\",\n            \"status\": \"archived\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFFDKY8T4JB8R6NSY1331J\",\n            \"displayName\": \"Ă. Test người dùng\",\n            \"email\": \"a@nikki.com\",\n            \"status\": \"a_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 3,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - If or",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?graph={\"or\":[{\"if\":[\"display_name\", \"=\", \"Owner\"]},{\"if\": [\"user_status.value\", \"*\", \"test\"]}]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"or\":[{\"if\":[\"display_name\", \"=\", \"Owner\"]},{\"if\": [\"user_status.value\", \"*\", \"test\"]}]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Wed, 09 Jul 2025 16:59:43 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "1159"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"displayName\": \"Owner\",\n            \"email\": \"owner\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFDH0N51Q3BFQFMFFGSCSV\",\n            \"displayName\": \"đ. Test người dùng\",\n            \"email\": \"d@nikki.com\",\n            \"status\": \"d_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFF9QEXH71P2CG9Y9MY8MM\",\n            \"displayName\": \"Ơ. Test người dùng\",\n            \"email\": \"ow@nikki.com\",\n            \"status\": \"ow_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFFDKY8T4JB8R6NSY1331J\",\n            \"displayName\": \"Ă. Test người dùng\",\n            \"email\": \"a@nikki.com\",\n            \"status\": \"a_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFGVKZCTV7S310W0BDMWCS\",\n            \"displayName\": \"Ợ. Test người dùng\",\n            \"email\": \"owj@nikki.com\",\n            \"status\": \"owj_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFY6EXRG0959Z95Y2EM3AM\",\n            \"displayName\": \"Ồ. Test người dùng\",\n            \"email\": \"oh@nikki.com\",\n            \"status\": \"oh_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFZFK6GM2D5X6MYHWH6FND\",\n            \"displayName\": \"Ớ. Test người dùng\",\n            \"email\": \"ows@nikki.com\",\n            \"status\": \"ows_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 7,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - If and or nested",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?graph={\"or\":[{\"if\":[\"display_name\", \"=\", \"Owner\"]},{\"and\":[{\"if\": [\"user_status.value\", \"*\", \"o\"]},{\"if\": [\"user_status.value\", \"*\", \"w\"]}]}]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"or\":[{\"if\":[\"display_name\", \"=\", \"Owner\"]},{\"and\":[{\"if\": [\"user_status.value\", \"*\", \"o\"]},{\"if\": [\"user_status.value\", \"*\", \"w\"]}]}]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Wed, 09 Jul 2025 17:02:42 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "670"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"displayName\": \"Owner\",\n            \"email\": \"owner\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFF9QEXH71P2CG9Y9MY8MM\",\n            \"displayName\": \"Ơ. Test người dùng\",\n            \"email\": \"ow@nikki.com\",\n            \"status\": \"ow_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFGVKZCTV7S310W0BDMWCS\",\n            \"displayName\": \"Ợ. Test người dùng\",\n            \"email\": \"owj@nikki.com\",\n            \"status\": \"owj_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFZFK6GM2D5X6MYHWH6FND\",\n            \"displayName\": \"Ớ. Test người dùng\",\n            \"email\": \"ows@nikki.com\",\n            \"status\": \"ows_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 4,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - Order by root field",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?graph={\"order\": [[\"display_name\", \"desc\"]]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"order\": [[\"display_name\", \"desc\"]]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Wed, 09 Jul 2025 10:52:26 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "605"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNXT3EY7FG47VDJTEPTDC98\",\n            \"displayName\": \"Thần sức mạnh bị xích\",\n            \"email\": \"power@nikki.com\",\n            \"status\": \"locked\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"displayName\": \"System\",\n            \"email\": \"system\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"displayName\": \"Owner\",\n            \"email\": \"owner\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFGVKZCTV7S310W0BDMWCS\",\n            \"displayName\": \"Ợ. Test người dùng\",\n            \"email\": \"owj@nikki.com\",\n            \"status\": \"owj_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFZFK6GM2D5X6MYHWH6FND\",\n            \"displayName\": \"Ớ. Test người dùng\",\n            \"email\": \"ows@nikki.com\",\n            \"status\": \"ows_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFF9QEXH71P2CG9Y9MY8MM\",\n            \"displayName\": \"Ơ. Test người dùng\",\n            \"email\": \"ow@nikki.com\",\n            \"status\": \"ow_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFY6EXRG0959Z95Y2EM3AM\",\n            \"displayName\": \"Ồ. Test người dùng\",\n            \"email\": \"oh@nikki.com\",\n            \"status\": \"oh_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNXXTF8958VVYAV33MVVMDN\",\n            \"displayName\": \"Gấu ngủ đông\",\n            \"email\": \"bear@nikki.com\",\n            \"status\": \"archived\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFDH0N51Q3BFQFMFFGSCSV\",\n            \"displayName\": \"đ. Test người dùng\",\n            \"email\": \"d@nikki.com\",\n            \"status\": \"d_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFFDKY8T4JB8R6NSY1331J\",\n            \"displayName\": \"Ă. Test người dùng\",\n            \"email\": \"a@nikki.com\",\n            \"status\": \"a_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 10,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - Order by edge root field",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?graph={\"order\": [[\"user_status.value\", \"desc\"]]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"order\": [[\"user_status.value\", \"desc\"]]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Wed, 09 Jul 2025 10:54:40 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "605"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JZQFZFK6GM2D5X6MYHWH6FND\",\n            \"displayName\": \"Ớ. Test người dùng\",\n            \"email\": \"ows@nikki.com\",\n            \"status\": \"ows_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFGVKZCTV7S310W0BDMWCS\",\n            \"displayName\": \"Ợ. Test người dùng\",\n            \"email\": \"owj@nikki.com\",\n            \"status\": \"owj_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFF9QEXH71P2CG9Y9MY8MM\",\n            \"displayName\": \"Ơ. Test người dùng\",\n            \"email\": \"ow@nikki.com\",\n            \"status\": \"ow_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFY6EXRG0959Z95Y2EM3AM\",\n            \"displayName\": \"Ồ. Test người dùng\",\n            \"email\": \"oh@nikki.com\",\n            \"status\": \"oh_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNXT3EY7FG47VDJTEPTDC98\",\n            \"displayName\": \"Thần sức mạnh bị xích\",\n            \"email\": \"power@nikki.com\",\n            \"status\": \"locked\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFDH0N51Q3BFQFMFFGSCSV\",\n            \"displayName\": \"đ. Test người dùng\",\n            \"email\": \"d@nikki.com\",\n            \"status\": \"d_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNXXTF8958VVYAV33MVVMDN\",\n            \"displayName\": \"Gấu ngủ đông\",\n            \"email\": \"bear@nikki.com\",\n            \"status\": \"archived\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"displayName\": \"Owner\",\n            \"email\": \"owner\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"displayName\": \"System\",\n            \"email\": \"system\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFFDKY8T4JB8R6NSY1331J\",\n            \"displayName\": \"Ă. Test người dùng\",\n            \"email\": \"a@nikki.com\",\n            \"status\": \"a_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 10,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Success - Order by edge JSON subfield",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users?graph={\"order\": [[\"user_status.label.vi_VN\", \"desc\"]]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users"
+											],
+											"query": [
+												{
+													"key": "graph",
+													"value": "{\"order\": [[\"user_status.label.vi_VN\", \"desc\"]]}"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Wed, 09 Jul 2025 10:55:53 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "605"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWNXT3EY7FG47VDJTEPTDC98\",\n            \"displayName\": \"Thần sức mạnh bị xích\",\n            \"email\": \"power@nikki.com\",\n            \"status\": \"locked\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFGVKZCTV7S310W0BDMWCS\",\n            \"displayName\": \"Ợ. Test người dùng\",\n            \"email\": \"owj@nikki.com\",\n            \"status\": \"owj_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFZFK6GM2D5X6MYHWH6FND\",\n            \"displayName\": \"Ớ. Test người dùng\",\n            \"email\": \"ows@nikki.com\",\n            \"status\": \"ows_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFF9QEXH71P2CG9Y9MY8MM\",\n            \"displayName\": \"Ơ. Test người dùng\",\n            \"email\": \"ow@nikki.com\",\n            \"status\": \"ow_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFY6EXRG0959Z95Y2EM3AM\",\n            \"displayName\": \"Ồ. Test người dùng\",\n            \"email\": \"oh@nikki.com\",\n            \"status\": \"oh_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNXXTF8958VVYAV33MVVMDN\",\n            \"displayName\": \"Gấu ngủ đông\",\n            \"email\": \"bear@nikki.com\",\n            \"status\": \"archived\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"displayName\": \"System\",\n            \"email\": \"system\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"displayName\": \"Owner\",\n            \"email\": \"owner\",\n            \"status\": \"active\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFDH0N51Q3BFQFMFFGSCSV\",\n            \"displayName\": \"đ. Test người dùng\",\n            \"email\": \"d@nikki.com\",\n            \"status\": \"d_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        },\n        {\n            \"id\": \"01JZQFFDKY8T4JB8R6NSY1331J\",\n            \"displayName\": \"Ă. Test người dùng\",\n            \"email\": \"a@nikki.com\",\n            \"status\": \"a_test_status\",\n            \"groups\": [],\n            \"hierarchies\": [],\n            \"orgs\": []\n        }\n    ],\n    \"total\": 10,\n    \"page\": 0,\n    \"size\": 50\n}"
 								}
 							]
 						},
@@ -1076,6 +2456,165 @@
 									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"user not found\"\n    }\n}"
 								}
 							]
+						},
+						{
+							"name": "User - List Statuses",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/users/statuses",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"users",
+										"statuses"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - No sort",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/statuses",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"statuses"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Wed, 09 Jul 2025 11:20:32 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "540"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JZK0R9WF30HMABN7XSW4YNFV\",\n            \"etag\": \"1752061451661878000\",\n            \"label\": {\n                \"en_US\": \"Active\",\n                \"vi_VN\": \"Đang hoạt động\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"active\"\n        },\n        {\n            \"id\": \"01JZK1458230BQ8C592CABM0RK\",\n            \"etag\": \"1752061451662380000\",\n            \"label\": {\n                \"en_US\": \"Locked\",\n                \"vi_VN\": \"Tạm khóa\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"locked\"\n        },\n        {\n            \"id\": \"01JZK15TKR71RH6PAB9ZRMKNHQ\",\n            \"etag\": \"1752061451662389000\",\n            \"label\": {\n                \"en_US\": \"Archived\",\n                \"vi_VN\": \"Ngưng hoạt động\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"archived\"\n        },\n        {\n            \"id\": \"01JZQF16QGN1YA1R6MKA0W7F0H\",\n            \"etag\": \"1752061451662393000\",\n            \"label\": {\n                \"en_US\": \"d. Test status\",\n                \"vi_VN\": \"đ. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"d_test_status\"\n        },\n        {\n            \"id\": \"01JZQF3DQ7R57B3TZNV417CZ3M\",\n            \"etag\": \"1752061451662396000\",\n            \"label\": {\n                \"en_US\": \"ow. Test status\",\n                \"vi_VN\": \"Ơ. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"ow_test_status\"\n        },\n        {\n            \"id\": \"01JZQEYPYFPCE26P46X437F2DM\",\n            \"etag\": \"1752061451662400000\",\n            \"label\": {\n                \"en_US\": \"A. Test status\",\n                \"vi_VN\": \"Ă. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"a_test_status\"\n        },\n        {\n            \"id\": \"01JZQF66HR1KEAF528M3RH7A1K\",\n            \"etag\": \"1752061451662403000\",\n            \"label\": {\n                \"en_US\": \"owj. Test status\",\n                \"vi_VN\": \"Ợ. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"owj_test_status\"\n        },\n        {\n            \"id\": \"01JZQF2MM3CH282SRVXWHS0V1T\",\n            \"etag\": \"1752061451662406000\",\n            \"label\": {\n                \"en_US\": \"oh. Test status\",\n                \"vi_VN\": \"Ồ. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"oh_test_status\"\n        },\n        {\n            \"id\": \"01JZQF4JBFRYV9THX9ZCT2P19J\",\n            \"etag\": \"1752061451662409000\",\n            \"label\": {\n                \"en_US\": \"ows. Test status\",\n                \"vi_VN\": \"Ớ. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"ows_test_status\"\n        }\n    ],\n    \"total\": 9,\n    \"page\": 0,\n    \"size\": 0\n}"
+								},
+								{
+									"name": "Success - Sort by label language",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/statuses?sortedByLang=vi_VN",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"statuses"
+											],
+											"query": [
+												{
+													"key": "sortedByLang",
+													"value": "vi_VN"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Wed, 09 Jul 2025 11:21:20 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "540"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JZQEYPYFPCE26P46X437F2DM\",\n            \"etag\": \"1752061451662400000\",\n            \"label\": {\n                \"en_US\": \"A. Test status\",\n                \"vi_VN\": \"Ă. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"a_test_status\"\n        },\n        {\n            \"id\": \"01JZQF16QGN1YA1R6MKA0W7F0H\",\n            \"etag\": \"1752061451662393000\",\n            \"label\": {\n                \"en_US\": \"d. Test status\",\n                \"vi_VN\": \"đ. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"d_test_status\"\n        },\n        {\n            \"id\": \"01JZK0R9WF30HMABN7XSW4YNFV\",\n            \"etag\": \"1752061451661878000\",\n            \"label\": {\n                \"en_US\": \"Active\",\n                \"vi_VN\": \"Đang hoạt động\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"active\"\n        },\n        {\n            \"id\": \"01JZK15TKR71RH6PAB9ZRMKNHQ\",\n            \"etag\": \"1752061451662389000\",\n            \"label\": {\n                \"en_US\": \"Archived\",\n                \"vi_VN\": \"Ngưng hoạt động\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"archived\"\n        },\n        {\n            \"id\": \"01JZQF2MM3CH282SRVXWHS0V1T\",\n            \"etag\": \"1752061451662406000\",\n            \"label\": {\n                \"en_US\": \"oh. Test status\",\n                \"vi_VN\": \"Ồ. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"oh_test_status\"\n        },\n        {\n            \"id\": \"01JZQF3DQ7R57B3TZNV417CZ3M\",\n            \"etag\": \"1752061451662396000\",\n            \"label\": {\n                \"en_US\": \"ow. Test status\",\n                \"vi_VN\": \"Ơ. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"ow_test_status\"\n        },\n        {\n            \"id\": \"01JZQF4JBFRYV9THX9ZCT2P19J\",\n            \"etag\": \"1752061451662409000\",\n            \"label\": {\n                \"en_US\": \"ows. Test status\",\n                \"vi_VN\": \"Ớ. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"ows_test_status\"\n        },\n        {\n            \"id\": \"01JZQF66HR1KEAF528M3RH7A1K\",\n            \"etag\": \"1752061451662403000\",\n            \"label\": {\n                \"en_US\": \"owj. Test status\",\n                \"vi_VN\": \"Ợ. Test xì ta tớt\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"owj_test_status\"\n        },\n        {\n            \"id\": \"01JZK1458230BQ8C592CABM0RK\",\n            \"etag\": \"1752061451662380000\",\n            \"label\": {\n                \"en_US\": \"Locked\",\n                \"vi_VN\": \"Tạm khóa\"\n            },\n            \"type\": \"ident_user_status\",\n            \"value\": \"locked\"\n        }\n    ],\n    \"total\": 9,\n    \"page\": 0,\n    \"size\": 0\n}"
+								},
+								{
+									"name": "Client error - Invalid language code",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/statuses?sortedByLang=vi_V",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"statuses"
+											],
+											"query": [
+												{
+													"key": "sortedByLang",
+													"value": "vi_V"
+												}
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Wed, 09 Jul 2025 11:21:57 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "83"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"sortedByLang\": \"must be in a valid format\"\n    }\n}"
+								}
+							]
 						}
 					]
 				},
@@ -1093,11 +2632,45 @@
 											"try {\r",
 											"    const payload = JSON.parse(body);\r",
 											"    const { id, etag } = payload;\r",
-											"    id && pm.environment.set('group_id', id);\r",
-											"    etag && pm.environment.set('etag', etag);\r",
+											"    id && pm.collectionVariables.set('group_id', id);\r",
+											"    etag && pm.collectionVariables.set('etag', etag);\r",
 											"} catch (err) {\r",
 											"    console.error(err)\r",
 											"}\r",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"const rawBody = pm.request.body.raw;\r",
+											"const payload = JSON.parse(rawBody);\r",
+											"\r",
+											"// Generate a 6-char alphanumeric string\r",
+											"function randomString(length = 6) {\r",
+											"    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';\r",
+											"    let result = '';\r",
+											"    for (let i = 0; i < length; i++) {\r",
+											"        result += chars.charAt(Math.floor(Math.random() * chars.length));\r",
+											"    }\r",
+											"    return result;\r",
+											"}\r",
+											"\r",
+											"const rand = randomString();\r",
+											"\r",
+											"if (payload.name) {\r",
+											"    payload.name += ' ' + rand;\r",
+											"}\r",
+											"if (payload.description) {\r",
+											"    payload.description += ' ' + rand;\r",
+											"}\r",
+											"\r",
+											"// Write modified payload back to request\r",
+											"pm.request.body.raw = JSON.stringify(payload, null, 2);\r",
 											""
 										],
 										"type": "text/javascript",
@@ -1259,14 +2832,8 @@
 									"listen": "test",
 									"script": {
 										"exec": [
-											"const body = pm.response.text();\r",
-											"try {\r",
-											"    const payload = JSON.parse(body);\r",
-											"    const etag = payload.etag;\r",
-											"    etag && pm.environment.set('etag', etag);\r",
-											"} catch (err) {\r",
-											"    console.error(err)\r",
-											"}\r",
+											"const payload = pm.response.json();\r",
+											"payload.etag && pm.collectionVariables.set('etag', payload.etag);\r",
 											""
 										],
 										"type": "text/javascript",
@@ -1432,14 +2999,8 @@
 									"listen": "test",
 									"script": {
 										"exec": [
-											"const body = pm.response.text();\r",
-											"try {\r",
-											"    const payload = JSON.parse(body);\r",
-											"    const etag = payload.etag;\r",
-											"    etag && pm.environment.set('etag', etag);\r",
-											"} catch (err) {\r",
-											"    console.error(err)\r",
-											"}\r",
+											"const payload = pm.response.json();\r",
+											"payload.etag && pm.collectionVariables.set('etag', payload.etag);\r",
 											""
 										],
 										"type": "text/javascript",
@@ -1947,6 +3508,28 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "user_id",
+			"value": ""
+		},
+		{
+			"key": "etag",
+			"value": ""
+		},
+		{
+			"key": "group_id",
+			"value": ""
+		},
+		{
+			"key": "email",
+			"value": ""
+		},
+		{
+			"key": "partytag_id",
+			"value": ""
 		}
 	]
 }

@@ -188,7 +188,7 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "label", Type: field.TypeJSON},
-		{Name: "value", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString, Nullable: true},
 		{Name: "type", Type: field.TypeString},
 	}
 	// CoreEnumsTable holds the schema information for the "core_enums" table.

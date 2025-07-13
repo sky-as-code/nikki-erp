@@ -3,7 +3,7 @@ package repository
 import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/core/enum"
+	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 )
@@ -64,7 +64,7 @@ func entToOrganizations(dbOrgs []*ent.Organization) []domain.Organization {
 }
 
 func entToUser(dbUser *ent.User) *domain.User {
-	return &domain.User{
+	user := &domain.User{
 		ModelBase: model.ModelBase{
 			Id:   &dbUser.ID,
 			Etag: &dbUser.Etag,
@@ -83,12 +83,25 @@ func entToUser(dbUser *ent.User) *domain.User {
 		PasswordChangedAt:   &dbUser.PasswordChangedAt,
 		PasswordHash:        &dbUser.PasswordHash,
 		StatusId:            &dbUser.StatusID,
-		StatusValue:         &dbUser.Edges.UserStatus.Value,
-
-		Groups: entToGroups(dbUser.Edges.Groups),
-		Orgs:   entToOrganizations(dbUser.Edges.Orgs),
-		Status: entToUserStatus(dbUser.Edges.UserStatus),
 	}
+
+	if dbUser.Edges.Groups != nil {
+		user.Groups = entToGroups(dbUser.Edges.Groups)
+	}
+
+	if dbUser.Edges.Hierarchy != nil {
+		user.HierarchyId = &dbUser.Edges.Hierarchy.ID
+	}
+
+	if dbUser.Edges.Orgs != nil {
+		user.Orgs = entToOrganizations(dbUser.Edges.Orgs)
+	}
+
+	if dbUser.Edges.UserStatus != nil {
+		user.StatusValue = dbUser.Edges.UserStatus.Value
+		user.Status = entToUserStatus(dbUser.Edges.UserStatus)
+	}
+	return user
 }
 
 func entToUsers(dbUsers []*ent.User) []domain.User {
@@ -102,15 +115,6 @@ func entToUsers(dbUsers []*ent.User) []domain.User {
 
 func entToUserStatus(dbStatus *ent.UserStatusEnum) *domain.UserStatus {
 	return &domain.UserStatus{
-		Enum: *enum.AnyToEnum(dbStatus),
+		Enum: *enum.AnyToEnum(*dbStatus),
 	}
-}
-
-func entToUserStatuses(dbStatuses []*ent.UserStatusEnum) []domain.UserStatus {
-	if dbStatuses == nil {
-		return nil
-	}
-	return array.Map(dbStatuses, func(entStatus *ent.UserStatusEnum) domain.UserStatus {
-		return *entToUserStatus(entStatus)
-	})
 }

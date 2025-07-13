@@ -38,3 +38,10 @@ func GetTimeUnixMilli(source *time.Time) *int64 {
 	}
 	return nil
 }
+
+func Indirect[TIn any, TOut any](srcPtr *TIn, fn func(src TIn) *TOut) *TOut {
+	if srcPtr != nil {
+		return fn(*srcPtr)
+	}
+	return nil
+}

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -31,16 +32,23 @@ func (this *OrganizationEntRepository) Create(ctx context.Context, org domain.Or
 		SetSlug(*org.Slug).
 		SetStatus(entOrg.Status(*org.Status))
 
-	return db.Mutate(ctx, creation, entToOrganization)
+	return db.Mutate(ctx, creation, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Organization) (*domain.Organization, error) {
+func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Organization, prevEtag model.Etag) (*domain.Organization, error) {
 	update := this.client.Organization.UpdateOneID(*org.Id).
 		SetDisplayName(*org.DisplayName).
-		SetEtag(*org.Etag).
-		SetStatus(entOrg.Status(*org.Status))
+		SetStatus(entOrg.Status(*org.Status)).
+		// IMPORTANT: Must have!
+		Where(entOrg.EtagEQ(prevEtag))
 
-	return db.Mutate(ctx, update, entToOrganization)
+	if len(update.Mutation().Fields()) > 0 {
+		update.
+			SetEtag(*org.Etag).
+			SetUpdatedAt(time.Now())
+	}
+
+	return db.Mutate(ctx, update, ent.IsNotFound, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) Delete(ctx context.Context, id model.Id) error {

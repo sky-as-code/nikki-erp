@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 )
@@ -27,14 +28,22 @@ func (usec *UserStatusEnumCreate) SetEtag(s string) *UserStatusEnumCreate {
 }
 
 // SetLabel sets the "label" field.
-func (usec *UserStatusEnumCreate) SetLabel(m map[string]string) *UserStatusEnumCreate {
-	usec.mutation.SetLabel(m)
+func (usec *UserStatusEnumCreate) SetLabel(mj model.LangJson) *UserStatusEnumCreate {
+	usec.mutation.SetLabel(mj)
 	return usec
 }
 
 // SetValue sets the "value" field.
 func (usec *UserStatusEnumCreate) SetValue(s string) *UserStatusEnumCreate {
 	usec.mutation.SetValue(s)
+	return usec
+}
+
+// SetNillableValue sets the "value" field if the given value is not nil.
+func (usec *UserStatusEnumCreate) SetNillableValue(s *string) *UserStatusEnumCreate {
+	if s != nil {
+		usec.SetValue(*s)
+	}
 	return usec
 }
 
@@ -105,9 +114,6 @@ func (usec *UserStatusEnumCreate) check() error {
 	if _, ok := usec.mutation.Label(); !ok {
 		return &ValidationError{Name: "label", err: errors.New(`ent: missing required field "UserStatusEnum.label"`)}
 	}
-	if _, ok := usec.mutation.Value(); !ok {
-		return &ValidationError{Name: "value", err: errors.New(`ent: missing required field "UserStatusEnum.value"`)}
-	}
 	if _, ok := usec.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "UserStatusEnum.type"`)}
 	}
@@ -156,7 +162,7 @@ func (usec *UserStatusEnumCreate) createSpec() (*UserStatusEnum, *sqlgraph.Creat
 	}
 	if value, ok := usec.mutation.Value(); ok {
 		_spec.SetField(userstatusenum.FieldValue, field.TypeString, value)
-		_node.Value = value
+		_node.Value = &value
 	}
 	if value, ok := usec.mutation.GetType(); ok {
 		_spec.SetField(userstatusenum.FieldType, field.TypeString, value)

@@ -1,18 +1,17 @@
-package enum
+package interfaces
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/array"
-	"github.com/sky-as-code/nikki-erp/common/copier"
-	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent"
 )
 
 func (this CreateEnumCommand) ToEnum() *Enum {
 	return &Enum{
 		Label: &this.Label,
-		Type:  &this.EnumType,
-		Value: &this.Value,
+		Type:  &this.Type,
+		Value: this.Value,
 	}
 }
 
@@ -33,8 +32,8 @@ func EntToEnum(dbEnum *ent.Enum) *Enum {
 			Id:   &dbEnum.ID,
 			Etag: &dbEnum.Etag,
 		},
-		Label: &dbEnum.Label,
-		Value: &dbEnum.Value,
+		Label: util.ToPtr(model.LangJson(dbEnum.Label)),
+		Value: dbEnum.Value,
 		Type:  &dbEnum.Type,
 	}
 }
@@ -50,8 +49,7 @@ func EntToEnums(dbEnums []*ent.Enum) []Enum {
 
 func AnyToEnum(dbEnum any) *Enum {
 	domainEnum := Enum{}
-	err := copier.Copy(dbEnum, &domainEnum)
-	fault.PanicOnErr(err)
+	model.MustCopy(dbEnum, &domainEnum)
 	return &domainEnum
 }
 

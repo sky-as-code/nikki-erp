@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent/enum"
 )
 
@@ -20,9 +21,9 @@ type Enum struct {
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// Label holds the value of the "label" field.
-	Label map[string]string `json:"label,omitempty"`
+	Label model.LangJson `json:"label,omitempty"`
 	// Value holds the value of the "value" field.
-	Value string `json:"value,omitempty"`
+	Value *string `json:"value,omitempty"`
 	// Type holds the value of the "type" field.
 	Type         string `json:"type,omitempty"`
 	selectValues sql.SelectValues
@@ -76,7 +77,8 @@ func (e *Enum) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field value", values[i])
 			} else if value.Valid {
-				e.Value = value.String
+				e.Value = new(string)
+				*e.Value = value.String
 			}
 		case enum.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -126,8 +128,10 @@ func (e *Enum) String() string {
 	builder.WriteString("label=")
 	builder.WriteString(fmt.Sprintf("%v", e.Label))
 	builder.WriteString(", ")
-	builder.WriteString("value=")
-	builder.WriteString(e.Value)
+	if v := e.Value; v != nil {
+		builder.WriteString("value=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(e.Type)

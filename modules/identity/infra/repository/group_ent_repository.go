@@ -2,9 +2,11 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
@@ -31,17 +33,25 @@ func (this *GroupEntRepository) Create(ctx context.Context, group domain.Group) 
 		SetNillableOrgID(group.OrgId).
 		SetEtag(*group.Etag)
 
-	return db.Mutate(ctx, creation, entToGroup)
+	return db.Mutate(ctx, creation, ent.IsNotFound, entToGroup)
 }
 
-func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group) (*domain.Group, error) {
+func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group, prevEtag model.Etag) (*domain.Group, error) {
 	update := this.client.Group.UpdateOneID(*group.Id).
 		SetNillableName(group.Name).
 		SetNillableDescription(group.Description).
 		SetEtag(*group.Etag).
-		SetNillableOrgID(group.OrgId)
+		SetNillableOrgID(group.OrgId).
+		// IMPORTANT: Must have!
+		Where(entGroup.EtagEQ(prevEtag))
 
-	return db.Mutate(ctx, update, entToGroup)
+	if len(update.Mutation().Fields()) > 0 {
+		update.
+			SetEtag(*group.Etag).
+			SetUpdatedAt(time.Now())
+	}
+
+	return db.Mutate(ctx, update, ent.IsNotFound, entToGroup)
 }
 
 func (this *GroupEntRepository) Delete(ctx context.Context, param it.DeleteParam) error {
@@ -93,6 +103,9 @@ func (this *GroupEntRepository) Search(
 }
 
 func (this *GroupEntRepository) AddRemoveUsers(ctx context.Context, param it.AddRemoveUsersParam) (*ft.ClientError, error) {
+	if len(param.Add) == 0 && len(param.Remove) == 0 {
+		return nil, nil
+	}
 	err := this.client.Group.UpdateOneID(param.GroupId).
 		AddUserIDs(param.Add...).
 		RemoveUserIDs(param.Remove...).

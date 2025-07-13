@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-
-	// util "github.com/sky-as-code/nikki-erp/common/util"
+	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itGrp "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
@@ -43,15 +43,23 @@ func (this *GroupServiceImpl) AddRemoveUsers(ctx context.Context, cmd itGrp.AddR
 		}, nil
 	}
 
-	valErrs := cmd.Validate()
-	dbGroup := this.assertGroupIdExists(ctx, valErrs, cmd.GroupId)
-	this.assertSameGroupEtag(valErrs, dbGroup, cmd.Etag)
-	this.assertUserIdsExist(ctx, valErrs, "add", cmd.Add)
-	this.assertUserIdsExist(ctx, valErrs, "remove", cmd.Remove)
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}, true).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			return this.assertCorrectGroup(ctx, cmd.GroupId, cmd.Etag, vErrs)
+		}, true).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			return this.assertUserIdsExist(ctx, vErrs, "add", cmd.Add)
+		}, true).
+		End()
 
-	if valErrs.Count() > 0 {
+	if vErrs.Count() > 0 {
 		return &itGrp.AddRemoveUsersResult{
-			ClientError: valErrs.ToClientError(),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
@@ -68,14 +76,16 @@ func (this *GroupServiceImpl) AddRemoveUsers(ctx context.Context, cmd itGrp.AddR
 
 	return &itGrp.AddRemoveUsersResult{
 		Data: &itGrp.AddRemoveUsersResultData{
+			Id:        cmd.GroupId,
+			Etag:      cmd.Etag,
 			UpdatedAt: time.Now(),
 		},
 	}, nil
 }
 
-func (this *GroupServiceImpl) assertUserIdsExist(ctx context.Context, valErrs ft.ValidationErrors, field string, userIds []string) {
-	if valErrs.Count() > 0 || len(userIds) == 0 {
-		return
+func (this *GroupServiceImpl) assertUserIdsExist(ctx context.Context, valErrs *ft.ValidationErrors, field string, userIds []string) error {
+	if len(userIds) == 0 {
+		return nil
 	}
 
 	existCmd := &itUser.UserExistsMultiCommand{
@@ -83,16 +93,19 @@ func (this *GroupServiceImpl) assertUserIdsExist(ctx context.Context, valErrs ft
 	}
 	existRes := itUser.UserExistsMultiResult{}
 	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
-	ft.PanicOnErr(err)
+	if err != nil {
+		return err
+	}
 
 	if existRes.ClientError != nil {
 		valErrs.MergeClientError(existRes.ClientError)
-		return
+		return nil
 	}
 
 	if len(existRes.Data.NotExisting) > 0 {
 		valErrs.Append(field, "not existing users: "+strings.Join(existRes.Data.NotExisting, ", "))
 	}
+	return nil
 }
 
 func (this *GroupServiceImpl) CreateGroup(ctx context.Context, cmd itGrp.CreateGroupCommand) (result *itGrp.CreateGroupResult, err error) {
@@ -103,14 +116,24 @@ func (this *GroupServiceImpl) CreateGroup(ctx context.Context, cmd itGrp.CreateG
 	}()
 
 	group := cmd.ToGroup()
-	this.setGroupDefaults(group)
+	group.SetDefaults()
 
-	valErr := group.Validate(false)
-	this.assertUniqueGroupName(ctx, valErr, *group.Name)
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = group.Validate(false)
+			return nil
+		}, true).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.sanitizeGroup(group)
+			return this.assertUniqueGroupName(ctx, group, vErrs)
+		}, true).
+		End()
+	ft.PanicOnErr(err)
 
-	if valErr.Count() > 0 {
+	if vErrs.Count() > 0 {
 		return &itGrp.CreateGroupResult{
-			ClientError: valErr.ToClientError(),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
@@ -120,11 +143,12 @@ func (this *GroupServiceImpl) CreateGroup(ctx context.Context, cmd itGrp.CreateG
 	return &itGrp.CreateGroupResult{Data: createdGroup}, err
 }
 
-func (this *GroupServiceImpl) setGroupDefaults(group *domain.Group) {
-	id, err := model.NewId()
-	ft.PanicOnErr(err)
-	group.Id = id
-	group.Etag = model.NewEtag()
+func (this *GroupServiceImpl) sanitizeGroup(group *domain.Group) {
+	if group.Name != nil {
+		cleanedName := strings.TrimSpace(*group.Name)
+		cleanedName = defense.SanitizePlainText(cleanedName)
+		group.Name = &cleanedName
+	}
 }
 
 func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd itGrp.UpdateGroupCommand) (result *itGrp.UpdateGroupResult, err error) {
@@ -135,19 +159,33 @@ func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd itGrp.UpdateG
 	}()
 
 	group := cmd.ToGroup()
-	valErrs := group.Validate(true)
-	dbGroup := this.assertGroupIdExists(ctx, valErrs, cmd.Id)
-	this.assertSameGroupEtag(valErrs, dbGroup, *group.Etag)
-	this.assertUniqueGroupName(ctx, valErrs, *group.Name)
 
-	if valErrs.Count() > 0 {
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = group.Validate(true)
+			return nil
+		}, true).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			return this.assertCorrectGroup(ctx, *group.Id, *group.Etag, vErrs)
+		}, true).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			// Sanitize after we've made sure this is the correct group
+			this.sanitizeGroup(group)
+			return this.assertUniqueGroupName(ctx, group, vErrs)
+		}, true).
+		End()
+	ft.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
 		return &itGrp.UpdateGroupResult{
-			ClientError: valErrs.ToClientError(),
+			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
+	prevEtag := group.Etag
 	group.Etag = model.NewEtag()
-	groupWithOrg, err := this.groupRepo.Update(ctx, *group)
+	groupWithOrg, err := this.groupRepo.Update(ctx, *group, *prevEtag)
 	ft.PanicOnErr(err)
 
 	return &itGrp.UpdateGroupResult{Data: groupWithOrg}, err
@@ -161,7 +199,8 @@ func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd itGrp.DeleteG
 	}()
 
 	vErrs := cmd.Validate()
-	this.assertGroupIdExists(ctx, vErrs, cmd.Id)
+	_, err = this.assertGroupIdExists(ctx, cmd.Id, &vErrs)
+	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &itGrp.DeleteGroupResult{
@@ -174,6 +213,7 @@ func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd itGrp.DeleteG
 
 	return &itGrp.DeleteGroupResult{
 		Data: itGrp.DeleteGroupResultData{
+			Id:        cmd.Id,
 			DeletedAt: time.Now(),
 		},
 	}, nil
@@ -187,7 +227,8 @@ func (this *GroupServiceImpl) GetGroupById(ctx context.Context, query itGrp.GetG
 	}()
 
 	vErrs := query.Validate()
-	dbGroup := this.assertGroupIdExists(ctx, vErrs, query.Id)
+	dbGroup, err := this.assertGroupIdExists(ctx, query.Id, &vErrs)
+	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &itGrp.GetGroupByIdResult{
@@ -233,45 +274,45 @@ func (thisSvc *GroupServiceImpl) SearchGroups(ctx context.Context, query itGrp.S
 	}, nil
 }
 
-func (this *GroupServiceImpl) assertGroupIdExists(ctx context.Context, valErrs ft.ValidationErrors, id string) *domain.Group {
-	if valErrs.Count() > 0 {
+func (this *GroupServiceImpl) assertCorrectGroup(ctx context.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
+	dbGroup, err := this.assertGroupIdExists(ctx, id, vErrs)
+	if err != nil {
+		return err
+	}
+
+	if dbGroup != nil && *dbGroup.Etag != etag {
+		vErrs.Append("etag", "group has been modified by another user")
 		return nil
 	}
 
+	return nil
+}
+
+func (this *GroupServiceImpl) assertGroupIdExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.Group, error) {
 	dbGroup, err := this.groupRepo.FindById(ctx, itGrp.FindByIdParam{
 		Id: id,
 	})
-	ft.PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 
 	if dbGroup == nil {
-		valErrs.Append("id", "group not found")
-		return nil
+		vErrs.Append("id", "group not found")
+		return nil, nil
 	}
-
-	return dbGroup
+	return dbGroup, nil
 }
 
-func (this *GroupServiceImpl) assertSameGroupEtag(valErrs ft.ValidationErrors, dbGroup *domain.Group, newEtag string) {
-	if valErrs.Count() > 0 {
-		return
-	}
-
-	if *dbGroup.Etag != newEtag {
-		valErrs.Append("etag", "group has been modified by another user")
-	}
-}
-
-func (this *GroupServiceImpl) assertUniqueGroupName(ctx context.Context, valErrs ft.ValidationErrors, name string) {
-	if valErrs.Count() > 0 {
-		return
-	}
-
+func (this *GroupServiceImpl) assertUniqueGroupName(ctx context.Context, group *domain.Group, vErrs *ft.ValidationErrors) error {
 	dbGroup, err := this.groupRepo.FindByName(ctx, itGrp.FindByNameParam{
-		Name: name,
+		Name: *group.Name,
 	})
-	ft.PanicOnErr(err)
+	if err != nil {
+		return err
+	}
 
 	if dbGroup != nil {
-		valErrs.Append("name", "group name already exists")
+		vErrs.Append("name", "group name already exists")
 	}
+	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent/enum"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent/predicate"
 )
@@ -42,8 +43,8 @@ func (eu *EnumUpdate) SetNillableEtag(s *string) *EnumUpdate {
 }
 
 // SetLabel sets the "label" field.
-func (eu *EnumUpdate) SetLabel(m map[string]string) *EnumUpdate {
-	eu.mutation.SetLabel(m)
+func (eu *EnumUpdate) SetLabel(mj model.LangJson) *EnumUpdate {
+	eu.mutation.SetLabel(mj)
 	return eu
 }
 
@@ -58,6 +59,12 @@ func (eu *EnumUpdate) SetNillableValue(s *string) *EnumUpdate {
 	if s != nil {
 		eu.SetValue(*s)
 	}
+	return eu
+}
+
+// ClearValue clears the value of the "value" field.
+func (eu *EnumUpdate) ClearValue() *EnumUpdate {
+	eu.mutation.ClearValue()
 	return eu
 }
 
@@ -125,6 +132,9 @@ func (eu *EnumUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := eu.mutation.Value(); ok {
 		_spec.SetField(enum.FieldValue, field.TypeString, value)
 	}
+	if eu.mutation.ValueCleared() {
+		_spec.ClearField(enum.FieldValue, field.TypeString)
+	}
 	if value, ok := eu.mutation.GetType(); ok {
 		_spec.SetField(enum.FieldType, field.TypeString, value)
 	}
@@ -163,8 +173,8 @@ func (euo *EnumUpdateOne) SetNillableEtag(s *string) *EnumUpdateOne {
 }
 
 // SetLabel sets the "label" field.
-func (euo *EnumUpdateOne) SetLabel(m map[string]string) *EnumUpdateOne {
-	euo.mutation.SetLabel(m)
+func (euo *EnumUpdateOne) SetLabel(mj model.LangJson) *EnumUpdateOne {
+	euo.mutation.SetLabel(mj)
 	return euo
 }
 
@@ -179,6 +189,12 @@ func (euo *EnumUpdateOne) SetNillableValue(s *string) *EnumUpdateOne {
 	if s != nil {
 		euo.SetValue(*s)
 	}
+	return euo
+}
+
+// ClearValue clears the value of the "value" field.
+func (euo *EnumUpdateOne) ClearValue() *EnumUpdateOne {
+	euo.mutation.ClearValue()
 	return euo
 }
 
@@ -275,6 +291,9 @@ func (euo *EnumUpdateOne) sqlSave(ctx context.Context) (_node *Enum, err error) 
 	}
 	if value, ok := euo.mutation.Value(); ok {
 		_spec.SetField(enum.FieldValue, field.TypeString, value)
+	}
+	if euo.mutation.ValueCleared() {
+		_spec.ClearField(enum.FieldValue, field.TypeString)
 	}
 	if value, ok := euo.mutation.GetType(); ok {
 		_spec.SetField(enum.FieldType, field.TypeString, value)

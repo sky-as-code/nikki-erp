@@ -26,10 +26,14 @@ type EntRepositoryBase struct {
 func Mutate[TDb any, TDomain any](
 	ctx context.Context,
 	mutationBuilder MutationBuilder[TDb],
+	isNotFoundFn func(err error) bool,
 	convertFn EntToDomainFn[TDb, TDomain],
 ) (*TDomain, error) {
 	entEntity, err := mutationBuilder.Save(ctx)
 	if err != nil {
+		if isNotFoundFn(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
