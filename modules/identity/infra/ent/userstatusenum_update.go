@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
@@ -43,8 +44,8 @@ func (useu *UserStatusEnumUpdate) SetNillableEtag(s *string) *UserStatusEnumUpda
 }
 
 // SetLabel sets the "label" field.
-func (useu *UserStatusEnumUpdate) SetLabel(m map[string]string) *UserStatusEnumUpdate {
-	useu.mutation.SetLabel(m)
+func (useu *UserStatusEnumUpdate) SetLabel(mj model.LangJson) *UserStatusEnumUpdate {
+	useu.mutation.SetLabel(mj)
 	return useu
 }
 
@@ -59,6 +60,12 @@ func (useu *UserStatusEnumUpdate) SetNillableValue(s *string) *UserStatusEnumUpd
 	if s != nil {
 		useu.SetValue(*s)
 	}
+	return useu
+}
+
+// ClearValue clears the value of the "value" field.
+func (useu *UserStatusEnumUpdate) ClearValue() *UserStatusEnumUpdate {
+	useu.mutation.ClearValue()
 	return useu
 }
 
@@ -162,6 +169,9 @@ func (useu *UserStatusEnumUpdate) sqlSave(ctx context.Context) (n int, err error
 	if value, ok := useu.mutation.Value(); ok {
 		_spec.SetField(userstatusenum.FieldValue, field.TypeString, value)
 	}
+	if useu.mutation.ValueCleared() {
+		_spec.ClearField(userstatusenum.FieldValue, field.TypeString)
+	}
 	if value, ok := useu.mutation.GetType(); ok {
 		_spec.SetField(userstatusenum.FieldType, field.TypeString, value)
 	}
@@ -245,8 +255,8 @@ func (useuo *UserStatusEnumUpdateOne) SetNillableEtag(s *string) *UserStatusEnum
 }
 
 // SetLabel sets the "label" field.
-func (useuo *UserStatusEnumUpdateOne) SetLabel(m map[string]string) *UserStatusEnumUpdateOne {
-	useuo.mutation.SetLabel(m)
+func (useuo *UserStatusEnumUpdateOne) SetLabel(mj model.LangJson) *UserStatusEnumUpdateOne {
+	useuo.mutation.SetLabel(mj)
 	return useuo
 }
 
@@ -261,6 +271,12 @@ func (useuo *UserStatusEnumUpdateOne) SetNillableValue(s *string) *UserStatusEnu
 	if s != nil {
 		useuo.SetValue(*s)
 	}
+	return useuo
+}
+
+// ClearValue clears the value of the "value" field.
+func (useuo *UserStatusEnumUpdateOne) ClearValue() *UserStatusEnumUpdateOne {
+	useuo.mutation.ClearValue()
 	return useuo
 }
 
@@ -393,6 +409,9 @@ func (useuo *UserStatusEnumUpdateOne) sqlSave(ctx context.Context) (_node *UserS
 	}
 	if value, ok := useuo.mutation.Value(); ok {
 		_spec.SetField(userstatusenum.FieldValue, field.TypeString, value)
+	}
+	if useuo.mutation.ValueCleared() {
+		_spec.ClearField(userstatusenum.FieldValue, field.TypeString)
 	}
 	if value, ok := useuo.mutation.GetType(); ok {
 		_spec.SetField(userstatusenum.FieldType, field.TypeString, value)

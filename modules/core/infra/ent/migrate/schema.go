@@ -14,7 +14,7 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "label", Type: field.TypeJSON},
-		{Name: "value", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString, Nullable: true},
 		{Name: "type", Type: field.TypeString},
 	}
 	// CoreEnumsTable holds the schema information for the "core_enums" table.
@@ -30,14 +30,28 @@ var (
 			},
 		},
 	}
+	// CoreTagsColumns holds the columns for the "core_tags" table.
+	CoreTagsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+	}
+	// CoreTagsTable holds the schema information for the "core_tags" table.
+	CoreTagsTable = &schema.Table{
+		Name:       "core_tags",
+		Columns:    CoreTagsColumns,
+		PrimaryKey: []*schema.Column{CoreTagsColumns[0]},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		CoreEnumsTable,
+		CoreTagsTable,
 	}
 )
 
 func init() {
 	CoreEnumsTable.Annotation = &entsql.Annotation{
 		Table: "core_enums",
+	}
+	CoreTagsTable.Annotation = &entsql.Annotation{
+		Table: "core_tags",
 	}
 }

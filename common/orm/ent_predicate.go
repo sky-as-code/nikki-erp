@@ -144,7 +144,11 @@ func (this Condition) toSimplePredicate(entity *EntityDescriptor) (Predicate, ft
 		return nullOp(field), nil
 	}
 
-	isString := fieldType.Kind() == reflect.String
+	baseType := fieldType
+	if fieldType.Kind() == reflect.Ptr {
+		baseType = fieldType.Elem()
+	}
+	isString := baseType.Kind() == reflect.String
 
 	if stringOp, ok := StringOperators[operator]; ok && isString {
 		return stringOp(field, fmt.Sprint(value)), nil

@@ -44,8 +44,7 @@ func (OrganizationMixin) Fields() []ent.Field {
 
 		field.Time("updated_at").
 			Optional().
-			Nillable().
-			UpdateDefault(time.Now),
+			Nillable(),
 	}
 }
 

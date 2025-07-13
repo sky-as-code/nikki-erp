@@ -52,7 +52,7 @@ func (this GroupRest) CreateGroup(echoCtx echo.Context) (err error) {
 	}
 
 	response := CreateGroupResponse{}
-	response.FromGroup(*result.Data)
+	response.FromEntity(result.Data)
 
 	return httpserver.JsonCreated(echoCtx, response)
 }
@@ -75,7 +75,7 @@ func (this GroupRest) UpdateGroup(echoCtx echo.Context) (err error) {
 	}
 
 	response := UpdateGroupResponse{}
-	response.FromGroup(*result.Data)
+	response.FromEntity(result.Data)
 
 	return httpserver.JsonOk(echoCtx, response)
 }
@@ -97,7 +97,7 @@ func (this GroupRest) GetGroupById(echoCtx echo.Context) (err error) {
 		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
 	}
 
-	response := GetGroupByIdResponse{}
+	response := GroupDto{}
 	response.FromGroup(*result.Data)
 
 	return httpserver.JsonOk(echoCtx, response)
@@ -120,9 +120,8 @@ func (this GroupRest) DeleteGroup(echoCtx echo.Context) (err error) {
 		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
 	}
 
-	response := DeleteGroupResponse{
-		DeletedAt: result.Data.DeletedAt.UnixMilli(),
-	}
+	response := DeleteGroupResponse{}
+	response.FromNonEntity(result.Data)
 
 	return httpserver.JsonOk(echoCtx, response)
 }
@@ -174,7 +173,7 @@ func (this GroupRest) ManageUsers(echoCtx echo.Context) (err error) {
 	}
 
 	response := ManageUsersResponse{}
-	response.FromResult(result.Data)
+	response.FromNonEntity(result.Data)
 
 	return httpserver.JsonOk(echoCtx, response)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	invopop "github.com/invopop/validation"
-	"github.com/sky-as-code/nikki-erp/common/util"
 )
 
 type ClientError struct {
@@ -80,10 +79,13 @@ func NewValidationErrors() ValidationErrors {
 
 func NewValidationErrorsFromInvopop(rawErrors invopop.Errors) ValidationErrors {
 	errors := make(ValidationErrors, len(rawErrors))
-	util.Unused(invopop.ErrorTag)
 	for field, err := range rawErrors {
-		e := err.(invopop.ErrorObject)
-		errors.Append(field, e.Error())
+		invoErr, ok := err.(invopop.ErrorObject)
+		if ok {
+			errors.Append(field, invoErr.Error())
+			continue
+		}
+		errors.Append(field, err.Error())
 	}
 	return errors
 }

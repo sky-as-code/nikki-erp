@@ -39,17 +39,19 @@ func (this *UserEntRepository) Create(ctx context.Context, user domain.User) (*d
 		SetPasswordChangedAt(*user.PasswordChangedAt).
 		SetStatusID(*user.StatusId)
 
-	return db.Mutate(ctx, creation, entToUser)
+	return db.Mutate(ctx, creation, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) Update(ctx context.Context, user domain.User) (*domain.User, error) {
+func (this *UserEntRepository) Update(ctx context.Context, user domain.User, prevEtag model.Etag) (*domain.User, error) {
 	update := this.client.User.UpdateOneID(*user.Id).
 		SetNillableAvatarURL(user.AvatarUrl).
 		SetNillableDisplayName(user.DisplayName).
 		SetNillableEmail(user.Email).
 		SetNillablePasswordHash(user.PasswordHash).
 		SetNillablePasswordChangedAt(user.PasswordChangedAt).
-		SetNillableStatusID(user.StatusId)
+		SetNillableStatusID(user.StatusId).
+		// IMPORTANT: Must have!
+		Where(entUser.EtagEQ(prevEtag))
 
 	if len(update.Mutation().Fields()) > 0 {
 		update.
@@ -57,7 +59,7 @@ func (this *UserEntRepository) Update(ctx context.Context, user domain.User) (*d
 			SetUpdatedAt(time.Now())
 	}
 
-	return db.Mutate(ctx, update, entToUser)
+	return db.Mutate(ctx, update, ent.IsNotFound, entToUser)
 }
 
 func (this *UserEntRepository) Delete(ctx context.Context, param it.DeleteParam) error {

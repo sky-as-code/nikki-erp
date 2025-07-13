@@ -20,14 +20,9 @@ type Organization struct {
 	Status      *OrgStatus  `json:"status,omitempty"`
 }
 
-func (this *Organization) SetDefaults() error {
-	err := this.ModelBase.SetDefaults()
-	if err != nil {
-		return err
-	}
+func (this *Organization) SetDefaults() {
+	this.ModelBase.SetDefaults()
 	safe.SetDefaultValue(&this.Status, OrgStatusInactive)
-	this.Etag = model.NewEtag()
-	return nil
 }
 
 func (this *Organization) Validate(forEdit bool) ft.ValidationErrors {

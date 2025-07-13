@@ -29,10 +29,6 @@ func init() {
 	groupDescName := groupMixinFields0[5].Descriptor()
 	// group.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	group.NameValidator = groupDescName.Validators[0].(func(string) error)
-	// groupDescUpdatedAt is the schema descriptor for updated_at field.
-	groupDescUpdatedAt := groupMixinFields0[7].Descriptor()
-	// group.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	group.UpdateDefaultUpdatedAt = groupDescUpdatedAt.UpdateDefault.(func() time.Time)
 	hierarchylevelMixin := schema.HierarchyLevel{}.Mixin()
 	hierarchylevelMixinFields0 := hierarchylevelMixin[0].Fields()
 	_ = hierarchylevelMixinFields0
@@ -51,10 +47,6 @@ func init() {
 	organizationDescCreatedAt := organizationMixinFields0[1].Descriptor()
 	// organization.DefaultCreatedAt holds the default value on creation for the created_at field.
 	organization.DefaultCreatedAt = organizationDescCreatedAt.Default.(func() time.Time)
-	// organizationDescUpdatedAt is the schema descriptor for updated_at field.
-	organizationDescUpdatedAt := organizationMixinFields0[7].Descriptor()
-	// organization.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	organization.UpdateDefaultUpdatedAt = organizationDescUpdatedAt.UpdateDefault.(func() time.Time)
 	userMixin := schema.User{}.Mixin()
 	userMixinFields0 := userMixin[0].Fields()
 	_ = userMixinFields0

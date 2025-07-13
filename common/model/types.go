@@ -2,11 +2,17 @@ package model
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
+	"strings"
 	"time"
 
+	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/ulid"
+	"golang.org/x/text/language"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
+	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
@@ -82,9 +88,16 @@ func SlugValidateRule(field any, isRequired bool) *val.FieldRules {
 }
 
 type OpResult[TData any] struct {
-	Data        TData           `json:"data"`
+	Data TData `json:"data"`
+
+	// Indicates whether "Data" has value. If ClientError is nil but HasData is false,
+	// it means the query is successfull but doesn't return any data.
 	HasData     bool            `json:"hasData"`
 	ClientError *ft.ClientError `json:"error,omitempty"`
+}
+
+func (this OpResult[TData]) GetClientError() *ft.ClientError {
+	return this.ClientError
 }
 
 func PageIndexValidateRule(field **int) *val.FieldRules {
@@ -102,12 +115,50 @@ func PageSizeValidateRule(field **int) *val.FieldRules {
 	))
 }
 
+// LanguageCode is a BCP47-compliant language code with region part.
+// It must be an alias of string to easily map from map[LanguageCode]string to LangJson
 type LanguageCode = string
+
+func IsBCP47LanguageCode(src string) bool {
+	canonical, err := ToBCP47LanguageCode(src)
+	if err != nil {
+		return false
+	}
+
+	// Must have at least one hyphen (i.e. at least 2 parts)
+	if strings.Count(canonical, "-") >= 1 {
+		return true
+	}
+
+	return false
+}
+
+func ToBCP47LanguageCode(src string) (string, error) {
+	src = strings.ReplaceAll(src, "_", "-")
+	parsed, err := language.Parse(src)
+	if err != nil {
+		return "", err
+	}
+
+	// Canonical string from parsed tag (e.g. "en-US")
+	canonical := parsed.String()
+	return canonical, nil
+}
+
+const (
+	LanguageCodeEnUS    = LanguageCode("en-US")
+	DefaultLanguageCode = LanguageCodeEnUS
+)
 
 var langCodeRules = []val.Rule{
 	val.NotEmpty,
-	val.RegExp(regexp.MustCompile(`^[a-z]{2}_[A-Z]{2}$`)).
-		Error("must be a valid language code"), // Validate if this has format similar to "en_US", "zh_CN"
+	val.By(func(value any) error {
+		code, _ := value.(string)
+		if !IsBCP47LanguageCode(code) {
+			return errors.New("must be a valid BCP47-compliant language code with region part")
+		}
+		return nil
+	}),
 }
 
 func LanguageCodeValidateRule(field **LanguageCode, isRequired bool) *val.FieldRules {
@@ -118,7 +169,39 @@ func LanguageCodeValidateRule(field **LanguageCode, isRequired bool) *val.FieldR
 	return val.Field(field, rules...)
 }
 
-type LangJson = map[LanguageCode]string
+type LangJson map[LanguageCode]string
+
+func (this LangJson) SanitizeClone(whitelistLangs []LanguageCode, isRichText bool) (*LangJson, int, error) {
+	sanitizedLabel := make(LangJson)
+	fieldCount := 0
+	for labelCode, labelStr := range this {
+		stdLabelCode, err := ToBCP47LanguageCode(labelCode)
+		if err != nil {
+			return nil, 0, err
+		}
+		if len(labelStr) == 0 || !array.Contains(whitelistLangs, stdLabelCode) {
+			continue
+		}
+		if isRichText {
+			sanitizedLabel[stdLabelCode] = defense.SanitizeRichText(labelStr)
+			fieldCount++
+		} else {
+			sanitizedLabel[stdLabelCode] = defense.SanitizePlainText(labelStr)
+			fieldCount++
+		}
+	}
+	return &sanitizedLabel, fieldCount, nil
+}
+
+// Transform creates a new LangJson with the same keys but
+// with the values transformed by the given function.
+func (this LangJson) Transform(fn func(key LanguageCode, value string) string) LangJson {
+	transformed := make(LangJson)
+	for key, value := range this {
+		transformed[key] = fn(key, value)
+	}
+	return transformed
+}
 
 func LangJsonValidateRule(field **LangJson, isRequired bool, minLength int, maxLength int) *val.FieldRules {
 	fieldValue := *field
@@ -127,11 +210,15 @@ func LangJsonValidateRule(field **LangJson, isRequired bool, minLength int, maxL
 		val.NotEmpty,
 		val.Length(minLength, maxLength),
 	}
-	allKeys := []LanguageCode{}
+
+	// This is a map instead of an array to workaround the validator limitation:
+	// With array, the error message only includes the index. E.g: "0: must be a language code; 1: must be a valid language code.".
+	// With map, the error message includes the key name. E.g: "en_lish: must be a language code".
+	allKeys := make(map[LanguageCode]LanguageCode)
 
 	if fieldValue != nil {
 		for langCode := range *fieldValue {
-			allKeys = append(allKeys, langCode)
+			allKeys[langCode] = langCode
 			mapRules = append(mapRules, val.Key(langCode, keyRules...))
 		}
 	}
@@ -146,4 +233,38 @@ func LangJsonValidateRule(field **LangJson, isRequired bool, minLength int, maxL
 			}),
 		),
 	)
+}
+
+func init() {
+	AddConversion[LangJson, *LangJson](func(in reflect.Value) (reflect.Value, error) {
+		if in.IsNil() {
+			return reflect.ValueOf((*LangJson)(nil)), nil
+		}
+
+		result := in.Interface().(LangJson)
+		return reflect.ValueOf(&result), nil
+	})
+
+	AddConversion[*LangJson, LangJson](func(in reflect.Value) (reflect.Value, error) {
+		if in.IsNil() {
+			return reflect.ValueOf((LangJson)(nil)), nil
+		}
+
+		result := *in.Interface().(*LangJson)
+		return reflect.ValueOf(result), nil
+	})
+
+	AddConversion[Id, *Id](func(in reflect.Value) (reflect.Value, error) {
+		result := in.Interface().(Id)
+		return reflect.ValueOf(&result), nil
+	})
+
+	AddConversion[*Id, Id](func(in reflect.Value) (reflect.Value, error) {
+		if in.IsNil() {
+			return reflect.ValueOf(Id("")), nil
+		}
+
+		result := *in.Interface().(*Id)
+		return reflect.ValueOf(result), nil
+	})
 }

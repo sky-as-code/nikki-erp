@@ -11,6 +11,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
@@ -4994,7 +4995,7 @@ type UserStatusEnumMutation struct {
 	typ           string
 	id            *string
 	etag          *string
-	label         *map[string]string
+	label         *model.LangJson
 	value         *string
 	_type         *string
 	clearedFields map[string]struct{}
@@ -5147,12 +5148,12 @@ func (m *UserStatusEnumMutation) ResetEtag() {
 }
 
 // SetLabel sets the "label" field.
-func (m *UserStatusEnumMutation) SetLabel(value map[string]string) {
-	m.label = &value
+func (m *UserStatusEnumMutation) SetLabel(mj model.LangJson) {
+	m.label = &mj
 }
 
 // Label returns the value of the "label" field in the mutation.
-func (m *UserStatusEnumMutation) Label() (r map[string]string, exists bool) {
+func (m *UserStatusEnumMutation) Label() (r model.LangJson, exists bool) {
 	v := m.label
 	if v == nil {
 		return
@@ -5163,7 +5164,7 @@ func (m *UserStatusEnumMutation) Label() (r map[string]string, exists bool) {
 // OldLabel returns the old "label" field's value of the UserStatusEnum entity.
 // If the UserStatusEnum object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserStatusEnumMutation) OldLabel(ctx context.Context) (v map[string]string, err error) {
+func (m *UserStatusEnumMutation) OldLabel(ctx context.Context) (v model.LangJson, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldLabel is only allowed on UpdateOne operations")
 	}
@@ -5199,7 +5200,7 @@ func (m *UserStatusEnumMutation) Value() (r string, exists bool) {
 // OldValue returns the old "value" field's value of the UserStatusEnum entity.
 // If the UserStatusEnum object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserStatusEnumMutation) OldValue(ctx context.Context) (v string, err error) {
+func (m *UserStatusEnumMutation) OldValue(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldValue is only allowed on UpdateOne operations")
 	}
@@ -5213,9 +5214,22 @@ func (m *UserStatusEnumMutation) OldValue(ctx context.Context) (v string, err er
 	return oldValue.Value, nil
 }
 
+// ClearValue clears the value of the "value" field.
+func (m *UserStatusEnumMutation) ClearValue() {
+	m.value = nil
+	m.clearedFields[userstatusenum.FieldValue] = struct{}{}
+}
+
+// ValueCleared returns if the "value" field was cleared in this mutation.
+func (m *UserStatusEnumMutation) ValueCleared() bool {
+	_, ok := m.clearedFields[userstatusenum.FieldValue]
+	return ok
+}
+
 // ResetValue resets all changes to the "value" field.
 func (m *UserStatusEnumMutation) ResetValue() {
 	m.value = nil
+	delete(m.clearedFields, userstatusenum.FieldValue)
 }
 
 // SetType sets the "type" field.
@@ -5405,7 +5419,7 @@ func (m *UserStatusEnumMutation) SetField(name string, value ent.Value) error {
 		m.SetEtag(v)
 		return nil
 	case userstatusenum.FieldLabel:
-		v, ok := value.(map[string]string)
+		v, ok := value.(model.LangJson)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -5454,7 +5468,11 @@ func (m *UserStatusEnumMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *UserStatusEnumMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(userstatusenum.FieldValue) {
+		fields = append(fields, userstatusenum.FieldValue)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -5467,6 +5485,11 @@ func (m *UserStatusEnumMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *UserStatusEnumMutation) ClearField(name string) error {
+	switch name {
+	case userstatusenum.FieldValue:
+		m.ClearValue()
+		return nil
+	}
 	return fmt.Errorf("unknown UserStatusEnum nullable field %s", name)
 }
 

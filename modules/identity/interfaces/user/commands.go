@@ -38,10 +38,10 @@ type CreateUserCommand struct {
 	Email              string     `json:"email"`
 	MustChangePassword bool       `json:"mustChangePassword"`
 	Password           string     `json:"password"`
-	OrgIds             []model.Id `json:"orgIds,omitempty"`
+	OrgIds             []model.Id `json:"orgIds"`
 }
 
-func (CreateUserCommand) Type() cqrs.RequestType {
+func (CreateUserCommand) CqrsRequestType() cqrs.RequestType {
 	return createUserCommandType
 }
 
@@ -55,16 +55,16 @@ var updateUserCommandType = cqrs.RequestType{
 
 type UpdateUserCommand struct {
 	Id                 model.Id   `param:"id" json:"id"`
-	AvatarUrl          *string    `json:"avatarUrl,omitempty"`
-	DisplayName        *string    `json:"displayName,omitempty"`
-	Email              *string    `json:"email,omitempty"`
-	Etag               model.Etag `json:"etag,omitempty"`
-	MustChangePassword *bool      `json:"mustChangePassword,omitempty"`
-	Password           *string    `json:"password,omitempty"`
-	Status             *string    `json:"status,omitempty"`
+	AvatarUrl          *string    `json:"avatarUrl"`
+	DisplayName        *string    `json:"displayName"`
+	Email              *string    `json:"email"`
+	Etag               model.Etag `json:"etag"`
+	MustChangePassword *bool      `json:"mustChangePassword"`
+	Password           *string    `json:"password"`
+	Status             *string    `json:"status"`
 }
 
-func (UpdateUserCommand) Type() cqrs.RequestType {
+func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
 	return updateUserCommandType
 }
 
@@ -80,7 +80,7 @@ type DeleteUserCommand struct {
 	Id model.Id `json:"id" param:"id"`
 }
 
-func (DeleteUserCommand) Type() cqrs.RequestType {
+func (DeleteUserCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteUserCommandType
 }
 
@@ -93,6 +93,7 @@ func (this DeleteUserCommand) Validate() ft.ValidationErrors {
 }
 
 type DeleteUserResultData struct {
+	Id        model.Id  `json:"id"`
 	DeletedAt time.Time `json:"deletedAt"`
 }
 
@@ -108,7 +109,7 @@ type UserExistsCommand struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (UserExistsCommand) Type() cqrs.RequestType {
+func (UserExistsCommand) CqrsRequestType() cqrs.RequestType {
 	return existsCommandType
 }
 
@@ -132,7 +133,7 @@ type UserExistsMultiCommand struct {
 	Ids []model.Id `json:"ids"`
 }
 
-func (UserExistsMultiCommand) Type() cqrs.RequestType {
+func (UserExistsMultiCommand) CqrsRequestType() cqrs.RequestType {
 	return existsMultiCommandType
 }
 
@@ -161,7 +162,7 @@ type GetUserByIdQuery struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (GetUserByIdQuery) Type() cqrs.RequestType {
+func (GetUserByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getUserByIdQueryType
 }
 
@@ -190,7 +191,7 @@ type SearchUsersQuery struct {
 	WithHierarchies bool    `json:"withHierarchies" query:"withHierarchies"`
 }
 
-func (SearchUsersQuery) Type() cqrs.RequestType {
+func (SearchUsersQuery) CqrsRequestType() cqrs.RequestType {
 	return searchUsersQueryType
 }
 
@@ -223,7 +224,7 @@ type ListUserStatusesQuery struct {
 	SortedByLang *model.LanguageCode `json:"sortedByLang" query:"sortedByLang"`
 }
 
-func (ListUserStatusesQuery) Type() cqrs.RequestType {
+func (ListUserStatusesQuery) CqrsRequestType() cqrs.RequestType {
 	return listUserStatusesCommandType
 }
 

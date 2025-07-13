@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent/enum"
 )
 
@@ -26,14 +27,22 @@ func (ec *EnumCreate) SetEtag(s string) *EnumCreate {
 }
 
 // SetLabel sets the "label" field.
-func (ec *EnumCreate) SetLabel(m map[string]string) *EnumCreate {
-	ec.mutation.SetLabel(m)
+func (ec *EnumCreate) SetLabel(mj model.LangJson) *EnumCreate {
+	ec.mutation.SetLabel(mj)
 	return ec
 }
 
 // SetValue sets the "value" field.
 func (ec *EnumCreate) SetValue(s string) *EnumCreate {
 	ec.mutation.SetValue(s)
+	return ec
+}
+
+// SetNillableValue sets the "value" field if the given value is not nil.
+func (ec *EnumCreate) SetNillableValue(s *string) *EnumCreate {
+	if s != nil {
+		ec.SetValue(*s)
+	}
 	return ec
 }
 
@@ -89,9 +98,6 @@ func (ec *EnumCreate) check() error {
 	if _, ok := ec.mutation.Label(); !ok {
 		return &ValidationError{Name: "label", err: errors.New(`ent: missing required field "Enum.label"`)}
 	}
-	if _, ok := ec.mutation.Value(); !ok {
-		return &ValidationError{Name: "value", err: errors.New(`ent: missing required field "Enum.value"`)}
-	}
 	if _, ok := ec.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "Enum.type"`)}
 	}
@@ -140,7 +146,7 @@ func (ec *EnumCreate) createSpec() (*Enum, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := ec.mutation.Value(); ok {
 		_spec.SetField(enum.FieldValue, field.TypeString, value)
-		_node.Value = value
+		_node.Value = &value
 	}
 	if value, ok := ec.mutation.GetType(); ok {
 		_spec.SetField(enum.FieldType, field.TypeString, value)

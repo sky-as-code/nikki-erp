@@ -8,10 +8,12 @@ import (
 	"go.bryk.io/pkg/ulid"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	util "github.com/sky-as-code/nikki-erp/common/util"
-	"github.com/sky-as-code/nikki-erp/modules/core/enum"
+	val "github.com/sky-as-code/nikki-erp/common/validator"
+	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
@@ -43,11 +45,11 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCo
 	}()
 
 	user := cmd.ToUser()
-	this.sanitizeUser(user)
 	this.setUserDefaults(ctx, user)
-
 	vErrs := user.Validate(false)
+	this.sanitizeUser(user)
 	this.assertUserUnique(ctx, user, &vErrs)
+
 	if vErrs.Count() > 0 {
 		return &it.CreateUserResult{
 			ClientError: vErrs.ToClientError(),
@@ -66,61 +68,6 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCo
 	}, err
 }
 
-func (this *UserServiceImpl) sanitizeUser(user *domain.User) {
-	if user.Email != nil {
-		user.Email = util.ToPtr(strings.ToLower(*user.Email))
-	}
-	if user.DisplayName != nil {
-		user.DisplayName = util.ToPtr(strings.TrimSpace(*user.DisplayName))
-	}
-	user.Etag = model.NewEtag()
-}
-
-func (this *UserServiceImpl) setUserDefaults(ctx context.Context, user *domain.User) {
-	err := user.SetDefaults()
-	ft.PanicOnErr(err)
-	activeEnum, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
-		Value:    util.ToPtr(domain.UserStatusActive),
-		EnumType: util.ToPtr(domain.UserStatusEnumType),
-	})
-	ft.PanicOnErr(err)
-	ft.PanicOnErr(activeEnum.ClientError)
-
-	user.Status = domain.WrapUserStatus(activeEnum.Data)
-	user.StatusId = activeEnum.Data.Id
-	user.Email = util.ToPtr(strings.ToLower(*user.Email))
-}
-
-func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.User, errors *ft.ValidationErrors) {
-	if errors.Has("email") {
-		return
-	}
-	dbUser, err := this.userRepo.FindByEmail(ctx, *user.Email)
-	ft.PanicOnErr(err)
-
-	if dbUser != nil {
-		errors.Append("email", "email already exists")
-	}
-}
-
-func (this *UserServiceImpl) assertStatusExists(ctx context.Context, user *domain.User, errors *ft.ValidationErrors) {
-	if errors.Has("status") || (user.StatusValue == nil) {
-		return
-	}
-	dbStatus, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
-		Value:    user.StatusValue,
-		EnumType: util.ToPtr(domain.UserStatusEnumType),
-	})
-	ft.PanicOnErr(err)
-	ft.PanicOnErr(dbStatus.ClientError)
-
-	if !dbStatus.HasData {
-		errors.Append("status", "invalid user status")
-		return
-	}
-	user.StatusId = dbStatus.Data.Id
-}
-
 func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCommand) (result *it.UpdateUserResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to update user"); e != nil {
@@ -129,37 +76,35 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 	}()
 
 	user := cmd.ToUser()
-	this.sanitizeUser(user)
 
-	vErrs := user.Validate(true)
-	if user.Email != nil {
-		this.assertUserUnique(ctx, user, &vErrs)
-	}
-	if user.StatusId != nil {
-		this.assertStatusExists(ctx, user, &vErrs)
-		// user.Status = this.enumRepo.FindById(ctx, *user.StatusId)
-	}
-	if vErrs.Count() > 0 {
-		return &it.UpdateUserResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = user.Validate(true)
+			return nil
+		}, true).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			return this.assertCorrectUser(ctx, user, vErrs)
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			// Sanitize after we've made sure this is the correct user
+			this.sanitizeUser(user)
 
-	dbUser, err := this.userRepo.FindById(ctx, it.FindByIdParam{Id: *user.Id})
+			if user.Email != nil {
+				this.assertUserUnique(ctx, user, vErrs)
+			}
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			if user.StatusId != nil {
+				this.assertStatusExists(ctx, user, vErrs)
+			}
+			return nil
+		}).
+		End()
 	ft.PanicOnErr(err)
 
-	if dbUser == nil {
-		vErrs = ft.NewValidationErrors()
-		vErrs.Append("id", "user not found")
-
-		return &it.UpdateUserResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-
-	} else if *dbUser.Etag != *user.Etag {
-		vErrs = ft.NewValidationErrors()
-		vErrs.Append("etag", "user has been modified by another process")
-
+	if vErrs.Count() > 0 {
 		return &it.UpdateUserResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
@@ -169,7 +114,9 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 		user.PasswordHash = this.encrypt(user.PasswordRaw)
 	}
 
-	user, err = this.userRepo.Update(ctx, *user)
+	prevEtag := user.Etag
+	user.Etag = model.NewEtag()
+	user, err = this.userRepo.Update(ctx, *user, *prevEtag)
 	ft.PanicOnErr(err)
 
 	return &it.UpdateUserResult{
@@ -185,6 +132,71 @@ func (this *UserServiceImpl) encrypt(str *string) *string {
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(*str), bcrypt.DefaultCost)
 	ft.PanicOnErr(err)
 	return util.ToPtr(string(hashedBytes))
+}
+
+func (this *UserServiceImpl) sanitizeUser(user *domain.User) {
+	if user.Email != nil {
+		user.Email = util.ToPtr(strings.ToLower(*user.Email))
+	}
+	if user.DisplayName != nil {
+		cleanedName := strings.TrimSpace(*user.DisplayName)
+		cleanedName = defense.SanitizePlainText(cleanedName)
+		user.DisplayName = &cleanedName
+	}
+}
+
+func (this *UserServiceImpl) setUserDefaults(ctx context.Context, user *domain.User) {
+	user.SetDefaults()
+
+	activeEnum, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
+		Value: util.ToPtr(domain.UserStatusActive),
+		Type:  util.ToPtr(domain.UserStatusEnumType),
+	})
+	ft.PanicOnErr(err)
+	ft.PanicOnErr(activeEnum.ClientError)
+
+	user.Status = domain.WrapUserStatus(activeEnum.Data)
+	user.StatusId = activeEnum.Data.Id
+}
+
+func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) {
+	dbUser, err := this.userRepo.FindByEmail(ctx, *user.Email)
+	ft.PanicOnErr(err)
+
+	if dbUser != nil {
+		vErrs.Append("email", "email already exists")
+	}
+}
+
+func (this *UserServiceImpl) assertStatusExists(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) {
+	dbStatus, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
+		Value: user.StatusValue,
+		Type:  util.ToPtr(domain.UserStatusEnumType),
+	})
+	ft.PanicOnErr(err)
+	ft.PanicOnErr(dbStatus.ClientError)
+
+	if !dbStatus.HasData {
+		vErrs.Append("status", "invalid user status")
+		return
+	}
+	user.StatusId = dbStatus.Data.Id
+}
+
+func (this *UserServiceImpl) assertCorrectUser(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) error {
+	dbUser, err := this.userRepo.FindById(ctx, it.FindByIdParam{Id: *user.Id})
+	if err != nil {
+		return err
+	}
+
+	if dbUser == nil {
+		vErrs.Append("id", "user not found")
+		return nil
+	} else if *dbUser.Etag != *user.Etag {
+		vErrs.Append("etag", "user has been modified by another user")
+		return nil
+	}
+	return nil
 }
 
 func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCommand) (result *it.DeleteUserResult, err error) {
@@ -219,6 +231,7 @@ func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCo
 
 	return &it.DeleteUserResult{
 		Data: &it.DeleteUserResultData{
+			Id:        *user.Id,
 			DeletedAt: time.Now(),
 		},
 		HasData: true,
@@ -352,7 +365,8 @@ func (this *UserServiceImpl) ListUserStatuses(ctx context.Context, query it.List
 	}
 	query.SetDefaults()
 	userStatuses, err := this.enumSvc.ListEnums(ctx, enum.ListEnumsQuery{
-		EnumType:     util.ToPtr(domain.UserStatusEnumType),
+		EntityName:   "user statuses",
+		Type:         util.ToPtr(domain.UserStatusEnumType),
 		Page:         query.Page,
 		Size:         query.Size,
 		SortedByLang: query.SortedByLang,

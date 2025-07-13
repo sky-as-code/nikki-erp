@@ -28,7 +28,7 @@ func (this RequestType) String() string {
 }
 
 type Request interface {
-	Type() RequestType
+	CqrsRequestType() RequestType
 }
 
 type RequestPacket[TReq Request] struct {

@@ -198,6 +198,16 @@ func ValueHasSuffix(v string) predicate.UserStatusEnum {
 	return predicate.UserStatusEnum(sql.FieldHasSuffix(FieldValue, v))
 }
 
+// ValueIsNil applies the IsNil predicate on the "value" field.
+func ValueIsNil() predicate.UserStatusEnum {
+	return predicate.UserStatusEnum(sql.FieldIsNull(FieldValue))
+}
+
+// ValueNotNil applies the NotNil predicate on the "value" field.
+func ValueNotNil() predicate.UserStatusEnum {
+	return predicate.UserStatusEnum(sql.FieldNotNull(FieldValue))
+}
+
 // ValueEqualFold applies the EqualFold predicate on the "value" field.
 func ValueEqualFold(v string) predicate.UserStatusEnum {
 	return predicate.UserStatusEnum(sql.FieldEqualFold(FieldValue, v))

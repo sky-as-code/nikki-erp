@@ -3,70 +3,33 @@ package v1
 import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/safe"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
-	"github.com/thoas/go-funk"
 )
 
-type CreateUserRequest = it.CreateUserCommand
-type CreateUserResponse = GetUserByIdResponse
+type UserDto struct {
+	Id          string  `json:"id"`
+	AvatarUrl   *string `json:"avatarUrl,omitempty"`
+	CreatedAt   int64   `json:"createdAt"`
+	DisplayName string  `json:"displayName"`
+	Email       string  `json:"email"`
+	Etag        string  `json:"etag"`
+	Status      string  `json:"status"`
+	UpdatedAt   *int64  `json:"updatedAt,omitempty"`
 
-type UpdateUserRequest = it.UpdateUserCommand
-type UpdateUserResponse = GetUserByIdResponse
-
-type DeleteUserRequest = it.DeleteUserCommand
-
-type DeleteUserResponse struct {
-	DeletedAt int64 `json:"deletedAt,omitempty"`
+	Groups      []GroupDto                   `json:"groups,omitempty"`
+	Hierarchies []SearchUsersRespHierarchies `json:"hierarchies,omitempty"`
+	Orgs        []GetGroupRespOrg            `json:"orgs,omitempty"`
 }
 
-type GetUserByIdRequest = it.GetUserByIdQuery
+func (this *UserDto) FromUser(user domain.User) {
+	model.MustCopy(user.AuditableBase, this)
+	model.MustCopy(user.ModelBase, this)
+	model.MustCopy(user, this)
 
-type GetUserByIdResponse struct {
-	Id          model.Id   `json:"id,omitempty"`
-	AvatarUrl   *string    `json:"avatarUrl,omitempty"`
-	CreatedAt   int64      `json:"createdAt,omitempty"`
-	DisplayName string     `json:"displayName,omitempty"`
-	Email       string     `json:"email,omitempty"`
-	Etag        model.Etag `json:"etag,omitempty"`
-	Status      string     `json:"status,omitempty"`
-	UpdatedAt   *int64     `json:"updatedAt,omitempty"`
-}
-
-func (this *GetUserByIdResponse) FromUser(user domain.User) {
-	this.Id = *user.Id
-	this.AvatarUrl = user.AvatarUrl
-	this.CreatedAt = user.CreatedAt.UnixMilli()
-	this.DisplayName = *user.DisplayName
-	this.Email = *user.Email
-	this.Etag = *user.Etag
-	this.Status = *user.Status.Value
-	this.UpdatedAt = safe.GetTimeUnixMilli(user.UpdatedAt)
-}
-
-type SearchUsersRequest = it.SearchUsersQuery
-
-type SearchUsersResponseItem struct {
-	Id          model.Id                     `json:"id"`
-	DisplayName string                       `json:"displayName"`
-	Email       string                       `json:"email"`
-	LockedUntil *int64                       `json:"lockedUntil,omitempty"`
-	Status      string                       `json:"status"`
-	Groups      []SearchUsersRespGroups      `json:"groups"`
-	Hierarchies []SearchUsersRespHierarchies `json:"hierarchies"`
-	Orgs        []GetGroupRespOrg            `json:"orgs"`
-}
-
-func (this *SearchUsersResponseItem) FromUser(user domain.User) {
-	this.Id = *user.Id
-	this.DisplayName = *user.DisplayName
-	this.Email = *user.Email
-	this.LockedUntil = safe.GetTimeUnix(user.LockedUntil)
-	this.Status = *user.Status.Value
-
-	this.Groups = array.Map(user.Groups, func(group domain.Group) SearchUsersRespGroups {
-		groupResp := SearchUsersRespGroups{}
+	this.Groups = array.Map(user.Groups, func(group domain.Group) GroupDto {
+		groupResp := GroupDto{}
 		groupResp.FromGroup(group)
 		return groupResp
 	})
@@ -82,11 +45,28 @@ func (this *SearchUsersResponseItem) FromUser(user domain.User) {
 		orgResp.FromOrg(&org)
 		return orgResp
 	})
+	if user.Status != nil {
+		this.Status = *user.Status.Value
+	}
 }
 
+type CreateUserRequest = it.CreateUserCommand
+type CreateUserResponse = httpserver.RestCreateResponse
+
+type UpdateUserRequest = it.UpdateUserCommand
+type UpdateUserResponse = httpserver.RestUpdateResponse
+
+type DeleteUserRequest = it.DeleteUserCommand
+type DeleteUserResponse = httpserver.RestDeleteResponse
+
+type GetUserByIdRequest = it.GetUserByIdQuery
+type GetUserByIdResponse = UserDto
+
+type SearchUsersRequest = it.SearchUsersQuery
+
 type SearchUsersRespGroups struct {
-	Id   model.Id `json:"id"`
-	Name string   `json:"name"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }
 
 func (this *SearchUsersRespGroups) FromGroup(group domain.Group) {
@@ -94,9 +74,10 @@ func (this *SearchUsersRespGroups) FromGroup(group domain.Group) {
 	this.Name = *group.Name
 }
 
+// TODO: Replace with HierarchyDto
 type SearchUsersRespHierarchies struct {
-	Id   model.Id `json:"id"`
-	Name string   `json:"name"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }
 
 func (this *SearchUsersRespHierarchies) FromHierarhy(hierarhy domain.HierarchyLevel) {
@@ -104,10 +85,12 @@ func (this *SearchUsersRespHierarchies) FromHierarhy(hierarhy domain.HierarchyLe
 	this.Name = *hierarhy.Name
 }
 
+// TODO: Replace with OrganizationDto
+
 type SearchUsersRespOrgs struct {
-	Id          model.Id   `json:"id"`
-	DisplayName string     `json:"displayName"`
-	Slug        model.Slug `json:"slug"`
+	Id          string `json:"id"`
+	DisplayName string `json:"displayName"`
+	Slug        string `json:"slug"`
 }
 
 func (this *SearchUsersRespOrgs) FromOrg(org domain.Organization) {
@@ -117,21 +100,21 @@ func (this *SearchUsersRespOrgs) FromOrg(org domain.Organization) {
 }
 
 type SearchUsersResponse struct {
-	Items []SearchUsersResponseItem `json:"items"`
-	Total int                       `json:"total"`
-	Page  int                       `json:"page"`
-	Size  int                       `json:"size"`
+	Items []UserDto `json:"items"`
+	Total int       `json:"total"`
+	Page  int       `json:"page"`
+	Size  int       `json:"size"`
 }
 
 func (this *SearchUsersResponse) FromResult(result *it.SearchUsersResultData) {
 	this.Total = result.Total
 	this.Page = result.Page
 	this.Size = result.Size
-	this.Items = funk.Map(result.Items, func(user domain.User) SearchUsersResponseItem {
-		item := SearchUsersResponseItem{}
+	this.Items = array.Map(result.Items, func(user domain.User) UserDto {
+		item := UserDto{}
 		item.FromUser(user)
 		return item
-	}).([]SearchUsersResponseItem)
+	})
 }
 
 type UserExistsMultiRequest = it.UserExistsMultiCommand

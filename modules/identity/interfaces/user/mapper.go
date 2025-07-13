@@ -1,6 +1,8 @@
 package user
 
 import (
+	"reflect"
+
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
@@ -27,4 +29,26 @@ func (this UpdateUserCommand) ToUser() *domain.User {
 		PasswordRaw:        this.Password,
 		StatusValue:        this.Status,
 	}
+}
+
+func init() {
+	model.AddConversion[domain.UserStatus, string](func(in reflect.Value) (reflect.Value, error) {
+		status := in.Interface().(domain.UserStatus)
+		if status.Value == nil {
+			return reflect.ValueOf(""), nil
+		}
+		return reflect.ValueOf(*status.Value), nil
+	})
+
+	model.AddConversion[*domain.UserStatus, string](func(in reflect.Value) (reflect.Value, error) {
+		if in.IsNil() {
+			return reflect.ValueOf(""), nil
+		}
+
+		status := in.Interface().(*domain.UserStatus)
+		if status.Value == nil {
+			return reflect.ValueOf(""), nil
+		}
+		return reflect.ValueOf(*status.Value), nil
+	})
 }

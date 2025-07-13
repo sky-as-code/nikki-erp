@@ -52,7 +52,7 @@ func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
 	}
 
 	response := CreateUserResponse{}
-	response.FromUser(*result.Data)
+	response.FromEntity(result.Data)
 
 	return httpserver.JsonCreated(echoCtx, response)
 }
@@ -75,7 +75,7 @@ func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
 	}
 
 	response := UpdateUserResponse{}
-	response.FromUser(*result.Data)
+	response.FromEntity(result.Data)
 
 	return httpserver.JsonOk(echoCtx, response)
 }
@@ -97,9 +97,8 @@ func (this UserRest) DeleteUser(echoCtx echo.Context) (err error) {
 		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
 	}
 
-	response := DeleteUserResponse{
-		DeletedAt: result.Data.DeletedAt.UnixMilli(),
-	}
+	response := DeleteUserResponse{}
+	response.FromNonEntity(result.Data)
 
 	return httpserver.JsonOk(echoCtx, response)
 }
