@@ -13,7 +13,6 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/defense"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
 
@@ -104,34 +103,6 @@ func SlugValidateRule(field *Slug, isRequired bool) *val.FieldRules {
 		val.Length(1, MODEL_RULE_SHORT_NAME_LENGTH),
 		val.RegExp(regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)),
 	)
-}
-
-type OpResult[TData any] struct {
-	Data TData `json:"data"`
-
-	// Indicates whether "Data" has value. If ClientError is nil but HasData is false,
-	// it means the query is successfull but doesn't return any data.
-	HasData     bool            `json:"hasData"`
-	ClientError *ft.ClientError `json:"error,omitempty"`
-}
-
-func (this OpResult[TData]) GetClientError() *ft.ClientError {
-	return this.ClientError
-}
-
-func PageIndexValidateRule(field **int) *val.FieldRules {
-	return val.Field(field,
-		val.Min(MODEL_RULE_PAGE_INDEX_START),
-		val.Max(MODEL_RULE_PAGE_INDEX_END),
-	)
-}
-
-func PageSizeValidateRule(field **int) *val.FieldRules {
-	return val.Field(field, val.When(*field != nil,
-		val.NotEmpty,
-		val.Min(MODEL_RULE_PAGE_MIN_SIZE),
-		val.Max(MODEL_RULE_PAGE_MAX_SIZE),
-	))
 }
 
 // LanguageCode is a BCP47-compliant language code with region part.

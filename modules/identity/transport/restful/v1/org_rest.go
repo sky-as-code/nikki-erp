@@ -128,7 +128,7 @@ func (this OrganizationRest) GetOrganizationBySlug(echoCtx echo.Context) (err er
 
 func (this OrganizationRest) SearchOrganizations(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to search organizations"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search organizations"); e != nil {
 			err = e
 		}
 	}()

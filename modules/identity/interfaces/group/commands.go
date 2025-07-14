@@ -56,7 +56,7 @@ type AddRemoveUsersResultData struct {
 	UpdatedAt time.Time  `json:"updatedAt"`
 }
 
-type AddRemoveUsersResult = model.OpResult[*AddRemoveUsersResultData]
+type AddRemoveUsersResult = crud.OpResult[*AddRemoveUsersResultData]
 
 var createGroupCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -74,7 +74,7 @@ func (CreateGroupCommand) CqrsRequestType() cqrs.RequestType {
 	return createGroupCommandType
 }
 
-type CreateGroupResult = model.OpResult[*domain.Group]
+type CreateGroupResult = crud.OpResult[*domain.Group]
 
 var updateGroupCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -94,7 +94,7 @@ func (UpdateGroupCommand) CqrsRequestType() cqrs.RequestType {
 	return updateGroupCommandType
 }
 
-type UpdateGroupResult = model.OpResult[*domain.Group]
+type UpdateGroupResult = crud.OpResult[*domain.Group]
 
 var deleteGroupCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -123,7 +123,7 @@ type DeleteGroupResultData struct {
 	DeletedAt time.Time `json:"deletedAt"`
 }
 
-type DeleteGroupResult = model.OpResult[DeleteGroupResultData]
+type DeleteGroupResult = crud.DeletionResult
 
 var getGroupByIdQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -148,7 +148,7 @@ func (this *GetGroupByIdQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(this, rules...)
 }
 
-type GetGroupByIdResult = model.OpResult[*domain.Group]
+type GetGroupByIdResult = crud.OpResult[*domain.Group]
 
 var searchGroupsQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -174,11 +174,11 @@ func (this *SearchGroupsQuery) SetDefaults() {
 
 func (this SearchGroupsQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 	}
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type SearchGroupsResultData = crud.PagedResult[domain.Group]
-type SearchGroupsResult = model.OpResult[*SearchGroupsResultData]
+type SearchGroupsResult = crud.OpResult[*SearchGroupsResultData]

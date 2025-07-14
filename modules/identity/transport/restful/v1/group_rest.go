@@ -128,7 +128,7 @@ func (this GroupRest) DeleteGroup(echoCtx echo.Context) (err error) {
 
 func (this GroupRest) SearchGroups(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to search users"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search groups"); e != nil {
 			err = e
 		}
 	}()

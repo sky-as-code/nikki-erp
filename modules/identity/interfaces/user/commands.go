@@ -45,7 +45,7 @@ func (CreateUserCommand) CqrsRequestType() cqrs.RequestType {
 	return createUserCommandType
 }
 
-type CreateUserResult model.OpResult[*domain.User]
+type CreateUserResult crud.OpResult[*domain.User]
 
 var updateUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -68,7 +68,7 @@ func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
 	return updateUserCommandType
 }
 
-type UpdateUserResult model.OpResult[*domain.User]
+type UpdateUserResult crud.OpResult[*domain.User]
 
 var deleteUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -97,7 +97,7 @@ type DeleteUserResultData struct {
 	DeletedAt time.Time `json:"deletedAt"`
 }
 
-type DeleteUserResult model.OpResult[*DeleteUserResultData]
+type DeleteUserResult = crud.DeletionResult
 
 var existsCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -121,7 +121,7 @@ func (this UserExistsCommand) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type UserExistsResult model.OpResult[bool]
+type UserExistsResult = crud.OpResult[bool]
 
 var existsMultiCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -150,7 +150,7 @@ type ExistsMultiResultData struct {
 	NotExisting []model.Id `json:"notExisting"`
 }
 
-type UserExistsMultiResult model.OpResult[*ExistsMultiResultData]
+type UserExistsMultiResult = crud.OpResult[*ExistsMultiResultData]
 
 var getUserByIdQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -174,7 +174,7 @@ func (this GetUserByIdQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetUserByIdResult model.OpResult[*domain.User]
+type GetUserByIdResult = crud.OpResult[*domain.User]
 
 var searchUsersQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -202,15 +202,15 @@ func (this *SearchUsersQuery) SetDefaults() {
 
 func (this SearchUsersQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type SearchUsersResultData = crud.PagedResult[domain.User]
-type SearchUsersResult model.OpResult[*SearchUsersResultData]
+type SearchUsersResult = crud.OpResult[*SearchUsersResultData]
 
 var listUserStatusesCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -235,8 +235,8 @@ func (this *ListUserStatusesQuery) SetDefaults() {
 
 func (this ListUserStatusesQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 		model.LanguageCodeValidateRule(&this.SortedByLang, false),
 	}
 
@@ -244,4 +244,4 @@ func (this ListUserStatusesQuery) Validate() ft.ValidationErrors {
 }
 
 type ListUserStatusesResultData = crud.PagedResult[domain.IdentityStatus]
-type ListUserStatusesResult model.OpResult[*ListUserStatusesResultData]
+type ListUserStatusesResult = crud.OpResult[*ListUserStatusesResultData]

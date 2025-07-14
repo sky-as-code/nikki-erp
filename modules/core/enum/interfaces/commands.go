@@ -48,11 +48,27 @@ func (this DeleteEnumCommand) Validate() ft.ValidationErrors {
 }
 
 type DeleteEnumResultData struct {
+	Id           *model.Id `json:"id"`
 	DeletedAt    time.Time `json:"deletedAt"`
 	DeletedCount int       `json:"deletedCount"`
 }
 
-type DeleteEnumResult = model.OpResult[*DeleteEnumResultData]
+type DeleteEnumResult = crud.OpResult[*DeleteEnumResultData]
+
+func ToCrudDeletionResult(src *DeleteEnumResult) *crud.DeletionResult {
+	var data *crud.DeletionResultData
+	if src.HasData {
+		data = &crud.DeletionResultData{
+			Id:        safe.GetVal(src.Data.Id, ""),
+			DeletedAt: src.Data.DeletedAt,
+		}
+	}
+	return &crud.DeletionResult{
+		ClientError: src.ClientError,
+		Data:        data,
+		HasData:     src.HasData,
+	}
+}
 
 type EnumExistsQuery struct {
 	Id model.Id `param:"id" json:"id"`
@@ -68,7 +84,7 @@ func (this EnumExistsQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type EnumExistsResult = model.OpResult[bool]
+type EnumExistsResult = crud.OpResult[bool]
 
 type EnumExistsMultiQuery struct {
 	Ids []model.Id `json:"ids"`
@@ -89,7 +105,7 @@ type ExistsMultiResultData struct {
 	NotExisting []model.Id `json:"notExisting"`
 }
 
-type EnumExistsMultiResult = model.OpResult[*ExistsMultiResultData]
+type EnumExistsMultiResult = crud.OpResult[*ExistsMultiResultData]
 
 type GetEnumQuery struct {
 	Id *model.Id `param:"id" json:"id"`
@@ -109,7 +125,7 @@ func (this GetEnumQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetEnumResult = model.OpResult[*Enum]
+type GetEnumResult = crud.OpResult[*Enum]
 
 type ListEnumsQuery struct {
 	// The name replacing "enum" to appear in all error messages
@@ -131,8 +147,8 @@ func (this ListEnumsQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		EnumTypeValidateRule(&this.Type, false),
 		model.LanguageCodeValidateRule(&this.SortedByLang, false),
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 		val.Field(&this.PartialLabel,
 			val.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
 		),
@@ -142,7 +158,7 @@ func (this ListEnumsQuery) Validate() ft.ValidationErrors {
 }
 
 type ListEnumsResultData = crud.PagedResult[Enum]
-type ListEnumsResult = model.OpResult[*ListEnumsResultData]
+type ListEnumsResult = crud.OpResult[*ListEnumsResultData]
 
 type SearchEnumsQuery struct {
 	// The name replacing "enum" to appear in all error messages
@@ -160,8 +176,8 @@ func (this *SearchEnumsQuery) SetDefaults() {
 
 func (this SearchEnumsQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)

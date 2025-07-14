@@ -2,8 +2,8 @@ package app
 
 import (
 	"context"
-	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -31,7 +31,7 @@ type OrganizationServiceImpl struct {
 
 func (this *OrganizationServiceImpl) CreateOrganization(ctx context.Context, cmd itOrg.CreateOrganizationCommand) (result *itOrg.CreateOrganizationResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to create organization"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "create organization"); e != nil {
 			err = e
 		}
 	}()
@@ -69,7 +69,7 @@ func (this *OrganizationServiceImpl) CreateOrganization(ctx context.Context, cmd
 
 func (this *OrganizationServiceImpl) UpdateOrganization(ctx context.Context, cmd itOrg.UpdateOrganizationCommand) (result *itOrg.UpdateOrganizationResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to update organization"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "update organization"); e != nil {
 			err = e
 		}
 	}()
@@ -130,7 +130,7 @@ func (this *OrganizationServiceImpl) assertOrgUnique(ctx context.Context, slug *
 	}
 
 	if dbOrg != nil {
-		vErrs.Append("slug", "organization slug already exists")
+		vErrs.AppendAlreadyExists("slug", "organization slug")
 	}
 	return nil
 }
@@ -147,7 +147,7 @@ func (this *OrganizationServiceImpl) assertOrgExists(ctx context.Context, slug m
 		IncludeDeleted: true,
 	})
 	if dbOrg == nil {
-		vErrs.Append("slug", "organization not found")
+		vErrs.AppendNotFound("slug", "organization slug")
 	}
 	return
 }
@@ -180,7 +180,7 @@ func (this *OrganizationServiceImpl) setOrgDefaults(ctx context.Context, org *do
 
 func (this *OrganizationServiceImpl) DeleteOrganization(ctx context.Context, cmd itOrg.DeleteOrganizationCommand) (result *itOrg.DeleteOrganizationResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to delete organization"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "delete organization"); e != nil {
 			err = e
 		}
 	}()
@@ -208,18 +208,12 @@ func (this *OrganizationServiceImpl) DeleteOrganization(ctx context.Context, cmd
 	err = this.orgRepo.DeleteHard(ctx, *dbOrg.Id)
 	ft.PanicOnErr(err)
 
-	return &itOrg.DeleteOrganizationResult{
-		Data: &itOrg.DeleteOrganizationResultData{
-			Id:        *dbOrg.Id,
-			DeletedAt: time.Now(),
-		},
-		HasData: true,
-	}, nil
+	return crud.NewSuccessDeletionResult(*dbOrg.Id), nil
 }
 
 func (this *OrganizationServiceImpl) GetOrganizationBySlug(ctx context.Context, query itOrg.GetOrganizationBySlugQuery) (result *itOrg.GetOrganizationBySlugResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get organization by slug"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "get organization by slug"); e != nil {
 			err = e
 		}
 	}()
@@ -252,7 +246,7 @@ func (this *OrganizationServiceImpl) GetOrganizationBySlug(ctx context.Context, 
 
 func (this *OrganizationServiceImpl) SearchOrganizations(ctx context.Context, query itOrg.SearchOrganizationsQuery) (result *itOrg.SearchOrganizationsResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to search organizations"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "search organizations"); e != nil {
 			err = e
 		}
 	}()

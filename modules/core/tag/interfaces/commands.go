@@ -1,8 +1,6 @@
 package tag
 
 import (
-	"time"
-
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
@@ -70,23 +68,10 @@ func (this DeleteTagCommand) ToEnumCommand(tagType string) enum.DeleteEnumComman
 	}
 }
 
-type DeleteTagResultData struct {
-	DeletedAt time.Time `json:"deletedAt,omitempty"`
-}
-type DeleteTagResult = model.OpResult[*DeleteTagResultData]
+type DeleteTagResult = crud.DeletionResult
 
 func NewDeleteTagResult(src *enum.DeleteEnumResult) *DeleteTagResult {
-	var data *DeleteTagResultData
-	if src.HasData {
-		data = &DeleteTagResultData{
-			DeletedAt: src.Data.DeletedAt,
-		}
-	}
-	return &DeleteTagResult{
-		ClientError: src.ClientError,
-		Data:        data,
-		HasData:     src.HasData,
-	}
+	return enum.ToCrudDeletionResult(src)
 }
 
 // TODO: I don't think of any use case where we need to check if a single tag exists.
@@ -104,7 +89,7 @@ type TagExistsMultiResultData struct {
 	Existing    []model.Id `json:"existing"`
 	NotExisting []model.Id `json:"notExisting"`
 }
-type TagExistsMultiResult = model.OpResult[*TagExistsMultiResultData]
+type TagExistsMultiResult = crud.OpResult[*TagExistsMultiResultData]
 
 func NewTagExistsMultiResult(src *enum.EnumExistsMultiResult) *TagExistsMultiResult {
 	if src == nil {
@@ -135,7 +120,7 @@ func (this GetTagByIdQuery) ToEnumQuery() enum.GetEnumQuery {
 	}
 }
 
-type GetTagByIdResult = model.OpResult[*Tag]
+type GetTagByIdResult = crud.OpResult[*Tag]
 
 func NewGetTagByIdResult(src *enum.GetEnumResult) *GetTagByIdResult {
 	return &GetTagByIdResult{
@@ -165,7 +150,7 @@ func (this ListTagsQuery) ToEnumQuery(tagType string) enum.ListEnumsQuery {
 }
 
 type ListTagsResultData = crud.PagedResult[Tag]
-type ListTagsResult = model.OpResult[*ListTagsResultData]
+type ListTagsResult = crud.OpResult[*ListTagsResultData]
 
 func NewListTagsResultData(src *enum.ListEnumsResultData) *ListTagsResultData {
 	if src == nil {

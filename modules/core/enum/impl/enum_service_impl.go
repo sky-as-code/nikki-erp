@@ -37,7 +37,7 @@ type EnumServiceImpl struct {
 
 func (this *EnumServiceImpl) CreateEnum(ctx context.Context, cmd it.CreateEnumCommand) (result *it.CreateEnumResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanicf(recover(), "failed to create %s", cmd.EntityName); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "create "+cmd.EntityName); e != nil {
 			err = e
 		}
 	}()
@@ -80,7 +80,7 @@ func (this *EnumServiceImpl) CreateEnum(ctx context.Context, cmd it.CreateEnumCo
 
 func (this *EnumServiceImpl) UpdateEnum(ctx context.Context, cmd it.UpdateEnumCommand) (result *it.UpdateEnumResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanicf(recover(), "failed to update %s", cmd.EntityName); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "update "+cmd.EntityName); e != nil {
 			err = e
 		}
 	}()
@@ -213,7 +213,7 @@ func (this *EnumServiceImpl) getEnabledLanguages(ctx context.Context) ([]model.L
 
 func (this *EnumServiceImpl) DeleteEnum(ctx context.Context, cmd it.DeleteEnumCommand) (result *it.DeleteEnumResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanicf(recover(), "failed to delete %s", cmd.EntityName); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "delete "+cmd.EntityName); e != nil {
 			err = e
 		}
 	}()
@@ -240,6 +240,7 @@ func (this *EnumServiceImpl) DeleteEnum(ctx context.Context, cmd it.DeleteEnumCo
 
 	return &it.DeleteEnumResult{
 		Data: &it.DeleteEnumResultData{
+			Id:           cmd.Id,
 			DeletedAt:    time.Now(),
 			DeletedCount: deletedCount,
 		},
@@ -252,7 +253,7 @@ func (this *EnumServiceImpl) deleteById(ctx context.Context, id model.Id, vErrs 
 	ft.PanicOnErr(err)
 
 	if deletedCount == 0 {
-		vErrs.Append("id", "enum not found")
+		vErrs.AppendIdNotFound("enum")
 		return
 	}
 
@@ -265,7 +266,7 @@ func (this *EnumServiceImpl) deleteMultiByType(ctx context.Context, enumType str
 	ft.PanicOnErr(err)
 
 	if deletedCount == 0 {
-		vErrs.Append("type", "enum not found")
+		vErrs.AppendNotFound("type", "enum type")
 		return
 	}
 
@@ -290,7 +291,7 @@ func (this *EnumServiceImpl) deleteMultiByType(ctx context.Context, enumType str
 
 func (this *EnumServiceImpl) EnumExists(ctx context.Context, query it.EnumExistsQuery) (result *it.EnumExistsResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanicf(recover(), "failed to check if %s exists", query.EntityName); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "check if "+query.EntityName+" exists"); e != nil {
 			err = e
 		}
 	}()
@@ -306,7 +307,7 @@ func (this *EnumServiceImpl) EnumExists(ctx context.Context, query it.EnumExists
 
 func (this *EnumServiceImpl) EnumExistsMulti(ctx context.Context, query it.EnumExistsMultiQuery) (result *it.EnumExistsMultiResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanicf(recover(), "failed to check if multiple %s exist", query.EntityName); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "check if multiple "+query.EntityName+" exist"); e != nil {
 			err = e
 		}
 	}()
@@ -325,7 +326,7 @@ func (this *EnumServiceImpl) EnumExistsMulti(ctx context.Context, query it.EnumE
 
 func (this *EnumServiceImpl) GetEnum(ctx context.Context, query it.GetEnumQuery) (result *it.GetEnumResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanicf(recover(), "failed to get %s", query.EntityName); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "get "+query.EntityName); e != nil {
 			err = e
 		}
 	}()
@@ -359,7 +360,7 @@ func (this *EnumServiceImpl) GetEnum(ctx context.Context, query it.GetEnumQuery)
 
 func (this *EnumServiceImpl) ListEnums(ctx context.Context, query it.ListEnumsQuery) (result *it.ListEnumsResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanicf(recover(), "failed to list %s", query.EntityName); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "list "+query.EntityName); e != nil {
 			err = e
 		}
 	}()
@@ -383,7 +384,7 @@ func (this *EnumServiceImpl) ListEnums(ctx context.Context, query it.ListEnumsQu
 
 func (this *EnumServiceImpl) SearchEnums(ctx context.Context, query it.SearchEnumsQuery) (result *it.SearchEnumsResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanicf(recover(), "failed to search %s", query.EntityName); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "search "+query.EntityName); e != nil {
 			err = e
 		}
 	}()

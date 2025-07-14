@@ -3,10 +3,10 @@ package app
 import (
 	"context"
 	"strings"
-	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -38,7 +38,7 @@ type UserServiceImpl struct {
 
 func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCommand) (result *it.CreateUserResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to create user"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "create user"); e != nil {
 			err = e
 		}
 	}()
@@ -79,7 +79,7 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCo
 
 func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCommand) (result *it.UpdateUserResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to update user"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "update user"); e != nil {
 			err = e
 		}
 	}()
@@ -175,7 +175,7 @@ func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.
 	}
 
 	if dbUser != nil {
-		vErrs.Append("email", "email already exists")
+		vErrs.AppendAlreadyExists("email", "email")
 	}
 	return nil
 }
@@ -202,10 +202,10 @@ func (this *UserServiceImpl) assertCorrectUser(ctx context.Context, user *domain
 	}
 
 	if dbUser == nil {
-		vErrs.Append("id", "user not found")
+		vErrs.AppendIdNotFound("user")
 		return nil
 	} else if *dbUser.Etag != *user.Etag {
-		vErrs.Append("etag", "user has been modified by another user")
+		vErrs.AppendEtagMismatched()
 		return nil
 	}
 	return nil
@@ -213,7 +213,7 @@ func (this *UserServiceImpl) assertCorrectUser(ctx context.Context, user *domain
 
 func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCommand) (result *it.DeleteUserResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to delete user"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "delete user"); e != nil {
 			err = e
 		}
 	}()
@@ -229,7 +229,7 @@ func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCo
 	ft.PanicOnErr(err)
 
 	if user == nil {
-		vErrs.Append("id", "user not found")
+		vErrs.AppendIdNotFound("user")
 		return &it.DeleteUserResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
@@ -238,18 +238,12 @@ func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCo
 	err = this.userRepo.Delete(ctx, it.DeleteParam{Id: cmd.Id})
 	ft.PanicOnErr(err)
 
-	return &it.DeleteUserResult{
-		Data: &it.DeleteUserResultData{
-			Id:        *user.Id,
-			DeletedAt: time.Now(),
-		},
-		HasData: true,
-	}, nil
+	return crud.NewSuccessDeletionResult(*user.Id), nil
 }
 
 func (this *UserServiceImpl) Exists(ctx context.Context, cmd it.UserExistsCommand) (result *it.UserExistsResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to check if user exists"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "check if user exists"); e != nil {
 			err = e
 		}
 	}()
@@ -278,7 +272,7 @@ func (this *UserServiceImpl) ExistsMulti(ctx context.Context, cmd it.UserExistsM
 
 func (this *UserServiceImpl) GetUserById(ctx context.Context, query it.GetUserByIdQuery) (result *it.GetUserByIdResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get user"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "get user"); e != nil {
 			err = e
 		}
 	}()
@@ -294,7 +288,7 @@ func (this *UserServiceImpl) GetUserById(ctx context.Context, query it.GetUserBy
 	ft.PanicOnErr(err)
 
 	if user == nil {
-		vErrs.Append("id", "user not found")
+		vErrs.AppendIdNotFound("user")
 		return &it.GetUserByIdResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
@@ -308,7 +302,7 @@ func (this *UserServiceImpl) GetUserById(ctx context.Context, query it.GetUserBy
 
 func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUsersQuery) (result *it.SearchUsersResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list users"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "list users"); e != nil {
 			err = e
 		}
 	}()
@@ -342,7 +336,7 @@ func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUse
 
 func (this *UserServiceImpl) ListUserStatuses(ctx context.Context, query it.ListUserStatusesQuery) (result *it.ListUserStatusesResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list user statuses"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "list user statuses"); e != nil {
 			err = e
 		}
 	}()
