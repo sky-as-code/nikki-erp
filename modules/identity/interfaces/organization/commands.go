@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
@@ -42,7 +43,7 @@ func (CreateOrganizationCommand) CqrsRequestType() cqrs.RequestType {
 	return createOrganizationCommandType
 }
 
-type CreateOrganizationResult model.OpResult[*domain.Organization]
+type CreateOrganizationResult = crud.OpResult[*domain.Organization]
 
 var updateOrganizationCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -59,7 +60,8 @@ type UpdateOrganizationCommand struct {
 	LegalName   *string     `json:"legalName"`
 	PhoneNumber *string     `json:"phoneNumber"`
 	NewSlug     *model.Slug `json:"newSlug"`
-	Status      *string     `json:"status" model:"-"`
+	StatusId    *model.Id   `json:"statusId"`
+	StatusValue *string     `json:"statusValue"`
 }
 
 func (UpdateOrganizationCommand) CqrsRequestType() cqrs.RequestType {
@@ -75,7 +77,7 @@ func (this UpdateOrganizationCommand) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type UpdateOrganizationResult model.OpResult[*domain.Organization]
+type UpdateOrganizationResult = crud.OpResult[*domain.Organization]
 
 var deleteOrganizationCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -104,7 +106,7 @@ type DeleteOrganizationResultData struct {
 	DeletedAt time.Time `json:"deletedAt"`
 }
 
-type DeleteOrganizationResult model.OpResult[*DeleteOrganizationResultData]
+type DeleteOrganizationResult = crud.DeletionResult
 
 var getOrganizationByIdQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -112,7 +114,7 @@ var getOrganizationByIdQueryType = cqrs.RequestType{
 	Action:    "getOrganizationById",
 }
 
-type GetOrganizationByIdResult model.OpResult[*domain.Organization]
+type GetOrganizationByIdResult = crud.OpResult[*domain.Organization]
 
 var getOrganizationBySlugQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -137,7 +139,7 @@ func (this GetOrganizationBySlugQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetOrganizationBySlugResult model.OpResult[*domain.Organization]
+type GetOrganizationBySlugResult = crud.OpResult[*domain.Organization]
 
 var searchOrganizationsQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -163,12 +165,26 @@ func (this *SearchOrganizationsQuery) SetDefaults() {
 
 func (this SearchOrganizationsQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type SearchOrganizationsResultData = crud.PagedResult[domain.Organization]
-type SearchOrganizationsResult model.OpResult[*SearchOrganizationsResultData]
+type SearchOrganizationsResult = crud.OpResult[*SearchOrganizationsResultData]
+
+var listOrgStatusesCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "organization",
+	Action:    "listOrgStatuses",
+}
+
+type ListOrgStatusesQuery struct {
+	enum.ListDerivedEnumsQuery
+}
+
+func (ListOrgStatusesQuery) CqrsRequestType() cqrs.RequestType {
+	return listOrgStatusesCommandType
+}

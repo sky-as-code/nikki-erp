@@ -62,8 +62,10 @@ func (this *UserEntRepository) Update(ctx context.Context, user domain.User, pre
 	return db.Mutate(ctx, update, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) Delete(ctx context.Context, param it.DeleteParam) error {
-	return db.Delete[ent.User](ctx, this.client.User.DeleteOneID(param.Id))
+func (this *UserEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+	return this.client.User.Delete().
+		Where(entUser.ID(param.Id)).
+		Exec(ctx)
 }
 
 func (this *UserEntRepository) Exists(ctx context.Context, id model.Id) (bool, error) {

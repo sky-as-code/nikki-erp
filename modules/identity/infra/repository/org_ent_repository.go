@@ -65,8 +65,10 @@ func (this *OrganizationEntRepository) DeleteSoft(ctx context.Context, id model.
 	return db.Mutate(ctx, update, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) DeleteHard(ctx context.Context, id model.Id) error {
-	return db.Delete[ent.Organization](ctx, this.client.Organization.DeleteOneID(id))
+func (this *OrganizationEntRepository) DeleteHard(ctx context.Context, id model.Id) (int, error) {
+	return this.client.Organization.Delete().
+		Where(entOrg.ID(id)).
+		Exec(ctx)
 }
 
 func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id) (*domain.Organization, error) {

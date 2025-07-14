@@ -5,14 +5,10 @@ import (
 	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 )
 
-type IdentityStatus struct {
-	enum.Enum
-}
+type IdentityStatus = enum.Enum
 
 func WrapIdentStatus(status *enum.Enum) *IdentityStatus {
-	return &IdentityStatus{
-		Enum: *status,
-	}
+	return (*IdentityStatus)(status)
 }
 
 func WrapIdentStatuses(statuses []enum.Enum) []IdentityStatus {

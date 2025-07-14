@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
@@ -45,7 +46,7 @@ func (CreateUserCommand) CqrsRequestType() cqrs.RequestType {
 	return createUserCommandType
 }
 
-type CreateUserResult model.OpResult[*domain.User]
+type CreateUserResult = crud.OpResult[*domain.User]
 
 var updateUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -61,14 +62,15 @@ type UpdateUserCommand struct {
 	Etag               model.Etag `json:"etag"`
 	MustChangePassword *bool      `json:"mustChangePassword"`
 	Password           *string    `json:"password"`
-	Status             *string    `json:"status" model:"-"`
+	StatusId           *model.Id  `json:"statusId"`
+	StatusValue        *string    `json:"statusValue"`
 }
 
 func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
 	return updateUserCommandType
 }
 
-type UpdateUserResult model.OpResult[*domain.User]
+type UpdateUserResult = crud.OpResult[*domain.User]
 
 var deleteUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -97,7 +99,7 @@ type DeleteUserResultData struct {
 	DeletedAt time.Time `json:"deletedAt"`
 }
 
-type DeleteUserResult model.OpResult[*DeleteUserResultData]
+type DeleteUserResult = crud.DeletionResult
 
 var existsCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -121,7 +123,7 @@ func (this UserExistsCommand) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type UserExistsResult model.OpResult[bool]
+type UserExistsResult = crud.OpResult[bool]
 
 var existsMultiCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -150,7 +152,7 @@ type ExistsMultiResultData struct {
 	NotExisting []model.Id `json:"notExisting"`
 }
 
-type UserExistsMultiResult model.OpResult[*ExistsMultiResultData]
+type UserExistsMultiResult = crud.OpResult[*ExistsMultiResultData]
 
 var getUserByIdQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -174,7 +176,7 @@ func (this GetUserByIdQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetUserByIdResult model.OpResult[*domain.User]
+type GetUserByIdResult = crud.OpResult[*domain.User]
 
 var searchUsersQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -202,15 +204,15 @@ func (this *SearchUsersQuery) SetDefaults() {
 
 func (this SearchUsersQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type SearchUsersResultData = crud.PagedResult[domain.User]
-type SearchUsersResult model.OpResult[*SearchUsersResultData]
+type SearchUsersResult = crud.OpResult[*SearchUsersResultData]
 
 var listUserStatusesCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -219,29 +221,12 @@ var listUserStatusesCommandType = cqrs.RequestType{
 }
 
 type ListUserStatusesQuery struct {
-	Page         *int                `json:"page" query:"page"`
-	Size         *int                `json:"size" query:"size"`
-	SortedByLang *model.LanguageCode `json:"sortedByLang" query:"sortedByLang"`
+	enum.ListDerivedEnumsQuery
 }
 
 func (ListUserStatusesQuery) CqrsRequestType() cqrs.RequestType {
 	return listUserStatusesCommandType
 }
 
-func (this *ListUserStatusesQuery) SetDefaults() {
-	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
-	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
-}
-
-func (this ListUserStatusesQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
-		model.LanguageCodeValidateRule(&this.SortedByLang, false),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type ListUserStatusesResultData = crud.PagedResult[domain.IdentityStatus]
-type ListUserStatusesResult model.OpResult[*ListUserStatusesResultData]
+type ListIdentStatusesResultData = crud.PagedResult[domain.IdentityStatus]
+type ListIdentStatusesResult = crud.OpResult[*ListIdentStatusesResultData]

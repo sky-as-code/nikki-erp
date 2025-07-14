@@ -13,7 +13,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/defense"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
 
@@ -106,34 +106,6 @@ func SlugValidateRule(field *Slug, isRequired bool) *val.FieldRules {
 	)
 }
 
-type OpResult[TData any] struct {
-	Data TData `json:"data"`
-
-	// Indicates whether "Data" has value. If ClientError is nil but HasData is false,
-	// it means the query is successfull but doesn't return any data.
-	HasData     bool            `json:"hasData"`
-	ClientError *ft.ClientError `json:"error,omitempty"`
-}
-
-func (this OpResult[TData]) GetClientError() *ft.ClientError {
-	return this.ClientError
-}
-
-func PageIndexValidateRule(field **int) *val.FieldRules {
-	return val.Field(field,
-		val.Min(MODEL_RULE_PAGE_INDEX_START),
-		val.Max(MODEL_RULE_PAGE_INDEX_END),
-	)
-}
-
-func PageSizeValidateRule(field **int) *val.FieldRules {
-	return val.Field(field, val.When(*field != nil,
-		val.NotEmpty,
-		val.Min(MODEL_RULE_PAGE_MIN_SIZE),
-		val.Max(MODEL_RULE_PAGE_MAX_SIZE),
-	))
-}
-
 // LanguageCode is a BCP47-compliant language code with region part.
 // It must be an alias of string to easily map from map[LanguageCode]string to LangJson
 type LanguageCode = string
@@ -172,7 +144,12 @@ const (
 var langCodeRules = []val.Rule{
 	val.NotEmpty,
 	val.By(func(value any) error {
-		code, _ := value.(string)
+		code, ok := value.(string)
+		if !ok {
+			codePtr, _ := value.(*string)
+			code = safe.GetVal(codePtr, "")
+		}
+
 		if !IsBCP47LanguageCode(code) {
 			return errors.New("must be a valid BCP47-compliant language code with region part")
 		}

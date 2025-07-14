@@ -36,7 +36,7 @@ func (this *PartyTagServiceImpl) TagSvc() tag.TagService {
 
 func (this *PartyTagServiceImpl) CreatePartyTag(ctx context.Context, cmd it.CreatePartyTagCommand) (result *it.CreatePartyTagResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to create party tag"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "create party tag"); e != nil {
 			err = e
 		}
 	}()
@@ -49,7 +49,7 @@ func (this *PartyTagServiceImpl) CreatePartyTag(ctx context.Context, cmd it.Crea
 
 func (this *PartyTagServiceImpl) UpdatePartyTag(ctx context.Context, cmd it.UpdatePartyTagCommand) (result *it.UpdatePartyTagResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to update party tag"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "update party tag"); e != nil {
 			err = e
 		}
 	}()
@@ -62,7 +62,7 @@ func (this *PartyTagServiceImpl) UpdatePartyTag(ctx context.Context, cmd it.Upda
 
 func (this *PartyTagServiceImpl) DeletePartyTag(ctx context.Context, cmd it.DeletePartyTagCommand) (result *it.DeletePartyTagResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to delete party tag"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "delete party tag"); e != nil {
 			err = e
 		}
 	}()
@@ -75,7 +75,7 @@ func (this *PartyTagServiceImpl) DeletePartyTag(ctx context.Context, cmd it.Dele
 
 func (this *PartyTagServiceImpl) PartyTagExistsMulti(ctx context.Context, query it.PartyTagExistsMultiQuery) (result *it.PartyTagExistsMultiResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to check if party tags exist"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "check if party tags exist"); e != nil {
 			err = e
 		}
 	}()
@@ -88,7 +88,7 @@ func (this *PartyTagServiceImpl) PartyTagExistsMulti(ctx context.Context, query 
 
 func (this *PartyTagServiceImpl) GetPartyTagById(ctx context.Context, query it.GetPartyByIdTagQuery) (result *it.GetPartyTagByIdResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get party tag"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "get party tag"); e != nil {
 			err = e
 		}
 	}()
@@ -101,7 +101,7 @@ func (this *PartyTagServiceImpl) GetPartyTagById(ctx context.Context, query it.G
 
 func (this *PartyTagServiceImpl) ListPartyTags(ctx context.Context, query it.ListPartyTagsQuery) (result *it.ListPartyTagsResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list party tags"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "list party tags"); e != nil {
 			err = e
 		}
 	}()

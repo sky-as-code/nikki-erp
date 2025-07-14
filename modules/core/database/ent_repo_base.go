@@ -41,22 +41,6 @@ func Mutate[TDb any, TDomain any](
 	return domainEntity, nil
 }
 
-func Delete[TDb any](
-	ctx context.Context,
-	deleteBuilder interface{ Exec(context.Context) error },
-) error {
-	return deleteBuilder.Exec(ctx)
-}
-
-func DeleteMulti[TDb any](
-	ctx context.Context,
-	deleteBuilder interface {
-		Exec(context.Context) (int, error)
-	},
-) (int, error) {
-	return deleteBuilder.Exec(ctx)
-}
-
 func FindOne[TDb any, TDomain any](
 	ctx context.Context,
 	queryBuilder QueryOneBuilder[TDb],

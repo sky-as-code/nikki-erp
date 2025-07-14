@@ -53,14 +53,15 @@ func (this *EnumEntRepository) Update(ctx context.Context, enum it.Enum, prevEta
 }
 
 func (this *EnumEntRepository) DeleteById(ctx context.Context, id model.Id) (int, error) {
-	return db.DeleteMulti[ent.Enum](ctx, this.client.Enum.Delete().Where(entEnum.ID(id)))
+	return this.client.Enum.Delete().
+		Where(entEnum.ID(id)).
+		Exec(ctx)
 }
 
 func (this *EnumEntRepository) DeleteByType(ctx context.Context, enumType string) (int, error) {
-	return db.DeleteMulti[ent.Enum](
-		ctx,
-		this.client.Enum.Delete().Where(entEnum.Type(enumType)),
-	)
+	return this.client.Enum.Delete().
+		Where(entEnum.Type(enumType)).
+		Exec(ctx)
 }
 
 func (this *EnumEntRepository) Exists(ctx context.Context, id model.Id) (bool, error) {
@@ -113,9 +114,9 @@ func (this *EnumEntRepository) List(ctx context.Context, param it.ListParam) (*c
 	if param.Type != nil {
 		query = query.Where(entEnum.Type(*param.Type))
 	}
-	if param.SortedByLang != nil {
+	if param.SortByLang != nil {
 		query = query.Order(
-			sqljson.OrderValue(entEnum.FieldLabel, sqljson.Path(string(*param.SortedByLang))),
+			sqljson.OrderValue(entEnum.FieldLabel, sqljson.Path(string(*param.SortByLang))),
 		)
 	}
 

@@ -82,7 +82,5 @@ func entToUsers(dbUsers []*ent.User) []domain.User {
 }
 
 func entToIdentityStatus(dbStatus *ent.IdentStatusEnum) *domain.IdentityStatus {
-	return &domain.IdentityStatus{
-		Enum: *enum.AnyToEnum(*dbStatus),
-	}
+	return domain.WrapIdentStatus(enum.AnyToEnum(*dbStatus))
 }

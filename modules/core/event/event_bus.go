@@ -92,7 +92,7 @@ type RedisEventBus struct {
 
 func (bus *RedisEventBus) PublishRequest(ctx context.Context, request EventRequest) (err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to publish event")
+		err = ft.RecoverPanicFailedTo(recover(), "publish event")
 	}()
 
 	// Marshal the event
@@ -116,7 +116,7 @@ func (bus *RedisEventBus) PublishRequestWaitReply(ctx context.Context, request E
 	ctx, cancelSubscription := context.WithCancel(ctx)
 
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to publish event and wait reply")
+		err = ft.RecoverPanicFailedTo(recover(), "publish event and wait reply")
 	}()
 
 	replyChan, errChan := bus.subscribeReply(ctx, request, DataReply, cancelSubscription)
@@ -173,7 +173,7 @@ func (bus *RedisEventBus) subscribeReply(ctx context.Context, request EventReque
 
 func (bus *RedisEventBus) SubscribeRequest(ctx context.Context, request EventRequest, result any) (requestChan chan any, err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to publish reply")
+		err = ft.RecoverPanicFailedTo(recover(), "publish reply")
 	}()
 
 	if _, exists := bus.subscriptions.Load(request.eventTopic); exists {
@@ -224,7 +224,7 @@ func (bus *RedisEventBus) SubscribeRequest(ctx context.Context, request EventReq
 // PublishReply publishes a reply to the specified reply topic
 func (bus *RedisEventBus) PublishReply(ctx context.Context, request EventRequest, reply *Reply[any]) (err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to publish reply")
+		err = ft.RecoverPanicFailedTo(recover(), "publish reply")
 	}()
 
 	// Marshal the reply

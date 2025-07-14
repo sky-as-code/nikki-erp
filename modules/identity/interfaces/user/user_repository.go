@@ -12,7 +12,7 @@ import (
 
 type UserRepository interface {
 	Create(ctx context.Context, user domain.User) (*domain.User, error)
-	Delete(ctx context.Context, param DeleteParam) error
+	DeleteHard(ctx context.Context, param DeleteParam) (int, error)
 	Exists(ctx context.Context, id model.Id) (bool, error)
 	ExistsMulti(ctx context.Context, ids []model.Id) (existing []model.Id, notExisting []model.Id, err error)
 	FindById(ctx context.Context, param FindByIdParam) (*domain.User, error)

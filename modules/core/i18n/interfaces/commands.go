@@ -18,7 +18,7 @@ func (GetCurrentLangCodeQuery) CqrsRequestType() cqrs.RequestType {
 	return getCurrentLangCodeQuery
 }
 
-type GetCurrentLangCodeResult model.OpResult[model.LanguageCode]
+type GetCurrentLangCodeResult = crud.OpResult[model.LanguageCode]
 
 var getCurrentLanguageQuery = cqrs.RequestType{
 	Module:    "core",
@@ -32,7 +32,7 @@ func (GetCurrentLanguageQuery) CqrsRequestType() cqrs.RequestType {
 	return getCurrentLanguageQuery
 }
 
-type GetCurrentLanguageResult model.OpResult[Language]
+type GetCurrentLanguageResult = crud.OpResult[Language]
 
 var listEnabledLangCodesQuery = cqrs.RequestType{
 	Module:    "core",
@@ -46,7 +46,7 @@ func (ListEnabledLangCodesQuery) CqrsRequestType() cqrs.RequestType {
 	return listEnabledLangCodesQuery
 }
 
-type ListEnabledLangCodesResult model.OpResult[[]model.LanguageCode]
+type ListEnabledLangCodesResult = crud.OpResult[[]model.LanguageCode]
 
 var listLanguagesQuery = cqrs.RequestType{
 	Module:    "core",
@@ -70,4 +70,4 @@ func (ListLanguagesQuery) CqrsRequestType() cqrs.RequestType {
 }
 
 type ListLanguagesResultData = crud.PagedResult[Language]
-type ListLanguagesResult model.OpResult[ListLanguagesResultData]
+type ListLanguagesResult = crud.OpResult[ListLanguagesResultData]

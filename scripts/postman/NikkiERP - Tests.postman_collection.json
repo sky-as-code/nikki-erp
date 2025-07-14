@@ -542,7 +542,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"email\": \"another.doe@nikkierp.com\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"isEnabled\": true,\r\n    \"mustChangePassword\": true,\r\n    \"password\": \"t0psecret!\"\r\n}\r\n",
+											"raw": "{\r\n    \"avatarUrl\": \"https://avatar.com/me.jpg\",\r\n    \"displayName\": \"Another Doe\",\r\n    \"email\": \"another.doe@nikkierp.com\",\r\n    \"etag\": \"{{etag}}\",\r\n    \"mustChangePassword\": true,\r\n    \"password\": \"t0psecret!\",\r\n    \"statusValue\": \"archived\"\r\n}\r\n",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -650,7 +650,7 @@
 													"const expected = {\r",
 													"    code: \"validation_error\",\r",
 													"    details: {\r",
-													"        etag: \"user has been modified by another user\",\r",
+													"        etag: \"etag mismatched\",\r",
 													"    },\r",
 													"};\r",
 													"\r",
@@ -1183,200 +1183,6 @@
 							]
 						},
 						{
-							"name": "User - Delete",
-							"item": [
-								{
-									"name": "User Delete - Success",
-									"event": [
-										{
-											"listen": "test",
-											"script": {
-												"exec": [
-													"const schema = {\r",
-													"    type: \"object\",\r",
-													"    required: [\"id\", \"deletedAt\"],\r",
-													"    properties: {\r",
-													"        id: {\r",
-													"            type: \"string\",\r",
-													"            minLength: 1,\r",
-													"        },\r",
-													"        deletedAt: {\r",
-													"            type: \"integer\",\r",
-													"            minimum: 1,\r",
-													"        },\r",
-													"    },\r",
-													"    additionalProperties: false\r",
-													"};\r",
-													"\r",
-													"pm.test(\"Status code is 200\", function () {\r",
-													"    pm.response.to.have.status(200);\r",
-													"});\r",
-													"\r",
-													"pm.test(\"Response matches expected JSON schema\", function () {\r",
-													"    pm.response.to.have.jsonSchema(schema);\r",
-													"});\r",
-													""
-												],
-												"type": "text/javascript",
-												"packages": {}
-											}
-										}
-									],
-									"request": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"users",
-												"{{user_id}}"
-											]
-										}
-									},
-									"response": []
-								},
-								{
-									"name": "User Delete Again - Not found ID - Validation errors",
-									"event": [
-										{
-											"listen": "test",
-											"script": {
-												"exec": [
-													"const expected = {\r",
-													"    code: \"validation_error\",\r",
-													"    details: {\r",
-													"        id: \"user not found\",\r",
-													"    },\r",
-													"};\r",
-													"\r",
-													"// Parse response body\r",
-													"let jsonData;\r",
-													"try {\r",
-													"    jsonData = pm.response.json();\r",
-													"} catch (e) {\r",
-													"    pm.test(\"Response is valid JSON\", function () {\r",
-													"        pm.expect.fail(\"Response is not valid JSON\");\r",
-													"    });\r",
-													"    return;\r",
-													"}\r",
-													"\r",
-													"pm.test(\"Status code is 400\", function () {\r",
-													"    pm.response.to.have.status(400);\r",
-													"});\r",
-													"\r",
-													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
-													"    pm.expect(jsonData).to.eql(expected);\r",
-													"});\r",
-													""
-												],
-												"type": "text/javascript",
-												"packages": {}
-											}
-										},
-										{
-											"listen": "prerequest",
-											"script": {
-												"exec": [
-													""
-												],
-												"type": "text/javascript",
-												"packages": {}
-											}
-										}
-									],
-									"request": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"users",
-												"{{user_id}}"
-											]
-										}
-									},
-									"response": []
-								},
-								{
-									"name": "User Delete - Not found ID - Validation errors",
-									"event": [
-										{
-											"listen": "test",
-											"script": {
-												"exec": [
-													"const expected = {\r",
-													"    code: \"validation_error\",\r",
-													"    details: {\r",
-													"        id: \"user not found\",\r",
-													"    },\r",
-													"};\r",
-													"\r",
-													"// Parse response body\r",
-													"let jsonData;\r",
-													"try {\r",
-													"    jsonData = pm.response.json();\r",
-													"} catch (e) {\r",
-													"    pm.test(\"Response is valid JSON\", function () {\r",
-													"        pm.expect.fail(\"Response is not valid JSON\");\r",
-													"    });\r",
-													"    return;\r",
-													"}\r",
-													"\r",
-													"pm.test(\"Status code is 400\", function () {\r",
-													"    pm.response.to.have.status(400);\r",
-													"});\r",
-													"\r",
-													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
-													"    pm.expect(jsonData).to.eql(expected);\r",
-													"});\r",
-													""
-												],
-												"type": "text/javascript",
-												"packages": {}
-											}
-										},
-										{
-											"listen": "prerequest",
-											"script": {
-												"exec": [
-													""
-												],
-												"type": "text/javascript",
-												"packages": {}
-											}
-										}
-									],
-									"request": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/users/not-existing-1234567890123",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"users",
-												"not-existing-1234567890123"
-											]
-										}
-									},
-									"response": []
-								}
-							]
-						},
-						{
 							"name": "User - Search",
 							"item": [
 								{
@@ -1393,6 +1199,7 @@
 													"      type: \"array\",\r",
 													"      items: {\r",
 													"        type: \"object\",\r",
+													"        required: [\"id\", \"createdAt\", \"displayName\", \"email\", \"etag\", \"status\"],\r",
 													"        properties: {\r",
 													"          id: {\r",
 													"            type: \"string\",\r",
@@ -1428,8 +1235,7 @@
 													"            type: \"integer\",\r",
 													"            minimum: 1,\r",
 													"          }\r",
-													"        },\r",
-													"        required: [\"id\", \"createdAt\", \"displayName\", \"email\", \"etag\", \"status\"]\r",
+													"        }\r",
 													"      }\r",
 													"    },\r",
 													"    total: {\r",
@@ -2528,6 +2334,456 @@
 									"response": []
 								}
 							]
+						},
+						{
+							"name": "User - Delete",
+							"item": [
+								{
+									"name": "User Delete - Success",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const schema = {\r",
+													"    type: \"object\",\r",
+													"    required: [\"id\", \"deletedAt\"],\r",
+													"    properties: {\r",
+													"        id: {\r",
+													"            type: \"string\",\r",
+													"            minLength: 1,\r",
+													"        },\r",
+													"        deletedAt: {\r",
+													"            type: \"integer\",\r",
+													"            minimum: 1,\r",
+													"        },\r",
+													"    },\r",
+													"    additionalProperties: false\r",
+													"};\r",
+													"\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response matches expected JSON schema\", function () {\r",
+													"    pm.response.to.have.jsonSchema(schema);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Delete Again - Not found ID - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        id: \"user not found\",\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/{{user_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"{{user_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User Delete - Not found ID - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        id: \"user not found\",\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/not-existing-1234567890123",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"not-existing-1234567890123"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "User - List statuses",
+							"item": [
+								{
+									"name": "User List Statuses - No sort - Success",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const schema = {\r",
+													"  type: \"object\",\r",
+													"  properties: {\r",
+													"    items: {\r",
+													"      type: \"array\",\r",
+													"      items: {\r",
+													"        type: \"object\",\r",
+													"        required: [\"id\", \"etag\", \"label\", \"type\", \"value\"],\r",
+													"        additionalProperties: false,\r",
+													"        properties: {\r",
+													"            id: {\r",
+													"                type: \"string\",\r",
+													"                minLength: 1,\r",
+													"            },\r",
+													"            etag: {\r",
+													"                type: \"string\",\r",
+													"                minLength: 1\r",
+													"            },\r",
+													"            label: {\r",
+													"                type: \"object\",\r",
+													"                minProperties: 1,\r",
+													"                additionalProperties: {\r",
+													"                    type: \"string\"\r",
+													"                }\r",
+													"            },\r",
+													"            type: {\r",
+													"                type: \"string\",\r",
+													"                \"const\": \"ident_user_status\"\r",
+													"            },\r",
+													"            value: {\r",
+													"                type: \"string\",\r",
+													"                minLength: 1,\r",
+													"            }\r",
+													"        }\r",
+													"        }\r",
+													"    },\r",
+													"    total: {\r",
+													"      type: \"integer\",\r",
+													"      minimum: 0\r",
+													"    },\r",
+													"    page: {\r",
+													"      type: \"integer\",\r",
+													"      minimum: 0\r",
+													"    },\r",
+													"    size: {\r",
+													"      type: \"integer\",\r",
+													"      minimum: 1\r",
+													"    }\r",
+													"  },\r",
+													"  required: [\"items\", \"total\", \"page\", \"size\"]\r",
+													"};\r",
+													"\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response matches expected JSON schema\", function () {\r",
+													"    pm.response.to.have.jsonSchema(schema);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/statuses",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"statuses"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User List Statuses - Sort by label lang - Success",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const schema = {\r",
+													"  type: \"object\",\r",
+													"  properties: {\r",
+													"    items: {\r",
+													"      type: \"array\",\r",
+													"      items: {\r",
+													"        type: \"object\",\r",
+													"        required: [\"id\", \"etag\", \"label\", \"type\", \"value\"],\r",
+													"        additionalProperties: false,\r",
+													"        properties: {\r",
+													"            id: {\r",
+													"                type: \"string\",\r",
+													"                minLength: 1,\r",
+													"            },\r",
+													"            etag: {\r",
+													"                type: \"string\",\r",
+													"                minLength: 1\r",
+													"            },\r",
+													"            label: {\r",
+													"                type: \"object\",\r",
+													"                minProperties: 1,\r",
+													"                additionalProperties: {\r",
+													"                    type: \"string\"\r",
+													"                }\r",
+													"            },\r",
+													"            type: {\r",
+													"                type: \"string\",\r",
+													"                \"const\": \"ident_user_status\"\r",
+													"            },\r",
+													"            value: {\r",
+													"                type: \"string\",\r",
+													"                minLength: 1,\r",
+													"            }\r",
+													"        }\r",
+													"        }\r",
+													"    },\r",
+													"    total: {\r",
+													"      type: \"integer\",\r",
+													"      minimum: 0\r",
+													"    },\r",
+													"    page: {\r",
+													"      type: \"integer\",\r",
+													"      minimum: 0\r",
+													"    },\r",
+													"    size: {\r",
+													"      type: \"integer\",\r",
+													"      minimum: 1\r",
+													"    }\r",
+													"  },\r",
+													"  required: [\"items\", \"total\", \"page\", \"size\"]\r",
+													"};\r",
+													"\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response matches expected JSON schema\", function () {\r",
+													"    pm.response.to.have.jsonSchema(schema);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/statuses?sortbyLang=vi-VN",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"statuses"
+											],
+											"query": [
+												{
+													"key": "sortbyLang",
+													"value": "vi-VN"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "User List Statuses - Sort by invalid lang - Validation errors",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        sortByLang: \"must be a valid BCP47-compliant language code with region part\",\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/users/statuses?sortbyLang=vi-V",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"users",
+												"statuses"
+											],
+											"query": [
+												{
+													"key": "sortbyLang",
+													"value": "vi-V"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
 						}
 					]
 				},
@@ -3147,7 +3403,7 @@
 													"const expected = {\r",
 													"    code: \"validation_error\",\r",
 													"    details: {\r",
-													"        etag: \"group has been modified by another user\",\r",
+													"        etag: \"etag mismatched\",\r",
 													"    },\r",
 													"};\r",
 													"\r",
@@ -5636,6 +5892,159 @@
 										"body": {
 											"mode": "raw",
 											"raw": "{\r\n    \"add\": [],\r\n    \"remove\": [],\r\n    \"etag\": \"{{etag}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}/manage-users",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}",
+												"manage-users"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Group - Invalid IDs - Validation errors",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        add: \"1: the length must be exactly 26.\",\r",
+													"        remove: \"2: cannot be blank.\",\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"add\": [\"11113ZBF68C3DRN0371PER5BRC\", \"01\"],\r\n    \"remove\": [\"22223ZBF68C3DRN0371PER5BRC\", \"33333ZBF68C3DRN0371PER5BRC\", \"\"],\r\n    \"etag\": \"{{etag}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/groups/{{group_id}}/manage-users",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"groups",
+												"{{group_id}}",
+												"manage-users"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Group - Duplicate IDs - Validation errors",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const expected = {\r",
+													"    code: \"validation_error\",\r",
+													"    details: {\r",
+													"        add: \"add and remove must not contain the same id\"\r",
+													"    },\r",
+													"};\r",
+													"\r",
+													"pm.test(\"Status code is 400\", function () {\r",
+													"    pm.response.to.have.status(400);\r",
+													"});\r",
+													"\r",
+													"// Parse response body\r",
+													"let jsonData;\r",
+													"try {\r",
+													"    jsonData = pm.response.json();\r",
+													"} catch (e) {\r",
+													"    pm.test(\"Response is valid JSON\", function () {\r",
+													"        pm.expect.fail(\"Response is not valid JSON\");\r",
+													"    });\r",
+													"    return;\r",
+													"}\r",
+													"\r",
+													"pm.test(\"Response body matches expected JSON exactly\", function () {\r",
+													"    pm.expect(jsonData).to.eql(expected);\r",
+													"});"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"add\": [\"01K03ZAZV5MCF483RYAY6CX5AH\"],\r\n    \"remove\": [\"01K03ZAZV5MCF483RYAY6CX5AH\"],\r\n    \"etag\": \"{{etag}}\"\r\n}",
 											"options": {
 												"raw": {
 													"language": "json"

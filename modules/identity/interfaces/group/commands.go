@@ -3,6 +3,9 @@ package group
 import (
 	"time"
 
+	"go.bryk.io/pkg/errors"
+
+	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -45,6 +48,18 @@ func (this *AddRemoveUsersCommand) Validate() ft.ValidationErrors {
 		model.IdValidateRule(&this.GroupId, true),
 		model.IdValidateRuleMulti(&this.Add, false, 0, model.MODEL_RULE_ID_ARR_MAX),
 		model.IdValidateRuleMulti(&this.Remove, false, 0, model.MODEL_RULE_ID_ARR_MAX),
+		val.Field(&this.Add, val.By(func(value any) error {
+			if this.Add == nil || this.Remove == nil || len(this.Remove) == 0 {
+				return nil
+			}
+			ids, _ := value.([]model.Id)
+			for _, addedId := range ids {
+				if array.Contains(this.Remove, addedId) {
+					return errors.New("add and remove must not contain the same id")
+				}
+			}
+			return nil
+		})),
 	}
 
 	return val.ApiBased.ValidateStruct(this, rules...)
@@ -56,7 +71,7 @@ type AddRemoveUsersResultData struct {
 	UpdatedAt time.Time  `json:"updatedAt"`
 }
 
-type AddRemoveUsersResult = model.OpResult[*AddRemoveUsersResultData]
+type AddRemoveUsersResult = crud.OpResult[*AddRemoveUsersResultData]
 
 var createGroupCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -74,7 +89,7 @@ func (CreateGroupCommand) CqrsRequestType() cqrs.RequestType {
 	return createGroupCommandType
 }
 
-type CreateGroupResult = model.OpResult[*domain.Group]
+type CreateGroupResult = crud.OpResult[*domain.Group]
 
 var updateGroupCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -94,7 +109,7 @@ func (UpdateGroupCommand) CqrsRequestType() cqrs.RequestType {
 	return updateGroupCommandType
 }
 
-type UpdateGroupResult = model.OpResult[*domain.Group]
+type UpdateGroupResult = crud.OpResult[*domain.Group]
 
 var deleteGroupCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -123,7 +138,7 @@ type DeleteGroupResultData struct {
 	DeletedAt time.Time `json:"deletedAt"`
 }
 
-type DeleteGroupResult = model.OpResult[DeleteGroupResultData]
+type DeleteGroupResult = crud.DeletionResult
 
 var getGroupByIdQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -148,7 +163,7 @@ func (this *GetGroupByIdQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(this, rules...)
 }
 
-type GetGroupByIdResult = model.OpResult[*domain.Group]
+type GetGroupByIdResult = crud.OpResult[*domain.Group]
 
 var searchGroupsQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -174,11 +189,11 @@ func (this *SearchGroupsQuery) SetDefaults() {
 
 func (this SearchGroupsQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 	}
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type SearchGroupsResultData = crud.PagedResult[domain.Group]
-type SearchGroupsResult = model.OpResult[*SearchGroupsResultData]
+type SearchGroupsResult = crud.OpResult[*SearchGroupsResultData]

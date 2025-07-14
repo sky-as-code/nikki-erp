@@ -34,6 +34,22 @@ func (this *ValidationErrors) AppendItem(item ValidationErrorItem) {
 	(*this)[item.Field] = item.Error
 }
 
+func (this *ValidationErrors) AppendAlreadyExists(fieldName string, fieldLabel string) {
+	this.Appendf(fieldName, "%s already exists", fieldLabel)
+}
+
+func (this *ValidationErrors) AppendIdNotFound(entityName string) {
+	this.Appendf("id", "%s not found", entityName)
+}
+
+func (this *ValidationErrors) AppendNotFound(fieldName string, fieldLabel string) {
+	this.Appendf(fieldName, "%s not found", fieldLabel)
+}
+
+func (this *ValidationErrors) AppendEtagMismatched() {
+	this.Append("etag", "etag mismatched")
+}
+
 func (this *ValidationErrors) Count() int {
 	return len(*this)
 }

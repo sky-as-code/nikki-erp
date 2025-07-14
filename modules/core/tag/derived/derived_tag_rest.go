@@ -4,10 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	it "github.com/sky-as-code/nikki-erp/modules/core/tag/interfaces"
 )
 
@@ -16,19 +13,11 @@ import (
 //
 
 type DerivedRestParams struct {
-	Config  config.ConfigService
-	Logger  logging.LoggerService
-	TagSvc  it.TagService
-	CqrsBus cqrs.CqrsBus
+	TagSvc it.TagService
 }
 
 func NewDerivedRest(params DerivedRestParams) *DerivedRest {
 	return &DerivedRest{
-		RestBase: httpserver.RestBase{
-			ConfigSvc: params.Config,
-			Logger:    params.Logger,
-			CqrsBus:   params.CqrsBus,
-		},
 		TagSvc: params.TagSvc,
 	}
 }
@@ -40,7 +29,7 @@ type DerivedRest struct {
 
 func (this DerivedRest) CreateDerivedTag(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to handle REST create derived tag"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create derived tag"); e != nil {
 			err = e
 		}
 	}()
@@ -59,7 +48,7 @@ func (this DerivedRest) CreateDerivedTag(echoCtx echo.Context) (err error) {
 
 func (this DerivedRest) UpdateDerivedTag(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to handle REST update derived tag"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update derived tag"); e != nil {
 			err = e
 		}
 	}()
@@ -78,7 +67,7 @@ func (this DerivedRest) UpdateDerivedTag(echoCtx echo.Context) (err error) {
 
 func (this DerivedRest) DeleteDerivedTag(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to handle REST delete derived tag"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete derived tag"); e != nil {
 			err = e
 		}
 	}()
@@ -97,7 +86,7 @@ func (this DerivedRest) DeleteDerivedTag(echoCtx echo.Context) (err error) {
 
 func (this DerivedRest) GetDerivedTagById(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to handle REST get derived tag by id"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get derived tag by id"); e != nil {
 			err = e
 		}
 	}()
@@ -116,7 +105,7 @@ func (this DerivedRest) GetDerivedTagById(echoCtx echo.Context) (err error) {
 
 func (this DerivedRest) ListDerivedTags(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to handle REST list derived tags"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST list derived tags"); e != nil {
 			err = e
 		}
 	}()
