@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
@@ -61,7 +62,8 @@ type UpdateUserCommand struct {
 	Etag               model.Etag `json:"etag"`
 	MustChangePassword *bool      `json:"mustChangePassword"`
 	Password           *string    `json:"password"`
-	Status             *string    `json:"status" model:"-"`
+	StatusId           *model.Id  `json:"statusId"`
+	StatusValue        *string    `json:"statusValue"`
 }
 
 func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
@@ -219,29 +221,12 @@ var listUserStatusesCommandType = cqrs.RequestType{
 }
 
 type ListUserStatusesQuery struct {
-	Page         *int                `json:"page" query:"page"`
-	Size         *int                `json:"size" query:"size"`
-	SortedByLang *model.LanguageCode `json:"sortedByLang" query:"sortedByLang"`
+	enum.ListDerivedEnumsQuery
 }
 
 func (ListUserStatusesQuery) CqrsRequestType() cqrs.RequestType {
 	return listUserStatusesCommandType
 }
 
-func (this *ListUserStatusesQuery) SetDefaults() {
-	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
-	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
-}
-
-func (this ListUserStatusesQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		crud.PageIndexValidateRule(&this.Page),
-		crud.PageSizeValidateRule(&this.Size),
-		model.LanguageCodeValidateRule(&this.SortedByLang, false),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type ListUserStatusesResultData = crud.PagedResult[domain.IdentityStatus]
-type ListUserStatusesResult = crud.OpResult[*ListUserStatusesResultData]
+type ListIdentStatusesResultData = crud.PagedResult[domain.IdentityStatus]
+type ListIdentStatusesResult = crud.OpResult[*ListIdentStatusesResultData]

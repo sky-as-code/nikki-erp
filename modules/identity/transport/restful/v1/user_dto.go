@@ -78,4 +78,4 @@ type UserExistsMultiRequest = it.UserExistsMultiCommand
 type UserExistsMultiResponse = it.ExistsMultiResultData
 
 type ListUserStatusesRequest = it.ListUserStatusesQuery
-type ListUserStatusesResponse = it.ListUserStatusesResultData
+type ListUserStatusesResponse = it.ListIdentStatusesResultData

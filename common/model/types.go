@@ -13,6 +13,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/defense"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
 
@@ -143,7 +144,12 @@ const (
 var langCodeRules = []val.Rule{
 	val.NotEmpty,
 	val.By(func(value any) error {
-		code, _ := value.(string)
+		code, ok := value.(string)
+		if !ok {
+			codePtr, _ := value.(*string)
+			code = safe.GetVal(codePtr, "")
+		}
+
 		if !IsBCP47LanguageCode(code) {
 			return errors.New("must be a valid BCP47-compliant language code with region part")
 		}

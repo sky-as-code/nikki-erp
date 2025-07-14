@@ -134,7 +134,7 @@ type ListEnumsQuery struct {
 	PartialLabel *string             `json:"partialLabel" query:"partialLabel"`
 	Page         *int                `json:"page" query:"page"`
 	Size         *int                `json:"size" query:"size"`
-	SortedByLang *model.LanguageCode `json:"sortedByLang" query:"sortedByLang"`
+	SortByLang   *model.LanguageCode `json:"sortByLang" query:"sortByLang"`
 	Type         *string             `json:"type" query:"type"`
 }
 
@@ -146,7 +146,7 @@ func (this *ListEnumsQuery) SetDefaults() {
 func (this ListEnumsQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		EnumTypeValidateRule(&this.Type, false),
-		model.LanguageCodeValidateRule(&this.SortedByLang, false),
+		model.LanguageCodeValidateRule(&this.SortByLang, false),
 		crud.PageIndexValidateRule(&this.Page),
 		crud.PageSizeValidateRule(&this.Size),
 		val.Field(&this.PartialLabel,
@@ -184,3 +184,24 @@ func (this SearchEnumsQuery) Validate() ft.ValidationErrors {
 }
 
 type SearchEnumsResult = ListEnumsResult
+
+type ListDerivedEnumsQuery struct {
+	Page       *int                `json:"page" query:"page"`
+	Size       *int                `json:"size" query:"size"`
+	SortByLang *model.LanguageCode `json:"sortByLang" query:"sortByLang"`
+}
+
+func (this *ListDerivedEnumsQuery) SetDefaults() {
+	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
+	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
+}
+
+func (this ListDerivedEnumsQuery) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
+		model.LanguageCodeValidateRule(&this.SortByLang, false),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}

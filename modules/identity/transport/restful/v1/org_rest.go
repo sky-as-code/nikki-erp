@@ -9,7 +9,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
+	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
+	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
 type organizationRestParams struct {
@@ -40,7 +41,7 @@ func (this OrganizationRest) CreateOrganization(echoCtx echo.Context) (err error
 		return err
 	}
 
-	result := it.CreateOrganizationResult{}
+	result := itOrg.CreateOrganizationResult{}
 	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
 
 	if err != nil {
@@ -63,7 +64,7 @@ func (this OrganizationRest) UpdateOrganization(echoCtx echo.Context) (err error
 		return err
 	}
 
-	result := it.UpdateOrganizationResult{}
+	result := itOrg.UpdateOrganizationResult{}
 	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
 
 	if err != nil {
@@ -86,7 +87,7 @@ func (this OrganizationRest) DeleteOrganization(echoCtx echo.Context) (err error
 		return err
 	}
 
-	result := it.DeleteOrganizationResult{}
+	result := itOrg.DeleteOrganizationResult{}
 	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
 
 	if err != nil {
@@ -109,7 +110,7 @@ func (this OrganizationRest) GetOrganizationBySlug(echoCtx echo.Context) (err er
 		return err
 	}
 
-	result := it.GetOrganizationBySlugResult{}
+	result := itOrg.GetOrganizationBySlugResult{}
 	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
 
 	if err != nil {
@@ -138,7 +139,7 @@ func (this OrganizationRest) SearchOrganizations(echoCtx echo.Context) (err erro
 		return err
 	}
 
-	result := it.SearchOrganizationsResult{}
+	result := itOrg.SearchOrganizationsResult{}
 	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
 
 	if err != nil {
@@ -153,4 +154,24 @@ func (this OrganizationRest) SearchOrganizations(echoCtx echo.Context) (err erro
 	response.FromResult(result.Data)
 
 	return httpserver.JsonOk(echoCtx, response)
+}
+
+func (this OrganizationRest) ListOrgStatuses(echoCtx echo.Context) (err error) {
+	request := &ListOrgStatusesRequest{}
+	if err = echoCtx.Bind(request); err != nil {
+		return err
+	}
+
+	result := itUser.ListIdentStatusesResult{}
+	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+
+	if err != nil {
+		return err
+	}
+
+	if result.ClientError != nil {
+		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
+	}
+
+	return httpserver.JsonOk(echoCtx, result.Data)
 }

@@ -97,14 +97,14 @@ func (this *UserHandler) UserExistsMulti(ctx context.Context, packet *cqrs.Reque
 	}, nil
 }
 
-func (this *UserHandler) ListUserStatuses(ctx context.Context, packet *cqrs.RequestPacket[it.ListUserStatusesQuery]) (*cqrs.Reply[it.ListUserStatusesResult], error) {
+func (this *UserHandler) ListUserStatuses(ctx context.Context, packet *cqrs.RequestPacket[it.ListUserStatusesQuery]) (*cqrs.Reply[it.ListIdentStatusesResult], error) {
 	cmd := packet.Request()
 	result, err := this.UserSvc.ListUserStatuses(ctx, *cmd)
 	if err != nil {
 		return nil, err
 	}
 
-	reply := &cqrs.Reply[it.ListUserStatusesResult]{
+	reply := &cqrs.Reply[it.ListIdentStatusesResult]{
 		Result: *result,
 	}
 	return reply, nil

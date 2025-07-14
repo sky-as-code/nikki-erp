@@ -181,7 +181,7 @@ func (this UserRest) ListUserStatuses(echoCtx echo.Context) (err error) {
 		return err
 	}
 
-	result := it.ListUserStatusesResult{}
+	result := it.ListIdentStatusesResult{}
 	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
 
 	if err != nil {

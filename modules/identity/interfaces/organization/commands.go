@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
@@ -59,7 +60,8 @@ type UpdateOrganizationCommand struct {
 	LegalName   *string     `json:"legalName"`
 	PhoneNumber *string     `json:"phoneNumber"`
 	NewSlug     *model.Slug `json:"newSlug"`
-	Status      *string     `json:"status" model:"-"`
+	StatusId    *model.Id   `json:"statusId"`
+	StatusValue *string     `json:"statusValue"`
 }
 
 func (UpdateOrganizationCommand) CqrsRequestType() cqrs.RequestType {
@@ -172,3 +174,17 @@ func (this SearchOrganizationsQuery) Validate() ft.ValidationErrors {
 
 type SearchOrganizationsResultData = crud.PagedResult[domain.Organization]
 type SearchOrganizationsResult = crud.OpResult[*SearchOrganizationsResultData]
+
+var listOrgStatusesCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "organization",
+	Action:    "listOrgStatuses",
+}
+
+type ListOrgStatusesQuery struct {
+	enum.ListDerivedEnumsQuery
+}
+
+func (ListOrgStatusesQuery) CqrsRequestType() cqrs.RequestType {
+	return listOrgStatusesCommandType
+}

@@ -8,6 +8,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	util "github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
+	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 )
 
 type User struct {
@@ -86,6 +87,7 @@ func (this *User) Validate(forEdit bool) ft.ValidationErrors {
 		),
 		model.IdPtrValidateRule(&this.HierarchyId, false),
 		model.IdPtrValidateRule(&this.StatusId, false),
+		enum.EnumValueValidateRule(&this.StatusValue, false),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)

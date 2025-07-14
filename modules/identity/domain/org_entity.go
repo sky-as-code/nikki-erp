@@ -4,6 +4,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
+	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 )
 
 type Organization struct {
@@ -44,6 +45,8 @@ func (this *Organization) Validate(forEdit bool) ft.ValidationErrors {
 		model.IdPtrValidateRule(&this.Id, false), // Id is not required but Slug is mandatory in all cases
 		model.SlugPtrValidateRule(&this.Slug, true),
 		model.EtagPtrValidateRule(&this.Etag, forEdit),
+		model.IdPtrValidateRule(&this.StatusId, false),
+		enum.EnumValueValidateRule(&this.StatusValue, false),
 	}
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
 

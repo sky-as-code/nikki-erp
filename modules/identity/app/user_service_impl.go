@@ -105,8 +105,9 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			if user.StatusId != nil {
-				this.assertStatusExists(ctx, user, vErrs)
+			if user.StatusId != nil || user.StatusValue != nil {
+				dbStatus := this.assertStatusExists(ctx, user, vErrs)
+				user.StatusId = dbStatus.Data.Id
 			}
 			return nil
 		}).
@@ -180,19 +181,22 @@ func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.
 	return nil
 }
 
-func (this *UserServiceImpl) assertStatusExists(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) {
+func (this *UserServiceImpl) assertStatusExists(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) *enum.GetEnumResult {
 	dbStatus, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
-		Value: user.StatusValue,
-		Type:  util.ToPtr(domain.UserStatusEnumType),
+		Id:         user.StatusId,
+		Value:      user.StatusValue,
+		Type:       util.ToPtr(domain.UserStatusEnumType),
+		EntityName: "user status",
 	})
+
 	ft.PanicOnErr(err)
 	ft.PanicOnErr(dbStatus.ClientError)
 
 	if !dbStatus.HasData {
 		vErrs.Append("status", "invalid user status")
-		return
+		return nil
 	}
-	user.StatusId = dbStatus.Data.Id
+	return dbStatus
 }
 
 func (this *UserServiceImpl) assertCorrectUser(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) error {
@@ -334,40 +338,13 @@ func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUse
 	}, nil
 }
 
-func (this *UserServiceImpl) ListUserStatuses(ctx context.Context, query it.ListUserStatusesQuery) (result *it.ListUserStatusesResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "list user statuses"); e != nil {
-			err = e
-		}
-	}()
-
-	vErrsModel := query.Validate()
-	if vErrsModel.Count() > 0 {
-		return &it.ListUserStatusesResult{
-			ClientError: vErrsModel.ToClientError(),
-		}, nil
-	}
-	query.SetDefaults()
-	userStatuses, err := this.enumSvc.ListEnums(ctx, enum.ListEnumsQuery{
-		EntityName:   "user statuses",
-		Type:         util.ToPtr(domain.UserStatusEnumType),
-		Page:         query.Page,
-		Size:         query.Size,
-		SortedByLang: query.SortedByLang,
+func (this *UserServiceImpl) ListUserStatuses(ctx context.Context, query it.ListUserStatusesQuery) (*it.ListIdentStatusesResult, error) {
+	result, err := this.enumSvc.ListEnums(ctx, enum.ListEnumsQuery{
+		EntityName: "user statuses",
+		Type:       util.ToPtr(domain.UserStatusEnumType),
+		Page:       query.Page,
+		Size:       query.Size,
+		SortByLang: query.SortByLang,
 	})
-	ft.PanicOnErr(err)
-
-	result = &it.ListUserStatusesResult{
-		ClientError: userStatuses.ClientError,
-	}
-
-	if result.ClientError == nil {
-		result.HasData = userStatuses.HasData
-		result.Data = &it.ListUserStatusesResultData{
-			Items: domain.WrapIdentStatuses(userStatuses.Data.Items),
-			Total: userStatuses.Data.Total,
-		}
-	}
-
-	return result, nil
+	return (*it.ListIdentStatusesResult)(result), err
 }

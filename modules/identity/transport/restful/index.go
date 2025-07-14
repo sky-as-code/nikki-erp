@@ -45,4 +45,5 @@ func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, o
 	route.GET("/organizations/:slug", orgRest.GetOrganizationBySlug)
 	route.GET("/organizations", orgRest.SearchOrganizations)
 	route.PUT("/organizations/:slug", orgRest.UpdateOrganization)
+	route.GET("/organizations/statuses", orgRest.ListOrgStatuses)
 }

@@ -135,7 +135,7 @@ type ListTagsQuery struct {
 	PartialLabel *string             `json:"partialLabel" query:"partialLabel"`
 	Page         *int                `json:"page" query:"page"`
 	Size         *int                `json:"size" query:"size"`
-	SortedByLang *model.LanguageCode `json:"sortedByLang" query:"sortedByLang"`
+	SortByLang   *model.LanguageCode `json:"sortByLang" query:"sortByLang"`
 }
 
 func (this ListTagsQuery) ToEnumQuery(tagType string) enum.ListEnumsQuery {
@@ -145,7 +145,7 @@ func (this ListTagsQuery) ToEnumQuery(tagType string) enum.ListEnumsQuery {
 		Type:         prependTagType(&tagType),
 		Page:         this.Page,
 		Size:         this.Size,
-		SortedByLang: this.SortedByLang,
+		SortByLang:   this.SortByLang,
 	}
 }
 

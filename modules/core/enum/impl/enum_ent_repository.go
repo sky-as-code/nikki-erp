@@ -113,9 +113,9 @@ func (this *EnumEntRepository) List(ctx context.Context, param it.ListParam) (*c
 	if param.Type != nil {
 		query = query.Where(entEnum.Type(*param.Type))
 	}
-	if param.SortedByLang != nil {
+	if param.SortByLang != nil {
 		query = query.Order(
-			sqljson.OrderValue(entEnum.FieldLabel, sqljson.Path(string(*param.SortedByLang))),
+			sqljson.OrderValue(entEnum.FieldLabel, sqljson.Path(string(*param.SortByLang))),
 		)
 	}
 
