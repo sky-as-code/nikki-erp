@@ -46,25 +46,25 @@ type PartyHandler struct {
 // }
 
 func (this *PartyHandler) CreatePartyTag(ctx context.Context, packet *cqrs.RequestPacket[it.CreatePartyTagCommand]) (*cqrs.Reply[it.CreatePartyTagResult], error) {
-	return cqrs.HandlePacket[it.CreatePartyTagCommand, it.CreatePartyTagResult](ctx, packet, this.PartySvc.CreatePartyTag)
+	return cqrs.HandlePacket(ctx, packet, this.PartySvc.CreatePartyTag)
 }
 
 func (this *PartyHandler) UpdatePartyTag(ctx context.Context, packet *cqrs.RequestPacket[it.UpdatePartyTagCommand]) (*cqrs.Reply[it.UpdatePartyTagResult], error) {
-	return cqrs.HandlePacket[it.UpdatePartyTagCommand, it.UpdatePartyTagResult](ctx, packet, this.PartySvc.UpdatePartyTag)
+	return cqrs.HandlePacket(ctx, packet, this.PartySvc.UpdatePartyTag)
 }
 
 func (this *PartyHandler) DeletePartyTag(ctx context.Context, packet *cqrs.RequestPacket[it.DeletePartyTagCommand]) (*cqrs.Reply[it.DeletePartyTagResult], error) {
-	return cqrs.HandlePacket[it.DeletePartyTagCommand, it.DeletePartyTagResult](ctx, packet, this.PartySvc.DeletePartyTag)
+	return cqrs.HandlePacket(ctx, packet, this.PartySvc.DeletePartyTag)
 }
 
 func (this *PartyHandler) PartyTagExistsMulti(ctx context.Context, packet *cqrs.RequestPacket[it.PartyTagExistsMultiQuery]) (*cqrs.Reply[it.PartyTagExistsMultiResult], error) {
-	return cqrs.HandlePacket[it.PartyTagExistsMultiQuery, it.PartyTagExistsMultiResult](ctx, packet, this.PartySvc.PartyTagExistsMulti)
+	return cqrs.HandlePacket(ctx, packet, this.PartySvc.PartyTagExistsMulti)
 }
 
 func (this *PartyHandler) GetPartyTagById(ctx context.Context, packet *cqrs.RequestPacket[it.GetPartyByIdTagQuery]) (*cqrs.Reply[it.GetPartyTagByIdResult], error) {
-	return cqrs.HandlePacket[it.GetPartyByIdTagQuery, it.GetPartyTagByIdResult](ctx, packet, this.PartySvc.GetPartyTagById)
+	return cqrs.HandlePacket(ctx, packet, this.PartySvc.GetPartyTagById)
 }
 
 func (this *PartyHandler) ListPartyTags(ctx context.Context, packet *cqrs.RequestPacket[it.ListPartyTagsQuery]) (*cqrs.Reply[it.ListPartyTagsResult], error) {
-	return cqrs.HandlePacket[it.ListPartyTagsQuery, it.ListPartyTagsResult](ctx, packet, this.PartySvc.ListPartyTags)
+	return cqrs.HandlePacket(ctx, packet, this.PartySvc.ListPartyTags)
 }

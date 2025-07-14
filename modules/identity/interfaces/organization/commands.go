@@ -43,7 +43,7 @@ func (CreateOrganizationCommand) CqrsRequestType() cqrs.RequestType {
 	return createOrganizationCommandType
 }
 
-type CreateOrganizationResult crud.OpResult[*domain.Organization]
+type CreateOrganizationResult = crud.OpResult[*domain.Organization]
 
 var updateOrganizationCommandType = cqrs.RequestType{
 	Module:    "identity",

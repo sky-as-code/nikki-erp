@@ -13,7 +13,7 @@ import (
 type GroupRepository interface {
 	AddRemoveUsers(ctx context.Context, param AddRemoveUsersParam) (*ft.ClientError, error)
 	Create(ctx context.Context, group domain.Group) (*domain.Group, error)
-	Delete(ctx context.Context, param DeleteParam) error
+	DeleteHard(ctx context.Context, param DeleteParam) (int, error)
 	FindById(ctx context.Context, param FindByIdParam) (*domain.Group, error)
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Group, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)

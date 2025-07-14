@@ -64,7 +64,7 @@ func (this *OrganizationServiceImpl) CreateOrganization(ctx context.Context, cmd
 
 	return &itOrg.CreateOrganizationResult{
 		Data:    org,
-		HasData: true,
+		HasData: org != nil,
 	}, nil
 }
 
@@ -89,7 +89,7 @@ func (this *OrganizationServiceImpl) UpdateOrganization(ctx context.Context, cmd
 			return err
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			this.assertCorrectEtag(updatedOrg, dbOrg, vErrs)
+			this.assertCorrectEtag(*updatedOrg.Etag, *dbOrg.Etag, vErrs)
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
@@ -121,16 +121,16 @@ func (this *OrganizationServiceImpl) UpdateOrganization(ctx context.Context, cmd
 
 	return &itOrg.UpdateOrganizationResult{
 		Data:    updatedOrg,
-		HasData: true,
+		HasData: updatedOrg != nil,
 	}, nil
 }
 
-func (this *OrganizationServiceImpl) assertOrgUnique(ctx context.Context, slug *model.Slug, vErrs *ft.ValidationErrors) error {
-	if slug == nil {
+func (this *OrganizationServiceImpl) assertOrgUnique(ctx context.Context, newSlug *model.Slug, vErrs *ft.ValidationErrors) error {
+	if newSlug == nil {
 		return nil
 	}
 	dbOrg, err := this.orgRepo.FindBySlug(ctx, itOrg.GetOrganizationBySlugQuery{
-		Slug:           *slug,
+		Slug:           *newSlug,
 		IncludeDeleted: true,
 	})
 	if err != nil {
@@ -143,9 +143,9 @@ func (this *OrganizationServiceImpl) assertOrgUnique(ctx context.Context, slug *
 	return nil
 }
 
-func (this *OrganizationServiceImpl) assertCorrectEtag(updatedOrg *domain.Organization, dbOrg *domain.Organization, vErrs *ft.ValidationErrors) {
-	if *updatedOrg.Etag != *dbOrg.Etag {
-		vErrs.Append("etag", "etag mismatched")
+func (this *OrganizationServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *ft.ValidationErrors) {
+	if updatedEtag != dbEtag {
+		vErrs.AppendEtagMismatched()
 	}
 }
 
@@ -230,10 +230,16 @@ func (this *OrganizationServiceImpl) DeleteOrganization(ctx context.Context, cmd
 		}, nil
 	}
 
-	err = this.orgRepo.DeleteHard(ctx, *dbOrg.Id)
+	deletedCount, err := this.orgRepo.DeleteHard(ctx, *dbOrg.Id)
 	ft.PanicOnErr(err)
 
-	return crud.NewSuccessDeletionResult(*dbOrg.Id), nil
+	// In case the org was deleted by another concurrent process,
+	// right after checking org existence.
+	if deletedCount == 0 {
+		vErrs.AppendIdNotFound("organization")
+	}
+
+	return crud.NewSuccessDeletionResult(*dbOrg.Id, &deletedCount), nil
 }
 
 func (this *OrganizationServiceImpl) GetOrganizationBySlug(ctx context.Context, query itOrg.GetOrganizationBySlugQuery) (result *itOrg.GetOrganizationBySlugResult, err error) {
@@ -298,7 +304,8 @@ func (this *OrganizationServiceImpl) SearchOrganizations(ctx context.Context, qu
 	ft.PanicOnErr(err)
 
 	return &itOrg.SearchOrganizationsResult{
-		Data: orgs,
+		Data:    orgs,
+		HasData: orgs.Items != nil,
 	}, nil
 }
 

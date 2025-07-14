@@ -4,10 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	it "github.com/sky-as-code/nikki-erp/modules/core/tag/interfaces"
 )
 
@@ -16,19 +13,11 @@ import (
 //
 
 type DerivedRestParams struct {
-	Config  config.ConfigService
-	Logger  logging.LoggerService
-	TagSvc  it.TagService
-	CqrsBus cqrs.CqrsBus
+	TagSvc it.TagService
 }
 
 func NewDerivedRest(params DerivedRestParams) *DerivedRest {
 	return &DerivedRest{
-		RestBase: httpserver.RestBase{
-			ConfigSvc: params.Config,
-			Logger:    params.Logger,
-			CqrsBus:   params.CqrsBus,
-		},
 		TagSvc: params.TagSvc,
 	}
 }

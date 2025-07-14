@@ -44,6 +44,7 @@ func (this *GroupServiceImpl) AddRemoveUsers(ctx context.Context, cmd itGrp.AddR
 		}, nil
 	}
 
+	var dbGroup *domain.Group
 	flow := val.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *ft.ValidationErrors) error {
@@ -51,7 +52,12 @@ func (this *GroupServiceImpl) AddRemoveUsers(ctx context.Context, cmd itGrp.AddR
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			return this.assertCorrectGroup(ctx, cmd.GroupId, cmd.Etag, vErrs)
+			dbGroup, err = this.assertGroupExists(ctx, cmd.GroupId, vErrs)
+			return err
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.assertCorrectEtag(cmd.Etag, *dbGroup.Etag, vErrs)
+			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			return this.assertUserIdsExist(ctx, vErrs, "add", cmd.Add)
@@ -81,6 +87,7 @@ func (this *GroupServiceImpl) AddRemoveUsers(ctx context.Context, cmd itGrp.AddR
 			Etag:      cmd.Etag,
 			UpdatedAt: time.Now(),
 		},
+		HasData: true,
 	}, nil
 }
 
@@ -141,7 +148,10 @@ func (this *GroupServiceImpl) CreateGroup(ctx context.Context, cmd itGrp.CreateG
 	createdGroup, err := this.groupRepo.Create(ctx, *group)
 	ft.PanicOnErr(err)
 
-	return &itGrp.CreateGroupResult{Data: createdGroup}, err
+	return &itGrp.CreateGroupResult{
+		Data:    createdGroup,
+		HasData: createdGroup != nil,
+	}, err
 }
 
 func (this *GroupServiceImpl) sanitizeGroup(group *domain.Group) {
@@ -161,6 +171,7 @@ func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd itGrp.UpdateG
 
 	group := cmd.ToGroup()
 
+	var dbGroup *domain.Group
 	flow := val.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *ft.ValidationErrors) error {
@@ -168,7 +179,12 @@ func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd itGrp.UpdateG
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			return this.assertCorrectGroup(ctx, *group.Id, *group.Etag, vErrs)
+			dbGroup, err = this.assertGroupExists(ctx, *group.Id, vErrs)
+			return err
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.assertCorrectEtag(*group.Etag, *dbGroup.Etag, vErrs)
+			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			// Sanitize after we've made sure this is the correct group
@@ -191,8 +207,36 @@ func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd itGrp.UpdateG
 
 	return &itGrp.UpdateGroupResult{
 		Data:    groupWithOrg,
-		HasData: true,
+		HasData: groupWithOrg != nil,
 	}, err
+}
+
+func (this *GroupServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *ft.ValidationErrors) {
+	if updatedEtag != dbEtag {
+		vErrs.AppendEtagMismatched()
+	}
+}
+
+func (this *GroupServiceImpl) assertGroupExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (dbGroup *domain.Group, err error) {
+	dbGroup, err = this.groupRepo.FindById(ctx, itGrp.FindByIdParam{Id: id})
+	if dbGroup == nil {
+		vErrs.AppendIdNotFound("group")
+	}
+	return
+}
+
+func (this *GroupServiceImpl) assertUniqueGroupName(ctx context.Context, group *domain.Group, vErrs *ft.ValidationErrors) error {
+	dbGroup, err := this.groupRepo.FindByName(ctx, itGrp.FindByNameParam{
+		Name: *group.Name,
+	})
+	if err != nil {
+		return err
+	}
+
+	if dbGroup != nil {
+		vErrs.AppendAlreadyExists("name", "group name")
+	}
+	return nil
 }
 
 func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd itGrp.DeleteGroupCommand) (result *itGrp.DeleteGroupResult, err error) {
@@ -203,8 +247,6 @@ func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd itGrp.DeleteG
 	}()
 
 	vErrs := cmd.Validate()
-	_, err = this.assertGroupIdExists(ctx, cmd.Id, &vErrs)
-	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &itGrp.DeleteGroupResult{
@@ -212,21 +254,37 @@ func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd itGrp.DeleteG
 		}, nil
 	}
 
-	err = this.groupRepo.Delete(ctx, cmd)
+	deletedCount, err := this.groupRepo.DeleteHard(ctx, cmd)
 	ft.PanicOnErr(err)
+	if deletedCount == 0 {
+		vErrs.AppendIdNotFound("group")
+		return &itGrp.DeleteGroupResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
 
-	return crud.NewSuccessDeletionResult(cmd.Id), nil
+	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
 func (this *GroupServiceImpl) GetGroupById(ctx context.Context, query itGrp.GetGroupByIdQuery) (result *itGrp.GetGroupByIdResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "get group"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "get group by Id"); e != nil {
 			err = e
 		}
 	}()
 
-	vErrs := query.Validate()
-	dbGroup, err := this.assertGroupIdExists(ctx, query.Id, &vErrs)
+	var dbGroup *domain.Group
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = query.Validate()
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			dbGroup, err = this.assertGroupExists(ctx, query.Id, vErrs)
+			return err
+		}).
+		End()
 	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
@@ -236,7 +294,8 @@ func (this *GroupServiceImpl) GetGroupById(ctx context.Context, query itGrp.GetG
 	}
 
 	return &itGrp.GetGroupByIdResult{
-		Data: dbGroup,
+		Data:    dbGroup,
+		HasData: dbGroup != nil,
 	}, nil
 }
 
@@ -269,49 +328,7 @@ func (thisSvc *GroupServiceImpl) SearchGroups(ctx context.Context, query itGrp.S
 	ft.PanicOnErr(err)
 
 	return &itGrp.SearchGroupsResult{
-		Data: groups,
+		Data:    groups,
+		HasData: groups.Items != nil,
 	}, nil
-}
-
-func (this *GroupServiceImpl) assertCorrectGroup(ctx context.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
-	dbGroup, err := this.assertGroupIdExists(ctx, id, vErrs)
-	if err != nil {
-		return err
-	}
-
-	if dbGroup != nil && *dbGroup.Etag != etag {
-		vErrs.AppendEtagMismatched()
-		return nil
-	}
-
-	return nil
-}
-
-func (this *GroupServiceImpl) assertGroupIdExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.Group, error) {
-	dbGroup, err := this.groupRepo.FindById(ctx, itGrp.FindByIdParam{
-		Id: id,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if dbGroup == nil {
-		vErrs.AppendIdNotFound("group")
-		return nil, nil
-	}
-	return dbGroup, nil
-}
-
-func (this *GroupServiceImpl) assertUniqueGroupName(ctx context.Context, group *domain.Group, vErrs *ft.ValidationErrors) error {
-	dbGroup, err := this.groupRepo.FindByName(ctx, itGrp.FindByNameParam{
-		Name: *group.Name,
-	})
-	if err != nil {
-		return err
-	}
-
-	if dbGroup != nil {
-		vErrs.AppendAlreadyExists("name", "group name")
-	}
-	return nil
 }

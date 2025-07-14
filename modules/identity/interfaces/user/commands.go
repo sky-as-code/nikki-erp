@@ -46,7 +46,7 @@ func (CreateUserCommand) CqrsRequestType() cqrs.RequestType {
 	return createUserCommandType
 }
 
-type CreateUserResult crud.OpResult[*domain.User]
+type CreateUserResult = crud.OpResult[*domain.User]
 
 var updateUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -70,7 +70,7 @@ func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
 	return updateUserCommandType
 }
 
-type UpdateUserResult crud.OpResult[*domain.User]
+type UpdateUserResult = crud.OpResult[*domain.User]
 
 var deleteUserCommandType = cqrs.RequestType{
 	Module:    "identity",

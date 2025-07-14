@@ -54,7 +54,7 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCo
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			this.sanitizeUser(user)
-			return this.assertUserUnique(ctx, user, vErrs)
+			return this.assertUserUnique(ctx, user.Email, vErrs)
 		}).
 		End()
 	ft.PanicOnErr(err)
@@ -73,7 +73,7 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCo
 
 	return &it.CreateUserResult{
 		Data:    user,
-		HasData: true,
+		HasData: user != nil, // In rare case, new user was deleted after created. Maybe due to a concurrent cleanup process.
 	}, err
 }
 
@@ -86,6 +86,7 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 
 	user := cmd.ToUser()
 
+	var dbUser *domain.User
 	flow := val.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *ft.ValidationErrors) error {
@@ -93,16 +94,17 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			return this.assertCorrectUser(ctx, user, vErrs)
+			dbUser, err = this.assertUserExists(ctx, *user.Id, vErrs)
+			return err
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.assertCorrectEtag(*user.Etag, *dbUser.Etag, vErrs)
+			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			// Sanitize after we've made sure this is the correct user
 			this.sanitizeUser(user)
-
-			if user.Email != nil {
-				return this.assertUserUnique(ctx, user, vErrs)
-			}
-			return nil
+			return this.assertUserUnique(ctx, user.Email, vErrs)
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			if user.StatusId != nil || user.StatusValue != nil {
@@ -131,7 +133,7 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 
 	return &it.UpdateUserResult{
 		Data:    user,
-		HasData: true,
+		HasData: user != nil,
 	}, err
 }
 
@@ -169,8 +171,11 @@ func (this *UserServiceImpl) setUserDefaults(ctx context.Context, user *domain.U
 	user.StatusId = activeEnum.Data.Id
 }
 
-func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) error {
-	dbUser, err := this.userRepo.FindByEmail(ctx, *user.Email)
+func (this *UserServiceImpl) assertUserUnique(ctx context.Context, newEmail *string, vErrs *ft.ValidationErrors) error {
+	if newEmail == nil {
+		return nil
+	}
+	dbUser, err := this.userRepo.FindByEmail(ctx, *newEmail)
 	if err != nil {
 		return err
 	}
@@ -179,6 +184,20 @@ func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.
 		vErrs.AppendAlreadyExists("email", "email")
 	}
 	return nil
+}
+
+func (this *UserServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *ft.ValidationErrors) {
+	if updatedEtag != dbEtag {
+		vErrs.AppendEtagMismatched()
+	}
+}
+
+func (this *UserServiceImpl) assertUserExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {
+	dbUser, err = this.userRepo.FindById(ctx, it.FindByIdParam{Id: id})
+	if dbUser == nil {
+		vErrs.AppendIdNotFound("user")
+	}
+	return
 }
 
 func (this *UserServiceImpl) assertStatusExists(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) *enum.GetEnumResult {
@@ -199,22 +218,6 @@ func (this *UserServiceImpl) assertStatusExists(ctx context.Context, user *domai
 	return dbStatus
 }
 
-func (this *UserServiceImpl) assertCorrectUser(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) error {
-	dbUser, err := this.userRepo.FindById(ctx, it.FindByIdParam{Id: *user.Id})
-	if err != nil {
-		return err
-	}
-
-	if dbUser == nil {
-		vErrs.AppendIdNotFound("user")
-		return nil
-	} else if *dbUser.Etag != *user.Etag {
-		vErrs.AppendEtagMismatched()
-		return nil
-	}
-	return nil
-}
-
 func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCommand) (result *it.DeleteUserResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "delete user"); e != nil {
@@ -223,26 +226,23 @@ func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCo
 	}()
 
 	vErrs := cmd.Validate()
+
 	if vErrs.Count() > 0 {
 		return &it.DeleteUserResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	user, err := this.userRepo.FindById(ctx, it.FindByIdParam{Id: cmd.Id})
+	deletedCount, err := this.userRepo.DeleteHard(ctx, it.DeleteParam{Id: cmd.Id})
 	ft.PanicOnErr(err)
-
-	if user == nil {
+	if deletedCount == 0 {
 		vErrs.AppendIdNotFound("user")
 		return &it.DeleteUserResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	err = this.userRepo.Delete(ctx, it.DeleteParam{Id: cmd.Id})
-	ft.PanicOnErr(err)
-
-	return crud.NewSuccessDeletionResult(*user.Id), nil
+	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
 func (this *UserServiceImpl) Exists(ctx context.Context, cmd it.UserExistsCommand) (result *it.UserExistsResult, err error) {
@@ -276,31 +276,34 @@ func (this *UserServiceImpl) ExistsMulti(ctx context.Context, cmd it.UserExistsM
 
 func (this *UserServiceImpl) GetUserById(ctx context.Context, query it.GetUserByIdQuery) (result *it.GetUserByIdResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "get user"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "get user by Id"); e != nil {
 			err = e
 		}
 	}()
 
-	vErrs := query.Validate()
+	var dbUser *domain.User
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = query.Validate()
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			dbUser, err = this.assertUserExists(ctx, query.Id, vErrs)
+			return err
+		}).
+		End()
+	ft.PanicOnErr(err)
+
 	if vErrs.Count() > 0 {
 		return &it.GetUserByIdResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	user, err := this.userRepo.FindById(ctx, query)
-	ft.PanicOnErr(err)
-
-	if user == nil {
-		vErrs.AppendIdNotFound("user")
-		return &it.GetUserByIdResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
 	return &it.GetUserByIdResult{
-		Data:    user,
-		HasData: true,
+		Data:    dbUser,
+		HasData: dbUser != nil,
 	}, nil
 }
 
@@ -334,7 +337,7 @@ func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUse
 
 	return &it.SearchUsersResult{
 		Data:    users,
-		HasData: len(users.Items) > 0,
+		HasData: users.Items != nil,
 	}, nil
 }
 

@@ -378,7 +378,7 @@ func (this *EnumServiceImpl) ListEnums(ctx context.Context, query it.ListEnumsQu
 
 	return &it.ListEnumsResult{
 		Data:    enums,
-		HasData: len(enums.Items) > 0,
+		HasData: enums.Items != nil,
 	}, nil
 }
 
@@ -412,6 +412,6 @@ func (this *EnumServiceImpl) SearchEnums(ctx context.Context, query it.SearchEnu
 
 	return &it.SearchEnumsResult{
 		Data:    enums,
-		HasData: len(enums.Items) > 0,
+		HasData: enums.Items != nil,
 	}, nil
 }

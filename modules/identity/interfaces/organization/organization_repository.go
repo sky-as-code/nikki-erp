@@ -12,7 +12,7 @@ import (
 
 type OrganizationRepository interface {
 	Create(ctx context.Context, organization domain.Organization) (*domain.Organization, error)
-	DeleteHard(ctx context.Context, id model.Id) error
+	DeleteHard(ctx context.Context, id model.Id) (int, error)
 	DeleteSoft(ctx context.Context, id model.Id) (*domain.Organization, error)
 	FindById(ctx context.Context, id model.Id) (*domain.Organization, error)
 	FindBySlug(ctx context.Context, query FindBySlugParam) (*domain.Organization, error)

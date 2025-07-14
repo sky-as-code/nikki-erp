@@ -47,7 +47,7 @@ func (this *ValidationErrors) AppendNotFound(fieldName string, fieldLabel string
 }
 
 func (this *ValidationErrors) AppendEtagMismatched() {
-	this.Append("etag", "etag mismatch")
+	this.Append("etag", "etag mismatched")
 }
 
 func (this *ValidationErrors) Count() int {

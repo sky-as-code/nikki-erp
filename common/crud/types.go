@@ -35,6 +35,10 @@ func (this OpResult[TData]) GetClientError() *ft.ClientError {
 	return this.ClientError
 }
 
+func (this OpResult[TData]) GetHasData() bool {
+	return this.HasData
+}
+
 func PageIndexValidateRule(field **int) *val.FieldRules {
 	return val.Field(field,
 		val.Min(model.MODEL_RULE_PAGE_INDEX_START),
@@ -51,17 +55,23 @@ func PageSizeValidateRule(field **int) *val.FieldRules {
 }
 
 type DeletionResultData struct {
-	Id        model.Id  `json:"id"`
-	DeletedAt time.Time `json:"deletedAt"`
+	Id           model.Id  `json:"id"`
+	DeletedAt    time.Time `json:"deletedAt"`
+	DeletedCount *int      `json:"deletedCount,omitempty"`
 }
 
 type DeletionResult = OpResult[*DeletionResultData]
 
-func NewSuccessDeletionResult(id model.Id) *DeletionResult {
+func NewSuccessDeletionResult(id model.Id, deletedCount ...*int) *DeletionResult {
+	var del *int
+	if len(deletedCount) > 0 {
+		del = deletedCount[0]
+	}
 	return &DeletionResult{
 		Data: &DeletionResultData{
-			Id:        id,
-			DeletedAt: time.Now(),
+			Id:           id,
+			DeletedAt:    time.Now(),
+			DeletedCount: del,
 		},
 		HasData: true,
 	}

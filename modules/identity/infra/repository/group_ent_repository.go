@@ -54,8 +54,10 @@ func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group, 
 	return db.Mutate(ctx, update, ent.IsNotFound, entToGroup)
 }
 
-func (this *GroupEntRepository) Delete(ctx context.Context, param it.DeleteParam) error {
-	return db.Delete[ent.Group](ctx, this.client.Group.DeleteOneID(param.Id))
+func (this *GroupEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+	return this.client.Group.Delete().
+		Where(entGroup.ID(param.Id)).
+		Exec(ctx)
 }
 
 func (this *GroupEntRepository) FindById(ctx context.Context, param it.GetGroupByIdQuery) (*domain.Group, error) {
