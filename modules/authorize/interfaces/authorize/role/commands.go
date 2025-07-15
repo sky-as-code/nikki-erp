@@ -1,12 +1,12 @@
 package role
 
 import (
-	// "github.com/sky-as-code/nikki-erp/common/crud"
-	// ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/crud"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	// "github.com/sky-as-code/nikki-erp/common/safe"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	// "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 )
@@ -15,9 +15,9 @@ func init() {
 	// Assert interface implementation
 	var req cqrs.Request
 	req = (*CreateRoleCommand)(nil)
-	// req = (*UpdateResourceCommand)(nil)
 	req = (*GetRoleByNameCommand)(nil)
-	// req = (*SearchResourcesCommand)(nil)
+	req = (*GetRoleByIdQuery)(nil)
+	req = (*SearchRolesQuery)(nil)
 	util.Unused(req)
 }
 
@@ -33,10 +33,12 @@ type CreateRoleCommand struct {
 	Description          *string `json:"description,omitempty"`
 	OwnerType            string  `json:"ownerType"`
 	OwnerRef             string  `json:"ownerRef"`
-	IsRequestable        bool   `json:"isRequestable"`
-	IsRequiredAttachment bool   `json:"isRequiredAttachment"`
-	IsRequiredComment    bool   `json:"isRequiredComment"`
+	IsRequestable        bool    `json:"isRequestable"`
+	IsRequiredAttachment bool    `json:"isRequiredAttachment"`
+	IsRequiredComment    bool    `json:"isRequiredComment"`
 	CreatedBy            string  `json:"createdBy"`
+
+	Entitlements []*model.Id `json:"entitlements,omitempty"`
 }
 
 func (CreateRoleCommand) Type() cqrs.RequestType {
@@ -68,22 +70,32 @@ type CreateRoleResult model.OpResult[*domain.Role]
 
 // // END: UpdateResourceCommand
 
-// // START: GetResourceByIdQuery
-// var getResourceByIdQueryType = cqrs.RequestType{
-// 	Module:    "authorize",
-// 	Submodule: "resource",
-// 	Action:    "getResourceById",
-// }
+// START: GetRoleByIdQuery
+var getRoleByIdQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role",
+	Action:    "getById",
+}
 
-// type GetResourceByIdQuery struct {
-// 	Id model.Id `param:"id" json:"id"`
-// }
+type GetRoleByIdQuery struct {
+	Id model.Id `param:"id" json:"id"`
+}
 
-// func (GetResourceByIdQuery) Type() cqrs.RequestType {
-// 	return getResourceByIdQueryType
-// }
+func (GetRoleByIdQuery) Type() cqrs.RequestType {
+	return getRoleByIdQueryType
+}
 
-// // END: GetResourceByIdQuery
+func (this GetRoleByIdQuery) Validate() ft.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type GetRoleByIdResult model.OpResult[*domain.Role]
+
+// END: GetRoleByIdQuery
 
 // START: GetRoleByNameCommand
 var getRoleByNameCommandType = cqrs.RequestType{
@@ -104,38 +116,37 @@ type GetRoleByNameResult model.OpResult[*domain.Role]
 
 // END: GetRoleByNameCommand
 
-// // START: SearchResourcesCommand
-// var searchResourcesCommandType = cqrs.RequestType{
-// 	Module:    "authorize",
-// 	Submodule: "resource",
-// 	Action:    "list",
-// }
+// START: SearchRolesQuery
+var searchRolesQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role",
+	Action:    "list",
+}
 
-// type SearchResourcesCommand struct {
-// 	Page        *int    `json:"page" query:"page"`
-// 	Size        *int    `json:"size" query:"size"`
-// 	Graph       *string `json:"graph" query:"graph"`
-// 	WithActions bool    `json:"withActions" query:"withActions"`
-// }
+type SearchRolesQuery struct {
+	Page             *int    `json:"page" query:"page"`
+	Size             *int    `json:"size" query:"size"`
+	Graph            *string `json:"graph" query:"graph"`
+}
 
-// func (SearchResourcesCommand) Type() cqrs.RequestType {
-// 	return searchResourcesCommandType
-// }
+func (SearchRolesQuery) Type() cqrs.RequestType {
+	return searchRolesQueryType
+}
 
-// func (this *SearchResourcesCommand) SetDefaults() {
-// 	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
-// 	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
-// }
+func (this *SearchRolesQuery) SetDefaults() {
+	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
+	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
+}
 
-// func (this SearchResourcesCommand) Validate() ft.ValidationErrors {
-// 	rules := []*validator.FieldRules{
-// 		model.PageIndexValidateRule(&this.Page),
-// 		model.PageSizeValidateRule(&this.Size),
-// 	}
-// 	return validator.ApiBased.ValidateStruct(&this, rules...)
-// }
+func (this SearchRolesQuery) Validate() ft.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.PageIndexValidateRule(&this.Page),
+		model.PageSizeValidateRule(&this.Size),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
 
-// type SearchResourcesResultData = crud.PagedResult[domain.Resource]
-// type SearchResourcesResult model.OpResult[*SearchResourcesResultData]
+type SearchRolesResultData = crud.PagedResult[*domain.Role]
+type SearchRolesResult model.OpResult[*SearchRolesResultData]
 
-// // END: SearchResourcesCommand
+// END: SearchRolesQuery

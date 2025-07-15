@@ -2,26 +2,39 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
+
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
+	entitlementIt "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
+	entitlementAssignIt "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
+	roleIt "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
+
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 )
 
-func NewRoleServiceImpl(roleRepo it.RoleRepository, eventBus event.EventBus) it.RoleService {
+func NewRoleServiceImpl(
+	roleRepo roleIt.RoleRepository,
+	eventBus event.EventBus,
+	cqrsBus cqrs.CqrsBus,
+) roleIt.RoleService {
 	return &RoleServiceImpl{
 		roleRepo: roleRepo,
 		eventBus: eventBus,
+		cqrsBus:  cqrsBus,
 	}
 }
 
 type RoleServiceImpl struct {
-	roleRepo it.RoleRepository
+	roleRepo roleIt.RoleRepository
 	eventBus event.EventBus
+	cqrsBus  cqrs.CqrsBus
 }
 
-func (this *RoleServiceImpl) CreateRole(ctx context.Context, cmd it.CreateRoleCommand) (result *it.CreateRoleResult, err error) {
+func (this *RoleServiceImpl) CreateRole(ctx context.Context, cmd roleIt.CreateRoleCommand) (result *roleIt.CreateRoleResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to create role"); e != nil {
 			err = e
@@ -34,23 +47,45 @@ func (this *RoleServiceImpl) CreateRole(ctx context.Context, cmd it.CreateRoleCo
 
 	vErrs := role.Validate(false)
 	this.assertRoleUnique(ctx, role, &vErrs)
+	if len(role.Entitlements) > 0 {
+		this.validateEntitlements(ctx, role.Entitlements, &vErrs)
+	}
+
 	if vErrs.Count() > 0 {
-		return &it.CreateRoleResult{
+		return &roleIt.CreateRoleResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	role, err = this.roleRepo.Create(ctx, *role)
+	var createdRole *domain.Role
+	if len(role.Entitlements) > 0 {
+		entitlementIds := make([]model.Id, 0, len(role.Entitlements))
+		for _, ent := range role.Entitlements {
+			if ent.Id != nil {
+				entitlementIds = append(entitlementIds, *ent.Id)
+			}
+		}
+
+		if len(entitlementIds) > 0 {
+			createdRole, err = this.roleRepo.CreateWithEntitlements(ctx, *role, entitlementIds)
+		} else {
+			createdRole, err = this.roleRepo.Create(ctx, *role)
+		}
+	} else {
+		createdRole, err = this.roleRepo.Create(ctx, *role)
+	}
+
 	ft.PanicOnErr(err)
 
-	return &it.CreateRoleResult{Data: role}, err
+	return &roleIt.CreateRoleResult{Data: createdRole}, nil
 }
 
-func (this *RoleServiceImpl) assertRoleUnique(ctx context.Context, role *domain.Role, errors *ft.ValidationErrors) {
+func (s *RoleServiceImpl) assertRoleUnique(ctx context.Context, role *domain.Role, errors *ft.ValidationErrors) {
 	if errors.Has("name") {
 		return
 	}
-	dbRole, err := this.roleRepo.FindByName(ctx, it.FindByNameParam{Name: *role.Name})
+
+	dbRole, err := s.roleRepo.FindByName(ctx, roleIt.FindByNameParam{Name: *role.Name})
 	ft.PanicOnErr(err)
 
 	if dbRole != nil {
@@ -58,94 +93,172 @@ func (this *RoleServiceImpl) assertRoleUnique(ctx context.Context, role *domain.
 	}
 }
 
-// func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.UpdateResourceCommand) (result *it.UpdateResourceResult, err error) {
-// 	defer func() {
-// 		if e := ft.RecoverPanic(recover(), "failed to update resource"); e != nil {
-// 			err = e
-// 		}
-// 	}()
+func (this *RoleServiceImpl) validateEntitlements(ctx context.Context, entitlementIds []*domain.Entitlement, errors *ft.ValidationErrors) {
+	if len(entitlementIds) == 0 {
+		return
+	}
 
-// 	resource := cmd.ToResource()
+	for i, ent := range entitlementIds {
+		if ent.Id == nil {
+			errors.Append(fmt.Sprintf("entitlements[%d]", i), "entitlement id cannot be nil")
+			continue
+		}
 
-// 	vErrs := resource.Validate(true)
-// 	if resource.Name != nil {
-// 		this.assertResourceUnique(ctx, resource, &vErrs)
-// 	}
-// 	if vErrs.Count() > 0 {
-// 		return &it.UpdateResourceResult{
-// 			ClientError: vErrs.ToClientError(),
-// 		}, nil
-// 	}
+		existsRes := entitlementIt.EntitlementExistsResult{}
+		err := this.cqrsBus.Request(ctx, entitlementIt.EntitlementExistsCommand{Id: *ent.Id}, &existsRes)
+		ft.PanicOnErr(err)
 
-// 	dbResource, err := this.resourceRepo.FindById(ctx, it.FindByIdParam{Id: *resource.Id})
-// 	ft.PanicOnErr(err)
+		if existsRes.ClientError != nil {
+			errors.MergeClientError(existsRes.ClientError)
+			continue
+		}
 
-// 	if dbResource == nil {
-// 		vErrs = ft.NewValidationErrors()
-// 		vErrs.Append("id", "resource not found")
+		if !existsRes.Data {
+			errors.Append(fmt.Sprintf("entitlements[%d]", i), "entitlement not found")
+		}
+	}
+}
 
-// 		return &it.UpdateResourceResult{
-// 			ClientError: vErrs.ToClientError(),
-// 		}, nil
+func (this *RoleServiceImpl) GetRoleById(ctx context.Context, query roleIt.GetRoleByIdQuery) (result *roleIt.GetRoleByIdResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanic(recover(), "failed to get role by id"); e != nil {
+			err = e
+		}
+	}()
 
-// 	} else if *dbResource.Etag != *resource.Etag {
-// 		vErrs = ft.NewValidationErrors()
-// 		vErrs.Append("etag", "resource has been modified by another process")
+	vErrs := query.Validate()
+	if vErrs.Count() > 0 {
+		return &roleIt.GetRoleByIdResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
 
-// 		return &it.UpdateResourceResult{
-// 			ClientError: vErrs.ToClientError(),
-// 		}, nil
-// 	}
+	role, err := this.roleRepo.FindById(ctx, query)
+	ft.PanicOnErr(err)
 
-// 	resource.Etag = model.NewEtag()
-// 	resource, err = this.resourceRepo.Update(ctx, *resource)
-// 	ft.PanicOnErr(err)
+	if role == nil {
+		vErrs.Append("id", "role not found")
+		return &roleIt.GetRoleByIdResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
 
-// 	return &it.UpdateResourceResult{Data: resource}, err
-// }
+	entitlementIds, err := this.getEntitlementByIds(ctx, role, &vErrs)
+	ft.PanicOnErr(err)
+	if vErrs.Count() > 0 {
+		return &roleIt.GetRoleByIdResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
 
-// func (this *ResourceServiceImpl) GetResourceByName(ctx context.Context, cmd it.GetResourceByNameCommand) (result *it.GetResourceByNameResult, err error) {
-// 	defer func() {
-// 		if e := ft.RecoverPanic(recover(), "failed to get resource by name"); e != nil {
-// 			err = e
-// 		}
-// 	}()
+	if len(entitlementIds) == 0 {
+		return &roleIt.GetRoleByIdResult{
+			Data: role,
+		}, nil
+	}
 
-// 	resource, err := this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: cmd.Name})
-// 	ft.PanicOnErr(err)
+	entitlements, err := this.getEntitlements(ctx, entitlementIds)
+	ft.PanicOnErr(err)
 
-// 	return &it.GetResourceByNameResult{Data: resource}, err
-// }
+	role.Entitlements = entitlements
 
-// func (this *ResourceServiceImpl) SearchResources(ctx context.Context, query it.SearchResourcesCommand) (result *it.SearchResourcesResult, err error) {
-// 	defer func() {
-// 		if e := ft.RecoverPanic(recover(), "failed to list resources"); e != nil {
-// 			err = e
-// 		}
-// 	}()
+	return &roleIt.GetRoleByIdResult{
+		Data: role,
+	}, nil
+}
 
-// 	vErrsModel := query.Validate()
-// 	predicate, order, vErrsGraph := this.resourceRepo.ParseSearchGraph(query.Graph)
+func (this *RoleServiceImpl) getEntitlementByIds(ctx context.Context, role *domain.Role, vErrs *ft.ValidationErrors) ([]model.Id, error) {
+	assignments := entitlementAssignIt.GetAllEntitlementAssignmentBySubjectQuery{
+		SubjectType: domain.EntitlementAssignmentSubjectTypeNikkiRole.String(),
+		SubjectRef:  *role.Id,
+	}
+	assignmentsRes := entitlementAssignIt.GetAllEntitlementAssignmentBySubjectResult{}
+	err := this.cqrsBus.Request(ctx, assignments, &assignmentsRes)
+	ft.PanicOnErr(err)
 
-// 	vErrsModel.Merge(vErrsGraph)
+	if assignmentsRes.ClientError != nil {
+		vErrs.MergeClientError(assignmentsRes.ClientError)
+		return nil, err
+	}
 
-// 	if vErrsModel.Count() > 0 {
-// 		return &it.SearchResourcesResult{
-// 			ClientError: vErrsModel.ToClientError(),
-// 		}, nil
-// 	}
-// 	query.SetDefaults()
+	// Extract unique entitlement IDs from assignments
+	entitlementIdSet := make(map[model.Id]bool)
+	uniqueEntitlementIds := make([]model.Id, 0)
 
-// 	resources, err := this.resourceRepo.Search(ctx, it.SearchParam{
-// 		Predicate:   predicate,
-// 		Order:       order,
-// 		Page:        *query.Page,
-// 		Size:        *query.Size,
-// 		WithActions: query.WithActions,
-// 	})
-// 	ft.PanicOnErr(err)
+	for _, assignment := range assignmentsRes.Data {
+		if assignment.EntitlementId != nil {
+			entId := *assignment.EntitlementId
+			if !entitlementIdSet[entId] {
+				entitlementIdSet[entId] = true
+				uniqueEntitlementIds = append(uniqueEntitlementIds, entId)
+			}
+		}
+	}
 
-// 	return &it.SearchResourcesResult{
-// 		Data: resources,
-// 	}, nil
-// }
+	return uniqueEntitlementIds, nil
+}
+
+func (this *RoleServiceImpl) getEntitlements(ctx context.Context, entitlementIds []model.Id) ([]*domain.Entitlement, error) {
+	entitlements := entitlementIt.GetAllEntitlementByIdsQuery{
+		Ids: entitlementIds,
+	}
+	entitlementsRes := entitlementIt.GetAllEntitlementByIdsResult{}
+	err := this.cqrsBus.Request(ctx, entitlements, &entitlementsRes)
+	ft.PanicOnErr(err)
+
+	if entitlementsRes.ClientError != nil {
+		return nil, entitlementsRes.ClientError
+	}
+
+	return entitlementsRes.Data, nil
+}
+
+func (this *RoleServiceImpl) SearchRoles(ctx context.Context, query roleIt.SearchRolesQuery) (result *roleIt.SearchRolesResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanic(recover(), "failed to list roles"); e != nil {
+			err = e
+		}
+	}()
+
+	vErrsModel := query.Validate()
+	predicate, order, vErrsGraph := this.roleRepo.ParseSearchGraph(query.Graph)
+
+	vErrsModel.Merge(vErrsGraph)
+
+	if vErrsModel.Count() > 0 {
+		return &roleIt.SearchRolesResult{
+			ClientError: vErrsModel.ToClientError(),
+		}, nil
+	}
+	query.SetDefaults()
+
+	roles, err := this.roleRepo.Search(ctx, roleIt.SearchParam{
+		Predicate: predicate,
+		Order:     order,
+		Page:      *query.Page,
+		Size:      *query.Size,
+	})
+	ft.PanicOnErr(err)
+
+	// Populate entitlements for each role
+	for _, role := range roles.Items {
+		entitlementIds, err := this.getEntitlementByIds(ctx, role, &vErrsModel)
+		ft.PanicOnErr(err)
+
+		if vErrsModel.Count() > 0 {
+			return &roleIt.SearchRolesResult{
+				ClientError: vErrsModel.ToClientError(),
+			}, nil
+		}
+
+		if len(entitlementIds) > 0 {
+			entitlements, err := this.getEntitlements(ctx, entitlementIds)
+			ft.PanicOnErr(err)
+			role.Entitlements = entitlements
+		}
+	}
+
+	return &roleIt.SearchRolesResult{
+		Data: roles,
+	}, nil
+}

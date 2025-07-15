@@ -29,26 +29,6 @@ func (eu *EntitlementUpdate) Where(ps ...predicate.Entitlement) *EntitlementUpda
 	return eu
 }
 
-// SetName sets the "name" field.
-func (eu *EntitlementUpdate) SetName(s string) *EntitlementUpdate {
-	eu.mutation.SetName(s)
-	return eu
-}
-
-// SetNillableName sets the "name" field if the given value is not nil.
-func (eu *EntitlementUpdate) SetNillableName(s *string) *EntitlementUpdate {
-	if s != nil {
-		eu.SetName(*s)
-	}
-	return eu
-}
-
-// ClearName clears the value of the "name" field.
-func (eu *EntitlementUpdate) ClearName() *EntitlementUpdate {
-	eu.mutation.ClearName()
-	return eu
-}
-
 // SetDescription sets the "description" field.
 func (eu *EntitlementUpdate) SetDescription(s string) *EntitlementUpdate {
 	eu.mutation.SetDescription(s)
@@ -196,12 +176,6 @@ func (eu *EntitlementUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := eu.mutation.Name(); ok {
-		_spec.SetField(entitlement.FieldName, field.TypeString, value)
-	}
-	if eu.mutation.NameCleared() {
-		_spec.ClearField(entitlement.FieldName, field.TypeString)
-	}
 	if value, ok := eu.mutation.Description(); ok {
 		_spec.SetField(entitlement.FieldDescription, field.TypeString, value)
 	}
@@ -322,26 +296,6 @@ type EntitlementUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *EntitlementMutation
-}
-
-// SetName sets the "name" field.
-func (euo *EntitlementUpdateOne) SetName(s string) *EntitlementUpdateOne {
-	euo.mutation.SetName(s)
-	return euo
-}
-
-// SetNillableName sets the "name" field if the given value is not nil.
-func (euo *EntitlementUpdateOne) SetNillableName(s *string) *EntitlementUpdateOne {
-	if s != nil {
-		euo.SetName(*s)
-	}
-	return euo
-}
-
-// ClearName clears the value of the "name" field.
-func (euo *EntitlementUpdateOne) ClearName() *EntitlementUpdateOne {
-	euo.mutation.ClearName()
-	return euo
 }
 
 // SetDescription sets the "description" field.
@@ -520,12 +474,6 @@ func (euo *EntitlementUpdateOne) sqlSave(ctx context.Context) (_node *Entitlemen
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := euo.mutation.Name(); ok {
-		_spec.SetField(entitlement.FieldName, field.TypeString, value)
-	}
-	if euo.mutation.NameCleared() {
-		_spec.ClearField(entitlement.FieldName, field.TypeString)
 	}
 	if value, ok := euo.mutation.Description(); ok {
 		_spec.SetField(entitlement.FieldDescription, field.TypeString, value)

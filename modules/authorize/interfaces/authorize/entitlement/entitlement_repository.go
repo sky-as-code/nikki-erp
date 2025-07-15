@@ -3,12 +3,30 @@ package entitlement
 import (
 	"context"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 type EntitlementRepository interface {
 	Create(ctx context.Context, entitlement domain.Entitlement) (*domain.Entitlement, error)
+	Update(ctx context.Context, entitlement domain.Entitlement) (*domain.Entitlement, error)
+	Exists(ctx context.Context, param FindByIdParam) (bool, error)
+	FindById(ctx context.Context, param FindByIdParam) (*domain.Entitlement, error)
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Entitlement, error)
+	FindAllByIds(ctx context.Context, param FindAllByIdsParam) ([]*domain.Entitlement, error)
+	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
+	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[*domain.Entitlement], error)
 }
 
-type FindByNameParam = GetEntitlementByNameCommand
+type FindByNameParam = GetEntitlementByNameQuery
+type FindByIdParam = GetEntitlementByIdQuery
+type FindAllByIdsParam = GetAllEntitlementByIdsQuery
+
+type SearchParam struct {
+	Predicate *orm.Predicate
+	Order     []orm.OrderOption
+	Page      int
+	Size      int
+}

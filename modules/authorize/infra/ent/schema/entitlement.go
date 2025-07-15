@@ -40,8 +40,8 @@ func (EntitlementMixin) Fields() []ent.Field {
 			Immutable(),
 
 		field.String("name").
-			Optional().
-			Nillable(),
+			Immutable().
+			Unique(),
 
 		field.String("description").
 			Optional().

@@ -108,6 +108,14 @@ func entToRole(dbRole *ent.Role) *domain.Role {
 	return role
 }
 
+func entToRoles(dbRoles []*ent.Role) []*domain.Role {
+	roles := make([]*domain.Role, len(dbRoles))
+	for i, dbRole := range dbRoles {
+		roles[i] = entToRole(dbRole)
+	}
+	return roles
+}
+
 // END: Role
 
 // START: Entitlement
@@ -120,18 +128,50 @@ func entToEntitlement(dbEntitlement *ent.Entitlement) *domain.Entitlement {
 		AuditableBase: model.AuditableBase{
 			CreatedAt: &dbEntitlement.CreatedAt,
 		},
-		ActionId:    dbEntitlement.ActionID,
-		ActionExpr:  &dbEntitlement.ActionExpr,
-		Name:        dbEntitlement.Name,
+		Name:        &dbEntitlement.Name,
 		Description: dbEntitlement.Description,
-		// SubjectType: domain.WrapEntitlementSubjectTypeEnt(dbEntitlement.SubjectType),
-		// SubjectRef:  &dbEntitlement.SubjectRef,
-		ScopeRef:    dbEntitlement.ScopeRef,
 		ResourceId:  dbEntitlement.ResourceID,
+		ActionId:    dbEntitlement.ActionID,
+		ScopeRef:    dbEntitlement.ScopeRef,
+		ActionExpr:  &dbEntitlement.ActionExpr,
 		CreatedBy:   &dbEntitlement.CreatedBy,
+	}
+
+	if dbEntitlement.Edges.Action != nil {
+		entitlement.Action = entToAction(dbEntitlement.Edges.Action)
+	}
+	if dbEntitlement.Edges.Resource != nil {
+		entitlement.Resource = entToResource(dbEntitlement.Edges.Resource)
 	}
 
 	return entitlement
 }
 
+func entToEntitlements(dbEntitlements []*ent.Entitlement) []*domain.Entitlement {
+	entitlements := make([]*domain.Entitlement, len(dbEntitlements))
+	for i, dbEntitlement := range dbEntitlements {
+		entitlements[i] = entToEntitlement(dbEntitlement)
+	}
+	return entitlements
+}
+
 // END: Entitlement
+
+// START: EntitlementAssignment
+func entToEntitlementAssignment(dbEntitlementAssignment *ent.EntitlementAssignment) *domain.EntitlementAssignment {
+	entitlementAssignment := &domain.EntitlementAssignment{
+		ModelBase: model.ModelBase{
+			Id: &dbEntitlementAssignment.ID,
+		},
+		SubjectType:   domain.WrapEntitlementAssignmentSubjectTypeEnt(dbEntitlementAssignment.SubjectType),
+		SubjectRef:    &dbEntitlementAssignment.SubjectRef,
+		ActionName:    dbEntitlementAssignment.ActionName,
+		ResourceName:  dbEntitlementAssignment.ResourceName,
+		ResolvedExpr:  &dbEntitlementAssignment.ResolvedExpr,
+		EntitlementId: &dbEntitlementAssignment.EntitlementID,
+	}
+
+	return entitlementAssignment
+}
+
+// END: EntitlementAssignment

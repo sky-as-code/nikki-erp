@@ -70,14 +70,6 @@ func (ec *EntitlementCreate) SetName(s string) *EntitlementCreate {
 	return ec
 }
 
-// SetNillableName sets the "name" field if the given value is not nil.
-func (ec *EntitlementCreate) SetNillableName(s *string) *EntitlementCreate {
-	if s != nil {
-		ec.SetName(*s)
-	}
-	return ec
-}
-
 // SetDescription sets the "description" field.
 func (ec *EntitlementCreate) SetDescription(s string) *EntitlementCreate {
 	ec.mutation.SetDescription(s)
@@ -224,6 +216,9 @@ func (ec *EntitlementCreate) check() error {
 	if _, ok := ec.mutation.CreatedBy(); !ok {
 		return &ValidationError{Name: "created_by", err: errors.New(`ent: missing required field "Entitlement.created_by"`)}
 	}
+	if _, ok := ec.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Entitlement.name"`)}
+	}
 	if _, ok := ec.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Entitlement.etag"`)}
 	}
@@ -276,7 +271,7 @@ func (ec *EntitlementCreate) createSpec() (*Entitlement, *sqlgraph.CreateSpec) {
 	}
 	if value, ok := ec.mutation.Name(); ok {
 		_spec.SetField(entitlement.FieldName, field.TypeString, value)
-		_node.Name = &value
+		_node.Name = value
 	}
 	if value, ok := ec.mutation.Description(); ok {
 		_spec.SetField(entitlement.FieldDescription, field.TypeString, value)

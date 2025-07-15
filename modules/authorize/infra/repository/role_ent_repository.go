@@ -2,11 +2,18 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
+	entEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	entEntitlementAssignment "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	entRole "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
+
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
@@ -19,6 +26,108 @@ func NewRoleEntRepository(client *ent.Client) it.RoleRepository {
 
 type RoleEntRepository struct {
 	client *ent.Client
+}
+
+func (this *RoleEntRepository) CreateWithEntitlements(ctx context.Context, role domain.Role, entitlementIds []model.Id) (result *domain.Role, err error) {
+	tx, err := this.client.Tx(ctx)
+	ft.PanicOnErr(err)
+
+	defer func() {
+		if e := ft.RecoverPanic(recover(), "failed to create role transaction"); e != nil {
+			_ = tx.Rollback()
+			err = e
+		}
+	}()
+
+	// Create role
+	createdRole, err := this.createRoleTx(ctx, tx, role)
+	ft.PanicOnErr(err)
+
+	// Create entitlement assignments for each entitlement ID
+	if len(entitlementIds) > 0 {
+		for _, entitlementId := range entitlementIds {
+			err := this.createAssignmentTx(ctx, tx, createdRole.ID, entitlementId)
+			ft.PanicOnErr(err)
+		}
+	}
+
+	ft.PanicOnErr(tx.Commit())
+
+	return entToRole(createdRole), nil
+}
+
+func (this *RoleEntRepository) createRoleTx(ctx context.Context, tx *ent.Tx, role domain.Role) (*ent.Role, error) {
+	return tx.Role.
+		Create().
+		SetID(*role.Id).
+		SetEtag(*role.Etag).
+		SetName(*role.Name).
+		SetNillableDescription(role.Description).
+		SetOwnerType(entRole.OwnerType(*role.OwnerType)).
+		SetOwnerRef(*role.OwnerRef).
+		SetIsRequestable(*role.IsRequestable).
+		SetIsRequiredAttachment(*role.IsRequiredAttachment).
+		SetIsRequiredComment(*role.IsRequiredComment).
+		SetCreatedBy(*role.CreatedBy).
+		Save(ctx)
+}
+
+func (this *RoleEntRepository) createAssignmentTx(ctx context.Context, tx *ent.Tx, roleID model.Id, entitlementID model.Id) error {
+	entitlement, err := tx.Entitlement.
+		Query().
+		Where(entEntitlement.IDEQ(entitlementID)).
+		WithAction().
+		WithResource().
+		Only(ctx)
+	if err != nil {
+		return err
+	}
+
+	var actionName *string
+	if entitlement.Edges.Action != nil {
+		actionName = &entitlement.Edges.Action.Name
+	}
+
+	var resourceName *string
+	if entitlement.Edges.Resource != nil {
+		resourceName = &entitlement.Edges.Resource.Name
+	}
+
+	scopeRef := "*"
+	if entitlement.ScopeRef != nil {
+		scopeRef = *entitlement.ScopeRef
+	}
+
+	actionExpr := "*"
+	if actionName != nil {
+		actionExpr = *actionName
+	}
+
+	resourceExpr := "*"
+	if resourceName != nil {
+		resourceExpr = *resourceName
+	}
+
+	resolvedExpr := fmt.Sprintf("%s:%s:%s:%s", roleID, actionExpr, scopeRef, resourceExpr)
+
+	// Generate new ID for entitlement assignment
+	assignmentID, err := model.NewId()
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.EntitlementAssignment.
+		Create().
+		SetID(*assignmentID).
+		SetSubjectRef(roleID).
+		SetSubjectType(entEntitlementAssignment.SubjectTypeNikkiRole).
+		SetEntitlementID(entitlementID).
+		SetResolvedExpr(resolvedExpr).
+		SetNillableActionName(actionName).
+		SetNillableResourceName(resourceName).
+		Save(ctx)
+
+	return err
 }
 
 func (this *RoleEntRepository) Create(ctx context.Context, role domain.Role) (*domain.Role, error) {
@@ -37,13 +146,6 @@ func (this *RoleEntRepository) Create(ctx context.Context, role domain.Role) (*d
 	return db.Mutate(ctx, creation, entToRole)
 }
 
-// func (this *ResourceEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Resource, error) {
-// 	query := this.client.Resource.Query().
-// 		Where(entResource.IDEQ(param.Id))
-
-// 	return db.FindOne(ctx, query, nil, entToResource)
-// }
-
 func (this *RoleEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Role, error) {
 	query := this.client.Role.Query().
 		Where(entRole.NameEQ(param.Name))
@@ -51,43 +153,35 @@ func (this *RoleEntRepository) FindByName(ctx context.Context, param it.FindByNa
 	return db.FindOne(ctx, query, ent.IsNotFound, entToRole)
 }
 
-// func (this *ResourceEntRepository) Update(ctx context.Context, resource domain.Resource) (*domain.Resource, error) {
-// 	update := this.client.Resource.UpdateOneID(*resource.Id).
-// 		SetDescription(*resource.Description)
+func (this *RoleEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Role, error) {
+	query := this.client.Role.Query().
+		Where(entRole.IDEQ(param.Id))
 
-// 	if len(update.Mutation().Fields()) > 0 {
-// 		update.
-// 			SetEtag(*resource.Etag)
-// 	}
+	return db.FindOne(ctx, query, ent.IsNotFound, entToRole)
+}
 
-// 	return db.Mutate(ctx, update, entToResource)
-// }
+func (this *RoleEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
+	return db.ParseSearchGraphStr[ent.Role, domain.Role](criteria, entRole.Label)
+}
 
-// func (this *ResourceEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-// 	return db.ParseSearchGraphStr[ent.Resource, domain.Resource](criteria, entResource.Label)
-// }
+func (this *RoleEntRepository) Search(
+	ctx context.Context,
+	param it.SearchParam,
+) (*crud.PagedResult[*domain.Role], error) {
+	query := this.client.Role.Query()
 
-// func (this *ResourceEntRepository) Search(
-// 	ctx context.Context,
-// 	param it.SearchParam,
-// ) (*crud.PagedResult[domain.Resource], error) {
-// 	query := this.client.Resource.Query()
-// 	if param.WithActions {
-// 		query = query.WithActions()
-// 	}
-
-// 	return db.Search(
-// 		ctx,
-// 		param.Predicate,
-// 		param.Order,
-// 		crud.PagingOptions{
-// 			Page: param.Page,
-// 			Size: param.Size,
-// 		},
-// 		query,
-// 		entToResources,
-// 	)
-// }
+	return db.Search(
+		ctx,
+		param.Predicate,
+		param.Order,
+		crud.PagingOptions{
+			Page: param.Page,
+			Size: param.Size,
+		},
+		query,
+		entToRoles,
+	)
+}
 
 func BuildRoleDescriptor() *orm.EntityDescriptor {
 	entity := ent.Role{}

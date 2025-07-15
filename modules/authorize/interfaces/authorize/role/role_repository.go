@@ -3,25 +3,29 @@ package role
 import (
 	"context"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 type RoleRepository interface {
 	Create(ctx context.Context, role domain.Role) (*domain.Role, error)
+	CreateWithEntitlements(ctx context.Context, role domain.Role, entitlementIds []model.Id) (*domain.Role, error)
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Role, error)
-	// FindById(ctx context.Context, param FindByIdParam) (*domain.Resource, error)
-	// Update(ctx context.Context, resource domain.Resource) (*domain.Resource, error)
-	// ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	// Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.Resource], error)
+	FindById(ctx context.Context, param FindByIdParam) (*domain.Role, error)
+	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
+	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[*domain.Role], error)
 }
 
-// type FindByIdParam = GetResourceByIdQuery
+type FindByIdParam = GetRoleByIdQuery
 type FindByNameParam = GetRoleByNameCommand
 
-// type SearchParam struct {
-// 	Predicate   *orm.Predicate
-// 	Order       []orm.OrderOption
-// 	Page        int
-// 	Size        int
-// 	WithActions bool
-// }
+type SearchParam struct {
+	Predicate        *orm.Predicate
+	Order            []orm.OrderOption
+	Page             int
+	Size             int
+	WithEntitlements bool
+}

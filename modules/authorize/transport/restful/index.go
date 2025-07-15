@@ -47,11 +47,15 @@ func initV1(route *echo.Group, resourceRest *v1.ResourceRest, actionRest *v1.Act
 
 	// START: Entitlement
 	route.POST("/entitlements", entitlementRest.CreateEntitlement)
+	route.PUT("/entitlements/:id", entitlementRest.UpdateEntitlement)
+	route.GET("/entitlements/:id", entitlementRest.GetEntitlementById)
+	route.GET("/entitlements", entitlementRest.SearchEntitlements) // Name can null, that why we can't use the name fied in graph
 
 	// END: Entitlement
 
 	// START: Role
 	route.POST("/roles", roleRest.CreateRole)
-
+	route.GET("/roles/:id", roleRest.GetRoleById)
+	route.GET("/roles", roleRest.SearchRoles)
 	// END: Role
 }

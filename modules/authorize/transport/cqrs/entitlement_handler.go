@@ -31,3 +31,57 @@ func (this *EntitlementHandler) CreateEntitlement(ctx context.Context, packet *c
 	}
 	return reply, nil
 }
+
+func (this *EntitlementHandler) EntitlementExists(ctx context.Context, packet *cqrs.RequestPacket[it.EntitlementExistsCommand]) (*cqrs.Reply[it.EntitlementExistsResult], error) {
+	cmd := packet.Request()
+	result, err := this.EntitlementSvc.EntitlementExists(ctx, *cmd)
+	ft.PanicOnErr(err)
+
+	return &cqrs.Reply[it.EntitlementExistsResult]{
+		Result: *result,
+	}, nil
+}
+
+func (this *EntitlementHandler) UpdateEntitlement(ctx context.Context, packet *cqrs.RequestPacket[it.UpdateEntitlementCommand]) (*cqrs.Reply[it.UpdateEntitlementResult], error) {
+	cmd := packet.Request()
+	result, err := this.EntitlementSvc.UpdateEntitlement(ctx, *cmd)
+	ft.PanicOnErr(err)
+
+	reply := &cqrs.Reply[it.UpdateEntitlementResult]{
+		Result: *result,
+	}
+	return reply, nil
+}
+
+func (this *EntitlementHandler) GetEntitlementById(ctx context.Context, packet *cqrs.RequestPacket[it.GetEntitlementByIdQuery]) (*cqrs.Reply[it.GetEntitlementByIdResult], error) {
+	query := packet.Request()
+	result, err := this.EntitlementSvc.GetEntitlementById(ctx, *query)
+	ft.PanicOnErr(err)
+
+	reply := &cqrs.Reply[it.GetEntitlementByIdResult]{
+		Result: *result,
+	}
+	return reply, nil
+}
+
+func (this *EntitlementHandler) GetAllEntitlementByIds(ctx context.Context, packet *cqrs.RequestPacket[it.GetAllEntitlementByIdsQuery]) (*cqrs.Reply[it.GetAllEntitlementByIdsResult], error) {
+	query := packet.Request()
+	result, err := this.EntitlementSvc.GetAllEntitlementByIds(ctx, *query)
+	ft.PanicOnErr(err)
+
+	reply := &cqrs.Reply[it.GetAllEntitlementByIdsResult]{
+		Result: *result,
+	}
+	return reply, nil
+}
+
+func (this *EntitlementHandler) SearchEntitlements(ctx context.Context, packet *cqrs.RequestPacket[it.SearchEntitlementsQuery]) (*cqrs.Reply[it.SearchEntitlementsResult], error) {
+	query := packet.Request()
+	result, err := this.EntitlementSvc.SearchEntitlements(ctx, *query)
+	ft.PanicOnErr(err)
+
+	reply := &cqrs.Reply[it.SearchEntitlementsResult]{
+		Result: *result,
+	}
+	return reply, nil
+}

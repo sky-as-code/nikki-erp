@@ -51,7 +51,7 @@ var (
 		{Name: "action_expr", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "created_by", Type: field.TypeString},
-		{Name: "name", Type: field.TypeString, Nullable: true},
+		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "scope_ref", Type: field.TypeString, Nullable: true},

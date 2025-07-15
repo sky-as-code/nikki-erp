@@ -1,13 +1,13 @@
 package v1
 
 import (
-	// "github.com/sky-as-code/nikki-erp/common/array"
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
-	// "github.com/thoas/go-funk"
+	"github.com/thoas/go-funk"
 )
 
 type CreateRoleRequest = it.CreateRoleCommand
@@ -16,8 +16,7 @@ type CreateRoleResponse = GetRoleByIdResponse
 // type UpdateResourceRequest = it.UpdateResourceCommand
 // type UpdateResourceResponse = GetResourceByIdResponse
 
-// type GetResourceByNameRequest = it.GetResourceByNameCommand
-// type GetResourceByNameResponse = GetResourceByIdResponse
+type GetRoleByIdRequest = it.GetRoleByIdQuery
 
 type GetRoleByIdResponse struct {
 	Id        model.Id   `json:"id"`
@@ -32,6 +31,8 @@ type GetRoleByIdResponse struct {
 	IsRequiredAttachment bool     `json:"isRequiredAttachment"`
 	IsRequiredComment    bool     `json:"isRequiredComment"`
 	CreatedBy            model.Id `json:"createdBy"`
+
+	Entitlements []*Entitlement `json:"entitlements,omitempty"`
 }
 
 func (this *GetRoleByIdResponse) FromRole(role domain.Role) {
@@ -46,50 +47,72 @@ func (this *GetRoleByIdResponse) FromRole(role domain.Role) {
 	this.IsRequiredAttachment = *role.IsRequiredAttachment
 	this.IsRequiredComment = *role.IsRequiredComment
 	this.CreatedBy = *role.CreatedBy
+
+	this.Entitlements = array.Map(role.Entitlements, func(entitlement *domain.Entitlement) *Entitlement {
+		entitlementItem := &Entitlement{}
+		entitlementItem.FromEntitlement(*entitlement)
+		return entitlementItem
+	})
 }
 
-// type SearchResourcesRequest = it.SearchResourcesCommand
+type SearchRolesRequest = it.SearchRolesQuery
 
-// type SearchResourcesResponseItem struct {
-// 	Id           model.Id   `json:"id,omitempty"`
-// 	Name         string     `json:"name,omitempty"`
-// 	Description  string     `json:"description,omitempty"`
-// 	Etag         model.Etag `json:"etag,omitempty"`
-// 	ResourceType string     `json:"resourceType,omitempty"`
-// 	ResourceRef  string     `json:"resourceRef,omitempty"`
-// 	ScopeType    string     `json:"scopeType,omitempty"`
-// 	Actions      []string   `json:"actions,omitempty"`
-// }
+type Entitlement struct {
+	Id model.Id `json:"id"`
 
-// func (this *SearchResourcesResponseItem) FromResource(resource domain.Resource) {
-// 	this.Id = *resource.Id
-// 	this.Name = *resource.Name
-// 	this.Description = *resource.Description
-// 	this.Etag = *resource.Etag
-// 	this.ResourceType = resource.ResourceType.String()
-// 	this.ResourceRef = *resource.ResourceRef
-// 	this.ScopeType = resource.ScopeType.String()
+	Name *string `json:"name,omitempty"`
+}
 
-// 	// Convert actions to string array
-// 	this.Actions = array.Map(resource.Actions, func(action domain.Action) string {
-// 		return *action.Name
-// 	})
-// }
+func (this *Entitlement) FromEntitlement(entitlement domain.Entitlement) {
+	this.Id = *entitlement.Id
+	this.Name = entitlement.Name
+}
 
-// type SearchResourcesResponse struct {
-// 	Items []SearchResourcesResponseItem `json:"items"`
-// 	Total int                         `json:"total"`
-// 	Page  int                         `json:"page"`
-// 	Size  int                         `json:"size"`
-// }
+type SearchRolesResponseItem struct {
+	Id model.Id `json:"id,omitempty"`
 
-// func (this *SearchResourcesResponse) FromResult(result *it.SearchResourcesResultData) {
-// 	this.Total = result.Total
-// 	this.Page = result.Page
-// 	this.Size = result.Size
-// 	this.Items = funk.Map(result.Items, func(resource domain.Resource) SearchResourcesResponseItem {
-// 		item := SearchResourcesResponseItem{}
-// 		item.FromResource(resource)
-// 		return item
-// 	}).([]SearchResourcesResponseItem)
-// }
+	Name                 string   `json:"name,omitempty"`
+	OwnerType            string   `json:"ownerType,omitempty"`
+	OwnerRef             model.Id `json:"ownerRef,omitempty"`
+	IsRequestable        bool     `json:"isRequestable,omitempty"`
+	IsRequiredAttachment bool     `json:"isRequiredAttachment,omitempty"`
+	IsRequiredComment    bool     `json:"isRequiredComment,omitempty"`
+	CreatedBy            model.Id `json:"createdBy,omitempty"`
+
+	Entitlements []*Entitlement `json:"entitlements,omitempty"`
+}
+
+func (this *SearchRolesResponseItem) FromRole(role domain.Role) {
+	this.Id = *role.Id
+	this.Name = *role.Name
+	this.OwnerType = role.OwnerType.String()
+	this.OwnerRef = *role.OwnerRef
+	this.IsRequestable = *role.IsRequestable
+	this.IsRequiredAttachment = *role.IsRequiredAttachment
+	this.IsRequiredComment = *role.IsRequiredComment
+	this.CreatedBy = *role.CreatedBy
+
+	this.Entitlements = array.Map(role.Entitlements, func(entitlement *domain.Entitlement) *Entitlement {
+		entitlementItem := &Entitlement{}
+		entitlementItem.FromEntitlement(*entitlement)
+		return entitlementItem
+	})
+}
+
+type SearchRolesResponse struct {
+	Items []SearchRolesResponseItem `json:"items"`
+	Total int                       `json:"total"`
+	Page  int                       `json:"page"`
+	Size  int                       `json:"size"`
+}
+
+func (this *SearchRolesResponse) FromResult(result *it.SearchRolesResultData) {
+	this.Total = result.Total
+	this.Page = result.Page
+	this.Size = result.Size
+	this.Items = funk.Map(result.Items, func(role *domain.Role) SearchRolesResponseItem {
+		item := SearchRolesResponseItem{}
+		item.FromRole(*role)
+		return item
+	}).([]SearchRolesResponseItem)
+}

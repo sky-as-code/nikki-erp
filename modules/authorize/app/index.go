@@ -11,6 +11,7 @@ func InitServices() error {
 		deps.Register(NewResourceServiceImpl),
 		deps.Register(NewActionServiceImpl),
 		deps.Register(NewEntitlementServiceImpl),
+		deps.Register(NewEntitlementAssignmentServiceImpl),
 		deps.Register(NewRoleServiceImpl),
 		// deps.Register(NewRoleSuiteServiceImpl),
 	)

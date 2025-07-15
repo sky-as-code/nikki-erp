@@ -1120,7 +1120,7 @@ func (m *EntitlementMutation) Name() (r string, exists bool) {
 // OldName returns the old "name" field's value of the Entitlement entity.
 // If the Entitlement object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EntitlementMutation) OldName(ctx context.Context) (v *string, err error) {
+func (m *EntitlementMutation) OldName(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldName is only allowed on UpdateOne operations")
 	}
@@ -1134,22 +1134,9 @@ func (m *EntitlementMutation) OldName(ctx context.Context) (v *string, err error
 	return oldValue.Name, nil
 }
 
-// ClearName clears the value of the "name" field.
-func (m *EntitlementMutation) ClearName() {
-	m.name = nil
-	m.clearedFields[entitlement.FieldName] = struct{}{}
-}
-
-// NameCleared returns if the "name" field was cleared in this mutation.
-func (m *EntitlementMutation) NameCleared() bool {
-	_, ok := m.clearedFields[entitlement.FieldName]
-	return ok
-}
-
 // ResetName resets all changes to the "name" field.
 func (m *EntitlementMutation) ResetName() {
 	m.name = nil
-	delete(m.clearedFields, entitlement.FieldName)
 }
 
 // SetDescription sets the "description" field.
@@ -1717,9 +1704,6 @@ func (m *EntitlementMutation) ClearedFields() []string {
 	if m.FieldCleared(entitlement.FieldActionID) {
 		fields = append(fields, entitlement.FieldActionID)
 	}
-	if m.FieldCleared(entitlement.FieldName) {
-		fields = append(fields, entitlement.FieldName)
-	}
 	if m.FieldCleared(entitlement.FieldDescription) {
 		fields = append(fields, entitlement.FieldDescription)
 	}
@@ -1745,9 +1729,6 @@ func (m *EntitlementMutation) ClearField(name string) error {
 	switch name {
 	case entitlement.FieldActionID:
 		m.ClearActionID()
-		return nil
-	case entitlement.FieldName:
-		m.ClearName()
 		return nil
 	case entitlement.FieldDescription:
 		m.ClearDescription()

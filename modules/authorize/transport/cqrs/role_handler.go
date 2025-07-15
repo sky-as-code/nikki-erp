@@ -44,24 +44,24 @@ func (this *RoleHandler) CreateRole(ctx context.Context, packet *cqrs.RequestPac
 // 	return reply, nil
 // }
 
-// func (this *ResourceHandler) GetResourceByName(ctx context.Context, packet *cqrs.RequestPacket[it.GetResourceByNameCommand]) (*cqrs.Reply[it.GetResourceByNameResult], error) {
-// 	cmd := packet.Request()
-// 	result, err := this.ResourceSvc.GetResourceByName(ctx, *cmd)
-// 	ft.PanicOnErr(err)
+func (this *RoleHandler) GetRoleById(ctx context.Context, packet *cqrs.RequestPacket[it.GetRoleByIdQuery]) (*cqrs.Reply[it.GetRoleByIdResult], error) {
+	query := packet.Request()
+	result, err := this.RoleSvc.GetRoleById(ctx, *query)
+	ft.PanicOnErr(err)
 
-// 	reply := &cqrs.Reply[it.GetResourceByNameResult]{
-// 		Result: *result,
-// 	}
-// 	return reply, nil
-// }
+	reply := &cqrs.Reply[it.GetRoleByIdResult]{
+		Result: *result,
+	}
+	return reply, nil
+}
 
-// func (this *ResourceHandler) SearchResources(ctx context.Context, packet *cqrs.RequestPacket[it.SearchResourcesCommand]) (*cqrs.Reply[it.SearchResourcesResult], error) {
-// 	cmd := packet.Request()
-// 	result, err := this.ResourceSvc.SearchResources(ctx, *cmd)
-// 	ft.PanicOnErr(err)
+func (this *RoleHandler) SearchRoles(ctx context.Context, packet *cqrs.RequestPacket[it.SearchRolesQuery]) (*cqrs.Reply[it.SearchRolesResult], error) {
+	cmd := packet.Request()
+	result, err := this.RoleSvc.SearchRoles(ctx, *cmd)
+	ft.PanicOnErr(err)
 
-// 	reply := &cqrs.Reply[it.SearchResourcesResult]{
-// 		Result: *result,
-// 	}
-// 	return reply, nil
-// }
+	reply := &cqrs.Reply[it.SearchRolesResult]{
+		Result: *result,
+	}
+	return reply, nil
+}

@@ -1,6 +1,7 @@
 package role
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
@@ -14,7 +15,21 @@ func (this CreateRoleCommand) ToRole() *domain.Role {
 		IsRequiredAttachment: &this.IsRequiredAttachment,
 		IsRequiredComment:    &this.IsRequiredComment,
 		CreatedBy:            &this.CreatedBy,
+		Entitlements:         this.ToEntitlements(),
 	}
+}
+
+func (this CreateRoleCommand) ToEntitlements() []*domain.Entitlement {
+	entitlements := make([]*domain.Entitlement, 0)
+	for _, entitlementId := range this.Entitlements {
+		entitlements = append(entitlements, &domain.Entitlement{
+			ModelBase: model.ModelBase{
+				Id: entitlementId,
+			},
+		})
+	}
+
+	return entitlements
 }
 
 // func (this UpdateResourceCommand) ToResource() *domain.Resource {

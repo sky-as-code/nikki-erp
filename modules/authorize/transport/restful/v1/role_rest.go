@@ -2,7 +2,7 @@ package v1
 
 import (
 	"github.com/labstack/echo/v4"
-	// ft "github.com/sky-as-code/nikki-erp/common/fault"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
@@ -79,54 +79,54 @@ func (this RoleRest) CreateRole(echoCtx echo.Context) (err error) {
 // 	return httpserver.JsonOk(echoCtx, response)
 // }
 
-// func (this ResourceRest) GetResourceByName(echoCtx echo.Context) (err error) {
-// 	request := &GetResourceByNameRequest{}
-// 	if err = echoCtx.Bind(request); err != nil {
-// 		return err
-// 	}
+func (this RoleRest) GetRoleById(echoCtx echo.Context) (err error) {
+	request := &GetRoleByIdRequest{}
+	if err = echoCtx.Bind(request); err != nil {
+		return err
+	}
 
-// 	result := it.GetResourceByNameResult{}
-// 	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+	result := it.GetRoleByIdResult{}
+	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
 
-// 	if err != nil {
-// 		return err
-// 	}
+	if err != nil {
+		return err
+	}
 
-// 	if result.ClientError != nil {
-// 		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-// 	}
+	if result.ClientError != nil {
+		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
+	}
 
-// 	response := GetResourceByNameResponse{}
-// 	response.FromResource(*result.Data)
+	response := GetRoleByIdResponse{}
+	response.FromRole(*result.Data)
 
-// 	return httpserver.JsonOk(echoCtx, response)
-// }
+	return httpserver.JsonOk(echoCtx, response)
+}
 
-// func (this ResourceRest) SearchResources(echoCtx echo.Context) (err error) {
-// 	defer func() {
-// 		if e := ft.RecoverPanic(recover(), "failed to list resources"); e != nil {
-// 			err = e
-// 		}
-// 	}()
+func (this RoleRest) SearchRoles(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanic(recover(), "failed to list resources"); e != nil {
+			err = e
+		}
+	}()
 
-// 	request := &SearchResourcesRequest{}
-// 	if err = echoCtx.Bind(request); err != nil {
-// 		return err
-// 	}
+	request := &SearchRolesRequest{}
+	if err = echoCtx.Bind(request); err != nil {
+		return err
+	}
 
-// 	result := it.SearchResourcesResult{}
-// 	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+	result := it.SearchRolesResult{}
+	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
 
-// 	if err != nil {
-// 		return err
-// 	}
+	if err != nil {
+		return err
+	}
 
-// 	if result.ClientError != nil {
-// 		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-// 	}
+	if result.ClientError != nil {
+		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
+	}
 
-// 	response := SearchResourcesResponse{}
-// 	response.FromResult(result.Data)
+	response := SearchRolesResponse{}
+	response.FromResult(result.Data)
 
-// 	return httpserver.JsonOk(echoCtx, response)
-// }
+	return httpserver.JsonOk(echoCtx, response)
+}

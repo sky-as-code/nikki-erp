@@ -28,7 +28,7 @@ type Entitlement struct {
 	// CreatedBy holds the value of the "created_by" field.
 	CreatedBy string `json:"created_by,omitempty"`
 	// Name holds the value of the "name" field.
-	Name *string `json:"name,omitempty"`
+	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
 	Description *string `json:"description,omitempty"`
 	// Etag holds the value of the "etag" field.
@@ -157,8 +157,7 @@ func (e *Entitlement) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
-				e.Name = new(string)
-				*e.Name = value.String
+				e.Name = value.String
 			}
 		case entitlement.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -257,10 +256,8 @@ func (e *Entitlement) String() string {
 	builder.WriteString("created_by=")
 	builder.WriteString(e.CreatedBy)
 	builder.WriteString(", ")
-	if v := e.Name; v != nil {
-		builder.WriteString("name=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("name=")
+	builder.WriteString(e.Name)
 	builder.WriteString(", ")
 	if v := e.Description; v != nil {
 		builder.WriteString("description=")

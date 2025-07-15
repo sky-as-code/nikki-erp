@@ -13,8 +13,8 @@ func InitCqrsHandlers() error {
 		initResourceHandlers(),
 		initActionHandlers(),
 		initEntitlementHandlers(),
+		initEntitlementAssignmentHandlers(),
 		initRoleHandlers(),
-		// initRoleSuiteHandlers(),
 	)
 	return err
 }
@@ -57,6 +57,23 @@ func initEntitlementHandlers() error {
 		return cqrsBus.SubscribeRequests(
 			ctx,
 			cqrs.NewHandler(handler.CreateEntitlement),
+			cqrs.NewHandler(handler.EntitlementExists),
+			cqrs.NewHandler(handler.UpdateEntitlement),
+			cqrs.NewHandler(handler.GetEntitlementById),
+			cqrs.NewHandler(handler.GetAllEntitlementByIds),
+			cqrs.NewHandler(handler.SearchEntitlements),
+		)
+	})
+}
+
+func initEntitlementAssignmentHandlers() error {
+	deps.Register(NewEntitlementAssignmentHandler)
+
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *EntitlementAssignmentHandler) error {
+		ctx := context.Background()
+		return cqrsBus.SubscribeRequests(
+			ctx,
+			cqrs.NewHandler(handler.GetAllEntitlementAssignmentBySubject),
 		)
 	})
 }
@@ -69,17 +86,8 @@ func initRoleHandlers() error {
 		return cqrsBus.SubscribeRequests(
 			ctx,
 			cqrs.NewHandler(handler.CreateRole),
+			cqrs.NewHandler(handler.GetRoleById),
+			cqrs.NewHandler(handler.SearchRoles),
 		)
 	})
 }
-
-// func initRoleSuiteHandlers() error {
-// 	deps.Register(NewRoleSuiteHandler)
-
-// 	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *RoleSuiteHandler) error {
-// 		ctx := context.Background()
-// 		return cqrsBus.SubscribeRequests(
-// 			ctx,
-// 		)
-// 	})
-// }
