@@ -7,6 +7,796 @@
 	},
 	"item": [
 		{
+			"name": "Authenticate",
+			"item": [
+				{
+					"name": "Login - Start",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const payload = pm.response.json();\r",
+									"const { attemptId } = payload;\r",
+									"attemptId && pm.collectionVariables.set('attemptId', attemptId);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"subjectType\": \"user\",\r\n    \"username\": \"{{email}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_host}}/v1/authn/login/start",
+							"host": [
+								"{{api_host}}"
+							],
+							"path": [
+								"v1",
+								"authn",
+								"login",
+								"start"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"subjectType\": \"user\",\r\n    \"username\": \"John.Doe-63FUqL@nikkierp.com\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login/start",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login",
+										"start"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 09:40:15 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "144"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"attemptId\": \"01K06Q9HC5KT4QC5E524F1783J\",\n    \"createdAt\": 1752572413,\n    \"currentMethod\": \"password\",\n    \"expiredAt\": 1752572713,\n    \"methods\": [\n        \"password\"\n    ],\n    \"subjectName\": \"John Doe 63FUqL\"\n}"
+						},
+						{
+							"name": "Client error - Email not found",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"subjectType\": \"user\",\r\n    \"username\": \"ppppppp@aaaa.com\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login/start",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login",
+										"start"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 10:03:55 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "74"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"username\": \"user email not found\"\n    }\n}"
+						},
+						{
+							"name": "Client error - Invalid subject type",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"subjectType\": \"userrrr\",\r\n    \"username\": \"{{email}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login/start",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login",
+										"start"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 10:04:36 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "78"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"subjectType\": \"must be a valid value\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Login - Authenticate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const payload = pm.response.json();\r",
+									"const { attemptId } = payload;\r",
+									"attemptId && pm.collectionVariables.set('attemptId', attemptId);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"attemptId\": \"{{attemptId}}\",\r\n    \"username\": \"{{email}}\",\r\n    \"password\": \"{{password}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_host}}/v1/authn/login",
+							"host": [
+								"{{api_host}}"
+							],
+							"path": [
+								"v1",
+								"authn",
+								"login"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"attemptId\": \"01K06Q9HC5KT4QC5E524F1783J\",\r\n    \"username\": \"John.Doe-63FUqL@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 10:03:11 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "185"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"done\": true,\n    \"data\": {\n        \"accessToken\": \"TODO\",\n        \"accessTokenExpiredAt\": \"2025-07-15T17:03:11.5992344+07:00\",\n        \"refreshToken\": \"TODO\",\n        \"refreshTokenExpiredAt\": \"2025-07-15T17:03:11.5992344+07:00\"\n    }\n}"
+						},
+						{
+							"name": "Client error - Attempt already settled",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"attemptId\": \"01K06Q9HC5KT4QC5E524F1783J\",\r\n    \"username\": \"John.Doe-63FUqL@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 10:02:09 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "77"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"attemptId\": \"attempt already settled\"\n    }\n}"
+						},
+						{
+							"name": "Client error - Attempt expired",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"attemptId\": \"01K06Q9HC5KT4QC5E524F1783J\",\r\n    \"username\": \"John.Doe-63FUqL@nikkierp.com\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 10:21:04 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "70"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"attemptId\": \"attempt expired\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Password - New",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const requestBody = JSON.parse(pm.request.body.raw);\r",
+									"pm.collectionVariables.set('password', requestBody.newPassword);\r",
+									"\r",
+									"const payload = pm.response.json();\r",
+									"const { attemptId } = payload;\r",
+									"attemptId && pm.collectionVariables.set('attemptId', attemptId);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"subjectType\": \"user\",\r\n    \"subjectRef\": \"{{user_id}}\",\r\n    \"newPassword\": \"Passwo0rd\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_host}}/v1/authn/passwords/password",
+							"host": [
+								"{{api_host}}"
+							],
+							"path": [
+								"v1",
+								"authn",
+								"passwords",
+								"password"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"attemptId\": \"{{attemptId}}\",\r\n    \"username\": \"{{email}}\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 10:03:11 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "185"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"done\": true,\n    \"data\": {\n        \"accessToken\": \"TODO\",\n        \"accessTokenExpiredAt\": \"2025-07-15T17:03:11.5992344+07:00\",\n        \"refreshToken\": \"TODO\",\n        \"refreshTokenExpiredAt\": \"2025-07-15T17:03:11.5992344+07:00\"\n    }\n}"
+						},
+						{
+							"name": "Client error - Attempt already settled",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"attemptId\": \"{{attemptId}}\",\r\n    \"username\": \"{{email}}\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 10:02:09 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "77"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"attemptId\": \"invalid attempt status\"\n    }\n}"
+						},
+						{
+							"name": "Client error - Attempt expired",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"attemptId\": \"{{attemptId}}\",\r\n    \"username\": \"{{email}}\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 10:21:04 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "70"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"attemptId\": \"attempt expired\"\n    }\n}"
+						}
+					]
+				},
+				{
+					"name": "Password - Change",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const payload = pm.response.json();\r",
+									"const { attemptId } = payload;\r",
+									"attemptId && pm.collectionVariables.set('attemptId', attemptId);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"subjectType\": \"user\",\r\n    \"subjectRef\": \"{{user_id}}\",\r\n    \"currentPassword\": \"Passwo0rd\",\r\n    \"newPassword\": \"S3crets!\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{api_host}}/v1/authn/passwords/password",
+							"host": [
+								"{{api_host}}"
+							],
+							"path": [
+								"v1",
+								"authn",
+								"passwords",
+								"password"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Success",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"attemptId\": \"{{attemptId}}\",\r\n    \"username\": \"{{email}}\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 10:03:11 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "185"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"done\": true,\n    \"data\": {\n        \"accessToken\": \"TODO\",\n        \"accessTokenExpiredAt\": \"2025-07-15T17:03:11.5992344+07:00\",\n        \"refreshToken\": \"TODO\",\n        \"refreshTokenExpiredAt\": \"2025-07-15T17:03:11.5992344+07:00\"\n    }\n}"
+						},
+						{
+							"name": "Client error - Attempt already settled",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"attemptId\": \"{{attemptId}}\",\r\n    \"username\": \"{{email}}\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 10:02:09 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "77"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"attemptId\": \"invalid attempt status\"\n    }\n}"
+						},
+						{
+							"name": "Client error - Attempt expired",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"attemptId\": \"{{attemptId}}\",\r\n    \"username\": \"{{email}}\",\r\n    \"password\": \"p@sswo0rd\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authn/login",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authn",
+										"login"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Vary",
+									"value": "Origin"
+								},
+								{
+									"key": "Date",
+									"value": "Tue, 15 Jul 2025 10:21:04 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "70"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"attemptId\": \"attempt expired\"\n    }\n}"
+						}
+					]
+				}
+			]
+		},
+		{
 			"name": "Contacts",
 			"item": [
 				{
@@ -8841,6 +9631,14 @@
 		},
 		{
 			"key": "rolesuite_id",
+			"value": ""
+		},
+		{
+			"key": "attemptId",
+			"value": ""
+		},
+		{
+			"key": "password",
 			"value": ""
 		}
 	]

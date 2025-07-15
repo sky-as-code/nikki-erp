@@ -178,6 +178,34 @@ func (this GetUserByIdQuery) Validate() ft.ValidationErrors {
 
 type GetUserByIdResult = crud.OpResult[*domain.User]
 
+var getUserByEmailQueryType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "getUserByEmail",
+}
+
+type GetUserByEmailQuery struct {
+	Email string `param:"email" json:"email"`
+}
+
+func (GetUserByEmailQuery) CqrsRequestType() cqrs.RequestType {
+	return getUserByEmailQueryType
+}
+
+func (this GetUserByEmailQuery) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		val.Field(&this.Email,
+			val.NotEmpty,
+			val.IsEmail,
+			val.Length(5, model.MODEL_RULE_EMAIL_LENGTH),
+		),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type GetUserByEmailResult = crud.OpResult[*domain.User]
+
 var searchUsersQueryType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "user",

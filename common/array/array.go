@@ -13,3 +13,7 @@ func Map[TSrc any, TDest any](array []TSrc, mapper func(TSrc) TDest) []TDest {
 func Filter[TSrc any](array []TSrc, predicate func(TSrc) bool) []TSrc {
 	return funk.Filter(array, predicate).([]TSrc)
 }
+
+func IndexOf[TSrc any](array []TSrc, item TSrc) int {
+	return funk.IndexOf(array, item)
+}

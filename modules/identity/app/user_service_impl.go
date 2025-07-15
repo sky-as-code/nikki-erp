@@ -307,6 +307,46 @@ func (this *UserServiceImpl) GetUserById(ctx context.Context, query it.GetUserBy
 	}, nil
 }
 
+func (this *UserServiceImpl) GetUserByEmail(ctx context.Context, query it.GetUserByEmailQuery) (result *it.GetUserByEmailResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "get user by email"); e != nil {
+			err = e
+		}
+	}()
+
+	var dbUser *domain.User
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = query.Validate()
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			query.Email = strings.ToLower(query.Email)
+			dbUser, err = this.userRepo.FindByEmail(ctx, query.Email)
+			if err != nil {
+				return err
+			}
+			if dbUser == nil {
+				vErrs.AppendNotFound("email", "user email")
+			}
+			return nil
+		}).
+		End()
+	ft.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &it.GetUserByIdResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	return &it.GetUserByIdResult{
+		Data:    dbUser,
+		HasData: dbUser != nil,
+	}, nil
+}
+
 func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUsersQuery) (result *it.SearchUsersResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "list users"); e != nil {

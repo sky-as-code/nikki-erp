@@ -28,6 +28,7 @@ func initUserHandlers() error {
 			cqrs.NewHandler(handler.Create),
 			cqrs.NewHandler(handler.Delete),
 			cqrs.NewHandler(handler.GetUserById),
+			cqrs.NewHandler(handler.GetUserByEmail),
 			cqrs.NewHandler(handler.SearchUsers),
 			cqrs.NewHandler(handler.Update),
 			cqrs.NewHandler(handler.UserExists),

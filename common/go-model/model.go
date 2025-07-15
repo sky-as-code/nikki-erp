@@ -700,6 +700,12 @@ func doCopy(dv, sv reflect.Value) []error {
 			dfv = dv.FieldByName(name)
 		}
 
+		newDfv, ok := tryConvertibles(sfv, dfv)
+		if ok {
+			dfv.Set(newDfv)
+			continue
+		}
+
 		// validate field - exists in dst, kind and type
 		err := validateCopyField(f, sfv, dfv)
 		if err != nil {
@@ -746,6 +752,46 @@ func doCopy(dv, sv reflect.Value) []error {
 	}
 
 	return errs
+}
+
+func tryConvertibles(from, to reflect.Value) (reflect.Value, bool) {
+	if !from.IsValid() || !to.IsValid() {
+		return reflect.Value{}, false
+	}
+
+	toType := to.Type()
+
+	// Dereference from pointer if needed
+	fromVal := from
+	if from.Kind() == reflect.Ptr && !from.IsNil() {
+		fromVal = from.Elem()
+	}
+
+	switch {
+	case from.Kind() == reflect.Ptr && toType.Kind() == reflect.Ptr:
+		if fromVal.Type().ConvertibleTo(toType.Elem()) {
+			newPtr := reflect.New(toType.Elem())
+			newPtr.Elem().Set(fromVal.Convert(toType.Elem()))
+			return newPtr, true
+		}
+
+	case from.Kind() == reflect.Ptr && toType.Kind() != reflect.Ptr:
+		if fromVal.Type().ConvertibleTo(toType) {
+			return fromVal.Convert(toType), true
+		}
+
+	case from.Kind() != reflect.Ptr && toType.Kind() == reflect.Ptr:
+		if from.Type().ConvertibleTo(toType.Elem()) {
+			newPtr := reflect.New(toType.Elem())
+			newPtr.Elem().Set(from.Convert(toType.Elem()))
+			return newPtr, true
+		}
+
+	case from.Type().ConvertibleTo(toType):
+		return from.Convert(toType), true
+	}
+
+	return reflect.Value{}, false
 }
 
 func doMap(sv reflect.Value) map[string]interface{} {

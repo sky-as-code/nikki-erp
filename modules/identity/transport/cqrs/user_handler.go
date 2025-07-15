@@ -33,6 +33,10 @@ func (this *UserHandler) GetUserById(ctx context.Context, packet *cqrs.RequestPa
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.GetUserById)
 }
 
+func (this *UserHandler) GetUserByEmail(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserByEmailQuery]) (*cqrs.Reply[it.GetUserByEmailResult], error) {
+	return cqrs.HandlePacket(ctx, packet, this.UserSvc.GetUserByEmail)
+}
+
 func (this *UserHandler) SearchUsers(ctx context.Context, packet *cqrs.RequestPacket[it.SearchUsersQuery]) (*cqrs.Reply[it.SearchUsersResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.SearchUsers)
 }

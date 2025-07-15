@@ -1,0 +1,20 @@
+package repository
+
+import (
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authenticate/infra/ent"
+)
+
+func entToAttempt(dbAttempt *ent.LoginAttempt) *domain.LoginAttempt {
+	attempt := &domain.LoginAttempt{}
+	model.MustCopy(dbAttempt, attempt)
+
+	return attempt
+}
+
+func entToPasswordStore(dbPasswordStore *ent.PasswordStore) *domain.PasswordStore {
+	pass := &domain.PasswordStore{}
+	model.MustCopy(dbPasswordStore, pass)
+	return pass
+}

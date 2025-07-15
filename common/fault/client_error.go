@@ -59,19 +59,34 @@ func (this *ValidationErrors) Has(field string) bool {
 	return ok
 }
 
-func (this *ValidationErrors) Merge(other ValidationErrors) {
+func (this *ValidationErrors) Merge(other map[string]string) {
 	for field, err := range other {
 		(*this)[field] = err
 	}
 }
 
-func (this *ValidationErrors) MergeClientError(other *ClientError) {
-	if other != nil {
-		otherErrs, isOk := other.Details.(ValidationErrors)
-		if isOk {
-			this.Merge(otherErrs)
-		}
+func (this *ValidationErrors) MergeClientError(other *ClientError) bool {
+	if other == nil {
+		return true
 	}
+	otherErrs, isOk := other.Details.(map[string]any)
+	if isOk {
+		for field, err := range otherErrs {
+			(*this)[field] = fmt.Sprint(err)
+		}
+		return true
+	}
+	return false
+}
+
+func (this *ValidationErrors) RenameKey(oldKey string, newKey string) bool {
+	val, ok := (*this)[oldKey]
+	if !ok {
+		return false
+	}
+	(*this)[newKey] = val
+	delete(*this, oldKey)
+	return true
 }
 
 func (this *ValidationErrors) Error() string {
@@ -85,7 +100,7 @@ func (this *ValidationErrors) Error() string {
 func (this *ValidationErrors) ToClientError() *ClientError {
 	return &ClientError{
 		Code:    "validation_error",
-		Details: this,
+		Details: *this,
 	}
 }
 
