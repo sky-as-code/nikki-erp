@@ -11,14 +11,15 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/usergroup"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userorg"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 )
 
 const (
@@ -30,13 +31,13 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeGroup          = "Group"
-	TypeHierarchyLevel = "HierarchyLevel"
-	TypeOrganization   = "Organization"
-	TypeUser           = "User"
-	TypeUserGroup      = "UserGroup"
-	TypeUserOrg        = "UserOrg"
-	TypeUserStatusEnum = "UserStatusEnum"
+	TypeGroup           = "Group"
+	TypeHierarchyLevel  = "HierarchyLevel"
+	TypeIdentStatusEnum = "IdentStatusEnum"
+	TypeOrganization    = "Organization"
+	TypeUser            = "User"
+	TypeUserGroup       = "UserGroup"
+	TypeUserOrg         = "UserOrg"
 )
 
 // GroupMutation represents an operation that mutates the Group nodes in the graph.
@@ -1751,6 +1752,698 @@ func (m *HierarchyLevelMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown HierarchyLevel edge %s", name)
 }
 
+// IdentStatusEnumMutation represents an operation that mutates the IdentStatusEnum nodes in the graph.
+type IdentStatusEnumMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *string
+	etag          *string
+	label         *model.LangJson
+	value         *string
+	_type         *string
+	clearedFields map[string]struct{}
+	orgs          map[string]struct{}
+	removedorgs   map[string]struct{}
+	clearedorgs   bool
+	users         map[string]struct{}
+	removedusers  map[string]struct{}
+	clearedusers  bool
+	done          bool
+	oldValue      func(context.Context) (*IdentStatusEnum, error)
+	predicates    []predicate.IdentStatusEnum
+}
+
+var _ ent.Mutation = (*IdentStatusEnumMutation)(nil)
+
+// identstatusenumOption allows management of the mutation configuration using functional options.
+type identstatusenumOption func(*IdentStatusEnumMutation)
+
+// newIdentStatusEnumMutation creates new mutation for the IdentStatusEnum entity.
+func newIdentStatusEnumMutation(c config, op Op, opts ...identstatusenumOption) *IdentStatusEnumMutation {
+	m := &IdentStatusEnumMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeIdentStatusEnum,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withIdentStatusEnumID sets the ID field of the mutation.
+func withIdentStatusEnumID(id string) identstatusenumOption {
+	return func(m *IdentStatusEnumMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *IdentStatusEnum
+		)
+		m.oldValue = func(ctx context.Context) (*IdentStatusEnum, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().IdentStatusEnum.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withIdentStatusEnum sets the old IdentStatusEnum of the mutation.
+func withIdentStatusEnum(node *IdentStatusEnum) identstatusenumOption {
+	return func(m *IdentStatusEnumMutation) {
+		m.oldValue = func(context.Context) (*IdentStatusEnum, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m IdentStatusEnumMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m IdentStatusEnumMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of IdentStatusEnum entities.
+func (m *IdentStatusEnumMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *IdentStatusEnumMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *IdentStatusEnumMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().IdentStatusEnum.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetEtag sets the "etag" field.
+func (m *IdentStatusEnumMutation) SetEtag(s string) {
+	m.etag = &s
+}
+
+// Etag returns the value of the "etag" field in the mutation.
+func (m *IdentStatusEnumMutation) Etag() (r string, exists bool) {
+	v := m.etag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEtag returns the old "etag" field's value of the IdentStatusEnum entity.
+// If the IdentStatusEnum object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IdentStatusEnumMutation) OldEtag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEtag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEtag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEtag: %w", err)
+	}
+	return oldValue.Etag, nil
+}
+
+// ResetEtag resets all changes to the "etag" field.
+func (m *IdentStatusEnumMutation) ResetEtag() {
+	m.etag = nil
+}
+
+// SetLabel sets the "label" field.
+func (m *IdentStatusEnumMutation) SetLabel(mj model.LangJson) {
+	m.label = &mj
+}
+
+// Label returns the value of the "label" field in the mutation.
+func (m *IdentStatusEnumMutation) Label() (r model.LangJson, exists bool) {
+	v := m.label
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLabel returns the old "label" field's value of the IdentStatusEnum entity.
+// If the IdentStatusEnum object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IdentStatusEnumMutation) OldLabel(ctx context.Context) (v model.LangJson, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLabel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLabel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLabel: %w", err)
+	}
+	return oldValue.Label, nil
+}
+
+// ResetLabel resets all changes to the "label" field.
+func (m *IdentStatusEnumMutation) ResetLabel() {
+	m.label = nil
+}
+
+// SetValue sets the "value" field.
+func (m *IdentStatusEnumMutation) SetValue(s string) {
+	m.value = &s
+}
+
+// Value returns the value of the "value" field in the mutation.
+func (m *IdentStatusEnumMutation) Value() (r string, exists bool) {
+	v := m.value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValue returns the old "value" field's value of the IdentStatusEnum entity.
+// If the IdentStatusEnum object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IdentStatusEnumMutation) OldValue(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValue: %w", err)
+	}
+	return oldValue.Value, nil
+}
+
+// ClearValue clears the value of the "value" field.
+func (m *IdentStatusEnumMutation) ClearValue() {
+	m.value = nil
+	m.clearedFields[identstatusenum.FieldValue] = struct{}{}
+}
+
+// ValueCleared returns if the "value" field was cleared in this mutation.
+func (m *IdentStatusEnumMutation) ValueCleared() bool {
+	_, ok := m.clearedFields[identstatusenum.FieldValue]
+	return ok
+}
+
+// ResetValue resets all changes to the "value" field.
+func (m *IdentStatusEnumMutation) ResetValue() {
+	m.value = nil
+	delete(m.clearedFields, identstatusenum.FieldValue)
+}
+
+// SetType sets the "type" field.
+func (m *IdentStatusEnumMutation) SetType(s string) {
+	m._type = &s
+}
+
+// GetType returns the value of the "type" field in the mutation.
+func (m *IdentStatusEnumMutation) GetType() (r string, exists bool) {
+	v := m._type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldType returns the old "type" field's value of the IdentStatusEnum entity.
+// If the IdentStatusEnum object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IdentStatusEnumMutation) OldType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldType: %w", err)
+	}
+	return oldValue.Type, nil
+}
+
+// ResetType resets all changes to the "type" field.
+func (m *IdentStatusEnumMutation) ResetType() {
+	m._type = nil
+}
+
+// AddOrgIDs adds the "orgs" edge to the Organization entity by ids.
+func (m *IdentStatusEnumMutation) AddOrgIDs(ids ...string) {
+	if m.orgs == nil {
+		m.orgs = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.orgs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearOrgs clears the "orgs" edge to the Organization entity.
+func (m *IdentStatusEnumMutation) ClearOrgs() {
+	m.clearedorgs = true
+}
+
+// OrgsCleared reports if the "orgs" edge to the Organization entity was cleared.
+func (m *IdentStatusEnumMutation) OrgsCleared() bool {
+	return m.clearedorgs
+}
+
+// RemoveOrgIDs removes the "orgs" edge to the Organization entity by IDs.
+func (m *IdentStatusEnumMutation) RemoveOrgIDs(ids ...string) {
+	if m.removedorgs == nil {
+		m.removedorgs = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.orgs, ids[i])
+		m.removedorgs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedOrgs returns the removed IDs of the "orgs" edge to the Organization entity.
+func (m *IdentStatusEnumMutation) RemovedOrgsIDs() (ids []string) {
+	for id := range m.removedorgs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// OrgsIDs returns the "orgs" edge IDs in the mutation.
+func (m *IdentStatusEnumMutation) OrgsIDs() (ids []string) {
+	for id := range m.orgs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetOrgs resets all changes to the "orgs" edge.
+func (m *IdentStatusEnumMutation) ResetOrgs() {
+	m.orgs = nil
+	m.clearedorgs = false
+	m.removedorgs = nil
+}
+
+// AddUserIDs adds the "users" edge to the User entity by ids.
+func (m *IdentStatusEnumMutation) AddUserIDs(ids ...string) {
+	if m.users == nil {
+		m.users = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.users[ids[i]] = struct{}{}
+	}
+}
+
+// ClearUsers clears the "users" edge to the User entity.
+func (m *IdentStatusEnumMutation) ClearUsers() {
+	m.clearedusers = true
+}
+
+// UsersCleared reports if the "users" edge to the User entity was cleared.
+func (m *IdentStatusEnumMutation) UsersCleared() bool {
+	return m.clearedusers
+}
+
+// RemoveUserIDs removes the "users" edge to the User entity by IDs.
+func (m *IdentStatusEnumMutation) RemoveUserIDs(ids ...string) {
+	if m.removedusers == nil {
+		m.removedusers = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.users, ids[i])
+		m.removedusers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedUsers returns the removed IDs of the "users" edge to the User entity.
+func (m *IdentStatusEnumMutation) RemovedUsersIDs() (ids []string) {
+	for id := range m.removedusers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// UsersIDs returns the "users" edge IDs in the mutation.
+func (m *IdentStatusEnumMutation) UsersIDs() (ids []string) {
+	for id := range m.users {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetUsers resets all changes to the "users" edge.
+func (m *IdentStatusEnumMutation) ResetUsers() {
+	m.users = nil
+	m.clearedusers = false
+	m.removedusers = nil
+}
+
+// Where appends a list predicates to the IdentStatusEnumMutation builder.
+func (m *IdentStatusEnumMutation) Where(ps ...predicate.IdentStatusEnum) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the IdentStatusEnumMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *IdentStatusEnumMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.IdentStatusEnum, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *IdentStatusEnumMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *IdentStatusEnumMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (IdentStatusEnum).
+func (m *IdentStatusEnumMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *IdentStatusEnumMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.etag != nil {
+		fields = append(fields, identstatusenum.FieldEtag)
+	}
+	if m.label != nil {
+		fields = append(fields, identstatusenum.FieldLabel)
+	}
+	if m.value != nil {
+		fields = append(fields, identstatusenum.FieldValue)
+	}
+	if m._type != nil {
+		fields = append(fields, identstatusenum.FieldType)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *IdentStatusEnumMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case identstatusenum.FieldEtag:
+		return m.Etag()
+	case identstatusenum.FieldLabel:
+		return m.Label()
+	case identstatusenum.FieldValue:
+		return m.Value()
+	case identstatusenum.FieldType:
+		return m.GetType()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *IdentStatusEnumMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case identstatusenum.FieldEtag:
+		return m.OldEtag(ctx)
+	case identstatusenum.FieldLabel:
+		return m.OldLabel(ctx)
+	case identstatusenum.FieldValue:
+		return m.OldValue(ctx)
+	case identstatusenum.FieldType:
+		return m.OldType(ctx)
+	}
+	return nil, fmt.Errorf("unknown IdentStatusEnum field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *IdentStatusEnumMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case identstatusenum.FieldEtag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEtag(v)
+		return nil
+	case identstatusenum.FieldLabel:
+		v, ok := value.(model.LangJson)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLabel(v)
+		return nil
+	case identstatusenum.FieldValue:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValue(v)
+		return nil
+	case identstatusenum.FieldType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetType(v)
+		return nil
+	}
+	return fmt.Errorf("unknown IdentStatusEnum field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *IdentStatusEnumMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *IdentStatusEnumMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *IdentStatusEnumMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown IdentStatusEnum numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *IdentStatusEnumMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(identstatusenum.FieldValue) {
+		fields = append(fields, identstatusenum.FieldValue)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *IdentStatusEnumMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *IdentStatusEnumMutation) ClearField(name string) error {
+	switch name {
+	case identstatusenum.FieldValue:
+		m.ClearValue()
+		return nil
+	}
+	return fmt.Errorf("unknown IdentStatusEnum nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *IdentStatusEnumMutation) ResetField(name string) error {
+	switch name {
+	case identstatusenum.FieldEtag:
+		m.ResetEtag()
+		return nil
+	case identstatusenum.FieldLabel:
+		m.ResetLabel()
+		return nil
+	case identstatusenum.FieldValue:
+		m.ResetValue()
+		return nil
+	case identstatusenum.FieldType:
+		m.ResetType()
+		return nil
+	}
+	return fmt.Errorf("unknown IdentStatusEnum field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *IdentStatusEnumMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.orgs != nil {
+		edges = append(edges, identstatusenum.EdgeOrgs)
+	}
+	if m.users != nil {
+		edges = append(edges, identstatusenum.EdgeUsers)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *IdentStatusEnumMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case identstatusenum.EdgeOrgs:
+		ids := make([]ent.Value, 0, len(m.orgs))
+		for id := range m.orgs {
+			ids = append(ids, id)
+		}
+		return ids
+	case identstatusenum.EdgeUsers:
+		ids := make([]ent.Value, 0, len(m.users))
+		for id := range m.users {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *IdentStatusEnumMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedorgs != nil {
+		edges = append(edges, identstatusenum.EdgeOrgs)
+	}
+	if m.removedusers != nil {
+		edges = append(edges, identstatusenum.EdgeUsers)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *IdentStatusEnumMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case identstatusenum.EdgeOrgs:
+		ids := make([]ent.Value, 0, len(m.removedorgs))
+		for id := range m.removedorgs {
+			ids = append(ids, id)
+		}
+		return ids
+	case identstatusenum.EdgeUsers:
+		ids := make([]ent.Value, 0, len(m.removedusers))
+		for id := range m.removedusers {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *IdentStatusEnumMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedorgs {
+		edges = append(edges, identstatusenum.EdgeOrgs)
+	}
+	if m.clearedusers {
+		edges = append(edges, identstatusenum.EdgeUsers)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *IdentStatusEnumMutation) EdgeCleared(name string) bool {
+	switch name {
+	case identstatusenum.EdgeOrgs:
+		return m.clearedorgs
+	case identstatusenum.EdgeUsers:
+		return m.clearedusers
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *IdentStatusEnumMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown IdentStatusEnum unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *IdentStatusEnumMutation) ResetEdge(name string) error {
+	switch name {
+	case identstatusenum.EdgeOrgs:
+		m.ResetOrgs()
+		return nil
+	case identstatusenum.EdgeUsers:
+		m.ResetUsers()
+		return nil
+	}
+	return fmt.Errorf("unknown IdentStatusEnum edge %s", name)
+}
+
 // OrganizationMutation represents an operation that mutates the Organization nodes in the graph.
 type OrganizationMutation struct {
 	config
@@ -1759,9 +2452,11 @@ type OrganizationMutation struct {
 	id                 *string
 	created_at         *time.Time
 	deleted_at         *time.Time
+	address            *string
 	display_name       *string
+	legal_name         *string
+	phone_number       *string
 	etag               *string
-	status             *organization.Status
 	slug               *string
 	updated_at         *time.Time
 	clearedFields      map[string]struct{}
@@ -1774,6 +2469,8 @@ type OrganizationMutation struct {
 	groups             map[string]struct{}
 	removedgroups      map[string]struct{}
 	clearedgroups      bool
+	org_status         *string
+	clearedorg_status  bool
 	done               bool
 	oldValue           func(context.Context) (*Organization, error)
 	predicates         []predicate.Organization
@@ -1968,6 +2665,55 @@ func (m *OrganizationMutation) ResetDeletedAt() {
 	delete(m.clearedFields, organization.FieldDeletedAt)
 }
 
+// SetAddress sets the "address" field.
+func (m *OrganizationMutation) SetAddress(s string) {
+	m.address = &s
+}
+
+// Address returns the value of the "address" field in the mutation.
+func (m *OrganizationMutation) Address() (r string, exists bool) {
+	v := m.address
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAddress returns the old "address" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldAddress(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAddress is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAddress requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAddress: %w", err)
+	}
+	return oldValue.Address, nil
+}
+
+// ClearAddress clears the value of the "address" field.
+func (m *OrganizationMutation) ClearAddress() {
+	m.address = nil
+	m.clearedFields[organization.FieldAddress] = struct{}{}
+}
+
+// AddressCleared returns if the "address" field was cleared in this mutation.
+func (m *OrganizationMutation) AddressCleared() bool {
+	_, ok := m.clearedFields[organization.FieldAddress]
+	return ok
+}
+
+// ResetAddress resets all changes to the "address" field.
+func (m *OrganizationMutation) ResetAddress() {
+	m.address = nil
+	delete(m.clearedFields, organization.FieldAddress)
+}
+
 // SetDisplayName sets the "display_name" field.
 func (m *OrganizationMutation) SetDisplayName(s string) {
 	m.display_name = &s
@@ -2002,6 +2748,104 @@ func (m *OrganizationMutation) OldDisplayName(ctx context.Context) (v string, er
 // ResetDisplayName resets all changes to the "display_name" field.
 func (m *OrganizationMutation) ResetDisplayName() {
 	m.display_name = nil
+}
+
+// SetLegalName sets the "legal_name" field.
+func (m *OrganizationMutation) SetLegalName(s string) {
+	m.legal_name = &s
+}
+
+// LegalName returns the value of the "legal_name" field in the mutation.
+func (m *OrganizationMutation) LegalName() (r string, exists bool) {
+	v := m.legal_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLegalName returns the old "legal_name" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldLegalName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLegalName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLegalName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLegalName: %w", err)
+	}
+	return oldValue.LegalName, nil
+}
+
+// ClearLegalName clears the value of the "legal_name" field.
+func (m *OrganizationMutation) ClearLegalName() {
+	m.legal_name = nil
+	m.clearedFields[organization.FieldLegalName] = struct{}{}
+}
+
+// LegalNameCleared returns if the "legal_name" field was cleared in this mutation.
+func (m *OrganizationMutation) LegalNameCleared() bool {
+	_, ok := m.clearedFields[organization.FieldLegalName]
+	return ok
+}
+
+// ResetLegalName resets all changes to the "legal_name" field.
+func (m *OrganizationMutation) ResetLegalName() {
+	m.legal_name = nil
+	delete(m.clearedFields, organization.FieldLegalName)
+}
+
+// SetPhoneNumber sets the "phone_number" field.
+func (m *OrganizationMutation) SetPhoneNumber(s string) {
+	m.phone_number = &s
+}
+
+// PhoneNumber returns the value of the "phone_number" field in the mutation.
+func (m *OrganizationMutation) PhoneNumber() (r string, exists bool) {
+	v := m.phone_number
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPhoneNumber returns the old "phone_number" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldPhoneNumber(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPhoneNumber is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPhoneNumber requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPhoneNumber: %w", err)
+	}
+	return oldValue.PhoneNumber, nil
+}
+
+// ClearPhoneNumber clears the value of the "phone_number" field.
+func (m *OrganizationMutation) ClearPhoneNumber() {
+	m.phone_number = nil
+	m.clearedFields[organization.FieldPhoneNumber] = struct{}{}
+}
+
+// PhoneNumberCleared returns if the "phone_number" field was cleared in this mutation.
+func (m *OrganizationMutation) PhoneNumberCleared() bool {
+	_, ok := m.clearedFields[organization.FieldPhoneNumber]
+	return ok
+}
+
+// ResetPhoneNumber resets all changes to the "phone_number" field.
+func (m *OrganizationMutation) ResetPhoneNumber() {
+	m.phone_number = nil
+	delete(m.clearedFields, organization.FieldPhoneNumber)
 }
 
 // SetEtag sets the "etag" field.
@@ -2040,40 +2884,40 @@ func (m *OrganizationMutation) ResetEtag() {
 	m.etag = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *OrganizationMutation) SetStatus(o organization.Status) {
-	m.status = &o
+// SetStatusID sets the "status_id" field.
+func (m *OrganizationMutation) SetStatusID(s string) {
+	m.org_status = &s
 }
 
-// Status returns the value of the "status" field in the mutation.
-func (m *OrganizationMutation) Status() (r organization.Status, exists bool) {
-	v := m.status
+// StatusID returns the value of the "status_id" field in the mutation.
+func (m *OrganizationMutation) StatusID() (r string, exists bool) {
+	v := m.org_status
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the Organization entity.
+// OldStatusID returns the old "status_id" field's value of the Organization entity.
 // If the Organization object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OrganizationMutation) OldStatus(ctx context.Context) (v organization.Status, err error) {
+func (m *OrganizationMutation) OldStatusID(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+		return v, errors.New("OldStatusID is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
+		return v, errors.New("OldStatusID requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+		return v, fmt.Errorf("querying old value for OldStatusID: %w", err)
 	}
-	return oldValue.Status, nil
+	return oldValue.StatusID, nil
 }
 
-// ResetStatus resets all changes to the "status" field.
-func (m *OrganizationMutation) ResetStatus() {
-	m.status = nil
+// ResetStatusID resets all changes to the "status_id" field.
+func (m *OrganizationMutation) ResetStatusID() {
+	m.org_status = nil
 }
 
 // SetSlug sets the "slug" field.
@@ -2323,6 +3167,46 @@ func (m *OrganizationMutation) ResetGroups() {
 	m.removedgroups = nil
 }
 
+// SetOrgStatusID sets the "org_status" edge to the IdentStatusEnum entity by id.
+func (m *OrganizationMutation) SetOrgStatusID(id string) {
+	m.org_status = &id
+}
+
+// ClearOrgStatus clears the "org_status" edge to the IdentStatusEnum entity.
+func (m *OrganizationMutation) ClearOrgStatus() {
+	m.clearedorg_status = true
+	m.clearedFields[organization.FieldStatusID] = struct{}{}
+}
+
+// OrgStatusCleared reports if the "org_status" edge to the IdentStatusEnum entity was cleared.
+func (m *OrganizationMutation) OrgStatusCleared() bool {
+	return m.clearedorg_status
+}
+
+// OrgStatusID returns the "org_status" edge ID in the mutation.
+func (m *OrganizationMutation) OrgStatusID() (id string, exists bool) {
+	if m.org_status != nil {
+		return *m.org_status, true
+	}
+	return
+}
+
+// OrgStatusIDs returns the "org_status" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OrgStatusID instead. It exists only for internal usage by the builders.
+func (m *OrganizationMutation) OrgStatusIDs() (ids []string) {
+	if id := m.org_status; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOrgStatus resets all changes to the "org_status" edge.
+func (m *OrganizationMutation) ResetOrgStatus() {
+	m.org_status = nil
+	m.clearedorg_status = false
+}
+
 // Where appends a list predicates to the OrganizationMutation builder.
 func (m *OrganizationMutation) Where(ps ...predicate.Organization) {
 	m.predicates = append(m.predicates, ps...)
@@ -2357,21 +3241,30 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 10)
 	if m.created_at != nil {
 		fields = append(fields, organization.FieldCreatedAt)
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, organization.FieldDeletedAt)
 	}
+	if m.address != nil {
+		fields = append(fields, organization.FieldAddress)
+	}
 	if m.display_name != nil {
 		fields = append(fields, organization.FieldDisplayName)
+	}
+	if m.legal_name != nil {
+		fields = append(fields, organization.FieldLegalName)
+	}
+	if m.phone_number != nil {
+		fields = append(fields, organization.FieldPhoneNumber)
 	}
 	if m.etag != nil {
 		fields = append(fields, organization.FieldEtag)
 	}
-	if m.status != nil {
-		fields = append(fields, organization.FieldStatus)
+	if m.org_status != nil {
+		fields = append(fields, organization.FieldStatusID)
 	}
 	if m.slug != nil {
 		fields = append(fields, organization.FieldSlug)
@@ -2391,12 +3284,18 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case organization.FieldDeletedAt:
 		return m.DeletedAt()
+	case organization.FieldAddress:
+		return m.Address()
 	case organization.FieldDisplayName:
 		return m.DisplayName()
+	case organization.FieldLegalName:
+		return m.LegalName()
+	case organization.FieldPhoneNumber:
+		return m.PhoneNumber()
 	case organization.FieldEtag:
 		return m.Etag()
-	case organization.FieldStatus:
-		return m.Status()
+	case organization.FieldStatusID:
+		return m.StatusID()
 	case organization.FieldSlug:
 		return m.Slug()
 	case organization.FieldUpdatedAt:
@@ -2414,12 +3313,18 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldCreatedAt(ctx)
 	case organization.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
+	case organization.FieldAddress:
+		return m.OldAddress(ctx)
 	case organization.FieldDisplayName:
 		return m.OldDisplayName(ctx)
+	case organization.FieldLegalName:
+		return m.OldLegalName(ctx)
+	case organization.FieldPhoneNumber:
+		return m.OldPhoneNumber(ctx)
 	case organization.FieldEtag:
 		return m.OldEtag(ctx)
-	case organization.FieldStatus:
-		return m.OldStatus(ctx)
+	case organization.FieldStatusID:
+		return m.OldStatusID(ctx)
 	case organization.FieldSlug:
 		return m.OldSlug(ctx)
 	case organization.FieldUpdatedAt:
@@ -2447,12 +3352,33 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDeletedAt(v)
 		return nil
+	case organization.FieldAddress:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAddress(v)
+		return nil
 	case organization.FieldDisplayName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDisplayName(v)
+		return nil
+	case organization.FieldLegalName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLegalName(v)
+		return nil
+	case organization.FieldPhoneNumber:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPhoneNumber(v)
 		return nil
 	case organization.FieldEtag:
 		v, ok := value.(string)
@@ -2461,12 +3387,12 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetEtag(v)
 		return nil
-	case organization.FieldStatus:
-		v, ok := value.(organization.Status)
+	case organization.FieldStatusID:
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStatus(v)
+		m.SetStatusID(v)
 		return nil
 	case organization.FieldSlug:
 		v, ok := value.(string)
@@ -2515,6 +3441,15 @@ func (m *OrganizationMutation) ClearedFields() []string {
 	if m.FieldCleared(organization.FieldDeletedAt) {
 		fields = append(fields, organization.FieldDeletedAt)
 	}
+	if m.FieldCleared(organization.FieldAddress) {
+		fields = append(fields, organization.FieldAddress)
+	}
+	if m.FieldCleared(organization.FieldLegalName) {
+		fields = append(fields, organization.FieldLegalName)
+	}
+	if m.FieldCleared(organization.FieldPhoneNumber) {
+		fields = append(fields, organization.FieldPhoneNumber)
+	}
 	if m.FieldCleared(organization.FieldUpdatedAt) {
 		fields = append(fields, organization.FieldUpdatedAt)
 	}
@@ -2535,6 +3470,15 @@ func (m *OrganizationMutation) ClearField(name string) error {
 	case organization.FieldDeletedAt:
 		m.ClearDeletedAt()
 		return nil
+	case organization.FieldAddress:
+		m.ClearAddress()
+		return nil
+	case organization.FieldLegalName:
+		m.ClearLegalName()
+		return nil
+	case organization.FieldPhoneNumber:
+		m.ClearPhoneNumber()
+		return nil
 	case organization.FieldUpdatedAt:
 		m.ClearUpdatedAt()
 		return nil
@@ -2552,14 +3496,23 @@ func (m *OrganizationMutation) ResetField(name string) error {
 	case organization.FieldDeletedAt:
 		m.ResetDeletedAt()
 		return nil
+	case organization.FieldAddress:
+		m.ResetAddress()
+		return nil
 	case organization.FieldDisplayName:
 		m.ResetDisplayName()
+		return nil
+	case organization.FieldLegalName:
+		m.ResetLegalName()
+		return nil
+	case organization.FieldPhoneNumber:
+		m.ResetPhoneNumber()
 		return nil
 	case organization.FieldEtag:
 		m.ResetEtag()
 		return nil
-	case organization.FieldStatus:
-		m.ResetStatus()
+	case organization.FieldStatusID:
+		m.ResetStatusID()
 		return nil
 	case organization.FieldSlug:
 		m.ResetSlug()
@@ -2573,7 +3526,7 @@ func (m *OrganizationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *OrganizationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.users != nil {
 		edges = append(edges, organization.EdgeUsers)
 	}
@@ -2582,6 +3535,9 @@ func (m *OrganizationMutation) AddedEdges() []string {
 	}
 	if m.groups != nil {
 		edges = append(edges, organization.EdgeGroups)
+	}
+	if m.org_status != nil {
+		edges = append(edges, organization.EdgeOrgStatus)
 	}
 	return edges
 }
@@ -2608,13 +3564,17 @@ func (m *OrganizationMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case organization.EdgeOrgStatus:
+		if id := m.org_status; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *OrganizationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedusers != nil {
 		edges = append(edges, organization.EdgeUsers)
 	}
@@ -2655,7 +3615,7 @@ func (m *OrganizationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *OrganizationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedusers {
 		edges = append(edges, organization.EdgeUsers)
 	}
@@ -2664,6 +3624,9 @@ func (m *OrganizationMutation) ClearedEdges() []string {
 	}
 	if m.clearedgroups {
 		edges = append(edges, organization.EdgeGroups)
+	}
+	if m.clearedorg_status {
+		edges = append(edges, organization.EdgeOrgStatus)
 	}
 	return edges
 }
@@ -2678,6 +3641,8 @@ func (m *OrganizationMutation) EdgeCleared(name string) bool {
 		return m.clearedhierarchies
 	case organization.EdgeGroups:
 		return m.clearedgroups
+	case organization.EdgeOrgStatus:
+		return m.clearedorg_status
 	}
 	return false
 }
@@ -2686,6 +3651,9 @@ func (m *OrganizationMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *OrganizationMutation) ClearEdge(name string) error {
 	switch name {
+	case organization.EdgeOrgStatus:
+		m.ClearOrgStatus()
+		return nil
 	}
 	return fmt.Errorf("unknown Organization unique edge %s", name)
 }
@@ -2702,6 +3670,9 @@ func (m *OrganizationMutation) ResetEdge(name string) error {
 		return nil
 	case organization.EdgeGroups:
 		m.ResetGroups()
+		return nil
+	case organization.EdgeOrgStatus:
+		m.ResetOrgStatus()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization edge %s", name)
@@ -3620,18 +4591,18 @@ func (m *UserMutation) ResetOrgs() {
 	m.removedorgs = nil
 }
 
-// SetUserStatusID sets the "user_status" edge to the UserStatusEnum entity by id.
+// SetUserStatusID sets the "user_status" edge to the IdentStatusEnum entity by id.
 func (m *UserMutation) SetUserStatusID(id string) {
 	m.user_status = &id
 }
 
-// ClearUserStatus clears the "user_status" edge to the UserStatusEnum entity.
+// ClearUserStatus clears the "user_status" edge to the IdentStatusEnum entity.
 func (m *UserMutation) ClearUserStatus() {
 	m.cleareduser_status = true
 	m.clearedFields[user.FieldStatusID] = struct{}{}
 }
 
-// UserStatusCleared reports if the "user_status" edge to the UserStatusEnum entity was cleared.
+// UserStatusCleared reports if the "user_status" edge to the IdentStatusEnum entity was cleared.
 func (m *UserMutation) UserStatusCleared() bool {
 	return m.cleareduser_status
 }
@@ -4985,591 +5956,4 @@ func (m *UserOrgMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown UserOrg edge %s", name)
-}
-
-// UserStatusEnumMutation represents an operation that mutates the UserStatusEnum nodes in the graph.
-type UserStatusEnumMutation struct {
-	config
-	op            Op
-	typ           string
-	id            *string
-	etag          *string
-	label         *map[string]string
-	value         *string
-	_type         *string
-	clearedFields map[string]struct{}
-	users         map[string]struct{}
-	removedusers  map[string]struct{}
-	clearedusers  bool
-	done          bool
-	oldValue      func(context.Context) (*UserStatusEnum, error)
-	predicates    []predicate.UserStatusEnum
-}
-
-var _ ent.Mutation = (*UserStatusEnumMutation)(nil)
-
-// userstatusenumOption allows management of the mutation configuration using functional options.
-type userstatusenumOption func(*UserStatusEnumMutation)
-
-// newUserStatusEnumMutation creates new mutation for the UserStatusEnum entity.
-func newUserStatusEnumMutation(c config, op Op, opts ...userstatusenumOption) *UserStatusEnumMutation {
-	m := &UserStatusEnumMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeUserStatusEnum,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withUserStatusEnumID sets the ID field of the mutation.
-func withUserStatusEnumID(id string) userstatusenumOption {
-	return func(m *UserStatusEnumMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *UserStatusEnum
-		)
-		m.oldValue = func(ctx context.Context) (*UserStatusEnum, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().UserStatusEnum.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withUserStatusEnum sets the old UserStatusEnum of the mutation.
-func withUserStatusEnum(node *UserStatusEnum) userstatusenumOption {
-	return func(m *UserStatusEnumMutation) {
-		m.oldValue = func(context.Context) (*UserStatusEnum, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m UserStatusEnumMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m UserStatusEnumMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of UserStatusEnum entities.
-func (m *UserStatusEnumMutation) SetID(id string) {
-	m.id = &id
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *UserStatusEnumMutation) ID() (id string, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *UserStatusEnumMutation) IDs(ctx context.Context) ([]string, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []string{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().UserStatusEnum.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetEtag sets the "etag" field.
-func (m *UserStatusEnumMutation) SetEtag(s string) {
-	m.etag = &s
-}
-
-// Etag returns the value of the "etag" field in the mutation.
-func (m *UserStatusEnumMutation) Etag() (r string, exists bool) {
-	v := m.etag
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldEtag returns the old "etag" field's value of the UserStatusEnum entity.
-// If the UserStatusEnum object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserStatusEnumMutation) OldEtag(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEtag is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEtag requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEtag: %w", err)
-	}
-	return oldValue.Etag, nil
-}
-
-// ResetEtag resets all changes to the "etag" field.
-func (m *UserStatusEnumMutation) ResetEtag() {
-	m.etag = nil
-}
-
-// SetLabel sets the "label" field.
-func (m *UserStatusEnumMutation) SetLabel(value map[string]string) {
-	m.label = &value
-}
-
-// Label returns the value of the "label" field in the mutation.
-func (m *UserStatusEnumMutation) Label() (r map[string]string, exists bool) {
-	v := m.label
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldLabel returns the old "label" field's value of the UserStatusEnum entity.
-// If the UserStatusEnum object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserStatusEnumMutation) OldLabel(ctx context.Context) (v map[string]string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldLabel is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldLabel requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLabel: %w", err)
-	}
-	return oldValue.Label, nil
-}
-
-// ResetLabel resets all changes to the "label" field.
-func (m *UserStatusEnumMutation) ResetLabel() {
-	m.label = nil
-}
-
-// SetValue sets the "value" field.
-func (m *UserStatusEnumMutation) SetValue(s string) {
-	m.value = &s
-}
-
-// Value returns the value of the "value" field in the mutation.
-func (m *UserStatusEnumMutation) Value() (r string, exists bool) {
-	v := m.value
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldValue returns the old "value" field's value of the UserStatusEnum entity.
-// If the UserStatusEnum object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserStatusEnumMutation) OldValue(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldValue is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldValue requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldValue: %w", err)
-	}
-	return oldValue.Value, nil
-}
-
-// ResetValue resets all changes to the "value" field.
-func (m *UserStatusEnumMutation) ResetValue() {
-	m.value = nil
-}
-
-// SetType sets the "type" field.
-func (m *UserStatusEnumMutation) SetType(s string) {
-	m._type = &s
-}
-
-// GetType returns the value of the "type" field in the mutation.
-func (m *UserStatusEnumMutation) GetType() (r string, exists bool) {
-	v := m._type
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldType returns the old "type" field's value of the UserStatusEnum entity.
-// If the UserStatusEnum object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserStatusEnumMutation) OldType(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldType is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldType requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldType: %w", err)
-	}
-	return oldValue.Type, nil
-}
-
-// ResetType resets all changes to the "type" field.
-func (m *UserStatusEnumMutation) ResetType() {
-	m._type = nil
-}
-
-// AddUserIDs adds the "users" edge to the User entity by ids.
-func (m *UserStatusEnumMutation) AddUserIDs(ids ...string) {
-	if m.users == nil {
-		m.users = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.users[ids[i]] = struct{}{}
-	}
-}
-
-// ClearUsers clears the "users" edge to the User entity.
-func (m *UserStatusEnumMutation) ClearUsers() {
-	m.clearedusers = true
-}
-
-// UsersCleared reports if the "users" edge to the User entity was cleared.
-func (m *UserStatusEnumMutation) UsersCleared() bool {
-	return m.clearedusers
-}
-
-// RemoveUserIDs removes the "users" edge to the User entity by IDs.
-func (m *UserStatusEnumMutation) RemoveUserIDs(ids ...string) {
-	if m.removedusers == nil {
-		m.removedusers = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.users, ids[i])
-		m.removedusers[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedUsers returns the removed IDs of the "users" edge to the User entity.
-func (m *UserStatusEnumMutation) RemovedUsersIDs() (ids []string) {
-	for id := range m.removedusers {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// UsersIDs returns the "users" edge IDs in the mutation.
-func (m *UserStatusEnumMutation) UsersIDs() (ids []string) {
-	for id := range m.users {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetUsers resets all changes to the "users" edge.
-func (m *UserStatusEnumMutation) ResetUsers() {
-	m.users = nil
-	m.clearedusers = false
-	m.removedusers = nil
-}
-
-// Where appends a list predicates to the UserStatusEnumMutation builder.
-func (m *UserStatusEnumMutation) Where(ps ...predicate.UserStatusEnum) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the UserStatusEnumMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *UserStatusEnumMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.UserStatusEnum, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *UserStatusEnumMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *UserStatusEnumMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (UserStatusEnum).
-func (m *UserStatusEnumMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *UserStatusEnumMutation) Fields() []string {
-	fields := make([]string, 0, 4)
-	if m.etag != nil {
-		fields = append(fields, userstatusenum.FieldEtag)
-	}
-	if m.label != nil {
-		fields = append(fields, userstatusenum.FieldLabel)
-	}
-	if m.value != nil {
-		fields = append(fields, userstatusenum.FieldValue)
-	}
-	if m._type != nil {
-		fields = append(fields, userstatusenum.FieldType)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *UserStatusEnumMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case userstatusenum.FieldEtag:
-		return m.Etag()
-	case userstatusenum.FieldLabel:
-		return m.Label()
-	case userstatusenum.FieldValue:
-		return m.Value()
-	case userstatusenum.FieldType:
-		return m.GetType()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *UserStatusEnumMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case userstatusenum.FieldEtag:
-		return m.OldEtag(ctx)
-	case userstatusenum.FieldLabel:
-		return m.OldLabel(ctx)
-	case userstatusenum.FieldValue:
-		return m.OldValue(ctx)
-	case userstatusenum.FieldType:
-		return m.OldType(ctx)
-	}
-	return nil, fmt.Errorf("unknown UserStatusEnum field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *UserStatusEnumMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case userstatusenum.FieldEtag:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetEtag(v)
-		return nil
-	case userstatusenum.FieldLabel:
-		v, ok := value.(map[string]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetLabel(v)
-		return nil
-	case userstatusenum.FieldValue:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetValue(v)
-		return nil
-	case userstatusenum.FieldType:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetType(v)
-		return nil
-	}
-	return fmt.Errorf("unknown UserStatusEnum field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *UserStatusEnumMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *UserStatusEnumMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *UserStatusEnumMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown UserStatusEnum numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *UserStatusEnumMutation) ClearedFields() []string {
-	return nil
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *UserStatusEnumMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *UserStatusEnumMutation) ClearField(name string) error {
-	return fmt.Errorf("unknown UserStatusEnum nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *UserStatusEnumMutation) ResetField(name string) error {
-	switch name {
-	case userstatusenum.FieldEtag:
-		m.ResetEtag()
-		return nil
-	case userstatusenum.FieldLabel:
-		m.ResetLabel()
-		return nil
-	case userstatusenum.FieldValue:
-		m.ResetValue()
-		return nil
-	case userstatusenum.FieldType:
-		m.ResetType()
-		return nil
-	}
-	return fmt.Errorf("unknown UserStatusEnum field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *UserStatusEnumMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.users != nil {
-		edges = append(edges, userstatusenum.EdgeUsers)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *UserStatusEnumMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case userstatusenum.EdgeUsers:
-		ids := make([]ent.Value, 0, len(m.users))
-		for id := range m.users {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *UserStatusEnumMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.removedusers != nil {
-		edges = append(edges, userstatusenum.EdgeUsers)
-	}
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *UserStatusEnumMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case userstatusenum.EdgeUsers:
-		ids := make([]ent.Value, 0, len(m.removedusers))
-		for id := range m.removedusers {
-			ids = append(ids, id)
-		}
-		return ids
-	}
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *UserStatusEnumMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedusers {
-		edges = append(edges, userstatusenum.EdgeUsers)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *UserStatusEnumMutation) EdgeCleared(name string) bool {
-	switch name {
-	case userstatusenum.EdgeUsers:
-		return m.clearedusers
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *UserStatusEnumMutation) ClearEdge(name string) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown UserStatusEnum unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *UserStatusEnumMutation) ResetEdge(name string) error {
-	switch name {
-	case userstatusenum.EdgeUsers:
-		m.ResetUsers()
-		return nil
-	}
-	return fmt.Errorf("unknown UserStatusEnum edge %s", name)
 }

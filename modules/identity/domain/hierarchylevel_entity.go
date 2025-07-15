@@ -15,10 +15,6 @@ type HierarchyLevel struct {
 	ParentId *model.Id
 }
 
-func (this *HierarchyLevel) SetDefaults() error {
-	return this.ModelBase.SetDefaults()
-}
-
 func (this *HierarchyLevel) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Name,

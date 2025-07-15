@@ -3,15 +3,16 @@ package app
 import (
 	"context"
 	"strings"
-	"time"
 
-	"go.bryk.io/pkg/ulid"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
+	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	util "github.com/sky-as-code/nikki-erp/common/util"
-	"github.com/sky-as-code/nikki-erp/modules/core/enum"
+	val "github.com/sky-as-code/nikki-erp/common/validator"
+	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
@@ -37,17 +38,27 @@ type UserServiceImpl struct {
 
 func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCommand) (result *it.CreateUserResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to create user"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "create user"); e != nil {
 			err = e
 		}
 	}()
 
 	user := cmd.ToUser()
-	this.sanitizeUser(user)
 	this.setUserDefaults(ctx, user)
 
-	vErrs := user.Validate(false)
-	this.assertUserUnique(ctx, user, &vErrs)
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = user.Validate(false)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.sanitizeUser(user)
+			return this.assertUserUnique(ctx, user.Email, vErrs)
+		}).
+		End()
+	ft.PanicOnErr(err)
+
 	if vErrs.Count() > 0 {
 		return &it.CreateUserResult{
 			ClientError: vErrs.ToClientError(),
@@ -62,104 +73,50 @@ func (this *UserServiceImpl) CreateUser(ctx context.Context, cmd it.CreateUserCo
 
 	return &it.CreateUserResult{
 		Data:    user,
-		HasData: true,
+		HasData: user != nil, // In rare case, new user was deleted after created. Maybe due to a concurrent cleanup process.
 	}, err
-}
-
-func (this *UserServiceImpl) sanitizeUser(user *domain.User) {
-	if user.Email != nil {
-		user.Email = util.ToPtr(strings.ToLower(*user.Email))
-	}
-	if user.DisplayName != nil {
-		user.DisplayName = util.ToPtr(strings.TrimSpace(*user.DisplayName))
-	}
-	user.Etag = model.NewEtag()
-}
-
-func (this *UserServiceImpl) setUserDefaults(ctx context.Context, user *domain.User) {
-	err := user.SetDefaults()
-	ft.PanicOnErr(err)
-	activeEnum, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
-		Value:    util.ToPtr(domain.UserStatusActive),
-		EnumType: util.ToPtr(domain.UserStatusEnumType),
-	})
-	ft.PanicOnErr(err)
-	ft.PanicOnErr(activeEnum.ClientError)
-
-	user.Status = domain.WrapUserStatus(activeEnum.Data)
-	user.StatusId = activeEnum.Data.Id
-	user.Email = util.ToPtr(strings.ToLower(*user.Email))
-}
-
-func (this *UserServiceImpl) assertUserUnique(ctx context.Context, user *domain.User, errors *ft.ValidationErrors) {
-	if errors.Has("email") {
-		return
-	}
-	dbUser, err := this.userRepo.FindByEmail(ctx, *user.Email)
-	ft.PanicOnErr(err)
-
-	if dbUser != nil {
-		errors.Append("email", "email already exists")
-	}
-}
-
-func (this *UserServiceImpl) assertStatusExists(ctx context.Context, user *domain.User, errors *ft.ValidationErrors) {
-	if errors.Has("status") || (user.StatusValue == nil) {
-		return
-	}
-	dbStatus, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
-		Value:    user.StatusValue,
-		EnumType: util.ToPtr(domain.UserStatusEnumType),
-	})
-	ft.PanicOnErr(err)
-	ft.PanicOnErr(dbStatus.ClientError)
-
-	if !dbStatus.HasData {
-		errors.Append("status", "invalid user status")
-		return
-	}
-	user.StatusId = dbStatus.Data.Id
 }
 
 func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCommand) (result *it.UpdateUserResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to update user"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "update user"); e != nil {
 			err = e
 		}
 	}()
 
 	user := cmd.ToUser()
-	this.sanitizeUser(user)
 
-	vErrs := user.Validate(true)
-	if user.Email != nil {
-		this.assertUserUnique(ctx, user, &vErrs)
-	}
-	if user.StatusId != nil {
-		this.assertStatusExists(ctx, user, &vErrs)
-		// user.Status = this.enumRepo.FindById(ctx, *user.StatusId)
-	}
-	if vErrs.Count() > 0 {
-		return &it.UpdateUserResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	dbUser, err := this.userRepo.FindById(ctx, it.FindByIdParam{Id: *user.Id})
+	var dbUser *domain.User
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = user.Validate(true)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			dbUser, err = this.assertUserExists(ctx, *user.Id, vErrs)
+			return err
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.assertCorrectEtag(*user.Etag, *dbUser.Etag, vErrs)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			// Sanitize after we've made sure this is the correct user
+			this.sanitizeUser(user)
+			return this.assertUserUnique(ctx, user.Email, vErrs)
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			if user.StatusId != nil || user.StatusValue != nil {
+				dbStatus := this.assertStatusExists(ctx, user, vErrs)
+				user.StatusId = dbStatus.Data.Id
+			}
+			return nil
+		}).
+		End()
 	ft.PanicOnErr(err)
 
-	if dbUser == nil {
-		vErrs = ft.NewValidationErrors()
-		vErrs.Append("id", "user not found")
-
-		return &it.UpdateUserResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-
-	} else if *dbUser.Etag != *user.Etag {
-		vErrs = ft.NewValidationErrors()
-		vErrs.Append("etag", "user has been modified by another process")
-
+	if vErrs.Count() > 0 {
 		return &it.UpdateUserResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
@@ -169,12 +126,14 @@ func (this *UserServiceImpl) UpdateUser(ctx context.Context, cmd it.UpdateUserCo
 		user.PasswordHash = this.encrypt(user.PasswordRaw)
 	}
 
-	user, err = this.userRepo.Update(ctx, *user)
+	prevEtag := user.Etag
+	user.Etag = model.NewEtag()
+	user, err = this.userRepo.Update(ctx, *user, *prevEtag)
 	ft.PanicOnErr(err)
 
 	return &it.UpdateUserResult{
 		Data:    user,
-		HasData: true,
+		HasData: user != nil,
 	}, err
 }
 
@@ -187,66 +146,108 @@ func (this *UserServiceImpl) encrypt(str *string) *string {
 	return util.ToPtr(string(hashedBytes))
 }
 
+func (this *UserServiceImpl) sanitizeUser(user *domain.User) {
+	if user.Email != nil {
+		user.Email = util.ToPtr(strings.ToLower(*user.Email))
+	}
+	if user.DisplayName != nil {
+		cleanedName := strings.TrimSpace(*user.DisplayName)
+		cleanedName = defense.SanitizePlainText(cleanedName)
+		user.DisplayName = &cleanedName
+	}
+}
+
+func (this *UserServiceImpl) setUserDefaults(ctx context.Context, user *domain.User) {
+	user.SetDefaults()
+
+	activeEnum, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
+		Value: util.ToPtr(domain.UserStatusActive),
+		Type:  util.ToPtr(domain.UserStatusEnumType),
+	})
+	ft.PanicOnErr(err)
+	ft.PanicOnErr(activeEnum.ClientError)
+
+	user.Status = domain.WrapIdentStatus(activeEnum.Data)
+	user.StatusId = activeEnum.Data.Id
+}
+
+func (this *UserServiceImpl) assertUserUnique(ctx context.Context, newEmail *string, vErrs *ft.ValidationErrors) error {
+	if newEmail == nil {
+		return nil
+	}
+	dbUser, err := this.userRepo.FindByEmail(ctx, *newEmail)
+	if err != nil {
+		return err
+	}
+
+	if dbUser != nil {
+		vErrs.AppendAlreadyExists("email", "email")
+	}
+	return nil
+}
+
+func (this *UserServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *ft.ValidationErrors) {
+	if updatedEtag != dbEtag {
+		vErrs.AppendEtagMismatched()
+	}
+}
+
+func (this *UserServiceImpl) assertUserExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {
+	dbUser, err = this.userRepo.FindById(ctx, it.FindByIdParam{Id: id})
+	if dbUser == nil {
+		vErrs.AppendIdNotFound("user")
+	}
+	return
+}
+
+func (this *UserServiceImpl) assertStatusExists(ctx context.Context, user *domain.User, vErrs *ft.ValidationErrors) *enum.GetEnumResult {
+	dbStatus, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
+		Id:         user.StatusId,
+		Value:      user.StatusValue,
+		Type:       util.ToPtr(domain.UserStatusEnumType),
+		EntityName: "user status",
+	})
+
+	ft.PanicOnErr(err)
+	ft.PanicOnErr(dbStatus.ClientError)
+
+	if !dbStatus.HasData {
+		vErrs.Append("status", "invalid user status")
+		return nil
+	}
+	return dbStatus
+}
+
 func (this *UserServiceImpl) DeleteUser(ctx context.Context, cmd it.DeleteUserCommand) (result *it.DeleteUserResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to delete user"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "delete user"); e != nil {
 			err = e
 		}
 	}()
 
 	vErrs := cmd.Validate()
+
 	if vErrs.Count() > 0 {
 		return &it.DeleteUserResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	user, err := this.userRepo.FindById(ctx, it.FindByIdParam{Id: cmd.Id})
+	deletedCount, err := this.userRepo.DeleteHard(ctx, it.DeleteParam{Id: cmd.Id})
 	ft.PanicOnErr(err)
-
-	if user == nil {
-		vErrs.Append("id", "user not found")
+	if deletedCount == 0 {
+		vErrs.AppendIdNotFound("user")
 		return &it.DeleteUserResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	err = this.userRepo.Delete(ctx, it.DeleteParam{Id: cmd.Id})
-	ft.PanicOnErr(err)
-	// Publish user deleted event
-	err = this.publishUserDeletedEvent(ctx, user)
-	ft.PanicOnErr(err)
-
-	return &it.DeleteUserResult{
-		Data: &it.DeleteUserResultData{
-			DeletedAt: time.Now(),
-		},
-		HasData: true,
-	}, nil
-}
-
-// publishUserDeletedEvent publishes a "user.deleted.done" event
-func (this *UserServiceImpl) publishUserDeletedEvent(ctx context.Context, user *domain.User) error {
-	// Generate event ID
-	eventId, err := ulid.New()
-	if err != nil {
-		return err
-	}
-
-	// Create the event payload
-	userDeletedEvent := &it.UserDeletedEvent{
-		ID:        *user.Id,
-		DeletedBy: "", // You might want to get this from context or pass it as parameter
-		EventID:   eventId.String(),
-	}
-
-	// Use the interface method to publish the event
-	return this.eventBus.PublishEvent(ctx, "user.deleted.done", userDeletedEvent)
+	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
 func (this *UserServiceImpl) Exists(ctx context.Context, cmd it.UserExistsCommand) (result *it.UserExistsResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to check if user exists"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "check if user exists"); e != nil {
 			err = e
 		}
 	}()
@@ -275,41 +276,45 @@ func (this *UserServiceImpl) ExistsMulti(ctx context.Context, cmd it.UserExistsM
 
 func (this *UserServiceImpl) GetUserById(ctx context.Context, query it.GetUserByIdQuery) (result *it.GetUserByIdResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get user"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "get user by Id"); e != nil {
 			err = e
 		}
 	}()
 
-	vErrs := query.Validate()
+	var dbUser *domain.User
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = query.Validate()
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			dbUser, err = this.assertUserExists(ctx, query.Id, vErrs)
+			return err
+		}).
+		End()
+	ft.PanicOnErr(err)
+
 	if vErrs.Count() > 0 {
 		return &it.GetUserByIdResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	user, err := this.userRepo.FindById(ctx, query)
-	ft.PanicOnErr(err)
-
-	if user == nil {
-		vErrs.Append("id", "user not found")
-		return &it.GetUserByIdResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
 	return &it.GetUserByIdResult{
-		Data:    user,
-		HasData: true,
+		Data:    dbUser,
+		HasData: dbUser != nil,
 	}, nil
 }
 
 func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUsersQuery) (result *it.SearchUsersResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list users"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "list users"); e != nil {
 			err = e
 		}
 	}()
 
+	query.SetDefaults()
 	vErrsModel := query.Validate()
 	predicate, order, vErrsGraph := this.userRepo.ParseSearchGraph(query.Graph)
 
@@ -320,7 +325,6 @@ func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUse
 			ClientError: vErrsModel.ToClientError(),
 		}, nil
 	}
-	query.SetDefaults()
 
 	users, err := this.userRepo.Search(ctx, it.SearchParam{
 		Predicate:  predicate,
@@ -333,43 +337,17 @@ func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUse
 
 	return &it.SearchUsersResult{
 		Data:    users,
-		HasData: len(users.Items) > 0,
+		HasData: users.Items != nil,
 	}, nil
 }
 
-func (this *UserServiceImpl) ListUserStatuses(ctx context.Context, query it.ListUserStatusesQuery) (result *it.ListUserStatusesResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list user statuses"); e != nil {
-			err = e
-		}
-	}()
-
-	vErrsModel := query.Validate()
-	if vErrsModel.Count() > 0 {
-		return &it.ListUserStatusesResult{
-			ClientError: vErrsModel.ToClientError(),
-		}, nil
-	}
-	query.SetDefaults()
-	userStatuses, err := this.enumSvc.ListEnums(ctx, enum.ListEnumsQuery{
-		EnumType:     util.ToPtr(domain.UserStatusEnumType),
-		Page:         query.Page,
-		Size:         query.Size,
-		SortedByLang: query.SortedByLang,
+func (this *UserServiceImpl) ListUserStatuses(ctx context.Context, query it.ListUserStatusesQuery) (*it.ListIdentStatusesResult, error) {
+	result, err := this.enumSvc.ListEnums(ctx, enum.ListEnumsQuery{
+		EntityName: "user statuses",
+		Type:       util.ToPtr(domain.UserStatusEnumType),
+		Page:       query.Page,
+		Size:       query.Size,
+		SortByLang: query.SortByLang,
 	})
-	ft.PanicOnErr(err)
-
-	result = &it.ListUserStatusesResult{
-		ClientError: userStatuses.ClientError,
-	}
-
-	if result.ClientError == nil {
-		result.HasData = userStatuses.HasData
-		result.Data = &it.ListUserStatusesResultData{
-			Items: domain.WrapUserStatuses(userStatuses.Data.Items),
-			Total: userStatuses.Data.Total,
-		}
-	}
-
-	return result, nil
+	return (*it.ListIdentStatusesResult)(result), err
 }

@@ -14,17 +14,68 @@ func IsArrayType(target reflect.Type) bool {
 }
 
 func IsConvertible(sourceValue any, targetType reflect.Type) bool {
-	val := reflect.ValueOf(sourceValue)
-	return val.Type().ConvertibleTo(targetType)
+	if sourceValue == nil {
+		return false
+	}
+
+	srcVal := reflect.ValueOf(sourceValue)
+	srcType := srcVal.Type()
+
+	// If targetType is a pointer, get its element type
+	for targetType.Kind() == reflect.Ptr {
+		targetType = targetType.Elem()
+	}
+
+	// If source is a pointer, get its element too
+	for srcType.Kind() == reflect.Ptr {
+		srcType = srcType.Elem()
+	}
+
+	return srcType.ConvertibleTo(targetType)
 }
 
 func ConvertType(sourceValue any, targetType reflect.Type) (any, error) {
-	val := reflect.ValueOf(sourceValue)
-	if !val.Type().ConvertibleTo(targetType) {
-		return nil, errors.Errorf("cannot convert %v to %v", sourceValue, targetType)
+	if sourceValue == nil {
+		// Return zero pointer if targetType is a pointer, otherwise nil
+		if targetType.Kind() == reflect.Ptr {
+			return reflect.Zero(targetType).Interface(), nil
+		}
+		return nil, errors.Errorf("cannot convert nil to non-pointer type %v", targetType)
 	}
-	converted := val.Convert(targetType).Interface()
-	return converted, nil
+
+	srcVal := reflect.ValueOf(sourceValue)
+	srcType := srcVal.Type()
+
+	// Unwrap pointer from targetType if needed
+	isTargetPtr := targetType.Kind() == reflect.Ptr
+	underlyingTargetType := targetType
+	if isTargetPtr {
+		underlyingTargetType = targetType.Elem()
+	}
+
+	// Unwrap source if it's a pointer
+	for srcVal.Kind() == reflect.Ptr {
+		if srcVal.IsNil() {
+			return nil, errors.Errorf("cannot convert nil pointer to %v", targetType)
+		}
+		srcVal = srcVal.Elem()
+		srcType = srcVal.Type()
+	}
+
+	// Check convertibility to base type
+	if !srcType.ConvertibleTo(underlyingTargetType) {
+		return nil, errors.Errorf("cannot convert %v (%v) to %v", sourceValue, srcType, targetType)
+	}
+
+	converted := srcVal.Convert(underlyingTargetType)
+
+	if isTargetPtr {
+		ptr := reflect.New(underlyingTargetType)
+		ptr.Elem().Set(converted)
+		return ptr.Interface(), nil
+	}
+
+	return converted.Interface(), nil
 }
 
 func IsErrorObj(target interface{}) bool {

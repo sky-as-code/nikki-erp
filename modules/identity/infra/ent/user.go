@@ -10,8 +10,8 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 )
 
 // User is the model entity for the User schema.
@@ -64,7 +64,7 @@ type UserEdges struct {
 	// Orgs holds the value of the orgs edge.
 	Orgs []*Organization `json:"orgs,omitempty"`
 	// UserStatus holds the value of the user_status edge.
-	UserStatus *UserStatusEnum `json:"user_status,omitempty"`
+	UserStatus *IdentStatusEnum `json:"user_status,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// UserOrgs holds the value of the user_orgs edge.
@@ -105,11 +105,11 @@ func (e UserEdges) OrgsOrErr() ([]*Organization, error) {
 
 // UserStatusOrErr returns the UserStatus value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e UserEdges) UserStatusOrErr() (*UserStatusEnum, error) {
+func (e UserEdges) UserStatusOrErr() (*IdentStatusEnum, error) {
 	if e.UserStatus != nil {
 		return e.UserStatus, nil
 	} else if e.loadedTypes[3] {
-		return nil, &NotFoundError{label: userstatusenum.Label}
+		return nil, &NotFoundError{label: identstatusenum.Label}
 	}
 	return nil, &NotLoadedError{edge: "user_status"}
 }
@@ -290,7 +290,7 @@ func (u *User) QueryOrgs() *OrganizationQuery {
 }
 
 // QueryUserStatus queries the "user_status" edge of the User entity.
-func (u *User) QueryUserStatus() *UserStatusEnumQuery {
+func (u *User) QueryUserStatus() *IdentStatusEnumQuery {
 	return NewUserClient(u.config).QueryUserStatus(u)
 }
 

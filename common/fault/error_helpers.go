@@ -27,6 +27,10 @@ func isNil(input interface{}) bool {
 	}
 }
 
+func RecoverPanicFailedTo(err any, action string) error {
+	return RecoverPanic(err, fmt.Sprintf("failed to %s", action))
+}
+
 func RecoverPanicf(err any, errMsg string, args ...any) error {
 	return RecoverPanic(err, fmt.Sprintf(errMsg, args...))
 }

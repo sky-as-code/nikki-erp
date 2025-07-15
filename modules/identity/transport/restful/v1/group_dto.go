@@ -3,48 +3,32 @@ package v1
 import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/safe"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
 )
 
-type CreateGroupRequest = it.CreateGroupCommand
-type CreateGroupResponse = GetGroupByIdResponse
-
-type DeleteGroupRequest = it.DeleteGroupCommand
-
-type DeleteGroupResponse struct {
-	DeletedAt int64 `json:"deletedAt"`
-}
-
-type UpdateGroupRequest = it.UpdateGroupCommand
-type UpdateGroupResponse = GetGroupByIdResponse
-
-type GetGroupByIdRequest = it.GetGroupByIdQuery
-
-type GetGroupByIdResponse struct {
-	Id          model.Id         `json:"id"`
-	CreatedAt   int64            `json:"createdAt,omitempty"`
+type GroupDto struct {
+	Id          string           `json:"id"`
+	CreatedAt   int64            `json:"createdAt"`
 	Name        string           `json:"name"`
 	Description *string          `json:"description,omitempty"`
-	Etag        model.Etag       `json:"etag"`
+	Etag        string           `json:"etag"`
 	Org         *GetGroupRespOrg `json:"org,omitempty"`
 	UpdatedAt   *int64           `json:"updatedAt,omitempty"`
 }
 
-func (this *GetGroupByIdResponse) FromGroup(group domain.Group) {
-	this.Id = *group.Id
-	this.CreatedAt = group.CreatedAt.UnixMilli()
-	this.Name = *group.Name
-	this.Description = group.Description
-	this.Etag = *group.Etag
-	this.UpdatedAt = safe.GetTimeUnixMilli(group.UpdatedAt)
+func (this *GroupDto) FromGroup(group domain.Group) {
+	model.MustCopy(group.AuditableBase, this)
+	model.MustCopy(group.ModelBase, this)
+	model.MustCopy(group, this)
 	if group.Org != nil {
 		this.Org = &GetGroupRespOrg{}
 		this.Org.FromOrg(group.Org)
 	}
 }
 
+// TODO: Replace with OrganizationDto
 type GetGroupRespOrg struct {
 	Id          model.Id   `json:"id"`
 	DisplayName string     `json:"displayName"`
@@ -60,48 +44,37 @@ func (this *GetGroupRespOrg) FromOrg(org *domain.Organization) {
 	this.Slug = *org.Slug
 }
 
+type CreateGroupRequest = it.CreateGroupCommand
+type CreateGroupResponse = httpserver.RestCreateResponse
+
+type DeleteGroupRequest = it.DeleteGroupCommand
+type DeleteGroupResponse = httpserver.RestDeleteResponse
+
+type UpdateGroupRequest = it.UpdateGroupCommand
+type UpdateGroupResponse = httpserver.RestUpdateResponse
+
+type GetGroupByIdRequest = it.GetGroupByIdQuery
+type GetGroupByIdResponse = GroupDto
+
 type SearchGroupsRequest = it.SearchGroupsQuery
 
-type SearchGroupsResponseItem struct {
-	Id          model.Id         `json:"id"`
-	Name        string           `json:"name"`
-	Description *string          `json:"description,omitempty"`
-	Org         *GetGroupRespOrg `json:"org,omitempty"`
-}
-
-func (this *SearchGroupsResponseItem) FromGroup(group domain.Group) {
-	this.Id = *group.Id
-	this.Name = *group.Name
-	this.Description = group.Description
-	if group.Org != nil {
-		this.Org = &GetGroupRespOrg{}
-		this.Org.FromOrg(group.Org)
-	}
-}
-
 type SearchGroupsResponse struct {
-	Items []SearchGroupsResponseItem `json:"items"`
-	Total int                        `json:"total"`
-	Page  int                        `json:"page"`
-	Size  int                        `json:"size"`
+	Items []GroupDto `json:"items"`
+	Total int        `json:"total"`
+	Page  int        `json:"page"`
+	Size  int        `json:"size"`
 }
 
 func (this *SearchGroupsResponse) FromResult(result *it.SearchGroupsResultData) {
 	this.Total = result.Total
 	this.Page = result.Page
 	this.Size = result.Size
-	this.Items = array.Map(result.Items, func(group domain.Group) SearchGroupsResponseItem {
-		item := SearchGroupsResponseItem{}
+	this.Items = array.Map(result.Items, func(group domain.Group) GroupDto {
+		item := GroupDto{}
 		item.FromGroup(group)
 		return item
 	})
 }
 
 type ManageUsersRequest = it.AddRemoveUsersCommand
-type ManageUsersResponse struct {
-	UpdatedAt int64 `json:"updatedAt"`
-}
-
-func (this *ManageUsersResponse) FromResult(result *it.AddRemoveUsersResultData) {
-	this.UpdatedAt = result.UpdatedAt.UnixMilli()
-}
+type ManageUsersResponse = httpserver.RestUpdateResponse

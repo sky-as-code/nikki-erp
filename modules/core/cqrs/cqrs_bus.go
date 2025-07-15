@@ -89,12 +89,12 @@ func (this *WatermillCqrsBus) SubscribeRequests(ctx context.Context, handlers ..
 
 func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestHandler) (err error) {
 	defer func() {
-		err = ft.RecoverPanicf(recover(), "failed to subscribe with handler %s", structName(handler))
+		err = ft.RecoverPanicFailedTo(recover(), "subscribe with handler "+structName(handler))
 	}()
 
 	sampleRequest := handler.NewRequest().(Request)
 
-	requestType := sampleRequest.Type().String()
+	requestType := sampleRequest.CqrsRequestType().String()
 
 	if _, existing := this.subscriptions.Load(requestType); existing {
 		return errors.Errorf("request type %s is already handled", requestType)
@@ -166,7 +166,7 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 
 func (this *WatermillCqrsBus) RequestNoReply(ctx context.Context, request Request) (err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to send request")
+		err = ft.RecoverPanicFailedTo(recover(), "send request")
 	}()
 
 	packet, err := this.newRequestPacket(ctx, request)
@@ -183,7 +183,7 @@ func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, resu
 	ctx, cancelSubscription := context.WithCancel(ctx)
 
 	defer func() {
-		if e := ft.RecoverPanicf(recover(), "failed to send request of type %s", request.Type().String()); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "send request of type "+request.CqrsRequestType().String()); e != nil {
 			err = e
 			cancelSubscription()
 		}
@@ -265,7 +265,7 @@ func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *Reques
 
 func (this *WatermillCqrsBus) newRequestPacket(ctx context.Context, request Request) (packet *RequestPacket[Request], err error) {
 	defer func() {
-		err = ft.RecoverPanicf(recover(), "failed to create request packet for %s", request.Type().String())
+		err = ft.RecoverPanicFailedTo(recover(), "create request packet for "+request.CqrsRequestType().String())
 	}()
 	packet = newOutgoingRequestPacket(request, this.marshaler)
 	packet.message.SetContext(ctx)
@@ -293,7 +293,7 @@ func newOutgoingRequestPacket(request Request, marshaler cqrs.CommandEventMarsha
 	ft.PanicOnErr(err)
 
 	packet.correlationId = newUlid.String()
-	requestType := request.Type().String()
+	requestType := request.CqrsRequestType().String()
 	packet.requestTopic = genRequestTopic(requestType)
 	packet.replyTopic = genReplyTopic(packet.requestTopic, packet.correlationId)
 	msg.Metadata.Set(MetaCorrelationId, packet.correlationId)
@@ -373,7 +373,7 @@ func (c genericRequestHandler[TReq, TResult]) NewReply() Reply[any] {
 
 func (c genericRequestHandler[TReq, TResult]) Handle(ctx context.Context, packet *RequestPacket[Request]) (reply *Reply[any], err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to handle request"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle request"); e != nil {
 			err = e
 		}
 	}()

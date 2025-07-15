@@ -31,7 +31,9 @@ func (EnumMixin) Fields() []ent.Field {
 
 		field.JSON("label", model.LangJson{}),
 
-		field.String("value"),
+		field.String("value").
+			Optional().
+			Nillable(),
 
 		field.String("type"),
 	}

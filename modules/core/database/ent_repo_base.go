@@ -26,31 +26,19 @@ type EntRepositoryBase struct {
 func Mutate[TDb any, TDomain any](
 	ctx context.Context,
 	mutationBuilder MutationBuilder[TDb],
+	isNotFoundFn func(err error) bool,
 	convertFn EntToDomainFn[TDb, TDomain],
 ) (*TDomain, error) {
 	entEntity, err := mutationBuilder.Save(ctx)
 	if err != nil {
+		if isNotFoundFn(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
 	domainEntity := convertFn(entEntity)
 	return domainEntity, nil
-}
-
-func Delete[TDb any](
-	ctx context.Context,
-	deleteBuilder interface{ Exec(context.Context) error },
-) error {
-	return deleteBuilder.Exec(ctx)
-}
-
-func DeleteMulti[TDb any](
-	ctx context.Context,
-	deleteBuilder interface {
-		Exec(context.Context) (int, error)
-	},
-) (int, error) {
-	return deleteBuilder.Exec(ctx)
 }
 
 func FindOne[TDb any, TDomain any](

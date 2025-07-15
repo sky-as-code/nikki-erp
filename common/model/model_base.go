@@ -3,6 +3,7 @@ package model
 import (
 	"time"
 
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
@@ -12,20 +13,17 @@ type ModelBase struct {
 	Etag *Etag `json:"etag,omitempty"`
 }
 
-func (this *ModelBase) SetDefaults() error {
+func (this *ModelBase) SetDefaults() {
 	id, err := NewId()
-	if err != nil {
-		return err
-	}
+	ft.PanicOnErr(err)
 	safe.SetDefaultValue(&this.Id, *id)
 	this.Etag = NewEtag()
-	return nil
 }
 
 func (this *ModelBase) ValidateRules(forEdit bool) []*val.FieldRules {
 	return []*val.FieldRules{
 		IdPtrValidateRule(&this.Id, forEdit),
-		EtagValidateRule(&this.Etag, forEdit),
+		EtagPtrValidateRule(&this.Etag, forEdit),
 	}
 }
 

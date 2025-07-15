@@ -6,22 +6,13 @@ import (
 )
 
 func (cmd CreateGroupCommand) ToGroup() *domain.Group {
-	return &domain.Group{
-		Name:        &cmd.Name,
-		Description: cmd.Description,
-		OrgId:       cmd.OrgId,
-	}
+	group := &domain.Group{}
+	model.MustCopy(cmd, group)
+	return group
 }
 
 func (cmd UpdateGroupCommand) ToGroup() *domain.Group {
-	return &domain.Group{
-		Name:        cmd.Name,
-		Description: cmd.Description,
-		OrgId:       cmd.OrgId,
-
-		ModelBase: model.ModelBase{
-			Id:   &cmd.Id,
-			Etag: &cmd.Etag,
-		},
-	}
+	group := &domain.Group{}
+	model.MustCopy(cmd, group)
+	return group
 }

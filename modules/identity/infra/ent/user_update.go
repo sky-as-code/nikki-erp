@@ -13,10 +13,10 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 )
 
 // UserUpdate is the builder for updating User entities.
@@ -286,15 +286,15 @@ func (uu *UserUpdate) AddOrgs(o ...*Organization) *UserUpdate {
 	return uu.AddOrgIDs(ids...)
 }
 
-// SetUserStatusID sets the "user_status" edge to the UserStatusEnum entity by ID.
+// SetUserStatusID sets the "user_status" edge to the IdentStatusEnum entity by ID.
 func (uu *UserUpdate) SetUserStatusID(id string) *UserUpdate {
 	uu.mutation.SetUserStatusID(id)
 	return uu
 }
 
-// SetUserStatus sets the "user_status" edge to the UserStatusEnum entity.
-func (uu *UserUpdate) SetUserStatus(u *UserStatusEnum) *UserUpdate {
-	return uu.SetUserStatusID(u.ID)
+// SetUserStatus sets the "user_status" edge to the IdentStatusEnum entity.
+func (uu *UserUpdate) SetUserStatus(i *IdentStatusEnum) *UserUpdate {
+	return uu.SetUserStatusID(i.ID)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -350,7 +350,7 @@ func (uu *UserUpdate) RemoveOrgs(o ...*Organization) *UserUpdate {
 	return uu.RemoveOrgIDs(ids...)
 }
 
-// ClearUserStatus clears the "user_status" edge to the UserStatusEnum entity.
+// ClearUserStatus clears the "user_status" edge to the IdentStatusEnum entity.
 func (uu *UserUpdate) ClearUserStatus() *UserUpdate {
 	uu.mutation.ClearUserStatus()
 	return uu
@@ -581,7 +581,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.UserStatusColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(userstatusenum.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -594,7 +594,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{user.UserStatusColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(userstatusenum.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -876,15 +876,15 @@ func (uuo *UserUpdateOne) AddOrgs(o ...*Organization) *UserUpdateOne {
 	return uuo.AddOrgIDs(ids...)
 }
 
-// SetUserStatusID sets the "user_status" edge to the UserStatusEnum entity by ID.
+// SetUserStatusID sets the "user_status" edge to the IdentStatusEnum entity by ID.
 func (uuo *UserUpdateOne) SetUserStatusID(id string) *UserUpdateOne {
 	uuo.mutation.SetUserStatusID(id)
 	return uuo
 }
 
-// SetUserStatus sets the "user_status" edge to the UserStatusEnum entity.
-func (uuo *UserUpdateOne) SetUserStatus(u *UserStatusEnum) *UserUpdateOne {
-	return uuo.SetUserStatusID(u.ID)
+// SetUserStatus sets the "user_status" edge to the IdentStatusEnum entity.
+func (uuo *UserUpdateOne) SetUserStatus(i *IdentStatusEnum) *UserUpdateOne {
+	return uuo.SetUserStatusID(i.ID)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -940,7 +940,7 @@ func (uuo *UserUpdateOne) RemoveOrgs(o ...*Organization) *UserUpdateOne {
 	return uuo.RemoveOrgIDs(ids...)
 }
 
-// ClearUserStatus clears the "user_status" edge to the UserStatusEnum entity.
+// ClearUserStatus clears the "user_status" edge to the IdentStatusEnum entity.
 func (uuo *UserUpdateOne) ClearUserStatus() *UserUpdateOne {
 	uuo.mutation.ClearUserStatus()
 	return uuo
@@ -1201,7 +1201,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.UserStatusColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(userstatusenum.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -1214,7 +1214,7 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Columns: []string{user.UserStatusColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(userstatusenum.FieldID, field.TypeString),
+				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

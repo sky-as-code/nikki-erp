@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -51,6 +52,26 @@ func (ou *OrganizationUpdate) ClearDeletedAt() *OrganizationUpdate {
 	return ou
 }
 
+// SetAddress sets the "address" field.
+func (ou *OrganizationUpdate) SetAddress(s string) *OrganizationUpdate {
+	ou.mutation.SetAddress(s)
+	return ou
+}
+
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableAddress(s *string) *OrganizationUpdate {
+	if s != nil {
+		ou.SetAddress(*s)
+	}
+	return ou
+}
+
+// ClearAddress clears the value of the "address" field.
+func (ou *OrganizationUpdate) ClearAddress() *OrganizationUpdate {
+	ou.mutation.ClearAddress()
+	return ou
+}
+
 // SetDisplayName sets the "display_name" field.
 func (ou *OrganizationUpdate) SetDisplayName(s string) *OrganizationUpdate {
 	ou.mutation.SetDisplayName(s)
@@ -62,6 +83,46 @@ func (ou *OrganizationUpdate) SetNillableDisplayName(s *string) *OrganizationUpd
 	if s != nil {
 		ou.SetDisplayName(*s)
 	}
+	return ou
+}
+
+// SetLegalName sets the "legal_name" field.
+func (ou *OrganizationUpdate) SetLegalName(s string) *OrganizationUpdate {
+	ou.mutation.SetLegalName(s)
+	return ou
+}
+
+// SetNillableLegalName sets the "legal_name" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableLegalName(s *string) *OrganizationUpdate {
+	if s != nil {
+		ou.SetLegalName(*s)
+	}
+	return ou
+}
+
+// ClearLegalName clears the value of the "legal_name" field.
+func (ou *OrganizationUpdate) ClearLegalName() *OrganizationUpdate {
+	ou.mutation.ClearLegalName()
+	return ou
+}
+
+// SetPhoneNumber sets the "phone_number" field.
+func (ou *OrganizationUpdate) SetPhoneNumber(s string) *OrganizationUpdate {
+	ou.mutation.SetPhoneNumber(s)
+	return ou
+}
+
+// SetNillablePhoneNumber sets the "phone_number" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillablePhoneNumber(s *string) *OrganizationUpdate {
+	if s != nil {
+		ou.SetPhoneNumber(*s)
+	}
+	return ou
+}
+
+// ClearPhoneNumber clears the value of the "phone_number" field.
+func (ou *OrganizationUpdate) ClearPhoneNumber() *OrganizationUpdate {
+	ou.mutation.ClearPhoneNumber()
 	return ou
 }
 
@@ -79,16 +140,16 @@ func (ou *OrganizationUpdate) SetNillableEtag(s *string) *OrganizationUpdate {
 	return ou
 }
 
-// SetStatus sets the "status" field.
-func (ou *OrganizationUpdate) SetStatus(o organization.Status) *OrganizationUpdate {
-	ou.mutation.SetStatus(o)
+// SetStatusID sets the "status_id" field.
+func (ou *OrganizationUpdate) SetStatusID(s string) *OrganizationUpdate {
+	ou.mutation.SetStatusID(s)
 	return ou
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (ou *OrganizationUpdate) SetNillableStatus(o *organization.Status) *OrganizationUpdate {
-	if o != nil {
-		ou.SetStatus(*o)
+// SetNillableStatusID sets the "status_id" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableStatusID(s *string) *OrganizationUpdate {
+	if s != nil {
+		ou.SetStatusID(*s)
 	}
 	return ou
 }
@@ -110,6 +171,14 @@ func (ou *OrganizationUpdate) SetNillableSlug(s *string) *OrganizationUpdate {
 // SetUpdatedAt sets the "updated_at" field.
 func (ou *OrganizationUpdate) SetUpdatedAt(t time.Time) *OrganizationUpdate {
 	ou.mutation.SetUpdatedAt(t)
+	return ou
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (ou *OrganizationUpdate) SetNillableUpdatedAt(t *time.Time) *OrganizationUpdate {
+	if t != nil {
+		ou.SetUpdatedAt(*t)
+	}
 	return ou
 }
 
@@ -162,6 +231,17 @@ func (ou *OrganizationUpdate) AddGroups(g ...*Group) *OrganizationUpdate {
 		ids[i] = g[i].ID
 	}
 	return ou.AddGroupIDs(ids...)
+}
+
+// SetOrgStatusID sets the "org_status" edge to the IdentStatusEnum entity by ID.
+func (ou *OrganizationUpdate) SetOrgStatusID(id string) *OrganizationUpdate {
+	ou.mutation.SetOrgStatusID(id)
+	return ou
+}
+
+// SetOrgStatus sets the "org_status" edge to the IdentStatusEnum entity.
+func (ou *OrganizationUpdate) SetOrgStatus(i *IdentStatusEnum) *OrganizationUpdate {
+	return ou.SetOrgStatusID(i.ID)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -232,9 +312,14 @@ func (ou *OrganizationUpdate) RemoveGroups(g ...*Group) *OrganizationUpdate {
 	return ou.RemoveGroupIDs(ids...)
 }
 
+// ClearOrgStatus clears the "org_status" edge to the IdentStatusEnum entity.
+func (ou *OrganizationUpdate) ClearOrgStatus() *OrganizationUpdate {
+	ou.mutation.ClearOrgStatus()
+	return ou
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (ou *OrganizationUpdate) Save(ctx context.Context) (int, error) {
-	ou.defaults()
 	return withHooks(ctx, ou.sqlSave, ou.mutation, ou.hooks)
 }
 
@@ -260,20 +345,10 @@ func (ou *OrganizationUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (ou *OrganizationUpdate) defaults() {
-	if _, ok := ou.mutation.UpdatedAt(); !ok && !ou.mutation.UpdatedAtCleared() {
-		v := organization.UpdateDefaultUpdatedAt()
-		ou.mutation.SetUpdatedAt(v)
-	}
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (ou *OrganizationUpdate) check() error {
-	if v, ok := ou.mutation.Status(); ok {
-		if err := organization.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Organization.status": %w`, err)}
-		}
+	if ou.mutation.OrgStatusCleared() && len(ou.mutation.OrgStatusIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Organization.org_status"`)
 	}
 	return nil
 }
@@ -296,14 +371,29 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if ou.mutation.DeletedAtCleared() {
 		_spec.ClearField(organization.FieldDeletedAt, field.TypeTime)
 	}
+	if value, ok := ou.mutation.Address(); ok {
+		_spec.SetField(organization.FieldAddress, field.TypeString, value)
+	}
+	if ou.mutation.AddressCleared() {
+		_spec.ClearField(organization.FieldAddress, field.TypeString)
+	}
 	if value, ok := ou.mutation.DisplayName(); ok {
 		_spec.SetField(organization.FieldDisplayName, field.TypeString, value)
 	}
+	if value, ok := ou.mutation.LegalName(); ok {
+		_spec.SetField(organization.FieldLegalName, field.TypeString, value)
+	}
+	if ou.mutation.LegalNameCleared() {
+		_spec.ClearField(organization.FieldLegalName, field.TypeString)
+	}
+	if value, ok := ou.mutation.PhoneNumber(); ok {
+		_spec.SetField(organization.FieldPhoneNumber, field.TypeString, value)
+	}
+	if ou.mutation.PhoneNumberCleared() {
+		_spec.ClearField(organization.FieldPhoneNumber, field.TypeString)
+	}
 	if value, ok := ou.mutation.Etag(); ok {
 		_spec.SetField(organization.FieldEtag, field.TypeString, value)
-	}
-	if value, ok := ou.mutation.Status(); ok {
-		_spec.SetField(organization.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := ou.mutation.Slug(); ok {
 		_spec.SetField(organization.FieldSlug, field.TypeString, value)
@@ -449,6 +539,35 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ou.mutation.OrgStatusCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   organization.OrgStatusTable,
+			Columns: []string{organization.OrgStatusColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ou.mutation.OrgStatusIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   organization.OrgStatusTable,
+			Columns: []string{organization.OrgStatusColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ou.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{organization.Label}
@@ -489,6 +608,26 @@ func (ouo *OrganizationUpdateOne) ClearDeletedAt() *OrganizationUpdateOne {
 	return ouo
 }
 
+// SetAddress sets the "address" field.
+func (ouo *OrganizationUpdateOne) SetAddress(s string) *OrganizationUpdateOne {
+	ouo.mutation.SetAddress(s)
+	return ouo
+}
+
+// SetNillableAddress sets the "address" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableAddress(s *string) *OrganizationUpdateOne {
+	if s != nil {
+		ouo.SetAddress(*s)
+	}
+	return ouo
+}
+
+// ClearAddress clears the value of the "address" field.
+func (ouo *OrganizationUpdateOne) ClearAddress() *OrganizationUpdateOne {
+	ouo.mutation.ClearAddress()
+	return ouo
+}
+
 // SetDisplayName sets the "display_name" field.
 func (ouo *OrganizationUpdateOne) SetDisplayName(s string) *OrganizationUpdateOne {
 	ouo.mutation.SetDisplayName(s)
@@ -500,6 +639,46 @@ func (ouo *OrganizationUpdateOne) SetNillableDisplayName(s *string) *Organizatio
 	if s != nil {
 		ouo.SetDisplayName(*s)
 	}
+	return ouo
+}
+
+// SetLegalName sets the "legal_name" field.
+func (ouo *OrganizationUpdateOne) SetLegalName(s string) *OrganizationUpdateOne {
+	ouo.mutation.SetLegalName(s)
+	return ouo
+}
+
+// SetNillableLegalName sets the "legal_name" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableLegalName(s *string) *OrganizationUpdateOne {
+	if s != nil {
+		ouo.SetLegalName(*s)
+	}
+	return ouo
+}
+
+// ClearLegalName clears the value of the "legal_name" field.
+func (ouo *OrganizationUpdateOne) ClearLegalName() *OrganizationUpdateOne {
+	ouo.mutation.ClearLegalName()
+	return ouo
+}
+
+// SetPhoneNumber sets the "phone_number" field.
+func (ouo *OrganizationUpdateOne) SetPhoneNumber(s string) *OrganizationUpdateOne {
+	ouo.mutation.SetPhoneNumber(s)
+	return ouo
+}
+
+// SetNillablePhoneNumber sets the "phone_number" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillablePhoneNumber(s *string) *OrganizationUpdateOne {
+	if s != nil {
+		ouo.SetPhoneNumber(*s)
+	}
+	return ouo
+}
+
+// ClearPhoneNumber clears the value of the "phone_number" field.
+func (ouo *OrganizationUpdateOne) ClearPhoneNumber() *OrganizationUpdateOne {
+	ouo.mutation.ClearPhoneNumber()
 	return ouo
 }
 
@@ -517,16 +696,16 @@ func (ouo *OrganizationUpdateOne) SetNillableEtag(s *string) *OrganizationUpdate
 	return ouo
 }
 
-// SetStatus sets the "status" field.
-func (ouo *OrganizationUpdateOne) SetStatus(o organization.Status) *OrganizationUpdateOne {
-	ouo.mutation.SetStatus(o)
+// SetStatusID sets the "status_id" field.
+func (ouo *OrganizationUpdateOne) SetStatusID(s string) *OrganizationUpdateOne {
+	ouo.mutation.SetStatusID(s)
 	return ouo
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (ouo *OrganizationUpdateOne) SetNillableStatus(o *organization.Status) *OrganizationUpdateOne {
-	if o != nil {
-		ouo.SetStatus(*o)
+// SetNillableStatusID sets the "status_id" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableStatusID(s *string) *OrganizationUpdateOne {
+	if s != nil {
+		ouo.SetStatusID(*s)
 	}
 	return ouo
 }
@@ -548,6 +727,14 @@ func (ouo *OrganizationUpdateOne) SetNillableSlug(s *string) *OrganizationUpdate
 // SetUpdatedAt sets the "updated_at" field.
 func (ouo *OrganizationUpdateOne) SetUpdatedAt(t time.Time) *OrganizationUpdateOne {
 	ouo.mutation.SetUpdatedAt(t)
+	return ouo
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (ouo *OrganizationUpdateOne) SetNillableUpdatedAt(t *time.Time) *OrganizationUpdateOne {
+	if t != nil {
+		ouo.SetUpdatedAt(*t)
+	}
 	return ouo
 }
 
@@ -600,6 +787,17 @@ func (ouo *OrganizationUpdateOne) AddGroups(g ...*Group) *OrganizationUpdateOne 
 		ids[i] = g[i].ID
 	}
 	return ouo.AddGroupIDs(ids...)
+}
+
+// SetOrgStatusID sets the "org_status" edge to the IdentStatusEnum entity by ID.
+func (ouo *OrganizationUpdateOne) SetOrgStatusID(id string) *OrganizationUpdateOne {
+	ouo.mutation.SetOrgStatusID(id)
+	return ouo
+}
+
+// SetOrgStatus sets the "org_status" edge to the IdentStatusEnum entity.
+func (ouo *OrganizationUpdateOne) SetOrgStatus(i *IdentStatusEnum) *OrganizationUpdateOne {
+	return ouo.SetOrgStatusID(i.ID)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -670,6 +868,12 @@ func (ouo *OrganizationUpdateOne) RemoveGroups(g ...*Group) *OrganizationUpdateO
 	return ouo.RemoveGroupIDs(ids...)
 }
 
+// ClearOrgStatus clears the "org_status" edge to the IdentStatusEnum entity.
+func (ouo *OrganizationUpdateOne) ClearOrgStatus() *OrganizationUpdateOne {
+	ouo.mutation.ClearOrgStatus()
+	return ouo
+}
+
 // Where appends a list predicates to the OrganizationUpdate builder.
 func (ouo *OrganizationUpdateOne) Where(ps ...predicate.Organization) *OrganizationUpdateOne {
 	ouo.mutation.Where(ps...)
@@ -685,7 +889,6 @@ func (ouo *OrganizationUpdateOne) Select(field string, fields ...string) *Organi
 
 // Save executes the query and returns the updated Organization entity.
 func (ouo *OrganizationUpdateOne) Save(ctx context.Context) (*Organization, error) {
-	ouo.defaults()
 	return withHooks(ctx, ouo.sqlSave, ouo.mutation, ouo.hooks)
 }
 
@@ -711,20 +914,10 @@ func (ouo *OrganizationUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// defaults sets the default values of the builder before save.
-func (ouo *OrganizationUpdateOne) defaults() {
-	if _, ok := ouo.mutation.UpdatedAt(); !ok && !ouo.mutation.UpdatedAtCleared() {
-		v := organization.UpdateDefaultUpdatedAt()
-		ouo.mutation.SetUpdatedAt(v)
-	}
-}
-
 // check runs all checks and user-defined validators on the builder.
 func (ouo *OrganizationUpdateOne) check() error {
-	if v, ok := ouo.mutation.Status(); ok {
-		if err := organization.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Organization.status": %w`, err)}
-		}
+	if ouo.mutation.OrgStatusCleared() && len(ouo.mutation.OrgStatusIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Organization.org_status"`)
 	}
 	return nil
 }
@@ -764,14 +957,29 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 	if ouo.mutation.DeletedAtCleared() {
 		_spec.ClearField(organization.FieldDeletedAt, field.TypeTime)
 	}
+	if value, ok := ouo.mutation.Address(); ok {
+		_spec.SetField(organization.FieldAddress, field.TypeString, value)
+	}
+	if ouo.mutation.AddressCleared() {
+		_spec.ClearField(organization.FieldAddress, field.TypeString)
+	}
 	if value, ok := ouo.mutation.DisplayName(); ok {
 		_spec.SetField(organization.FieldDisplayName, field.TypeString, value)
 	}
+	if value, ok := ouo.mutation.LegalName(); ok {
+		_spec.SetField(organization.FieldLegalName, field.TypeString, value)
+	}
+	if ouo.mutation.LegalNameCleared() {
+		_spec.ClearField(organization.FieldLegalName, field.TypeString)
+	}
+	if value, ok := ouo.mutation.PhoneNumber(); ok {
+		_spec.SetField(organization.FieldPhoneNumber, field.TypeString, value)
+	}
+	if ouo.mutation.PhoneNumberCleared() {
+		_spec.ClearField(organization.FieldPhoneNumber, field.TypeString)
+	}
 	if value, ok := ouo.mutation.Etag(); ok {
 		_spec.SetField(organization.FieldEtag, field.TypeString, value)
-	}
-	if value, ok := ouo.mutation.Status(); ok {
-		_spec.SetField(organization.FieldStatus, field.TypeEnum, value)
 	}
 	if value, ok := ouo.mutation.Slug(); ok {
 		_spec.SetField(organization.FieldSlug, field.TypeString, value)
@@ -910,6 +1118,35 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ouo.mutation.OrgStatusCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   organization.OrgStatusTable,
+			Columns: []string{organization.OrgStatusColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ouo.mutation.OrgStatusIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   organization.OrgStatusTable,
+			Columns: []string{organization.OrgStatusColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

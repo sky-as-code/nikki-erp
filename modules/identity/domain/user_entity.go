@@ -3,46 +3,40 @@ package domain
 import (
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/array"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	util "github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/enum"
+	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 )
 
 type User struct {
 	model.ModelBase
 	model.AuditableBase
 
-	AvatarUrl           *string    `json:"avatarUrl,omitempty"`
-	DisplayName         *string    `json:"displayName,omitempty"`
-	Email               *string    `json:"email,omitempty"`
-	FailedLoginAttempts *int       `json:"failedLoginAttempts,omitempty"`
-	HierarchyId         *model.Id  `json:"hierarchyId,omitempty"`
-	LastLoginAt         *time.Time `json:"lastLoginAt,omitempty"`
-	LockedUntil         *time.Time `json:"lockedUntil,omitempty"`
-	MustChangePassword  *bool      `json:"mustChangePassword,omitempty"`
-	PasswordRaw         *string    `json:"passwordRaw,omitempty"`
-	PasswordChangedAt   *time.Time `json:"passwordChangedAt,omitempty"`
-	PasswordHash        *string    `json:"passwordHash,omitempty"`
-	StatusId            *model.Id  `json:"statusId,omitempty"`
-	StatusValue         *string    `json:"statusValue,omitempty"`
+	AvatarUrl           *string    `json:"avatarUrl"`
+	DisplayName         *string    `json:"displayName"`
+	Email               *string    `json:"email"`
+	FailedLoginAttempts *int       `json:"failedLoginAttempts"`
+	HierarchyId         *model.Id  `json:"hierarchyId"`
+	LastLoginAt         *time.Time `json:"lastLoginAt"`
+	LockedUntil         *time.Time `json:"lockedUntil"`
+	MustChangePassword  *bool      `json:"mustChangePassword"`
+	PasswordRaw         *string    `json:"passwordRaw"`
+	PasswordChangedAt   *time.Time `json:"passwordChangedAt"`
+	PasswordHash        *string    `json:"passwordHash"`
+	StatusId            *model.Id  `json:"statusId"`
+	StatusValue         *string    `json:"statusValue"`
 
-	Groups      []Group          `json:"groups,omitempty"`
-	Hierarchies []HierarchyLevel `json:"hierarchies,omitempty"`
-	Orgs        []Organization   `json:"orgs,omitempty"`
-	Status      *UserStatus      `json:"status,omitempty"`
+	Groups      []Group          `json:"groups,omitempty" model:"-"` // TODO: Handle copy
+	Hierarchies []HierarchyLevel `json:"hierarchies,omitempty" model:"-"`
+	Orgs        []Organization   `json:"orgs,omitempty" model:"-"`
+	Status      *IdentityStatus  `json:"status,omitempty"`
 }
 
-func (this *User) SetDefaults() error {
-	err := this.ModelBase.SetDefaults()
-	if err != nil {
-		return err
-	}
-
-	// safe.SetDefaultValue(&this.Status, UserStatusInactive)
+func (this *User) SetDefaults() {
+	this.ModelBase.SetDefaults()
 
 	now := time.Now()
 
@@ -55,8 +49,6 @@ func (this *User) SetDefaults() error {
 	}
 
 	safe.SetDefaultValue(&this.MustChangePassword, true)
-
-	return nil
 }
 
 func (this *User) Validate(forEdit bool) ft.ValidationErrors {
@@ -95,32 +87,10 @@ func (this *User) Validate(forEdit bool) ft.ValidationErrors {
 		),
 		model.IdPtrValidateRule(&this.HierarchyId, false),
 		model.IdPtrValidateRule(&this.StatusId, false),
+		enum.EnumValueValidateRule(&this.StatusValue, false),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
 
 	return val.ApiBased.ValidateStruct(this, rules...)
 }
-
-type UserStatus struct {
-	enum.Enum
-}
-
-func WrapUserStatus(status *enum.Enum) *UserStatus {
-	return &UserStatus{
-		Enum: *status,
-	}
-}
-
-func WrapUserStatuses(statuses []enum.Enum) []UserStatus {
-	return array.Map(statuses, func(status enum.Enum) UserStatus {
-		return *WrapUserStatus(&status)
-	})
-}
-
-const (
-	UserStatusActive   = "active"
-	UserStatusArchived = "archived"
-	UserStatusLocked   = "locked"
-	UserStatusEnumType = "ident_user_status"
-)

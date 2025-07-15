@@ -30,13 +30,24 @@ func (OrganizationMixin) Fields() []ent.Field {
 			Nillable().
 			Comment("Set value for this column when the process is running to delete all resources under this hierarchy level"),
 
+		field.String("address").
+			Optional().
+			Nillable(),
+
 		field.String("display_name").
 			Comment("Human-friendly-readable organization name"),
 
+		field.String("legal_name").
+			Optional().
+			Nillable(),
+
+		field.String("phone_number").
+			Optional().
+			Nillable(),
+
 		field.String("etag"),
 
-		field.Enum("status").
-			Values("active", "inactive"),
+		field.String("status_id"),
 
 		field.String("slug").
 			Unique().
@@ -44,8 +55,7 @@ func (OrganizationMixin) Fields() []ent.Field {
 
 		field.Time("updated_at").
 			Optional().
-			Nillable().
-			UpdateDefault(time.Now),
+			Nillable(),
 	}
 }
 
@@ -63,10 +73,6 @@ func (Organization) Annotations() []schema.Annotation {
 	}
 }
 
-func (Organization) Fields() []ent.Field {
-	return nil
-}
-
 func (Organization) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("users", User.Type).
@@ -78,6 +84,11 @@ func (Organization) Edges() []ent.Edge {
 
 		edge.From("groups", Group.Type).
 			Ref("org"),
+
+		edge.To("org_status", IdentStatusEnum.Type).
+			Field("status_id").
+			Unique().
+			Required(),
 	}
 }
 

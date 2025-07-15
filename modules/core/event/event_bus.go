@@ -14,7 +14,6 @@ import (
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/redis/go-redis/v9"
 	"go.bryk.io/pkg/errors"
-	"go.bryk.io/pkg/ulid"
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -91,62 +90,53 @@ type RedisEventBus struct {
 	marshaler     cqrs.CommandEventMarshaler
 }
 
-// Verify RedisEventBus implements EventBus interface
-
-func (bus *RedisEventBus) PublishNoReply(ctx context.Context, packet *EventPacket) (err error) {
+func (bus *RedisEventBus) PublishRequest(ctx context.Context, request EventRequest) (err error) {
 	defer func() {
-		err = ft.RecoverPanic(recover(), "failed to publish event")
+		err = ft.RecoverPanicFailedTo(recover(), "publish event")
 	}()
 
-	err = bus.publisher.Publish(packet.eventTopic, packet.message)
+	// Marshal the event
+	msg, err := bus.marshaler.Marshal(request.message.Payload)
+	ft.PanicOnErr(err)
+
+	// Set metadata
+	msg.Metadata.Set(MetaEventTopic, request.eventTopic)
+	msg.Metadata.Set(MetaCorrelationId, request.correlationId)
+	msg.Metadata.Set(MetaReplyTopic, request.replyTopic)
+	msg.Metadata.Set(MetaNoReply, "false")
+
+	// Publish the event
+	err = bus.publisher.Publish(request.eventTopic, msg)
 	ft.PanicOnErr(err)
 
 	return nil
 }
 
-func (bus *RedisEventBus) PublishWaitReply(ctx context.Context, packet *EventPacket, result any) (err error) {
+func (bus *RedisEventBus) PublishRequestWaitReply(ctx context.Context, request EventRequest, DataReply any) (reply *Reply[any], err error) {
 	ctx, cancelSubscription := context.WithCancel(ctx)
 
 	defer func() {
-		if e := ft.RecoverPanicf(recover(), "failed to publish event of type %s", err); e != nil {
-			err = e
-			cancelSubscription()
-		}
+		err = ft.RecoverPanicFailedTo(recover(), "publish event and wait reply")
 	}()
 
-	replyChan, errChan := bus.subscribeReply(ctx, packet, result, cancelSubscription)
-	ft.PanicOnErr(err)
+	replyChan, errChan := bus.subscribeReply(ctx, request, DataReply, cancelSubscription)
 
-	err = bus.publisher.Publish(packet.eventTopic, packet.message)
+	err = bus.PublishRequest(ctx, request)
 	ft.PanicOnErr(err)
 
 	select {
 	case reply := <-replyChan:
-		if reply.Error != nil {
-			return errors.New(*reply.Error)
-		}
-		return nil
-	case err := <-errChan:
-		return err
+		return reply, nil
+	case err = <-errChan:
+		return nil, err
 	}
 }
 
-func (bus *RedisEventBus) subscribeReply(ctx context.Context, packet *EventPacket, result any, cancelSubscription context.CancelFunc) (<-chan *Reply[any], <-chan error) {
+func (bus *RedisEventBus) subscribeReply(ctx context.Context, request EventRequest, result any, cancelSubscription context.CancelFunc) (<-chan *Reply[any], <-chan error) {
 	replyChan := make(chan *Reply[any])
 	errChan := make(chan error)
 
-	handleErr := func() {
-		if r := recover(); r != nil {
-			err := errors.Wrap(r.(error), fmt.Sprintf("failed to subscribe for reply from topic %s", packet.replyTopic))
-			errChan <- err
-			close(errChan)
-			close(replyChan)
-		}
-	}
-
-	defer handleErr()
-
-	msgChan, err := bus.subscriber.Subscribe(ctx, packet.replyTopic)
+	msgChan, err := bus.subscriber.Subscribe(ctx, request.replyTopic)
 	if err != nil {
 		errChan <- err
 		return replyChan, errChan
@@ -154,271 +144,102 @@ func (bus *RedisEventBus) subscribeReply(ctx context.Context, packet *EventPacke
 
 	go func() {
 		defer cancelSubscription()
-		defer handleErr()
+		defer close(replyChan)
+		defer close(errChan)
 
-		select {
-		case msg := <-msgChan:
-			msg.Ack()
-			reply := &Reply[any]{
-				Result: result,
-			}
-			err = bus.marshaler.Unmarshal(msg, reply)
-			if err == nil {
-				replyChan <- reply
-				close(replyChan)
-				close(errChan)
+		for {
+			select {
+			case msg := <-msgChan:
+				msg.Ack()
+				reply := &Reply[any]{
+					Result: result,
+				}
+				err = bus.marshaler.Unmarshal(msg, reply)
+				if err == nil {
+					replyChan <- reply
+					return
+				}
+			case <-ctx.Done():
+				errChan <- ctx.Err()
+			case <-time.After(bus.maxTimeout):
 				return
 			}
-		case <-ctx.Done():
-			err = ctx.Err()
-		case <-time.After(bus.maxTimeout):
-			err = errors.Errorf("timeout for event %s (%s)", packet.correlationId, packet.eventTopic)
 		}
 
-		// If we reach here, it means we have an error,
-		// close error channel first to follow the failure path
-		errChan <- err
-		close(errChan)
-		close(replyChan)
 	}()
 
 	return replyChan, errChan
 }
 
-// Subscribe to events on a topic with an event handler
-func (bus *RedisEventBus) Subscribe(ctx context.Context, topic string, handler EventHandler) error {
+func (bus *RedisEventBus) SubscribeRequest(ctx context.Context, request EventRequest, result any) (requestChan chan any, err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err := fmt.Errorf("panic in Subscribe for topic %s: %v", topic, r)
-			bus.logger.Error("subscribe panic", err)
-		}
+		err = ft.RecoverPanicFailedTo(recover(), "publish reply")
 	}()
 
-	// Check if already subscribed to this topic
-	if _, exists := bus.subscriptions.Load(topic); exists {
-		return errors.Errorf("already subscribed to topic: %s", topic)
+	if _, exists := bus.subscriptions.Load(request.eventTopic); exists {
+		return nil, fmt.Errorf("already subscribed to topic: %s", request.eventTopic)
 	}
 
-	msgChan, err := bus.subscriber.Subscribe(ctx, topic)
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to subscribe to topic: %s", topic))
-	}
+	msgChan, err := bus.subscriber.Subscribe(ctx, request.eventTopic)
+	ft.PanicOnErr(err)
 
-	// Store subscription
-	bus.subscriptions.Store(topic, true)
+	bus.subscriptions.Store(request.eventTopic, msgChan)
+
+	requestChan = make(chan any, 10)
 
 	go func() {
 		defer func() {
-			bus.subscriptions.Delete(topic)
 			if r := recover(); r != nil {
-				err := fmt.Errorf("panic in message handler for topic %s: %v", topic, r)
+				err := fmt.Errorf("panic in message handler for topic %s: %v", request.eventTopic, r)
 				bus.logger.Error("message handler panic", err)
 			}
 		}()
 
 		for {
 			select {
-			case msg := <-msgChan:
-				if msg == nil {
-					bus.logger.Info("subscription closed for topic", topic)
+			case msg, ok := <-msgChan:
+				if !ok {
+					bus.subscriptions.Delete(request.eventTopic)
+					close(requestChan)
+					return
+				}
+				msg.Ack()
+				err := bus.marshaler.Unmarshal(msg, result)
+				if err != nil {
 					return
 				}
 
-				// Extract event packet information from message metadata
-				correlationId := msg.Metadata.Get(MetaCorrelationId)
-				eventTopic := msg.Metadata.Get(MetaEventTopic)
-				replyTopic := msg.Metadata.Get(MetaReplyTopic)
-
-				packet := &EventPacket{
-					correlationId: correlationId,
-					eventTopic:    eventTopic,
-					replyTopic:    replyTopic,
-					message:       msg,
-				}
-
-				// Handle the event
-				if err := handler.Handle(ctx, packet); err != nil {
-					bus.logger.Error("error handling event on topic "+topic, err)
-
-					// Send error reply if reply topic is specified
-					if replyTopic != "" && replyTopic != MetaNoReply {
-						errorMsg := errors.Wrap(err, "error handling event").Error()
-						errorReply := &Reply[any]{
-							Result: nil, // No specific result to return
-							Error:  &errorMsg,
-						}
-						if replyErr := bus.PublishReply(ctx, replyTopic, errorReply, correlationId); replyErr != nil {
-							bus.logger.Error("failed to send error reply", replyErr)
-						}
-					}
-				} else {
-					// Send success reply if reply topic is specified
-					if replyTopic != "" && replyTopic != MetaNoReply {
-						successReply := &Reply[any]{
-							Result: nil, // No specific result to return
-							Error:  nil, // No error
-						}
-						if replyErr := bus.PublishReply(ctx, replyTopic, successReply, correlationId); replyErr != nil {
-							bus.logger.Error("failed to send success reply", replyErr)
-						}
-					}
-				}
-
-				msg.Ack()
-
+				requestChan <- result
 			case <-ctx.Done():
-				bus.logger.Info("context cancelled for topic", topic)
+				bus.subscriptions.Delete(request.eventTopic)
+				close(requestChan)
 				return
 			}
 		}
 	}()
 
-	return nil
+	return requestChan, nil
 }
 
-// SubscribeReply subscribes to reply messages on a specific topic
-func (bus *RedisEventBus) SubscribeReply(ctx context.Context, replyTopic string, handler ReplyHandler) error {
+// PublishReply publishes a reply to the specified reply topic
+func (bus *RedisEventBus) PublishReply(ctx context.Context, request EventRequest, reply *Reply[any]) (err error) {
 	defer func() {
-		if r := recover(); r != nil {
-			err := fmt.Errorf("panic in SubscribeReply for topic %s: %v", replyTopic, r)
-			bus.logger.Error("subscribe reply panic", err)
-		}
-	}()
-
-	// Check if already subscribed to this reply topic
-	replyKey := fmt.Sprintf("reply_%s", replyTopic)
-	if _, exists := bus.subscriptions.Load(replyKey); exists {
-		return errors.Errorf("already subscribed to reply topic: %s", replyTopic)
-	}
-
-	msgChan, err := bus.subscriber.Subscribe(ctx, replyTopic)
-	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to subscribe to reply topic: %s", replyTopic))
-	}
-
-	// Store subscription
-	bus.subscriptions.Store(replyKey, true)
-
-	go func() {
-		defer func() {
-			bus.subscriptions.Delete(replyKey)
-			if r := recover(); r != nil {
-				err := fmt.Errorf("panic in reply handler for topic %s: %v", replyTopic, r)
-				bus.logger.Error("reply handler panic", err)
-			}
-		}()
-
-		for {
-			select {
-			case msg := <-msgChan:
-				if msg == nil {
-					bus.logger.Info("reply subscription closed for topic", replyTopic)
-					return
-				}
-
-				correlationId := msg.Metadata.Get(MetaCorrelationId)
-
-				// Unmarshal the reply
-				var reply Reply[any]
-				if err := bus.marshaler.Unmarshal(msg, &reply); err != nil {
-					bus.logger.Error("failed to unmarshal reply on topic "+replyTopic, err)
-					msg.Ack()
-					continue
-				}
-
-				replyPacket := &ReplyPacket[any]{
-					correlationId: correlationId,
-					reply:         reply,
-				}
-
-				// Handle the reply
-				if err := handler.Handle(ctx, replyPacket); err != nil {
-					bus.logger.Error("error handling reply on topic "+replyTopic, err)
-				}
-
-				msg.Ack()
-
-			case <-ctx.Done():
-				bus.logger.Info("context cancelled for reply topic", replyTopic)
-				return
-			}
-		}
-	}()
-
-	return nil
-}
-
-// PublishReply publishes a reply message to the specified reply topic
-func (bus *RedisEventBus) PublishReply(ctx context.Context, replyTopic string, reply any, correlationId string) error {
-	defer func() {
-		if r := recover(); r != nil {
-			err := fmt.Errorf("panic in PublishReply for topic %s: %v", replyTopic, r)
-			bus.logger.Error("publish reply panic", err)
-		}
+		err = ft.RecoverPanicFailedTo(recover(), "publish reply")
 	}()
 
 	// Marshal the reply
 	msg, err := bus.marshaler.Marshal(reply)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshal reply")
-	}
+	ft.PanicOnErr(err)
 
 	// Set metadata
-	msg.Metadata.Set(MetaCorrelationId, correlationId)
-	msg.Metadata.Set(MetaReplyTopic, replyTopic)
-
-	// Generate unique message ID
-	msgId, err := ulid.New()
-	if err != nil {
-		return errors.Wrap(err, "failed to generate message ID")
-	}
-	msg.UUID = msgId.String()
+	msg.Metadata.Set(MetaCorrelationId, request.correlationId)
+	msg.Metadata.Set(MetaReplyTopic, request.replyTopic)
 
 	// Publish the reply
-	if err := bus.publisher.Publish(replyTopic, msg); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to publish reply to topic: %s", replyTopic))
-	}
+	err = bus.publisher.Publish(request.replyTopic, msg)
+	ft.PanicOnErr(err)
 
-	bus.logger.Debug("published reply to topic", fmt.Sprintf("%s with correlation ID %s", replyTopic, correlationId))
 	return nil
-}
-
-// PublishEvent is a helper method to publish events without waiting for a reply
-func (bus *RedisEventBus) PublishEvent(ctx context.Context, topic string, eventData any) error {
-	defer func() {
-		if r := recover(); r != nil {
-			err := fmt.Errorf("panic in PublishEvent for topic %s: %v", topic, r)
-			bus.logger.Error("publish event panic", err)
-		}
-	}()
-
-	// Generate unique event ID
-	eventId, err := ulid.New()
-	if err != nil {
-		return errors.Wrap(err, "failed to generate event ID")
-	}
-
-	// Marshal the event
-	msg, err := bus.marshaler.Marshal(eventData)
-	if err != nil {
-		return errors.Wrap(err, "failed to marshal event")
-	}
-
-	// Set metadata
-	msg.Metadata.Set(MetaEventTopic, topic)
-	msg.Metadata.Set(MetaCorrelationId, eventId.String())
-	msg.Metadata.Set(MetaReplyTopic, MetaNoReply)
-	msg.UUID = eventId.String()
-	// Create event packet
-	packet := &EventPacket{
-		correlationId: eventId.String(),
-		eventTopic:    topic,
-		replyTopic:    MetaNoReply,
-		message:       msg,
-	}
-
-	// Publish the event
-	return bus.PublishNoReply(ctx, packet)
 }
 
 // Close closes the event bus and all its subscriptions

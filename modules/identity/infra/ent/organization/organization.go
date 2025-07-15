@@ -3,7 +3,6 @@
 package organization
 
 import (
-	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -19,12 +18,18 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
+	// FieldAddress holds the string denoting the address field in the database.
+	FieldAddress = "address"
 	// FieldDisplayName holds the string denoting the display_name field in the database.
 	FieldDisplayName = "display_name"
+	// FieldLegalName holds the string denoting the legal_name field in the database.
+	FieldLegalName = "legal_name"
+	// FieldPhoneNumber holds the string denoting the phone_number field in the database.
+	FieldPhoneNumber = "phone_number"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldStatusID holds the string denoting the status_id field in the database.
+	FieldStatusID = "status_id"
 	// FieldSlug holds the string denoting the slug field in the database.
 	FieldSlug = "slug"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -35,6 +40,8 @@ const (
 	EdgeHierarchies = "hierarchies"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
+	// EdgeOrgStatus holds the string denoting the org_status edge name in mutations.
+	EdgeOrgStatus = "org_status"
 	// EdgeUserOrgs holds the string denoting the user_orgs edge name in mutations.
 	EdgeUserOrgs = "user_orgs"
 	// Table holds the table name of the organization in the database.
@@ -58,6 +65,13 @@ const (
 	GroupsInverseTable = "ident_groups"
 	// GroupsColumn is the table column denoting the groups relation/edge.
 	GroupsColumn = "org_id"
+	// OrgStatusTable is the table that holds the org_status relation/edge.
+	OrgStatusTable = "ident_organizations"
+	// OrgStatusInverseTable is the table name for the IdentStatusEnum entity.
+	// It exists in this package in order to avoid circular dependency with the "identstatusenum" package.
+	OrgStatusInverseTable = "core_enums"
+	// OrgStatusColumn is the table column denoting the org_status relation/edge.
+	OrgStatusColumn = "status_id"
 	// UserOrgsTable is the table that holds the user_orgs relation/edge.
 	UserOrgsTable = "ident_user_org_rel"
 	// UserOrgsInverseTable is the table name for the UserOrg entity.
@@ -72,9 +86,12 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldDeletedAt,
+	FieldAddress,
 	FieldDisplayName,
+	FieldLegalName,
+	FieldPhoneNumber,
 	FieldEtag,
-	FieldStatus,
+	FieldStatusID,
 	FieldSlug,
 	FieldUpdatedAt,
 }
@@ -98,32 +115,7 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
-	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
-	UpdateDefaultUpdatedAt func() time.Time
 )
-
-// Status defines the type for the "status" enum field.
-type Status string
-
-// Status values.
-const (
-	StatusActive   Status = "active"
-	StatusInactive Status = "inactive"
-)
-
-func (s Status) String() string {
-	return string(s)
-}
-
-// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
-func StatusValidator(s Status) error {
-	switch s {
-	case StatusActive, StatusInactive:
-		return nil
-	default:
-		return fmt.Errorf("organization: invalid enum value for status field: %q", s)
-	}
-}
 
 // OrderOption defines the ordering options for the Organization queries.
 type OrderOption = func(*sql.Selector)
@@ -143,9 +135,24 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
 }
 
+// ByAddress orders the results by the address field.
+func ByAddress(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAddress, opts...).ToFunc()
+}
+
 // ByDisplayName orders the results by the display_name field.
 func ByDisplayName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDisplayName, opts...).ToFunc()
+}
+
+// ByLegalName orders the results by the legal_name field.
+func ByLegalName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLegalName, opts...).ToFunc()
+}
+
+// ByPhoneNumber orders the results by the phone_number field.
+func ByPhoneNumber(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPhoneNumber, opts...).ToFunc()
 }
 
 // ByEtag orders the results by the etag field.
@@ -153,9 +160,9 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEtag, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+// ByStatusID orders the results by the status_id field.
+func ByStatusID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatusID, opts...).ToFunc()
 }
 
 // BySlug orders the results by the slug field.
@@ -210,6 +217,13 @@ func ByGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByOrgStatusField orders the results by org_status field.
+func ByOrgStatusField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOrgStatusStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByUserOrgsCount orders the results by user_orgs count.
 func ByUserOrgsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -260,6 +274,19 @@ func newGroupsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GroupsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, GroupsTable, GroupsColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewOrgStatusStepNikki() *sqlgraph.Step {
+	return newOrgStatusStep()
+}
+
+func newOrgStatusStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OrgStatusInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, OrgStatusTable, OrgStatusColumn),
 	)
 }
 

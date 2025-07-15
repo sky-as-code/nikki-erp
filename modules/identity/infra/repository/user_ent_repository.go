@@ -12,8 +12,8 @@ import (
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
+	entStatus "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
-	entUserStatus "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userstatusenum"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -39,17 +39,19 @@ func (this *UserEntRepository) Create(ctx context.Context, user domain.User) (*d
 		SetPasswordChangedAt(*user.PasswordChangedAt).
 		SetStatusID(*user.StatusId)
 
-	return db.Mutate(ctx, creation, entToUser)
+	return db.Mutate(ctx, creation, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) Update(ctx context.Context, user domain.User) (*domain.User, error) {
+func (this *UserEntRepository) Update(ctx context.Context, user domain.User, prevEtag model.Etag) (*domain.User, error) {
 	update := this.client.User.UpdateOneID(*user.Id).
 		SetNillableAvatarURL(user.AvatarUrl).
 		SetNillableDisplayName(user.DisplayName).
 		SetNillableEmail(user.Email).
 		SetNillablePasswordHash(user.PasswordHash).
 		SetNillablePasswordChangedAt(user.PasswordChangedAt).
-		SetNillableStatusID(user.StatusId)
+		SetNillableStatusID(user.StatusId).
+		// IMPORTANT: Must have!
+		Where(entUser.EtagEQ(prevEtag))
 
 	if len(update.Mutation().Fields()) > 0 {
 		update.
@@ -57,11 +59,13 @@ func (this *UserEntRepository) Update(ctx context.Context, user domain.User) (*d
 			SetUpdatedAt(time.Now())
 	}
 
-	return db.Mutate(ctx, update, entToUser)
+	return db.Mutate(ctx, update, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) Delete(ctx context.Context, param it.DeleteParam) error {
-	return db.Delete[ent.User](ctx, this.client.User.DeleteOneID(param.Id))
+func (this *UserEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+	return this.client.User.Delete().
+		Where(entUser.ID(param.Id)).
+		Exec(ctx)
 }
 
 func (this *UserEntRepository) Exists(ctx context.Context, id model.Id) (bool, error) {
@@ -164,13 +168,13 @@ func BuildUserDescriptor() *orm.EntityDescriptor {
 }
 
 func BuildUserStatusDescriptor() *orm.EntityDescriptor {
-	entity := ent.UserStatusEnum{}
+	entity := ent.IdentStatusEnum{}
 	builder := orm.DescribeEntity(entUser.EdgeUserStatus).
-		Aliases(entUserStatus.Label).
-		Field(entUserStatus.FieldID, entity.ID).
-		Field(entUserStatus.FieldEtag, entity.Etag).
-		Field(entUserStatus.FieldLabel, entity.Label).
-		Field(entUserStatus.FieldValue, entity.Value)
+		Aliases(entStatus.Label).
+		Field(entStatus.FieldID, entity.ID).
+		Field(entStatus.FieldEtag, entity.Etag).
+		Field(entStatus.FieldLabel, entity.Label).
+		Field(entStatus.FieldValue, entity.Value)
 
 	return builder.Descriptor()
 }

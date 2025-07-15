@@ -7,23 +7,27 @@ import (
 )
 
 type EventBus interface {
-	PublishNoReply(ctx context.Context, packet *EventPacket) error
-	PublishWaitReply(ctx context.Context, packet *EventPacket, result any) error
-	PublishEvent(ctx context.Context, topic string, eventData any) error
-	Subscribe(ctx context.Context, topic string, handler EventHandler) error
-	SubscribeReply(ctx context.Context, replyTopic string, handler ReplyHandler) error
-	PublishReply(ctx context.Context, replyTopic string, reply any, correlationId string) error
+	PublishRequest(ctx context.Context, request EventRequest) (err error)
+	PublishRequestWaitReply(ctx context.Context, request EventRequest, DataReply any) (reply *Reply[any], err error)
+	PublishReply(ctx context.Context, request EventRequest, reply *Reply[any]) (err error)
+	SubscribeRequest(ctx context.Context, request EventRequest, result any) (requestChan chan any, err error)
 	Close() error
 }
-type EventPacket struct {
+
+type EventRequest struct {
 	correlationId string
 	eventTopic    string
 	replyTopic    string
 	message       *message.Message
 }
 
-func (packet EventPacket) CorrelationId() string {
-	return packet.correlationId
+func NewEventRequest(correlationId, eventTopic, replyTopic string, message *message.Message) *EventRequest {
+	return &EventRequest{
+		correlationId: correlationId,
+		eventTopic:    eventTopic,
+		replyTopic:    replyTopic,
+		message:       message,
+	}
 }
 
 type Reply[TResult any] struct {
@@ -31,24 +35,16 @@ type Reply[TResult any] struct {
 	Error  *string `json:"error"`
 }
 
-type ReplyPacket[TResult any] struct {
+type EventReply[TResult any] struct {
 	correlationId string
+	message       *message.Message
 	reply         Reply[TResult]
 }
 
-func (packet ReplyPacket[TResult]) CorrelationId() string {
+func (packet EventReply[TResult]) CorrelationId() string {
 	return packet.correlationId
 }
 
-func (packet ReplyPacket[TResult]) Reply() *Reply[TResult] {
+func (packet EventReply[TResult]) Reply() *Reply[TResult] {
 	return &packet.reply
-}
-
-type EventHandler interface {
-	Handle(ctx context.Context, packet *EventPacket) error
-	NewEvent() any
-}
-
-type ReplyHandler interface {
-	Handle(ctx context.Context, packet *ReplyPacket[any]) error
 }
