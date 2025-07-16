@@ -202,7 +202,7 @@ func (this *OrganizationServiceImpl) DeleteOrganization(ctx context.Context, cmd
 	// In case the org was deleted by another concurrent process,
 	// right after checking org existence.
 	if deletedCount == 0 {
-		vErrs.AppendIdNotFound("organization")
+		vErrs.AppendNotFound("slug", "organization slug")
 	}
 
 	return crud.NewSuccessDeletionResult(*dbOrg.Id, &deletedCount), nil

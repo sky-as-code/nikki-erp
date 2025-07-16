@@ -5,6 +5,21 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/password"
 )
 
+type CreateOtpPasswordRequest = it.CreatePasswordOtpCommand
+
+type CreateOtpPasswordResponse struct {
+	CreatedAt     int64    `json:"createdAt"`
+	ExpiredAt     int64    `json:"expiredAt"`
+	OtpUrl        string   `json:"otpUrl"`
+	RecoveryCodes []string `json:"recoveryCodes"`
+}
+
+func NewCreateOtpPasswordResponse(result it.CreatePasswordOtpResult) CreateOtpPasswordResponse {
+	response := CreateOtpPasswordResponse{}
+	model.MustCopy(result.Data, &response)
+	return response
+}
+
 type CreateTempPasswordRequest = it.CreateTempPasswordCommand
 
 type CreateTempPasswordResponse struct {

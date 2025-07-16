@@ -38,10 +38,6 @@ func (this *ValidationErrors) AppendAlreadyExists(fieldName string, fieldLabel s
 	this.Appendf(fieldName, "%s already exists", fieldLabel)
 }
 
-func (this *ValidationErrors) AppendIdNotFound(entityName string) {
-	this.Appendf("id", "%s not found", entityName)
-}
-
 func (this *ValidationErrors) AppendNotFound(fieldName string, fieldLabel string) {
 	this.Appendf(fieldName, "%s not found", fieldLabel)
 }

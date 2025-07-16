@@ -17,3 +17,14 @@ func Filter[TSrc any](array []TSrc, predicate func(TSrc) bool) []TSrc {
 func IndexOf[TSrc any](array []TSrc, item TSrc) int {
 	return funk.IndexOf(array, item)
 }
+
+func RemoveString(array []string, str string) ([]string, bool) {
+	found := false
+	for i, v := range array {
+		if v == str {
+			found = true
+			return append(array[:i], array[i+1:]...), true
+		}
+	}
+	return array, found
+}

@@ -67,7 +67,7 @@ func (this *AttemptServiceImpl) CreateLoginAttempt(ctx context.Context, cmd it.C
 			return err
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			methods := []string{"password", "captcha"} // TODO: load method settings from DB
+			methods := []string{"password", "captcha", "passwordotp"} // TODO: load method settings from DB
 			if len(methods) == 0 {
 				return ft.ClientError{
 					Code:    "unauthorized",
@@ -200,7 +200,7 @@ func (this *AttemptServiceImpl) GetAttemptById(ctx context.Context, query it.Get
 func (this *AttemptServiceImpl) assertAttemptExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (attempt *domain.LoginAttempt, err error) {
 	attempt, err = this.attemptRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	if attempt == nil {
-		vErrs.AppendIdNotFound("attempt")
+		vErrs.AppendNotFound("id", "attempt")
 	}
 	return
 }

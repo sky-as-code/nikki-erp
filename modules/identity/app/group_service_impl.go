@@ -220,7 +220,7 @@ func (this *GroupServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag m
 func (this *GroupServiceImpl) assertGroupExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (dbGroup *domain.Group, err error) {
 	dbGroup, err = this.groupRepo.FindById(ctx, itGrp.FindByIdParam{Id: id})
 	if dbGroup == nil {
-		vErrs.AppendIdNotFound("group")
+		vErrs.AppendNotFound("id", "group id")
 	}
 	return
 }
@@ -257,7 +257,7 @@ func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd itGrp.DeleteG
 	deletedCount, err := this.groupRepo.DeleteHard(ctx, cmd)
 	ft.PanicOnErr(err)
 	if deletedCount == 0 {
-		vErrs.AppendIdNotFound("group")
+		vErrs.AppendNotFound("id", "group id")
 		return &itGrp.DeleteGroupResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil

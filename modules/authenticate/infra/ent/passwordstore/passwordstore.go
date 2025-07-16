@@ -25,6 +25,8 @@ const (
 	FieldPasswordotp = "passwordotp"
 	// FieldPasswordotpExpiredAt holds the string denoting the passwordotp_expired_at field in the database.
 	FieldPasswordotpExpiredAt = "passwordotp_expired_at"
+	// FieldPasswordotpRecovery holds the string denoting the passwordotp_recovery field in the database.
+	FieldPasswordotpRecovery = "passwordotp_recovery"
 	// FieldSubjectType holds the string denoting the subject_type field in the database.
 	FieldSubjectType = "subject_type"
 	// FieldSubjectRef holds the string denoting the subject_ref field in the database.
@@ -45,6 +47,7 @@ var Columns = []string{
 	FieldPasswordtmpExpiredAt,
 	FieldPasswordotp,
 	FieldPasswordotpExpiredAt,
+	FieldPasswordotpRecovery,
 	FieldSubjectType,
 	FieldSubjectRef,
 	FieldSubjectSourceRef,

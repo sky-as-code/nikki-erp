@@ -5,10 +5,8 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	domIdent "github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -22,10 +20,16 @@ type loginSubject struct {
 	Username string
 }
 
-func (this *subjectHelper) assertSubjectExists(ctx context.Context, subjectType domain.SubjectType, username string, vErrs *ft.ValidationErrors) (subject *loginSubject, err error) {
+func (this *subjectHelper) assertSubjectExists(
+	ctx context.Context,
+	subjectType domain.SubjectType,
+	subjectRef *model.Id,
+	username *string,
+	vErrs *ft.ValidationErrors,
+) (subject *loginSubject, err error) {
 	switch subjectType {
 	case domain.SubjectTypeUser:
-		subject, err = this.assertUserExists(ctx, username, vErrs)
+		subject, err = this.assertUserExists(ctx, subjectRef, username, vErrs)
 	}
 	if err != nil {
 		return nil, err
@@ -33,11 +37,17 @@ func (this *subjectHelper) assertSubjectExists(ctx context.Context, subjectType 
 	return subject, nil
 }
 
-func (this *subjectHelper) assertUserExists(ctx context.Context, username string, vErrs *ft.ValidationErrors) (*loginSubject, error) {
-	result := itUser.GetUserByEmailResult{}
-	err := this.cqrsBus.Request(ctx, &itUser.GetUserByEmailQuery{
-		Email:  username,
-		Status: util.ToPtr(domIdent.UserStatusActive),
+func (this *subjectHelper) assertUserExists(ctx context.Context, userId *string, username *string, vErrs *ft.ValidationErrors) (*loginSubject, error) {
+	result := itUser.MustGetActiveUserResult{}
+	var field string
+	if userId != nil {
+		field = "id"
+	} else {
+		field = "email"
+	}
+	err := this.cqrsBus.Request(ctx, &itUser.MustGetActiveUserQuery{
+		Email: username,
+		Id:    userId,
 	}, &result)
 	if err != nil {
 		return nil, err
@@ -47,7 +57,8 @@ func (this *subjectHelper) assertUserExists(ctx context.Context, username string
 		return nil, result.ClientError
 	}
 	if vErrs.Count() > 0 {
-		vErrs.RenameKey("email", "username")
+		// E.g: From {"email": "user is archived"} to {"username": "user is archived"}
+		vErrs.RenameKey(field, "username")
 		return nil, nil
 	}
 	return &loginSubject{

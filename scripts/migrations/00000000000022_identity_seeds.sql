@@ -4,17 +4,17 @@ BEGIN
 		SELECT FROM information_schema.tables 
 		WHERE table_schema = 'public' AND table_name = 'ident_users'
 	) THEN
-		INSERT INTO "ident_users" ("id", "created_at", "display_name", "email", "etag", "failed_login_attempts", "is_owner", "must_change_password", "password_hash", "password_changed_at", "status") VALUES
-		('01JWNNJGS70Y07MBEV3AQ0M526', NOW(), 'System', 'system', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 0, NULL, FALSE, '', NOW(), 'active'),
-		('01JWNMZ36QHC7CQQ748H9NQ6J6', NOW(), 'Owner', 'owner', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 0, TRUE, TRUE, '', NOW(), 'active'),
-		('01JWNXT3EY7FG47VDJTEPTDC98', NOW(), 'Thần sức mạnh bị xích', 'power@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 0, NULL, FALSE, '', NOW(), 'locked'),
-		('01JWNXXTF8958VVYAV33MVVMDN', NOW(), 'Gấu ngủ đông', 'bear@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 0, NULL, FALSE, '', NOW(), 'archived'),
-		('01JZQFDH0N51Q3BFQFMFFGSCSV', NOW(), 'đ. Test người dùng', 'd@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 0, NULL, FALSE, '', NOW(), 'active'),
-		('01JZQFF9QEXH71P2CG9Y9MY8MM', NOW(), 'Ơ. Test người dùng', 'ow@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 0, NULL, FALSE, '', NOW(), 'archived'),
-		('01JZQFFDKY8T4JB8R6NSY1331J', NOW(), 'Ă. Test người dùng', 'a@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 0, NULL, FALSE, '', NOW(), 'active'),
-		('01JZQFGVKZCTV7S310W0BDMWCS', NOW(), 'Ợ. Test người dùng', 'owj@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 0, NULL, FALSE, '', NOW(), 'active'),
-		('01JZQFY6EXRG0959Z95Y2EM3AM', NOW(), 'Ồ. Test người dùng', 'oh@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 0, NULL, FALSE, '', NOW(), 'locked'),
-		('01JZQFZFK6GM2D5X6MYHWH6FND', NOW(), 'Ớ. Test người dùng', 'ows@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, 0, NULL, FALSE, '', NOW(), 'active');
+		INSERT INTO "ident_users" ("id", "created_at", "display_name", "email", "etag", "is_owner", "status") VALUES
+		('01JWNNJGS70Y07MBEV3AQ0M526', NOW(), 'System', 'system', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, NULL, 'active'),
+		('01JWNMZ36QHC7CQQ748H9NQ6J6', NOW(), 'Owner', 'owner', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, TRUE, 'active'),
+		('01JWNXT3EY7FG47VDJTEPTDC98', NOW(), 'Thần sức mạnh bị xích', 'power@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, NULL, 'locked'),
+		('01JWNXXTF8958VVYAV33MVVMDN', NOW(), 'Gấu ngủ đông', 'bear@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, NULL, 'archived'),
+		('01JZQFDH0N51Q3BFQFMFFGSCSV', NOW(), 'đ. Test người dùng', 'd@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, NULL, 'active'),
+		('01JZQFF9QEXH71P2CG9Y9MY8MM', NOW(), 'Ơ. Test người dùng', 'ow@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, NULL, 'archived'),
+		('01JZQFFDKY8T4JB8R6NSY1331J', NOW(), 'Ă. Test người dùng', 'a@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, NULL, 'active'),
+		('01JZQFGVKZCTV7S310W0BDMWCS', NOW(), 'Ợ. Test người dùng', 'owj@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, NULL, 'active'),
+		('01JZQFY6EXRG0959Z95Y2EM3AM', NOW(), 'Ồ. Test người dùng', 'oh@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, NULL, 'locked'),
+		('01JZQFZFK6GM2D5X6MYHWH6FND', NOW(), 'Ớ. Test người dùng', 'ows@nikki.com', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint, NULL, 'active');
 	END IF;
 
 	IF EXISTS (

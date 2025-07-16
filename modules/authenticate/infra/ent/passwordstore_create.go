@@ -118,6 +118,12 @@ func (psc *PasswordStoreCreate) SetNillablePasswordotpExpiredAt(t *time.Time) *P
 	return psc
 }
 
+// SetPasswordotpRecovery sets the "passwordotp_recovery" field.
+func (psc *PasswordStoreCreate) SetPasswordotpRecovery(s []string) *PasswordStoreCreate {
+	psc.mutation.SetPasswordotpRecovery(s)
+	return psc
+}
+
 // SetSubjectType sets the "subject_type" field.
 func (psc *PasswordStoreCreate) SetSubjectType(s string) *PasswordStoreCreate {
 	psc.mutation.SetSubjectType(s)
@@ -252,6 +258,10 @@ func (psc *PasswordStoreCreate) createSpec() (*PasswordStore, *sqlgraph.CreateSp
 	if value, ok := psc.mutation.PasswordotpExpiredAt(); ok {
 		_spec.SetField(passwordstore.FieldPasswordotpExpiredAt, field.TypeTime, value)
 		_node.PasswordotpExpiredAt = &value
+	}
+	if value, ok := psc.mutation.PasswordotpRecovery(); ok {
+		_spec.SetField(passwordstore.FieldPasswordotpRecovery, field.TypeJSON, value)
+		_node.PasswordotpRecovery = value
 	}
 	if value, ok := psc.mutation.SubjectType(); ok {
 		_spec.SetField(passwordstore.FieldSubjectType, field.TypeString, value)

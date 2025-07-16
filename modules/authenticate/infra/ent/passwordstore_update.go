@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/infra/ent/passwordstore"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/infra/ent/predicate"
@@ -168,6 +169,24 @@ func (psu *PasswordStoreUpdate) ClearPasswordotpExpiredAt() *PasswordStoreUpdate
 	return psu
 }
 
+// SetPasswordotpRecovery sets the "passwordotp_recovery" field.
+func (psu *PasswordStoreUpdate) SetPasswordotpRecovery(s []string) *PasswordStoreUpdate {
+	psu.mutation.SetPasswordotpRecovery(s)
+	return psu
+}
+
+// AppendPasswordotpRecovery appends s to the "passwordotp_recovery" field.
+func (psu *PasswordStoreUpdate) AppendPasswordotpRecovery(s []string) *PasswordStoreUpdate {
+	psu.mutation.AppendPasswordotpRecovery(s)
+	return psu
+}
+
+// ClearPasswordotpRecovery clears the value of the "passwordotp_recovery" field.
+func (psu *PasswordStoreUpdate) ClearPasswordotpRecovery() *PasswordStoreUpdate {
+	psu.mutation.ClearPasswordotpRecovery()
+	return psu
+}
+
 // Mutation returns the PasswordStoreMutation object of the builder.
 func (psu *PasswordStoreUpdate) Mutation() *PasswordStoreMutation {
 	return psu.mutation
@@ -250,6 +269,17 @@ func (psu *PasswordStoreUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if psu.mutation.PasswordotpExpiredAtCleared() {
 		_spec.ClearField(passwordstore.FieldPasswordotpExpiredAt, field.TypeTime)
+	}
+	if value, ok := psu.mutation.PasswordotpRecovery(); ok {
+		_spec.SetField(passwordstore.FieldPasswordotpRecovery, field.TypeJSON, value)
+	}
+	if value, ok := psu.mutation.AppendedPasswordotpRecovery(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, passwordstore.FieldPasswordotpRecovery, value)
+		})
+	}
+	if psu.mutation.PasswordotpRecoveryCleared() {
+		_spec.ClearField(passwordstore.FieldPasswordotpRecovery, field.TypeJSON)
 	}
 	if psu.mutation.SubjectSourceRefCleared() {
 		_spec.ClearField(passwordstore.FieldSubjectSourceRef, field.TypeString)
@@ -414,6 +444,24 @@ func (psuo *PasswordStoreUpdateOne) ClearPasswordotpExpiredAt() *PasswordStoreUp
 	return psuo
 }
 
+// SetPasswordotpRecovery sets the "passwordotp_recovery" field.
+func (psuo *PasswordStoreUpdateOne) SetPasswordotpRecovery(s []string) *PasswordStoreUpdateOne {
+	psuo.mutation.SetPasswordotpRecovery(s)
+	return psuo
+}
+
+// AppendPasswordotpRecovery appends s to the "passwordotp_recovery" field.
+func (psuo *PasswordStoreUpdateOne) AppendPasswordotpRecovery(s []string) *PasswordStoreUpdateOne {
+	psuo.mutation.AppendPasswordotpRecovery(s)
+	return psuo
+}
+
+// ClearPasswordotpRecovery clears the value of the "passwordotp_recovery" field.
+func (psuo *PasswordStoreUpdateOne) ClearPasswordotpRecovery() *PasswordStoreUpdateOne {
+	psuo.mutation.ClearPasswordotpRecovery()
+	return psuo
+}
+
 // Mutation returns the PasswordStoreMutation object of the builder.
 func (psuo *PasswordStoreUpdateOne) Mutation() *PasswordStoreMutation {
 	return psuo.mutation
@@ -526,6 +574,17 @@ func (psuo *PasswordStoreUpdateOne) sqlSave(ctx context.Context) (_node *Passwor
 	}
 	if psuo.mutation.PasswordotpExpiredAtCleared() {
 		_spec.ClearField(passwordstore.FieldPasswordotpExpiredAt, field.TypeTime)
+	}
+	if value, ok := psuo.mutation.PasswordotpRecovery(); ok {
+		_spec.SetField(passwordstore.FieldPasswordotpRecovery, field.TypeJSON, value)
+	}
+	if value, ok := psuo.mutation.AppendedPasswordotpRecovery(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, passwordstore.FieldPasswordotpRecovery, value)
+		})
+	}
+	if psuo.mutation.PasswordotpRecoveryCleared() {
+		_spec.ClearField(passwordstore.FieldPasswordotpRecovery, field.TypeJSON)
 	}
 	if psuo.mutation.SubjectSourceRefCleared() {
 		_spec.ClearField(passwordstore.FieldSubjectSourceRef, field.TypeString)

@@ -95,6 +95,7 @@ var (
 		{Name: "passwordtmp_expired_at", Type: field.TypeTime, Nullable: true},
 		{Name: "passwordotp", Type: field.TypeString, Nullable: true},
 		{Name: "passwordotp_expired_at", Type: field.TypeTime, Nullable: true},
+		{Name: "passwordotp_recovery", Type: field.TypeJSON, Nullable: true},
 		{Name: "subject_type", Type: field.TypeString},
 		{Name: "subject_ref", Type: field.TypeString},
 		{Name: "subject_source_ref", Type: field.TypeString, Nullable: true},
@@ -107,8 +108,8 @@ var (
 		Indexes: []*schema.Index{
 			{
 				Name:    "passwordstore_subject_type_subject_ref",
-				Unique:  false,
-				Columns: []*schema.Column{AuthnPasswordStoresColumns[8], AuthnPasswordStoresColumns[9]},
+				Unique:  true,
+				Columns: []*schema.Column{AuthnPasswordStoresColumns[9], AuthnPasswordStoresColumns[10]},
 			},
 		},
 	}

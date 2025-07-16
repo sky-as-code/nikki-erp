@@ -9,6 +9,25 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 )
 
+var createPasswordOtpCommandType = cqrs.RequestType{
+	Module:    "authenticate",
+	Submodule: "password",
+	Action:    "createPasswordOtp",
+}
+
+type CreatePasswordOtpCommand struct {
+	SubjectType domain.SubjectType `json:"subjectType"`
+	SubjectRef  model.Id           `json:"subjectRef"`
+}
+
+type CreatePasswordOtpResultData struct {
+	CreatedAt     time.Time `json:"createdAt"`
+	OtpUrl        string    `json:"otpUrl"`
+	ExpiredAt     time.Time `json:"expiredAt"`
+	RecoveryCodes []string  `json:"recoveryCodes"`
+}
+type CreatePasswordOtpResult = crud.OpResult[*CreatePasswordOtpResultData]
+
 var createTempPasswordCommandType = cqrs.RequestType{
 	Module:    "authenticate",
 	Submodule: "password",
@@ -45,10 +64,10 @@ type SetPasswordResultData struct {
 }
 type SetPasswordResult = crud.OpResult[*SetPasswordResultData]
 
-var isPasswordMatchedQueryType = cqrs.RequestType{
+var verifyPasswordQueryType = cqrs.RequestType{
 	Module:    "authenticate",
 	Submodule: "password",
-	Action:    "isPasswordMatched",
+	Action:    "verifyPassword",
 }
 
 type VerifyPasswordQuery struct {
@@ -58,7 +77,7 @@ type VerifyPasswordQuery struct {
 }
 
 func (VerifyPasswordQuery) CqrsRequestType() cqrs.RequestType {
-	return isPasswordMatchedQueryType
+	return verifyPasswordQueryType
 }
 
 type VerifyPasswordResultData struct {
@@ -66,3 +85,19 @@ type VerifyPasswordResultData struct {
 	FailedReason *string `json:"failedReason"`
 }
 type VerifyPasswordResult = crud.OpResult[*VerifyPasswordResultData]
+
+var verifyPasswordOtpQueryType = cqrs.RequestType{
+	Module:    "authenticate",
+	Submodule: "password",
+	Action:    "isPasswordMatched",
+}
+
+type VerifyPasswordOtpQuery struct {
+	SubjectType domain.SubjectType `json:"subjectType"`
+	Username    string             `json:"username"`
+	OtpCode     string             `json:"otpCode"`
+}
+
+func (VerifyPasswordOtpQuery) CqrsRequestType() cqrs.RequestType {
+	return verifyPasswordOtpQueryType
+}

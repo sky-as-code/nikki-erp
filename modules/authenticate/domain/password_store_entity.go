@@ -18,6 +18,7 @@ type PasswordStore struct {
 	PasswordtmpExpiredAt *time.Time   `json:"passwordTmpExpiredAt"`
 	Passwordotp          *string      `json:"passwordOtp"`
 	PasswordotpExpiredAt *time.Time   `json:"passwordOtpExpiredAt"`
+	PasswordotpRecovery  []string     `json:"passwordOtp"`
 	SubjectType          *SubjectType `json:"subjectType"`
 	SubjectRef           *model.Id    `json:"subjectRef"`
 	SubjectSourceRef     *string      `json:"subjectSourceRef"`

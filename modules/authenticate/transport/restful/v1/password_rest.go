@@ -26,6 +26,23 @@ type PasswordRest struct {
 	passwordSvc it.PasswordService
 }
 
+func (this PasswordRest) CreatePasswordOtp(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create otp password"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest(
+		echoCtx, this.passwordSvc.CreatePasswordOtp,
+		func(request CreateOtpPasswordRequest) it.CreatePasswordOtpCommand {
+			return it.CreatePasswordOtpCommand(request)
+		},
+		NewCreateOtpPasswordResponse,
+		httpserver.JsonOk,
+	)
+	return err
+}
+
 func (this PasswordRest) CreateTempPassword(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create temp password"); e != nil {

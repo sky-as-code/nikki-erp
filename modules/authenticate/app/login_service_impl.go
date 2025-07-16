@@ -91,7 +91,7 @@ func (s *LoginServiceImpl) validateAuthInput(ctx context.Context, cmd it.Authent
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			var err error
-			subject, err = s.subjectHelper.assertSubjectExists(ctx, *attempt.SubjectType, *attempt.Username, vErrs)
+			subject, err = s.subjectHelper.assertSubjectExists(ctx, *attempt.SubjectType, nil, attempt.Username, vErrs)
 			return err
 		}).
 		End()

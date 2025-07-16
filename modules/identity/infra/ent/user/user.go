@@ -24,22 +24,10 @@ const (
 	FieldEmail = "email"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
-	// FieldFailedLoginAttempts holds the string denoting the failed_login_attempts field in the database.
-	FieldFailedLoginAttempts = "failed_login_attempts"
 	// FieldHierarchyID holds the string denoting the hierarchy_id field in the database.
 	FieldHierarchyID = "hierarchy_id"
 	// FieldIsOwner holds the string denoting the is_owner field in the database.
 	FieldIsOwner = "is_owner"
-	// FieldLastLoginAt holds the string denoting the last_login_at field in the database.
-	FieldLastLoginAt = "last_login_at"
-	// FieldLockedUntil holds the string denoting the locked_until field in the database.
-	FieldLockedUntil = "locked_until"
-	// FieldMustChangePassword holds the string denoting the must_change_password field in the database.
-	FieldMustChangePassword = "must_change_password"
-	// FieldPasswordHash holds the string denoting the password_hash field in the database.
-	FieldPasswordHash = "password_hash"
-	// FieldPasswordChangedAt holds the string denoting the password_changed_at field in the database.
-	FieldPasswordChangedAt = "password_changed_at"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -97,14 +85,8 @@ var Columns = []string{
 	FieldDisplayName,
 	FieldEmail,
 	FieldEtag,
-	FieldFailedLoginAttempts,
 	FieldHierarchyID,
 	FieldIsOwner,
-	FieldLastLoginAt,
-	FieldLockedUntil,
-	FieldMustChangePassword,
-	FieldPasswordHash,
-	FieldPasswordChangedAt,
 	FieldStatus,
 	FieldUpdatedAt,
 }
@@ -131,10 +113,6 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
-	// DefaultFailedLoginAttempts holds the default value on creation for the "failed_login_attempts" field.
-	DefaultFailedLoginAttempts int
-	// DefaultMustChangePassword holds the default value on creation for the "must_change_password" field.
-	DefaultMustChangePassword bool
 )
 
 // OrderOption defines the ordering options for the User queries.
@@ -170,11 +148,6 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEtag, opts...).ToFunc()
 }
 
-// ByFailedLoginAttempts orders the results by the failed_login_attempts field.
-func ByFailedLoginAttempts(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldFailedLoginAttempts, opts...).ToFunc()
-}
-
 // ByHierarchyID orders the results by the hierarchy_id field.
 func ByHierarchyID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHierarchyID, opts...).ToFunc()
@@ -183,31 +156,6 @@ func ByHierarchyID(opts ...sql.OrderTermOption) OrderOption {
 // ByIsOwner orders the results by the is_owner field.
 func ByIsOwner(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsOwner, opts...).ToFunc()
-}
-
-// ByLastLoginAt orders the results by the last_login_at field.
-func ByLastLoginAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldLastLoginAt, opts...).ToFunc()
-}
-
-// ByLockedUntil orders the results by the locked_until field.
-func ByLockedUntil(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldLockedUntil, opts...).ToFunc()
-}
-
-// ByMustChangePassword orders the results by the must_change_password field.
-func ByMustChangePassword(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldMustChangePassword, opts...).ToFunc()
-}
-
-// ByPasswordHash orders the results by the password_hash field.
-func ByPasswordHash(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldPasswordHash, opts...).ToFunc()
-}
-
-// ByPasswordChangedAt orders the results by the password_changed_at field.
-func ByPasswordChangedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldPasswordChangedAt, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

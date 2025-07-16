@@ -7,6 +7,6 @@ CREATE TABLE "authn_method_settings" ("id" character varying NOT NULL, "method" 
 -- Create index "methodsetting_subject_type_subject_ref" to table: "authn_method_settings"
 CREATE INDEX "methodsetting_subject_type_subject_ref" ON "authn_method_settings" ("subject_type", "subject_ref");
 -- Create "authn_password_stores" table
-CREATE TABLE "authn_password_stores" ("id" character varying NOT NULL, "password" character varying NULL, "password_expired_at" timestamptz NULL, "password_updated_at" timestamptz NULL, "passwordtmp" character varying NULL, "passwordtmp_expired_at" timestamptz NULL, "passwordotp" character varying NULL, "passwordotp_expired_at" timestamptz NULL, "subject_type" character varying NOT NULL, "subject_ref" character varying NOT NULL, "subject_source_ref" character varying NULL, PRIMARY KEY ("id"));
+CREATE TABLE "authn_password_stores" ("id" character varying NOT NULL, "password" character varying NULL, "password_expired_at" timestamptz NULL, "password_updated_at" timestamptz NULL, "passwordtmp" character varying NULL, "passwordtmp_expired_at" timestamptz NULL, "passwordotp" character varying NULL, "passwordotp_expired_at" timestamptz NULL, "passwordotp_recovery" jsonb NULL, "subject_type" character varying NOT NULL, "subject_ref" character varying NOT NULL, "subject_source_ref" character varying NULL, PRIMARY KEY ("id"));
 -- Create index "passwordstore_subject_type_subject_ref" to table: "authn_password_stores"
-CREATE INDEX "passwordstore_subject_type_subject_ref" ON "authn_password_stores" ("subject_type", "subject_ref");
+CREATE UNIQUE INDEX "passwordstore_subject_type_subject_ref" ON "authn_password_stores" ("subject_type", "subject_ref");

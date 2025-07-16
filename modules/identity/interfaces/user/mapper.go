@@ -8,13 +8,11 @@ import (
 func (this CreateUserCommand) ToUser() *domain.User {
 	user := &domain.User{}
 	model.MustCopy(this, user)
-	user.PasswordRaw = &this.Password
 	return user
 }
 
 func (this UpdateUserCommand) ToUser() *domain.User {
 	user := &domain.User{}
 	model.MustCopy(this, user)
-	user.PasswordRaw = this.Password
 	return user
 }

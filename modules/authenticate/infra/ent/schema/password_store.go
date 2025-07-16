@@ -21,7 +21,8 @@ func (PasswordStoreMixin) Fields() []ent.Field {
 
 		field.String("password").
 			Optional().
-			Nillable(),
+			Nillable().
+			Sensitive(),
 
 		field.Time("password_expired_at").
 			Optional().
@@ -33,7 +34,8 @@ func (PasswordStoreMixin) Fields() []ent.Field {
 
 		field.String("passwordtmp").
 			Optional().
-			Nillable(),
+			Nillable().
+			Sensitive(),
 
 		field.Time("passwordtmp_expired_at").
 			Optional().
@@ -41,11 +43,16 @@ func (PasswordStoreMixin) Fields() []ent.Field {
 
 		field.String("passwordotp").
 			Optional().
-			Nillable(),
+			Nillable().
+			Sensitive(),
 
 		field.Time("passwordotp_expired_at").
 			Optional().
 			Nillable(),
+
+		field.Strings("passwordotp_recovery").
+			Optional().
+			Sensitive(),
 
 		field.String("subject_type").
 			Immutable(),
@@ -72,7 +79,7 @@ func (PasswordStore) Annotations() []schema.Annotation {
 
 func (PasswordStore) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("subject_type", "subject_ref"),
+		index.Fields("subject_type", "subject_ref").Unique(),
 	}
 }
 

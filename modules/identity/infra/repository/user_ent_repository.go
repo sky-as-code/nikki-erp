@@ -33,9 +33,6 @@ func (this *UserEntRepository) Create(ctx context.Context, user domain.User) (*d
 		SetDisplayName(*user.DisplayName).
 		SetEtag(*user.Etag).
 		SetEmail(*user.Email).
-		SetMustChangePassword(*user.MustChangePassword).
-		SetPasswordHash(*user.PasswordHash).
-		SetPasswordChangedAt(*user.PasswordChangedAt).
 		SetStatus(string(*user.Status))
 
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToUser)
@@ -46,8 +43,6 @@ func (this *UserEntRepository) Update(ctx context.Context, user domain.User, pre
 		SetNillableAvatarURL(user.AvatarUrl).
 		SetNillableDisplayName(user.DisplayName).
 		SetNillableEmail(user.Email).
-		SetNillablePasswordHash(user.PasswordHash).
-		SetNillablePasswordChangedAt(user.PasswordChangedAt).
 		SetNillableStatus((*string)(user.Status)).
 		// IMPORTANT: Must have!
 		Where(entUser.EtagEQ(prevEtag))
@@ -156,11 +151,7 @@ func BuildUserDescriptor() *orm.EntityDescriptor {
 		Field(entUser.FieldDisplayName, entity.DisplayName).
 		Field(entUser.FieldEmail, entity.Email).
 		Field(entUser.FieldEtag, entity.Etag).
-		Field(entUser.FieldFailedLoginAttempts, entity.FailedLoginAttempts).
 		Field(entUser.FieldID, entity.ID).
-		Field(entUser.FieldLastLoginAt, entity.LastLoginAt).
-		Field(entUser.FieldLockedUntil, entity.LockedUntil).
-		Field(entUser.FieldMustChangePassword, entity.MustChangePassword).
 		Field(entUser.FieldStatus, entity.Status).
 		Field(entUser.FieldUpdatedAt, entity.UpdatedAt).
 		Edge(entUser.EdgeGroups, orm.ToEdgePredicate(entUser.HasGroupsWith)).

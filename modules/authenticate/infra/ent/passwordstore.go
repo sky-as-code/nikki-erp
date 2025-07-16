@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -18,19 +19,21 @@ type PasswordStore struct {
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
 	// Password holds the value of the "password" field.
-	Password *string `json:"password,omitempty"`
+	Password *string `json:"-"`
 	// PasswordExpiredAt holds the value of the "password_expired_at" field.
 	PasswordExpiredAt *time.Time `json:"password_expired_at,omitempty"`
 	// PasswordUpdatedAt holds the value of the "password_updated_at" field.
 	PasswordUpdatedAt *time.Time `json:"password_updated_at,omitempty"`
 	// Passwordtmp holds the value of the "passwordtmp" field.
-	Passwordtmp *string `json:"passwordtmp,omitempty"`
+	Passwordtmp *string `json:"-"`
 	// PasswordtmpExpiredAt holds the value of the "passwordtmp_expired_at" field.
 	PasswordtmpExpiredAt *time.Time `json:"passwordtmp_expired_at,omitempty"`
 	// Passwordotp holds the value of the "passwordotp" field.
-	Passwordotp *string `json:"passwordotp,omitempty"`
+	Passwordotp *string `json:"-"`
 	// PasswordotpExpiredAt holds the value of the "passwordotp_expired_at" field.
 	PasswordotpExpiredAt *time.Time `json:"passwordotp_expired_at,omitempty"`
+	// PasswordotpRecovery holds the value of the "passwordotp_recovery" field.
+	PasswordotpRecovery []string `json:"-"`
 	// SubjectType holds the value of the "subject_type" field.
 	SubjectType string `json:"subject_type,omitempty"`
 	// SubjectRef holds the value of the "subject_ref" field.
@@ -45,6 +48,8 @@ func (*PasswordStore) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case passwordstore.FieldPasswordotpRecovery:
+			values[i] = new([]byte)
 		case passwordstore.FieldID, passwordstore.FieldPassword, passwordstore.FieldPasswordtmp, passwordstore.FieldPasswordotp, passwordstore.FieldSubjectType, passwordstore.FieldSubjectRef, passwordstore.FieldSubjectSourceRef:
 			values[i] = new(sql.NullString)
 		case passwordstore.FieldPasswordExpiredAt, passwordstore.FieldPasswordUpdatedAt, passwordstore.FieldPasswordtmpExpiredAt, passwordstore.FieldPasswordotpExpiredAt:
@@ -119,6 +124,14 @@ func (ps *PasswordStore) assignValues(columns []string, values []any) error {
 				ps.PasswordotpExpiredAt = new(time.Time)
 				*ps.PasswordotpExpiredAt = value.Time
 			}
+		case passwordstore.FieldPasswordotpRecovery:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field passwordotp_recovery", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &ps.PasswordotpRecovery); err != nil {
+					return fmt.Errorf("unmarshal field passwordotp_recovery: %w", err)
+				}
+			}
 		case passwordstore.FieldSubjectType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field subject_type", values[i])
@@ -174,10 +187,7 @@ func (ps *PasswordStore) String() string {
 	var builder strings.Builder
 	builder.WriteString("PasswordStore(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", ps.ID))
-	if v := ps.Password; v != nil {
-		builder.WriteString("password=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("password=<sensitive>")
 	builder.WriteString(", ")
 	if v := ps.PasswordExpiredAt; v != nil {
 		builder.WriteString("password_expired_at=")
@@ -189,25 +199,21 @@ func (ps *PasswordStore) String() string {
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	if v := ps.Passwordtmp; v != nil {
-		builder.WriteString("passwordtmp=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("passwordtmp=<sensitive>")
 	builder.WriteString(", ")
 	if v := ps.PasswordtmpExpiredAt; v != nil {
 		builder.WriteString("passwordtmp_expired_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	if v := ps.Passwordotp; v != nil {
-		builder.WriteString("passwordotp=")
-		builder.WriteString(*v)
-	}
+	builder.WriteString("passwordotp=<sensitive>")
 	builder.WriteString(", ")
 	if v := ps.PasswordotpExpiredAt; v != nil {
 		builder.WriteString("passwordotp_expired_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("passwordotp_recovery=<sensitive>")
 	builder.WriteString(", ")
 	builder.WriteString("subject_type=")
 	builder.WriteString(ps.SubjectType)

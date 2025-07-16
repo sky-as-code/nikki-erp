@@ -43,7 +43,7 @@ type LoginAttempt struct {
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
 	// Username holds the value of the "username" field.
-	Username string `json:"username,omitempty"`
+	Username string `json:"-"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt    *time.Time `json:"updated_at,omitempty"`
 	selectValues sql.SelectValues
@@ -257,8 +257,7 @@ func (la *LoginAttempt) String() string {
 	builder.WriteString("status=")
 	builder.WriteString(la.Status)
 	builder.WriteString(", ")
-	builder.WriteString("username=")
-	builder.WriteString(la.Username)
+	builder.WriteString("username=<sensitive>")
 	builder.WriteString(", ")
 	if v := la.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")

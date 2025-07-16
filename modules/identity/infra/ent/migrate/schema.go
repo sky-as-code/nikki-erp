@@ -101,13 +101,7 @@ var (
 		{Name: "display_name", Type: field.TypeString},
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "failed_login_attempts", Type: field.TypeInt, Default: 0},
 		{Name: "is_owner", Type: field.TypeBool, Nullable: true},
-		{Name: "last_login_at", Type: field.TypeTime, Nullable: true},
-		{Name: "locked_until", Type: field.TypeTime, Nullable: true},
-		{Name: "must_change_password", Type: field.TypeBool, Default: true},
-		{Name: "password_hash", Type: field.TypeString},
-		{Name: "password_changed_at", Type: field.TypeTime},
 		{Name: "status", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "hierarchy_id", Type: field.TypeString, Nullable: true},
@@ -120,7 +114,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "ident_users_ident_hierarchy_levels_hierarchy",
-				Columns:    []*schema.Column{IdentUsersColumns[15]},
+				Columns:    []*schema.Column{IdentUsersColumns[9]},
 				RefColumns: []*schema.Column{IdentHierarchyLevelsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -129,7 +123,7 @@ var (
 			{
 				Name:    "user_is_owner",
 				Unique:  true,
-				Columns: []*schema.Column{IdentUsersColumns[7]},
+				Columns: []*schema.Column{IdentUsersColumns[6]},
 			},
 		},
 	}

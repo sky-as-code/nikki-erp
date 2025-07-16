@@ -2539,23 +2539,25 @@ func (m *MethodSettingMutation) ResetEdge(name string) error {
 // PasswordStoreMutation represents an operation that mutates the PasswordStore nodes in the graph.
 type PasswordStoreMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *string
-	password               *string
-	password_expired_at    *time.Time
-	password_updated_at    *time.Time
-	passwordtmp            *string
-	passwordtmp_expired_at *time.Time
-	passwordotp            *string
-	passwordotp_expired_at *time.Time
-	subject_type           *string
-	subject_ref            *string
-	subject_source_ref     *string
-	clearedFields          map[string]struct{}
-	done                   bool
-	oldValue               func(context.Context) (*PasswordStore, error)
-	predicates             []predicate.PasswordStore
+	op                         Op
+	typ                        string
+	id                         *string
+	password                   *string
+	password_expired_at        *time.Time
+	password_updated_at        *time.Time
+	passwordtmp                *string
+	passwordtmp_expired_at     *time.Time
+	passwordotp                *string
+	passwordotp_expired_at     *time.Time
+	passwordotp_recovery       *[]string
+	appendpasswordotp_recovery []string
+	subject_type               *string
+	subject_ref                *string
+	subject_source_ref         *string
+	clearedFields              map[string]struct{}
+	done                       bool
+	oldValue                   func(context.Context) (*PasswordStore, error)
+	predicates                 []predicate.PasswordStore
 }
 
 var _ ent.Mutation = (*PasswordStoreMutation)(nil)
@@ -3005,6 +3007,71 @@ func (m *PasswordStoreMutation) ResetPasswordotpExpiredAt() {
 	delete(m.clearedFields, passwordstore.FieldPasswordotpExpiredAt)
 }
 
+// SetPasswordotpRecovery sets the "passwordotp_recovery" field.
+func (m *PasswordStoreMutation) SetPasswordotpRecovery(s []string) {
+	m.passwordotp_recovery = &s
+	m.appendpasswordotp_recovery = nil
+}
+
+// PasswordotpRecovery returns the value of the "passwordotp_recovery" field in the mutation.
+func (m *PasswordStoreMutation) PasswordotpRecovery() (r []string, exists bool) {
+	v := m.passwordotp_recovery
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPasswordotpRecovery returns the old "passwordotp_recovery" field's value of the PasswordStore entity.
+// If the PasswordStore object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PasswordStoreMutation) OldPasswordotpRecovery(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPasswordotpRecovery is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPasswordotpRecovery requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPasswordotpRecovery: %w", err)
+	}
+	return oldValue.PasswordotpRecovery, nil
+}
+
+// AppendPasswordotpRecovery adds s to the "passwordotp_recovery" field.
+func (m *PasswordStoreMutation) AppendPasswordotpRecovery(s []string) {
+	m.appendpasswordotp_recovery = append(m.appendpasswordotp_recovery, s...)
+}
+
+// AppendedPasswordotpRecovery returns the list of values that were appended to the "passwordotp_recovery" field in this mutation.
+func (m *PasswordStoreMutation) AppendedPasswordotpRecovery() ([]string, bool) {
+	if len(m.appendpasswordotp_recovery) == 0 {
+		return nil, false
+	}
+	return m.appendpasswordotp_recovery, true
+}
+
+// ClearPasswordotpRecovery clears the value of the "passwordotp_recovery" field.
+func (m *PasswordStoreMutation) ClearPasswordotpRecovery() {
+	m.passwordotp_recovery = nil
+	m.appendpasswordotp_recovery = nil
+	m.clearedFields[passwordstore.FieldPasswordotpRecovery] = struct{}{}
+}
+
+// PasswordotpRecoveryCleared returns if the "passwordotp_recovery" field was cleared in this mutation.
+func (m *PasswordStoreMutation) PasswordotpRecoveryCleared() bool {
+	_, ok := m.clearedFields[passwordstore.FieldPasswordotpRecovery]
+	return ok
+}
+
+// ResetPasswordotpRecovery resets all changes to the "passwordotp_recovery" field.
+func (m *PasswordStoreMutation) ResetPasswordotpRecovery() {
+	m.passwordotp_recovery = nil
+	m.appendpasswordotp_recovery = nil
+	delete(m.clearedFields, passwordstore.FieldPasswordotpRecovery)
+}
+
 // SetSubjectType sets the "subject_type" field.
 func (m *PasswordStoreMutation) SetSubjectType(s string) {
 	m.subject_type = &s
@@ -3160,7 +3227,7 @@ func (m *PasswordStoreMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PasswordStoreMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.password != nil {
 		fields = append(fields, passwordstore.FieldPassword)
 	}
@@ -3181,6 +3248,9 @@ func (m *PasswordStoreMutation) Fields() []string {
 	}
 	if m.passwordotp_expired_at != nil {
 		fields = append(fields, passwordstore.FieldPasswordotpExpiredAt)
+	}
+	if m.passwordotp_recovery != nil {
+		fields = append(fields, passwordstore.FieldPasswordotpRecovery)
 	}
 	if m.subject_type != nil {
 		fields = append(fields, passwordstore.FieldSubjectType)
@@ -3213,6 +3283,8 @@ func (m *PasswordStoreMutation) Field(name string) (ent.Value, bool) {
 		return m.Passwordotp()
 	case passwordstore.FieldPasswordotpExpiredAt:
 		return m.PasswordotpExpiredAt()
+	case passwordstore.FieldPasswordotpRecovery:
+		return m.PasswordotpRecovery()
 	case passwordstore.FieldSubjectType:
 		return m.SubjectType()
 	case passwordstore.FieldSubjectRef:
@@ -3242,6 +3314,8 @@ func (m *PasswordStoreMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldPasswordotp(ctx)
 	case passwordstore.FieldPasswordotpExpiredAt:
 		return m.OldPasswordotpExpiredAt(ctx)
+	case passwordstore.FieldPasswordotpRecovery:
+		return m.OldPasswordotpRecovery(ctx)
 	case passwordstore.FieldSubjectType:
 		return m.OldSubjectType(ctx)
 	case passwordstore.FieldSubjectRef:
@@ -3305,6 +3379,13 @@ func (m *PasswordStoreMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPasswordotpExpiredAt(v)
+		return nil
+	case passwordstore.FieldPasswordotpRecovery:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPasswordotpRecovery(v)
 		return nil
 	case passwordstore.FieldSubjectType:
 		v, ok := value.(string)
@@ -3378,6 +3459,9 @@ func (m *PasswordStoreMutation) ClearedFields() []string {
 	if m.FieldCleared(passwordstore.FieldPasswordotpExpiredAt) {
 		fields = append(fields, passwordstore.FieldPasswordotpExpiredAt)
 	}
+	if m.FieldCleared(passwordstore.FieldPasswordotpRecovery) {
+		fields = append(fields, passwordstore.FieldPasswordotpRecovery)
+	}
 	if m.FieldCleared(passwordstore.FieldSubjectSourceRef) {
 		fields = append(fields, passwordstore.FieldSubjectSourceRef)
 	}
@@ -3416,6 +3500,9 @@ func (m *PasswordStoreMutation) ClearField(name string) error {
 	case passwordstore.FieldPasswordotpExpiredAt:
 		m.ClearPasswordotpExpiredAt()
 		return nil
+	case passwordstore.FieldPasswordotpRecovery:
+		m.ClearPasswordotpRecovery()
+		return nil
 	case passwordstore.FieldSubjectSourceRef:
 		m.ClearSubjectSourceRef()
 		return nil
@@ -3447,6 +3534,9 @@ func (m *PasswordStoreMutation) ResetField(name string) error {
 		return nil
 	case passwordstore.FieldPasswordotpExpiredAt:
 		m.ResetPasswordotpExpiredAt()
+		return nil
+	case passwordstore.FieldPasswordotpRecovery:
+		m.ResetPasswordotpRecovery()
 		return nil
 	case passwordstore.FieldSubjectType:
 		m.ResetSubjectType()

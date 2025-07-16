@@ -14,7 +14,14 @@ func entToAttempt(dbAttempt *ent.LoginAttempt) *domain.LoginAttempt {
 }
 
 func entToPasswordStore(dbPasswordStore *ent.PasswordStore) *domain.PasswordStore {
-	pass := &domain.PasswordStore{}
-	model.MustCopy(dbPasswordStore, pass)
-	return pass
+	passStore := &domain.PasswordStore{}
+	model.MustCopy(dbPasswordStore, passStore)
+
+	// Manualy copy because sensitive fields are not iteratable.
+	// passStore.Password = dbPasswordStore.Password
+	// passStore.Passwordotp = dbPasswordStore.Passwordotp
+	// passStore.PasswordotpRecovery = dbPasswordStore.PasswordotpRecovery
+	// passStore.Passwordtmp = dbPasswordStore.Passwordtmp
+
+	return passStore
 }

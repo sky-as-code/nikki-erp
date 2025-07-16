@@ -539,6 +539,16 @@ func PasswordotpExpiredAtNotNil() predicate.PasswordStore {
 	return predicate.PasswordStore(sql.FieldNotNull(FieldPasswordotpExpiredAt))
 }
 
+// PasswordotpRecoveryIsNil applies the IsNil predicate on the "passwordotp_recovery" field.
+func PasswordotpRecoveryIsNil() predicate.PasswordStore {
+	return predicate.PasswordStore(sql.FieldIsNull(FieldPasswordotpRecovery))
+}
+
+// PasswordotpRecoveryNotNil applies the NotNil predicate on the "passwordotp_recovery" field.
+func PasswordotpRecoveryNotNil() predicate.PasswordStore {
+	return predicate.PasswordStore(sql.FieldNotNull(FieldPasswordotpRecovery))
+}
+
 // SubjectTypeEQ applies the EQ predicate on the "subject_type" field.
 func SubjectTypeEQ(v string) predicate.PasswordStore {
 	return predicate.PasswordStore(sql.FieldEQ(FieldSubjectType, v))

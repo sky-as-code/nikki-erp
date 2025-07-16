@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
@@ -29,6 +30,7 @@ func (this *PasswordStoreEntRepository) Create(ctx context.Context, pass domain.
 		SetNillablePasswordExpiredAt(pass.PasswordExpiredAt).
 		SetNillablePasswordotp(pass.Passwordotp).
 		SetNillablePasswordotpExpiredAt(pass.PasswordotpExpiredAt).
+		SetPasswordotpRecovery(pass.PasswordotpRecovery).
 		SetNillablePasswordtmp(pass.Passwordtmp).
 		SetNillablePasswordtmpExpiredAt(pass.PasswordtmpExpiredAt).
 		SetNillableSubjectSourceRef(pass.SubjectSourceRef).
@@ -36,7 +38,6 @@ func (this *PasswordStoreEntRepository) Create(ctx context.Context, pass domain.
 		SetSubjectType(pass.SubjectType.String())
 
 	if pass.Password != nil {
-		pass.PasswordUpdatedAt = util.ToPtr(time.Now())
 		creation = creation.
 			SetPassword(*pass.Password).
 			SetPasswordUpdatedAt(*pass.PasswordUpdatedAt)
@@ -46,33 +47,47 @@ func (this *PasswordStoreEntRepository) Create(ctx context.Context, pass domain.
 }
 
 func (this *PasswordStoreEntRepository) Update(ctx context.Context, pass domain.PasswordStore) (*domain.PasswordStore, error) {
-	update := this.client.PasswordStore.UpdateOneID(*pass.Id).
-		SetNillablePasswordExpiredAt(pass.PasswordExpiredAt)
+	update := this.client.PasswordStore.UpdateOneID(*pass.Id)
 
 	if pass.Password != nil {
 		pass.PasswordUpdatedAt = util.ToPtr(time.Now())
 		update = update.
 			SetPassword(*pass.Password).
-			SetPasswordUpdatedAt(*pass.PasswordUpdatedAt)
+			SetPasswordUpdatedAt(*pass.PasswordUpdatedAt).
+			SetNillablePasswordExpiredAt(pass.PasswordExpiredAt)
 	}
 
 	if pass.Passwordotp != nil {
-		update = update.
-			SetNillablePasswordotp(pass.Passwordotp).
-			SetNillablePasswordotpExpiredAt(pass.PasswordotpExpiredAt)
-	} else {
-		update = update.ClearPasswordotp().ClearPasswordotpExpiredAt()
+		if len(*pass.Passwordotp) > 0 {
+			update = update.
+				SetPasswordotp(*pass.Passwordotp).
+				SetPasswordotpExpiredAt(*pass.PasswordotpExpiredAt)
+		} else {
+			update = update.ClearPasswordotp().ClearPasswordotpExpiredAt()
+		}
+	}
+
+	// TODO: Refactor this
+	if pass.PasswordotpRecovery != nil {
+		if len(pass.PasswordotpRecovery) > 0 {
+			update = update.
+				SetPasswordotpRecovery(pass.PasswordotpRecovery)
+		} else {
+			update = update.ClearPasswordotpRecovery()
+		}
 	}
 
 	if pass.Passwordtmp != nil {
-		update = update.
-			SetNillablePasswordtmp(pass.Passwordtmp).
-			SetNillablePasswordtmpExpiredAt(pass.PasswordtmpExpiredAt)
-	} else {
-		update = update.ClearPasswordtmp().ClearPasswordtmpExpiredAt()
+		if len(*pass.Passwordtmp) > 0 {
+			update = update.
+				SetPasswordtmp(*pass.Passwordtmp).
+				SetPasswordtmpExpiredAt(*pass.PasswordtmpExpiredAt)
+		} else {
+			update = update.ClearPasswordtmp().ClearPasswordtmpExpiredAt()
+		}
 	}
 
-	if pass.PasswordExpiredAt == nil {
+	if pass.PasswordExpiredAt != nil && *pass.PasswordExpiredAt == model.ZeroTime {
 		update = update.ClearPasswordExpiredAt()
 	}
 
@@ -92,13 +107,13 @@ func (this *PasswordStoreEntRepository) FindBySubject(ctx context.Context, param
 func BuildPasswordStoreDescriptor() *orm.EntityDescriptor {
 	entity := ent.PasswordStore{}
 	builder := orm.DescribeEntity(entPass.Label).
+		/*
+		 * DO NOT include sensitive fields in the descriptor (passwords, recovery codes, etc.)
+		 */
 		Field(entPass.FieldID, entity.ID).
-		Field(entPass.FieldPassword, entity.Password).
 		Field(entPass.FieldPasswordExpiredAt, entity.PasswordExpiredAt).
 		Field(entPass.FieldPasswordUpdatedAt, entity.PasswordUpdatedAt).
-		Field(entPass.FieldPasswordotp, entity.Passwordotp).
 		Field(entPass.FieldPasswordotpExpiredAt, entity.PasswordotpExpiredAt).
-		Field(entPass.FieldPasswordtmp, entity.Passwordtmp).
 		Field(entPass.FieldPasswordtmpExpiredAt, entity.PasswordtmpExpiredAt).
 		Field(entPass.FieldSubjectRef, entity.SubjectRef).
 		Field(entPass.FieldSubjectType, entity.SubjectType).

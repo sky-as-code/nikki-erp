@@ -54,15 +54,12 @@ var updateUserCommandType = cqrs.RequestType{
 }
 
 type UpdateUserCommand struct {
-	Id                 model.Id   `param:"id" json:"id"`
-	AvatarUrl          *string    `json:"avatarUrl"`
-	DisplayName        *string    `json:"displayName"`
-	Email              *string    `json:"email"`
-	Etag               model.Etag `json:"etag"`
-	MustChangePassword *bool      `json:"mustChangePassword"`
-	Password           *string    `json:"password"`
-	StatusId           *model.Id  `json:"statusId"`
-	StatusValue        *string    `json:"statusValue"`
+	Id          model.Id           `param:"id" json:"id"`
+	AvatarUrl   *string            `json:"avatarUrl"`
+	DisplayName *string            `json:"displayName"`
+	Email       *string            `json:"email"`
+	Etag        model.Etag         `json:"etag"`
+	Status      *domain.UserStatus `json:"statusValue"`
 }
 
 func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
@@ -206,6 +203,39 @@ func (this GetUserByEmailQuery) Validate() ft.ValidationErrors {
 }
 
 type GetUserByEmailResult = crud.OpResult[*domain.User]
+
+var mustGetActiveUserQueryType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "mustGetActiveUser",
+}
+
+type MustGetActiveUserQuery struct {
+	Id    *string `json:"id"`
+	Email *string `json:"email"`
+}
+
+func (MustGetActiveUserQuery) CqrsRequestType() cqrs.RequestType {
+	return mustGetActiveUserQueryType
+}
+
+func (this MustGetActiveUserQuery) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdPtrValidateRule(&this.Id, this.Email == nil),
+		val.Field(&this.Email,
+			val.NotNilWhen(this.Id == nil),
+			val.When(this.Email != nil,
+				val.NotEmpty,
+				val.IsEmail,
+				val.Length(5, model.MODEL_RULE_EMAIL_LENGTH),
+			),
+		),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type MustGetActiveUserResult = crud.OpResult[*domain.User]
 
 var searchUsersQueryType = cqrs.RequestType{
 	Module:    "identity",
