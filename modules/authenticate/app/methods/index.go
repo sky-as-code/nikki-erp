@@ -5,7 +5,14 @@ import (
 )
 
 var allMethods = []it.LoginMethod{
+	// 1. mTLS
+	// 2. QR Code
+	// 3. Hard key / Passkey
+	// 4. Password + Temp Password
 	&LoginMethodPassword{},
+	// 5. Captcha
+	&LoginMethodCaptcha{},
+	// 6. Password OTP
 }
 var methodMap map[string]it.LoginMethod
 var methodNames []string

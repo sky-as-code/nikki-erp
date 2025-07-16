@@ -5,8 +5,10 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	domIdent "github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -34,7 +36,8 @@ func (this *subjectHelper) assertSubjectExists(ctx context.Context, subjectType 
 func (this *subjectHelper) assertUserExists(ctx context.Context, username string, vErrs *ft.ValidationErrors) (*loginSubject, error) {
 	result := itUser.GetUserByEmailResult{}
 	err := this.cqrsBus.Request(ctx, &itUser.GetUserByEmailQuery{
-		Email: username,
+		Email:  username,
+		Status: util.ToPtr(domIdent.UserStatusActive),
 	}, &result)
 	if err != nil {
 		return nil, err

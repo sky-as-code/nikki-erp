@@ -70,7 +70,7 @@ func (UserMixin) Fields() []ent.Field {
 		field.Time("password_changed_at").
 			Comment("Last password change timestamp"),
 
-		field.String("status_id"),
+		field.String("status"),
 
 		field.Time("updated_at").
 			Optional().
@@ -108,11 +108,6 @@ func (User) Edges() []ent.Edge {
 
 		edge.To("orgs", Organization.Type).
 			Through("user_orgs", UserOrg.Type),
-
-		edge.To("user_status", IdentStatusEnum.Type).
-			Field("status_id").
-			Unique().
-			Required(),
 	}
 }
 

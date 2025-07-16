@@ -12,9 +12,6 @@ type Group = func(*sql.Selector)
 // HierarchyLevel is the predicate function for hierarchylevel builders.
 type HierarchyLevel = func(*sql.Selector)
 
-// IdentStatusEnum is the predicate function for identstatusenum builders.
-type IdentStatusEnum = func(*sql.Selector)
-
 // Organization is the predicate function for organization builders.
 type Organization = func(*sql.Selector)
 

@@ -24,6 +24,7 @@ type LoginAttempt struct {
 	SubjectRef       *model.Id      `json:"subjectRef"`
 	SubjectSourceRef *string        `json:"subjectSourceRef"`
 	Status           *AttemptStatus `json:"status"`
+	Username         *string        `json:"username"`
 }
 
 func (this *LoginAttempt) NextMethod() *string {

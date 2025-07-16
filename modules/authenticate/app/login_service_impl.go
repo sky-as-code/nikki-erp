@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.uber.org/dig"
@@ -45,73 +46,127 @@ type LoginServiceImpl struct {
 	attemptDurationSecs int
 }
 
-func (this *LoginServiceImpl) Authenticate(ctx context.Context, cmd it.AuthenticateCommand) (result *it.AuthenticateResult, err error) {
+func (s *LoginServiceImpl) Authenticate(ctx context.Context, cmd it.AuthenticateCommand) (result *it.AuthenticateResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "authenticate"); e != nil {
 			err = e
 		}
 	}()
 
-	var attempt *domain.LoginAttempt
-	var subject *loginSubject
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			attempt, err = this.assertAttemptExists(ctx, cmd.AttemptId, vErrs)
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			this.assertAttemptValid(ctx, attempt, vErrs)
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			subject, err = this.subjectHelper.assertSubjectExists(ctx, *attempt.SubjectType, cmd.Username, vErrs)
-			return err
-		}).
-		End()
+	attempt, subject, vErrs, err := s.validateAuthInput(ctx, cmd)
 	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
-		return &it.AuthenticateResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
+		return &it.AuthenticateResult{ClientError: vErrs.ToClientError()}, nil
 	}
 
-	method := m.GetLoginMethod(*attempt.CurrentMethod)
-	isAuthenticated, err := method.Execute(ctx, it.LoginParam{
-		SubjectType: *attempt.SubjectType,
-		Username:    subject.Username,
-		Password:    cmd.Password,
-	})
+	done, err := s.performLoginMethods(ctx, cmd, attempt, subject, vErrs)
 	ft.PanicOnErr(err)
 
-	if !isAuthenticated {
-		return &it.AuthenticateResult{
-			Data: &it.AuthenticateResultData{
-				Done: false,
-			},
-			HasData: true,
-		}, nil
+	if vErrs.Count() > 0 {
+		return &it.AuthenticateResult{ClientError: vErrs.ToClientError()}, nil
 	}
 
-	nextMethod := attempt.NextMethod()
-	done := false
-	if nextMethod == nil {
-		done = true
-		attempt.CurrentMethod = nil
-		attempt.Status = util.ToPtr(domain.AttemptStatusSuccess)
-	} else {
-		attempt.CurrentMethod = nextMethod
+	if err := s.updateAttemptStatus(ctx, attempt); err != nil {
+		return nil, err
 	}
 
-	attResult, err := this.attemptSvc.UpdateLoginAttempt(ctx, it.UpdateLoginAttemptCommand{
+	return s.buildAuthenticateResult(done, attempt), nil
+}
+
+func (s *LoginServiceImpl) validateAuthInput(ctx context.Context, cmd it.AuthenticateCommand) (*domain.LoginAttempt, *loginSubject, *ft.ValidationErrors, error) {
+	var attempt *domain.LoginAttempt
+	var subject *loginSubject
+	flow := val.StartValidationFlow()
+
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			var err error
+			attempt, err = s.assertAttemptExists(ctx, cmd.AttemptId, vErrs)
+			return err
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			s.assertAttemptValid(ctx, attempt, vErrs)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			var err error
+			subject, err = s.subjectHelper.assertSubjectExists(ctx, *attempt.SubjectType, *attempt.Username, vErrs)
+			return err
+		}).
+		End()
+
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return attempt, subject, vErrs, nil
+}
+
+func (s *LoginServiceImpl) performLoginMethods(
+	ctx context.Context,
+	cmd it.AuthenticateCommand,
+	attempt *domain.LoginAttempt,
+	subject *loginSubject,
+	vErrs *ft.ValidationErrors,
+) (done bool, err error) {
+
+	requiredMethod := *attempt.CurrentMethod
+
+	for {
+		methodName := *attempt.CurrentMethod
+		submittedPassword, ok := cmd.Passwords[methodName]
+
+		if !ok {
+			if methodName == requiredMethod {
+				vErrs.Appendf(fmt.Sprintf("passwords.%s", methodName), "%s mismatched", methodName)
+			}
+			break
+		}
+
+		method := m.GetLoginMethod(methodName)
+		var isAuthenticated bool
+		var reason *string
+		isAuthenticated, reason, err = method.Execute(ctx, it.LoginParam{
+			SubjectType: *attempt.SubjectType,
+			Username:    *attempt.Username,
+			Password:    submittedPassword,
+		})
+		if err != nil {
+			return false, err
+		}
+
+		if !isAuthenticated {
+			vErrs.Append(fmt.Sprintf("passwords.%s", methodName), *reason)
+			return false, nil
+		}
+
+		if nextMethod := attempt.NextMethod(); nextMethod == nil {
+			attempt.CurrentMethod = nil
+			attempt.Status = util.ToPtr(domain.AttemptStatusSuccess)
+			return true, nil
+		} else {
+			attempt.CurrentMethod = nextMethod
+		}
+	}
+	return false, nil
+}
+
+func (s *LoginServiceImpl) updateAttemptStatus(ctx context.Context, attempt *domain.LoginAttempt) error {
+	attResult, err := s.attemptSvc.UpdateLoginAttempt(ctx, it.UpdateLoginAttemptCommand{
 		Id:            *attempt.Id,
 		CurrentMethod: attempt.CurrentMethod,
 		Status:        attempt.Status,
 	})
-	ft.PanicOnErr(err)
-	ft.PanicOnErr(attResult.ClientError)
+	if err != nil {
+		return err
+	}
+	if attResult.ClientError != nil {
+		return attResult.ClientError
+	}
+	return nil
+}
 
+func (s *LoginServiceImpl) buildAuthenticateResult(done bool, attempt *domain.LoginAttempt) *it.AuthenticateResult {
 	if done {
 		return &it.AuthenticateResult{
 			Data: &it.AuthenticateResultData{
@@ -124,15 +179,15 @@ func (this *LoginServiceImpl) Authenticate(ctx context.Context, cmd it.Authentic
 				},
 			},
 			HasData: true,
-		}, nil
+		}
 	}
 	return &it.AuthenticateResult{
 		Data: &it.AuthenticateResultData{
 			Done:     false,
-			NextStep: nextMethod,
+			NextStep: attempt.CurrentMethod,
 		},
 		HasData: true,
-	}, nil
+	}
 }
 
 func (this *LoginServiceImpl) assertAttemptExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (attempt *domain.LoginAttempt, err error) {

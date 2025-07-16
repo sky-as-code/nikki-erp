@@ -37,6 +37,8 @@ const (
 	FieldSubjectSourceRef = "subject_source_ref"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldUsername holds the string denoting the username field in the database.
+	FieldUsername = "username"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
 	// Table holds the table name of the loginattempt in the database.
@@ -58,6 +60,7 @@ var Columns = []string{
 	FieldSubjectRef,
 	FieldSubjectSourceRef,
 	FieldStatus,
+	FieldUsername,
 	FieldUpdatedAt,
 }
 
@@ -137,6 +140,11 @@ func BySubjectSourceRef(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByUsername orders the results by the username field.
+func ByUsername(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUsername, opts...).ToFunc()
 }
 
 // ByUpdatedAt orders the results by the updated_at field.

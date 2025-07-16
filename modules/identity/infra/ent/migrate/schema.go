@@ -73,27 +73,6 @@ var (
 			},
 		},
 	}
-	// CoreEnumsColumns holds the columns for the "core_enums" table.
-	CoreEnumsColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeString},
-		{Name: "etag", Type: field.TypeString},
-		{Name: "label", Type: field.TypeJSON},
-		{Name: "value", Type: field.TypeString, Nullable: true},
-		{Name: "type", Type: field.TypeString},
-	}
-	// CoreEnumsTable holds the schema information for the "core_enums" table.
-	CoreEnumsTable = &schema.Table{
-		Name:       "core_enums",
-		Columns:    CoreEnumsColumns,
-		PrimaryKey: []*schema.Column{CoreEnumsColumns[0]},
-		Indexes: []*schema.Index{
-			{
-				Name:    "enum_value_type",
-				Unique:  true,
-				Columns: []*schema.Column{CoreEnumsColumns[3], CoreEnumsColumns[4]},
-			},
-		},
-	}
 	// IdentOrganizationsColumns holds the columns for the "ident_organizations" table.
 	IdentOrganizationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
@@ -104,23 +83,15 @@ var (
 		{Name: "legal_name", Type: field.TypeString, Nullable: true},
 		{Name: "phone_number", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
+		{Name: "status", Type: field.TypeString},
 		{Name: "slug", Type: field.TypeString, Unique: true},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
-		{Name: "status_id", Type: field.TypeString},
 	}
 	// IdentOrganizationsTable holds the schema information for the "ident_organizations" table.
 	IdentOrganizationsTable = &schema.Table{
 		Name:       "ident_organizations",
 		Columns:    IdentOrganizationsColumns,
 		PrimaryKey: []*schema.Column{IdentOrganizationsColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "ident_organizations_core_enums_org_status",
-				Columns:    []*schema.Column{IdentOrganizationsColumns[10]},
-				RefColumns: []*schema.Column{CoreEnumsColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
 	}
 	// IdentUsersColumns holds the columns for the "ident_users" table.
 	IdentUsersColumns = []*schema.Column{
@@ -137,9 +108,9 @@ var (
 		{Name: "must_change_password", Type: field.TypeBool, Default: true},
 		{Name: "password_hash", Type: field.TypeString},
 		{Name: "password_changed_at", Type: field.TypeTime},
+		{Name: "status", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "hierarchy_id", Type: field.TypeString, Nullable: true},
-		{Name: "status_id", Type: field.TypeString},
 	}
 	// IdentUsersTable holds the schema information for the "ident_users" table.
 	IdentUsersTable = &schema.Table{
@@ -149,15 +120,9 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "ident_users_ident_hierarchy_levels_hierarchy",
-				Columns:    []*schema.Column{IdentUsersColumns[14]},
+				Columns:    []*schema.Column{IdentUsersColumns[15]},
 				RefColumns: []*schema.Column{IdentHierarchyLevelsColumns[0]},
 				OnDelete:   schema.SetNull,
-			},
-			{
-				Symbol:     "ident_users_core_enums_user_status",
-				Columns:    []*schema.Column{IdentUsersColumns[15]},
-				RefColumns: []*schema.Column{CoreEnumsColumns[0]},
-				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -222,7 +187,6 @@ var (
 	Tables = []*schema.Table{
 		IdentGroupsTable,
 		IdentHierarchyLevelsTable,
-		CoreEnumsTable,
 		IdentOrganizationsTable,
 		IdentUsersTable,
 		IdentUserGroupRelTable,
@@ -240,15 +204,10 @@ func init() {
 	IdentHierarchyLevelsTable.Annotation = &entsql.Annotation{
 		Table: "ident_hierarchy_levels",
 	}
-	CoreEnumsTable.Annotation = &entsql.Annotation{
-		Table: "core_enums",
-	}
-	IdentOrganizationsTable.ForeignKeys[0].RefTable = CoreEnumsTable
 	IdentOrganizationsTable.Annotation = &entsql.Annotation{
 		Table: "ident_organizations",
 	}
 	IdentUsersTable.ForeignKeys[0].RefTable = IdentHierarchyLevelsTable
-	IdentUsersTable.ForeignKeys[1].RefTable = CoreEnumsTable
 	IdentUsersTable.Annotation = &entsql.Annotation{
 		Table: "ident_users",
 	}

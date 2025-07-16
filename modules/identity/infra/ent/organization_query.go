@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -31,7 +30,6 @@ type OrganizationQuery struct {
 	withUsers       *UserQuery
 	withHierarchies *HierarchyLevelQuery
 	withGroups      *GroupQuery
-	withOrgStatus   *IdentStatusEnumQuery
 	withUserOrgs    *UserOrgQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -128,28 +126,6 @@ func (oq *OrganizationQuery) QueryGroups() *GroupQuery {
 			sqlgraph.From(organization.Table, organization.FieldID, selector),
 			sqlgraph.To(group.Table, group.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, organization.GroupsTable, organization.GroupsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryOrgStatus chains the current query on the "org_status" edge.
-func (oq *OrganizationQuery) QueryOrgStatus() *IdentStatusEnumQuery {
-	query := (&IdentStatusEnumClient{config: oq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := oq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := oq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(organization.Table, organization.FieldID, selector),
-			sqlgraph.To(identstatusenum.Table, identstatusenum.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, organization.OrgStatusTable, organization.OrgStatusColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
 		return fromU, nil
@@ -374,7 +350,6 @@ func (oq *OrganizationQuery) Clone() *OrganizationQuery {
 		withUsers:       oq.withUsers.Clone(),
 		withHierarchies: oq.withHierarchies.Clone(),
 		withGroups:      oq.withGroups.Clone(),
-		withOrgStatus:   oq.withOrgStatus.Clone(),
 		withUserOrgs:    oq.withUserOrgs.Clone(),
 		// clone intermediate query.
 		sql:  oq.sql.Clone(),
@@ -412,17 +387,6 @@ func (oq *OrganizationQuery) WithGroups(opts ...func(*GroupQuery)) *Organization
 		opt(query)
 	}
 	oq.withGroups = query
-	return oq
-}
-
-// WithOrgStatus tells the query-builder to eager-load the nodes that are connected to
-// the "org_status" edge. The optional arguments are used to configure the query builder of the edge.
-func (oq *OrganizationQuery) WithOrgStatus(opts ...func(*IdentStatusEnumQuery)) *OrganizationQuery {
-	query := (&IdentStatusEnumClient{config: oq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	oq.withOrgStatus = query
 	return oq
 }
 
@@ -515,11 +479,10 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	var (
 		nodes       = []*Organization{}
 		_spec       = oq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [4]bool{
 			oq.withUsers != nil,
 			oq.withHierarchies != nil,
 			oq.withGroups != nil,
-			oq.withOrgStatus != nil,
 			oq.withUserOrgs != nil,
 		}
 	)
@@ -559,12 +522,6 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		if err := oq.loadGroups(ctx, query, nodes,
 			func(n *Organization) { n.Edges.Groups = []*Group{} },
 			func(n *Organization, e *Group) { n.Edges.Groups = append(n.Edges.Groups, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := oq.withOrgStatus; query != nil {
-		if err := oq.loadOrgStatus(ctx, query, nodes, nil,
-			func(n *Organization, e *IdentStatusEnum) { n.Edges.OrgStatus = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -702,35 +659,6 @@ func (oq *OrganizationQuery) loadGroups(ctx context.Context, query *GroupQuery, 
 	}
 	return nil
 }
-func (oq *OrganizationQuery) loadOrgStatus(ctx context.Context, query *IdentStatusEnumQuery, nodes []*Organization, init func(*Organization), assign func(*Organization, *IdentStatusEnum)) error {
-	ids := make([]string, 0, len(nodes))
-	nodeids := make(map[string][]*Organization)
-	for i := range nodes {
-		fk := nodes[i].StatusID
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(identstatusenum.IDIn(ids...))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
-		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "status_id" returned %v`, n.ID)
-		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
-	}
-	return nil
-}
 func (oq *OrganizationQuery) loadUserOrgs(ctx context.Context, query *UserOrgQuery, nodes []*Organization, init func(*Organization), assign func(*Organization, *UserOrg)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*Organization)
@@ -786,9 +714,6 @@ func (oq *OrganizationQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != organization.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
-		}
-		if oq.withOrgStatus != nil {
-			_spec.Node.AddColumnOnce(organization.FieldStatusID)
 		}
 	}
 	if ps := oq.predicates; len(ps) > 0 {

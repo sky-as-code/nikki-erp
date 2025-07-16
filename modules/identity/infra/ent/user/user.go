@@ -40,8 +40,8 @@ const (
 	FieldPasswordHash = "password_hash"
 	// FieldPasswordChangedAt holds the string denoting the password_changed_at field in the database.
 	FieldPasswordChangedAt = "password_changed_at"
-	// FieldStatusID holds the string denoting the status_id field in the database.
-	FieldStatusID = "status_id"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
@@ -50,8 +50,6 @@ const (
 	EdgeHierarchy = "hierarchy"
 	// EdgeOrgs holds the string denoting the orgs edge name in mutations.
 	EdgeOrgs = "orgs"
-	// EdgeUserStatus holds the string denoting the user_status edge name in mutations.
-	EdgeUserStatus = "user_status"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
 	EdgeUserGroups = "user_groups"
 	// EdgeUserOrgs holds the string denoting the user_orgs edge name in mutations.
@@ -75,13 +73,6 @@ const (
 	// OrgsInverseTable is the table name for the Organization entity.
 	// It exists in this package in order to avoid circular dependency with the "organization" package.
 	OrgsInverseTable = "ident_organizations"
-	// UserStatusTable is the table that holds the user_status relation/edge.
-	UserStatusTable = "ident_users"
-	// UserStatusInverseTable is the table name for the IdentStatusEnum entity.
-	// It exists in this package in order to avoid circular dependency with the "identstatusenum" package.
-	UserStatusInverseTable = "core_enums"
-	// UserStatusColumn is the table column denoting the user_status relation/edge.
-	UserStatusColumn = "status_id"
 	// UserGroupsTable is the table that holds the user_groups relation/edge.
 	UserGroupsTable = "ident_user_group_rel"
 	// UserGroupsInverseTable is the table name for the UserGroup entity.
@@ -114,7 +105,7 @@ var Columns = []string{
 	FieldMustChangePassword,
 	FieldPasswordHash,
 	FieldPasswordChangedAt,
-	FieldStatusID,
+	FieldStatus,
 	FieldUpdatedAt,
 }
 
@@ -219,9 +210,9 @@ func ByPasswordChangedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPasswordChangedAt, opts...).ToFunc()
 }
 
-// ByStatusID orders the results by the status_id field.
-func ByStatusID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatusID, opts...).ToFunc()
+// ByStatus orders the results by the status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
 // ByUpdatedAt orders the results by the updated_at field.
@@ -261,13 +252,6 @@ func ByOrgsCount(opts ...sql.OrderTermOption) OrderOption {
 func ByOrgs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newOrgsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByUserStatusField orders the results by user_status field.
-func ByUserStatusField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newUserStatusStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -335,19 +319,6 @@ func newOrgsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OrgsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, OrgsTable, OrgsPrimaryKey...),
-	)
-}
-
-// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
-func NewUserStatusStepNikki() *sqlgraph.Step {
-	return newUserStatusStep()
-}
-
-func newUserStatusStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(UserStatusInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, UserStatusTable, UserStatusColumn),
 	)
 }
 

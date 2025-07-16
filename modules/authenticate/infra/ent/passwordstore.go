@@ -18,11 +18,11 @@ type PasswordStore struct {
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
 	// Password holds the value of the "password" field.
-	Password string `json:"password,omitempty"`
+	Password *string `json:"password,omitempty"`
 	// PasswordExpiredAt holds the value of the "password_expired_at" field.
 	PasswordExpiredAt *time.Time `json:"password_expired_at,omitempty"`
 	// PasswordUpdatedAt holds the value of the "password_updated_at" field.
-	PasswordUpdatedAt time.Time `json:"password_updated_at,omitempty"`
+	PasswordUpdatedAt *time.Time `json:"password_updated_at,omitempty"`
 	// Passwordtmp holds the value of the "passwordtmp" field.
 	Passwordtmp *string `json:"passwordtmp,omitempty"`
 	// PasswordtmpExpiredAt holds the value of the "passwordtmp_expired_at" field.
@@ -74,7 +74,8 @@ func (ps *PasswordStore) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field password", values[i])
 			} else if value.Valid {
-				ps.Password = value.String
+				ps.Password = new(string)
+				*ps.Password = value.String
 			}
 		case passwordstore.FieldPasswordExpiredAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -87,7 +88,8 @@ func (ps *PasswordStore) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field password_updated_at", values[i])
 			} else if value.Valid {
-				ps.PasswordUpdatedAt = value.Time
+				ps.PasswordUpdatedAt = new(time.Time)
+				*ps.PasswordUpdatedAt = value.Time
 			}
 		case passwordstore.FieldPasswordtmp:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -172,16 +174,20 @@ func (ps *PasswordStore) String() string {
 	var builder strings.Builder
 	builder.WriteString("PasswordStore(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", ps.ID))
-	builder.WriteString("password=")
-	builder.WriteString(ps.Password)
+	if v := ps.Password; v != nil {
+		builder.WriteString("password=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	if v := ps.PasswordExpiredAt; v != nil {
 		builder.WriteString("password_expired_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	builder.WriteString("password_updated_at=")
-	builder.WriteString(ps.PasswordUpdatedAt.Format(time.ANSIC))
+	if v := ps.PasswordUpdatedAt; v != nil {
+		builder.WriteString("password_updated_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	if v := ps.Passwordtmp; v != nil {
 		builder.WriteString("passwordtmp=")

@@ -3,7 +3,6 @@ package repository
 import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 )
@@ -31,12 +30,6 @@ func entToGroups(dbGroups []*ent.Group) []domain.Group {
 func entToOrganization(dbOrg *ent.Organization) *domain.Organization {
 	org := &domain.Organization{}
 	model.MustCopy(dbOrg, org)
-
-	if dbOrg.Edges.OrgStatus != nil {
-		org.StatusValue = dbOrg.Edges.OrgStatus.Value
-		org.Status = entToIdentityStatus(dbOrg.Edges.OrgStatus)
-	}
-
 	return org
 }
 
@@ -64,11 +57,6 @@ func entToUser(dbUser *ent.User) *domain.User {
 	if dbUser.Edges.Orgs != nil {
 		user.Orgs = entToOrganizations(dbUser.Edges.Orgs)
 	}
-
-	if dbUser.Edges.UserStatus != nil {
-		user.StatusValue = dbUser.Edges.UserStatus.Value
-		user.Status = entToIdentityStatus(dbUser.Edges.UserStatus)
-	}
 	return user
 }
 
@@ -79,10 +67,6 @@ func entToUsers(dbUsers []*ent.User) []domain.User {
 	return array.Map(dbUsers, func(entUser *ent.User) domain.User {
 		return *entToUser(entUser)
 	})
-}
-
-func entToIdentityStatus(dbStatus *ent.IdentStatusEnum) *domain.IdentityStatus {
-	return domain.WrapIdentStatus(enum.AnyToEnum(*dbStatus))
 }
 
 func entToHierarchyLevel(dbHierarchy *ent.HierarchyLevel) *domain.HierarchyLevel {

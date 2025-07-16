@@ -12,7 +12,6 @@ import (
 func InitRepositories() error {
 	err := stdErr.Join(
 		orm.RegisterEntity(BuildUserDescriptor()),
-		orm.RegisterEntity(BuildUserStatusDescriptor()),
 		orm.RegisterEntity(BuildGroupDescriptor()),
 	)
 	if err != nil {

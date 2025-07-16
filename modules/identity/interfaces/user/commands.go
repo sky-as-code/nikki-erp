@@ -10,7 +10,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
@@ -21,7 +20,7 @@ func init() {
 	req = (*UpdateUserCommand)(nil)
 	req = (*DeleteUserCommand)(nil)
 	req = (*GetUserByIdQuery)(nil)
-	req = (*ListUserStatusesQuery)(nil)
+	req = (*GetUserByEmailQuery)(nil)
 	req = (*SearchUsersQuery)(nil)
 	req = (*UserExistsCommand)(nil)
 	req = (*UserExistsMultiCommand)(nil)
@@ -161,7 +160,8 @@ var getUserByIdQueryType = cqrs.RequestType{
 }
 
 type GetUserByIdQuery struct {
-	Id model.Id `param:"id" json:"id"`
+	Id     model.Id           `param:"id" json:"id"`
+	Status *domain.UserStatus `json:"status"`
 }
 
 func (GetUserByIdQuery) CqrsRequestType() cqrs.RequestType {
@@ -185,7 +185,8 @@ var getUserByEmailQueryType = cqrs.RequestType{
 }
 
 type GetUserByEmailQuery struct {
-	Email string `param:"email" json:"email"`
+	Email  string             `param:"email" json:"email"`
+	Status *domain.UserStatus `json:"status"`
 }
 
 func (GetUserByEmailQuery) CqrsRequestType() cqrs.RequestType {
@@ -241,20 +242,3 @@ func (this SearchUsersQuery) Validate() ft.ValidationErrors {
 
 type SearchUsersResultData = crud.PagedResult[domain.User]
 type SearchUsersResult = crud.OpResult[*SearchUsersResultData]
-
-var listUserStatusesCommandType = cqrs.RequestType{
-	Module:    "identity",
-	Submodule: "user",
-	Action:    "listUserStatuses",
-}
-
-type ListUserStatusesQuery struct {
-	enum.ListDerivedEnumsQuery
-}
-
-func (ListUserStatusesQuery) CqrsRequestType() cqrs.RequestType {
-	return listUserStatusesCommandType
-}
-
-type ListIdentStatusesResultData = crud.PagedResult[domain.IdentityStatus]
-type ListIdentStatusesResult = crud.OpResult[*ListIdentStatusesResultData]

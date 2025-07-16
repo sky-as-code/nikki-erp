@@ -6,7 +6,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
-	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
 func NewOrganizationHandler(orgSvc itOrg.OrganizationService, logger logging.LoggerService) *OrganizationHandler {
@@ -39,8 +38,4 @@ func (this *OrganizationHandler) GetOrganizationBySlug(ctx context.Context, pack
 
 func (this *OrganizationHandler) SearchOrganizations(ctx context.Context, packet *cqrs.RequestPacket[itOrg.SearchOrganizationsQuery]) (*cqrs.Reply[itOrg.SearchOrganizationsResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.OrgSvc.SearchOrganizations)
-}
-
-func (this *OrganizationHandler) ListOrgStatuses(ctx context.Context, packet *cqrs.RequestPacket[itOrg.ListOrgStatusesQuery]) (*cqrs.Reply[itUser.ListIdentStatusesResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.OrgSvc.ListOrgStatuses)
 }

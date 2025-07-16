@@ -36,7 +36,8 @@ func (this *AttemptEntRepository) Create(ctx context.Context, attempt domain.Log
 		SetStatus(attempt.Status.String()).
 		SetSubjectRef(*attempt.SubjectRef).
 		SetSubjectType(attempt.SubjectType.String()).
-		SetNillableSubjectSourceRef(attempt.SubjectSourceRef)
+		SetNillableSubjectSourceRef(attempt.SubjectSourceRef).
+		SetUsername(*attempt.Username)
 
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToAttempt)
 }

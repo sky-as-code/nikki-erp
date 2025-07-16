@@ -48,7 +48,7 @@ func (this *loggerImpl) InnerLogger() any {
 	return this.slogger
 }
 
-func (this *loggerImpl) Debug(message string, data any) {
+func (this *loggerImpl) Debug(message string, data Attr) {
 	this.writeLogData(LevelDebug, message, data)
 }
 
@@ -56,7 +56,7 @@ func (this *loggerImpl) Debugf(format string, args ...any) {
 	this.writeLogFormat(LevelDebug, format, args...)
 }
 
-func (this *loggerImpl) Info(message string, data any) {
+func (this *loggerImpl) Info(message string, data Attr) {
 	this.writeLogData(LevelInfo, message, data)
 }
 
@@ -64,7 +64,7 @@ func (this *loggerImpl) Infof(format string, args ...any) {
 	this.writeLogFormat(LevelInfo, format, args...)
 }
 
-func (this *loggerImpl) Warn(message string, data any) {
+func (this *loggerImpl) Warn(message string, data Attr) {
 	this.writeLogData(LevelWarn, message, data)
 }
 
@@ -80,7 +80,7 @@ func (this *loggerImpl) Errorf(format string, args ...any) {
 	this.writeLogFormat(LevelError, format, args...)
 }
 
-func (this *loggerImpl) writeLogData(level Level, message string, data any) {
+func (this *loggerImpl) writeLogData(level Level, message string, data Attr) {
 	fileNameLine := getFileName(skippedCallStackDepth)
 	this.slogger.Log(context.Background(), slogLevelMap[level], message, slog.Any("data", data), slog.String("source", fileNameLine))
 }

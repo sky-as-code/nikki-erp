@@ -42,6 +42,12 @@ func (psu *PasswordStoreUpdate) SetNillablePassword(s *string) *PasswordStoreUpd
 	return psu
 }
 
+// ClearPassword clears the value of the "password" field.
+func (psu *PasswordStoreUpdate) ClearPassword() *PasswordStoreUpdate {
+	psu.mutation.ClearPassword()
+	return psu
+}
+
 // SetPasswordExpiredAt sets the "password_expired_at" field.
 func (psu *PasswordStoreUpdate) SetPasswordExpiredAt(t time.Time) *PasswordStoreUpdate {
 	psu.mutation.SetPasswordExpiredAt(t)
@@ -73,6 +79,12 @@ func (psu *PasswordStoreUpdate) SetNillablePasswordUpdatedAt(t *time.Time) *Pass
 	if t != nil {
 		psu.SetPasswordUpdatedAt(*t)
 	}
+	return psu
+}
+
+// ClearPasswordUpdatedAt clears the value of the "password_updated_at" field.
+func (psu *PasswordStoreUpdate) ClearPasswordUpdatedAt() *PasswordStoreUpdate {
+	psu.mutation.ClearPasswordUpdatedAt()
 	return psu
 }
 
@@ -200,6 +212,9 @@ func (psu *PasswordStoreUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	if value, ok := psu.mutation.Password(); ok {
 		_spec.SetField(passwordstore.FieldPassword, field.TypeString, value)
 	}
+	if psu.mutation.PasswordCleared() {
+		_spec.ClearField(passwordstore.FieldPassword, field.TypeString)
+	}
 	if value, ok := psu.mutation.PasswordExpiredAt(); ok {
 		_spec.SetField(passwordstore.FieldPasswordExpiredAt, field.TypeTime, value)
 	}
@@ -208,6 +223,9 @@ func (psu *PasswordStoreUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if value, ok := psu.mutation.PasswordUpdatedAt(); ok {
 		_spec.SetField(passwordstore.FieldPasswordUpdatedAt, field.TypeTime, value)
+	}
+	if psu.mutation.PasswordUpdatedAtCleared() {
+		_spec.ClearField(passwordstore.FieldPasswordUpdatedAt, field.TypeTime)
 	}
 	if value, ok := psu.mutation.Passwordtmp(); ok {
 		_spec.SetField(passwordstore.FieldPasswordtmp, field.TypeString, value)
@@ -270,6 +288,12 @@ func (psuo *PasswordStoreUpdateOne) SetNillablePassword(s *string) *PasswordStor
 	return psuo
 }
 
+// ClearPassword clears the value of the "password" field.
+func (psuo *PasswordStoreUpdateOne) ClearPassword() *PasswordStoreUpdateOne {
+	psuo.mutation.ClearPassword()
+	return psuo
+}
+
 // SetPasswordExpiredAt sets the "password_expired_at" field.
 func (psuo *PasswordStoreUpdateOne) SetPasswordExpiredAt(t time.Time) *PasswordStoreUpdateOne {
 	psuo.mutation.SetPasswordExpiredAt(t)
@@ -301,6 +325,12 @@ func (psuo *PasswordStoreUpdateOne) SetNillablePasswordUpdatedAt(t *time.Time) *
 	if t != nil {
 		psuo.SetPasswordUpdatedAt(*t)
 	}
+	return psuo
+}
+
+// ClearPasswordUpdatedAt clears the value of the "password_updated_at" field.
+func (psuo *PasswordStoreUpdateOne) ClearPasswordUpdatedAt() *PasswordStoreUpdateOne {
+	psuo.mutation.ClearPasswordUpdatedAt()
 	return psuo
 }
 
@@ -458,6 +488,9 @@ func (psuo *PasswordStoreUpdateOne) sqlSave(ctx context.Context) (_node *Passwor
 	if value, ok := psuo.mutation.Password(); ok {
 		_spec.SetField(passwordstore.FieldPassword, field.TypeString, value)
 	}
+	if psuo.mutation.PasswordCleared() {
+		_spec.ClearField(passwordstore.FieldPassword, field.TypeString)
+	}
 	if value, ok := psuo.mutation.PasswordExpiredAt(); ok {
 		_spec.SetField(passwordstore.FieldPasswordExpiredAt, field.TypeTime, value)
 	}
@@ -466,6 +499,9 @@ func (psuo *PasswordStoreUpdateOne) sqlSave(ctx context.Context) (_node *Passwor
 	}
 	if value, ok := psuo.mutation.PasswordUpdatedAt(); ok {
 		_spec.SetField(passwordstore.FieldPasswordUpdatedAt, field.TypeTime, value)
+	}
+	if psuo.mutation.PasswordUpdatedAtCleared() {
+		_spec.ClearField(passwordstore.FieldPasswordUpdatedAt, field.TypeTime)
 	}
 	if value, ok := psuo.mutation.Passwordtmp(); ok {
 		_spec.SetField(passwordstore.FieldPasswordtmp, field.TypeString, value)

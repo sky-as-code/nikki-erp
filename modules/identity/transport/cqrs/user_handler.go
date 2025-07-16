@@ -48,7 +48,3 @@ func (this *UserHandler) UserExists(ctx context.Context, packet *cqrs.RequestPac
 func (this *UserHandler) UserExistsMulti(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsMultiCommand]) (*cqrs.Reply[it.UserExistsMultiResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.ExistsMulti)
 }
-
-func (this *UserHandler) ListUserStatuses(ctx context.Context, packet *cqrs.RequestPacket[it.ListUserStatusesQuery]) (*cqrs.Reply[it.ListIdentStatusesResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.ListUserStatuses)
-}

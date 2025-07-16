@@ -15,11 +15,15 @@ func (this *LoginMethodPassword) Name() string {
 	return "password"
 }
 
-func (this *LoginMethodPassword) Execute(ctx context.Context, param itLogin.LoginParam) (bool, error) {
-	var result *itPass.IsPasswordMatchedResult
+func (this *LoginMethodPassword) SkipMethod() *itLogin.SkippedMethod {
+	return nil
+}
+
+func (this *LoginMethodPassword) Execute(ctx context.Context, param itLogin.LoginParam) (bool, *string, error) {
+	var result *itPass.VerifyPasswordResult
 	var err error
 	err = deps.Invoke(func(passwordService itPass.PasswordService) error {
-		result, err = passwordService.IsPasswordMatched(ctx, itPass.IsPasswordMatchedQuery{
+		result, err = passwordService.VerifyPassword(ctx, itPass.VerifyPasswordQuery{
 			SubjectType: param.SubjectType,
 			Username:    param.Username,
 			Password:    param.Password,
@@ -27,11 +31,7 @@ func (this *LoginMethodPassword) Execute(ctx context.Context, param itLogin.Logi
 		return err
 	})
 	if err != nil {
-		return false, err
+		return false, nil, err
 	}
-	if !result.Data.IsMatched {
-		return false, nil
-	}
-
-	return true, nil
+	return result.Data.IsVerified, result.Data.FailedReason, nil
 }

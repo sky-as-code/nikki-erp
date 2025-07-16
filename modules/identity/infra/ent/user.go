@@ -10,7 +10,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
@@ -45,8 +44,8 @@ type User struct {
 	PasswordHash string `json:"-"`
 	// Last password change timestamp
 	PasswordChangedAt time.Time `json:"password_changed_at,omitempty"`
-	// StatusID holds the value of the "status_id" field.
-	StatusID string `json:"status_id,omitempty"`
+	// Status holds the value of the "status" field.
+	Status string `json:"status,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -63,15 +62,13 @@ type UserEdges struct {
 	Hierarchy *HierarchyLevel `json:"hierarchy,omitempty"`
 	// Orgs holds the value of the orgs edge.
 	Orgs []*Organization `json:"orgs,omitempty"`
-	// UserStatus holds the value of the user_status edge.
-	UserStatus *IdentStatusEnum `json:"user_status,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// UserOrgs holds the value of the user_orgs edge.
 	UserOrgs []*UserOrg `json:"user_orgs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [5]bool
 }
 
 // GroupsOrErr returns the Groups value or an error if the edge
@@ -103,21 +100,10 @@ func (e UserEdges) OrgsOrErr() ([]*Organization, error) {
 	return nil, &NotLoadedError{edge: "orgs"}
 }
 
-// UserStatusOrErr returns the UserStatus value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e UserEdges) UserStatusOrErr() (*IdentStatusEnum, error) {
-	if e.UserStatus != nil {
-		return e.UserStatus, nil
-	} else if e.loadedTypes[3] {
-		return nil, &NotFoundError{label: identstatusenum.Label}
-	}
-	return nil, &NotLoadedError{edge: "user_status"}
-}
-
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserGroupsOrErr() ([]*UserGroup, error) {
-	if e.loadedTypes[4] {
+	if e.loadedTypes[3] {
 		return e.UserGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_groups"}
@@ -126,7 +112,7 @@ func (e UserEdges) UserGroupsOrErr() ([]*UserGroup, error) {
 // UserOrgsOrErr returns the UserOrgs value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserOrgsOrErr() ([]*UserOrg, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[4] {
 		return e.UserOrgs, nil
 	}
 	return nil, &NotLoadedError{edge: "user_orgs"}
@@ -141,7 +127,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case user.FieldFailedLoginAttempts:
 			values[i] = new(sql.NullInt64)
-		case user.FieldID, user.FieldAvatarURL, user.FieldDisplayName, user.FieldEmail, user.FieldEtag, user.FieldHierarchyID, user.FieldPasswordHash, user.FieldStatusID:
+		case user.FieldID, user.FieldAvatarURL, user.FieldDisplayName, user.FieldEmail, user.FieldEtag, user.FieldHierarchyID, user.FieldPasswordHash, user.FieldStatus:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt, user.FieldLastLoginAt, user.FieldLockedUntil, user.FieldPasswordChangedAt, user.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -248,11 +234,11 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.PasswordChangedAt = value.Time
 			}
-		case user.FieldStatusID:
+		case user.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status_id", values[i])
+				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
-				u.StatusID = value.String
+				u.Status = value.String
 			}
 		case user.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -287,11 +273,6 @@ func (u *User) QueryHierarchy() *HierarchyLevelQuery {
 // QueryOrgs queries the "orgs" edge of the User entity.
 func (u *User) QueryOrgs() *OrganizationQuery {
 	return NewUserClient(u.config).QueryOrgs(u)
-}
-
-// QueryUserStatus queries the "user_status" edge of the User entity.
-func (u *User) QueryUserStatus() *IdentStatusEnumQuery {
-	return NewUserClient(u.config).QueryUserStatus(u)
 }
 
 // QueryUserGroups queries the "user_groups" edge of the User entity.
@@ -373,8 +354,8 @@ func (u *User) String() string {
 	builder.WriteString("password_changed_at=")
 	builder.WriteString(u.PasswordChangedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("status_id=")
-	builder.WriteString(u.StatusID)
+	builder.WriteString("status=")
+	builder.WriteString(u.Status)
 	builder.WriteString(", ")
 	if v := u.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")

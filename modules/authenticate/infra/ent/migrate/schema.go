@@ -45,6 +45,7 @@ var (
 		{Name: "subject_ref", Type: field.TypeString},
 		{Name: "subject_source_ref", Type: field.TypeString, Nullable: true},
 		{Name: "status", Type: field.TypeString},
+		{Name: "username", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 	}
 	// AuthnAttemptsTable holds the schema information for the "authn_attempts" table.
@@ -87,9 +88,9 @@ var (
 	// AuthnPasswordStoresColumns holds the columns for the "authn_password_stores" table.
 	AuthnPasswordStoresColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "password", Type: field.TypeString},
+		{Name: "password", Type: field.TypeString, Nullable: true},
 		{Name: "password_expired_at", Type: field.TypeTime, Nullable: true},
-		{Name: "password_updated_at", Type: field.TypeTime},
+		{Name: "password_updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "passwordtmp", Type: field.TypeString, Nullable: true},
 		{Name: "passwordtmp_expired_at", Type: field.TypeTime, Nullable: true},
 		{Name: "passwordotp", Type: field.TypeString, Nullable: true},

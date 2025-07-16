@@ -569,6 +569,7 @@ type LoginAttemptMutation struct {
 	subject_ref        *string
 	subject_source_ref *string
 	status             *string
+	username           *string
 	updated_at         *time.Time
 	clearedFields      map[string]struct{}
 	done               bool
@@ -1192,6 +1193,42 @@ func (m *LoginAttemptMutation) ResetStatus() {
 	m.status = nil
 }
 
+// SetUsername sets the "username" field.
+func (m *LoginAttemptMutation) SetUsername(s string) {
+	m.username = &s
+}
+
+// Username returns the value of the "username" field in the mutation.
+func (m *LoginAttemptMutation) Username() (r string, exists bool) {
+	v := m.username
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsername returns the old "username" field's value of the LoginAttempt entity.
+// If the LoginAttempt object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *LoginAttemptMutation) OldUsername(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsername is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsername requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsername: %w", err)
+	}
+	return oldValue.Username, nil
+}
+
+// ResetUsername resets all changes to the "username" field.
+func (m *LoginAttemptMutation) ResetUsername() {
+	m.username = nil
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (m *LoginAttemptMutation) SetUpdatedAt(t time.Time) {
 	m.updated_at = &t
@@ -1275,7 +1312,7 @@ func (m *LoginAttemptMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *LoginAttemptMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.created_at != nil {
 		fields = append(fields, loginattempt.FieldCreatedAt)
 	}
@@ -1312,6 +1349,9 @@ func (m *LoginAttemptMutation) Fields() []string {
 	if m.status != nil {
 		fields = append(fields, loginattempt.FieldStatus)
 	}
+	if m.username != nil {
+		fields = append(fields, loginattempt.FieldUsername)
+	}
 	if m.updated_at != nil {
 		fields = append(fields, loginattempt.FieldUpdatedAt)
 	}
@@ -1347,6 +1387,8 @@ func (m *LoginAttemptMutation) Field(name string) (ent.Value, bool) {
 		return m.SubjectSourceRef()
 	case loginattempt.FieldStatus:
 		return m.Status()
+	case loginattempt.FieldUsername:
+		return m.Username()
 	case loginattempt.FieldUpdatedAt:
 		return m.UpdatedAt()
 	}
@@ -1382,6 +1424,8 @@ func (m *LoginAttemptMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldSubjectSourceRef(ctx)
 	case loginattempt.FieldStatus:
 		return m.OldStatus(ctx)
+	case loginattempt.FieldUsername:
+		return m.OldUsername(ctx)
 	case loginattempt.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
 	}
@@ -1476,6 +1520,13 @@ func (m *LoginAttemptMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case loginattempt.FieldUsername:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsername(v)
 		return nil
 	case loginattempt.FieldUpdatedAt:
 		v, ok := value.(time.Time)
@@ -1607,6 +1658,9 @@ func (m *LoginAttemptMutation) ResetField(name string) error {
 		return nil
 	case loginattempt.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case loginattempt.FieldUsername:
+		m.ResetUsername()
 		return nil
 	case loginattempt.FieldUpdatedAt:
 		m.ResetUpdatedAt()
@@ -2625,7 +2679,7 @@ func (m *PasswordStoreMutation) Password() (r string, exists bool) {
 // OldPassword returns the old "password" field's value of the PasswordStore entity.
 // If the PasswordStore object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PasswordStoreMutation) OldPassword(ctx context.Context) (v string, err error) {
+func (m *PasswordStoreMutation) OldPassword(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldPassword is only allowed on UpdateOne operations")
 	}
@@ -2639,9 +2693,22 @@ func (m *PasswordStoreMutation) OldPassword(ctx context.Context) (v string, err 
 	return oldValue.Password, nil
 }
 
+// ClearPassword clears the value of the "password" field.
+func (m *PasswordStoreMutation) ClearPassword() {
+	m.password = nil
+	m.clearedFields[passwordstore.FieldPassword] = struct{}{}
+}
+
+// PasswordCleared returns if the "password" field was cleared in this mutation.
+func (m *PasswordStoreMutation) PasswordCleared() bool {
+	_, ok := m.clearedFields[passwordstore.FieldPassword]
+	return ok
+}
+
 // ResetPassword resets all changes to the "password" field.
 func (m *PasswordStoreMutation) ResetPassword() {
 	m.password = nil
+	delete(m.clearedFields, passwordstore.FieldPassword)
 }
 
 // SetPasswordExpiredAt sets the "password_expired_at" field.
@@ -2710,7 +2777,7 @@ func (m *PasswordStoreMutation) PasswordUpdatedAt() (r time.Time, exists bool) {
 // OldPasswordUpdatedAt returns the old "password_updated_at" field's value of the PasswordStore entity.
 // If the PasswordStore object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PasswordStoreMutation) OldPasswordUpdatedAt(ctx context.Context) (v time.Time, err error) {
+func (m *PasswordStoreMutation) OldPasswordUpdatedAt(ctx context.Context) (v *time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldPasswordUpdatedAt is only allowed on UpdateOne operations")
 	}
@@ -2724,9 +2791,22 @@ func (m *PasswordStoreMutation) OldPasswordUpdatedAt(ctx context.Context) (v tim
 	return oldValue.PasswordUpdatedAt, nil
 }
 
+// ClearPasswordUpdatedAt clears the value of the "password_updated_at" field.
+func (m *PasswordStoreMutation) ClearPasswordUpdatedAt() {
+	m.password_updated_at = nil
+	m.clearedFields[passwordstore.FieldPasswordUpdatedAt] = struct{}{}
+}
+
+// PasswordUpdatedAtCleared returns if the "password_updated_at" field was cleared in this mutation.
+func (m *PasswordStoreMutation) PasswordUpdatedAtCleared() bool {
+	_, ok := m.clearedFields[passwordstore.FieldPasswordUpdatedAt]
+	return ok
+}
+
 // ResetPasswordUpdatedAt resets all changes to the "password_updated_at" field.
 func (m *PasswordStoreMutation) ResetPasswordUpdatedAt() {
 	m.password_updated_at = nil
+	delete(m.clearedFields, passwordstore.FieldPasswordUpdatedAt)
 }
 
 // SetPasswordtmp sets the "passwordtmp" field.
@@ -3277,8 +3357,14 @@ func (m *PasswordStoreMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *PasswordStoreMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(passwordstore.FieldPassword) {
+		fields = append(fields, passwordstore.FieldPassword)
+	}
 	if m.FieldCleared(passwordstore.FieldPasswordExpiredAt) {
 		fields = append(fields, passwordstore.FieldPasswordExpiredAt)
+	}
+	if m.FieldCleared(passwordstore.FieldPasswordUpdatedAt) {
+		fields = append(fields, passwordstore.FieldPasswordUpdatedAt)
 	}
 	if m.FieldCleared(passwordstore.FieldPasswordtmp) {
 		fields = append(fields, passwordstore.FieldPasswordtmp)
@@ -3309,8 +3395,14 @@ func (m *PasswordStoreMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *PasswordStoreMutation) ClearField(name string) error {
 	switch name {
+	case passwordstore.FieldPassword:
+		m.ClearPassword()
+		return nil
 	case passwordstore.FieldPasswordExpiredAt:
 		m.ClearPasswordExpiredAt()
+		return nil
+	case passwordstore.FieldPasswordUpdatedAt:
+		m.ClearPasswordUpdatedAt()
 		return nil
 	case passwordstore.FieldPasswordtmp:
 		m.ClearPasswordtmp()

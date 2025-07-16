@@ -12,7 +12,6 @@ import (
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
-	entStatus "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
@@ -37,7 +36,7 @@ func (this *UserEntRepository) Create(ctx context.Context, user domain.User) (*d
 		SetMustChangePassword(*user.MustChangePassword).
 		SetPasswordHash(*user.PasswordHash).
 		SetPasswordChangedAt(*user.PasswordChangedAt).
-		SetStatusID(*user.StatusId)
+		SetStatus(string(*user.Status))
 
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToUser)
 }
@@ -49,7 +48,7 @@ func (this *UserEntRepository) Update(ctx context.Context, user domain.User, pre
 		SetNillableEmail(user.Email).
 		SetNillablePasswordHash(user.PasswordHash).
 		SetNillablePasswordChangedAt(user.PasswordChangedAt).
-		SetNillableStatusID(user.StatusId).
+		SetNillableStatus((*string)(user.Status)).
 		// IMPORTANT: Must have!
 		Where(entUser.EtagEQ(prevEtag))
 
@@ -99,18 +98,24 @@ func (this *UserEntRepository) FindById(ctx context.Context, param it.FindByIdPa
 	query := this.client.User.Query().
 		Where(entUser.ID(param.Id)).
 		WithGroups().
-		WithOrgs().
-		WithUserStatus()
+		WithOrgs()
+
+	if param.Status != nil {
+		query = query.Where(entUser.StatusEQ(string(*param.Status)))
+	}
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
+func (this *UserEntRepository) FindByEmail(ctx context.Context, param it.FindByEmailParam) (*domain.User, error) {
 	query := this.client.User.Query().
-		Where(entUser.EmailEQ(email)).
+		Where(entUser.EmailEQ(param.Email)).
 		WithGroups().
-		WithOrgs().
-		WithUserStatus()
+		WithOrgs()
+
+	if param.Status != nil {
+		query = query.Where(entUser.StatusEQ(string(*param.Status)))
+	}
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
@@ -123,8 +128,7 @@ func (this *UserEntRepository) Search(
 	ctx context.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.User], error) {
-	query := this.client.User.Query().
-		WithUserStatus()
+	query := this.client.User.Query()
 
 	if param.WithGroups {
 		query = query.WithGroups()
@@ -157,24 +161,12 @@ func BuildUserDescriptor() *orm.EntityDescriptor {
 		Field(entUser.FieldLastLoginAt, entity.LastLoginAt).
 		Field(entUser.FieldLockedUntil, entity.LockedUntil).
 		Field(entUser.FieldMustChangePassword, entity.MustChangePassword).
-		Field(entUser.FieldStatusID, entity.StatusID).
+		Field(entUser.FieldStatus, entity.Status).
 		Field(entUser.FieldUpdatedAt, entity.UpdatedAt).
 		Edge(entUser.EdgeGroups, orm.ToEdgePredicate(entUser.HasGroupsWith)).
-		Edge(entUser.EdgeOrgs, orm.ToEdgePredicate(entUser.HasOrgsWith)).
-		Edge(entUser.EdgeUserStatus, orm.ToEdgePredicate(entUser.HasUserStatusWith)).
-		OrderByEdge(entUser.EdgeUserStatus, entUser.NewUserStatusStepNikki)
-
-	return builder.Descriptor()
-}
-
-func BuildUserStatusDescriptor() *orm.EntityDescriptor {
-	entity := ent.IdentStatusEnum{}
-	builder := orm.DescribeEntity(entUser.EdgeUserStatus).
-		Aliases(entStatus.Label).
-		Field(entStatus.FieldID, entity.ID).
-		Field(entStatus.FieldEtag, entity.Etag).
-		Field(entStatus.FieldLabel, entity.Label).
-		Field(entStatus.FieldValue, entity.Value)
+		Edge(entUser.EdgeOrgs, orm.ToEdgePredicate(entUser.HasOrgsWith))
+		// TODO: Use for hierarchy
+		//OrderByEdge(entUser.EdgeUserStatus, entUser.NewUserStatusStepNikki)
 
 	return builder.Descriptor()
 }

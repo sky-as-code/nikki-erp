@@ -31,6 +31,14 @@ type LoginParam struct {
 }
 
 type LoginMethod interface {
-	Execute(ctx context.Context, param LoginParam) (bool, error)
+	Execute(ctx context.Context, param LoginParam) (bool, *string, error)
 	Name() string
+	SkipMethod() *SkippedMethod
 }
+
+type SkippedMethod string
+
+const (
+	SkippedMethodAll      SkippedMethod = "*"
+	SkippedMethodPassword SkippedMethod = "password"
+)

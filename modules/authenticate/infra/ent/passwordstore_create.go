@@ -26,6 +26,14 @@ func (psc *PasswordStoreCreate) SetPassword(s string) *PasswordStoreCreate {
 	return psc
 }
 
+// SetNillablePassword sets the "password" field if the given value is not nil.
+func (psc *PasswordStoreCreate) SetNillablePassword(s *string) *PasswordStoreCreate {
+	if s != nil {
+		psc.SetPassword(*s)
+	}
+	return psc
+}
+
 // SetPasswordExpiredAt sets the "password_expired_at" field.
 func (psc *PasswordStoreCreate) SetPasswordExpiredAt(t time.Time) *PasswordStoreCreate {
 	psc.mutation.SetPasswordExpiredAt(t)
@@ -43,6 +51,14 @@ func (psc *PasswordStoreCreate) SetNillablePasswordExpiredAt(t *time.Time) *Pass
 // SetPasswordUpdatedAt sets the "password_updated_at" field.
 func (psc *PasswordStoreCreate) SetPasswordUpdatedAt(t time.Time) *PasswordStoreCreate {
 	psc.mutation.SetPasswordUpdatedAt(t)
+	return psc
+}
+
+// SetNillablePasswordUpdatedAt sets the "password_updated_at" field if the given value is not nil.
+func (psc *PasswordStoreCreate) SetNillablePasswordUpdatedAt(t *time.Time) *PasswordStoreCreate {
+	if t != nil {
+		psc.SetPasswordUpdatedAt(*t)
+	}
 	return psc
 }
 
@@ -168,12 +184,6 @@ func (psc *PasswordStoreCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (psc *PasswordStoreCreate) check() error {
-	if _, ok := psc.mutation.Password(); !ok {
-		return &ValidationError{Name: "password", err: errors.New(`ent: missing required field "PasswordStore.password"`)}
-	}
-	if _, ok := psc.mutation.PasswordUpdatedAt(); !ok {
-		return &ValidationError{Name: "password_updated_at", err: errors.New(`ent: missing required field "PasswordStore.password_updated_at"`)}
-	}
 	if _, ok := psc.mutation.SubjectType(); !ok {
 		return &ValidationError{Name: "subject_type", err: errors.New(`ent: missing required field "PasswordStore.subject_type"`)}
 	}
@@ -217,7 +227,7 @@ func (psc *PasswordStoreCreate) createSpec() (*PasswordStore, *sqlgraph.CreateSp
 	}
 	if value, ok := psc.mutation.Password(); ok {
 		_spec.SetField(passwordstore.FieldPassword, field.TypeString, value)
-		_node.Password = value
+		_node.Password = &value
 	}
 	if value, ok := psc.mutation.PasswordExpiredAt(); ok {
 		_spec.SetField(passwordstore.FieldPasswordExpiredAt, field.TypeTime, value)
@@ -225,7 +235,7 @@ func (psc *PasswordStoreCreate) createSpec() (*PasswordStore, *sqlgraph.CreateSp
 	}
 	if value, ok := psc.mutation.PasswordUpdatedAt(); ok {
 		_spec.SetField(passwordstore.FieldPasswordUpdatedAt, field.TypeTime, value)
-		_node.PasswordUpdatedAt = value
+		_node.PasswordUpdatedAt = &value
 	}
 	if value, ok := psc.mutation.Passwordtmp(); ok {
 		_spec.SetField(passwordstore.FieldPasswordtmp, field.TypeString, value)

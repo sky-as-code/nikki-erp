@@ -42,6 +42,8 @@ type LoginAttempt struct {
 	SubjectSourceRef *string `json:"subject_source_ref,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
+	// Username holds the value of the "username" field.
+	Username string `json:"username,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt    *time.Time `json:"updated_at,omitempty"`
 	selectValues sql.SelectValues
@@ -56,7 +58,7 @@ func (*LoginAttempt) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case loginattempt.FieldIsGenuine:
 			values[i] = new(sql.NullBool)
-		case loginattempt.FieldID, loginattempt.FieldCurrentMethod, loginattempt.FieldDeviceIP, loginattempt.FieldDeviceName, loginattempt.FieldDeviceLocation, loginattempt.FieldSubjectType, loginattempt.FieldSubjectRef, loginattempt.FieldSubjectSourceRef, loginattempt.FieldStatus:
+		case loginattempt.FieldID, loginattempt.FieldCurrentMethod, loginattempt.FieldDeviceIP, loginattempt.FieldDeviceName, loginattempt.FieldDeviceLocation, loginattempt.FieldSubjectType, loginattempt.FieldSubjectRef, loginattempt.FieldSubjectSourceRef, loginattempt.FieldStatus, loginattempt.FieldUsername:
 			values[i] = new(sql.NullString)
 		case loginattempt.FieldCreatedAt, loginattempt.FieldExpiredAt, loginattempt.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -160,6 +162,12 @@ func (la *LoginAttempt) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				la.Status = value.String
 			}
+		case loginattempt.FieldUsername:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field username", values[i])
+			} else if value.Valid {
+				la.Username = value.String
+			}
 		case loginattempt.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
@@ -248,6 +256,9 @@ func (la *LoginAttempt) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(la.Status)
+	builder.WriteString(", ")
+	builder.WriteString("username=")
+	builder.WriteString(la.Username)
 	builder.WriteString(", ")
 	if v := la.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")

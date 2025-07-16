@@ -18,9 +18,8 @@ var authenticateCommandType = cqrs.RequestType{
 }
 
 type AuthenticateCommand struct {
-	AttemptId model.Id `json:"attemptId"`
-	Username  string   `json:"username"`
-	Password  string   `json:"password"`
+	AttemptId model.Id          `json:"attemptId"`
+	Passwords map[string]string `json:"passwords"`
 }
 
 func (AuthenticateCommand) CqrsRequestType() cqrs.RequestType {

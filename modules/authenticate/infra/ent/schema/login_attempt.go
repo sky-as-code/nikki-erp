@@ -62,6 +62,9 @@ func (LoginAttemptMixin) Fields() []ent.Field {
 
 		field.String("status"),
 
+		field.String("username").
+			Immutable(),
+
 		field.Time("updated_at").
 			Optional().
 			Nillable(),

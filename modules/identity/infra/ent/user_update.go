@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -217,16 +216,16 @@ func (uu *UserUpdate) SetNillablePasswordChangedAt(t *time.Time) *UserUpdate {
 	return uu
 }
 
-// SetStatusID sets the "status_id" field.
-func (uu *UserUpdate) SetStatusID(s string) *UserUpdate {
-	uu.mutation.SetStatusID(s)
+// SetStatus sets the "status" field.
+func (uu *UserUpdate) SetStatus(s string) *UserUpdate {
+	uu.mutation.SetStatus(s)
 	return uu
 }
 
-// SetNillableStatusID sets the "status_id" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableStatusID(s *string) *UserUpdate {
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableStatus(s *string) *UserUpdate {
 	if s != nil {
-		uu.SetStatusID(*s)
+		uu.SetStatus(*s)
 	}
 	return uu
 }
@@ -286,17 +285,6 @@ func (uu *UserUpdate) AddOrgs(o ...*Organization) *UserUpdate {
 	return uu.AddOrgIDs(ids...)
 }
 
-// SetUserStatusID sets the "user_status" edge to the IdentStatusEnum entity by ID.
-func (uu *UserUpdate) SetUserStatusID(id string) *UserUpdate {
-	uu.mutation.SetUserStatusID(id)
-	return uu
-}
-
-// SetUserStatus sets the "user_status" edge to the IdentStatusEnum entity.
-func (uu *UserUpdate) SetUserStatus(i *IdentStatusEnum) *UserUpdate {
-	return uu.SetUserStatusID(i.ID)
-}
-
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -350,12 +338,6 @@ func (uu *UserUpdate) RemoveOrgs(o ...*Organization) *UserUpdate {
 	return uu.RemoveOrgIDs(ids...)
 }
 
-// ClearUserStatus clears the "user_status" edge to the IdentStatusEnum entity.
-func (uu *UserUpdate) ClearUserStatus() *UserUpdate {
-	uu.mutation.ClearUserStatus()
-	return uu
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (uu *UserUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, uu.sqlSave, uu.mutation, uu.hooks)
@@ -383,18 +365,7 @@ func (uu *UserUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (uu *UserUpdate) check() error {
-	if uu.mutation.UserStatusCleared() && len(uu.mutation.UserStatusIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "User.user_status"`)
-	}
-	return nil
-}
-
 func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := uu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeString))
 	if ps := uu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -447,6 +418,9 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := uu.mutation.PasswordChangedAt(); ok {
 		_spec.SetField(user.FieldPasswordChangedAt, field.TypeTime, value)
+	}
+	if value, ok := uu.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeString, value)
 	}
 	if value, ok := uu.mutation.UpdatedAt(); ok {
 		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
@@ -566,35 +540,6 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if uu.mutation.UserStatusCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   user.UserStatusTable,
-			Columns: []string{user.UserStatusColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uu.mutation.UserStatusIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   user.UserStatusTable,
-			Columns: []string{user.UserStatusColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -807,16 +752,16 @@ func (uuo *UserUpdateOne) SetNillablePasswordChangedAt(t *time.Time) *UserUpdate
 	return uuo
 }
 
-// SetStatusID sets the "status_id" field.
-func (uuo *UserUpdateOne) SetStatusID(s string) *UserUpdateOne {
-	uuo.mutation.SetStatusID(s)
+// SetStatus sets the "status" field.
+func (uuo *UserUpdateOne) SetStatus(s string) *UserUpdateOne {
+	uuo.mutation.SetStatus(s)
 	return uuo
 }
 
-// SetNillableStatusID sets the "status_id" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableStatusID(s *string) *UserUpdateOne {
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableStatus(s *string) *UserUpdateOne {
 	if s != nil {
-		uuo.SetStatusID(*s)
+		uuo.SetStatus(*s)
 	}
 	return uuo
 }
@@ -876,17 +821,6 @@ func (uuo *UserUpdateOne) AddOrgs(o ...*Organization) *UserUpdateOne {
 	return uuo.AddOrgIDs(ids...)
 }
 
-// SetUserStatusID sets the "user_status" edge to the IdentStatusEnum entity by ID.
-func (uuo *UserUpdateOne) SetUserStatusID(id string) *UserUpdateOne {
-	uuo.mutation.SetUserStatusID(id)
-	return uuo
-}
-
-// SetUserStatus sets the "user_status" edge to the IdentStatusEnum entity.
-func (uuo *UserUpdateOne) SetUserStatus(i *IdentStatusEnum) *UserUpdateOne {
-	return uuo.SetUserStatusID(i.ID)
-}
-
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -940,12 +874,6 @@ func (uuo *UserUpdateOne) RemoveOrgs(o ...*Organization) *UserUpdateOne {
 	return uuo.RemoveOrgIDs(ids...)
 }
 
-// ClearUserStatus clears the "user_status" edge to the IdentStatusEnum entity.
-func (uuo *UserUpdateOne) ClearUserStatus() *UserUpdateOne {
-	uuo.mutation.ClearUserStatus()
-	return uuo
-}
-
 // Where appends a list predicates to the UserUpdate builder.
 func (uuo *UserUpdateOne) Where(ps ...predicate.User) *UserUpdateOne {
 	uuo.mutation.Where(ps...)
@@ -986,18 +914,7 @@ func (uuo *UserUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (uuo *UserUpdateOne) check() error {
-	if uuo.mutation.UserStatusCleared() && len(uuo.mutation.UserStatusIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "User.user_status"`)
-	}
-	return nil
-}
-
 func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
-	if err := uuo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeString))
 	id, ok := uuo.mutation.ID()
 	if !ok {
@@ -1067,6 +984,9 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if value, ok := uuo.mutation.PasswordChangedAt(); ok {
 		_spec.SetField(user.FieldPasswordChangedAt, field.TypeTime, value)
+	}
+	if value, ok := uuo.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeString, value)
 	}
 	if value, ok := uuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
@@ -1186,35 +1106,6 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if uuo.mutation.UserStatusCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   user.UserStatusTable,
-			Columns: []string{user.UserStatusColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uuo.mutation.UserStatusIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   user.UserStatusTable,
-			Columns: []string{user.UserStatusColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

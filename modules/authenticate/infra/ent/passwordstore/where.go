@@ -169,6 +169,16 @@ func PasswordHasSuffix(v string) predicate.PasswordStore {
 	return predicate.PasswordStore(sql.FieldHasSuffix(FieldPassword, v))
 }
 
+// PasswordIsNil applies the IsNil predicate on the "password" field.
+func PasswordIsNil() predicate.PasswordStore {
+	return predicate.PasswordStore(sql.FieldIsNull(FieldPassword))
+}
+
+// PasswordNotNil applies the NotNil predicate on the "password" field.
+func PasswordNotNil() predicate.PasswordStore {
+	return predicate.PasswordStore(sql.FieldNotNull(FieldPassword))
+}
+
 // PasswordEqualFold applies the EqualFold predicate on the "password" field.
 func PasswordEqualFold(v string) predicate.PasswordStore {
 	return predicate.PasswordStore(sql.FieldEqualFold(FieldPassword, v))
@@ -267,6 +277,16 @@ func PasswordUpdatedAtLT(v time.Time) predicate.PasswordStore {
 // PasswordUpdatedAtLTE applies the LTE predicate on the "password_updated_at" field.
 func PasswordUpdatedAtLTE(v time.Time) predicate.PasswordStore {
 	return predicate.PasswordStore(sql.FieldLTE(FieldPasswordUpdatedAt, v))
+}
+
+// PasswordUpdatedAtIsNil applies the IsNil predicate on the "password_updated_at" field.
+func PasswordUpdatedAtIsNil() predicate.PasswordStore {
+	return predicate.PasswordStore(sql.FieldIsNull(FieldPasswordUpdatedAt))
+}
+
+// PasswordUpdatedAtNotNil applies the NotNil predicate on the "password_updated_at" field.
+func PasswordUpdatedAtNotNil() predicate.PasswordStore {
+	return predicate.PasswordStore(sql.FieldNotNull(FieldPasswordUpdatedAt))
 }
 
 // PasswordtmpEQ applies the EQ predicate on the "passwordtmp" field.

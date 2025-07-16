@@ -67,7 +67,7 @@ func (this *AttemptServiceImpl) CreateLoginAttempt(ctx context.Context, cmd it.C
 			return err
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			methods := []string{"password"} // TODO: load method settings from DB
+			methods := []string{"password", "captcha"} // TODO: load method settings from DB
 			if len(methods) == 0 {
 				return ft.ClientError{
 					Code:    "unauthorized",
@@ -91,6 +91,7 @@ func (this *AttemptServiceImpl) CreateLoginAttempt(ctx context.Context, cmd it.C
 	attempt.CurrentMethod = util.ToPtr(attempt.Methods[0])
 	attempt.SubjectRef = util.ToPtr(subject.Id)
 	attempt.SubjectType = &cmd.SubjectType
+	attempt.Username = &cmd.Username
 
 	attempt, err = this.attemptRepo.Create(ctx, *attempt)
 	ft.PanicOnErr(err)

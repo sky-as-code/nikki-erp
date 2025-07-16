@@ -28,8 +28,8 @@ const (
 	FieldPhoneNumber = "phone_number"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
-	// FieldStatusID holds the string denoting the status_id field in the database.
-	FieldStatusID = "status_id"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
 	// FieldSlug holds the string denoting the slug field in the database.
 	FieldSlug = "slug"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -40,8 +40,6 @@ const (
 	EdgeHierarchies = "hierarchies"
 	// EdgeGroups holds the string denoting the groups edge name in mutations.
 	EdgeGroups = "groups"
-	// EdgeOrgStatus holds the string denoting the org_status edge name in mutations.
-	EdgeOrgStatus = "org_status"
 	// EdgeUserOrgs holds the string denoting the user_orgs edge name in mutations.
 	EdgeUserOrgs = "user_orgs"
 	// Table holds the table name of the organization in the database.
@@ -65,13 +63,6 @@ const (
 	GroupsInverseTable = "ident_groups"
 	// GroupsColumn is the table column denoting the groups relation/edge.
 	GroupsColumn = "org_id"
-	// OrgStatusTable is the table that holds the org_status relation/edge.
-	OrgStatusTable = "ident_organizations"
-	// OrgStatusInverseTable is the table name for the IdentStatusEnum entity.
-	// It exists in this package in order to avoid circular dependency with the "identstatusenum" package.
-	OrgStatusInverseTable = "core_enums"
-	// OrgStatusColumn is the table column denoting the org_status relation/edge.
-	OrgStatusColumn = "status_id"
 	// UserOrgsTable is the table that holds the user_orgs relation/edge.
 	UserOrgsTable = "ident_user_org_rel"
 	// UserOrgsInverseTable is the table name for the UserOrg entity.
@@ -91,7 +82,7 @@ var Columns = []string{
 	FieldLegalName,
 	FieldPhoneNumber,
 	FieldEtag,
-	FieldStatusID,
+	FieldStatus,
 	FieldSlug,
 	FieldUpdatedAt,
 }
@@ -160,9 +151,9 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEtag, opts...).ToFunc()
 }
 
-// ByStatusID orders the results by the status_id field.
-func ByStatusID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatusID, opts...).ToFunc()
+// ByStatus orders the results by the status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
 // BySlug orders the results by the slug field.
@@ -217,13 +208,6 @@ func ByGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByOrgStatusField orders the results by org_status field.
-func ByOrgStatusField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newOrgStatusStep(), sql.OrderByField(field, opts...))
-	}
-}
-
 // ByUserOrgsCount orders the results by user_orgs count.
 func ByUserOrgsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -274,19 +258,6 @@ func newGroupsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(GroupsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, GroupsTable, GroupsColumn),
-	)
-}
-
-// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
-func NewOrgStatusStepNikki() *sqlgraph.Step {
-	return newOrgStatusStep()
-}
-
-func newOrgStatusStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(OrgStatusInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, OrgStatusTable, OrgStatusColumn),
 	)
 }
 

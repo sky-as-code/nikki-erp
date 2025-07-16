@@ -8,8 +8,9 @@ import (
 )
 
 type PasswordService interface {
-	SetPassword(ctx context.Context, cmd SetPasswordCommand) (result *SetPasswordResult, err error)
-	IsPasswordMatched(ctx context.Context, cmd IsPasswordMatchedQuery) (result *IsPasswordMatchedResult, err error)
+	CreateTempPassword(ctx context.Context, cmd CreateTempPasswordCommand) (*CreateTempPasswordResult, error)
+	SetPassword(ctx context.Context, cmd SetPasswordCommand) (*SetPasswordResult, error)
+	VerifyPassword(ctx context.Context, cmd VerifyPasswordQuery) (*VerifyPasswordResult, error)
 }
 
 type PasswordStoreRepository interface {

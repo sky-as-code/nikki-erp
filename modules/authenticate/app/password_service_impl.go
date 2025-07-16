@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"regexp"
+	"time"
 
 	"go.uber.org/dig"
 
@@ -14,16 +15,27 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/password"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+)
+
+var (
+	tempPasswordLength       = 10
+	tempPasswordDurationMins = 60
+
+	errExpired    = "expired"
+	errMismatched = "mismatched"
 )
 
 type PasswordServiceParams struct {
 	dig.In
+	Logger       logging.LoggerService
 	PasswordRepo it.PasswordStoreRepository
 	CqrsBus      cqrs.CqrsBus
 }
 
 func NewPasswordServiceImpl(params PasswordServiceParams) it.PasswordService {
 	return &PasswordServiceImpl{
+		logger:       params.Logger,
 		passwordRepo: params.PasswordRepo,
 		subjectHelper: subjectHelper{
 			cqrsBus: params.CqrsBus,
@@ -32,8 +44,79 @@ func NewPasswordServiceImpl(params PasswordServiceParams) it.PasswordService {
 }
 
 type PasswordServiceImpl struct {
+	logger        logging.LoggerService
 	passwordRepo  it.PasswordStoreRepository
 	subjectHelper subjectHelper
+}
+
+func (this *PasswordServiceImpl) CreateTempPassword(ctx context.Context, cmd it.CreateTempPasswordCommand) (_ *it.CreateTempPasswordResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "create temp password"); e != nil {
+			err = e
+		}
+	}()
+
+	var subject *loginSubject
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			subject, err = this.subjectHelper.assertSubjectExists(ctx, cmd.SubjectType, cmd.Username, vErrs)
+			return err
+		}).
+		End()
+	ft.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &it.CreateTempPasswordResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	passStore, err := this.findPasswordStore(ctx, cmd.SubjectType, subject.Id)
+	ft.PanicOnErr(err)
+
+	tmpPass, err := crypto.GenerateSecurePassword(tempPasswordLength)
+	ft.PanicOnErr(err)
+
+	this.logger.Debug("create temp password", logging.Attr{
+		"subjectType": cmd.SubjectType,
+		"username":    cmd.Username,
+		"passwordtmp": tmpPass,
+	})
+
+	tmpPassHash, err := crypto.GenerateFromPassword([]byte(tmpPass))
+	ft.PanicOnErr(err)
+
+	tmpPassExpiredAt := time.Now().Add(time.Duration(tempPasswordDurationMins) * time.Minute)
+
+	if passStore != nil {
+		passStore, err = this.passwordRepo.Update(ctx, domain.PasswordStore{
+			ModelBase: model.ModelBase{
+				Id: passStore.Id,
+			},
+			Passwordtmp:          util.ToPtr(string(tmpPassHash)),
+			PasswordtmpExpiredAt: &tmpPassExpiredAt,
+		})
+	} else {
+		newPassStore := domain.PasswordStore{
+			SubjectType:          &cmd.SubjectType,
+			SubjectRef:           &subject.Id,
+			Passwordtmp:          util.ToPtr(string(tmpPassHash)),
+			PasswordtmpExpiredAt: &tmpPassExpiredAt,
+		}
+		newPassStore.SetDefaults()
+		passStore, err = this.passwordRepo.Create(ctx, newPassStore)
+	}
+
+	ft.PanicOnErr(err)
+
+	return &it.CreateTempPasswordResult{
+		Data: &it.CreateTempPasswordResultData{
+			CreatedAt: time.Now(),
+			ExpiredAt: tmpPassExpiredAt,
+		},
+		HasData: true,
+	}, nil
 }
 
 func (this *PasswordServiceImpl) SetPassword(ctx context.Context, cmd it.SetPasswordCommand) (_ *it.SetPasswordResult, err error) {
@@ -111,11 +194,11 @@ func (this *PasswordServiceImpl) SetPassword(ctx context.Context, cmd it.SetPass
 		Data: &it.SetPasswordResultData{
 			UpdatedAt: *passStore.PasswordUpdatedAt,
 		},
-		HasData: passStore != nil,
+		HasData: true,
 	}, nil
 }
 
-func (this *PasswordServiceImpl) IsPasswordMatched(ctx context.Context, cmd it.IsPasswordMatchedQuery) (_ *it.IsPasswordMatchedResult, err error) {
+func (this *PasswordServiceImpl) VerifyPassword(ctx context.Context, cmd it.VerifyPasswordQuery) (_ *it.VerifyPasswordResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "check password matched"); e != nil {
 			err = e
@@ -123,7 +206,7 @@ func (this *PasswordServiceImpl) IsPasswordMatched(ctx context.Context, cmd it.I
 	}()
 
 	var subject *loginSubject
-	var curPassHash []byte
+	var passStore *domain.PasswordStore
 	flow := val.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *ft.ValidationErrors) error {
@@ -131,7 +214,7 @@ func (this *PasswordServiceImpl) IsPasswordMatched(ctx context.Context, cmd it.I
 			return err
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			_, curPassHash, err = this.getCurrentPassword(ctx, cmd.SubjectType, subject.Id)
+			passStore, err = this.findPasswordStore(ctx, cmd.SubjectType, subject.Id)
 			ft.PanicOnErr(err)
 
 			return nil
@@ -140,40 +223,81 @@ func (this *PasswordServiceImpl) IsPasswordMatched(ctx context.Context, cmd it.I
 	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
-		return &it.IsPasswordMatchedResult{
+		return &it.VerifyPasswordResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	curPassMatched := this.isPasswordEqual(curPassHash, cmd.Password)
+	var isMatched bool
+	var reason *string = &errMismatched
+	if passStore != nil {
+		if passStore.Password != nil {
+			isMatched, reason = this.validateCurrentPass([]byte(*passStore.Password), passStore.PasswordExpiredAt, cmd.Password)
+		}
+		if !isMatched && passStore.Passwordtmp != nil {
+			isMatched, reason = this.validateCurrentPass([]byte(*passStore.Passwordtmp), passStore.PasswordtmpExpiredAt, cmd.Password)
+		}
+	}
 
-	return &it.IsPasswordMatchedResult{
-		Data: &it.IsPasswordMatchedResultData{
-			IsMatched: curPassMatched,
+	return &it.VerifyPasswordResult{
+		Data: &it.VerifyPasswordResultData{
+			IsVerified:   isMatched,
+			FailedReason: reason,
 		},
 		HasData: true,
 	}, nil
 }
 
 func (this *PasswordServiceImpl) getCurrentPassword(ctx context.Context, subjectType domain.SubjectType, subjectRef model.Id) (*model.Id, []byte, error) {
-	pass, err := this.passwordRepo.FindBySubject(ctx, it.FindBySubjectParam{
-		SubjectType: subjectType,
-		SubjectRef:  subjectRef,
-	})
+	pass, err := this.findPasswordStore(ctx, subjectType, subjectRef)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	noPass := (pass == nil)
-	if noPass {
+	if pass == nil {
 		return nil, nil, nil
 	}
 
 	return pass.Id, []byte(*pass.Password), nil
 }
 
+func (this *PasswordServiceImpl) findPasswordStore(ctx context.Context, subjectType domain.SubjectType, subjectRef model.Id) (*domain.PasswordStore, error) {
+	pass, err := this.passwordRepo.FindBySubject(ctx, it.FindBySubjectParam{
+		SubjectType: subjectType,
+		SubjectRef:  subjectRef,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return pass, nil
+}
+
+func (this *PasswordServiceImpl) validateCurrentPass(curPassHash []byte, curPassExpireAt *time.Time, candidatePass string) (bool, *string) {
+	var reason string
+	isExpired := curPassExpireAt != nil && time.Now().After(*curPassExpireAt)
+	if isExpired {
+		reason = errExpired
+		return false, &reason
+	}
+
+	isMatched := this.isPasswordEqual(curPassHash, candidatePass)
+	if !isMatched {
+		reason = errMismatched
+		return false, &reason
+	}
+
+	return true, nil
+}
+
 func (this *PasswordServiceImpl) isPasswordEqual(passHash []byte, candidatePass string) bool {
-	isEqual, _ := crypto.CompareHashAndPassword(passHash, []byte(candidatePass))
+	isEqual, err := crypto.CompareHashAndPassword(passHash, []byte(candidatePass))
+	if err != nil {
+		this.logger.Warn("error with crypto.CompareHashAndPassword()", logging.Attr{
+			"error": err.Error(),
+		})
+		return false
+	}
 	return isEqual
 }
 

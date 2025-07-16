@@ -140,6 +140,12 @@ func (lac *LoginAttemptCreate) SetStatus(s string) *LoginAttemptCreate {
 	return lac
 }
 
+// SetUsername sets the "username" field.
+func (lac *LoginAttemptCreate) SetUsername(s string) *LoginAttemptCreate {
+	lac.mutation.SetUsername(s)
+	return lac
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (lac *LoginAttemptCreate) SetUpdatedAt(t time.Time) *LoginAttemptCreate {
 	lac.mutation.SetUpdatedAt(t)
@@ -224,6 +230,9 @@ func (lac *LoginAttemptCreate) check() error {
 	if _, ok := lac.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "LoginAttempt.status"`)}
 	}
+	if _, ok := lac.mutation.Username(); !ok {
+		return &ValidationError{Name: "username", err: errors.New(`ent: missing required field "LoginAttempt.username"`)}
+	}
 	return nil
 }
 
@@ -306,6 +315,10 @@ func (lac *LoginAttemptCreate) createSpec() (*LoginAttempt, *sqlgraph.CreateSpec
 	if value, ok := lac.mutation.Status(); ok {
 		_spec.SetField(loginattempt.FieldStatus, field.TypeString, value)
 		_node.Status = value
+	}
+	if value, ok := lac.mutation.Username(); ok {
+		_spec.SetField(loginattempt.FieldUsername, field.TypeString, value)
+		_node.Username = value
 	}
 	if value, ok := lac.mutation.UpdatedAt(); ok {
 		_spec.SetField(loginattempt.FieldUpdatedAt, field.TypeTime, value)

@@ -28,6 +28,7 @@ func initV1(route *echo.Group, loginRest *v1.LoginRest, passwordRest *v1.Passwor
 	route.POST("/login", loginRest.Authenticate)
 
 	route.POST("/passwords/password", passwordRest.SetPassword)
+	route.POST("/passwords/passwordtmp", passwordRest.CreateTempPassword)
 	// route.POST("/passwords/otp", passwordRest.SetPassword)
 	// route.POST("/passwords/tmp", passwordRest.SetPassword)
 }

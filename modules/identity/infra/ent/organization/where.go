@@ -100,9 +100,9 @@ func Etag(v string) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldEtag, v))
 }
 
-// StatusID applies equality check predicate on the "status_id" field. It's identical to StatusIDEQ.
-func StatusID(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldEQ(FieldStatusID, v))
+// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
+func Status(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldStatus, v))
 }
 
 // Slug applies equality check predicate on the "slug" field. It's identical to SlugEQ.
@@ -560,69 +560,69 @@ func EtagContainsFold(v string) predicate.Organization {
 	return predicate.Organization(sql.FieldContainsFold(FieldEtag, v))
 }
 
-// StatusIDEQ applies the EQ predicate on the "status_id" field.
-func StatusIDEQ(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldEQ(FieldStatusID, v))
+// StatusEQ applies the EQ predicate on the "status" field.
+func StatusEQ(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldEQ(FieldStatus, v))
 }
 
-// StatusIDNEQ applies the NEQ predicate on the "status_id" field.
-func StatusIDNEQ(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldNEQ(FieldStatusID, v))
+// StatusNEQ applies the NEQ predicate on the "status" field.
+func StatusNEQ(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldNEQ(FieldStatus, v))
 }
 
-// StatusIDIn applies the In predicate on the "status_id" field.
-func StatusIDIn(vs ...string) predicate.Organization {
-	return predicate.Organization(sql.FieldIn(FieldStatusID, vs...))
+// StatusIn applies the In predicate on the "status" field.
+func StatusIn(vs ...string) predicate.Organization {
+	return predicate.Organization(sql.FieldIn(FieldStatus, vs...))
 }
 
-// StatusIDNotIn applies the NotIn predicate on the "status_id" field.
-func StatusIDNotIn(vs ...string) predicate.Organization {
-	return predicate.Organization(sql.FieldNotIn(FieldStatusID, vs...))
+// StatusNotIn applies the NotIn predicate on the "status" field.
+func StatusNotIn(vs ...string) predicate.Organization {
+	return predicate.Organization(sql.FieldNotIn(FieldStatus, vs...))
 }
 
-// StatusIDGT applies the GT predicate on the "status_id" field.
-func StatusIDGT(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldGT(FieldStatusID, v))
+// StatusGT applies the GT predicate on the "status" field.
+func StatusGT(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldGT(FieldStatus, v))
 }
 
-// StatusIDGTE applies the GTE predicate on the "status_id" field.
-func StatusIDGTE(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldGTE(FieldStatusID, v))
+// StatusGTE applies the GTE predicate on the "status" field.
+func StatusGTE(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldGTE(FieldStatus, v))
 }
 
-// StatusIDLT applies the LT predicate on the "status_id" field.
-func StatusIDLT(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldLT(FieldStatusID, v))
+// StatusLT applies the LT predicate on the "status" field.
+func StatusLT(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldLT(FieldStatus, v))
 }
 
-// StatusIDLTE applies the LTE predicate on the "status_id" field.
-func StatusIDLTE(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldLTE(FieldStatusID, v))
+// StatusLTE applies the LTE predicate on the "status" field.
+func StatusLTE(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldLTE(FieldStatus, v))
 }
 
-// StatusIDContains applies the Contains predicate on the "status_id" field.
-func StatusIDContains(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldContains(FieldStatusID, v))
+// StatusContains applies the Contains predicate on the "status" field.
+func StatusContains(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldContains(FieldStatus, v))
 }
 
-// StatusIDHasPrefix applies the HasPrefix predicate on the "status_id" field.
-func StatusIDHasPrefix(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldHasPrefix(FieldStatusID, v))
+// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
+func StatusHasPrefix(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldHasPrefix(FieldStatus, v))
 }
 
-// StatusIDHasSuffix applies the HasSuffix predicate on the "status_id" field.
-func StatusIDHasSuffix(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldHasSuffix(FieldStatusID, v))
+// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
+func StatusHasSuffix(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldHasSuffix(FieldStatus, v))
 }
 
-// StatusIDEqualFold applies the EqualFold predicate on the "status_id" field.
-func StatusIDEqualFold(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldEqualFold(FieldStatusID, v))
+// StatusEqualFold applies the EqualFold predicate on the "status" field.
+func StatusEqualFold(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldEqualFold(FieldStatus, v))
 }
 
-// StatusIDContainsFold applies the ContainsFold predicate on the "status_id" field.
-func StatusIDContainsFold(v string) predicate.Organization {
-	return predicate.Organization(sql.FieldContainsFold(FieldStatusID, v))
+// StatusContainsFold applies the ContainsFold predicate on the "status" field.
+func StatusContainsFold(v string) predicate.Organization {
+	return predicate.Organization(sql.FieldContainsFold(FieldStatus, v))
 }
 
 // SlugEQ applies the EQ predicate on the "slug" field.
@@ -801,29 +801,6 @@ func HasGroups() predicate.Organization {
 func HasGroupsWith(preds ...predicate.Group) predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {
 		step := newGroupsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasOrgStatus applies the HasEdge predicate on the "org_status" edge.
-func HasOrgStatus() predicate.Organization {
-	return predicate.Organization(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, OrgStatusTable, OrgStatusColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasOrgStatusWith applies the HasEdge predicate on the "org_status" edge with a given conditions (other predicates).
-func HasOrgStatusWith(preds ...predicate.IdentStatusEnum) predicate.Organization {
-	return predicate.Organization(func(s *sql.Selector) {
-		step := newOrgStatusStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

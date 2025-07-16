@@ -12,7 +12,6 @@ import (
 	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
-	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
 func NewOrganizationServiceImpl(
@@ -96,13 +95,6 @@ func (this *OrganizationServiceImpl) UpdateOrganization(ctx context.Context, cmd
 			this.sanitizeOrg(updatedOrg)
 			return this.assertOrgUnique(ctx, cmd.NewSlug, vErrs)
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			if updatedOrg.StatusId != nil || updatedOrg.StatusValue != nil {
-				dbStatus := this.assertOrgStatusExists(ctx, updatedOrg, vErrs)
-				updatedOrg.StatusId = dbStatus.Data.Id
-			}
-			return nil
-		}).
 		End()
 	ft.PanicOnErr(err)
 
@@ -160,23 +152,6 @@ func (this *OrganizationServiceImpl) assertOrgExists(ctx context.Context, slug m
 	return
 }
 
-func (this *OrganizationServiceImpl) assertOrgStatusExists(ctx context.Context, org *domain.Organization, vErrs *ft.ValidationErrors) *enum.GetEnumResult {
-	dbStatus, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
-		Id:         org.StatusId,
-		Value:      org.StatusValue,
-		Type:       util.ToPtr(domain.OrgStatusEnumType),
-		EntityName: "organization status",
-	})
-	ft.PanicOnErr(err)
-	ft.PanicOnErr(dbStatus.ClientError)
-
-	if !dbStatus.HasData {
-		vErrs.Append("status", "invalid organization status")
-		return nil
-	}
-	return dbStatus
-}
-
 func (this *OrganizationServiceImpl) sanitizeOrg(org *domain.Organization) {
 	if org.Address != nil {
 		org.Address = util.ToPtr(defense.SanitizePlainText(*org.Address, true))
@@ -191,16 +166,7 @@ func (this *OrganizationServiceImpl) sanitizeOrg(org *domain.Organization) {
 
 func (this *OrganizationServiceImpl) setOrgDefaults(ctx context.Context, org *domain.Organization) {
 	org.SetDefaults()
-
-	activeEnum, err := this.enumSvc.GetEnum(ctx, enum.GetEnumQuery{
-		Value: util.ToPtr(domain.OrgStatusActive),
-		Type:  util.ToPtr(domain.OrgStatusEnumType),
-	})
-	ft.PanicOnErr(err)
-	ft.PanicOnErr(activeEnum.ClientError)
-
-	org.Status = domain.WrapIdentStatus(activeEnum.Data)
-	org.StatusId = activeEnum.Data.Id
+	org.Status = util.ToPtr(domain.OrgStatusActive)
 }
 
 func (this *OrganizationServiceImpl) DeleteOrganization(ctx context.Context, cmd itOrg.DeleteOrganizationCommand) (result *itOrg.DeleteOrganizationResult, err error) {
@@ -307,15 +273,4 @@ func (this *OrganizationServiceImpl) SearchOrganizations(ctx context.Context, qu
 		Data:    orgs,
 		HasData: orgs.Items != nil,
 	}, nil
-}
-
-func (this *OrganizationServiceImpl) ListOrgStatuses(ctx context.Context, query itOrg.ListOrgStatusesQuery) (*itUser.ListIdentStatusesResult, error) {
-	result, err := this.enumSvc.ListEnums(ctx, enum.ListEnumsQuery{
-		EntityName: "organization statuses",
-		Type:       util.ToPtr(domain.OrgStatusEnumType),
-		Page:       query.Page,
-		Size:       query.Size,
-		SortByLang: query.SortByLang,
-	})
-	return (*itUser.ListIdentStatusesResult)(result), err
 }

@@ -19,13 +19,17 @@ func (PasswordStoreMixin) Fields() []ent.Field {
 			Immutable().
 			StorageKey("id"),
 
-		field.String("password"),
+		field.String("password").
+			Optional().
+			Nillable(),
 
 		field.Time("password_expired_at").
 			Optional().
 			Nillable(),
 
-		field.Time("password_updated_at"),
+		field.Time("password_updated_at").
+			Optional().
+			Nillable(),
 
 		field.String("passwordtmp").
 			Optional().
