@@ -9,6 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
@@ -55,6 +56,15 @@ func init() {
 	permissionhistoryDescCreatedAt := permissionhistoryMixinFields0[3].Descriptor()
 	// permissionhistory.DefaultCreatedAt holds the default value on creation for the created_at field.
 	permissionhistory.DefaultCreatedAt = permissionhistoryDescCreatedAt.Default.(func() time.Time)
+	resourceMixin := schema.Resource{}.Mixin()
+	resourceMixinFields0 := resourceMixin[0].Fields()
+	_ = resourceMixinFields0
+	resourceFields := schema.Resource{}.Fields()
+	_ = resourceFields
+	// resourceDescCreatedAt is the schema descriptor for created_at field.
+	resourceDescCreatedAt := resourceMixinFields0[1].Descriptor()
+	// resource.DefaultCreatedAt holds the default value on creation for the created_at field.
+	resource.DefaultCreatedAt = resourceDescCreatedAt.Default.(func() time.Time)
 	revokerequestMixin := schema.RevokeRequest{}.Mixin()
 	revokerequestMixinFields0 := revokerequestMixin[0].Fields()
 	_ = revokerequestMixinFields0

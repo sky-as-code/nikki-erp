@@ -5370,6 +5370,7 @@ type ResourceMutation struct {
 	op                  Op
 	typ                 string
 	id                  *string
+	created_at          *time.Time
 	name                *string
 	description         *string
 	etag                *string
@@ -5490,6 +5491,42 @@ func (m *ResourceMutation) IDs(ctx context.Context) ([]string, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ResourceMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ResourceMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Resource entity.
+// If the Resource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ResourceMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ResourceMutation) ResetCreatedAt() {
+	m.created_at = nil
 }
 
 // SetName sets the "name" field.
@@ -5876,7 +5913,10 @@ func (m *ResourceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ResourceMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
+	if m.created_at != nil {
+		fields = append(fields, resource.FieldCreatedAt)
+	}
 	if m.name != nil {
 		fields = append(fields, resource.FieldName)
 	}
@@ -5903,6 +5943,8 @@ func (m *ResourceMutation) Fields() []string {
 // schema.
 func (m *ResourceMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case resource.FieldCreatedAt:
+		return m.CreatedAt()
 	case resource.FieldName:
 		return m.Name()
 	case resource.FieldDescription:
@@ -5924,6 +5966,8 @@ func (m *ResourceMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *ResourceMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case resource.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
 	case resource.FieldName:
 		return m.OldName(ctx)
 	case resource.FieldDescription:
@@ -5945,6 +5989,13 @@ func (m *ResourceMutation) OldField(ctx context.Context, name string) (ent.Value
 // type.
 func (m *ResourceMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case resource.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
 	case resource.FieldName:
 		v, ok := value.(string)
 		if !ok {
@@ -6051,6 +6102,9 @@ func (m *ResourceMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *ResourceMutation) ResetField(name string) error {
 	switch name {
+	case resource.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
 	case resource.FieldName:
 		m.ResetName()
 		return nil

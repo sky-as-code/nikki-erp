@@ -15,6 +15,7 @@ func InitCqrsHandlers() error {
 		initEntitlementHandlers(),
 		initEntitlementAssignmentHandlers(),
 		initRoleHandlers(),
+		initRoleSuiteHandlers(),
 	)
 	return err
 }
@@ -88,6 +89,19 @@ func initRoleHandlers() error {
 			cqrs.NewHandler(handler.CreateRole),
 			cqrs.NewHandler(handler.GetRoleById),
 			cqrs.NewHandler(handler.SearchRoles),
+			cqrs.NewHandler(handler.GetRolesBySubject),
+		)
+	})
+}
+
+func initRoleSuiteHandlers() error {
+	deps.Register(NewRoleSuiteHandler)
+
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *RoleSuiteHandler) error {
+		ctx := context.Background()
+		return cqrsBus.SubscribeRequests(
+			ctx,
+			cqrs.NewHandler(handler.GetRoleSuitesBySubject),
 		)
 	})
 }

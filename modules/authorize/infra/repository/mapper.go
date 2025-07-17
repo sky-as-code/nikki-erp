@@ -14,6 +14,9 @@ func entToResource(dbResource *ent.Resource) *domain.Resource {
 			Id:   &dbResource.ID,
 			Etag: &dbResource.Etag,
 		},
+		AuditableBase: model.AuditableBase{
+			CreatedAt: &dbResource.CreatedAt,
+		},
 		Name:         &dbResource.Name,
 		Description:  &dbResource.Description,
 		ResourceType: domain.WrapResourceTypeEnt(dbResource.ResourceType),
@@ -76,11 +79,12 @@ func entToAction(dbAction *ent.Action) *domain.Action {
 }
 
 func entToActions(dbActions []*ent.Action) []domain.Action {
-	actions := make([]domain.Action, len(dbActions))
-	for i, dbAction := range dbActions {
-		actions[i] = *entToAction(dbAction)
+	if dbActions == nil {
+		return nil
 	}
-	return actions
+	return array.Map(dbActions, func(dbAction *ent.Action) domain.Action {
+		return *entToAction(dbAction)
+	})
 }
 
 // END: Action
@@ -117,6 +121,45 @@ func entToRoles(dbRoles []*ent.Role) []*domain.Role {
 }
 
 // END: Role
+
+// START: RoleSuite
+func entToRoleSuite(dbRoleSuite *ent.RoleSuite) *domain.RoleSuite {
+	roleSuite := &domain.RoleSuite{
+		ModelBase: model.ModelBase{
+			Id:   &dbRoleSuite.ID,
+			Etag: &dbRoleSuite.Etag,
+		},
+		AuditableBase: model.AuditableBase{
+			CreatedAt: &dbRoleSuite.CreatedAt,
+		},
+		Name:                 &dbRoleSuite.Name,
+		Description:          &dbRoleSuite.Description,
+		OwnerType:            domain.WrapRoleSuiteOwnerTypeEnt(dbRoleSuite.OwnerType),
+		OwnerRef:             &dbRoleSuite.OwnerRef,
+		IsRequestable:        &dbRoleSuite.IsRequestable,
+		IsRequiredAttachment: &dbRoleSuite.IsRequiredAttachment,
+		IsRequiredComment:    &dbRoleSuite.IsRequiredComment,
+		CreatedBy:            &dbRoleSuite.CreatedBy,
+	}
+
+	if dbRoleSuite.Edges.Roles != nil {
+		roleSuite.Roles = array.Map(dbRoleSuite.Edges.Roles, func(dbRole *ent.Role) *domain.Role {
+			return entToRole(dbRole)
+		})
+	}
+
+	return roleSuite
+}
+
+func entToRoleSuites(dbRoleSuites []*ent.RoleSuite) []domain.RoleSuite {
+	roleSuites := make([]domain.RoleSuite, len(dbRoleSuites))
+	for i, dbRoleSuite := range dbRoleSuites {
+		roleSuites[i] = *entToRoleSuite(dbRoleSuite)
+	}
+	return roleSuites
+}
+
+// END: RoleSuite
 
 // START: Entitlement
 func entToEntitlement(dbEntitlement *ent.Entitlement) *domain.Entitlement {
@@ -169,6 +212,10 @@ func entToEntitlementAssignment(dbEntitlementAssignment *ent.EntitlementAssignme
 		ResourceName:  dbEntitlementAssignment.ResourceName,
 		ResolvedExpr:  &dbEntitlementAssignment.ResolvedExpr,
 		EntitlementId: &dbEntitlementAssignment.EntitlementID,
+	}
+
+	if dbEntitlementAssignment.Edges.Entitlement != nil {
+		entitlementAssignment.Entitlement = entToEntitlement(dbEntitlementAssignment.Edges.Entitlement)
 	}
 
 	return entitlementAssignment

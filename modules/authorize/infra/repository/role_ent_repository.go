@@ -13,6 +13,7 @@ import (
 	entEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
 	entEntitlementAssignment "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	entRole "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
+	entRoleUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/roleuser"
 
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
@@ -143,7 +144,7 @@ func (this *RoleEntRepository) Create(ctx context.Context, role domain.Role) (*d
 		SetIsRequiredComment(*role.IsRequiredComment).
 		SetCreatedBy(*role.CreatedBy)
 
-	return db.Mutate(ctx, creation, entToRole)
+	return db.Mutate(ctx, creation, ent.IsNotFound, entToRole)
 }
 
 func (this *RoleEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Role, error) {
@@ -181,6 +182,13 @@ func (this *RoleEntRepository) Search(
 		query,
 		entToRoles,
 	)
+}
+
+func (this *RoleEntRepository) FindAllBySubject(ctx context.Context, param it.FindAllBySubjectParam) ([]*domain.Role, error) {
+	query := this.client.Role.Query().
+		Where(entRole.HasRoleUsersWith(entRoleUser.ReceiverRefEQ(param.SubjectRef)))
+
+	return db.List(ctx, query, entToRoles)
 }
 
 func BuildRoleDescriptor() *orm.EntityDescriptor {

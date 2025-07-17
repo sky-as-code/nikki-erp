@@ -18,6 +18,7 @@ func init() {
 	req = (*GetRoleByNameCommand)(nil)
 	req = (*GetRoleByIdQuery)(nil)
 	req = (*SearchRolesQuery)(nil)
+	req = (*GetRolesBySubjectQuery)(nil)
 	util.Unused(req)
 }
 
@@ -41,34 +42,13 @@ type CreateRoleCommand struct {
 	Entitlements []*model.Id `json:"entitlements,omitempty"`
 }
 
-func (CreateRoleCommand) Type() cqrs.RequestType {
+func (CreateRoleCommand) CqrsRequestType() cqrs.RequestType {
 	return createRoleCommandType
 }
 
-type CreateRoleResult model.OpResult[*domain.Role]
+type CreateRoleResult = crud.OpResult[*domain.Role]
 
 // END: CreateRoleCommand
-
-// // START: UpdateResourceCommand
-// var updateResourceCommandType = cqrs.RequestType{
-// 	Module:    "authorize",
-// 	Submodule: "resource",
-// 	Action:    "update",
-// }
-
-// type UpdateResourceCommand struct {
-// 	Id          model.Id   `param:"id" json:"id"`
-// 	Description *string    `json:"description,omitempty"`
-// 	Etag        model.Etag `json:"etag,omitempty"`
-// }
-
-// func (UpdateResourceCommand) Type() cqrs.RequestType {
-// 	return updateResourceCommandType
-// }
-
-// type UpdateResourceResult model.OpResult[*domain.Resource]
-
-// // END: UpdateResourceCommand
 
 // START: GetRoleByIdQuery
 var getRoleByIdQueryType = cqrs.RequestType{
@@ -81,7 +61,7 @@ type GetRoleByIdQuery struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (GetRoleByIdQuery) Type() cqrs.RequestType {
+func (GetRoleByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getRoleByIdQueryType
 }
 
@@ -93,7 +73,7 @@ func (this GetRoleByIdQuery) Validate() ft.ValidationErrors {
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetRoleByIdResult model.OpResult[*domain.Role]
+type GetRoleByIdResult = crud.OpResult[*domain.Role]
 
 // END: GetRoleByIdQuery
 
@@ -108,11 +88,11 @@ type GetRoleByNameCommand struct {
 	Name string `param:"name" json:"name"`
 }
 
-func (GetRoleByNameCommand) Type() cqrs.RequestType {
+func (GetRoleByNameCommand) CqrsRequestType() cqrs.RequestType {
 	return getRoleByNameCommandType
 }
 
-type GetRoleByNameResult model.OpResult[*domain.Role]
+type GetRoleByNameResult = crud.OpResult[*domain.Role]
 
 // END: GetRoleByNameCommand
 
@@ -124,12 +104,12 @@ var searchRolesQueryType = cqrs.RequestType{
 }
 
 type SearchRolesQuery struct {
-	Page             *int    `json:"page" query:"page"`
-	Size             *int    `json:"size" query:"size"`
-	Graph            *string `json:"graph" query:"graph"`
+	Page  *int    `json:"page" query:"page"`
+	Size  *int    `json:"size" query:"size"`
+	Graph *string `json:"graph" query:"graph"`
 }
 
-func (SearchRolesQuery) Type() cqrs.RequestType {
+func (SearchRolesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchRolesQueryType
 }
 
@@ -140,13 +120,34 @@ func (this *SearchRolesQuery) SetDefaults() {
 
 func (this SearchRolesQuery) Validate() ft.ValidationErrors {
 	rules := []*validator.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 	}
+
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type SearchRolesResultData = crud.PagedResult[*domain.Role]
-type SearchRolesResult model.OpResult[*SearchRolesResultData]
+type SearchRolesResult = crud.OpResult[*SearchRolesResultData]
 
 // END: SearchRolesQuery
+
+// START: GetRolesBySubjectQuery
+var getRolesBySubjectQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role",
+	Action:    "getBySubject",
+}
+
+type GetRolesBySubjectQuery struct {
+	SubjectType *domain.EntitlementAssignmentSubjectType `param:"subjectType" json:"subjectType"`
+	SubjectRef  string                                   `param:"subjectRef" json:"subjectRef"`
+}
+
+func (GetRolesBySubjectQuery) CqrsRequestType() cqrs.RequestType {
+	return getRolesBySubjectQueryType
+}
+
+type GetRolesBySubjectResult = crud.OpResult[[]*domain.Role]
+
+// END: GetRolesBySubjectQuery

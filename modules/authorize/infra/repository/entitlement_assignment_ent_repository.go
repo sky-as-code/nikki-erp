@@ -31,7 +31,7 @@ func (this *EntitlementAssignmentEntRepository) Create(ctx context.Context, assi
 		SetNillableActionName(assignment.ActionName).
 		SetNillableResourceName(assignment.ResourceName)
 
-	return db.Mutate(ctx, creation, entToEntitlementAssignment)
+	return db.Mutate(ctx, creation, ent.IsNotFound, entToEntitlementAssignment)
 }
 
 func (this *EntitlementAssignmentEntRepository) CreateBulk(ctx context.Context, assignments []domain.EntitlementAssignment) error {
@@ -55,7 +55,10 @@ func (this *EntitlementAssignmentEntRepository) CreateBulk(ctx context.Context, 
 func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx context.Context, param it.FindBySubjectParam) ([]*domain.EntitlementAssignment, error) {
 	query := this.client.EntitlementAssignment.Query().
 		Where(entEntitlementAssignment.SubjectTypeEQ(entEntitlementAssignment.SubjectType(param.SubjectType))).
-		Where(entEntitlementAssignment.SubjectRefEQ(param.SubjectRef))
+		Where(entEntitlementAssignment.SubjectRefEQ(param.SubjectRef)).
+		WithEntitlement(func(eq *ent.EntitlementQuery) {
+			eq.WithResource()
+		})
 
 	return db.List(ctx, query, func(assignments []*ent.EntitlementAssignment) []*domain.EntitlementAssignment {
 		result := make([]*domain.EntitlementAssignment, len(assignments))

@@ -4,135 +4,115 @@ import (
 	"github.com/labstack/echo/v4"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
-	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"go.uber.org/dig"
 )
 
 type actionRestParams struct {
 	dig.In
 
-	Config  config.ConfigService
-	Logger  logging.LoggerService
-	CqrsBus cqrs.CqrsBus
+	ActionSvc it.ActionService
 }
 
 func NewActionRest(params actionRestParams) *ActionRest {
 	return &ActionRest{
-		RestBase: httpserver.RestBase{
-			ConfigSvc: params.Config,
-			Logger:    params.Logger,
-			CqrsBus:   params.CqrsBus,
-		},
+		ActionSvc: params.ActionSvc,
 	}
 }
 
 type ActionRest struct {
 	httpserver.RestBase
+	ActionSvc it.ActionService
 }
 
 func (this ActionRest) CreateAction(echoCtx echo.Context) (err error) {
-	request := &CreateActionRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create action"); e != nil {
+			err = e
+		}
+	}()
 
-	result := it.CreateActionResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+	err = httpserver.ServeRequest(
+		echoCtx, this.ActionSvc.CreateAction,
+		func(request CreateActionRequest) it.CreateActionCommand {
+			return it.CreateActionCommand(request)
+		},
+		func(result it.CreateActionResult) CreateActionResponse {
+			response := CreateActionResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonCreated,
+	)
 
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := CreateActionResponse{}
-	response.FromAction(*result.Data)
-
-	return httpserver.JsonCreated(echoCtx, response)
+	return err
 }
 
 func (this ActionRest) UpdateAction(echoCtx echo.Context) (err error) {
-	request := &UpdateActionRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update action"); e != nil {
+			err = e
+		}
+	}()
 
-	result := it.UpdateActionResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+	err = httpserver.ServeRequest(
+		echoCtx, this.ActionSvc.UpdateAction,
+		func(request UpdateActionRequest) it.UpdateActionCommand {
+			return it.UpdateActionCommand(request)
+		},
+		func(result it.UpdateActionResult) UpdateActionResponse {
+			response := UpdateActionResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
 
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := UpdateActionResponse{}
-	response.FromAction(*result.Data)
-
-	return httpserver.JsonOk(echoCtx, response)
+	return err
 }
 
 func (this ActionRest) GetActionById(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get action by id"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get action by id"); e != nil {
 			err = e
 		}
 	}()
 
-	request := &GetActionByIdRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
+	err = httpserver.ServeRequest(
+		echoCtx, this.ActionSvc.GetActionById,
+		func(request GetActionByIdRequest) it.GetActionByIdQuery {
+			return it.GetActionByIdQuery(request)
+		},
+		func(result it.GetActionByIdResult) GetActionByIdResponse {
+			response := GetActionByIdResponse{}
+			response.FromAction(*result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
 
-	result := it.GetActionByIdResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
-
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := GetActionByIdResponse{}
-	response.FromAction(*result.Data)
-
-	return httpserver.JsonOk(echoCtx, response)
+	return err
 }
 
 func (this ActionRest) SearchActions(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list actions"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search actions"); e != nil {
 			err = e
 		}
 	}()
 
-	request := &SearchActionsRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
+	err = httpserver.ServeRequest(
+		echoCtx, this.ActionSvc.SearchActions,
+		func(request SearchActionsRequest) it.SearchActionsCommand {
+			return it.SearchActionsCommand(request)
+		},
+		func(result it.SearchActionsResult) SearchActionsResponse {
+			response := SearchActionsResponse{}
+			response.FromResult(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
 
-	result := it.SearchActionsResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
-
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := SearchActionsResponse{}
-	response.FromResultWithResources(result.Data)
-
-	return httpserver.JsonOk(echoCtx, response)
+	return err
 }

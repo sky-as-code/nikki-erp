@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "d037e36f-f955-440e-bc76-a4a69eca1c2d",
+		"_postman_id": "074a8751-8dfb-48ad-bae9-e76dca577a73",
 		"name": "NikkiERP - API",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "26697084"
@@ -4506,11 +4506,6 @@
 									"listen": "test",
 									"script": {
 										"exec": [
-											"pm.test(\"Status code is 201\", function () {",
-											"    pm.expect(pm.response.code).to.eql(201);",
-											"});",
-											"",
-											"// ✅ Define schema",
 											"const schema = {",
 											"    type: \"object\",",
 											"    required: [\"id\", \"etag\", \"name\", \"resourceType\", \"resourceRef\", \"scopeType\"],",
@@ -4526,54 +4521,42 @@
 											"    additionalProperties: true",
 											"};",
 											"",
-											"// ✅ Track schema validity",
+											"let isStatusValid = false;",
+											"pm.test(\"Status code is 201\", function () {",
+											"    isStatusValid = pm.response.code === 201;",
+											"    pm.expect(isStatusValid).to.be.true;",
+											"});",
+											"",
 											"let isSchemaValid = false;",
 											"pm.test(\"Response matches expected schema\", function () {",
 											"    pm.response.to.have.jsonSchema(schema);",
 											"    isSchemaValid = true;",
 											"});",
 											"",
-											"// ✅ Parse JSON response safely",
+											"// ✅ Parse JSON response",
 											"let body;",
 											"let isJsonValid = true;",
 											"try {",
 											"    body = pm.response.json();",
-											"    console.log(\"✅ Resource response body:\", body);",
-											"} catch (err) {",
+											"    console.log(\"✅ Response body:\", body);",
+											"    isSchemaValid = true;",
+											"} catch (e) {",
 											"    isJsonValid = false;",
-											"    console.error(\"❌ Failed to parse response JSON:\", err);",
+											"    console.error(\"❌ Failed to parse response JSON:\", e);",
 											"}",
 											"",
-											"// ✅ Set env vars only if valid",
 											"if (",
-											"    pm.response.code === 201 &&",
+											"    isStatusValid &&",
 											"    isSchemaValid &&",
 											"    isJsonValid &&",
 											"    body?.id &&",
 											"    body?.etag",
 											") {",
-											"    pm.environment.set(\"resource_id\", body.id);",
-											"    pm.environment.set(\"etag\", body.etag);",
+											"    pm.collectionVariables.set(\"resource_id\", body.id);",
+											"    pm.collectionVariables.set(\"etag\", body.etag);",
 											"    console.log(\"✅ Set resource_id and etag\");",
 											"} else {",
-											"    console.warn(\"⚠️ Response invalid — environment variables not set\");",
-											"}",
-											"",
-											"// ✅ Additional checks only if body is valid",
-											"if (body) {",
-											"    pm.test(\"Name matches generated\", function () {",
-											"        pm.expect(body.name).to.eql(pm.environment.get(\"resource_name\"));",
-											"    });",
-											"",
-											"    if (body.resourceType === \"nikki_application\") {",
-											"        pm.test(\"resourceRef is 26-char ULID\", function () {",
-											"            pm.expect(body.resourceRef.length).to.eql(26);",
-											"        });",
-											"    } else if (body.resourceType === \"custom\") {",
-											"        pm.test(\"resourceRef is a string for custom type\", function () {",
-											"            pm.expect(typeof body.resourceRef).to.eql(\"string\");",
-											"        });",
-											"    }",
+											"    console.warn(\"⚠️ Response invalid or incomplete — NOT setting collectionVariables vars\");",
 											"}",
 											""
 										],
@@ -4585,6 +4568,20 @@
 									"listen": "prerequest",
 									"script": {
 										"exec": [
+											"let rawBody = pm.request.body.raw;",
+											"",
+											"let payload;",
+											"try {",
+											"    payload = JSON.parse(rawBody);",
+											"} catch (e) {",
+											"    console.error(\"❌ Failed to parse JSON body:\", e);",
+											"    return;",
+											"}",
+											"",
+											"pm.collectionVariables.set(\"resource_name\", payload.name);",
+											"pm.request.body.raw = JSON.stringify(payload, null, 2);",
+											"",
+											"console.log(\"✅ Final request payload:\", payload);",
 											""
 										],
 										"type": "text/javascript",
@@ -4597,7 +4594,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"1123\",\n    \"resourceType\": \"nikki_application\",\n    \"resourceRef\": \"12345678901234567890123456\",\n    \"scopeType\": \"org\"\n}",
+									"raw": "{\n    \"name\": \"AuthProduct\",\n    \"resourceType\": \"nikki_application\",\n    \"resourceRef\": \"12345678901234567890123456\",\n    \"scopeType\": \"org\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -4624,7 +4621,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"TestResourcde1\",\n    \"resourceType\": \"custom\",\n    \"scopeType\": \"org\"\n}",
+											"raw": "{\n    \"name\": \"AuthProduct\",\n    \"resourceType\": \"custom\",\n    \"scopeType\": \"org\"\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -4653,7 +4650,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"id\": \"01JZN7T18JYZNZ46HAB1ZKA2YC\",\n    \"etag\": \"1751985751314106000\",\n    \"name\": \"TestResourcde1\",\n    \"description\": \"\",\n    \"resourceType\": \"custom\",\n    \"resourceRef\": \"\",\n    \"scopeType\": \"org\"\n}"
+									"body": "{\n    \"id\": \"01K0BR47BY69M58EZV4N91YXZM\",\n    \"createdAt\": 1752741059967,\n    \"etag\": \"1752741059966509000\"\n}"
 								},
 								{
 									"name": "Success - type nikki_application",
@@ -4662,7 +4659,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"TestResourcde\",\n    \"resourceType\": \"nikki_application\",\n    \"resourceRef\": \"12345678901234567890123456\",\n    \"scopeType\": \"org\"\n}",
+											"raw": "{\n    \"name\": \"AuthProduct\",\n    \"resourceType\": \"nikki_application\",\n    \"resourceRef\": \"12345678901234567890123456\",\n    \"scopeType\": \"org\"\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -4691,7 +4688,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"id\": \"01JZN7S2TAW9DYX1WTFSJT7RQF\",\n    \"etag\": \"1751985720138444000\",\n    \"name\": \"TestResourcde\",\n    \"description\": \"\",\n    \"resourceType\": \"nikki_application\",\n    \"resourceRef\": \"12345678901234567890123456\",\n    \"scopeType\": \"org\"\n}"
+									"body": "{\n    \"id\": \"01K0BR47BY69M58EZV4N91YXZM\",\n    \"createdAt\": 1752741059967,\n    \"etag\": \"1752741059966509000\"\n}"
 								},
 								{
 									"name": "Client error - Invalid fields",
@@ -4778,36 +4775,53 @@
 									"listen": "test",
 									"script": {
 										"exec": [
+											"// Check status code",
+											"let isStatusValid = false;",
 											"pm.test(\"Status code is 200\", function () {",
-											"    pm.response.to.have.status(200);",
+											"    isStatusValid = pm.response.code === 200;",
+											"    pm.expect(isStatusValid).to.be.true;",
 											"});",
 											"",
-											"pm.test(\"Response contains updated resource fields\", function () {",
-											"    let json;",
-											"    try {",
-											"        json = pm.response.json();",
-											"    } catch (err) {",
-											"        pm.expect.fail(\"Response is not valid JSON\");",
+											"// Parse JSON response",
+											"let body;",
+											"let isJsonValid = true;",
+											"try {",
+											"    body = pm.response.json();",
+											"    console.log(\"📥 Response body:\", body);",
+											"} catch (err) {",
+											"    isJsonValid = false;",
+											"    pm.expect.fail(\"❌ Response is not valid JSON\");",
+											"}",
+											"",
+											"// Validate response structure (only id, etag, updatedAt)",
+											"let isStructureValid = false;",
+											"if (isStatusValid && isJsonValid) {",
+											"    pm.test(\"Response contains required fields\", function () {",
+											"        const requiredFields = [\"id\", \"etag\", \"updatedAt\"];",
+											"        requiredFields.forEach(field => {",
+											"            pm.expect(body).to.have.property(field);",
+											"        });",
+											"        isStructureValid = true;",
+											"    });",
+											"",
+											"    // Set collection variable: etag (only if present and string)",
+											"    if (typeof body.etag === \"string\" && body.etag.length > 0) {",
+											"        pm.collectionVariables.set(\"etag\", body.etag);",
+											"        console.log(\"✅ etag set to:\", body.etag);",
+											"    } else {",
+											"        console.warn(\"⚠️ etag missing or invalid\");",
 											"    }",
 											"",
-											"    // Required top-level fields",
-											"    pm.expect(json).to.have.property(\"id\").that.is.a(\"string\");",
-											"    pm.expect(json).to.have.property(\"etag\").that.is.a(\"string\");",
-											"    pm.expect(json).to.have.property(\"name\").that.is.a(\"string\");",
-											"    pm.expect(json).to.have.property(\"description\").that.is.a(\"string\");",
-											"    pm.expect(json).to.have.property(\"resourceType\").that.is.a(\"string\");",
-											"    pm.expect(json).to.have.property(\"resourceRef\").that.is.a(\"string\");",
-											"    pm.expect(json).to.have.property(\"scopeType\").that.is.a(\"string\");",
-											"",
-											"    // Optionally store updated etag if needed for further operations",
-											"    pm.environment.set(\"etag\", json.etag);",
-											"    console.log(\"✅ Updated etag saved:\", json.etag);",
-											"});",
-											"",
-											"pm.test(\"Description has been updated\", function () {",
-											"    const body = pm.response.json();",
-											"    pm.expect(body.description).to.eql(\"Description\");",
-											"});",
+											"    // Set collection variable: id (optional, if needed)",
+											"    if (typeof body.id === \"string\" && body.id.length > 0) {",
+											"        pm.collectionVariables.set(\"resource_id\", body.id);",
+											"        console.log(\"✅ resource_id set to:\", body.id);",
+											"    } else {",
+											"        console.warn(\"⚠️ id missing or invalid\");",
+											"    }",
+											"} else {",
+											"    console.warn(\"⚠️ Skipped field validation or variable setting due to invalid status/JSON\");",
+											"}",
 											""
 										],
 										"type": "text/javascript",
@@ -4878,7 +4892,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"id\": \"01JZPK8ZE5SWSYRF69RG1BFY9D\",\n    \"etag\": \"1752032294635863000\",\n    \"name\": \"TestResourcde\",\n    \"description\": \"hehe\",\n    \"resourceType\": \"nikki_application\",\n    \"resourceRef\": \"12345678901234567890123456\",\n    \"scopeType\": \"org\"\n}"
+									"body": "{\n    \"id\": \"01K0BR47BY69M58EZV4N91YXZM\",\n    \"updatedAt\": 0,\n    \"etag\": \"1752741084833858000\"\n}"
 								},
 								{
 									"name": "Client error - Invalid fields",
@@ -5380,6 +5394,20 @@
 									"listen": "prerequest",
 									"script": {
 										"exec": [
+											"let rawBody = pm.request.body.raw;",
+											"",
+											"let payload;",
+											"try {",
+											"    payload = JSON.parse(rawBody);",
+											"} catch (e) {",
+											"    console.error(\"❌ Failed to parse JSON body:\", e);",
+											"    return;",
+											"}",
+											"",
+											"pm.collectionVariables.set(\"action_name\", payload.name);",
+											"// Update request body",
+											"pm.request.body.raw = JSON.stringify(payload, null, 2);",
+											"console.log(\"✅ Final request payload:\", payload);",
 											""
 										],
 										"type": "text/javascript",
@@ -5390,12 +5418,14 @@
 									"listen": "test",
 									"script": {
 										"exec": [
+											"// ✅ Define schema",
 											"const schema = {",
 											"    type: \"object\",",
-											"    required: [\"id\", \"etag\", \"name\", \"resourceId\", \"createdBy\"],",
+											"    required: [\"id\", \"etag\", \"createdAt\"],",
 											"    properties: {",
 											"        id: { type: \"string\" },",
 											"        etag: { type: \"string\" },",
+											"        createdAt: { type: \"integer\" },",
 											"        name: { type: \"string\", pattern: \"^[a-zA-Z0-9_-]+$\" },",
 											"        description: { type: [\"string\", \"null\"] },",
 											"        resourceId: { type: \"string\" },",
@@ -5405,48 +5435,37 @@
 											"    additionalProperties: true",
 											"};",
 											"",
-											"// ✅ Check status code",
+											"let isStatusValid = false;",
 											"pm.test(\"Status code is 200 or 201\", function () {",
-											"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+											"    isStatusValid = [200, 201].includes(pm.response.code);",
+											"    pm.expect(isStatusValid).to.be.true;",
 											"});",
 											"",
 											"let body;",
-											"let isValidJson = true;",
-											"let isSchemaValid = false;",
-											"",
+											"let isJsonValid = true;",
 											"try {",
 											"    body = pm.response.json();",
-											"} catch (err) {",
-											"    isValidJson = false;",
-											"    console.error(\"❌ Failed to parse JSON:\", err);",
+											"} catch (e) {",
+											"    isJsonValid = false;",
+											"    pm.expect.fail(\"❌ Failed to parse response JSON\");",
 											"}",
 											"",
-											"// ✅ Validate schema if JSON is valid",
-											"if (isValidJson && body) {",
-											"    try {",
-											"        pm.test(\"Response matches expected schema\", function () {",
-											"            pm.response.to.have.jsonSchema(schema);",
-											"        });",
+											"let isSchemaValid = false;",
+											"if (isStatusValid && isJsonValid) {",
+											"    pm.test(\"Response matches expected schema\", function () {",
+											"        pm.expect(tv4.validate(body, schema)).to.be.true;",
 											"        isSchemaValid = true;",
-											"    } catch (err) {",
-											"        console.error(\"❌ Schema validation failed:\", err);",
-											"    }",
+											"    });",
+											"} else {",
+											"    console.warn(\"⚠️ Skip schema check due to invalid status or JSON\");",
 											"}",
 											"",
-											"// ✅ Only set env if all conditions are good",
-											"if (",
-											"    isValidJson &&",
-											"    isSchemaValid &&",
-											"    body.id &&",
-											"    body.etag &&",
-											"    typeof body.id === \"string\" &&",
-											"    typeof body.etag === \"string\"",
-											") {",
-											"    pm.environment.set(\"action_id\", body.id);",
-											"    pm.environment.set(\"etag\", body.etag);",
-											"    console.log(\"✅ Saved action_id & etag to env:\", body.id, body.etag);",
+											"if (isStatusValid && isJsonValid && isSchemaValid) {",
+											"    pm.collectionVariables.set(\"action_id\", body.id);",
+											"    pm.collectionVariables.set(\"etag\", body.etag);",
+											"    console.log(\"📦 Response body:\", body);",
 											"} else {",
-											"    console.warn(\"⚠️ Skipped saving to env due to invalid body or schema.\");",
+											"    console.warn(\"🚫 Not updating env due to failed validation\");",
 											"}",
 											""
 										],
@@ -5460,7 +5479,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"createdBy\": \"{{user_id}}\"\n}",
+									"raw": "{\n    \"name\": \"View\",\n    \"description\": \"Description\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"createdBy\": \"{{user_id}}\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -5487,7 +5506,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"raw": "{\n    \"name\": \"View\",\n    \"description\": \"Description\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"createdBy\": \"{{user_id}}\"\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -5516,7 +5535,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"id\": \"01JZP8CPMNFXXQ5SKD2PZTWEPR\",\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"01JWP5S7KJF8T3RSA8WDZVSZWA\",\n    \"etag\": \"1752019917461563000\",\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\",\n    \"resource\": {}\n}"
+									"body": "{\n    \"id\": \"01K0BS1Y8T175CD76QTJX69SQZ\",\n    \"createdAt\": 1752742033699,\n    \"etag\": \"1752742033690508000\"\n}"
 								},
 								{
 									"name": "Client error - Invalid fields",
@@ -5563,7 +5582,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"raw": "{\n    \"name\": \"{{action_name}}\",\n    \"description\": \"Description\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"createdBy\": \"{{user_id}}\"\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -5613,14 +5632,15 @@
 									"listen": "test",
 									"script": {
 										"exec": [
-											"// ✅ Check status",
+											"let isStatusValid = false;",
 											"pm.test(\"Status code is 200\", function () {",
-											"    pm.expect(pm.response.code).to.eql(200);",
+											"    isStatusValid = pm.response.code === 200;",
+											"    pm.expect(isStatusValid).to.be.true;",
 											"});",
 											"",
 											"const schema = {",
 											"    type: \"object\",",
-											"    required: [\"id\", \"etag\", \"name\", \"resourceId\", \"createdBy\"], ",
+											"    required: [\"id\", \"etag\"],",
 											"    properties: {",
 											"        id: { type: \"string\" },",
 											"        etag: { type: \"string\" },",
@@ -5632,36 +5652,35 @@
 											"    additionalProperties: true",
 											"};",
 											"",
-											"// ✅ Check schema",
-											"let isSchemaValid = false;",
-											"pm.test(\"Response matches schema\", function () {",
-											"    pm.response.to.have.jsonSchema(schema);",
-											"    isSchemaValid = true;",
-											"});",
-											"",
 											"let body;",
 											"let isJsonValid = true;",
+											"let isSchemaValid = false;",
 											"",
 											"try {",
 											"    body = pm.response.json();",
-											"    console.log(\"✅ Response body:\", body);",
 											"} catch (e) {",
 											"    isJsonValid = false;",
-											"    console.error(\"❌ Failed to parse response:\", e);",
+											"    pm.expect.fail(\"❌ JSON parse failed\");",
 											"}",
 											"",
-											"// ✅ Set etag only if everything is valid",
-											"if (",
-											"    pm.response.code === 200 &&",
-											"    isJsonValid &&",
-											"    isSchemaValid &&",
-											"    body &&",
-											"    typeof body.etag === \"string\"",
-											") {",
-											"    pm.environment.set(\"etag\", body.etag);",
-											"    console.log(\"🔁 Updated etag:\", body.etag);",
+											"if (isStatusValid && isJsonValid) {",
+											"    pm.test(\"Response matches schema\", function () {",
+											"        pm.expect(tv4.validate(body, schema)).to.be.true;",
+											"        isSchemaValid = true;",
+											"    });",
 											"} else {",
-											"    console.warn(\"⚠️ Etag not updated: either response failed, invalid JSON, or schema mismatch.\");",
+											"    console.warn(\"⚠️ Skip schema test due to invalid status or JSON\");",
+											"}",
+											"",
+											"if (isStatusValid && isJsonValid && isSchemaValid && body.etag) {",
+											"    pm.collectionVariables.set(\"etag\", body.etag);",
+											"    console.log(\"✅ Updated etag:\", body.etag);",
+											"} else {",
+											"    console.warn(\"🚫 Not updating etag due to failed checks\");",
+											"}",
+											"",
+											"if (isJsonValid) {",
+											"    console.log(\"📦 Response body:\", body);",
 											"}",
 											""
 										],
@@ -5733,7 +5752,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"id\": \"01JZPN7ASRDNXCRTBREWW8B1R2\",\n    \"etag\": \"1752033419175672000\",\n    \"name\": \"TestAction\",\n    \"description\": \"Description\",\n    \"resourceId\": \"01JZPK8ZE5SWSYRF69RG1BFY9D\",\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\"\n}"
+									"body": "{\n    \"id\": \"01K0BS1Y8T175CD76QTJX69SQZ\",\n    \"updatedAt\": 0,\n    \"etag\": \"1752742134542202000\"\n}"
 								},
 								{
 									"name": "Client error - Invalid fields",
@@ -5904,8 +5923,8 @@
 											"}",
 											"",
 											"if (body && body.id && body.etag) {",
-											"    pm.environment.set(\"action_id\", body.id);",
-											"    pm.environment.set(\"etag\", body.etag);",
+											"    pm.collectionVariables.set(\"action_id\", body.id);",
+											"    pm.collectionVariables.set(\"etag\", body.etag);",
 											"}",
 											""
 										],
@@ -6292,77 +6311,65 @@
 					]
 				},
 				{
-					"name": "Role",
+					"name": "Entitlement",
 					"item": [
 						{
-							"name": "Role - Create",
+							"name": "Entitlement - Create",
 							"event": [
 								{
 									"listen": "test",
 									"script": {
 										"exec": [
-											"// ✅ Check status",
-											"pm.test(\"Status code is 200\", function () {",
-											"    pm.expect(pm.response.code).to.eql(200);",
-											"});",
-											"",
-											"// ✅ Schema",
 											"const schema = {",
 											"    type: \"object\",",
-											"    required: [",
-											"        \"id\", \"etag\", \"createdAt\",",
-											"        \"name\", \"ownerType\", \"ownerRef\",",
-											"        \"isRequestable\", \"isRequiredAttachment\",",
-											"        \"isRequiredComment\", \"createdBy\"",
-											"    ],",
+											"    required: [\"id\", \"etag\", \"createdAt\"],",
 											"    properties: {",
 											"        id: { type: \"string\" },",
 											"        etag: { type: \"string\" },",
-											"        createdAt: { type: \"string\", format: \"date-time\" },",
+											"        createdAt: { type: \"integer\" },",
 											"        name: { type: \"string\" },",
-											"        description: { type: [\"string\", \"null\"] },",
-											"        ownerType: { type: \"string\", enum: [\"user\", \"group\"] },",
-											"        ownerRef: { type: \"string\" },",
-											"        isRequestable: { type: \"boolean\" },",
-											"        isRequiredAttachment: { type: \"boolean\" },",
-											"        isRequiredComment: { type: \"boolean\" },",
+											"        actionId: { type: \"string\" },",
+											"        actionExpr: { type: \"string\" },",
+											"        resourceId: { type: \"string\" },",
+											"        scopeRef: { type: \"string\" },",
+											"        subjectType: { type: \"string\" },",
+											"        subjectRef: { type: \"string\" },",
 											"        createdBy: { type: \"string\" }",
 											"    },",
-											"    additionalProperties: false",
+											"    additionalProperties: true",
 											"};",
 											"",
-											"// ✅ Track schema validity",
-											"let isSchemaValid = false;",
-											"pm.test(\"Response matches expected schema\", function () {",
-											"    pm.response.to.have.jsonSchema(schema);",
-											"    isSchemaValid = true;",
+											"let isStatusValid = false;",
+											"pm.test(\"Status code is 200 or 201\", function () {",
+											"    isStatusValid = [200, 201].includes(pm.response.code);",
+											"    pm.expect(isStatusValid).to.be.true;",
 											"});",
 											"",
-											"// ✅ Parse response",
 											"let body;",
 											"let isJsonValid = true;",
-											"",
 											"try {",
 											"    body = pm.response.json();",
-											"    console.log(\"✅ Create Role response:\", body);",
-											"} catch (err) {",
+											"} catch (e) {",
 											"    isJsonValid = false;",
-											"    console.error(\"❌ Failed to parse response JSON:\", err);",
+											"    pm.expect.fail(\"❌ Failed to parse response JSON\");",
 											"}",
 											"",
-											"// ✅ Save env vars only if everything is correct",
-											"if (",
-											"    pm.response.code === 200 &&",
-											"    isJsonValid &&",
-											"    isSchemaValid &&",
-											"    body?.id &&",
-											"    body?.etag",
-											") {",
-											"    pm.environment.set(\"role_id\", body.id);",
-											"    pm.environment.set(\"etag\", body.etag);",
-											"    console.log(\"✅ Saved role_id and etag to environment\");",
+											"let isSchemaValid = false;",
+											"if (isStatusValid && isJsonValid) {",
+											"    pm.test(\"Response matches expected schema\", function () {",
+											"        pm.expect(tv4.validate(body, schema)).to.be.true;",
+											"        isSchemaValid = true;",
+											"    });",
 											"} else {",
-											"    console.warn(\"⚠️ Role not created or response invalid — env vars not set\");",
+											"    console.warn(\"⚠️ Skip schema check due to invalid status or JSON\");",
+											"}",
+											"",
+											"if (isStatusValid && isJsonValid && isSchemaValid) {",
+											"    pm.collectionVariables.set(\"entitlement_id\", body.id);",
+											"    pm.collectionVariables.set(\"etag\", body.etag);",
+											"    console.log(\"📦 Saved entitlement_id and etag:\", body.id, body.etag);",
+											"} else {",
+											"    console.warn(\"🚫 Not saving vars due to failed validation\");",
 											"}",
 											""
 										],
@@ -6374,6 +6381,20 @@
 									"listen": "prerequest",
 									"script": {
 										"exec": [
+											"let rawBody = pm.request.body.raw;",
+											"",
+											"let payload;",
+											"try {",
+											"    payload = JSON.parse(rawBody);",
+											"} catch (e) {",
+											"    console.error(\"❌ Failed to parse JSON body:\", e);",
+											"    return;",
+											"}",
+											"",
+											"pm.collectionVariables.set(\"entitlement_name\", payload.name);",
+											"pm.request.body.raw = JSON.stringify(payload, null, 2);",
+											"",
+											"console.log(\"✅ Final request payload:\", payload);",
 											""
 										],
 										"type": "text/javascript",
@@ -6386,7 +6407,707 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"TestRole\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\"\n}",
+									"raw": "{\n    \"name\": \"Author Identdity - Readonly\",\n    \"actionId\": \"{{action_id}}\",\n    \"actionExpr\": \"{{action_name}}:*.{{resource_name}}\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n    \"createdBy\": \"{{user_id}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/entitlements",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"entitlements"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"Author Identdity - Readonly\",\n    \"actionId\": \"{{action_id}}\",\n    \"actionExpr\": \"{{action_name}}:*.{{resource_name}}\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01K0BS95SZN3SZDM01M0T1ZCAP\",\n    \"createdAt\": 1752742270783,\n    \"etag\": \"1752742270783938000\"\n}"
+								},
+								{
+									"name": "Client error - Existing name",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"Author Identdity - Readonly\",\n    \"actionId\": \"{{action_id}}\",\n    \"actionExpr\": \"{{action_name}}:*.{{resource_name}}\",\n    \"resourceId\": \"{{resource_id}}\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"name already exists\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid field",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"actionExpr\": \"cannot be blank\",\n        \"actionId\": \"is required\",\n        \"createdBy\": \"cannot be blank\",\n        \"name\": \"cannot be blank\",\n        \"resourceId\": \"is required\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Entitlement - Update",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let isStatusValid = false;",
+											"pm.test(\"Status code is 200\", function () {",
+											"    isStatusValid = pm.response.code === 200;",
+											"    pm.expect(isStatusValid).to.be.true;",
+											"});",
+											"",
+											"const schema = {",
+											"    type: \"object\",",
+											"    required: [\"id\", \"etag\"],",
+											"    properties: {",
+											"        id: { type: \"string\" },",
+											"        etag: { type: \"string\" },",
+											"        name: { type: \"string\" },",
+											"        description: { type: \"string\" },",
+											"        actionId: {type: \"string\"},",
+											"        resourceId: { type: \"string\" },",
+											"        actionExpr: {type: \"string\"},",
+											"        createdBy: { type: \"string\" }",
+											"    },",
+											"    additionalProperties: true",
+											"};",
+											"",
+											"let body;",
+											"let isJsonValid = true;",
+											"let isSchemaValid = false;",
+											"",
+											"try {",
+											"    body = pm.response.json();",
+											"} catch (e) {",
+											"    isJsonValid = false;",
+											"    pm.expect.fail(\"❌ JSON parse failed\");",
+											"}",
+											"",
+											"if (isStatusValid && isJsonValid) {",
+											"    pm.test(\"Response matches schema\", function () {",
+											"        pm.expect(tv4.validate(body, schema)).to.be.true;",
+											"        isSchemaValid = true;",
+											"    });",
+											"} else {",
+											"    console.warn(\"⚠️ Skip schema test due to invalid status or JSON\");",
+											"}",
+											"",
+											"if (isStatusValid && isJsonValid && isSchemaValid && body.etag) {",
+											"    pm.collectionVariables.set(\"etag\", body.etag);",
+											"    console.log(\"✅ Updated etag:\", body.etag);",
+											"} else {",
+											"    console.warn(\"🚫 Not updating etag due to failed checks\");",
+											"}",
+											"",
+											"if (isJsonValid) {",
+											"    console.log(\"📦 Response body:\", body);",
+											"}",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"description\": \"description\",\n    \"etag\": \"{{etag}}\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/entitlements/{{entitlement_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"entitlements",
+										"{{entitlement_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"description\",\n    \"etag\": \"{{etag}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01K0BS95SZN3SZDM01M0T1ZCAP\",\n    \"updatedAt\": 0,\n    \"etag\": \"1752742340725347000\"\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"invalide_field\": \"invalide_value\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements/{{entitlement_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements",
+												"{{entitlement_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"cannot be blank\"\n    }\n}"
+								},
+								{
+									"name": "Client errors - Not found",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"description\",\n    \"etag\": \"{{etag}}\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements/01K037AZFSS7YSJGST7704WSK2",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements",
+												"01K037AZFSS7YSJGST7704WSK2"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"entitlement not found\"\n    }\n}"
+								},
+								{
+									"name": "Client errors - Not match etag",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"description\": \"description\",\n    \"etag\": \"12345678\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements/{{entitlement_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements",
+												"{{entitlement_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"etag mismatched\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Entitlement - Get by Id",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/entitlements/{{entitlement_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"entitlements",
+										"{{entitlement_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements/{{entitlement_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements",
+												"{{entitlement_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01JWPA3A4J2644C24V86419A2V\",\n    \"etag\": \"1752677376900586000\",\n    \"name\": \"Authorize Readonly - View Entitlements\",\n    \"actionId\": \"01JWNYK975JE0PKC1NRAB68D9C\",\n    \"resourceId\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n    \"actionExpr\": \"View:*.AuthzEntitlement\",\n    \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n    \"resource\": {\n        \"id\": \"01JWNX10DN9E2PVZTVPJNTWR7D\",\n        \"name\": \"AuthzEntitlement\"\n    },\n    \"action\": {\n        \"id\": \"01JWNYK975JE0PKC1NRAB68D9C\",\n        \"name\": \"View\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements/01JWPA35MPHG33G77FKQNYJS22",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements",
+												"01JWPA35MPHG33G77FKQNYJS22"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"entitlement not found\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid model Id",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements/01JWPA35MPHG33G77FKQNYJS2",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements",
+												"01JWPA35MPHG33G77FKQNYJS2"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"the length must be exactly 26\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Entitlement - Search",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/entitlements?page=0&size=4",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"entitlements"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "4"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - Full params",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements?page=0&size=4&graph={\"if\":[\"name\", \"=\", \"Create\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "4"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"Create\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": null,
+									"header": null,
+									"cookie": [],
+									"body": null
+								},
+								{
+									"name": "Success - No criteria, With paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/entitlements?page=0&size=4",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"entitlements"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "4"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWP88N498RQS88TYVJ4Z20EX\",\n            \"etag\": \"1752229659936045000\",\n            \"actionExpr\": \"*:*:*.*\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\"\n        },\n        {\n            \"id\": \"01JWP8EARV3B9A1HWFPMQZQ6HZ\",\n            \"etag\": \"1752229659936088000\",\n            \"actionId\": \"01JWNZ3XVWDP73JGHRRBFAHQYJ\",\n            \"resourceId\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n            \"actionExpr\": \"View:*.IdentityUser\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n                \"name\": \"IdentityUser\"\n            },\n            \"action\": {\n                \"id\": \"01JWNZ3XVWDP73JGHRRBFAHQYJ\",\n                \"name\": \"View\"\n            }\n        },\n        {\n            \"id\": \"01JWP8EFENXFNN17GSEJP0RCXZ\",\n            \"etag\": \"1752229659936094000\",\n            \"actionId\": \"01JWNZ516R64X2S8A7STFXTP9B\",\n            \"resourceId\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n            \"actionExpr\": \"View:*.IdentityGroup\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQNN68RKN62TNG5K0CPCE\",\n                \"name\": \"IdentityGroup\"\n            },\n            \"action\": {\n                \"id\": \"01JWNZ516R64X2S8A7STFXTP9B\",\n                \"name\": \"View\"\n            }\n        },\n        {\n            \"id\": \"01JWP8KSP3Q3YH6RKND552DWRR\",\n            \"etag\": \"1752229659936099000\",\n            \"resourceId\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n            \"actionExpr\": \"*:*.IdentityUser\",\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"resource\": {\n                \"id\": \"01JWNYQ2A04PPV4135QGXX7W0M\",\n                \"name\": \"IdentityUser\"\n            }\n        }\n    ],\n    \"total\": 23,\n    \"page\": 0,\n    \"size\": 4\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Role",
+					"item": [
+						{
+							"name": "Role - Create",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let isStatus201 = false;",
+											"pm.test(\"Status code is 201\", function () {",
+											"    isStatus201 = pm.response.code === 201;",
+											"    pm.expect(isStatus201).to.be.true;",
+											"});",
+											"",
+											"const schema = {",
+											"    type: \"object\",",
+											"    required: [\"id\", \"etag\", \"createdAt\"],",
+											"    properties: {",
+											"        id: { type: \"string\" },",
+											"        etag: { type: \"string\" },",
+											"        createdAt: { type: \"integer\" },",
+											"    },",
+											"    additionalProperties: false",
+											"};",
+											"",
+											"let isSchemaValid = false;",
+											"let body;",
+											"let isJsonValid = true;",
+											"",
+											"try {",
+											"    body = pm.response.json();",
+											"    console.log(\"✅ Create Role response:\", body);",
+											"} catch (err) {",
+											"    isJsonValid = false;",
+											"    pm.expect.fail(\"❌ Failed to parse response JSON\");",
+											"}",
+											"",
+											"// ✅ validate schema đúng cách",
+											"if (isJsonValid) {",
+											"    pm.test(\"Response matches expected schema\", function () {",
+											"        const valid = tv4.validate(body, schema);",
+											"        pm.expect(valid).to.be.true;",
+											"        isSchemaValid = valid;",
+											"    });",
+											"}",
+											"",
+											"if (isStatus201 && isJsonValid && isSchemaValid && body?.id && body?.etag) {",
+											"    pm.collectionVariables.set(\"role_id\", body.id);",
+											"    pm.collectionVariables.set(\"etag\", body.etag);",
+											"    console.log(\"✅ Saved role_id and etag to collection variables\");",
+											"} else {",
+											"    console.warn(\"⚠️ Skipped setting role_id and etag due to invalid response or status\");",
+											"}",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let rawBody = pm.request.body.raw;",
+											"let payload;",
+											"try {",
+											"    payload = JSON.parse(rawBody);",
+											"} catch (e) {",
+											"    console.error(\"❌ Failed to parse JSON body:\", e);",
+											"    return;",
+											"}",
+											"",
+											"// Save generated name for later use",
+											"pm.collectionVariables.set(\"role_name\", payload.name);",
+											"",
+											"pm.request.body.raw = JSON.stringify(payload, null, 2);",
+											"console.log(\"✅ Final payload for create role:\", payload);",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Authorize module Product Manager\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"entitlements\": [\"{{entitlement_id}}\"]\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -6413,7 +7134,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"TestRole\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\"\n}",
+											"raw": "{\n    \"name\": \"Authorize module Product Manager\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"entitlements\": [\"{{entitlement_id}}\"]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -6442,45 +7163,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"id\": \"01JZPHBZ7GRNT87Q560QY9NFKR\",\n    \"etag\": \"1752029330672839000\",\n    \"createdAt\": \"2025-07-09T09:48:50.67712+07:00\",\n    \"name\": \"TestRole\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"01JYZZK83XRJXY2YT4HC4GRESN\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\"\n}"
-								},
-								{
-									"name": "Success - Some filed can nil",
-									"originalRequest": {
-										"method": "POST",
-										"header": [],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n    \"name\": \"TestRole\",\n    \"createdBy\": \"{{user_id}}\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\"\n}",
-											"options": {
-												"raw": {
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{api_host}}/v1/authorize/roles",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"authorize",
-												"roles"
-											]
-										}
-									},
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json",
-											"description": "",
-											"type": "text"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"id\": \"01JZPHERVW9S054MTXRHKN765F\",\n    \"etag\": \"1752029422460207000\",\n    \"createdAt\": \"2025-07-09T09:50:22.462493+07:00\",\n    \"name\": \"TestRole\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"01JYZZK83XRJXY2YT4HC4GRESN\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\"\n}"
+									"body": "{\n    \"id\": \"01K0BSMMMVHGN2MTJX86S9GMJ7\",\n    \"createdAt\": 1752742646429,\n    \"etag\": \"1752742646427318000\"\n}"
 								},
 								{
 									"name": "Client error - Invalid fields",
@@ -6527,7 +7210,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"TestRole\",\n    \"ownerType\": \"invalid_type\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"raw": "{\n    \"name\": \"Authorize module Product Manager\",\n    \"ownerType\": \"invalid_type\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"entitlements\": [\n        \"{{entitlement_id}}\"\n    ]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -6565,7 +7248,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"TestRole\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\"\n}",
+											"raw": "{\n    \"name\": \"Authorize module Product Manager\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"entitlements\": [\"{{entitlement_id}}\"]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -6595,6 +7278,402 @@
 									],
 									"cookie": [],
 									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"name already exists\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Entitlement not found",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"Authorize module Product Manager\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"entitlements\": [\n        \"01JWPA3A4J2644C24V86419A2V\",\n        \"01JWPA35MPHG33G77FKQNYJS22\"\n    ]\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"entitlements[1]\": \"entitlement not found\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Duplicate entitlement Id",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"Authorize module Product Manager1\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"entitlements\": [\n        \"{{entitlement_id}}\",\n        \"{{entitlement_id}}\"\n    ]\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"entitlements[1]\": \"duplicate entitlement id found at index 0\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Role - Get by Id",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/roles/{{role_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"roles",
+										"{{role_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles/{{role_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles",
+												"{{role_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01K0BSMMMVHGN2MTJX86S9GMJ7\",\n    \"etag\": \"1752742646427318000\",\n    \"createdAt\": \"2025-07-17T08:57:26.429529Z\",\n    \"name\": \"Authorize module Product Manager\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n    \"entitlements\": [\n        {\n            \"id\": \"01K0BS95SZN3SZDM01M0T1ZCAP\",\n            \"name\": \"Author Identdity - Readonly\"\n        }\n    ]\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles/01JWPB7TC3CG1EB567WYQCJM71",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles",
+												"01JWPB7TC3CG1EB567WYQCJM71"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"role not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Role - Search",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/roles?page=0&size=4&graph={\"if\":[\"name\", \"=\", \"Identity module User Manager\"]}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"roles"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "4"
+										},
+										{
+											"key": "graph",
+											"value": "{\"if\":[\"name\", \"=\", \"Identity module User Manager\"]}"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - Full params",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles?page=0&size=4&graph={\"if\":[\"name\", \"=\", \"Identity module User Manager\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "4"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"Identity module User Manager\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWPB7TC3CG1EB567WYQCJM79\",\n            \"etag\": \"1752677376898735000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Identity module User Manager\",\n            \"description\": \"Granted with all actions on on Users and Groups in Identity module, except with Owner user\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP8KSP3Q3YH6RKND552DWRR\",\n                    \"name\": \"Identity Admin - All User Actions\"\n                },\n                {\n                    \"id\": \"01JWP8KP39GKAH67FEAC7TZ631\",\n                    \"name\": \"Identity Admin - All Group Actions\"\n                }\n            ]\n        }\n    ],\n    \"total\": 1,\n    \"page\": 0,\n    \"size\": 4\n}"
+								},
+								{
+									"name": "Success - No criteria, With paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles?page=0&size=4",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "4"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWP72JJCDT4M0J8MSS51MN3T\",\n            \"etag\": \"1752677376898656000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Domain Administrator\",\n            \"description\": \"Granted with all actions on all resources regardless of scope\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP88N498RQS88TYVJ4Z20EX\",\n                    \"name\": \"Domain Administrator - All Permissions\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01JWP80E084MTYF2C882WNR6MJ\",\n            \"etag\": \"1752677376898730000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Identity module Readonly\",\n            \"description\": \"Granted with view action on Users and Groups in Identity module, except with Owner user\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP8EARV3B9A1HWFPMQZQ6HZ\",\n                    \"name\": \"Identity Readonly - View Users\"\n                },\n                {\n                    \"id\": \"01JWP8EFENXFNN17GSEJP0RCXZ\",\n                    \"name\": \"Identity Readonly - View Groups\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01JWP80NHTHXSZDB1MZJXQ0MGQ\",\n            \"etag\": \"1752677376898733000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Identity module Administrator\",\n            \"description\": \"Granted with all actions on all resources in Identity module, except with Owner user\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP8KSP3Q3YH6RKND552DWRR\",\n                    \"name\": \"Identity Admin - All User Actions\"\n                },\n                {\n                    \"id\": \"01JWP8KP39GKAH67FEAC7TZ631\",\n                    \"name\": \"Identity Admin - All Group Actions\"\n                },\n                {\n                    \"id\": \"01JWP8KK6K1M9WMP59BBAGEMB1\",\n                    \"name\": \"Identity Admin - All Organization Actions\"\n                },\n                {\n                    \"id\": \"01JWP8KG15N26CRWNRM6F5CB29\",\n                    \"name\": \"Identity Admin - All HierarchyLevel Actions\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01JWPB7TC3CG1EB567WYQCJM79\",\n            \"etag\": \"1752677376898735000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Identity module User Manager\",\n            \"description\": \"Granted with all actions on on Users and Groups in Identity module, except with Owner user\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP8KSP3Q3YH6RKND552DWRR\",\n                    \"name\": \"Identity Admin - All User Actions\"\n                },\n                {\n                    \"id\": \"01JWP8KP39GKAH67FEAC7TZ631\",\n                    \"name\": \"Identity Admin - All Group Actions\"\n                }\n            ]\n        }\n    ],\n    \"total\": 34,\n    \"page\": 0,\n    \"size\": 4\n}"
+								},
+								{
+									"name": "Success - No criteria, No paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWP72JJCDT4M0J8MSS51MN3T\",\n            \"etag\": \"1752677376898656000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Domain Administrator\",\n            \"description\": \"Granted with all actions on all resources regardless of scope\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP88N498RQS88TYVJ4Z20EX\",\n                    \"name\": \"Domain Administrator - All Permissions\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01JWP80E084MTYF2C882WNR6MJ\",\n            \"etag\": \"1752677376898730000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Identity module Readonly\",\n            \"description\": \"Granted with view action on Users and Groups in Identity module, except with Owner user\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP8EARV3B9A1HWFPMQZQ6HZ\",\n                    \"name\": \"Identity Readonly - View Users\"\n                },\n                {\n                    \"id\": \"01JWP8EFENXFNN17GSEJP0RCXZ\",\n                    \"name\": \"Identity Readonly - View Groups\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01JWP80NHTHXSZDB1MZJXQ0MGQ\",\n            \"etag\": \"1752677376898733000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Identity module Administrator\",\n            \"description\": \"Granted with all actions on all resources in Identity module, except with Owner user\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP8KSP3Q3YH6RKND552DWRR\",\n                    \"name\": \"Identity Admin - All User Actions\"\n                },\n                {\n                    \"id\": \"01JWP8KP39GKAH67FEAC7TZ631\",\n                    \"name\": \"Identity Admin - All Group Actions\"\n                },\n                {\n                    \"id\": \"01JWP8KK6K1M9WMP59BBAGEMB1\",\n                    \"name\": \"Identity Admin - All Organization Actions\"\n                },\n                {\n                    \"id\": \"01JWP8KG15N26CRWNRM6F5CB29\",\n                    \"name\": \"Identity Admin - All HierarchyLevel Actions\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01JWPB7TC3CG1EB567WYQCJM79\",\n            \"etag\": \"1752677376898735000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Identity module User Manager\",\n            \"description\": \"Granted with all actions on on Users and Groups in Identity module, except with Owner user\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP8KSP3Q3YH6RKND552DWRR\",\n                    \"name\": \"Identity Admin - All User Actions\"\n                },\n                {\n                    \"id\": \"01JWP8KP39GKAH67FEAC7TZ631\",\n                    \"name\": \"Identity Admin - All Group Actions\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01JWP80S5RXP8BD4YCY8ZHP7NZ\",\n            \"etag\": \"1752677376898737000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Authorize module Readonly\",\n            \"description\": \"Granted with view action on all resources in Authorize module\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWPA3A4J2644C24V86419A2V\",\n                    \"name\": \"Authorize Readonly - View Entitlements\"\n                },\n                {\n                    \"id\": \"01JWP8KCVWVYDSQ6C8SNDQD5F9\",\n                    \"name\": \"Authorize Moderator - View Resources\"\n                },\n                {\n                    \"id\": \"01JWP8K6DQKNR910S6CP90P26N\",\n                    \"name\": \"Authorize Moderator - View RoleSuites\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01JWP80WR22SAG8Z7EYKDB00K6\",\n            \"etag\": \"1752677376898738000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Authorize module Administrator\",\n            \"description\": \"Granted with all actions on all resources in Authorize module\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWPA35MPHG33G77FKQNYJS21\",\n                    \"name\": \"Authorize Admin - All Resource Actions\"\n                },\n                {\n                    \"id\": \"01JWPA3232EYYN4HQMWBBV345B\",\n                    \"name\": \"Authorize Admin - All Role Actions\"\n                },\n                {\n                    \"id\": \"01JWPA2YP0HTKY290T7570N7QF\",\n                    \"name\": \"Authorize Admin - All RoleSuite Actions\"\n                },\n                {\n                    \"id\": \"01JWPA2SEP8T4S2VKAKYDYME64\",\n                    \"name\": \"Authorize Admin - All Entitlement Actions\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01JWP810BRSH9GWCYQC463K012\",\n            \"etag\": \"1752677376898740000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Authorize module Moderator\",\n            \"description\": \"Granted with all actions on Resource, Action, Role and Role Suite in Authorize module, but not allowed to delete the ones which are associated with an Entitlement\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP8KCVWVYDSQ6C8SNDQD5F6\",\n                    \"name\": \"Authorize Moderator - Create Resources\"\n                },\n                {\n                    \"id\": \"01JWP8KCVWVYDSQ6C8SNDQD5F7\",\n                    \"name\": \"Authorize Moderator - Update Resources\"\n                },\n                {\n                    \"id\": \"01JWP8KCVWVYDSQ6C8SNDQD5F9\",\n                    \"name\": \"Authorize Moderator - View Resources\"\n                },\n                {\n                    \"id\": \"01JWP8K9QE8PW6BKZZ6EW9C9Z5\",\n                    \"name\": \"Authorize Moderator - Create Roles\"\n                },\n                {\n                    \"id\": \"01JWP8K9QE8PW6BKZZ6EW9C9Z6\",\n                    \"name\": \"Authorize Moderator - Update Roles\"\n                },\n                {\n                    \"id\": \"01JWP8K9QE8PW6BKZZ6EW9C9Z7\",\n                    \"name\": \"Authorize Moderator - View Roles\"\n                },\n                {\n                    \"id\": \"01JWP8K6DQKNR910S6CP90P24N\",\n                    \"name\": \"Authorize Moderator - Create RoleSuites\"\n                },\n                {\n                    \"id\": \"01JWP8K6DQKNR910S6CP90P25N\",\n                    \"name\": \"Authorize Moderator - Update RoleSuites\"\n                },\n                {\n                    \"id\": \"01JWP8K6DQKNR910S6CP90P26N\",\n                    \"name\": \"Authorize Moderator - View RoleSuites\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01JWP72RCDK8NVBJMZTWJK9R97\",\n            \"etag\": \"1752677376898743000\",\n            \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n            \"name\": \"Org Administrator (My Company)\",\n            \"description\": \"Granted with all actions on all resources regardless of hierarchy level in the organization My Company\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": true,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": true,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP940XSBXNAN8BEV00W9DTH\",\n                    \"name\": \"Org Administrator - My Company All Actions\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B83N2WJRX7R41PJC8P788V\",\n            \"etag\": \"1752724264028159000\",\n            \"createdAt\": \"2025-07-17T03:51:04.03785Z\",\n            \"name\": \"AuthorizemoduleProductManager KPUXYm\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01Ay7z3y42adORKkPNrMbPH8Ae\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01oxzXI1OdJHLopWqo9zl003wl\"\n        },\n        {\n            \"id\": \"01K0B83QCMY4HDARDGKWV70FJK\",\n            \"etag\": \"1752724266388025000\",\n            \"createdAt\": \"2025-07-17T03:51:06.388972Z\",\n            \"name\": \"AuthorizemoduleProductManager MGVRqE\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01xbML4ZhzHbCwzcG3uVtaVQSs\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01XLrLE53wqdJuwySprWztOTOc\"\n        },\n        {\n            \"id\": \"01K0B83R5Z6ER4ZKY72VWEY0MT\",\n            \"etag\": \"1752724267199365000\",\n            \"createdAt\": \"2025-07-17T03:51:07.200338Z\",\n            \"name\": \"AuthorizemoduleProductManager 9WOBh7\",\n            \"ownerType\": \"group\",\n            \"ownerRef\": \"01fQdqETihHdqQOYDDTT0r21ii\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01BJ9O8d5Zs06Fmx36O7Mdoedf\"\n        },\n        {\n            \"id\": \"01K0B83RVA9914WMB1HSYTBSWP\",\n            \"etag\": \"1752724267882491000\",\n            \"createdAt\": \"2025-07-17T03:51:07.883941Z\",\n            \"name\": \"AuthorizemoduleProductManager TOLCkg\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01M6RGOjr9BXzA2VFvMQvvY5Av\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"013SYA7ohweS6Vtmvcp4sPTXQy\"\n        },\n        {\n            \"id\": \"01K0B84YX4949GMHFJFNE7Y9D2\",\n            \"etag\": \"1752724306852184000\",\n            \"createdAt\": \"2025-07-17T03:51:46.854333Z\",\n            \"name\": \"AuthorizemoduleProductManager b8KCqs\",\n            \"ownerType\": \"group\",\n            \"ownerRef\": \"01yqFjHAdqpjndKQdWLDWTmwPh\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"011LVLhi1Ij8sKLo5CrjUTKcYJ\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B84ZPBAX6Z3JPYCG3CDN86\",\n            \"etag\": \"1752724307659438000\",\n            \"createdAt\": \"2025-07-17T03:51:47.661273Z\",\n            \"name\": \"AuthorizemoduleProductManager YtvgwG\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"016ar2f9W37VnsS5r8dKjROHBi\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01dUCkD64OW0DjuLm76XrM6hPh\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B8BS5S48V7Y1GSBTQAP4R5\",\n            \"etag\": \"1752724530361429000\",\n            \"createdAt\": \"2025-07-17T03:55:30.363527Z\",\n            \"name\": \"AuthorizemoduleProductManager cGbwmi\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01irNDEoW9W2f61FaOkIQLAlCf\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01SEypjqxCUa3iWPWDQUoCYvDu\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWP940XSBXNAN8BEV00W9DTH\",\n                    \"name\": \"Org Administrator - My Company All Actions\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B8CSA7E1WHX5M0752MHQW3\",\n            \"etag\": \"1752724563271671000\",\n            \"createdAt\": \"2025-07-17T03:56:03.274122Z\",\n            \"name\": \"AuthorizemoduleProductManager tYm7vu\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01GmnBJllcVhmEXoham5eJYTgC\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01DYtJYFTLbho3tdCylowjQHJi\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWPA2SEP8T4S2VKAKYDYME64\",\n                    \"name\": \"Authorize Admin - All Entitlement Actions\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B8ET4QDWJ71Q419DB7QNY6\",\n            \"etag\": \"1752724629655935000\",\n            \"createdAt\": \"2025-07-17T03:57:09.658184Z\",\n            \"name\": \"AuthorizemoduleProductManager KIm1MQ\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01rjM3PhhbAChssix16dwZAWv4\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01SxV2Ef0oyTM9PwhCxlM4NtCH\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01JWPA2SEP8T4S2VKAKYDYME64\",\n                    \"name\": \"Authorize Admin - All Entitlement Actions\"\n                },\n                {\n                    \"id\": \"01JWP940XSBXNAN8BEV00W9DTH\",\n                    \"name\": \"Org Administrator - My Company All Actions\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9ANCVH20KYYFWCPSGN8K5\",\n            \"etag\": \"1752725542299403000\",\n            \"createdAt\": \"2025-07-17T04:12:22.302132Z\",\n            \"name\": \"Author Identdity - Readonly - i4PpXs\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9DK0V4EEJE8KJ19QNFS7A\",\n            \"etag\": \"1752725638171879000\",\n            \"createdAt\": \"2025-07-17T04:13:58.173553Z\",\n            \"name\": \"AuthorizemoduleProductManager Ow1p1e\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01okTKlzUtUj0weXxwkZjieNjH\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01aj3vAtyAyj3GJ4xoHun1UUcA\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9DKYKNMETEVJDJYZFP3K1\",\n            \"etag\": \"1752725639123015000\",\n            \"createdAt\": \"2025-07-17T04:13:59.124526Z\",\n            \"name\": \"AuthorizemoduleProductManager ui9Ucz\",\n            \"ownerType\": \"group\",\n            \"ownerRef\": \"01lsvMoQEWRTPuWy0NJxTM4Y8N\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01BjDAR0qXRn5nvgdgdxZNcL8i\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9EGFADPEJYWSPZM87WS97\",\n            \"etag\": \"1752725668330376000\",\n            \"createdAt\": \"2025-07-17T04:14:28.332058Z\",\n            \"name\": \"AuthorizemoduleProductManager VMNC7N\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01kpWGWbj93PajNpBIhyiTUADh\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"012K5IKuV5gZoykIMvVMxpEktL\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9EK5SCRVKXFNZ982NQ38A\",\n            \"etag\": \"1752725671097172000\",\n            \"createdAt\": \"2025-07-17T04:14:31.098791Z\",\n            \"name\": \"AuthorizemoduleProductManager IpNWfw\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"018nvHSc8Uc1dOLHPDLfJ7Ig1p\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01IcDRbHX9YA4BdVyCqOtdUUI7\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9EQ4BYGPMT6PRMH8FPAMM\",\n            \"etag\": \"1752725675147211000\",\n            \"createdAt\": \"2025-07-17T04:14:35.149139Z\",\n            \"name\": \"AuthorizemoduleProductManager 3P7Z1g\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01xIYsqCdvTFc04sPxrBnfZiSs\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01aYUrYl1qiAfXaGsygiT1QgLi\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9F1CSQBGMR9F7SHR22NVQ\",\n            \"etag\": \"1752725685657643000\",\n            \"createdAt\": \"2025-07-17T04:14:45.659761Z\",\n            \"name\": \"AuthorizemoduleProductManager 8Mwm0w\",\n            \"ownerType\": \"group\",\n            \"ownerRef\": \"01ETma0bvqhtXiwDqw97YaSQWk\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01wlW73vwtc25UKSAQGTowTAU9\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9FM6D3QFX1BFA6XBPPAE7\",\n            \"etag\": \"1752725704909479000\",\n            \"createdAt\": \"2025-07-17T04:15:04.91112Z\",\n            \"name\": \"AuthorizemoduleProductManager s0MZCG\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01xyryXDmL3D5GQRhVvUHmTeOL\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"014dlCCrk7yVAUqsuK79kbhCHJ\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9KD5BREZNCWFY7RVEX050\",\n            \"etag\": \"1752725828779388000\",\n            \"createdAt\": \"2025-07-17T04:17:08.781258Z\",\n            \"name\": \"AuthorizemoduleProductManager UNc2cW\",\n            \"ownerType\": \"group\",\n            \"ownerRef\": \"01OYIJpuG3AZzGaJH6rGinm9Oo\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01PLveYlzaTci7fpnZ2qWmRHP6\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9KR8YTE3FQCWRG1P0B4D2\",\n            \"etag\": \"1752725840158754000\",\n            \"createdAt\": \"2025-07-17T04:17:20.160692Z\",\n            \"name\": \"AuthorizemoduleProductManager drlRac\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01Fh4iXKbjwKcsVNUbzKFNOwyX\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"017Up7iPcneEftgQG8V7TZLhyd\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9KT8JNPJPXW39XSVRC5XH\",\n            \"etag\": \"1752725842194052000\",\n            \"createdAt\": \"2025-07-17T04:17:22.195677Z\",\n            \"name\": \"AuthorizemoduleProductManager kUl3p9\",\n            \"ownerType\": \"group\",\n            \"ownerRef\": \"01UEB8jKNGfj2PESlxF4cBrros\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01U1ufNt6DcNRrKYFghe0fM5pg\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9MBH4BBTNZBNS54E5J4ET\",\n            \"etag\": \"1752725859876981000\",\n            \"createdAt\": \"2025-07-17T04:17:39.878646Z\",\n            \"name\": \"AuthorizemoduleProductManager xS1hbR\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01Cuznnl0aGe3vSgUU29bJ9B2R\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01XG9nrLc45zIPohf7u2Zjh8nu\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9P8JPNBXH23SNWK350NB2\",\n            \"etag\": \"1752725922390864000\",\n            \"createdAt\": \"2025-07-17T04:18:42.393218Z\",\n            \"name\": \"AuthorizemoduleProductManager IXhH6Q\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01RR39d7YB3Qleeb5nLezuomHX\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01SYUi4CJvlhoUgiCUhcjotiWM\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9QAG6VG5R61JTYSRFNJCH\",\n            \"etag\": \"1752725957126121000\",\n            \"createdAt\": \"2025-07-17T04:19:17.128426Z\",\n            \"name\": \"AuthorizemoduleProductManager VoGiaq\",\n            \"ownerType\": \"group\",\n            \"ownerRef\": \"01OyjaDCvm5ra7mue6zz7NVFVr\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"014AXJaW2krrxG216RrFkGxGVd\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0B9T6146H04CYCYBY8NYN7J\",\n            \"etag\": \"1752726050852321000\",\n            \"createdAt\": \"2025-07-17T04:20:50.854476Z\",\n            \"name\": \"AuthorizemoduleProductManager NolQt4\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01uG4p7wuzKqkIq6jfu8CjdqY8\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"016ejoAMcsJzu9DUWCXEQzVnpi\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0BAYG7Y3DQRTZ4KE53HAT12\",\n            \"etag\": \"1752727240958184000\",\n            \"createdAt\": \"2025-07-17T04:40:40.960117Z\",\n            \"name\": \"Authorize module Product Manager bpWdPR\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01xKNHmmrGMUMKoDQoUpOSZJjp\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01dxqRC6mhdiYOTyE1kuwyskbB\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0B427B1G3Z1RE8R3N7850A2\",\n                    \"name\": \"Author Identdity - Readonly - i4PpXs\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0BSMMMVHGN2MTJX86S9GMJ7\",\n            \"etag\": \"1752742646427318000\",\n            \"createdAt\": \"2025-07-17T08:57:26.429529Z\",\n            \"name\": \"Authorize module Product Manager\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"entitlements\": [\n                {\n                    \"id\": \"01K0BS95SZN3SZDM01M0T1ZCAP\",\n                    \"name\": \"Author Identdity - Readonly\"\n                }\n            ]\n        }\n    ],\n    \"total\": 34,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Client error - Invalid criteria",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles?page=0&size=4&graph={\"if\":[\"invalid_field\", \"=\", \"invalid_value\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "4"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"invalid_field\", \"=\", \"invalid_value\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"graph.condition\": \"invalid field 'invalid_field' of entity 'role' in condition '[invalid_field = invalid_value]'\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/roles?page=-1&size=99999999999&graph={\"if\":[\"name\", \"=\", \"Create\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"roles"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "-1"
+												},
+												{
+													"key": "size",
+													"value": "99999999999"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"Create\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"page\": \"must be no less than 0\",\n        \"size\": \"must be no greater than 500\"\n    }\n}"
 								}
 							]
 						}
@@ -6602,19 +7681,96 @@
 				},
 				{
 					"name": "Role Suite",
-					"item": []
-				},
-				{
-					"name": "Entitlement",
 					"item": [
 						{
-							"name": "Entitlement - Create",
+							"name": "Role suite - Create",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"let isStatus201 = false;",
+											"pm.test(\"Status code is 201\", function () {",
+											"    isStatus201 = pm.response.code === 201;",
+											"    pm.expect(isStatus201).to.be.true;",
+											"});",
+											"",
+											"const schema = {",
+											"    type: \"object\",",
+											"    required: [\"id\", \"etag\", \"createdAt\"],",
+											"    properties: {",
+											"        id: { type: \"string\" },",
+											"        etag: { type: \"string\" },",
+											"        createdAt: { type: \"integer\" },",
+											"    },",
+											"    additionalProperties: false",
+											"};",
+											"",
+											"let isSchemaValid = false;",
+											"let body;",
+											"let isJsonValid = true;",
+											"",
+											"try {",
+											"    body = pm.response.json();",
+											"    console.log(\"✅ Create Role suite response:\", body);",
+											"} catch (err) {",
+											"    isJsonValid = false;",
+											"    pm.expect.fail(\"❌ Failed to parse response JSON\");",
+											"}",
+											"",
+											"// ✅ validate schema",
+											"if (isJsonValid) {",
+											"    pm.test(\"Response matches expected schema\", function () {",
+											"        const valid = tv4.validate(body, schema);",
+											"        pm.expect(valid).to.be.true;",
+											"        isSchemaValid = valid;",
+											"    });",
+											"}",
+											"",
+											"if (isStatus201 && isJsonValid && isSchemaValid && body?.id && body?.etag) {",
+											"    pm.collectionVariables.set(\"rolesuite_id\", body.id);",
+											"    pm.collectionVariables.set(\"etag\", body.etag);",
+											"    console.log(\"✅ Saved rolesuite_id and etag to collection variables\");",
+											"} else {",
+											"    console.warn(\"⚠️ Skipped setting rolesuite_id and etag due to invalid response or status\");",
+											"}",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"exec": [
+											"let rawBody = pm.request.body.raw;",
+											"let payload;",
+											"try {",
+											"    payload = JSON.parse(rawBody);",
+											"} catch (e) {",
+											"    console.error(\"❌ Failed to parse JSON body:\", e);",
+											"    return;",
+											"}",
+											"",
+											"// Save generated name for later use",
+											"pm.collectionVariables.set(\"rolesuite_name\", payload.name);",
+											"",
+											"pm.request.body.raw = JSON.stringify(payload, null, 2);",
+											"console.log(\"✅ Final payload for create role suite:\", payload);",
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
 							"request": {
 								"method": "POST",
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n    \"name\": \"TestEntitlement\",\n\n    \"actionId\": \"{{action_id}}\",\n    \"actionExpr\": \"TestAction:TestResourcde\",\n\n    \"resourceId\": \"{{resource_id}}\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n    \n    \"createdBy\": \"{{user_id}}\"\n}",
+									"raw": "{\n    \"name\": \"Org Intern Suite1\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"roles\": [\"{{role_id}}\"]\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -6622,14 +7778,14 @@
 									}
 								},
 								"url": {
-									"raw": "{{api_host}}/v1/authorize/entitlements",
+									"raw": "{{api_host}}/v1/authorize/role-suites",
 									"host": [
 										"{{api_host}}"
 									],
 									"path": [
 										"v1",
 										"authorize",
-										"entitlements"
+										"role-suites"
 									]
 								}
 							},
@@ -6641,7 +7797,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"actionExpr\": \"TestAction:TestResourcde\",\n    \"actionId\": \"{{action_id}}\",\n\n    \"createdBy\": \"{{user_id}}\",\n    \"name\": \"TestEntitlement\",\n    // \"description\": \"\", description is optional\n\n    \"resourceId\": \"{{resource_id}}\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n    \n    \"subjectRef\": \"custom\",\n    \"subjectType\": \"custom\"\n}",
+											"raw": "{\n    \"name\": \"Org Intern Suite1\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"roles\": [\"{{role_id}}\"]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -6649,14 +7805,14 @@
 											}
 										},
 										"url": {
-											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"raw": "{{api_host}}/v1/authorize/role-suites",
 											"host": [
 												"{{api_host}}"
 											],
 											"path": [
 												"v1",
 												"authorize",
-												"entitlements"
+												"role-suites"
 											]
 										}
 									},
@@ -6670,16 +7826,16 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"id\": \"01JZPFRE7Q61QYVKXPKVKK6QH9\",\n    \"etag\": \"1752027642103080000\",\n    \"name\": \"TestEntitlement\",\n    \"actionId\": \"01JX0PKTPPP5CN780TAPMK846J\",\n    \"actionExpr\": \"TestAction:TestResourcde\",\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n    \"resourceId\": \"01JWP5S7KJF8T3RSA8WDZVSZWA\",\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\"\n}"
+									"body": "{\n    \"id\": \"01K0BT4X5XVNH8J1WQF5HDHA9E\",\n    \"createdAt\": 1752743179453,\n    \"etag\": \"1752743179453415000\"\n}"
 								},
 								{
-									"name": "Success - Some field can nil",
+									"name": "Client error - Invalid fields",
 									"originalRequest": {
 										"method": "POST",
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"TestEntitlement\",\n\n    // \"actionId\": \"{{action_id}}\",\n    \"actionExpr\": \"TestAction:TestResourcde\",\n\n    // \"resourceId\": \"{{resource_id}}\",\n    // \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n\n    \"createdBy\": \"{{user_id}}\"\n}",
+											"raw": "{\n    \"invalid_field\": \"ìnvalid_value\"\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -6687,14 +7843,14 @@
 											}
 										},
 										"url": {
-											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"raw": "{{api_host}}/v1/authorize/role-suites",
 											"host": [
 												"{{api_host}}"
 											],
 											"path": [
 												"v1",
 												"authorize",
-												"entitlements"
+												"role-suites"
 											]
 										}
 									},
@@ -6708,7 +7864,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"id\": \"01JZPG1EDKKW53H3D41DJKWDRH\",\n    \"etag\": \"1752027937203269000\",\n    \"name\": \"TestEntitlement\",\n    \"actionExpr\": \"TestAction:TestResourcde\",\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n    \"createdBy\": \"01JYZZK83XRJXY2YT4HC4GRESN\"\n}"
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"createdBy\": \"cannot be blank\",\n        \"name\": \"cannot be blank\",\n        \"ownerRef\": \"cannot be blank\",\n        \"ownerType\": \"cannot be blank\"\n    }\n}"
 								},
 								{
 									"name": "Client error - Existing name",
@@ -6717,7 +7873,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    \"name\": \"TestEntitlement\",\n\n    \"actionId\": \"{{action_id}}\",\n    \"actionExpr\": \"TestAction:TestResourcde\",\n\n    \"resourceId\": \"{{resource_id}}\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n\n    \"subjectType\": \"custom\",\n    \"subjectRef\": \"custom\",\n    \n    \"createdBy\": \"{{user_id}}\"\n}",
+											"raw": "{\n    \"name\": \"{{rolesuite_name}}\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"roles\": [\"{{role_id}}\"]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -6725,14 +7881,14 @@
 											}
 										},
 										"url": {
-											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"raw": "{{api_host}}/v1/authorize/roles",
 											"host": [
 												"{{api_host}}"
 											],
 											"path": [
 												"v1",
 												"authorize",
-												"entitlements"
+												"roles"
 											]
 										}
 									},
@@ -6749,13 +7905,13 @@
 									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"name already exists\"\n    }\n}"
 								},
 								{
-									"name": "Client error - Invalid field",
+									"name": "Client error - Duplicate role Id",
 									"originalRequest": {
 										"method": "POST",
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n    // \"name\": \"TestEntitlement\",\n\n    // \"actionId\": \"{{action_id}}\",\n    // \"actionExpr\": \"TestAction:TestResourcde\",\n\n    // \"resourceId\": \"{{resource_id}}\",\n    // \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n\n    // \"subjectType\": \"custom\",\n    // \"subjectRef\": \"custom\",\n    \n    // \"createdBy\": \"{{user_id}}\"\n}",
+											"raw": "{\n    \"name\": \"Org Intern Suite\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"{{user_id}}\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"{{user_id}}\",\n    \"roles\": [\n        \"{{role_id}}\",\n        \"{{role_id}}\"\n    ]\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -6763,14 +7919,14 @@
 											}
 										},
 										"url": {
-											"raw": "{{api_host}}/v1/authorize/entitlements",
+											"raw": "{{api_host}}/v1/authorize/role-suites",
 											"host": [
 												"{{api_host}}"
 											],
 											"path": [
 												"v1",
 												"authorize",
-												"entitlements"
+												"role-suites"
 											]
 										}
 									},
@@ -6779,12 +7935,332 @@
 										{
 											"key": "Content-Type",
 											"value": "application/json",
+											"name": "Content-Type",
 											"description": "",
 											"type": "text"
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"actionExpr\": \"cannot be blank\",\n        \"createdBy\": \"cannot be blank\",\n        \"name\": \"cannot be blank\",\n        \"subjectRef\": \"cannot be blank\",\n        \"subjectType\": \"cannot be blank\"\n    }\n}"
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"roles[1]\": \"duplicate role id found at index 0\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Role suite - Get by Id",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/role-suites/{{rolesuite_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"role-suites",
+										"{{rolesuite_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/role-suites/{{rolesuite_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"role-suites",
+												"{{rolesuite_id}}"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01K0BT4X5XVNH8J1WQF5HDHA9E\",\n    \"etag\": \"1752743179453415000\",\n    \"name\": \"Org Intern Suite1\",\n    \"description\": \"\",\n    \"ownerType\": \"user\",\n    \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n    \"isRequestable\": false,\n    \"isRequiredAttachment\": false,\n    \"isRequiredComment\": false,\n    \"createdBy\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n    \"roles\": [\n        {\n            \"id\": \"01K0BSMMMVHGN2MTJX86S9GMJ7\",\n            \"etag\": \"1752742646427318000\",\n            \"createdAt\": \"2025-07-17T08:57:26.429529Z\",\n            \"name\": \"Authorize module Product Manager\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\"\n        }\n    ]\n}"
+								},
+								{
+									"name": "Client error - Not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/role-suites/01K0BT4X5XVNH8J1WQF5HDHA91",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"role-suites",
+												"01K0BT4X5XVNH8J1WQF5HDHA91"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"roleSuite not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Role suite - Search",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/authorize/role-suites?page=0&size=4&graph={\"if\":[\"name\", \"=\", \"Org Intern Suite 104JgY\"]}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"authorize",
+										"role-suites"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "0"
+										},
+										{
+											"key": "size",
+											"value": "4"
+										},
+										{
+											"key": "graph",
+											"value": "{\"if\":[\"name\", \"=\", \"Org Intern Suite 104JgY\"]}"
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - Full params",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/role-suites?page=0&size=4&graph={\"if\":[\"name\", \"=\", \"Org Intern Suite 104JgY\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"role-suites"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "4"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"Org Intern Suite 104JgY\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01K0BPDBGYKS8DVVJPGC7Y7X4X\",\n            \"etag\": \"1752739261982221000\",\n            \"name\": \"Org Intern Suite 104JgY\",\n            \"description\": \"\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01HlCAS8CqJmlCbCLaw7uDfYu4\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01qoe973WJ9g5lw39deJUolotR\",\n            \"roles\": [\n                {\n                    \"id\": \"01K0BAYG7Y3DQRTZ4KE53HAT12\",\n                    \"etag\": \"1752727240958184000\",\n                    \"createdAt\": \"2025-07-17T04:40:40.960117Z\",\n                    \"name\": \"Authorize module Product Manager bpWdPR\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01xKNHmmrGMUMKoDQoUpOSZJjp\",\n                    \"isRequestable\": false,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": false,\n                    \"createdBy\": \"01dxqRC6mhdiYOTyE1kuwyskbB\"\n                }\n            ]\n        }\n    ],\n    \"total\": 1,\n    \"page\": 0,\n    \"size\": 4\n}"
+								},
+								{
+									"name": "Success - No criteria, With paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/role-suites?page=0&size=4",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"role-suites"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "4"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWP9MVYX0K24R9H81SZEM7CE\",\n            \"etag\": \"1752677376899001000\",\n            \"name\": \"Domain User Suite\",\n            \"description\": \"Grant basic privileges to all users in the domain\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"roles\": [\n                {\n                    \"id\": \"01JWP80E084MTYF2C882WNR6MJ\",\n                    \"etag\": \"1752677376898730000\",\n                    \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n                    \"name\": \"Identity module Readonly\",\n                    \"description\": \"Granted with view action on Users and Groups in Identity module, except with Owner user\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n                    \"isRequestable\": true,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": true,\n                    \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\"\n                },\n                {\n                    \"id\": \"01JWP80S5RXP8BD4YCY8ZHP7NZ\",\n                    \"etag\": \"1752677376898737000\",\n                    \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n                    \"name\": \"Authorize module Readonly\",\n                    \"description\": \"Granted with view action on all resources in Authorize module\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n                    \"isRequestable\": true,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": true,\n                    \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0BPD3D6ZWGV2X1KZ5PGMYAB\",\n            \"etag\": \"1752739253670979000\",\n            \"name\": \"Org Intern Suite QeHpdl\",\n            \"description\": \"\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"018SPrpWwU8KBB95A2rIk4OzHx\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01HSbABL9DhRfcWLb0cqjT96pp\",\n            \"roles\": [\n                {\n                    \"id\": \"01K0BAYG7Y3DQRTZ4KE53HAT12\",\n                    \"etag\": \"1752727240958184000\",\n                    \"createdAt\": \"2025-07-17T04:40:40.960117Z\",\n                    \"name\": \"Authorize module Product Manager bpWdPR\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01xKNHmmrGMUMKoDQoUpOSZJjp\",\n                    \"isRequestable\": false,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": false,\n                    \"createdBy\": \"01dxqRC6mhdiYOTyE1kuwyskbB\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0BPDAZSSWSQ2719CQ4BXDRG\",\n            \"etag\": \"1752739261433981000\",\n            \"name\": \"Org Intern Suite eoZTSY\",\n            \"description\": \"\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01FYgrdMojavRAFne1gNkllwxY\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01vlXlKAWQCscfh1lUNlOQC0As\",\n            \"roles\": [\n                {\n                    \"id\": \"01K0BAYG7Y3DQRTZ4KE53HAT12\",\n                    \"etag\": \"1752727240958184000\",\n                    \"createdAt\": \"2025-07-17T04:40:40.960117Z\",\n                    \"name\": \"Authorize module Product Manager bpWdPR\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01xKNHmmrGMUMKoDQoUpOSZJjp\",\n                    \"isRequestable\": false,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": false,\n                    \"createdBy\": \"01dxqRC6mhdiYOTyE1kuwyskbB\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0BPDBGYKS8DVVJPGC7Y7X4X\",\n            \"etag\": \"1752739261982221000\",\n            \"name\": \"Org Intern Suite 104JgY\",\n            \"description\": \"\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01HlCAS8CqJmlCbCLaw7uDfYu4\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01qoe973WJ9g5lw39deJUolotR\",\n            \"roles\": [\n                {\n                    \"id\": \"01K0BAYG7Y3DQRTZ4KE53HAT12\",\n                    \"etag\": \"1752727240958184000\",\n                    \"createdAt\": \"2025-07-17T04:40:40.960117Z\",\n                    \"name\": \"Authorize module Product Manager bpWdPR\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01xKNHmmrGMUMKoDQoUpOSZJjp\",\n                    \"isRequestable\": false,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": false,\n                    \"createdBy\": \"01dxqRC6mhdiYOTyE1kuwyskbB\"\n                }\n            ]\n        }\n    ],\n    \"total\": 6,\n    \"page\": 0,\n    \"size\": 4\n}"
+								},
+								{
+									"name": "Success - No criteria, No paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/role-suites",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"role-suites"
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01JWP9MVYX0K24R9H81SZEM7CE\",\n            \"etag\": \"1752677376899001000\",\n            \"name\": \"Domain User Suite\",\n            \"description\": \"Grant basic privileges to all users in the domain\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\",\n            \"roles\": [\n                {\n                    \"id\": \"01JWP80E084MTYF2C882WNR6MJ\",\n                    \"etag\": \"1752677376898730000\",\n                    \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n                    \"name\": \"Identity module Readonly\",\n                    \"description\": \"Granted with view action on Users and Groups in Identity module, except with Owner user\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n                    \"isRequestable\": true,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": true,\n                    \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\"\n                },\n                {\n                    \"id\": \"01JWP80S5RXP8BD4YCY8ZHP7NZ\",\n                    \"etag\": \"1752677376898737000\",\n                    \"createdAt\": \"2025-07-16T14:49:36.894726Z\",\n                    \"name\": \"Authorize module Readonly\",\n                    \"description\": \"Granted with view action on all resources in Authorize module\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n                    \"isRequestable\": true,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": true,\n                    \"createdBy\": \"01JWNNJGS70Y07MBEV3AQ0M526\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0BPD3D6ZWGV2X1KZ5PGMYAB\",\n            \"etag\": \"1752739253670979000\",\n            \"name\": \"Org Intern Suite QeHpdl\",\n            \"description\": \"\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"018SPrpWwU8KBB95A2rIk4OzHx\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01HSbABL9DhRfcWLb0cqjT96pp\",\n            \"roles\": [\n                {\n                    \"id\": \"01K0BAYG7Y3DQRTZ4KE53HAT12\",\n                    \"etag\": \"1752727240958184000\",\n                    \"createdAt\": \"2025-07-17T04:40:40.960117Z\",\n                    \"name\": \"Authorize module Product Manager bpWdPR\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01xKNHmmrGMUMKoDQoUpOSZJjp\",\n                    \"isRequestable\": false,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": false,\n                    \"createdBy\": \"01dxqRC6mhdiYOTyE1kuwyskbB\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0BPDAZSSWSQ2719CQ4BXDRG\",\n            \"etag\": \"1752739261433981000\",\n            \"name\": \"Org Intern Suite eoZTSY\",\n            \"description\": \"\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01FYgrdMojavRAFne1gNkllwxY\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01vlXlKAWQCscfh1lUNlOQC0As\",\n            \"roles\": [\n                {\n                    \"id\": \"01K0BAYG7Y3DQRTZ4KE53HAT12\",\n                    \"etag\": \"1752727240958184000\",\n                    \"createdAt\": \"2025-07-17T04:40:40.960117Z\",\n                    \"name\": \"Authorize module Product Manager bpWdPR\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01xKNHmmrGMUMKoDQoUpOSZJjp\",\n                    \"isRequestable\": false,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": false,\n                    \"createdBy\": \"01dxqRC6mhdiYOTyE1kuwyskbB\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0BPDBGYKS8DVVJPGC7Y7X4X\",\n            \"etag\": \"1752739261982221000\",\n            \"name\": \"Org Intern Suite 104JgY\",\n            \"description\": \"\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01HlCAS8CqJmlCbCLaw7uDfYu4\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01qoe973WJ9g5lw39deJUolotR\",\n            \"roles\": [\n                {\n                    \"id\": \"01K0BAYG7Y3DQRTZ4KE53HAT12\",\n                    \"etag\": \"1752727240958184000\",\n                    \"createdAt\": \"2025-07-17T04:40:40.960117Z\",\n                    \"name\": \"Authorize module Product Manager bpWdPR\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01xKNHmmrGMUMKoDQoUpOSZJjp\",\n                    \"isRequestable\": false,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": false,\n                    \"createdBy\": \"01dxqRC6mhdiYOTyE1kuwyskbB\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0BPZ2NV2Y4F1B4BPKX6SP3A\",\n            \"etag\": \"1752739842747849000\",\n            \"name\": \"Org Intern Suite\",\n            \"description\": \"\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"roles\": [\n                {\n                    \"id\": \"01K0BAYG7Y3DQRTZ4KE53HAT12\",\n                    \"etag\": \"1752727240958184000\",\n                    \"createdAt\": \"2025-07-17T04:40:40.960117Z\",\n                    \"name\": \"Authorize module Product Manager bpWdPR\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01xKNHmmrGMUMKoDQoUpOSZJjp\",\n                    \"isRequestable\": false,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": false,\n                    \"createdBy\": \"01dxqRC6mhdiYOTyE1kuwyskbB\"\n                }\n            ]\n        },\n        {\n            \"id\": \"01K0BT4X5XVNH8J1WQF5HDHA9E\",\n            \"etag\": \"1752743179453415000\",\n            \"name\": \"Org Intern Suite1\",\n            \"description\": \"\",\n            \"ownerType\": \"user\",\n            \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"isRequestable\": false,\n            \"isRequiredAttachment\": false,\n            \"isRequiredComment\": false,\n            \"createdBy\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n            \"roles\": [\n                {\n                    \"id\": \"01K0BSMMMVHGN2MTJX86S9GMJ7\",\n                    \"etag\": \"1752742646427318000\",\n                    \"createdAt\": \"2025-07-17T08:57:26.429529Z\",\n                    \"name\": \"Authorize module Product Manager\",\n                    \"ownerType\": \"user\",\n                    \"ownerRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\",\n                    \"isRequestable\": false,\n                    \"isRequiredAttachment\": false,\n                    \"isRequiredComment\": false,\n                    \"createdBy\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\"\n                }\n            ]\n        }\n    ],\n    \"total\": 6,\n    \"page\": 0,\n    \"size\": 50\n}"
+								},
+								{
+									"name": "Client error - Invalid criteria",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/role-suites?page=0&size=4&graph={\"if\":[\"invalid_field\", \"=\", \"invalid_value\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"role-suites"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "0"
+												},
+												{
+													"key": "size",
+													"value": "4"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"invalid_field\", \"=\", \"invalid_value\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"graph.condition\": \"invalid field 'invalid_field' of entity 'role_suite' in condition '[invalid_field = invalid_value]'\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/role-suites?page=-1&size=99999999999&graph={\"if\":[\"name\", \"=\", \"Create\"]}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"role-suites"
+											],
+											"query": [
+												{
+													"key": "page",
+													"value": "-1"
+												},
+												{
+													"key": "size",
+													"value": "99999999999"
+												},
+												{
+													"key": "graph",
+													"value": "{\"if\":[\"name\", \"=\", \"Create\"]}"
+												}
+											]
+										}
+									},
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json",
+											"name": "Content-Type",
+											"description": "",
+											"type": "text"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"page\": \"must be no less than 0\",\n        \"size\": \"must be no greater than 500\"\n    }\n}"
 								}
 							]
 						}
@@ -6820,6 +8296,46 @@
 		},
 		{
 			"key": "org_id",
+			"value": ""
+		},
+		{
+			"key": "resource_id",
+			"value": ""
+		},
+		{
+			"key": "resource_name",
+			"value": ""
+		},
+		{
+			"key": "action_name",
+			"value": ""
+		},
+		{
+			"key": "action_id",
+			"value": ""
+		},
+		{
+			"key": "entitlement_name",
+			"value": ""
+		},
+		{
+			"key": "entitlement_id",
+			"value": ""
+		},
+		{
+			"key": "role_name",
+			"value": ""
+		},
+		{
+			"key": "role_id",
+			"value": ""
+		},
+		{
+			"key": "rolesuite_name",
+			"value": ""
+		},
+		{
+			"key": "rolesuite_id",
 			"value": ""
 		}
 	]

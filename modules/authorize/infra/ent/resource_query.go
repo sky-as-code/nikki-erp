@@ -335,12 +335,12 @@ func (rq *ResourceQuery) WithEntitlements(opts ...func(*EntitlementQuery)) *Reso
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Resource.Query().
-//		GroupBy(resource.FieldName).
+//		GroupBy(resource.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (rq *ResourceQuery) GroupBy(field string, fields ...string) *ResourceGroupBy {
@@ -358,11 +358,11 @@ func (rq *ResourceQuery) GroupBy(field string, fields ...string) *ResourceGroupB
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.Resource.Query().
-//		Select(resource.FieldName).
+//		Select(resource.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (rq *ResourceQuery) Select(fields ...string) *ResourceSelect {
 	rq.ctx.Fields = append(rq.ctx.Fields, fields...)

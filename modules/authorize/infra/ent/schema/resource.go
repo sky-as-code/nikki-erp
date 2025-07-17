@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"time"
+
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
@@ -19,6 +21,10 @@ func (ResourceMixin) Fields() []ent.Field {
 		field.String("id").
 			Immutable().
 			StorageKey("id"),
+
+		field.Time("created_at").
+			Default(time.Now).
+			Immutable(),
 
 		field.String("name").
 			Immutable(),

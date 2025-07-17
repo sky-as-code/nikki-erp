@@ -1,6 +1,16 @@
 package app
 
 import (
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/sky-as-code/nikki-erp/common/defense"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	val "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 )
@@ -16,132 +26,195 @@ type RoleSuiteServiceImpl struct {
 	roleSuiteRepo it.RoleSuiteRepository
 	eventBus      event.EventBus
 }
- 
-// func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.CreateResourceCommand) (result *it.CreateResourceResult, err error) {
-// 	defer func() {
-// 		if e := ft.RecoverPanic(recover(), "failed to create resource"); e != nil {
-// 			err = e
-// 		}
-// 	}()
 
-// 	resource := cmd.ToResource()
-// 	err = resource.SetDefaults()
-// 	ft.PanicOnErr(err)
+func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx context.Context, cmd it.CreateRoleSuiteCommand) (result *it.CreateRoleSuiteResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanic(recover(), "failed to create role suite"); e != nil {
+			err = e
+		}
+	}()
 
-// 	vErrs := resource.Validate(false)
-// 	this.assertResourceUnique(ctx, resource, &vErrs)
-// 	if vErrs.Count() > 0 {
-// 		return &it.CreateResourceResult{
-// 			ClientError: vErrs.ToClientError(),
-// 		}, nil
-// 	}
+	roleSuite := cmd.ToRoleSuite()
+	this.setRoleSuiteDefaults(ctx, roleSuite)
+	roleSuite.SetCreatedAt(time.Now())
 
-// 	resource, err = this.resourceRepo.Create(ctx, *resource)
-// 	ft.PanicOnErr(err)
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = roleSuite.Validate(false)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.sanitizeRoleSuite(roleSuite)
+			return this.assertRoleSuiteUnique(ctx, roleSuite, vErrs)
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			if len(roleSuite.Roles) > 0 {
+				this.validateRoles(ctx, roleSuite.Roles, vErrs)
+			}
+			return nil
+		}).
+		End()
+	ft.PanicOnErr(err)
 
-// 	return &it.CreateResourceResult{Data: resource}, err
-// }
+	if vErrs.Count() > 0 {
+		return &it.CreateRoleSuiteResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
 
-// func (this *ResourceServiceImpl) assertResourceUnique(ctx context.Context, resource *domain.Resource, errors *ft.ValidationErrors) {
-// 	if errors.Has("name") {
-// 		return
-// 	}
-// 	dbResource, err := this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: *resource.Name})
-// 	ft.PanicOnErr(err)
+	roleSuite, err = this.roleSuiteRepo.Create(ctx, *roleSuite)
+	ft.PanicOnErr(err)
 
-// 	if dbResource != nil {
-// 		errors.Append("name", "name already exists")
-// 	}
-// }
+	return &it.CreateRoleSuiteResult{
+		Data:    roleSuite,
+		HasData: roleSuite != nil,
+	}, nil
+}
 
-// func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.UpdateResourceCommand) (result *it.UpdateResourceResult, err error) {
-// 	defer func() {
-// 		if e := ft.RecoverPanic(recover(), "failed to update resource"); e != nil {
-// 			err = e
-// 		}
-// 	}()
+func (this *RoleSuiteServiceImpl) GetRoleSuiteById(ctx context.Context, query it.GetRoleSuiteByIdQuery) (result *it.GetRoleSuiteByIdResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanic(recover(), "failed to get role suite by id"); e != nil {
+			err = e
+		}
+	}()
 
-// 	resource := cmd.ToResource()
+	var dbRoleSuite *domain.RoleSuite
+	vErrs := ft.NewValidationErrors()
+	dbRoleSuite, err = this.assertRoleSuiteExistsById(ctx, query.Id, &vErrs)
+	ft.PanicOnErr(err)
 
-// 	vErrs := resource.Validate(true)
-// 	if resource.Name != nil {
-// 		this.assertResourceUnique(ctx, resource, &vErrs)
-// 	}
-// 	if vErrs.Count() > 0 {
-// 		return &it.UpdateResourceResult{
-// 			ClientError: vErrs.ToClientError(),
-// 		}, nil
-// 	}
+	if vErrs.Count() > 0 {
+		return &it.GetRoleSuiteByIdResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
 
-// 	dbResource, err := this.resourceRepo.FindById(ctx, it.FindByIdParam{Id: *resource.Id})
-// 	ft.PanicOnErr(err)
+	return &it.GetRoleSuiteByIdResult{
+		Data:    dbRoleSuite,
+		HasData: dbRoleSuite != nil,
+	}, nil
+}
 
-// 	if dbResource == nil {
-// 		vErrs = ft.NewValidationErrors()
-// 		vErrs.Append("id", "resource not found")
+func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx context.Context, query it.SearchRoleSuitesCommand) (result *it.SearchRoleSuitesResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanic(recover(), "failed to list role suites"); e != nil {
+			err = e
+		}
+	}()
 
-// 		return &it.UpdateResourceResult{
-// 			ClientError: vErrs.ToClientError(),
-// 		}, nil
+	query.SetDefaults()
+	vErrsModel := query.Validate()
+	predicate, order, vErrsGraph := this.roleSuiteRepo.ParseSearchGraph(query.Graph)
 
-// 	} else if *dbResource.Etag != *resource.Etag {
-// 		vErrs = ft.NewValidationErrors()
-// 		vErrs.Append("etag", "resource has been modified by another process")
+	vErrsModel.Merge(vErrsGraph)
 
-// 		return &it.UpdateResourceResult{
-// 			ClientError: vErrs.ToClientError(),
-// 		}, nil
-// 	}
+	if vErrsModel.Count() > 0 {
+		return &it.SearchRoleSuitesResult{
+			ClientError: vErrsModel.ToClientError(),
+		}, nil
+	}
 
-// 	resource.Etag = model.NewEtag()
-// 	resource, err = this.resourceRepo.Update(ctx, *resource)
-// 	ft.PanicOnErr(err)
+	roleSuites, err := this.roleSuiteRepo.Search(ctx, it.SearchParam{
+		Predicate: predicate,
+		Order:     order,
+		Page:      *query.Page,
+		Size:      *query.Size,
+	})
+	ft.PanicOnErr(err)
 
-// 	return &it.UpdateResourceResult{Data: resource}, err
-// }
+	return &it.SearchRoleSuitesResult{
+		Data:    roleSuites,
+		HasData: roleSuites.Items != nil,
+	}, nil
+}
 
-// func (this *ResourceServiceImpl) GetResourceByName(ctx context.Context, cmd it.GetResourceByNameCommand) (result *it.GetResourceByNameResult, err error) {
-// 	defer func() {
-// 		if e := ft.RecoverPanic(recover(), "failed to get resource by name"); e != nil {
-// 			err = e
-// 		}
-// 	}()
+func (this *RoleSuiteServiceImpl) GetRoleSuitesBySubject(ctx context.Context, query it.GetRoleSuitesBySubjectQuery) (result *it.GetRoleSuitesBySubjectResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanic(recover(), "failed to get role suites by subject"); e != nil {
+			err = e
+		}
+	}()
 
-// 	resource, err := this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: cmd.Name})
-// 	ft.PanicOnErr(err)
+	var roleSuites []domain.RoleSuite
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			// *vErrs = query.Validate()
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			roleSuites, err = this.roleSuiteRepo.FindAllBySubject(ctx, query)
+			return err
+		}).
+		End()
+	ft.PanicOnErr(err)
 
-// 	return &it.GetResourceByNameResult{Data: resource}, err
-// }
+	if vErrs.Count() > 0 {
+		return &it.GetRoleSuitesBySubjectResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
 
-// func (this *ResourceServiceImpl) SearchResources(ctx context.Context, query it.SearchResourcesCommand) (result *it.SearchResourcesResult, err error) {
-// 	defer func() {
-// 		if e := ft.RecoverPanic(recover(), "failed to list resources"); e != nil {
-// 			err = e
-// 		}
-// 	}()
+	return &it.GetRoleSuitesBySubjectResult{
+		Data:    roleSuites,
+		HasData: roleSuites != nil,
+	}, nil
+}
 
-// 	vErrsModel := query.Validate()
-// 	predicate, order, vErrsGraph := this.resourceRepo.ParseSearchGraph(query.Graph)
+func (this *RoleSuiteServiceImpl) assertRoleSuiteExistsById(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (dbRoleSuite *domain.RoleSuite, err error) {
+	dbRoleSuite, err = this.roleSuiteRepo.FindById(ctx, it.FindByIdParam{Id: id})
+	if dbRoleSuite == nil {
+		vErrs.AppendIdNotFound("roleSuite")
+	}
+	return
+}
 
-// 	vErrsModel.Merge(vErrsGraph)
+func (this *RoleSuiteServiceImpl) assertRoleSuiteUnique(ctx context.Context, roleSuite *domain.RoleSuite, vErrs *ft.ValidationErrors) error {
+	if vErrs.Has("name") {
+		return nil
+	}
 
-// 	if vErrsModel.Count() > 0 {
-// 		return &it.SearchResourcesResult{
-// 			ClientError: vErrsModel.ToClientError(),
-// 		}, nil
-// 	}
-// 	query.SetDefaults()
+	dbRoleSuite, err := this.roleSuiteRepo.FindByName(ctx, it.FindByNameParam{Name: *roleSuite.Name})
+	ft.PanicOnErr(err)
 
-// 	resources, err := this.resourceRepo.Search(ctx, it.SearchParam{
-// 		Predicate:   predicate,
-// 		Order:       order,
-// 		Page:        *query.Page,
-// 		Size:        *query.Size,
-// 		WithActions: query.WithActions,
-// 	})
-// 	ft.PanicOnErr(err)
+	if dbRoleSuite != nil {
+		vErrs.Append("name", "name already exists")
+	}
 
-// 	return &it.SearchResourcesResult{
-// 		Data: resources,
-// 	}, nil
-// }
+	return nil
+}
+
+func (this *RoleSuiteServiceImpl) sanitizeRoleSuite(roleSuite *domain.RoleSuite) {
+	if roleSuite.Description != nil {
+		cleanedDescription := strings.TrimSpace(*roleSuite.Description)
+		cleanedDescription = defense.SanitizePlainText(cleanedDescription)
+		roleSuite.Description = &cleanedDescription
+	}
+}
+
+func (this *RoleSuiteServiceImpl) setRoleSuiteDefaults(ctx context.Context, roleSuite *domain.RoleSuite) {
+	roleSuite.SetDefaults()
+}
+
+func (this *RoleSuiteServiceImpl) validateRoles(ctx context.Context, roles []*domain.Role, vErrs *ft.ValidationErrors) {
+	seenIds := make(map[model.Id]int)
+
+	for i, role := range roles {
+		if role.Id == nil {
+			vErrs.Append(fmt.Sprintf("roles[%d]", i), "role id cannot be nil")
+			continue
+		}
+
+		if firstIndex, exists := seenIds[*role.Id]; exists {
+			vErrs.Append(fmt.Sprintf("roles[%d]", i), fmt.Sprintf("duplicate role id found at index %d", firstIndex))
+			continue
+		}
+
+		seenIds[*role.Id] = i
+	}
+
+	if vErrs.Count() > 0 {
+		return
+	}
+}

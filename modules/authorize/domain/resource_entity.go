@@ -11,6 +11,7 @@ import (
 
 type Resource struct {
 	model.ModelBase
+	model.AuditableBase
 
 	Name         *string            `json:"name,omitempty"`
 	Description  *string            `json:"description,omitempty"`

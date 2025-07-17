@@ -1,27 +1,33 @@
 package role_suite
 
-// import (
-// 	"github.com/sky-as-code/nikki-erp/common/model"
-// 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-// )
+import (
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+)
 
-// func (this CreateResourceCommand) ToResource() *domain.Resource {
-// 	return &domain.Resource{
-// 		Name:         &this.Name,
-// 		Description:  &this.Description,
-// 		ResourceType: domain.WrapResourceType(this.ResourceType),
-// 		ResourceRef:  &this.ResourceRef,
-// 		ScopeType:    domain.WrapResourceScopeType(this.ScopeType),
-// 		Actions:      []domain.Action{},
-// 	}
-// }
+func (this CreateRoleSuiteCommand) ToRoleSuite() *domain.RoleSuite {
+	return &domain.RoleSuite{
+		Name:                 &this.Name,
+		Description:          this.Description,
+		OwnerType:            domain.WrapRoleSuiteOwnerType(this.OwnerType),
+		OwnerRef:             &this.OwnerRef,
+		IsRequestable:        this.IsRequestable,
+		IsRequiredAttachment: this.IsRequiredAttachment,
+		IsRequiredComment:    this.IsRequiredComment,
+		CreatedBy:            &this.CreatedBy,
+		Roles:                this.ToRoles(),
+	}
+}
 
-// func (this UpdateResourceCommand) ToResource() *domain.Resource {
-// 	return &domain.Resource{
-// 		ModelBase: model.ModelBase{
-// 			Id:   &this.Id,
-// 			Etag: &this.Etag,
-// 		},
-// 		Description: this.Description,
-// 	}
-// }
+func (this CreateRoleSuiteCommand) ToRoles() []*domain.Role {
+	roles := make([]*domain.Role, 0)
+	for _, roleId := range this.Roles {
+		roles = append(roles, &domain.Role{
+			ModelBase: model.ModelBase{
+				Id: roleId,
+			},
+		})
+	}
+
+	return roles
+}

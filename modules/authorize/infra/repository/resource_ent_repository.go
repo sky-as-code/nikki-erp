@@ -5,6 +5,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
@@ -33,7 +34,7 @@ func (this *ResourceEntRepository) Create(ctx context.Context, resource domain.R
 		SetScopeType(entResource.ScopeType(*resource.ScopeType)).
 		SetEtag(*resource.Etag)
 
-	return db.Mutate(ctx, creation, entToResource)
+	return db.Mutate(ctx, creation, ent.IsNotFound, entToResource)
 }
 
 func (this *ResourceEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Resource, error) {
@@ -51,17 +52,17 @@ func (this *ResourceEntRepository) FindByName(ctx context.Context, param it.Find
 	return db.FindOne(ctx, query, ent.IsNotFound, entToResource)
 }
 
-func (this *ResourceEntRepository) Update(ctx context.Context, resource domain.Resource) (*domain.Resource, error) {
+func (this *ResourceEntRepository) Update(ctx context.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error) {
 	update := this.client.Resource.UpdateOneID(*resource.Id).
 		SetDescription(*resource.Description).
-		SetEtag(*resource.Etag)
+		Where(entResource.EtagEQ(prevEtag))
 
 	if len(update.Mutation().Fields()) > 0 {
 		update.
 			SetEtag(*resource.Etag)
 	}
 
-	return db.Mutate(ctx, update, entToResource)
+	return db.Mutate(ctx, update, ent.IsNotFound, entToResource)
 }
 
 func (this *ResourceEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {

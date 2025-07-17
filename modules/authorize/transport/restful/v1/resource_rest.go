@@ -4,129 +4,114 @@ import (
 	"github.com/labstack/echo/v4"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
-	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"go.uber.org/dig"
 )
 
 type resourceRestParams struct {
 	dig.In
 
-	Config  config.ConfigService
-	Logger  logging.LoggerService
-	CqrsBus cqrs.CqrsBus
+	ResourceSvc it.ResourceService
 }
 
 func NewResourceRest(params resourceRestParams) *ResourceRest {
 	return &ResourceRest{
-		RestBase: httpserver.RestBase{
-			ConfigSvc: params.Config,
-			Logger:    params.Logger,
-			CqrsBus:   params.CqrsBus,
-		},
+		ResourceSvc: params.ResourceSvc,
 	}
 }
 
 type ResourceRest struct {
-	httpserver.RestBase
+	ResourceSvc it.ResourceService
 }
 
 func (this ResourceRest) CreateResource(echoCtx echo.Context) (err error) {
-	request := &CreateResourceRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
-
-	result := it.CreateResourceResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
-
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := CreateResourceResponse{}
-	response.FromResource(*result.Data)
-
-	return httpserver.JsonCreated(echoCtx, response)
-}
-
-func (this ResourceRest) UpdateResource(echoCtx echo.Context) (err error) {
-	request := &UpdateResourceRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
-
-	result := it.UpdateResourceResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
-
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := UpdateResourceResponse{}
-	response.FromResource(*result.Data)
-
-	return httpserver.JsonOk(echoCtx, response)
-}
-
-func (this ResourceRest) GetResourceByName(echoCtx echo.Context) (err error) {
-	request := &GetResourceByNameRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
-
-	result := it.GetResourceByNameResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
-
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := GetResourceByNameResponse{}
-	response.FromResource(*result.Data)
-
-	return httpserver.JsonOk(echoCtx, response)
-}
-
-func (this ResourceRest) SearchResources(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list resources"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create resource"); e != nil {
 			err = e
 		}
 	}()
 
-	request := &SearchResourcesRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
+	err = httpserver.ServeRequest(
+		echoCtx, this.ResourceSvc.CreateResource,
+		func(request CreateResourceRequest) it.CreateResourceCommand {
+			return it.CreateResourceCommand(request)
+		},
+		func(result it.CreateResourceResult) CreateResourceResponse {
+			response := CreateResourceResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonCreated,
+	)
 
-	result := it.SearchResourcesResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+	return err
+}
 
-	if err != nil {
-		return err
-	}
+func (this ResourceRest) UpdateResource(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update resource"); e != nil {
+			err = e
+		}
+	}()
 
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
+	err = httpserver.ServeRequest(
+		echoCtx, this.ResourceSvc.UpdateResource,
+		func(request UpdateResourceRequest) it.UpdateResourceCommand {
+			return it.UpdateResourceCommand(request)
+		},
+		func(result it.UpdateResourceResult) UpdateResourceResponse {
+			response := UpdateResourceResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
 
-	response := SearchResourcesResponse{}
-	response.FromResult(result.Data)
+	return err
+}
 
-	return httpserver.JsonOk(echoCtx, response)
+func (this ResourceRest) GetResourceByName(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get resource by name"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.ResourceSvc.GetResourceByName,
+		func(request GetResourceByNameRequest) it.GetResourceByNameQuery {
+			return it.GetResourceByNameQuery(request)
+		},
+		func(result it.GetResourceByNameResult) GetResourceByNameResponse {
+			response := GetResourceByNameResponse{}	
+			response.FromResource(*result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
+func (this ResourceRest) SearchResources(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search resources"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.ResourceSvc.SearchResources,
+		func(request SearchResourcesRequest) it.SearchResourcesQuery {
+			return it.SearchResourcesQuery(request)
+		},
+		func(result it.SearchResourcesResult) SearchResourcesResponse {
+			response := SearchResourcesResponse{}
+			response.FromResult(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
 }

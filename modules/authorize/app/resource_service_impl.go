@@ -2,9 +2,13 @@ package app
 
 import (
 	"context"
+	"strings"
+	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
@@ -30,11 +34,22 @@ func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.Crea
 	}()
 
 	resource := cmd.ToResource()
-	err = resource.SetDefaults()
+	this.setResourceDefaults(ctx, resource)
+	resource.SetCreatedAt(time.Now())
+
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = resource.Validate(false)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.sanitizeResource(resource)
+			return this.assertResourceUnique(ctx, resource, vErrs)
+		}).
+		End()
 	ft.PanicOnErr(err)
 
-	vErrs := resource.Validate(false)
-	this.assertResourceUnique(ctx, resource, &vErrs)
 	if vErrs.Count() > 0 {
 		return &it.CreateResourceResult{
 			ClientError: vErrs.ToClientError(),
@@ -44,19 +59,10 @@ func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.Crea
 	resource, err = this.resourceRepo.Create(ctx, *resource)
 	ft.PanicOnErr(err)
 
-	return &it.CreateResourceResult{Data: resource}, err
-}
-
-func (this *ResourceServiceImpl) assertResourceUnique(ctx context.Context, resource *domain.Resource, errors *ft.ValidationErrors) {
-	if errors.Has("name") {
-		return
-	}
-	dbResource, err := this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: *resource.Name})
-	ft.PanicOnErr(err)
-
-	if dbResource != nil {
-		errors.Append("name", "name already exists")
-	}
+	return &it.CreateResourceResult{
+		Data:    resource,
+		HasData: resource != nil,
+	}, err
 }
 
 func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.UpdateResourceCommand) (result *it.UpdateResourceResult, err error) {
@@ -67,39 +73,44 @@ func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.Upda
 	}()
 
 	resource := cmd.ToResource()
+	var dbResource *domain.Resource
 
-	vErrs := resource.Validate(true)
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = resource.Validate(true)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			dbResource, err = this.assertResourceExistsById(ctx, *resource.Id, vErrs)
+			return err
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.assertCorrectEtag(*resource.Etag, *dbResource.Etag, vErrs)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.sanitizeResource(resource)
+			return nil
+		}).
+		End()
+	ft.PanicOnErr(err)
+
 	if vErrs.Count() > 0 {
 		return &it.UpdateResourceResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	dbResource, err := this.resourceRepo.FindById(ctx, it.FindByIdParam{Id: *resource.Id})
-	ft.PanicOnErr(err)
-
-	if dbResource == nil {
-		vErrs = ft.NewValidationErrors()
-		vErrs.Append("id", "resource not found")
-
-		return &it.UpdateResourceResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-
-	} else if *dbResource.Etag != *resource.Etag {
-		vErrs = ft.NewValidationErrors()
-		vErrs.Append("etag", "resource has been modified by another process")
-
-		return &it.UpdateResourceResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
+	prevEtag := resource.Etag
 	resource.Etag = model.NewEtag()
-	resource, err = this.resourceRepo.Update(ctx, *resource)
+	resource, err = this.resourceRepo.Update(ctx, *resource, *prevEtag)
 	ft.PanicOnErr(err)
 
-	return &it.UpdateResourceResult{Data: resource}, err
+	return &it.UpdateResourceResult{
+		Data:    resource,
+		HasData: resource != nil,
+	}, err
 }
 
 func (this *ResourceServiceImpl) GetResourceByName(ctx context.Context, query it.GetResourceByNameQuery) (result *it.GetResourceByNameResult, err error) {
@@ -109,33 +120,40 @@ func (this *ResourceServiceImpl) GetResourceByName(ctx context.Context, query it
 		}
 	}()
 
-	vErrs := query.Validate()
+	var dbResource *domain.Resource
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = query.Validate()
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			dbResource, err = this.assertResourceExistsByName(ctx, query.Name, vErrs)
+			return err
+		}).
+		End()
+	ft.PanicOnErr(err)
+
 	if vErrs.Count() > 0 {
 		return &it.GetResourceByNameResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil
 	}
 
-	resource, err := this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: query.Name})
-	ft.PanicOnErr(err)
-
-	if resource == nil {
-		vErrs.Append("name", "resource not found")
-		return &it.GetResourceByNameResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	return &it.GetResourceByNameResult{Data: resource}, err
+	return &it.GetResourceByNameResult{
+		Data:    dbResource,
+		HasData: dbResource != nil,
+	}, nil
 }
 
 func (this *ResourceServiceImpl) SearchResources(ctx context.Context, query it.SearchResourcesQuery) (result *it.SearchResourcesResult, err error) {
-	defer func() {	
+	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to list resources"); e != nil {
 			err = e
 		}
 	}()
 
+	query.SetDefaults()
 	vErrsModel := query.Validate()
 	predicate, order, vErrsGraph := this.resourceRepo.ParseSearchGraph(query.Graph)
 
@@ -146,7 +164,6 @@ func (this *ResourceServiceImpl) SearchResources(ctx context.Context, query it.S
 			ClientError: vErrsModel.ToClientError(),
 		}, nil
 	}
-	query.SetDefaults()
 
 	resources, err := this.resourceRepo.Search(ctx, it.SearchParam{
 		Predicate:   predicate,
@@ -158,6 +175,56 @@ func (this *ResourceServiceImpl) SearchResources(ctx context.Context, query it.S
 	ft.PanicOnErr(err)
 
 	return &it.SearchResourcesResult{
-		Data: resources,
+		Data:    resources,
+		HasData: resources.Items != nil,
 	}, nil
+}
+
+func (this *ResourceServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *ft.ValidationErrors) {
+	if updatedEtag != dbEtag {
+		vErrs.AppendEtagMismatched()
+	}
+}
+
+func (this *ResourceServiceImpl) assertResourceExistsByName(ctx context.Context, name string, vErrs *ft.ValidationErrors) (dbResource *domain.Resource, err error) {
+	dbResource, err = this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: name})
+	if dbResource == nil {
+		vErrs.AppendIdNotFound("resource")
+	}
+	return
+}
+
+func (this *ResourceServiceImpl) assertResourceExistsById(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (dbResource *domain.Resource, err error) {
+	dbResource, err = this.resourceRepo.FindById(ctx, it.FindByIdParam{Id: id})
+	if dbResource == nil {
+		vErrs.AppendIdNotFound("resource")
+	}
+	return
+}
+
+func (this *ResourceServiceImpl) sanitizeResource(resource *domain.Resource) {
+	if resource.Description != nil {
+		cleanedName := strings.TrimSpace(*resource.Description)
+		cleanedName = defense.SanitizePlainText(cleanedName)
+		resource.Description = &cleanedName
+	}
+}
+
+func (this *ResourceServiceImpl) setResourceDefaults(ctx context.Context, resource *domain.Resource) {
+	resource.SetDefaults()
+}
+
+func (this *ResourceServiceImpl) assertResourceUnique(ctx context.Context, resource *domain.Resource, vErrs *ft.ValidationErrors) error {
+	if vErrs.Has("name") {
+		return nil
+	}
+
+	dbResource, err := this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: *resource.Name})
+	ft.PanicOnErr(err)
+
+	if dbResource != nil {
+		vErrs.Append("name", "name already exists")
+	}
+
+	return nil
 }

@@ -31,13 +31,3 @@ func (this CreateRoleCommand) ToEntitlements() []*domain.Entitlement {
 
 	return entitlements
 }
-
-// func (this UpdateResourceCommand) ToResource() *domain.Resource {
-// 	return &domain.Resource{
-// 		ModelBase: model.ModelBase{
-// 			Id:   &this.Id,
-// 			Etag: &this.Etag,
-// 		},
-// 		Description: this.Description,
-// 	}
-// }

@@ -1,84 +1,64 @@
 package v1
 
-// import (
-// 	"github.com/sky-as-code/nikki-erp/common/array"
-// 	"github.com/sky-as-code/nikki-erp/common/model"
-// 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-// 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
-// 	"github.com/thoas/go-funk"
-// )
+import (
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/thoas/go-funk"
+)
 
-// type CreateResourceRequest = it.CreateResourceCommand
-// type CreateResourceResponse = GetResourceByIdResponse
+type RoleSuiteDto struct {
+	Id   model.Id   `json:"id"`
+	Etag model.Etag `json:"etag"`
 
-// type UpdateResourceRequest = it.UpdateResourceCommand
-// type UpdateResourceResponse = GetResourceByIdResponse
+	Name                 string   `json:"name"`
+	Description          *string  `json:"description,omitempty"`
+	OwnerType            string   `json:"ownerType"`
+	OwnerRef             string   `json:"ownerRef"`
+	IsRequestable        *bool    `json:"isRequestable,omitempty"`
+	IsRequiredAttachment *bool    `json:"isRequiredAttachment,omitempty"`
+	IsRequiredComment    *bool    `json:"isRequiredComment,omitempty"`
+	CreatedBy            model.Id `json:"createdBy"`
 
-// type GetResourceByNameRequest = it.GetResourceByNameCommand
-// type GetResourceByNameResponse = GetResourceByIdResponse
+	Roles []*RoleDto `json:"roles,omitempty"`
+}
 
-// type GetResourceByIdResponse struct {
-// 	Id           model.Id   `json:"id,omitempty"`
-// 	Name         string     `json:"name,omitempty"`
-// 	Description  string     `json:"description,omitempty"`
-// 	Etag         model.Etag `json:"etag,omitempty"`
-// 	ResourceType string     `json:"resourceType,omitempty"`
-// 	ResourceRef  string     `json:"resourceRef,omitempty"`
-// 	ScopeType    string     `json:"scopeType,omitempty"`
-// }
+type CreateRoleSuiteRequest = it.CreateRoleSuiteCommand
+type CreateRoleSuiteResponse = httpserver.RestCreateResponse
 
-// func (this *GetResourceByIdResponse) FromResource(resource domain.Resource) {
-// 	this.Id = *resource.Id
-// 	this.Name = *resource.Name
-// 	this.Description = *resource.Description
-// 	this.Etag = *resource.Etag
-// 	this.ResourceType = resource.ResourceType.String()
-// 	this.ResourceRef = *resource.ResourceRef
-// 	this.ScopeType = resource.ScopeType.String()
-// }
+type GetRoleSuiteByIdRequest = it.GetRoleSuiteByIdQuery
+type GetRoleSuiteByIdResponse = RoleSuiteDto
 
-// type SearchResourcesRequest = it.SearchResourcesCommand
+type SearchRoleSuitesRequest = it.SearchRoleSuitesCommand
+type SearchRoleSuitesResponse httpserver.RestSearchResponse[RoleSuiteDto]
 
-// type SearchResourcesResponseItem struct {
-// 	Id           model.Id   `json:"id,omitempty"`
-// 	Name         string     `json:"name,omitempty"`
-// 	Description  string     `json:"description,omitempty"`
-// 	Etag         model.Etag `json:"etag,omitempty"`
-// 	ResourceType string     `json:"resourceType,omitempty"`
-// 	ResourceRef  string     `json:"resourceRef,omitempty"`
-// 	ScopeType    string     `json:"scopeType,omitempty"`
-// 	Actions      []string   `json:"actions,omitempty"`
-// }
+func (this *SearchRoleSuitesResponse) FromResult(result *it.SearchRoleSuitesResultData) {
+	this.Total = result.Total
+	this.Page = result.Page
+	this.Size = result.Size
+	this.Items = funk.Map(result.Items, func(roleSuite domain.RoleSuite) RoleSuiteDto {
+		item := RoleSuiteDto{}
+		item.FromRoleSuite(roleSuite)
+		return item
+	}).([]RoleSuiteDto)
+}
 
-// func (this *SearchResourcesResponseItem) FromResource(resource domain.Resource) {
-// 	this.Id = *resource.Id
-// 	this.Name = *resource.Name
-// 	this.Description = *resource.Description
-// 	this.Etag = *resource.Etag
-// 	this.ResourceType = resource.ResourceType.String()
-// 	this.ResourceRef = *resource.ResourceRef
-// 	this.ScopeType = resource.ScopeType.String()
+func (this *GetRoleSuiteByIdResponse) FromRoleSuite(roleSuite domain.RoleSuite) {
+	this.Id = *roleSuite.Id
+	this.Name = *roleSuite.Name
+	this.Description = roleSuite.Description
+	this.Etag = *roleSuite.Etag
+	this.OwnerType = roleSuite.OwnerType.String()
+	this.OwnerRef = *roleSuite.OwnerRef
+	this.IsRequestable = roleSuite.IsRequestable
+	this.IsRequiredAttachment = roleSuite.IsRequiredAttachment
+	this.IsRequiredComment = roleSuite.IsRequiredComment
+	this.CreatedBy = *roleSuite.CreatedBy
 
-// 	// Convert actions to string array
-// 	this.Actions = array.Map(resource.Actions, func(action domain.Action) string {
-// 		return *action.Name
-// 	})
-// }
-
-// type SearchResourcesResponse struct {
-// 	Items []SearchResourcesResponseItem `json:"items"`
-// 	Total int                         `json:"total"`
-// 	Page  int                         `json:"page"`
-// 	Size  int                         `json:"size"`
-// }
-
-// func (this *SearchResourcesResponse) FromResult(result *it.SearchResourcesResultData) {
-// 	this.Total = result.Total
-// 	this.Page = result.Page
-// 	this.Size = result.Size
-// 	this.Items = funk.Map(result.Items, func(resource domain.Resource) SearchResourcesResponseItem {
-// 		item := SearchResourcesResponseItem{}
-// 		item.FromResource(resource)
-// 		return item
-// 	}).([]SearchResourcesResponseItem)
-// }
+	this.Roles = funk.Map(roleSuite.Roles, func(role *domain.Role) *RoleDto {
+		item := RoleDto{}
+		item.FromRole(*role)
+		return &item
+	}).([]*RoleDto)
+}

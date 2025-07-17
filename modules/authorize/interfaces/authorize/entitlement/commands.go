@@ -42,11 +42,11 @@ type CreateEntitlementCommand struct {
 	CreatedBy   string    `json:"createdBy"`
 }
 
-func (CreateEntitlementCommand) Type() cqrs.RequestType {
+func (CreateEntitlementCommand) CqrsRequestType() cqrs.RequestType {
 	return createEntitlementCommandType
 }
 
-type CreateEntitlementResult model.OpResult[*domain.Entitlement]
+type CreateEntitlementResult = crud.OpResult[*domain.Entitlement]
 
 // END: CreateEntitlementCommand
 
@@ -61,7 +61,7 @@ type EntitlementExistsCommand struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (EntitlementExistsCommand) Type() cqrs.RequestType {
+func (EntitlementExistsCommand) CqrsRequestType() cqrs.RequestType {
 	return existsCommandType
 }
 
@@ -73,7 +73,7 @@ func (this EntitlementExistsCommand) Validate() ft.ValidationErrors {
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type EntitlementExistsResult model.OpResult[bool]
+type EntitlementExistsResult = crud.OpResult[bool]
 
 // END: EntitlementExistsCommand
 
@@ -91,11 +91,11 @@ type UpdateEntitlementCommand struct {
 	Description *string `json:"description,omitempty"`
 }
 
-func (UpdateEntitlementCommand) Type() cqrs.RequestType {
+func (UpdateEntitlementCommand) CqrsRequestType() cqrs.RequestType {
 	return updateEntitlementCommandType
 }
 
-type UpdateEntitlementResult model.OpResult[*domain.Entitlement]
+type UpdateEntitlementResult = crud.OpResult[*domain.Entitlement]
 
 // END: UpdateEntitlementCommand
 
@@ -117,11 +117,11 @@ func (this GetEntitlementByIdQuery) Validate() ft.ValidationErrors {
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-func (GetEntitlementByIdQuery) Type() cqrs.RequestType {
+func (GetEntitlementByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getEntitlementByIdQueryType
 }
 
-type GetEntitlementByIdResult model.OpResult[*domain.Entitlement]
+type GetEntitlementByIdResult = crud.OpResult[*domain.Entitlement]
 
 // END: GetEntitlementByIdQuery
 
@@ -136,11 +136,11 @@ type GetEntitlementByNameQuery struct {
 	Name string `param:"name" json:"name"`
 }
 
-func (GetEntitlementByNameQuery) Type() cqrs.RequestType {
+func (GetEntitlementByNameQuery) CqrsRequestType() cqrs.RequestType {
 	return getEntitlementByNameQueryType
 }
 
-type GetEntitlementByNameResult model.OpResult[*domain.Entitlement]
+type GetEntitlementByNameResult = crud.OpResult[*domain.Entitlement]
 
 // END: GetEntitlementByNameQuery
 
@@ -155,11 +155,18 @@ type GetAllEntitlementByIdsQuery struct {
 	Ids []model.Id `param:"ids" json:"ids"`
 }
 
-func (GetAllEntitlementByIdsQuery) Type() cqrs.RequestType {
+func (GetAllEntitlementByIdsQuery) CqrsRequestType() cqrs.RequestType {
 	return getAllEntitlementByIdsQueryType
 }
 
-type GetAllEntitlementByIdsResult model.OpResult[[]*domain.Entitlement]
+func (this GetAllEntitlementByIdsQuery) Validate() ft.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRuleMulti(&this.Ids, true, 1, model.MODEL_RULE_ID_ARR_MAX),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type GetAllEntitlementByIdsResult = crud.OpResult[[]*domain.Entitlement]
 
 // END: GetAllEntitlementByIdsQuery
 
@@ -176,7 +183,7 @@ type SearchEntitlementsQuery struct {
 	Graph *string `json:"graph" query:"graph"`
 }
 
-func (SearchEntitlementsQuery) Type() cqrs.RequestType {
+func (SearchEntitlementsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchEntitlementsQueryType
 }
 
@@ -187,13 +194,13 @@ func (this *SearchEntitlementsQuery) SetDefaults() {
 
 func (this SearchEntitlementsQuery) Validate() ft.ValidationErrors {
 	rules := []*validator.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type SearchEntitlementsResultData = crud.PagedResult[*domain.Entitlement]
-type SearchEntitlementsResult model.OpResult[*SearchEntitlementsResultData]
+type SearchEntitlementsResult = crud.OpResult[*SearchEntitlementsResultData]
 
 // END: SearchEntitlementsQuery

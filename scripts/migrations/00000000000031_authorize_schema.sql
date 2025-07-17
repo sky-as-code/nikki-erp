@@ -1,5 +1,5 @@
 -- Create "authz_resources" table
-CREATE TABLE "authz_resources" ("id" character varying NOT NULL, "name" character varying NOT NULL, "description" character varying NULL, "etag" character varying NOT NULL, "resource_type" character varying NOT NULL, "resource_ref" character varying NULL, "scope_type" character varying NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "authz_resources" ("id" character varying NOT NULL, "created_at" timestamptz NOT NULL, "name" character varying NOT NULL, "description" character varying NULL, "etag" character varying NOT NULL, "resource_type" character varying NOT NULL, "resource_ref" character varying NULL, "scope_type" character varying NOT NULL, PRIMARY KEY ("id"));
 -- Create index "resource_name" to table: "authz_resources"
 CREATE UNIQUE INDEX "resource_name" ON "authz_resources" ("name");
 -- Create "authz_actions" table

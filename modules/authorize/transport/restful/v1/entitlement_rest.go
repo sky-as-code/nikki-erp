@@ -3,130 +3,120 @@ package v1
 import (
 	"github.com/labstack/echo/v4"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
-	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"go.uber.org/dig"
 )
 
 type entitlementRestParams struct {
 	dig.In
 
-	Config  config.ConfigService
-	Logger  logging.LoggerService
-	CqrsBus cqrs.CqrsBus
+	EntitlementSvc entitlement.EntitlementService
 }
 
 func NewEntitlementRest(params entitlementRestParams) *EntitlementRest {
 	return &EntitlementRest{
-		RestBase: httpserver.RestBase{
-			ConfigSvc: params.Config,
-			Logger:    params.Logger,
-			CqrsBus:   params.CqrsBus,
-		},
+		EntitlementSvc: params.EntitlementSvc,
 	}
 }
 
 type EntitlementRest struct {
-	httpserver.RestBase
+	EntitlementSvc entitlement.EntitlementService
 }
 
 func (this EntitlementRest) CreateEntitlement(echoCtx echo.Context) (err error) {
-	request := &CreateEntitlementRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
-
-	result := it.CreateEntitlementResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
-
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := CreateEntitlementResponse{}
-	response.FromEntitlement(*result.Data)
-
-	return httpserver.JsonCreated(echoCtx, response)
-}
-
-func (this EntitlementRest) UpdateEntitlement(echoCtx echo.Context) (err error) {
-	request := &UpdateEntitlementRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
-
-	result := it.UpdateEntitlementResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
-
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := UpdateEntitlementResponse{}
-	response.FromEntitlement(*result.Data)
-
-	return httpserver.JsonOk(echoCtx, response)
-}
-
-func (this EntitlementRest) GetEntitlementById(echoCtx echo.Context) (err error) {
-	request := &GetEntitlementByIdRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
-
-	result := it.GetEntitlementByIdResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
-
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := GetEntitlementByIdResponse{}
-	response.FromEntitlement(*result.Data)
-
-	return httpserver.JsonOk(echoCtx, response)
-}
-
-func (this EntitlementRest) SearchEntitlements(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list entitlements"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create entitlement"); e != nil {
 			err = e
 		}
 	}()
 
-	request := &SearchEntitlementsRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
+	err = httpserver.ServeRequest(
+		echoCtx,
+		this.EntitlementSvc.CreateEntitlement,
+		func(request CreateEntitlementRequest) it.CreateEntitlementCommand {
+			return it.CreateEntitlementCommand(request)
+		},
+		func(result it.CreateEntitlementResult) CreateEntitlementResponse {
+			response := CreateEntitlementResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonCreated,
+	)
 
-	result := it.SearchEntitlementsResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+	return err
+}
 
-	if err != nil {
-		return err
-	}
+func (this EntitlementRest) UpdateEntitlement(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update entitlement"); e != nil {
+			err = e
+		}
+	}()
 
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
+	err = httpserver.ServeRequest(
+		echoCtx,
+		this.EntitlementSvc.UpdateEntitlement,
+		func(request UpdateEntitlementRequest) it.UpdateEntitlementCommand {
+			return it.UpdateEntitlementCommand(request)
+		},
+		func(result it.UpdateEntitlementResult) UpdateEntitlementResponse {
+			response := UpdateEntitlementResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
 
-	response := SearchEntitlementsResponse{}
-	response.FromResult(result.Data)
+	return err
+}
 
-	return httpserver.JsonOk(echoCtx, response)
+func (this EntitlementRest) GetEntitlementById(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get entitlement by id"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx,
+		this.EntitlementSvc.GetEntitlementById,
+		func(request GetEntitlementByIdRequest) it.GetEntitlementByIdQuery {
+			return it.GetEntitlementByIdQuery(request)
+		},
+		func(result it.GetEntitlementByIdResult) EntitlementDto {
+			response := EntitlementDto{}
+			response.FromEntitlement(*result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
+func (this EntitlementRest) SearchEntitlements(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search entitlements"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx,
+		this.EntitlementSvc.SearchEntitlements,
+		func(request SearchEntitlementsRequest) it.SearchEntitlementsQuery {
+			return it.SearchEntitlementsQuery(request)
+		},
+		func(result it.SearchEntitlementsResult) SearchEntitlementsResponse {
+			response := SearchEntitlementsResponse{}
+			response.FromResult(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
 }

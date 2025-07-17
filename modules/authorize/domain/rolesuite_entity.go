@@ -15,14 +15,14 @@ type RoleSuite struct {
 
 	Name                 *string             `json:"displayName,omitempty"`
 	Description          *string             `json:"description,omitempty"`
-	Etag                 *string             `json:"etag,omitempty"`
 	OwnerType            *RoleSuiteOwnerType `json:"ownerType,omitempty"`
 	OwnerRef             *model.Id           `json:"ownerRef,omitempty"`
 	IsRequestable        *bool               `json:"isRequestable,omitempty"`
 	IsRequiredAttachment *bool               `json:"isRequiredAttachment,omitempty"`
 	IsRequiredComment    *bool               `json:"isRequiredComment,omitempty"`
+	CreatedBy            *model.Id           `json:"createdBy,omitempty"`
 
-	Roles []Role `json:"roles,omitempty"`
+	Roles []*Role `json:"roles,omitempty"`
 }
 
 func (this *RoleSuite) Validate(forEdit bool) ft.ValidationErrors {
@@ -42,6 +42,7 @@ func (this *RoleSuite) Validate(forEdit bool) ft.ValidationErrors {
 		),
 		RoleSuiteOwnerTypeValidateRule(&this.OwnerType, !forEdit),
 		model.IdPtrValidateRule(&this.OwnerRef, !forEdit),
+		model.IdPtrValidateRule(&this.CreatedBy, !forEdit),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
@@ -70,6 +71,11 @@ func (this RoleSuiteOwnerType) String() string {
 }
 
 func WrapRoleSuiteOwnerType(s string) *RoleSuiteOwnerType {
+	ot := RoleSuiteOwnerType(s)
+	return &ot
+}
+
+func WrapRoleSuiteOwnerTypeEnt(s entRoleSuite.OwnerType) *RoleSuiteOwnerType {
 	ot := RoleSuiteOwnerType(s)
 	return &ot
 }

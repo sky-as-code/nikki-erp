@@ -1,6 +1,7 @@
 package entitlement_assignment
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -33,11 +34,11 @@ type CreateEntitlementAssignmentCommand struct {
 	EntitlementId *model.Id `json:"entitlementId"`
 }
 
-func (CreateEntitlementAssignmentCommand) Type() cqrs.RequestType {
+func (CreateEntitlementAssignmentCommand) CqrsRequestType() cqrs.RequestType {
 	return createEntitlementAssignmentCommandType
 }
 
-type CreateEntitlementAssignmentResult model.OpResult[*domain.EntitlementAssignment]
+type CreateEntitlementAssignmentResult = crud.OpResult[*domain.EntitlementAssignment]
 
 // END: CreateEntitlementAssignmentCommand
 
@@ -69,10 +70,10 @@ func (this GetAllEntitlementAssignmentBySubjectQuery) Validate() ft.ValidationEr
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-func (GetAllEntitlementAssignmentBySubjectQuery) Type() cqrs.RequestType {
+func (GetAllEntitlementAssignmentBySubjectQuery) CqrsRequestType() cqrs.RequestType {
 	return getAllEntitlementAssignmentBySubjectQueryType
 }
 
-type GetAllEntitlementAssignmentBySubjectResult model.OpResult[[]*domain.EntitlementAssignment]
+type GetAllEntitlementAssignmentBySubjectResult = crud.OpResult[[]*domain.EntitlementAssignment]
 
 // END: GetAllEntitlementAssignmentBySubjectQuery

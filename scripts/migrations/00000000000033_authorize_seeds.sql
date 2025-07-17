@@ -4,16 +4,16 @@ BEGIN
 		SELECT FROM information_schema.tables 
 		WHERE table_schema = 'public' AND table_name = 'authz_resources'
 	) THEN
-		INSERT INTO "authz_resources" ("id", "name", "resource_type", "scope_type", "etag") VALUES
-		('01JWNX10DN9E2PVZTVPJNTWR7D', 'AuthzEntitlement', 'custom', 'domain', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
-		('01JWNYWE9FBX2WTMYZMR9XHHX6', 'AuthzResource', 'custom', 'domain', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
-		('01JWNYV4RQ1ZKWG8RE0RMFTVCM', 'AuthzRole', 'custom', 'domain', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
-		('01JWNYW23X8CMREJ2Y9349BAE4', 'AuthzRoleSuite', 'custom', 'domain', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
-		('01JWNYQ2A04PPV4135QGXX7W0M', 'IdentityUser', 'custom', 'hierarchy', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
-		('01JWNYQNN68RKN62TNG5K0CPCE', 'IdentityGroup', 'custom', 'org', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
-		('01JWNYQTHN6JTRNWKJ1BMCYB80', 'IdentityOrganization', 'custom', 'domain', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
-		('01JWNYRSKZ56EAE2QRFHJWRZPT', 'IdentityHierarchyLevel', 'custom', 'org', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
-		('01JWP5S7KJF8T3RSA8WDZVSZWA', 'IdentityProfile', 'custom', 'private', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint);
+		INSERT INTO "authz_resources" ("id", "created_at", "name", "resource_type", "scope_type", "etag") VALUES
+		('01JWNX10DN9E2PVZTVPJNTWR7D', NOW(), 'AuthzEntitlement', 'custom', 'domain', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
+		('01JWNYWE9FBX2WTMYZMR9XHHX6', NOW(), 'AuthzResource', 'custom', 'domain', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
+		('01JWNYV4RQ1ZKWG8RE0RMFTVCM', NOW(), 'AuthzRole', 'custom', 'domain', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
+		('01JWNYW23X8CMREJ2Y9349BAE4', NOW(), 'AuthzRoleSuite', 'custom', 'domain', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
+		('01JWNYQ2A04PPV4135QGXX7W0M', NOW(), 'IdentityUser', 'custom', 'hierarchy', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
+		('01JWNYQNN68RKN62TNG5K0CPCE', NOW(),'IdentityGroup', 'custom', 'org', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
+		('01JWNYQTHN6JTRNWKJ1BMCYB80', NOW(),'IdentityOrganization', 'custom', 'domain', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
+		('01JWNYRSKZ56EAE2QRFHJWRZPT', NOW(),'IdentityHierarchyLevel', 'custom', 'org', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
+		('01JWP5S7KJF8T3RSA8WDZVSZWA', NOW(),'IdentityProfile', 'custom', 'private', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint);
 	END IF;
 
 	IF EXISTS (

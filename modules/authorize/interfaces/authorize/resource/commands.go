@@ -8,7 +8,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	"github.com/sky-as-code/nikki-erp/common/validator"
+	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 )
@@ -38,11 +38,11 @@ type CreateResourceCommand struct {
 	ScopeType    string  `json:"scopeType"`
 }
 
-func (CreateResourceCommand) Type() cqrs.RequestType {
+func (CreateResourceCommand) CqrsRequestType() cqrs.RequestType {
 	return createResourceCommandType
 }
 
-type CreateResourceResult model.OpResult[*domain.Resource]
+type CreateResourceResult = crud.OpResult[*domain.Resource]
 
 // END: CreateResourceCommand
 
@@ -55,16 +55,16 @@ var updateResourceCommandType = cqrs.RequestType{
 
 type UpdateResourceCommand struct {
 	Id   model.Id   `param:"id" json:"id"`
-	Etag model.Etag `json:"etag,omitempty"`
+	Etag model.Etag `json:"etag"`
 
 	Description *string `json:"description,omitempty"`
 }
 
-func (UpdateResourceCommand) Type() cqrs.RequestType {
+func (UpdateResourceCommand) CqrsRequestType() cqrs.RequestType {
 	return updateResourceCommandType
 }
 
-type UpdateResourceResult model.OpResult[*domain.Resource]
+type UpdateResourceResult = crud.OpResult[*domain.Resource]
 
 // END: UpdateResourceCommand
 
@@ -79,7 +79,7 @@ type GetResourceByIdQuery struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (GetResourceByIdQuery) Type() cqrs.RequestType {
+func (GetResourceByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getResourceByIdQueryType
 }
 
@@ -96,23 +96,23 @@ type GetResourceByNameQuery struct {
 	Name string `param:"name" json:"name"`
 }
 
-func (GetResourceByNameQuery) Type() cqrs.RequestType {
+func (GetResourceByNameQuery) CqrsRequestType() cqrs.RequestType {
 	return getResourceByNameQueryType
 }
 
 func (this *GetResourceByNameQuery) Validate() ft.ValidationErrors {
-	rules := []*validator.FieldRules{
-		validator.Field(&this.Name,
-			validator.NotEmpty,
-			validator.RegExp(regexp.MustCompile(`^[a-zA-Z0-9]+$`)), // alphanumeric
-			validator.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
+	rules := []*val.FieldRules{
+		val.Field(&this.Name,
+			val.NotEmpty,
+			val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9]+$`)), // alphanumeric
+			val.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
 		),
 	}
 
-	return validator.ApiBased.ValidateStruct(this, rules...)
+	return val.ApiBased.ValidateStruct(this, rules...)
 }
 
-type GetResourceByNameResult model.OpResult[*domain.Resource]
+type GetResourceByNameResult = crud.OpResult[*domain.Resource]
 
 // END: GetResourceByNameQuery
 
@@ -130,7 +130,7 @@ type SearchResourcesQuery struct {
 	WithActions bool    `json:"withActions" query:"withActions"`
 }
 
-func (SearchResourcesQuery) Type() cqrs.RequestType {
+func (SearchResourcesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchResourcesQueryType
 }
 
@@ -140,14 +140,15 @@ func (this *SearchResourcesQuery) SetDefaults() {
 }
 
 func (this SearchResourcesQuery) Validate() ft.ValidationErrors {
-	rules := []*validator.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+	rules := []*val.FieldRules{
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 	}
-	return validator.ApiBased.ValidateStruct(&this, rules...)
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type SearchResourcesResultData = crud.PagedResult[domain.Resource]
-type SearchResourcesResult model.OpResult[*SearchResourcesResultData]
+type SearchResourcesResult = crud.OpResult[*SearchResourcesResultData]
 
 // END: SearchResourcesQuery

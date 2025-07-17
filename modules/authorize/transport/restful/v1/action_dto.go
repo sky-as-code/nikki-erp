@@ -4,35 +4,51 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/thoas/go-funk"
 )
 
-type CreateActionRequest = it.CreateActionCommand
-type CreateActionResponse = ResponseActionItem
+type ActionDto struct {
+	Id   model.Id   `json:"id"`
+	Etag model.Etag `json:"etag"`
 
-type UpdateActionRequest = it.UpdateActionCommand
-type UpdateActionResponse = ResponseActionItem
+	Name        string   `json:"name"`
+	Description *string  `json:"description,omitempty"`
+	ResourceId  model.Id `json:"resourceId"`
+	CreatedBy   string   `json:"createdBy"`
 
-type GetActionByIdRequest = it.GetActionByIdQuery
-type GetActionByIdResponse = ResponseActionItem
+	Resource *Resource `json:"resource,omitempty"`
+}
 
 type Resource struct {
 	Id   model.Id `json:"id"`
 	Name string   `json:"name"`
 }
 
-type ResponseActionItem struct {
-	Id   model.Id   `json:"id"`
-	Etag model.Etag `json:"etag"`
+type CreateActionRequest = it.CreateActionCommand
+type CreateActionResponse = httpserver.RestCreateResponse
 
-	Name        string    `json:"name"`
-	Description *string   `json:"description,omitempty"`
-	ResourceId  model.Id  `json:"resourceId"`
-	CreatedBy   string    `json:"createdBy"`
-	Resource    *Resource `json:"resource,omitempty"`
+type UpdateActionRequest = it.UpdateActionCommand
+type UpdateActionResponse = httpserver.RestUpdateResponse
+
+type GetActionByIdRequest = it.GetActionByIdQuery
+type GetActionByIdResponse = ActionDto
+
+type SearchActionsRequest = it.SearchActionsCommand
+type SearchActionsResponse httpserver.RestSearchResponse[ActionDto]
+
+func (this *SearchActionsResponse) FromResult(result *it.SearchActionsResultData) {
+	this.Total = result.Total
+	this.Page = result.Page
+	this.Size = result.Size
+	this.Items = funk.Map(result.Items, func(action domain.Action) ActionDto {
+		item := ActionDto{}
+		item.FromAction(action)
+		return item
+	}).([]ActionDto)
 }
 
-func (this *ResponseActionItem) FromAction(action domain.Action) {
+func (this *ActionDto) FromAction(action domain.Action) {
 	this.Id = *action.Id
 	this.Name = *action.Name
 	this.Description = action.Description
@@ -46,25 +62,4 @@ func (this *ResponseActionItem) FromAction(action domain.Action) {
 			Name: *action.Resource.Name,
 		}
 	}
-}
-
-type SearchActionsRequest = it.SearchActionsCommand
-type SearchActionsResponseItem = ResponseActionItem
-
-type SearchActionsResponse struct {
-	Items []SearchActionsResponseItem `json:"items"`
-	Total int                         `json:"total"`
-	Page  int                         `json:"page"`
-	Size  int                         `json:"size"`
-}
-
-func (this *SearchActionsResponse) FromResultWithResources(result *it.SearchActionsResultData) {
-	this.Total = result.Total
-	this.Page = result.Page
-	this.Size = result.Size
-	this.Items = funk.Map(result.Items, func(action domain.Action) SearchActionsResponseItem {
-		item := SearchActionsResponseItem{}
-		item.FromAction(action)
-		return item
-	}).([]SearchActionsResponseItem)
 }

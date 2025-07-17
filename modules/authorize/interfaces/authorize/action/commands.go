@@ -36,11 +36,11 @@ type CreateActionCommand struct {
 	CreatedBy   string   `json:"createdBy"`
 }
 
-func (CreateActionCommand) Type() cqrs.RequestType {
+func (CreateActionCommand) CqrsRequestType() cqrs.RequestType {
 	return createActionCommandType
 }
 
-type CreateActionResult model.OpResult[*domain.Action]
+type CreateActionResult = crud.OpResult[*domain.Action]
 
 // END: CreateActionCommand
 
@@ -52,17 +52,17 @@ var updateActionCommandType = cqrs.RequestType{
 }
 
 type UpdateActionCommand struct {
-	Id          model.Id   `param:"id" json:"id"`
-	Etag        model.Etag `json:"etag"`
+	Id   model.Id   `param:"id" json:"id"`
+	Etag model.Etag `json:"etag"`
 
-	Description *string    `json:"description,omitempty"`
+	Description *string `json:"description,omitempty"`
 }
 
-func (UpdateActionCommand) Type() cqrs.RequestType {
+func (UpdateActionCommand) CqrsRequestType() cqrs.RequestType {
 	return updateActionCommandType
 }
 
-type UpdateActionResult model.OpResult[*domain.Action]
+type UpdateActionResult = crud.OpResult[*domain.Action]
 
 // END: UpdateResourceCommand
 
@@ -77,7 +77,7 @@ type GetActionByIdQuery struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (GetActionByIdQuery) Type() cqrs.RequestType {
+func (GetActionByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getActionByIdQueryType
 }
 
@@ -89,7 +89,7 @@ func (this GetActionByIdQuery) Validate() ft.ValidationErrors {
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetActionByIdResult model.OpResult[*domain.Action]
+type GetActionByIdResult = crud.OpResult[*domain.Action]
 
 // END: GetActionByIdQuery
 
@@ -101,14 +101,15 @@ var getActionByNameCommandType = cqrs.RequestType{
 }
 
 type GetActionByNameCommand struct {
-	Name string `param:"name" json:"name"`
+	Name       string   `param:"name" json:"name"`
+	ResourceId model.Id `json:"resourceId"`
 }
 
-func (GetActionByNameCommand) Type() cqrs.RequestType {
+func (GetActionByNameCommand) CqrsRequestType() cqrs.RequestType {
 	return getActionByNameCommandType
 }
 
-type GetActionByNameResult model.OpResult[*domain.Action]
+type GetActionByNameResult = crud.OpResult[*domain.Action]
 
 // END: GetResourceByNameCommand
 
@@ -125,7 +126,7 @@ type SearchActionsCommand struct {
 	Graph *string `json:"graph" query:"graph"`
 }
 
-func (SearchActionsCommand) Type() cqrs.RequestType {
+func (SearchActionsCommand) CqrsRequestType() cqrs.RequestType {
 	return searchActionsCommandType
 }
 
@@ -136,13 +137,13 @@ func (this *SearchActionsCommand) SetDefaults() {
 
 func (this SearchActionsCommand) Validate() ft.ValidationErrors {
 	rules := []*validator.FieldRules{
-		model.PageIndexValidateRule(&this.Page),
-		model.PageSizeValidateRule(&this.Size),
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type SearchActionsResultData = crud.PagedResult[domain.Action]
-type SearchActionsResult model.OpResult[*SearchActionsResultData]
+type SearchActionsResult = crud.OpResult[*SearchActionsResultData]
 
 // END: SearchActionsCommand

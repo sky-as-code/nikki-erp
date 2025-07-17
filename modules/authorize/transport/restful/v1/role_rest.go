@@ -4,129 +4,91 @@ import (
 	"github.com/labstack/echo/v4"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
-	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"go.uber.org/dig"
 )
 
 type roleRestParams struct {
 	dig.In
 
-	Config  config.ConfigService
-	Logger  logging.LoggerService
-	CqrsBus cqrs.CqrsBus
+	RoleService it.RoleService
 }
 
 func NewRoleRest(params roleRestParams) *RoleRest {
 	return &RoleRest{
-		RestBase: httpserver.RestBase{
-			ConfigSvc: params.Config,
-			Logger:    params.Logger,
-			CqrsBus:   params.CqrsBus,
-		},
+		roleService: params.RoleService,
 	}
 }
 
 type RoleRest struct {
-	httpserver.RestBase
+	roleService it.RoleService
 }
 
 func (this RoleRest) CreateRole(echoCtx echo.Context) (err error) {
-	request := &CreateRoleRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
-
-	result := it.CreateRoleResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
-
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := CreateRoleResponse{}
-	response.FromRole(*result.Data)
-
-	return httpserver.JsonCreated(echoCtx, response)
-}
-
-// func (this ResourceRest) UpdateResource(echoCtx echo.Context) (err error) {
-// 	request := &UpdateResourceRequest{}
-// 	if err = echoCtx.Bind(request); err != nil {
-// 		return err
-// 	}
-
-// 	result := it.UpdateResourceResult{}
-// 	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	if result.ClientError != nil {
-// 		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-// 	}
-
-// 	response := UpdateResourceResponse{}
-// 	response.FromResource(*result.Data)
-
-// 	return httpserver.JsonOk(echoCtx, response)
-// }
-
-func (this RoleRest) GetRoleById(echoCtx echo.Context) (err error) {
-	request := &GetRoleByIdRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
-
-	result := it.GetRoleByIdResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
-
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
-
-	response := GetRoleByIdResponse{}
-	response.FromRole(*result.Data)
-
-	return httpserver.JsonOk(echoCtx, response)
-}
-
-func (this RoleRest) SearchRoles(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list resources"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create action"); e != nil {
 			err = e
 		}
 	}()
 
-	request := &SearchRolesRequest{}
-	if err = echoCtx.Bind(request); err != nil {
-		return err
-	}
+	err = httpserver.ServeRequest(
+		echoCtx, this.roleService.CreateRole,
+		func(request CreateRoleRequest) it.CreateRoleCommand {
+			return it.CreateRoleCommand(request)
+		},
+		func(result it.CreateRoleResult) CreateRoleResponse {
+			response := CreateRoleResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonCreated,
+	)
 
-	result := it.SearchRolesResult{}
-	err = this.CqrsBus.Request(echoCtx.Request().Context(), *request, &result)
+	return err
+}
 
-	if err != nil {
-		return err
-	}
+func (this RoleRest) GetRoleById(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get role by id"); e != nil {
+			err = e
+		}
+	}()
 
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.ClientError)
-	}
+	err = httpserver.ServeRequest(
+		echoCtx, this.roleService.GetRoleById,
+		func(request GetRoleByIdRequest) it.GetRoleByIdQuery {
+			return it.GetRoleByIdQuery(request)
+		},
+		func(result it.GetRoleByIdResult) GetRoleByIdResponse {
+			response := GetRoleByIdResponse{}
+			response.FromRole(*result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
 
-	response := SearchRolesResponse{}
-	response.FromResult(result.Data)
+	return err
+}
 
-	return httpserver.JsonOk(echoCtx, response)
+func (this RoleRest) SearchRoles(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search roles"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.roleService.SearchRoles,
+		func(request SearchRolesRequest) it.SearchRolesQuery {
+			return it.SearchRolesQuery(request)
+		},
+		func(result it.SearchRolesResult) SearchRolesResponse {
+			response := SearchRolesResponse{}
+			response.FromResult(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
 }

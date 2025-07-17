@@ -4,8 +4,6 @@ import (
 	"context"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	// "github.com/sky-as-code/nikki-erp/common/model"
-	// "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 )

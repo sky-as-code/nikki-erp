@@ -5,6 +5,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
@@ -33,7 +34,7 @@ func (this *ActionEntRepository) Create(ctx context.Context, action domain.Actio
 		SetNillableDescription(action.Description).
 		SetCreatedBy(*action.CreatedBy)
 
-	return db.Mutate(ctx, creation, entToAction)
+	return db.Mutate(ctx, creation, ent.IsNotFound, entToAction)
 }
 
 func (this *ActionEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Action, error) {
@@ -46,21 +47,23 @@ func (this *ActionEntRepository) FindById(ctx context.Context, param it.FindById
 
 func (this *ActionEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Action, error) {
 	query := this.client.Action.Query().
-		Where(entAction.NameEQ(param.Name))
+		Where(entAction.NameEQ(param.Name)).
+		Where(entAction.ResourceIDEQ(param.ResourceId))
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToAction)
 }
 
-func (this *ActionEntRepository) Update(ctx context.Context, action domain.Action) (*domain.Action, error) {
+func (this *ActionEntRepository) Update(ctx context.Context, action domain.Action, prevEtag model.Etag) (*domain.Action, error) {
 	update := this.client.Action.UpdateOneID(*action.Id).
-		SetDescription(*action.Description)
+		SetNillableDescription(action.Description).
+		Where(entAction.EtagEQ(prevEtag))
 
 	if len(update.Mutation().Fields()) > 0 {
 		update.
 			SetEtag(*action.Etag)
 	}
 
-	return db.Mutate(ctx, update, entToAction)
+	return db.Mutate(ctx, update, ent.IsNotFound, entToAction)
 }
 
 func (this *ActionEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {

@@ -1,138 +1,144 @@
 package role_suite
 
-// import (
-// 	"github.com/sky-as-code/nikki-erp/common/crud"
-// 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-// 	"github.com/sky-as-code/nikki-erp/common/model"
-// 	"github.com/sky-as-code/nikki-erp/common/safe"
-// 	"github.com/sky-as-code/nikki-erp/common/util"
-// 	"github.com/sky-as-code/nikki-erp/common/validator"
-// 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-// 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-// )
+import (
+	"github.com/sky-as-code/nikki-erp/common/crud"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/safe"
+	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+)
 
-// func init() {
-// 	// Assert interface implementation
-// 	var req cqrs.Request
-// 	req = (*CreateResourceCommand)(nil)
-// 	req = (*UpdateResourceCommand)(nil)
-// 	req = (*GetResourceByNameCommand)(nil)
-// 	req = (*SearchResourcesCommand)(nil)
-// 	util.Unused(req)
-// }
+func init() {
+	// Assert interface implementation
+	var req cqrs.Request
+	req = (*CreateRoleSuiteCommand)(nil)
+	req = (*GetRoleSuiteByIdQuery)(nil)
+	req = (*SearchRoleSuitesCommand)(nil)
+	req = (*GetRoleSuitesBySubjectQuery)(nil)
+	util.Unused(req)
+}
 
-// // START: CreateResourceCommand
-// var createResourceCommandType = cqrs.RequestType{
-// 	Module:    "authorize",
-// 	Submodule: "resource",
-// 	Action:    "create",
-// }
+// START: CreateRoleSuiteCommand
+var createRoleSuiteCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role_suite",
+	Action:    "create",
+}
 
-// type CreateResourceCommand struct {
-// 	Name         string `json:"name"`
-// 	Description  string `json:"description"`
-// 	ResourceType string `json:"resourceType"`
-// 	ResourceRef  string `json:"resourceRef"`
-// 	ScopeType    string `json:"scopeType"`
-// }
+type CreateRoleSuiteCommand struct {
+	Name                 string   `json:"name"`
+	Description          *string  `json:"description,omitempty"`
+	OwnerType            string   `json:"ownerType"`
+	OwnerRef             model.Id `json:"ownerRef"`
+	IsRequestable        *bool    `json:"isRequestable,omitempty"`
+	IsRequiredAttachment *bool    `json:"isRequiredAttachment,omitempty"`
+	IsRequiredComment    *bool    `json:"isRequiredComment,omitempty"`
+	CreatedBy            model.Id `json:"createdBy"`
 
-// func (CreateResourceCommand) Type() cqrs.RequestType {
-// 	return createResourceCommandType
-// }
+	Roles []*model.Id `json:"roles,omitempty"`
+}
 
-// type CreateResourceResult model.OpResult[*domain.Resource]
+func (CreateRoleSuiteCommand) CqrsRequestType() cqrs.RequestType {
+	return createRoleSuiteCommandType
+}
 
-// // END: CreateResourceCommand
+type CreateRoleSuiteResult = crud.OpResult[*domain.RoleSuite]
 
-// // START: UpdateResourceCommand
-// var updateResourceCommandType = cqrs.RequestType{
-// 	Module:    "authorize",
-// 	Submodule: "resource",
-// 	Action:    "update",
-// }
+// END: CreateRoleSuiteCommand
 
-// type UpdateResourceCommand struct {
-// 	Id          model.Id   `param:"id" json:"id"`
-// 	Description *string    `json:"description,omitempty"`
-// 	Etag        model.Etag `json:"etag,omitempty"`
-// }
+// START: GetRoleSuiteByIdQuery
+var getRoleSuiteByIdQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role_suite",
+	Action:    "getRoleSuiteById",
+}
 
-// func (UpdateResourceCommand) Type() cqrs.RequestType {
-// 	return updateResourceCommandType
-// }
+type GetRoleSuiteByIdQuery struct {
+	Id model.Id `param:"id" json:"id"`
+}
 
-// type UpdateResourceResult model.OpResult[*domain.Resource]
+func (GetRoleSuiteByIdQuery) CqrsRequestType() cqrs.RequestType {
+	return getRoleSuiteByIdQueryType
+}
 
-// // END: UpdateResourceCommand
+type GetRoleSuiteByIdResult = crud.OpResult[*domain.RoleSuite]
 
-// // START: GetResourceByIdQuery
-// var getResourceByIdQueryType = cqrs.RequestType{
-// 	Module:    "authorize",
-// 	Submodule: "resource",
-// 	Action:    "getResourceById",
-// }
+// END: GetRoleSuiteByIdQuery
 
-// type GetResourceByIdQuery struct {
-// 	Id model.Id `param:"id" json:"id"`
-// }
+// START: GetRoleSuiteByNameCommand
+var getRoleSuiteByNameCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role_suite",
+	Action:    "getRoleSuiteByName",
+}
 
-// func (GetResourceByIdQuery) Type() cqrs.RequestType {
-// 	return getResourceByIdQueryType
-// }
+type GetRoleSuiteByNameCommand struct {
+	Name string `param:"name" json:"name"`
+}
 
-// // END: GetResourceByIdQuery
+func (GetRoleSuiteByNameCommand) CqrsRequestType() cqrs.RequestType {
+	return getRoleSuiteByNameCommandType
+}
 
-// // START: GetResourceByNameCommand
-// var getResourceByNameCommandType = cqrs.RequestType{
-// 	Module:    "authorize",
-// 	Submodule: "resource",
-// 	Action:    "getResourceByName",
-// }
+type GetRoleSuiteByNameResult = crud.OpResult[*domain.RoleSuite]
 
-// type GetResourceByNameCommand struct {
-// 	Name string `param:"name" json:"name"`
-// }
+// END: GetRoleSuiteByNameCommand
 
-// func (GetResourceByNameCommand) Type() cqrs.RequestType {
-// 	return getResourceByNameCommandType
-// }
+// START: SearchRoleSuitesCommand
+var searchRoleSuitesCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role_suite",
+	Action:    "list",
+}
 
-// type GetResourceByNameResult model.OpResult[*domain.Resource]
+type SearchRoleSuitesCommand struct {
+	Page  *int    `json:"page" query:"page"`
+	Size  *int    `json:"size" query:"size"`
+	Graph *string `json:"graph" query:"graph"`
+}
 
-// // END: GetResourceByNameCommand
+func (SearchRoleSuitesCommand) CqrsRequestType() cqrs.RequestType {
+	return searchRoleSuitesCommandType
+}
 
-// // START: SearchResourcesCommand
-// var searchResourcesCommandType = cqrs.RequestType{
-// 	Module:    "authorize",
-// 	Submodule: "resource",
-// 	Action:    "list",
-// }
+func (this *SearchRoleSuitesCommand) SetDefaults() {
+	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
+	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
+}
 
-// type SearchResourcesCommand struct {
-// 	Page        *int    `json:"page" query:"page"`
-// 	Size        *int    `json:"size" query:"size"`
-// 	Graph       *string `json:"graph" query:"graph"`
-// 	WithActions bool    `json:"withActions" query:"withActions"`
-// }
+func (this SearchRoleSuitesCommand) Validate() ft.ValidationErrors {
+	rules := []*validator.FieldRules{
+		crud.PageIndexValidateRule(&this.Page),
+		crud.PageSizeValidateRule(&this.Size),
+	}
 
-// func (SearchResourcesCommand) Type() cqrs.RequestType {
-// 	return searchResourcesCommandType
-// }
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
 
-// func (this *SearchResourcesCommand) SetDefaults() {
-// 	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
-// 	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
-// }
+type SearchRoleSuitesResultData = crud.PagedResult[domain.RoleSuite]
+type SearchRoleSuitesResult = crud.OpResult[*SearchRoleSuitesResultData]
 
-// func (this SearchResourcesCommand) Validate() ft.ValidationErrors {
-// 	rules := []*validator.FieldRules{
-// 		model.PageIndexValidateRule(&this.Page),
-// 		model.PageSizeValidateRule(&this.Size),
-// 	}
-// 	return validator.ApiBased.ValidateStruct(&this, rules...)
-// }
+// END: SearchRoleSuitesCommand
 
-// type SearchResourcesResultData = crud.PagedResult[domain.Resource]
-// type SearchResourcesResult model.OpResult[*SearchResourcesResultData]
+// START: GetRoleSuitesBySubjectQuery
+var getRoleSuitesBySubjectQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role_suite",
+	Action:    "getRoleSuitesBySubject",
+}
 
-// // END: SearchResourcesCommand
+type GetRoleSuitesBySubjectQuery struct {
+	SubjectType *domain.EntitlementAssignmentSubjectType `param:"subjectType" json:"subjectType"`
+	SubjectRef  string                                   `param:"subjectRef" json:"subjectRef"`
+}
+
+func (GetRoleSuitesBySubjectQuery) CqrsRequestType() cqrs.RequestType {
+	return getRoleSuitesBySubjectQueryType
+}
+
+type GetRoleSuitesBySubjectResult = crud.OpResult[[]domain.RoleSuite]
+
+// END: GetRoleSuitesBySubjectQuery

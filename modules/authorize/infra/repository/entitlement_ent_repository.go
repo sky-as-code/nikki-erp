@@ -5,6 +5,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
@@ -36,15 +37,21 @@ func (this *EntitlementEntRepository) Create(ctx context.Context, entitlement do
 		SetActionExpr(*entitlement.ActionExpr).
 		SetCreatedBy(*entitlement.CreatedBy)
 
-	return db.Mutate(ctx, creation, entToEntitlement)
+	return db.Mutate(ctx, creation, ent.IsNotFound, entToEntitlement)
 }
 
-func (this *EntitlementEntRepository) Update(ctx context.Context, entitlement domain.Entitlement) (*domain.Entitlement, error) {
+func (this *EntitlementEntRepository) Update(ctx context.Context, entitlement domain.Entitlement, prevEtag model.Etag) (*domain.Entitlement, error) {
 	updation := this.client.Entitlement.UpdateOneID(*entitlement.Id).
 		SetEtag(*entitlement.Etag).
-		SetNillableDescription(entitlement.Description)
+		SetNillableDescription(entitlement.Description).
+		Where(entEntitlement.EtagEQ(prevEtag))
 
-	return db.Mutate(ctx, updation, entToEntitlement)
+	if len(updation.Mutation().Fields()) > 0 {
+		updation.
+			SetEtag(*entitlement.Etag)
+	}
+
+	return db.Mutate(ctx, updation, ent.IsNotFound, entToEntitlement)
 }
 
 func (this *EntitlementEntRepository) Exists(ctx context.Context, param it.FindByIdParam) (bool, error) {

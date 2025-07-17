@@ -16,6 +16,7 @@ func InitRepositories() error {
 		orm.RegisterEntity(BuildEntitlementDescriptor()),
 		orm.RegisterEntity(BuildEntitlementAssignmentDescriptor()),
 		orm.RegisterEntity(BuildRoleDescriptor()),
+		orm.RegisterEntity(BuildRoleSuiteDescriptor()),
 	)
 	if err != nil {
 		return err
@@ -28,6 +29,7 @@ func InitRepositories() error {
 		deps.Register(NewEntitlementEntRepository),
 		deps.Register(NewEntitlementAssignmentEntRepository),
 		deps.Register(NewRoleEntRepository),
+		deps.Register(NewRoleSuiteEntRepository),
 	)
 
 	return err

@@ -1,8 +1,10 @@
 package role_suite
 
+import "context"
+
 type RoleSuiteService interface {
-	// CreateResource(ctx context.Context, cmd CreateResourceCommand) (*CreateResourceResult, error)
-	// UpdateResource(ctx context.Context, cmd UpdateResourceCommand) (*UpdateResourceResult, error)
-	// GetResourceByName(ctx context.Context, cmd GetResourceByNameCommand) (*GetResourceByNameResult, error)
-	// SearchResources(ctx context.Context, query SearchResourcesCommand) (*SearchResourcesResult, error)
+	CreateRoleSuite(ctx context.Context, cmd CreateRoleSuiteCommand) (*CreateRoleSuiteResult, error)
+	GetRoleSuiteById(ctx context.Context, cmd GetRoleSuiteByIdQuery) (*GetRoleSuiteByIdResult, error)
+	GetRoleSuitesBySubject(ctx context.Context, query GetRoleSuitesBySubjectQuery) (*GetRoleSuitesBySubjectResult, error)
+	SearchRoleSuites(ctx context.Context, query SearchRoleSuitesCommand) (*SearchRoleSuitesResult, error)
 }

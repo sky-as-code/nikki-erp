@@ -1,10 +1,18 @@
 package repository
 
 import (
+	"context"
+
+	"github.com/sky-as-code/nikki-erp/common/array"
+	"github.com/sky-as-code/nikki-erp/common/crud"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
+	entRoleSuiteUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuiteuser"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
+	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewRoleSuiteEntRepository(client *ent.Client) it.RoleSuiteRepository {
@@ -17,70 +25,75 @@ type RoleSuiteEntRepository struct {
 	client *ent.Client
 }
 
-// func (this *ResourceEntRepository) Create(ctx context.Context, resource domain.Resource) (*domain.Resource, error) {
-// 	creation := this.client.Resource.Create().
-// 		SetID(*resource.Id).
-// 		SetName(*resource.Name).
-// 		SetDescription(*resource.Description).
-// 		SetResourceType(entResource.ResourceType(*resource.ResourceType)).
-// 		SetResourceRef(*resource.ResourceRef).
-// 		SetScopeType(entResource.ScopeType(*resource.ScopeType)).
-// 		SetEtag(*resource.Etag)
+func (this *RoleSuiteEntRepository) Create(ctx context.Context, roleSuite domain.RoleSuite) (*domain.RoleSuite, error) {
+	creation := this.client.RoleSuite.Create().
+		SetID(*roleSuite.Id).
+		SetName(*roleSuite.Name).
+		SetNillableDescription(roleSuite.Description).
+		SetEtag(*roleSuite.Etag).
+		SetOwnerType(entRoleSuite.OwnerType(*roleSuite.OwnerType)).
+		SetOwnerRef(*roleSuite.OwnerRef).
+		SetIsRequestable(*roleSuite.IsRequestable).
+		SetIsRequiredAttachment(*roleSuite.IsRequiredAttachment).
+		SetIsRequiredComment(*roleSuite.IsRequiredComment).
+		SetCreatedBy(*roleSuite.CreatedBy).
+		SetCreatedAt(*roleSuite.CreatedAt)
 
-// 	return db.Mutate(ctx, creation, entToResource)
-// }
+	if len(roleSuite.Roles) > 0 {
+		roleIds := array.Map(roleSuite.Roles, func(role *domain.Role) string {
+			return *role.Id
+		})
+		creation.AddRoleIDs(roleIds...)
+	}
 
-// func (this *ResourceEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Resource, error) {
-// 	query := this.client.Resource.Query().
-// 		Where(entResource.IDEQ(param.Id))
+	return db.Mutate(ctx, creation, ent.IsNotFound, entToRoleSuite)
+}
 
-// 	return db.FindOne(ctx, query, nil, entToResource)
-// }
+func (this *RoleSuiteEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.RoleSuite, error) {
+	query := this.client.RoleSuite.Query().
+		Where(entRoleSuite.IDEQ(param.Id)).
+		WithRoles()
 
-// func (this *ResourceEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Resource, error) {
-// 	query := this.client.Resource.Query().
-// 		Where(entResource.NameEQ(param.Name))
+	return db.FindOne(ctx, query, ent.IsNotFound, entToRoleSuite)
+}
 
-// 	return db.FindOne(ctx, query, nil, entToResource)
-// }
+func (this *RoleSuiteEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.RoleSuite, error) {
+	query := this.client.RoleSuite.Query().
+		Where(entRoleSuite.NameEQ(param.Name))
 
-// func (this *ResourceEntRepository) Update(ctx context.Context, resource domain.Resource) (*domain.Resource, error) {
-// 	update := this.client.Resource.UpdateOneID(*resource.Id).
-// 		SetDescription(*resource.Description)
+	return db.FindOne(ctx, query, ent.IsNotFound, entToRoleSuite)
+}
 
-// 	if len(update.Mutation().Fields()) > 0 {
-// 		update.
-// 			SetEtag(*resource.Etag)
-// 	}
+func (this *RoleSuiteEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
+	return db.ParseSearchGraphStr[ent.RoleSuite, domain.RoleSuite](criteria, entRoleSuite.Label)
+}
 
-// 	return db.Mutate(ctx, update, entToResource)
-// }
+func (this *RoleSuiteEntRepository) Search(
+	ctx context.Context,
+	param it.SearchParam,
+) (*crud.PagedResult[domain.RoleSuite], error) {
+	query := this.client.RoleSuite.Query().
+		WithRoles()
 
-// func (this *ResourceEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-// 	return db.ParseSearchGraphStr[ent.Resource, domain.Resource](criteria, entResource.Label)
-// }
+	return db.Search(
+		ctx,
+		param.Predicate,
+		param.Order,
+		crud.PagingOptions{
+			Page: param.Page,
+			Size: param.Size,
+		},
+		query,
+		entToRoleSuites,
+	)
+}
 
-// func (this *ResourceEntRepository) Search(
-// 	ctx context.Context,
-// 	param it.SearchParam,
-// ) (*crud.PagedResult[domain.Resource], error) {
-// 	query := this.client.Resource.Query()
-// 	if param.WithActions {
-// 		query = query.WithActions()
-// 	}
+func (this *RoleSuiteEntRepository) FindAllBySubject(ctx context.Context, param it.FindAllBySubjectParam) ([]domain.RoleSuite, error) {
+	query := this.client.RoleSuite.Query().
+		Where(entRoleSuite.HasRolesWith(entRoleSuiteUser.ReceiverRefEQ(param.SubjectRef)))
 
-// 	return db.Search(
-// 		ctx,
-// 		param.Predicate,
-// 		param.Order,
-// 		crud.PagingOptions{
-// 			Page: param.Page,
-// 			Size: param.Size,
-// 		},
-// 		query,
-// 		entToResources,
-// 	)
-// }
+	return db.List(ctx, query, entToRoleSuites)
+}
 
 func BuildRoleSuiteDescriptor() *orm.EntityDescriptor {
 	entity := ent.RoleSuite{}
@@ -89,7 +102,14 @@ func BuildRoleSuiteDescriptor() *orm.EntityDescriptor {
 		Field(entRoleSuite.FieldID, entity.ID).
 		Field(entRoleSuite.FieldName, entity.Name).
 		Field(entRoleSuite.FieldDescription, entity.Description).
-		Field(entRoleSuite.FieldEtag, entity.Etag)
+		Field(entRoleSuite.FieldEtag, entity.Etag).
+		Field(entRoleSuite.FieldOwnerType, entity.OwnerType).
+		Field(entRoleSuite.FieldOwnerRef, entity.OwnerRef).
+		Field(entRoleSuite.FieldIsRequestable, entity.IsRequestable).
+		Field(entRoleSuite.FieldIsRequiredAttachment, entity.IsRequiredAttachment).
+		Field(entRoleSuite.FieldIsRequiredComment, entity.IsRequiredComment).
+		Field(entRoleSuite.FieldCreatedBy, entity.CreatedBy).
+		Field(entRoleSuite.FieldCreatedAt, entity.CreatedAt)
 
 	return builder.Descriptor()
 }
