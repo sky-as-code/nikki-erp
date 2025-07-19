@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.bryk.io/pkg/errors"
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -53,14 +54,14 @@ func (s *LoginServiceImpl) Authenticate(ctx context.Context, cmd it.Authenticate
 		}
 	}()
 
-	attempt, subject, vErrs, err := s.validateAuthInput(ctx, cmd)
+	attempt, vErrs, err := s.validateAuthInput(ctx, cmd)
 	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.AuthenticateResult{ClientError: vErrs.ToClientError()}, nil
 	}
 
-	done, err := s.performLoginMethods(ctx, cmd, attempt, subject, vErrs)
+	done, err := s.performLoginMethods(ctx, cmd, attempt, vErrs)
 	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
@@ -74,11 +75,10 @@ func (s *LoginServiceImpl) Authenticate(ctx context.Context, cmd it.Authenticate
 	return s.buildAuthenticateResult(done, attempt), nil
 }
 
-func (s *LoginServiceImpl) validateAuthInput(ctx context.Context, cmd it.AuthenticateCommand) (*domain.LoginAttempt, *loginSubject, *ft.ValidationErrors, error) {
+func (s *LoginServiceImpl) validateAuthInput(ctx context.Context, cmd it.AuthenticateCommand) (*domain.LoginAttempt, *ft.ValidationErrors, error) {
 	var attempt *domain.LoginAttempt
-	var subject *loginSubject
-	flow := val.StartValidationFlow()
 
+	flow := val.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *ft.ValidationErrors) error {
 			var err error
@@ -91,22 +91,21 @@ func (s *LoginServiceImpl) validateAuthInput(ctx context.Context, cmd it.Authent
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			var err error
-			subject, err = s.subjectHelper.assertSubjectExists(ctx, *attempt.SubjectType, nil, attempt.Username, vErrs)
+			_, err = s.subjectHelper.assertSubjectExists(ctx, *attempt.SubjectType, nil, attempt.Username, vErrs)
 			return err
 		}).
 		End()
 
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
-	return attempt, subject, vErrs, nil
+	return attempt, &vErrs, nil
 }
 
 func (s *LoginServiceImpl) performLoginMethods(
 	ctx context.Context,
 	cmd it.AuthenticateCommand,
 	attempt *domain.LoginAttempt,
-	subject *loginSubject,
 	vErrs *ft.ValidationErrors,
 ) (done bool, err error) {
 
@@ -124,9 +123,8 @@ func (s *LoginServiceImpl) performLoginMethods(
 		}
 
 		method := m.GetLoginMethod(methodName)
-		var isAuthenticated bool
-		var reason *string
-		isAuthenticated, reason, err = method.Execute(ctx, it.LoginParam{
+		var exeResult *it.ExecuteResult
+		exeResult, err = method.Execute(ctx, it.LoginParam{
 			SubjectType: *attempt.SubjectType,
 			Username:    *attempt.Username,
 			Password:    submittedPassword,
@@ -135,8 +133,16 @@ func (s *LoginServiceImpl) performLoginMethods(
 			return false, err
 		}
 
-		if !isAuthenticated {
-			vErrs.Append(fmt.Sprintf("passwords.%s", methodName), *reason)
+		if exeResult.ClientErr != nil {
+			if vErrs.MergeClientError(exeResult.ClientErr) {
+				return false, nil
+			} else {
+				return false, exeResult.ClientErr
+			}
+		}
+
+		if !exeResult.IsVerified {
+			vErrs.Append(fmt.Sprintf("passwords.%s", methodName), exeResult.FailedReason)
 			return false, nil
 		}
 
@@ -161,7 +167,7 @@ func (s *LoginServiceImpl) updateAttemptStatus(ctx context.Context, attempt *dom
 		return err
 	}
 	if attResult.ClientError != nil {
-		return attResult.ClientError
+		return errors.Wrap(attResult.ClientError, "failed to update attempt status")
 	}
 	return nil
 }

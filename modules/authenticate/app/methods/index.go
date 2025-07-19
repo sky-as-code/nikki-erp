@@ -13,7 +13,7 @@ var allMethods = []it.LoginMethod{
 	// 5. Captcha
 	&LoginMethodCaptcha{},
 	// 6. Password OTP
-	&LoginMethodPasswordOtp{},
+	&LoginMethodOtpCode{},
 }
 var methodMap map[string]it.LoginMethod
 var methodNames []string

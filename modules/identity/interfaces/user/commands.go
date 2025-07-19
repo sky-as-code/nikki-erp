@@ -195,7 +195,7 @@ func (this GetUserByEmailQuery) Validate() ft.ValidationErrors {
 		val.Field(&this.Email,
 			val.NotEmpty,
 			val.IsEmail,
-			val.Length(5, model.MODEL_RULE_EMAIL_LENGTH),
+			val.Length(5, model.MODEL_RULE_USERNAME_LENGTH),
 		),
 	}
 
@@ -227,7 +227,7 @@ func (this MustGetActiveUserQuery) Validate() ft.ValidationErrors {
 			val.When(this.Email != nil,
 				val.NotEmpty,
 				val.IsEmail,
-				val.Length(5, model.MODEL_RULE_EMAIL_LENGTH),
+				val.Length(5, model.MODEL_RULE_USERNAME_LENGTH),
 			),
 		),
 	}

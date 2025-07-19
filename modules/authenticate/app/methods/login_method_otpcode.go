@@ -4,29 +4,30 @@ import (
 	"context"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	itLogin "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
 	itPass "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/password"
 )
 
-type LoginMethodPassword struct {
+type LoginMethodOtpCode struct {
 }
 
-func (this *LoginMethodPassword) Name() string {
-	return "password"
+func (this *LoginMethodOtpCode) Name() string {
+	return "otpCode"
 }
 
-func (this *LoginMethodPassword) SkipMethod() *itLogin.SkippedMethod {
+func (this *LoginMethodOtpCode) SkipMethod() *itLogin.SkippedMethod {
 	return nil
 }
 
-func (this *LoginMethodPassword) Execute(ctx context.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
+func (this *LoginMethodOtpCode) Execute(ctx context.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
 	var result *itPass.VerifyPasswordResult
 	var err error
-	err = deps.Invoke(func(passwordService itPass.PasswordService) error {
-		result, err = passwordService.VerifyPassword(ctx, itPass.VerifyPasswordQuery{
+	err = deps.Invoke(func(passwordSvc itPass.PasswordService) error {
+		result, err = passwordSvc.VerifyOtpCode(ctx, itPass.VerifyOtpCodeQuery{
 			SubjectType: param.SubjectType,
 			Username:    param.Username,
-			Password:    param.Password,
+			OtpCode:     domain.OtpCode(param.Password),
 		})
 		return err
 	})

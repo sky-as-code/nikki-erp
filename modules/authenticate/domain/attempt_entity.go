@@ -57,9 +57,17 @@ func (this *LoginAttempt) Validate(forEdit bool) ft.ValidationErrors {
 		val.Field(&this.DeviceLocation,
 			val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
 		),
+		val.Field(&this.Username,
+			val.NotNilWhen(this.SubjectType != nil && this.SubjectRef == nil),
+			val.When(this.Username != nil,
+				val.NotEmpty,
+				val.Length(5, model.MODEL_RULE_USERNAME_LENGTH),
+			),
+		),
 
-		model.IdPtrValidateRule(&this.Id, !forEdit),
-		SubjectTypeValidateRule(&this.SubjectType),
+		model.IdPtrValidateRule(&this.Id, true),
+		SubjectTypePtrValidateRule(&this.SubjectType, !forEdit),
+		model.IdPtrValidateRule(&this.SubjectRef, this.SubjectType != nil && this.Username == nil),
 		AttemptStatusValidateRule(&this.Status),
 	}
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)

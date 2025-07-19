@@ -26,18 +26,35 @@ type PasswordRest struct {
 	passwordSvc it.PasswordService
 }
 
-func (this PasswordRest) CreatePasswordOtp(echoCtx echo.Context) (err error) {
+func (this PasswordRest) CreateOtpPassword(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create otp password"); e != nil {
 			err = e
 		}
 	}()
 	err = httpserver.ServeRequest(
-		echoCtx, this.passwordSvc.CreatePasswordOtp,
-		func(request CreateOtpPasswordRequest) it.CreatePasswordOtpCommand {
-			return it.CreatePasswordOtpCommand(request)
+		echoCtx, this.passwordSvc.CreateOtpPassword,
+		func(request CreateOtpPasswordRequest) it.CreateOtpPasswordCommand {
+			return it.CreateOtpPasswordCommand(request)
 		},
 		NewCreateOtpPasswordResponse,
+		httpserver.JsonOk,
+	)
+	return err
+}
+
+func (this PasswordRest) ConfirmOtpPassword(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST confirm otp password"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest(
+		echoCtx, this.passwordSvc.ConfirmOtpPassword,
+		func(request ConfirmOtpPasswordRequest) it.ConfirmOtpPasswordCommand {
+			return it.ConfirmOtpPasswordCommand(request)
+		},
+		NewConfirmOtpPasswordResponse,
 		httpserver.JsonOk,
 	)
 	return err

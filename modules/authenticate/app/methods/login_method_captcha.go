@@ -22,13 +22,15 @@ func (this *LoginMethodCaptcha) SkipMethod() *itLogin.SkippedMethod {
 	return nil
 }
 
-func (this *LoginMethodCaptcha) Execute(ctx context.Context, param itLogin.LoginParam) (bool, *string, error) {
+func (this *LoginMethodCaptcha) Execute(ctx context.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
+	result := &itLogin.ExecuteResult{}
 	switch param.Password {
 	case "NIKKI":
-		return true, nil, nil
+		result.IsVerified = true
 	case "EXPIRED":
-		return false, &errExpired, nil
+		result.FailedReason = errExpired
 	default:
-		return false, &errMismatched, nil
+		result.FailedReason = errMismatched
 	}
+	return result, nil
 }

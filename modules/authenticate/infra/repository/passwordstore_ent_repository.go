@@ -53,10 +53,20 @@ func (this *PasswordStoreEntRepository) Update(ctx context.Context, pass domain.
 		pass.PasswordUpdatedAt = util.ToPtr(time.Now())
 		update = update.
 			SetPassword(*pass.Password).
-			SetPasswordUpdatedAt(*pass.PasswordUpdatedAt).
-			SetNillablePasswordExpiredAt(pass.PasswordExpiredAt)
+			SetPasswordUpdatedAt(*pass.PasswordUpdatedAt)
 	}
 
+	// Password expiration may not be set together with Password in case a new policy
+	// enforces with or without password expiration.
+	if pass.PasswordExpiredAt != nil {
+		if !model.ZeroTime.Equal(*pass.PasswordExpiredAt) {
+			update = update.SetPasswordExpiredAt(*pass.PasswordExpiredAt)
+		} else {
+			update = update.ClearPasswordExpiredAt()
+		}
+	}
+
+	// Setting or deleting OTP secret always requires the same action on OTP expiration.
 	if pass.Passwordotp != nil {
 		if len(*pass.Passwordotp) > 0 {
 			update = update.
@@ -67,7 +77,12 @@ func (this *PasswordStoreEntRepository) Update(ctx context.Context, pass domain.
 		}
 	}
 
-	// TODO: Refactor this
+	// OTP expiration is deleted when OTP confirmation step is done.
+	if pass.PasswordotpExpiredAt != nil && model.ZeroTime.Equal(*pass.PasswordotpExpiredAt) {
+		update = update.ClearPasswordotpExpiredAt()
+	}
+
+	// OTP recovery codes are cleared after all codes are used up.
 	if pass.PasswordotpRecovery != nil {
 		if len(pass.PasswordotpRecovery) > 0 {
 			update = update.
@@ -77,6 +92,7 @@ func (this *PasswordStoreEntRepository) Update(ctx context.Context, pass domain.
 		}
 	}
 
+	// Setting or deleting temp password always requires the same action on temp password expiration.
 	if pass.Passwordtmp != nil {
 		if len(*pass.Passwordtmp) > 0 {
 			update = update.
@@ -85,10 +101,6 @@ func (this *PasswordStoreEntRepository) Update(ctx context.Context, pass domain.
 		} else {
 			update = update.ClearPasswordtmp().ClearPasswordtmpExpiredAt()
 		}
-	}
-
-	if pass.PasswordExpiredAt != nil && *pass.PasswordExpiredAt == model.ZeroTime {
-		update = update.ClearPasswordExpiredAt()
 	}
 
 	return db.Mutate(ctx, update, ent.IsNotFound, entToPasswordStore)

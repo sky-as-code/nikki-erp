@@ -55,7 +55,7 @@ func (this *ValidationErrors) Has(field string) bool {
 	return ok
 }
 
-func (this *ValidationErrors) Merge(other map[string]string) {
+func (this *ValidationErrors) Merge(other ValidationErrors) {
 	for field, err := range other {
 		(*this)[field] = err
 	}
@@ -65,7 +65,7 @@ func (this *ValidationErrors) MergeClientError(other *ClientError) bool {
 	if other == nil {
 		return true
 	}
-	otherErrs, isOk := other.Details.(map[string]any)
+	otherErrs, isOk := other.Details.(ValidationErrors)
 	if isOk {
 		for field, err := range otherErrs {
 			(*this)[field] = fmt.Sprint(err)
@@ -115,4 +115,8 @@ func NewValidationErrorsFromInvopop(rawErrors invopop.Errors) ValidationErrors {
 		errors.Append(field, err.Error())
 	}
 	return errors
+}
+
+type Validatable interface {
+	Validate() ValidationErrors
 }

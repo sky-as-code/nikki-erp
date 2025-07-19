@@ -3,6 +3,7 @@ package login
 import (
 	"context"
 
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 )
 
@@ -31,9 +32,15 @@ type LoginParam struct {
 }
 
 type LoginMethod interface {
-	Execute(ctx context.Context, param LoginParam) (bool, *string, error)
+	Execute(ctx context.Context, param LoginParam) (*ExecuteResult, error)
 	Name() string
 	SkipMethod() *SkippedMethod
+}
+
+type ExecuteResult struct {
+	IsVerified   bool
+	FailedReason string
+	ClientErr    *ft.ClientError
 }
 
 type SkippedMethod string
