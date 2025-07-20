@@ -84,3 +84,32 @@ func entToUsers(dbUsers []*ent.User) []domain.User {
 func entToIdentityStatus(dbStatus *ent.IdentStatusEnum) *domain.IdentityStatus {
 	return domain.WrapIdentStatus(enum.AnyToEnum(*dbStatus))
 }
+
+func entToHierarchyLevel(dbHierarchy *ent.HierarchyLevel) *domain.HierarchyLevel {
+	hierarchy := &domain.HierarchyLevel{}
+	model.MustCopy(dbHierarchy, hierarchy)
+
+	if dbHierarchy.Edges.Org != nil {
+		hierarchy.Org = entToOrganization(dbHierarchy.Edges.Org)
+	}
+
+	if dbHierarchy.Edges.Parent != nil {
+		hierarchy.ParentId = &dbHierarchy.Edges.Parent.ID
+		hierarchy.Parent = entToHierarchyLevel(dbHierarchy.Edges.Parent)
+	}
+
+	if dbHierarchy.Edges.Children != nil {
+		hierarchy.Children = entToHierarchyLevels(dbHierarchy.Edges.Children)
+	}
+
+	return hierarchy
+}
+
+func entToHierarchyLevels(dbHierarchies []*ent.HierarchyLevel) []domain.HierarchyLevel {
+	if dbHierarchies == nil {
+		return nil
+	}
+	return array.Map(dbHierarchies, func(entHierarchy *ent.HierarchyLevel) domain.HierarchyLevel {
+		return *entToHierarchyLevel(entHierarchy)
+	})
+}

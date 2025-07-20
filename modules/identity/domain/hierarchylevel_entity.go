@@ -9,10 +9,14 @@ import (
 type HierarchyLevel struct {
 	model.ModelBase
 	model.AuditableBase
-	model.OrgBase
 
 	Name     *string
 	ParentId *model.Id
+	OrgId    *model.Id
+
+	Org      *Organization    `json:"org,omitempty" model:"-"`
+	Parent   *HierarchyLevel  `json:"parent,omitempty" model:"-"`
+	Children []HierarchyLevel `json:"children,omitempty" model:"-"`
 }
 
 func (this *HierarchyLevel) Validate(forEdit bool) ft.ValidationErrors {
@@ -22,9 +26,9 @@ func (this *HierarchyLevel) Validate(forEdit bool) ft.ValidationErrors {
 			val.Length(1, 50),
 		),
 		model.IdPtrValidateRule(&this.ParentId, false),
+		model.IdPtrValidateRule(&this.OrgId, !forEdit),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
-	rules = append(rules, this.OrgBase.ValidateRules(forEdit)...)
 	return val.ApiBased.ValidateStruct(this, rules...)
 }
