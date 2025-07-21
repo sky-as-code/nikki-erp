@@ -131,7 +131,7 @@ func (this GroupRest) SearchGroups(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this GroupRest) ManageUsers(echoCtx echo.Context) (err error) {
+func (this GroupRest) ManageGroupUsers(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST manage users"); e != nil {
 			err = e
@@ -139,11 +139,11 @@ func (this GroupRest) ManageUsers(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.GroupSvc.AddRemoveUsers,
-		func(request ManageUsersRequest) it.AddRemoveUsersCommand {
+		func(request ManageGroupUsersRequest) it.AddRemoveUsersCommand {
 			return it.AddRemoveUsersCommand(request)
 		},
-		func(result it.AddRemoveUsersResult) ManageUsersResponse {
-			response := ManageUsersResponse{}
+		func(result it.AddRemoveUsersResult) ManageGroupUsersResponse {
+			response := ManageGroupUsersResponse{}
 			response.FromNonEntity(result.Data)
 			return response
 		},

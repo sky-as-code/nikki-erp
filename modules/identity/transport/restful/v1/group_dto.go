@@ -76,5 +76,5 @@ func (this *SearchGroupsResponse) FromResult(result *it.SearchGroupsResultData) 
 	})
 }
 
-type ManageUsersRequest = it.AddRemoveUsersCommand
-type ManageUsersResponse = httpserver.RestUpdateResponse
+type ManageGroupUsersRequest = it.AddRemoveUsersCommand
+type ManageGroupUsersResponse = httpserver.RestUpdateResponse

@@ -38,8 +38,11 @@ var (
 	IdentHierarchyLevelsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "deleted_by", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
+		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "parent_id", Type: field.TypeString, Nullable: true},
 		{Name: "org_id", Type: field.TypeString},
 	}
@@ -51,13 +54,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "ident_hierarchy_levels_ident_hierarchy_levels_parent",
-				Columns:    []*schema.Column{IdentHierarchyLevelsColumns[4]},
+				Columns:    []*schema.Column{IdentHierarchyLevelsColumns[7]},
 				RefColumns: []*schema.Column{IdentHierarchyLevelsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "ident_hierarchy_levels_ident_organizations_org",
-				Columns:    []*schema.Column{IdentHierarchyLevelsColumns[5]},
+				Columns:    []*schema.Column{IdentHierarchyLevelsColumns[8]},
 				RefColumns: []*schema.Column{IdentOrganizationsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -66,7 +69,7 @@ var (
 			{
 				Name:    "hierarchylevel_name_org_id",
 				Unique:  true,
-				Columns: []*schema.Column{IdentHierarchyLevelsColumns[3], IdentHierarchyLevelsColumns[5]},
+				Columns: []*schema.Column{IdentHierarchyLevelsColumns[5], IdentHierarchyLevelsColumns[8]},
 			},
 		},
 	}

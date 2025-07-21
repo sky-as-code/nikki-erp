@@ -27,6 +27,15 @@ func (HierarchyLevelMixin) Fields() []ent.Field {
 			Default(time.Now).
 			Immutable(),
 
+		field.Time("deleted_at").
+			Optional().
+			Nillable(),
+
+		field.String("deleted_by").
+			Optional().
+			Nillable().
+			Comment("User ID of the user who deleted this hierarchy level"),
+
 		field.String("etag"),
 
 		field.String("name"),
@@ -35,6 +44,10 @@ func (HierarchyLevelMixin) Fields() []ent.Field {
 			Immutable(),
 
 		field.String("parent_id").
+			Optional().
+			Nillable(),
+
+		field.Time("updated_at").
 			Optional().
 			Nillable(),
 	}

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -25,6 +26,46 @@ type HierarchyLevelUpdate struct {
 // Where appends a list predicates to the HierarchyLevelUpdate builder.
 func (hlu *HierarchyLevelUpdate) Where(ps ...predicate.HierarchyLevel) *HierarchyLevelUpdate {
 	hlu.mutation.Where(ps...)
+	return hlu
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (hlu *HierarchyLevelUpdate) SetDeletedAt(t time.Time) *HierarchyLevelUpdate {
+	hlu.mutation.SetDeletedAt(t)
+	return hlu
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (hlu *HierarchyLevelUpdate) SetNillableDeletedAt(t *time.Time) *HierarchyLevelUpdate {
+	if t != nil {
+		hlu.SetDeletedAt(*t)
+	}
+	return hlu
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (hlu *HierarchyLevelUpdate) ClearDeletedAt() *HierarchyLevelUpdate {
+	hlu.mutation.ClearDeletedAt()
+	return hlu
+}
+
+// SetDeletedBy sets the "deleted_by" field.
+func (hlu *HierarchyLevelUpdate) SetDeletedBy(s string) *HierarchyLevelUpdate {
+	hlu.mutation.SetDeletedBy(s)
+	return hlu
+}
+
+// SetNillableDeletedBy sets the "deleted_by" field if the given value is not nil.
+func (hlu *HierarchyLevelUpdate) SetNillableDeletedBy(s *string) *HierarchyLevelUpdate {
+	if s != nil {
+		hlu.SetDeletedBy(*s)
+	}
+	return hlu
+}
+
+// ClearDeletedBy clears the value of the "deleted_by" field.
+func (hlu *HierarchyLevelUpdate) ClearDeletedBy() *HierarchyLevelUpdate {
+	hlu.mutation.ClearDeletedBy()
 	return hlu
 }
 
@@ -73,6 +114,26 @@ func (hlu *HierarchyLevelUpdate) SetNillableParentID(s *string) *HierarchyLevelU
 // ClearParentID clears the value of the "parent_id" field.
 func (hlu *HierarchyLevelUpdate) ClearParentID() *HierarchyLevelUpdate {
 	hlu.mutation.ClearParentID()
+	return hlu
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (hlu *HierarchyLevelUpdate) SetUpdatedAt(t time.Time) *HierarchyLevelUpdate {
+	hlu.mutation.SetUpdatedAt(t)
+	return hlu
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (hlu *HierarchyLevelUpdate) SetNillableUpdatedAt(t *time.Time) *HierarchyLevelUpdate {
+	if t != nil {
+		hlu.SetUpdatedAt(*t)
+	}
+	return hlu
+}
+
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (hlu *HierarchyLevelUpdate) ClearUpdatedAt() *HierarchyLevelUpdate {
+	hlu.mutation.ClearUpdatedAt()
 	return hlu
 }
 
@@ -211,11 +272,29 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 			}
 		}
 	}
+	if value, ok := hlu.mutation.DeletedAt(); ok {
+		_spec.SetField(hierarchylevel.FieldDeletedAt, field.TypeTime, value)
+	}
+	if hlu.mutation.DeletedAtCleared() {
+		_spec.ClearField(hierarchylevel.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := hlu.mutation.DeletedBy(); ok {
+		_spec.SetField(hierarchylevel.FieldDeletedBy, field.TypeString, value)
+	}
+	if hlu.mutation.DeletedByCleared() {
+		_spec.ClearField(hierarchylevel.FieldDeletedBy, field.TypeString)
+	}
 	if value, ok := hlu.mutation.Etag(); ok {
 		_spec.SetField(hierarchylevel.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := hlu.mutation.Name(); ok {
 		_spec.SetField(hierarchylevel.FieldName, field.TypeString, value)
+	}
+	if value, ok := hlu.mutation.UpdatedAt(); ok {
+		_spec.SetField(hierarchylevel.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if hlu.mutation.UpdatedAtCleared() {
+		_spec.ClearField(hierarchylevel.FieldUpdatedAt, field.TypeTime)
 	}
 	if hlu.mutation.ChildrenCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -356,6 +435,46 @@ type HierarchyLevelUpdateOne struct {
 	mutation *HierarchyLevelMutation
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (hluo *HierarchyLevelUpdateOne) SetDeletedAt(t time.Time) *HierarchyLevelUpdateOne {
+	hluo.mutation.SetDeletedAt(t)
+	return hluo
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (hluo *HierarchyLevelUpdateOne) SetNillableDeletedAt(t *time.Time) *HierarchyLevelUpdateOne {
+	if t != nil {
+		hluo.SetDeletedAt(*t)
+	}
+	return hluo
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (hluo *HierarchyLevelUpdateOne) ClearDeletedAt() *HierarchyLevelUpdateOne {
+	hluo.mutation.ClearDeletedAt()
+	return hluo
+}
+
+// SetDeletedBy sets the "deleted_by" field.
+func (hluo *HierarchyLevelUpdateOne) SetDeletedBy(s string) *HierarchyLevelUpdateOne {
+	hluo.mutation.SetDeletedBy(s)
+	return hluo
+}
+
+// SetNillableDeletedBy sets the "deleted_by" field if the given value is not nil.
+func (hluo *HierarchyLevelUpdateOne) SetNillableDeletedBy(s *string) *HierarchyLevelUpdateOne {
+	if s != nil {
+		hluo.SetDeletedBy(*s)
+	}
+	return hluo
+}
+
+// ClearDeletedBy clears the value of the "deleted_by" field.
+func (hluo *HierarchyLevelUpdateOne) ClearDeletedBy() *HierarchyLevelUpdateOne {
+	hluo.mutation.ClearDeletedBy()
+	return hluo
+}
+
 // SetEtag sets the "etag" field.
 func (hluo *HierarchyLevelUpdateOne) SetEtag(s string) *HierarchyLevelUpdateOne {
 	hluo.mutation.SetEtag(s)
@@ -401,6 +520,26 @@ func (hluo *HierarchyLevelUpdateOne) SetNillableParentID(s *string) *HierarchyLe
 // ClearParentID clears the value of the "parent_id" field.
 func (hluo *HierarchyLevelUpdateOne) ClearParentID() *HierarchyLevelUpdateOne {
 	hluo.mutation.ClearParentID()
+	return hluo
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (hluo *HierarchyLevelUpdateOne) SetUpdatedAt(t time.Time) *HierarchyLevelUpdateOne {
+	hluo.mutation.SetUpdatedAt(t)
+	return hluo
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (hluo *HierarchyLevelUpdateOne) SetNillableUpdatedAt(t *time.Time) *HierarchyLevelUpdateOne {
+	if t != nil {
+		hluo.SetUpdatedAt(*t)
+	}
+	return hluo
+}
+
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (hluo *HierarchyLevelUpdateOne) ClearUpdatedAt() *HierarchyLevelUpdateOne {
+	hluo.mutation.ClearUpdatedAt()
 	return hluo
 }
 
@@ -569,11 +708,29 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 			}
 		}
 	}
+	if value, ok := hluo.mutation.DeletedAt(); ok {
+		_spec.SetField(hierarchylevel.FieldDeletedAt, field.TypeTime, value)
+	}
+	if hluo.mutation.DeletedAtCleared() {
+		_spec.ClearField(hierarchylevel.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := hluo.mutation.DeletedBy(); ok {
+		_spec.SetField(hierarchylevel.FieldDeletedBy, field.TypeString, value)
+	}
+	if hluo.mutation.DeletedByCleared() {
+		_spec.ClearField(hierarchylevel.FieldDeletedBy, field.TypeString)
+	}
 	if value, ok := hluo.mutation.Etag(); ok {
 		_spec.SetField(hierarchylevel.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := hluo.mutation.Name(); ok {
 		_spec.SetField(hierarchylevel.FieldName, field.TypeString, value)
+	}
+	if value, ok := hluo.mutation.UpdatedAt(); ok {
+		_spec.SetField(hierarchylevel.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if hluo.mutation.UpdatedAtCleared() {
+		_spec.ClearField(hierarchylevel.FieldUpdatedAt, field.TypeTime)
 	}
 	if hluo.mutation.ChildrenCleared() {
 		edge := &sqlgraph.EdgeSpec{

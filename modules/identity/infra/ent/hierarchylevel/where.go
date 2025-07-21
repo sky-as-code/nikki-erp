@@ -70,6 +70,16 @@ func CreatedAt(v time.Time) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
+func DeletedAt(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldDeletedAt, v))
+}
+
+// DeletedBy applies equality check predicate on the "deleted_by" field. It's identical to DeletedByEQ.
+func DeletedBy(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldDeletedBy, v))
+}
+
 // Etag applies equality check predicate on the "etag" field. It's identical to EtagEQ.
 func Etag(v string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldEQ(FieldEtag, v))
@@ -88,6 +98,11 @@ func OrgID(v string) predicate.HierarchyLevel {
 // ParentID applies equality check predicate on the "parent_id" field. It's identical to ParentIDEQ.
 func ParentID(v string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldEQ(FieldParentID, v))
+}
+
+// UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
+func UpdatedAt(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldUpdatedAt, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -128,6 +143,131 @@ func CreatedAtLT(v time.Time) predicate.HierarchyLevel {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// DeletedAtEQ applies the EQ predicate on the "deleted_at" field.
+func DeletedAtEQ(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldDeletedAt, v))
+}
+
+// DeletedAtNEQ applies the NEQ predicate on the "deleted_at" field.
+func DeletedAtNEQ(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNEQ(FieldDeletedAt, v))
+}
+
+// DeletedAtIn applies the In predicate on the "deleted_at" field.
+func DeletedAtIn(vs ...time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIn(FieldDeletedAt, vs...))
+}
+
+// DeletedAtNotIn applies the NotIn predicate on the "deleted_at" field.
+func DeletedAtNotIn(vs ...time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotIn(FieldDeletedAt, vs...))
+}
+
+// DeletedAtGT applies the GT predicate on the "deleted_at" field.
+func DeletedAtGT(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGT(FieldDeletedAt, v))
+}
+
+// DeletedAtGTE applies the GTE predicate on the "deleted_at" field.
+func DeletedAtGTE(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGTE(FieldDeletedAt, v))
+}
+
+// DeletedAtLT applies the LT predicate on the "deleted_at" field.
+func DeletedAtLT(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLT(FieldDeletedAt, v))
+}
+
+// DeletedAtLTE applies the LTE predicate on the "deleted_at" field.
+func DeletedAtLTE(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLTE(FieldDeletedAt, v))
+}
+
+// DeletedAtIsNil applies the IsNil predicate on the "deleted_at" field.
+func DeletedAtIsNil() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIsNull(FieldDeletedAt))
+}
+
+// DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
+func DeletedAtNotNil() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotNull(FieldDeletedAt))
+}
+
+// DeletedByEQ applies the EQ predicate on the "deleted_by" field.
+func DeletedByEQ(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldDeletedBy, v))
+}
+
+// DeletedByNEQ applies the NEQ predicate on the "deleted_by" field.
+func DeletedByNEQ(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNEQ(FieldDeletedBy, v))
+}
+
+// DeletedByIn applies the In predicate on the "deleted_by" field.
+func DeletedByIn(vs ...string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIn(FieldDeletedBy, vs...))
+}
+
+// DeletedByNotIn applies the NotIn predicate on the "deleted_by" field.
+func DeletedByNotIn(vs ...string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotIn(FieldDeletedBy, vs...))
+}
+
+// DeletedByGT applies the GT predicate on the "deleted_by" field.
+func DeletedByGT(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGT(FieldDeletedBy, v))
+}
+
+// DeletedByGTE applies the GTE predicate on the "deleted_by" field.
+func DeletedByGTE(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGTE(FieldDeletedBy, v))
+}
+
+// DeletedByLT applies the LT predicate on the "deleted_by" field.
+func DeletedByLT(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLT(FieldDeletedBy, v))
+}
+
+// DeletedByLTE applies the LTE predicate on the "deleted_by" field.
+func DeletedByLTE(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLTE(FieldDeletedBy, v))
+}
+
+// DeletedByContains applies the Contains predicate on the "deleted_by" field.
+func DeletedByContains(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldContains(FieldDeletedBy, v))
+}
+
+// DeletedByHasPrefix applies the HasPrefix predicate on the "deleted_by" field.
+func DeletedByHasPrefix(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldHasPrefix(FieldDeletedBy, v))
+}
+
+// DeletedByHasSuffix applies the HasSuffix predicate on the "deleted_by" field.
+func DeletedByHasSuffix(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldHasSuffix(FieldDeletedBy, v))
+}
+
+// DeletedByIsNil applies the IsNil predicate on the "deleted_by" field.
+func DeletedByIsNil() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIsNull(FieldDeletedBy))
+}
+
+// DeletedByNotNil applies the NotNil predicate on the "deleted_by" field.
+func DeletedByNotNil() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotNull(FieldDeletedBy))
+}
+
+// DeletedByEqualFold applies the EqualFold predicate on the "deleted_by" field.
+func DeletedByEqualFold(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEqualFold(FieldDeletedBy, v))
+}
+
+// DeletedByContainsFold applies the ContainsFold predicate on the "deleted_by" field.
+func DeletedByContainsFold(v string) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldContainsFold(FieldDeletedBy, v))
 }
 
 // EtagEQ applies the EQ predicate on the "etag" field.
@@ -398,6 +538,56 @@ func ParentIDEqualFold(v string) predicate.HierarchyLevel {
 // ParentIDContainsFold applies the ContainsFold predicate on the "parent_id" field.
 func ParentIDContainsFold(v string) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(sql.FieldContainsFold(FieldParentID, v))
+}
+
+// UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
+func UpdatedAtEQ(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtNEQ applies the NEQ predicate on the "updated_at" field.
+func UpdatedAtNEQ(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNEQ(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIn applies the In predicate on the "updated_at" field.
+func UpdatedAtIn(vs ...time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtNotIn applies the NotIn predicate on the "updated_at" field.
+func UpdatedAtNotIn(vs ...time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotIn(FieldUpdatedAt, vs...))
+}
+
+// UpdatedAtGT applies the GT predicate on the "updated_at" field.
+func UpdatedAtGT(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtGTE applies the GTE predicate on the "updated_at" field.
+func UpdatedAtGTE(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldGTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLT applies the LT predicate on the "updated_at" field.
+func UpdatedAtLT(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLT(FieldUpdatedAt, v))
+}
+
+// UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
+func UpdatedAtLTE(v time.Time) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// UpdatedAtIsNil applies the IsNil predicate on the "updated_at" field.
+func UpdatedAtIsNil() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldIsNull(FieldUpdatedAt))
+}
+
+// UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
+func UpdatedAtNotNil() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(sql.FieldNotNull(FieldUpdatedAt))
 }
 
 // HasChildren applies the HasEdge predicate on the "children" edge.
