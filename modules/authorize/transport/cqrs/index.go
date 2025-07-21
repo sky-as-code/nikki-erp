@@ -102,6 +102,7 @@ func initRoleSuiteHandlers() error {
 		return cqrsBus.SubscribeRequests(
 			ctx,
 			cqrs.NewHandler(handler.GetRoleSuitesBySubject),
+			cqrs.NewHandler(handler.GetRoleSuiteById),
 		)
 	})
 }

@@ -1,11 +1,13 @@
 package v1
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/thoas/go-funk"
+
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
 )
 
 type EntitlementDto struct {

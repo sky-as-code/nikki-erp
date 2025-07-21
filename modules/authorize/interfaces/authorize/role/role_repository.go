@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 type RoleRepository interface {
@@ -16,7 +17,7 @@ type RoleRepository interface {
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Role, error)
 	FindById(ctx context.Context, param FindByIdParam) (*domain.Role, error)
 	FindAllBySubject(ctx context.Context, param FindAllBySubjectParam) ([]*domain.Role, error)
-	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
+	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[*domain.Role], error)
 }
 

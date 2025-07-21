@@ -2,13 +2,14 @@ package role
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/crud"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 func init() {
@@ -65,7 +66,7 @@ func (GetRoleByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getRoleByIdQueryType
 }
 
-func (this GetRoleByIdQuery) Validate() ft.ValidationErrors {
+func (this GetRoleByIdQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
@@ -118,7 +119,7 @@ func (this *SearchRolesQuery) SetDefaults() {
 	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
 }
 
-func (this SearchRolesQuery) Validate() ft.ValidationErrors {
+func (this SearchRolesQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		crud.PageIndexValidateRule(&this.Page),
 		crud.PageSizeValidateRule(&this.Size),
@@ -140,8 +141,24 @@ var getRolesBySubjectQueryType = cqrs.RequestType{
 }
 
 type GetRolesBySubjectQuery struct {
-	SubjectType *domain.EntitlementAssignmentSubjectType `param:"subjectType" json:"subjectType"`
-	SubjectRef  string                                   `param:"subjectRef" json:"subjectRef"`
+	SubjectType domain.EntitlementAssignmentSubjectType `param:"subjectType" json:"subjectType"`
+	SubjectRef  string                                  `param:"subjectRef" json:"subjectRef"`
+}
+
+func (this GetRolesBySubjectQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		validator.Field(&this.SubjectType,
+			validator.NotEmpty,
+			validator.OneOf(
+				domain.EntitlementAssignmentSubjectTypeNikkiUser,
+				domain.EntitlementAssignmentSubjectTypeNikkiGroup,
+				domain.EntitlementAssignmentSubjectTypeNikkiRole,
+				domain.EntitlementAssignmentSubjectTypeCustom,
+			),
+		),
+		model.IdValidateRule(&this.SubjectRef, true),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
 func (GetRolesBySubjectQuery) CqrsRequestType() cqrs.RequestType {

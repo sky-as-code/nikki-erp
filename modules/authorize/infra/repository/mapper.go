@@ -3,8 +3,9 @@ package repository
 import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 )
 
 // START: Resource

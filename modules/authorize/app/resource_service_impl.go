@@ -2,16 +2,16 @@ package app
 
 import (
 	"context"
-	"strings"
-	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
 )
 
 func NewResourceServiceImpl(resourceRepo it.ResourceRepository, eventBus event.EventBus) it.ResourceService {
@@ -28,27 +28,26 @@ type ResourceServiceImpl struct {
 
 func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.CreateResourceCommand) (result *it.CreateResourceResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to create resource"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to create resource"); e != nil {
 			err = e
 		}
 	}()
 
 	resource := cmd.ToResource()
 	this.setResourceDefaults(ctx, resource)
-	resource.SetCreatedAt(time.Now())
 
-	flow := val.StartValidationFlow()
+	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			*vErrs = resource.Validate(false)
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			this.sanitizeResource(resource)
 			return this.assertResourceUnique(ctx, resource, vErrs)
 		}).
 		End()
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.CreateResourceResult{
@@ -57,7 +56,7 @@ func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.Crea
 	}
 
 	resource, err = this.resourceRepo.Create(ctx, *resource)
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	return &it.CreateResourceResult{
 		Data:    resource,
@@ -67,7 +66,7 @@ func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.Crea
 
 func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.UpdateResourceCommand) (result *it.UpdateResourceResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to update resource"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to update resource"); e != nil {
 			err = e
 		}
 	}()
@@ -75,26 +74,26 @@ func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.Upda
 	resource := cmd.ToResource()
 	var dbResource *domain.Resource
 
-	flow := val.StartValidationFlow()
+	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			*vErrs = resource.Validate(true)
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			dbResource, err = this.assertResourceExistsById(ctx, *resource.Id, vErrs)
 			return err
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			this.assertCorrectEtag(*resource.Etag, *dbResource.Etag, vErrs)
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			this.sanitizeResource(resource)
 			return nil
 		}).
 		End()
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.UpdateResourceResult{
@@ -105,7 +104,7 @@ func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.Upda
 	prevEtag := resource.Etag
 	resource.Etag = model.NewEtag()
 	resource, err = this.resourceRepo.Update(ctx, *resource, *prevEtag)
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	return &it.UpdateResourceResult{
 		Data:    resource,
@@ -115,24 +114,24 @@ func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.Upda
 
 func (this *ResourceServiceImpl) GetResourceByName(ctx context.Context, query it.GetResourceByNameQuery) (result *it.GetResourceByNameResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get resource by name"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to get resource by name"); e != nil {
 			err = e
 		}
 	}()
 
 	var dbResource *domain.Resource
-	flow := val.StartValidationFlow()
+	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			*vErrs = query.Validate()
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			dbResource, err = this.assertResourceExistsByName(ctx, query.Name, vErrs)
 			return err
 		}).
 		End()
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.GetResourceByNameResult{
@@ -148,7 +147,7 @@ func (this *ResourceServiceImpl) GetResourceByName(ctx context.Context, query it
 
 func (this *ResourceServiceImpl) SearchResources(ctx context.Context, query it.SearchResourcesQuery) (result *it.SearchResourcesResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list resources"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to list resources"); e != nil {
 			err = e
 		}
 	}()
@@ -172,7 +171,7 @@ func (this *ResourceServiceImpl) SearchResources(ctx context.Context, query it.S
 		Size:        *query.Size,
 		WithActions: query.WithActions,
 	})
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	return &it.SearchResourcesResult{
 		Data:    resources,
@@ -180,13 +179,13 @@ func (this *ResourceServiceImpl) SearchResources(ctx context.Context, query it.S
 	}, nil
 }
 
-func (this *ResourceServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *ft.ValidationErrors) {
+func (this *ResourceServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *fault.ValidationErrors) {
 	if updatedEtag != dbEtag {
 		vErrs.AppendEtagMismatched()
 	}
 }
 
-func (this *ResourceServiceImpl) assertResourceExistsByName(ctx context.Context, name string, vErrs *ft.ValidationErrors) (dbResource *domain.Resource, err error) {
+func (this *ResourceServiceImpl) assertResourceExistsByName(ctx context.Context, name string, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
 	dbResource, err = this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: name})
 	if dbResource == nil {
 		vErrs.AppendIdNotFound("resource")
@@ -194,7 +193,7 @@ func (this *ResourceServiceImpl) assertResourceExistsByName(ctx context.Context,
 	return
 }
 
-func (this *ResourceServiceImpl) assertResourceExistsById(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (dbResource *domain.Resource, err error) {
+func (this *ResourceServiceImpl) assertResourceExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
 	dbResource, err = this.resourceRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	if dbResource == nil {
 		vErrs.AppendIdNotFound("resource")
@@ -204,9 +203,7 @@ func (this *ResourceServiceImpl) assertResourceExistsById(ctx context.Context, i
 
 func (this *ResourceServiceImpl) sanitizeResource(resource *domain.Resource) {
 	if resource.Description != nil {
-		cleanedName := strings.TrimSpace(*resource.Description)
-		cleanedName = defense.SanitizePlainText(cleanedName)
-		resource.Description = &cleanedName
+		resource.Description = util.ToPtr(defense.SanitizePlainText(*resource.Description, true))
 	}
 }
 
@@ -214,16 +211,12 @@ func (this *ResourceServiceImpl) setResourceDefaults(ctx context.Context, resour
 	resource.SetDefaults()
 }
 
-func (this *ResourceServiceImpl) assertResourceUnique(ctx context.Context, resource *domain.Resource, vErrs *ft.ValidationErrors) error {
-	if vErrs.Has("name") {
-		return nil
-	}
-
+func (this *ResourceServiceImpl) assertResourceUnique(ctx context.Context, resource *domain.Resource, vErrs *fault.ValidationErrors) error {
 	dbResource, err := this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: *resource.Name})
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if dbResource != nil {
-		vErrs.Append("name", "name already exists")
+		vErrs.AppendAlreadyExists("name", "resource name")
 	}
 
 	return nil

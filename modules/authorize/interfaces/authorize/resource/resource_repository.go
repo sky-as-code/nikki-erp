@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 type ResourceRepository interface {
@@ -15,7 +16,7 @@ type ResourceRepository interface {
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Resource, error)
 	FindById(ctx context.Context, param FindByIdParam) (*domain.Resource, error)
 	Update(ctx context.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error)
-	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
+	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.Resource], error)
 }
 

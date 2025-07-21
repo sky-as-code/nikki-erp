@@ -2,16 +2,18 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewEntitlementEntRepository(client *ent.Client) it.EntitlementRepository {
@@ -35,9 +37,10 @@ func (this *EntitlementEntRepository) Create(ctx context.Context, entitlement do
 		SetNillableActionID(entitlement.ActionId).
 		SetNillableScopeRef(entitlement.ScopeRef).
 		SetActionExpr(*entitlement.ActionExpr).
-		SetCreatedBy(*entitlement.CreatedBy)
+		SetCreatedBy(*entitlement.CreatedBy).
+		SetCreatedAt(time.Now())
 
-	return db.Mutate(ctx, creation, ent.IsNotFound, entToEntitlement)
+	return database.Mutate(ctx, creation, ent.IsNotFound, entToEntitlement)
 }
 
 func (this *EntitlementEntRepository) Update(ctx context.Context, entitlement domain.Entitlement, prevEtag model.Etag) (*domain.Entitlement, error) {
@@ -51,7 +54,7 @@ func (this *EntitlementEntRepository) Update(ctx context.Context, entitlement do
 			SetEtag(*entitlement.Etag)
 	}
 
-	return db.Mutate(ctx, updation, ent.IsNotFound, entToEntitlement)
+	return database.Mutate(ctx, updation, ent.IsNotFound, entToEntitlement)
 }
 
 func (this *EntitlementEntRepository) Exists(ctx context.Context, param it.FindByIdParam) (bool, error) {
@@ -66,25 +69,25 @@ func (this *EntitlementEntRepository) FindById(ctx context.Context, param it.Fin
 		WithAction().
 		WithResource()
 
-	return db.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
+	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
 }
 
 func (this *EntitlementEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Entitlement, error) {
 	query := this.client.Entitlement.Query().
 		Where(entEntitlement.NameEQ(param.Name))
 
-	return db.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
+	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
 }
 
 func (this *EntitlementEntRepository) FindAllByIds(ctx context.Context, param it.FindAllByIdsParam) ([]*domain.Entitlement, error) {
 	query := this.client.Entitlement.Query().
 		Where(entEntitlement.IDIn(param.Ids...))
 
-	return db.List(ctx, query, entToEntitlements)
+	return database.List(ctx, query, entToEntitlements)
 }
 
-func (this *EntitlementEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return db.ParseSearchGraphStr[ent.Entitlement, domain.Entitlement](criteria, entEntitlement.Label)
+func (this *EntitlementEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
+	return database.ParseSearchGraphStr[ent.Entitlement, domain.Entitlement](criteria, entEntitlement.Label)
 }
 
 func (this *EntitlementEntRepository) Search(
@@ -95,7 +98,7 @@ func (this *EntitlementEntRepository) Search(
 		WithResource().
 		WithAction()
 
-	return db.Search(
+	return database.Search(
 		ctx,
 		param.Predicate,
 		param.Order,
@@ -129,7 +132,8 @@ func BuildEntitlementDescriptor() *orm.EntityDescriptor {
 		Field(entEntitlement.FieldActionExpr, entity.ActionExpr).
 		Field(entEntitlement.FieldScopeRef, entity.ScopeRef).
 		Field(entEntitlement.FieldResourceID, entity.ResourceID).
-		Field(entEntitlement.FieldCreatedBy, entity.CreatedBy)
+		Field(entEntitlement.FieldCreatedBy, entity.CreatedBy).
+		Field(entEntitlement.FieldCreatedAt, entity.CreatedAt)
 
 	return builder.Descriptor()
 }

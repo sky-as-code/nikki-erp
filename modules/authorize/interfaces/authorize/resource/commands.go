@@ -4,13 +4,14 @@ import (
 	"regexp"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 func init() {
@@ -100,16 +101,16 @@ func (GetResourceByNameQuery) CqrsRequestType() cqrs.RequestType {
 	return getResourceByNameQueryType
 }
 
-func (this *GetResourceByNameQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.Name,
-			val.NotEmpty,
-			val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9]+$`)), // alphanumeric
-			val.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
+func (this *GetResourceByNameQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		validator.Field(&this.Name,
+			validator.NotEmpty,
+			validator.RegExp(regexp.MustCompile(`^[a-zA-Z0-9]+$`)), // alphanumeric
+			validator.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
 		),
 	}
 
-	return val.ApiBased.ValidateStruct(this, rules...)
+	return validator.ApiBased.ValidateStruct(this, rules...)
 }
 
 type GetResourceByNameResult = crud.OpResult[*domain.Resource]
@@ -139,13 +140,13 @@ func (this *SearchResourcesQuery) SetDefaults() {
 	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
 }
 
-func (this SearchResourcesQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
+func (this SearchResourcesQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
 		crud.PageIndexValidateRule(&this.Page),
 		crud.PageSizeValidateRule(&this.Size),
 	}
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type SearchResourcesResultData = crud.PagedResult[domain.Resource]

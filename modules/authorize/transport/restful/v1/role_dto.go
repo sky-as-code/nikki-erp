@@ -3,12 +3,14 @@ package v1
 import (
 	"time"
 
+	"github.com/thoas/go-funk"
+
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/thoas/go-funk"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
 )
 
 type RoleDto struct {

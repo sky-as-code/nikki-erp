@@ -2,16 +2,18 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entResource "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewResourceEntRepository(client *ent.Client) it.ResourceRepository {
@@ -32,16 +34,17 @@ func (this *ResourceEntRepository) Create(ctx context.Context, resource domain.R
 		SetResourceType(entResource.ResourceType(*resource.ResourceType)).
 		SetResourceRef(*resource.ResourceRef).
 		SetScopeType(entResource.ScopeType(*resource.ScopeType)).
-		SetEtag(*resource.Etag)
+		SetEtag(*resource.Etag).
+		SetCreatedAt(time.Now())
 
-	return db.Mutate(ctx, creation, ent.IsNotFound, entToResource)
+	return database.Mutate(ctx, creation, ent.IsNotFound, entToResource)
 }
 
 func (this *ResourceEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Resource, error) {
 	query := this.client.Resource.Query().
 		Where(entResource.IDEQ(param.Id))
 
-	return db.FindOne(ctx, query, ent.IsNotFound, entToResource)
+	return database.FindOne(ctx, query, ent.IsNotFound, entToResource)
 }
 
 func (this *ResourceEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Resource, error) {
@@ -49,7 +52,7 @@ func (this *ResourceEntRepository) FindByName(ctx context.Context, param it.Find
 		Where(entResource.NameEQ(param.Name)).
 		WithActions()
 
-	return db.FindOne(ctx, query, ent.IsNotFound, entToResource)
+	return database.FindOne(ctx, query, ent.IsNotFound, entToResource)
 }
 
 func (this *ResourceEntRepository) Update(ctx context.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error) {
@@ -62,11 +65,11 @@ func (this *ResourceEntRepository) Update(ctx context.Context, resource domain.R
 			SetEtag(*resource.Etag)
 	}
 
-	return db.Mutate(ctx, update, ent.IsNotFound, entToResource)
+	return database.Mutate(ctx, update, ent.IsNotFound, entToResource)
 }
 
-func (this *ResourceEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return db.ParseSearchGraphStr[ent.Resource, domain.Resource](criteria, entResource.Label)
+func (this *ResourceEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
+	return database.ParseSearchGraphStr[ent.Resource, domain.Resource](criteria, entResource.Label)
 }
 
 func (this *ResourceEntRepository) Search(
@@ -78,7 +81,7 @@ func (this *ResourceEntRepository) Search(
 		query = query.WithActions()
 	}
 
-	return db.Search(
+	return database.Search(
 		ctx,
 		param.Predicate,
 		param.Order,
@@ -101,7 +104,8 @@ func BuildResourceDescriptor() *orm.EntityDescriptor {
 		Field(entResource.FieldResourceType, entity.ResourceType).
 		Field(entResource.FieldResourceRef, entity.ResourceRef).
 		Field(entResource.FieldScopeType, entity.ScopeType).
-		Field(entResource.FieldEtag, entity.Etag)
+		Field(entResource.FieldEtag, entity.Etag).
+		Field(entResource.FieldCreatedAt, entity.CreatedAt)
 
 	return builder.Descriptor()
 }

@@ -2,13 +2,14 @@ package resource
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/crud"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 func init() {
@@ -81,7 +82,7 @@ func (GetActionByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getActionByIdQueryType
 }
 
-func (this GetActionByIdQuery) Validate() ft.ValidationErrors {
+func (this GetActionByIdQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
@@ -135,7 +136,7 @@ func (this *SearchActionsCommand) SetDefaults() {
 	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
 }
 
-func (this SearchActionsCommand) Validate() ft.ValidationErrors {
+func (this SearchActionsCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		crud.PageIndexValidateRule(&this.Page),
 		crud.PageSizeValidateRule(&this.Size),

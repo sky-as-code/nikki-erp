@@ -3,8 +3,9 @@ package cqrs
 import (
 	"context"
 
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
 )
 
 func NewEntitlementHandler(entitlementSvc it.EntitlementService) *EntitlementHandler {

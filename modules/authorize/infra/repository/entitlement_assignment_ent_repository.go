@@ -2,13 +2,15 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
-	entEntitlementAssignment "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
+	entAssignt "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewEntitlementAssignmentEntRepository(client *ent.Client) it.EntitlementAssignmentRepository {
@@ -25,13 +27,13 @@ func (this *EntitlementAssignmentEntRepository) Create(ctx context.Context, assi
 	creation := this.client.EntitlementAssignment.Create().
 		SetID(*assignment.Id).
 		SetEntitlementID(*assignment.EntitlementId).
-		SetSubjectType(entEntitlementAssignment.SubjectType(*assignment.SubjectType)).
+		SetSubjectType(entAssignt.SubjectType(*assignment.SubjectType)).
 		SetSubjectRef(*assignment.SubjectRef).
 		SetResolvedExpr(*assignment.ResolvedExpr).
 		SetNillableActionName(assignment.ActionName).
 		SetNillableResourceName(assignment.ResourceName)
 
-	return db.Mutate(ctx, creation, ent.IsNotFound, entToEntitlementAssignment)
+	return database.Mutate(ctx, creation, ent.IsNotFound, entToEntitlementAssignment)
 }
 
 func (this *EntitlementAssignmentEntRepository) CreateBulk(ctx context.Context, assignments []domain.EntitlementAssignment) error {
@@ -41,7 +43,7 @@ func (this *EntitlementAssignmentEntRepository) CreateBulk(ctx context.Context, 
 		builders[i] = this.client.EntitlementAssignment.Create().
 			SetID(*assignment.Id).
 			SetEntitlementID(*assignment.EntitlementId).
-			SetSubjectType(entEntitlementAssignment.SubjectType(*assignment.SubjectType)).
+			SetSubjectType(entAssignt.SubjectType(*assignment.SubjectType)).
 			SetSubjectRef(*assignment.SubjectRef).
 			SetResolvedExpr(*assignment.ResolvedExpr).
 			SetNillableActionName(assignment.ActionName).
@@ -53,14 +55,30 @@ func (this *EntitlementAssignmentEntRepository) CreateBulk(ctx context.Context, 
 }
 
 func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx context.Context, param it.FindBySubjectParam) ([]*domain.EntitlementAssignment, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	countQuery := this.client.EntitlementAssignment.Query().
+		Where(entAssignt.SubjectTypeEQ(entAssignt.SubjectType(param.SubjectType))).
+		Where(entAssignt.SubjectRefEQ(param.SubjectRef))
+
+	count, err := countQuery.Count(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if count == 0 {
+		return []*domain.EntitlementAssignment{}, nil
+	}
+
 	query := this.client.EntitlementAssignment.Query().
-		Where(entEntitlementAssignment.SubjectTypeEQ(entEntitlementAssignment.SubjectType(param.SubjectType))).
-		Where(entEntitlementAssignment.SubjectRefEQ(param.SubjectRef)).
+		Where(entAssignt.SubjectTypeEQ(entAssignt.SubjectType(param.SubjectType))).
+		Where(entAssignt.SubjectRefEQ(param.SubjectRef)).
 		WithEntitlement(func(eq *ent.EntitlementQuery) {
 			eq.WithResource()
 		})
 
-	return db.List(ctx, query, func(assignments []*ent.EntitlementAssignment) []*domain.EntitlementAssignment {
+	return database.List(ctx, query, func(assignments []*ent.EntitlementAssignment) []*domain.EntitlementAssignment {
 		result := make([]*domain.EntitlementAssignment, len(assignments))
 		for i, assignment := range assignments {
 			result[i] = entToEntitlementAssignment(assignment)
@@ -71,15 +89,15 @@ func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx context.Con
 
 func BuildEntitlementAssignmentDescriptor() *orm.EntityDescriptor {
 	entity := ent.EntitlementAssignment{}
-	builder := orm.DescribeEntity(entEntitlementAssignment.Label).
+	builder := orm.DescribeEntity(entAssignt.Label).
 		Aliases("entitlement_assignments").
-		Field(entEntitlementAssignment.FieldID, entity.ID).
-		Field(entEntitlementAssignment.FieldSubjectType, entity.SubjectType).
-		Field(entEntitlementAssignment.FieldSubjectRef, entity.SubjectRef).
-		Field(entEntitlementAssignment.FieldActionName, entity.ActionName).
-		Field(entEntitlementAssignment.FieldResourceName, entity.ResourceName).
-		Field(entEntitlementAssignment.FieldResolvedExpr, entity.ResolvedExpr).
-		Field(entEntitlementAssignment.FieldEntitlementID, entity.EntitlementID)
+		Field(entAssignt.FieldID, entity.ID).
+		Field(entAssignt.FieldSubjectType, entity.SubjectType).
+		Field(entAssignt.FieldSubjectRef, entity.SubjectRef).
+		Field(entAssignt.FieldActionName, entity.ActionName).
+		Field(entAssignt.FieldResourceName, entity.ResourceName).
+		Field(entAssignt.FieldResolvedExpr, entity.ResolvedExpr).
+		Field(entAssignt.FieldEntitlementID, entity.EntitlementID)
 
 	return builder.Descriptor()
 }

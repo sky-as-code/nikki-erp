@@ -2,13 +2,14 @@ package role_suite
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/crud"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 func init() {
@@ -109,7 +110,7 @@ func (this *SearchRoleSuitesCommand) SetDefaults() {
 	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
 }
 
-func (this SearchRoleSuitesCommand) Validate() ft.ValidationErrors {
+func (this SearchRoleSuitesCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		crud.PageIndexValidateRule(&this.Page),
 		crud.PageSizeValidateRule(&this.Size),
@@ -131,8 +132,24 @@ var getRoleSuitesBySubjectQueryType = cqrs.RequestType{
 }
 
 type GetRoleSuitesBySubjectQuery struct {
-	SubjectType *domain.EntitlementAssignmentSubjectType `param:"subjectType" json:"subjectType"`
-	SubjectRef  string                                   `param:"subjectRef" json:"subjectRef"`
+	SubjectType domain.EntitlementAssignmentSubjectType `param:"subjectType" json:"subjectType"`
+	SubjectRef  string                                  `param:"subjectRef" json:"subjectRef"`
+}
+
+func (this GetRoleSuitesBySubjectQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		validator.Field(&this.SubjectType,
+			validator.NotEmpty,
+			validator.OneOf(
+				domain.EntitlementAssignmentSubjectTypeNikkiUser,
+				domain.EntitlementAssignmentSubjectTypeNikkiGroup,
+				domain.EntitlementAssignmentSubjectTypeNikkiRole,
+				domain.EntitlementAssignmentSubjectTypeCustom,
+			),
+		),
+		model.IdValidateRule(&this.SubjectRef, true),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
 func (GetRoleSuitesBySubjectQuery) CqrsRequestType() cqrs.RequestType {

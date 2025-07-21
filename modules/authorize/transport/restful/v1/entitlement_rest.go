@@ -2,17 +2,18 @@ package v1
 
 import (
 	"github.com/labstack/echo/v4"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"go.uber.org/dig"
+
+	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
 )
 
 type entitlementRestParams struct {
 	dig.In
 
-	EntitlementSvc entitlement.EntitlementService
+	EntitlementSvc it.EntitlementService
 }
 
 func NewEntitlementRest(params entitlementRestParams) *EntitlementRest {
@@ -22,12 +23,12 @@ func NewEntitlementRest(params entitlementRestParams) *EntitlementRest {
 }
 
 type EntitlementRest struct {
-	EntitlementSvc entitlement.EntitlementService
+	EntitlementSvc it.EntitlementService
 }
 
 func (this EntitlementRest) CreateEntitlement(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create entitlement"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create entitlement"); e != nil {
 			err = e
 		}
 	}()
@@ -51,7 +52,7 @@ func (this EntitlementRest) CreateEntitlement(echoCtx echo.Context) (err error) 
 
 func (this EntitlementRest) UpdateEntitlement(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update entitlement"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update entitlement"); e != nil {
 			err = e
 		}
 	}()
@@ -75,7 +76,7 @@ func (this EntitlementRest) UpdateEntitlement(echoCtx echo.Context) (err error) 
 
 func (this EntitlementRest) GetEntitlementById(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get entitlement by id"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get entitlement by id"); e != nil {
 			err = e
 		}
 	}()
@@ -99,7 +100,7 @@ func (this EntitlementRest) GetEntitlementById(echoCtx echo.Context) (err error)
 
 func (this EntitlementRest) SearchEntitlements(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search entitlements"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search entitlements"); e != nil {
 			err = e
 		}
 	}()

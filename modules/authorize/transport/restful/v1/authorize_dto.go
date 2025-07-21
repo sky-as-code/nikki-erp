@@ -5,10 +5,8 @@ import (
 )
 
 type IsAuthorizedRequest = it.IsAuthorizedQuery
-type IsAuthorizedResponse struct {
-	Decision it.IsAuthorizedResult `json:"decision"`
-}
+type IsAuthorizedResponse it.IsAuthorizedResult
 
 func (this *IsAuthorizedResponse) FromResult(result *it.IsAuthorizedResult) {
-	this.Decision = *result
+	this.Decision = result.Decision
 }

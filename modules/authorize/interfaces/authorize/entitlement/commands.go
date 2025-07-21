@@ -2,14 +2,14 @@ package entitlement
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/crud"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 func init() {
@@ -65,7 +65,7 @@ func (EntitlementExistsCommand) CqrsRequestType() cqrs.RequestType {
 	return existsCommandType
 }
 
-func (this EntitlementExistsCommand) Validate() ft.ValidationErrors {
+func (this EntitlementExistsCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
@@ -110,7 +110,7 @@ type GetEntitlementByIdQuery struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (this GetEntitlementByIdQuery) Validate() ft.ValidationErrors {
+func (this GetEntitlementByIdQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
@@ -159,7 +159,7 @@ func (GetAllEntitlementByIdsQuery) CqrsRequestType() cqrs.RequestType {
 	return getAllEntitlementByIdsQueryType
 }
 
-func (this GetAllEntitlementByIdsQuery) Validate() ft.ValidationErrors {
+func (this GetAllEntitlementByIdsQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRuleMulti(&this.Ids, true, 1, model.MODEL_RULE_ID_ARR_MAX),
 	}
@@ -192,7 +192,7 @@ func (this *SearchEntitlementsQuery) SetDefaults() {
 	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
 }
 
-func (this SearchEntitlementsQuery) Validate() ft.ValidationErrors {
+func (this SearchEntitlementsQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		crud.PageIndexValidateRule(&this.Page),
 		crud.PageSizeValidateRule(&this.Size),

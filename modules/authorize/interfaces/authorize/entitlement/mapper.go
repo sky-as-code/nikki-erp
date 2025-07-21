@@ -2,7 +2,8 @@ package entitlement
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 func (this CreateEntitlementCommand) ToEntitlement() *domain.Entitlement {

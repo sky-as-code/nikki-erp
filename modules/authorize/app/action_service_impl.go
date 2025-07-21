@@ -2,16 +2,16 @@ package app
 
 import (
 	"context"
-	"strings"
-	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
+	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
 )
 
 func NewActionServiceImpl(actionRepo it.ActionRepository, eventBus event.EventBus) it.ActionService {
@@ -28,27 +28,26 @@ type ActionServiceImpl struct {
 
 func (this *ActionServiceImpl) CreateAction(ctx context.Context, cmd it.CreateActionCommand) (result *it.CreateActionResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to create action"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to create action"); e != nil {
 			err = e
 		}
 	}()
 
 	action := cmd.ToAction()
-	this.setActionDefaults(ctx, action)
-	action.SetCreatedAt(time.Now())
+	this.setActionDefaults(action)
 
-	flow := val.StartValidationFlow()
+	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			*vErrs = action.Validate(false)
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			this.sanitizeAction(action)
 			return this.assertActionUnique(ctx, action, vErrs)
 		}).
 		End()
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.CreateActionResult{
@@ -57,7 +56,7 @@ func (this *ActionServiceImpl) CreateAction(ctx context.Context, cmd it.CreateAc
 	}
 
 	action, err = this.actionRepo.Create(ctx, *action)
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	return &it.CreateActionResult{
 		Data:    action,
@@ -67,7 +66,7 @@ func (this *ActionServiceImpl) CreateAction(ctx context.Context, cmd it.CreateAc
 
 func (this *ActionServiceImpl) UpdateAction(ctx context.Context, cmd it.UpdateActionCommand) (result *it.UpdateActionResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to update action"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to update action"); e != nil {
 			err = e
 		}
 	}()
@@ -75,26 +74,26 @@ func (this *ActionServiceImpl) UpdateAction(ctx context.Context, cmd it.UpdateAc
 	action := cmd.ToAction()
 	var dbAction *domain.Action
 
-	flow := val.StartValidationFlow()
+	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			*vErrs = action.Validate(true)
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			dbAction, err = this.assertActionExists(ctx, *action.Id, vErrs)
 			return err
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			this.assertCorrectEtag(*action.Etag, *dbAction.Etag, vErrs)
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			this.sanitizeAction(action)
 			return nil
 		}).
 		End()
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.UpdateActionResult{
@@ -105,7 +104,7 @@ func (this *ActionServiceImpl) UpdateAction(ctx context.Context, cmd it.UpdateAc
 	prevEtag := action.Etag
 	action.Etag = model.NewEtag()
 	action, err = this.actionRepo.Update(ctx, *action, *prevEtag)
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	return &it.UpdateActionResult{
 		Data:    action,
@@ -115,24 +114,24 @@ func (this *ActionServiceImpl) UpdateAction(ctx context.Context, cmd it.UpdateAc
 
 func (this *ActionServiceImpl) GetActionById(ctx context.Context, query it.GetActionByIdQuery) (result *it.GetActionByIdResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get action by id"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to get action by id"); e != nil {
 			err = e
 		}
 	}()
 
 	var dbAction *domain.Action
-	flow := val.StartValidationFlow()
+	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			*vErrs = query.Validate()
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			dbAction, err = this.assertActionExists(ctx, query.Id, vErrs)
 			return err
 		}).
 		End()
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.GetActionByIdResult{
@@ -148,7 +147,7 @@ func (this *ActionServiceImpl) GetActionById(ctx context.Context, query it.GetAc
 
 func (this *ActionServiceImpl) SearchActions(ctx context.Context, query it.SearchActionsCommand) (result *it.SearchActionsResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list actions"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to list actions"); e != nil {
 			err = e
 		}
 	}()
@@ -171,7 +170,7 @@ func (this *ActionServiceImpl) SearchActions(ctx context.Context, query it.Searc
 		Page:      *query.Page,
 		Size:      *query.Size,
 	})
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	return &it.SearchActionsResult{
 		Data:    actions,
@@ -181,30 +180,25 @@ func (this *ActionServiceImpl) SearchActions(ctx context.Context, query it.Searc
 
 func (this *ActionServiceImpl) sanitizeAction(action *domain.Action) {
 	if action.Description != nil {
-		cleanedName := strings.TrimSpace(*action.Description)
-		cleanedName = defense.SanitizePlainText(cleanedName)
-		action.Description = &cleanedName
+		action.Description = util.ToPtr(defense.SanitizePlainText(*action.Description, true))
 	}
 }
 
-func (this *ActionServiceImpl) setActionDefaults(ctx context.Context, action *domain.Action) {
+func (this *ActionServiceImpl) setActionDefaults(action *domain.Action) {
 	action.SetDefaults()
 }
 
-func (this *ActionServiceImpl) assertActionUnique(ctx context.Context, action *domain.Action, vErrs *ft.ValidationErrors) error {
-	if vErrs.Has("name") {
-		return nil
-	}
+func (this *ActionServiceImpl) assertActionUnique(ctx context.Context, action *domain.Action, vErrs *fault.ValidationErrors) error {
 	dbAction, err := this.actionRepo.FindByName(ctx, it.FindByNameParam{Name: *action.Name, ResourceId: *action.ResourceId})
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if dbAction != nil {
-		vErrs.AppendAlreadyExists("name", "name")
+		vErrs.AppendAlreadyExists("name", "action name")
 	}
 	return nil
 }
 
-func (this *ActionServiceImpl) assertActionExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (dbAction *domain.Action, err error) {
+func (this *ActionServiceImpl) assertActionExists(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbAction *domain.Action, err error) {
 	dbAction, err = this.actionRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	if dbAction == nil {
 		vErrs.AppendIdNotFound("action")
@@ -212,7 +206,7 @@ func (this *ActionServiceImpl) assertActionExists(ctx context.Context, id model.
 	return
 }
 
-func (this *ActionServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *ft.ValidationErrors) {
+func (this *ActionServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *fault.ValidationErrors) {
 	if updatedEtag != dbEtag {
 		vErrs.AppendEtagMismatched()
 	}

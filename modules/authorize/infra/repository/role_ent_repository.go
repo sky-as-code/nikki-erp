@@ -3,20 +3,21 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
-	entEntitlementAssignment "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
+	entAssignt "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	entRole "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
 	entRoleUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/roleuser"
-
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewRoleEntRepository(client *ent.Client) it.RoleRepository {
@@ -31,10 +32,10 @@ type RoleEntRepository struct {
 
 func (this *RoleEntRepository) CreateWithEntitlements(ctx context.Context, role domain.Role, entitlementIds []model.Id) (result *domain.Role, err error) {
 	tx, err := this.client.Tx(ctx)
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to create role transaction"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to create role transaction"); e != nil {
 			_ = tx.Rollback()
 			err = e
 		}
@@ -42,17 +43,17 @@ func (this *RoleEntRepository) CreateWithEntitlements(ctx context.Context, role 
 
 	// Create role
 	createdRole, err := this.createRoleTx(ctx, tx, role)
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	// Create entitlement assignments for each entitlement ID
 	if len(entitlementIds) > 0 {
 		for _, entitlementId := range entitlementIds {
 			err := this.createAssignmentTx(ctx, tx, createdRole.ID, entitlementId)
-			ft.PanicOnErr(err)
+			fault.PanicOnErr(err)
 		}
 	}
 
-	ft.PanicOnErr(tx.Commit())
+	fault.PanicOnErr(tx.Commit())
 
 	return entToRole(createdRole), nil
 }
@@ -109,7 +110,7 @@ func (this *RoleEntRepository) createAssignmentTx(ctx context.Context, tx *ent.T
 		resourceExpr = *resourceName
 	}
 
-	resolvedExpr := fmt.Sprintf("%s:%s:%s:%s", roleID, actionExpr, scopeRef, resourceExpr)
+	resolvedExpr := fmt.Sprintf("%s:%s:%s.%s", roleID, actionExpr, scopeRef, resourceExpr)
 
 	// Generate new ID for entitlement assignment
 	assignmentID, err := model.NewId()
@@ -121,7 +122,7 @@ func (this *RoleEntRepository) createAssignmentTx(ctx context.Context, tx *ent.T
 		Create().
 		SetID(*assignmentID).
 		SetSubjectRef(roleID).
-		SetSubjectType(entEntitlementAssignment.SubjectTypeNikkiRole).
+		SetSubjectType(entAssignt.SubjectTypeNikkiRole).
 		SetEntitlementID(entitlementID).
 		SetResolvedExpr(resolvedExpr).
 		SetNillableActionName(actionName).
@@ -142,27 +143,28 @@ func (this *RoleEntRepository) Create(ctx context.Context, role domain.Role) (*d
 		SetIsRequestable(*role.IsRequestable).
 		SetIsRequiredAttachment(*role.IsRequiredAttachment).
 		SetIsRequiredComment(*role.IsRequiredComment).
-		SetCreatedBy(*role.CreatedBy)
+		SetCreatedBy(*role.CreatedBy).
+		SetCreatedAt(time.Now())
 
-	return db.Mutate(ctx, creation, ent.IsNotFound, entToRole)
+	return database.Mutate(ctx, creation, ent.IsNotFound, entToRole)
 }
 
 func (this *RoleEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Role, error) {
 	query := this.client.Role.Query().
 		Where(entRole.NameEQ(param.Name))
 
-	return db.FindOne(ctx, query, ent.IsNotFound, entToRole)
+	return database.FindOne(ctx, query, ent.IsNotFound, entToRole)
 }
 
 func (this *RoleEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Role, error) {
 	query := this.client.Role.Query().
 		Where(entRole.IDEQ(param.Id))
 
-	return db.FindOne(ctx, query, ent.IsNotFound, entToRole)
+	return database.FindOne(ctx, query, ent.IsNotFound, entToRole)
 }
 
-func (this *RoleEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return db.ParseSearchGraphStr[ent.Role, domain.Role](criteria, entRole.Label)
+func (this *RoleEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
+	return database.ParseSearchGraphStr[ent.Role, domain.Role](criteria, entRole.Label)
 }
 
 func (this *RoleEntRepository) Search(
@@ -171,7 +173,7 @@ func (this *RoleEntRepository) Search(
 ) (*crud.PagedResult[*domain.Role], error) {
 	query := this.client.Role.Query()
 
-	return db.Search(
+	return database.Search(
 		ctx,
 		param.Predicate,
 		param.Order,
@@ -188,7 +190,7 @@ func (this *RoleEntRepository) FindAllBySubject(ctx context.Context, param it.Fi
 	query := this.client.Role.Query().
 		Where(entRole.HasRoleUsersWith(entRoleUser.ReceiverRefEQ(param.SubjectRef)))
 
-	return db.List(ctx, query, entToRoles)
+	return database.List(ctx, query, entToRoles)
 }
 
 func BuildRoleDescriptor() *orm.EntityDescriptor {

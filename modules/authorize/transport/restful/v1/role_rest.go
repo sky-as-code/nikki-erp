@@ -2,10 +2,12 @@ package v1
 
 import (
 	"github.com/labstack/echo/v4"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"go.uber.org/dig"
+
+	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
 )
 
 type roleRestParams struct {
@@ -26,7 +28,7 @@ type RoleRest struct {
 
 func (this RoleRest) CreateRole(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create action"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create action"); e != nil {
 			err = e
 		}
 	}()
@@ -49,7 +51,7 @@ func (this RoleRest) CreateRole(echoCtx echo.Context) (err error) {
 
 func (this RoleRest) GetRoleById(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get role by id"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get role by id"); e != nil {
 			err = e
 		}
 	}()
@@ -72,7 +74,7 @@ func (this RoleRest) GetRoleById(echoCtx echo.Context) (err error) {
 
 func (this RoleRest) SearchRoles(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search roles"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search roles"); e != nil {
 			err = e
 		}
 	}()

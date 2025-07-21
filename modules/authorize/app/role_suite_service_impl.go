@@ -3,16 +3,16 @@ package app
 import (
 	"context"
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
+	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
 )
 
 func NewRoleSuiteServiceImpl(roleSuiteRepo it.RoleSuiteRepository, eventBus event.EventBus) it.RoleSuiteService {
@@ -29,33 +29,32 @@ type RoleSuiteServiceImpl struct {
 
 func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx context.Context, cmd it.CreateRoleSuiteCommand) (result *it.CreateRoleSuiteResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to create role suite"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to create role suite"); e != nil {
 			err = e
 		}
 	}()
 
 	roleSuite := cmd.ToRoleSuite()
 	this.setRoleSuiteDefaults(ctx, roleSuite)
-	roleSuite.SetCreatedAt(time.Now())
 
-	flow := val.StartValidationFlow()
+	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			*vErrs = roleSuite.Validate(false)
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			this.sanitizeRoleSuite(roleSuite)
 			return this.assertRoleSuiteUnique(ctx, roleSuite, vErrs)
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			if len(roleSuite.Roles) > 0 {
 				this.validateRoles(ctx, roleSuite.Roles, vErrs)
 			}
 			return nil
 		}).
 		End()
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.CreateRoleSuiteResult{
@@ -64,7 +63,7 @@ func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx context.Context, cmd it.Cr
 	}
 
 	roleSuite, err = this.roleSuiteRepo.Create(ctx, *roleSuite)
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	return &it.CreateRoleSuiteResult{
 		Data:    roleSuite,
@@ -74,15 +73,15 @@ func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx context.Context, cmd it.Cr
 
 func (this *RoleSuiteServiceImpl) GetRoleSuiteById(ctx context.Context, query it.GetRoleSuiteByIdQuery) (result *it.GetRoleSuiteByIdResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get role suite by id"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to get role suite by id"); e != nil {
 			err = e
 		}
 	}()
 
 	var dbRoleSuite *domain.RoleSuite
-	vErrs := ft.NewValidationErrors()
+	vErrs := fault.NewValidationErrors()
 	dbRoleSuite, err = this.assertRoleSuiteExistsById(ctx, query.Id, &vErrs)
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.GetRoleSuiteByIdResult{
@@ -98,7 +97,7 @@ func (this *RoleSuiteServiceImpl) GetRoleSuiteById(ctx context.Context, query it
 
 func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx context.Context, query it.SearchRoleSuitesCommand) (result *it.SearchRoleSuitesResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to list role suites"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to list role suites"); e != nil {
 			err = e
 		}
 	}()
@@ -121,7 +120,7 @@ func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx context.Context, query it
 		Page:      *query.Page,
 		Size:      *query.Size,
 	})
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	return &it.SearchRoleSuitesResult{
 		Data:    roleSuites,
@@ -131,24 +130,24 @@ func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx context.Context, query it
 
 func (this *RoleSuiteServiceImpl) GetRoleSuitesBySubject(ctx context.Context, query it.GetRoleSuitesBySubjectQuery) (result *it.GetRoleSuitesBySubjectResult, err error) {
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get role suites by subject"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to get role suites by subject"); e != nil {
 			err = e
 		}
 	}()
 
 	var roleSuites []domain.RoleSuite
-	flow := val.StartValidationFlow()
+	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			// *vErrs = query.Validate()
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = query.Validate()
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(vErrs *fault.ValidationErrors) error {
 			roleSuites, err = this.roleSuiteRepo.FindAllBySubject(ctx, query)
 			return err
 		}).
 		End()
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
 		return &it.GetRoleSuitesBySubjectResult{
@@ -162,7 +161,7 @@ func (this *RoleSuiteServiceImpl) GetRoleSuitesBySubject(ctx context.Context, qu
 	}, nil
 }
 
-func (this *RoleSuiteServiceImpl) assertRoleSuiteExistsById(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (dbRoleSuite *domain.RoleSuite, err error) {
+func (this *RoleSuiteServiceImpl) assertRoleSuiteExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbRoleSuite *domain.RoleSuite, err error) {
 	dbRoleSuite, err = this.roleSuiteRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	if dbRoleSuite == nil {
 		vErrs.AppendIdNotFound("roleSuite")
@@ -170,16 +169,12 @@ func (this *RoleSuiteServiceImpl) assertRoleSuiteExistsById(ctx context.Context,
 	return
 }
 
-func (this *RoleSuiteServiceImpl) assertRoleSuiteUnique(ctx context.Context, roleSuite *domain.RoleSuite, vErrs *ft.ValidationErrors) error {
-	if vErrs.Has("name") {
-		return nil
-	}
-
+func (this *RoleSuiteServiceImpl) assertRoleSuiteUnique(ctx context.Context, roleSuite *domain.RoleSuite, vErrs *fault.ValidationErrors) error {
 	dbRoleSuite, err := this.roleSuiteRepo.FindByName(ctx, it.FindByNameParam{Name: *roleSuite.Name})
-	ft.PanicOnErr(err)
+	fault.PanicOnErr(err)
 
 	if dbRoleSuite != nil {
-		vErrs.Append("name", "name already exists")
+		vErrs.AppendAlreadyExists("name", "role suite name")
 	}
 
 	return nil
@@ -187,9 +182,7 @@ func (this *RoleSuiteServiceImpl) assertRoleSuiteUnique(ctx context.Context, rol
 
 func (this *RoleSuiteServiceImpl) sanitizeRoleSuite(roleSuite *domain.RoleSuite) {
 	if roleSuite.Description != nil {
-		cleanedDescription := strings.TrimSpace(*roleSuite.Description)
-		cleanedDescription = defense.SanitizePlainText(cleanedDescription)
-		roleSuite.Description = &cleanedDescription
+		roleSuite.Description = util.ToPtr(defense.SanitizePlainText(*roleSuite.Description, true))
 	}
 }
 
@@ -197,7 +190,7 @@ func (this *RoleSuiteServiceImpl) setRoleSuiteDefaults(ctx context.Context, role
 	roleSuite.SetDefaults()
 }
 
-func (this *RoleSuiteServiceImpl) validateRoles(ctx context.Context, roles []*domain.Role, vErrs *ft.ValidationErrors) {
+func (this *RoleSuiteServiceImpl) validateRoles(ctx context.Context, roles []*domain.Role, vErrs *fault.ValidationErrors) {
 	seenIds := make(map[model.Id]int)
 
 	for i, role := range roles {

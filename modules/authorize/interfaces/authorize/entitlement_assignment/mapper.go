@@ -1,7 +1,7 @@
 package entitlement_assignment
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 func (this CreateEntitlementAssignmentCommand) ToEntitlementAssignment() *domain.EntitlementAssignment {

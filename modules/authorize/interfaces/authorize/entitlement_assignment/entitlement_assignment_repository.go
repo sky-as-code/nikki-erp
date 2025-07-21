@@ -3,7 +3,7 @@ package entitlement_assignment
 import (
 	"context"
 
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
 type EntitlementAssignmentRepository interface {

@@ -2,10 +2,12 @@ package v1
 
 import (
 	"github.com/labstack/echo/v4"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"go.uber.org/dig"
+
+	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
 )
 
 type resourceRestParams struct {
@@ -26,7 +28,7 @@ type ResourceRest struct {
 
 func (this ResourceRest) CreateResource(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create resource"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create resource"); e != nil {
 			err = e
 		}
 	}()
@@ -49,7 +51,7 @@ func (this ResourceRest) CreateResource(echoCtx echo.Context) (err error) {
 
 func (this ResourceRest) UpdateResource(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update resource"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update resource"); e != nil {
 			err = e
 		}
 	}()
@@ -72,7 +74,7 @@ func (this ResourceRest) UpdateResource(echoCtx echo.Context) (err error) {
 
 func (this ResourceRest) GetResourceByName(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get resource by name"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get resource by name"); e != nil {
 			err = e
 		}
 	}()
@@ -83,7 +85,7 @@ func (this ResourceRest) GetResourceByName(echoCtx echo.Context) (err error) {
 			return it.GetResourceByNameQuery(request)
 		},
 		func(result it.GetResourceByNameResult) GetResourceByNameResponse {
-			response := GetResourceByNameResponse{}	
+			response := GetResourceByNameResponse{}
 			response.FromResource(*result.Data)
 			return response
 		},
@@ -95,7 +97,7 @@ func (this ResourceRest) GetResourceByName(echoCtx echo.Context) (err error) {
 
 func (this ResourceRest) SearchResources(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search resources"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search resources"); e != nil {
 			err = e
 		}
 	}()

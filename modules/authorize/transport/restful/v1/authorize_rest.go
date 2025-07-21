@@ -4,10 +4,12 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"go.uber.org/dig"
+
+	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize"
 )
 
 type authorizeRestParams struct {
@@ -29,7 +31,7 @@ type AuthorizeRest struct {
 
 func (this AuthorizeRest) IsAuthorized(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST is authorized"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST is authorized"); e != nil {
 			err = e
 		}
 	}()

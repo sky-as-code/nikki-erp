@@ -8,13 +8,13 @@ import (
 
 func InitServices() error {
 	err := errors.Join(
-		deps.Register(NewResourceServiceImpl),
 		deps.Register(NewActionServiceImpl),
+		deps.Register(NewAuthorizeServiceImpl),
 		deps.Register(NewEntitlementServiceImpl),
 		deps.Register(NewEntitlementAssignmentServiceImpl),
+		deps.Register(NewResourceServiceImpl),
 		deps.Register(NewRoleServiceImpl),
 		deps.Register(NewRoleSuiteServiceImpl),
-		deps.Register(NewAuthorizeServiceImpl),
 	)
 	return err
 }
