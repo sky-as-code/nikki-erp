@@ -24,6 +24,7 @@ func InitRepositories() error {
 		deps.Register(NewUserEntRepository),
 		deps.Register(NewGroupEntRepository),
 		deps.Register(NewOrganizationEntRepository),
+		deps.Register(NewHierarchyLevelEntRepository),
 	)
 
 	return err

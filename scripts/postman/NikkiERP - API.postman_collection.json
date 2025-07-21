@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "074a8751-8dfb-48ad-bae9-e76dca577a73",
+		"_postman_id": "0f3140cf-6d4d-418b-8399-a905bfe18355",
 		"name": "NikkiERP - API",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "26697084"
+		"_exporter_id": "33688214"
 	},
 	"item": [
 		{
@@ -1059,7 +1059,8 @@
 									"listen": "prerequest",
 									"script": {
 										"exec": [
-											"const payload = JSON.parse(pm.request.body.raw);\r",
+											"const rawBody = pm.request.body.raw;\r",
+											"const payload = JSON.parse(rawBody);\r",
 											"\r",
 											"// Generate a 6-char alphanumeric string\r",
 											"function randomString(length = 6) {\r",
@@ -1399,7 +1400,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"etag mismatched\"\n    }\n}"
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"group has been modified by another user\"\n    }\n}"
 								}
 							]
 						},
@@ -2164,8 +2165,7 @@
 									"script": {
 										"exec": [
 											"const payload = pm.response.json();\r",
-											"const { id, etag } = payload;\r",
-											"id && pm.collectionVariables.set('org_id', id);\r",
+											"const { etag } = payload;\r",
 											"etag && pm.collectionVariables.set('etag', etag);"
 										],
 										"type": "text/javascript",
@@ -2178,7 +2178,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"displayName\": \"<p>White Wolf company<i><a></<script>hacked<<</script>\",\r\n    \"legalName\": \"Cong ty <strong>TNHH 1-thanh-vien</strong> Mot Minh Tui - White Wolf Co. Ltd.\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
+									"raw": "{\r\n    \"address\": \"291 An Duong Vuong , Phuong 3 , TP.HCM\",\r\n    \"displayName\": \"Company Zalo\",\r\n    \"phoneNumber\": \"023424234234\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -2186,7 +2186,7 @@
 									}
 								},
 								"url": {
-									"raw": "{{api_host}}/v1/identity/organizations/{{org_slug}}",
+									"raw": "{{api_host}}/v1/identity/organizations/{{org_id}}",
 									"host": [
 										"{{api_host}}"
 									],
@@ -2194,7 +2194,7 @@
 										"v1",
 										"identity",
 										"organizations",
-										"{{org_slug}}"
+										"{{org_id}}"
 									]
 								}
 							},
@@ -2206,7 +2206,7 @@
 										"header": [],
 										"body": {
 											"mode": "raw",
-											"raw": "{\r\n    \"displayName\": \"<p>White Wolf company<i><a></<script>hacked<<</script>\",\r\n    \"legalName\": \"Cong ty <strong>TNHH 1-thanh-vien</strong> Mot Minh Tui - White Wolf Co. Ltd.\",\r\n    \"etag\": \"{{etag}}\"\r\n}",
+											"raw": "{\r\n    \"address\": \"1324dad Duong\",\r\n    \"displayName\": \"dsadasdsa\",\r\n    \"phoneNumber\": \"023424234234\",\r\n    \"etag\": \"1751511021090000600\"\r\n}",
 											"options": {
 												"raw": {
 													"language": "json"
@@ -2214,7 +2214,7 @@
 											}
 										},
 										"url": {
-											"raw": "{{api_host}}/v1/identity/organizations/{{org_slug}}",
+											"raw": "{{api_host}}/v1/identity/organizations/asd12321",
 											"host": [
 												"{{api_host}}"
 											],
@@ -2222,7 +2222,7 @@
 												"v1",
 												"identity",
 												"organizations",
-												"{{org_slug}}"
+												"asd12321"
 											]
 										}
 									},
@@ -2240,15 +2240,15 @@
 										},
 										{
 											"key": "Date",
-											"value": "Sun, 13 Jul 2025 16:40:33 GMT"
+											"value": "Thu, 03 Jul 2025 03:03:48 GMT"
 										},
 										{
 											"key": "Content-Length",
-											"value": "342"
+											"value": "236"
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"id\": \"01K02A8DYW536F415WDJZ1D76K\",\n    \"address\": \"123 Ham Nghi st, HCM city uWV2vL\",\n    \"createdAt\": 1752424527838,\n    \"displayName\": \"White Wolf companyhacked&lt;&lt;\",\n    \"legalName\": \"Cong ty TNHH 1-thanh-vien Mot Minh Tui - White Wolf Co. Ltd.\",\n    \"slug\": \"lone-wolf-uwv2vl\",\n    \"status\": \"inactive\",\n    \"etag\": \"1752424833275665000\",\n    \"updatedAt\": 1752424833275\n}"
+									"body": "{\n    \"id\": \"01JZ732DH26QKRS7DMEFHADPWF\",\n    \"createdAt\": 1751511021090,\n    \"displayName\": \"dsadasdsa\",\n    \"address\": \"1324dad Duong\",\n    \"phoneNumber\": \"023424234234\",\n    \"slug\": \"asd12321\",\n    \"status\": \"inactive\",\n    \"etag\": \"1751511021090000600\",\n    \"updatedAt\": 1751511828189\n}"
 								},
 								{
 									"name": "Client error - Invalid fields",
@@ -2302,7 +2302,7 @@
 									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"cannot be blank\"\n    }\n}"
 								},
 								{
-									"name": "Client error - Unmatched etag",
+									"name": "Client error - Etag mismatch",
 									"originalRequest": {
 										"method": "PUT",
 										"header": [],
@@ -2350,10 +2350,10 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"etag mismatched\"\n    }\n}"
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"etag mismatch\"\n    }\n}"
 								},
 								{
-									"name": "Client error - Not found",
+									"name": "Client error - Not Found",
 									"originalRequest": {
 										"method": "PUT",
 										"header": [],
@@ -2406,16 +2406,16 @@
 							]
 						},
 						{
-							"name": "Organization - Get by slug",
+							"name": "Organization - Get By Slug",
 							"event": [
 								{
 									"listen": "test",
 									"script": {
 										"exec": [
 											"const payload = pm.response.json();\r",
-											"const { id, etag } = payload;\r",
-											"id && pm.collectionVariables.set('org_id', id);\r",
-											"etag && pm.collectionVariables.set('etag', etag);"
+											"const { etag } = payload;\r",
+											"etag && pm.collectionVariables.set('etag', etag);\r",
+											""
 										],
 										"type": "text/javascript",
 										"packages": {}
@@ -2426,7 +2426,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{api_host}}/v1/identity/organizations/{{org_slug}}",
+									"raw": "{{api_host}}/v1/identity/organizations/{{org_id}}",
 									"host": [
 										"{{api_host}}"
 									],
@@ -2434,7 +2434,7 @@
 										"v1",
 										"identity",
 										"organizations",
-										"{{org_slug}}"
+										"{{org_id}}"
 									]
 								}
 							},
@@ -2445,7 +2445,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{api_host}}/v1/identity/organizations/{{org_slug}}",
+											"raw": "{{api_host}}/v1/identity/organizations/asd12321",
 											"host": [
 												"{{api_host}}"
 											],
@@ -2453,7 +2453,7 @@
 												"v1",
 												"identity",
 												"organizations",
-												"{{org_slug}}"
+												"asd12321"
 											]
 										}
 									},
@@ -2471,15 +2471,15 @@
 										},
 										{
 											"key": "Date",
-											"value": "Sun, 13 Jul 2025 16:43:17 GMT"
+											"value": "Thu, 03 Jul 2025 03:06:33 GMT"
 										},
 										{
 											"key": "Content-Length",
-											"value": "342"
+											"value": "236"
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"id\": \"01K02APJKA8NYAWVHDWHC0ZNPR\",\n    \"address\": \"123 Ham Nghi st, HCM city lrVuUf\",\n    \"createdAt\": 1752424991341,\n    \"displayName\": \"White Wolf companyhacked&lt;&lt;\",\n    \"legalName\": \"Cong ty TNHH 1-thanh-vien Mot Minh Tui - White Wolf Co. Ltd.\",\n    \"slug\": \"lone-wolf-lrvuuf\",\n    \"status\": \"inactive\",\n    \"etag\": \"1752424993141438100\",\n    \"updatedAt\": 1752424993141\n}"
+									"body": "{\n    \"id\": \"01JZ732DH26QKRS7DMEFHADPWF\",\n    \"createdAt\": 1751511021090,\n    \"displayName\": \"dsadasdsa\",\n    \"address\": \"1324dad Duong\",\n    \"phoneNumber\": \"023424234234\",\n    \"slug\": \"asd12321\",\n    \"status\": \"inactive\",\n    \"etag\": \"1751511021090000600\",\n    \"updatedAt\": 1751511828189\n}"
 								},
 								{
 									"name": "Client error - Not Found",
@@ -2554,7 +2554,7 @@
 							},
 							"response": [
 								{
-									"name": "Success - No criteria, No paging",
+									"name": "Success - No criteria, No paging, No Orgs",
 									"originalRequest": {
 										"method": "GET",
 										"header": [],
@@ -2653,7 +2653,7 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{api_host}}/v1/identity/organizations/{{org_slug}}",
+									"raw": "{{api_host}}/v1/identity/organizations/{{org_id}}",
 									"host": [
 										"{{api_host}}"
 									],
@@ -2661,7 +2661,7 @@
 										"v1",
 										"identity",
 										"organizations",
-										"{{org_slug}}"
+										"{{org_id}}"
 									]
 								}
 							},
@@ -2672,7 +2672,7 @@
 										"method": "DELETE",
 										"header": [],
 										"url": {
-											"raw": "{{api_host}}/v1/identity/organizations/{{org_slug}}",
+											"raw": "{{api_host}}/v1/identity/organizations/asd12321",
 											"host": [
 												"{{api_host}}"
 											],
@@ -2680,7 +2680,7 @@
 												"v1",
 												"identity",
 												"organizations",
-												"{{org_slug}}"
+												"asd12321"
 											]
 										}
 									},
@@ -2698,7 +2698,7 @@
 										},
 										{
 											"key": "Date",
-											"value": "Sun, 13 Jul 2025 16:44:55 GMT"
+											"value": "Thu, 03 Jul 2025 03:37:57 GMT"
 										},
 										{
 											"key": "Content-Length",
@@ -2706,7 +2706,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"deletedAt\": 1752425095926\n}"
+									"body": "{\n    \"deletedAt\": 1751513877506\n}"
 								},
 								{
 									"name": "Client error - Not Found",
@@ -2751,165 +2751,6 @@
 									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"slug\": \"organization not found\"\n    }\n}"
 								}
 							]
-						},
-						{
-							"name": "Organization - List Statuses",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{api_host}}/v1/identity/organizations/statuses",
-									"host": [
-										"{{api_host}}"
-									],
-									"path": [
-										"v1",
-										"identity",
-										"organizations",
-										"statuses"
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Success - No sort",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/organizations/statuses",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"organizations",
-												"statuses"
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json"
-										},
-										{
-											"key": "Vary",
-											"value": "Origin"
-										},
-										{
-											"key": "Date",
-											"value": "Wed, 09 Jul 2025 11:20:32 GMT"
-										},
-										{
-											"key": "Content-Length",
-											"value": "540"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01K02G37PCJAHSTC0AWG5JZ3X4\",\n            \"etag\": \"1752430800321097000\",\n            \"label\": {\n                \"en_US\": \"Active\",\n                \"vi_VN\": \"Đang hoạt động\"\n            },\n            \"type\": \"ident_org_status\",\n            \"value\": \"active\"\n        },\n        {\n            \"id\": \"01K02G3CQXBQGD6C83WZ835JR2\",\n            \"etag\": \"1752430800321101000\",\n            \"label\": {\n                \"en_US\": \"Archived\",\n                \"vi_VN\": \"Ngưng hoạt động\"\n            },\n            \"type\": \"ident_org_status\",\n            \"value\": \"archived\"\n        }\n    ],\n    \"total\": 2,\n    \"page\": 0,\n    \"size\": 50\n}"
-								},
-								{
-									"name": "Success - Sort by label language",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/organizations/statuses?sortedByLang=vi_VN",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"organizations",
-												"statuses"
-											],
-											"query": [
-												{
-													"key": "sortedByLang",
-													"value": "vi_VN"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json"
-										},
-										{
-											"key": "Vary",
-											"value": "Origin"
-										},
-										{
-											"key": "Date",
-											"value": "Wed, 09 Jul 2025 11:21:20 GMT"
-										},
-										{
-											"key": "Content-Length",
-											"value": "540"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01K02G37PCJAHSTC0AWG5JZ3X4\",\n            \"etag\": \"1752430800321097000\",\n            \"label\": {\n                \"en_US\": \"Active\",\n                \"vi_VN\": \"Đang hoạt động\"\n            },\n            \"type\": \"ident_org_status\",\n            \"value\": \"active\"\n        },\n        {\n            \"id\": \"01K02G3CQXBQGD6C83WZ835JR2\",\n            \"etag\": \"1752430800321101000\",\n            \"label\": {\n                \"en_US\": \"Archived\",\n                \"vi_VN\": \"Ngưng hoạt động\"\n            },\n            \"type\": \"ident_org_status\",\n            \"value\": \"archived\"\n        }\n    ],\n    \"total\": 2,\n    \"page\": 0,\n    \"size\": 50\n}"
-								},
-								{
-									"name": "Client error - Invalid language code",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{api_host}}/v1/identity/organizations/statuses?sortedByLang=vi_V",
-											"host": [
-												"{{api_host}}"
-											],
-											"path": [
-												"v1",
-												"identity",
-												"organizations",
-												"statuses"
-											],
-											"query": [
-												{
-													"key": "sortedByLang",
-													"value": "vi_V"
-												}
-											]
-										}
-									},
-									"status": "Bad Request",
-									"code": 400,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json"
-										},
-										{
-											"key": "Vary",
-											"value": "Origin"
-										},
-										{
-											"key": "Date",
-											"value": "Wed, 09 Jul 2025 11:21:57 GMT"
-										},
-										{
-											"key": "Content-Length",
-											"value": "83"
-										}
-									],
-									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"sortedByLang\": \"must be a valid BCP47-compliant language code with region part\"\n    }\n}"
-								}
-							]
 						}
 					]
 				},
@@ -2939,7 +2780,7 @@
 									"listen": "prerequest",
 									"script": {
 										"exec": [
-											"const payload = JSON.parse(pm.request.body.raw);\r",
+											"const payload = JSON.parse(rawBody);\r",
 											"\r",
 											"// Generate a 6-char alphanumeric string\r",
 											"function randomString(length = 6) {\r",
@@ -3280,7 +3121,7 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"etag mismatched\"\n    }\n}"
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"user has been modified by another user\"\n    }\n}"
 								}
 							]
 						},
@@ -3969,7 +3810,7 @@
 							]
 						},
 						{
-							"name": "User - Search by group",
+							"name": "User - Search By Group",
 							"event": [
 								{
 									"listen": "test",
@@ -4397,7 +4238,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{api_host}}/v1/identity/users/statuses?sortByLang=vi-VN",
+											"raw": "{{api_host}}/v1/identity/users/statuses?sortedByLang=vi_VN",
 											"host": [
 												"{{api_host}}"
 											],
@@ -4409,8 +4250,8 @@
 											],
 											"query": [
 												{
-													"key": "sortByLang",
-													"value": "vi-VN"
+													"key": "sortedByLang",
+													"value": "vi_VN"
 												}
 											]
 										}
@@ -4445,7 +4286,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{api_host}}/v1/identity/users/statuses?sortByLang=vi_V",
+											"raw": "{{api_host}}/v1/identity/users/statuses?sortedByLang=vi_V",
 											"host": [
 												"{{api_host}}"
 											],
@@ -4457,7 +4298,7 @@
 											],
 											"query": [
 												{
-													"key": "sortByLang",
+													"key": "sortedByLang",
 													"value": "vi_V"
 												}
 											]
@@ -4485,7 +4326,671 @@
 										}
 									],
 									"cookie": [],
-									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"sortedByLang\": \"must be a valid BCP47-compliant language code with region part\"\n    }\n}"
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"sortedByLang\": \"must be in a valid format\"\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Hierarchy",
+					"item": [
+						{
+							"name": "Hierarchy - Create",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											""
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Giam Doc Cong ty Co Phan ABC\",\r\n    \"orgID\": \"01JZVRG5C981ZZD5943T68RPK2\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/hierarchy",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"hierarchy"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"Giam Doc Cong ty Co Phan ABC\",\r\n    \"orgID\": \"01JZVRG5C981ZZD5943T68RPK2\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/hierarchy",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"hierarchy"
+											]
+										}
+									},
+									"status": "Created",
+									"code": 201,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 20 Jul 2025 08:49:28 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "91"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01K0KGC750TE17K9RKG1GWQ6GN\",\n    \"createdAt\": 1753001368824,\n    \"etag\": \"1753001368737333700\"\n}"
+								},
+								{
+									"name": "Client error - Existing name",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"Giam Doc Cong ty Co Phan ABC\",\r\n    \"orgID\": \"01JZVRG5C981ZZD5943T68RPK2\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/hierarchy",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"hierarchy"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 20 Jul 2025 08:51:55 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "85"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"name\": \"hierarchy level name already exists\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Invalid fields",
+									"originalRequest": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/hierarchy",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"hierarchy"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 20 Jul 2025 08:53:22 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "91"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"Name\": \"cannot be blank\",\n        \"OrgId\": \"cannot be blank\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Hierarchy - Update",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"const payload = pm.response.json();\r",
+											"const { etag } = payload;\r",
+											"etag && pm.collectionVariables.set('etag', etag);"
+										],
+										"type": "text/javascript",
+										"packages": {}
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Ngan Hang MBank\",\r\n    \"parentId\" : \"01K0G5JN9AGHPT5R9C1JS2PGW5\",\r\n    \"etag\" : \"{{etag}}\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{api_host}}/v1/identity/hierarchy/{{hierarchy_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"hierarchy",
+										"{{hierarchy_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"Ngan Hang MBank\",\r\n    \"parentId\" : \"01K0G5JN9AGHPT5R9C1JS2PGW5\",\r\n    \"etag\" : \"{{etag}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/hierarchy/{{hierarchy_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"hierarchy",
+												"{{hierarchy_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 20 Jul 2025 08:59:09 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "91"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01K0KGC750TE17K9RKG1GWQ6GN\",\n    \"updatedAt\": 1753001949175,\n    \"etag\": \"1753001949175052300\"\n}"
+								},
+								{
+									"name": "Client error - Not Found",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"Ngan Hang MBank\",\r\n    \"parentId\" : \"01K0G5JN9AGHPT5R9C1JS2PGW5\",\r\n    \"etag\" : \"{{etag}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/hierarchy/{{hierarchy_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"hierarchy",
+												"{{hierarchy_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 20 Jul 2025 09:19:17 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "73"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"hierarchy level not found\"\n    }\n}"
+								},
+								{
+									"name": "Client error - Etag mismatch",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"name\": \"Ngan Hang MBank\",\r\n    \"parentId\" : \"01K0G5JN9AGHPT5R9C1JS2PGW5\",\r\n    \"etag\" : \"{{etag}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/identity/hierarchy/{{hierarchy_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"hierarchy",
+												"{{hierarchy_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 20 Jul 2025 09:20:30 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "99"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"etag\": \"hierarchy level has been modified by another user\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Hierarchy - Get By Id",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/hierarchy/{{org_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"hierarchy",
+										"{{org_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/hierarchy/{{org_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"hierarchy",
+												"{{org_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 20 Jul 2025 09:21:09 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "171"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01K0KGC750TE17K9RKG1GWQ6GN\",\n    \"createdAt\": 1753001368824,\n    \"etag\": \"1753001949175052300\",\n    \"name\": \"Ngan Hang MBank\",\n    \"parent\": {\n        \"id\": \"\",\n        \"name\": \"\"\n    },\n    \"updatedAt\": 1753001949175\n}"
+								},
+								{
+									"name": "Client error - Not Found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/hierarchy/{{org_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"hierarchy",
+												"{{org_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 20 Jul 2025 09:21:49 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "73"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"hierarchy level not found\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "Hierarchy - Search",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/hierarchy",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"hierarchy"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success - No criteria, No paging",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/hierarchy",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"hierarchy"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 20 Jul 2025 09:24:07 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "806"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"items\": [\n        {\n            \"id\": \"01K0G3C2Y85F5W53MA59XVWH3B\",\n            \"createdAt\": 1752887069645,\n            \"etag\": \"1752887069640229500\",\n            \"name\": \"Giam Doc \"\n        },\n        {\n            \"id\": \"01K0G3TPM3YNBW55SDJYHKKKTG\",\n            \"createdAt\": 1752887548612,\n            \"etag\": \"1752887548547850700\",\n            \"name\": \"Giam Doc  Cong ty Co Phan ABE\"\n        },\n        {\n            \"id\": \"01K0G5JN9AGHPT5R9C1JS2PGW5\",\n            \"createdAt\": 1752889382240,\n            \"etag\": \"1752889382186734800\",\n            \"name\": \"Giam Doc Cong ty Co Phan AEF\"\n        },\n        {\n            \"id\": \"01K0G5P1TSH6ATMM09YWAT19BP\",\n            \"createdAt\": 1752889493396,\n            \"etag\": \"1752889493337192900\",\n            \"name\": \"Giam Doc Cong ty Co Phan AEFGH\"\n        },\n        {\n            \"id\": \"01K0G67SS9A8X8810VY2JMJQS9\",\n            \"createdAt\": 1752890074970,\n            \"etag\": \"1752890074921059600\",\n            \"name\": \"Giam Doc Cong ty Co Phan AEFBGH\"\n        },\n        {\n            \"id\": \"01K0G68XVHE8Z1R2G4ND0A4NKS\",\n            \"createdAt\": 1752890111861,\n            \"etag\": \"1752890111857175100\",\n            \"name\": \"Giam Doc Cong ty Co Phan AEFABGH\"\n        }\n    ],\n    \"total\": 6,\n    \"page\": 0,\n    \"size\": 50\n}"
+								}
+							]
+						},
+						{
+							"name": "Hierarchy - Delete",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{api_host}}/v1/identity/hierarchy/{{org_id}}",
+									"host": [
+										"{{api_host}}"
+									],
+									"path": [
+										"v1",
+										"identity",
+										"hierarchy",
+										"{{org_id}}"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Success",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/hierarchy/{{org_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"hierarchy",
+												"{{org_id}}"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 20 Jul 2025 09:23:21 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "62"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"id\": \"01K0KGC750TE17K9RKG1GWQ6GN\",\n    \"deletedAt\": 1753003401677\n}"
+								},
+								{
+									"name": "Client error - Not Found",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{api_host}}/v1/identity/hierarchy/{{org_id}}",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"identity",
+												"hierarchy",
+												"{{org_id}}"
+											]
+										}
+									},
+									"status": "Bad Request",
+									"code": 400,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										},
+										{
+											"key": "Vary",
+											"value": "Origin"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 20 Jul 2025 09:23:33 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "73"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"code\": \"validation_error\",\n    \"details\": {\n        \"id\": \"hierarchy level not found\"\n    }\n}"
 								}
 							]
 						}

@@ -13,6 +13,7 @@ func InitCqrsHandlers() error {
 		initUserHandlers(),
 		initGroupHandlers(),
 		initOrganizationHandlers(),
+		initHierarchyHandlers(),
 	)
 	return err
 }
@@ -67,6 +68,22 @@ func initOrganizationHandlers() error {
 			cqrs.NewHandler(handler.GetOrganizationBySlug),
 			cqrs.NewHandler(handler.ListOrgStatuses),
 			cqrs.NewHandler(handler.SearchOrganizations),
+		)
+	})
+}
+
+func initHierarchyHandlers() error {
+	deps.Register(NewHierarchyHandler)
+
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *HierarchyHandler) error {
+		ctx := context.Background()
+		return cqrsBus.SubscribeRequests(
+			ctx,
+			cqrs.NewHandler(handler.CreateHierarchyLevel),
+			cqrs.NewHandler(handler.UpdateHierarchyLevel),
+			cqrs.NewHandler(handler.DeleteHierarchyLevel),
+			cqrs.NewHandler(handler.GetHierarchyLevelById),
+			cqrs.NewHandler(handler.SearchHierarchyLevels),
 		)
 	})
 }

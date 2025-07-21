@@ -20,6 +20,10 @@ type HierarchyLevel struct {
 	ID string `json:"id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// DeletedAt holds the value of the "deleted_at" field.
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	// User ID of the user who deleted this hierarchy level
+	DeletedBy *string `json:"deleted_by,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// Name holds the value of the "name" field.
@@ -28,6 +32,8 @@ type HierarchyLevel struct {
 	OrgID string `json:"org_id,omitempty"`
 	// ParentID holds the value of the "parent_id" field.
 	ParentID *string `json:"parent_id,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the HierarchyLevelQuery when eager-loading is set.
 	Edges        HierarchyLevelEdges `json:"edges"`
@@ -94,9 +100,9 @@ func (*HierarchyLevel) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case hierarchylevel.FieldID, hierarchylevel.FieldEtag, hierarchylevel.FieldName, hierarchylevel.FieldOrgID, hierarchylevel.FieldParentID:
+		case hierarchylevel.FieldID, hierarchylevel.FieldDeletedBy, hierarchylevel.FieldEtag, hierarchylevel.FieldName, hierarchylevel.FieldOrgID, hierarchylevel.FieldParentID:
 			values[i] = new(sql.NullString)
-		case hierarchylevel.FieldCreatedAt:
+		case hierarchylevel.FieldCreatedAt, hierarchylevel.FieldDeletedAt, hierarchylevel.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -125,6 +131,20 @@ func (hl *HierarchyLevel) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				hl.CreatedAt = value.Time
 			}
+		case hierarchylevel.FieldDeletedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
+			} else if value.Valid {
+				hl.DeletedAt = new(time.Time)
+				*hl.DeletedAt = value.Time
+			}
+		case hierarchylevel.FieldDeletedBy:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_by", values[i])
+			} else if value.Valid {
+				hl.DeletedBy = new(string)
+				*hl.DeletedBy = value.String
+			}
 		case hierarchylevel.FieldEtag:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field etag", values[i])
@@ -149,6 +169,13 @@ func (hl *HierarchyLevel) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				hl.ParentID = new(string)
 				*hl.ParentID = value.String
+			}
+		case hierarchylevel.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				hl.UpdatedAt = new(time.Time)
+				*hl.UpdatedAt = value.Time
 			}
 		default:
 			hl.selectValues.Set(columns[i], values[i])
@@ -209,6 +236,16 @@ func (hl *HierarchyLevel) String() string {
 	builder.WriteString("created_at=")
 	builder.WriteString(hl.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
+	if v := hl.DeletedAt; v != nil {
+		builder.WriteString("deleted_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := hl.DeletedBy; v != nil {
+		builder.WriteString("deleted_by=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	builder.WriteString("etag=")
 	builder.WriteString(hl.Etag)
 	builder.WriteString(", ")
@@ -221,6 +258,11 @@ func (hl *HierarchyLevel) String() string {
 	if v := hl.ParentID; v != nil {
 		builder.WriteString("parent_id=")
 		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := hl.UpdatedAt; v != nil {
+		builder.WriteString("updated_at=")
+		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteByte(')')
 	return builder.String()

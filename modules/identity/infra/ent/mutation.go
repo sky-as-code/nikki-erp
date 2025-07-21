@@ -921,8 +921,11 @@ type HierarchyLevelMutation struct {
 	typ             string
 	id              *string
 	created_at      *time.Time
+	deleted_at      *time.Time
+	deleted_by      *string
 	etag            *string
 	name            *string
+	updated_at      *time.Time
 	clearedFields   map[string]struct{}
 	children        map[string]struct{}
 	removedchildren map[string]struct{}
@@ -1077,6 +1080,104 @@ func (m *HierarchyLevelMutation) OldCreatedAt(ctx context.Context) (v time.Time,
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *HierarchyLevelMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *HierarchyLevelMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *HierarchyLevelMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the HierarchyLevel entity.
+// If the HierarchyLevel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HierarchyLevelMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *HierarchyLevelMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[hierarchylevel.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *HierarchyLevelMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[hierarchylevel.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *HierarchyLevelMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, hierarchylevel.FieldDeletedAt)
+}
+
+// SetDeletedBy sets the "deleted_by" field.
+func (m *HierarchyLevelMutation) SetDeletedBy(s string) {
+	m.deleted_by = &s
+}
+
+// DeletedBy returns the value of the "deleted_by" field in the mutation.
+func (m *HierarchyLevelMutation) DeletedBy() (r string, exists bool) {
+	v := m.deleted_by
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedBy returns the old "deleted_by" field's value of the HierarchyLevel entity.
+// If the HierarchyLevel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HierarchyLevelMutation) OldDeletedBy(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedBy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedBy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedBy: %w", err)
+	}
+	return oldValue.DeletedBy, nil
+}
+
+// ClearDeletedBy clears the value of the "deleted_by" field.
+func (m *HierarchyLevelMutation) ClearDeletedBy() {
+	m.deleted_by = nil
+	m.clearedFields[hierarchylevel.FieldDeletedBy] = struct{}{}
+}
+
+// DeletedByCleared returns if the "deleted_by" field was cleared in this mutation.
+func (m *HierarchyLevelMutation) DeletedByCleared() bool {
+	_, ok := m.clearedFields[hierarchylevel.FieldDeletedBy]
+	return ok
+}
+
+// ResetDeletedBy resets all changes to the "deleted_by" field.
+func (m *HierarchyLevelMutation) ResetDeletedBy() {
+	m.deleted_by = nil
+	delete(m.clearedFields, hierarchylevel.FieldDeletedBy)
 }
 
 // SetEtag sets the "etag" field.
@@ -1234,6 +1335,55 @@ func (m *HierarchyLevelMutation) ParentIDCleared() bool {
 func (m *HierarchyLevelMutation) ResetParentID() {
 	m.parent = nil
 	delete(m.clearedFields, hierarchylevel.FieldParentID)
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *HierarchyLevelMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *HierarchyLevelMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the HierarchyLevel entity.
+// If the HierarchyLevel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *HierarchyLevelMutation) OldUpdatedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ClearUpdatedAt clears the value of the "updated_at" field.
+func (m *HierarchyLevelMutation) ClearUpdatedAt() {
+	m.updated_at = nil
+	m.clearedFields[hierarchylevel.FieldUpdatedAt] = struct{}{}
+}
+
+// UpdatedAtCleared returns if the "updated_at" field was cleared in this mutation.
+func (m *HierarchyLevelMutation) UpdatedAtCleared() bool {
+	_, ok := m.clearedFields[hierarchylevel.FieldUpdatedAt]
+	return ok
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *HierarchyLevelMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+	delete(m.clearedFields, hierarchylevel.FieldUpdatedAt)
 }
 
 // AddChildIDs adds the "children" edge to the HierarchyLevel entity by ids.
@@ -1432,9 +1582,15 @@ func (m *HierarchyLevelMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *HierarchyLevelMutation) Fields() []string {
-	fields := make([]string, 0, 5)
+	fields := make([]string, 0, 8)
 	if m.created_at != nil {
 		fields = append(fields, hierarchylevel.FieldCreatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, hierarchylevel.FieldDeletedAt)
+	}
+	if m.deleted_by != nil {
+		fields = append(fields, hierarchylevel.FieldDeletedBy)
 	}
 	if m.etag != nil {
 		fields = append(fields, hierarchylevel.FieldEtag)
@@ -1448,6 +1604,9 @@ func (m *HierarchyLevelMutation) Fields() []string {
 	if m.parent != nil {
 		fields = append(fields, hierarchylevel.FieldParentID)
 	}
+	if m.updated_at != nil {
+		fields = append(fields, hierarchylevel.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -1458,6 +1617,10 @@ func (m *HierarchyLevelMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case hierarchylevel.FieldCreatedAt:
 		return m.CreatedAt()
+	case hierarchylevel.FieldDeletedAt:
+		return m.DeletedAt()
+	case hierarchylevel.FieldDeletedBy:
+		return m.DeletedBy()
 	case hierarchylevel.FieldEtag:
 		return m.Etag()
 	case hierarchylevel.FieldName:
@@ -1466,6 +1629,8 @@ func (m *HierarchyLevelMutation) Field(name string) (ent.Value, bool) {
 		return m.OrgID()
 	case hierarchylevel.FieldParentID:
 		return m.ParentID()
+	case hierarchylevel.FieldUpdatedAt:
+		return m.UpdatedAt()
 	}
 	return nil, false
 }
@@ -1477,6 +1642,10 @@ func (m *HierarchyLevelMutation) OldField(ctx context.Context, name string) (ent
 	switch name {
 	case hierarchylevel.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case hierarchylevel.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case hierarchylevel.FieldDeletedBy:
+		return m.OldDeletedBy(ctx)
 	case hierarchylevel.FieldEtag:
 		return m.OldEtag(ctx)
 	case hierarchylevel.FieldName:
@@ -1485,6 +1654,8 @@ func (m *HierarchyLevelMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldOrgID(ctx)
 	case hierarchylevel.FieldParentID:
 		return m.OldParentID(ctx)
+	case hierarchylevel.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown HierarchyLevel field %s", name)
 }
@@ -1500,6 +1671,20 @@ func (m *HierarchyLevelMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case hierarchylevel.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case hierarchylevel.FieldDeletedBy:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedBy(v)
 		return nil
 	case hierarchylevel.FieldEtag:
 		v, ok := value.(string)
@@ -1528,6 +1713,13 @@ func (m *HierarchyLevelMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetParentID(v)
+		return nil
+	case hierarchylevel.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
 		return nil
 	}
 	return fmt.Errorf("unknown HierarchyLevel field %s", name)
@@ -1559,8 +1751,17 @@ func (m *HierarchyLevelMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *HierarchyLevelMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(hierarchylevel.FieldDeletedAt) {
+		fields = append(fields, hierarchylevel.FieldDeletedAt)
+	}
+	if m.FieldCleared(hierarchylevel.FieldDeletedBy) {
+		fields = append(fields, hierarchylevel.FieldDeletedBy)
+	}
 	if m.FieldCleared(hierarchylevel.FieldParentID) {
 		fields = append(fields, hierarchylevel.FieldParentID)
+	}
+	if m.FieldCleared(hierarchylevel.FieldUpdatedAt) {
+		fields = append(fields, hierarchylevel.FieldUpdatedAt)
 	}
 	return fields
 }
@@ -1576,8 +1777,17 @@ func (m *HierarchyLevelMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *HierarchyLevelMutation) ClearField(name string) error {
 	switch name {
+	case hierarchylevel.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	case hierarchylevel.FieldDeletedBy:
+		m.ClearDeletedBy()
+		return nil
 	case hierarchylevel.FieldParentID:
 		m.ClearParentID()
+		return nil
+	case hierarchylevel.FieldUpdatedAt:
+		m.ClearUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown HierarchyLevel nullable field %s", name)
@@ -1590,6 +1800,12 @@ func (m *HierarchyLevelMutation) ResetField(name string) error {
 	case hierarchylevel.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
+	case hierarchylevel.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case hierarchylevel.FieldDeletedBy:
+		m.ResetDeletedBy()
+		return nil
 	case hierarchylevel.FieldEtag:
 		m.ResetEtag()
 		return nil
@@ -1601,6 +1817,9 @@ func (m *HierarchyLevelMutation) ResetField(name string) error {
 		return nil
 	case hierarchylevel.FieldParentID:
 		m.ResetParentID()
+		return nil
+	case hierarchylevel.FieldUpdatedAt:
+		m.ResetUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown HierarchyLevel field %s", name)

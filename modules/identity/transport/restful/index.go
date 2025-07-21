@@ -17,14 +17,14 @@ func InitRestfulHandlers() error {
 }
 
 func initUserRest() error {
-	deps.Register(v1.NewUserRest, v1.NewGroupRest, v1.NewOrganizationRest)
-	return deps.Invoke(func(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, orgRest *v1.OrganizationRest) {
+	deps.Register(v1.NewUserRest, v1.NewGroupRest, v1.NewOrganizationRest, v1.NewHierarchyRest)
+	return deps.Invoke(func(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, orgRest *v1.OrganizationRest, hierarchyRest *v1.HierarchyRest) {
 		v1 := route.Group("/v1/identity")
-		initV1(v1, userRest, groupRest, orgRest)
+		initV1(v1, userRest, groupRest, orgRest, hierarchyRest)
 	})
 }
 
-func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, orgRest *v1.OrganizationRest) {
+func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, orgRest *v1.OrganizationRest, hierarchyRest *v1.HierarchyRest) {
 	route.POST("/users", userRest.CreateUser)
 	route.DELETE("/users/:id", userRest.DeleteUser)
 	route.GET("/users/:id", userRest.GetUserById)
@@ -38,7 +38,7 @@ func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, o
 	route.GET("/groups/:id", groupRest.GetGroupById)
 	route.GET("/groups", groupRest.SearchGroups)
 	route.PUT("/groups/:id", groupRest.UpdateGroup)
-	route.POST("/groups/:groupId/manage-users", groupRest.ManageUsers)
+	route.POST("/groups/:groupId/manage-users", groupRest.ManageGroupUsers)
 
 	route.POST("/organizations", orgRest.CreateOrganization)
 	route.DELETE("/organizations/:slug", orgRest.DeleteOrganization)
@@ -46,4 +46,10 @@ func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, o
 	route.GET("/organizations", orgRest.SearchOrganizations)
 	route.PUT("/organizations/:slug", orgRest.UpdateOrganization)
 	route.GET("/organizations/statuses", orgRest.ListOrgStatuses)
+
+	route.POST("/hierarchy", hierarchyRest.CreateHierarchyLevel)
+	route.DELETE("/hierarchy/:id", hierarchyRest.DeleteHierarchyLevel)
+	route.GET("/hierarchy/:id", hierarchyRest.GetHierarchyLevelById)
+	route.GET("/hierarchy", hierarchyRest.SearchHierarchyLevels)
+	route.PUT("/hierarchy/:id", hierarchyRest.UpdateHierarchyLevel)
 }

@@ -36,6 +36,34 @@ func (hlc *HierarchyLevelCreate) SetNillableCreatedAt(t *time.Time) *HierarchyLe
 	return hlc
 }
 
+// SetDeletedAt sets the "deleted_at" field.
+func (hlc *HierarchyLevelCreate) SetDeletedAt(t time.Time) *HierarchyLevelCreate {
+	hlc.mutation.SetDeletedAt(t)
+	return hlc
+}
+
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (hlc *HierarchyLevelCreate) SetNillableDeletedAt(t *time.Time) *HierarchyLevelCreate {
+	if t != nil {
+		hlc.SetDeletedAt(*t)
+	}
+	return hlc
+}
+
+// SetDeletedBy sets the "deleted_by" field.
+func (hlc *HierarchyLevelCreate) SetDeletedBy(s string) *HierarchyLevelCreate {
+	hlc.mutation.SetDeletedBy(s)
+	return hlc
+}
+
+// SetNillableDeletedBy sets the "deleted_by" field if the given value is not nil.
+func (hlc *HierarchyLevelCreate) SetNillableDeletedBy(s *string) *HierarchyLevelCreate {
+	if s != nil {
+		hlc.SetDeletedBy(*s)
+	}
+	return hlc
+}
+
 // SetEtag sets the "etag" field.
 func (hlc *HierarchyLevelCreate) SetEtag(s string) *HierarchyLevelCreate {
 	hlc.mutation.SetEtag(s)
@@ -64,6 +92,20 @@ func (hlc *HierarchyLevelCreate) SetParentID(s string) *HierarchyLevelCreate {
 func (hlc *HierarchyLevelCreate) SetNillableParentID(s *string) *HierarchyLevelCreate {
 	if s != nil {
 		hlc.SetParentID(*s)
+	}
+	return hlc
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (hlc *HierarchyLevelCreate) SetUpdatedAt(t time.Time) *HierarchyLevelCreate {
+	hlc.mutation.SetUpdatedAt(t)
+	return hlc
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (hlc *HierarchyLevelCreate) SetNillableUpdatedAt(t *time.Time) *HierarchyLevelCreate {
+	if t != nil {
+		hlc.SetUpdatedAt(*t)
 	}
 	return hlc
 }
@@ -211,6 +253,14 @@ func (hlc *HierarchyLevelCreate) createSpec() (*HierarchyLevel, *sqlgraph.Create
 		_spec.SetField(hierarchylevel.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
+	if value, ok := hlc.mutation.DeletedAt(); ok {
+		_spec.SetField(hierarchylevel.FieldDeletedAt, field.TypeTime, value)
+		_node.DeletedAt = &value
+	}
+	if value, ok := hlc.mutation.DeletedBy(); ok {
+		_spec.SetField(hierarchylevel.FieldDeletedBy, field.TypeString, value)
+		_node.DeletedBy = &value
+	}
 	if value, ok := hlc.mutation.Etag(); ok {
 		_spec.SetField(hierarchylevel.FieldEtag, field.TypeString, value)
 		_node.Etag = value
@@ -218,6 +268,10 @@ func (hlc *HierarchyLevelCreate) createSpec() (*HierarchyLevel, *sqlgraph.Create
 	if value, ok := hlc.mutation.Name(); ok {
 		_spec.SetField(hierarchylevel.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if value, ok := hlc.mutation.UpdatedAt(); ok {
+		_spec.SetField(hierarchylevel.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = &value
 	}
 	if nodes := hlc.mutation.ChildrenIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
