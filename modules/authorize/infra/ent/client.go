@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/action"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
@@ -39,6 +40,8 @@ type Client struct {
 	EffectiveEntitlement *EffectiveEntitlementClient
 	// Entitlement is the client for interacting with the Entitlement builders.
 	Entitlement *EntitlementClient
+	// EntitlementAssignment is the client for interacting with the EntitlementAssignment builders.
+	EntitlementAssignment *EntitlementAssignmentClient
 	// GrantRequest is the client for interacting with the GrantRequest builders.
 	GrantRequest *GrantRequestClient
 	// PermissionHistory is the client for interacting with the PermissionHistory builders.
@@ -71,6 +74,7 @@ func (c *Client) init() {
 	c.Action = NewActionClient(c.config)
 	c.EffectiveEntitlement = NewEffectiveEntitlementClient(c.config)
 	c.Entitlement = NewEntitlementClient(c.config)
+	c.EntitlementAssignment = NewEntitlementAssignmentClient(c.config)
 	c.GrantRequest = NewGrantRequestClient(c.config)
 	c.PermissionHistory = NewPermissionHistoryClient(c.config)
 	c.Resource = NewResourceClient(c.config)
@@ -170,20 +174,21 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:                  ctx,
-		config:               cfg,
-		Action:               NewActionClient(cfg),
-		EffectiveEntitlement: NewEffectiveEntitlementClient(cfg),
-		Entitlement:          NewEntitlementClient(cfg),
-		GrantRequest:         NewGrantRequestClient(cfg),
-		PermissionHistory:    NewPermissionHistoryClient(cfg),
-		Resource:             NewResourceClient(cfg),
-		RevokeRequest:        NewRevokeRequestClient(cfg),
-		Role:                 NewRoleClient(cfg),
-		RoleRoleSuite:        NewRoleRoleSuiteClient(cfg),
-		RoleSuite:            NewRoleSuiteClient(cfg),
-		RoleSuiteUser:        NewRoleSuiteUserClient(cfg),
-		RoleUser:             NewRoleUserClient(cfg),
+		ctx:                   ctx,
+		config:                cfg,
+		Action:                NewActionClient(cfg),
+		EffectiveEntitlement:  NewEffectiveEntitlementClient(cfg),
+		Entitlement:           NewEntitlementClient(cfg),
+		EntitlementAssignment: NewEntitlementAssignmentClient(cfg),
+		GrantRequest:          NewGrantRequestClient(cfg),
+		PermissionHistory:     NewPermissionHistoryClient(cfg),
+		Resource:              NewResourceClient(cfg),
+		RevokeRequest:         NewRevokeRequestClient(cfg),
+		Role:                  NewRoleClient(cfg),
+		RoleRoleSuite:         NewRoleRoleSuiteClient(cfg),
+		RoleSuite:             NewRoleSuiteClient(cfg),
+		RoleSuiteUser:         NewRoleSuiteUserClient(cfg),
+		RoleUser:              NewRoleUserClient(cfg),
 	}, nil
 }
 
@@ -201,20 +206,21 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:                  ctx,
-		config:               cfg,
-		Action:               NewActionClient(cfg),
-		EffectiveEntitlement: NewEffectiveEntitlementClient(cfg),
-		Entitlement:          NewEntitlementClient(cfg),
-		GrantRequest:         NewGrantRequestClient(cfg),
-		PermissionHistory:    NewPermissionHistoryClient(cfg),
-		Resource:             NewResourceClient(cfg),
-		RevokeRequest:        NewRevokeRequestClient(cfg),
-		Role:                 NewRoleClient(cfg),
-		RoleRoleSuite:        NewRoleRoleSuiteClient(cfg),
-		RoleSuite:            NewRoleSuiteClient(cfg),
-		RoleSuiteUser:        NewRoleSuiteUserClient(cfg),
-		RoleUser:             NewRoleUserClient(cfg),
+		ctx:                   ctx,
+		config:                cfg,
+		Action:                NewActionClient(cfg),
+		EffectiveEntitlement:  NewEffectiveEntitlementClient(cfg),
+		Entitlement:           NewEntitlementClient(cfg),
+		EntitlementAssignment: NewEntitlementAssignmentClient(cfg),
+		GrantRequest:          NewGrantRequestClient(cfg),
+		PermissionHistory:     NewPermissionHistoryClient(cfg),
+		Resource:              NewResourceClient(cfg),
+		RevokeRequest:         NewRevokeRequestClient(cfg),
+		Role:                  NewRoleClient(cfg),
+		RoleRoleSuite:         NewRoleRoleSuiteClient(cfg),
+		RoleSuite:             NewRoleSuiteClient(cfg),
+		RoleSuiteUser:         NewRoleSuiteUserClient(cfg),
+		RoleUser:              NewRoleUserClient(cfg),
 	}, nil
 }
 
@@ -244,9 +250,9 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Action, c.Entitlement, c.GrantRequest, c.PermissionHistory, c.Resource,
-		c.RevokeRequest, c.Role, c.RoleRoleSuite, c.RoleSuite, c.RoleSuiteUser,
-		c.RoleUser,
+		c.Action, c.Entitlement, c.EntitlementAssignment, c.GrantRequest,
+		c.PermissionHistory, c.Resource, c.RevokeRequest, c.Role, c.RoleRoleSuite,
+		c.RoleSuite, c.RoleSuiteUser, c.RoleUser,
 	} {
 		n.Use(hooks...)
 	}
@@ -256,9 +262,9 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Action, c.EffectiveEntitlement, c.Entitlement, c.GrantRequest,
-		c.PermissionHistory, c.Resource, c.RevokeRequest, c.Role, c.RoleRoleSuite,
-		c.RoleSuite, c.RoleSuiteUser, c.RoleUser,
+		c.Action, c.EffectiveEntitlement, c.Entitlement, c.EntitlementAssignment,
+		c.GrantRequest, c.PermissionHistory, c.Resource, c.RevokeRequest, c.Role,
+		c.RoleRoleSuite, c.RoleSuite, c.RoleSuiteUser, c.RoleUser,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -271,6 +277,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Action.mutate(ctx, m)
 	case *EntitlementMutation:
 		return c.Entitlement.mutate(ctx, m)
+	case *EntitlementAssignmentMutation:
+		return c.EntitlementAssignment.mutate(ctx, m)
 	case *GrantRequestMutation:
 		return c.GrantRequest.mutate(ctx, m)
 	case *PermissionHistoryMutation:
@@ -613,6 +621,22 @@ func (c *EntitlementClient) QueryPermissionHistories(e *Entitlement) *Permission
 	return query
 }
 
+// QueryEntitlementAssignments queries the entitlement_assignments edge of a Entitlement.
+func (c *EntitlementClient) QueryEntitlementAssignments(e *Entitlement) *EntitlementAssignmentQuery {
+	query := (&EntitlementAssignmentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := e.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entitlement.Table, entitlement.FieldID, id),
+			sqlgraph.To(entitlementassignment.Table, entitlementassignment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, entitlement.EntitlementAssignmentsTable, entitlement.EntitlementAssignmentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryAction queries the action edge of a Entitlement.
 func (c *EntitlementClient) QueryAction(e *Entitlement) *ActionQuery {
 	query := (&ActionClient{config: c.config}).Query()
@@ -667,6 +691,155 @@ func (c *EntitlementClient) mutate(ctx context.Context, m *EntitlementMutation) 
 		return (&EntitlementDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Entitlement mutation op: %q", m.Op())
+	}
+}
+
+// EntitlementAssignmentClient is a client for the EntitlementAssignment schema.
+type EntitlementAssignmentClient struct {
+	config
+}
+
+// NewEntitlementAssignmentClient returns a client for the EntitlementAssignment from the given config.
+func NewEntitlementAssignmentClient(c config) *EntitlementAssignmentClient {
+	return &EntitlementAssignmentClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `entitlementassignment.Hooks(f(g(h())))`.
+func (c *EntitlementAssignmentClient) Use(hooks ...Hook) {
+	c.hooks.EntitlementAssignment = append(c.hooks.EntitlementAssignment, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `entitlementassignment.Intercept(f(g(h())))`.
+func (c *EntitlementAssignmentClient) Intercept(interceptors ...Interceptor) {
+	c.inters.EntitlementAssignment = append(c.inters.EntitlementAssignment, interceptors...)
+}
+
+// Create returns a builder for creating a EntitlementAssignment entity.
+func (c *EntitlementAssignmentClient) Create() *EntitlementAssignmentCreate {
+	mutation := newEntitlementAssignmentMutation(c.config, OpCreate)
+	return &EntitlementAssignmentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of EntitlementAssignment entities.
+func (c *EntitlementAssignmentClient) CreateBulk(builders ...*EntitlementAssignmentCreate) *EntitlementAssignmentCreateBulk {
+	return &EntitlementAssignmentCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *EntitlementAssignmentClient) MapCreateBulk(slice any, setFunc func(*EntitlementAssignmentCreate, int)) *EntitlementAssignmentCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &EntitlementAssignmentCreateBulk{err: fmt.Errorf("calling to EntitlementAssignmentClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*EntitlementAssignmentCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &EntitlementAssignmentCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for EntitlementAssignment.
+func (c *EntitlementAssignmentClient) Update() *EntitlementAssignmentUpdate {
+	mutation := newEntitlementAssignmentMutation(c.config, OpUpdate)
+	return &EntitlementAssignmentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EntitlementAssignmentClient) UpdateOne(ea *EntitlementAssignment) *EntitlementAssignmentUpdateOne {
+	mutation := newEntitlementAssignmentMutation(c.config, OpUpdateOne, withEntitlementAssignment(ea))
+	return &EntitlementAssignmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EntitlementAssignmentClient) UpdateOneID(id string) *EntitlementAssignmentUpdateOne {
+	mutation := newEntitlementAssignmentMutation(c.config, OpUpdateOne, withEntitlementAssignmentID(id))
+	return &EntitlementAssignmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for EntitlementAssignment.
+func (c *EntitlementAssignmentClient) Delete() *EntitlementAssignmentDelete {
+	mutation := newEntitlementAssignmentMutation(c.config, OpDelete)
+	return &EntitlementAssignmentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *EntitlementAssignmentClient) DeleteOne(ea *EntitlementAssignment) *EntitlementAssignmentDeleteOne {
+	return c.DeleteOneID(ea.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *EntitlementAssignmentClient) DeleteOneID(id string) *EntitlementAssignmentDeleteOne {
+	builder := c.Delete().Where(entitlementassignment.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EntitlementAssignmentDeleteOne{builder}
+}
+
+// Query returns a query builder for EntitlementAssignment.
+func (c *EntitlementAssignmentClient) Query() *EntitlementAssignmentQuery {
+	return &EntitlementAssignmentQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeEntitlementAssignment},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a EntitlementAssignment entity by its id.
+func (c *EntitlementAssignmentClient) Get(ctx context.Context, id string) (*EntitlementAssignment, error) {
+	return c.Query().Where(entitlementassignment.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EntitlementAssignmentClient) GetX(ctx context.Context, id string) *EntitlementAssignment {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryEntitlement queries the entitlement edge of a EntitlementAssignment.
+func (c *EntitlementAssignmentClient) QueryEntitlement(ea *EntitlementAssignment) *EntitlementQuery {
+	query := (&EntitlementClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ea.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entitlementassignment.Table, entitlementassignment.FieldID, id),
+			sqlgraph.To(entitlement.Table, entitlement.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, entitlementassignment.EntitlementTable, entitlementassignment.EntitlementColumn),
+		)
+		fromV = sqlgraph.Neighbors(ea.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EntitlementAssignmentClient) Hooks() []Hook {
+	return c.hooks.EntitlementAssignment
+}
+
+// Interceptors returns the client interceptors.
+func (c *EntitlementAssignmentClient) Interceptors() []Interceptor {
+	return c.inters.EntitlementAssignment
+}
+
+func (c *EntitlementAssignmentClient) mutate(ctx context.Context, m *EntitlementAssignmentMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&EntitlementAssignmentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&EntitlementAssignmentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&EntitlementAssignmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&EntitlementAssignmentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown EntitlementAssignment mutation op: %q", m.Op())
 	}
 }
 
@@ -968,6 +1141,22 @@ func (c *PermissionHistoryClient) QueryEntitlement(ph *PermissionHistory) *Entit
 			sqlgraph.From(permissionhistory.Table, permissionhistory.FieldID, id),
 			sqlgraph.To(entitlement.Table, entitlement.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, permissionhistory.EntitlementTable, permissionhistory.EntitlementColumn),
+		)
+		fromV = sqlgraph.Neighbors(ph.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEntitlementAssignment queries the entitlement_assignment edge of a PermissionHistory.
+func (c *PermissionHistoryClient) QueryEntitlementAssignment(ph *PermissionHistory) *EntitlementAssignmentQuery {
+	query := (&EntitlementAssignmentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ph.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(permissionhistory.Table, permissionhistory.FieldID, id),
+			sqlgraph.To(entitlementassignment.Table, entitlementassignment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, permissionhistory.EntitlementAssignmentTable, permissionhistory.EntitlementAssignmentColumn),
 		)
 		fromV = sqlgraph.Neighbors(ph.driver.Dialect(), step)
 		return fromV, nil
@@ -2285,12 +2474,13 @@ func (c *RoleUserClient) mutate(ctx context.Context, m *RoleUserMutation) (Value
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Action, Entitlement, GrantRequest, PermissionHistory, Resource, RevokeRequest,
-		Role, RoleRoleSuite, RoleSuite, RoleSuiteUser, RoleUser []ent.Hook
+		Action, Entitlement, EntitlementAssignment, GrantRequest, PermissionHistory,
+		Resource, RevokeRequest, Role, RoleRoleSuite, RoleSuite, RoleSuiteUser,
+		RoleUser []ent.Hook
 	}
 	inters struct {
-		Action, EffectiveEntitlement, Entitlement, GrantRequest, PermissionHistory,
-		Resource, RevokeRequest, Role, RoleRoleSuite, RoleSuite, RoleSuiteUser,
-		RoleUser []ent.Interceptor
+		Action, EffectiveEntitlement, Entitlement, EntitlementAssignment, GrantRequest,
+		PermissionHistory, Resource, RevokeRequest, Role, RoleRoleSuite, RoleSuite,
+		RoleSuiteUser, RoleUser []ent.Interceptor
 	}
 )

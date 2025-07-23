@@ -42,6 +42,26 @@ func (au *ActionUpdate) SetNillableEtag(s *string) *ActionUpdate {
 	return au
 }
 
+// SetDescription sets the "description" field.
+func (au *ActionUpdate) SetDescription(s string) *ActionUpdate {
+	au.mutation.SetDescription(s)
+	return au
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (au *ActionUpdate) SetNillableDescription(s *string) *ActionUpdate {
+	if s != nil {
+		au.SetDescription(*s)
+	}
+	return au
+}
+
+// ClearDescription clears the value of the "description" field.
+func (au *ActionUpdate) ClearDescription() *ActionUpdate {
+	au.mutation.ClearDescription()
+	return au
+}
+
 // AddEntitlementIDs adds the "entitlements" edge to the Entitlement entity by IDs.
 func (au *ActionUpdate) AddEntitlementIDs(ids ...string) *ActionUpdate {
 	au.mutation.AddEntitlementIDs(ids...)
@@ -133,6 +153,12 @@ func (au *ActionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := au.mutation.Etag(); ok {
 		_spec.SetField(action.FieldEtag, field.TypeString, value)
 	}
+	if value, ok := au.mutation.Description(); ok {
+		_spec.SetField(action.FieldDescription, field.TypeString, value)
+	}
+	if au.mutation.DescriptionCleared() {
+		_spec.ClearField(action.FieldDescription, field.TypeString)
+	}
 	if au.mutation.EntitlementsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -209,6 +235,26 @@ func (auo *ActionUpdateOne) SetNillableEtag(s *string) *ActionUpdateOne {
 	if s != nil {
 		auo.SetEtag(*s)
 	}
+	return auo
+}
+
+// SetDescription sets the "description" field.
+func (auo *ActionUpdateOne) SetDescription(s string) *ActionUpdateOne {
+	auo.mutation.SetDescription(s)
+	return auo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (auo *ActionUpdateOne) SetNillableDescription(s *string) *ActionUpdateOne {
+	if s != nil {
+		auo.SetDescription(*s)
+	}
+	return auo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (auo *ActionUpdateOne) ClearDescription() *ActionUpdateOne {
+	auo.mutation.ClearDescription()
 	return auo
 }
 
@@ -332,6 +378,12 @@ func (auo *ActionUpdateOne) sqlSave(ctx context.Context) (_node *Action, err err
 	}
 	if value, ok := auo.mutation.Etag(); ok {
 		_spec.SetField(action.FieldEtag, field.TypeString, value)
+	}
+	if value, ok := auo.mutation.Description(); ok {
+		_spec.SetField(action.FieldDescription, field.TypeString, value)
+	}
+	if auo.mutation.DescriptionCleared() {
+		_spec.ClearField(action.FieldDescription, field.TypeString)
 	}
 	if auo.mutation.EntitlementsCleared() {
 		edge := &sqlgraph.EdgeSpec{

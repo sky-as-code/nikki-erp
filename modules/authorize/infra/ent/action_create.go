@@ -60,6 +60,20 @@ func (ac *ActionCreate) SetResourceID(s string) *ActionCreate {
 	return ac
 }
 
+// SetDescription sets the "description" field.
+func (ac *ActionCreate) SetDescription(s string) *ActionCreate {
+	ac.mutation.SetDescription(s)
+	return ac
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (ac *ActionCreate) SetNillableDescription(s *string) *ActionCreate {
+	if s != nil {
+		ac.SetDescription(*s)
+	}
+	return ac
+}
+
 // SetID sets the "id" field.
 func (ac *ActionCreate) SetID(s string) *ActionCreate {
 	ac.mutation.SetID(s)
@@ -197,6 +211,10 @@ func (ac *ActionCreate) createSpec() (*Action, *sqlgraph.CreateSpec) {
 	if value, ok := ac.mutation.Etag(); ok {
 		_spec.SetField(action.FieldEtag, field.TypeString, value)
 		_node.Etag = value
+	}
+	if value, ok := ac.mutation.Description(); ok {
+		_spec.SetField(action.FieldDescription, field.TypeString, value)
+		_node.Description = value
 	}
 	if nodes := ac.mutation.EntitlementsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

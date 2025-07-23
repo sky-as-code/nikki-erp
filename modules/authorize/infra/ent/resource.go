@@ -5,6 +5,7 @@ package ent
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -16,6 +17,8 @@ type Resource struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
@@ -70,6 +73,8 @@ func (*Resource) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case resource.FieldID, resource.FieldName, resource.FieldDescription, resource.FieldEtag, resource.FieldResourceType, resource.FieldResourceRef, resource.FieldScopeType:
 			values[i] = new(sql.NullString)
+		case resource.FieldCreatedAt:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -90,6 +95,12 @@ func (r *Resource) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
 				r.ID = value.String
+			}
+		case resource.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				r.CreatedAt = value.Time
 			}
 		case resource.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -173,6 +184,9 @@ func (r *Resource) String() string {
 	var builder strings.Builder
 	builder.WriteString("Resource(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", r.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(r.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(r.Name)
 	builder.WriteString(", ")

@@ -59,10 +59,10 @@ type RestUpdateResponse struct {
 func (this *RestUpdateResponse) FromEntity(src updatedEntity) {
 	this.Id = *src.GetId()
 	this.Etag = *src.GetEtag()
-	this.UpdatedAt = *safe.Indirect(src.GetUpdatedAt(), func(srcTime time.Time) *int64 {
-		milli := srcTime.UnixMilli()
-		return &milli
-	})
+
+	if updatedAt := src.GetUpdatedAt(); updatedAt != nil {
+		this.UpdatedAt = updatedAt.UnixMilli()
+	}
 }
 
 func (this *RestUpdateResponse) FromNonEntity(src any) {

@@ -67,6 +67,14 @@ func (PermissionHistoryMixin) Fields() []ent.Field {
 		field.String("entitlement_expr").
 			Comment("Entitlement expression must be copied here before the entitlement is deleted"),
 
+		field.String("entitlement_assignment_id").
+			Optional().
+			Nillable().
+			Comment("Must be set NULL before the entitlement assignment is deleted"),
+
+		field.String("resolved_expr").
+			Comment("Resolved expression must be copied here before the entitlement assignment is deleted"),
+
 		field.String("receiver_id").
 			Optional().
 			Nillable().
@@ -113,6 +121,9 @@ func (PermissionHistory) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("entitlement", Entitlement.Type).
 			Field("entitlement_id").
+			Unique(),
+		edge.To("entitlement_assignment", EntitlementAssignment.Type).
+			Field("entitlement_assignment_id").
 			Unique(),
 		edge.To("role", Role.Type).
 			Field("role_id").

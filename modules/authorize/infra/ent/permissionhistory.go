@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
@@ -36,6 +37,10 @@ type PermissionHistory struct {
 	EntitlementID *string `json:"entitlement_id,omitempty"`
 	// Entitlement expression must be copied here before the entitlement is deleted
 	EntitlementExpr string `json:"entitlement_expr,omitempty"`
+	// Must be set NULL before the entitlement assignment is deleted
+	EntitlementAssignmentID *string `json:"entitlement_assignment_id,omitempty"`
+	// Resolved expression must be copied here before the entitlement assignment is deleted
+	ResolvedExpr string `json:"resolved_expr,omitempty"`
 	// Must be set NULL before the receiver account is deleted
 	ReceiverID *string `json:"receiver_id,omitempty"`
 	// Receiver email must be copied here before the receiver account is deleted
@@ -62,6 +67,8 @@ type PermissionHistory struct {
 type PermissionHistoryEdges struct {
 	// Entitlement holds the value of the entitlement edge.
 	Entitlement *Entitlement `json:"entitlement,omitempty"`
+	// EntitlementAssignment holds the value of the entitlement_assignment edge.
+	EntitlementAssignment *EntitlementAssignment `json:"entitlement_assignment,omitempty"`
 	// Role holds the value of the role edge.
 	Role *Role `json:"role,omitempty"`
 	// RoleSuite holds the value of the role_suite edge.
@@ -72,7 +79,7 @@ type PermissionHistoryEdges struct {
 	RevokeRequest *RevokeRequest `json:"revoke_request,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // EntitlementOrErr returns the Entitlement value or an error if the edge
@@ -86,12 +93,23 @@ func (e PermissionHistoryEdges) EntitlementOrErr() (*Entitlement, error) {
 	return nil, &NotLoadedError{edge: "entitlement"}
 }
 
+// EntitlementAssignmentOrErr returns the EntitlementAssignment value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PermissionHistoryEdges) EntitlementAssignmentOrErr() (*EntitlementAssignment, error) {
+	if e.EntitlementAssignment != nil {
+		return e.EntitlementAssignment, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: entitlementassignment.Label}
+	}
+	return nil, &NotLoadedError{edge: "entitlement_assignment"}
+}
+
 // RoleOrErr returns the Role value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e PermissionHistoryEdges) RoleOrErr() (*Role, error) {
 	if e.Role != nil {
 		return e.Role, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: role.Label}
 	}
 	return nil, &NotLoadedError{edge: "role"}
@@ -102,7 +120,7 @@ func (e PermissionHistoryEdges) RoleOrErr() (*Role, error) {
 func (e PermissionHistoryEdges) RoleSuiteOrErr() (*RoleSuite, error) {
 	if e.RoleSuite != nil {
 		return e.RoleSuite, nil
-	} else if e.loadedTypes[2] {
+	} else if e.loadedTypes[3] {
 		return nil, &NotFoundError{label: rolesuite.Label}
 	}
 	return nil, &NotLoadedError{edge: "role_suite"}
@@ -113,7 +131,7 @@ func (e PermissionHistoryEdges) RoleSuiteOrErr() (*RoleSuite, error) {
 func (e PermissionHistoryEdges) GrantRequestOrErr() (*GrantRequest, error) {
 	if e.GrantRequest != nil {
 		return e.GrantRequest, nil
-	} else if e.loadedTypes[3] {
+	} else if e.loadedTypes[4] {
 		return nil, &NotFoundError{label: grantrequest.Label}
 	}
 	return nil, &NotLoadedError{edge: "grant_request"}
@@ -124,7 +142,7 @@ func (e PermissionHistoryEdges) GrantRequestOrErr() (*GrantRequest, error) {
 func (e PermissionHistoryEdges) RevokeRequestOrErr() (*RevokeRequest, error) {
 	if e.RevokeRequest != nil {
 		return e.RevokeRequest, nil
-	} else if e.loadedTypes[4] {
+	} else if e.loadedTypes[5] {
 		return nil, &NotFoundError{label: revokerequest.Label}
 	}
 	return nil, &NotLoadedError{edge: "revoke_request"}
@@ -135,7 +153,7 @@ func (*PermissionHistory) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case permissionhistory.FieldID, permissionhistory.FieldApproverID, permissionhistory.FieldApproverEmail, permissionhistory.FieldEffect, permissionhistory.FieldReason, permissionhistory.FieldEntitlementID, permissionhistory.FieldEntitlementExpr, permissionhistory.FieldReceiverID, permissionhistory.FieldReceiverEmail, permissionhistory.FieldGrantRequestID, permissionhistory.FieldRevokeRequestID, permissionhistory.FieldRoleID, permissionhistory.FieldRoleName, permissionhistory.FieldRoleSuiteID, permissionhistory.FieldRoleSuiteName:
+		case permissionhistory.FieldID, permissionhistory.FieldApproverID, permissionhistory.FieldApproverEmail, permissionhistory.FieldEffect, permissionhistory.FieldReason, permissionhistory.FieldEntitlementID, permissionhistory.FieldEntitlementExpr, permissionhistory.FieldEntitlementAssignmentID, permissionhistory.FieldResolvedExpr, permissionhistory.FieldReceiverID, permissionhistory.FieldReceiverEmail, permissionhistory.FieldGrantRequestID, permissionhistory.FieldRevokeRequestID, permissionhistory.FieldRoleID, permissionhistory.FieldRoleName, permissionhistory.FieldRoleSuiteID, permissionhistory.FieldRoleSuiteName:
 			values[i] = new(sql.NullString)
 		case permissionhistory.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -203,6 +221,19 @@ func (ph *PermissionHistory) assignValues(columns []string, values []any) error 
 				return fmt.Errorf("unexpected type %T for field entitlement_expr", values[i])
 			} else if value.Valid {
 				ph.EntitlementExpr = value.String
+			}
+		case permissionhistory.FieldEntitlementAssignmentID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field entitlement_assignment_id", values[i])
+			} else if value.Valid {
+				ph.EntitlementAssignmentID = new(string)
+				*ph.EntitlementAssignmentID = value.String
+			}
+		case permissionhistory.FieldResolvedExpr:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field resolved_expr", values[i])
+			} else if value.Valid {
+				ph.ResolvedExpr = value.String
 			}
 		case permissionhistory.FieldReceiverID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -275,6 +306,11 @@ func (ph *PermissionHistory) QueryEntitlement() *EntitlementQuery {
 	return NewPermissionHistoryClient(ph.config).QueryEntitlement(ph)
 }
 
+// QueryEntitlementAssignment queries the "entitlement_assignment" edge of the PermissionHistory entity.
+func (ph *PermissionHistory) QueryEntitlementAssignment() *EntitlementAssignmentQuery {
+	return NewPermissionHistoryClient(ph.config).QueryEntitlementAssignment(ph)
+}
+
 // QueryRole queries the "role" edge of the PermissionHistory entity.
 func (ph *PermissionHistory) QueryRole() *RoleQuery {
 	return NewPermissionHistoryClient(ph.config).QueryRole(ph)
@@ -342,6 +378,14 @@ func (ph *PermissionHistory) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("entitlement_expr=")
 	builder.WriteString(ph.EntitlementExpr)
+	builder.WriteString(", ")
+	if v := ph.EntitlementAssignmentID; v != nil {
+		builder.WriteString("entitlement_assignment_id=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	builder.WriteString("resolved_expr=")
+	builder.WriteString(ph.ResolvedExpr)
 	builder.WriteString(", ")
 	if v := ph.ReceiverID; v != nil {
 		builder.WriteString("receiver_id=")

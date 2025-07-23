@@ -28,6 +28,8 @@ type Action struct {
 	Etag string `json:"etag,omitempty"`
 	// ResourceID holds the value of the "resource_id" field.
 	ResourceID string `json:"resource_id,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ActionQuery when eager-loading is set.
 	Edges        ActionEdges `json:"edges"`
@@ -70,7 +72,7 @@ func (*Action) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case action.FieldID, action.FieldCreatedBy, action.FieldName, action.FieldEtag, action.FieldResourceID:
+		case action.FieldID, action.FieldCreatedBy, action.FieldName, action.FieldEtag, action.FieldResourceID, action.FieldDescription:
 			values[i] = new(sql.NullString)
 		case action.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -124,6 +126,12 @@ func (a *Action) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field resource_id", values[i])
 			} else if value.Valid {
 				a.ResourceID = value.String
+			}
+		case action.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				a.Description = value.String
 			}
 		default:
 			a.selectValues.Set(columns[i], values[i])
@@ -185,6 +193,9 @@ func (a *Action) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("resource_id=")
 	builder.WriteString(a.ResourceID)
+	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(a.Description)
 	builder.WriteByte(')')
 	return builder.String()
 }

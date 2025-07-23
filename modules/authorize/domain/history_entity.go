@@ -29,7 +29,7 @@ type History struct {
 	RoleName        *string                 `json:"roleName,omitempty"`
 	RoleSuiteId     *model.Id               `json:"roleSuiteId,omitempty"`
 	RoleSuiteName   *string                 `json:"roleSuiteName,omitempty"`
-	SubjectType     *EntitlementSubjectType `json:"subjectType,omitempty"`
+	// SubjectType     *EntitlementSubjectType `json:"subjectType,omitempty"`
 	SubjectRef      *string                 `json:"subjectRef,omitempty"`
 	ScopeRef        *string                 `json:"scopeRef,omitempty"`
 }

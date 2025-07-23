@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
@@ -23,15 +24,16 @@ import (
 // PermissionHistoryQuery is the builder for querying PermissionHistory entities.
 type PermissionHistoryQuery struct {
 	config
-	ctx               *QueryContext
-	order             []permissionhistory.OrderOption
-	inters            []Interceptor
-	predicates        []predicate.PermissionHistory
-	withEntitlement   *EntitlementQuery
-	withRole          *RoleQuery
-	withRoleSuite     *RoleSuiteQuery
-	withGrantRequest  *GrantRequestQuery
-	withRevokeRequest *RevokeRequestQuery
+	ctx                       *QueryContext
+	order                     []permissionhistory.OrderOption
+	inters                    []Interceptor
+	predicates                []predicate.PermissionHistory
+	withEntitlement           *EntitlementQuery
+	withEntitlementAssignment *EntitlementAssignmentQuery
+	withRole                  *RoleQuery
+	withRoleSuite             *RoleSuiteQuery
+	withGrantRequest          *GrantRequestQuery
+	withRevokeRequest         *RevokeRequestQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -83,6 +85,28 @@ func (phq *PermissionHistoryQuery) QueryEntitlement() *EntitlementQuery {
 			sqlgraph.From(permissionhistory.Table, permissionhistory.FieldID, selector),
 			sqlgraph.To(entitlement.Table, entitlement.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, permissionhistory.EntitlementTable, permissionhistory.EntitlementColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(phq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEntitlementAssignment chains the current query on the "entitlement_assignment" edge.
+func (phq *PermissionHistoryQuery) QueryEntitlementAssignment() *EntitlementAssignmentQuery {
+	query := (&EntitlementAssignmentClient{config: phq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := phq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := phq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(permissionhistory.Table, permissionhistory.FieldID, selector),
+			sqlgraph.To(entitlementassignment.Table, entitlementassignment.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, permissionhistory.EntitlementAssignmentTable, permissionhistory.EntitlementAssignmentColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(phq.driver.Dialect(), step)
 		return fromU, nil
@@ -365,16 +389,17 @@ func (phq *PermissionHistoryQuery) Clone() *PermissionHistoryQuery {
 		return nil
 	}
 	return &PermissionHistoryQuery{
-		config:            phq.config,
-		ctx:               phq.ctx.Clone(),
-		order:             append([]permissionhistory.OrderOption{}, phq.order...),
-		inters:            append([]Interceptor{}, phq.inters...),
-		predicates:        append([]predicate.PermissionHistory{}, phq.predicates...),
-		withEntitlement:   phq.withEntitlement.Clone(),
-		withRole:          phq.withRole.Clone(),
-		withRoleSuite:     phq.withRoleSuite.Clone(),
-		withGrantRequest:  phq.withGrantRequest.Clone(),
-		withRevokeRequest: phq.withRevokeRequest.Clone(),
+		config:                    phq.config,
+		ctx:                       phq.ctx.Clone(),
+		order:                     append([]permissionhistory.OrderOption{}, phq.order...),
+		inters:                    append([]Interceptor{}, phq.inters...),
+		predicates:                append([]predicate.PermissionHistory{}, phq.predicates...),
+		withEntitlement:           phq.withEntitlement.Clone(),
+		withEntitlementAssignment: phq.withEntitlementAssignment.Clone(),
+		withRole:                  phq.withRole.Clone(),
+		withRoleSuite:             phq.withRoleSuite.Clone(),
+		withGrantRequest:          phq.withGrantRequest.Clone(),
+		withRevokeRequest:         phq.withRevokeRequest.Clone(),
 		// clone intermediate query.
 		sql:  phq.sql.Clone(),
 		path: phq.path,
@@ -389,6 +414,17 @@ func (phq *PermissionHistoryQuery) WithEntitlement(opts ...func(*EntitlementQuer
 		opt(query)
 	}
 	phq.withEntitlement = query
+	return phq
+}
+
+// WithEntitlementAssignment tells the query-builder to eager-load the nodes that are connected to
+// the "entitlement_assignment" edge. The optional arguments are used to configure the query builder of the edge.
+func (phq *PermissionHistoryQuery) WithEntitlementAssignment(opts ...func(*EntitlementAssignmentQuery)) *PermissionHistoryQuery {
+	query := (&EntitlementAssignmentClient{config: phq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	phq.withEntitlementAssignment = query
 	return phq
 }
 
@@ -514,8 +550,9 @@ func (phq *PermissionHistoryQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 	var (
 		nodes       = []*PermissionHistory{}
 		_spec       = phq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [6]bool{
 			phq.withEntitlement != nil,
+			phq.withEntitlementAssignment != nil,
 			phq.withRole != nil,
 			phq.withRoleSuite != nil,
 			phq.withGrantRequest != nil,
@@ -543,6 +580,12 @@ func (phq *PermissionHistoryQuery) sqlAll(ctx context.Context, hooks ...queryHoo
 	if query := phq.withEntitlement; query != nil {
 		if err := phq.loadEntitlement(ctx, query, nodes, nil,
 			func(n *PermissionHistory, e *Entitlement) { n.Edges.Entitlement = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := phq.withEntitlementAssignment; query != nil {
+		if err := phq.loadEntitlementAssignment(ctx, query, nodes, nil,
+			func(n *PermissionHistory, e *EntitlementAssignment) { n.Edges.EntitlementAssignment = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -598,6 +641,38 @@ func (phq *PermissionHistoryQuery) loadEntitlement(ctx context.Context, query *E
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "entitlement_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (phq *PermissionHistoryQuery) loadEntitlementAssignment(ctx context.Context, query *EntitlementAssignmentQuery, nodes []*PermissionHistory, init func(*PermissionHistory), assign func(*PermissionHistory, *EntitlementAssignment)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*PermissionHistory)
+	for i := range nodes {
+		if nodes[i].EntitlementAssignmentID == nil {
+			continue
+		}
+		fk := *nodes[i].EntitlementAssignmentID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(entitlementassignment.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "entitlement_assignment_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -761,6 +836,9 @@ func (phq *PermissionHistoryQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if phq.withEntitlement != nil {
 			_spec.Node.AddColumnOnce(permissionhistory.FieldEntitlementID)
+		}
+		if phq.withEntitlementAssignment != nil {
+			_spec.Node.AddColumnOnce(permissionhistory.FieldEntitlementAssignmentID)
 		}
 		if phq.withRole != nil {
 			_spec.Node.AddColumnOnce(permissionhistory.FieldRoleID)

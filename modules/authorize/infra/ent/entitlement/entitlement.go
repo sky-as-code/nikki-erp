@@ -3,7 +3,6 @@
 package entitlement
 
 import (
-	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -31,14 +30,12 @@ const (
 	FieldEtag = "etag"
 	// FieldResourceID holds the string denoting the resource_id field in the database.
 	FieldResourceID = "resource_id"
-	// FieldSubjectType holds the string denoting the subject_type field in the database.
-	FieldSubjectType = "subject_type"
-	// FieldSubjectRef holds the string denoting the subject_ref field in the database.
-	FieldSubjectRef = "subject_ref"
 	// FieldScopeRef holds the string denoting the scope_ref field in the database.
 	FieldScopeRef = "scope_ref"
 	// EdgePermissionHistories holds the string denoting the permission_histories edge name in mutations.
 	EdgePermissionHistories = "permission_histories"
+	// EdgeEntitlementAssignments holds the string denoting the entitlement_assignments edge name in mutations.
+	EdgeEntitlementAssignments = "entitlement_assignments"
 	// EdgeAction holds the string denoting the action edge name in mutations.
 	EdgeAction = "action"
 	// EdgeResource holds the string denoting the resource edge name in mutations.
@@ -52,6 +49,13 @@ const (
 	PermissionHistoriesInverseTable = "authz_permission_histories"
 	// PermissionHistoriesColumn is the table column denoting the permission_histories relation/edge.
 	PermissionHistoriesColumn = "entitlement_id"
+	// EntitlementAssignmentsTable is the table that holds the entitlement_assignments relation/edge.
+	EntitlementAssignmentsTable = "authz_entitlement_assignments"
+	// EntitlementAssignmentsInverseTable is the table name for the EntitlementAssignment entity.
+	// It exists in this package in order to avoid circular dependency with the "entitlementassignment" package.
+	EntitlementAssignmentsInverseTable = "authz_entitlement_assignments"
+	// EntitlementAssignmentsColumn is the table column denoting the entitlement_assignments relation/edge.
+	EntitlementAssignmentsColumn = "entitlement_id"
 	// ActionTable is the table that holds the action relation/edge.
 	ActionTable = "authz_entitlements"
 	// ActionInverseTable is the table name for the Action entity.
@@ -79,8 +83,6 @@ var Columns = []string{
 	FieldDescription,
 	FieldEtag,
 	FieldResourceID,
-	FieldSubjectType,
-	FieldSubjectRef,
 	FieldScopeRef,
 }
 
@@ -98,31 +100,6 @@ var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
-
-// SubjectType defines the type for the "subject_type" enum field.
-type SubjectType string
-
-// SubjectType values.
-const (
-	SubjectTypeNikkiUser  SubjectType = "nikki_user"
-	SubjectTypeNikkiGroup SubjectType = "nikki_group"
-	SubjectTypeNikkiRole  SubjectType = "nikki_role"
-	SubjectTypeCustom     SubjectType = "custom"
-)
-
-func (st SubjectType) String() string {
-	return string(st)
-}
-
-// SubjectTypeValidator is a validator for the "subject_type" field enum values. It is called by the builders before save.
-func SubjectTypeValidator(st SubjectType) error {
-	switch st {
-	case SubjectTypeNikkiUser, SubjectTypeNikkiGroup, SubjectTypeNikkiRole, SubjectTypeCustom:
-		return nil
-	default:
-		return fmt.Errorf("entitlement: invalid enum value for subject_type field: %q", st)
-	}
-}
 
 // OrderOption defines the ordering options for the Entitlement queries.
 type OrderOption = func(*sql.Selector)
@@ -172,16 +149,6 @@ func ByResourceID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResourceID, opts...).ToFunc()
 }
 
-// BySubjectType orders the results by the subject_type field.
-func BySubjectType(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSubjectType, opts...).ToFunc()
-}
-
-// BySubjectRef orders the results by the subject_ref field.
-func BySubjectRef(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSubjectRef, opts...).ToFunc()
-}
-
 // ByScopeRef orders the results by the scope_ref field.
 func ByScopeRef(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldScopeRef, opts...).ToFunc()
@@ -201,6 +168,20 @@ func ByPermissionHistories(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpti
 	}
 }
 
+// ByEntitlementAssignmentsCount orders the results by entitlement_assignments count.
+func ByEntitlementAssignmentsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEntitlementAssignmentsStep(), opts...)
+	}
+}
+
+// ByEntitlementAssignments orders the results by entitlement_assignments terms.
+func ByEntitlementAssignments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEntitlementAssignmentsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByActionField orders the results by action field.
 func ByActionField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -214,6 +195,12 @@ func ByResourceField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newResourceStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewPermissionHistoriesStepNikki() *sqlgraph.Step {
+	return newPermissionHistoriesStep()
+}
+
 func newPermissionHistoriesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -221,6 +208,25 @@ func newPermissionHistoriesStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, PermissionHistoriesTable, PermissionHistoriesColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewEntitlementAssignmentsStepNikki() *sqlgraph.Step {
+	return newEntitlementAssignmentsStep()
+}
+
+func newEntitlementAssignmentsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EntitlementAssignmentsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, EntitlementAssignmentsTable, EntitlementAssignmentsColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewActionStepNikki() *sqlgraph.Step {
+	return newActionStep()
+}
+
 func newActionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -228,6 +234,12 @@ func newActionStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, ActionTable, ActionColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewResourceStepNikki() *sqlgraph.Step {
+	return newResourceStep()
+}
+
 func newResourceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),

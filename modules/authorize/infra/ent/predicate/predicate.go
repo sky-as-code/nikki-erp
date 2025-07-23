@@ -15,6 +15,9 @@ type EffectiveEntitlement = func(*sql.Selector)
 // Entitlement is the predicate function for entitlement builders.
 type Entitlement = func(*sql.Selector)
 
+// EntitlementAssignment is the predicate function for entitlementassignment builders.
+type EntitlementAssignment = func(*sql.Selector)
+
 // GrantRequest is the predicate function for grantrequest builders.
 type GrantRequest = func(*sql.Selector)
 

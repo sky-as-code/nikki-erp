@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -19,6 +20,20 @@ type ResourceCreate struct {
 	config
 	mutation *ResourceMutation
 	hooks    []Hook
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (rc *ResourceCreate) SetCreatedAt(t time.Time) *ResourceCreate {
+	rc.mutation.SetCreatedAt(t)
+	return rc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (rc *ResourceCreate) SetNillableCreatedAt(t *time.Time) *ResourceCreate {
+	if t != nil {
+		rc.SetCreatedAt(*t)
+	}
+	return rc
 }
 
 // SetName sets the "name" field.
@@ -116,6 +131,7 @@ func (rc *ResourceCreate) Mutation() *ResourceMutation {
 
 // Save creates the Resource in the database.
 func (rc *ResourceCreate) Save(ctx context.Context) (*Resource, error) {
+	rc.defaults()
 	return withHooks(ctx, rc.sqlSave, rc.mutation, rc.hooks)
 }
 
@@ -141,8 +157,19 @@ func (rc *ResourceCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (rc *ResourceCreate) defaults() {
+	if _, ok := rc.mutation.CreatedAt(); !ok {
+		v := resource.DefaultCreatedAt()
+		rc.mutation.SetCreatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (rc *ResourceCreate) check() error {
+	if _, ok := rc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Resource.created_at"`)}
+	}
 	if _, ok := rc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Resource.name"`)}
 	}
@@ -199,6 +226,10 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 	if id, ok := rc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = id
+	}
+	if value, ok := rc.mutation.CreatedAt(); ok {
+		_spec.SetField(resource.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
 	}
 	if value, ok := rc.mutation.Name(); ok {
 		_spec.SetField(resource.FieldName, field.TypeString, value)
@@ -277,6 +308,7 @@ func (rcb *ResourceCreateBulk) Save(ctx context.Context) ([]*Resource, error) {
 	for i := range rcb.builders {
 		func(i int, root context.Context) {
 			builder := rcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ResourceMutation)
 				if !ok {

@@ -29,6 +29,10 @@ const (
 	FieldEntitlementID = "entitlement_id"
 	// FieldEntitlementExpr holds the string denoting the entitlement_expr field in the database.
 	FieldEntitlementExpr = "entitlement_expr"
+	// FieldEntitlementAssignmentID holds the string denoting the entitlement_assignment_id field in the database.
+	FieldEntitlementAssignmentID = "entitlement_assignment_id"
+	// FieldResolvedExpr holds the string denoting the resolved_expr field in the database.
+	FieldResolvedExpr = "resolved_expr"
 	// FieldReceiverID holds the string denoting the receiver_id field in the database.
 	FieldReceiverID = "receiver_id"
 	// FieldReceiverEmail holds the string denoting the receiver_email field in the database.
@@ -47,6 +51,8 @@ const (
 	FieldRoleSuiteName = "role_suite_name"
 	// EdgeEntitlement holds the string denoting the entitlement edge name in mutations.
 	EdgeEntitlement = "entitlement"
+	// EdgeEntitlementAssignment holds the string denoting the entitlement_assignment edge name in mutations.
+	EdgeEntitlementAssignment = "entitlement_assignment"
 	// EdgeRole holds the string denoting the role edge name in mutations.
 	EdgeRole = "role"
 	// EdgeRoleSuite holds the string denoting the role_suite edge name in mutations.
@@ -64,6 +70,13 @@ const (
 	EntitlementInverseTable = "authz_entitlements"
 	// EntitlementColumn is the table column denoting the entitlement relation/edge.
 	EntitlementColumn = "entitlement_id"
+	// EntitlementAssignmentTable is the table that holds the entitlement_assignment relation/edge.
+	EntitlementAssignmentTable = "authz_permission_histories"
+	// EntitlementAssignmentInverseTable is the table name for the EntitlementAssignment entity.
+	// It exists in this package in order to avoid circular dependency with the "entitlementassignment" package.
+	EntitlementAssignmentInverseTable = "authz_entitlement_assignments"
+	// EntitlementAssignmentColumn is the table column denoting the entitlement_assignment relation/edge.
+	EntitlementAssignmentColumn = "entitlement_assignment_id"
 	// RoleTable is the table that holds the role relation/edge.
 	RoleTable = "authz_permission_histories"
 	// RoleInverseTable is the table name for the Role entity.
@@ -104,6 +117,8 @@ var Columns = []string{
 	FieldReason,
 	FieldEntitlementID,
 	FieldEntitlementExpr,
+	FieldEntitlementAssignmentID,
+	FieldResolvedExpr,
 	FieldReceiverID,
 	FieldReceiverEmail,
 	FieldGrantRequestID,
@@ -245,6 +260,16 @@ func ByEntitlementExpr(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEntitlementExpr, opts...).ToFunc()
 }
 
+// ByEntitlementAssignmentID orders the results by the entitlement_assignment_id field.
+func ByEntitlementAssignmentID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEntitlementAssignmentID, opts...).ToFunc()
+}
+
+// ByResolvedExpr orders the results by the resolved_expr field.
+func ByResolvedExpr(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldResolvedExpr, opts...).ToFunc()
+}
+
 // ByReceiverID orders the results by the receiver_id field.
 func ByReceiverID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReceiverID, opts...).ToFunc()
@@ -292,6 +317,13 @@ func ByEntitlementField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByEntitlementAssignmentField orders the results by entitlement_assignment field.
+func ByEntitlementAssignmentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEntitlementAssignmentStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByRoleField orders the results by role field.
 func ByRoleField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -319,6 +351,12 @@ func ByRevokeRequestField(field string, opts ...sql.OrderTermOption) OrderOption
 		sqlgraph.OrderByNeighborTerms(s, newRevokeRequestStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewEntitlementStepNikki() *sqlgraph.Step {
+	return newEntitlementStep()
+}
+
 func newEntitlementStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -326,6 +364,25 @@ func newEntitlementStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, EntitlementTable, EntitlementColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewEntitlementAssignmentStepNikki() *sqlgraph.Step {
+	return newEntitlementAssignmentStep()
+}
+
+func newEntitlementAssignmentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EntitlementAssignmentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, EntitlementAssignmentTable, EntitlementAssignmentColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewRoleStepNikki() *sqlgraph.Step {
+	return newRoleStep()
+}
+
 func newRoleStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -333,6 +390,12 @@ func newRoleStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, RoleTable, RoleColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewRoleSuiteStepNikki() *sqlgraph.Step {
+	return newRoleSuiteStep()
+}
+
 func newRoleSuiteStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -340,6 +403,12 @@ func newRoleSuiteStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, RoleSuiteTable, RoleSuiteColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewGrantRequestStepNikki() *sqlgraph.Step {
+	return newGrantRequestStep()
+}
+
 func newGrantRequestStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -347,6 +416,12 @@ func newGrantRequestStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, GrantRequestTable, GrantRequestColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewRevokeRequestStepNikki() *sqlgraph.Step {
+	return newRevokeRequestStep()
+}
+
 func newRevokeRequestStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),

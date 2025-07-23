@@ -1,12 +1,12 @@
-package identity
+package authorize
 
 import (
 	"errors"
 
 	"github.com/sky-as-code/nikki-erp/modules"
-	// "github.com/sky-as-code/nikki-erp/modules/authorize/app"
-	// repo "github.com/sky-as-code/nikki-erp/modules/authorize/infra/repository"
-	// "github.com/sky-as-code/nikki-erp/modules/authorize/transport"
+	app "github.com/sky-as-code/nikki-erp/modules/authorize/app"
+	repo "github.com/sky-as-code/nikki-erp/modules/authorize/infra/repository"
+	transport "github.com/sky-as-code/nikki-erp/modules/authorize/transport"
 )
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
@@ -31,9 +31,9 @@ func (*AuthorizeModule) Deps() []string {
 // Init implements NikkiModule.
 func (*AuthorizeModule) Init() error {
 	err := errors.Join(
-	// repo.InitRepositories(),
-	// app.InitServices(),
-	// transport.InitTransport(),
+		repo.InitRepositories(),
+		app.InitServices(),
+		transport.InitTransport(),
 	)
 
 	return err

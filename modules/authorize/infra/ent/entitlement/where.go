@@ -105,11 +105,6 @@ func ResourceID(v string) predicate.Entitlement {
 	return predicate.Entitlement(sql.FieldEQ(FieldResourceID, v))
 }
 
-// SubjectRef applies equality check predicate on the "subject_ref" field. It's identical to SubjectRefEQ.
-func SubjectRef(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldEQ(FieldSubjectRef, v))
-}
-
 // ScopeRef applies equality check predicate on the "scope_ref" field. It's identical to ScopeRefEQ.
 func ScopeRef(v string) predicate.Entitlement {
 	return predicate.Entitlement(sql.FieldEQ(FieldScopeRef, v))
@@ -415,16 +410,6 @@ func NameHasSuffix(v string) predicate.Entitlement {
 	return predicate.Entitlement(sql.FieldHasSuffix(FieldName, v))
 }
 
-// NameIsNil applies the IsNil predicate on the "name" field.
-func NameIsNil() predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldIsNull(FieldName))
-}
-
-// NameNotNil applies the NotNil predicate on the "name" field.
-func NameNotNil() predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldNotNull(FieldName))
-}
-
 // NameEqualFold applies the EqualFold predicate on the "name" field.
 func NameEqualFold(v string) predicate.Entitlement {
 	return predicate.Entitlement(sql.FieldEqualFold(FieldName, v))
@@ -650,91 +635,6 @@ func ResourceIDContainsFold(v string) predicate.Entitlement {
 	return predicate.Entitlement(sql.FieldContainsFold(FieldResourceID, v))
 }
 
-// SubjectTypeEQ applies the EQ predicate on the "subject_type" field.
-func SubjectTypeEQ(v SubjectType) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldEQ(FieldSubjectType, v))
-}
-
-// SubjectTypeNEQ applies the NEQ predicate on the "subject_type" field.
-func SubjectTypeNEQ(v SubjectType) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldNEQ(FieldSubjectType, v))
-}
-
-// SubjectTypeIn applies the In predicate on the "subject_type" field.
-func SubjectTypeIn(vs ...SubjectType) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldIn(FieldSubjectType, vs...))
-}
-
-// SubjectTypeNotIn applies the NotIn predicate on the "subject_type" field.
-func SubjectTypeNotIn(vs ...SubjectType) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldNotIn(FieldSubjectType, vs...))
-}
-
-// SubjectRefEQ applies the EQ predicate on the "subject_ref" field.
-func SubjectRefEQ(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldEQ(FieldSubjectRef, v))
-}
-
-// SubjectRefNEQ applies the NEQ predicate on the "subject_ref" field.
-func SubjectRefNEQ(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldNEQ(FieldSubjectRef, v))
-}
-
-// SubjectRefIn applies the In predicate on the "subject_ref" field.
-func SubjectRefIn(vs ...string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldIn(FieldSubjectRef, vs...))
-}
-
-// SubjectRefNotIn applies the NotIn predicate on the "subject_ref" field.
-func SubjectRefNotIn(vs ...string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldNotIn(FieldSubjectRef, vs...))
-}
-
-// SubjectRefGT applies the GT predicate on the "subject_ref" field.
-func SubjectRefGT(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldGT(FieldSubjectRef, v))
-}
-
-// SubjectRefGTE applies the GTE predicate on the "subject_ref" field.
-func SubjectRefGTE(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldGTE(FieldSubjectRef, v))
-}
-
-// SubjectRefLT applies the LT predicate on the "subject_ref" field.
-func SubjectRefLT(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldLT(FieldSubjectRef, v))
-}
-
-// SubjectRefLTE applies the LTE predicate on the "subject_ref" field.
-func SubjectRefLTE(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldLTE(FieldSubjectRef, v))
-}
-
-// SubjectRefContains applies the Contains predicate on the "subject_ref" field.
-func SubjectRefContains(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldContains(FieldSubjectRef, v))
-}
-
-// SubjectRefHasPrefix applies the HasPrefix predicate on the "subject_ref" field.
-func SubjectRefHasPrefix(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldHasPrefix(FieldSubjectRef, v))
-}
-
-// SubjectRefHasSuffix applies the HasSuffix predicate on the "subject_ref" field.
-func SubjectRefHasSuffix(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldHasSuffix(FieldSubjectRef, v))
-}
-
-// SubjectRefEqualFold applies the EqualFold predicate on the "subject_ref" field.
-func SubjectRefEqualFold(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldEqualFold(FieldSubjectRef, v))
-}
-
-// SubjectRefContainsFold applies the ContainsFold predicate on the "subject_ref" field.
-func SubjectRefContainsFold(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldContainsFold(FieldSubjectRef, v))
-}
-
 // ScopeRefEQ applies the EQ predicate on the "scope_ref" field.
 func ScopeRefEQ(v string) predicate.Entitlement {
 	return predicate.Entitlement(sql.FieldEQ(FieldScopeRef, v))
@@ -825,6 +725,29 @@ func HasPermissionHistories() predicate.Entitlement {
 func HasPermissionHistoriesWith(preds ...predicate.PermissionHistory) predicate.Entitlement {
 	return predicate.Entitlement(func(s *sql.Selector) {
 		step := newPermissionHistoriesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEntitlementAssignments applies the HasEdge predicate on the "entitlement_assignments" edge.
+func HasEntitlementAssignments() predicate.Entitlement {
+	return predicate.Entitlement(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, EntitlementAssignmentsTable, EntitlementAssignmentsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEntitlementAssignmentsWith applies the HasEdge predicate on the "entitlement_assignments" edge with a given conditions (other predicates).
+func HasEntitlementAssignmentsWith(preds ...predicate.EntitlementAssignment) predicate.Entitlement {
+	return predicate.Entitlement(func(s *sql.Selector) {
+		step := newEntitlementAssignmentsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

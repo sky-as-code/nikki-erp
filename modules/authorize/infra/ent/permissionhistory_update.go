@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
@@ -96,6 +97,40 @@ func (phu *PermissionHistoryUpdate) SetEntitlementExpr(s string) *PermissionHist
 func (phu *PermissionHistoryUpdate) SetNillableEntitlementExpr(s *string) *PermissionHistoryUpdate {
 	if s != nil {
 		phu.SetEntitlementExpr(*s)
+	}
+	return phu
+}
+
+// SetEntitlementAssignmentID sets the "entitlement_assignment_id" field.
+func (phu *PermissionHistoryUpdate) SetEntitlementAssignmentID(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetEntitlementAssignmentID(s)
+	return phu
+}
+
+// SetNillableEntitlementAssignmentID sets the "entitlement_assignment_id" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableEntitlementAssignmentID(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetEntitlementAssignmentID(*s)
+	}
+	return phu
+}
+
+// ClearEntitlementAssignmentID clears the value of the "entitlement_assignment_id" field.
+func (phu *PermissionHistoryUpdate) ClearEntitlementAssignmentID() *PermissionHistoryUpdate {
+	phu.mutation.ClearEntitlementAssignmentID()
+	return phu
+}
+
+// SetResolvedExpr sets the "resolved_expr" field.
+func (phu *PermissionHistoryUpdate) SetResolvedExpr(s string) *PermissionHistoryUpdate {
+	phu.mutation.SetResolvedExpr(s)
+	return phu
+}
+
+// SetNillableResolvedExpr sets the "resolved_expr" field if the given value is not nil.
+func (phu *PermissionHistoryUpdate) SetNillableResolvedExpr(s *string) *PermissionHistoryUpdate {
+	if s != nil {
+		phu.SetResolvedExpr(*s)
 	}
 	return phu
 }
@@ -247,6 +282,11 @@ func (phu *PermissionHistoryUpdate) SetEntitlement(e *Entitlement) *PermissionHi
 	return phu.SetEntitlementID(e.ID)
 }
 
+// SetEntitlementAssignment sets the "entitlement_assignment" edge to the EntitlementAssignment entity.
+func (phu *PermissionHistoryUpdate) SetEntitlementAssignment(e *EntitlementAssignment) *PermissionHistoryUpdate {
+	return phu.SetEntitlementAssignmentID(e.ID)
+}
+
 // SetRole sets the "role" edge to the Role entity.
 func (phu *PermissionHistoryUpdate) SetRole(r *Role) *PermissionHistoryUpdate {
 	return phu.SetRoleID(r.ID)
@@ -275,6 +315,12 @@ func (phu *PermissionHistoryUpdate) Mutation() *PermissionHistoryMutation {
 // ClearEntitlement clears the "entitlement" edge to the Entitlement entity.
 func (phu *PermissionHistoryUpdate) ClearEntitlement() *PermissionHistoryUpdate {
 	phu.mutation.ClearEntitlement()
+	return phu
+}
+
+// ClearEntitlementAssignment clears the "entitlement_assignment" edge to the EntitlementAssignment entity.
+func (phu *PermissionHistoryUpdate) ClearEntitlementAssignment() *PermissionHistoryUpdate {
+	phu.mutation.ClearEntitlementAssignment()
 	return phu
 }
 
@@ -350,6 +396,9 @@ func (phu *PermissionHistoryUpdate) sqlSave(ctx context.Context) (n int, err err
 	if value, ok := phu.mutation.EntitlementExpr(); ok {
 		_spec.SetField(permissionhistory.FieldEntitlementExpr, field.TypeString, value)
 	}
+	if value, ok := phu.mutation.ResolvedExpr(); ok {
+		_spec.SetField(permissionhistory.FieldResolvedExpr, field.TypeString, value)
+	}
 	if value, ok := phu.mutation.ReceiverID(); ok {
 		_spec.SetField(permissionhistory.FieldReceiverID, field.TypeString, value)
 	}
@@ -387,6 +436,35 @@ func (phu *PermissionHistoryUpdate) sqlSave(ctx context.Context) (n int, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(entitlement.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if phu.mutation.EntitlementAssignmentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.EntitlementAssignmentTable,
+			Columns: []string{permissionhistory.EntitlementAssignmentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phu.mutation.EntitlementAssignmentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.EntitlementAssignmentTable,
+			Columns: []string{permissionhistory.EntitlementAssignmentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -598,6 +676,40 @@ func (phuo *PermissionHistoryUpdateOne) SetNillableEntitlementExpr(s *string) *P
 	return phuo
 }
 
+// SetEntitlementAssignmentID sets the "entitlement_assignment_id" field.
+func (phuo *PermissionHistoryUpdateOne) SetEntitlementAssignmentID(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetEntitlementAssignmentID(s)
+	return phuo
+}
+
+// SetNillableEntitlementAssignmentID sets the "entitlement_assignment_id" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableEntitlementAssignmentID(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetEntitlementAssignmentID(*s)
+	}
+	return phuo
+}
+
+// ClearEntitlementAssignmentID clears the value of the "entitlement_assignment_id" field.
+func (phuo *PermissionHistoryUpdateOne) ClearEntitlementAssignmentID() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearEntitlementAssignmentID()
+	return phuo
+}
+
+// SetResolvedExpr sets the "resolved_expr" field.
+func (phuo *PermissionHistoryUpdateOne) SetResolvedExpr(s string) *PermissionHistoryUpdateOne {
+	phuo.mutation.SetResolvedExpr(s)
+	return phuo
+}
+
+// SetNillableResolvedExpr sets the "resolved_expr" field if the given value is not nil.
+func (phuo *PermissionHistoryUpdateOne) SetNillableResolvedExpr(s *string) *PermissionHistoryUpdateOne {
+	if s != nil {
+		phuo.SetResolvedExpr(*s)
+	}
+	return phuo
+}
+
 // SetReceiverID sets the "receiver_id" field.
 func (phuo *PermissionHistoryUpdateOne) SetReceiverID(s string) *PermissionHistoryUpdateOne {
 	phuo.mutation.SetReceiverID(s)
@@ -745,6 +857,11 @@ func (phuo *PermissionHistoryUpdateOne) SetEntitlement(e *Entitlement) *Permissi
 	return phuo.SetEntitlementID(e.ID)
 }
 
+// SetEntitlementAssignment sets the "entitlement_assignment" edge to the EntitlementAssignment entity.
+func (phuo *PermissionHistoryUpdateOne) SetEntitlementAssignment(e *EntitlementAssignment) *PermissionHistoryUpdateOne {
+	return phuo.SetEntitlementAssignmentID(e.ID)
+}
+
 // SetRole sets the "role" edge to the Role entity.
 func (phuo *PermissionHistoryUpdateOne) SetRole(r *Role) *PermissionHistoryUpdateOne {
 	return phuo.SetRoleID(r.ID)
@@ -773,6 +890,12 @@ func (phuo *PermissionHistoryUpdateOne) Mutation() *PermissionHistoryMutation {
 // ClearEntitlement clears the "entitlement" edge to the Entitlement entity.
 func (phuo *PermissionHistoryUpdateOne) ClearEntitlement() *PermissionHistoryUpdateOne {
 	phuo.mutation.ClearEntitlement()
+	return phuo
+}
+
+// ClearEntitlementAssignment clears the "entitlement_assignment" edge to the EntitlementAssignment entity.
+func (phuo *PermissionHistoryUpdateOne) ClearEntitlementAssignment() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearEntitlementAssignment()
 	return phuo
 }
 
@@ -878,6 +1001,9 @@ func (phuo *PermissionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *Per
 	if value, ok := phuo.mutation.EntitlementExpr(); ok {
 		_spec.SetField(permissionhistory.FieldEntitlementExpr, field.TypeString, value)
 	}
+	if value, ok := phuo.mutation.ResolvedExpr(); ok {
+		_spec.SetField(permissionhistory.FieldResolvedExpr, field.TypeString, value)
+	}
 	if value, ok := phuo.mutation.ReceiverID(); ok {
 		_spec.SetField(permissionhistory.FieldReceiverID, field.TypeString, value)
 	}
@@ -915,6 +1041,35 @@ func (phuo *PermissionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *Per
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(entitlement.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if phuo.mutation.EntitlementAssignmentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.EntitlementAssignmentTable,
+			Columns: []string{permissionhistory.EntitlementAssignmentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := phuo.mutation.EntitlementAssignmentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   permissionhistory.EntitlementAssignmentTable,
+			Columns: []string{permissionhistory.EntitlementAssignmentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entitlementassignment.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

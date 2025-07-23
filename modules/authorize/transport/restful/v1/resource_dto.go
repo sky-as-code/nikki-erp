@@ -1,0 +1,78 @@
+package v1
+
+import (
+	"github.com/thoas/go-funk"
+
+	"github.com/sky-as-code/nikki-erp/common/array"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+)
+
+type ResourceDto struct {
+	Id   model.Id   `json:"id"`
+	Etag model.Etag `json:"etag"`
+
+	Name         string  `json:"name"`
+	Description  *string `json:"description,omitempty"`
+	ResourceType string  `json:"resourceType"`
+	ResourceRef  string  `json:"resourceRef"`
+	ScopeType    string  `json:"scopeType"`
+
+	Actions []Action `json:"actions,omitempty"`
+}
+
+type Action struct {
+	Id model.Id `json:"id"`
+
+	Name        string  `json:"name"`
+	Description *string `json:"description,omitempty"`
+}
+
+type CreateResourceRequest = it.CreateResourceCommand
+type CreateResourceResponse = httpserver.RestCreateResponse
+
+type UpdateResourceRequest = it.UpdateResourceCommand
+type UpdateResourceResponse = httpserver.RestUpdateResponse
+
+type GetResourceByNameRequest = it.GetResourceByNameQuery
+type GetResourceByNameResponse = ResourceDto
+
+type SearchResourcesRequest = it.SearchResourcesQuery
+type SearchResourcesResponse httpserver.RestSearchResponse[ResourceDto]
+
+func (this *SearchResourcesResponse) FromResult(result *it.SearchResourcesResultData) {
+	this.Total = result.Total
+	this.Page = result.Page
+	this.Size = result.Size
+	this.Items = funk.Map(result.Items, func(resource domain.Resource) ResourceDto {
+		item := ResourceDto{}
+		item.FromResource(resource)
+		return item
+	}).([]ResourceDto)
+}
+
+func (this *Action) FromAction(action domain.Action) {
+	this.Id = *action.ModelBase.Id
+	this.Name = *action.Name
+	this.Description = action.Description
+}
+
+func (this *ResourceDto) FromResource(resource domain.Resource) {
+	this.Id = *resource.Id
+	this.Etag = *resource.Etag
+	this.Name = *resource.Name
+	this.Description = resource.Description
+	this.ResourceType = resource.ResourceType.String()
+	this.ResourceRef = *resource.ResourceRef
+	this.ScopeType = resource.ScopeType.String()
+
+	// Convert actions to Action array
+	this.Actions = array.Map(resource.Actions, func(action domain.Action) Action {
+		actionItem := Action{}
+		actionItem.FromAction(action)
+		return actionItem
+	})
+}

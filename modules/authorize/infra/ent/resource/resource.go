@@ -4,6 +4,7 @@ package resource
 
 import (
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -14,6 +15,8 @@ const (
 	Label = "resource"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldDescription holds the string denoting the description field in the database.
@@ -51,6 +54,7 @@ const (
 // Columns holds all SQL columns for resource fields.
 var Columns = []string{
 	FieldID,
+	FieldCreatedAt,
 	FieldName,
 	FieldDescription,
 	FieldEtag,
@@ -68,6 +72,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
+)
 
 // ResourceType defines the type for the "resource_type" enum field.
 type ResourceType string
@@ -123,6 +132,11 @@ type OrderOption = func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.
@@ -182,6 +196,12 @@ func ByEntitlements(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newEntitlementsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewActionsStepNikki() *sqlgraph.Step {
+	return newActionsStep()
+}
+
 func newActionsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -189,6 +209,12 @@ func newActionsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, true, ActionsTable, ActionsColumn),
 	)
 }
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewEntitlementsStepNikki() *sqlgraph.Step {
+	return newEntitlementsStep()
+}
+
 func newEntitlementsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
