@@ -27,18 +27,19 @@ func initAuthorizeRest() error {
 func initV1(route *echo.Group, resourceRest *v1.ResourceRest, actionRest *v1.ActionRest, entitlementRest *v1.EntitlementRest, roleRest *v1.RoleRest, roleSuiteRest *v1.RoleSuiteRest, authorizedRest *v1.AuthorizeRest) {
 	route.POST("/resources", resourceRest.CreateResource)
 	route.PUT("/resources/:id", resourceRest.UpdateResource)
+	route.DELETE("/resources/:id", resourceRest.DeleteHardResource)
 	route.GET("/resources/:name", resourceRest.GetResourceByName)
 	route.GET("/resources", resourceRest.SearchResources)
-	// route.DELETE("/resources/:id", resourceRest.DeleteResource)
 
 	route.POST("/actions", actionRest.CreateAction)
 	route.PUT("/actions/:id", actionRest.UpdateAction)
+	route.DELETE("/actions/:id", actionRest.DeleteHardAction)
 	route.GET("/actions/:id", actionRest.GetActionById)
 	route.GET("/actions", actionRest.SearchActions)
-	// route.DELETE("/actions/:id", actionRest.DeleteAction)
 
 	route.POST("/entitlements", entitlementRest.CreateEntitlement)
 	route.PUT("/entitlements/:id", entitlementRest.UpdateEntitlement)
+	route.DELETE("/entitlements/:id", entitlementRest.DeleteHardEntitlement)
 	route.GET("/entitlements/:id", entitlementRest.GetEntitlementById)
 	route.GET("/entitlements", entitlementRest.SearchEntitlements)
 

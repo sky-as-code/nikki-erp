@@ -68,6 +68,12 @@ func (this *ActionEntRepository) Update(ctx context.Context, action domain.Actio
 	return database.Mutate(ctx, update, ent.IsNotFound, entToAction)
 }
 
+func (this *ActionEntRepository) DeleteHard(ctx context.Context, param it.DeleteHardActionCommand) (int, error) {
+	return this.client.Action.Delete().
+		Where(entAction.ID(param.Id)).
+		Exec(ctx)
+}
+
 func (this *ActionEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
 	return database.ParseSearchGraphStr[ent.Action, domain.Action](criteria, entAction.Label)
 }

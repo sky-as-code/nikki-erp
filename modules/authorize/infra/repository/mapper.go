@@ -222,4 +222,57 @@ func entToEntitlementAssignment(dbEntitlementAssignment *ent.EntitlementAssignme
 	return entitlementAssignment
 }
 
+func entFromEffectiveUserEntitlement(dbEffectiveUserEntitlement *ent.EffectiveUserEntitlement) *domain.EntitlementAssignment {
+	entitlementAssignment := &domain.EntitlementAssignment{
+		SubjectRef:   &dbEffectiveUserEntitlement.UserID,
+		ActionName:   dbEffectiveUserEntitlement.ActionName,
+		ResourceName: dbEffectiveUserEntitlement.ResourceName,
+		Entitlement: &domain.Entitlement{
+			Resource: &domain.Resource{},
+			ScopeRef: dbEffectiveUserEntitlement.ScopeRef,
+		},
+	}
+
+	if dbEffectiveUserEntitlement.ScopeType != nil {
+		entitlementAssignment.Entitlement.Resource.ScopeType = domain.WrapResourceScopeType(*dbEffectiveUserEntitlement.ScopeType)
+	}
+
+	return entitlementAssignment
+}
+
+func entFromEffectiveGroupEntitlement(dbEffectiveGroupEntitlement *ent.EffectiveGroupEntitlement) *domain.EntitlementAssignment {
+	entitlementAssignment := &domain.EntitlementAssignment{
+		SubjectRef:   &dbEffectiveGroupEntitlement.GroupID,
+		ActionName:   dbEffectiveGroupEntitlement.ActionName,
+		ResourceName: dbEffectiveGroupEntitlement.ResourceName,
+		Entitlement: &domain.Entitlement{
+			Resource: &domain.Resource{},
+			ScopeRef: dbEffectiveGroupEntitlement.ScopeRef,
+		},
+	}
+
+	if dbEffectiveGroupEntitlement.ScopeType != nil {
+		entitlementAssignment.Entitlement.Resource.ScopeType = domain.WrapResourceScopeType(*dbEffectiveGroupEntitlement.ScopeType)
+	}
+
+	return entitlementAssignment
+}
+
+func entToEntitlementAssignments(dbEffectiveUserEntitlements []*ent.EffectiveUserEntitlement, dbEffectiveGroupEntitlements []*ent.EffectiveGroupEntitlement) []*domain.EntitlementAssignment {
+	assignments := make([]*domain.EntitlementAssignment, 0)
+
+	if dbEffectiveUserEntitlements != nil {
+		assignments = append(assignments, array.Map(dbEffectiveUserEntitlements, func(dbEffectiveUserEntitlement *ent.EffectiveUserEntitlement) *domain.EntitlementAssignment {
+			return entFromEffectiveUserEntitlement(dbEffectiveUserEntitlement)
+		})...)
+	}
+
+	if dbEffectiveGroupEntitlements != nil {
+		assignments = append(assignments, array.Map(dbEffectiveGroupEntitlements, func(dbEffectiveGroupEntitlement *ent.EffectiveGroupEntitlement) *domain.EntitlementAssignment {
+			return entFromEffectiveGroupEntitlement(dbEffectiveGroupEntitlement)
+		})...)
+	}
+	return assignments
+}
+
 // END: EntitlementAssignment

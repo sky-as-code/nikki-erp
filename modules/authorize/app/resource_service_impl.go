@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -34,7 +35,7 @@ func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.Crea
 	}()
 
 	resource := cmd.ToResource()
-	this.setResourceDefaults(ctx, resource)
+	this.setResourceDefaults(resource)
 
 	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
@@ -110,6 +111,41 @@ func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.Upda
 		Data:    resource,
 		HasData: resource != nil,
 	}, err
+}
+
+func (this *ResourceServiceImpl) DeleteHardResource(ctx context.Context, cmd it.DeleteHardResourceCommand) (result *it.DeleteHardResourceResult, err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to delete hard resource"); e != nil {
+			err = e
+		}
+	}()
+
+	deletedCount := 0
+
+	flow := validator.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			this.assertResourceExistsById(ctx, cmd.Id, vErrs)
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			deletedCount, err = this.resourceRepo.DeleteHard(ctx, cmd)
+			return err
+		}).
+		End()
+	fault.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &it.DeleteHardResourceResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
 func (this *ResourceServiceImpl) GetResourceByName(ctx context.Context, query it.GetResourceByNameQuery) (result *it.GetResourceByNameResult, err error) {
@@ -207,7 +243,7 @@ func (this *ResourceServiceImpl) sanitizeResource(resource *domain.Resource) {
 	}
 }
 
-func (this *ResourceServiceImpl) setResourceDefaults(ctx context.Context, resource *domain.Resource) {
+func (this *ResourceServiceImpl) setResourceDefaults(resource *domain.Resource) {
 	resource.SetDefaults()
 }
 

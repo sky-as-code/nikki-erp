@@ -16,10 +16,12 @@ type ResourceRepository interface {
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Resource, error)
 	FindById(ctx context.Context, param FindByIdParam) (*domain.Resource, error)
 	Update(ctx context.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error)
+	DeleteHard(ctx context.Context, param DeleteParam) (int, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.Resource], error)
 }
 
+type DeleteParam = DeleteHardResourceCommand
 type FindByIdParam = GetResourceByIdQuery
 type FindByNameParam = GetResourceByNameQuery
 

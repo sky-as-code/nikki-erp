@@ -2,6 +2,7 @@ package resource
 
 import (
 	"regexp"
+	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
@@ -19,6 +20,7 @@ func init() {
 	var req cqrs.Request
 	req = (*CreateResourceCommand)(nil)
 	req = (*UpdateResourceCommand)(nil)
+	req = (*DeleteHardResourceCommand)(nil)
 	req = (*GetResourceByNameQuery)(nil)
 	req = (*SearchResourcesQuery)(nil)
 	util.Unused(req)
@@ -68,6 +70,38 @@ func (UpdateResourceCommand) CqrsRequestType() cqrs.RequestType {
 type UpdateResourceResult = crud.OpResult[*domain.Resource]
 
 // END: UpdateResourceCommand
+
+// START: DeleteHardResourceCommand
+var deleteHardResourceCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "resource",
+	Action:    "delete",
+}
+
+type DeleteHardResourceCommand struct {
+	Id model.Id `json:"id" param:"id"`
+}
+
+func (DeleteHardResourceCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteHardResourceCommandType
+}
+
+func (this DeleteHardResourceCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type DeleteHardResourceResultData struct {
+	Id        model.Id  `json:"id"`
+	DeletedAt time.Time `json:"deletedAt"`
+}
+
+type DeleteHardResourceResult = crud.DeletionResult
+
+// END: DeleteHardResourceCommand
 
 // START: GetResourceByIdQuery
 var getResourceByIdQueryType = cqrs.RequestType{

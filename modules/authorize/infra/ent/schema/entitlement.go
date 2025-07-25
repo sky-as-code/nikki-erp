@@ -30,7 +30,7 @@ func (EntitlementMixin) Fields() []ent.Field {
 
 		field.String("action_expr").
 			Immutable().
-			Comment("Format: '{actionName}:{scopeRef}:{resourceName}' E.g: 'create:01JWNZ5KW6WC643VXGKV1D0J64.user', '*:01JWNZ5KW6WC643VXGKV1D0J64.*'"),
+			Comment("Format: '{actionName}:{scopeRef}.{resourceName}' E.g: 'create:01JWNZ5KW6WC643VXGKV1D0J64.user', '*:01JWNZ5KW6WC643VXGKV1D0J64.*'"),
 
 		field.Time("created_at").
 			Default(time.Now).

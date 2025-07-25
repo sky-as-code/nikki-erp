@@ -1,6 +1,8 @@
-package resource
+package action
 
 import (
+	"time"
+
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -17,6 +19,7 @@ func init() {
 	var req cqrs.Request
 	req = (*CreateActionCommand)(nil)
 	req = (*UpdateActionCommand)(nil)
+	req = (*DeleteHardActionCommand)(nil)
 	req = (*GetActionByIdQuery)(nil)
 	req = (*GetActionByNameCommand)(nil)
 	req = (*SearchActionsCommand)(nil)
@@ -66,6 +69,38 @@ func (UpdateActionCommand) CqrsRequestType() cqrs.RequestType {
 type UpdateActionResult = crud.OpResult[*domain.Action]
 
 // END: UpdateResourceCommand
+
+// START: DeleteHardActionCommand
+var deleteHardActionCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "action",
+	Action:    "deleteHard",
+}
+
+type DeleteHardActionCommand struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (DeleteHardActionCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteHardActionCommandType
+}
+
+func (this DeleteHardActionCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type DeleteHardActionResultData struct {
+	Id        model.Id  `json:"id"`
+	DeletedAt time.Time `json:"deletedAt"`
+}
+
+type DeleteHardActionResult = crud.DeletionResult
+
+// END: DeleteHardActionCommand
 
 // START: GetActionByIdQuery
 var getActionByIdQueryType = cqrs.RequestType{

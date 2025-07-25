@@ -129,9 +129,9 @@ BEGIN
 
 	IF EXISTS (
 		SELECT FROM information_schema.tables 
-		WHERE table_schema = 'public' AND table_name = 'ident_user_group'
+		WHERE table_schema = 'public' AND table_name = 'ident_user_group_rel'
 	) THEN
-		INSERT INTO "ident_user_group" ("user_id", "group_id") VALUES
+		INSERT INTO "ident_user_group_rel" ("user_id", "group_id") VALUES
 		('01JWNXT3EY7FG47VDJTEPTDC98', '01JWNXBR5QJBH7PE9PQ9FW746V'),
 		('01JWNXXTF8958VVYAV33MVVMDN', '01JWNXBR5QJBH7PE9PQ9FW746V');
 	END IF;
@@ -150,9 +150,9 @@ BEGIN
 
 	IF EXISTS (
 		SELECT FROM information_schema.tables 
-		WHERE table_schema = 'public' AND table_name = 'ident_user_org'
+		WHERE table_schema = 'public' AND table_name = 'ident_user_org_rel'
 	) THEN
-		INSERT INTO "ident_user_org" ("user_id", "org_id") VALUES
+		INSERT INTO "ident_user_org_rel" ("user_id", "org_id") VALUES
 		('01JWNXT3EY7FG47VDJTEPTDC98', '01JWNY20G23KD4RV5VWYABQYHD'),
 		('01JWNXXTF8958VVYAV33MVVMDN', '01JWNY20G23KD4RV5VWYABQYHD');
 	END IF;

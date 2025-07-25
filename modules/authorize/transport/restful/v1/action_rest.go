@@ -73,6 +73,29 @@ func (this ActionRest) UpdateAction(echoCtx echo.Context) (err error) {
 	return err
 }
 
+func (this ActionRest) DeleteHardAction(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete hard action"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.ActionSvc.DeleteHardAction,
+		func(request DeleteHardActionRequest) it.DeleteHardActionCommand {
+			return it.DeleteHardActionCommand(request)
+		},
+		func(result it.DeleteHardActionResult) DeleteHardActionResponse {
+			response := DeleteHardActionResponse{}
+			response.FromNonEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
 func (this ActionRest) GetActionById(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get action by id"); e != nil {

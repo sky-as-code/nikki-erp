@@ -1,6 +1,8 @@
 package entitlement
 
 import (
+	"time"
+
 	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -18,6 +20,7 @@ func init() {
 	req = (*CreateEntitlementCommand)(nil)
 	req = (*EntitlementExistsCommand)(nil)
 	req = (*UpdateEntitlementCommand)(nil)
+	req = (*DeleteHardEntitlementCommand)(nil)
 	req = (*GetEntitlementByIdQuery)(nil)
 	req = (*GetEntitlementByNameQuery)(nil)
 	req = (*GetAllEntitlementByIdsQuery)(nil)
@@ -98,6 +101,38 @@ func (UpdateEntitlementCommand) CqrsRequestType() cqrs.RequestType {
 type UpdateEntitlementResult = crud.OpResult[*domain.Entitlement]
 
 // END: UpdateEntitlementCommand
+
+// START: DeleteHardEntitlementCommand
+var deleteHardEntitlementCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "entitlement",
+	Action:    "deleteHard",
+}
+
+type DeleteHardEntitlementCommand struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (DeleteHardEntitlementCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteHardEntitlementCommandType
+}
+
+func (this DeleteHardEntitlementCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type DeleteHardEntitlementResultData struct {
+	Id        model.Id  `json:"id"`
+	DeletedAt time.Time `json:"deletedAt"`
+}
+
+type DeleteHardEntitlementResult = crud.DeletionResult
+
+// END: DeleteHardEntitlementCommand
 
 // START: GetEntitlementByIdQuery
 var getEntitlementByIdQueryType = cqrs.RequestType{

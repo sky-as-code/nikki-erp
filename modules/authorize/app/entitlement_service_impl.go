@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -34,7 +35,7 @@ func (this *EntitlementServiceImpl) CreateEntitlement(ctx context.Context, cmd i
 	}()
 
 	entitlement := cmd.ToEntitlement()
-	this.setEntitlementDefaults(ctx, entitlement)
+	this.setEntitlementDefaults(entitlement)
 
 	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
@@ -144,6 +145,41 @@ func (this *EntitlementServiceImpl) UpdateEntitlement(ctx context.Context, cmd i
 		Data:    entitlement,
 		HasData: entitlement != nil,
 	}, err
+}
+
+func (this *EntitlementServiceImpl) DeleteHardEntitlement(ctx context.Context, cmd it.DeleteHardEntitlementCommand) (result *it.DeleteHardEntitlementResult, err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to delete entitlement"); e != nil {
+			err = e
+		}
+	}()
+
+	deletedCount := 0
+
+	flow := validator.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			this.assertEntitlementExistsById(ctx, cmd.Id, vErrs)
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			deletedCount, err = this.entitlementRepo.DeleteHard(ctx, cmd)
+			return err
+		}).
+		End()
+	fault.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &it.DeleteHardEntitlementResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
 func (this *EntitlementServiceImpl) GetEntitlementById(ctx context.Context, query it.GetEntitlementByIdQuery) (result *it.GetEntitlementByIdResult, err error) {
@@ -273,7 +309,7 @@ func (this *EntitlementServiceImpl) sanitizeEntitlement(entitlement *domain.Enti
 	}
 }
 
-func (this *EntitlementServiceImpl) setEntitlementDefaults(ctx context.Context, entitlement *domain.Entitlement) {
+func (this *EntitlementServiceImpl) setEntitlementDefaults(entitlement *domain.Entitlement) {
 	entitlement.SetDefaults()
 }
 

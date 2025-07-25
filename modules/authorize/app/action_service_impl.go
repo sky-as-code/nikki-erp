@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -110,6 +111,41 @@ func (this *ActionServiceImpl) UpdateAction(ctx context.Context, cmd it.UpdateAc
 		Data:    action,
 		HasData: action != nil,
 	}, err
+}
+
+func (this *ActionServiceImpl) DeleteHardAction(ctx context.Context, cmd it.DeleteHardActionCommand) (result *it.DeleteHardActionResult, err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "failed to delete hard action"); e != nil {
+			err = e
+		}
+	}()
+
+	deletedCount := 0
+
+	flow := validator.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			this.assertActionExists(ctx, cmd.Id, vErrs)
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			deletedCount, err = this.actionRepo.DeleteHard(ctx, cmd)
+			return err
+		}).
+		End()
+	fault.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &it.DeleteHardActionResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
 func (this *ActionServiceImpl) GetActionById(ctx context.Context, query it.GetActionByIdQuery) (result *it.GetActionByIdResult, err error) {

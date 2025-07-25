@@ -35,19 +35,20 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAction                = "Action"
-	TypeEffectiveEntitlement  = "EffectiveEntitlement"
-	TypeEntitlement           = "Entitlement"
-	TypeEntitlementAssignment = "EntitlementAssignment"
-	TypeGrantRequest          = "GrantRequest"
-	TypePermissionHistory     = "PermissionHistory"
-	TypeResource              = "Resource"
-	TypeRevokeRequest         = "RevokeRequest"
-	TypeRole                  = "Role"
-	TypeRoleRoleSuite         = "RoleRoleSuite"
-	TypeRoleSuite             = "RoleSuite"
-	TypeRoleSuiteUser         = "RoleSuiteUser"
-	TypeRoleUser              = "RoleUser"
+	TypeAction                    = "Action"
+	TypeEffectiveGroupEntitlement = "EffectiveGroupEntitlement"
+	TypeEffectiveUserEntitlement  = "EffectiveUserEntitlement"
+	TypeEntitlement               = "Entitlement"
+	TypeEntitlementAssignment     = "EntitlementAssignment"
+	TypeGrantRequest              = "GrantRequest"
+	TypePermissionHistory         = "PermissionHistory"
+	TypeResource                  = "Resource"
+	TypeRevokeRequest             = "RevokeRequest"
+	TypeRole                      = "Role"
+	TypeRoleRoleSuite             = "RoleRoleSuite"
+	TypeRoleSuite                 = "RoleSuite"
+	TypeRoleSuiteUser             = "RoleSuiteUser"
+	TypeRoleUser                  = "RoleUser"
 )
 
 // ActionMutation represents an operation that mutates the Action nodes in the graph.

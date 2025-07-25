@@ -68,6 +68,12 @@ func (this *ResourceEntRepository) Update(ctx context.Context, resource domain.R
 	return database.Mutate(ctx, update, ent.IsNotFound, entToResource)
 }
 
+func (this *ResourceEntRepository) DeleteHard(ctx context.Context, param it.DeleteHardResourceCommand) (int, error) {
+	return this.client.Resource.Delete().
+		Where(entResource.ID(param.Id)).
+		Exec(ctx)
+}
+
 func (this *ResourceEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
 	return database.ParseSearchGraphStr[ent.Resource, domain.Resource](criteria, entResource.Label)
 }

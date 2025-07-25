@@ -1,4 +1,4 @@
-package resource
+package action
 
 import (
 	"context"
@@ -16,10 +16,12 @@ type ActionRepository interface {
 	FindById(ctx context.Context, param FindByIdParam) (*domain.Action, error)
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Action, error)
 	Update(ctx context.Context, action domain.Action, prevEtag model.Etag) (*domain.Action, error)
+	DeleteHard(ctx context.Context, param DeleteParam) (int, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.Action], error)
 }
 
+type DeleteParam = DeleteHardActionCommand
 type FindByIdParam = GetActionByIdQuery
 type FindByNameParam = GetActionByNameCommand
 

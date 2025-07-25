@@ -37,6 +37,9 @@ type CreateResourceResponse = httpserver.RestCreateResponse
 type UpdateResourceRequest = it.UpdateResourceCommand
 type UpdateResourceResponse = httpserver.RestUpdateResponse
 
+type DeleteHardResourceRequest = it.DeleteHardResourceCommand
+type DeleteHardResourceResponse = httpserver.RestDeleteResponse
+
 type GetResourceByNameRequest = it.GetResourceByNameQuery
 type GetResourceByNameResponse = ResourceDto
 
