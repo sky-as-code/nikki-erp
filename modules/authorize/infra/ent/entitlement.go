@@ -21,7 +21,7 @@ type Entitlement struct {
 	ID string `json:"id,omitempty"`
 	// ActionID holds the value of the "action_id" field.
 	ActionID *string `json:"action_id,omitempty"`
-	// Format: '{actionName}:{scopeRef}:{resourceName}' E.g: 'create:01JWNZ5KW6WC643VXGKV1D0J64.user', '*:01JWNZ5KW6WC643VXGKV1D0J64.*'
+	// Format: '{actionName}:{scopeRef}.{resourceName}' E.g: 'create:01JWNZ5KW6WC643VXGKV1D0J64.user', '*:01JWNZ5KW6WC643VXGKV1D0J64.*'
 	ActionExpr string `json:"action_expr,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`

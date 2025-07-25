@@ -9,4 +9,5 @@ type IsAuthorizedResponse it.IsAuthorizedResult
 
 func (this *IsAuthorizedResponse) FromResult(result *it.IsAuthorizedResult) {
 	this.Decision = result.Decision
+	this.ClientError = result.ClientError
 }

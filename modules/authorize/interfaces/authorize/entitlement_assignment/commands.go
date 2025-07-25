@@ -16,6 +16,7 @@ func init() {
 	var req cqrs.Request
 	req = (*CreateEntitlementAssignmentCommand)(nil)
 	req = (*GetAllEntitlementAssignmentBySubjectQuery)(nil)
+	req = (*GetViewsByIdQuery)(nil)
 	util.Unused(req)
 }
 
@@ -78,3 +79,37 @@ func (GetAllEntitlementAssignmentBySubjectQuery) CqrsRequestType() cqrs.RequestT
 type GetAllEntitlementAssignmentBySubjectResult = crud.OpResult[[]*domain.EntitlementAssignment]
 
 // END: GetAllEntitlementAssignmentBySubjectQuery
+
+// START: GetViewsByIdQuery
+var getViewsByIdQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "entitlement_assignment",
+	Action:    "getViewsById",
+}
+
+type GetViewsByIdQuery struct {
+	SubjectType string `param:"subjectType" json:"subjectType"`
+	SubjectRef  string `param:"subjectRef" json:"subjectRef"`
+}
+
+func (this GetViewsByIdQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		validator.Field(&this.SubjectType,
+			validator.NotEmpty,
+			validator.OneOf(
+				domain.EntitlementAssignmentSubjectTypeNikkiUser.String(),
+				domain.EntitlementAssignmentSubjectTypeNikkiGroup.String(),
+			),
+		),
+		model.IdValidateRule(&this.SubjectRef, true),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+func (GetViewsByIdQuery) CqrsRequestType() cqrs.RequestType {
+	return getViewsByIdQueryType
+}
+
+type GetViewsByIdResult = crud.OpResult[[]*domain.EntitlementAssignment]
+
+// END: GetViewsByIdQuery

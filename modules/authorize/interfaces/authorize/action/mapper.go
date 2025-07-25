@@ -1,4 +1,4 @@
-package resource
+package action
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/model"

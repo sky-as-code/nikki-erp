@@ -3,29 +3,39 @@ package app
 import (
 	"context"
 
+	"github.com/sky-as-code/nikki-erp/common/convert"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
-	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize"
-	itAssignt "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
-	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
+	itAction "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
+	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
+	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
 	itSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
 )
 
-func NewAuthorizeServiceImpl(cqrsBus cqrs.CqrsBus, eventBus event.EventBus) itAuthorize.AuthorizeService {
+func NewAuthorizeServiceImpl(cqrsBus cqrs.CqrsBus, eventBus event.EventBus, entAssignmentRepo itAssign.EntitlementAssignmentRepository, entSuiteRepo itSuite.RoleSuiteRepository, entActionRepo itAction.ActionRepository, entResourceRepo itResource.ResourceRepository) itAuthorize.AuthorizeService {
 	return &AuthorizeServiceImpl{
-		cqrsBus:  cqrsBus,
-		eventBus: eventBus,
+		cqrsBus:           cqrsBus,
+		eventBus:          eventBus,
+		entAssignmentRepo: entAssignmentRepo,
+		entSuiteRepo:      entSuiteRepo,
+		entActionRepo:     entActionRepo,
+		entResourceRepo:   entResourceRepo,
 	}
 }
 
 type AuthorizeServiceImpl struct {
-	cqrsBus  cqrs.CqrsBus
-	eventBus event.EventBus
+	cqrsBus           cqrs.CqrsBus
+	eventBus          event.EventBus
+	entAssignmentRepo itAssign.EntitlementAssignmentRepository
+	entSuiteRepo      itSuite.RoleSuiteRepository
+	entActionRepo     itAction.ActionRepository
+	entResourceRepo   itResource.ResourceRepository
 }
 
 func (this *AuthorizeServiceImpl) IsAuthorized(ctx context.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
@@ -35,7 +45,87 @@ func (this *AuthorizeServiceImpl) IsAuthorized(ctx context.Context, query itAuth
 		}
 	}()
 
-	subjects, err := this.expandSubjects(ctx, query.Subject.Type.String(), query.Subject.Ref)
+	// resource variable is used to store the resource object after validation
+	var resource *domain.Resource
+
+	flow := validator.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = query.Validate()
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			resource, err = this.validateResource(ctx, query.ResourceName, vErrs)
+			if err != nil {
+				return err
+			}
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			return this.validateAction(ctx, query.ActionName, resource, vErrs)
+		}).
+		End()
+	fault.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &itAuthorize.IsAuthorizedResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	// Temporarily not available for private type
+	switch query.SubjectType {
+	case itAuthorize.SubjectTypeUser:
+		return this.isUserAuthorized(ctx, query)
+	case itAuthorize.SubjectTypeGroup:
+		return this.isGroupAuthorized(ctx, query)
+	default:
+		return this.isAuthorizedLegacy(ctx, query)
+	}
+}
+
+func (this *AuthorizeServiceImpl) isUserAuthorized(ctx context.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
+	userAssignments, err := this.entAssignmentRepo.FindViewsById(ctx, itAssign.FindViewsByIdParam{
+		SubjectType: itAuthorize.SubjectTypeUser.String(),
+		SubjectRef:  query.SubjectRef,
+	})
+	fault.PanicOnErr(err)
+
+	for _, assignment := range userAssignments {
+		if this.matchAssignment(assignment, query) {
+			return &itAuthorize.IsAuthorizedResult{
+				Decision: convert.StringPtr(itAuthorize.DecisionAllow),
+			}, nil
+		}
+	}
+
+	return &itAuthorize.IsAuthorizedResult{
+		Decision: convert.StringPtr(itAuthorize.DecisionDeny),
+	}, nil
+}
+
+func (this *AuthorizeServiceImpl) isGroupAuthorized(ctx context.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
+	groupAssignments, err := this.entAssignmentRepo.FindViewsById(ctx, itAssign.FindViewsByIdParam{
+		SubjectType: itAuthorize.SubjectTypeGroup.String(),
+		SubjectRef:  query.SubjectRef,
+	})
+	fault.PanicOnErr(err)
+
+	for _, assignment := range groupAssignments {
+		if this.matchAssignment(assignment, query) {
+			return &itAuthorize.IsAuthorizedResult{
+				Decision: convert.StringPtr(itAuthorize.DecisionAllow),
+			}, nil
+		}
+	}
+
+	return &itAuthorize.IsAuthorizedResult{
+		Decision: convert.StringPtr(itAuthorize.DecisionDeny),
+	}, nil
+}
+
+func (this *AuthorizeServiceImpl) isAuthorizedLegacy(ctx context.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
+	subjects, err := this.expandSubjects(ctx, query.SubjectType.String(), query.SubjectRef)
 	fault.PanicOnErr(err)
 
 	subjects = uniqueSubjects(subjects)
@@ -45,189 +135,47 @@ func (this *AuthorizeServiceImpl) IsAuthorized(ctx context.Context, query itAuth
 
 	for _, assignment := range assignments {
 		if this.matchAssignment(assignment, query) {
-			return &itAuthorize.IsAuthorizedResult{Decision: itAuthorize.DecisionAllow}, nil
+			return &itAuthorize.IsAuthorizedResult{
+				Decision: convert.StringPtr(itAuthorize.DecisionAllow),
+			}, nil
 		}
 	}
 
 	return &itAuthorize.IsAuthorizedResult{
-		Decision: itAuthorize.DecisionDeny,
+		Decision: convert.StringPtr(itAuthorize.DecisionDeny),
 	}, nil
 }
 
 func (this *AuthorizeServiceImpl) expandSubjects(ctx context.Context, subjectType, subjectRef string) (subjects []itAuthorize.Subject, err error) {
-	subjects = append(subjects, itAuthorize.Subject{Type: itAuthorize.WrapSubjectType(subjectType), Ref: subjectRef})
+	subjects = append(subjects, itAuthorize.Subject{Type: itAuthorize.SubjectTypeAuthorize(subjectType), Ref: subjectRef})
 
-	switch subjectType {
-	case itAuthorize.SubjectTypeUser.String():
-		userGroups, err := this.getUserGroups(ctx, subjectRef)
-		if err != nil {
-			return nil, err
-		}
-		subjects = append(subjects, userGroups...)
-
-		userRoles, err := this.getUserRoles(ctx, subjectRef)
-		if err != nil {
-			return nil, err
-		}
-		subjects = append(subjects, userRoles...)
-
-		userSuiteRoles, err := this.getUserSuiteRoles(ctx, subjectRef)
-		if err != nil {
-			return nil, err
-		}
-		subjects = append(subjects, userSuiteRoles...)
-
-	case itAuthorize.SubjectTypeGroup.String():
-		groupRoles, err := this.getGroupRoles(ctx, subjectRef)
-		if err != nil {
-			return nil, err
-		}
-		subjects = append(subjects, groupRoles...)
-
-		groupSuiteRoles, err := this.getGroupSuiteRoles(ctx, subjectRef)
-		if err != nil {
-			return nil, err
-		}
-		subjects = append(subjects, groupSuiteRoles...)
-
-	case itAuthorize.SubjectTypeSuite.String():
+	if subjectType == itAuthorize.SubjectTypeSuite.String() {
 		suiteRoles, err := this.getSuiteRoles(ctx, subjectRef)
-		if err != nil {
-			return nil, err
+		fault.PanicOnErr(err)
+
+		if suiteRoles != nil {
+			subjects = append(subjects, suiteRoles...)
 		}
-		subjects = append(subjects, suiteRoles...)
 	}
 
 	return subjects, nil
 }
 
-func (this *AuthorizeServiceImpl) getUserGroups(ctx context.Context, userRef string) ([]itAuthorize.Subject, error) {
-	userRes := itUser.GetUserByIdResult{}
-	err := this.cqrsBus.Request(ctx, itUser.GetUserByIdQuery{Id: model.Id(userRef)}, &userRes)
-	fault.PanicOnErr(err)
-
-	if userRes.ClientError != nil {
-		return nil, userRes.ClientError
-	}
-
-	groups := make([]itAuthorize.Subject, 0, len(userRes.Data.Groups))
-	for _, g := range userRes.Data.Groups {
-		groups = append(groups, itAuthorize.Subject{
-			Type: itAuthorize.WrapSubjectType(itAuthorize.SubjectTypeGroup.String()),
-			Ref:  *g.Id,
-		})
-	}
-	return groups, nil
-}
-
-func (this *AuthorizeServiceImpl) getUserRoles(ctx context.Context, userRef string) ([]itAuthorize.Subject, error) {
-	rolesRes := itRole.GetRolesBySubjectResult{}
-	err := this.cqrsBus.Request(ctx, itRole.GetRolesBySubjectQuery{
-		SubjectType: *domain.WrapEntitlementAssignmentSubjectType(domain.EntitlementAssignmentSubjectTypeNikkiUser.String()),
-		SubjectRef:  userRef,
-	}, &rolesRes)
-	fault.PanicOnErr(err)
-
-	if rolesRes.ClientError != nil {
-		return nil, rolesRes.ClientError
-	}
-
-	roles := make([]itAuthorize.Subject, 0, len(rolesRes.Data))
-	for _, r := range rolesRes.Data {
-		roles = append(roles, itAuthorize.Subject{
-			Type: itAuthorize.WrapSubjectType(itAuthorize.SubjectTypeRole.String()),
-			Ref:  *r.Id,
-		})
-	}
-	return roles, nil
-}
-
-func (this *AuthorizeServiceImpl) getUserSuiteRoles(ctx context.Context, userRef string) ([]itAuthorize.Subject, error) {
-	suitesRes := itSuite.GetRoleSuitesBySubjectResult{}
-	err := this.cqrsBus.Request(ctx, itSuite.GetRoleSuitesBySubjectQuery{
-		SubjectType: *domain.WrapEntitlementAssignmentSubjectType(domain.EntitlementAssignmentSubjectTypeNikkiUser.String()),
-		SubjectRef:  userRef,
-	}, &suitesRes)
-	fault.PanicOnErr(err)
-
-	if suitesRes.ClientError != nil {
-		return nil, suitesRes.ClientError
-	}
-
-	roles := make([]itAuthorize.Subject, 0)
-	for _, su := range suitesRes.Data {
-		for _, r := range su.Roles {
-			roles = append(roles, itAuthorize.Subject{
-				Type: itAuthorize.WrapSubjectType(itAuthorize.SubjectTypeRole.String()),
-				Ref:  *r.Id,
-			})
-		}
-	}
-	return roles, nil
-}
-
-func (this *AuthorizeServiceImpl) getGroupRoles(ctx context.Context, groupRef string) ([]itAuthorize.Subject, error) {
-	rolesRes := itRole.GetRolesBySubjectResult{}
-	err := this.cqrsBus.Request(ctx, itRole.GetRolesBySubjectQuery{
-		SubjectType: *domain.WrapEntitlementAssignmentSubjectType(domain.EntitlementAssignmentSubjectTypeNikkiGroup.String()),
-		SubjectRef:  groupRef,
-	}, &rolesRes)
-	fault.PanicOnErr(err)
-
-	if rolesRes.ClientError != nil {
-		return nil, rolesRes.ClientError
-	}
-
-	roles := make([]itAuthorize.Subject, 0, len(rolesRes.Data))
-	for _, r := range rolesRes.Data {
-		roles = append(roles, itAuthorize.Subject{
-			Type: itAuthorize.WrapSubjectType(itAuthorize.SubjectTypeRole.String()),
-			Ref:  *r.Id,
-		})
-	}
-	return roles, nil
-}
-
-func (this *AuthorizeServiceImpl) getGroupSuiteRoles(ctx context.Context, groupRef string) ([]itAuthorize.Subject, error) {
-	suitesRes := itSuite.GetRoleSuitesBySubjectResult{}
-	err := this.cqrsBus.Request(ctx, itSuite.GetRoleSuitesBySubjectQuery{
-		SubjectType: *domain.WrapEntitlementAssignmentSubjectType(domain.EntitlementAssignmentSubjectTypeNikkiGroup.String()),
-		SubjectRef:  groupRef,
-	}, &suitesRes)
-	fault.PanicOnErr(err)
-
-	if suitesRes.ClientError != nil {
-		return nil, suitesRes.ClientError
-	}
-
-	roles := make([]itAuthorize.Subject, 0)
-	for _, su := range suitesRes.Data {
-		for _, r := range su.Roles {
-			roles = append(roles, itAuthorize.Subject{
-				Type: itAuthorize.WrapSubjectType(itAuthorize.SubjectTypeRole.String()),
-				Ref:  *r.Id,
-			})
-		}
-	}
-	return roles, nil
-}
-
 func (this *AuthorizeServiceImpl) getSuiteRoles(ctx context.Context, suiteRef string) ([]itAuthorize.Subject, error) {
-	suiteRes := itSuite.GetRoleSuiteByIdResult{}
-	err := this.cqrsBus.Request(ctx, itSuite.GetRoleSuiteByIdQuery{
+	suiteRes, err := this.entSuiteRepo.FindById(ctx, itSuite.FindByIdParam{
 		Id: suiteRef,
-	}, &suiteRes)
+	})
 	fault.PanicOnErr(err)
 
-	if suiteRes.ClientError != nil {
-		return nil, suiteRes.ClientError
+	if suiteRes == nil {
+		return nil, nil
 	}
 
-	roles := make([]itAuthorize.Subject, 0, len(suiteRes.Data.Roles))
-	for _, r := range suiteRes.Data.Roles {
+	roles := make([]itAuthorize.Subject, 0, len(suiteRes.Roles))
+	for _, role := range suiteRes.Roles {
 		roles = append(roles, itAuthorize.Subject{
-			Type: itAuthorize.WrapSubjectType(itAuthorize.SubjectTypeRole.String()),
-			Ref:  *r.Id,
+			Type: itAuthorize.SubjectTypeAuthorize(itAuthorize.SubjectTypeRole.String()),
+			Ref:  *role.Id,
 		})
 	}
 	return roles, nil
@@ -237,64 +185,84 @@ func (this *AuthorizeServiceImpl) getAssignmentsForSubjects(ctx context.Context,
 	assignments := []*domain.EntitlementAssignment{}
 
 	for _, subject := range subjects {
-		query := itAssignt.GetAllEntitlementAssignmentBySubjectQuery{
+		res, err := this.entAssignmentRepo.FindAllBySubject(ctx, itAssign.FindBySubjectParam{
 			SubjectType: domain.EntitlementAssignmentSubjectType(subject.Type.String()),
-			SubjectRef:  subject.Ref,
-		}
-		assignmentsRes := itAssignt.GetAllEntitlementAssignmentBySubjectResult{}
-		err := this.cqrsBus.Request(ctx, query, &assignmentsRes)
+			SubjectRef:  model.Id(subject.Ref),
+		})
 		fault.PanicOnErr(err)
 
-		if assignmentsRes.ClientError != nil {
-			return nil, assignmentsRes.ClientError
-		}
-
-		assignments = append(assignments, assignmentsRes.Data...)
+		assignments = append(assignments, res...)
 	}
 
 	return assignments, nil
 }
 
 func (this *AuthorizeServiceImpl) matchAssignment(assignment *domain.EntitlementAssignment, query itAuthorize.IsAuthorizedQuery) bool {
-	// 1. Action: If ActionName is nil, allow all action. If not nil, must match actionName
-	if assignment.ActionName != nil && *assignment.ActionName != *query.ActionName {
+	if assignment.Entitlement == nil {
 		return false
 	}
 
-	// 2. Resource: If ResourceName is nil, allow all resource. If not nil, must match resourceName
-	if assignment.ResourceName != nil && *assignment.ResourceName != *query.ResourceName {
-		return false
-	}
-
-	// 3. Scope: If assignment doesn't have Entitlement or Entitlement doesn't have ScopeRef, allow all scope
-	if assignment.Entitlement == nil || assignment.Entitlement.ScopeRef == nil {
-		return true
-	}
-
-	if assignment.Entitlement.Resource != nil && assignment.Entitlement.Resource.ScopeType != nil {
-		switch *assignment.Entitlement.Resource.ScopeType {
-		case "domain":
-			return true
-		case "org":
-			if query.ScopeRef != nil && *assignment.Entitlement.ScopeRef == *query.ScopeRef {
-				return true
-			}
-			return false
-		case "hierarchy":
-			if query.ScopeRef == nil && *assignment.Entitlement.ScopeRef == *query.ScopeRef {
-				return true
-			}
-			return false
-		default:
+	if assignment.ActionName != nil {
+		if *assignment.ActionName != query.ActionName {
 			return false
 		}
 	}
 
-	if query.ScopeRef != nil && *assignment.Entitlement.ScopeRef == *query.ScopeRef {
-		return true
+	if assignment.ResourceName != nil {
+		if *assignment.ResourceName != query.ResourceName {
+			return false
+		}
+	}
+
+	if assignment.Entitlement.Resource != nil {
+		if assignment.Entitlement.Resource.ScopeType == nil {
+			return true
+		}
+		if assignment.Entitlement.Resource.ScopeType != nil {
+			switch *assignment.Entitlement.Resource.ScopeType {
+			case "domain":
+				return true
+			case "org", "hierarchy":
+				if assignment.Entitlement.ScopeRef == nil {
+					return true
+				}
+				if *assignment.Entitlement.ScopeRef == query.ScopeRef {
+					return true
+				}
+				return false
+			default:
+				return false
+			}
+		}
 	}
 
 	return false
+}
+
+func (this *AuthorizeServiceImpl) validateResource(ctx context.Context, resourceName string, vErrs *fault.ValidationErrors) (*domain.Resource, error) {
+	resource, err := this.entResourceRepo.FindByName(ctx, itResource.FindByNameParam{Name: resourceName})
+	fault.PanicOnErr(err)
+
+	if resource == nil {
+		vErrs.AppendNotFound("resource name", resourceName)
+	}
+
+	return resource, nil
+}
+
+func (this *AuthorizeServiceImpl) validateAction(ctx context.Context, actionName string, resource *domain.Resource, vErrs *fault.ValidationErrors) error {
+	if resource == nil {
+		return nil
+	}
+
+	action, err := this.entActionRepo.FindByName(ctx, itAction.FindByNameParam{Name: actionName, ResourceId: *resource.Id})
+	fault.PanicOnErr(err)
+
+	if action == nil {
+		vErrs.AppendNotFound("action name", actionName)
+	}
+
+	return nil
 }
 
 func uniqueSubjects(subjects []itAuthorize.Subject) []itAuthorize.Subject {

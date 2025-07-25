@@ -6947,6 +6947,34 @@
 							]
 						},
 						{
+							"name": "Resource - Delete",
+							"item": [
+								{
+									"name": "New Request",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"subject\": {\n        \"type\": \"nikki_group\",\n        \"ref\": \"01JWNXBR5QJBH7PE9PQ9FW746V\"\n    }\n}"
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/id",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"id"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
 							"name": "Resource - Get by name",
 							"item": [
 								{
@@ -7872,6 +7900,34 @@
 												"authorize",
 												"actions",
 												"01JZQ2A5K04QSBPK2SCYFH4PJ1"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Action - Delete",
+							"item": [
+								{
+									"name": "New Request",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"subject\": {\n        \"type\": \"nikki_group\",\n        \"ref\": \"01JWNXBR5QJBH7PE9PQ9FW746V\"\n    }\n}"
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/id",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"id"
 											]
 										}
 									},
@@ -8863,6 +8919,34 @@
 												"authorize",
 												"entitlements",
 												"{{entitlement_id}}"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Entitlement - Delete",
+							"item": [
+								{
+									"name": "New Request",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"subject\": {\n        \"type\": \"nikki_group\",\n        \"ref\": \"01JWNXBR5QJBH7PE9PQ9FW746V\"\n    }\n}"
+										},
+										"url": {
+											"raw": "{{api_host}}/v1/authorize/id",
+											"host": [
+												"{{api_host}}"
+											],
+											"path": [
+												"v1",
+												"authorize",
+												"id"
 											]
 										}
 									},
@@ -9903,7 +9987,7 @@
 							"name": "Role suite - Create",
 							"item": [
 								{
-									"name": "Role suite Create - Create",
+									"name": "Role suite Create - Success",
 									"event": [
 										{
 											"listen": "prerequest",
@@ -10508,116 +10592,1355 @@
 					"name": "IsAuthorize",
 					"item": [
 						{
-							"name": "IsAuthorize - User / Group",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"actionName\": \"ViewxivQYo\",\n    \"resourceName\": \"AuthProducth0vJDU\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n    \"subject\": {\n        \"type\": \"nikki_user\",\n        \"ref\": \"01JZQFFDKY8T4JB8R6NSY1331J\"\n    }\n}",
-									"options": {
-										"raw": {
-											"language": "json"
+							"name": "IsAuthorize - User",
+							"item": [
+								{
+									"name": "IsAuthorize User - Direct Assignment",
+									"item": [
+										{
+											"name": "Allow (View:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYH1\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JZQFY6EXRG0959Z95Y2EM3AM\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Allow (*:*.*)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"Grant\",\n    \"resourceName\": \"AuthzEntitlement\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong scopeRef (View:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYH2\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JZQFY6EXRG0959Z95Y2EM3AM\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong subjectRef (View:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYH1\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JZQFY6EXRG0959Z95Y2EM3AT\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Invalid fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Validate fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"subjectType\": \"invalid_value\",\n    \"subjectRef\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Not found",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"Grant1\",\n    \"resourceName\": \"AuthzEntitlement\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYH1\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JWNMZ36QHC7CQQ748H9NQ6J6\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
 										}
-									}
-								},
-								"url": {
-									"raw": "{{api_host}}/v1/authorize/isauthorized",
-									"host": [
-										"{{api_host}}"
-									],
-									"path": [
-										"v1",
-										"authorize",
-										"isauthorized"
 									]
+								},
+								{
+									"name": "IsAuthorize User - Belong to Group",
+									"item": [
+										{
+											"name": "Allow (View:*.AuthzEntitlement)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"AuthzEntitlement\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JWNXT3EY7FG47VDJTEPTDC98\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Allow (View:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYH1\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JWNXT3EY7FG47VDJTEPTDC98\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong scopeType (View:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JWNXT3EY7FG47VDJTEPTDC98\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Invalid fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Validate fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"subjectType\": \"invalid_value\",\n    \"subjectRef\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "IsAuthorize User - Belong to Role",
+									"item": [
+										{
+											"name": "Allow (*:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABKDT1\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JZQFDH0N51Q3BFQFMFFGSCSV\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Allow (*:*.IdentityGroup)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"Create\",\n    \"resourceName\": \"IdentityGroup\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JZQFDH0N51Q3BFQFMFFGSCSV\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong scopeRef (*:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABKDT2\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JZQFDH0N51Q3BFQFMFFGSCSV\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong subjectRef (*:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"Create\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABKDT1\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JZQFDH0N51Q3BFQFMFFGSCCC\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Invalid fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Validate fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"subjectType\": \"invalid_value\",\n    \"subjectRef\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Not found",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"Grant\",\n    \"resourceName\": \"IdentityGroup\",\n    \"subjectType\": \"nikki_user\",\n    \"subjectRef\": \"01JZQFDH0N51Q3BFQFMFFGSCSV\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "IsAuthorize User - Belong to Suite (Similar to role)",
+									"item": []
 								}
-							},
-							"response": []
+							]
 						},
 						{
-							"name": "IsAuthorize - Role / Role suite",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"resourceName\": \"AuthzEntitlement\",\n    \"subject\": {\n        \"type\": \"nikki_role\",\n        \"ref\": \"01K0B8CSA7E1WHX5M0752MHQW3\"\n    }\n}",
-									"options": {
-										"raw": {
-											"language": "json"
+							"name": "IsAuthorize - Group",
+							"item": [
+								{
+									"name": "IsAuthorize Group - Direct Assignment",
+									"item": [
+										{
+											"name": "Allow (*:*.AuthzResource)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"Update\",\n    \"resourceName\": \"AuthzResource\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_group\",\n    \"subjectRef\": \"01JWNXBR5QJBH7PE9PQ9FW746V\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong subjectRef (*:*.AuthzResource)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"Update\",\n    \"resourceName\": \"AuthzResource\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_group\",\n    \"subjectRef\": \"01JWNXBR5QJBH7PE9PQ9FW746T\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Invalid fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Validate fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"subjectType\": \"invalid_value\",\n    \"subjectRef\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Not found",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"Update1\",\n    \"resourceName\": \"AuthzResource2\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_group\",\n    \"subjectRef\": \"01JWNXBR5QJBH7PE9PQ9FW746V\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
 										}
-									}
+									]
 								},
-								"url": {
-									"raw": "{{api_host}}/v1/authorize/isauthorized",
-									"host": [
-										"{{api_host}}"
-									],
-									"path": [
-										"v1",
-										"authorize",
-										"isauthorized"
+								{
+									"name": "IsAuthorize Group - Belong to Role (Similar to suite)",
+									"item": []
+								},
+								{
+									"name": "IsAuthorize Group - Belong to Suite",
+									"item": [
+										{
+											"name": "Allow (View:*.AuthzEntitlement)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"AuthzEntitlement\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_group\",\n    \"subjectRef\": \"01JWNXBR5QJBH7PE9PQ9FW746V\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Allow (View:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYH1\",\n    \"subjectType\": \"nikki_group\",\n    \"subjectRef\": \"01JWNXBR5QJBH7PE9PQ9FW746V\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong scopeRef (View:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYH2\",\n    \"subjectType\": \"nikki_group\",\n    \"subjectRef\": \"01JWNXBR5QJBH7PE9PQ9FW746V\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong subjectRef (View:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYH1\",\n    \"subjectType\": \"nikki_group\",\n    \"subjectRef\": \"01JWNXBR5QJBH7PE9PQ9FW746C\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Invalid fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Validate fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"subjectType\": \"invalid_value\",\n    \"subjectRef\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Not found",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"InvalidAcion\",\n    \"resourceName\": \"AuthzEntitlement\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_group\",\n    \"subjectRef\": \"01JWNXBR5QJBH7PE9PQ9FW746V\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										}
 									]
 								}
-							},
-							"response": []
+							]
 						},
 						{
-							"name": "IsAuthorize - User / Group in role_user table",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"AuthProduct1\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABQYHD\",\n    \"subject\": {\n        \"type\": \"nikki_role\",\n        \"ref\": \"01JZQFFDKY8T4JB8R6NSY1331J\"\n    }\n}",
-									"options": {
-										"raw": {
-											"language": "json"
+							"name": "IsAuthorize - Role",
+							"item": [
+								{
+									"name": "IsAuthorize Role - Direct Assignment",
+									"item": [
+										{
+											"name": "Allow (View:*.AuthzEntitlement)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"AuthzEntitlement\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_role\",\n    \"subjectRef\": \"01JWP80S5RXP8BD4YCY8ZHP7NZ\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Allow (*:*.IdentityGroup)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityGroup\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_role\",\n    \"subjectRef\": \"01JWPB7TC3CG1EB567WYQCJM79\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Allow (*:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABKDT1\",\n    \"subjectType\": \"nikki_role\",\n    \"subjectRef\": \"01JWPB7TC3CG1EB567WYQCJM79\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong scopeRef (*:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"InvalidScope\",\n    \"subjectType\": \"nikki_role\",\n    \"subjectRef\": \"01JWPB7TC3CG1EB567WYQCJM79\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong subjectRef (*:scopeRef.IdentityUser)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"scopeRef\": \"01JWNY20G23KD4RV5VWYABKDT1\",\n    \"subjectType\": \"nikki_role\",\n    \"subjectRef\": \"01JWPB7TC3CG1EB567WYQCJACK\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Invalid fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Validate fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"subjectType\": \"invalid_value\",\n    \"subjectRef\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Not found (*:*.IdentityGroup)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View1\",\n    \"resourceName\": \"IdentityGroup2\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_role\",\n    \"subjectRef\": \"01JWPB7TC3CG1EB567WYQCJM79\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
 										}
-									}
-								},
-								"url": {
-									"raw": "{{api_host}}/v1/authorize/isauthorized",
-									"host": [
-										"{{api_host}}"
-									],
-									"path": [
-										"v1",
-										"authorize",
-										"isauthorized"
 									]
 								}
-							},
-							"response": []
+							]
 						},
 						{
-							"name": "IsAuthorize - User / Group in rolesuite_user table",
-							"request": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityUser\",\n    \"subject\": {\n        \"type\": \"nikki_group\",\n        \"ref\": \"01JWNXBR5QJBH7PE9PQ9FW746V\"\n    }\n}",
-									"options": {
-										"raw": {
-											"language": "json"
+							"name": "IsAuthorize - Suite",
+							"item": [
+								{
+									"name": "IsAuthorize Suite - Belong to Role",
+									"item": [
+										{
+											"name": "Allow (View:*.IdentityGroup)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityGroup\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_suite\",\n    \"subjectRef\": \"01JWP9MVYX0K24R9H81SZEM7CE\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Allow (View:*.AuthzRoleSuite)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"AuthzRoleSuite\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_suite\",\n    \"subjectRef\": \"01JWP9MVYX0K24R9H81SZEM7CE\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong subjectRef (View:*.IdentityGroup)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"IdentityGroup\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_suite\",\n    \"subjectRef\": \"01JWP9MVYX0K24R9H81SZEM7CC\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Deny - Wrong subjectRef (View:*.AuthzRoleSuite)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View\",\n    \"resourceName\": \"AuthzRoleSuite\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_suite\",\n    \"subjectRef\": \"01JWP9MVYX0K24R9H81SZEM7CC\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Invalid fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"invalid_field\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Validate fields",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"subjectType\": \"invalid_value\",\n    \"subjectRef\": \"invalid_value\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Client error - Not found (View:*.AuthzRoleSuite)",
+											"request": {
+												"method": "POST",
+												"header": [],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n    \"actionName\": \"View1\",\n    \"resourceName\": \"AuthzRoleSuite\",\n    \"scopeRef\": \"uuidToScope\",\n    \"subjectType\": \"nikki_suite\",\n    \"subjectRef\": \"01JWP9MVYX0K24R9H81SZEM7CE\"\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{api_host}}/v1/authorize/isauthorized",
+													"host": [
+														"{{api_host}}"
+													],
+													"path": [
+														"v1",
+														"authorize",
+														"isauthorized"
+													]
+												}
+											},
+											"response": []
 										}
-									}
-								},
-								"url": {
-									"raw": "{{api_host}}/v1/authorize/isauthorized",
-									"host": [
-										"{{api_host}}"
-									],
-									"path": [
-										"v1",
-										"authorize",
-										"isauthorized"
 									]
 								}
-							},
-							"response": []
+							]
 						}
 					]
 				}
