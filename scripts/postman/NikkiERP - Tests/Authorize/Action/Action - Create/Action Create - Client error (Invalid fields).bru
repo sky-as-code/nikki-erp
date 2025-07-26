@@ -1,0 +1,72 @@
+meta {
+  name: Action Create - Client error (Invalid fields)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authorize/actions
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "invalid_field": "invalid_value"
+  }
+}
+
+script:post-response {
+  // ✅ Test status code
+  let isStatusValid = false;
+  test("Status code is 400", function () {
+      isStatusValid = res.getStatus() === 400;
+      expect(isStatusValid).to.be.true;
+  });
+  
+  // ✅ Parse response body safely
+  let body;
+  let isJsonValid = true;
+  try {
+      body = res.getBody();
+  } catch (e) {
+      isJsonValid = false;
+      expect.fail("❌ Response body is not valid JSON");
+  }
+  
+  // ✅ Validate error code
+  let isCodeValid = false;
+  if (isStatusValid && isJsonValid) {
+      test("Error code is validation_error", function () {
+          expect(body).to.have.property("code", "validation_error");
+          isCodeValid = true;
+      });
+  } else {
+      console.warn("⚠️ Skipping error code test due to invalid status or JSON");
+  }
+  
+  // ✅ Validate expected invalid fields
+  if (isStatusValid && isJsonValid && isCodeValid) {
+      test("Contains all expected invalid fields", function () {
+          const expectedErrors = ["name", "createdBy", "resourceId"];
+          expect(body).to.have.property("details");
+  
+          for (const field of expectedErrors) {
+              expect(body.details).to.have.property(field);
+              expect(body.details[field]).to.be.a("string").and.not.empty;
+          }
+      });
+  } else {
+      console.warn("⚠️ Skipping field validation due to earlier failure");
+  }
+  
+  // ✅ Debug log
+  if (isJsonValid) {
+      console.log("🧪 Validation error response:", body);
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

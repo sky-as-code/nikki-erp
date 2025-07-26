@@ -1,0 +1,25 @@
+meta {
+  name: IsAuthorize - Role / Role suite
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "resourceName": "AuthzEntitlement",
+      "subject": {
+          "type": "nikki_role",
+          "ref": "01K0B8CSA7E1WHX5M0752MHQW3"
+      }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

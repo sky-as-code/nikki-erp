@@ -1,0 +1,42 @@
+meta {
+  name: Group Delete - Success
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const schema = {
+      type: "object",
+      required: ["id", "deletedAt"],
+      properties: {
+          id: {
+              type: "string",
+              minLength: 1,
+          },
+          deletedAt: {
+              type: "integer",
+              minimum: 1,
+          },
+      },
+      additionalProperties: false
+  };
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

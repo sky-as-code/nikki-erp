@@ -1,0 +1,39 @@
+meta {
+  name: Resource Create- Client error (Not found)
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{api_host}}/v1/authorize/resources/01JZQ0R0AF76T1TNZ84CAB8PM1
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "description": "Description",
+      "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  test("Status code is 400", function () {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Returns validation_error code", function () {
+      const json = res.getBody();
+      expect(json.code).to.eql("validation_error");
+  });
+  
+  test("Returns 'resource not found' on id", function () {
+      const json = res.getBody();
+      expect(json.details).to.have.property("id", "resource not found");
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

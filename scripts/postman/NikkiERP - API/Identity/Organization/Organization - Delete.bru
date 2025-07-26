@@ -1,0 +1,15 @@
+meta {
+  name: Organization - Delete
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{api_host}}/v1/identity/organizations/{{org_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

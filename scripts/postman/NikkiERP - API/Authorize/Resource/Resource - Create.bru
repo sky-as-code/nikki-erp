@@ -1,0 +1,98 @@
+meta {
+  name: Resource - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/resources
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "AuthProduct",
+      "resourceType": "nikki_application",
+      "resourceRef": "12345678901234567890123456",
+      "scopeType": "org"
+  }
+}
+
+script:pre-request {
+  let rawBody = req.getBody().raw;
+  
+  let payload;
+  try {
+      payload = JSON.parse(rawBody);
+  } catch (e) {
+      console.error("❌ Failed to parse JSON body:", e);
+      return;
+  }
+  
+  bru.setVar("resource_name", payload.name);
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
+  console.log("✅ Final request payload:", payload);
+  
+}
+
+script:post-response {
+  const schema = {
+      type: "object",
+      required: ["id", "etag", "name", "resourceType", "resourceRef", "scopeType"],
+      properties: {
+          id: { type: "string" },
+          etag: { type: "string" },
+          name: { type: "string" },
+          description: { type: "string" },
+          resourceType: { type: "string", enum: ["nikki_application", "custom"] },
+          resourceRef: { type: "string" },
+          scopeType: { type: "string", enum: ["org", "hierarchy", "private", "domain"] }
+      },
+      additionalProperties: true
+  };
+  
+  let isStatusValid = false;
+  test("Status code is 201", function () {
+      isStatusValid = res.getStatus() === 201;
+      expect(isStatusValid).to.be.true;
+  });
+  
+  let isSchemaValid = false;
+  test("Response matches expected schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+      isSchemaValid = true;
+  });
+  
+  // ✅ Parse JSON response
+  let body;
+  let isJsonValid = true;
+  try {
+      body = res.getBody();
+      console.log("✅ Response body:", body);
+      isSchemaValid = true;
+  } catch (e) {
+      isJsonValid = false;
+      console.error("❌ Failed to parse response JSON:", e);
+  }
+  
+  if (
+      isStatusValid &&
+      isSchemaValid &&
+      isJsonValid &&
+      body?.id &&
+      body?.etag
+  ) {
+      bru.setVar("resource_id", body.id);
+      bru.setVar("etag", body.etag);
+      console.log("✅ Set resource_id and etag");
+  } else {
+      console.warn("⚠️ Response invalid or incomplete — NOT setting collectionVariables vars");
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

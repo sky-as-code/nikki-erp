@@ -1,0 +1,20 @@
+meta {
+  name: User - Search By Group
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api_host}}/v1/identity/users?graph={"if":["groups.id", "=", "{{group_id}}"]}&withGroups=true
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"if":["groups.id", "=", "{{group_id}}"]}
+  withGroups: true
+}
+
+settings {
+  encodeUrl: true
+}

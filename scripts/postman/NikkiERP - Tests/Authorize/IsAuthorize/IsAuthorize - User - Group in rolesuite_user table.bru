@@ -1,0 +1,26 @@
+meta {
+  name: IsAuthorize - User / Group in rolesuite_user table
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "View",
+      "resourceName": "IdentityUser",
+      "subject": {
+          "type": "nikki_group",
+          "ref": "01JWNXBR5QJBH7PE9PQ9FW746V"
+      }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

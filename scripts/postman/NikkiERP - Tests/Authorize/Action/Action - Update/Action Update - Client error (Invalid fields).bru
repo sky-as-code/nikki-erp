@@ -1,0 +1,78 @@
+meta {
+  name: Action Update - Client error (Invalid fields)
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/authorize/actions/{{action_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "invalid_field": "invalid_field"
+  }
+}
+
+script:post-response {
+  // ✅ Check status code is 400
+  let isStatus400 = false;
+  test("Status code is 400", function () {
+      isStatus400 = res.getStatus() === 400;
+      expect(isStatus400).to.be.true;
+  });
+  
+  // ✅ Define expected validation error schema
+  const schema = {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+          code: { type: "string", const: "validation_error" },
+          details: {
+              type: "object",
+              properties: {
+                  etag: { type: "string", const: "cannot be blank" }
+              },
+              additionalProperties: true
+          }
+      },
+      additionalProperties: true
+  };
+  
+  // ✅ Parse response body
+  let body;
+  let isJsonValid = true;
+  
+  try {
+      body = res.getBody();
+  } catch (e) {
+      isJsonValid = false;
+      expect.fail("❌ Failed to parse response JSON");
+  }
+  
+  if (isStatus400 && isJsonValid) {
+      test("Response matches expected validation error schema", function () {
+          expect(tv4.validate(body, schema)).to.be.true;
+      });
+  
+      test("Error message contains 'etag: cannot be blank'", function () {
+          expect(body.details).to.have.property("etag", "cannot be blank");
+      });
+  
+      console.log("⚠️ Error response body:", body);
+  }
+  
+  // ✅ Ensure etag is NOT modified
+  test("Environment variable 'etag' is NOT updated on error", function () {
+      const currentEtag = bru.getVar("etag");
+      expect(currentEtag).to.not.eql(null);
+      expect(currentEtag).to.not.eql(undefined);
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

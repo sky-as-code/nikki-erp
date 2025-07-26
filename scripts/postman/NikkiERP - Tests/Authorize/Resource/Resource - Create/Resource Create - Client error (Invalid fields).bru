@@ -1,0 +1,91 @@
+meta {
+  name: Resource Create - Client error (Invalid fields)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authorize/resources
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "resourceType": "invalid_type",
+      "scopeType": "invalid_scope"
+  }
+}
+
+script:post-response {
+  // ✅ Expected error schema for validation errors
+  const errorSchema = {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+          code: { type: "string", enum: ["validation_error"] },
+          details: {
+              type: "object",
+              additionalProperties: { type: "string" }
+          }
+      },
+      additionalProperties: true
+  };
+  
+  // ✅ Test: status code
+  let isStatusValid = false;
+  test("Status code is 400", function () {
+      isStatusValid = res.getStatus() === 400;
+      expect(isStatusValid).to.be.true;
+  });
+  
+  // ✅ Parse response JSON
+  let body;
+  let isJsonValid = true;
+  try {
+      body = res.getBody();
+      console.log("📥 Parsed error response:", body);
+  } catch (err) {
+      isJsonValid = false;
+      console.error("❌ Failed to parse JSON response:", err);
+      expect.fail("Response is not valid JSON");
+  }
+  
+  // ✅ Validate schema
+  let isSchemaValid = false;
+  if (isJsonValid) {
+      test("Error response matches expected schema", function () {
+          expect(body).to.have.jsonSchema(errorSchema);
+          isSchemaValid = true;
+      });
+  }
+  
+  // ✅ Validate error content only if schema is valid
+  if (isJsonValid && isSchemaValid && isStatusValid) {
+      test("Validation error fields match expected", function () {
+          // Check error code
+          expect(body.code).to.eql("validation_error");
+  
+          // Check each expected field and message
+          const expectedFields = {
+              name: "cannot be blank",
+              resourceType: "must be a valid value",
+              scopeType: "must be a valid value"
+          };
+  
+          Object.entries(expectedFields).forEach(([key, expectedMsg]) => {
+              expect(body.details).to.have.property(key);
+              expect(body.details[key]).to.eql(expectedMsg);
+          });
+  
+          console.log("✅ Validation error details matched:", body.details);
+      });
+  } else {
+      console.warn("⚠️ Invalid error response — skipping validation detail checks and no env will be set");
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

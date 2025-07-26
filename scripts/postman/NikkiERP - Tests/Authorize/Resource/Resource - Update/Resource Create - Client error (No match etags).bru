@@ -1,0 +1,39 @@
+meta {
+  name: Resource Create - Client error (No match etags)
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "description": "Description",
+      "etag": "1752032294635863001"
+  }
+}
+
+script:post-response {
+  test("Status code is 400", function () {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Returns validation_error code", function () {
+      const json = res.getBody();
+      expect(json.code).to.eql("validation_error");
+  });
+  
+  test("Returns etag conflict message", function () {
+      const json = res.getBody();
+      expect(json.details).to.have.property("etag", "resource has been modified by another process");
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

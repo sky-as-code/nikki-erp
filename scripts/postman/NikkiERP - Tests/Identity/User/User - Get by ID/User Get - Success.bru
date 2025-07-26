@@ -1,0 +1,67 @@
+meta {
+  name: User Get - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/identity/users/{{user_id}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const schema = {
+      type: "object",
+      required: ["id", "createdAt", "displayName", "email", "etag", "status"],
+      properties: {
+          id: {
+              type: "string",
+              minLength: 1,
+          },
+          avatarUrl: {
+              type: "string",
+              format: "uri",
+          },
+          createdAt: {
+              type: "integer",
+              minimum: 1,
+          },
+          displayName: {
+              type: "string",
+              minLength: 1,
+          },
+          email: {
+              type: "string",
+              format: "email",
+              minLength: 1,
+          },
+          etag: {
+              type: "string",
+              minLength: 1,
+          },
+          status: {
+              type: "string",
+              minLength: 1,
+          },
+          updatedAt: {
+              type: "integer",
+              minimum: 1,
+          }
+      },
+      additionalProperties: false
+  };
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

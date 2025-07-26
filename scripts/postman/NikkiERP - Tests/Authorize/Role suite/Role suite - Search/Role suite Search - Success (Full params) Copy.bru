@@ -1,0 +1,21 @@
+meta {
+  name: Role suite Search - Success (Full params) Copy
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/authorize/role-suites?page=0&size=4&graph={"if":["name", "=", "Org Intern Suite 104JgY"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 4
+  graph: {"if":["name", "=", "Org Intern Suite 104JgY"]}
+}
+
+settings {
+  encodeUrl: true
+}

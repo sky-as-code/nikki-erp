@@ -1,0 +1,76 @@
+meta {
+  name: Action - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/authorize/actions/{{action_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "description": "Description",
+      "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  let isStatusValid = false;
+  test("Status code is 200", function () {
+      isStatusValid = res.getStatus() === 200;
+      expect(isStatusValid).to.be.true;
+  });
+  
+  const schema = {
+      type: "object",
+      required: ["id", "etag"],
+      properties: {
+          id: { type: "string" },
+          etag: { type: "string" },
+          name: { type: "string" },
+          description: { type: "string" },
+          resourceId: { type: "string" },
+          createdBy: { type: "string" }
+      },
+      additionalProperties: true
+  };
+  
+  let body;
+  let isJsonValid = true;
+  let isSchemaValid = false;
+  
+  try {
+      body = res.getBody();
+  } catch (e) {
+      isJsonValid = false;
+      expect.fail("❌ JSON parse failed");
+  }
+  
+  if (isStatusValid && isJsonValid) {
+      test("Response matches schema", function () {
+          expect(tv4.validate(body, schema)).to.be.true;
+          isSchemaValid = true;
+      });
+  } else {
+      console.warn("⚠️ Skip schema test due to invalid status or JSON");
+  }
+  
+  if (isStatusValid && isJsonValid && isSchemaValid && body.etag) {
+      bru.setVar("etag", body.etag);
+      console.log("✅ Updated etag:", body.etag);
+  } else {
+      console.warn("🚫 Not updating etag due to failed checks");
+  }
+  
+  if (isJsonValid) {
+      console.log("📦 Response body:", body);
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

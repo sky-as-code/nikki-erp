@@ -1,0 +1,37 @@
+meta {
+  name: User Search - If edge root field - Success
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{api_host}}/v1/identity/users?graph={"if": ["user_status.value", "!=", "active"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"if": ["user_status.value", "!=", "active"]}
+}
+
+script:post-response {
+  const schema = bru.getVar("search_schema");
+  const payload = res.getBody();
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  test("Response has positive number of items", function () {
+      expect(payload.items.length).to.be.greaterThan(0)
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

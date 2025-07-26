@@ -1,0 +1,29 @@
+meta {
+  name: Hierarchy - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/identity/hierarchy/{{hierarchy_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "Ngan Hang MBank",
+      "parentId" : "01K0G5JN9AGHPT5R9C1JS2PGW5",
+      "etag" : "{{etag}}"
+  }
+}
+
+script:post-response {
+  const payload = res.getBody();
+  const { etag } = payload;
+  etag && bru.setVar('etag', etag);
+}
+
+settings {
+  encodeUrl: true
+}

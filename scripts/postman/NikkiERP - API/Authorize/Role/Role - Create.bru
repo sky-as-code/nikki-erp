@@ -1,0 +1,95 @@
+meta {
+  name: Role - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/roles
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "Authorize module Product Manager",
+      "ownerType": "user",
+      "ownerRef": "{{user_id}}",
+      "isRequestable": false,
+      "isRequiredAttachment": false,
+      "isRequiredComment": false,
+      "createdBy": "{{user_id}}",
+      "entitlements": ["{{entitlement_id}}"]
+  }
+}
+
+script:pre-request {
+  let rawBody = req.getBody().raw;
+  let payload;
+  try {
+      payload = JSON.parse(rawBody);
+  } catch (e) {
+      console.error("❌ Failed to parse JSON body:", e);
+      return;
+  }
+  
+  // Save generated name for later use
+  bru.setVar("role_name", payload.name);
+  
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  console.log("✅ Final payload for create role:", payload);
+  
+}
+
+script:post-response {
+  let isStatus201 = false;
+  test("Status code is 201", function () {
+      isStatus201 = res.getStatus() === 201;
+      expect(isStatus201).to.be.true;
+  });
+  
+  const schema = {
+      type: "object",
+      required: ["id", "etag", "createdAt"],
+      properties: {
+          id: { type: "string" },
+          etag: { type: "string" },
+          createdAt: { type: "integer" },
+      },
+      additionalProperties: false
+  };
+  
+  let isSchemaValid = false;
+  let body;
+  let isJsonValid = true;
+  
+  try {
+      body = res.getBody();
+      console.log("✅ Create Role response:", body);
+  } catch (err) {
+      isJsonValid = false;
+      expect.fail("❌ Failed to parse response JSON");
+  }
+  
+  // ✅ validate schema đúng cách
+  if (isJsonValid) {
+      test("Response matches expected schema", function () {
+          const valid = tv4.validate(body, schema);
+          expect(valid).to.be.true;
+          isSchemaValid = valid;
+      });
+  }
+  
+  if (isStatus201 && isJsonValid && isSchemaValid && body?.id && body?.etag) {
+      bru.setVar("role_id", body.id);
+      bru.setVar("etag", body.etag);
+      console.log("✅ Saved role_id and etag to collection variables");
+  } else {
+      console.warn("⚠️ Skipped setting role_id and etag due to invalid response or status");
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

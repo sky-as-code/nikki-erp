@@ -1,0 +1,79 @@
+meta {
+  name: User Search - Create test data - Loop 100
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "displayName": "Tester {{loop_count}}",
+      "email": "tester-{{loop_count}}@nikkierp.com",
+      "password": "p@sswo0rd"
+  }
+}
+
+script:pre-request {
+  // Get original request body as raw text
+  let rawBody = req.getBody().raw;
+  
+  // Parse it as JSON
+  let payload;
+  try {
+      payload = JSON.parse(rawBody);
+  } catch (e) {
+      console.error("Failed to parse request body as JSON:", e);
+      return;
+  }
+  
+  // Generate a 6-char alphanumeric string
+  function randomString(length = 6) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+  }
+  
+  const rand = randomString();
+  
+  if (payload.displayName) {
+      payload.displayName += ' ' + rand;
+  }
+  if (payload.email && payload.email.includes('@')) {
+      const [local, domain] = payload.email.split('@');
+      payload.email = `${local}-${rand}@${domain}`;
+  }
+  
+  // Write modified payload back to request
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
+  console.log('Creating test user: ', payload.displayName)
+}
+
+script:post-response {
+  const myRequestId = "1c4510f0-91f5-46a0-a532-732f5a5fb741"
+  const UserSearch_NoCrit_NoPaging_Success = "58d40e9b-1594-4bf0-99c4-71066ed6ded9"
+  let i = bru.getVar("loop_count");
+  
+  if (i > 0) {
+      bru.setVar("loop_count", --i);
+      console.log("To loop: ", i)
+      bru.runner.setNextRequest(myRequestId);
+  } else {
+      console.log("To test case")
+      bru.deleteVar("loop_count")
+      bru.runner.setNextRequest(UserSearch_NoCrit_NoPaging_Success);
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

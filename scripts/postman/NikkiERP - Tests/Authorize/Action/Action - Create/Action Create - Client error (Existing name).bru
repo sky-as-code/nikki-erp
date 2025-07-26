@@ -1,0 +1,49 @@
+meta {
+  name: Action Create - Client error (Existing name)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/authorize/actions
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "{{resource_name}}",
+      "description": "Description",
+      "resourceId": "{{resource_id}}",
+      "createdBy": "{{user_id}}"
+  }
+}
+
+script:post-response {
+  test("Status code is 400", function () {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  let body;
+  try {
+      body = res.getBody();
+  } catch (e) {
+      console.error("❌ Failed to parse response JSON:", e);
+  }
+  
+  test("Response has validation_error code", function () {
+      expect(body).to.have.property("code", "validation_error");
+  });
+  
+  test("Error message should say name already exists", function () {
+      expect(body.details).to.have.property("name");
+      expect(body.details.name.toLowerCase()).to.include("already exists");
+  });
+  
+  console.log("✅ Duplicate name test response:", body);
+  
+}
+
+settings {
+  encodeUrl: true
+}

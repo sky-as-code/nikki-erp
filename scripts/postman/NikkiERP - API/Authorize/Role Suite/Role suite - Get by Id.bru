@@ -1,0 +1,15 @@
+meta {
+  name: Role suite - Get by Id
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/authorize/role-suites/{{rolesuite_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

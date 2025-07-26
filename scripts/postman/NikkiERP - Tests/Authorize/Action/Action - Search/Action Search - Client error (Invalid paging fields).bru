@@ -1,0 +1,21 @@
+meta {
+  name: Action Search - Client error (Invalid paging fields)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{api_host}}/v1/authorize/actions?page=-1&size=99999999999&graph={"if":["name", "=", "Create"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: -1
+  size: 99999999999
+  graph: {"if":["name", "=", "Create"]}
+}
+
+settings {
+  encodeUrl: true
+}

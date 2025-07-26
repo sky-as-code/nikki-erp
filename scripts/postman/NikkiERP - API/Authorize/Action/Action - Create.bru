@@ -1,0 +1,95 @@
+meta {
+  name: Action - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/actions
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "View",
+      "description": "Description",
+      "resourceId": "{{resource_id}}",
+      "createdBy": "{{user_id}}"
+  }
+}
+
+script:pre-request {
+  let rawBody = req.getBody().raw;
+  
+  let payload;
+  try {
+      payload = JSON.parse(rawBody);
+  } catch (e) {
+      console.error("❌ Failed to parse JSON body:", e);
+      return;
+  }
+  
+  bru.setVar("action_name", payload.name);
+  // Update request body
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  console.log("✅ Final request payload:", payload);
+  
+}
+
+script:post-response {
+  // ✅ Define schema
+  const schema = {
+      type: "object",
+      required: ["id", "etag", "createdAt"],
+      properties: {
+          id: { type: "string" },
+          etag: { type: "string" },
+          createdAt: { type: "integer" },
+          name: { type: "string", pattern: "^[a-zA-Z0-9_-]+$" },
+          description: { type: ["string", "null"] },
+          resourceId: { type: "string" },
+          createdBy: { type: "string" },
+          resource: { type: ["object", "null"] }
+      },
+      additionalProperties: true
+  };
+  
+  let isStatusValid = false;
+  test("Status code is 200 or 201", function () {
+      isStatusValid = [200, 201].includes(res.getStatus());
+      expect(isStatusValid).to.be.true;
+  });
+  
+  let body;
+  let isJsonValid = true;
+  try {
+      body = res.getBody();
+  } catch (e) {
+      isJsonValid = false;
+      expect.fail("❌ Failed to parse response JSON");
+  }
+  
+  let isSchemaValid = false;
+  if (isStatusValid && isJsonValid) {
+      test("Response matches expected schema", function () {
+          expect(tv4.validate(body, schema)).to.be.true;
+          isSchemaValid = true;
+      });
+  } else {
+      console.warn("⚠️ Skip schema check due to invalid status or JSON");
+  }
+  
+  if (isStatusValid && isJsonValid && isSchemaValid) {
+      bru.setVar("action_id", body.id);
+      bru.setVar("etag", body.etag);
+      console.log("📦 Response body:", body);
+  } else {
+      console.warn("🚫 Not updating env due to failed validation");
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,87 @@
+meta {
+  name: Group - Create test Users - Loop 50
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "displayName": "Tester {{loop_count}}",
+      "email": "tester-{{loop_count}}@nikkierp.com",
+      "password": "p@sswo0rd"
+  }
+}
+
+script:pre-request {
+  // Get original request body as raw text
+  let rawBody = req.getBody().raw;
+  
+  // Parse it as JSON
+  let payload;
+  try {
+      payload = JSON.parse(rawBody);
+  } catch (e) {
+      console.error("Failed to parse request body as JSON:", e);
+      return;
+  }
+  
+  // Generate a 6-char alphanumeric string
+  function randomString(length = 6) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+  }
+  
+  const rand = randomString();
+  
+  if (payload.displayName) {
+      payload.displayName += ' ' + rand;
+  }
+  if (payload.email && payload.email.includes('@')) {
+      const [local, domain] = payload.email.split('@');
+      payload.email = `${local}-${rand}@${domain}`;
+  }
+  
+  // Write modified payload back to request
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
+  console.log('Creating test user: ', payload.displayName)
+}
+
+script:post-response {
+  const myRequestId = "7766e8dc-92a4-4c48-a799-623cb196c673"
+  const Group_AddUsers_Success = "a23cccbe-bbfe-4261-8432-892796399d19"
+  let i = bru.getVar("loop_count");
+  
+  if (i > 0) {
+      bru.setVar("loop_count", --i);
+      console.log("To loop: ", i)
+      bru.runner.setNextRequest(myRequestId);
+  } else {
+      console.log("To test case")
+      bru.deleteVar("loop_count")
+      bru.runner.setNextRequest(Group_AddUsers_Success);
+  }
+  
+  const payload = res.getBody();
+  const { id } = payload;
+  
+  if (id) {
+      const groupUserIds = bru.getVar('group_users') || []
+      bru.setVar('group_users', [...groupUserIds, id]);
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

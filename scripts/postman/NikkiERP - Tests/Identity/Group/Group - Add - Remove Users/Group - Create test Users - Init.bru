@@ -1,0 +1,85 @@
+meta {
+  name: Group - Create test Users - Init
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "displayName": "Tester Lead",
+      "email": "tester-lead@nikkierp.com",
+      "password": "p@sswo0rd"
+  }
+}
+
+script:pre-request {
+  // Get original request body as raw text
+  let rawBody = req.getBody().raw;
+  
+  // Parse it as JSON
+  let payload;
+  try {
+      payload = JSON.parse(rawBody);
+  } catch (e) {
+      console.error("Failed to parse request body as JSON:", e);
+      return;
+  }
+  
+  // Generate a 6-char alphanumeric string
+  function randomString(length = 6) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+  }
+  
+  const rand = randomString();
+  
+  if (payload.displayName) {
+      payload.displayName += ' ' + rand;
+  }
+  if (payload.email && payload.email.includes('@')) {
+      const [local, domain] = payload.email.split('@');
+      payload.email = `${local}-${rand}@${domain}`;
+  }
+  
+  // Write modified payload back to request
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
+  console.log('Creating test user: ', payload.displayName)
+}
+
+script:post-response {
+  // // pm.collectionVariables.set("search_schema", schema);
+  
+  /*
+   * Configure loop
+   */
+  const LOOP_COUNT = 50;
+  bru.setVar("loop_count", LOOP_COUNT);
+  
+  const Group_Create_Test_Users_Loop_RequestId = "7766e8dc-92a4-4c48-a799-623cb196c673"
+  
+  console.log(`Creating ${LOOP_COUNT} test records`)
+  bru.runner.setNextRequest(Group_Create_Test_Users_Loop_RequestId);
+  
+  /*
+   * Keep track a list of created User IDs
+   */
+  const payload = res.getBody();
+  const { id } = payload;
+  id && bru.setVar('group_users', [id]);
+  
+}
+
+settings {
+  encodeUrl: true
+}

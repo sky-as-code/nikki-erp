@@ -1,0 +1,58 @@
+meta {
+  name: User Update - Invalid fields - Validation errors
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{api_host}}/v1/identity/users/{{user_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "displayName": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+      "email": "invalid@",
+      "etag": "fake",
+      "password": "short",
+      "orgIds": [""]
+  }
+}
+
+script:post-response {
+  const expected = {
+      code: "validation_error",
+      details: {
+          displayName: "the length must be between 1 and 200",
+          email: "must be a valid email address",
+          etag: "the length must be between 7 and 30",
+          passwordRaw: "the length must be between 8 and 1000",
+          // TODO: Validate orgIds
+      },
+  };
+  
+  // Parse response body
+  let jsonData;
+  try {
+      jsonData = res.getBody();
+  } catch (e) {
+      test("Response is valid JSON", function () {
+          expect.fail("Response is not valid JSON");
+      });
+      return;
+  }
+  
+  test("Status code is 400", function () {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Response body matches expected JSON exactly", function () {
+      expect(jsonData).to.eql(expected);
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

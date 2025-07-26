@@ -1,0 +1,30 @@
+meta {
+  name: User - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/identity/users/{{user_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "avatarUrl": "https://avatar.com/me.jpg",
+      "displayName": "Another Doe",
+      "etag": "{{etag}}"
+  }
+  
+}
+
+script:post-response {
+  const payload = res.getBody();
+  const { etag } = payload;
+  etag && bru.setVar('etag', etag);
+}
+
+settings {
+  encodeUrl: true
+}

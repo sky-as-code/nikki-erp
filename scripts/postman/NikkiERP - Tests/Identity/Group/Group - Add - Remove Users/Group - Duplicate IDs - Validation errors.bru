@@ -1,0 +1,51 @@
+meta {
+  name: Group - Duplicate IDs - Validation errors
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "add": ["01K03ZAZV5MCF483RYAY6CX5AH"],
+      "remove": ["01K03ZAZV5MCF483RYAY6CX5AH"],
+      "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  const expected = {
+      code: "validation_error",
+      details: {
+          add: "add and remove must not contain the same id"
+      },
+  };
+  
+  test("Status code is 400", function () {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  // Parse response body
+  let jsonData;
+  try {
+      jsonData = res.getBody();
+  } catch (e) {
+      test("Response is valid JSON", function () {
+          expect.fail("Response is not valid JSON");
+      });
+      return;
+  }
+  
+  test("Response body matches expected JSON exactly", function () {
+      expect(jsonData).to.eql(expected);
+  });
+}
+
+settings {
+  encodeUrl: true
+}

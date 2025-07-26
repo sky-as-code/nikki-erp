@@ -1,0 +1,61 @@
+meta {
+  name: Role Create - Client error (Existing name)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/authorize/roles
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "{{entitlement_name}}",
+      "isRequestable": false,
+      "isRequiredAttachment": false,
+      "isRequiredComment": false,
+      "createdBy": "{{user_id}}",
+      "ownerType": "user",
+      "ownerRef": "{{user_id}}",
+      "entitlements": ["{{entitlement_id}}"]
+  }
+}
+
+script:post-response {
+  const schema = {
+      type: "object",
+      required: ["id", "etag", "createdAt"],
+      properties: {
+          id: { type: "string" },
+          etag: { type: "string" },
+          createdAt: { type: "number" }
+      },
+      additionalProperties: true
+  };
+  
+  let res;
+  let parsed = true;
+  
+  try {
+      res = res.getBody();
+  } catch (e) {
+      parsed = false;
+      console.error("❌ Failed to parse response JSON:", e);
+  }
+  
+  test("❌ Should return validation error for existing name", function () {
+      expect(res.getStatus()).to.eql(400);
+      if (parsed) {
+          expect(res).to.have.property("code", "validation_error");
+          expect(res.details).to.have.property("name");
+          expect(res.details.name).to.match(/already exists|duplicate/i);
+      }
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,83 @@
+meta {
+  name: Group - Remove Users - Success
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "remove": ["<< Managed by script >>"],
+      "etag": "{{etag}}"
+  }
+}
+
+script:pre-request {
+  let groupUserIds = bru.getVar('group_users') || []
+  
+  if (! Array.isArray(groupUserIds)) {
+      console.warn('Postman bug: groupUserIds was turned to string')
+      groupUserIds = groupUserIds.split(',');
+  }
+  
+  if (!groupUserIds.length) {
+      test("Test data was prepared", function () {
+          expect.fail(`Must create test data and run "Group - Add Users - Success" before running this request`);
+      });
+      bru.runner.skipRequest();
+  }
+  
+  const rawBody = req.getBody().raw;
+  const payload = JSON.parse(rawBody);
+  
+  // Remove the previously-added users from group
+  payload.remove = groupUserIds.slice(groupUserIds.length/2, groupUserIds.length);
+  
+  // Write modified payload back to request
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
+}
+
+script:post-response {
+  const schema = {
+      type: "object",
+      required: ["id", "updatedAt", "etag"],
+      properties: {
+          id: {
+              type: "string",
+              minLength: 1,
+          },
+          updatedAt: {
+              type: "integer",
+              minimum: 1,
+          },
+          etag: {
+              type: "string",
+              minLength: 1,
+          },
+      },
+      additionalProperties: false
+  };
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  const payload = res.getBody();
+  const { etag } = payload;
+  etag && bru.setVar('etag', etag);
+  
+}
+
+settings {
+  encodeUrl: true
+}

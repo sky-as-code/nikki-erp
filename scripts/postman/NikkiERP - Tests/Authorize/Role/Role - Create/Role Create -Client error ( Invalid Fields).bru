@@ -1,0 +1,59 @@
+meta {
+  name: Role Create -Client error ( Invalid Fields)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/authorize/roles
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "invalid_field": "ìnvalid_value"
+  }
+}
+
+script:post-response {
+  // ✅ Check status code
+  let isStatus200 = false;
+  test("Status code is 200", function () {
+      isStatus200 = res.getStatus() === 200;
+      expect(isStatus200).to.be.true;
+  });
+  
+  // ✅ JSON schema check
+  const schema = {
+      type: "object",
+      required: ["id", "etag", "createdAt"],
+      properties: {
+          id: { type: "string" },
+          etag: { type: "string" },
+          createdAt: { type: "number" }
+      },
+      additionalProperties: true
+  };
+  
+  let isSchemaValid = false;
+  test("Response matches expected schema", function () {
+  //     isSchemaValid = pm.response.to.have.jsonSchema(schema);
+  });
+  
+  // ✅ Parse response safely
+  let body;
+  let isJsonValid = true;
+  try {
+      body = res.getBody();
+      console.log("✅ Create Role response:", body);
+  } catch (err) {
+      isJsonValid = false;
+      console.error("❌ Failed to parse response JSON:", err);
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

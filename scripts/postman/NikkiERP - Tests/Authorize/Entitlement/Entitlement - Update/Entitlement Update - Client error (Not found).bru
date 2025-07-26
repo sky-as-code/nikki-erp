@@ -1,0 +1,78 @@
+meta {
+  name: Entitlement Update - Client error (Not found)
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{api_host}}/v1/authorize/entitlements/01K037AZFSS7YSJGST7704WSK2
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "description": "description",
+      "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  let isStatus400 = false;
+  test("Status code is 400", function () {
+      isStatus400 = res.getStatus() === 400;
+      expect(isStatus400).to.be.true;
+  });
+  
+  const schema = {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+          code: { type: "string", const: "validation_error" },
+          details: {
+              type: "object",
+              required: ["id"],
+              properties: {
+                  id: { type: "string", const: "action not found" }
+              },
+              additionalProperties: true
+          }
+      },
+      additionalProperties: true
+  };
+  
+  // ✅ Parse response
+  let body;
+  let isJsonValid = true;
+  try {
+      body = res.getBody();
+  } catch (e) {
+      isJsonValid = false;
+      console.error("❌ Failed to parse response:", e);
+      expect.fail("Response body is not valid JSON");
+  }
+  
+  // ✅ Validate response body against schema
+  if (isStatus400 && isJsonValid) {
+      test("Response matches 'not found' schema", function () {
+          expect(tv4.validate(body, schema)).to.be.true;
+      });
+  
+      test("Error message contains 'id: action not found'", function () {
+          expect(body.details).to.have.property("id", "action not found");
+      });
+  
+      console.log("⚠️ Error response (Not Found):", body);
+  }
+  
+  test("Do not update 'etag' when action is not found", function () {
+      const etag = bru.getVar("etag");
+      expect(etag).to.not.eql(null);
+      expect(etag).to.not.eql(undefined);
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}
