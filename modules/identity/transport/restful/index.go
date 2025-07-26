@@ -12,6 +12,7 @@ func InitRestfulHandlers() error {
 		v1.NewUserRest,
 		v1.NewGroupRest,
 		v1.NewOrganizationRest,
+		v1.NewHierarchyRest,
 	)
 	return deps.Invoke(func(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, orgRest *v1.OrganizationRest, hierarchyRest *v1.HierarchyRest) {
 		v1 := route.Group("/v1/identity")

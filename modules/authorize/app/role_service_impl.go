@@ -123,7 +123,7 @@ func (this *RoleServiceImpl) GetRoleById(ctx context.Context, query itRole.GetRo
 		}, nil
 	}
 
-	entitlementIds, err := this.getEntitlementByIds(ctx, dbRole, vErrs)
+	entitlementIds, err := this.getEntitlementByIds(ctx, dbRole, &vErrs)
 	fault.PanicOnErr(err)
 	if vErrs.Count() > 0 {
 		return &itRole.GetRoleByIdResult{
@@ -232,7 +232,7 @@ func (this *RoleServiceImpl) GetRolesBySubject(ctx context.Context, query itRole
 func (this *RoleServiceImpl) assertRoleExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbRole *domain.Role, err error) {
 	dbRole, err = this.roleRepo.FindById(ctx, itRole.FindByIdParam{Id: id})
 	if dbRole == nil {
-		vErrs.AppendIdNotFound("role")
+		vErrs.AppendNotFound("id", "role")
 	}
 	return
 }
