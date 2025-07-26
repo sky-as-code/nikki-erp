@@ -47,7 +47,7 @@ func (OrganizationMixin) Fields() []ent.Field {
 
 		field.String("etag"),
 
-		field.String("status_id"),
+		field.String("status"),
 
 		field.String("slug").
 			Unique().
@@ -84,11 +84,6 @@ func (Organization) Edges() []ent.Edge {
 
 		edge.From("groups", Group.Type).
 			Ref("org"),
-
-		edge.To("org_status", IdentStatusEnum.Type).
-			Field("status_id").
-			Unique().
-			Required(),
 	}
 }
 

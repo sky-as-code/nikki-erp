@@ -253,7 +253,7 @@ func (this *EnumServiceImpl) deleteById(ctx context.Context, id model.Id, vErrs 
 	ft.PanicOnErr(err)
 
 	if deletedCount == 0 {
-		vErrs.AppendIdNotFound("enum")
+		vErrs.AppendNotFound("id", "enum")
 		return
 	}
 

@@ -17,7 +17,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/usergroup"
@@ -33,8 +32,6 @@ type Client struct {
 	Group *GroupClient
 	// HierarchyLevel is the client for interacting with the HierarchyLevel builders.
 	HierarchyLevel *HierarchyLevelClient
-	// IdentStatusEnum is the client for interacting with the IdentStatusEnum builders.
-	IdentStatusEnum *IdentStatusEnumClient
 	// Organization is the client for interacting with the Organization builders.
 	Organization *OrganizationClient
 	// User is the client for interacting with the User builders.
@@ -56,7 +53,6 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Group = NewGroupClient(c.config)
 	c.HierarchyLevel = NewHierarchyLevelClient(c.config)
-	c.IdentStatusEnum = NewIdentStatusEnumClient(c.config)
 	c.Organization = NewOrganizationClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.UserGroup = NewUserGroupClient(c.config)
@@ -151,15 +147,14 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:             ctx,
-		config:          cfg,
-		Group:           NewGroupClient(cfg),
-		HierarchyLevel:  NewHierarchyLevelClient(cfg),
-		IdentStatusEnum: NewIdentStatusEnumClient(cfg),
-		Organization:    NewOrganizationClient(cfg),
-		User:            NewUserClient(cfg),
-		UserGroup:       NewUserGroupClient(cfg),
-		UserOrg:         NewUserOrgClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Group:          NewGroupClient(cfg),
+		HierarchyLevel: NewHierarchyLevelClient(cfg),
+		Organization:   NewOrganizationClient(cfg),
+		User:           NewUserClient(cfg),
+		UserGroup:      NewUserGroupClient(cfg),
+		UserOrg:        NewUserOrgClient(cfg),
 	}, nil
 }
 
@@ -177,15 +172,14 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:             ctx,
-		config:          cfg,
-		Group:           NewGroupClient(cfg),
-		HierarchyLevel:  NewHierarchyLevelClient(cfg),
-		IdentStatusEnum: NewIdentStatusEnumClient(cfg),
-		Organization:    NewOrganizationClient(cfg),
-		User:            NewUserClient(cfg),
-		UserGroup:       NewUserGroupClient(cfg),
-		UserOrg:         NewUserOrgClient(cfg),
+		ctx:            ctx,
+		config:         cfg,
+		Group:          NewGroupClient(cfg),
+		HierarchyLevel: NewHierarchyLevelClient(cfg),
+		Organization:   NewOrganizationClient(cfg),
+		User:           NewUserClient(cfg),
+		UserGroup:      NewUserGroupClient(cfg),
+		UserOrg:        NewUserOrgClient(cfg),
 	}, nil
 }
 
@@ -215,8 +209,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Group, c.HierarchyLevel, c.IdentStatusEnum, c.Organization, c.User,
-		c.UserGroup, c.UserOrg,
+		c.Group, c.HierarchyLevel, c.Organization, c.User, c.UserGroup, c.UserOrg,
 	} {
 		n.Use(hooks...)
 	}
@@ -226,8 +219,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Group, c.HierarchyLevel, c.IdentStatusEnum, c.Organization, c.User,
-		c.UserGroup, c.UserOrg,
+		c.Group, c.HierarchyLevel, c.Organization, c.User, c.UserGroup, c.UserOrg,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -240,8 +232,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Group.mutate(ctx, m)
 	case *HierarchyLevelMutation:
 		return c.HierarchyLevel.mutate(ctx, m)
-	case *IdentStatusEnumMutation:
-		return c.IdentStatusEnum.mutate(ctx, m)
 	case *OrganizationMutation:
 		return c.Organization.mutate(ctx, m)
 	case *UserMutation:
@@ -633,171 +623,6 @@ func (c *HierarchyLevelClient) mutate(ctx context.Context, m *HierarchyLevelMuta
 	}
 }
 
-// IdentStatusEnumClient is a client for the IdentStatusEnum schema.
-type IdentStatusEnumClient struct {
-	config
-}
-
-// NewIdentStatusEnumClient returns a client for the IdentStatusEnum from the given config.
-func NewIdentStatusEnumClient(c config) *IdentStatusEnumClient {
-	return &IdentStatusEnumClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `identstatusenum.Hooks(f(g(h())))`.
-func (c *IdentStatusEnumClient) Use(hooks ...Hook) {
-	c.hooks.IdentStatusEnum = append(c.hooks.IdentStatusEnum, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `identstatusenum.Intercept(f(g(h())))`.
-func (c *IdentStatusEnumClient) Intercept(interceptors ...Interceptor) {
-	c.inters.IdentStatusEnum = append(c.inters.IdentStatusEnum, interceptors...)
-}
-
-// Create returns a builder for creating a IdentStatusEnum entity.
-func (c *IdentStatusEnumClient) Create() *IdentStatusEnumCreate {
-	mutation := newIdentStatusEnumMutation(c.config, OpCreate)
-	return &IdentStatusEnumCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of IdentStatusEnum entities.
-func (c *IdentStatusEnumClient) CreateBulk(builders ...*IdentStatusEnumCreate) *IdentStatusEnumCreateBulk {
-	return &IdentStatusEnumCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *IdentStatusEnumClient) MapCreateBulk(slice any, setFunc func(*IdentStatusEnumCreate, int)) *IdentStatusEnumCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &IdentStatusEnumCreateBulk{err: fmt.Errorf("calling to IdentStatusEnumClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*IdentStatusEnumCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &IdentStatusEnumCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for IdentStatusEnum.
-func (c *IdentStatusEnumClient) Update() *IdentStatusEnumUpdate {
-	mutation := newIdentStatusEnumMutation(c.config, OpUpdate)
-	return &IdentStatusEnumUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *IdentStatusEnumClient) UpdateOne(ise *IdentStatusEnum) *IdentStatusEnumUpdateOne {
-	mutation := newIdentStatusEnumMutation(c.config, OpUpdateOne, withIdentStatusEnum(ise))
-	return &IdentStatusEnumUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *IdentStatusEnumClient) UpdateOneID(id string) *IdentStatusEnumUpdateOne {
-	mutation := newIdentStatusEnumMutation(c.config, OpUpdateOne, withIdentStatusEnumID(id))
-	return &IdentStatusEnumUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for IdentStatusEnum.
-func (c *IdentStatusEnumClient) Delete() *IdentStatusEnumDelete {
-	mutation := newIdentStatusEnumMutation(c.config, OpDelete)
-	return &IdentStatusEnumDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *IdentStatusEnumClient) DeleteOne(ise *IdentStatusEnum) *IdentStatusEnumDeleteOne {
-	return c.DeleteOneID(ise.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *IdentStatusEnumClient) DeleteOneID(id string) *IdentStatusEnumDeleteOne {
-	builder := c.Delete().Where(identstatusenum.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &IdentStatusEnumDeleteOne{builder}
-}
-
-// Query returns a query builder for IdentStatusEnum.
-func (c *IdentStatusEnumClient) Query() *IdentStatusEnumQuery {
-	return &IdentStatusEnumQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeIdentStatusEnum},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a IdentStatusEnum entity by its id.
-func (c *IdentStatusEnumClient) Get(ctx context.Context, id string) (*IdentStatusEnum, error) {
-	return c.Query().Where(identstatusenum.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *IdentStatusEnumClient) GetX(ctx context.Context, id string) *IdentStatusEnum {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryOrgs queries the orgs edge of a IdentStatusEnum.
-func (c *IdentStatusEnumClient) QueryOrgs(ise *IdentStatusEnum) *OrganizationQuery {
-	query := (&OrganizationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ise.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(identstatusenum.Table, identstatusenum.FieldID, id),
-			sqlgraph.To(organization.Table, organization.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, identstatusenum.OrgsTable, identstatusenum.OrgsColumn),
-		)
-		fromV = sqlgraph.Neighbors(ise.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryUsers queries the users edge of a IdentStatusEnum.
-func (c *IdentStatusEnumClient) QueryUsers(ise *IdentStatusEnum) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := ise.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(identstatusenum.Table, identstatusenum.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, identstatusenum.UsersTable, identstatusenum.UsersColumn),
-		)
-		fromV = sqlgraph.Neighbors(ise.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *IdentStatusEnumClient) Hooks() []Hook {
-	return c.hooks.IdentStatusEnum
-}
-
-// Interceptors returns the client interceptors.
-func (c *IdentStatusEnumClient) Interceptors() []Interceptor {
-	return c.inters.IdentStatusEnum
-}
-
-func (c *IdentStatusEnumClient) mutate(ctx context.Context, m *IdentStatusEnumMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&IdentStatusEnumCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&IdentStatusEnumUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&IdentStatusEnumUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&IdentStatusEnumDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown IdentStatusEnum mutation op: %q", m.Op())
-	}
-}
-
 // OrganizationClient is a client for the Organization schema.
 type OrganizationClient struct {
 	config
@@ -947,22 +772,6 @@ func (c *OrganizationClient) QueryGroups(o *Organization) *GroupQuery {
 			sqlgraph.From(organization.Table, organization.FieldID, id),
 			sqlgraph.To(group.Table, group.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, organization.GroupsTable, organization.GroupsColumn),
-		)
-		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryOrgStatus queries the org_status edge of a Organization.
-func (c *OrganizationClient) QueryOrgStatus(o *Organization) *IdentStatusEnumQuery {
-	query := (&IdentStatusEnumClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := o.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(organization.Table, organization.FieldID, id),
-			sqlgraph.To(identstatusenum.Table, identstatusenum.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, organization.OrgStatusTable, organization.OrgStatusColumn),
 		)
 		fromV = sqlgraph.Neighbors(o.driver.Dialect(), step)
 		return fromV, nil
@@ -1160,22 +969,6 @@ func (c *UserClient) QueryOrgs(u *User) *OrganizationQuery {
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, user.OrgsTable, user.OrgsPrimaryKey...),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryUserStatus queries the user_status edge of a User.
-func (c *UserClient) QueryUserStatus(u *User) *IdentStatusEnumQuery {
-	query := (&IdentStatusEnumClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(identstatusenum.Table, identstatusenum.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, user.UserStatusTable, user.UserStatusColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil
@@ -1475,11 +1268,9 @@ func (c *UserOrgClient) mutate(ctx context.Context, m *UserOrgMutation) (Value, 
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Group, HierarchyLevel, IdentStatusEnum, Organization, User, UserGroup,
-		UserOrg []ent.Hook
+		Group, HierarchyLevel, Organization, User, UserGroup, UserOrg []ent.Hook
 	}
 	inters struct {
-		Group, HierarchyLevel, IdentStatusEnum, Organization, User, UserGroup,
-		UserOrg []ent.Interceptor
+		Group, HierarchyLevel, Organization, User, UserGroup, UserOrg []ent.Interceptor
 	}
 )

@@ -38,10 +38,6 @@ func (this *ValidationErrors) AppendAlreadyExists(fieldName string, fieldLabel s
 	this.Appendf(fieldName, "%s already exists", fieldLabel)
 }
 
-func (this *ValidationErrors) AppendIdNotFound(entityName string) {
-	this.Appendf("id", "%s not found", entityName)
-}
-
 func (this *ValidationErrors) AppendNotFound(fieldName string, fieldLabel string) {
 	this.Appendf(fieldName, "%s not found", fieldLabel)
 }
@@ -65,13 +61,28 @@ func (this *ValidationErrors) Merge(other ValidationErrors) {
 	}
 }
 
-func (this *ValidationErrors) MergeClientError(other *ClientError) {
-	if other != nil {
-		otherErrs, isOk := other.Details.(ValidationErrors)
-		if isOk {
-			this.Merge(otherErrs)
-		}
+func (this *ValidationErrors) MergeClientError(other *ClientError) bool {
+	if other == nil {
+		return true
 	}
+	otherErrs, isOk := other.Details.(ValidationErrors)
+	if isOk {
+		for field, err := range otherErrs {
+			(*this)[field] = fmt.Sprint(err)
+		}
+		return true
+	}
+	return false
+}
+
+func (this *ValidationErrors) RenameKey(oldKey string, newKey string) bool {
+	val, ok := (*this)[oldKey]
+	if !ok {
+		return false
+	}
+	(*this)[newKey] = val
+	delete(*this, oldKey)
+	return true
 }
 
 func (this *ValidationErrors) Error() string {
@@ -85,7 +96,7 @@ func (this *ValidationErrors) Error() string {
 func (this *ValidationErrors) ToClientError() *ClientError {
 	return &ClientError{
 		Code:    "validation_error",
-		Details: this,
+		Details: *this,
 	}
 }
 
@@ -104,4 +115,8 @@ func NewValidationErrorsFromInvopop(rawErrors invopop.Errors) ValidationErrors {
 		errors.Append(field, err.Error())
 	}
 	return errors
+}
+
+type Validatable interface {
+	Validate() ValidationErrors
 }

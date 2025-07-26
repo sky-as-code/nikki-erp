@@ -33,6 +33,14 @@ func (this *UserHandler) GetUserById(ctx context.Context, packet *cqrs.RequestPa
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.GetUserById)
 }
 
+func (this *UserHandler) GetUserByEmail(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserByEmailQuery]) (*cqrs.Reply[it.GetUserByEmailResult], error) {
+	return cqrs.HandlePacket(ctx, packet, this.UserSvc.GetUserByEmail)
+}
+
+func (this *UserHandler) MustGetActiveUser(ctx context.Context, packet *cqrs.RequestPacket[it.MustGetActiveUserQuery]) (*cqrs.Reply[it.MustGetActiveUserResult], error) {
+	return cqrs.HandlePacket(ctx, packet, this.UserSvc.MustGetActiveUser)
+}
+
 func (this *UserHandler) SearchUsers(ctx context.Context, packet *cqrs.RequestPacket[it.SearchUsersQuery]) (*cqrs.Reply[it.SearchUsersResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.SearchUsers)
 }
@@ -43,8 +51,4 @@ func (this *UserHandler) UserExists(ctx context.Context, packet *cqrs.RequestPac
 
 func (this *UserHandler) UserExistsMulti(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsMultiCommand]) (*cqrs.Reply[it.UserExistsMultiResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.ExistsMulti)
-}
-
-func (this *UserHandler) ListUserStatuses(ctx context.Context, packet *cqrs.RequestPacket[it.ListUserStatusesQuery]) (*cqrs.Reply[it.ListIdentStatusesResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.ListUserStatuses)
 }

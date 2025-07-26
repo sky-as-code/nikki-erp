@@ -149,22 +149,3 @@ func (this UserRest) UserExistsMulti(echoCtx echo.Context) (err error) {
 	)
 	return err
 }
-
-func (this UserRest) ListUserStatuses(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST list user statuses"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UserSvc.ListUserStatuses,
-		func(request ListUserStatusesRequest) it.ListUserStatusesQuery {
-			return it.ListUserStatusesQuery(request)
-		},
-		func(result it.ListIdentStatusesResult) ListUserStatusesResponse {
-			return *result.Data
-		},
-		httpserver.JsonOk,
-	)
-	return err
-}

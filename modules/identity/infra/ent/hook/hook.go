@@ -33,18 +33,6 @@ func (f HierarchyLevelFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Val
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.HierarchyLevelMutation", m)
 }
 
-// The IdentStatusEnumFunc type is an adapter to allow the use of ordinary
-// function as IdentStatusEnum mutator.
-type IdentStatusEnumFunc func(context.Context, *ent.IdentStatusEnumMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f IdentStatusEnumFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.IdentStatusEnumMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IdentStatusEnumMutation", m)
-}
-
 // The OrganizationFunc type is an adapter to allow the use of ordinary
 // function as Organization mutator.
 type OrganizationFunc func(context.Context, *ent.OrganizationMutation) (ent.Value, error)

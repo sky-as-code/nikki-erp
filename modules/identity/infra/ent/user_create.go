@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
@@ -70,20 +69,6 @@ func (uc *UserCreate) SetEtag(s string) *UserCreate {
 	return uc
 }
 
-// SetFailedLoginAttempts sets the "failed_login_attempts" field.
-func (uc *UserCreate) SetFailedLoginAttempts(i int) *UserCreate {
-	uc.mutation.SetFailedLoginAttempts(i)
-	return uc
-}
-
-// SetNillableFailedLoginAttempts sets the "failed_login_attempts" field if the given value is not nil.
-func (uc *UserCreate) SetNillableFailedLoginAttempts(i *int) *UserCreate {
-	if i != nil {
-		uc.SetFailedLoginAttempts(*i)
-	}
-	return uc
-}
-
 // SetHierarchyID sets the "hierarchy_id" field.
 func (uc *UserCreate) SetHierarchyID(s string) *UserCreate {
 	uc.mutation.SetHierarchyID(s)
@@ -112,63 +97,9 @@ func (uc *UserCreate) SetNillableIsOwner(b *bool) *UserCreate {
 	return uc
 }
 
-// SetLastLoginAt sets the "last_login_at" field.
-func (uc *UserCreate) SetLastLoginAt(t time.Time) *UserCreate {
-	uc.mutation.SetLastLoginAt(t)
-	return uc
-}
-
-// SetNillableLastLoginAt sets the "last_login_at" field if the given value is not nil.
-func (uc *UserCreate) SetNillableLastLoginAt(t *time.Time) *UserCreate {
-	if t != nil {
-		uc.SetLastLoginAt(*t)
-	}
-	return uc
-}
-
-// SetLockedUntil sets the "locked_until" field.
-func (uc *UserCreate) SetLockedUntil(t time.Time) *UserCreate {
-	uc.mutation.SetLockedUntil(t)
-	return uc
-}
-
-// SetNillableLockedUntil sets the "locked_until" field if the given value is not nil.
-func (uc *UserCreate) SetNillableLockedUntil(t *time.Time) *UserCreate {
-	if t != nil {
-		uc.SetLockedUntil(*t)
-	}
-	return uc
-}
-
-// SetMustChangePassword sets the "must_change_password" field.
-func (uc *UserCreate) SetMustChangePassword(b bool) *UserCreate {
-	uc.mutation.SetMustChangePassword(b)
-	return uc
-}
-
-// SetNillableMustChangePassword sets the "must_change_password" field if the given value is not nil.
-func (uc *UserCreate) SetNillableMustChangePassword(b *bool) *UserCreate {
-	if b != nil {
-		uc.SetMustChangePassword(*b)
-	}
-	return uc
-}
-
-// SetPasswordHash sets the "password_hash" field.
-func (uc *UserCreate) SetPasswordHash(s string) *UserCreate {
-	uc.mutation.SetPasswordHash(s)
-	return uc
-}
-
-// SetPasswordChangedAt sets the "password_changed_at" field.
-func (uc *UserCreate) SetPasswordChangedAt(t time.Time) *UserCreate {
-	uc.mutation.SetPasswordChangedAt(t)
-	return uc
-}
-
-// SetStatusID sets the "status_id" field.
-func (uc *UserCreate) SetStatusID(s string) *UserCreate {
-	uc.mutation.SetStatusID(s)
+// SetStatus sets the "status" field.
+func (uc *UserCreate) SetStatus(s string) *UserCreate {
+	uc.mutation.SetStatus(s)
 	return uc
 }
 
@@ -227,17 +158,6 @@ func (uc *UserCreate) AddOrgs(o ...*Organization) *UserCreate {
 	return uc.AddOrgIDs(ids...)
 }
 
-// SetUserStatusID sets the "user_status" edge to the IdentStatusEnum entity by ID.
-func (uc *UserCreate) SetUserStatusID(id string) *UserCreate {
-	uc.mutation.SetUserStatusID(id)
-	return uc
-}
-
-// SetUserStatus sets the "user_status" edge to the IdentStatusEnum entity.
-func (uc *UserCreate) SetUserStatus(i *IdentStatusEnum) *UserCreate {
-	return uc.SetUserStatusID(i.ID)
-}
-
 // Mutation returns the UserMutation object of the builder.
 func (uc *UserCreate) Mutation() *UserMutation {
 	return uc.mutation
@@ -277,14 +197,6 @@ func (uc *UserCreate) defaults() {
 		v := user.DefaultCreatedAt()
 		uc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := uc.mutation.FailedLoginAttempts(); !ok {
-		v := user.DefaultFailedLoginAttempts
-		uc.mutation.SetFailedLoginAttempts(v)
-	}
-	if _, ok := uc.mutation.MustChangePassword(); !ok {
-		v := user.DefaultMustChangePassword
-		uc.mutation.SetMustChangePassword(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -301,23 +213,8 @@ func (uc *UserCreate) check() error {
 	if _, ok := uc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "User.etag"`)}
 	}
-	if _, ok := uc.mutation.FailedLoginAttempts(); !ok {
-		return &ValidationError{Name: "failed_login_attempts", err: errors.New(`ent: missing required field "User.failed_login_attempts"`)}
-	}
-	if _, ok := uc.mutation.MustChangePassword(); !ok {
-		return &ValidationError{Name: "must_change_password", err: errors.New(`ent: missing required field "User.must_change_password"`)}
-	}
-	if _, ok := uc.mutation.PasswordHash(); !ok {
-		return &ValidationError{Name: "password_hash", err: errors.New(`ent: missing required field "User.password_hash"`)}
-	}
-	if _, ok := uc.mutation.PasswordChangedAt(); !ok {
-		return &ValidationError{Name: "password_changed_at", err: errors.New(`ent: missing required field "User.password_changed_at"`)}
-	}
-	if _, ok := uc.mutation.StatusID(); !ok {
-		return &ValidationError{Name: "status_id", err: errors.New(`ent: missing required field "User.status_id"`)}
-	}
-	if len(uc.mutation.UserStatusIDs()) == 0 {
-		return &ValidationError{Name: "user_status", err: errors.New(`ent: missing required edge "User.user_status"`)}
+	if _, ok := uc.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "User.status"`)}
 	}
 	return nil
 }
@@ -374,33 +271,13 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldEtag, field.TypeString, value)
 		_node.Etag = value
 	}
-	if value, ok := uc.mutation.FailedLoginAttempts(); ok {
-		_spec.SetField(user.FieldFailedLoginAttempts, field.TypeInt, value)
-		_node.FailedLoginAttempts = value
-	}
 	if value, ok := uc.mutation.IsOwner(); ok {
 		_spec.SetField(user.FieldIsOwner, field.TypeBool, value)
 		_node.IsOwner = value
 	}
-	if value, ok := uc.mutation.LastLoginAt(); ok {
-		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
-		_node.LastLoginAt = &value
-	}
-	if value, ok := uc.mutation.LockedUntil(); ok {
-		_spec.SetField(user.FieldLockedUntil, field.TypeTime, value)
-		_node.LockedUntil = &value
-	}
-	if value, ok := uc.mutation.MustChangePassword(); ok {
-		_spec.SetField(user.FieldMustChangePassword, field.TypeBool, value)
-		_node.MustChangePassword = value
-	}
-	if value, ok := uc.mutation.PasswordHash(); ok {
-		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
-		_node.PasswordHash = value
-	}
-	if value, ok := uc.mutation.PasswordChangedAt(); ok {
-		_spec.SetField(user.FieldPasswordChangedAt, field.TypeTime, value)
-		_node.PasswordChangedAt = value
+	if value, ok := uc.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeString, value)
+		_node.Status = value
 	}
 	if value, ok := uc.mutation.UpdatedAt(); ok {
 		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
@@ -453,23 +330,6 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := uc.mutation.UserStatusIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   user.UserStatusTable,
-			Columns: []string{user.UserStatusColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.StatusID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

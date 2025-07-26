@@ -10,7 +10,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
@@ -174,17 +173,3 @@ func (this SearchOrganizationsQuery) Validate() ft.ValidationErrors {
 
 type SearchOrganizationsResultData = crud.PagedResult[domain.Organization]
 type SearchOrganizationsResult = crud.OpResult[*SearchOrganizationsResultData]
-
-var listOrgStatusesCommandType = cqrs.RequestType{
-	Module:    "identity",
-	Submodule: "organization",
-	Action:    "listOrgStatuses",
-}
-
-type ListOrgStatusesQuery struct {
-	enum.ListDerivedEnumsQuery
-}
-
-func (ListOrgStatusesQuery) CqrsRequestType() cqrs.RequestType {
-	return listOrgStatusesCommandType
-}

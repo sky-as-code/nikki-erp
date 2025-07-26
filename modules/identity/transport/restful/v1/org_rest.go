@@ -7,7 +7,6 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
-	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
 type organizationRestParams struct {
@@ -126,25 +125,6 @@ func (this OrganizationRest) SearchOrganizations(echoCtx echo.Context) (err erro
 			response := SearchOrganizationsResponse{}
 			response.FromResult(result.Data)
 			return response
-		},
-		httpserver.JsonOk,
-	)
-	return err
-}
-
-func (this OrganizationRest) ListOrgStatuses(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST list org statuses"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.OrgSvc.ListOrgStatuses,
-		func(request ListOrgStatusesRequest) itOrg.ListOrgStatusesQuery {
-			return itOrg.ListOrgStatusesQuery(request)
-		},
-		func(result itUser.ListIdentStatusesResult) ListOrgStatusesResponse {
-			return *result.Data
 		},
 		httpserver.JsonOk,
 	)

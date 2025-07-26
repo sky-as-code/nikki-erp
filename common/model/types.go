@@ -17,6 +17,8 @@ import (
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
 
+var ZeroTime = time.Time{}
+
 type Id = string
 
 func NewId() (*Id, error) {

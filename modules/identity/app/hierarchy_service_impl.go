@@ -218,7 +218,7 @@ func (this *HierarchyServiceImpl) DeleteHierarchyLevel(ctx context.Context, cmd 
 	deletedCount, err := this.hierarchyRepo.DeleteHard(ctx, cmd.Id)
 	ft.PanicOnErr(err)
 	if deletedCount == 0 {
-		vErrs.AppendIdNotFound("hierarchy")
+		vErrs.AppendNotFound("id", "hierarchy")
 		return &itHier.DeleteHierarchyLevelResult{
 			ClientError: vErrs.ToClientError(),
 		}, nil

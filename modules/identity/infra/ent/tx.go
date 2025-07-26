@@ -16,8 +16,6 @@ type Tx struct {
 	Group *GroupClient
 	// HierarchyLevel is the client for interacting with the HierarchyLevel builders.
 	HierarchyLevel *HierarchyLevelClient
-	// IdentStatusEnum is the client for interacting with the IdentStatusEnum builders.
-	IdentStatusEnum *IdentStatusEnumClient
 	// Organization is the client for interacting with the Organization builders.
 	Organization *OrganizationClient
 	// User is the client for interacting with the User builders.
@@ -159,7 +157,6 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Group = NewGroupClient(tx.config)
 	tx.HierarchyLevel = NewHierarchyLevelClient(tx.config)
-	tx.IdentStatusEnum = NewIdentStatusEnumClient(tx.config)
 	tx.Organization = NewOrganizationClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserGroup = NewUserGroupClient(tx.config)

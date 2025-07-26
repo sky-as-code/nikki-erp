@@ -76,6 +76,3 @@ func (this *SearchUsersResponse) FromResult(result *it.SearchUsersResultData) {
 
 type UserExistsMultiRequest = it.UserExistsMultiCommand
 type UserExistsMultiResponse = it.ExistsMultiResultData
-
-type ListUserStatusesRequest = it.ListUserStatusesQuery
-type ListUserStatusesResponse = it.ListIdentStatusesResultData

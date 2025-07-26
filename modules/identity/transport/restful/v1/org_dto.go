@@ -6,7 +6,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
-	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
 type OrganizationDto struct {
@@ -54,6 +53,3 @@ func (this *SearchOrganizationsResponse) FromResult(result *itOrg.SearchOrganiza
 		return orgDto
 	})
 }
-
-type ListOrgStatusesRequest = itOrg.ListOrgStatusesQuery
-type ListOrgStatusesResponse = itUser.ListIdentStatusesResultData

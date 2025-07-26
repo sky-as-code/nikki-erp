@@ -10,7 +10,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
@@ -21,7 +20,7 @@ func init() {
 	req = (*UpdateUserCommand)(nil)
 	req = (*DeleteUserCommand)(nil)
 	req = (*GetUserByIdQuery)(nil)
-	req = (*ListUserStatusesQuery)(nil)
+	req = (*GetUserByEmailQuery)(nil)
 	req = (*SearchUsersQuery)(nil)
 	req = (*UserExistsCommand)(nil)
 	req = (*UserExistsMultiCommand)(nil)
@@ -55,15 +54,12 @@ var updateUserCommandType = cqrs.RequestType{
 }
 
 type UpdateUserCommand struct {
-	Id                 model.Id   `param:"id" json:"id"`
-	AvatarUrl          *string    `json:"avatarUrl"`
-	DisplayName        *string    `json:"displayName"`
-	Email              *string    `json:"email"`
-	Etag               model.Etag `json:"etag"`
-	MustChangePassword *bool      `json:"mustChangePassword"`
-	Password           *string    `json:"password"`
-	StatusId           *model.Id  `json:"statusId"`
-	StatusValue        *string    `json:"statusValue"`
+	Id          model.Id           `param:"id" json:"id"`
+	AvatarUrl   *string            `json:"avatarUrl"`
+	DisplayName *string            `json:"displayName"`
+	Email       *string            `json:"email"`
+	Etag        model.Etag         `json:"etag"`
+	Status      *domain.UserStatus `json:"statusValue"`
 }
 
 func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
@@ -161,7 +157,8 @@ var getUserByIdQueryType = cqrs.RequestType{
 }
 
 type GetUserByIdQuery struct {
-	Id model.Id `param:"id" json:"id"`
+	Id     model.Id           `param:"id" json:"id"`
+	Status *domain.UserStatus `json:"status"`
 }
 
 func (GetUserByIdQuery) CqrsRequestType() cqrs.RequestType {
@@ -177,6 +174,68 @@ func (this GetUserByIdQuery) Validate() ft.ValidationErrors {
 }
 
 type GetUserByIdResult = crud.OpResult[*domain.User]
+
+var getUserByEmailQueryType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "getUserByEmail",
+}
+
+type GetUserByEmailQuery struct {
+	Email  string             `param:"email" json:"email"`
+	Status *domain.UserStatus `json:"status"`
+}
+
+func (GetUserByEmailQuery) CqrsRequestType() cqrs.RequestType {
+	return getUserByEmailQueryType
+}
+
+func (this GetUserByEmailQuery) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		val.Field(&this.Email,
+			val.NotEmpty,
+			val.IsEmail,
+			val.Length(5, model.MODEL_RULE_USERNAME_LENGTH),
+		),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type GetUserByEmailResult = crud.OpResult[*domain.User]
+
+var mustGetActiveUserQueryType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "mustGetActiveUser",
+}
+
+type MustGetActiveUserQuery struct {
+	Id    *string `json:"id"`
+	Email *string `json:"email"`
+}
+
+func (MustGetActiveUserQuery) CqrsRequestType() cqrs.RequestType {
+	return mustGetActiveUserQueryType
+}
+
+func (this MustGetActiveUserQuery) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdPtrValidateRule(&this.Id, this.Email == nil),
+		val.Field(&this.Email,
+			val.NotNilWhen(this.Id == nil),
+			val.When(this.Email != nil,
+				val.NotEmpty,
+				val.IsEmail,
+				val.Length(5, model.MODEL_RULE_USERNAME_LENGTH),
+			),
+		),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type MustGetActiveUserResult = crud.OpResult[*domain.User]
 
 var searchUsersQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -213,20 +272,3 @@ func (this SearchUsersQuery) Validate() ft.ValidationErrors {
 
 type SearchUsersResultData = crud.PagedResult[domain.User]
 type SearchUsersResult = crud.OpResult[*SearchUsersResultData]
-
-var listUserStatusesCommandType = cqrs.RequestType{
-	Module:    "identity",
-	Submodule: "user",
-	Action:    "listUserStatuses",
-}
-
-type ListUserStatusesQuery struct {
-	enum.ListDerivedEnumsQuery
-}
-
-func (ListUserStatusesQuery) CqrsRequestType() cqrs.RequestType {
-	return listUserStatusesCommandType
-}
-
-type ListIdentStatusesResultData = crud.PagedResult[domain.IdentityStatus]
-type ListIdentStatusesResult = crud.OpResult[*ListIdentStatusesResultData]

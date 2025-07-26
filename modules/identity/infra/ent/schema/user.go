@@ -34,13 +34,10 @@ func (UserMixin) Fields() []ent.Field {
 		field.String("display_name"),
 
 		field.String("email").
+			Sensitive().
 			Unique(),
 
 		field.String("etag"),
-
-		field.Int("failed_login_attempts").
-			Default(0).
-			Comment("Count of consecutive failed login attempts"),
 
 		field.String("hierarchy_id").
 			Optional().
@@ -51,26 +48,7 @@ func (UserMixin) Fields() []ent.Field {
 			Immutable().
 			Comment("Whether the user is an owner with root privileges in this deployment"),
 
-		field.Time("last_login_at").
-			Optional().
-			Nillable(),
-
-		field.Time("locked_until").
-			Optional().
-			Nillable().
-			Comment("Account locked until this timestamp"),
-
-		field.Bool("must_change_password").
-			Default(true).
-			Comment("Force password change on next login"),
-
-		field.String("password_hash").
-			Sensitive(),
-
-		field.Time("password_changed_at").
-			Comment("Last password change timestamp"),
-
-		field.String("status_id"),
+		field.String("status"),
 
 		field.Time("updated_at").
 			Optional().
@@ -108,11 +86,6 @@ func (User) Edges() []ent.Edge {
 
 		edge.To("orgs", Organization.Type).
 			Through("user_orgs", UserOrg.Type),
-
-		edge.To("user_status", IdentStatusEnum.Type).
-			Field("status_id").
-			Unique().
-			Required(),
 	}
 }
 
