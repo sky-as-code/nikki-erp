@@ -1,0 +1,37 @@
+meta {
+  name: User Search - No result - Success
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api_host}}/v1/identity/users?page=99
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 99
+}
+
+script:post-response {
+  const schema = bru.getVar("search_schema");
+  const payload = res.getBody();
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  test("Response has no items", function () {
+      expect(payload.items.length).to.equal(0)
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

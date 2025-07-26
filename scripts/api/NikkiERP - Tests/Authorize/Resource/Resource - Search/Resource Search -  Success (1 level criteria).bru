@@ -1,0 +1,19 @@
+meta {
+  name: Resource Search -  Success (1 level criteria)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources?graph={"if":["name", "=", "IdentityUser"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"if":["name", "=", "IdentityUser"]}
+}
+
+settings {
+  encodeUrl: true
+}

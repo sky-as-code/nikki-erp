@@ -1,0 +1,25 @@
+meta {
+  name: Client error - Not found (*:*.IdentityGroup)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "View1",
+      "resourceName": "IdentityGroup2",
+      "scopeRef": "uuidToScope",
+      "subjectType": "nikki_role",
+      "subjectRef": "01JWPB7TC3CG1EB567WYQCJM79"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

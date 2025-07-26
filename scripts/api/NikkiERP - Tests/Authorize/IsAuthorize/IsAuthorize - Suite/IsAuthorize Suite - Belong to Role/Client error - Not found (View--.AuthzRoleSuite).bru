@@ -1,0 +1,25 @@
+meta {
+  name: Client error - Not found (View:*.AuthzRoleSuite)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "View1",
+      "resourceName": "AuthzRoleSuite",
+      "scopeRef": "uuidToScope",
+      "subjectType": "nikki_suite",
+      "subjectRef": "01JWP9MVYX0K24R9H81SZEM7CE"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

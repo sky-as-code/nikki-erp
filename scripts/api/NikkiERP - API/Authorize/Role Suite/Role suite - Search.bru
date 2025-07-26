@@ -1,0 +1,21 @@
+meta {
+  name: Role suite - Search
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/authorize/role-suites?page=0&size=4&graph={"if":["name", "=", "Org Intern Suite 104JgY"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 4
+  graph: {"if":["name", "=", "Org Intern Suite 104JgY"]}
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,65 @@
+meta {
+  name: Action Get by Id - Client error (Not found)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/authorize/actions/01JZQ2GPTQ7AYRG8K7B7ZEY661
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  const schema = {
+      type: "object",
+      required: ["id", "etag", "name", "resourceId", "createdBy"],
+      properties: {
+          id: { type: "string" },
+          etag: { type: "string" },
+          name: { 
+              type: "string",
+              pattern: "^[a-zA-Z0-9_-]+$"
+          },
+          description: { type: ["string", "null"] },
+          resourceId: { type: "string" },
+          createdBy: { type: "string" },
+          resource: { 
+              type: ["object", "null"],
+              properties: {
+                  id: { type: "string" },
+                  name: { type: "string" }
+              },
+              required: ["id", "name"],
+              additionalProperties: true
+          }
+      },
+      additionalProperties: true
+  };
+  
+  test("Response matches expected schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  let body;
+  try {
+      body = res.getBody();
+      console.log("✅ Get Action by ID response:", body);
+  } catch (err) {
+      console.error("❌ Failed to parse response JSON:", err);
+  }
+  
+  if (body && body.id && body.etag) {
+      bru.setVar("action_id", body.id);
+      bru.setVar("etag", body.etag);
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

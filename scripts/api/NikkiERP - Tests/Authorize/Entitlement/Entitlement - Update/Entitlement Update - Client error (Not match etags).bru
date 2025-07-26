@@ -1,0 +1,22 @@
+meta {
+  name: Entitlement Update - Client error (Not match etags)
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{api_host}}/v1/authorize/entitlements/{{entitlement_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "description": "description",
+      "etag": "1752720685738865000"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

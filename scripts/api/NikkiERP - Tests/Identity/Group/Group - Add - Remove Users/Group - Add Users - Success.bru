@@ -1,0 +1,83 @@
+meta {
+  name: Group - Add Users - Success
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "add": ["<< Managed by script >>"],
+      "etag": "{{etag}}"
+  }
+}
+
+script:pre-request {
+  let groupUserIds = bru.getVar('group_users') || []
+  
+  if (! Array.isArray(groupUserIds)) {
+      console.warn('Postman bug: groupUserIds was turned to string')
+      groupUserIds = groupUserIds.split(',');
+  }
+  
+  if (!groupUserIds.length) {
+      test("Test data was prepared", function () {
+          expect.fail("Must create test data before running this request");
+      });
+      bru.runner.skipRequest();
+  }
+  
+  const rawBody = req.getBody().raw;
+  const payload = JSON.parse(rawBody);
+  
+  // Add 50% new users to group
+  payload.add = groupUserIds.slice(0, groupUserIds.length/2);
+  
+  // Write modified payload back to request
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
+}
+
+script:post-response {
+  const schema = {
+      type: "object",
+      required: ["id", "updatedAt", "etag"],
+      properties: {
+          id: {
+              type: "string",
+              minLength: 1,
+          },
+          updatedAt: {
+              type: "integer",
+              minimum: 1,
+          },
+          etag: {
+              type: "string",
+              minLength: 1,
+          },
+      },
+      additionalProperties: false
+  };
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  const payload = res.getBody();
+  const { etag } = payload;
+  etag && bru.setVar('etag', etag);
+  
+}
+
+settings {
+  encodeUrl: true
+}

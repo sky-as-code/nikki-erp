@@ -1,0 +1,20 @@
+meta {
+  name: Role suite Search - Success (No criteria, With paging)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/authorize/role-suites?page=0&size=4
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 4
+}
+
+settings {
+  encodeUrl: true
+}

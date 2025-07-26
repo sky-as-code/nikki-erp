@@ -34,7 +34,7 @@ func (this *OrganizationEntRepository) Create(ctx context.Context, org domain.Or
 		SetNillableLegalName(org.LegalName).
 		SetNillablePhoneNumber(org.PhoneNumber).
 		SetSlug(*org.Slug).
-		SetStatusID(*org.StatusId)
+		SetStatus(string(*org.Status))
 
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToOrganization)
 }
@@ -45,7 +45,7 @@ func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Or
 		SetNillableDisplayName(org.DisplayName).
 		SetNillableLegalName(org.LegalName).
 		SetNillablePhoneNumber(org.PhoneNumber).
-		SetNillableStatusID(org.StatusId).
+		SetNillableStatus((*string)(org.Status)).
 		// IMPORTANT: Must have!
 		Where(entOrg.EtagEQ(prevEtag))
 
@@ -74,8 +74,7 @@ func (this *OrganizationEntRepository) DeleteHard(ctx context.Context, id model.
 func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id) (*domain.Organization, error) {
 	query := this.client.Organization.Query().
 		Where(entOrg.ID(id)).
-		WithUsers().
-		WithOrgStatus()
+		WithUsers()
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToOrganization)
 }
@@ -83,8 +82,7 @@ func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id
 func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, param it.FindBySlugParam) (*domain.Organization, error) {
 	query := this.client.Organization.Query().
 		Where(entOrg.Slug(param.Slug)).
-		WithUsers().
-		WithOrgStatus()
+		WithUsers()
 
 	query = this.queryIncludeDeleted(query, param.IncludeDeleted)
 
@@ -108,8 +106,7 @@ func (this *OrganizationEntRepository) ParseSearchGraph(criteria *string) (*orm.
 func (this *OrganizationEntRepository) Search(
 	ctx context.Context, param it.SearchParam,
 ) (*crud.PagedResult[domain.Organization], error) {
-	query := this.client.Organization.Query().
-		WithOrgStatus()
+	query := this.client.Organization.Query()
 
 	query = this.queryIncludeDeleted(query, param.IncludeDeleted)
 
@@ -135,7 +132,7 @@ func BuildOrganizationDescriptor() *orm.EntityDescriptor {
 		Field(entOrg.FieldEtag, entity.Etag).
 		Field(entOrg.FieldID, entity.ID).
 		Field(entOrg.FieldSlug, entity.Slug).
-		Field(entOrg.FieldStatusID, entity.StatusID).
+		Field(entOrg.FieldStatus, entity.Status).
 		Field(entOrg.FieldUpdatedAt, entity.UpdatedAt).
 		Edge(entOrg.EdgeUsers, orm.ToEdgePredicate(entOrg.HasUsersWith))
 

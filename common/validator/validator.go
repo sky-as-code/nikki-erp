@@ -32,6 +32,7 @@ var (
 	IsAlphaNumeric = is.Alphanumeric
 	IsDomain       = is.Domain
 	IsEmail        = is.EmailFormat
+	IsIp           = is.IP
 	IsNumeric      = is.Digit
 	IsUuid         = is.UUID
 	IsUrl          = is.URL

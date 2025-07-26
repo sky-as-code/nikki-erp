@@ -5,6 +5,7 @@ import (
 )
 
 type Level string
+type Attr map[string]any
 
 const (
 	LevelDebug Level = "debug"
@@ -31,11 +32,11 @@ type LoggerService interface {
 	Level() Level
 	SetLevel(lvl Level)
 	InnerLogger() any
-	Debug(message string, data any)
+	Debug(message string, data Attr)
 	Debugf(format string, args ...any)
-	Info(message string, data any)
+	Info(message string, data Attr)
 	Infof(format string, args ...any)
-	Warn(message string, data any)
+	Warn(message string, data Attr)
 	Warnf(format string, args ...any)
 	Error(message string, err error)
 	Errorf(format string, args ...any)

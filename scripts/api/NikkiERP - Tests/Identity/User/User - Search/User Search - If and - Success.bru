@@ -1,0 +1,37 @@
+meta {
+  name: User Search - If and - Success
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{api_host}}/v1/identity/users?graph={"and":[{"if":["display_name", "*", "tester"]},{"if": ["user_status.value", "^", "a"]}]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"and":[{"if":["display_name", "*", "tester"]},{"if": ["user_status.value", "^", "a"]}]}
+}
+
+script:post-response {
+  const schema = bru.getVar("search_schema");
+  const payload = res.getBody();
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  test("Response has positive number of items", function () {
+      expect(payload.items.length).to.be.greaterThan(0)
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

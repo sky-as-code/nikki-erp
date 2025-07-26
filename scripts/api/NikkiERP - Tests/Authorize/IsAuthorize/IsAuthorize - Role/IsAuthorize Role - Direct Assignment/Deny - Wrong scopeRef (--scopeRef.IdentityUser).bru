@@ -1,0 +1,25 @@
+meta {
+  name: Deny - Wrong scopeRef (*:scopeRef.IdentityUser)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "View",
+      "resourceName": "IdentityUser",
+      "scopeRef": "InvalidScope",
+      "subjectType": "nikki_role",
+      "subjectRef": "01JWPB7TC3CG1EB567WYQCJM79"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

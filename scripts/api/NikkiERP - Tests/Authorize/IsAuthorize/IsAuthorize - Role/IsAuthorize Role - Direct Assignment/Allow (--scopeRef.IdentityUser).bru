@@ -1,0 +1,25 @@
+meta {
+  name: Allow (*:scopeRef.IdentityUser)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "View",
+      "resourceName": "IdentityUser",
+      "scopeRef": "01JWNY20G23KD4RV5VWYABKDT1",
+      "subjectType": "nikki_role",
+      "subjectRef": "01JWPB7TC3CG1EB567WYQCJM79"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

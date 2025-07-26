@@ -1,0 +1,63 @@
+meta {
+  name: Group - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "My Team",
+      "description": "This is my team"
+  }
+}
+
+script:pre-request {
+  const rawBody = req.getBody().raw;
+  const payload = JSON.parse(rawBody);
+  
+  // Generate a 6-char alphanumeric string
+  function randomString(length = 6) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+  }
+  
+  const rand = randomString();
+  
+  if (payload.name) {
+      payload.name += ' ' + rand;
+  }
+  if (payload.description) {
+      payload.description += ' ' + rand;
+  }
+  
+  // Write modified payload back to request
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
+}
+
+script:post-response {
+  const body = JSON.stringify(res.getBody());
+  try {
+      const payload = JSON.parse(body);
+      const { id, etag } = payload;
+      id && bru.setVar('group_id', id);
+      etag && bru.setVar('etag', etag);
+  } catch (err) {
+      console.error(err)
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

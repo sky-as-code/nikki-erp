@@ -1,0 +1,21 @@
+meta {
+  name: Role Search - Success (Full params)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/authorize/roles?page=0&size=4&graph={"if":["name", "=", "Identity module User Manager"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 4
+  graph: {"if":["name", "=", "Identity module User Manager"]}
+}
+
+settings {
+  encodeUrl: true
+}

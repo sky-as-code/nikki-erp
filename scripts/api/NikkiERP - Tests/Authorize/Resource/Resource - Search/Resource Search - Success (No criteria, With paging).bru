@@ -1,0 +1,20 @@
+meta {
+  name: Resource Search - Success (No criteria, With paging)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources?page=0&size=3
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 3
+}
+
+settings {
+  encodeUrl: true
+}

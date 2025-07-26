@@ -1,0 +1,60 @@
+meta {
+  name: Resource Create - Client error (Invalid fields)
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "invalid_field": "invalid_value"
+  }
+}
+
+script:post-response {
+  let isStatusValid = false;
+  test("Status code is 400", function () {
+      isStatusValid = res.getStatus() === 400;
+      expect(isStatusValid).to.be.true;
+  });
+  
+  let body;
+  let isJsonValid = true;
+  try {
+      body = res.getBody();
+      console.log("📥 Parsed response:", body);
+  } catch (e) {
+      isJsonValid = false;
+      expect.fail("❌ Response body is not valid JSON");
+  }
+  
+  let isCodeValid = false;
+  if (isStatusValid && isJsonValid) {
+      test("Returns validation_error code", function () {
+          expect(body.code).to.eql("validation_error");
+          isCodeValid = true;
+      });
+  }
+  
+  if (isStatusValid && isJsonValid && isCodeValid) {
+      test("Returns etag validation message", function () {
+          expect(body.details).to.have.property("etag", "cannot be blank");
+      });
+  
+      test("Does not contain unrelated fields", function () {
+          expect(body.details).to.not.have.property("invalid_field");
+      });
+  } else {
+      console.warn("⚠️ Skip detailed tests due to invalid response structure");
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

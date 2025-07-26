@@ -56,12 +56,4 @@ func init() {
 	userDescCreatedAt := userMixinFields0[2].Descriptor()
 	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
 	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
-	// userDescFailedLoginAttempts is the schema descriptor for failed_login_attempts field.
-	userDescFailedLoginAttempts := userMixinFields0[6].Descriptor()
-	// user.DefaultFailedLoginAttempts holds the default value on creation for the failed_login_attempts field.
-	user.DefaultFailedLoginAttempts = userDescFailedLoginAttempts.Default.(int)
-	// userDescMustChangePassword is the schema descriptor for must_change_password field.
-	userDescMustChangePassword := userMixinFields0[11].Descriptor()
-	// user.DefaultMustChangePassword holds the default value on creation for the must_change_password field.
-	user.DefaultMustChangePassword = userDescMustChangePassword.Default.(bool)
 }

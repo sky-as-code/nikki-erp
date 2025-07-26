@@ -1,0 +1,37 @@
+meta {
+  name: Group Search - If root field - Success
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{api_host}}/v1/identity/groups?graph={"if":["name", "*", "squad"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"if":["name", "*", "squad"]}
+}
+
+script:post-response {
+  const schema = bru.getVar("search_schema");
+  const payload = res.getBody();
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  test("Response has positive number of items", function () {
+      expect(payload.items.length).to.be.greaterThan(0)
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

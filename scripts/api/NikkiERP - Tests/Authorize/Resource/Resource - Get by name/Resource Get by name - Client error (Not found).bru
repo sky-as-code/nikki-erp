@@ -1,0 +1,48 @@
+meta {
+  name: Resource Get by name - Client error (Not found)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources/{{resource_name}}Invalid
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const schema = {
+      type: "object",
+      required: ["id", "etag", "name", "resourceType", "resourceRef", "scopeType"],
+      properties: {
+          id: { type: "string" },
+          etag: { type: "string" },
+          name: { type: "string" },
+          description: { type: "string" },
+          resourceType: { type: "string", enum: ["nikki_application", "custom"] },
+          resourceRef: { type: "string" },
+          scopeType: { type: "string", enum: ["org", "hierarchy", "private", "domain"] }
+      },
+      additionalProperties: true
+  };
+  
+  test("Status code is 400", function () {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Response matches expected error schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  try {
+      const payload = res.getBody();
+      console.log("❌ Resource not found error response:", payload);
+  } catch (err) {
+      console.error("❌ Failed to parse error response:", err);
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

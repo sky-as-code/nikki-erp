@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -94,27 +93,6 @@ func (uu *UserUpdate) SetNillableEtag(s *string) *UserUpdate {
 	return uu
 }
 
-// SetFailedLoginAttempts sets the "failed_login_attempts" field.
-func (uu *UserUpdate) SetFailedLoginAttempts(i int) *UserUpdate {
-	uu.mutation.ResetFailedLoginAttempts()
-	uu.mutation.SetFailedLoginAttempts(i)
-	return uu
-}
-
-// SetNillableFailedLoginAttempts sets the "failed_login_attempts" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableFailedLoginAttempts(i *int) *UserUpdate {
-	if i != nil {
-		uu.SetFailedLoginAttempts(*i)
-	}
-	return uu
-}
-
-// AddFailedLoginAttempts adds i to the "failed_login_attempts" field.
-func (uu *UserUpdate) AddFailedLoginAttempts(i int) *UserUpdate {
-	uu.mutation.AddFailedLoginAttempts(i)
-	return uu
-}
-
 // SetHierarchyID sets the "hierarchy_id" field.
 func (uu *UserUpdate) SetHierarchyID(s string) *UserUpdate {
 	uu.mutation.SetHierarchyID(s)
@@ -135,98 +113,16 @@ func (uu *UserUpdate) ClearHierarchyID() *UserUpdate {
 	return uu
 }
 
-// SetLastLoginAt sets the "last_login_at" field.
-func (uu *UserUpdate) SetLastLoginAt(t time.Time) *UserUpdate {
-	uu.mutation.SetLastLoginAt(t)
+// SetStatus sets the "status" field.
+func (uu *UserUpdate) SetStatus(s string) *UserUpdate {
+	uu.mutation.SetStatus(s)
 	return uu
 }
 
-// SetNillableLastLoginAt sets the "last_login_at" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableLastLoginAt(t *time.Time) *UserUpdate {
-	if t != nil {
-		uu.SetLastLoginAt(*t)
-	}
-	return uu
-}
-
-// ClearLastLoginAt clears the value of the "last_login_at" field.
-func (uu *UserUpdate) ClearLastLoginAt() *UserUpdate {
-	uu.mutation.ClearLastLoginAt()
-	return uu
-}
-
-// SetLockedUntil sets the "locked_until" field.
-func (uu *UserUpdate) SetLockedUntil(t time.Time) *UserUpdate {
-	uu.mutation.SetLockedUntil(t)
-	return uu
-}
-
-// SetNillableLockedUntil sets the "locked_until" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableLockedUntil(t *time.Time) *UserUpdate {
-	if t != nil {
-		uu.SetLockedUntil(*t)
-	}
-	return uu
-}
-
-// ClearLockedUntil clears the value of the "locked_until" field.
-func (uu *UserUpdate) ClearLockedUntil() *UserUpdate {
-	uu.mutation.ClearLockedUntil()
-	return uu
-}
-
-// SetMustChangePassword sets the "must_change_password" field.
-func (uu *UserUpdate) SetMustChangePassword(b bool) *UserUpdate {
-	uu.mutation.SetMustChangePassword(b)
-	return uu
-}
-
-// SetNillableMustChangePassword sets the "must_change_password" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableMustChangePassword(b *bool) *UserUpdate {
-	if b != nil {
-		uu.SetMustChangePassword(*b)
-	}
-	return uu
-}
-
-// SetPasswordHash sets the "password_hash" field.
-func (uu *UserUpdate) SetPasswordHash(s string) *UserUpdate {
-	uu.mutation.SetPasswordHash(s)
-	return uu
-}
-
-// SetNillablePasswordHash sets the "password_hash" field if the given value is not nil.
-func (uu *UserUpdate) SetNillablePasswordHash(s *string) *UserUpdate {
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableStatus(s *string) *UserUpdate {
 	if s != nil {
-		uu.SetPasswordHash(*s)
-	}
-	return uu
-}
-
-// SetPasswordChangedAt sets the "password_changed_at" field.
-func (uu *UserUpdate) SetPasswordChangedAt(t time.Time) *UserUpdate {
-	uu.mutation.SetPasswordChangedAt(t)
-	return uu
-}
-
-// SetNillablePasswordChangedAt sets the "password_changed_at" field if the given value is not nil.
-func (uu *UserUpdate) SetNillablePasswordChangedAt(t *time.Time) *UserUpdate {
-	if t != nil {
-		uu.SetPasswordChangedAt(*t)
-	}
-	return uu
-}
-
-// SetStatusID sets the "status_id" field.
-func (uu *UserUpdate) SetStatusID(s string) *UserUpdate {
-	uu.mutation.SetStatusID(s)
-	return uu
-}
-
-// SetNillableStatusID sets the "status_id" field if the given value is not nil.
-func (uu *UserUpdate) SetNillableStatusID(s *string) *UserUpdate {
-	if s != nil {
-		uu.SetStatusID(*s)
+		uu.SetStatus(*s)
 	}
 	return uu
 }
@@ -286,17 +182,6 @@ func (uu *UserUpdate) AddOrgs(o ...*Organization) *UserUpdate {
 	return uu.AddOrgIDs(ids...)
 }
 
-// SetUserStatusID sets the "user_status" edge to the IdentStatusEnum entity by ID.
-func (uu *UserUpdate) SetUserStatusID(id string) *UserUpdate {
-	uu.mutation.SetUserStatusID(id)
-	return uu
-}
-
-// SetUserStatus sets the "user_status" edge to the IdentStatusEnum entity.
-func (uu *UserUpdate) SetUserStatus(i *IdentStatusEnum) *UserUpdate {
-	return uu.SetUserStatusID(i.ID)
-}
-
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -350,12 +235,6 @@ func (uu *UserUpdate) RemoveOrgs(o ...*Organization) *UserUpdate {
 	return uu.RemoveOrgIDs(ids...)
 }
 
-// ClearUserStatus clears the "user_status" edge to the IdentStatusEnum entity.
-func (uu *UserUpdate) ClearUserStatus() *UserUpdate {
-	uu.mutation.ClearUserStatus()
-	return uu
-}
-
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (uu *UserUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, uu.sqlSave, uu.mutation, uu.hooks)
@@ -383,18 +262,7 @@ func (uu *UserUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (uu *UserUpdate) check() error {
-	if uu.mutation.UserStatusCleared() && len(uu.mutation.UserStatusIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "User.user_status"`)
-	}
-	return nil
-}
-
 func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := uu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeString))
 	if ps := uu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -418,35 +286,11 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uu.mutation.Etag(); ok {
 		_spec.SetField(user.FieldEtag, field.TypeString, value)
 	}
-	if value, ok := uu.mutation.FailedLoginAttempts(); ok {
-		_spec.SetField(user.FieldFailedLoginAttempts, field.TypeInt, value)
-	}
-	if value, ok := uu.mutation.AddedFailedLoginAttempts(); ok {
-		_spec.AddField(user.FieldFailedLoginAttempts, field.TypeInt, value)
-	}
 	if uu.mutation.IsOwnerCleared() {
 		_spec.ClearField(user.FieldIsOwner, field.TypeBool)
 	}
-	if value, ok := uu.mutation.LastLoginAt(); ok {
-		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
-	}
-	if uu.mutation.LastLoginAtCleared() {
-		_spec.ClearField(user.FieldLastLoginAt, field.TypeTime)
-	}
-	if value, ok := uu.mutation.LockedUntil(); ok {
-		_spec.SetField(user.FieldLockedUntil, field.TypeTime, value)
-	}
-	if uu.mutation.LockedUntilCleared() {
-		_spec.ClearField(user.FieldLockedUntil, field.TypeTime)
-	}
-	if value, ok := uu.mutation.MustChangePassword(); ok {
-		_spec.SetField(user.FieldMustChangePassword, field.TypeBool, value)
-	}
-	if value, ok := uu.mutation.PasswordHash(); ok {
-		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
-	}
-	if value, ok := uu.mutation.PasswordChangedAt(); ok {
-		_spec.SetField(user.FieldPasswordChangedAt, field.TypeTime, value)
+	if value, ok := uu.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeString, value)
 	}
 	if value, ok := uu.mutation.UpdatedAt(); ok {
 		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
@@ -573,35 +417,6 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if uu.mutation.UserStatusCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   user.UserStatusTable,
-			Columns: []string{user.UserStatusColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uu.mutation.UserStatusIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   user.UserStatusTable,
-			Columns: []string{user.UserStatusColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -684,27 +499,6 @@ func (uuo *UserUpdateOne) SetNillableEtag(s *string) *UserUpdateOne {
 	return uuo
 }
 
-// SetFailedLoginAttempts sets the "failed_login_attempts" field.
-func (uuo *UserUpdateOne) SetFailedLoginAttempts(i int) *UserUpdateOne {
-	uuo.mutation.ResetFailedLoginAttempts()
-	uuo.mutation.SetFailedLoginAttempts(i)
-	return uuo
-}
-
-// SetNillableFailedLoginAttempts sets the "failed_login_attempts" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableFailedLoginAttempts(i *int) *UserUpdateOne {
-	if i != nil {
-		uuo.SetFailedLoginAttempts(*i)
-	}
-	return uuo
-}
-
-// AddFailedLoginAttempts adds i to the "failed_login_attempts" field.
-func (uuo *UserUpdateOne) AddFailedLoginAttempts(i int) *UserUpdateOne {
-	uuo.mutation.AddFailedLoginAttempts(i)
-	return uuo
-}
-
 // SetHierarchyID sets the "hierarchy_id" field.
 func (uuo *UserUpdateOne) SetHierarchyID(s string) *UserUpdateOne {
 	uuo.mutation.SetHierarchyID(s)
@@ -725,98 +519,16 @@ func (uuo *UserUpdateOne) ClearHierarchyID() *UserUpdateOne {
 	return uuo
 }
 
-// SetLastLoginAt sets the "last_login_at" field.
-func (uuo *UserUpdateOne) SetLastLoginAt(t time.Time) *UserUpdateOne {
-	uuo.mutation.SetLastLoginAt(t)
+// SetStatus sets the "status" field.
+func (uuo *UserUpdateOne) SetStatus(s string) *UserUpdateOne {
+	uuo.mutation.SetStatus(s)
 	return uuo
 }
 
-// SetNillableLastLoginAt sets the "last_login_at" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableLastLoginAt(t *time.Time) *UserUpdateOne {
-	if t != nil {
-		uuo.SetLastLoginAt(*t)
-	}
-	return uuo
-}
-
-// ClearLastLoginAt clears the value of the "last_login_at" field.
-func (uuo *UserUpdateOne) ClearLastLoginAt() *UserUpdateOne {
-	uuo.mutation.ClearLastLoginAt()
-	return uuo
-}
-
-// SetLockedUntil sets the "locked_until" field.
-func (uuo *UserUpdateOne) SetLockedUntil(t time.Time) *UserUpdateOne {
-	uuo.mutation.SetLockedUntil(t)
-	return uuo
-}
-
-// SetNillableLockedUntil sets the "locked_until" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableLockedUntil(t *time.Time) *UserUpdateOne {
-	if t != nil {
-		uuo.SetLockedUntil(*t)
-	}
-	return uuo
-}
-
-// ClearLockedUntil clears the value of the "locked_until" field.
-func (uuo *UserUpdateOne) ClearLockedUntil() *UserUpdateOne {
-	uuo.mutation.ClearLockedUntil()
-	return uuo
-}
-
-// SetMustChangePassword sets the "must_change_password" field.
-func (uuo *UserUpdateOne) SetMustChangePassword(b bool) *UserUpdateOne {
-	uuo.mutation.SetMustChangePassword(b)
-	return uuo
-}
-
-// SetNillableMustChangePassword sets the "must_change_password" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableMustChangePassword(b *bool) *UserUpdateOne {
-	if b != nil {
-		uuo.SetMustChangePassword(*b)
-	}
-	return uuo
-}
-
-// SetPasswordHash sets the "password_hash" field.
-func (uuo *UserUpdateOne) SetPasswordHash(s string) *UserUpdateOne {
-	uuo.mutation.SetPasswordHash(s)
-	return uuo
-}
-
-// SetNillablePasswordHash sets the "password_hash" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillablePasswordHash(s *string) *UserUpdateOne {
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableStatus(s *string) *UserUpdateOne {
 	if s != nil {
-		uuo.SetPasswordHash(*s)
-	}
-	return uuo
-}
-
-// SetPasswordChangedAt sets the "password_changed_at" field.
-func (uuo *UserUpdateOne) SetPasswordChangedAt(t time.Time) *UserUpdateOne {
-	uuo.mutation.SetPasswordChangedAt(t)
-	return uuo
-}
-
-// SetNillablePasswordChangedAt sets the "password_changed_at" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillablePasswordChangedAt(t *time.Time) *UserUpdateOne {
-	if t != nil {
-		uuo.SetPasswordChangedAt(*t)
-	}
-	return uuo
-}
-
-// SetStatusID sets the "status_id" field.
-func (uuo *UserUpdateOne) SetStatusID(s string) *UserUpdateOne {
-	uuo.mutation.SetStatusID(s)
-	return uuo
-}
-
-// SetNillableStatusID sets the "status_id" field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableStatusID(s *string) *UserUpdateOne {
-	if s != nil {
-		uuo.SetStatusID(*s)
+		uuo.SetStatus(*s)
 	}
 	return uuo
 }
@@ -876,17 +588,6 @@ func (uuo *UserUpdateOne) AddOrgs(o ...*Organization) *UserUpdateOne {
 	return uuo.AddOrgIDs(ids...)
 }
 
-// SetUserStatusID sets the "user_status" edge to the IdentStatusEnum entity by ID.
-func (uuo *UserUpdateOne) SetUserStatusID(id string) *UserUpdateOne {
-	uuo.mutation.SetUserStatusID(id)
-	return uuo
-}
-
-// SetUserStatus sets the "user_status" edge to the IdentStatusEnum entity.
-func (uuo *UserUpdateOne) SetUserStatus(i *IdentStatusEnum) *UserUpdateOne {
-	return uuo.SetUserStatusID(i.ID)
-}
-
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -940,12 +641,6 @@ func (uuo *UserUpdateOne) RemoveOrgs(o ...*Organization) *UserUpdateOne {
 	return uuo.RemoveOrgIDs(ids...)
 }
 
-// ClearUserStatus clears the "user_status" edge to the IdentStatusEnum entity.
-func (uuo *UserUpdateOne) ClearUserStatus() *UserUpdateOne {
-	uuo.mutation.ClearUserStatus()
-	return uuo
-}
-
 // Where appends a list predicates to the UserUpdate builder.
 func (uuo *UserUpdateOne) Where(ps ...predicate.User) *UserUpdateOne {
 	uuo.mutation.Where(ps...)
@@ -986,18 +681,7 @@ func (uuo *UserUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (uuo *UserUpdateOne) check() error {
-	if uuo.mutation.UserStatusCleared() && len(uuo.mutation.UserStatusIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "User.user_status"`)
-	}
-	return nil
-}
-
 func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
-	if err := uuo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeString))
 	id, ok := uuo.mutation.ID()
 	if !ok {
@@ -1038,35 +722,11 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	if value, ok := uuo.mutation.Etag(); ok {
 		_spec.SetField(user.FieldEtag, field.TypeString, value)
 	}
-	if value, ok := uuo.mutation.FailedLoginAttempts(); ok {
-		_spec.SetField(user.FieldFailedLoginAttempts, field.TypeInt, value)
-	}
-	if value, ok := uuo.mutation.AddedFailedLoginAttempts(); ok {
-		_spec.AddField(user.FieldFailedLoginAttempts, field.TypeInt, value)
-	}
 	if uuo.mutation.IsOwnerCleared() {
 		_spec.ClearField(user.FieldIsOwner, field.TypeBool)
 	}
-	if value, ok := uuo.mutation.LastLoginAt(); ok {
-		_spec.SetField(user.FieldLastLoginAt, field.TypeTime, value)
-	}
-	if uuo.mutation.LastLoginAtCleared() {
-		_spec.ClearField(user.FieldLastLoginAt, field.TypeTime)
-	}
-	if value, ok := uuo.mutation.LockedUntil(); ok {
-		_spec.SetField(user.FieldLockedUntil, field.TypeTime, value)
-	}
-	if uuo.mutation.LockedUntilCleared() {
-		_spec.ClearField(user.FieldLockedUntil, field.TypeTime)
-	}
-	if value, ok := uuo.mutation.MustChangePassword(); ok {
-		_spec.SetField(user.FieldMustChangePassword, field.TypeBool, value)
-	}
-	if value, ok := uuo.mutation.PasswordHash(); ok {
-		_spec.SetField(user.FieldPasswordHash, field.TypeString, value)
-	}
-	if value, ok := uuo.mutation.PasswordChangedAt(); ok {
-		_spec.SetField(user.FieldPasswordChangedAt, field.TypeTime, value)
+	if value, ok := uuo.mutation.Status(); ok {
+		_spec.SetField(user.FieldStatus, field.TypeString, value)
 	}
 	if value, ok := uuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
@@ -1186,35 +846,6 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if uuo.mutation.UserStatusCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   user.UserStatusTable,
-			Columns: []string{user.UserStatusColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uuo.mutation.UserStatusIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   user.UserStatusTable,
-			Columns: []string{user.UserStatusColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(identstatusenum.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

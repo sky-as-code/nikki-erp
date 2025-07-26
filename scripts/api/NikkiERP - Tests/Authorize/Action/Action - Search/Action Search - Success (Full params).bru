@@ -1,0 +1,21 @@
+meta {
+  name: Action Search - Success (Full params)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/authorize/actions?page=0&size=4&graph={"if":["name", "=", "Create"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 4
+  graph: {"if":["name", "=", "Create"]}
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,34 @@
+meta {
+  name: User Search - No criteria, No paging - Success
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/identity/users
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const schema = bru.getVar("search_schema");
+  const payload = res.getBody();
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  const defaultPageSize = 50; // Change this number according to Backend default
+  test("Response has default number of paged items", function () {
+      expect(payload.items.length).to.equal(defaultPageSize)
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

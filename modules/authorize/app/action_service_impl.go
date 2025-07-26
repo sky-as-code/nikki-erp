@@ -201,7 +201,7 @@ func (this *ActionServiceImpl) assertActionUnique(ctx context.Context, action *d
 func (this *ActionServiceImpl) assertActionExists(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbAction *domain.Action, err error) {
 	dbAction, err = this.actionRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	if dbAction == nil {
-		vErrs.AppendIdNotFound("action")
+		vErrs.AppendNotFound("id", "action")
 	}
 	return
 }

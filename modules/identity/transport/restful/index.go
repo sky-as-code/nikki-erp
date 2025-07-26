@@ -1,8 +1,6 @@
 package restful
 
 import (
-	"errors"
-
 	"github.com/labstack/echo/v4"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
@@ -10,14 +8,12 @@ import (
 )
 
 func InitRestfulHandlers() error {
-	err := errors.Join(
-		initUserRest(),
+	deps.Register(
+		v1.NewUserRest,
+		v1.NewGroupRest,
+		v1.NewOrganizationRest,
+		v1.NewHierarchyRest,
 	)
-	return err
-}
-
-func initUserRest() error {
-	deps.Register(v1.NewUserRest, v1.NewGroupRest, v1.NewOrganizationRest, v1.NewHierarchyRest)
 	return deps.Invoke(func(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, orgRest *v1.OrganizationRest, hierarchyRest *v1.HierarchyRest) {
 		v1 := route.Group("/v1/identity")
 		initV1(v1, userRest, groupRest, orgRest, hierarchyRest)
@@ -31,7 +27,6 @@ func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, o
 	route.GET("/users", userRest.SearchUsers)
 	route.PUT("/users/:id", userRest.UpdateUser)
 	route.POST("/users/exists", userRest.UserExistsMulti)
-	route.GET("/users/statuses", userRest.ListUserStatuses)
 
 	route.POST("/groups", groupRest.CreateGroup)
 	route.DELETE("/groups/:id", groupRest.DeleteGroup)
@@ -45,7 +40,6 @@ func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, o
 	route.GET("/organizations/:slug", orgRest.GetOrganizationBySlug)
 	route.GET("/organizations", orgRest.SearchOrganizations)
 	route.PUT("/organizations/:slug", orgRest.UpdateOrganization)
-	route.GET("/organizations/statuses", orgRest.ListOrgStatuses)
 
 	route.POST("/hierarchy", hierarchyRest.CreateHierarchyLevel)
 	route.DELETE("/hierarchy/:id", hierarchyRest.DeleteHierarchyLevel)

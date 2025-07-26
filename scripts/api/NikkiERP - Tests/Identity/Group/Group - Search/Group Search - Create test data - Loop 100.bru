@@ -1,0 +1,67 @@
+meta {
+  name: Group Search - Create test data - Loop 100
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "Dev squad {{loop_count}}",
+      "description": "Squad of max 10 developers {{loop_count}}"
+  }
+}
+
+script:pre-request {
+  const rawBody = req.getBody().raw;
+  const payload = JSON.parse(rawBody);
+  
+  // Generate a 6-char alphanumeric string
+  function randomString(length = 6) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+  }
+  
+  const rand = randomString();
+  
+  if (payload.name) {
+      payload.name += ' ' + rand;
+  }
+  if (payload.description) {
+      payload.description += ' ' + rand;
+  }
+  
+  // Write modified payload back to request
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
+}
+
+script:post-response {
+  const myRequestId = "347c2615-00f4-4024-b1f7-68989b1b2129"
+  const GroupSearch_NoCrit_NoPaging_Success = "6bc3c209-ae18-414b-a263-e5dd9d7c5f4b"
+  let i = bru.getVar("loop_count");
+  
+  if (i > 0) {
+      bru.setVar("loop_count", --i);
+      console.log("To loop: ", i)
+      bru.runner.setNextRequest(myRequestId);
+  } else {
+      console.log("To test case")
+      bru.deleteVar("loop_count")
+      bru.runner.setNextRequest(GroupSearch_NoCrit_NoPaging_Success);
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

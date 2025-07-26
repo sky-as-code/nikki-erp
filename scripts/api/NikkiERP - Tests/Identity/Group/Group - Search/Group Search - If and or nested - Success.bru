@@ -1,0 +1,37 @@
+meta {
+  name: Group Search - If and or nested - Success
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{api_host}}/v1/identity/groups?graph={"or":[{"if":["name", "^", "Manager"]},{"and":[{"if": ["description", "*", "squad"]},{"if": ["description", "*", "77"]}]}]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"or":[{"if":["name", "^", "Manager"]},{"and":[{"if": ["description", "*", "squad"]},{"if": ["description", "*", "77"]}]}]}
+}
+
+script:post-response {
+  const schema = bru.getVar("search_schema");
+  const payload = res.getBody();
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  test("Response has positive number of items", function () {
+      expect(payload.items.length).to.be.greaterThan(0)
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

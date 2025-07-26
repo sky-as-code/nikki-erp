@@ -1,0 +1,44 @@
+meta {
+  name: Group Search - No criteria, With paging - Success
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/identity/groups?page=2&size=7
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 2
+  size: 7
+}
+
+script:post-response {
+  const schema = bru.getVar("search_schema");
+  const payload = res.getBody();
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  // Change these numbers according to the query string params
+  const pageIndex = 2;
+  const pageSize = 7;
+  
+  test("Response has correct requested number of paged items", function () {
+      expect(payload.items.length).to.equal(pageSize)
+      expect(payload.page).to.equal(pageIndex)
+      expect(payload.size).to.equal(pageSize)
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

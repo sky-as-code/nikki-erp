@@ -1,0 +1,74 @@
+meta {
+  name: Role Get by Id - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/authorize/roles/{{role_id}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  const schema = {
+      type: "object",
+      required: [
+          "id",
+          "etag",
+          "name",
+          "ownerType",
+          "ownerRef"
+      ],
+      properties: {
+          id: { type: "string" },
+          etag: { type: "string" },
+          name: { type: "string" },
+          description: { type: ["string", "null"] },
+          ownerType: { type: "string", enum: ["user", "group"] },
+          ownerRef: { type: "string" },
+          isRequestable: { type: "boolean" },
+          isRequiredAttachment: { type: "boolean" },
+          ownerisRequiredCommentRef: { type: "boolean" },
+          createdBy: { type: "string" },
+          entitlements: {
+              type: ["object", "null"],
+              properties: {
+                  id: { type: "string" },
+                  name: { type: "string" }
+              },
+              required: ["id", "name"],
+              additionalProperties: true
+          },
+      },
+      additionalProperties: true
+  };
+  
+  test("Response matches expected schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  let body;
+  try {
+      body = res.getBody();
+      console.log("✅ Get Role by ID response:", body);
+  } catch (err) {
+      console.error("❌ Failed to parse response JSON:", err);
+  }
+  
+  if (body && body.id && body.etag) {
+      bru.setVar("role_id", body.id);
+      bru.setVar("role_name", body.name);
+      bru.setVar("etag", body.etag);
+      console.log("✅ Save value to env")
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

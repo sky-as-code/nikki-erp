@@ -1,0 +1,25 @@
+meta {
+  name: Deny - Wrong subjectRef (*:scopeRef.IdentityUser)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "Create",
+      "resourceName": "IdentityUser",
+      "scopeRef": "01JWNY20G23KD4RV5VWYABKDT1",
+      "subjectType": "nikki_user",
+      "subjectRef": "01JZQFDH0N51Q3BFQFMFFGSCCC"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

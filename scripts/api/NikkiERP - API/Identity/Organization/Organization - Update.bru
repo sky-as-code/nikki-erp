@@ -1,0 +1,30 @@
+meta {
+  name: Organization - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/identity/organizations/{{org_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "address": "291 An Duong Vuong , Phuong 3 , TP.HCM",
+      "displayName": "Company Zalo",
+      "phoneNumber": "023424234234",
+      "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  const payload = res.getBody();
+  const { etag } = payload;
+  etag && bru.setVar('etag', etag);
+}
+
+settings {
+  encodeUrl: true
+}

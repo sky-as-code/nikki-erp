@@ -1,0 +1,15 @@
+meta {
+  name: Party Tag - List
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/contacts/parties/tags
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

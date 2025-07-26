@@ -1,0 +1,21 @@
+meta {
+  name: Role Search - Client error (Invalid paging)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api_host}}/v1/authorize/roles?page=-1&size=99999999999&graph={"if":["name", "=", "Create"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: -1
+  size: 99999999999
+  graph: {"if":["name", "=", "Create"]}
+}
+
+settings {
+  encodeUrl: true
+}

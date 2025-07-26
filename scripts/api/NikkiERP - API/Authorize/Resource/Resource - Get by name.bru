@@ -1,0 +1,15 @@
+meta {
+  name: Resource - Get by name
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources/{{resource_name}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

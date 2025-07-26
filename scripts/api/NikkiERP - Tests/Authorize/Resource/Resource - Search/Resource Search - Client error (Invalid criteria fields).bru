@@ -1,0 +1,22 @@
+meta {
+  name: Resource Search - Client error (Invalid criteria fields)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources?page=-1&size=999999999999&withActions=true&graph={"if":["name", "=", "IdentityUser"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: -1
+  size: 999999999999
+  withActions: true
+  graph: {"if":["name", "=", "IdentityUser"]}
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Login - Start
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authn/login/start
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "subjectType": "user",
+      "username": "{{email}}"
+  }
+}
+
+script:post-response {
+  const payload = res.getBody();
+  const { attemptId } = payload;
+  attemptId && bru.setVar('attemptId', attemptId);
+  
+}
+
+settings {
+  encodeUrl: true
+}

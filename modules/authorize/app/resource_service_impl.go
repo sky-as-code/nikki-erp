@@ -188,7 +188,7 @@ func (this *ResourceServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEta
 func (this *ResourceServiceImpl) assertResourceExistsByName(ctx context.Context, name string, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
 	dbResource, err = this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: name})
 	if dbResource == nil {
-		vErrs.AppendIdNotFound("resource")
+		vErrs.AppendNotFound("id", "resource")
 	}
 	return
 }
@@ -196,7 +196,7 @@ func (this *ResourceServiceImpl) assertResourceExistsByName(ctx context.Context,
 func (this *ResourceServiceImpl) assertResourceExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
 	dbResource, err = this.resourceRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	if dbResource == nil {
-		vErrs.AppendIdNotFound("resource")
+		vErrs.AppendNotFound("id", "resource")
 	}
 	return
 }

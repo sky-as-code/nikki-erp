@@ -1,0 +1,99 @@
+meta {
+  name: Role Create - Client error (Duplicate entitlement id)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authorize/roles
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "Authorize module Product Manager",
+      "ownerType": "user",
+      "ownerRef": "{{user_id}}",
+      "isRequestable": false,
+      "isRequiredAttachment": false,
+      "isRequiredComment": false,
+      "createdBy": "{{user_id}}",
+      "entitlements": [
+          "{{entitlement_id}}",
+          "{{entitlement_id}}"
+      ]
+  }
+}
+
+script:post-response {
+  // ✅ Expected success schema
+  const successSchema = {
+      type: "object",
+      required: ["id", "etag", "createdAt"],
+      properties: {
+          id: { type: "string" },
+          etag: { type: "string" },
+          createdAt: { type: "number" }
+      },
+      additionalProperties: true
+  };
+  
+  // ✅ Expected error schema (validation error)
+  const errorSchema = {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+          code: { type: "string" },
+          details: { type: "object" }
+      },
+      additionalProperties: true
+  };
+  
+  let isJsonValid = true;
+  let body;
+  
+  try {
+      body = res.getBody();
+      console.log("📥 Response body:", body);
+  } catch (e) {
+      isJsonValid = false;
+      expect.fail("❌ Response is not valid JSON");
+  }
+  
+  const statusCode = res.getStatus();
+  
+  // ✅ Handle success case
+  if (isJsonValid && statusCode === 201) {
+      test("✅ Status code is 201 Created", function () {
+          expect(statusCode).to.eql(201);
+      });
+  
+      test("✅ Response matches success schema", function () {
+          expect(tv4.validate(body, successSchema)).to.be.true;
+      });
+  
+      bru.setVar("etag", body.etag);
+      console.log("✅ etag saved.");
+  }
+  
+  // ❌ Handle validation error
+  else if (isJsonValid && statusCode === 400 && body.code === "validation_error") {
+      test("❌ Validation error received", function () {
+          expect(body.details).to.be.an("object");
+          console.warn("⚠️ Validation errors:", JSON.stringify(body.details, null, 2));
+      });
+  } 
+  
+  // ❓ Unexpected status
+  else {
+      test("⚠️ Unexpected response", function () {
+          expect.fail(`Unexpected status ${statusCode}`);
+      });
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

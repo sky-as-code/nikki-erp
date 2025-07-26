@@ -1,0 +1,25 @@
+meta {
+  name: Allow (*:*.*)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "Grant",
+      "resourceName": "AuthzEntitlement",
+      "scopeRef": "uuidToScope",
+      "subjectType": "nikki_user",
+      "subjectRef": "01JWNMZ36QHC7CQQ748H9NQ6J6"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

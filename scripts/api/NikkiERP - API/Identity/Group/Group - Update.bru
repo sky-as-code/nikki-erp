@@ -1,0 +1,29 @@
+meta {
+  name: Group - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "Your Team",
+      "description": "The people you are working with",
+      "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  const payload = res.getBody();
+  payload.etag && bru.setVar('etag', payload.etag);
+  
+}
+
+settings {
+  encodeUrl: true
+}

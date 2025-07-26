@@ -1,0 +1,25 @@
+meta {
+  name: Deny - Wrong subjectRef (View:*.AuthzRoleSuite)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "View",
+      "resourceName": "AuthzRoleSuite",
+      "scopeRef": "uuidToScope",
+      "subjectType": "nikki_suite",
+      "subjectRef": "01JWP9MVYX0K24R9H81SZEM7CC"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

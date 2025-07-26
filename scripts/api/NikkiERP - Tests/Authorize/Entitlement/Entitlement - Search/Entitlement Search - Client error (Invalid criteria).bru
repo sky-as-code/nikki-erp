@@ -1,0 +1,21 @@
+meta {
+  name: Entitlement Search - Client error (Invalid criteria)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/authorize/entitlements?page=0&size=4&graph={"if":["invalid_field", "=", "invalid_value"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 4
+  graph: {"if":["invalid_field", "=", "invalid_value"]}
+}
+
+settings {
+  encodeUrl: true
+}

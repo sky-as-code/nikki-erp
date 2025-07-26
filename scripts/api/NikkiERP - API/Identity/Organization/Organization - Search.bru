@@ -1,0 +1,20 @@
+meta {
+  name: Organization - Search
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/identity/organizations?page=0&size=3
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 3
+}
+
+settings {
+  encodeUrl: true
+}

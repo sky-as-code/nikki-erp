@@ -1,0 +1,112 @@
+meta {
+  name: User Update - Success
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{api_host}}/v1/identity/users/{{user_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "avatarUrl": "https://avatar.com/me.jpg",
+      "displayName": "Another Doe",
+      "email": "another.doe@nikkierp.com",
+      "etag": "{{etag}}",
+      "mustChangePassword": true,
+      "password": "t0psecret!",
+      "statusValue": "archived"
+  }
+  
+}
+
+script:pre-request {
+  // Get original request body as raw text
+  let rawBody = req.getBody().raw;
+  
+  // Parse it as JSON
+  let payload;
+  try {
+      payload = JSON.parse(rawBody);
+  } catch (e) {
+      console.error("Failed to parse request body as JSON:", e);
+      return;
+  }
+  
+  // Generate a 6-char alphanumeric string
+  function randomString(length = 6) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+  }
+  
+  const rand = randomString();
+  
+  if (payload.displayName) {
+      payload.displayName += ' ' + rand;
+  }
+  if (payload.email && payload.email.includes('@')) {
+      const [local, domain] = payload.email.split('@');
+      payload.email = `${local}-${rand}@${domain}`;
+  }
+  
+  // Write modified payload back to request
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
+}
+
+script:post-response {
+  const schema = {
+      type: "object",
+      required: ["id", "etag", "updatedAt"],
+      properties: {
+          id: {
+              type: "string",
+              minLength: 1,
+          },
+          etag: {
+              type: "string",
+              minLength: 1,
+          },
+          updatedAt: {
+              type: "integer",
+              minimum: 1,
+          }
+      },
+      additionalProperties: false
+  };
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  const requestBody = JSON.parse(req.getBody().raw);
+  bru.setVar('email', requestBody.email);
+  
+  const payload = res.getBody();
+  const { id, etag, email } = payload;
+  const previousEtag = bru.getVar("etag");
+  
+  test("Response 'etag' is different from previous", () => {
+      expect(etag).to.not.eql(previousEtag);
+  });
+  
+  id && bru.setVar('user_id', id);
+  etag && bru.setVar('etag', etag);
+  email && bru.setVar('email', email);
+  
+}
+
+settings {
+  encodeUrl: true
+}

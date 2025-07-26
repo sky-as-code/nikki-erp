@@ -1,0 +1,22 @@
+meta {
+  name: Resource - Search
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources?page=0&size=3&withActions=true&graph={"if":["name", "=", "IdentityUser"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 3
+  withActions: true
+  graph: {"if":["name", "=", "IdentityUser"]}
+}
+
+settings {
+  encodeUrl: true
+}

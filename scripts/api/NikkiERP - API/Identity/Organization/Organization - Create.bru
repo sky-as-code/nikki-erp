@@ -1,0 +1,66 @@
+meta {
+  name: Organization - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/organizations
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "address": "123 <b>Ham Nghi st</b>, <a onclick=\"alert()\">HCM city</a>",
+      "displayName": "<i>Lone Wolf company<i><script>hacked</script>",
+      "legalName": "Cong ty trach nhiem huu han Mot thanh vien Mot Minh Tui - Lone Wolf Co. Ltd.",
+      "slug": "lone-wolf"
+  }
+}
+
+script:pre-request {
+  const payload = JSON.parse(req.getBody().raw);
+  
+  // Generate a 6-char alphanumeric string
+  function randomString(length = 6) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+  }
+  
+  const rand = randomString();
+  
+  if (payload.address) {
+      payload.address += ' ' + rand;
+  }
+  if (payload.displayName) {
+      payload.displayName += ' ' + rand;
+  }
+  if (payload.legalName) {
+      payload.legalName += ' ' + rand;
+  }
+  if (payload.slug) {
+      payload.slug = `${payload.slug}-${rand}`.toLowerCase();
+  }
+  // Write modified payload back to request
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
+}
+
+script:post-response {
+  const requestBody = JSON.parse(req.getBody().raw);
+  bru.setVar('org_slug', requestBody.slug);
+  
+  const payload = res.getBody();
+  const { id, etag } = payload;
+  id && bru.setVar('org_id', id);
+  etag && bru.setVar('etag', etag);
+}
+
+settings {
+  encodeUrl: true
+}

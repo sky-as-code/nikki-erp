@@ -207,7 +207,7 @@ func (this *EntitlementServiceImpl) GetAllEntitlementByIds(ctx context.Context, 
 	}
 
 	if len(dbEntitlements) == 0 {
-		vErrs.AppendIdNotFound("entitlement")
+		vErrs.AppendNotFound("id", "entitlement")
 
 		return &it.GetAllEntitlementByIdsResult{
 			ClientError: vErrs.ToClientError(),
@@ -262,7 +262,7 @@ func (this *EntitlementServiceImpl) assertCorrectEtag(updatedEtag model.Etag, db
 func (this *EntitlementServiceImpl) assertEntitlementExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbEntitlement *domain.Entitlement, err error) {
 	dbEntitlement, err = this.entitlementRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	if dbEntitlement == nil {
-		vErrs.AppendIdNotFound("entitlement")
+		vErrs.AppendNotFound("id", "entitlement")
 	}
 	return
 }

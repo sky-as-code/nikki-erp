@@ -1,0 +1,19 @@
+meta {
+  name: Action Search - Success (1 level criteria)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/authorize/actions?graph={"if":["name", "=", "Create"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"if":["name", "=", "Create"]}
+}
+
+settings {
+  encodeUrl: true
+}

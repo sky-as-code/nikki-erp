@@ -1,0 +1,52 @@
+meta {
+  name: Group - Invalid IDs - Validation errors
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "add": ["11113ZBF68C3DRN0371PER5BRC", "01"],
+      "remove": ["22223ZBF68C3DRN0371PER5BRC", "33333ZBF68C3DRN0371PER5BRC", ""],
+      "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  const expected = {
+      code: "validation_error",
+      details: {
+          add: "1: the length must be exactly 26.",
+          remove: "2: cannot be blank.",
+      },
+  };
+  
+  test("Status code is 400", function () {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  // Parse response body
+  let jsonData;
+  try {
+      jsonData = res.getBody();
+  } catch (e) {
+      test("Response is valid JSON", function () {
+          expect.fail("Response is not valid JSON");
+      });
+      return;
+  }
+  
+  test("Response body matches expected JSON exactly", function () {
+      expect(jsonData).to.eql(expected);
+  });
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,60 @@
+meta {
+  name: Group Get - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const schema = {
+      type: "object",
+      properties: {
+          id: {
+              "type": "string",
+              minLength: 1,
+          },
+          createdAt: {
+              type: "integer",
+              minimum: 1,
+              description: "Unix timestamp in milliseconds"
+          },
+          name: {
+              type: "string",
+              minLength: 1,
+          },
+          description: {
+              type: "string",
+              minLength: 1,
+          },
+          etag: {
+              type: "string",
+              minLength: 1,
+          },
+          updatedAt: {
+              type: "integer",
+              minimum: 1,
+              description: "Unix timestamp in milliseconds"
+          }
+      },
+      "required": ["id", "createdAt", "name", "etag"],
+      "additionalProperties": false
+  };
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

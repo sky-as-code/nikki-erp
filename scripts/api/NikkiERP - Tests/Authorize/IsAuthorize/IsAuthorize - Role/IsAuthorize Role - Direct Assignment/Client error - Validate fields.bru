@@ -1,0 +1,22 @@
+meta {
+  name: Client error - Validate fields
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "subjectType": "invalid_value",
+      "subjectRef": "invalid_value"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

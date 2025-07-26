@@ -28,11 +28,12 @@ func initUserHandlers() error {
 			cqrs.NewHandler(handler.Create),
 			cqrs.NewHandler(handler.Delete),
 			cqrs.NewHandler(handler.GetUserById),
+			cqrs.NewHandler(handler.GetUserByEmail),
+			cqrs.NewHandler(handler.MustGetActiveUser),
 			cqrs.NewHandler(handler.SearchUsers),
 			cqrs.NewHandler(handler.Update),
 			cqrs.NewHandler(handler.UserExists),
 			cqrs.NewHandler(handler.UserExistsMulti),
-			cqrs.NewHandler(handler.ListUserStatuses),
 		)
 	})
 }
@@ -66,7 +67,6 @@ func initOrganizationHandlers() error {
 			cqrs.NewHandler(handler.UpdateOrganization),
 			cqrs.NewHandler(handler.DeleteOrganization),
 			cqrs.NewHandler(handler.GetOrganizationBySlug),
-			cqrs.NewHandler(handler.ListOrgStatuses),
 			cqrs.NewHandler(handler.SearchOrganizations),
 		)
 	})

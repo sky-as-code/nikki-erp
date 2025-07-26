@@ -1,0 +1,25 @@
+meta {
+  name: Client error - Not found
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "Update1",
+      "resourceName": "AuthzResource2",
+      "scopeRef": "uuidToScope",
+      "subjectType": "nikki_group",
+      "subjectRef": "01JWNXBR5QJBH7PE9PQ9FW746V"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

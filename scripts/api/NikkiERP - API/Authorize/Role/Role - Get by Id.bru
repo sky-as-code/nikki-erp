@@ -1,0 +1,15 @@
+meta {
+  name: Role - Get by Id
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/authorize/roles/{{role_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Organization - Get By Slug
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/identity/organizations/{{org_id}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const payload = res.getBody();
+  const { etag } = payload;
+  etag && bru.setVar('etag', etag);
+  
+}
+
+settings {
+  encodeUrl: true
+}

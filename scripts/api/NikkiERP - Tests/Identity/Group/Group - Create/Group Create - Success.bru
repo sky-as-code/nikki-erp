@@ -1,0 +1,89 @@
+meta {
+  name: Group Create - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "My Team",
+      "description": "This is my team"
+  }
+}
+
+script:pre-request {
+  const rawBody = req.getBody().raw;
+  const payload = JSON.parse(rawBody);
+  
+  // Generate a 6-char alphanumeric string
+  function randomString(length = 6) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+  }
+  
+  const rand = randomString();
+  
+  if (payload.name) {
+      payload.name += ' ' + rand;
+  }
+  if (payload.description) {
+      payload.description += ' ' + rand;
+  }
+  
+  // Write modified payload back to request
+  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
+}
+
+script:post-response {
+  const schema = {
+      type: "object",
+      required: ["id", "createdAt", "etag"],
+      properties: {
+          id: {
+              type: "string",
+              minLength: 1,
+          },
+          createdAt: {
+              type: "integer",
+              minimum: 1,
+          },
+          etag: {
+              type: "string",
+              minLength: 1,
+          },
+      },
+      additionalProperties: false
+  };
+  
+  test("Status code is 201", function () {
+      expect(res.getStatus()).to.equal(201);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+  //     pm.response.to.have.jsonSchema(schema);
+  });
+  
+  const { name } = JSON.parse(req.getBody().raw);
+  name && bru.setVar('name', name);
+  
+  const payload = res.getBody();
+  const { id, etag } = payload;
+  id && bru.setVar('group_id', id);
+  etag && bru.setVar('etag', etag);
+  
+}
+
+settings {
+  encodeUrl: true
+}

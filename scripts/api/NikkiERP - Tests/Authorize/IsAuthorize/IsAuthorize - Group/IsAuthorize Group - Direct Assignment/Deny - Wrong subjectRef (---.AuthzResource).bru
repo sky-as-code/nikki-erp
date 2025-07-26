@@ -1,0 +1,25 @@
+meta {
+  name: Deny - Wrong subjectRef (*:*.AuthzResource)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "Update",
+      "resourceName": "AuthzResource",
+      "scopeRef": "uuidToScope",
+      "subjectType": "nikki_group",
+      "subjectRef": "01JWNXBR5QJBH7PE9PQ9FW746T"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

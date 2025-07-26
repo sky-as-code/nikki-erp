@@ -14,7 +14,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/identstatusenum"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/usergroup"
@@ -79,13 +78,12 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			group.Table:           group.ValidColumn,
-			hierarchylevel.Table:  hierarchylevel.ValidColumn,
-			identstatusenum.Table: identstatusenum.ValidColumn,
-			organization.Table:    organization.ValidColumn,
-			user.Table:            user.ValidColumn,
-			usergroup.Table:       usergroup.ValidColumn,
-			userorg.Table:         userorg.ValidColumn,
+			group.Table:          group.ValidColumn,
+			hierarchylevel.Table: hierarchylevel.ValidColumn,
+			organization.Table:   organization.ValidColumn,
+			user.Table:           user.ValidColumn,
+			usergroup.Table:      usergroup.ValidColumn,
+			userorg.Table:        userorg.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

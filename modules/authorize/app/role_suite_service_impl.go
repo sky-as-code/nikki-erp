@@ -164,7 +164,7 @@ func (this *RoleSuiteServiceImpl) GetRoleSuitesBySubject(ctx context.Context, qu
 func (this *RoleSuiteServiceImpl) assertRoleSuiteExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbRoleSuite *domain.RoleSuite, err error) {
 	dbRoleSuite, err = this.roleSuiteRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	if dbRoleSuite == nil {
-		vErrs.AppendIdNotFound("roleSuite")
+		vErrs.AppendNotFound("id", "roleSuite")
 	}
 	return
 }
