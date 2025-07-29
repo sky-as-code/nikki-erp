@@ -1,0 +1,21 @@
+meta {
+  name: Client error - Invalid fields
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "invalid_field": "invalid_value"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

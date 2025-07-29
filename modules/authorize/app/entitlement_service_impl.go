@@ -34,7 +34,7 @@ func (this *EntitlementServiceImpl) CreateEntitlement(ctx context.Context, cmd i
 	}()
 
 	entitlement := cmd.ToEntitlement()
-	this.setEntitlementDefaults(ctx, entitlement)
+	this.setEntitlementDefaults(entitlement)
 
 	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
@@ -273,7 +273,7 @@ func (this *EntitlementServiceImpl) sanitizeEntitlement(entitlement *domain.Enti
 	}
 }
 
-func (this *EntitlementServiceImpl) setEntitlementDefaults(ctx context.Context, entitlement *domain.Entitlement) {
+func (this *EntitlementServiceImpl) setEntitlementDefaults(entitlement *domain.Entitlement) {
 	entitlement.SetDefaults()
 }
 

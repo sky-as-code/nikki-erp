@@ -35,7 +35,7 @@ func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx context.Context, cmd it.Cr
 	}()
 
 	roleSuite := cmd.ToRoleSuite()
-	this.setRoleSuiteDefaults(ctx, roleSuite)
+	this.setRoleSuiteDefaults(roleSuite)
 
 	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
@@ -49,7 +49,7 @@ func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx context.Context, cmd it.Cr
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
 			if len(roleSuite.Roles) > 0 {
-				this.validateRoles(ctx, roleSuite.Roles, vErrs)
+				this.validateRoles(roleSuite.Roles, vErrs)
 			}
 			return nil
 		}).
@@ -186,11 +186,11 @@ func (this *RoleSuiteServiceImpl) sanitizeRoleSuite(roleSuite *domain.RoleSuite)
 	}
 }
 
-func (this *RoleSuiteServiceImpl) setRoleSuiteDefaults(ctx context.Context, roleSuite *domain.RoleSuite) {
+func (this *RoleSuiteServiceImpl) setRoleSuiteDefaults(roleSuite *domain.RoleSuite) {
 	roleSuite.SetDefaults()
 }
 
-func (this *RoleSuiteServiceImpl) validateRoles(ctx context.Context, roles []*domain.Role, vErrs *fault.ValidationErrors) {
+func (this *RoleSuiteServiceImpl) validateRoles(roles []*domain.Role, vErrs *fault.ValidationErrors) {
 	seenIds := make(map[model.Id]int)
 
 	for i, role := range roles {

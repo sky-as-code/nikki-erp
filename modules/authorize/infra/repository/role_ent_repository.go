@@ -14,7 +14,7 @@ import (
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
-	entAssignt "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
+	entAssign "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	entRole "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
 	entRoleUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/roleuser"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
@@ -122,7 +122,7 @@ func (this *RoleEntRepository) createAssignmentTx(ctx context.Context, tx *ent.T
 		Create().
 		SetID(*assignmentID).
 		SetSubjectRef(roleID).
-		SetSubjectType(entAssignt.SubjectTypeNikkiRole).
+		SetSubjectType(entAssign.SubjectTypeNikkiRole).
 		SetEntitlementID(entitlementID).
 		SetResolvedExpr(resolvedExpr).
 		SetNillableActionName(actionName).

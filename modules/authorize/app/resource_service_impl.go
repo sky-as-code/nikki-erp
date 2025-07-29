@@ -34,7 +34,7 @@ func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.Crea
 	}()
 
 	resource := cmd.ToResource()
-	this.setResourceDefaults(ctx, resource)
+	this.setResourceDefaults(resource)
 
 	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
@@ -207,7 +207,7 @@ func (this *ResourceServiceImpl) sanitizeResource(resource *domain.Resource) {
 	}
 }
 
-func (this *ResourceServiceImpl) setResourceDefaults(ctx context.Context, resource *domain.Resource) {
+func (this *ResourceServiceImpl) setResourceDefaults(resource *domain.Resource) {
 	resource.SetDefaults()
 }
 

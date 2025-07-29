@@ -1,0 +1,25 @@
+meta {
+  name: Allow (View:*.IdentityGroup)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "View",
+      "resourceName": "IdentityGroup",
+      "scopeRef": "uuidToScope",
+      "subjectType": "nikki_suite",
+      "subjectRef": "01JWP9MVYX0K24R9H81SZEM7CE"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

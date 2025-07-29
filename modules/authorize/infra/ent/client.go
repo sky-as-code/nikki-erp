@@ -36,8 +36,10 @@ type Client struct {
 	Schema *migrate.Schema
 	// Action is the client for interacting with the Action builders.
 	Action *ActionClient
-	// EffectiveEntitlement is the client for interacting with the EffectiveEntitlement builders.
-	EffectiveEntitlement *EffectiveEntitlementClient
+	// EffectiveGroupEntitlement is the client for interacting with the EffectiveGroupEntitlement builders.
+	EffectiveGroupEntitlement *EffectiveGroupEntitlementClient
+	// EffectiveUserEntitlement is the client for interacting with the EffectiveUserEntitlement builders.
+	EffectiveUserEntitlement *EffectiveUserEntitlementClient
 	// Entitlement is the client for interacting with the Entitlement builders.
 	Entitlement *EntitlementClient
 	// EntitlementAssignment is the client for interacting with the EntitlementAssignment builders.
@@ -72,7 +74,8 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Action = NewActionClient(c.config)
-	c.EffectiveEntitlement = NewEffectiveEntitlementClient(c.config)
+	c.EffectiveGroupEntitlement = NewEffectiveGroupEntitlementClient(c.config)
+	c.EffectiveUserEntitlement = NewEffectiveUserEntitlementClient(c.config)
 	c.Entitlement = NewEntitlementClient(c.config)
 	c.EntitlementAssignment = NewEntitlementAssignmentClient(c.config)
 	c.GrantRequest = NewGrantRequestClient(c.config)
@@ -174,21 +177,22 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:                   ctx,
-		config:                cfg,
-		Action:                NewActionClient(cfg),
-		EffectiveEntitlement:  NewEffectiveEntitlementClient(cfg),
-		Entitlement:           NewEntitlementClient(cfg),
-		EntitlementAssignment: NewEntitlementAssignmentClient(cfg),
-		GrantRequest:          NewGrantRequestClient(cfg),
-		PermissionHistory:     NewPermissionHistoryClient(cfg),
-		Resource:              NewResourceClient(cfg),
-		RevokeRequest:         NewRevokeRequestClient(cfg),
-		Role:                  NewRoleClient(cfg),
-		RoleRoleSuite:         NewRoleRoleSuiteClient(cfg),
-		RoleSuite:             NewRoleSuiteClient(cfg),
-		RoleSuiteUser:         NewRoleSuiteUserClient(cfg),
-		RoleUser:              NewRoleUserClient(cfg),
+		ctx:                       ctx,
+		config:                    cfg,
+		Action:                    NewActionClient(cfg),
+		EffectiveGroupEntitlement: NewEffectiveGroupEntitlementClient(cfg),
+		EffectiveUserEntitlement:  NewEffectiveUserEntitlementClient(cfg),
+		Entitlement:               NewEntitlementClient(cfg),
+		EntitlementAssignment:     NewEntitlementAssignmentClient(cfg),
+		GrantRequest:              NewGrantRequestClient(cfg),
+		PermissionHistory:         NewPermissionHistoryClient(cfg),
+		Resource:                  NewResourceClient(cfg),
+		RevokeRequest:             NewRevokeRequestClient(cfg),
+		Role:                      NewRoleClient(cfg),
+		RoleRoleSuite:             NewRoleRoleSuiteClient(cfg),
+		RoleSuite:                 NewRoleSuiteClient(cfg),
+		RoleSuiteUser:             NewRoleSuiteUserClient(cfg),
+		RoleUser:                  NewRoleUserClient(cfg),
 	}, nil
 }
 
@@ -206,21 +210,22 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:                   ctx,
-		config:                cfg,
-		Action:                NewActionClient(cfg),
-		EffectiveEntitlement:  NewEffectiveEntitlementClient(cfg),
-		Entitlement:           NewEntitlementClient(cfg),
-		EntitlementAssignment: NewEntitlementAssignmentClient(cfg),
-		GrantRequest:          NewGrantRequestClient(cfg),
-		PermissionHistory:     NewPermissionHistoryClient(cfg),
-		Resource:              NewResourceClient(cfg),
-		RevokeRequest:         NewRevokeRequestClient(cfg),
-		Role:                  NewRoleClient(cfg),
-		RoleRoleSuite:         NewRoleRoleSuiteClient(cfg),
-		RoleSuite:             NewRoleSuiteClient(cfg),
-		RoleSuiteUser:         NewRoleSuiteUserClient(cfg),
-		RoleUser:              NewRoleUserClient(cfg),
+		ctx:                       ctx,
+		config:                    cfg,
+		Action:                    NewActionClient(cfg),
+		EffectiveGroupEntitlement: NewEffectiveGroupEntitlementClient(cfg),
+		EffectiveUserEntitlement:  NewEffectiveUserEntitlementClient(cfg),
+		Entitlement:               NewEntitlementClient(cfg),
+		EntitlementAssignment:     NewEntitlementAssignmentClient(cfg),
+		GrantRequest:              NewGrantRequestClient(cfg),
+		PermissionHistory:         NewPermissionHistoryClient(cfg),
+		Resource:                  NewResourceClient(cfg),
+		RevokeRequest:             NewRevokeRequestClient(cfg),
+		Role:                      NewRoleClient(cfg),
+		RoleRoleSuite:             NewRoleRoleSuiteClient(cfg),
+		RoleSuite:                 NewRoleSuiteClient(cfg),
+		RoleSuiteUser:             NewRoleSuiteUserClient(cfg),
+		RoleUser:                  NewRoleUserClient(cfg),
 	}, nil
 }
 
@@ -262,9 +267,10 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Action, c.EffectiveEntitlement, c.Entitlement, c.EntitlementAssignment,
-		c.GrantRequest, c.PermissionHistory, c.Resource, c.RevokeRequest, c.Role,
-		c.RoleRoleSuite, c.RoleSuite, c.RoleSuiteUser, c.RoleUser,
+		c.Action, c.EffectiveGroupEntitlement, c.EffectiveUserEntitlement,
+		c.Entitlement, c.EntitlementAssignment, c.GrantRequest, c.PermissionHistory,
+		c.Resource, c.RevokeRequest, c.Role, c.RoleRoleSuite, c.RoleSuite,
+		c.RoleSuiteUser, c.RoleUser,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -467,34 +473,64 @@ func (c *ActionClient) mutate(ctx context.Context, m *ActionMutation) (Value, er
 	}
 }
 
-// EffectiveEntitlementClient is a client for the EffectiveEntitlement schema.
-type EffectiveEntitlementClient struct {
+// EffectiveGroupEntitlementClient is a client for the EffectiveGroupEntitlement schema.
+type EffectiveGroupEntitlementClient struct {
 	config
 }
 
-// NewEffectiveEntitlementClient returns a client for the EffectiveEntitlement from the given config.
-func NewEffectiveEntitlementClient(c config) *EffectiveEntitlementClient {
-	return &EffectiveEntitlementClient{config: c}
+// NewEffectiveGroupEntitlementClient returns a client for the EffectiveGroupEntitlement from the given config.
+func NewEffectiveGroupEntitlementClient(c config) *EffectiveGroupEntitlementClient {
+	return &EffectiveGroupEntitlementClient{config: c}
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `effectiveentitlement.Intercept(f(g(h())))`.
-func (c *EffectiveEntitlementClient) Intercept(interceptors ...Interceptor) {
-	c.inters.EffectiveEntitlement = append(c.inters.EffectiveEntitlement, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `effectivegroupentitlement.Intercept(f(g(h())))`.
+func (c *EffectiveGroupEntitlementClient) Intercept(interceptors ...Interceptor) {
+	c.inters.EffectiveGroupEntitlement = append(c.inters.EffectiveGroupEntitlement, interceptors...)
 }
 
-// Query returns a query builder for EffectiveEntitlement.
-func (c *EffectiveEntitlementClient) Query() *EffectiveEntitlementQuery {
-	return &EffectiveEntitlementQuery{
+// Query returns a query builder for EffectiveGroupEntitlement.
+func (c *EffectiveGroupEntitlementClient) Query() *EffectiveGroupEntitlementQuery {
+	return &EffectiveGroupEntitlementQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeEffectiveEntitlement},
+		ctx:    &QueryContext{Type: TypeEffectiveGroupEntitlement},
 		inters: c.Interceptors(),
 	}
 }
 
 // Interceptors returns the client interceptors.
-func (c *EffectiveEntitlementClient) Interceptors() []Interceptor {
-	return c.inters.EffectiveEntitlement
+func (c *EffectiveGroupEntitlementClient) Interceptors() []Interceptor {
+	return c.inters.EffectiveGroupEntitlement
+}
+
+// EffectiveUserEntitlementClient is a client for the EffectiveUserEntitlement schema.
+type EffectiveUserEntitlementClient struct {
+	config
+}
+
+// NewEffectiveUserEntitlementClient returns a client for the EffectiveUserEntitlement from the given config.
+func NewEffectiveUserEntitlementClient(c config) *EffectiveUserEntitlementClient {
+	return &EffectiveUserEntitlementClient{config: c}
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `effectiveuserentitlement.Intercept(f(g(h())))`.
+func (c *EffectiveUserEntitlementClient) Intercept(interceptors ...Interceptor) {
+	c.inters.EffectiveUserEntitlement = append(c.inters.EffectiveUserEntitlement, interceptors...)
+}
+
+// Query returns a query builder for EffectiveUserEntitlement.
+func (c *EffectiveUserEntitlementClient) Query() *EffectiveUserEntitlementQuery {
+	return &EffectiveUserEntitlementQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeEffectiveUserEntitlement},
+		inters: c.Interceptors(),
+	}
+}
+
+// Interceptors returns the client interceptors.
+func (c *EffectiveUserEntitlementClient) Interceptors() []Interceptor {
+	return c.inters.EffectiveUserEntitlement
 }
 
 // EntitlementClient is a client for the Entitlement schema.
@@ -2479,8 +2515,9 @@ type (
 		RoleUser []ent.Hook
 	}
 	inters struct {
-		Action, EffectiveEntitlement, Entitlement, EntitlementAssignment, GrantRequest,
-		PermissionHistory, Resource, RevokeRequest, Role, RoleRoleSuite, RoleSuite,
-		RoleSuiteUser, RoleUser []ent.Interceptor
+		Action, EffectiveGroupEntitlement, EffectiveUserEntitlement, Entitlement,
+		EntitlementAssignment, GrantRequest, PermissionHistory, Resource,
+		RevokeRequest, Role, RoleRoleSuite, RoleSuite, RoleSuiteUser,
+		RoleUser []ent.Interceptor
 	}
 )

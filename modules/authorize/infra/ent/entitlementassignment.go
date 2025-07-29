@@ -23,7 +23,7 @@ type EntitlementAssignment struct {
 	SubjectType entitlementassignment.SubjectType `json:"subject_type,omitempty"`
 	// SubjectRef holds the value of the "subject_ref" field.
 	SubjectRef string `json:"subject_ref,omitempty"`
-	// Format: '{subjectRef}:{actionName}:{scopeRef}:{resourceName}' E.g: '01JWNXT3EY7FG47VDJTEPTDC98:create:01JWNZ5KW6WC643VXGKV1D0J64.user'
+	// Format: '{subjectRef}:{actionName}:{scopeRef}.{resourceName}' E.g: '01JWNXT3EY7FG47VDJTEPTDC98:create:01JWNZ5KW6WC643VXGKV1D0J64.user'
 	ResolvedExpr string `json:"resolved_expr,omitempty"`
 	// Denormalized action name for easier search and display
 	ActionName *string `json:"action_name,omitempty"`

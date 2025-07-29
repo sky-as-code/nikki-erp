@@ -14,7 +14,7 @@ import (
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	itEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
-	itAssignt "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
+	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
 	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
 )
 
@@ -44,7 +44,7 @@ func (this *RoleServiceImpl) CreateRole(ctx context.Context, cmd itRole.CreateRo
 	}()
 
 	role := cmd.ToRole()
-	this.setRoleDefaults(ctx, role)
+	this.setRoleDefaults(role)
 
 	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
@@ -254,7 +254,7 @@ func (this *RoleServiceImpl) sanitizeRole(role *domain.Role) {
 	}
 }
 
-func (this *RoleServiceImpl) setRoleDefaults(ctx context.Context, role *domain.Role) {
+func (this *RoleServiceImpl) setRoleDefaults(role *domain.Role) {
 	role.SetDefaults()
 }
 
@@ -304,11 +304,11 @@ func (this *RoleServiceImpl) validateEntitlements(ctx context.Context, entitleme
 }
 
 func (this *RoleServiceImpl) getEntitlementByIds(ctx context.Context, role *domain.Role, vErrs *fault.ValidationErrors) ([]model.Id, error) {
-	assignments := itAssignt.GetAllEntitlementAssignmentBySubjectQuery{
+	assignments := itAssign.GetAllEntitlementAssignmentBySubjectQuery{
 		SubjectType: *domain.WrapEntitlementAssignmentSubjectType(domain.EntitlementAssignmentSubjectTypeNikkiRole.String()),
 		SubjectRef:  *role.Id,
 	}
-	assignmentsRes := itAssignt.GetAllEntitlementAssignmentBySubjectResult{}
+	assignmentsRes := itAssign.GetAllEntitlementAssignmentBySubjectResult{}
 	err := this.cqrsBus.Request(ctx, assignments, &assignmentsRes)
 	fault.PanicOnErr(err)
 
