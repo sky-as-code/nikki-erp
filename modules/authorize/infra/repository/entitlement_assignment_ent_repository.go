@@ -4,11 +4,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
+	entEffectiveGroup "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/effectivegroupentitlement"
+	entEffectiveUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/effectiveuserentitlement"
 	entAssign "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
 )
@@ -87,6 +90,29 @@ func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx context.Con
 	})
 }
 
+func (this *EntitlementAssignmentEntRepository) FindViewsById(ctx context.Context, param it.FindViewsByIdParam) ([]*domain.EntitlementAssignment, error) {
+	assignments := make([]*domain.EntitlementAssignment, 0)
+
+	switch param.SubjectType {
+	case domain.EntitlementAssignmentSubjectTypeNikkiUser.String():
+		userAssignments, err := this.getUserEffectiveEntitlements(ctx, model.Id(param.SubjectRef))
+		if err != nil {
+			return nil, err
+		}
+
+		assignments = append(assignments, userAssignments...)
+	case domain.EntitlementAssignmentSubjectTypeNikkiGroup.String():
+		groupAssignments, err := this.getGroupEffectiveEntitlements(ctx, model.Id(param.SubjectRef))
+		if err != nil {
+			return nil, err
+		}
+
+		assignments = append(assignments, groupAssignments...)
+	}
+
+	return assignments, nil
+}
+
 func (this *EntitlementAssignmentEntRepository) FindAllByEntitlementId(ctx context.Context, param it.FindAllByEntitlementIdParam) ([]*domain.EntitlementAssignment, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -101,6 +127,32 @@ func (this *EntitlementAssignmentEntRepository) DeleteHard(ctx context.Context, 
 	return this.client.EntitlementAssignment.Delete().
 		Where(entAssign.IDEQ(param.Id)).
 		Exec(ctx)
+}
+
+func (this *EntitlementAssignmentEntRepository) getUserEffectiveEntitlements(ctx context.Context, userId model.Id) ([]*domain.EntitlementAssignment, error) {
+	effectiveAssignments, err := this.client.EffectiveUserEntitlement.
+		Query().
+		Where(entEffectiveUser.UserIDEQ(string(userId))).
+		All(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return effectiveEntToEntitlementAssignments(effectiveAssignments, nil), nil
+}
+
+func (this *EntitlementAssignmentEntRepository) getGroupEffectiveEntitlements(ctx context.Context, groupId model.Id) ([]*domain.EntitlementAssignment, error) {
+	effectiveAssignments, err := this.client.EffectiveGroupEntitlement.
+		Query().
+		Where(entEffectiveGroup.GroupIDEQ(string(groupId))).
+		All(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return effectiveEntToEntitlementAssignments(nil, effectiveAssignments), nil
 }
 
 func BuildEntitlementAssignmentDescriptor() *orm.EntityDescriptor {

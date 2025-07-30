@@ -1,0 +1,24 @@
+meta {
+  name: Client error - Not found
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "Grant",
+      "resourceName": "IdentityGroup",
+      "subjectType": "nikki_user",
+      "subjectRef": "01JZQFDH0N51Q3BFQFMFFGSCSV"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

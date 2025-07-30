@@ -1,5 +1,5 @@
 meta {
-  name: IsAuthorize - Role / Role suite
+  name: Allow (*:*.*)
   type: http
   seq: 2
 }
@@ -12,11 +12,11 @@ post {
 
 body:json {
   {
+      "actionName": "Grant",
       "resourceName": "AuthzEntitlement",
-      "subject": {
-          "type": "nikki_role",
-          "ref": "01K0B8CSA7E1WHX5M0752MHQW3"
-      }
+      "scopeRef": "uuidToScope",
+      "subjectType": "nikki_user",
+      "subjectRef": "01JWNMZ36QHC7CQQ748H9NQ6J6"
   }
 }
 

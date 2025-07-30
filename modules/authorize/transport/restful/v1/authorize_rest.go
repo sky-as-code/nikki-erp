@@ -36,7 +36,7 @@ func (this AuthorizeRest) IsAuthorized(echoCtx echo.Context) (err error) {
 		}
 	}()
 
-	query := it.IsAuthorizedQuery{}
+	query := IsAuthorizedRequest{}
 	err = echoCtx.Bind(&query)
 	if err != nil {
 		return err

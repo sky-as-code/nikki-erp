@@ -1,0 +1,25 @@
+meta {
+  name: Allow (View:*.AuthzEntitlement)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "View",
+      "resourceName": "AuthzEntitlement",
+      "scopeRef": "uuidToScope",
+      "subjectType": "nikki_role",
+      "subjectRef": "01JWP80S5RXP8BD4YCY8ZHP7NZ"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

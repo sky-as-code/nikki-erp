@@ -1,0 +1,25 @@
+meta {
+  name: Allow (View:*.AuthzRoleSuite)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authorize/isauthorized
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "actionName": "View",
+      "resourceName": "AuthzRoleSuite",
+      "scopeRef": "uuidToScope",
+      "subjectType": "nikki_suite",
+      "subjectRef": "01JWP9MVYX0K24R9H81SZEM7CE"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -32,7 +32,7 @@ func (EntitlementAssignmentMixin) Fields() []ent.Field {
 
 		field.String("resolved_expr").
 			Immutable().
-			Comment("Format: '{subjectRef}:{actionName}:{scopeRef}:{resourceName}' E.g: '01JWNXT3EY7FG47VDJTEPTDC98:create:01JWNZ5KW6WC643VXGKV1D0J64.user'"),
+			Comment("Format: '{subjectRef}:{actionName}:{scopeRef}.{resourceName}' E.g: '01JWNXT3EY7FG47VDJTEPTDC98:create:01JWNZ5KW6WC643VXGKV1D0J64.user'"),
 
 		field.String("action_name").
 			Optional().
