@@ -9,7 +9,7 @@ import (
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
-	entAssignt "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
+	entAssign "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
 )
 
@@ -27,7 +27,7 @@ func (this *EntitlementAssignmentEntRepository) Create(ctx context.Context, assi
 	creation := this.client.EntitlementAssignment.Create().
 		SetID(*assignment.Id).
 		SetEntitlementID(*assignment.EntitlementId).
-		SetSubjectType(entAssignt.SubjectType(*assignment.SubjectType)).
+		SetSubjectType(entAssign.SubjectType(*assignment.SubjectType)).
 		SetSubjectRef(*assignment.SubjectRef).
 		SetResolvedExpr(*assignment.ResolvedExpr).
 		SetNillableActionName(assignment.ActionName).
@@ -43,7 +43,7 @@ func (this *EntitlementAssignmentEntRepository) CreateBulk(ctx context.Context, 
 		builders[i] = this.client.EntitlementAssignment.Create().
 			SetID(*assignment.Id).
 			SetEntitlementID(*assignment.EntitlementId).
-			SetSubjectType(entAssignt.SubjectType(*assignment.SubjectType)).
+			SetSubjectType(entAssign.SubjectType(*assignment.SubjectType)).
 			SetSubjectRef(*assignment.SubjectRef).
 			SetResolvedExpr(*assignment.ResolvedExpr).
 			SetNillableActionName(assignment.ActionName).
@@ -59,8 +59,8 @@ func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx context.Con
 	defer cancel()
 
 	countQuery := this.client.EntitlementAssignment.Query().
-		Where(entAssignt.SubjectTypeEQ(entAssignt.SubjectType(param.SubjectType))).
-		Where(entAssignt.SubjectRefEQ(param.SubjectRef))
+		Where(entAssign.SubjectTypeEQ(entAssign.SubjectType(param.SubjectType))).
+		Where(entAssign.SubjectRefEQ(param.SubjectRef))
 
 	count, err := countQuery.Count(ctx)
 	if err != nil {
@@ -72,8 +72,8 @@ func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx context.Con
 	}
 
 	query := this.client.EntitlementAssignment.Query().
-		Where(entAssignt.SubjectTypeEQ(entAssignt.SubjectType(param.SubjectType))).
-		Where(entAssignt.SubjectRefEQ(param.SubjectRef)).
+		Where(entAssign.SubjectTypeEQ(entAssign.SubjectType(param.SubjectType))).
+		Where(entAssign.SubjectRefEQ(param.SubjectRef)).
 		WithEntitlement(func(eq *ent.EntitlementQuery) {
 			eq.WithResource()
 		})
@@ -87,17 +87,33 @@ func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx context.Con
 	})
 }
 
+func (this *EntitlementAssignmentEntRepository) FindAllByEntitlementId(ctx context.Context, param it.FindAllByEntitlementIdParam) ([]*domain.EntitlementAssignment, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	query := this.client.EntitlementAssignment.Query().
+		Where(entAssign.EntitlementIDEQ(param.EntitlementId))
+
+	return database.List(ctx, query, entToEntitlementAssignments)
+}
+
+func (this *EntitlementAssignmentEntRepository) DeleteHard(ctx context.Context, param it.DeleteEntitlementAssignmentByIdQuery) (int, error) {
+	return this.client.EntitlementAssignment.Delete().
+		Where(entAssign.IDEQ(param.Id)).
+		Exec(ctx)
+}
+
 func BuildEntitlementAssignmentDescriptor() *orm.EntityDescriptor {
 	entity := ent.EntitlementAssignment{}
-	builder := orm.DescribeEntity(entAssignt.Label).
+	builder := orm.DescribeEntity(entAssign.Label).
 		Aliases("entitlement_assignments").
-		Field(entAssignt.FieldID, entity.ID).
-		Field(entAssignt.FieldSubjectType, entity.SubjectType).
-		Field(entAssignt.FieldSubjectRef, entity.SubjectRef).
-		Field(entAssignt.FieldActionName, entity.ActionName).
-		Field(entAssignt.FieldResourceName, entity.ResourceName).
-		Field(entAssignt.FieldResolvedExpr, entity.ResolvedExpr).
-		Field(entAssignt.FieldEntitlementID, entity.EntitlementID)
+		Field(entAssign.FieldID, entity.ID).
+		Field(entAssign.FieldSubjectType, entity.SubjectType).
+		Field(entAssign.FieldSubjectRef, entity.SubjectRef).
+		Field(entAssign.FieldActionName, entity.ActionName).
+		Field(entAssign.FieldResourceName, entity.ResourceName).
+		Field(entAssign.FieldResolvedExpr, entity.ResolvedExpr).
+		Field(entAssign.FieldEntitlementID, entity.EntitlementID)
 
 	return builder.Descriptor()
 }

@@ -19,8 +19,10 @@ func init() {
 	var req cqrs.Request
 	req = (*CreateResourceCommand)(nil)
 	req = (*UpdateResourceCommand)(nil)
+	req = (*DeleteResourceHardByNameQuery)(nil)
 	req = (*GetResourceByNameQuery)(nil)
 	req = (*SearchResourcesQuery)(nil)
+	req = (*ExistResourceParam)(nil)
 	util.Unused(req)
 }
 
@@ -68,6 +70,37 @@ func (UpdateResourceCommand) CqrsRequestType() cqrs.RequestType {
 type UpdateResourceResult = crud.OpResult[*domain.Resource]
 
 // END: UpdateResourceCommand
+
+// START: DeleteResourceHardByNameQuery
+var deleteResourceHardByNameQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "resource",
+	Action:    "delete",
+}
+
+type DeleteResourceHardByNameQuery struct {
+	Name string `param:"name" json:"name"`
+}
+
+func (DeleteResourceHardByNameQuery) CqrsRequestType() cqrs.RequestType {
+	return deleteResourceHardByNameQueryType
+}
+
+func (this *DeleteResourceHardByNameQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		validator.Field(&this.Name,
+			validator.NotEmpty,
+			validator.RegExp(regexp.MustCompile(`^[a-zA-Z0-9]+$`)), // alphanumeric
+			validator.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
+		),
+	}
+
+	return validator.ApiBased.ValidateStruct(this, rules...)
+}
+
+type DeleteResourceHardByNameResult = crud.DeletionResult
+
+// END: DeleteResourceHardByNameQuery
 
 // START: GetResourceByIdQuery
 var getResourceByIdQueryType = cqrs.RequestType{
@@ -153,3 +186,30 @@ type SearchResourcesResultData = crud.PagedResult[domain.Resource]
 type SearchResourcesResult = crud.OpResult[*SearchResourcesResultData]
 
 // END: SearchResourcesQuery
+
+// START: ExistResourceParam
+var existCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "resource",
+	Action:    "exist",
+}
+
+type ExistResourceParam struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (ExistResourceParam) CqrsRequestType() cqrs.RequestType {
+	return existCommandType
+}
+
+func (this ExistResourceParam) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type ExistResourceResult = crud.OpResult[bool]
+
+// END: ExistResourceParam

@@ -17,6 +17,7 @@ func init() {
 	var req cqrs.Request
 	req = (*CreateActionCommand)(nil)
 	req = (*UpdateActionCommand)(nil)
+	req = (*DeleteActionHardByIdQuery)(nil)
 	req = (*GetActionByIdQuery)(nil)
 	req = (*GetActionByNameCommand)(nil)
 	req = (*SearchActionsCommand)(nil)
@@ -66,6 +67,33 @@ func (UpdateActionCommand) CqrsRequestType() cqrs.RequestType {
 type UpdateActionResult = crud.OpResult[*domain.Action]
 
 // END: UpdateResourceCommand
+
+// START: DeleteActionHardByIdQuery
+var deleteActionHardByIdQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "action",
+	Action:    "delete",
+}
+
+type DeleteActionHardByIdQuery struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (DeleteActionHardByIdQuery) CqrsRequestType() cqrs.RequestType {
+	return deleteActionHardByIdQueryType
+}
+
+func (this DeleteActionHardByIdQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type DeleteActionHardByIdResult = crud.DeletionResult
+
+// END: DeleteActionHardByIdQuery
 
 // START: GetActionByIdQuery
 var getActionByIdQueryType = cqrs.RequestType{

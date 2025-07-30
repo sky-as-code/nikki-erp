@@ -24,6 +24,7 @@ func entToResource(dbResource *ent.Resource) *domain.Resource {
 		ResourceRef:  &dbResource.ResourceRef,
 		ScopeType:    domain.WrapResourceScopeTypeEnt(dbResource.ScopeType),
 		Actions:      []domain.Action{},
+		Entitlements: []domain.Entitlement{},
 	}
 
 	// Convert actions if they are loaded
@@ -35,6 +36,19 @@ func entToResource(dbResource *ent.Resource) *domain.Resource {
 					Etag: &dbAction.Etag,
 				},
 				Name: &dbAction.Name,
+			}
+		})
+	}
+
+	// Convert entitlements if they are loaded
+	if dbResource.Edges.Entitlements != nil {
+		resource.Entitlements = array.Map(dbResource.Edges.Entitlements, func(dbEntitlement *ent.Entitlement) domain.Entitlement {
+			return domain.Entitlement{
+				ModelBase: model.ModelBase{
+					Id:   &dbEntitlement.ID,
+					Etag: &dbEntitlement.Etag,
+				},
+				Name: &dbEntitlement.Name,
 			}
 		})
 	}
@@ -66,14 +80,21 @@ func entToAction(dbAction *ent.Action) *domain.Action {
 		AuditableBase: model.AuditableBase{
 			CreatedAt: &dbAction.CreatedAt,
 		},
-		Name:        &dbAction.Name,
-		ResourceId:  &dbAction.ResourceID,
-		Description: &dbAction.Description,
-		CreatedBy:   &dbAction.CreatedBy,
+		Name:         &dbAction.Name,
+		ResourceId:   &dbAction.ResourceID,
+		Description:  &dbAction.Description,
+		CreatedBy:    &dbAction.CreatedBy,
+		Entitlements: []domain.Entitlement{},
 	}
 
 	if dbAction.Edges.Resource != nil {
 		action.Resource = entToResource(dbAction.Edges.Resource)
+	}
+
+	if dbAction.Edges.Entitlements != nil {
+		action.Entitlements = array.Map(dbAction.Edges.Entitlements, func(dbEntitlement *ent.Entitlement) domain.Entitlement {
+			return *entToEntitlement(dbEntitlement)
+		})
 	}
 
 	return action
@@ -220,6 +241,14 @@ func entToEntitlementAssignment(dbEntitlementAssignment *ent.EntitlementAssignme
 	}
 
 	return entitlementAssignment
+}
+
+func entToEntitlementAssignments(dbEntitlementAssignments []*ent.EntitlementAssignment) []*domain.EntitlementAssignment {
+	entitlementAssignments := make([]*domain.EntitlementAssignment, len(dbEntitlementAssignments))
+	for i, dbEntitlementAssignment := range dbEntitlementAssignments {
+		entitlementAssignments[i] = entToEntitlementAssignment(dbEntitlementAssignment)
+	}
+	return entitlementAssignments
 }
 
 // END: EntitlementAssignment

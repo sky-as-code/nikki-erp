@@ -72,6 +72,28 @@ func (this ResourceRest) UpdateResource(echoCtx echo.Context) (err error) {
 	return err
 }
 
+func (this ResourceRest) DeleteResourceHard(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete resource hard"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest(
+		echoCtx, this.ResourceSvc.DeleteResourceHard,
+		func(request DeleteResourceHardByNameRequest) it.DeleteResourceHardByNameQuery {
+			return it.DeleteResourceHardByNameQuery(request)
+		},
+		func(result it.DeleteResourceHardByNameResult) DeleteResourceHardByNameResponse {
+			response := DeleteResourceHardByNameResponse{}
+			response.FromNonEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
 func (this ResourceRest) GetResourceByName(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get resource by name"); e != nil {

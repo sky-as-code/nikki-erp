@@ -16,6 +16,8 @@ func init() {
 	var req cqrs.Request
 	req = (*CreateEntitlementAssignmentCommand)(nil)
 	req = (*GetAllEntitlementAssignmentBySubjectQuery)(nil)
+	req = (*GetAllEntitlementAssignmentByEntitlementIdQuery)(nil)
+	req = (*DeleteEntitlementAssignmentByIdQuery)(nil)
 	util.Unused(req)
 }
 
@@ -78,3 +80,56 @@ func (GetAllEntitlementAssignmentBySubjectQuery) CqrsRequestType() cqrs.RequestT
 type GetAllEntitlementAssignmentBySubjectResult = crud.OpResult[[]*domain.EntitlementAssignment]
 
 // END: GetAllEntitlementAssignmentBySubjectQuery
+
+// START: GetAllEntitlementAssignmentByEntitlementIdQuery
+
+var getAllEntitlementAssignmentByEntitlementIdQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "entitlement_assignment",
+	Action:    "getAllByEntitlementId",
+}
+
+type GetAllEntitlementAssignmentByEntitlementIdQuery struct {
+	EntitlementId model.Id `param:"entitlementId" json:"entitlementId"`
+}
+
+func (this GetAllEntitlementAssignmentByEntitlementIdQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.EntitlementId, true),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+func (GetAllEntitlementAssignmentByEntitlementIdQuery) CqrsRequestType() cqrs.RequestType {
+	return getAllEntitlementAssignmentByEntitlementIdQueryType
+}
+
+type GetAllEntitlementAssignmentByEntitlementIdResult = crud.OpResult[[]*domain.EntitlementAssignment]
+
+// END: GetAllEntitlementAssignmentByEntitlementIdQuery
+
+// START: DeleteEntitlementAssignmentByIdQuery
+var deleteEntitlementAssignmentByIdQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "entitlement_assignment",
+	Action:    "deleteById",
+}
+
+type DeleteEntitlementAssignmentByIdQuery struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (this DeleteEntitlementAssignmentByIdQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+func (DeleteEntitlementAssignmentByIdQuery) CqrsRequestType() cqrs.RequestType {
+	return deleteEntitlementAssignmentByIdQueryType
+}
+
+type DeleteEntitlementAssignmentByIdResult = crud.DeletionResult
+
+// END: DeleteEntitlementAssignmentByIdQuery

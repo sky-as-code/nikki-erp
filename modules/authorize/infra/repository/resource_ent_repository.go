@@ -50,7 +50,8 @@ func (this *ResourceEntRepository) FindById(ctx context.Context, param it.FindBy
 func (this *ResourceEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Resource, error) {
 	query := this.client.Resource.Query().
 		Where(entResource.NameEQ(param.Name)).
-		WithActions()
+		WithActions().
+		WithEntitlements()
 
 	return database.FindOne(ctx, query, ent.IsNotFound, entToResource)
 }
@@ -66,6 +67,12 @@ func (this *ResourceEntRepository) Update(ctx context.Context, resource domain.R
 	}
 
 	return database.Mutate(ctx, update, ent.IsNotFound, entToResource)
+}
+
+func (this *ResourceEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+	return this.client.Resource.Delete().
+		Where(entResource.NameEQ(param.Name)).
+		Exec(ctx)
 }
 
 func (this *ResourceEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
@@ -92,6 +99,12 @@ func (this *ResourceEntRepository) Search(
 		query,
 		entToResources,
 	)
+}
+
+func (this *ResourceEntRepository) Exist(ctx context.Context, param it.ExistParam) (bool, error) {
+	return this.client.Resource.Query().
+		Where(entResource.IDEQ(param.Id)).
+		Exist(ctx)
 }
 
 func BuildResourceDescriptor() *orm.EntityDescriptor {

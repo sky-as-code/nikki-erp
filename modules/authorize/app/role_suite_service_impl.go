@@ -29,13 +29,13 @@ type RoleSuiteServiceImpl struct {
 
 func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx context.Context, cmd it.CreateRoleSuiteCommand) (result *it.CreateRoleSuiteResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to create role suite"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "create role suite"); e != nil {
 			err = e
 		}
 	}()
 
 	roleSuite := cmd.ToRoleSuite()
-	this.setRoleSuiteDefaults(ctx, roleSuite)
+	this.setRoleSuiteDefaults(roleSuite)
 
 	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
@@ -49,7 +49,7 @@ func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx context.Context, cmd it.Cr
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
 			if len(roleSuite.Roles) > 0 {
-				this.validateRoles(ctx, roleSuite.Roles, vErrs)
+				this.validateRoles(roleSuite.Roles, vErrs)
 			}
 			return nil
 		}).
@@ -73,7 +73,7 @@ func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx context.Context, cmd it.Cr
 
 func (this *RoleSuiteServiceImpl) GetRoleSuiteById(ctx context.Context, query it.GetRoleSuiteByIdQuery) (result *it.GetRoleSuiteByIdResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to get role suite by id"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "get role suite by id"); e != nil {
 			err = e
 		}
 	}()
@@ -97,7 +97,7 @@ func (this *RoleSuiteServiceImpl) GetRoleSuiteById(ctx context.Context, query it
 
 func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx context.Context, query it.SearchRoleSuitesCommand) (result *it.SearchRoleSuitesResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to list role suites"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "search role suites"); e != nil {
 			err = e
 		}
 	}()
@@ -130,7 +130,7 @@ func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx context.Context, query it
 
 func (this *RoleSuiteServiceImpl) GetRoleSuitesBySubject(ctx context.Context, query it.GetRoleSuitesBySubjectQuery) (result *it.GetRoleSuitesBySubjectResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to get role suites by subject"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "get role suites by subject"); e != nil {
 			err = e
 		}
 	}()
@@ -186,11 +186,11 @@ func (this *RoleSuiteServiceImpl) sanitizeRoleSuite(roleSuite *domain.RoleSuite)
 	}
 }
 
-func (this *RoleSuiteServiceImpl) setRoleSuiteDefaults(ctx context.Context, roleSuite *domain.RoleSuite) {
+func (this *RoleSuiteServiceImpl) setRoleSuiteDefaults(roleSuite *domain.RoleSuite) {
 	roleSuite.SetDefaults()
 }
 
-func (this *RoleSuiteServiceImpl) validateRoles(ctx context.Context, roles []*domain.Role, vErrs *fault.ValidationErrors) {
+func (this *RoleSuiteServiceImpl) validateRoles(roles []*domain.Role, vErrs *fault.ValidationErrors) {
 	seenIds := make(map[model.Id]int)
 
 	for i, role := range roles {

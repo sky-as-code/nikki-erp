@@ -29,18 +29,19 @@ func initV1(route *echo.Group, resourceRest *v1.ResourceRest, actionRest *v1.Act
 	route.PUT("/resources/:id", resourceRest.UpdateResource)
 	route.GET("/resources/:name", resourceRest.GetResourceByName)
 	route.GET("/resources", resourceRest.SearchResources)
-	// route.DELETE("/resources/:id", resourceRest.DeleteResource)
+	route.DELETE("/resources/:name", resourceRest.DeleteResourceHard)
 
 	route.POST("/actions", actionRest.CreateAction)
 	route.PUT("/actions/:id", actionRest.UpdateAction)
 	route.GET("/actions/:id", actionRest.GetActionById)
 	route.GET("/actions", actionRest.SearchActions)
-	// route.DELETE("/actions/:id", actionRest.DeleteAction)
+	route.DELETE("/actions/:id", actionRest.DeleteActionHard)
 
 	route.POST("/entitlements", entitlementRest.CreateEntitlement)
 	route.PUT("/entitlements/:id", entitlementRest.UpdateEntitlement)
 	route.GET("/entitlements/:id", entitlementRest.GetEntitlementById)
 	route.GET("/entitlements", entitlementRest.SearchEntitlements)
+	route.DELETE("/entitlements/:id", entitlementRest.DeleteEntitlementHard)
 
 	route.POST("/roles", roleRest.CreateRole)
 	route.GET("/roles/:id", roleRest.GetRoleById)

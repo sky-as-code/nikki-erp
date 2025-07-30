@@ -23,7 +23,7 @@ type EntitlementAssignmentServiceImpl struct {
 
 func (this *EntitlementAssignmentServiceImpl) FindAllBySubject(ctx context.Context, query it.GetAllEntitlementAssignmentBySubjectQuery) (result *it.GetAllEntitlementAssignmentBySubjectResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to get entitlement assignment by subject"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "get entitlement assignment by subject"); e != nil {
 			err = e
 		}
 	}()
