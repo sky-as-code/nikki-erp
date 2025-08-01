@@ -18,10 +18,12 @@ type ResourceRepository interface {
 	Update(ctx context.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.Resource], error)
+	Exist(ctx context.Context, param ExistParam) (bool, error)
 }
 
 type FindByIdParam = GetResourceByIdQuery
 type FindByNameParam = GetResourceByNameQuery
+type ExistParam = ExistResourceParam
 
 type SearchParam struct {
 	Predicate   *orm.Predicate

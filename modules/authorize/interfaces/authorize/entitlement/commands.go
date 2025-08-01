@@ -166,7 +166,7 @@ func (this GetAllEntitlementByIdsQuery) Validate() fault.ValidationErrors {
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetAllEntitlementByIdsResult = crud.OpResult[[]*domain.Entitlement]
+type GetAllEntitlementByIdsResult = crud.OpResult[[]domain.Entitlement]
 
 // END: GetAllEntitlementByIdsQuery
 
@@ -200,7 +200,7 @@ func (this SearchEntitlementsQuery) Validate() fault.ValidationErrors {
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type SearchEntitlementsResultData = crud.PagedResult[*domain.Entitlement]
+type SearchEntitlementsResultData = crud.PagedResult[domain.Entitlement]
 type SearchEntitlementsResult = crud.OpResult[*SearchEntitlementsResultData]
 
 // END: SearchEntitlementsQuery

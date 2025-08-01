@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
@@ -11,24 +12,33 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	itAction "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
+	itAssignment "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
+	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
 )
 
-func NewEntitlementServiceImpl(entitlementRepo it.EntitlementRepository, eventBus event.EventBus) it.EntitlementService {
+func NewEntitlementServiceImpl(entitlementRepo it.EntitlementRepository, assignmentRepo itAssignment.EntitlementAssignmentRepository, resourceRepo itResource.ResourceRepository, actionRepo itAction.ActionRepository, eventBus event.EventBus) it.EntitlementService {
 	return &EntitlementServiceImpl{
 		entitlementRepo: entitlementRepo,
+		assignmentRepo:  assignmentRepo,
+		resourceRepo:    resourceRepo,
+		actionRepo:      actionRepo,
 		eventBus:        eventBus,
 	}
 }
 
 type EntitlementServiceImpl struct {
 	entitlementRepo it.EntitlementRepository
+	assignmentRepo  itAssignment.EntitlementAssignmentRepository
+	resourceRepo    itResource.ResourceRepository
+	actionRepo      itAction.ActionRepository
 	eventBus        event.EventBus
 }
 
 func (this *EntitlementServiceImpl) CreateEntitlement(ctx context.Context, cmd it.CreateEntitlementCommand) (result *it.CreateEntitlementResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to create entitlement"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "create entitlement"); e != nil {
 			err = e
 		}
 	}()
@@ -36,11 +46,25 @@ func (this *EntitlementServiceImpl) CreateEntitlement(ctx context.Context, cmd i
 	entitlement := cmd.ToEntitlement()
 	this.setEntitlementDefaults(entitlement)
 
+	var resource *domain.Resource
+	var action *domain.Action
+
 	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *fault.ValidationErrors) error {
 			*vErrs = entitlement.Validate(false)
 			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			resource, err = this.assertResourceExists(ctx, *entitlement.ResourceId, vErrs)
+			return err
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			action, err = this.assertActionExists(ctx, *entitlement.ActionId, vErrs)
+			return err
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			return this.assertActionExprValid(resource, action, entitlement.ScopeRef, entitlement, vErrs)
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
 			this.sanitizeEntitlement(entitlement)
@@ -66,7 +90,7 @@ func (this *EntitlementServiceImpl) CreateEntitlement(ctx context.Context, cmd i
 
 func (this *EntitlementServiceImpl) EntitlementExists(ctx context.Context, cmd it.EntitlementExistsCommand) (result *it.EntitlementExistsResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to check entitlement exists"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "check entitlement exists"); e != nil {
 			err = e
 		}
 	}()
@@ -100,7 +124,7 @@ func (this *EntitlementServiceImpl) EntitlementExists(ctx context.Context, cmd i
 
 func (this *EntitlementServiceImpl) UpdateEntitlement(ctx context.Context, cmd it.UpdateEntitlementCommand) (result *it.UpdateEntitlementResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to update resource"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "update resource"); e != nil {
 			err = e
 		}
 	}()
@@ -148,7 +172,7 @@ func (this *EntitlementServiceImpl) UpdateEntitlement(ctx context.Context, cmd i
 
 func (this *EntitlementServiceImpl) GetEntitlementById(ctx context.Context, query it.GetEntitlementByIdQuery) (result *it.GetEntitlementByIdResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to get entitlement by id"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "get entitlement by id"); e != nil {
 			err = e
 		}
 	}()
@@ -181,12 +205,12 @@ func (this *EntitlementServiceImpl) GetEntitlementById(ctx context.Context, quer
 
 func (this *EntitlementServiceImpl) GetAllEntitlementByIds(ctx context.Context, query it.GetAllEntitlementByIdsQuery) (result *it.GetAllEntitlementByIdsResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to get all entitlement by ids"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "get all entitlement by ids"); e != nil {
 			err = e
 		}
 	}()
 
-	var dbEntitlements []*domain.Entitlement
+	var dbEntitlements []domain.Entitlement
 	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *fault.ValidationErrors) error {
@@ -222,7 +246,7 @@ func (this *EntitlementServiceImpl) GetAllEntitlementByIds(ctx context.Context, 
 
 func (this *EntitlementServiceImpl) SearchEntitlements(ctx context.Context, query it.SearchEntitlementsQuery) (result *it.SearchEntitlementsResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to list resources"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "list entitlements"); e != nil {
 			err = e
 		}
 	}()
@@ -239,7 +263,7 @@ func (this *EntitlementServiceImpl) SearchEntitlements(ctx context.Context, quer
 		}, nil
 	}
 
-	resources, err := this.entitlementRepo.Search(ctx, it.SearchParam{
+	entitlements, err := this.entitlementRepo.Search(ctx, it.SearchParam{
 		Predicate: predicate,
 		Order:     order,
 		Page:      *query.Page,
@@ -248,8 +272,8 @@ func (this *EntitlementServiceImpl) SearchEntitlements(ctx context.Context, quer
 	fault.PanicOnErr(err)
 
 	return &it.SearchEntitlementsResult{
-		Data:    resources,
-		HasData: resources.Items != nil,
+		Data:    entitlements,
+		HasData: entitlements.Items != nil,
 	}, nil
 }
 
@@ -262,7 +286,7 @@ func (this *EntitlementServiceImpl) assertCorrectEtag(updatedEtag model.Etag, db
 func (this *EntitlementServiceImpl) assertEntitlementExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbEntitlement *domain.Entitlement, err error) {
 	dbEntitlement, err = this.entitlementRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	if dbEntitlement == nil {
-		vErrs.AppendNotFound("id", "entitlement")
+		vErrs.AppendNotFound("entitlement_id", "entitlement")
 	}
 	return
 }
@@ -282,7 +306,64 @@ func (this *EntitlementServiceImpl) assertEntitlementUnique(ctx context.Context,
 	fault.PanicOnErr(err)
 
 	if dbEntitlement != nil {
-		vErrs.AppendAlreadyExists("name", "entitlement name")
+		vErrs.AppendAlreadyExists("entitlement_name", "entitlement name")
 	}
+	return nil
+}
+
+func (this *EntitlementServiceImpl) assertResourceExists(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (resource *domain.Resource, err error) {
+	resource, err = this.resourceRepo.FindById(ctx, itResource.FindByIdParam{Id: id})
+	fault.PanicOnErr(err)
+
+	if resource == nil {
+		vErrs.AppendNotFound("resource_id", "resource")
+	}
+	return resource, err
+}
+
+func (this *EntitlementServiceImpl) assertActionExists(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (action *domain.Action, err error) {
+	action, err = this.actionRepo.FindById(ctx, itAction.FindByIdParam{Id: id})
+	fault.PanicOnErr(err)
+
+	if action == nil {
+		vErrs.AppendNotFound("action_id", "action")
+	}
+	return action, err
+}
+
+func (this *EntitlementServiceImpl) assertActionExprValid(resource *domain.Resource, action *domain.Action, scopeRef *string, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
+	var actionName *string
+	if action != nil {
+		actionName = action.Name
+	}
+
+	var resourceName *string
+	if resource != nil {
+		resourceName = resource.Name
+	}
+
+	scopeExpr := "*"
+	if scopeRef != nil {
+		scopeExpr = *scopeRef
+	}
+
+	actionDefault := "*"
+	if actionName != nil {
+		actionDefault = *actionName
+	}
+
+	resourceDefault := "*"
+	if resourceName != nil {
+		resourceDefault = *resourceName
+	}
+
+	actionExpr := fmt.Sprintf("%s:%s.%s", actionDefault, scopeExpr, resourceDefault)
+
+	if entitlement.ActionExpr != nil {
+		if *entitlement.ActionExpr != actionExpr {
+			vErrs.Append("action_expr", "action_expr is not valid")
+		}
+	}
+
 	return nil
 }

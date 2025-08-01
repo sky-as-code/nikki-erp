@@ -42,7 +42,7 @@ func (this *RoleSuiteEntRepository) Create(ctx context.Context, roleSuite domain
 		SetCreatedAt(time.Now())
 
 	if len(roleSuite.Roles) > 0 {
-		roleIds := array.Map(roleSuite.Roles, func(role *domain.Role) string {
+		roleIds := array.Map(roleSuite.Roles, func(role domain.Role) string {
 			return *role.Id
 		})
 		creation.AddRoleIDs(roleIds...)

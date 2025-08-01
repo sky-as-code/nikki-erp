@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"github.com/thoas/go-funk"
-
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -21,14 +19,21 @@ type ResourceDto struct {
 	ResourceRef  string  `json:"resourceRef"`
 	ScopeType    string  `json:"scopeType"`
 
-	Actions []Action `json:"actions,omitempty"`
+	Actions []ActionDto `json:"actions,omitempty"`
 }
 
-type Action struct {
-	Id model.Id `json:"id"`
+func (this *ResourceDto) FromResource(resource domain.Resource) {
+	model.MustCopy(resource.AuditableBase, this)
+	model.MustCopy(resource.ModelBase, this)
+	model.MustCopy(resource, this)
 
-	Name        string  `json:"name"`
-	Description *string `json:"description,omitempty"`
+	if resource.Actions != nil {
+		this.Actions = array.Map(resource.Actions, func(action domain.Action) ActionDto {
+			actionDto := ActionDto{}
+			actionDto.FromAction(action)
+			return actionDto
+		})
+	}
 }
 
 type CreateResourceRequest = it.CreateResourceCommand
@@ -47,32 +52,9 @@ func (this *SearchResourcesResponse) FromResult(result *it.SearchResourcesResult
 	this.Total = result.Total
 	this.Page = result.Page
 	this.Size = result.Size
-	this.Items = funk.Map(result.Items, func(resource domain.Resource) ResourceDto {
+	this.Items = array.Map(result.Items, func(resource domain.Resource) ResourceDto {
 		item := ResourceDto{}
 		item.FromResource(resource)
 		return item
-	}).([]ResourceDto)
-}
-
-func (this *Action) FromAction(action domain.Action) {
-	this.Id = *action.ModelBase.Id
-	this.Name = *action.Name
-	this.Description = action.Description
-}
-
-func (this *ResourceDto) FromResource(resource domain.Resource) {
-	this.Id = *resource.Id
-	this.Etag = *resource.Etag
-	this.Name = *resource.Name
-	this.Description = resource.Description
-	this.ResourceType = resource.ResourceType.String()
-	this.ResourceRef = *resource.ResourceRef
-	this.ScopeType = resource.ScopeType.String()
-
-	// Convert actions to Action array
-	this.Actions = array.Map(resource.Actions, func(action domain.Action) Action {
-		actionItem := Action{}
-		actionItem.FromAction(action)
-		return actionItem
 	})
 }

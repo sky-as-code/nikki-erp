@@ -7,23 +7,15 @@ import (
 )
 
 func (this CreateEntitlementCommand) ToEntitlement() *domain.Entitlement {
-	return &domain.Entitlement{
-		Name:        &this.Name,
-		Description: this.Description,
-		ActionId:    this.ActionId,
-		ResourceId:  this.ResourceId,
-		ScopeRef:    this.ScopeRef,
-		ActionExpr:  &this.ActionExpr,
-		CreatedBy:   &this.CreatedBy,
-	}
+	entitlement := &domain.Entitlement{}
+	model.MustCopy(this, entitlement)
+
+	return entitlement
 }
 
 func (this UpdateEntitlementCommand) ToEntitlement() *domain.Entitlement {
-	return &domain.Entitlement{
-		ModelBase: model.ModelBase{
-			Id:   &this.Id,
-			Etag: &this.Etag,
-		},
-		Description: this.Description,
-	}
+	entitlement := &domain.Entitlement{}
+	model.MustCopy(this, entitlement)
+
+	return entitlement
 }

@@ -1,8 +1,7 @@
 package v1
 
 import (
-	"github.com/thoas/go-funk"
-
+	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
@@ -22,14 +21,30 @@ type EntitlementDto struct {
 	ActionExpr  *string   `json:"actionExpr,omitempty"`
 	CreatedBy   model.Id  `json:"createdBy"`
 
-	Resource *Resource  `json:"resource,omitempty"`
-	Action   *Action    `json:"action,omitempty"`
-	Subject  []*Subject `json:"subject,omitempty"`
+	Resource *ResourceDto `json:"resource,omitempty"`
+	Action   *ActionDto   `json:"action,omitempty"`
+	Subject  []Subject    `json:"subject,omitempty"`
 }
 
 type Subject struct {
 	Id   model.Id `json:"id"`
 	Name string   `json:"name"`
+}
+
+func (this *EntitlementDto) FromEntitlement(entitlement domain.Entitlement) {
+	model.MustCopy(entitlement.AuditableBase, this)
+	model.MustCopy(entitlement.ModelBase, this)
+	model.MustCopy(entitlement, this)
+
+	if entitlement.Resource != nil {
+		this.Resource = &ResourceDto{}
+		this.Resource.FromResource(*entitlement.Resource)
+	}
+
+	if entitlement.Action != nil {
+		this.Action = &ActionDto{}
+		this.Action.FromAction(*entitlement.Action)
+	}
 }
 
 type CreateEntitlementRequest = it.CreateEntitlementCommand
@@ -47,35 +62,9 @@ func (this *SearchEntitlementsResponse) FromResult(result *it.SearchEntitlements
 	this.Total = result.Total
 	this.Page = result.Page
 	this.Size = result.Size
-	this.Items = funk.Map(result.Items, func(entitlement *domain.Entitlement) EntitlementDto {
+	this.Items = array.Map(result.Items, func(entitlement domain.Entitlement) EntitlementDto {
 		item := EntitlementDto{}
-		item.FromEntitlement(*entitlement)
+		item.FromEntitlement(entitlement)
 		return item
-	}).([]EntitlementDto)
-}
-
-func (this *EntitlementDto) FromEntitlement(entitlement domain.Entitlement) {
-	this.Id = *entitlement.Id
-	this.Etag = *entitlement.Etag
-	this.Name = *entitlement.Name
-	this.Description = entitlement.Description
-	this.ResourceId = entitlement.ResourceId
-	this.ActionId = entitlement.ActionId
-	this.ScopeRef = entitlement.ScopeRef
-	this.ActionExpr = entitlement.ActionExpr
-	this.CreatedBy = *entitlement.CreatedBy
-
-	if entitlement.Resource != nil {
-		this.Resource = &Resource{
-			Id:   *entitlement.Resource.Id,
-			Name: *entitlement.Resource.Name,
-		}
-	}
-
-	if entitlement.Action != nil {
-		this.Action = &Action{
-			Id:   *entitlement.Action.Id,
-			Name: *entitlement.Action.Name,
-		}
-	}
+	})
 }

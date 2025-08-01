@@ -21,6 +21,7 @@ func init() {
 	req = (*UpdateResourceCommand)(nil)
 	req = (*GetResourceByNameQuery)(nil)
 	req = (*SearchResourcesQuery)(nil)
+	req = (*ExistResourceParam)(nil)
 	util.Unused(req)
 }
 
@@ -153,3 +154,30 @@ type SearchResourcesResultData = crud.PagedResult[domain.Resource]
 type SearchResourcesResult = crud.OpResult[*SearchResourcesResultData]
 
 // END: SearchResourcesQuery
+
+// START: ExistResourceParam
+var existCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "resource",
+	Action:    "exist",
+}
+
+type ExistResourceParam struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (ExistResourceParam) CqrsRequestType() cqrs.RequestType {
+	return existCommandType
+}
+
+func (this ExistResourceParam) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type ExistResourceResult = crud.OpResult[bool]
+
+// END: ExistResourceParam

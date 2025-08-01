@@ -17,7 +17,7 @@ type Action struct {
 	Description *string   `json:"description,omitempty"`
 	CreatedBy   *string   `json:"createdBy,omitempty"`
 
-	Resource *Resource `json:"resource,omitempty"`
+	Resource *Resource `json:"resource,omitempty" model:"-"` // TODO: Handle copy
 }
 
 func (this *Action) Validate(forEdit bool) ft.ValidationErrors {

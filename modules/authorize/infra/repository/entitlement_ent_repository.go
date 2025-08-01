@@ -30,7 +30,6 @@ func (this *EntitlementEntRepository) Create(ctx context.Context, entitlement do
 	creation := this.client.Entitlement.Create().
 		SetID(*entitlement.Id).
 		SetEtag(*entitlement.Etag).
-		SetCreatedAt(*entitlement.CreatedAt).
 		SetName(*entitlement.Name).
 		SetNillableDescription(entitlement.Description).
 		SetNillableResourceID(entitlement.ResourceId).
@@ -79,7 +78,7 @@ func (this *EntitlementEntRepository) FindByName(ctx context.Context, param it.F
 	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
 }
 
-func (this *EntitlementEntRepository) FindAllByIds(ctx context.Context, param it.FindAllByIdsParam) ([]*domain.Entitlement, error) {
+func (this *EntitlementEntRepository) FindAllByIds(ctx context.Context, param it.FindAllByIdsParam) ([]domain.Entitlement, error) {
 	query := this.client.Entitlement.Query().
 		Where(entEntitlement.IDIn(param.Ids...))
 
@@ -93,7 +92,7 @@ func (this *EntitlementEntRepository) ParseSearchGraph(criteria *string) (*orm.P
 func (this *EntitlementEntRepository) Search(
 	ctx context.Context,
 	param it.SearchParam,
-) (*crud.PagedResult[*domain.Entitlement], error) {
+) (*crud.PagedResult[domain.Entitlement], error) {
 	query := this.client.Entitlement.Query().
 		WithResource().
 		WithAction()

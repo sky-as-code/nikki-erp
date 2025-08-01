@@ -9,7 +9,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
@@ -20,20 +19,23 @@ import (
 
 func NewRoleServiceImpl(
 	roleRepo itRole.RoleRepository,
+	entitlementRepo itEntitlement.EntitlementRepository,
+	assignmentRepo itAssign.EntitlementAssignmentRepository,
 	eventBus event.EventBus,
-	cqrsBus cqrs.CqrsBus,
 ) itRole.RoleService {
 	return &RoleServiceImpl{
-		roleRepo: roleRepo,
-		eventBus: eventBus,
-		cqrsBus:  cqrsBus,
+		roleRepo:        roleRepo,
+		entitlementRepo: entitlementRepo,
+		assignmentRepo:  assignmentRepo,
+		eventBus:        eventBus,
 	}
 }
 
 type RoleServiceImpl struct {
-	roleRepo itRole.RoleRepository
-	eventBus event.EventBus
-	cqrsBus  cqrs.CqrsBus
+	roleRepo        itRole.RoleRepository
+	entitlementRepo itEntitlement.EntitlementRepository
+	assignmentRepo  itAssign.EntitlementAssignmentRepository
+	eventBus        event.EventBus
 }
 
 func (this *RoleServiceImpl) CreateRole(ctx context.Context, cmd itRole.CreateRoleCommand) (result *itRole.CreateRoleResult, err error) {
@@ -258,14 +260,14 @@ func (this *RoleServiceImpl) setRoleDefaults(role *domain.Role) {
 	role.SetDefaults()
 }
 
-func (this *RoleServiceImpl) validateEntitlements(ctx context.Context, entitlements []*domain.Entitlement, vErrs *fault.ValidationErrors) {
+func (this *RoleServiceImpl) validateEntitlements(ctx context.Context, entitlements []domain.Entitlement, vErrs *fault.ValidationErrors) {
 	if len(entitlements) == 0 {
 		return
 	}
 
 	// Check for duplicate entitlement IDs and null IDs first
 	seenIds := make(map[model.Id]int)
-	validEntitlements := make([]*domain.Entitlement, 0)
+	validEntitlements := make([]domain.Entitlement, 0)
 
 	for i, ent := range entitlements {
 		if ent.Id == nil {
@@ -287,16 +289,10 @@ func (this *RoleServiceImpl) validateEntitlements(ctx context.Context, entitleme
 	}
 
 	for _, ent := range validEntitlements {
-		existsRes := itEntitlement.EntitlementExistsResult{}
-		err := this.cqrsBus.Request(ctx, itEntitlement.EntitlementExistsCommand{Id: *ent.Id}, &existsRes)
+		existsRes, err := this.entitlementRepo.Exists(ctx, itEntitlement.GetEntitlementByIdQuery{Id: *ent.Id})
 		fault.PanicOnErr(err)
 
-		if existsRes.ClientError != nil {
-			vErrs.MergeClientError(existsRes.ClientError)
-			continue
-		}
-
-		if !existsRes.Data {
+		if !existsRes {
 			originalIndex := seenIds[*ent.Id]
 			vErrs.Append(fmt.Sprintf("entitlements[%d]", originalIndex), "entitlement not found")
 		}
@@ -304,24 +300,17 @@ func (this *RoleServiceImpl) validateEntitlements(ctx context.Context, entitleme
 }
 
 func (this *RoleServiceImpl) getEntitlementByIds(ctx context.Context, role *domain.Role, vErrs *fault.ValidationErrors) ([]model.Id, error) {
-	assignments := itAssign.GetAllEntitlementAssignmentBySubjectQuery{
+	assignmentsRes, err := this.assignmentRepo.FindAllBySubject(ctx, itAssign.FindBySubjectParam{
 		SubjectType: *domain.WrapEntitlementAssignmentSubjectType(domain.EntitlementAssignmentSubjectTypeNikkiRole.String()),
 		SubjectRef:  *role.Id,
-	}
-	assignmentsRes := itAssign.GetAllEntitlementAssignmentBySubjectResult{}
-	err := this.cqrsBus.Request(ctx, assignments, &assignmentsRes)
+	})
 	fault.PanicOnErr(err)
-
-	if assignmentsRes.ClientError != nil {
-		vErrs.MergeClientError(assignmentsRes.ClientError)
-		return nil, err
-	}
 
 	// Extract unique entitlement IDs from assignments
 	entitlementIdSet := make(map[model.Id]bool)
 	uniqueEntitlementIds := make([]model.Id, 0)
 
-	for _, assignment := range assignmentsRes.Data {
+	for _, assignment := range assignmentsRes {
 		if assignment.EntitlementId != nil {
 			entId := *assignment.EntitlementId
 			if !entitlementIdSet[entId] {
@@ -334,17 +323,9 @@ func (this *RoleServiceImpl) getEntitlementByIds(ctx context.Context, role *doma
 	return uniqueEntitlementIds, nil
 }
 
-func (this *RoleServiceImpl) getEntitlements(ctx context.Context, entitlementIds []model.Id) ([]*domain.Entitlement, error) {
-	entitlements := itEntitlement.GetAllEntitlementByIdsQuery{
-		Ids: entitlementIds,
-	}
-	entitlementsRes := itEntitlement.GetAllEntitlementByIdsResult{}
-	err := this.cqrsBus.Request(ctx, entitlements, &entitlementsRes)
+func (this *RoleServiceImpl) getEntitlements(ctx context.Context, entitlementIds []model.Id) ([]domain.Entitlement, error) {
+	entitlementsRes, err := this.entitlementRepo.FindAllByIds(ctx, itEntitlement.FindAllByIdsParam{Ids: entitlementIds})
 	fault.PanicOnErr(err)
 
-	if entitlementsRes.ClientError != nil {
-		return nil, entitlementsRes.ClientError
-	}
-
-	return entitlementsRes.Data, nil
+	return entitlementsRes, nil
 }

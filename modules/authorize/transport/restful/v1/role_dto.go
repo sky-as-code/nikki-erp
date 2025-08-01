@@ -27,13 +27,27 @@ type RoleDto struct {
 	IsRequiredComment    bool     `json:"isRequiredComment"`
 	CreatedBy            model.Id `json:"createdBy"`
 
-	Entitlements []*Entitlement `json:"entitlements,omitempty"`
+	Entitlements []EntitlementDto `json:"entitlements,omitempty"`
 }
 
-type Entitlement struct {
-	Id model.Id `json:"id"`
+func (this *RoleDto) FromRole(role domain.Role) {
+	this.Id = *role.Id
+	this.Etag = *role.Etag
+	this.CreatedAt = *role.CreatedAt
+	this.Name = *role.Name
+	this.Description = role.Description
+	this.OwnerType = role.OwnerType.String()
+	this.OwnerRef = *role.OwnerRef
+	this.IsRequestable = *role.IsRequestable
+	this.IsRequiredAttachment = *role.IsRequiredAttachment
+	this.IsRequiredComment = *role.IsRequiredComment
+	this.CreatedBy = *role.CreatedBy
 
-	Name *string `json:"name,omitempty"`
+	this.Entitlements = array.Map(role.Entitlements, func(entitlement domain.Entitlement) EntitlementDto {
+		entitlementItem := EntitlementDto{}
+		entitlementItem.FromEntitlement(entitlement)
+		return entitlementItem
+	})
 }
 
 type CreateRoleRequest = it.CreateRoleCommand
@@ -54,29 +68,4 @@ func (this *SearchRolesResponse) FromResult(result *it.SearchRolesResultData) {
 		item.FromRole(*role)
 		return item
 	}).([]RoleDto)
-}
-
-func (this *RoleDto) FromRole(role domain.Role) {
-	this.Id = *role.Id
-	this.Etag = *role.Etag
-	this.CreatedAt = *role.CreatedAt
-	this.Name = *role.Name
-	this.Description = role.Description
-	this.OwnerType = role.OwnerType.String()
-	this.OwnerRef = *role.OwnerRef
-	this.IsRequestable = *role.IsRequestable
-	this.IsRequiredAttachment = *role.IsRequiredAttachment
-	this.IsRequiredComment = *role.IsRequiredComment
-	this.CreatedBy = *role.CreatedBy
-
-	this.Entitlements = array.Map(role.Entitlements, func(entitlement *domain.Entitlement) *Entitlement {
-		entitlementItem := &Entitlement{}
-		entitlementItem.FromEntitlement(*entitlement)
-		return entitlementItem
-	})
-}
-
-func (this *Entitlement) FromEntitlement(entitlement domain.Entitlement) {
-	this.Id = *entitlement.Id
-	this.Name = entitlement.Name
 }

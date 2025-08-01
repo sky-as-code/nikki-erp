@@ -94,6 +94,12 @@ func (this *ResourceEntRepository) Search(
 	)
 }
 
+func (this *ResourceEntRepository) Exist(ctx context.Context, param it.ExistParam) (bool, error) {
+	return this.client.Resource.Query().
+		Where(entResource.IDEQ(param.Id)).
+		Exist(ctx)
+}
+
 func BuildResourceDescriptor() *orm.EntityDescriptor {
 	entity := ent.Resource{}
 	builder := orm.DescribeEntity(entResource.Label).

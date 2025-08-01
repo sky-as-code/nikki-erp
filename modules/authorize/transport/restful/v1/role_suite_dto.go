@@ -23,7 +23,26 @@ type RoleSuiteDto struct {
 	IsRequiredComment    *bool    `json:"isRequiredComment,omitempty"`
 	CreatedBy            model.Id `json:"createdBy"`
 
-	Roles []*RoleDto `json:"roles,omitempty"`
+	Roles []RoleDto `json:"roles,omitempty"`
+}
+
+func (this *RoleSuiteDto) FromRoleSuite(roleSuite domain.RoleSuite) {
+	this.Id = *roleSuite.Id
+	this.Name = *roleSuite.Name
+	this.Description = roleSuite.Description
+	this.Etag = *roleSuite.Etag
+	this.OwnerType = roleSuite.OwnerType.String()
+	this.OwnerRef = *roleSuite.OwnerRef
+	this.IsRequestable = roleSuite.IsRequestable
+	this.IsRequiredAttachment = roleSuite.IsRequiredAttachment
+	this.IsRequiredComment = roleSuite.IsRequiredComment
+	this.CreatedBy = *roleSuite.CreatedBy
+
+	this.Roles = funk.Map(roleSuite.Roles, func(role domain.Role) RoleDto {
+		item := RoleDto{}
+		item.FromRole(role)
+		return item
+	}).([]RoleDto)
 }
 
 type CreateRoleSuiteRequest = it.CreateRoleSuiteCommand
@@ -44,23 +63,4 @@ func (this *SearchRoleSuitesResponse) FromResult(result *it.SearchRoleSuitesResu
 		item.FromRoleSuite(roleSuite)
 		return item
 	}).([]RoleSuiteDto)
-}
-
-func (this *GetRoleSuiteByIdResponse) FromRoleSuite(roleSuite domain.RoleSuite) {
-	this.Id = *roleSuite.Id
-	this.Name = *roleSuite.Name
-	this.Description = roleSuite.Description
-	this.Etag = *roleSuite.Etag
-	this.OwnerType = roleSuite.OwnerType.String()
-	this.OwnerRef = *roleSuite.OwnerRef
-	this.IsRequestable = roleSuite.IsRequestable
-	this.IsRequiredAttachment = roleSuite.IsRequiredAttachment
-	this.IsRequiredComment = roleSuite.IsRequiredComment
-	this.CreatedBy = *roleSuite.CreatedBy
-
-	this.Roles = funk.Map(roleSuite.Roles, func(role *domain.Role) *RoleDto {
-		item := RoleDto{}
-		item.FromRole(*role)
-		return &item
-	}).([]*RoleDto)
 }

@@ -28,7 +28,7 @@ type ResourceServiceImpl struct {
 
 func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.CreateResourceCommand) (result *it.CreateResourceResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to create resource"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "create resource"); e != nil {
 			err = e
 		}
 	}()
@@ -66,7 +66,7 @@ func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.Crea
 
 func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.UpdateResourceCommand) (result *it.UpdateResourceResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to update resource"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "update resource"); e != nil {
 			err = e
 		}
 	}()
@@ -114,7 +114,7 @@ func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.Upda
 
 func (this *ResourceServiceImpl) GetResourceByName(ctx context.Context, query it.GetResourceByNameQuery) (result *it.GetResourceByNameResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to get resource by name"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "get resource by name"); e != nil {
 			err = e
 		}
 	}()
@@ -147,7 +147,7 @@ func (this *ResourceServiceImpl) GetResourceByName(ctx context.Context, query it
 
 func (this *ResourceServiceImpl) SearchResources(ctx context.Context, query it.SearchResourcesQuery) (result *it.SearchResourcesResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to list resources"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "list resources"); e != nil {
 			err = e
 		}
 	}()
@@ -187,16 +187,20 @@ func (this *ResourceServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEta
 
 func (this *ResourceServiceImpl) assertResourceExistsByName(ctx context.Context, name string, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
 	dbResource, err = this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: name})
+	fault.PanicOnErr(err)
+
 	if dbResource == nil {
-		vErrs.AppendNotFound("id", "resource")
+		vErrs.AppendNotFound("resource_name", "resource")
 	}
 	return
 }
 
 func (this *ResourceServiceImpl) assertResourceExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
 	dbResource, err = this.resourceRepo.FindById(ctx, it.FindByIdParam{Id: id})
+	fault.PanicOnErr(err)
+
 	if dbResource == nil {
-		vErrs.AppendNotFound("id", "resource")
+		vErrs.AppendNotFound("resource_id", "resource")
 	}
 	return
 }
@@ -216,7 +220,7 @@ func (this *ResourceServiceImpl) assertResourceUnique(ctx context.Context, resou
 	fault.PanicOnErr(err)
 
 	if dbResource != nil {
-		vErrs.AppendAlreadyExists("name", "resource name")
+		vErrs.AppendAlreadyExists("resource_name", "resource name")
 	}
 
 	return nil
