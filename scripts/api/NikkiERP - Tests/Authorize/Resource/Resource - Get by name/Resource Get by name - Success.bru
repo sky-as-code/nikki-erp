@@ -26,20 +26,21 @@ script:post-response {
       additionalProperties: true
   };
   
-  test("Status code is 400", function () {
-      expect(res.getStatus()).to.equal(400);
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
   });
   
-  test("Response matches expected error schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
-  });
-  
+  let body;
   try {
-      const payload = res.getBody();
-      console.log("❌ Resource not found error response:", payload);
+      body = res.getBody();
+      console.log("✅ Get Resource by name response:", body);
   } catch (err) {
-      console.error("❌ Failed to parse error response:", err);
+      console.error("❌ Failed to parse response JSON:", err);
   }
+  
+  test("Response matches expected schema", function () {
+    expect(tv4.validate(body, schema)).to.be.true;
+  });
   
 }
 

@@ -1,7 +1,7 @@
 meta {
   name: Entitlement Create - Client error (Existing name)
   type: http
-  seq: 3
+  seq: 5
 }
 
 post {
@@ -14,7 +14,7 @@ body:json {
   {
       "name": "{{entitlement_name}}",
       "actionId": "{{action_id}}",
-      "actionExpr": "{{action_name}}:*.{{resource_name}}",
+      "actionExpr": "{{action_name}}:01JWNY20G23KD4RV5VWYABQYHD.{{resource_name}}",
       "resourceId": "{{resource_id}}",
       "scopeRef": "01JWNY20G23KD4RV5VWYABQYHD",
       "subjectType": "custom",
@@ -39,9 +39,9 @@ script:post-response {
       expect(body).to.have.property("code", "validation_error");
   });
   
-  test("Error message should say name already exists", function () {
-      expect(body.details).to.have.property("name");
-      expect(body.details.name.toLowerCase()).to.include("already exists");
+  test("Error message should say entitlement name already exists", function () {
+      expect(body.details).to.have.property("entitlement_name");
+      expect(body.details.entitlement_name.toLowerCase()).to.include("already exists");
   });
   
   console.log("✅ Duplicate name test response:", body);

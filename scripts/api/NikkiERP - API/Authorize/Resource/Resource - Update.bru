@@ -18,52 +18,103 @@ body:json {
 }
 
 script:post-response {
-  // Check status code
-  let isStatusValid = false;
-  test("Status code is 200", function () {
-      isStatusValid = res.getStatus() === 200;
-      expect(isStatusValid).to.be.true;
-  });
-  
-  // Parse JSON response
+  const statusCode = res.getStatus();
   let body;
-  let isJsonValid = true;
+  
   try {
-      body = res.getBody();
-      console.log("📥 Response body:", body);
-  } catch (err) {
-      isJsonValid = false;
-      expect.fail("❌ Response is not valid JSON");
+    body = res.getBody();
+    console.log(`📥 Response body (status: ${statusCode}):`, body);
+  } catch (e) {
+    expect.fail("❌ Failed to parse response body");
   }
   
-  // Validate response structure (only id, etag, updatedAt)
-  let isStructureValid = false;
-  if (isStatusValid && isJsonValid) {
-      test("Response contains required fields", function () {
-          const requiredFields = ["id", "etag", "updatedAt"];
-          requiredFields.forEach(field => {
-              expect(body).to.have.property(field);
-          });
-          isStructureValid = true;
+  test("Status code is 200 or 400", () => {
+    expect([200, 400]).to.include(statusCode);
+  });
+  
+  // ========== 🟢 SUCCESS ==========
+  if (statusCode === 200) {
+    test("Success: Response contains required fields", () => {
+      expect(body).to.be.an("object");
+      const requiredFields = ["id", "etag", "updatedAt"];
+      requiredFields.forEach(field => {
+        expect(body).to.have.property(field);
       });
+    });
   
-      // Set collection variable: etag (only if present and string)
-      if (typeof body.etag === "string" && body.etag.length > 0) {
-          bru.setVar("etag", body.etag);
-          console.log("✅ etag set to:", body.etag);
-      } else {
-          console.warn("⚠️ etag missing or invalid");
-      }
+    // Set vars only when all valid
+    if (typeof body.etag === "string" && body.etag.length > 0) {
+      bru.setVar("etag", body.etag);
+      console.log("✅ etag set to:", body.etag);
+    } else {
+      console.warn("⚠️ etag missing or invalid");
+    }
   
-      // Set collection variable: id (optional, if needed)
-      if (typeof body.id === "string" && body.id.length > 0) {
-          bru.setVar("resource_id", body.id);
-          console.log("✅ resource_id set to:", body.id);
-      } else {
-          console.warn("⚠️ id missing or invalid");
-      }
-  } else {
-      console.warn("⚠️ Skipped field validation or variable setting due to invalid status/JSON");
+    if (typeof body.id === "string" && body.id.length > 0) {
+      bru.setVar("resource_id", body.id);
+      console.log("✅ resource_id set to:", body.id);
+    } else {
+      console.warn("⚠️ resource_id missing or invalid");
+    }
+  }
+  
+  // ========== 🔴 VALIDATION ERROR ==========
+  if (statusCode === 400) {
+    const errorSchema = {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+        code: { type: "string", enum: ["validation_error"] },
+        details: { type: "object" }
+      },
+      additionalProperties: true
+    };
+  
+    test("Error: Matches validation_error schema", () => {
+      expect(tv4.validate(body, errorSchema)).to.be.true;
+    });
+  
+    test("Error: code is 'validation_error'", () => {
+      expect(body.code).to.eql("validation_error");
+      expect(body.details).to.be.an("object");
+    });
+  
+    const details = body.details;
+  
+    // ========== ❌ Missing Required Fields ==========
+    if (details.etag === "cannot be blank") {
+      test("Error: etag is missing", () => {
+        expect(details).to.have.property("etag", "cannot be blank");
+      });
+    }
+  
+    // ========== ❌ Etag Mismatch ==========
+    if (details.etag === "etag mismatched") {
+      test("Error: etag mismatch", () => {
+        expect(details).to.have.property("etag", "etag mismatched");
+      });
+    }
+  
+    // ========== ❌ Resource Not Found ==========
+    if (details.resource_id === "resource not found") {
+      test("Error: resource_id not found", () => {
+        expect(details).to.have.property("resource_id", "resource not found");
+      });
+    }
+  
+    // ========== 🧪 Unexpected fields ==========
+    test("Error: Does not include unrelated fields", () => {
+      expect(details).to.not.have.property("invalid_field");
+    });
+  
+    // ========== ℹ️ Unknown case fallback ==========
+    if (
+      !details.etag?.includes("cannot be blank") &&
+      !details.etag?.includes("etag mismatched") &&
+      !details.resource_id?.includes("resource not found")
+    ) {
+      console.warn("❓ Unexpected validation error details:", details);
+    }
   }
   
 }

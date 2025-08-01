@@ -12,34 +12,44 @@ get {
 
 script:post-response {
   const schema = {
-      type: "object",
-      required: ["id", "etag", "name", "resourceType", "resourceRef", "scopeType"],
-      properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          name: { type: "string" },
-          description: { type: "string" },
-          resourceType: { type: "string", enum: ["nikki_application", "custom"] },
-          resourceRef: { type: "string" },
-          scopeType: { type: "string", enum: ["org", "hierarchy", "private", "domain"] }
+    type: "object",
+    required: ["code", "details"],
+    properties: {
+      code: {
+        type: "string",
+        const: "validation_error"
       },
-      additionalProperties: true
+      details: {
+        type: "object",
+        required: ["resource_name"],
+        properties: {
+          resource_name: {
+            type: "string",
+            pattern: "not found$"
+          }
+        },
+        additionalProperties: true
+      }
+    },
+    additionalProperties: true
   };
+  
+  let body;
+  try {
+    body = res.getBody();
+    console.log("📥 Parsed error response:", body);
+  } catch (err) {
+    console.error("❌ Failed to parse error response:", err);
+    expect.fail("❌ Response body is not valid JSON");
+  }
   
   test("Status code is 400", function () {
       expect(res.getStatus()).to.equal(400);
   });
   
   test("Response matches expected error schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
+    expect(tv4.validate(body, schema)).to.be.true;
   });
-  
-  try {
-      const payload = res.getBody();
-      console.log("❌ Resource not found error response:", payload);
-  } catch (err) {
-      console.error("❌ Failed to parse error response:", err);
-  }
   
 }
 

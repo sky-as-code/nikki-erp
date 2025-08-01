@@ -11,60 +11,51 @@ get {
 }
 
 script:post-response {
-  test("Status code is 200", function () {
-      expect(res.getStatus()).to.equal(200);
+  test("Status code is 400", function () {
+    expect(res.getStatus()).to.equal(400);
   });
   
   const schema = {
-      type: "object",
-      required: ["id", "etag", "name", "actionExpr"],
-      properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          name: { type: "string" },
-          description: { type: ["string", "null"] },
-          resourceId: { type: ["string", "null"] },
-          actionId: { type: ["string", "null"] },
-          actionExpr: { type: "string" },
-          createdBy: { type: "string" },
-          resource: {
-              type: ["object", "null"],
-              properties: {
-                  id: { type: "string" },
-                  name: { type: "string" }
-              },
-              required: ["id", "name"],
-              additionalProperties: true
-          },
-          resource: {
-              type: ["object", "null"],
-              properties: {
-                  id: { type: "string" },
-                  name: { type: "string" }
-              },
-              required: ["id", "name"],
-              additionalProperties: true
-          }
+    type: "object",
+    required: ["code", "details"],
+    properties: {
+      code: {
+        type: "string",
+        const: "validation_error"
       },
-      additionalProperties: true
+      details: {
+        type: "object",
+        required: ["entitlement_id"],
+        properties: {
+          entitlement_id: {
+            type: "string",
+            pattern: "not found$"
+          }
+        },
+        additionalProperties: true
+      }
+    },
+    additionalProperties: true
   };
   
-  test("Response matches expected schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
-  });
   
   let body;
   try {
-      body = res.getBody();
-      console.log("✅ Get Action by ID response:", body);
+    body = res.getBody();
+    console.log("📥 Parsed error response:", body);
   } catch (err) {
-      console.error("❌ Failed to parse response JSON:", err);
+    console.error("❌ Failed to parse error response:", err);
+    expect.fail("❌ Response body is not valid JSON");
   }
   
-  if (body && body.id && body.etag) {
-      bru.setVar("entitlement_id", body.id);
-      bru.setVar("etag", body.etag);
-  }
+  test("Response matches expected error schema", function () {
+    expect(tv4.validate(body, schema)).to.be.true;
+  });
+  
+  test("Error message for entitlement_id includes 'not found'", function () {
+    expect(body.details).to.have.property("entitlement_id");
+    expect(body.details.entitlement_id).to.match(/not found$/);
+  });
   
 }
 

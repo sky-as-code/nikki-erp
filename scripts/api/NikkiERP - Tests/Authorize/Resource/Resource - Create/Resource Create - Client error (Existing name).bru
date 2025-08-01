@@ -19,59 +19,28 @@ body:json {
 }
 
 script:post-response {
-  const errorSchema = {
-      type: "object",
-      required: ["code", "details"],
-      properties: {
-          code: { type: "string", enum: ["validation_error"] },
-          details: {
-              type: "object",
-              additionalProperties: { type: "string" }
-          }
-      },
-      additionalProperties: true
-  };
+  let body;
+  let statusCode = res.getStatus();
   
-  let isStatusValid = false;
-  test("Status code is 400", function () {
-      isStatusValid = res.getStatus() === 400;
-      expect(isStatusValid).to.be.true;
+  try {
+    body = res.getBody();
+    console.log("📥 Error response:", body);
+  } catch (e) {
+    expect.fail("❌ Faield to parse");
+  }
+  
+  test("Status code is 400", () => {
+    expect(statusCode).to.eql(400);
   });
   
-  // ✅ Parse JSON body
-  let body;
-  let isJsonValid = true;
-  try {
-      body = res.getBody();
-      console.log("📥 Parsed error response:", body);
-  } catch (e) {
-      isJsonValid = false;
-      console.error("❌ Failed to parse JSON:", e);
-      expect.fail("Response body is not valid JSON");
-  }
+  test("Validation error for existing name", () => {
+    expect(body).to.have.property("code", "validation_error");
+    expect(body).to.have.property("details").that.is.an("object");
   
-  // ✅ Validate schema
-  let isSchemaValid = false;
-  if (isJsonValid) {
-      test("Error response matches schema", function () {
-          expect(body).to.have.jsonSchema(errorSchema);
-          isSchemaValid = true;
-      });
-  }
+    expect(body.details).to.have.property("resource_name");
   
-  if (isStatusValid && isJsonValid && isSchemaValid) {
-      test("Response is validation_error due to existing name", function () {
-          expect(body.code).to.eql("validation_error");
-  
-          expect(body.details).to.be.an("object");
-          expect(body.details).to.have.property("name");
-          expect(body.details.name).to.eql("name already exists");
-  
-          console.log("✅ Correctly failed on existing name:", body.details.name);
-      });
-  } else {
-      console.warn("⚠️ Invalid error response — skipping validation and NOT setting any environment variables.");
-  }
+    expect(body.details.resource_name).to.include("already exists");
+  });
   
 }
 

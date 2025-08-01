@@ -29,7 +29,7 @@ script:post-response {
   
   test("Returns etag conflict message", function () {
       const json = res.getBody();
-      expect(json.details).to.have.property("etag", "resource has been modified by another process");
+      expect(json.details).to.have.property("etag", "etag mismatched");
   });
   
 }

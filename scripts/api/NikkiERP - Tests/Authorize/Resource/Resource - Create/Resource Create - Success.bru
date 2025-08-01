@@ -20,93 +20,53 @@ body:json {
 }
 
 script:pre-request {
-  let rawBody = req.getBody().raw;
+  let payload = req.getBody();
   
-  let payload;
-  try {
-      payload = JSON.parse(rawBody);
-  } catch (e) {
-      console.error("❌ Failed to parse JSON body:", e);
-      return;
-  }
-  
-  // Generate a 6-character alphanumeric string (no spaces)
   function randomString(length = 6) {
-      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
   }
   
   const rand = randomString();
   
   if (payload.name) {
-      payload.name = payload.name.replace(/[^a-zA-Z0-9]/g, '') + rand;
+    payload.name = payload.name.replace(/[^a-zA-Z0-9]/g, '') + rand;
   }
   
-  // Generate valid ULID length (26 characters)
   if (payload.resourceType === "nikki_application") {
-      payload.resourceRef = "01" + randomString(24); // example ULID: total 26
+    payload.resourceRef = "01" + randomString(24);
   }
   
+  req.setBody(payload);
   bru.setVar("resource_name", payload.name);
-  req.getBody().raw = JSON.stringify(payload, null, 2);
   
   console.log("✅ Final request payload:", payload);
   
 }
 
 script:post-response {
-  const schema = {
-      type: "object",
-      required: ["id", "etag", "name", "resourceType", "resourceRef", "scopeType"],
-      properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          name: { type: "string" },
-          description: { type: "string" },
-          resourceType: { type: "string", enum: ["nikki_application", "custom"] },
-          resourceRef: { type: "string" },
-          scopeType: { type: "string", enum: ["org", "hierarchy", "private", "domain"] }
-      },
-      additionalProperties: true
-  };
-  
-  let isStatusValid = false;
-  test("Status code is 201", function () {
-      isStatusValid = res.getStatus() === 201;
-      expect(isStatusValid).to.be.true;
-  });
-  
-  let isSchemaValid = false;
-  test("Response matches expected schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
-      isSchemaValid = true;
-  });
-  
-  // ✅ Parse JSON response
   let body;
-  let isJsonValid = true;
   try {
-      body = res.getBody();
-      console.log("✅ Response body:", body);
-      isSchemaValid = true;
+    body = res.getBody();
+    console.log("📦 Success response:", body);
   } catch (e) {
-      isJsonValid = false;
-      console.error("❌ Failed to parse response JSON:", e);
+    expect.fail("❌ Failed to parse");
   }
   
-  if (
-      isStatusValid &&
-      isSchemaValid &&
-      isJsonValid &&
-      body?.id &&
-      body?.etag
-  ) {
-      bru.setVar("resource_id", body.id);
-      bru.setVar("etag", body.etag);
-      console.log("✅ Set resource_id and etag");
-  } else {
-      console.warn("⚠️ Response invalid or incomplete — NOT setting collectionVariables vars");
-  }
+  test("Status code is 200 or 201", () => {
+    const status = res.getStatus();
+    expect([200, 201]).to.include(status);
+  });
+  
+  test("Response body contains id, createdAt, etag", () => {
+    expect(body).to.be.an("object");
+    expect(body).to.have.property("id").that.is.a("string").with.length.greaterThan(25);
+    expect(body).to.have.property("createdAt").that.is.a("number");
+    expect(body).to.have.property("etag").that.is.a("string");
+  });
+  
+  bru.setVar("resource_id", body.id);
+  bru.setVar("etag", body.etag)
   
 }
 

@@ -18,13 +18,11 @@ body:json {
 }
 
 script:pre-request {
-  let rawBody = req.getBody().raw;
-  
   let payload;
   try {
-      payload = JSON.parse(rawBody);
+      payload = req.getBody();
   } catch (e) {
-      console.error("❌ Failed to parse JSON body:", e);
+      console.error("❌ Failed to parse: ", e);
       return;
   }
   
@@ -32,62 +30,59 @@ script:pre-request {
   const randDesc = `Updated description ${Math.floor(Math.random() * 1000)}`;
   payload.description = randDesc;
   
-  req.getBody().raw = JSON.stringify(payload, null, 2);
+  req.setBody(payload)
   
   console.log("✅ Final request payload for update:", payload);
   
 }
 
 script:post-response {
+  // Check status code
   let isStatusValid = false;
   test("Status code is 200", function () {
       isStatusValid = res.getStatus() === 200;
       expect(isStatusValid).to.be.true;
   });
   
-  const schema = {
-      type: "object",
-      required: ["id", "etag"],
-      properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          name: { type: "string" },
-          description: { type: "string" },
-          resourceId: { type: "string" },
-          createdBy: { type: "string" }
-      },
-      additionalProperties: true
-  };
-  
+  // Parse JSON response
   let body;
   let isJsonValid = true;
-  let isSchemaValid = false;
-  
   try {
       body = res.getBody();
-  } catch (e) {
+      console.log("📥 Response body:", body);
+  } catch (err) {
       isJsonValid = false;
-      expect.fail("❌ JSON parse failed");
+      expect.fail("❌ Response is not valid JSON");
   }
   
+  // Validate response structure
+  let isStructureValid = false;
   if (isStatusValid && isJsonValid) {
-      test("Response matches schema", function () {
-          expect(tv4.validate(body, schema)).to.be.true;
-          isSchemaValid = true;
+      test("Response contains required fields", function () {
+          const requiredFields = ["id", "etag", "updatedAt"];
+          requiredFields.forEach(field => {
+              expect(body).to.have.property(field);
+          });
+          isStructureValid = true;
       });
-  } else {
-      console.warn("⚠️ Skip schema test due to invalid status or JSON");
-  }
   
-  if (isStatusValid && isJsonValid && isSchemaValid && body.etag) {
-      bru.setVar("etag", body.etag);
-      console.log("✅ Updated etag:", body.etag);
-  } else {
-      console.warn("🚫 Not updating etag due to failed checks");
-  }
+      // Set variable: etag
+      if (typeof body.etag === "string" && body.etag.length > 0) {
+          bru.setVar("etag", body.etag);
+          console.log("✅ etag set to:", body.etag);
+      } else {
+          console.warn("⚠️ etag missing or invalid");
+      }
   
-  if (isJsonValid) {
-      console.log("📦 Response body:", body);
+      // Set variable: action_id
+      if (typeof body.id === "string" && body.id.length > 0) {
+          bru.setVar("action_id", body.id);
+          console.log("✅ action_id set to:", body.id);
+      } else {
+          console.warn("⚠️ id missing or invalid");
+      }
+  } else {
+      console.warn("⚠️ Skipped field validation or variable setting due to invalid status/JSON");
   }
   
 }

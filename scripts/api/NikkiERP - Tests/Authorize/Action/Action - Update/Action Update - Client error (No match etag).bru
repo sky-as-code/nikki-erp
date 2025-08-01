@@ -1,19 +1,19 @@
 meta {
-  name: Entitlement Update - Client error (Not match etags)
+  name: Action Update - Client error (No match etag)
   type: http
-  seq: 4
+  seq: 3
 }
 
 put {
-  url: {{api_host}}/v1/authorize/entitlements/{{entitlement_id}}
+  url: {{api_host}}/v1/authorize/actions/{{action_id}}
   body: json
   auth: inherit
 }
 
 body:json {
   {
-      "description": "description",
-      "etag": "1752720685738865000"
+      "description": "Description",
+      "etag": "1752032294635863001"
   }
 }
 

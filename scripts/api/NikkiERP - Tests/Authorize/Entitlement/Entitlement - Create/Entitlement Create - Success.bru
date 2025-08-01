@@ -1,0 +1,100 @@
+meta {
+  name: Entitlement Create - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/entitlements
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "Author Identdity - Readonly",
+      "actionId": "{{action_id}}",
+      "actionExpr": "{{action_name}}:01JWNY20G23KD4RV5VWYABQYHD.{{resource_name}}",
+      "resourceId": "{{resource_id}}",
+      "scopeRef": "01JWNY20G23KD4RV5VWYABQYHD",
+      "subjectType": "custom",
+      "subjectRef": "custom",
+      "createdBy": "{{user_id}}"
+  }
+}
+
+script:pre-request {
+  let payload;
+  try {
+      payload = req.getBody();
+  } catch (e) {
+      console.error("❌ Failed to parse:", e);
+      return;
+  }
+  
+  // Generate a 6-character alphanumeric string
+  function randomString(length = 6) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  }
+  
+  const rand = randomString();
+  
+  // Randomize name if present
+  if (payload.name) {
+      const cleanedName = payload.name.replace(/[^\w\s-]/g, '').trim();
+      payload.name = `${cleanedName} - ${rand}`;
+  }
+  
+  // Optional: regenerate scopeRef if needed (ULID-style)
+  if (payload.scopeRef && payload.scopeRef.length !== 26) {
+      payload.scopeRef = randomString(26);
+  }
+  
+  req.setBody(payload);
+  bru.setVar("entitlement_name", payload.name);
+  
+  console.log("✅ Final request payload:", payload);
+  
+}
+
+script:post-response {
+  let body;
+  
+  try {
+    body = res.getBody();
+    console.log("📦 Success response:", body);
+  } catch (e) {
+    expect.fail("❌ Failed to parse");
+  }
+  
+  test("Status code is 200 or 201", () => {
+    const status = res.getStatus();
+    expect([200, 201]).to.include(status);
+  });
+  
+  test("Response body contains id, createdAt, etag", () => {
+    expect(body).to.be.an("object");
+  
+    expect(body).to.have.property("id")
+      .that.is.a("string")
+      .with.length.greaterThan(25);
+  
+    expect(body).to.have.property("createdAt")
+      .that.is.a("number");
+  
+    expect(body).to.have.property("etag")
+      .that.is.a("string");
+  });
+  
+  // ✅ Set variables
+  bru.setVar("entitlement_id", body.id);
+  bru.setVar("etag", body.etag);
+  console.log("✅ entitlement_id:", body.id);
+  console.log("✅ etag:", body.etag);
+  
+}
+
+settings {
+  encodeUrl: true
+}

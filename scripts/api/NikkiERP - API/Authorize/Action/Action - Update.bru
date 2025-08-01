@@ -18,55 +18,106 @@ body:json {
 }
 
 script:post-response {
-  let isStatusValid = false;
-  test("Status code is 200", function () {
-      isStatusValid = res.getStatus() === 200;
-      expect(isStatusValid).to.be.true;
-  });
-  
-  const schema = {
-      type: "object",
-      required: ["id", "etag"],
-      properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          name: { type: "string" },
-          description: { type: "string" },
-          resourceId: { type: "string" },
-          createdBy: { type: "string" }
-      },
-      additionalProperties: true
-  };
-  
+  const statusCode = res.getStatus();
   let body;
   let isJsonValid = true;
-  let isSchemaValid = false;
   
   try {
       body = res.getBody();
+      console.log(`📥 Parsed response (status: ${statusCode}):`, body);
   } catch (e) {
       isJsonValid = false;
-      expect.fail("❌ JSON parse failed");
+      console.error("❌ Failed to parse response body:", e);
+      expect.fail("❌ Invalid JSON response");
   }
   
-  if (isStatusValid && isJsonValid) {
-      test("Response matches schema", function () {
-          expect(tv4.validate(body, schema)).to.be.true;
-          isSchemaValid = true;
+  // ========= ✅ CASE 1: SUCCESS =========
+  if (statusCode === 200 && isJsonValid) {
+      test("✅ Status code is 200", () => {
+          expect(statusCode).to.equal(200);
       });
-  } else {
-      console.warn("⚠️ Skip schema test due to invalid status or JSON");
+  
+      test("✅ Response contains id, etag, updatedAt", () => {
+          ["id", "etag", "updatedAt"].forEach(field => {
+              expect(body).to.have.property(field);
+          });
+      });
+  
+      // Set variables only on success
+      if (typeof body.etag === "string" && body.etag.length > 0) {
+          bru.setVar("etag", body.etag);
+          console.log("✅ etag set to:", body.etag);
+      } else {
+          console.warn("⚠️ Missing or invalid etag");
+      }
+  
+      if (typeof body.id === "string" && body.id.length > 0) {
+          bru.setVar("action_id", body.id);
+          console.log("✅ action_id set to:", body.id);
+      } else {
+          console.warn("⚠️ Missing or invalid action_id");
+      }
   }
   
-  if (isStatusValid && isJsonValid && isSchemaValid && body.etag) {
-      bru.setVar("etag", body.etag);
-      console.log("✅ Updated etag:", body.etag);
-  } else {
-      console.warn("🚫 Not updating etag due to failed checks");
+  // ========= ❌ CASE 2: INVALID FIELDS (etag blank) =========
+  if (statusCode === 400 && body?.details?.etag === "cannot be blank") {
+      test("❌ Status code is 400 (invalid fields)", () => {
+          expect(statusCode).to.equal(400);
+      });
+  
+      test("❌ Response has validation_error for etag", () => {
+          expect(body.code).to.eql("validation_error");
+          expect(body.details).to.have.property("etag", "cannot be blank");
+      });
+  
+      test("🔒 Do not update etag when error", () => {
+          const etag = bru.getVar("etag");
+          expect(etag).to.not.eql(null);
+          expect(etag).to.not.eql(undefined);
+      });
+  
+      console.log("⚠️ Validation error response:", body);
   }
   
-  if (isJsonValid) {
-      console.log("📦 Response body:", body);
+  // ========= ❌ CASE 3: ETag MISMATCH =========
+  if (statusCode === 400 && body?.details?.etag === "etag mismatched") {
+      test("❌ Status code is 400 (etag mismatch)", () => {
+          expect(statusCode).to.equal(400);
+      });
+  
+      test("❌ Returns etag mismatch error", () => {
+          expect(body.code).to.eql("validation_error");
+          expect(body.details).to.have.property("etag", "etag mismatched");
+      });
+  
+      test("🔒 Do not update etag when mismatched", () => {
+          const etag = bru.getVar("etag");
+          expect(etag).to.not.eql(null);
+          expect(etag).to.not.eql(undefined);
+      });
+  
+      console.log("⚠️ ETag mismatch error:", body.details);
+  }
+  
+  // ========= ❌ CASE 4: NOT FOUND =========
+  if (statusCode === 400 && body?.details?.action_id?.includes("not found")) {
+      test("❌ Status code is 400 (not found)", () => {
+          expect(statusCode).to.equal(400);
+      });
+  
+      test("❌ Response includes 'action_id: not found'", () => {
+          expect(body.code).to.eql("validation_error");
+          expect(body.details).to.have.property("action_id");
+          expect(body.details.action_id).to.include("not found");
+      });
+  
+      test("🔒 Do not update etag when action not found", () => {
+          const etag = bru.getVar("etag");
+          expect(etag).to.not.eql(null);
+          expect(etag).to.not.eql(undefined);
+      });
+  
+      console.log("⚠️ Not found error:", body.details);
   }
   
 }

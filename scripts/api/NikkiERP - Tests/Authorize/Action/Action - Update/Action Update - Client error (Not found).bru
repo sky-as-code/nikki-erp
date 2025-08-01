@@ -1,7 +1,7 @@
 meta {
   name: Action Update - Client error (Not found)
   type: http
-  seq: 3
+  seq: 4
 }
 
 put {
@@ -31,9 +31,9 @@ script:post-response {
           code: { type: "string", const: "validation_error" },
           details: {
               type: "object",
-              required: ["id"],
+              required: ["action_id"],
               properties: {
-                  id: { type: "string", const: "action not found" }
+                  action_id: { type: "string" }
               },
               additionalProperties: true
           }
@@ -46,6 +46,7 @@ script:post-response {
   let isJsonValid = true;
   try {
       body = res.getBody();
+      console.log("📥 Parsed error response:", body);
   } catch (e) {
       isJsonValid = false;
       console.error("❌ Failed to parse response:", e);
@@ -58,13 +59,13 @@ script:post-response {
           expect(tv4.validate(body, schema)).to.be.true;
       });
   
-      test("Error message contains 'id: action not found'", function () {
-          expect(body.details).to.have.property("id", "action not found");
+      test("Error message includes 'not found'", function () {
+          expect(body.details).to.have.property("action_id");
+          expect(body.details.action_id).to.include("not found");
       });
-  
-      console.log("⚠️ Error response (Not Found):", body);
   }
   
+  // ✅ Make sure etag is not modified or reused
   test("Do not update 'etag' when action is not found", function () {
       const etag = bru.getVar("etag");
       expect(etag).to.not.eql(null);

@@ -41,10 +41,6 @@ script:post-response {
       additionalProperties: true
   };
   
-  test("Response matches expected schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
-  });
-  
   let body;
   try {
       body = res.getBody();
@@ -52,6 +48,10 @@ script:post-response {
   } catch (err) {
       console.error("❌ Failed to parse response JSON:", err);
   }
+  
+  test("Response matches expected schema", function () {
+    expect(tv4.validate(body, schema)).to.be.true;
+  });
   
   if (body && body.id && body.etag) {
       bru.setVar("action_id", body.id);

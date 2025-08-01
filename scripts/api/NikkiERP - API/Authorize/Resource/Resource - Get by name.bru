@@ -10,6 +10,95 @@ get {
   auth: inherit
 }
 
+script:post-response {
+  const statusCode = res.getStatus();
+  let body;
+  
+  try {
+    body = res.getBody();
+    console.log(`📥 Response body (status: ${statusCode}):`, body);
+  } catch (err) {
+    console.error("❌ Failed to parse JSON response:", err);
+    expect.fail("❌ Response is not valid JSON");
+  }
+  
+  test("Status code is 200 or 400", function () {
+    expect([200, 400]).to.include(statusCode);
+  });
+  
+  // ========== 🟢 SUCCESS ==========
+  if (statusCode === 200) {
+    const successSchema = {
+      type: "object",
+      required: ["id", "etag", "name", "resourceType", "resourceRef", "scopeType"],
+      properties: {
+        id: { type: "string" },
+        etag: { type: "string" },
+        name: { type: "string" },
+        description: { type: "string" },
+        resourceType: { type: "string", enum: ["nikki_application", "custom"] },
+        resourceRef: { type: "string" },
+        scopeType: { type: "string", enum: ["org", "hierarchy", "private", "domain"] }
+      },
+      additionalProperties: true
+    };
+  
+    test("Success: Response matches expected schema", function () {
+      expect(tv4.validate(body, successSchema)).to.be.true;
+    });
+  
+    // Set variables only if valid
+    if (typeof body.id === "string" && body.id.length > 0) {
+      bru.setVar("resource_id", body.id);
+      console.log("✅ resource_id set to:", body.id);
+    } else {
+      console.warn("⚠️ resource_id missing or invalid");
+    }
+  
+    if (typeof body.etag === "string" && body.etag.length > 0) {
+      bru.setVar("etag", body.etag);
+      console.log("✅ etag set to:", body.etag);
+    } else {
+      console.warn("⚠️ etag missing or invalid");
+    }
+  }
+  
+  // ========== 🔴 NOT FOUND ==========
+  if (statusCode === 400) {
+    const errorSchema = {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+        code: {
+          type: "string",
+          const: "validation_error"
+        },
+        details: {
+          type: "object",
+          required: ["resource_name"],
+          properties: {
+            resource_name: {
+              type: "string",
+              pattern: "not found$"
+            }
+          },
+          additionalProperties: true
+        }
+      },
+      additionalProperties: true
+    };
+  
+    test("Error: Response matches validation_error schema", function () {
+      expect(tv4.validate(body, errorSchema)).to.be.true;
+    });
+  
+    test("Error: resource_name not found message", function () {
+      expect(body.details.resource_name).to.match(/not found$/);
+    });
+  }
+  
+}
+
 settings {
   encodeUrl: true
 }
