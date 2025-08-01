@@ -17,6 +17,10 @@ func entToResource(dbResource *ent.Resource) *domain.Resource {
 		resource.Actions = entToActions(dbResource.Edges.Actions)
 	}
 
+	if dbResource.Edges.Entitlements != nil {
+		resource.Entitlements = entToEntitlements(dbResource.Edges.Entitlements)
+	}
+
 	return resource
 }
 
@@ -38,6 +42,12 @@ func entToAction(dbAction *ent.Action) *domain.Action {
 
 	if dbAction.Edges.Resource != nil {
 		action.Resource = entToResource(dbAction.Edges.Resource)
+	}
+
+	if dbAction.Edges.Entitlements != nil {
+		action.Entitlements = array.Map(dbAction.Edges.Entitlements, func(dbEntitlement *ent.Entitlement) domain.Entitlement {
+			return *entToEntitlement(dbEntitlement)
+		})
 	}
 
 	return action
@@ -208,7 +218,7 @@ func entFromEffectiveGroupEntitlement(dbEffectiveGroupEntitlement *ent.Effective
 	return entitlementAssignment
 }
 
-func entToEntitlementAssignments(dbEffectiveUserEntitlements []*ent.EffectiveUserEntitlement, dbEffectiveGroupEntitlements []*ent.EffectiveGroupEntitlement) []*domain.EntitlementAssignment {
+func effectiveEntToEntitlementAssignments(dbEffectiveUserEntitlements []*ent.EffectiveUserEntitlement, dbEffectiveGroupEntitlements []*ent.EffectiveGroupEntitlement) []*domain.EntitlementAssignment {
 	assignments := make([]*domain.EntitlementAssignment, 0)
 
 	if dbEffectiveUserEntitlements != nil {
@@ -224,4 +234,14 @@ func entToEntitlementAssignments(dbEffectiveUserEntitlements []*ent.EffectiveUse
 	}
 	return assignments
 }
+
+func entToEntitlementAssignments(dbEntitlementAssignments []*ent.EntitlementAssignment) []*domain.EntitlementAssignment {
+	entitlementAssignments := make([]*domain.EntitlementAssignment, len(dbEntitlementAssignments))
+	for i, dbEntitlementAssignment := range dbEntitlementAssignments {
+		entitlementAssignments[i] = entToEntitlementAssignment(dbEntitlementAssignment)
+	}
+	return entitlementAssignments
+}
+
+
 // END: EntitlementAssignment

@@ -56,6 +56,12 @@ func (this *EntitlementEntRepository) Update(ctx context.Context, entitlement do
 	return database.Mutate(ctx, updation, ent.IsNotFound, entToEntitlement)
 }
 
+func (this *EntitlementEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+	return this.client.Entitlement.Delete().
+		Where(entEntitlement.IDEQ(param.Id)).
+		Exec(ctx)
+}
+
 func (this *EntitlementEntRepository) Exists(ctx context.Context, param it.FindByIdParam) (bool, error) {
 	return this.client.Entitlement.Query().
 		Where(entEntitlement.ID(param.Id)).
@@ -84,6 +90,14 @@ func (this *EntitlementEntRepository) FindAllByIds(ctx context.Context, param it
 
 	return database.List(ctx, query, entToEntitlements)
 }
+
+func (this *EntitlementEntRepository) FindByActionExpr(ctx context.Context, param it.FindByActionExprParam) (*domain.Entitlement, error) {
+	query := this.client.Entitlement.Query().
+		Where(entEntitlement.ActionExprEQ(param.ActionExpr))
+
+	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
+}
+
 
 func (this *EntitlementEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
 	return database.ParseSearchGraphStr[ent.Entitlement, domain.Entitlement](criteria, entEntitlement.Label)

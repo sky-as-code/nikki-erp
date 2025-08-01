@@ -53,6 +53,9 @@ type CreateEntitlementResponse = httpserver.RestCreateResponse
 type UpdateEntitlementRequest = it.UpdateEntitlementCommand
 type UpdateEntitlementResponse = httpserver.RestUpdateResponse
 
+type DeleteEntitlementHardByIdRequest = it.DeleteEntitlementHardByIdQuery
+type DeleteEntitlementHardByIdResponse = httpserver.RestDeleteResponse
+
 type GetEntitlementByIdRequest = it.GetEntitlementByIdQuery
 
 type SearchEntitlementsRequest = it.SearchEntitlementsQuery

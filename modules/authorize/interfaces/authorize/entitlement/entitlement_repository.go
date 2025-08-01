@@ -14,10 +14,12 @@ import (
 type EntitlementRepository interface {
 	Create(ctx context.Context, entitlement domain.Entitlement) (*domain.Entitlement, error)
 	Update(ctx context.Context, entitlement domain.Entitlement, prevEtag model.Etag) (*domain.Entitlement, error)
+	DeleteHard(ctx context.Context, param DeleteParam) (int, error)
 	Exists(ctx context.Context, param FindByIdParam) (bool, error)
 	FindById(ctx context.Context, param FindByIdParam) (*domain.Entitlement, error)
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Entitlement, error)
 	FindAllByIds(ctx context.Context, param FindAllByIdsParam) ([]domain.Entitlement, error)
+	FindByActionExpr(ctx context.Context, param FindByActionExprParam) (*domain.Entitlement, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.Entitlement], error)
 }
@@ -25,6 +27,8 @@ type EntitlementRepository interface {
 type FindByNameParam = GetEntitlementByNameQuery
 type FindByIdParam = GetEntitlementByIdQuery
 type FindAllByIdsParam = GetAllEntitlementByIdsQuery
+type FindByActionExprParam = GetEntitlementByActionExprQuery
+type DeleteParam = DeleteEntitlementHardByIdQuery
 
 type SearchParam struct {
 	Predicate *orm.Predicate

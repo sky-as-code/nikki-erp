@@ -65,8 +65,10 @@ script:post-response {
     expect(body).to.have.property("etag").that.is.a("string");
   });
   
-  bru.setVar("resource_id", body.id);
-  bru.setVar("etag", body.etag)
+  if (res.getStatus() === 201) {
+    bru.setVar("resource_id", body.id);
+    bru.setVar("etag", body.etag)
+  }
   
 }
 

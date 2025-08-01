@@ -88,10 +88,12 @@ script:post-response {
   });
   
   // ✅ Set variables
-  bru.setVar("entitlement_id", body.id);
-  bru.setVar("etag", body.etag);
-  console.log("✅ entitlement_id:", body.id);
-  console.log("✅ etag:", body.etag);
+  if (res.getStatus() === 201) {
+    bru.setVar("entitlement_id", body.id);
+    bru.setVar("etag", body.etag);
+    console.log("✅ entitlement_id:", body.id);
+    console.log("✅ etag:", body.etag);
+  }
   
 }
 

@@ -42,7 +42,8 @@ func (this *ActionEntRepository) Create(ctx context.Context, action domain.Actio
 func (this *ActionEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Action, error) {
 	query := this.client.Action.Query().
 		Where(entAction.IDEQ(param.Id)).
-		WithResource()
+		WithResource().
+		WithEntitlements()
 
 	return database.FindOne(ctx, query, ent.IsNotFound, entToAction)
 }
@@ -66,6 +67,12 @@ func (this *ActionEntRepository) Update(ctx context.Context, action domain.Actio
 	}
 
 	return database.Mutate(ctx, update, ent.IsNotFound, entToAction)
+}
+
+func (this *ActionEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+	return this.client.Action.Delete().
+		Where(entAction.IDEQ(param.Id)).
+		Exec(ctx)
 }
 
 func (this *ActionEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {

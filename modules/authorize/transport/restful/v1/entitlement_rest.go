@@ -74,6 +74,30 @@ func (this EntitlementRest) UpdateEntitlement(echoCtx echo.Context) (err error) 
 	return err
 }
 
+func (this EntitlementRest) DeleteEntitlementHard(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete entitlement hard"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx,
+		this.EntitlementSvc.DeleteEntitlementHard,
+		func(request DeleteEntitlementHardByIdRequest) it.DeleteEntitlementHardByIdQuery {
+			return it.DeleteEntitlementHardByIdQuery(request)
+		},
+		func(result it.DeleteEntitlementHardByIdResult) DeleteEntitlementHardByIdResponse {
+			response := DeleteEntitlementHardByIdResponse{}
+			response.FromNonEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
 func (this EntitlementRest) GetEntitlementById(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get entitlement by id"); e != nil {

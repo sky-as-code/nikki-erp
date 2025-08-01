@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -70,6 +71,9 @@ func (this *EntitlementServiceImpl) CreateEntitlement(ctx context.Context, cmd i
 			this.sanitizeEntitlement(entitlement)
 			return this.assertEntitlementUnique(ctx, entitlement, vErrs)
 		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			return this.assertActionExprUnique(ctx, *entitlement.ActionExpr, vErrs)
+		}).
 		End()
 	fault.PanicOnErr(err)
 
@@ -124,7 +128,7 @@ func (this *EntitlementServiceImpl) EntitlementExists(ctx context.Context, cmd i
 
 func (this *EntitlementServiceImpl) UpdateEntitlement(ctx context.Context, cmd it.UpdateEntitlementCommand) (result *it.UpdateEntitlementResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "update resource"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "update entitlement"); e != nil {
 			err = e
 		}
 	}()
@@ -168,6 +172,48 @@ func (this *EntitlementServiceImpl) UpdateEntitlement(ctx context.Context, cmd i
 		Data:    entitlement,
 		HasData: entitlement != nil,
 	}, err
+}
+
+func (this *EntitlementServiceImpl) DeleteEntitlementHard(ctx context.Context, cmd it.DeleteEntitlementHardByIdQuery) (result *it.DeleteEntitlementHardByIdResult, err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "delete entitlement hard"); e != nil {
+			err = e
+		}
+	}()
+
+	var dbEntitlement *domain.Entitlement
+	var assignments []*domain.EntitlementAssignment
+
+	flow := validator.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			dbEntitlement, err = this.assertEntitlementExistsById(ctx, cmd.Id, vErrs)
+			return err
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			assignments, err = this.configPermissionHistory(ctx, dbEntitlement, vErrs)
+			return err
+		}).
+		End()
+	fault.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &it.DeleteEntitlementHardByIdResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	err = this.deleteAssignments(ctx, assignments)
+	fault.PanicOnErr(err)
+
+	deletedCount, err := this.entitlementRepo.DeleteHard(ctx, cmd)
+	fault.PanicOnErr(err)
+
+	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
 func (this *EntitlementServiceImpl) GetEntitlementById(ctx context.Context, query it.GetEntitlementByIdQuery) (result *it.GetEntitlementByIdResult, err error) {
@@ -246,7 +292,7 @@ func (this *EntitlementServiceImpl) GetAllEntitlementByIds(ctx context.Context, 
 
 func (this *EntitlementServiceImpl) SearchEntitlements(ctx context.Context, query it.SearchEntitlementsQuery) (result *it.SearchEntitlementsResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "list entitlements"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "search entitlements"); e != nil {
 			err = e
 		}
 	}()
@@ -285,6 +331,8 @@ func (this *EntitlementServiceImpl) assertCorrectEtag(updatedEtag model.Etag, db
 
 func (this *EntitlementServiceImpl) assertEntitlementExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbEntitlement *domain.Entitlement, err error) {
 	dbEntitlement, err = this.entitlementRepo.FindById(ctx, it.FindByIdParam{Id: id})
+	fault.PanicOnErr(err)
+
 	if dbEntitlement == nil {
 		vErrs.AppendNotFound("entitlement_id", "entitlement")
 	}
@@ -308,6 +356,28 @@ func (this *EntitlementServiceImpl) assertEntitlementUnique(ctx context.Context,
 	if dbEntitlement != nil {
 		vErrs.AppendAlreadyExists("entitlement_name", "entitlement name")
 	}
+	return nil
+}
+
+func (this *EntitlementServiceImpl) configPermissionHistory(ctx context.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) (assignments []*domain.EntitlementAssignment, err error) {
+	assignments, err = this.assignmentRepo.FindAllByEntitlementId(ctx, itAssignment.FindAllByEntitlementIdParam{EntitlementId: *entitlement.Id})
+	fault.PanicOnErr(err)
+
+	// TODO: Set entitlement_id & assignment_id to null in permission history table
+	// TODO: Copy action_expr & resolved_expr to permission history table
+	//
+	//
+	// return nil, err (if process has problem, return error)
+
+	return assignments, nil
+}
+
+func (this *EntitlementServiceImpl) deleteAssignments(ctx context.Context, assignments []*domain.EntitlementAssignment) (err error) {
+	for _, assignment := range assignments {
+		_, err = this.assignmentRepo.DeleteHard(ctx, itAssignment.DeleteEntitlementAssignmentByIdQuery{Id: *assignment.Id})
+		fault.PanicOnErr(err)
+	}
+
 	return nil
 }
 
@@ -365,5 +435,15 @@ func (this *EntitlementServiceImpl) assertActionExprValid(resource *domain.Resou
 		}
 	}
 
+	return nil
+}
+
+func (this *EntitlementServiceImpl) assertActionExprUnique(ctx context.Context, actionExpr string, vErrs *fault.ValidationErrors) error {
+	dbEntitlement, err := this.entitlementRepo.FindByActionExpr(ctx, it.GetEntitlementByActionExprQuery{ActionExpr: actionExpr})
+	fault.PanicOnErr(err)
+
+	if dbEntitlement != nil {
+		vErrs.AppendAlreadyExists("action_expr", "action expresstion")
+	}
 	return nil
 }

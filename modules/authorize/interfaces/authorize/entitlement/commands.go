@@ -18,9 +18,11 @@ func init() {
 	req = (*CreateEntitlementCommand)(nil)
 	req = (*EntitlementExistsCommand)(nil)
 	req = (*UpdateEntitlementCommand)(nil)
+	req = (*DeleteEntitlementHardByIdQuery)(nil)
 	req = (*GetEntitlementByIdQuery)(nil)
 	req = (*GetEntitlementByNameQuery)(nil)
 	req = (*GetAllEntitlementByIdsQuery)(nil)
+	req = (*GetEntitlementByActionExprQuery)(nil)
 	req = (*SearchEntitlementsQuery)(nil)
 	util.Unused(req)
 }
@@ -99,6 +101,32 @@ type UpdateEntitlementResult = crud.OpResult[*domain.Entitlement]
 
 // END: UpdateEntitlementCommand
 
+// START: DeleteEntitlementHardByIdQuery
+var deleteEntitlementHardByIdQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "entitlement",
+	Action:    "deleteHardById",
+}
+
+type DeleteEntitlementHardByIdQuery struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (DeleteEntitlementHardByIdQuery) CqrsRequestType() cqrs.RequestType {
+	return deleteEntitlementHardByIdQueryType
+}
+
+func (this DeleteEntitlementHardByIdQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type DeleteEntitlementHardByIdResult = crud.DeletionResult
+
+// END: DeleteEntitlementHardByIdQuery
+
 // START: GetEntitlementByIdQuery
 var getEntitlementByIdQueryType = cqrs.RequestType{
 	Module:    "authorize",
@@ -169,6 +197,25 @@ func (this GetAllEntitlementByIdsQuery) Validate() fault.ValidationErrors {
 type GetAllEntitlementByIdsResult = crud.OpResult[[]domain.Entitlement]
 
 // END: GetAllEntitlementByIdsQuery
+
+// START: GetEntitlementByActionExprQuery
+var getEntitlementByActionExprQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "entitlement",
+	Action:    "getByActionExpr",
+}
+
+type GetEntitlementByActionExprQuery struct {
+	ActionExpr string `param:"actionExpr" json:"actionExpr"`
+}
+
+func (GetEntitlementByActionExprQuery) CqrsRequestType() cqrs.RequestType {
+	return getEntitlementByActionExprQueryType
+}
+
+type GetEntitlementByActionExprQueryResult = crud.OpResult[*domain.Entitlement]
+
+// END: GetEntitlementByActionExprQuery
 
 // START: SearchEntitlementsQuery
 var searchEntitlementsQueryType = cqrs.RequestType{

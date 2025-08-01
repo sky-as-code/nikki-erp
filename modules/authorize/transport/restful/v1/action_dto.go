@@ -38,6 +38,9 @@ type CreateActionResponse = httpserver.RestCreateResponse
 type UpdateActionRequest = it.UpdateActionCommand
 type UpdateActionResponse = httpserver.RestUpdateResponse
 
+type DeleteActionHardByIdRequest = it.DeleteActionHardByIdQuery
+type DeleteActionHardByIdResponse = httpserver.RestDeleteResponse
+
 type GetActionByIdRequest = it.GetActionByIdQuery
 type GetActionByIdResponse = ActionDto
 
