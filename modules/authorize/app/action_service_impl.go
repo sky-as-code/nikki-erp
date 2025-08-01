@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -12,23 +13,26 @@ import (
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
+	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
 )
 
-func NewActionServiceImpl(actionRepo it.ActionRepository, eventBus event.EventBus) it.ActionService {
+func NewActionServiceImpl(actionRepo it.ActionRepository, resourceRepo itResource.ResourceRepository, eventBus event.EventBus) it.ActionService {
 	return &ActionServiceImpl{
-		actionRepo: actionRepo,
-		eventBus:   eventBus,
+		actionRepo:   actionRepo,
+		resourceRepo: resourceRepo,
+		eventBus:     eventBus,
 	}
 }
 
 type ActionServiceImpl struct {
-	actionRepo it.ActionRepository
-	eventBus   event.EventBus
+	actionRepo   it.ActionRepository
+	resourceRepo itResource.ResourceRepository
+	eventBus     event.EventBus
 }
 
 func (this *ActionServiceImpl) CreateAction(ctx context.Context, cmd it.CreateActionCommand) (result *it.CreateActionResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to create action"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "create action"); e != nil {
 			err = e
 		}
 	}()
@@ -41,6 +45,9 @@ func (this *ActionServiceImpl) CreateAction(ctx context.Context, cmd it.CreateAc
 		Step(func(vErrs *fault.ValidationErrors) error {
 			*vErrs = action.Validate(false)
 			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			return this.assertResourceExists(ctx, *action.ResourceId, vErrs)
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
 			this.sanitizeAction(action)
@@ -66,7 +73,7 @@ func (this *ActionServiceImpl) CreateAction(ctx context.Context, cmd it.CreateAc
 
 func (this *ActionServiceImpl) UpdateAction(ctx context.Context, cmd it.UpdateActionCommand) (result *it.UpdateActionResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to update action"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "update action"); e != nil {
 			err = e
 		}
 	}()
@@ -112,9 +119,46 @@ func (this *ActionServiceImpl) UpdateAction(ctx context.Context, cmd it.UpdateAc
 	}, err
 }
 
+func (this *ActionServiceImpl) DeleteActionHard(ctx context.Context, cmd it.DeleteActionHardByIdQuery) (result *it.DeleteActionHardByIdResult, err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "delete action hard"); e != nil {
+			err = e
+		}
+	}()
+
+	var dbAction *domain.Action
+
+	flow := validator.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			dbAction, err = this.assertActionExists(ctx, cmd.Id, vErrs)
+			return err
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			return this.assertConstraintViolated(dbAction, vErrs)
+		}).
+		End()
+	fault.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &it.DeleteActionHardByIdResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	deletedCount, err := this.actionRepo.DeleteHard(ctx, cmd)
+	fault.PanicOnErr(err)
+
+	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
+}
+
 func (this *ActionServiceImpl) GetActionById(ctx context.Context, query it.GetActionByIdQuery) (result *it.GetActionByIdResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to get action by id"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "get action by id"); e != nil {
 			err = e
 		}
 	}()
@@ -147,7 +191,7 @@ func (this *ActionServiceImpl) GetActionById(ctx context.Context, query it.GetAc
 
 func (this *ActionServiceImpl) SearchActions(ctx context.Context, query it.SearchActionsCommand) (result *it.SearchActionsResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to list actions"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "list actions"); e != nil {
 			err = e
 		}
 	}()
@@ -193,15 +237,17 @@ func (this *ActionServiceImpl) assertActionUnique(ctx context.Context, action *d
 	fault.PanicOnErr(err)
 
 	if dbAction != nil {
-		vErrs.AppendAlreadyExists("name", "action name")
+		vErrs.AppendAlreadyExists("action_name", "action name")
 	}
 	return nil
 }
 
 func (this *ActionServiceImpl) assertActionExists(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbAction *domain.Action, err error) {
 	dbAction, err = this.actionRepo.FindById(ctx, it.FindByIdParam{Id: id})
+	fault.PanicOnErr(err)
+
 	if dbAction == nil {
-		vErrs.AppendNotFound("id", "action")
+		vErrs.AppendNotFound("action_id", "action")
 	}
 	return
 }
@@ -210,4 +256,24 @@ func (this *ActionServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag 
 	if updatedEtag != dbEtag {
 		vErrs.AppendEtagMismatched()
 	}
+}
+
+func (this *ActionServiceImpl) assertConstraintViolated(action *domain.Action, vErrs *fault.ValidationErrors) error {
+	if len(action.Entitlements) > 0 {
+		for _, entitlement := range action.Entitlements {
+			vErrs.AppendConstraintViolated("entitlements", *entitlement.Name)
+		}
+	}
+
+	return nil
+}
+
+func (this *ActionServiceImpl) assertResourceExists(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (err error) {
+	exist, err := this.resourceRepo.Exist(ctx, itResource.ExistParam{Id: id})
+	fault.PanicOnErr(err)
+
+	if !exist {
+		vErrs.AppendNotFound("resource_id", "resource")
+	}
+	return err
 }

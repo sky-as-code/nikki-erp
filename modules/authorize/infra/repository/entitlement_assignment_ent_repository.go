@@ -113,6 +113,22 @@ func (this *EntitlementAssignmentEntRepository) FindViewsById(ctx context.Contex
 	return assignments, nil
 }
 
+func (this *EntitlementAssignmentEntRepository) FindAllByEntitlementId(ctx context.Context, param it.FindAllByEntitlementIdParam) ([]*domain.EntitlementAssignment, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	query := this.client.EntitlementAssignment.Query().
+		Where(entAssign.EntitlementIDEQ(param.EntitlementId))
+
+	return database.List(ctx, query, entToEntitlementAssignments)
+}
+
+func (this *EntitlementAssignmentEntRepository) DeleteHard(ctx context.Context, param it.DeleteEntitlementAssignmentByIdQuery) (int, error) {
+	return this.client.EntitlementAssignment.Delete().
+		Where(entAssign.IDEQ(param.Id)).
+		Exec(ctx)
+}
+
 func (this *EntitlementAssignmentEntRepository) getUserEffectiveEntitlements(ctx context.Context, userId model.Id) ([]*domain.EntitlementAssignment, error) {
 	effectiveAssignments, err := this.client.EffectiveUserEntitlement.
 		Query().
@@ -123,7 +139,7 @@ func (this *EntitlementAssignmentEntRepository) getUserEffectiveEntitlements(ctx
 		return nil, err
 	}
 
-	return entToEntitlementAssignments(effectiveAssignments, nil), nil
+	return effectiveEntToEntitlementAssignments(effectiveAssignments, nil), nil
 }
 
 func (this *EntitlementAssignmentEntRepository) getGroupEffectiveEntitlements(ctx context.Context, groupId model.Id) ([]*domain.EntitlementAssignment, error) {
@@ -136,7 +152,7 @@ func (this *EntitlementAssignmentEntRepository) getGroupEffectiveEntitlements(ct
 		return nil, err
 	}
 
-	return entToEntitlementAssignments(nil, effectiveAssignments), nil
+	return effectiveEntToEntitlementAssignments(nil, effectiveAssignments), nil
 }
 
 func BuildEntitlementAssignmentDescriptor() *orm.EntityDescriptor {

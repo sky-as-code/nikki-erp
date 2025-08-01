@@ -57,6 +57,12 @@ func (this *EntitlementEntRepository) Update(ctx context.Context, entitlement do
 	return database.Mutate(ctx, updation, ent.IsNotFound, entToEntitlement)
 }
 
+func (this *EntitlementEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+	return this.client.Entitlement.Delete().
+		Where(entEntitlement.IDEQ(param.Id)).
+		Exec(ctx)
+}
+
 func (this *EntitlementEntRepository) Exists(ctx context.Context, param it.FindByIdParam) (bool, error) {
 	return this.client.Entitlement.Query().
 		Where(entEntitlement.ID(param.Id)).

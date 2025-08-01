@@ -19,7 +19,8 @@ type Resource struct {
 	ResourceRef  *string            `json:"resourceRef,omitempty"`
 	ScopeType    *ResourceScopeType `json:"scopeType,omitempty"`
 
-	Actions []Action `json:"actions,omitempty"`
+	Actions      []Action      `json:"actions"`
+	Entitlements []Entitlement `json:"entitlements"`
 }
 
 func (this *Resource) Validate(forEdit bool) ft.ValidationErrors {

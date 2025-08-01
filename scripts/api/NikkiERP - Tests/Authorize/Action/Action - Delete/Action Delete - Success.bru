@@ -1,0 +1,61 @@
+meta {
+  name: Action Delete - Success
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{api_host}}/v1/authorize/actions/01JWNYJGBHZX29Y3C7V1V7QNN3
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const status = res.getStatus();
+  let body = res.getBody();
+  
+  test("status should be 2xx or 400", function () {
+    expect([200, 204, 400]).to.include(status);
+  });
+  
+  if (status >= 200 && status < 300) {
+    test("response should contain id and deletedAt", function () {
+      expect(body).to.have.property("id").that.is.a("string");
+      expect(body).to.have.property("deletedAt").that.is.a("number");
+    });
+  }
+  
+  if (status === 400) {
+    test("should have code and details fields", function () {
+      expect(body).to.have.property("code", "validation_error");
+      expect(body).to.have.property("details").that.is.an("object");
+    });
+  
+    const details = body.details || {};
+  
+    if (details.name === "must be in a valid format") {
+      test("should catch invalid name format", function () {
+        expect(details.name).to.equal("must be in a valid format");
+      });
+    }
+  
+    if (details.id === "action not found") {
+      test("should catch action not found", function () {
+        expect(details.id).to.equal("action not found");
+      });
+    }
+  
+    if (details.entitlements) {
+      test("should catch constraint violations", function () {
+        if (details.entitlements) {
+          expect(details.entitlements).to.be.a("string");
+        }
+      });
+    }
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

@@ -40,7 +40,7 @@ type AuthorizeServiceImpl struct {
 
 func (this *AuthorizeServiceImpl) IsAuthorized(ctx context.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to check authorization"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "check authorization"); e != nil {
 			err = e
 		}
 	}()

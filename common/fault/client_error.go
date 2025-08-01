@@ -42,6 +42,10 @@ func (this *ValidationErrors) AppendNotFound(fieldName string, fieldLabel string
 	this.Appendf(fieldName, "%s not found", fieldLabel)
 }
 
+func (this *ValidationErrors) AppendConstraintViolated(fieldName string, fieldLabel string) {
+	this.Appendf(fieldName, "%s constraint violated", fieldLabel)
+}
+
 func (this *ValidationErrors) AppendEtagMismatched() {
 	this.Append("etag", "etag mismatched")
 }

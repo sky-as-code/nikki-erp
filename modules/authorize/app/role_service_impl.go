@@ -38,7 +38,7 @@ type RoleServiceImpl struct {
 
 func (this *RoleServiceImpl) CreateRole(ctx context.Context, cmd itRole.CreateRoleCommand) (result *itRole.CreateRoleResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to create role"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "create role"); e != nil {
 			err = e
 		}
 	}()
@@ -98,7 +98,7 @@ func (this *RoleServiceImpl) CreateRole(ctx context.Context, cmd itRole.CreateRo
 
 func (this *RoleServiceImpl) GetRoleById(ctx context.Context, query itRole.GetRoleByIdQuery) (result *itRole.GetRoleByIdResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to get role by id"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "get role by id"); e != nil {
 			err = e
 		}
 	}()
@@ -145,7 +145,7 @@ func (this *RoleServiceImpl) GetRoleById(ctx context.Context, query itRole.GetRo
 
 func (this *RoleServiceImpl) SearchRoles(ctx context.Context, query itRole.SearchRolesQuery) (result *itRole.SearchRolesResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to list roles"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "search roles"); e != nil {
 			err = e
 		}
 	}()
@@ -197,7 +197,7 @@ func (this *RoleServiceImpl) SearchRoles(ctx context.Context, query itRole.Searc
 
 func (this *RoleServiceImpl) GetRolesBySubject(ctx context.Context, query itRole.GetRolesBySubjectQuery) (result *itRole.GetRolesBySubjectResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to get role by subject"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "get role by subject"); e != nil {
 			err = e
 		}
 	}()

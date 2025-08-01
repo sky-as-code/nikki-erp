@@ -64,10 +64,7 @@ func (Resource) Annotations() []schema.Annotation {
 func (Resource) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("actions", Action.Type).
-			Ref("resource").
-			Annotations(entsql.Annotation{
-				OnDelete: entsql.Cascade,
-			}),
+			Ref("resource"),
 		edge.From("entitlements", Entitlement.Type).
 			Ref("resource"),
 	}

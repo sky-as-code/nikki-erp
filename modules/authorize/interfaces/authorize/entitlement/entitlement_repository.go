@@ -14,6 +14,7 @@ import (
 type EntitlementRepository interface {
 	Create(ctx context.Context, entitlement domain.Entitlement) (*domain.Entitlement, error)
 	Update(ctx context.Context, entitlement domain.Entitlement, prevEtag model.Etag) (*domain.Entitlement, error)
+	DeleteHard(ctx context.Context, param DeleteParam) (int, error)
 	Exists(ctx context.Context, param FindByIdParam) (bool, error)
 	FindById(ctx context.Context, param FindByIdParam) (*domain.Entitlement, error)
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Entitlement, error)
@@ -25,6 +26,7 @@ type EntitlementRepository interface {
 type FindByNameParam = GetEntitlementByNameQuery
 type FindByIdParam = GetEntitlementByIdQuery
 type FindAllByIdsParam = GetAllEntitlementByIdsQuery
+type DeleteParam = DeleteEntitlementHardByIdQuery
 
 type SearchParam struct {
 	Predicate *orm.Predicate
