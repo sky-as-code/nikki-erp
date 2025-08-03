@@ -1,0 +1,55 @@
+meta {
+  name: Entitlement Create - Client error (Resource not found)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authorize/entitlements
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "Author Identdity - Readonly",
+      "actionId": "{{action_id}}",
+      "actionExpr": "{{action_name}}:01JWNY20G23KD4RV5VWYABQYHD.{{resource_name}}",
+      "resourceId": "01K1G2MSTGMZ90CYQ8NOTFOUND",
+      "scopeRef": "01JWNY20G23KD4RV5VWYABQYHD",
+      "subjectType": "custom",
+      "subjectRef": "custom",
+      "createdBy": "{{user_id}}"
+  }
+}
+
+script:post-response {
+  let body;
+  let statusCode = res.getStatus();
+  
+  try {
+    body = res.getBody();
+    console.log("📥 Error response:", body);
+  } catch (e) {
+    expect.fail("❌ Failed to parse response body");
+  }
+  
+  test("Status code is 400", () => {
+    expect(statusCode).to.eql(400);
+  });
+  
+  test("Validation error for missing resource_id", () => {
+    expect(body).to.have.property("code", "validation_error");
+    expect(body).to.have.property("details").that.is.an("object");
+  
+    expect(body.details).to.have.property("resource_id");
+    expect(body.details.resource_id).to.include("not found");
+  
+    console.log("✅ Resource not found error correctly detected:", body.details.resource_id);
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}

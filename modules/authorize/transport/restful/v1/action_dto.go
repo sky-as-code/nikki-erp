@@ -1,8 +1,7 @@
 package v1
 
 import (
-	"github.com/thoas/go-funk"
-
+	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
@@ -19,12 +18,18 @@ type ActionDto struct {
 	ResourceId  model.Id `json:"resourceId"`
 	CreatedBy   string   `json:"createdBy"`
 
-	Resource *Resource `json:"resource,omitempty"`
+	Resource *ResourceDto `json:"resource,omitempty"`
 }
 
-type Resource struct {
-	Id   model.Id `json:"id"`
-	Name string   `json:"name"`
+func (this *ActionDto) FromAction(action domain.Action) {
+	model.MustCopy(action.ModelBase, this)
+	model.MustCopy(action.AuditableBase, this)
+	model.MustCopy(action, this)
+
+	if action.Resource != nil {
+		this.Resource = &ResourceDto{}
+		this.Resource.FromResource(*action.Resource)
+	}
 }
 
 type CreateActionRequest = it.CreateActionCommand
@@ -46,25 +51,9 @@ func (this *SearchActionsResponse) FromResult(result *it.SearchActionsResultData
 	this.Total = result.Total
 	this.Page = result.Page
 	this.Size = result.Size
-	this.Items = funk.Map(result.Items, func(action domain.Action) ActionDto {
+	this.Items = array.Map(result.Items, func(action domain.Action) ActionDto {
 		item := ActionDto{}
 		item.FromAction(action)
 		return item
-	}).([]ActionDto)
-}
-
-func (this *ActionDto) FromAction(action domain.Action) {
-	this.Id = *action.Id
-	this.Name = *action.Name
-	this.Description = action.Description
-	this.ResourceId = *action.ResourceId
-	this.Etag = *action.Etag
-	this.CreatedBy = *action.CreatedBy
-
-	if action.Resource != nil {
-		this.Resource = &Resource{
-			Id:   *action.Resource.Id,
-			Name: *action.Resource.Name,
-		}
-	}
+	})
 }

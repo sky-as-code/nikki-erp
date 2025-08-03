@@ -1,13 +1,122 @@
 meta {
   name: Entitlement - Get by Id
   type: http
-  seq: 3
+  seq: 4
 }
 
 get {
   url: {{api_host}}/v1/authorize/entitlements/{{entitlement_id}}
   body: none
   auth: inherit
+}
+
+script:post-response {
+  const statusCode = res.getStatus();
+  let body;
+  
+  // ✅ Attempt to parse response
+  let isJsonValid = true;
+  try {
+    body = res.getBody();
+    console.log(`📥 Parsed response (status ${statusCode}):`, body);
+  } catch (err) {
+    isJsonValid = false;
+    console.error("❌ Failed to parse response JSON:", err);
+    expect.fail("❌ Response body is not valid JSON");
+  }
+  
+  // ========== ✅ CASE 1: SUCCESS ==========
+  if (statusCode === 200 && isJsonValid) {
+    test("✅ Status code is 200", () => {
+      expect(statusCode).to.equal(200);
+    });
+  
+    const successSchema = {
+      type: "object",
+      required: ["id", "etag", "name", "actionExpr"],
+      properties: {
+        id: { type: "string" },
+        etag: { type: "string" },
+        name: { type: "string" },
+        description: { type: ["string", "null"] },
+        resourceId: { type: ["string", "null"] },
+        actionId: { type: ["string", "null"] },
+        actionExpr: { type: "string" },
+        createdBy: { type: "string" },
+        resource: {
+          type: ["object", "null"],
+          properties: {
+            id: { type: "string" },
+            name: { type: "string" }
+          },
+          required: ["id", "name"],
+          additionalProperties: true
+        },
+        action: {
+          type: ["object", "null"],
+          properties: {
+            id: { type: "string" },
+            name: { type: "string" }
+          },
+          required: ["id", "name"],
+          additionalProperties: true
+        }
+      },
+      additionalProperties: true
+    };
+  
+    test("✅ Response matches expected schema", () => {
+      expect(tv4.validate(body, successSchema)).to.be.true;
+    });
+  
+    // ✅ Set vars
+    if (body?.id) bru.setVar("entitlement_id", body.id);
+    if (body?.etag) bru.setVar("etag", body.etag);
+    console.log("✅ entitlement_id:", body.id);
+    console.log("✅ etag:", body.etag);
+  }
+  
+  // ========== ❌ CASE 2: NOT FOUND ==========
+  if (statusCode === 400 && isJsonValid && body?.code === "validation_error") {
+    test("❌ Status code is 400", () => {
+      expect(statusCode).to.equal(400);
+    });
+  
+    const errorSchema = {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+        code: {
+          type: "string",
+          const: "validation_error"
+        },
+        details: {
+          type: "object",
+          required: ["entitlement_id"],
+          properties: {
+            entitlement_id: {
+              type: "string",
+              pattern: "not found$"
+            }
+          },
+          additionalProperties: true
+        }
+      },
+      additionalProperties: true
+    };
+  
+    test("❌ Response matches expected error schema", () => {
+      expect(tv4.validate(body, errorSchema)).to.be.true;
+    });
+  
+    test("❌ Error message includes 'entitlement_id: not found'", () => {
+      expect(body.details).to.have.property("entitlement_id");
+      expect(body.details.entitlement_id).to.match(/not found$/);
+    });
+  
+    console.log("⚠️ Error response (Not Found):", body);
+  }
+  
 }
 
 settings {

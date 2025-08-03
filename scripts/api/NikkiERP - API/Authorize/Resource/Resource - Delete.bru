@@ -1,11 +1,11 @@
 meta {
-  name: Action Delete - Success
+  name: Resource - Delete
   type: http
-  seq: 1
+  seq: 3
 }
 
 delete {
-  url: {{api_host}}/v1/authorize/actions/{{action_id}}
+  url: {{api_host}}/v1/authorize/resources/{{resource_name}}
   body: none
   auth: inherit
 }
@@ -22,48 +22,50 @@ script:post-response {
     body = {};
   }
   
-  test("status should be 2xx or 400", function () {
+  test("Status should be 2xx or 400", function () {
     expect([200, 204, 400]).to.include(status);
   });
   
-  // ✅ Nếu xoá thành công (status 2xx)
   if (status >= 200 && status < 300) {
-    test("response should contain id and deletedAt", function () {
+    test("Response should contain id and deletedAt", function () {
       expect(body).to.have.property("id").that.is.a("string");
       expect(body).to.have.property("deletedAt").that.is.a("number");
     });
   
-    // ✅ Xoá biến môi trường
-    bru.deleteVar("action_id");
-    bru.deleteVar("action_name");
+    bru.deleteVar("resource_id");
+    bru.deleteVar("resource_name");
     bru.deleteVar("etag");
-    console.log("🧹 Deleted variables: action_id, etag");
+    console.log("🧹 Cleared resource_id, resource_name, etag from environment variables.");
   }
   
-  // ❌ Nếu thất bại (400)
   if (status === 400) {
-    test("should have code and details fields", function () {
+    test("Should have code and details fields", function () {
       expect(body).to.have.property("code", "validation_error");
       expect(body).to.have.property("details").that.is.an("object");
     });
   
     const details = body.details || {};
   
-    if (details.name === "must be in a valid format") {
-      test("should catch invalid name format", function () {
+    if (details.name) {
+      test("Handle invalid name format", function () {
         expect(details.name).to.equal("must be in a valid format");
       });
     }
   
-    if (details.id === "action not found") {
-      test("should catch action not found", function () {
-        expect(details.id).to.equal("action not found");
+    if (details.id) {
+      test("Handle resource not found", function () {
+        expect(details.id).to.equal("resource not found");
       });
     }
   
-    if (details.entitlements) {
-      test("should catch constraint violations", function () {
-        expect(details.entitlements).to.be.a("string");
+    if (details.actions || details.entitlements) {
+      test("Handle constraint violations", function () {
+        if (details.actions) {
+          expect(details.actions).to.be.a("string");
+        }
+        if (details.entitlements) {
+          expect(details.entitlements).to.be.a("string");
+        }
       });
     }
   }

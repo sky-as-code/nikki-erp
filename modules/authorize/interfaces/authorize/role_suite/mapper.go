@@ -20,10 +20,10 @@ func (this CreateRoleSuiteCommand) ToRoleSuite() *domain.RoleSuite {
 	}
 }
 
-func (this CreateRoleSuiteCommand) ToRoles() []*domain.Role {
-	roles := make([]*domain.Role, 0)
+func (this CreateRoleSuiteCommand) ToRoles() []domain.Role {
+	roles := make([]domain.Role, 0)
 	for _, roleId := range this.Roles {
-		roles = append(roles, &domain.Role{
+		roles = append(roles, domain.Role{
 			ModelBase: model.ModelBase{
 				Id: roleId,
 			},

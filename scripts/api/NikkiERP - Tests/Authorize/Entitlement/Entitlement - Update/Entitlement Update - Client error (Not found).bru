@@ -31,9 +31,9 @@ script:post-response {
           code: { type: "string", const: "validation_error" },
           details: {
               type: "object",
-              required: ["id"],
+              required: ["entitlement_id"],
               properties: {
-                  id: { type: "string", const: "action not found" }
+                  entitlement_id: { type: "string", const: "entitlement not found" }
               },
               additionalProperties: true
           }
@@ -58,8 +58,8 @@ script:post-response {
           expect(tv4.validate(body, schema)).to.be.true;
       });
   
-      test("Error message contains 'id: action not found'", function () {
-          expect(body.details).to.have.property("id", "action not found");
+      test("Error message contains 'entitlement_id: entitlement not found'", function () {
+          expect(body.details).to.have.property("entitlement_id", "entitlement not found");
       });
   
       console.log("⚠️ Error response (Not Found):", body);

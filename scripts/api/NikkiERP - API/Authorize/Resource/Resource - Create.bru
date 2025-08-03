@@ -12,7 +12,7 @@ post {
 
 body:json {
   {
-      "name": "AuthProduct",
+      "name": "AuthAssignment",
       "resourceType": "nikki_application",
       "resourceRef": "12345678901234567890123456",
       "scopeType": "org"
@@ -20,75 +20,94 @@ body:json {
 }
 
 script:pre-request {
-  let rawBody = req.getBody().raw;
-  
   let payload;
   try {
-      payload = JSON.parse(rawBody);
+      payload = req.getBody();
   } catch (e) {
-      console.error("❌ Failed to parse JSON body:", e);
+      console.error("❌ Failed to parse:", e);
       return;
   }
   
   bru.setVar("resource_name", payload.name);
-  req.getBody().raw = JSON.stringify(payload, null, 2);
   
   console.log("✅ Final request payload:", payload);
   
 }
 
 script:post-response {
-  const schema = {
-      type: "object",
-      required: ["id", "etag", "name", "resourceType", "resourceRef", "scopeType"],
-      properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          name: { type: "string" },
-          description: { type: "string" },
-          resourceType: { type: "string", enum: ["nikki_application", "custom"] },
-          resourceRef: { type: "string" },
-          scopeType: { type: "string", enum: ["org", "hierarchy", "private", "domain"] }
-      },
-      additionalProperties: true
-  };
-  
-  let isStatusValid = false;
-  test("Status code is 201", function () {
-      isStatusValid = res.getStatus() === 201;
-      expect(isStatusValid).to.be.true;
-  });
-  
-  let isSchemaValid = false;
-  test("Response matches expected schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
-      isSchemaValid = true;
-  });
-  
-  // ✅ Parse JSON response
+  const statusCode = res.getStatus();
   let body;
-  let isJsonValid = true;
+  
   try {
-      body = res.getBody();
-      console.log("✅ Response body:", body);
-      isSchemaValid = true;
+    body = res.getBody();
+    console.log(`📥 Response body (status: ${statusCode}):`, body);
   } catch (e) {
-      isJsonValid = false;
-      console.error("❌ Failed to parse response JSON:", e);
+    expect.fail("❌ Failed to parse response body");
   }
   
-  if (
-      isStatusValid &&
-      isSchemaValid &&
-      isJsonValid &&
-      body?.id &&
-      body?.etag
-  ) {
-      bru.setVar("resource_id", body.id);
-      bru.setVar("etag", body.etag);
-      console.log("✅ Set resource_id and etag");
-  } else {
-      console.warn("⚠️ Response invalid or incomplete — NOT setting collectionVariables vars");
+  test("Status code is 200, 201, or 400", () => {
+    expect([200, 201, 400]).to.include(statusCode);
+  });
+  
+  // ========== 🟢 SUCCESS ==========
+  if ([200, 201].includes(statusCode)) {
+    test("Success: Response has required fields", () => {
+      expect(body).to.be.an("object");
+      expect(body).to.have.property("id").that.is.a("string").with.length.greaterThan(25);
+      expect(body).to.have.property("createdAt").that.is.a("number");
+      expect(body).to.have.property("etag").that.is.a("string");
+    });
+  
+    bru.setVar("resource_id", body.id);
+    bru.setVar("etag", body.etag);
+    console.log("✅ Set resource_id and etag:", body.id, body.etag);
+  }
+  
+  // ========== 🔴 VALIDATION ERROR ==========
+  if (statusCode === 400) {
+    const errorSchema = {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+        code: { type: "string", enum: ["validation_error"] },
+        details: { type: "object" }
+      },
+      additionalProperties: true
+    };
+  
+    test("Error: Response matches validation error schema", () => {
+      expect(tv4.validate(body, errorSchema)).to.be.true;
+    });
+  
+    test("Error: code is 'validation_error' and details exist", () => {
+      expect(body).to.have.property("code", "validation_error");
+      expect(body).to.have.property("details").that.is.an("object");
+    });
+  
+    const details = body.details;
+  
+    // ========== ❌ Case: Multiple Invalid Fields ==========
+    if (details.name && details.resourceType && details.scopeType) {
+      test("Error: Multiple invalid fields", () => {
+        expect(details.name).to.equal("cannot be blank");
+        expect(details.resourceType).to.equal("must be a valid value");
+        expect(details.scopeType).to.equal("must be a valid value");
+      });
+      console.warn("⚠️ Multiple validation errors:", details);
+    }
+  
+    // ========== ❌ Case: Name Already Exists ==========
+    if (details.resource_name) {
+      test("Error: resource_name already exists", () => {
+        expect(details.resource_name).to.include("already exists");
+      });
+      console.warn("⚠️ Duplicate name error:", details.resource_name);
+    }
+  
+    // ========== ℹ️ Log for unexpected validation details ==========
+    if (!details.name && !details.resourceType && !details.scopeType && !details.resource_name) {
+      console.warn("❓ Unexpected validation error format:", details);
+    }
   }
   
 }

@@ -18,8 +18,8 @@ type Entitlement struct {
 	ScopeRef    *string   `json:"scopeRef,omitempty"`
 	CreatedBy   *string   `json:"createdBy,omitempty"`
 
-	Action      *Action                  `json:"action,omitempty"`
-	Resource    *Resource                `json:"resource,omitempty"`
+	Action   *Action   `json:"action,omitempty" model:"-"`   // TODO: Handle copy
+	Resource *Resource `json:"resource,omitempty" model:"-"` // TODO: Handle copy
 }
 
 func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {

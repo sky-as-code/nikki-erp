@@ -65,11 +65,14 @@ func (this *EntitlementServiceImpl) CreateEntitlement(ctx context.Context, cmd i
 			return err
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
-			return this.assertActionExprValid(ctx, resource, action, entitlement.ScopeRef, entitlement, vErrs)
+			return this.assertActionExprValid(resource, action, entitlement.ScopeRef, entitlement, vErrs)
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
 			this.sanitizeEntitlement(entitlement)
 			return this.assertEntitlementUnique(ctx, entitlement, vErrs)
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			return this.assertActionExprUnique(ctx, *entitlement.ActionExpr, vErrs)
 		}).
 		End()
 	fault.PanicOnErr(err)
@@ -253,7 +256,7 @@ func (this *EntitlementServiceImpl) GetAllEntitlementByIds(ctx context.Context, 
 		}
 	}()
 
-	var dbEntitlements []*domain.Entitlement
+	var dbEntitlements []domain.Entitlement
 	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *fault.ValidationErrors) error {
@@ -306,7 +309,7 @@ func (this *EntitlementServiceImpl) SearchEntitlements(ctx context.Context, quer
 		}, nil
 	}
 
-	resources, err := this.entitlementRepo.Search(ctx, it.SearchParam{
+	entitlements, err := this.entitlementRepo.Search(ctx, it.SearchParam{
 		Predicate: predicate,
 		Order:     order,
 		Page:      *query.Page,
@@ -315,8 +318,8 @@ func (this *EntitlementServiceImpl) SearchEntitlements(ctx context.Context, quer
 	fault.PanicOnErr(err)
 
 	return &it.SearchEntitlementsResult{
-		Data:    resources,
-		HasData: resources.Items != nil,
+		Data:    entitlements,
+		HasData: entitlements.Items != nil,
 	}, nil
 }
 
@@ -331,7 +334,7 @@ func (this *EntitlementServiceImpl) assertEntitlementExistsById(ctx context.Cont
 	fault.PanicOnErr(err)
 
 	if dbEntitlement == nil {
-		vErrs.AppendNotFound("id", "entitlement")
+		vErrs.AppendNotFound("entitlement_id", "entitlement")
 	}
 	return
 }
@@ -351,7 +354,7 @@ func (this *EntitlementServiceImpl) assertEntitlementUnique(ctx context.Context,
 	fault.PanicOnErr(err)
 
 	if dbEntitlement != nil {
-		vErrs.AppendAlreadyExists("name", "entitlement name")
+		vErrs.AppendAlreadyExists("entitlement_name", "entitlement name")
 	}
 	return nil
 }
@@ -383,7 +386,7 @@ func (this *EntitlementServiceImpl) assertResourceExists(ctx context.Context, id
 	fault.PanicOnErr(err)
 
 	if resource == nil {
-		vErrs.AppendNotFound("id", "resource")
+		vErrs.AppendNotFound("resource_id", "resource")
 	}
 	return resource, err
 }
@@ -393,12 +396,12 @@ func (this *EntitlementServiceImpl) assertActionExists(ctx context.Context, id m
 	fault.PanicOnErr(err)
 
 	if action == nil {
-		vErrs.AppendNotFound("id", "action")
+		vErrs.AppendNotFound("action_id", "action")
 	}
 	return action, err
 }
 
-func (this *EntitlementServiceImpl) assertActionExprValid(ctx context.Context, resource *domain.Resource, action *domain.Action, scopeRef *string, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
+func (this *EntitlementServiceImpl) assertActionExprValid(resource *domain.Resource, action *domain.Action, scopeRef *string, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
 	var actionName *string
 	if action != nil {
 		actionName = action.Name
@@ -432,5 +435,15 @@ func (this *EntitlementServiceImpl) assertActionExprValid(ctx context.Context, r
 		}
 	}
 
+	return nil
+}
+
+func (this *EntitlementServiceImpl) assertActionExprUnique(ctx context.Context, actionExpr string, vErrs *fault.ValidationErrors) error {
+	dbEntitlement, err := this.entitlementRepo.FindByActionExpr(ctx, it.GetEntitlementByActionExprQuery{ActionExpr: actionExpr})
+	fault.PanicOnErr(err)
+
+	if dbEntitlement != nil {
+		vErrs.AppendAlreadyExists("action_expr", "action expresstion")
+	}
 	return nil
 }

@@ -228,7 +228,7 @@ func (this *ResourceServiceImpl) assertResourceExistsByName(ctx context.Context,
 	fault.PanicOnErr(err)
 
 	if dbResource == nil {
-		vErrs.AppendNotFound("id", "resource")
+		vErrs.AppendNotFound("resource_name", "resource")
 	}
 	return
 }
@@ -238,7 +238,7 @@ func (this *ResourceServiceImpl) assertResourceExistsById(ctx context.Context, i
 	fault.PanicOnErr(err)
 
 	if dbResource == nil {
-		vErrs.AppendNotFound("id", "resource")
+		vErrs.AppendNotFound("resource_id", "resource")
 	}
 	return
 }
@@ -258,7 +258,7 @@ func (this *ResourceServiceImpl) assertResourceUnique(ctx context.Context, resou
 	fault.PanicOnErr(err)
 
 	if dbResource != nil {
-		vErrs.AppendAlreadyExists("name", "resource name")
+		vErrs.AppendAlreadyExists("resource_name", "resource name")
 	}
 
 	return nil

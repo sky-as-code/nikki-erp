@@ -1,20 +1,24 @@
 meta {
-  name: Action Create - Client error (Existing name)
+  name: Entitlement Create - Client error (Invalid action_expr)
   type: http
   seq: 4
 }
 
 post {
-  url: {{api_host}}/v1/authorize/actions
+  url: {{api_host}}/v1/authorize/entitlements
   body: json
   auth: inherit
 }
 
 body:json {
   {
-      "name": "View",
-      "description": "Description",
+      "name": "Author Identdity - Readonly",
+      "actionId": "{{action_id}}",
+      "actionExpr": "{{action_name}}:*.{{resource_name}}",
       "resourceId": "{{resource_id}}",
+      "scopeRef": "01JWNY20G23KD4RV5VWYABQYHD",
+      "subjectType": "custom",
+      "subjectRef": "custom",
       "createdBy": "{{user_id}}"
   }
 }
@@ -34,14 +38,14 @@ script:post-response {
     expect(statusCode).to.eql(400);
   });
   
-  test("Validation error for existing action name", () => {
+  test("Validation error for invalid action_expr", () => {
     expect(body).to.have.property("code", "validation_error");
     expect(body).to.have.property("details").that.is.an("object");
   
-    expect(body.details).to.have.property("action_name");
-    expect(body.details.action_name).to.include("already exists");
+    expect(body.details).to.have.property("action_expr");
+    expect(body.details.action_expr).to.include("not valid");
   
-    console.log("✅ Existing action name conflict correctly detected:", body.details.name);
+    console.log("✅ Detected invalid action_expr:", body.details.action_expr);
   });
   
 }

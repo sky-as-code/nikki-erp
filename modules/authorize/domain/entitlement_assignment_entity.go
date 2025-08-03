@@ -15,8 +15,8 @@ type EntitlementAssignment struct {
 	ResolvedExpr  *string                           `json:"resolvedExpr,omitempty"`
 	EntitlementId *model.Id                         `json:"entitlementId,omitempty"`
 
-	Entitlement *Entitlement `json:"entitlement,omitempty"`
-	Role        *Role        `json:"role,omitempty"`
+	Entitlement *Entitlement `json:"entitlement,omitempty" model:"-"` // TODO: Handle copy
+	Role        *Role        `json:"role,omitempty" model:"-"`
 }
 
 type EntitlementAssignmentSubjectType entEntitlementAssignment.SubjectType

@@ -20,10 +20,10 @@ func (this CreateRoleCommand) ToRole() *domain.Role {
 	}
 }
 
-func (this CreateRoleCommand) ToEntitlements() []*domain.Entitlement {
-	entitlements := make([]*domain.Entitlement, 0)
+func (this CreateRoleCommand) ToEntitlements() []domain.Entitlement {
+	entitlements := make([]domain.Entitlement, 0)
 	for _, entitlementId := range this.Entitlements {
-		entitlements = append(entitlements, &domain.Entitlement{
+		entitlements = append(entitlements, domain.Entitlement{
 			ModelBase: model.ModelBase{
 				Id: entitlementId,
 			},

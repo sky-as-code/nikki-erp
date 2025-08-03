@@ -1,5 +1,5 @@
 meta {
-  name: Resource Create- Client error (Not found)
+  name: Resource Create - Client error (Not found)
   type: http
   seq: 4
 }
@@ -27,9 +27,9 @@ script:post-response {
       expect(json.code).to.eql("validation_error");
   });
   
-  test("Returns 'resource not found' on id", function () {
+  test("Returns 'resource not found' on resource_id", function () {
       const json = res.getBody();
-      expect(json.details).to.have.property("id", "resource not found");
+      expect(json.details).to.have.property("resource_id", "resource not found");
   });
   
 }

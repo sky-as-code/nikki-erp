@@ -20,72 +20,91 @@ body:json {
 }
 
 script:pre-request {
-  let rawBody = req.getBody().raw;
-  
   let payload;
   try {
-      payload = JSON.parse(rawBody);
+      payload = req.getBody();
   } catch (e) {
-      console.error("❌ Failed to parse JSON body:", e);
+      console.error("❌ Failed to parse:", e);
       return;
   }
   
   bru.setVar("action_name", payload.name);
-  // Update request body
-  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
   console.log("✅ Final request payload:", payload);
   
 }
 
 script:post-response {
-  // ✅ Define schema
-  const schema = {
-      type: "object",
-      required: ["id", "etag", "createdAt"],
-      properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          createdAt: { type: "integer" },
-          name: { type: "string", pattern: "^[a-zA-Z0-9_-]+$" },
-          description: { type: ["string", "null"] },
-          resourceId: { type: "string" },
-          createdBy: { type: "string" },
-          resource: { type: ["object", "null"] }
-      },
-      additionalProperties: true
-  };
+  const statusCode = res.getStatus();
+  let body;
   
-  let isStatusValid = false;
-  test("Status code is 200 or 201", function () {
-      isStatusValid = [200, 201].includes(res.getStatus());
-      expect(isStatusValid).to.be.true;
+  try {
+    body = res.getBody();
+    console.log(`📥 Response body (status: ${statusCode}):`, body);
+  } catch (err) {
+    console.error("❌ Failed to parse JSON response:", err);
+    expect.fail("❌ Response is not valid JSON");
+  }
+  
+  test("Status code is 200, 201 or 400", function () {
+    expect([200, 201, 400]).to.include(statusCode);
   });
   
-  let body;
-  let isJsonValid = true;
-  try {
-      body = res.getBody();
-  } catch (e) {
-      isJsonValid = false;
-      expect.fail("❌ Failed to parse response JSON");
-  }
+  // ========== ✅ CASE 1: Success ==========
+  if ([200, 201].includes(statusCode)) {
+    test("Success: Response contains required fields", () => {
+      expect(body).to.be.an("object");
+      expect(body).to.have.property("id").that.is.a("string").with.length.greaterThan(25);
+      expect(body).to.have.property("createdAt").that.is.a("number");
+      expect(body).to.have.property("etag").that.is.a("string");
+    });
   
-  let isSchemaValid = false;
-  if (isStatusValid && isJsonValid) {
-      test("Response matches expected schema", function () {
-          expect(tv4.validate(body, schema)).to.be.true;
-          isSchemaValid = true;
-      });
-  } else {
-      console.warn("⚠️ Skip schema check due to invalid status or JSON");
-  }
-  
-  if (isStatusValid && isJsonValid && isSchemaValid) {
+    // Set variables
+    if (typeof body.id === "string" && body.id.length > 0) {
       bru.setVar("action_id", body.id);
+      console.log("✅ action_id set to:", body.id);
+    } else {
+      console.warn("⚠️ action_id missing or invalid");
+    }
+  
+    if (typeof body.etag === "string" && body.etag.length > 0) {
       bru.setVar("etag", body.etag);
-      console.log("📦 Response body:", body);
-  } else {
-      console.warn("🚫 Not updating env due to failed validation");
+      console.log("✅ etag set to:", body.etag);
+    } else {
+      console.warn("⚠️ etag missing or invalid");
+    }
+  }
+  
+  // ========== ❌ CASE 2: Resource Not Found ==========
+  if (statusCode === 400 && body?.details?.resource_id?.includes("not found")) {
+    test("Error: Resource ID not found", () => {
+      expect(body).to.have.property("code", "validation_error");
+      expect(body.details).to.have.property("resource_id").that.includes("not found");
+    });
+    console.log("✅ Resource not found error correctly detected:", body.details.resource_id);
+  }
+  
+  // ========== ❌ CASE 3: Invalid Fields ==========
+  if (statusCode === 400 && body?.details?.name === "cannot be blank") {
+    test("Error: Invalid fields in request", () => {
+      expect(body.code).to.eql("validation_error");
+      expect(body.details).to.be.an("object");
+      expect(body.details).to.have.property("createdBy", "cannot be blank");
+      expect(body.details).to.have.property("name", "cannot be blank");
+      expect(body.details).to.have.property("resourceId", "cannot be blank");
+    });
+  
+    console.log("✅ Validation errors matched for action fields:", body.details);
+  }
+  
+  // ========== ❌ CASE 4: Existing Name ==========
+  if (statusCode === 400 && body?.details?.action_name?.includes("already exists")) {
+    test("Error: Action name already exists", () => {
+      expect(body.code).to.eql("validation_error");
+      expect(body.details).to.have.property("action_name").that.includes("already exists");
+    });
+  
+    console.log("✅ Existing action name conflict correctly detected:", body.details.action_name);
   }
   
 }

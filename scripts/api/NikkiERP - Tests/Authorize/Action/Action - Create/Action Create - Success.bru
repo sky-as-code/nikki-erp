@@ -20,13 +20,11 @@ body:json {
 }
 
 script:pre-request {
-  let rawBody = req.getBody().raw;
-  
   let payload;
   try {
-      payload = JSON.parse(rawBody);
+      payload = req.getBody();
   } catch (e) {
-      console.error("❌ Failed to parse JSON body:", e);
+      console.error("❌ Failed to parse body:", e);
       return;
   }
   
@@ -43,62 +41,37 @@ script:pre-request {
       payload.name = payload.name.replace(/[^a-zA-Z0-9_-]/g, '') + rand;
   }
   
+  req.setBody(payload);
   bru.setVar("action_name", payload.name);
-  // Update request body
-  req.getBody().raw = JSON.stringify(payload, null, 2);
+  
   console.log("✅ Final request payload:", payload);
   
 }
 
 script:post-response {
-  // ✅ Define schema
-  const schema = {
-      type: "object",
-      required: ["id", "etag", "createdAt"],
-      properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          createdAt: { type: "integer" },
-          name: { type: "string", pattern: "^[a-zA-Z0-9_-]+$" },
-          description: { type: ["string", "null"] },
-          resourceId: { type: "string" },
-          createdBy: { type: "string" },
-          resource: { type: ["object", "null"] }
-      },
-      additionalProperties: true
-  };
+  let body;
+  try {
+    body = res.getBody();
+    console.log("📦 Success response:", body);
+  } catch (e) {
+    expect.fail("❌ Failed to parse");
+  }
   
-  let isStatusValid = false;
-  test("Status code is 200 or 201", function () {
-      isStatusValid = [200, 201].includes(res.getStatus());
-      expect(isStatusValid).to.be.true;
+  test("Status code is 200 or 201", () => {
+    const status = res.getStatus();
+    expect([200, 201]).to.include(status);
   });
   
-  let body;
-  let isJsonValid = true;
-  try {
-      body = res.getBody();
-  } catch (e) {
-      isJsonValid = false;
-      expect.fail("❌ Failed to parse response JSON");
-  }
+  test("Response body contains id, createdAt, etag", () => {
+    expect(body).to.be.an("object");
+    expect(body).to.have.property("id").that.is.a("string").with.length.greaterThan(25);
+    expect(body).to.have.property("createdAt").that.is.a("number");
+    expect(body).to.have.property("etag").that.is.a("string");
+  });
   
-  let isSchemaValid = false;
-  if (isStatusValid && isJsonValid) {
-      test("Response matches expected schema", function () {
-          expect(tv4.validate(body, schema)).to.be.true;
-          isSchemaValid = true;
-      });
-  } else {
-      console.warn("⚠️ Skip schema check due to invalid status or JSON");
-  }
-  
-  if (isStatusValid && isJsonValid && isSchemaValid) {
-      bru.setVar("action_id", body.id);
-      bru.setVar("etag", body.etag);
-      console.log("📦 Response body:", body);
-  } else {
-      console.warn("🚫 Not updating env due to failed validation");
+  if (res.getStatus() === 201) {
+    bru.setVar("action_id", body.id);
+    bru.setVar("etag", body.etag)
   }
   
 }

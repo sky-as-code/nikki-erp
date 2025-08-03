@@ -1,7 +1,7 @@
 meta {
-  name: Action Create - Client error (Existing name)
+  name: Action Create - Client error (Resource not found)
   type: http
-  seq: 4
+  seq: 2
 }
 
 post {
@@ -12,9 +12,9 @@ post {
 
 body:json {
   {
-      "name": "View",
+      "name": "View1",
       "description": "Description",
-      "resourceId": "{{resource_id}}",
+      "resourceId": "01K1G2MSTGMZ90CYQ8NOTFOUND",
       "createdBy": "{{user_id}}"
   }
 }
@@ -34,14 +34,14 @@ script:post-response {
     expect(statusCode).to.eql(400);
   });
   
-  test("Validation error for existing action name", () => {
+  test("Validation error for missing resource ID", () => {
     expect(body).to.have.property("code", "validation_error");
     expect(body).to.have.property("details").that.is.an("object");
   
-    expect(body.details).to.have.property("action_name");
-    expect(body.details.action_name).to.include("already exists");
+    expect(body.details).to.have.property("resource_id");
+    expect(body.details.resource_id).to.include("not found");
   
-    console.log("✅ Existing action name conflict correctly detected:", body.details.name);
+    console.log("✅ Resource not found error correctly detected:", body.details.id);
   });
   
 }

@@ -190,7 +190,7 @@ func (this *RoleSuiteServiceImpl) setRoleSuiteDefaults(roleSuite *domain.RoleSui
 	roleSuite.SetDefaults()
 }
 
-func (this *RoleSuiteServiceImpl) validateRoles(roles []*domain.Role, vErrs *fault.ValidationErrors) {
+func (this *RoleSuiteServiceImpl) validateRoles(roles []domain.Role, vErrs *fault.ValidationErrors) {
 	seenIds := make(map[model.Id]int)
 
 	for i, role := range roles {

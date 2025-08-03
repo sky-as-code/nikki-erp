@@ -10,82 +10,35 @@ import (
 
 // START: Resource
 func entToResource(dbResource *ent.Resource) *domain.Resource {
-	resource := &domain.Resource{
-		ModelBase: model.ModelBase{
-			Id:   &dbResource.ID,
-			Etag: &dbResource.Etag,
-		},
-		AuditableBase: model.AuditableBase{
-			CreatedAt: &dbResource.CreatedAt,
-		},
-		Name:         &dbResource.Name,
-		Description:  &dbResource.Description,
-		ResourceType: domain.WrapResourceTypeEnt(dbResource.ResourceType),
-		ResourceRef:  &dbResource.ResourceRef,
-		ScopeType:    domain.WrapResourceScopeTypeEnt(dbResource.ScopeType),
-		Actions:      []domain.Action{},
-		Entitlements: []domain.Entitlement{},
-	}
+	resource := &domain.Resource{}
+	model.MustCopy(dbResource, resource)
 
-	// Convert actions if they are loaded
 	if dbResource.Edges.Actions != nil {
-		resource.Actions = array.Map(dbResource.Edges.Actions, func(dbAction *ent.Action) domain.Action {
-			return domain.Action{
-				ModelBase: model.ModelBase{
-					Id:   &dbAction.ID,
-					Etag: &dbAction.Etag,
-				},
-				Name: &dbAction.Name,
-			}
-		})
+		resource.Actions = entToActions(dbResource.Edges.Actions)
 	}
 
-	// Convert entitlements if they are loaded
 	if dbResource.Edges.Entitlements != nil {
-		resource.Entitlements = array.Map(dbResource.Edges.Entitlements, func(dbEntitlement *ent.Entitlement) domain.Entitlement {
-			return domain.Entitlement{
-				ModelBase: model.ModelBase{
-					Id:   &dbEntitlement.ID,
-					Etag: &dbEntitlement.Etag,
-				},
-				Name: &dbEntitlement.Name,
-			}
-		})
+		resource.Entitlements = entToEntitlements(dbResource.Edges.Entitlements)
 	}
 
 	return resource
 }
 
 func entToResources(dbResources []*ent.Resource) []domain.Resource {
-	resources := make([]domain.Resource, len(dbResources))
-	for i, dbResource := range dbResources {
-		resources[i] = *entToResource(dbResource)
+	if dbResources == nil {
+		return nil
 	}
-	return resources
-}
 
+	return array.Map(dbResources, func(dbResource *ent.Resource) domain.Resource {
+		return *entToResource(dbResource)
+	})
+}
 // END: Resource
 
 // START: Action
 func entToAction(dbAction *ent.Action) *domain.Action {
-	if dbAction == nil {
-		return nil
-	}
-
-	action := &domain.Action{
-		ModelBase: model.ModelBase{
-			Id:   &dbAction.ID,
-			Etag: &dbAction.Etag,
-		},
-		AuditableBase: model.AuditableBase{
-			CreatedAt: &dbAction.CreatedAt,
-		},
-		Name:         &dbAction.Name,
-		ResourceId:   &dbAction.ResourceID,
-		Description:  &dbAction.Description,
-		CreatedBy:    &dbAction.CreatedBy,
-		Entitlements: []domain.Entitlement{},
-	}
+	action := &domain.Action{}
+	model.MustCopy(dbAction, action)
 
 	if dbAction.Edges.Resource != nil {
 		action.Resource = entToResource(dbAction.Edges.Resource)
@@ -104,12 +57,39 @@ func entToActions(dbActions []*ent.Action) []domain.Action {
 	if dbActions == nil {
 		return nil
 	}
+
 	return array.Map(dbActions, func(dbAction *ent.Action) domain.Action {
 		return *entToAction(dbAction)
 	})
 }
-
 // END: Action
+
+// START: Entitlement
+func entToEntitlement(dbEntitlement *ent.Entitlement) *domain.Entitlement {
+	entitlement := &domain.Entitlement{}
+	model.MustCopy(dbEntitlement, entitlement)
+
+	if dbEntitlement.Edges.Action != nil {
+		entitlement.Action = entToAction(dbEntitlement.Edges.Action)
+	}
+
+	if dbEntitlement.Edges.Resource != nil {
+		entitlement.Resource = entToResource(dbEntitlement.Edges.Resource)
+	}
+
+	return entitlement
+}
+
+func entToEntitlements(dbEntitlements []*ent.Entitlement) []domain.Entitlement {
+	if dbEntitlements == nil {
+		return nil
+	}
+
+	return array.Map(dbEntitlements, func(dbEntitlement *ent.Entitlement) domain.Entitlement {
+		return *entToEntitlement(dbEntitlement)
+	})
+}
+// END: Entitlement
 
 // START: Role
 func entToRole(dbRole *ent.Role) *domain.Role {
@@ -141,7 +121,6 @@ func entToRoles(dbRoles []*ent.Role) []*domain.Role {
 	}
 	return roles
 }
-
 // END: Role
 
 // START: RoleSuite
@@ -165,8 +144,8 @@ func entToRoleSuite(dbRoleSuite *ent.RoleSuite) *domain.RoleSuite {
 	}
 
 	if dbRoleSuite.Edges.Roles != nil {
-		roleSuite.Roles = array.Map(dbRoleSuite.Edges.Roles, func(dbRole *ent.Role) *domain.Role {
-			return entToRole(dbRole)
+		roleSuite.Roles = array.Map(dbRoleSuite.Edges.Roles, func(dbRole *ent.Role) domain.Role {
+			return *entToRole(dbRole)
 		})
 	}
 
@@ -180,47 +159,7 @@ func entToRoleSuites(dbRoleSuites []*ent.RoleSuite) []domain.RoleSuite {
 	}
 	return roleSuites
 }
-
 // END: RoleSuite
-
-// START: Entitlement
-func entToEntitlement(dbEntitlement *ent.Entitlement) *domain.Entitlement {
-	entitlement := &domain.Entitlement{
-		ModelBase: model.ModelBase{
-			Id:   &dbEntitlement.ID,
-			Etag: &dbEntitlement.Etag,
-		},
-		AuditableBase: model.AuditableBase{
-			CreatedAt: &dbEntitlement.CreatedAt,
-		},
-		Name:        &dbEntitlement.Name,
-		Description: dbEntitlement.Description,
-		ResourceId:  dbEntitlement.ResourceID,
-		ActionId:    dbEntitlement.ActionID,
-		ScopeRef:    dbEntitlement.ScopeRef,
-		ActionExpr:  &dbEntitlement.ActionExpr,
-		CreatedBy:   &dbEntitlement.CreatedBy,
-	}
-
-	if dbEntitlement.Edges.Action != nil {
-		entitlement.Action = entToAction(dbEntitlement.Edges.Action)
-	}
-	if dbEntitlement.Edges.Resource != nil {
-		entitlement.Resource = entToResource(dbEntitlement.Edges.Resource)
-	}
-
-	return entitlement
-}
-
-func entToEntitlements(dbEntitlements []*ent.Entitlement) []*domain.Entitlement {
-	entitlements := make([]*domain.Entitlement, len(dbEntitlements))
-	for i, dbEntitlement := range dbEntitlements {
-		entitlements[i] = entToEntitlement(dbEntitlement)
-	}
-	return entitlements
-}
-
-// END: Entitlement
 
 // START: EntitlementAssignment
 func entToEntitlementAssignment(dbEntitlementAssignment *ent.EntitlementAssignment) *domain.EntitlementAssignment {

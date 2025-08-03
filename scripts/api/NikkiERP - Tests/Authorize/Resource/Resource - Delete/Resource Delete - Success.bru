@@ -5,14 +5,22 @@ meta {
 }
 
 delete {
-  url: {{api_host}}/v1/authorize/resources/IdentityProfile
+  url: {{api_host}}/v1/authorize/resources/{{resource_name}}
   body: none
   auth: inherit
 }
 
 script:post-response {
   const status = res.getStatus();
-  let body = res.getBody();
+  let body;
+  
+  try {
+    body = res.getBody();
+    console.log("📦 Response:", body);
+  } catch (e) {
+    console.warn("⚠️ Failed to parse body or body is empty:", e);
+    body = {};
+  }
   
   test("status should be 2xx or 400", function () {
     expect([200, 204, 400]).to.include(status);
@@ -23,6 +31,12 @@ script:post-response {
       expect(body).to.have.property("id").that.is.a("string");
       expect(body).to.have.property("deletedAt").that.is.a("number");
     });
+  
+    // ✅ Unset variables if delete succeeded
+    bru.deleteVar("resource_id");
+    bru.deleteVar("resource_name");
+    bru.deleteVar("etag");
+    console.log("🧹 Cleared resource_id and etag from environment variables.");
   }
   
   if (status === 400) {

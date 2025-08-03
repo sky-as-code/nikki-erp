@@ -36,7 +36,7 @@ script:post-response {
               required: ["id", "name"],
               additionalProperties: true
           },
-          resource: {
+          action: {
               type: ["object", "null"],
               properties: {
                   id: { type: "string" },
@@ -49,17 +49,17 @@ script:post-response {
       additionalProperties: true
   };
   
-  test("Response matches expected schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
-  });
-  
   let body;
   try {
       body = res.getBody();
-      console.log("✅ Get Action by ID response:", body);
+      console.log("✅ Get Entitlement by ID response:", body);
   } catch (err) {
       console.error("❌ Failed to parse response JSON:", err);
   }
+  
+  test("Response matches expected schema", function () {
+    expect(tv4.validate(body, schema)).to.be.true;
+  });
   
   if (body && body.id && body.etag) {
       bru.setVar("entitlement_id", body.id);

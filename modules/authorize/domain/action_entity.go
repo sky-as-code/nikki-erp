@@ -17,8 +17,8 @@ type Action struct {
 	Description *string   `json:"description,omitempty"`
 	CreatedBy   *string   `json:"createdBy,omitempty"`
 
-	Resource     *Resource     `json:"resource,omitempty"`
-	Entitlements []Entitlement `json:"entitlements"`
+	Resource     *Resource     `json:"resource,omitempty" model:"-"` // TODO: Handle copy
+	Entitlements []Entitlement `json:"entitlements" model:"-"`
 }
 
 func (this *Action) Validate(forEdit bool) ft.ValidationErrors {

@@ -7,22 +7,15 @@ import (
 )
 
 func (this CreateResourceCommand) ToResource() *domain.Resource {
-	return &domain.Resource{
-		Name:         &this.Name,
-		Description:  this.Description,
-		ResourceType: domain.WrapResourceType(this.ResourceType),
-		ResourceRef:  &this.ResourceRef,
-		ScopeType:    domain.WrapResourceScopeType(this.ScopeType),
-		Actions:      []domain.Action{},
-	}
+	resource := &domain.Resource{}
+	model.MustCopy(this, resource)
+
+	return resource
 }
 
 func (this UpdateResourceCommand) ToResource() *domain.Resource {
-	return &domain.Resource{
-		ModelBase: model.ModelBase{
-			Id:   &this.Id,
-			Etag: &this.Etag,
-		},
-		Description: this.Description,
-	}
+	resource := &domain.Resource{}
+	model.MustCopy(this, resource)
+
+	return resource
 }

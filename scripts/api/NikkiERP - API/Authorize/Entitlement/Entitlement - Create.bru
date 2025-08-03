@@ -14,7 +14,7 @@ body:json {
   {
       "name": "Author Identdity - Readonly",
       "actionId": "{{action_id}}",
-      "actionExpr": "{{action_name}}:*.{{resource_name}}",
+      "actionExpr": "{{action_name}}:01JWNY20G23KD4RV5VWYABQYHD.{{resource_name}}",
       "resourceId": "{{resource_id}}",
       "scopeRef": "01JWNY20G23KD4RV5VWYABQYHD",
       "subjectType": "custom",
@@ -24,74 +24,123 @@ body:json {
 }
 
 script:pre-request {
-  let rawBody = req.getBody().raw;
-  
   let payload;
   try {
-      payload = JSON.parse(rawBody);
+      payload = req.getBody();
   } catch (e) {
       console.error("❌ Failed to parse JSON body:", e);
       return;
   }
   
   bru.setVar("entitlement_name", payload.name);
-  req.getBody().raw = JSON.stringify(payload, null, 2);
   
   console.log("✅ Final request payload:", payload);
   
 }
 
 script:post-response {
-  const schema = {
-      type: "object",
-      required: ["id", "etag", "createdAt"],
-      properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          createdAt: { type: "integer" },
-          name: { type: "string" },
-          actionId: { type: "string" },
-          actionExpr: { type: "string" },
-          resourceId: { type: "string" },
-          scopeRef: { type: "string" },
-          subjectType: { type: "string" },
-          subjectRef: { type: "string" },
-          createdBy: { type: "string" }
-      },
-      additionalProperties: true
-  };
-  
-  let isStatusValid = false;
-  test("Status code is 200 or 201", function () {
-      isStatusValid = [200, 201].includes(res.getStatus());
-      expect(isStatusValid).to.be.true;
-  });
-  
+  const statusCode = res.getStatus();
   let body;
-  let isJsonValid = true;
+  
   try {
-      body = res.getBody();
+    body = res.getBody();
+    console.log(`📥 Parsed response (status: ${statusCode}):`, body);
   } catch (e) {
-      isJsonValid = false;
-      expect.fail("❌ Failed to parse response JSON");
+    expect.fail("❌ Failed to parse response body");
   }
   
-  let isSchemaValid = false;
-  if (isStatusValid && isJsonValid) {
-      test("Response matches expected schema", function () {
-          expect(tv4.validate(body, schema)).to.be.true;
-          isSchemaValid = true;
+  // ========== ✅ CASE 1: SUCCESS ==========
+  if ([200, 201].includes(statusCode)) {
+    test("✅ Status code is 200 or 201", () => {
+      expect([200, 201]).to.include(statusCode);
+    });
+  
+    test("✅ Response body contains id, createdAt, etag", () => {
+      expect(body).to.have.property("id").that.is.a("string").with.length.greaterThan(25);
+      expect(body).to.have.property("createdAt").that.is.a("number");
+      expect(body).to.have.property("etag").that.is.a("string");
+    });
+  
+    bru.setVar("entitlement_id", body.id);
+    bru.setVar("etag", body.etag);
+    console.log("✅ entitlement_id:", body.id);
+    console.log("✅ etag:", body.etag);
+  }
+  
+  // ========== ❌ CASE 2: RESOURCE NOT FOUND ==========
+  if (statusCode === 400 && body?.details?.resource_id?.includes("not found")) {
+    test("❌ Status code is 400", () => {
+      expect(statusCode).to.eql(400);
+    });
+  
+    test("❌ Resource not found", () => {
+      expect(body.code).to.equal("validation_error");
+      expect(body.details).to.have.property("resource_id");
+      expect(body.details.resource_id).to.include("not found");
+    });
+  }
+  
+  // ========== ❌ CASE 3: ACTION NOT FOUND ==========
+  if (statusCode === 400 && body?.details?.action_id?.includes("not found")) {
+    test("❌ Status code is 400", () => {
+      expect(statusCode).to.eql(400);
+    });
+  
+    test("❌ Action not found", () => {
+      expect(body.code).to.equal("validation_error");
+      expect(body.details).to.have.property("action_id");
+      expect(body.details.action_id).to.include("not found");
+    });
+  }
+  
+  // ========== ❌ CASE 4: INVALID action_expr ==========
+  if (statusCode === 400 && body?.details?.action_expr?.includes("not valid")) {
+    test("❌ Status code is 400", () => {
+      expect(statusCode).to.eql(400);
+    });
+  
+    test("❌ Invalid action_expr", () => {
+      expect(body.code).to.equal("validation_error");
+      expect(body.details).to.have.property("action_expr");
+      expect(body.details.action_expr).to.include("not valid");
+    });
+  }
+  
+  // ========== ❌ CASE 5: DUPLICATE NAME ==========
+  if (statusCode === 400 && body?.details?.entitlement_name?.toLowerCase().includes("already exists")) {
+    test("❌ Status code is 400", () => {
+      expect(statusCode).to.eql(400);
+    });
+  
+    test("❌ Duplicate entitlement name", () => {
+      expect(body.code).to.equal("validation_error");
+      expect(body.details).to.have.property("entitlement_name");
+      expect(body.details.entitlement_name.toLowerCase()).to.include("already exists");
+    });
+  
+    console.log("✅ Duplicate name test response:", body);
+  }
+  
+  // ========== ❌ CASE 6: INVALID FIELDS ==========
+  if (
+    statusCode === 400 &&
+    body?.code === "validation_error" &&
+    body?.details &&
+    ["name", "createdBy", "resourceId", "actionId", "actionExpr"].every(k => k in body.details)
+  ) {
+    test("❌ Status code is 400", () => {
+      expect(statusCode).to.eql(400);
+    });
+  
+    test("❌ Response contains all expected invalid fields", () => {
+      const expectedErrors = ["name", "createdBy", "resourceId", "actionId", "actionExpr"];
+      expectedErrors.forEach(field => {
+        expect(body.details).to.have.property(field);
+        expect(body.details[field]).to.be.a("string").and.not.empty;
       });
-  } else {
-      console.warn("⚠️ Skip schema check due to invalid status or JSON");
-  }
+    });
   
-  if (isStatusValid && isJsonValid && isSchemaValid) {
-      bru.setVar("entitlement_id", body.id);
-      bru.setVar("etag", body.etag);
-      console.log("📦 Saved entitlement_id and etag:", body.id, body.etag);
-  } else {
-      console.warn("🚫 Not saving vars due to failed validation");
+    console.log("🧪 Validation error response:", body);
   }
   
 }

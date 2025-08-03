@@ -7,7 +7,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
@@ -18,9 +17,8 @@ import (
 	itSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
 )
 
-func NewAuthorizeServiceImpl(cqrsBus cqrs.CqrsBus, eventBus event.EventBus, entAssignmentRepo itAssign.EntitlementAssignmentRepository, entSuiteRepo itSuite.RoleSuiteRepository, entActionRepo itAction.ActionRepository, entResourceRepo itResource.ResourceRepository) itAuthorize.AuthorizeService {
+func NewAuthorizeServiceImpl(eventBus event.EventBus, entAssignmentRepo itAssign.EntitlementAssignmentRepository, entSuiteRepo itSuite.RoleSuiteRepository, entActionRepo itAction.ActionRepository, entResourceRepo itResource.ResourceRepository) itAuthorize.AuthorizeService {
 	return &AuthorizeServiceImpl{
-		cqrsBus:           cqrsBus,
 		eventBus:          eventBus,
 		entAssignmentRepo: entAssignmentRepo,
 		entSuiteRepo:      entSuiteRepo,
@@ -30,7 +28,6 @@ func NewAuthorizeServiceImpl(cqrsBus cqrs.CqrsBus, eventBus event.EventBus, entA
 }
 
 type AuthorizeServiceImpl struct {
-	cqrsBus           cqrs.CqrsBus
 	eventBus          event.EventBus
 	entAssignmentRepo itAssign.EntitlementAssignmentRepository
 	entSuiteRepo      itSuite.RoleSuiteRepository
@@ -56,10 +53,7 @@ func (this *AuthorizeServiceImpl) IsAuthorized(ctx context.Context, query itAuth
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
 			resource, err = this.validateResource(ctx, query.ResourceName, vErrs)
-			if err != nil {
-				return err
-			}
-			return nil
+			return err
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
 			return this.validateAction(ctx, query.ActionName, resource, vErrs)
@@ -218,25 +212,25 @@ func (this *AuthorizeServiceImpl) matchAssignment(assignment *domain.Entitlement
 		if assignment.Entitlement.Resource.ScopeType == nil {
 			return true
 		}
-		if assignment.Entitlement.Resource.ScopeType != nil {
-			switch *assignment.Entitlement.Resource.ScopeType {
-			case "domain":
+
+		switch *assignment.Entitlement.Resource.ScopeType {
+		case "domain":
+			return true
+		case "org", "hierarchy":
+			if assignment.Entitlement.ScopeRef == nil {
 				return true
-			case "org", "hierarchy":
-				if assignment.Entitlement.ScopeRef == nil {
-					return true
-				}
-				if *assignment.Entitlement.ScopeRef == query.ScopeRef {
-					return true
-				}
-				return false
-			default:
-				return false
 			}
+
+			if *assignment.Entitlement.ScopeRef == query.ScopeRef {
+				return true
+			}
+			return false
+		default:
+			return false
 		}
 	}
 
-	return false
+	return true
 }
 
 func (this *AuthorizeServiceImpl) validateResource(ctx context.Context, resourceName string, vErrs *fault.ValidationErrors) (*domain.Resource, error) {

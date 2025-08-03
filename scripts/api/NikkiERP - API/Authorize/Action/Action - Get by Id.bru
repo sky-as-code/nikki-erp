@@ -1,7 +1,7 @@
 meta {
   name: Action - Get by Id
   type: http
-  seq: 3
+  seq: 4
 }
 
 get {
@@ -11,51 +11,98 @@ get {
 }
 
 script:post-response {
-  test("Status code is 200", function () {
-      expect(res.getStatus()).to.equal(200);
-  });
+  const statusCode = res.getStatus();
+  let body;
   
-  const schema = {
+  try {
+    body = res.getBody();
+    console.log(`📥 Parsed response (status: ${statusCode}):`, body);
+  } catch (err) {
+    console.error("❌ Failed to parse response JSON:", err);
+    expect.fail("❌ Response body is not valid JSON");
+  }
+  
+  // ========== ✅ CASE 1: SUCCESS ==========
+  if (statusCode === 200) {
+    test("✅ Status code is 200", () => {
+      expect(statusCode).to.equal(200);
+    });
+  
+    const schema = {
       type: "object",
       required: ["id", "etag", "name", "resourceId", "createdBy"],
       properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          name: { 
-              type: "string",
-              pattern: "^[a-zA-Z0-9_-]+$"
+        id: { type: "string" },
+        etag: { type: "string" },
+        name: { type: "string", pattern: "^[a-zA-Z0-9_-]+$" },
+        description: { type: ["string", "null"] },
+        resourceId: { type: "string" },
+        createdBy: { type: "string" },
+        resource: {
+          type: ["object", "null"],
+          properties: {
+            id: { type: "string" },
+            name: { type: "string" }
           },
-          description: { type: ["string", "null"] },
-          resourceId: { type: "string" },
-          createdBy: { type: "string" },
-          resource: { 
-              type: ["object", "null"],
-              properties: {
-                  id: { type: "string" },
-                  name: { type: "string" }
-              },
-              required: ["id", "name"],
-              additionalProperties: true
-          }
+          required: ["id", "name"],
+          additionalProperties: true
+        }
       },
       additionalProperties: true
-  };
+    };
   
-  test("Response matches expected schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
-  });
+    test("✅ Response matches expected schema", () => {
+      expect(tv4.validate(body, schema)).to.be.true;
+    });
   
-  let body;
-  try {
-      body = res.getBody();
-      console.log("✅ Get Action by ID response:", body);
-  } catch (err) {
-      console.error("❌ Failed to parse response JSON:", err);
-  }
-  
-  if (body && body.id && body.etag) {
+    if (body?.id && body?.etag) {
       bru.setVar("action_id", body.id);
       bru.setVar("etag", body.etag);
+      console.log("✅ action_id and etag updated");
+    } else {
+      console.warn("⚠️ Missing id or etag in response");
+    }
+  }
+  
+  // ========== ❌ CASE 2: NOT FOUND ==========
+  if (statusCode === 400 && body?.code === "validation_error" && body?.details?.action_id?.match(/not found$/)) {
+    test("❌ Status code is 400", () => {
+      expect(statusCode).to.equal(400);
+    });
+  
+    const errorSchema = {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+        code: {
+          type: "string",
+          const: "validation_error"
+        },
+        details: {
+          type: "object",
+          required: ["action_id"],
+          properties: {
+            action_id: {
+              type: "string",
+              pattern: "not found$"
+            }
+          },
+          additionalProperties: true
+        }
+      },
+      additionalProperties: true
+    };
+  
+    test("❌ Response matches error schema", () => {
+      expect(tv4.validate(body, errorSchema)).to.be.true;
+    });
+  
+    test("❌ Error message includes 'action_id: not found'", () => {
+      expect(body.details).to.have.property("action_id");
+      expect(body.details.action_id).to.match(/not found$/);
+    });
+  
+    console.warn("⚠️ Action not found error:", body.details);
   }
   
 }

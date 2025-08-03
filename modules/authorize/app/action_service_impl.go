@@ -191,7 +191,7 @@ func (this *ActionServiceImpl) GetActionById(ctx context.Context, query it.GetAc
 
 func (this *ActionServiceImpl) SearchActions(ctx context.Context, query it.SearchActionsCommand) (result *it.SearchActionsResult, err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "list actions"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "search actions"); e != nil {
 			err = e
 		}
 	}()
@@ -258,16 +258,6 @@ func (this *ActionServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag 
 	}
 }
 
-func (this *ActionServiceImpl) assertConstraintViolated(action *domain.Action, vErrs *fault.ValidationErrors) error {
-	if len(action.Entitlements) > 0 {
-		for _, entitlement := range action.Entitlements {
-			vErrs.AppendConstraintViolated("entitlements", *entitlement.Name)
-		}
-	}
-
-	return nil
-}
-
 func (this *ActionServiceImpl) assertResourceExists(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (err error) {
 	exist, err := this.resourceRepo.Exist(ctx, itResource.ExistParam{Id: id})
 	fault.PanicOnErr(err)
@@ -276,4 +266,13 @@ func (this *ActionServiceImpl) assertResourceExists(ctx context.Context, id mode
 		vErrs.AppendNotFound("resource_id", "resource")
 	}
 	return err
+}
+func (this *ActionServiceImpl) assertConstraintViolated(action *domain.Action, vErrs *fault.ValidationErrors) error {
+	if len(action.Entitlements) > 0 {
+		for _, entitlement := range action.Entitlements {
+			vErrs.AppendConstraintViolated("entitlements", *entitlement.Name)
+		}
+	}
+
+	return nil
 }

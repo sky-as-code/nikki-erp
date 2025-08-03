@@ -22,6 +22,7 @@ func init() {
 	req = (*GetEntitlementByIdQuery)(nil)
 	req = (*GetEntitlementByNameQuery)(nil)
 	req = (*GetAllEntitlementByIdsQuery)(nil)
+	req = (*GetEntitlementByActionExprQuery)(nil)
 	req = (*SearchEntitlementsQuery)(nil)
 	util.Unused(req)
 }
@@ -193,9 +194,28 @@ func (this GetAllEntitlementByIdsQuery) Validate() fault.ValidationErrors {
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetAllEntitlementByIdsResult = crud.OpResult[[]*domain.Entitlement]
+type GetAllEntitlementByIdsResult = crud.OpResult[[]domain.Entitlement]
 
 // END: GetAllEntitlementByIdsQuery
+
+// START: GetEntitlementByActionExprQuery
+var getEntitlementByActionExprQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "entitlement",
+	Action:    "getByActionExpr",
+}
+
+type GetEntitlementByActionExprQuery struct {
+	ActionExpr string `param:"actionExpr" json:"actionExpr"`
+}
+
+func (GetEntitlementByActionExprQuery) CqrsRequestType() cqrs.RequestType {
+	return getEntitlementByActionExprQueryType
+}
+
+type GetEntitlementByActionExprQueryResult = crud.OpResult[*domain.Entitlement]
+
+// END: GetEntitlementByActionExprQuery
 
 // START: SearchEntitlementsQuery
 var searchEntitlementsQueryType = cqrs.RequestType{
@@ -227,7 +247,7 @@ func (this SearchEntitlementsQuery) Validate() fault.ValidationErrors {
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type SearchEntitlementsResultData = crud.PagedResult[*domain.Entitlement]
+type SearchEntitlementsResultData = crud.PagedResult[domain.Entitlement]
 type SearchEntitlementsResult = crud.OpResult[*SearchEntitlementsResultData]
 
 // END: SearchEntitlementsQuery

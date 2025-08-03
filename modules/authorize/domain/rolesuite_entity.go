@@ -22,7 +22,7 @@ type RoleSuite struct {
 	IsRequiredComment    *bool               `json:"isRequiredComment,omitempty"`
 	CreatedBy            *model.Id           `json:"createdBy,omitempty"`
 
-	Roles []*Role `json:"roles,omitempty"`
+	Roles []Role `json:"roles,omitempty" model:"-"` // TODO: Handle copy
 }
 
 func (this *RoleSuite) Validate(forEdit bool) ft.ValidationErrors {

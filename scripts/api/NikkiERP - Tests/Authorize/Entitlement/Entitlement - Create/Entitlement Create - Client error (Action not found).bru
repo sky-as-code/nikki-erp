@@ -1,0 +1,55 @@
+meta {
+  name: Entitlement Create - Client error (Action not found)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/authorize/entitlements
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "Author Identdity - Readonly",
+      "actionId": "01K1G43TVEA97CH0R3NOTFOUND",
+      "actionExpr": "{{action_name}}:01JWNY20G23KD4RV5VWYABQYHD.{{resource_name}}",
+      "resourceId": "{{resource_id}}",
+      "scopeRef": "01JWNY20G23KD4RV5VWYABQYHD",
+      "subjectType": "custom",
+      "subjectRef": "custom",
+      "createdBy": "{{user_id}}"
+  }
+}
+
+script:post-response {
+  let body;
+  let statusCode = res.getStatus();
+  
+  try {
+    body = res.getBody();
+    console.log("📥 Error response:", body);
+  } catch (e) {
+    expect.fail("❌ Failed to parse response body");
+  }
+  
+  test("Status code is 400", () => {
+    expect(statusCode).to.eql(400);
+  });
+  
+  test("Validation error for missing action_id", () => {
+    expect(body).to.have.property("code", "validation_error");
+    expect(body).to.have.property("details").that.is.an("object");
+  
+    expect(body.details).to.have.property("action_id");
+    expect(body.details.action_id).to.include("not found");
+  
+    console.log("✅ Action not found error correctly detected:", body.details.action_id);
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+}
