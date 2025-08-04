@@ -1,0 +1,51 @@
+meta {
+  name: Role Update - Client error (Invalid fields)
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{api_host}}/v1/authorize/roles/{{role_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "invalid_field": "invalid_value"
+  }
+}
+
+script:post-response {
+  const status = res.getStatus();
+  let body;
+  
+  test("Status should be 400", function () {
+    expect(status).to.equal(400);
+  });
+  
+  try {
+    body = res.getBody();
+    console.log("📥 Response body:", body);
+  } catch (err) {
+    expect.fail("❌ Response body is not valid JSON");
+  }
+  
+  test("Should contain validation error details", function () {
+    expect(body).to.have.property("code", "validation_error");
+    expect(body).to.have.property("details").that.is.an("object");
+  });
+  
+  const details = body.details || {};
+  
+  if (details.etag === "cannot be blank") {
+    test("Should catch blank etag field", function () {
+      expect(details.etag).to.equal("cannot be blank");
+    });
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

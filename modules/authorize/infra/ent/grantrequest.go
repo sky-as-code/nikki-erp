@@ -33,9 +33,9 @@ type GrantRequest struct {
 	ReceiverID string `json:"receiver_id,omitempty"`
 	// TargetType holds the value of the "target_type" field.
 	TargetType grantrequest.TargetType `json:"target_type,omitempty"`
-	// TargetRoleID holds the value of the "target_role_id" field.
+	// Must be set NULL before the role is deleted
 	TargetRoleID *string `json:"target_role_id,omitempty"`
-	// TargetSuiteID holds the value of the "target_suite_id" field.
+	// Must be set NULL before the role suite is deleted
 	TargetSuiteID *string `json:"target_suite_id,omitempty"`
 	// Status holds the value of the "status" field.
 	Status grantrequest.Status `json:"status,omitempty"`

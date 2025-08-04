@@ -1,0 +1,100 @@
+meta {
+  name: Role Update - Success
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{api_host}}/v1/authorize/roles/{{role_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Name update",
+    "description": "descriptopn",
+    "entitlementIds": [
+      "01JWP8KP39GKAH67FEAC7TZ631",
+      "{{entitlement_id}}"
+    ],
+    "etag": "{{etag}}"
+  }
+}
+
+script:pre-request {
+  let payload;
+  try {
+      payload = req.getBody();
+  } catch (e) {
+      console.error("❌ Failed to parse: ", e);
+      return;
+  }
+  
+  // Optionally randomize description for better coverage
+  const randDesc = `Updated description ${Math.floor(Math.random() * 1000)}`;
+  const randName = `Updated name ${Math.floor(Math.random() * 1000)}`;
+  
+  payload.name = randName;
+  payload.description = randDesc;
+  
+  req.setBody(payload)
+  
+  console.log("✅ Final request payload for update:", payload);
+  
+}
+
+script:post-response {
+  // Check status code
+  let isStatusValid = false;
+  test("Status code is 200", function () {
+      isStatusValid = res.getStatus() === 200;
+      expect(isStatusValid).to.be.true;
+  });
+  
+  // Parse JSON response
+  let body;
+  let isJsonValid = true;
+  try {
+      body = res.getBody();
+      console.log("📥 Response body:", body);
+  } catch (err) {
+      isJsonValid = false;
+      expect.fail("❌ Response is not valid JSON");
+  }
+  
+  // Validate response structure
+  let isStructureValid = false;
+  if (isStatusValid && isJsonValid) {
+      test("Response contains required fields", function () {
+          const requiredFields = ["id", "etag", "updatedAt"];
+          requiredFields.forEach(field => {
+              expect(body).to.have.property(field);
+          });
+          isStructureValid = true;
+      });
+  
+      // Set variable: etag
+      if (typeof body.etag === "string" && body.etag.length > 0) {
+          bru.setVar("etag", body.etag);
+          console.log("✅ etag set to:", body.etag);
+      } else {
+          console.warn("⚠️ etag missing or invalid");
+      }
+  
+      // Set variable: action_id
+      if (typeof body.id === "string" && body.id.length > 0) {
+          bru.setVar("role_id", body.id);
+          console.log("✅ action_id set to:", body.id);
+      } else {
+          console.warn("⚠️ id missing or invalid");
+      }
+  } else {
+      console.warn("⚠️ Skipped field validation or variable setting due to invalid status/JSON");
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

@@ -49,6 +49,29 @@ func (this RoleRest) CreateRole(echoCtx echo.Context) (err error) {
 	return err
 }
 
+func (this RoleRest) UpdateRole(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update role"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.roleService.UpdateRole,
+		func(request UpdateRoleRequest) it.UpdateRoleCommand {
+			return it.UpdateRoleCommand(request)
+		},
+		func(result it.UpdateRoleResult) UpdateRoleResponse {
+			response := UpdateRoleResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
 func (this RoleRest) GetRoleById(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get role by id"); e != nil {

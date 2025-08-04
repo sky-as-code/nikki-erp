@@ -1,0 +1,65 @@
+meta {
+  name: Role Update - Client error (Not found Entitlement)
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{api_host}}/v1/authorize/roles/{{role_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Name update",
+    "description": "descriptopn",
+    "entitlementIds": [
+      "01JWP8KCVWVYDSQ6C81NOTFOUND",
+      "01JWP8KP39GKAH67FE1NOTFOUND"
+    ],
+    "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  const status = res.getStatus();
+  let body;
+  
+  test("Status should be 400", function () {
+    expect(status).to.equal(400);
+  });
+  
+  try {
+    body = res.getBody();
+    console.log("📥 Response body:", body);
+  } catch (err) {
+    expect.fail("❌ Response body is not valid JSON");
+  }
+  
+  test("Should contain validation error details", function () {
+    expect(body).to.have.property("code", "validation_error");
+    expect(body).to.have.property("details").that.is.an("object");
+  });
+  
+  const details = body.details || {};
+  
+  const missingEntitlements = Object.entries(details).filter(([key, val]) =>
+    key.startsWith("entitlements[") && val === "entitlement not found"
+  );
+  
+  if (missingEntitlements.length > 0) {
+    test("Should catch missing entitlements", function () {
+      missingEntitlements.forEach(([key, val]) => {
+        expect(val).to.equal("entitlement not found");
+        console.warn(`❌ ${key}: ${val}`);
+      });
+    });
+  }
+  
+  
+}
+
+settings {
+  encodeUrl: true
+}

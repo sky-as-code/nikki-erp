@@ -1,0 +1,57 @@
+meta {
+  name: Role Update - Client error (Not found Role)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{api_host}}/v1/authorize/roles/01K1T6FJS0Y9629N12NOTFOUND
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Name update",
+    "description": "descriptopn",
+    "entitlementIds": [
+      "01JWP8KP39GKAH67FEAC7TZ631",
+      "{{entitlement_id}}"
+    ],
+    "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  const status = res.getStatus();
+  let body;
+  
+  test("Status should be 400", function () {
+    expect(status).to.equal(400);
+  });
+  
+  try {
+    body = res.getBody();
+    console.log("📥 Response body:", body);
+  } catch (err) {
+    expect.fail("❌ Response body is not valid JSON");
+  }
+  
+  test("Should contain validation error details", function () {
+    expect(body).to.have.property("code", "validation_error");
+    expect(body).to.have.property("details").that.is.an("object");
+  });
+  
+  const details = body.details || {};
+  
+  if (details.role_id === "role not found") {
+    test("Should catch non-existent role", function () {
+      expect(details.role_id).to.equal("role not found");
+    });
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

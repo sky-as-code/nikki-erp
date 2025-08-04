@@ -7,8 +7,6 @@ import (
 )
 
 type EntitlementAssignmentRepository interface {
-	Create(ctx context.Context, assignment domain.EntitlementAssignment) (*domain.EntitlementAssignment, error)
-	CreateBulk(ctx context.Context, assignments []domain.EntitlementAssignment) error
 	FindAllBySubject(ctx context.Context, param FindBySubjectParam) ([]*domain.EntitlementAssignment, error)
 	FindViewsById(ctx context.Context, param FindViewsByIdParam) ([]*domain.EntitlementAssignment, error)
 	FindAllByEntitlementId(ctx context.Context, param FindAllByEntitlementIdParam) ([]*domain.EntitlementAssignment, error)

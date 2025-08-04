@@ -1928,20 +1928,23 @@ func (m *EntitlementMutation) ResetEdge(name string) error {
 // EntitlementAssignmentMutation represents an operation that mutates the EntitlementAssignment nodes in the graph.
 type EntitlementAssignmentMutation struct {
 	config
-	op                 Op
-	typ                string
-	id                 *string
-	subject_type       *entitlementassignment.SubjectType
-	subject_ref        *string
-	resolved_expr      *string
-	action_name        *string
-	resource_name      *string
-	clearedFields      map[string]struct{}
-	entitlement        *string
-	clearedentitlement bool
-	done               bool
-	oldValue           func(context.Context) (*EntitlementAssignment, error)
-	predicates         []predicate.EntitlementAssignment
+	op                          Op
+	typ                         string
+	id                          *string
+	subject_type                *entitlementassignment.SubjectType
+	subject_ref                 *string
+	resolved_expr               *string
+	action_name                 *string
+	resource_name               *string
+	clearedFields               map[string]struct{}
+	entitlement                 *string
+	clearedentitlement          bool
+	permission_histories        map[string]struct{}
+	removedpermission_histories map[string]struct{}
+	clearedpermission_histories bool
+	done                        bool
+	oldValue                    func(context.Context) (*EntitlementAssignment, error)
+	predicates                  []predicate.EntitlementAssignment
 }
 
 var _ ent.Mutation = (*EntitlementAssignmentMutation)(nil)
@@ -2317,6 +2320,60 @@ func (m *EntitlementAssignmentMutation) ResetEntitlement() {
 	m.clearedentitlement = false
 }
 
+// AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by ids.
+func (m *EntitlementAssignmentMutation) AddPermissionHistoryIDs(ids ...string) {
+	if m.permission_histories == nil {
+		m.permission_histories = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.permission_histories[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPermissionHistories clears the "permission_histories" edge to the PermissionHistory entity.
+func (m *EntitlementAssignmentMutation) ClearPermissionHistories() {
+	m.clearedpermission_histories = true
+}
+
+// PermissionHistoriesCleared reports if the "permission_histories" edge to the PermissionHistory entity was cleared.
+func (m *EntitlementAssignmentMutation) PermissionHistoriesCleared() bool {
+	return m.clearedpermission_histories
+}
+
+// RemovePermissionHistoryIDs removes the "permission_histories" edge to the PermissionHistory entity by IDs.
+func (m *EntitlementAssignmentMutation) RemovePermissionHistoryIDs(ids ...string) {
+	if m.removedpermission_histories == nil {
+		m.removedpermission_histories = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.permission_histories, ids[i])
+		m.removedpermission_histories[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPermissionHistories returns the removed IDs of the "permission_histories" edge to the PermissionHistory entity.
+func (m *EntitlementAssignmentMutation) RemovedPermissionHistoriesIDs() (ids []string) {
+	for id := range m.removedpermission_histories {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PermissionHistoriesIDs returns the "permission_histories" edge IDs in the mutation.
+func (m *EntitlementAssignmentMutation) PermissionHistoriesIDs() (ids []string) {
+	for id := range m.permission_histories {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPermissionHistories resets all changes to the "permission_histories" edge.
+func (m *EntitlementAssignmentMutation) ResetPermissionHistories() {
+	m.permission_histories = nil
+	m.clearedpermission_histories = false
+	m.removedpermission_histories = nil
+}
+
 // Where appends a list predicates to the EntitlementAssignmentMutation builder.
 func (m *EntitlementAssignmentMutation) Where(ps ...predicate.EntitlementAssignment) {
 	m.predicates = append(m.predicates, ps...)
@@ -2550,9 +2607,12 @@ func (m *EntitlementAssignmentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *EntitlementAssignmentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.entitlement != nil {
 		edges = append(edges, entitlementassignment.EdgeEntitlement)
+	}
+	if m.permission_histories != nil {
+		edges = append(edges, entitlementassignment.EdgePermissionHistories)
 	}
 	return edges
 }
@@ -2565,27 +2625,47 @@ func (m *EntitlementAssignmentMutation) AddedIDs(name string) []ent.Value {
 		if id := m.entitlement; id != nil {
 			return []ent.Value{*id}
 		}
+	case entitlementassignment.EdgePermissionHistories:
+		ids := make([]ent.Value, 0, len(m.permission_histories))
+		for id := range m.permission_histories {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *EntitlementAssignmentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removedpermission_histories != nil {
+		edges = append(edges, entitlementassignment.EdgePermissionHistories)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *EntitlementAssignmentMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case entitlementassignment.EdgePermissionHistories:
+		ids := make([]ent.Value, 0, len(m.removedpermission_histories))
+		for id := range m.removedpermission_histories {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *EntitlementAssignmentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedentitlement {
 		edges = append(edges, entitlementassignment.EdgeEntitlement)
+	}
+	if m.clearedpermission_histories {
+		edges = append(edges, entitlementassignment.EdgePermissionHistories)
 	}
 	return edges
 }
@@ -2596,6 +2676,8 @@ func (m *EntitlementAssignmentMutation) EdgeCleared(name string) bool {
 	switch name {
 	case entitlementassignment.EdgeEntitlement:
 		return m.clearedentitlement
+	case entitlementassignment.EdgePermissionHistories:
+		return m.clearedpermission_histories
 	}
 	return false
 }
@@ -2617,6 +2699,9 @@ func (m *EntitlementAssignmentMutation) ResetEdge(name string) error {
 	switch name {
 	case entitlementassignment.EdgeEntitlement:
 		m.ResetEntitlement()
+		return nil
+	case entitlementassignment.EdgePermissionHistories:
+		m.ResetPermissionHistories()
 		return nil
 	}
 	return fmt.Errorf("unknown EntitlementAssignment edge %s", name)

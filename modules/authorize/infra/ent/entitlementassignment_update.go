@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
 )
 
@@ -67,9 +68,45 @@ func (eau *EntitlementAssignmentUpdate) ClearResourceName() *EntitlementAssignme
 	return eau
 }
 
+// AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by IDs.
+func (eau *EntitlementAssignmentUpdate) AddPermissionHistoryIDs(ids ...string) *EntitlementAssignmentUpdate {
+	eau.mutation.AddPermissionHistoryIDs(ids...)
+	return eau
+}
+
+// AddPermissionHistories adds the "permission_histories" edges to the PermissionHistory entity.
+func (eau *EntitlementAssignmentUpdate) AddPermissionHistories(p ...*PermissionHistory) *EntitlementAssignmentUpdate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return eau.AddPermissionHistoryIDs(ids...)
+}
+
 // Mutation returns the EntitlementAssignmentMutation object of the builder.
 func (eau *EntitlementAssignmentUpdate) Mutation() *EntitlementAssignmentMutation {
 	return eau.mutation
+}
+
+// ClearPermissionHistories clears all "permission_histories" edges to the PermissionHistory entity.
+func (eau *EntitlementAssignmentUpdate) ClearPermissionHistories() *EntitlementAssignmentUpdate {
+	eau.mutation.ClearPermissionHistories()
+	return eau
+}
+
+// RemovePermissionHistoryIDs removes the "permission_histories" edge to PermissionHistory entities by IDs.
+func (eau *EntitlementAssignmentUpdate) RemovePermissionHistoryIDs(ids ...string) *EntitlementAssignmentUpdate {
+	eau.mutation.RemovePermissionHistoryIDs(ids...)
+	return eau
+}
+
+// RemovePermissionHistories removes "permission_histories" edges to PermissionHistory entities.
+func (eau *EntitlementAssignmentUpdate) RemovePermissionHistories(p ...*PermissionHistory) *EntitlementAssignmentUpdate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return eau.RemovePermissionHistoryIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -131,6 +168,51 @@ func (eau *EntitlementAssignmentUpdate) sqlSave(ctx context.Context) (n int, err
 	if eau.mutation.ResourceNameCleared() {
 		_spec.ClearField(entitlementassignment.FieldResourceName, field.TypeString)
 	}
+	if eau.mutation.PermissionHistoriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlementassignment.PermissionHistoriesTable,
+			Columns: []string{entitlementassignment.PermissionHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := eau.mutation.RemovedPermissionHistoriesIDs(); len(nodes) > 0 && !eau.mutation.PermissionHistoriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlementassignment.PermissionHistoriesTable,
+			Columns: []string{entitlementassignment.PermissionHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := eau.mutation.PermissionHistoriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlementassignment.PermissionHistoriesTable,
+			Columns: []string{entitlementassignment.PermissionHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, eau.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{entitlementassignment.Label}
@@ -191,9 +273,45 @@ func (eauo *EntitlementAssignmentUpdateOne) ClearResourceName() *EntitlementAssi
 	return eauo
 }
 
+// AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by IDs.
+func (eauo *EntitlementAssignmentUpdateOne) AddPermissionHistoryIDs(ids ...string) *EntitlementAssignmentUpdateOne {
+	eauo.mutation.AddPermissionHistoryIDs(ids...)
+	return eauo
+}
+
+// AddPermissionHistories adds the "permission_histories" edges to the PermissionHistory entity.
+func (eauo *EntitlementAssignmentUpdateOne) AddPermissionHistories(p ...*PermissionHistory) *EntitlementAssignmentUpdateOne {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return eauo.AddPermissionHistoryIDs(ids...)
+}
+
 // Mutation returns the EntitlementAssignmentMutation object of the builder.
 func (eauo *EntitlementAssignmentUpdateOne) Mutation() *EntitlementAssignmentMutation {
 	return eauo.mutation
+}
+
+// ClearPermissionHistories clears all "permission_histories" edges to the PermissionHistory entity.
+func (eauo *EntitlementAssignmentUpdateOne) ClearPermissionHistories() *EntitlementAssignmentUpdateOne {
+	eauo.mutation.ClearPermissionHistories()
+	return eauo
+}
+
+// RemovePermissionHistoryIDs removes the "permission_histories" edge to PermissionHistory entities by IDs.
+func (eauo *EntitlementAssignmentUpdateOne) RemovePermissionHistoryIDs(ids ...string) *EntitlementAssignmentUpdateOne {
+	eauo.mutation.RemovePermissionHistoryIDs(ids...)
+	return eauo
+}
+
+// RemovePermissionHistories removes "permission_histories" edges to PermissionHistory entities.
+func (eauo *EntitlementAssignmentUpdateOne) RemovePermissionHistories(p ...*PermissionHistory) *EntitlementAssignmentUpdateOne {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return eauo.RemovePermissionHistoryIDs(ids...)
 }
 
 // Where appends a list predicates to the EntitlementAssignmentUpdate builder.
@@ -284,6 +402,51 @@ func (eauo *EntitlementAssignmentUpdateOne) sqlSave(ctx context.Context) (_node 
 	}
 	if eauo.mutation.ResourceNameCleared() {
 		_spec.ClearField(entitlementassignment.FieldResourceName, field.TypeString)
+	}
+	if eauo.mutation.PermissionHistoriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlementassignment.PermissionHistoriesTable,
+			Columns: []string{entitlementassignment.PermissionHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := eauo.mutation.RemovedPermissionHistoriesIDs(); len(nodes) > 0 && !eauo.mutation.PermissionHistoriesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlementassignment.PermissionHistoriesTable,
+			Columns: []string{entitlementassignment.PermissionHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := eauo.mutation.PermissionHistoriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlementassignment.PermissionHistoriesTable,
+			Columns: []string{entitlementassignment.PermissionHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &EntitlementAssignment{config: eauo.config}
 	_spec.Assign = _node.assignValues

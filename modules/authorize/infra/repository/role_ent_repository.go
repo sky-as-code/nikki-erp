@@ -15,6 +15,7 @@ import (
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
 	entAssign "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
+	entPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	entRole "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
 	entRoleUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/roleuser"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
@@ -35,7 +36,7 @@ func (this *RoleEntRepository) CreateWithEntitlements(ctx context.Context, role 
 	fault.PanicOnErr(err)
 
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "failed to create role transaction"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "create role transaction"); e != nil {
 			_ = tx.Rollback()
 			err = e
 		}
@@ -56,6 +57,76 @@ func (this *RoleEntRepository) CreateWithEntitlements(ctx context.Context, role 
 	fault.PanicOnErr(tx.Commit())
 
 	return entToRole(createdRole), nil
+}
+
+func (this *RoleEntRepository) UpdateWithEntitlements(ctx context.Context, role domain.Role, prevEtag model.Etag, addEntitlementIds, removeEntitlementIds []model.Id) (*domain.Role, error) {
+	tx, err := this.client.Tx(ctx)
+	fault.PanicOnErr(err)
+
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "update role transaction"); e != nil {
+			_ = tx.Rollback()
+			err = e
+		}
+	}()
+
+	updatedRole, err := this.updateRole(ctx, tx, prevEtag, role)
+
+	// Update assignment_id on permission history to nil before remove assignment
+	for _, entId := range removeEntitlementIds {
+		err = this.setAssignmentIdNull(ctx, tx, entId)
+		fault.PanicOnErr(err)
+
+		err := this.removeAssignmentTx(ctx, tx, *role.Id, entId)
+		fault.PanicOnErr(err)
+	}
+
+	for _, entId := range addEntitlementIds {
+		err := this.createAssignmentTx(ctx, tx, *role.Id, entId)
+		fault.PanicOnErr(err)
+	}
+
+	fault.PanicOnErr(tx.Commit())
+	return entToRole(updatedRole), nil
+}
+
+func (this *RoleEntRepository) updateRole(ctx context.Context, tx *ent.Tx, prevEtag model.Etag, role domain.Role) (*ent.Role, error) {
+	_, err := tx.Role.
+		UpdateOneID(*role.Id).
+		SetName(*role.Name).
+		SetNillableDescription(role.Description).
+		Where(entRole.EtagEQ(prevEtag)).
+		Save(ctx)
+	fault.PanicOnErr(err)
+
+	updatedRole, err := tx.Role.
+		UpdateOneID(*role.Id).
+		SetEtag(*role.Etag).
+		Save(ctx)
+	fault.PanicOnErr(err)
+
+	return updatedRole, nil
+}
+
+func (r *RoleEntRepository) setAssignmentIdNull(ctx context.Context, tx *ent.Tx, assignmentId string) error {
+	_, err := tx.PermissionHistory.
+		Update().
+		Where(entPermissionHistory.EntitlementAssignmentIDEQ(assignmentId)).
+		ClearEntitlementAssignmentID().
+		Save(ctx)
+	return err
+}
+
+func (this *RoleEntRepository) removeAssignmentTx(ctx context.Context, tx *ent.Tx, roleID model.Id, entitlementID model.Id) error {
+	_, err := tx.EntitlementAssignment.
+		Delete().
+		Where(
+			entAssign.SubjectTypeEQ(entAssign.SubjectTypeNikkiRole),
+			entAssign.SubjectRefEQ(roleID),
+			entAssign.EntitlementIDEQ(entitlementID),
+		).
+		Exec(ctx)
+	return err
 }
 
 func (this *RoleEntRepository) createRoleTx(ctx context.Context, tx *ent.Tx, role domain.Role) (*ent.Role, error) {
@@ -170,7 +241,7 @@ func (this *RoleEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicat
 func (this *RoleEntRepository) Search(
 	ctx context.Context,
 	param it.SearchParam,
-) (*crud.PagedResult[*domain.Role], error) {
+) (*crud.PagedResult[domain.Role], error) {
 	query := this.client.Role.Query()
 
 	return database.Search(
@@ -186,7 +257,7 @@ func (this *RoleEntRepository) Search(
 	)
 }
 
-func (this *RoleEntRepository) FindAllBySubject(ctx context.Context, param it.FindAllBySubjectParam) ([]*domain.Role, error) {
+func (this *RoleEntRepository) FindAllBySubject(ctx context.Context, param it.FindAllBySubjectParam) ([]domain.Role, error) {
 	query := this.client.Role.Query().
 		Where(entRole.HasRoleUsersWith(entRoleUser.ReceiverRefEQ(param.SubjectRef)))
 

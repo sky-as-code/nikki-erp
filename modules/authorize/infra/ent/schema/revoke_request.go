@@ -50,12 +50,14 @@ func (RevokeRequestMixin) Fields() []ent.Field {
 		field.String("target_role_id").
 			Immutable().
 			Optional().
-			Nillable(),
+			Nillable().
+			Comment("Must be set NULL before the role is deleted"),
 
 		field.String("target_suite_id").
 			Immutable().
 			Optional().
-			Nillable(),
+			Nillable().
+			Comment("Must be set NULL before the role suite is deleted"),
 
 		field.Enum("status").
 			Values("pending", "approved", "rejected"),

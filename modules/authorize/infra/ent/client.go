@@ -854,6 +854,22 @@ func (c *EntitlementAssignmentClient) QueryEntitlement(ea *EntitlementAssignment
 	return query
 }
 
+// QueryPermissionHistories queries the permission_histories edge of a EntitlementAssignment.
+func (c *EntitlementAssignmentClient) QueryPermissionHistories(ea *EntitlementAssignment) *PermissionHistoryQuery {
+	query := (&PermissionHistoryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ea.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entitlementassignment.Table, entitlementassignment.FieldID, id),
+			sqlgraph.To(permissionhistory.Table, permissionhistory.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, entitlementassignment.PermissionHistoriesTable, entitlementassignment.PermissionHistoriesColumn),
+		)
+		fromV = sqlgraph.Neighbors(ea.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *EntitlementAssignmentClient) Hooks() []Hook {
 	return c.hooks.EntitlementAssignment

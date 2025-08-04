@@ -16,6 +16,7 @@ func init() {
 	// Assert interface implementation
 	var req cqrs.Request
 	req = (*CreateRoleCommand)(nil)
+	req = (*UpdateRoleCommand)(nil)
 	req = (*GetRoleByNameCommand)(nil)
 	req = (*GetRoleByIdQuery)(nil)
 	req = (*SearchRolesQuery)(nil)
@@ -40,7 +41,7 @@ type CreateRoleCommand struct {
 	IsRequiredComment    bool    `json:"isRequiredComment"`
 	CreatedBy            string  `json:"createdBy"`
 
-	Entitlements []*model.Id `json:"entitlements,omitempty"`
+	EntitlementIds []model.Id `json:"entitlementIds,omitempty"`
 }
 
 func (CreateRoleCommand) CqrsRequestType() cqrs.RequestType {
@@ -50,6 +51,30 @@ func (CreateRoleCommand) CqrsRequestType() cqrs.RequestType {
 type CreateRoleResult = crud.OpResult[*domain.Role]
 
 // END: CreateRoleCommand
+
+// START: UpdateRoleCommand
+var updateRoleCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role",
+	Action:    "update",
+}
+
+type UpdateRoleCommand struct {
+	Id          model.Id   `param:"id" json:"id"`
+	Etag        model.Etag `json:"etag"`
+	Name        *string    `json:"name,omitempty"`
+	Description *string    `json:"description,omitempty"`
+
+	EntitlementIds []model.Id `json:"entitlementIds,omitempty"`
+}
+
+func (UpdateRoleCommand) CqrsRequestType() cqrs.RequestType {
+	return updateRoleCommandType
+}
+
+type UpdateRoleResult = crud.OpResult[*domain.Role]
+
+// END: UpdateRoleCommand
 
 // START: GetRoleByIdQuery
 var getRoleByIdQueryType = cqrs.RequestType{
@@ -128,7 +153,7 @@ func (this SearchRolesQuery) Validate() fault.ValidationErrors {
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type SearchRolesResultData = crud.PagedResult[*domain.Role]
+type SearchRolesResultData = crud.PagedResult[domain.Role]
 type SearchRolesResult = crud.OpResult[*SearchRolesResultData]
 
 // END: SearchRolesQuery
@@ -165,6 +190,6 @@ func (GetRolesBySubjectQuery) CqrsRequestType() cqrs.RequestType {
 	return getRolesBySubjectQueryType
 }
 
-type GetRolesBySubjectResult = crud.OpResult[[]*domain.Role]
+type GetRolesBySubjectResult = crud.OpResult[[]domain.Role]
 
 // END: GetRolesBySubjectQuery

@@ -1,0 +1,58 @@
+meta {
+  name: Role Update - Client error (Existing name)
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/authorize/roles/{{role_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{role_name}}",
+    "description": "description",
+    "entitlementIds": [
+      "01JWP8KP39GKAH67FEAC7TZ631",
+      "{{entitlement_id}}"
+    ],
+    "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  const status = res.getStatus();
+  let body;
+  
+  test("Status should be 400", function () {
+    expect(status).to.equal(400);
+  });
+  
+  try {
+    body = res.getBody();
+    console.log("📥 Response body:", body);
+  } catch (err) {
+    expect.fail("❌ Response body is not valid JSON");
+  }
+  
+  test("Should contain validation error details", function () {
+    expect(body).to.have.property("code", "validation_error");
+    expect(body).to.have.property("details").that.is.an("object");
+  });
+  
+  const details = body.details || {};
+  
+  if (details.name) {
+    test("Should catch existing name conflict", function () {
+      expect(details.name).to.be.a("string");
+      console.warn("⚠️ Name conflict:", details.name);
+    });
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

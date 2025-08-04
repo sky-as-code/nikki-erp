@@ -19,17 +19,16 @@ body:json {
       "isRequiredAttachment": false,
       "isRequiredComment": false,
       "createdBy": "{{user_id}}",
-      "entitlements": ["{{entitlement_id}}"]
+      "entitlementIds": ["{{entitlement_id}}"]
   }
 }
 
 script:pre-request {
-  let rawBody = req.getBody().raw;
   let payload;
   try {
-      payload = JSON.parse(rawBody);
+      payload = req.getBody();
   } catch (e) {
-      console.error("❌ Failed to parse JSON body:", e);
+      console.error("❌ Failed to parse:", e);
       return;
   }
   
@@ -68,10 +67,11 @@ script:pre-request {
       payload.isRequiredComment = false;
   }
   
+  req.setBody(payload)
+  
   // Save generated name for later use
   bru.setVar("role_name", payload.name);
   
-  req.getBody().raw = JSON.stringify(payload, null, 2);
   console.log("✅ Final payload for create role:", payload);
   
 }

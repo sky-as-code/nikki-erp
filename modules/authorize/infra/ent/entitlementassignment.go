@@ -39,9 +39,11 @@ type EntitlementAssignment struct {
 type EntitlementAssignmentEdges struct {
 	// Entitlement holds the value of the entitlement edge.
 	Entitlement *Entitlement `json:"entitlement,omitempty"`
+	// PermissionHistories holds the value of the permission_histories edge.
+	PermissionHistories []*PermissionHistory `json:"permission_histories,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // EntitlementOrErr returns the Entitlement value or an error if the edge
@@ -53,6 +55,15 @@ func (e EntitlementAssignmentEdges) EntitlementOrErr() (*Entitlement, error) {
 		return nil, &NotFoundError{label: entitlement.Label}
 	}
 	return nil, &NotLoadedError{edge: "entitlement"}
+}
+
+// PermissionHistoriesOrErr returns the PermissionHistories value or an error if the edge
+// was not loaded in eager-loading.
+func (e EntitlementAssignmentEdges) PermissionHistoriesOrErr() ([]*PermissionHistory, error) {
+	if e.loadedTypes[1] {
+		return e.PermissionHistories, nil
+	}
+	return nil, &NotLoadedError{edge: "permission_histories"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -137,6 +148,11 @@ func (ea *EntitlementAssignment) Value(name string) (ent.Value, error) {
 // QueryEntitlement queries the "entitlement" edge of the EntitlementAssignment entity.
 func (ea *EntitlementAssignment) QueryEntitlement() *EntitlementQuery {
 	return NewEntitlementAssignmentClient(ea.config).QueryEntitlement(ea)
+}
+
+// QueryPermissionHistories queries the "permission_histories" edge of the EntitlementAssignment entity.
+func (ea *EntitlementAssignment) QueryPermissionHistories() *PermissionHistoryQuery {
+	return NewEntitlementAssignmentClient(ea.config).QueryPermissionHistories(ea)
 }
 
 // Update returns a builder for updating this EntitlementAssignment.

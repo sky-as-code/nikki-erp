@@ -50,12 +50,14 @@ func (GrantRequestMixin) Fields() []ent.Field {
 		field.String("target_role_id").
 			Immutable().
 			Nillable().
-			Optional(),
+			Optional().
+			Comment("Must be set NULL before the role is deleted"),
 
 		field.String("target_suite_id").
 			Immutable().
 			Nillable().
-			Optional(),
+			Optional().
+			Comment("Must be set NULL before the role suite is deleted"),
 
 		field.Enum("status").
 			Values("pending", "approved", "rejected"),

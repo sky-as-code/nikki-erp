@@ -44,6 +44,7 @@ func initV1(route *echo.Group, resourceRest *v1.ResourceRest, actionRest *v1.Act
 	route.DELETE("/entitlements/:id", entitlementRest.DeleteEntitlementHard)
 
 	route.POST("/roles", roleRest.CreateRole)
+	route.PUT("/roles/:id", roleRest.UpdateRole)
 	route.GET("/roles/:id", roleRest.GetRoleById)
 	route.GET("/roles", roleRest.SearchRoles)
 
