@@ -31,8 +31,12 @@ const (
 	FieldTargetType = "target_type"
 	// FieldTargetRoleID holds the string denoting the target_role_id field in the database.
 	FieldTargetRoleID = "target_role_id"
+	// FieldTargetRoleName holds the string denoting the target_role_name field in the database.
+	FieldTargetRoleName = "target_role_name"
 	// FieldTargetSuiteID holds the string denoting the target_suite_id field in the database.
 	FieldTargetSuiteID = "target_suite_id"
+	// FieldTargetSuiteName holds the string denoting the target_suite_name field in the database.
+	FieldTargetSuiteName = "target_suite_name"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// EdgePermissionHistories holds the string denoting the permission_histories edge name in mutations.
@@ -77,7 +81,9 @@ var Columns = []string{
 	FieldReceiverID,
 	FieldTargetType,
 	FieldTargetRoleID,
+	FieldTargetRoleName,
 	FieldTargetSuiteID,
+	FieldTargetSuiteName,
 	FieldStatus,
 }
 
@@ -191,9 +197,19 @@ func ByTargetRoleID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTargetRoleID, opts...).ToFunc()
 }
 
+// ByTargetRoleName orders the results by the target_role_name field.
+func ByTargetRoleName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTargetRoleName, opts...).ToFunc()
+}
+
 // ByTargetSuiteID orders the results by the target_suite_id field.
 func ByTargetSuiteID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTargetSuiteID, opts...).ToFunc()
+}
+
+// ByTargetSuiteName orders the results by the target_suite_name field.
+func ByTargetSuiteName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTargetSuiteName, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

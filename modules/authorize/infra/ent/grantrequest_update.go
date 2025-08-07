@@ -13,6 +13,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
 )
 
 // GrantRequestUpdate is the builder for updating GrantRequest entities.
@@ -38,6 +40,74 @@ func (gru *GrantRequestUpdate) SetEtag(s string) *GrantRequestUpdate {
 func (gru *GrantRequestUpdate) SetNillableEtag(s *string) *GrantRequestUpdate {
 	if s != nil {
 		gru.SetEtag(*s)
+	}
+	return gru
+}
+
+// SetTargetRoleID sets the "target_role_id" field.
+func (gru *GrantRequestUpdate) SetTargetRoleID(s string) *GrantRequestUpdate {
+	gru.mutation.SetTargetRoleID(s)
+	return gru
+}
+
+// SetNillableTargetRoleID sets the "target_role_id" field if the given value is not nil.
+func (gru *GrantRequestUpdate) SetNillableTargetRoleID(s *string) *GrantRequestUpdate {
+	if s != nil {
+		gru.SetTargetRoleID(*s)
+	}
+	return gru
+}
+
+// ClearTargetRoleID clears the value of the "target_role_id" field.
+func (gru *GrantRequestUpdate) ClearTargetRoleID() *GrantRequestUpdate {
+	gru.mutation.ClearTargetRoleID()
+	return gru
+}
+
+// SetTargetRoleName sets the "target_role_name" field.
+func (gru *GrantRequestUpdate) SetTargetRoleName(s string) *GrantRequestUpdate {
+	gru.mutation.SetTargetRoleName(s)
+	return gru
+}
+
+// SetNillableTargetRoleName sets the "target_role_name" field if the given value is not nil.
+func (gru *GrantRequestUpdate) SetNillableTargetRoleName(s *string) *GrantRequestUpdate {
+	if s != nil {
+		gru.SetTargetRoleName(*s)
+	}
+	return gru
+}
+
+// SetTargetSuiteID sets the "target_suite_id" field.
+func (gru *GrantRequestUpdate) SetTargetSuiteID(s string) *GrantRequestUpdate {
+	gru.mutation.SetTargetSuiteID(s)
+	return gru
+}
+
+// SetNillableTargetSuiteID sets the "target_suite_id" field if the given value is not nil.
+func (gru *GrantRequestUpdate) SetNillableTargetSuiteID(s *string) *GrantRequestUpdate {
+	if s != nil {
+		gru.SetTargetSuiteID(*s)
+	}
+	return gru
+}
+
+// ClearTargetSuiteID clears the value of the "target_suite_id" field.
+func (gru *GrantRequestUpdate) ClearTargetSuiteID() *GrantRequestUpdate {
+	gru.mutation.ClearTargetSuiteID()
+	return gru
+}
+
+// SetTargetSuiteName sets the "target_suite_name" field.
+func (gru *GrantRequestUpdate) SetTargetSuiteName(s string) *GrantRequestUpdate {
+	gru.mutation.SetTargetSuiteName(s)
+	return gru
+}
+
+// SetNillableTargetSuiteName sets the "target_suite_name" field if the given value is not nil.
+func (gru *GrantRequestUpdate) SetNillableTargetSuiteName(s *string) *GrantRequestUpdate {
+	if s != nil {
+		gru.SetTargetSuiteName(*s)
 	}
 	return gru
 }
@@ -71,6 +141,44 @@ func (gru *GrantRequestUpdate) AddPermissionHistories(p ...*PermissionHistory) *
 	return gru.AddPermissionHistoryIDs(ids...)
 }
 
+// SetRoleID sets the "role" edge to the Role entity by ID.
+func (gru *GrantRequestUpdate) SetRoleID(id string) *GrantRequestUpdate {
+	gru.mutation.SetRoleID(id)
+	return gru
+}
+
+// SetNillableRoleID sets the "role" edge to the Role entity by ID if the given value is not nil.
+func (gru *GrantRequestUpdate) SetNillableRoleID(id *string) *GrantRequestUpdate {
+	if id != nil {
+		gru = gru.SetRoleID(*id)
+	}
+	return gru
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (gru *GrantRequestUpdate) SetRole(r *Role) *GrantRequestUpdate {
+	return gru.SetRoleID(r.ID)
+}
+
+// SetRoleSuiteID sets the "role_suite" edge to the RoleSuite entity by ID.
+func (gru *GrantRequestUpdate) SetRoleSuiteID(id string) *GrantRequestUpdate {
+	gru.mutation.SetRoleSuiteID(id)
+	return gru
+}
+
+// SetNillableRoleSuiteID sets the "role_suite" edge to the RoleSuite entity by ID if the given value is not nil.
+func (gru *GrantRequestUpdate) SetNillableRoleSuiteID(id *string) *GrantRequestUpdate {
+	if id != nil {
+		gru = gru.SetRoleSuiteID(*id)
+	}
+	return gru
+}
+
+// SetRoleSuite sets the "role_suite" edge to the RoleSuite entity.
+func (gru *GrantRequestUpdate) SetRoleSuite(r *RoleSuite) *GrantRequestUpdate {
+	return gru.SetRoleSuiteID(r.ID)
+}
+
 // Mutation returns the GrantRequestMutation object of the builder.
 func (gru *GrantRequestUpdate) Mutation() *GrantRequestMutation {
 	return gru.mutation
@@ -95,6 +203,18 @@ func (gru *GrantRequestUpdate) RemovePermissionHistories(p ...*PermissionHistory
 		ids[i] = p[i].ID
 	}
 	return gru.RemovePermissionHistoryIDs(ids...)
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (gru *GrantRequestUpdate) ClearRole() *GrantRequestUpdate {
+	gru.mutation.ClearRole()
+	return gru
+}
+
+// ClearRoleSuite clears the "role_suite" edge to the RoleSuite entity.
+func (gru *GrantRequestUpdate) ClearRoleSuite() *GrantRequestUpdate {
+	gru.mutation.ClearRoleSuite()
+	return gru
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -155,6 +275,12 @@ func (gru *GrantRequestUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := gru.mutation.Etag(); ok {
 		_spec.SetField(grantrequest.FieldEtag, field.TypeString, value)
 	}
+	if value, ok := gru.mutation.TargetRoleName(); ok {
+		_spec.SetField(grantrequest.FieldTargetRoleName, field.TypeString, value)
+	}
+	if value, ok := gru.mutation.TargetSuiteName(); ok {
+		_spec.SetField(grantrequest.FieldTargetSuiteName, field.TypeString, value)
+	}
 	if value, ok := gru.mutation.Status(); ok {
 		_spec.SetField(grantrequest.FieldStatus, field.TypeEnum, value)
 	}
@@ -203,6 +329,64 @@ func (gru *GrantRequestUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if gru.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   grantrequest.RoleTable,
+			Columns: []string{grantrequest.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gru.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   grantrequest.RoleTable,
+			Columns: []string{grantrequest.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if gru.mutation.RoleSuiteCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   grantrequest.RoleSuiteTable,
+			Columns: []string{grantrequest.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gru.mutation.RoleSuiteIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   grantrequest.RoleSuiteTable,
+			Columns: []string{grantrequest.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, gru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{grantrequest.Label}
@@ -237,6 +421,74 @@ func (gruo *GrantRequestUpdateOne) SetNillableEtag(s *string) *GrantRequestUpdat
 	return gruo
 }
 
+// SetTargetRoleID sets the "target_role_id" field.
+func (gruo *GrantRequestUpdateOne) SetTargetRoleID(s string) *GrantRequestUpdateOne {
+	gruo.mutation.SetTargetRoleID(s)
+	return gruo
+}
+
+// SetNillableTargetRoleID sets the "target_role_id" field if the given value is not nil.
+func (gruo *GrantRequestUpdateOne) SetNillableTargetRoleID(s *string) *GrantRequestUpdateOne {
+	if s != nil {
+		gruo.SetTargetRoleID(*s)
+	}
+	return gruo
+}
+
+// ClearTargetRoleID clears the value of the "target_role_id" field.
+func (gruo *GrantRequestUpdateOne) ClearTargetRoleID() *GrantRequestUpdateOne {
+	gruo.mutation.ClearTargetRoleID()
+	return gruo
+}
+
+// SetTargetRoleName sets the "target_role_name" field.
+func (gruo *GrantRequestUpdateOne) SetTargetRoleName(s string) *GrantRequestUpdateOne {
+	gruo.mutation.SetTargetRoleName(s)
+	return gruo
+}
+
+// SetNillableTargetRoleName sets the "target_role_name" field if the given value is not nil.
+func (gruo *GrantRequestUpdateOne) SetNillableTargetRoleName(s *string) *GrantRequestUpdateOne {
+	if s != nil {
+		gruo.SetTargetRoleName(*s)
+	}
+	return gruo
+}
+
+// SetTargetSuiteID sets the "target_suite_id" field.
+func (gruo *GrantRequestUpdateOne) SetTargetSuiteID(s string) *GrantRequestUpdateOne {
+	gruo.mutation.SetTargetSuiteID(s)
+	return gruo
+}
+
+// SetNillableTargetSuiteID sets the "target_suite_id" field if the given value is not nil.
+func (gruo *GrantRequestUpdateOne) SetNillableTargetSuiteID(s *string) *GrantRequestUpdateOne {
+	if s != nil {
+		gruo.SetTargetSuiteID(*s)
+	}
+	return gruo
+}
+
+// ClearTargetSuiteID clears the value of the "target_suite_id" field.
+func (gruo *GrantRequestUpdateOne) ClearTargetSuiteID() *GrantRequestUpdateOne {
+	gruo.mutation.ClearTargetSuiteID()
+	return gruo
+}
+
+// SetTargetSuiteName sets the "target_suite_name" field.
+func (gruo *GrantRequestUpdateOne) SetTargetSuiteName(s string) *GrantRequestUpdateOne {
+	gruo.mutation.SetTargetSuiteName(s)
+	return gruo
+}
+
+// SetNillableTargetSuiteName sets the "target_suite_name" field if the given value is not nil.
+func (gruo *GrantRequestUpdateOne) SetNillableTargetSuiteName(s *string) *GrantRequestUpdateOne {
+	if s != nil {
+		gruo.SetTargetSuiteName(*s)
+	}
+	return gruo
+}
+
 // SetStatus sets the "status" field.
 func (gruo *GrantRequestUpdateOne) SetStatus(gr grantrequest.Status) *GrantRequestUpdateOne {
 	gruo.mutation.SetStatus(gr)
@@ -266,6 +518,44 @@ func (gruo *GrantRequestUpdateOne) AddPermissionHistories(p ...*PermissionHistor
 	return gruo.AddPermissionHistoryIDs(ids...)
 }
 
+// SetRoleID sets the "role" edge to the Role entity by ID.
+func (gruo *GrantRequestUpdateOne) SetRoleID(id string) *GrantRequestUpdateOne {
+	gruo.mutation.SetRoleID(id)
+	return gruo
+}
+
+// SetNillableRoleID sets the "role" edge to the Role entity by ID if the given value is not nil.
+func (gruo *GrantRequestUpdateOne) SetNillableRoleID(id *string) *GrantRequestUpdateOne {
+	if id != nil {
+		gruo = gruo.SetRoleID(*id)
+	}
+	return gruo
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (gruo *GrantRequestUpdateOne) SetRole(r *Role) *GrantRequestUpdateOne {
+	return gruo.SetRoleID(r.ID)
+}
+
+// SetRoleSuiteID sets the "role_suite" edge to the RoleSuite entity by ID.
+func (gruo *GrantRequestUpdateOne) SetRoleSuiteID(id string) *GrantRequestUpdateOne {
+	gruo.mutation.SetRoleSuiteID(id)
+	return gruo
+}
+
+// SetNillableRoleSuiteID sets the "role_suite" edge to the RoleSuite entity by ID if the given value is not nil.
+func (gruo *GrantRequestUpdateOne) SetNillableRoleSuiteID(id *string) *GrantRequestUpdateOne {
+	if id != nil {
+		gruo = gruo.SetRoleSuiteID(*id)
+	}
+	return gruo
+}
+
+// SetRoleSuite sets the "role_suite" edge to the RoleSuite entity.
+func (gruo *GrantRequestUpdateOne) SetRoleSuite(r *RoleSuite) *GrantRequestUpdateOne {
+	return gruo.SetRoleSuiteID(r.ID)
+}
+
 // Mutation returns the GrantRequestMutation object of the builder.
 func (gruo *GrantRequestUpdateOne) Mutation() *GrantRequestMutation {
 	return gruo.mutation
@@ -290,6 +580,18 @@ func (gruo *GrantRequestUpdateOne) RemovePermissionHistories(p ...*PermissionHis
 		ids[i] = p[i].ID
 	}
 	return gruo.RemovePermissionHistoryIDs(ids...)
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (gruo *GrantRequestUpdateOne) ClearRole() *GrantRequestUpdateOne {
+	gruo.mutation.ClearRole()
+	return gruo
+}
+
+// ClearRoleSuite clears the "role_suite" edge to the RoleSuite entity.
+func (gruo *GrantRequestUpdateOne) ClearRoleSuite() *GrantRequestUpdateOne {
+	gruo.mutation.ClearRoleSuite()
+	return gruo
 }
 
 // Where appends a list predicates to the GrantRequestUpdate builder.
@@ -380,6 +682,12 @@ func (gruo *GrantRequestUpdateOne) sqlSave(ctx context.Context) (_node *GrantReq
 	if value, ok := gruo.mutation.Etag(); ok {
 		_spec.SetField(grantrequest.FieldEtag, field.TypeString, value)
 	}
+	if value, ok := gruo.mutation.TargetRoleName(); ok {
+		_spec.SetField(grantrequest.FieldTargetRoleName, field.TypeString, value)
+	}
+	if value, ok := gruo.mutation.TargetSuiteName(); ok {
+		_spec.SetField(grantrequest.FieldTargetSuiteName, field.TypeString, value)
+	}
 	if value, ok := gruo.mutation.Status(); ok {
 		_spec.SetField(grantrequest.FieldStatus, field.TypeEnum, value)
 	}
@@ -421,6 +729,64 @@ func (gruo *GrantRequestUpdateOne) sqlSave(ctx context.Context) (_node *GrantReq
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if gruo.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   grantrequest.RoleTable,
+			Columns: []string{grantrequest.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gruo.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   grantrequest.RoleTable,
+			Columns: []string{grantrequest.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if gruo.mutation.RoleSuiteCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   grantrequest.RoleSuiteTable,
+			Columns: []string{grantrequest.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gruo.mutation.RoleSuiteIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   grantrequest.RoleSuiteTable,
+			Columns: []string{grantrequest.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

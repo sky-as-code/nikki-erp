@@ -13,6 +13,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
 )
 
 // RevokeRequestUpdate is the builder for updating RevokeRequest entities.
@@ -38,6 +40,74 @@ func (rru *RevokeRequestUpdate) SetEtag(s string) *RevokeRequestUpdate {
 func (rru *RevokeRequestUpdate) SetNillableEtag(s *string) *RevokeRequestUpdate {
 	if s != nil {
 		rru.SetEtag(*s)
+	}
+	return rru
+}
+
+// SetTargetRoleID sets the "target_role_id" field.
+func (rru *RevokeRequestUpdate) SetTargetRoleID(s string) *RevokeRequestUpdate {
+	rru.mutation.SetTargetRoleID(s)
+	return rru
+}
+
+// SetNillableTargetRoleID sets the "target_role_id" field if the given value is not nil.
+func (rru *RevokeRequestUpdate) SetNillableTargetRoleID(s *string) *RevokeRequestUpdate {
+	if s != nil {
+		rru.SetTargetRoleID(*s)
+	}
+	return rru
+}
+
+// ClearTargetRoleID clears the value of the "target_role_id" field.
+func (rru *RevokeRequestUpdate) ClearTargetRoleID() *RevokeRequestUpdate {
+	rru.mutation.ClearTargetRoleID()
+	return rru
+}
+
+// SetTargetRoleName sets the "target_role_name" field.
+func (rru *RevokeRequestUpdate) SetTargetRoleName(s string) *RevokeRequestUpdate {
+	rru.mutation.SetTargetRoleName(s)
+	return rru
+}
+
+// SetNillableTargetRoleName sets the "target_role_name" field if the given value is not nil.
+func (rru *RevokeRequestUpdate) SetNillableTargetRoleName(s *string) *RevokeRequestUpdate {
+	if s != nil {
+		rru.SetTargetRoleName(*s)
+	}
+	return rru
+}
+
+// SetTargetSuiteID sets the "target_suite_id" field.
+func (rru *RevokeRequestUpdate) SetTargetSuiteID(s string) *RevokeRequestUpdate {
+	rru.mutation.SetTargetSuiteID(s)
+	return rru
+}
+
+// SetNillableTargetSuiteID sets the "target_suite_id" field if the given value is not nil.
+func (rru *RevokeRequestUpdate) SetNillableTargetSuiteID(s *string) *RevokeRequestUpdate {
+	if s != nil {
+		rru.SetTargetSuiteID(*s)
+	}
+	return rru
+}
+
+// ClearTargetSuiteID clears the value of the "target_suite_id" field.
+func (rru *RevokeRequestUpdate) ClearTargetSuiteID() *RevokeRequestUpdate {
+	rru.mutation.ClearTargetSuiteID()
+	return rru
+}
+
+// SetTargetSuiteName sets the "target_suite_name" field.
+func (rru *RevokeRequestUpdate) SetTargetSuiteName(s string) *RevokeRequestUpdate {
+	rru.mutation.SetTargetSuiteName(s)
+	return rru
+}
+
+// SetNillableTargetSuiteName sets the "target_suite_name" field if the given value is not nil.
+func (rru *RevokeRequestUpdate) SetNillableTargetSuiteName(s *string) *RevokeRequestUpdate {
+	if s != nil {
+		rru.SetTargetSuiteName(*s)
 	}
 	return rru
 }
@@ -71,6 +141,44 @@ func (rru *RevokeRequestUpdate) AddPermissionHistories(p ...*PermissionHistory) 
 	return rru.AddPermissionHistoryIDs(ids...)
 }
 
+// SetRoleID sets the "role" edge to the Role entity by ID.
+func (rru *RevokeRequestUpdate) SetRoleID(id string) *RevokeRequestUpdate {
+	rru.mutation.SetRoleID(id)
+	return rru
+}
+
+// SetNillableRoleID sets the "role" edge to the Role entity by ID if the given value is not nil.
+func (rru *RevokeRequestUpdate) SetNillableRoleID(id *string) *RevokeRequestUpdate {
+	if id != nil {
+		rru = rru.SetRoleID(*id)
+	}
+	return rru
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (rru *RevokeRequestUpdate) SetRole(r *Role) *RevokeRequestUpdate {
+	return rru.SetRoleID(r.ID)
+}
+
+// SetRoleSuiteID sets the "role_suite" edge to the RoleSuite entity by ID.
+func (rru *RevokeRequestUpdate) SetRoleSuiteID(id string) *RevokeRequestUpdate {
+	rru.mutation.SetRoleSuiteID(id)
+	return rru
+}
+
+// SetNillableRoleSuiteID sets the "role_suite" edge to the RoleSuite entity by ID if the given value is not nil.
+func (rru *RevokeRequestUpdate) SetNillableRoleSuiteID(id *string) *RevokeRequestUpdate {
+	if id != nil {
+		rru = rru.SetRoleSuiteID(*id)
+	}
+	return rru
+}
+
+// SetRoleSuite sets the "role_suite" edge to the RoleSuite entity.
+func (rru *RevokeRequestUpdate) SetRoleSuite(r *RoleSuite) *RevokeRequestUpdate {
+	return rru.SetRoleSuiteID(r.ID)
+}
+
 // Mutation returns the RevokeRequestMutation object of the builder.
 func (rru *RevokeRequestUpdate) Mutation() *RevokeRequestMutation {
 	return rru.mutation
@@ -95,6 +203,18 @@ func (rru *RevokeRequestUpdate) RemovePermissionHistories(p ...*PermissionHistor
 		ids[i] = p[i].ID
 	}
 	return rru.RemovePermissionHistoryIDs(ids...)
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (rru *RevokeRequestUpdate) ClearRole() *RevokeRequestUpdate {
+	rru.mutation.ClearRole()
+	return rru
+}
+
+// ClearRoleSuite clears the "role_suite" edge to the RoleSuite entity.
+func (rru *RevokeRequestUpdate) ClearRoleSuite() *RevokeRequestUpdate {
+	rru.mutation.ClearRoleSuite()
+	return rru
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -155,6 +275,12 @@ func (rru *RevokeRequestUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	if value, ok := rru.mutation.Etag(); ok {
 		_spec.SetField(revokerequest.FieldEtag, field.TypeString, value)
 	}
+	if value, ok := rru.mutation.TargetRoleName(); ok {
+		_spec.SetField(revokerequest.FieldTargetRoleName, field.TypeString, value)
+	}
+	if value, ok := rru.mutation.TargetSuiteName(); ok {
+		_spec.SetField(revokerequest.FieldTargetSuiteName, field.TypeString, value)
+	}
 	if value, ok := rru.mutation.Status(); ok {
 		_spec.SetField(revokerequest.FieldStatus, field.TypeEnum, value)
 	}
@@ -203,6 +329,64 @@ func (rru *RevokeRequestUpdate) sqlSave(ctx context.Context) (n int, err error) 
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if rru.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   revokerequest.RoleTable,
+			Columns: []string{revokerequest.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rru.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   revokerequest.RoleTable,
+			Columns: []string{revokerequest.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if rru.mutation.RoleSuiteCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   revokerequest.RoleSuiteTable,
+			Columns: []string{revokerequest.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rru.mutation.RoleSuiteIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   revokerequest.RoleSuiteTable,
+			Columns: []string{revokerequest.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, rru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{revokerequest.Label}
@@ -237,6 +421,74 @@ func (rruo *RevokeRequestUpdateOne) SetNillableEtag(s *string) *RevokeRequestUpd
 	return rruo
 }
 
+// SetTargetRoleID sets the "target_role_id" field.
+func (rruo *RevokeRequestUpdateOne) SetTargetRoleID(s string) *RevokeRequestUpdateOne {
+	rruo.mutation.SetTargetRoleID(s)
+	return rruo
+}
+
+// SetNillableTargetRoleID sets the "target_role_id" field if the given value is not nil.
+func (rruo *RevokeRequestUpdateOne) SetNillableTargetRoleID(s *string) *RevokeRequestUpdateOne {
+	if s != nil {
+		rruo.SetTargetRoleID(*s)
+	}
+	return rruo
+}
+
+// ClearTargetRoleID clears the value of the "target_role_id" field.
+func (rruo *RevokeRequestUpdateOne) ClearTargetRoleID() *RevokeRequestUpdateOne {
+	rruo.mutation.ClearTargetRoleID()
+	return rruo
+}
+
+// SetTargetRoleName sets the "target_role_name" field.
+func (rruo *RevokeRequestUpdateOne) SetTargetRoleName(s string) *RevokeRequestUpdateOne {
+	rruo.mutation.SetTargetRoleName(s)
+	return rruo
+}
+
+// SetNillableTargetRoleName sets the "target_role_name" field if the given value is not nil.
+func (rruo *RevokeRequestUpdateOne) SetNillableTargetRoleName(s *string) *RevokeRequestUpdateOne {
+	if s != nil {
+		rruo.SetTargetRoleName(*s)
+	}
+	return rruo
+}
+
+// SetTargetSuiteID sets the "target_suite_id" field.
+func (rruo *RevokeRequestUpdateOne) SetTargetSuiteID(s string) *RevokeRequestUpdateOne {
+	rruo.mutation.SetTargetSuiteID(s)
+	return rruo
+}
+
+// SetNillableTargetSuiteID sets the "target_suite_id" field if the given value is not nil.
+func (rruo *RevokeRequestUpdateOne) SetNillableTargetSuiteID(s *string) *RevokeRequestUpdateOne {
+	if s != nil {
+		rruo.SetTargetSuiteID(*s)
+	}
+	return rruo
+}
+
+// ClearTargetSuiteID clears the value of the "target_suite_id" field.
+func (rruo *RevokeRequestUpdateOne) ClearTargetSuiteID() *RevokeRequestUpdateOne {
+	rruo.mutation.ClearTargetSuiteID()
+	return rruo
+}
+
+// SetTargetSuiteName sets the "target_suite_name" field.
+func (rruo *RevokeRequestUpdateOne) SetTargetSuiteName(s string) *RevokeRequestUpdateOne {
+	rruo.mutation.SetTargetSuiteName(s)
+	return rruo
+}
+
+// SetNillableTargetSuiteName sets the "target_suite_name" field if the given value is not nil.
+func (rruo *RevokeRequestUpdateOne) SetNillableTargetSuiteName(s *string) *RevokeRequestUpdateOne {
+	if s != nil {
+		rruo.SetTargetSuiteName(*s)
+	}
+	return rruo
+}
+
 // SetStatus sets the "status" field.
 func (rruo *RevokeRequestUpdateOne) SetStatus(r revokerequest.Status) *RevokeRequestUpdateOne {
 	rruo.mutation.SetStatus(r)
@@ -266,6 +518,44 @@ func (rruo *RevokeRequestUpdateOne) AddPermissionHistories(p ...*PermissionHisto
 	return rruo.AddPermissionHistoryIDs(ids...)
 }
 
+// SetRoleID sets the "role" edge to the Role entity by ID.
+func (rruo *RevokeRequestUpdateOne) SetRoleID(id string) *RevokeRequestUpdateOne {
+	rruo.mutation.SetRoleID(id)
+	return rruo
+}
+
+// SetNillableRoleID sets the "role" edge to the Role entity by ID if the given value is not nil.
+func (rruo *RevokeRequestUpdateOne) SetNillableRoleID(id *string) *RevokeRequestUpdateOne {
+	if id != nil {
+		rruo = rruo.SetRoleID(*id)
+	}
+	return rruo
+}
+
+// SetRole sets the "role" edge to the Role entity.
+func (rruo *RevokeRequestUpdateOne) SetRole(r *Role) *RevokeRequestUpdateOne {
+	return rruo.SetRoleID(r.ID)
+}
+
+// SetRoleSuiteID sets the "role_suite" edge to the RoleSuite entity by ID.
+func (rruo *RevokeRequestUpdateOne) SetRoleSuiteID(id string) *RevokeRequestUpdateOne {
+	rruo.mutation.SetRoleSuiteID(id)
+	return rruo
+}
+
+// SetNillableRoleSuiteID sets the "role_suite" edge to the RoleSuite entity by ID if the given value is not nil.
+func (rruo *RevokeRequestUpdateOne) SetNillableRoleSuiteID(id *string) *RevokeRequestUpdateOne {
+	if id != nil {
+		rruo = rruo.SetRoleSuiteID(*id)
+	}
+	return rruo
+}
+
+// SetRoleSuite sets the "role_suite" edge to the RoleSuite entity.
+func (rruo *RevokeRequestUpdateOne) SetRoleSuite(r *RoleSuite) *RevokeRequestUpdateOne {
+	return rruo.SetRoleSuiteID(r.ID)
+}
+
 // Mutation returns the RevokeRequestMutation object of the builder.
 func (rruo *RevokeRequestUpdateOne) Mutation() *RevokeRequestMutation {
 	return rruo.mutation
@@ -290,6 +580,18 @@ func (rruo *RevokeRequestUpdateOne) RemovePermissionHistories(p ...*PermissionHi
 		ids[i] = p[i].ID
 	}
 	return rruo.RemovePermissionHistoryIDs(ids...)
+}
+
+// ClearRole clears the "role" edge to the Role entity.
+func (rruo *RevokeRequestUpdateOne) ClearRole() *RevokeRequestUpdateOne {
+	rruo.mutation.ClearRole()
+	return rruo
+}
+
+// ClearRoleSuite clears the "role_suite" edge to the RoleSuite entity.
+func (rruo *RevokeRequestUpdateOne) ClearRoleSuite() *RevokeRequestUpdateOne {
+	rruo.mutation.ClearRoleSuite()
+	return rruo
 }
 
 // Where appends a list predicates to the RevokeRequestUpdate builder.
@@ -380,6 +682,12 @@ func (rruo *RevokeRequestUpdateOne) sqlSave(ctx context.Context) (_node *RevokeR
 	if value, ok := rruo.mutation.Etag(); ok {
 		_spec.SetField(revokerequest.FieldEtag, field.TypeString, value)
 	}
+	if value, ok := rruo.mutation.TargetRoleName(); ok {
+		_spec.SetField(revokerequest.FieldTargetRoleName, field.TypeString, value)
+	}
+	if value, ok := rruo.mutation.TargetSuiteName(); ok {
+		_spec.SetField(revokerequest.FieldTargetSuiteName, field.TypeString, value)
+	}
 	if value, ok := rruo.mutation.Status(); ok {
 		_spec.SetField(revokerequest.FieldStatus, field.TypeEnum, value)
 	}
@@ -421,6 +729,64 @@ func (rruo *RevokeRequestUpdateOne) sqlSave(ctx context.Context) (_node *RevokeR
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if rruo.mutation.RoleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   revokerequest.RoleTable,
+			Columns: []string{revokerequest.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rruo.mutation.RoleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   revokerequest.RoleTable,
+			Columns: []string{revokerequest.RoleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(role.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if rruo.mutation.RoleSuiteCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   revokerequest.RoleSuiteTable,
+			Columns: []string{revokerequest.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := rruo.mutation.RoleSuiteIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   revokerequest.RoleSuiteTable,
+			Columns: []string{revokerequest.RoleSuiteColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

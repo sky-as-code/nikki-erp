@@ -48,16 +48,20 @@ func (RevokeRequestMixin) Fields() []ent.Field {
 			Immutable(),
 
 		field.String("target_role_id").
-			Immutable().
-			Optional().
 			Nillable().
+			Optional().
 			Comment("Must be set NULL before the role is deleted"),
 
+		field.String("target_role_name").
+			Comment("Role name must be copied here before the role is deleted"),
+
 		field.String("target_suite_id").
-			Immutable().
-			Optional().
 			Nillable().
+			Optional().
 			Comment("Must be set NULL before the role suite is deleted"),
+
+		field.String("target_suite_name").
+			Comment("Role suite name must be copied here before the role suite is deleted"),
 
 		field.Enum("status").
 			Values("pending", "approved", "rejected"),
@@ -76,17 +80,15 @@ func (RevokeRequest) Annotations() []schema.Annotation {
 
 func (RevokeRequest) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.From("permission_histories", PermissionHistory.Type).
+			Ref("revoke_request"),
+
 		edge.To("role", Role.Type).
 			Field("target_role_id").
-			Immutable().
 			Unique(),
 		edge.To("role_suite", RoleSuite.Type).
 			Field("target_suite_id").
-			Immutable().
 			Unique(),
-
-		edge.From("permission_histories", PermissionHistory.Type).
-			Ref("revoke_request"),
 	}
 }
 

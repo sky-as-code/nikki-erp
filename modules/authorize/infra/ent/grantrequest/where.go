@@ -100,9 +100,19 @@ func TargetRoleID(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldEQ(FieldTargetRoleID, v))
 }
 
+// TargetRoleName applies equality check predicate on the "target_role_name" field. It's identical to TargetRoleNameEQ.
+func TargetRoleName(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldEQ(FieldTargetRoleName, v))
+}
+
 // TargetSuiteID applies equality check predicate on the "target_suite_id" field. It's identical to TargetSuiteIDEQ.
 func TargetSuiteID(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldEQ(FieldTargetSuiteID, v))
+}
+
+// TargetSuiteName applies equality check predicate on the "target_suite_name" field. It's identical to TargetSuiteNameEQ.
+func TargetSuiteName(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldEQ(FieldTargetSuiteName, v))
 }
 
 // AttachmentURLEQ applies the EQ predicate on the "attachment_url" field.
@@ -585,6 +595,71 @@ func TargetRoleIDContainsFold(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldContainsFold(FieldTargetRoleID, v))
 }
 
+// TargetRoleNameEQ applies the EQ predicate on the "target_role_name" field.
+func TargetRoleNameEQ(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldEQ(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameNEQ applies the NEQ predicate on the "target_role_name" field.
+func TargetRoleNameNEQ(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldNEQ(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameIn applies the In predicate on the "target_role_name" field.
+func TargetRoleNameIn(vs ...string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldIn(FieldTargetRoleName, vs...))
+}
+
+// TargetRoleNameNotIn applies the NotIn predicate on the "target_role_name" field.
+func TargetRoleNameNotIn(vs ...string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldNotIn(FieldTargetRoleName, vs...))
+}
+
+// TargetRoleNameGT applies the GT predicate on the "target_role_name" field.
+func TargetRoleNameGT(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldGT(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameGTE applies the GTE predicate on the "target_role_name" field.
+func TargetRoleNameGTE(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldGTE(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameLT applies the LT predicate on the "target_role_name" field.
+func TargetRoleNameLT(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldLT(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameLTE applies the LTE predicate on the "target_role_name" field.
+func TargetRoleNameLTE(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldLTE(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameContains applies the Contains predicate on the "target_role_name" field.
+func TargetRoleNameContains(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldContains(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameHasPrefix applies the HasPrefix predicate on the "target_role_name" field.
+func TargetRoleNameHasPrefix(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldHasPrefix(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameHasSuffix applies the HasSuffix predicate on the "target_role_name" field.
+func TargetRoleNameHasSuffix(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldHasSuffix(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameEqualFold applies the EqualFold predicate on the "target_role_name" field.
+func TargetRoleNameEqualFold(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldEqualFold(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameContainsFold applies the ContainsFold predicate on the "target_role_name" field.
+func TargetRoleNameContainsFold(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldContainsFold(FieldTargetRoleName, v))
+}
+
 // TargetSuiteIDEQ applies the EQ predicate on the "target_suite_id" field.
 func TargetSuiteIDEQ(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldEQ(FieldTargetSuiteID, v))
@@ -658,6 +733,71 @@ func TargetSuiteIDEqualFold(v string) predicate.GrantRequest {
 // TargetSuiteIDContainsFold applies the ContainsFold predicate on the "target_suite_id" field.
 func TargetSuiteIDContainsFold(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldContainsFold(FieldTargetSuiteID, v))
+}
+
+// TargetSuiteNameEQ applies the EQ predicate on the "target_suite_name" field.
+func TargetSuiteNameEQ(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldEQ(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameNEQ applies the NEQ predicate on the "target_suite_name" field.
+func TargetSuiteNameNEQ(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldNEQ(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameIn applies the In predicate on the "target_suite_name" field.
+func TargetSuiteNameIn(vs ...string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldIn(FieldTargetSuiteName, vs...))
+}
+
+// TargetSuiteNameNotIn applies the NotIn predicate on the "target_suite_name" field.
+func TargetSuiteNameNotIn(vs ...string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldNotIn(FieldTargetSuiteName, vs...))
+}
+
+// TargetSuiteNameGT applies the GT predicate on the "target_suite_name" field.
+func TargetSuiteNameGT(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldGT(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameGTE applies the GTE predicate on the "target_suite_name" field.
+func TargetSuiteNameGTE(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldGTE(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameLT applies the LT predicate on the "target_suite_name" field.
+func TargetSuiteNameLT(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldLT(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameLTE applies the LTE predicate on the "target_suite_name" field.
+func TargetSuiteNameLTE(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldLTE(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameContains applies the Contains predicate on the "target_suite_name" field.
+func TargetSuiteNameContains(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldContains(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameHasPrefix applies the HasPrefix predicate on the "target_suite_name" field.
+func TargetSuiteNameHasPrefix(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldHasPrefix(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameHasSuffix applies the HasSuffix predicate on the "target_suite_name" field.
+func TargetSuiteNameHasSuffix(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldHasSuffix(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameEqualFold applies the EqualFold predicate on the "target_suite_name" field.
+func TargetSuiteNameEqualFold(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldEqualFold(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameContainsFold applies the ContainsFold predicate on the "target_suite_name" field.
+func TargetSuiteNameContainsFold(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldContainsFold(FieldTargetSuiteName, v))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

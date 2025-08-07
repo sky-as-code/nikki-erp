@@ -1578,6 +1578,22 @@ func (c *RevokeRequestClient) GetX(ctx context.Context, id string) *RevokeReques
 	return obj
 }
 
+// QueryPermissionHistories queries the permission_histories edge of a RevokeRequest.
+func (c *RevokeRequestClient) QueryPermissionHistories(rr *RevokeRequest) *PermissionHistoryQuery {
+	query := (&PermissionHistoryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := rr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revokerequest.Table, revokerequest.FieldID, id),
+			sqlgraph.To(permissionhistory.Table, permissionhistory.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, revokerequest.PermissionHistoriesTable, revokerequest.PermissionHistoriesColumn),
+		)
+		fromV = sqlgraph.Neighbors(rr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryRole queries the role edge of a RevokeRequest.
 func (c *RevokeRequestClient) QueryRole(rr *RevokeRequest) *RoleQuery {
 	query := (&RoleClient{config: c.config}).Query()
@@ -1603,22 +1619,6 @@ func (c *RevokeRequestClient) QueryRoleSuite(rr *RevokeRequest) *RoleSuiteQuery 
 			sqlgraph.From(revokerequest.Table, revokerequest.FieldID, id),
 			sqlgraph.To(rolesuite.Table, rolesuite.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, revokerequest.RoleSuiteTable, revokerequest.RoleSuiteColumn),
-		)
-		fromV = sqlgraph.Neighbors(rr.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryPermissionHistories queries the permission_histories edge of a RevokeRequest.
-func (c *RevokeRequestClient) QueryPermissionHistories(rr *RevokeRequest) *PermissionHistoryQuery {
-	query := (&PermissionHistoryClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := rr.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(revokerequest.Table, revokerequest.FieldID, id),
-			sqlgraph.To(permissionhistory.Table, permissionhistory.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, revokerequest.PermissionHistoriesTable, revokerequest.PermissionHistoriesColumn),
 		)
 		fromV = sqlgraph.Neighbors(rr.driver.Dialect(), step)
 		return fromV, nil

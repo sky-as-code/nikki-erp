@@ -31,18 +31,29 @@ const (
 	FieldTargetType = "target_type"
 	// FieldTargetRoleID holds the string denoting the target_role_id field in the database.
 	FieldTargetRoleID = "target_role_id"
+	// FieldTargetRoleName holds the string denoting the target_role_name field in the database.
+	FieldTargetRoleName = "target_role_name"
 	// FieldTargetSuiteID holds the string denoting the target_suite_id field in the database.
 	FieldTargetSuiteID = "target_suite_id"
+	// FieldTargetSuiteName holds the string denoting the target_suite_name field in the database.
+	FieldTargetSuiteName = "target_suite_name"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// EdgePermissionHistories holds the string denoting the permission_histories edge name in mutations.
+	EdgePermissionHistories = "permission_histories"
 	// EdgeRole holds the string denoting the role edge name in mutations.
 	EdgeRole = "role"
 	// EdgeRoleSuite holds the string denoting the role_suite edge name in mutations.
 	EdgeRoleSuite = "role_suite"
-	// EdgePermissionHistories holds the string denoting the permission_histories edge name in mutations.
-	EdgePermissionHistories = "permission_histories"
 	// Table holds the table name of the revokerequest in the database.
 	Table = "authz_revoke_requests"
+	// PermissionHistoriesTable is the table that holds the permission_histories relation/edge.
+	PermissionHistoriesTable = "authz_permission_histories"
+	// PermissionHistoriesInverseTable is the table name for the PermissionHistory entity.
+	// It exists in this package in order to avoid circular dependency with the "permissionhistory" package.
+	PermissionHistoriesInverseTable = "authz_permission_histories"
+	// PermissionHistoriesColumn is the table column denoting the permission_histories relation/edge.
+	PermissionHistoriesColumn = "revoke_request_id"
 	// RoleTable is the table that holds the role relation/edge.
 	RoleTable = "authz_revoke_requests"
 	// RoleInverseTable is the table name for the Role entity.
@@ -57,13 +68,6 @@ const (
 	RoleSuiteInverseTable = "authz_role_suites"
 	// RoleSuiteColumn is the table column denoting the role_suite relation/edge.
 	RoleSuiteColumn = "target_suite_id"
-	// PermissionHistoriesTable is the table that holds the permission_histories relation/edge.
-	PermissionHistoriesTable = "authz_permission_histories"
-	// PermissionHistoriesInverseTable is the table name for the PermissionHistory entity.
-	// It exists in this package in order to avoid circular dependency with the "permissionhistory" package.
-	PermissionHistoriesInverseTable = "authz_permission_histories"
-	// PermissionHistoriesColumn is the table column denoting the permission_histories relation/edge.
-	PermissionHistoriesColumn = "revoke_request_id"
 )
 
 // Columns holds all SQL columns for revokerequest fields.
@@ -77,7 +81,9 @@ var Columns = []string{
 	FieldReceiverID,
 	FieldTargetType,
 	FieldTargetRoleID,
+	FieldTargetRoleName,
 	FieldTargetSuiteID,
+	FieldTargetSuiteName,
 	FieldStatus,
 }
 
@@ -191,14 +197,38 @@ func ByTargetRoleID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTargetRoleID, opts...).ToFunc()
 }
 
+// ByTargetRoleName orders the results by the target_role_name field.
+func ByTargetRoleName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTargetRoleName, opts...).ToFunc()
+}
+
 // ByTargetSuiteID orders the results by the target_suite_id field.
 func ByTargetSuiteID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTargetSuiteID, opts...).ToFunc()
 }
 
+// ByTargetSuiteName orders the results by the target_suite_name field.
+func ByTargetSuiteName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTargetSuiteName, opts...).ToFunc()
+}
+
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByPermissionHistoriesCount orders the results by permission_histories count.
+func ByPermissionHistoriesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPermissionHistoriesStep(), opts...)
+	}
+}
+
+// ByPermissionHistories orders the results by permission_histories terms.
+func ByPermissionHistories(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPermissionHistoriesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
 }
 
 // ByRoleField orders the results by role field.
@@ -215,18 +245,17 @@ func ByRoleSuiteField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByPermissionHistoriesCount orders the results by permission_histories count.
-func ByPermissionHistoriesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newPermissionHistoriesStep(), opts...)
-	}
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewPermissionHistoriesStepNikki() *sqlgraph.Step {
+	return newPermissionHistoriesStep()
 }
 
-// ByPermissionHistories orders the results by permission_histories terms.
-func ByPermissionHistories(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newPermissionHistoriesStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
+func newPermissionHistoriesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PermissionHistoriesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, PermissionHistoriesTable, PermissionHistoriesColumn),
+	)
 }
 
 // Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
@@ -252,18 +281,5 @@ func newRoleSuiteStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RoleSuiteInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, RoleSuiteTable, RoleSuiteColumn),
-	)
-}
-
-// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
-func NewPermissionHistoriesStepNikki() *sqlgraph.Step {
-	return newPermissionHistoriesStep()
-}
-
-func newPermissionHistoriesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(PermissionHistoriesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, true, PermissionHistoriesTable, PermissionHistoriesColumn),
 	)
 }

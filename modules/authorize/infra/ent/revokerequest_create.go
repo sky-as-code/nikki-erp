@@ -103,6 +103,12 @@ func (rrc *RevokeRequestCreate) SetNillableTargetRoleID(s *string) *RevokeReques
 	return rrc
 }
 
+// SetTargetRoleName sets the "target_role_name" field.
+func (rrc *RevokeRequestCreate) SetTargetRoleName(s string) *RevokeRequestCreate {
+	rrc.mutation.SetTargetRoleName(s)
+	return rrc
+}
+
 // SetTargetSuiteID sets the "target_suite_id" field.
 func (rrc *RevokeRequestCreate) SetTargetSuiteID(s string) *RevokeRequestCreate {
 	rrc.mutation.SetTargetSuiteID(s)
@@ -117,6 +123,12 @@ func (rrc *RevokeRequestCreate) SetNillableTargetSuiteID(s *string) *RevokeReque
 	return rrc
 }
 
+// SetTargetSuiteName sets the "target_suite_name" field.
+func (rrc *RevokeRequestCreate) SetTargetSuiteName(s string) *RevokeRequestCreate {
+	rrc.mutation.SetTargetSuiteName(s)
+	return rrc
+}
+
 // SetStatus sets the "status" field.
 func (rrc *RevokeRequestCreate) SetStatus(r revokerequest.Status) *RevokeRequestCreate {
 	rrc.mutation.SetStatus(r)
@@ -127,6 +139,21 @@ func (rrc *RevokeRequestCreate) SetStatus(r revokerequest.Status) *RevokeRequest
 func (rrc *RevokeRequestCreate) SetID(s string) *RevokeRequestCreate {
 	rrc.mutation.SetID(s)
 	return rrc
+}
+
+// AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by IDs.
+func (rrc *RevokeRequestCreate) AddPermissionHistoryIDs(ids ...string) *RevokeRequestCreate {
+	rrc.mutation.AddPermissionHistoryIDs(ids...)
+	return rrc
+}
+
+// AddPermissionHistories adds the "permission_histories" edges to the PermissionHistory entity.
+func (rrc *RevokeRequestCreate) AddPermissionHistories(p ...*PermissionHistory) *RevokeRequestCreate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return rrc.AddPermissionHistoryIDs(ids...)
 }
 
 // SetRoleID sets the "role" edge to the Role entity by ID.
@@ -165,21 +192,6 @@ func (rrc *RevokeRequestCreate) SetNillableRoleSuiteID(id *string) *RevokeReques
 // SetRoleSuite sets the "role_suite" edge to the RoleSuite entity.
 func (rrc *RevokeRequestCreate) SetRoleSuite(r *RoleSuite) *RevokeRequestCreate {
 	return rrc.SetRoleSuiteID(r.ID)
-}
-
-// AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by IDs.
-func (rrc *RevokeRequestCreate) AddPermissionHistoryIDs(ids ...string) *RevokeRequestCreate {
-	rrc.mutation.AddPermissionHistoryIDs(ids...)
-	return rrc
-}
-
-// AddPermissionHistories adds the "permission_histories" edges to the PermissionHistory entity.
-func (rrc *RevokeRequestCreate) AddPermissionHistories(p ...*PermissionHistory) *RevokeRequestCreate {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return rrc.AddPermissionHistoryIDs(ids...)
 }
 
 // Mutation returns the RevokeRequestMutation object of the builder.
@@ -244,6 +256,12 @@ func (rrc *RevokeRequestCreate) check() error {
 		if err := revokerequest.TargetTypeValidator(v); err != nil {
 			return &ValidationError{Name: "target_type", err: fmt.Errorf(`ent: validator failed for field "RevokeRequest.target_type": %w`, err)}
 		}
+	}
+	if _, ok := rrc.mutation.TargetRoleName(); !ok {
+		return &ValidationError{Name: "target_role_name", err: errors.New(`ent: missing required field "RevokeRequest.target_role_name"`)}
+	}
+	if _, ok := rrc.mutation.TargetSuiteName(); !ok {
+		return &ValidationError{Name: "target_suite_name", err: errors.New(`ent: missing required field "RevokeRequest.target_suite_name"`)}
 	}
 	if _, ok := rrc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "RevokeRequest.status"`)}
@@ -316,9 +334,33 @@ func (rrc *RevokeRequestCreate) createSpec() (*RevokeRequest, *sqlgraph.CreateSp
 		_spec.SetField(revokerequest.FieldTargetType, field.TypeEnum, value)
 		_node.TargetType = value
 	}
+	if value, ok := rrc.mutation.TargetRoleName(); ok {
+		_spec.SetField(revokerequest.FieldTargetRoleName, field.TypeString, value)
+		_node.TargetRoleName = value
+	}
+	if value, ok := rrc.mutation.TargetSuiteName(); ok {
+		_spec.SetField(revokerequest.FieldTargetSuiteName, field.TypeString, value)
+		_node.TargetSuiteName = value
+	}
 	if value, ok := rrc.mutation.Status(); ok {
 		_spec.SetField(revokerequest.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
+	}
+	if nodes := rrc.mutation.PermissionHistoriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   revokerequest.PermissionHistoriesTable,
+			Columns: []string{revokerequest.PermissionHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := rrc.mutation.RoleIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -352,22 +394,6 @@ func (rrc *RevokeRequestCreate) createSpec() (*RevokeRequest, *sqlgraph.CreateSp
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.TargetSuiteID = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := rrc.mutation.PermissionHistoriesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   revokerequest.PermissionHistoriesTable,
-			Columns: []string{revokerequest.PermissionHistoriesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
