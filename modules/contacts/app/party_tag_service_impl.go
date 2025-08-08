@@ -30,83 +30,83 @@ type PartyTagServiceImpl struct {
 	eventBus event.EventBus
 }
 
-func (this *PartyTagServiceImpl) TagSvc() tag.TagService {
-	return this.tagSvc
+func (pts *PartyTagServiceImpl) TagSvc() tag.TagService {
+	return pts.tagSvc
 }
 
-func (this *PartyTagServiceImpl) CreatePartyTag(ctx context.Context, cmd it.CreatePartyTagCommand) (result *it.CreatePartyTagResult, err error) {
+func (pts *PartyTagServiceImpl) CreatePartyTag(ctx context.Context, cmd it.CreatePartyTagCommand) (result *it.CreatePartyTagResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "create party tag"); e != nil {
 			err = e
 		}
 	}()
 
-	result, err = this.tagSvc.CreateTag(ctx, cmd.ToTagCommand())
+	result, err = pts.tagSvc.CreateTag(ctx, cmd.ToTagCommand())
 	ft.PanicOnErr(err)
 
 	return result, err
 }
 
-func (this *PartyTagServiceImpl) UpdatePartyTag(ctx context.Context, cmd it.UpdatePartyTagCommand) (result *it.UpdatePartyTagResult, err error) {
+func (pts *PartyTagServiceImpl) UpdatePartyTag(ctx context.Context, cmd it.UpdatePartyTagCommand) (result *it.UpdatePartyTagResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "update party tag"); e != nil {
 			err = e
 		}
 	}()
 
-	result, err = this.tagSvc.UpdateTag(ctx, cmd.ToTagCommand())
+	result, err = pts.tagSvc.UpdateTag(ctx, cmd.ToTagCommand())
 	ft.PanicOnErr(err)
 
 	return result, err
 }
 
-func (this *PartyTagServiceImpl) DeletePartyTag(ctx context.Context, cmd it.DeletePartyTagCommand) (result *it.DeletePartyTagResult, err error) {
+func (pts *PartyTagServiceImpl) DeletePartyTag(ctx context.Context, cmd it.DeletePartyTagCommand) (result *it.DeletePartyTagResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "delete party tag"); e != nil {
 			err = e
 		}
 	}()
 
-	result, err = this.tagSvc.DeleteTag(ctx, cmd.ToTagCommand())
+	result, err = pts.tagSvc.DeleteTag(ctx, cmd.ToTagCommand())
 	ft.PanicOnErr(err)
 
 	return result, err
 }
 
-func (this *PartyTagServiceImpl) PartyTagExistsMulti(ctx context.Context, query it.PartyTagExistsMultiQuery) (result *it.PartyTagExistsMultiResult, err error) {
+func (pts *PartyTagServiceImpl) PartyTagExistsMulti(ctx context.Context, query it.PartyTagExistsMultiQuery) (result *it.PartyTagExistsMultiResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "check if party tags exist"); e != nil {
 			err = e
 		}
 	}()
 
-	result, err = this.tagSvc.TagExistsMulti(ctx, query.ToTagQuery())
+	result, err = pts.tagSvc.TagExistsMulti(ctx, query.ToTagQuery())
 	ft.PanicOnErr(err)
 
 	return result, err
 }
 
-func (this *PartyTagServiceImpl) GetPartyTagById(ctx context.Context, query it.GetPartyByIdTagQuery) (result *it.GetPartyTagByIdResult, err error) {
+func (pts *PartyTagServiceImpl) GetPartyTagById(ctx context.Context, query it.GetPartyByIdTagQuery) (result *it.GetPartyTagByIdResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "get party tag"); e != nil {
 			err = e
 		}
 	}()
 
-	result, err = this.tagSvc.GetTagById(ctx, query.ToTagQuery())
+	result, err = pts.tagSvc.GetTagById(ctx, query.ToTagQuery())
 	ft.PanicOnErr(err)
 
 	return result, err
 }
 
-func (this *PartyTagServiceImpl) ListPartyTags(ctx context.Context, query it.ListPartyTagsQuery) (result *it.ListPartyTagsResult, err error) {
+func (pts *PartyTagServiceImpl) ListPartyTags(ctx context.Context, query it.ListPartyTagsQuery) (result *it.ListPartyTagsResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "list party tags"); e != nil {
 			err = e
 		}
 	}()
 
-	result, err = this.tagSvc.ListTags(ctx, query.ToTagQuery())
+	result, err = pts.tagSvc.ListTags(ctx, query.ToTagQuery())
 	ft.PanicOnErr(err)
 
 	return result, err
