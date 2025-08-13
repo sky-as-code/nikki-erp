@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
@@ -13,6 +14,7 @@ import (
 	entEffectiveGroup "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/effectivegroupentitlement"
 	entEffectiveUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/effectiveuserentitlement"
 	entAssign "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
+	entPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
 )
 
@@ -96,6 +98,44 @@ func (this *EntitlementAssignmentEntRepository) DeleteHard(ctx context.Context, 
 	return this.client.EntitlementAssignment.Delete().
 		Where(entAssign.IDEQ(param.Id)).
 		Exec(ctx)
+}
+
+func (this *EntitlementAssignmentEntRepository) DeleteHardTx(ctx context.Context, param it.DeleteEntitlementAssignmentByIdQuery) (int, error) {
+	tx, err := this.client.Tx(ctx)
+	fault.PanicOnErr(err)
+
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "delete entitlement assignment transaction"); e != nil {
+			_ = tx.Rollback()
+			err = e
+		}
+	}()
+
+	err = this.setEntitlementAssignmentIdNullTx(ctx, tx, param.Id)
+	fault.PanicOnErr(err)
+
+	deletedCount, err := this.deleteEntitlementAssignmentTx(ctx, tx, param.Id)
+	fault.PanicOnErr(err)
+
+	fault.PanicOnErr(tx.Commit())
+	return deletedCount, nil
+}
+
+func (this *EntitlementAssignmentEntRepository) deleteEntitlementAssignmentTx(ctx context.Context, tx *ent.Tx, entitlementAssignmentId model.Id) (int, error) {
+	deletedCount, err := tx.EntitlementAssignment.
+		Delete().
+		Where(entAssign.IDEQ(entitlementAssignmentId)).
+		Exec(ctx)
+	return deletedCount, err
+}
+
+func (this *EntitlementAssignmentEntRepository) setEntitlementAssignmentIdNullTx(ctx context.Context, tx *ent.Tx, entitlementAssignmentId string) error {
+	_, err := tx.PermissionHistory.
+		Update().
+		Where(entPermissionHistory.EntitlementAssignmentIDEQ(entitlementAssignmentId)).
+		ClearEntitlementAssignmentID().
+		Save(ctx)
+	return err
 }
 
 func (this *EntitlementAssignmentEntRepository) getUserEffectiveEntitlements(ctx context.Context, userId model.Id) ([]*domain.EntitlementAssignment, error) {

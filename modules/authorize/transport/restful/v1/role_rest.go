@@ -72,6 +72,29 @@ func (this RoleRest) UpdateRole(echoCtx echo.Context) (err error) {
 	return err
 }
 
+func (this RoleRest) DeleteRoleHard(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete role hard"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.roleService.DeleteRoleHard,
+		func(request DeleteRoleHardRequest) it.DeleteRoleHardCommand {
+			return it.DeleteRoleHardCommand(request)
+		},
+		func(result it.DeleteRoleHardResult) DeleteRoleHardResponse {
+			response := DeleteRoleHardResponse{}
+			response.FromNonEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
 func (this RoleRest) GetRoleById(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get role by id"); e != nil {

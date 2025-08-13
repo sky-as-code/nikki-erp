@@ -17,6 +17,7 @@ func init() {
 	var req cqrs.Request
 	req = (*CreateRoleCommand)(nil)
 	req = (*UpdateRoleCommand)(nil)
+	req = (*DeleteRoleHardCommand)(nil)
 	req = (*GetRoleByNameCommand)(nil)
 	req = (*GetRoleByIdQuery)(nil)
 	req = (*SearchRolesQuery)(nil)
@@ -75,6 +76,33 @@ func (UpdateRoleCommand) CqrsRequestType() cqrs.RequestType {
 type UpdateRoleResult = crud.OpResult[*domain.Role]
 
 // END: UpdateRoleCommand
+
+// START: DeleteRoleHardCommand
+var deleteRoleHardCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role",
+	Action:    "deleteHard",
+}
+
+type DeleteRoleHardCommand struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (DeleteRoleHardCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteRoleHardCommandType
+}
+
+func (this DeleteRoleHardCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type DeleteRoleHardResult = crud.DeletionResult
+
+// END: DeleteRoleHardCommand
 
 // START: GetRoleByIdQuery
 var getRoleByIdQueryType = cqrs.RequestType{

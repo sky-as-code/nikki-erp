@@ -1,11 +1,11 @@
 meta {
-  name: Role Update - Client error (Not found Role)
+  name: Role - Update
   type: http
-  seq: 5
+  seq: 2
 }
 
 put {
-  url: {{api_host}}/v1/authorize/roles/01K1T6FJS0Y9629N12NOTFOUND
+  url: {{api_host}}/v1/authorize/roles/{{role_id}}
   body: json
   auth: inherit
 }
@@ -15,7 +15,6 @@ body:json {
     "name": "Name update",
     "description": "descriptopn",
     "entitlementIds": [
-      "01JWP8KP39GKAH67FEAC7TZ631",
       "{{entitlement_id}}"
     ],
     "etag": "{{etag}}"

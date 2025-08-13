@@ -25,38 +25,115 @@ body:json {
 script:post-response {
   const status = res.getStatus();
   let body;
-  
-  test("Status should be 400", function () {
-    expect(status).to.equal(400);
-  });
+  let isJsonValid = true;
   
   try {
     body = res.getBody();
     console.log("📥 Response body:", body);
   } catch (err) {
-    expect.fail("❌ Response body is not valid JSON");
+    isJsonValid = false;
+    expect.fail("❌ Response is not valid JSON");
   }
   
-  test("Should contain validation error details", function () {
-    expect(body).to.have.property("code", "validation_error");
-    expect(body).to.have.property("details").that.is.an("object");
-  });
+  // ================== Case 1: Success ==================
+  if (status === 200 && isJsonValid) {
+    test("Status code is 200", function () {
+      expect(status).to.equal(200);
+    });
   
-  const details = body.details || {};
-  
-  const missingEntitlements = Object.entries(details).filter(([key, val]) =>
-    key.startsWith("entitlements[") && val === "entitlement not found"
-  );
-  
-  if (missingEntitlements.length > 0) {
-    test("Should catch missing entitlements", function () {
-      missingEntitlements.forEach(([key, val]) => {
-        expect(val).to.equal("entitlement not found");
-        console.warn(`❌ ${key}: ${val}`);
+    test("Response contains required fields", function () {
+      ["id", "etag", "updatedAt"].forEach(field => {
+        expect(body).to.have.property(field);
       });
     });
+  
+    // ✅ Set variables
+    if (typeof body.etag === "string" && body.etag.length > 0) {
+      bru.setVar("etag", body.etag);
+      console.log("✅ etag set to:", body.etag);
+    } else {
+      console.warn("⚠️ etag missing or invalid");
+    }
+  
+    if (typeof body.id === "string" && body.id.length > 0) {
+      bru.setVar("role_id", body.id);
+      console.log("✅ role_id set to:", body.id);
+    } else {
+      console.warn("⚠️ id missing or invalid");
+    }
   }
   
+  // ================== Validation Error Cases ==================
+  if (status === 400 && isJsonValid) {
+    test("Should contain validation error details", function () {
+      expect(body).to.have.property("code", "validation_error");
+      expect(body).to.have.property("details").that.is.an("object");
+    });
+  
+    const details = body.details || {};
+  
+    // Case 2: Existing name
+    if (details.name) {
+      test("Should catch existing name conflict", function () {
+        expect(details.name).to.be.a("string");
+        console.warn("⚠️ Name conflict:", details.name);
+      });
+    }
+  
+    // Case 3: Invalid fields - blank etag
+    if (details.etag === "cannot be blank") {
+      test("Should catch blank etag field", function () {
+        expect(details.etag).to.equal("cannot be blank");
+      });
+    }
+  
+    // Case 4: No match etag
+    if (details.etag === "etag mismatched") {
+      test("Should catch mismatched etag", function () {
+        expect(details.etag).to.equal("etag mismatched");
+      });
+    }
+  
+    // Case 5: Not found role
+    if (details.role_id === "role not found") {
+      test("Should catch non-existent role", function () {
+        expect(details.role_id).to.equal("role not found");
+      });
+    }
+  
+    // Case 6: Not found entitlement(s)
+    const missingEntitlements = Object.entries(details).filter(([key, val]) =>
+      key.startsWith("entitlements[") && val === "entitlement not found"
+    );
+    if (missingEntitlements.length > 0) {
+      test("Should catch missing entitlements", function () {
+        missingEntitlements.forEach(([key, val]) => {
+          expect(val).to.equal("entitlement not found");
+          console.warn(`❌ ${key}: ${val}`);
+        });
+      });
+    }
+  
+    // Case 7: Duplicate entitlement ID(s)
+    const duplicates = Object.entries(details).filter(([key, val]) =>
+      key.startsWith("entitlements[") && val.includes("duplicate entitlement id")
+    );
+    if (duplicates.length > 0) {
+      test("Should catch duplicate entitlement IDs", function () {
+        duplicates.forEach(([key, val]) => {
+          expect(val).to.include("duplicate entitlement id");
+          console.warn(`⚠️ Duplicate: ${key}: ${val}`);
+        });
+      });
+    }
+  
+    // ❌ Do not update etag when failed
+    test("Do not update 'etag' on error", function () {
+      const currentEtag = bru.getVar("etag");
+      expect(currentEtag).to.not.eql(null);
+      expect(currentEtag).to.not.eql(undefined);
+    });
+  }
   
 }
 

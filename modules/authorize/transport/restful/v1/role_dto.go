@@ -46,6 +46,9 @@ type CreateRoleResponse = httpserver.RestCreateResponse
 type UpdateRoleRequest = it.UpdateRoleCommand
 type UpdateRoleResponse = httpserver.RestUpdateResponse
 
+type DeleteRoleHardRequest = it.DeleteRoleHardCommand
+type DeleteRoleHardResponse = httpserver.RestDeleteResponse
+
 type GetRoleByIdRequest = it.GetRoleByIdQuery
 type GetRoleByIdResponse = RoleDto
 

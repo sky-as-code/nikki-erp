@@ -16,6 +16,8 @@ func init() {
 	// Assert interface implementation
 	var req cqrs.Request
 	req = (*CreateRoleSuiteCommand)(nil)
+	req = (*UpdateRoleSuiteCommand)(nil)
+	req = (*DeleteRoleSuiteCommand)(nil)
 	req = (*GetRoleSuiteByIdQuery)(nil)
 	req = (*SearchRoleSuitesCommand)(nil)
 	req = (*GetRoleSuitesBySubjectQuery)(nil)
@@ -39,7 +41,7 @@ type CreateRoleSuiteCommand struct {
 	IsRequiredComment    *bool    `json:"isRequiredComment,omitempty"`
 	CreatedBy            model.Id `json:"createdBy"`
 
-	Roles []*model.Id `json:"roles,omitempty"`
+	RoleIds []model.Id `json:"roleIds,omitempty"`
 }
 
 func (CreateRoleSuiteCommand) CqrsRequestType() cqrs.RequestType {
@@ -49,6 +51,57 @@ func (CreateRoleSuiteCommand) CqrsRequestType() cqrs.RequestType {
 type CreateRoleSuiteResult = crud.OpResult[*domain.RoleSuite]
 
 // END: CreateRoleSuiteCommand
+
+// START: UpdateRoleSuiteCommand
+var updateRoleSuiteCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role_suite",
+	Action:    "update",
+}
+
+type UpdateRoleSuiteCommand struct {
+	Id          model.Id   `param:"id" json:"id"`
+	Etag        model.Etag `json:"etag"`
+	Name        *string    `json:"name,omitempty"`
+	Description *string    `json:"description,omitempty"`
+
+	RoleIds []model.Id `json:"roleIds,omitempty"`
+}
+
+func (UpdateRoleSuiteCommand) CqrsRequestType() cqrs.RequestType {
+	return updateRoleSuiteCommandType
+}
+
+type UpdateRoleSuiteResult = crud.OpResult[*domain.RoleSuite]
+
+// END: UpdateRoleSuiteCommand
+
+// START: DeleteRoleSuiteCommand
+var deleteRoleSuiteCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role_suite",
+	Action:    "delete",
+}
+
+type DeleteRoleSuiteCommand struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (DeleteRoleSuiteCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteRoleSuiteCommandType
+}
+
+func (this DeleteRoleSuiteCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type DeleteRoleSuiteResult = crud.DeletionResult
+
+// END: DeleteRoleSuiteCommand
 
 // START: GetRoleSuiteByIdQuery
 var getRoleSuiteByIdQueryType = cqrs.RequestType{
