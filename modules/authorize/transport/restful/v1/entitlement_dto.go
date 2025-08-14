@@ -21,9 +21,14 @@ type EntitlementDto struct {
 	ActionExpr  *string   `json:"actionExpr,omitempty"`
 	CreatedBy   model.Id  `json:"createdBy"`
 
-	Resource *ResourceDto `json:"resource,omitempty"`
-	Action   *ActionDto   `json:"action,omitempty"`
-	Subject  []Subject    `json:"subject,omitempty"`
+	Resource *ResourceSummaryDto `json:"resource,omitempty"`
+	Action   *ActionSummaryDto   `json:"action,omitempty"`
+	Subject  []Subject           `json:"subject,omitempty"`
+}
+
+type EntitlementSummaryDto struct {
+	Id   model.Id `json:"id"`
+	Name string   `json:"name"`
 }
 
 type Subject struct {
@@ -37,14 +42,19 @@ func (this *EntitlementDto) FromEntitlement(entitlement domain.Entitlement) {
 	model.MustCopy(entitlement, this)
 
 	if entitlement.Resource != nil {
-		this.Resource = &ResourceDto{}
+		this.Resource = &ResourceSummaryDto{}
 		this.Resource.FromResource(*entitlement.Resource)
 	}
 
 	if entitlement.Action != nil {
-		this.Action = &ActionDto{}
+		this.Action = &ActionSummaryDto{}
 		this.Action.FromAction(*entitlement.Action)
 	}
+}
+
+func (this *EntitlementSummaryDto) FromEntitlement(entitlement *domain.Entitlement) {
+	this.Id = *entitlement.Id
+	this.Name = *entitlement.Name
 }
 
 type CreateEntitlementRequest = it.CreateEntitlementCommand

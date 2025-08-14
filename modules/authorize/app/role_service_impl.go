@@ -224,11 +224,6 @@ func (this *RoleServiceImpl) GetRoleById(ctx context.Context, query itRole.GetRo
 
 	entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, dbRole)
 	fault.PanicOnErr(err)
-	if vErrs.Count() > 0 {
-		return &itRole.GetRoleByIdResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
 
 	if len(entitlementIds) > 0 {
 		entitlements, err := this.getEntitlements(ctx, entitlementIds)
@@ -270,20 +265,14 @@ func (this *RoleServiceImpl) SearchRoles(ctx context.Context, query itRole.Searc
 	})
 	fault.PanicOnErr(err)
 
-	for _, role := range roles.Items {
-		entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, &role)
+	for i := range roles.Items {
+		entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, &roles.Items[i])
 		fault.PanicOnErr(err)
-
-		if vErrsModel.Count() > 0 {
-			return &itRole.SearchRolesResult{
-				ClientError: vErrsModel.ToClientError(),
-			}, nil
-		}
 
 		if len(entitlementIds) > 0 {
 			entitlements, err := this.getEntitlements(ctx, entitlementIds)
 			fault.PanicOnErr(err)
-			role.Entitlements = entitlements
+			roles.Items[i].Entitlements = entitlements
 		}
 	}
 
@@ -407,7 +396,7 @@ func (this *RoleServiceImpl) validateEntitlements(ctx context.Context, entitleme
 	}
 }
 
-func (this *RoleServiceImpl) getEntitlementIdsByRoleId(ctx context.Context, role *domain.Role) ([]model.Id, error) {
+func (this *RoleServiceImpl) getAssignmentsByRoleId(ctx context.Context, role *domain.Role) ([]*domain.EntitlementAssignment, error) {
 	assignmentsRes, err := this.assignmentRepo.FindAllBySubject(
 		ctx,
 		itAssign.GetAllEntitlementAssignmentBySubjectQuery{
@@ -415,6 +404,12 @@ func (this *RoleServiceImpl) getEntitlementIdsByRoleId(ctx context.Context, role
 			SubjectRef:  *role.Id,
 		})
 	fault.PanicOnErr(err)
+
+	return assignmentsRes, nil
+}
+
+func (this *RoleServiceImpl) getEntitlementIdsByRoleId(ctx context.Context, role *domain.Role) ([]model.Id, error) {
+	assignmentsRes, err := this.getAssignmentsByRoleId(ctx, role)
 
 	if len(assignmentsRes) == 0 {
 		return nil, err
@@ -438,13 +433,7 @@ func (this *RoleServiceImpl) getEntitlementIdsByRoleId(ctx context.Context, role
 }
 
 func (this *RoleServiceImpl) getAssignmentIdsByRoleId(ctx context.Context, role *domain.Role) ([]model.Id, error) {
-	assignmentsRes, err := this.assignmentRepo.FindAllBySubject(
-		ctx,
-		itAssign.GetAllEntitlementAssignmentBySubjectQuery{
-			SubjectType: *domain.WrapEntitlementAssignmentSubjectType(domain.EntitlementAssignmentSubjectTypeNikkiRole.String()),
-			SubjectRef:  *role.Id,
-		})
-	fault.PanicOnErr(err)
+	assignmentsRes, err := this.getAssignmentsByRoleId(ctx, role)
 
 	if len(assignmentsRes) == 0 {
 		return nil, err
@@ -470,10 +459,6 @@ func (this *RoleServiceImpl) getAssignmentIdsByRoleId(ctx context.Context, role 
 func (this *RoleServiceImpl) getEntitlements(ctx context.Context, entitlementIds []model.Id) ([]domain.Entitlement, error) {
 	entitlementsRes, err := this.entitlementRepo.FindAllByIds(ctx, itEntitlement.GetAllEntitlementByIdsQuery{Ids: entitlementIds})
 	fault.PanicOnErr(err)
-
-	if entitlementsRes != nil {
-		return nil, err
-	}
 
 	return entitlementsRes, nil
 }

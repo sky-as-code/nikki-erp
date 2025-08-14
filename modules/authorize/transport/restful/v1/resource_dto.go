@@ -19,7 +19,12 @@ type ResourceDto struct {
 	ResourceRef  string  `json:"resourceRef"`
 	ScopeType    string  `json:"scopeType"`
 
-	Actions []ActionDto `json:"actions,omitempty"`
+	Actions []ActionSummaryDto `json:"actions,omitempty"`
+}
+
+type ResourceSummaryDto struct {
+	Id   model.Id `json:"id"`
+	Name string   `json:"name"`
 }
 
 func (this *ResourceDto) FromResource(resource domain.Resource) {
@@ -28,12 +33,17 @@ func (this *ResourceDto) FromResource(resource domain.Resource) {
 	model.MustCopy(resource, this)
 
 	if resource.Actions != nil {
-		this.Actions = array.Map(resource.Actions, func(action domain.Action) ActionDto {
-			actionDto := ActionDto{}
+		this.Actions = array.Map(resource.Actions, func(action domain.Action) ActionSummaryDto {
+			actionDto := ActionSummaryDto{}
 			actionDto.FromAction(action)
 			return actionDto
 		})
 	}
+}
+
+func (this *ResourceSummaryDto) FromResource(resource domain.Resource) {
+	this.Id = *resource.Id
+	this.Name = *resource.Name
 }
 
 type CreateResourceRequest = it.CreateResourceCommand

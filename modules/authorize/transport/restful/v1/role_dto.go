@@ -25,7 +25,12 @@ type RoleDto struct {
 	IsRequiredComment    bool     `json:"isRequiredComment"`
 	CreatedBy            model.Id `json:"createdBy"`
 
-	Entitlements []EntitlementDto `json:"entitlements,omitempty"`
+	Entitlements []EntitlementSummaryDto `json:"entitlements,omitempty"`
+}
+
+type RoleSummaryDto struct {
+	Id   model.Id `json:"id"`
+	Name string   `json:"name"`
 }
 
 func (this *RoleDto) FromRole(role domain.Role) {
@@ -33,11 +38,16 @@ func (this *RoleDto) FromRole(role domain.Role) {
 	model.MustCopy(role.ModelBase, this)
 	model.MustCopy(role, this)
 
-	this.Entitlements = array.Map(role.Entitlements, func(entitlement domain.Entitlement) EntitlementDto {
-		entitlementItem := EntitlementDto{}
-		entitlementItem.FromEntitlement(entitlement)
+	this.Entitlements = array.Map(role.Entitlements, func(entitlement domain.Entitlement) EntitlementSummaryDto {
+		entitlementItem := EntitlementSummaryDto{}
+		entitlementItem.FromEntitlement(&entitlement)
 		return entitlementItem
 	})
+}
+
+func (this *RoleSummaryDto) FromRole(role *domain.Role) {
+	this.Id = *role.Id
+	this.Name = *role.Name
 }
 
 type CreateRoleRequest = it.CreateRoleCommand

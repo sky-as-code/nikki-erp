@@ -22,7 +22,7 @@ type RoleSuiteDto struct {
 	IsRequiredComment    *bool    `json:"isRequiredComment,omitempty"`
 	CreatedBy            model.Id `json:"createdBy"`
 
-	Roles []RoleDto `json:"roles,omitempty"`
+	Roles []RoleSummaryDto `json:"roles,omitempty"`
 }
 
 func (this *RoleSuiteDto) FromRoleSuite(roleSuite domain.RoleSuite) {
@@ -30,9 +30,9 @@ func (this *RoleSuiteDto) FromRoleSuite(roleSuite domain.RoleSuite) {
 	model.MustCopy(roleSuite.ModelBase, this)
 	model.MustCopy(roleSuite, this)
 
-	this.Roles = array.Map(roleSuite.Roles, func(role domain.Role) RoleDto {
-		item := RoleDto{}
-		item.FromRole(role)
+	this.Roles = array.Map(roleSuite.Roles, func(role domain.Role) RoleSummaryDto {
+		item := RoleSummaryDto{}
+		item.FromRole(&role)
 		return item
 	})
 }
