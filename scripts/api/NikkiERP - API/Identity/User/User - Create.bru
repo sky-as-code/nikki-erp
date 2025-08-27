@@ -12,46 +12,17 @@ post {
 
 body:json {
   {
-      "displayName": "John Doe",
-      "email": "john.doe@nikkierp.com",
+      "displayName": "{{$randomFullName}}",
+      "email": "{{$randomEmail}}",
       "password": "p@sswo0rd"
   }
 }
 
-script:pre-request {
-  const payload = JSON.parse(rawBody);
-  
-  // Generate a 6-char alphanumeric string
-  function randomString(length = 6) {
-      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let result = '';
-      for (let i = 0; i < length; i++) {
-          result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return result;
-  }
-  
-  const rand = randomString();
-  
-  if (payload.displayName) {
-      payload.displayName += ' ' + rand;
-  }
-  if (payload.email && payload.email.includes('@')) {
-      const [local, domain] = payload.email.split('@');
-      payload.email = `${local}-${rand}@${domain}`;
-  }
-  
-  // Write modified payload back to request
-  req.getBody().raw = JSON.stringify(payload, null, 2);
-  
-}
-
 script:post-response {
-  const requestBody = JSON.parse(req.getBody().raw);
+  const requestBody = req.getBody();
   bru.setVar('email', requestBody.email);
   
-  const payload = res.getBody();
-  const { id, etag } = payload;
+  const { id, etag } = res.getBody();
   id && bru.setVar('user_id', id);
   etag && bru.setVar('etag', etag);
 }

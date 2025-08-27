@@ -45,6 +45,7 @@ func entToOrganizations(dbOrgs []*ent.Organization) []domain.Organization {
 func entToUser(dbUser *ent.User) *domain.User {
 	user := &domain.User{}
 	model.MustCopy(dbUser, user)
+	user.AvatarUrl = dbUser.AvatarURL
 
 	if dbUser.Edges.Groups != nil {
 		user.Groups = entToGroups(dbUser.Edges.Groups)

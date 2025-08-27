@@ -1,19 +1,17 @@
 package repository
 
 import (
-	"context"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
-
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
+	crud "github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewEntitlementEntRepository(client *ent.Client) it.EntitlementRepository {
@@ -26,7 +24,7 @@ type EntitlementEntRepository struct {
 	client *ent.Client
 }
 
-func (this *EntitlementEntRepository) Create(ctx context.Context, entitlement domain.Entitlement) (*domain.Entitlement, error) {
+func (this *EntitlementEntRepository) Create(ctx crud.Context, entitlement domain.Entitlement) (*domain.Entitlement, error) {
 	creation := this.client.Entitlement.Create().
 		SetID(*entitlement.Id).
 		SetEtag(*entitlement.Etag).
@@ -42,7 +40,7 @@ func (this *EntitlementEntRepository) Create(ctx context.Context, entitlement do
 	return database.Mutate(ctx, creation, ent.IsNotFound, entToEntitlement)
 }
 
-func (this *EntitlementEntRepository) Update(ctx context.Context, entitlement domain.Entitlement, prevEtag model.Etag) (*domain.Entitlement, error) {
+func (this *EntitlementEntRepository) Update(ctx crud.Context, entitlement domain.Entitlement, prevEtag model.Etag) (*domain.Entitlement, error) {
 	updation := this.client.Entitlement.UpdateOneID(*entitlement.Id).
 		SetEtag(*entitlement.Etag).
 		SetNillableDescription(entitlement.Description).
@@ -56,19 +54,19 @@ func (this *EntitlementEntRepository) Update(ctx context.Context, entitlement do
 	return database.Mutate(ctx, updation, ent.IsNotFound, entToEntitlement)
 }
 
-func (this *EntitlementEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+func (this *EntitlementEntRepository) DeleteHard(ctx crud.Context, param it.DeleteParam) (int, error) {
 	return this.client.Entitlement.Delete().
 		Where(entEntitlement.IDEQ(param.Id)).
 		Exec(ctx)
 }
 
-func (this *EntitlementEntRepository) Exists(ctx context.Context, param it.FindByIdParam) (bool, error) {
+func (this *EntitlementEntRepository) Exists(ctx crud.Context, param it.FindByIdParam) (bool, error) {
 	return this.client.Entitlement.Query().
 		Where(entEntitlement.ID(param.Id)).
 		Exist(ctx)
 }
 
-func (this *EntitlementEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Entitlement, error) {
+func (this *EntitlementEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.Entitlement, error) {
 	query := this.client.Entitlement.Query().
 		Where(entEntitlement.IDEQ(param.Id)).
 		WithAction().
@@ -77,34 +75,33 @@ func (this *EntitlementEntRepository) FindById(ctx context.Context, param it.Fin
 	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
 }
 
-func (this *EntitlementEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Entitlement, error) {
+func (this *EntitlementEntRepository) FindByName(ctx crud.Context, param it.FindByNameParam) (*domain.Entitlement, error) {
 	query := this.client.Entitlement.Query().
 		Where(entEntitlement.NameEQ(param.Name))
 
 	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
 }
 
-func (this *EntitlementEntRepository) FindAllByIds(ctx context.Context, param it.FindAllByIdsParam) ([]domain.Entitlement, error) {
+func (this *EntitlementEntRepository) FindAllByIds(ctx crud.Context, param it.FindAllByIdsParam) ([]domain.Entitlement, error) {
 	query := this.client.Entitlement.Query().
 		Where(entEntitlement.IDIn(param.Ids...))
 
 	return database.List(ctx, query, entToEntitlements)
 }
 
-func (this *EntitlementEntRepository) FindByActionExpr(ctx context.Context, param it.FindByActionExprParam) (*domain.Entitlement, error) {
+func (this *EntitlementEntRepository) FindByActionExpr(ctx crud.Context, param it.FindByActionExprParam) (*domain.Entitlement, error) {
 	query := this.client.Entitlement.Query().
 		Where(entEntitlement.ActionExprEQ(param.ActionExpr))
 
 	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
 }
 
-
 func (this *EntitlementEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
 	return database.ParseSearchGraphStr[ent.Entitlement, domain.Entitlement](criteria, entEntitlement.Label)
 }
 
 func (this *EntitlementEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.Entitlement], error) {
 	query := this.client.Entitlement.Query().
@@ -124,8 +121,8 @@ func (this *EntitlementEntRepository) Search(
 	)
 }
 
-// func (this *EntitlementEntRepository) getUserEffectiveEntitlements(ctx context.Context, subject domain.Subject) ([]domain.Entitlement, error) {
-// func (this *EntitlementEntRepository) getUserEffectiveEntitlements(ctx context.Context, userId model.Id) ([]domain.Entitlement, error) {
+// func (this *EntitlementEntRepository) getUserEffectiveEntitlements(ctx crud.Context, subject domain.Subject) ([]domain.Entitlement, error) {
+// func (this *EntitlementEntRepository) getUserEffectiveEntitlements(ctx crud.Context, userId model.Id) ([]domain.Entitlement, error) {
 // 	effectiveEnts, err := this.client.EffectiveEntitlement.
 // 		Query().
 // 		Where(entEff.UserIDEQ(userId.String())).

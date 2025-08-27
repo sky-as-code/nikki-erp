@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
-
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
@@ -21,6 +18,8 @@ import (
 	entRole "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
 	entRoleUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/roleuser"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewRoleEntRepository(client *ent.Client) it.RoleRepository {
@@ -203,7 +202,7 @@ func (this *RoleEntRepository) createRoleTx(ctx context.Context, tx *ent.Tx, rol
 		Save(ctx)
 }
 
-func (this *RoleEntRepository) createAssignmentTx(ctx context.Context, tx *ent.Tx, roleID model.Id, entitlementID model.Id) error {
+func (this *RoleEntRepository) createAssignmentTx(ctx crud.Context, tx *ent.Tx, roleID model.Id, entitlementID model.Id) error {
 	entitlement, err := tx.Entitlement.
 		Query().
 		Where(entEntitlement.IDEQ(entitlementID)).

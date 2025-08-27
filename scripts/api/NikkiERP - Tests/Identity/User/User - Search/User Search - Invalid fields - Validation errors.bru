@@ -30,23 +30,12 @@ script:post-response {
       },
   };
   
-  // Parse response body
-  let jsonData;
-  try {
-      jsonData = res.getBody();
-  } catch (e) {
-      test("Response is valid JSON", function () {
-          expect.fail("Response is not valid JSON");
-      });
-      return;
-  }
-  
   test("Status code is 400", function () {
       expect(res.getStatus()).to.equal(400);
   });
   
   test("Response body matches expected JSON exactly", function () {
-      expect(jsonData).to.eql(expected);
+      expect(res.getBody()).to.eql(expected);
   });
   
 }

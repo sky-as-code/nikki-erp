@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -11,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/infra/ent"
 	entPass "github.com/sky-as-code/nikki-erp/modules/authenticate/infra/ent/passwordstore"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/password"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
@@ -24,7 +24,7 @@ type PasswordStoreEntRepository struct {
 	client *ent.Client
 }
 
-func (this *PasswordStoreEntRepository) Create(ctx context.Context, pass domain.PasswordStore) (*domain.PasswordStore, error) {
+func (this *PasswordStoreEntRepository) Create(ctx crud.Context, pass domain.PasswordStore) (*domain.PasswordStore, error) {
 	creation := this.client.PasswordStore.Create().
 		SetID(*pass.Id).
 		SetNillablePasswordExpiredAt(pass.PasswordExpiredAt).
@@ -46,7 +46,7 @@ func (this *PasswordStoreEntRepository) Create(ctx context.Context, pass domain.
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToPasswordStore)
 }
 
-func (this *PasswordStoreEntRepository) Update(ctx context.Context, pass domain.PasswordStore) (*domain.PasswordStore, error) {
+func (this *PasswordStoreEntRepository) Update(ctx crud.Context, pass domain.PasswordStore) (*domain.PasswordStore, error) {
 	update := this.client.PasswordStore.UpdateOneID(*pass.Id)
 
 	if pass.Password != nil {
@@ -106,7 +106,7 @@ func (this *PasswordStoreEntRepository) Update(ctx context.Context, pass domain.
 	return db.Mutate(ctx, update, ent.IsNotFound, entToPasswordStore)
 }
 
-func (this *PasswordStoreEntRepository) FindBySubject(ctx context.Context, param it.FindBySubjectParam) (*domain.PasswordStore, error) {
+func (this *PasswordStoreEntRepository) FindBySubject(ctx crud.Context, param it.FindBySubjectParam) (*domain.PasswordStore, error) {
 	query := this.client.PasswordStore.Query().
 		Where(
 			entPass.SubjectRef(param.SubjectRef),

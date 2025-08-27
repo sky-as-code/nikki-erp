@@ -1,7 +1,6 @@
 package impl
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	it "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	i18n "github.com/sky-as-code/nikki-erp/modules/core/i18n/interfaces"
@@ -35,7 +35,7 @@ type EnumServiceImpl struct {
 	eventBus event.EventBus
 }
 
-func (this *EnumServiceImpl) CreateEnum(ctx context.Context, cmd it.CreateEnumCommand) (result *it.CreateEnumResult, err error) {
+func (this *EnumServiceImpl) CreateEnum(ctx crud.Context, cmd it.CreateEnumCommand) (result *it.CreateEnumResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "create "+cmd.EntityName); e != nil {
 			err = e
@@ -78,7 +78,7 @@ func (this *EnumServiceImpl) CreateEnum(ctx context.Context, cmd it.CreateEnumCo
 	}, err
 }
 
-func (this *EnumServiceImpl) UpdateEnum(ctx context.Context, cmd it.UpdateEnumCommand) (result *it.UpdateEnumResult, err error) {
+func (this *EnumServiceImpl) UpdateEnum(ctx crud.Context, cmd it.UpdateEnumCommand) (result *it.UpdateEnumResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "update "+cmd.EntityName); e != nil {
 			err = e
@@ -128,7 +128,7 @@ func (this *EnumServiceImpl) UpdateEnum(ctx context.Context, cmd it.UpdateEnumCo
 	}, err
 }
 
-func (this *EnumServiceImpl) valSanitizeStep(ctx context.Context, enum *it.Enum, vErrs *ft.ValidationErrors) ([]model.LanguageCode, error) {
+func (this *EnumServiceImpl) valSanitizeStep(ctx crud.Context, enum *it.Enum, vErrs *ft.ValidationErrors) ([]model.LanguageCode, error) {
 	langCodes, err := this.getEnabledLanguages(ctx)
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (this *EnumServiceImpl) sanitizeEnum(enum *it.Enum, langCodes []model.Langu
 }
 
 func (this *EnumServiceImpl) assertEnumUnique(
-	ctx context.Context,
+	ctx crud.Context,
 	enum *it.Enum,
 	enumType string,
 	langCodes []model.LanguageCode,
@@ -186,7 +186,7 @@ func (this *EnumServiceImpl) assertEnumUnique(
 	}
 }
 
-func (this *EnumServiceImpl) assertCorrectEnum(ctx context.Context, enum *it.Enum, entityName string, vErrs *ft.ValidationErrors) error {
+func (this *EnumServiceImpl) assertCorrectEnum(ctx crud.Context, enum *it.Enum, entityName string, vErrs *ft.ValidationErrors) error {
 	dbEnum, err := this.enumRepo.FindById(ctx, *enum.Id)
 	if err != nil {
 		return err
@@ -202,7 +202,7 @@ func (this *EnumServiceImpl) assertCorrectEnum(ctx context.Context, enum *it.Enu
 	return nil
 }
 
-func (this *EnumServiceImpl) getEnabledLanguages(ctx context.Context) ([]model.LanguageCode, error) {
+func (this *EnumServiceImpl) getEnabledLanguages(ctx crud.Context) ([]model.LanguageCode, error) {
 	query := i18n.ListEnabledLangCodesQuery{}
 	result := i18n.ListEnabledLangCodesResult{}
 	err := this.cqrsBus.Request(ctx, query, &result)
@@ -211,7 +211,7 @@ func (this *EnumServiceImpl) getEnabledLanguages(ctx context.Context) ([]model.L
 	return result.Data, nil
 }
 
-func (this *EnumServiceImpl) DeleteEnum(ctx context.Context, cmd it.DeleteEnumCommand) (result *it.DeleteEnumResult, err error) {
+func (this *EnumServiceImpl) DeleteEnum(ctx crud.Context, cmd it.DeleteEnumCommand) (result *it.DeleteEnumResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "delete "+cmd.EntityName); e != nil {
 			err = e
@@ -248,7 +248,7 @@ func (this *EnumServiceImpl) DeleteEnum(ctx context.Context, cmd it.DeleteEnumCo
 	}, nil
 }
 
-func (this *EnumServiceImpl) deleteById(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) {
+func (this *EnumServiceImpl) deleteById(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) {
 	deletedCount, err := this.enumRepo.DeleteById(ctx, id)
 	ft.PanicOnErr(err)
 
@@ -261,7 +261,7 @@ func (this *EnumServiceImpl) deleteById(ctx context.Context, id model.Id, vErrs 
 	// ft.PanicOnErr(err)
 }
 
-func (this *EnumServiceImpl) deleteMultiByType(ctx context.Context, enumType string, vErrs *ft.ValidationErrors) {
+func (this *EnumServiceImpl) deleteMultiByType(ctx crud.Context, enumType string, vErrs *ft.ValidationErrors) {
 	deletedCount, err := this.enumRepo.DeleteByType(ctx, enumType)
 	ft.PanicOnErr(err)
 
@@ -274,7 +274,7 @@ func (this *EnumServiceImpl) deleteMultiByType(ctx context.Context, enumType str
 	// ft.PanicOnErr(err)
 }
 
-// func (this *EnumServiceImpl) publishEnumDeletedEvent(ctx context.Context, enum *domain.Enum) error {
+// func (this *EnumServiceImpl) publishEnumDeletedEvent(ctx crud.Context, enum *domain.Enum) error {
 // 	eventId, err := ulid.New()
 // 	if err != nil {
 // 		return err
@@ -289,7 +289,7 @@ func (this *EnumServiceImpl) deleteMultiByType(ctx context.Context, enumType str
 // 	return this.eventBus.PublishEvent(ctx, "core.enum.deleted.done", enumDeletedEvent)
 // }
 
-func (this *EnumServiceImpl) EnumExists(ctx context.Context, query it.EnumExistsQuery) (result *it.EnumExistsResult, err error) {
+func (this *EnumServiceImpl) EnumExists(ctx crud.Context, query it.EnumExistsQuery) (result *it.EnumExistsResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "check if "+query.EntityName+" exists"); e != nil {
 			err = e
@@ -305,7 +305,7 @@ func (this *EnumServiceImpl) EnumExists(ctx context.Context, query it.EnumExists
 	}, nil
 }
 
-func (this *EnumServiceImpl) EnumExistsMulti(ctx context.Context, query it.EnumExistsMultiQuery) (result *it.EnumExistsMultiResult, err error) {
+func (this *EnumServiceImpl) EnumExistsMulti(ctx crud.Context, query it.EnumExistsMultiQuery) (result *it.EnumExistsMultiResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "check if multiple "+query.EntityName+" exist"); e != nil {
 			err = e
@@ -324,7 +324,7 @@ func (this *EnumServiceImpl) EnumExistsMulti(ctx context.Context, query it.EnumE
 	}, nil
 }
 
-func (this *EnumServiceImpl) GetEnum(ctx context.Context, query it.GetEnumQuery) (result *it.GetEnumResult, err error) {
+func (this *EnumServiceImpl) GetEnum(ctx crud.Context, query it.GetEnumQuery) (result *it.GetEnumResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "get "+query.EntityName); e != nil {
 			err = e
@@ -358,7 +358,7 @@ func (this *EnumServiceImpl) GetEnum(ctx context.Context, query it.GetEnumQuery)
 	}, nil
 }
 
-func (this *EnumServiceImpl) ListEnums(ctx context.Context, query it.ListEnumsQuery) (result *it.ListEnumsResult, err error) {
+func (this *EnumServiceImpl) ListEnums(ctx crud.Context, query it.ListEnumsQuery) (result *it.ListEnumsResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "list "+query.EntityName); e != nil {
 			err = e
@@ -382,7 +382,7 @@ func (this *EnumServiceImpl) ListEnums(ctx context.Context, query it.ListEnumsQu
 	}, nil
 }
 
-func (this *EnumServiceImpl) SearchEnums(ctx context.Context, query it.SearchEnumsQuery) (result *it.SearchEnumsResult, err error) {
+func (this *EnumServiceImpl) SearchEnums(ctx crud.Context, query it.SearchEnumsQuery) (result *it.SearchEnumsResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "search "+query.EntityName); e != nil {
 			err = e

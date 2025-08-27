@@ -12,16 +12,16 @@ put {
 
 body:json {
   {
-      "avatarUrl": "https://avatar.com/me.jpg",
-      "displayName": "Another Doe",
+      "avatarUrl": "{{$randomUrl}}/{{$randomWord}}.jpg",
+      "displayName": "{{$randomFullName}}",
       "etag": "{{etag}}"
   }
   
 }
 
 script:post-response {
-  const payload = res.getBody();
-  const { etag } = payload;
+  const body = res.getBody();
+  const { etag } = body;
   etag && bru.setVar('etag', etag);
 }
 

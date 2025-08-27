@@ -76,17 +76,22 @@ func NewTestLogger() *TestLogger {
 	}
 }
 
-func (l *TestLogger) Level() logging.Level              { return logging.LevelInfo }
-func (l *TestLogger) SetLevel(lvl logging.Level)        {}
-func (l *TestLogger) InnerLogger() any                  { return l.slogger }
-func (l *TestLogger) Debug(message string, data any)    {}
-func (l *TestLogger) Debugf(format string, args ...any) {}
-func (l *TestLogger) Info(message string, data any)     {}
-func (l *TestLogger) Infof(format string, args ...any)  {}
-func (l *TestLogger) Warn(message string, data any)     {}
-func (l *TestLogger) Warnf(format string, args ...any)  {}
-func (l *TestLogger) Error(message string, err error)   {}
-func (l *TestLogger) Errorf(format string, args ...any) {}
+func (l TestLogger) GetContext(key string) string        { return "" }
+func (l TestLogger) RemoveContext(key string)            {}
+func (l TestLogger) SetContext(key string, value string) {}
+
+func (l TestLogger) Clone() logging.LoggerService            { return l }
+func (l TestLogger) SetLevel(lvl logging.Level)              {}
+func (l TestLogger) Level() logging.Level                    { return logging.LevelInfo }
+func (l TestLogger) InnerLogger() any                        { return l.slogger }
+func (l TestLogger) Debug(message string, data logging.Attr) {}
+func (l TestLogger) Debugf(format string, args ...any)       {}
+func (l TestLogger) Info(message string, data logging.Attr)  {}
+func (l TestLogger) Infof(format string, args ...any)        {}
+func (l TestLogger) Warn(message string, data logging.Attr)  {}
+func (l TestLogger) Warnf(format string, args ...any)        {}
+func (l TestLogger) Error(message string, err error)         {}
+func (l TestLogger) Errorf(format string, args ...any)       {}
 
 type TestHandler struct {
 	mu           sync.RWMutex

@@ -1,27 +1,24 @@
 package entitlement
 
 import (
-	"context"
-
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-
-	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type EntitlementRepository interface {
-	Create(ctx context.Context, entitlement domain.Entitlement) (*domain.Entitlement, error)
-	Update(ctx context.Context, entitlement domain.Entitlement, prevEtag model.Etag) (*domain.Entitlement, error)
-	DeleteHard(ctx context.Context, param DeleteParam) (int, error)
-	Exists(ctx context.Context, param FindByIdParam) (bool, error)
-	FindById(ctx context.Context, param FindByIdParam) (*domain.Entitlement, error)
-	FindByName(ctx context.Context, param FindByNameParam) (*domain.Entitlement, error)
-	FindAllByIds(ctx context.Context, param FindAllByIdsParam) ([]domain.Entitlement, error)
-	FindByActionExpr(ctx context.Context, param FindByActionExprParam) (*domain.Entitlement, error)
+	Create(ctx crud.Context, entitlement domain.Entitlement) (*domain.Entitlement, error)
+	Update(ctx crud.Context, entitlement domain.Entitlement, prevEtag model.Etag) (*domain.Entitlement, error)
+	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
+	Exists(ctx crud.Context, param FindByIdParam) (bool, error)
+	FindById(ctx crud.Context, param FindByIdParam) (*domain.Entitlement, error)
+	FindByName(ctx crud.Context, param FindByNameParam) (*domain.Entitlement, error)
+	FindAllByIds(ctx crud.Context, param FindAllByIdsParam) ([]domain.Entitlement, error)
+	FindByActionExpr(ctx crud.Context, param FindByActionExprParam) (*domain.Entitlement, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
-	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.Entitlement], error)
+	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Entitlement], error)
 }
 
 type FindByNameParam = GetEntitlementByNameQuery

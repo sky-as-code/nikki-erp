@@ -9,6 +9,7 @@ import (
 	"math"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -29,6 +30,7 @@ type HierarchyLevelQuery struct {
 	withUsers    *UserQuery
 	withParent   *HierarchyLevelQuery
 	withOrg      *OrganizationQuery
+	modifiers    []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -350,8 +352,9 @@ func (hlq *HierarchyLevelQuery) Clone() *HierarchyLevelQuery {
 		withParent:   hlq.withParent.Clone(),
 		withOrg:      hlq.withOrg.Clone(),
 		// clone intermediate query.
-		sql:  hlq.sql.Clone(),
-		path: hlq.path,
+		sql:       hlq.sql.Clone(),
+		path:      hlq.path,
+		modifiers: append([]func(*sql.Selector){}, hlq.modifiers...),
 	}
 }
 
@@ -492,6 +495,9 @@ func (hlq *HierarchyLevelQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
+	}
+	if len(hlq.modifiers) > 0 {
+		_spec.Modifiers = hlq.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
@@ -661,6 +667,9 @@ func (hlq *HierarchyLevelQuery) loadOrg(ctx context.Context, query *Organization
 
 func (hlq *HierarchyLevelQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := hlq.querySpec()
+	if len(hlq.modifiers) > 0 {
+		_spec.Modifiers = hlq.modifiers
+	}
 	_spec.Node.Columns = hlq.ctx.Fields
 	if len(hlq.ctx.Fields) > 0 {
 		_spec.Unique = hlq.ctx.Unique != nil && *hlq.ctx.Unique
@@ -729,6 +738,9 @@ func (hlq *HierarchyLevelQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if hlq.ctx.Unique != nil && *hlq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range hlq.modifiers {
+		m(selector)
+	}
 	for _, p := range hlq.predicates {
 		p(selector)
 	}
@@ -744,6 +756,38 @@ func (hlq *HierarchyLevelQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// ForUpdate locks the selected rows against concurrent updates, and prevent them from being
+// updated, deleted or "selected ... for update" by other sessions, until the transaction is
+// either committed or rolled-back.
+func (hlq *HierarchyLevelQuery) ForUpdate(opts ...sql.LockOption) *HierarchyLevelQuery {
+	if hlq.driver.Dialect() == dialect.Postgres {
+		hlq.Unique(false)
+	}
+	hlq.modifiers = append(hlq.modifiers, func(s *sql.Selector) {
+		s.ForUpdate(opts...)
+	})
+	return hlq
+}
+
+// ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
+// on any rows that are read. Other sessions can read the rows, but cannot modify them
+// until your transaction commits.
+func (hlq *HierarchyLevelQuery) ForShare(opts ...sql.LockOption) *HierarchyLevelQuery {
+	if hlq.driver.Dialect() == dialect.Postgres {
+		hlq.Unique(false)
+	}
+	hlq.modifiers = append(hlq.modifiers, func(s *sql.Selector) {
+		s.ForShare(opts...)
+	})
+	return hlq
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (hlq *HierarchyLevelQuery) Modify(modifiers ...func(s *sql.Selector)) *HierarchyLevelSelect {
+	hlq.modifiers = append(hlq.modifiers, modifiers...)
+	return hlq.Select()
 }
 
 // HierarchyLevelGroupBy is the group-by builder for HierarchyLevel entities.
@@ -834,4 +878,10 @@ func (hls *HierarchyLevelSelect) sqlScan(ctx context.Context, root *HierarchyLev
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (hls *HierarchyLevelSelect) Modify(modifiers ...func(s *sql.Selector)) *HierarchyLevelSelect {
+	hls.modifiers = append(hls.modifiers, modifiers...)
+	return hls
 }

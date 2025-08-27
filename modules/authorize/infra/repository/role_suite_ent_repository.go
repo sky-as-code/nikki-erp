@@ -4,12 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
-
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
@@ -18,6 +15,8 @@ import (
 	entRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
 	entRoleSuiteUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuiteuser"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewRoleSuiteEntRepository(client *ent.Client) it.RoleSuiteRepository {
@@ -106,7 +105,7 @@ func (this *RoleSuiteEntRepository) FindById(ctx context.Context, param it.FindB
 	return database.FindOne(ctx, query, ent.IsNotFound, entToRoleSuite)
 }
 
-func (this *RoleSuiteEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.RoleSuite, error) {
+func (this *RoleSuiteEntRepository) FindByName(ctx crud.Context, param it.FindByNameParam) (*domain.RoleSuite, error) {
 	query := this.client.RoleSuite.Query().
 		Where(entRoleSuite.NameEQ(param.Name))
 
@@ -118,7 +117,7 @@ func (this *RoleSuiteEntRepository) ParseSearchGraph(criteria *string) (*orm.Pre
 }
 
 func (this *RoleSuiteEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.RoleSuite], error) {
 	query := this.client.RoleSuite.Query().
@@ -137,7 +136,7 @@ func (this *RoleSuiteEntRepository) Search(
 	)
 }
 
-func (this *RoleSuiteEntRepository) FindAllBySubject(ctx context.Context, param it.FindAllBySubjectParam) ([]domain.RoleSuite, error) {
+func (this *RoleSuiteEntRepository) FindAllBySubject(ctx crud.Context, param it.FindAllBySubjectParam) ([]domain.RoleSuite, error) {
 	query := this.client.RoleSuite.Query().
 		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverRefEQ(param.SubjectRef))).
 		WithRoles()

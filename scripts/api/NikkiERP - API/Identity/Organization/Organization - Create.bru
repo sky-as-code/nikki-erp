@@ -12,51 +12,18 @@ post {
 
 body:json {
   {
-      "address": "123 <b>Ham Nghi st</b>, <a onclick=\"alert()\">HCM city</a>",
-      "displayName": "<i>Lone Wolf company<i><script>hacked</script>",
-      "legalName": "Cong ty trach nhiem huu han Mot thanh vien Mot Minh Tui - Lone Wolf Co. Ltd.",
-      "slug": "lone-wolf"
+      "address": "{{$randomStreetAddress}}, <b>planet Earth</b>, <a onclick=\"alert()\">Milky Way galaxy</a>",
+      "displayName": "<i>{{$randomLoremWords}} company<i><script>hacked</script>",
+      "legalName": "{{$randomLoremSentence}} Co. Ltd.",
+      "slug": "{{$randomLoremSlug}}"
   }
-}
-
-script:pre-request {
-  const payload = JSON.parse(req.getBody().raw);
-  
-  // Generate a 6-char alphanumeric string
-  function randomString(length = 6) {
-      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let result = '';
-      for (let i = 0; i < length; i++) {
-          result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return result;
-  }
-  
-  const rand = randomString();
-  
-  if (payload.address) {
-      payload.address += ' ' + rand;
-  }
-  if (payload.displayName) {
-      payload.displayName += ' ' + rand;
-  }
-  if (payload.legalName) {
-      payload.legalName += ' ' + rand;
-  }
-  if (payload.slug) {
-      payload.slug = `${payload.slug}-${rand}`.toLowerCase();
-  }
-  // Write modified payload back to request
-  req.getBody().raw = JSON.stringify(payload, null, 2);
-  
 }
 
 script:post-response {
-  const requestBody = JSON.parse(req.getBody().raw);
+  const requestBody = req.getBody();
   bru.setVar('org_slug', requestBody.slug);
   
-  const payload = res.getBody();
-  const { id, etag } = payload;
+  const { id, etag } = res.getBody();
   id && bru.setVar('org_id', id);
   etag && bru.setVar('etag', etag);
 }

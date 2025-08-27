@@ -68,7 +68,7 @@ func OrgStatusValidateRule(field **OrgStatus) *val.FieldRules {
 	return val.Field(field,
 		val.When(*field != nil,
 			val.NotEmpty,
-			val.OneOf(UserStatusActive, UserStatusArchived, UserStatusLocked),
+			val.OneOf(OrgStatusActive, OrgStatusArchived),
 		),
 	)
 }

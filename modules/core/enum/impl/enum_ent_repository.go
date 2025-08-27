@@ -1,16 +1,14 @@
 package impl
 
 import (
-	"context"
-
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
 
 	"github.com/sky-as-code/nikki-erp/common/array"
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	it "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent"
@@ -27,7 +25,7 @@ type EnumEntRepository struct {
 	client *ent.Client
 }
 
-func (this *EnumEntRepository) Create(ctx context.Context, enum it.Enum) (*it.Enum, error) {
+func (this *EnumEntRepository) Create(ctx crud.Context, enum it.Enum) (*it.Enum, error) {
 	creation := this.client.Enum.Create().
 		SetID(*enum.Id).
 		SetEtag(*enum.Etag).
@@ -38,7 +36,7 @@ func (this *EnumEntRepository) Create(ctx context.Context, enum it.Enum) (*it.En
 	return db.Mutate(ctx, creation, ent.IsNotFound, it.EntToEnum)
 }
 
-func (this *EnumEntRepository) Update(ctx context.Context, enum it.Enum, prevEtag model.Etag) (*it.Enum, error) {
+func (this *EnumEntRepository) Update(ctx crud.Context, enum it.Enum, prevEtag model.Etag) (*it.Enum, error) {
 	update := this.client.Enum.UpdateOneID(*enum.Id).
 		SetLabel(*enum.Label).
 		SetNillableValue(enum.Value).
@@ -52,25 +50,25 @@ func (this *EnumEntRepository) Update(ctx context.Context, enum it.Enum, prevEta
 	return db.Mutate(ctx, update, ent.IsNotFound, it.EntToEnum)
 }
 
-func (this *EnumEntRepository) DeleteById(ctx context.Context, id model.Id) (int, error) {
+func (this *EnumEntRepository) DeleteById(ctx crud.Context, id model.Id) (int, error) {
 	return this.client.Enum.Delete().
 		Where(entEnum.ID(id)).
 		Exec(ctx)
 }
 
-func (this *EnumEntRepository) DeleteByType(ctx context.Context, enumType string) (int, error) {
+func (this *EnumEntRepository) DeleteByType(ctx crud.Context, enumType string) (int, error) {
 	return this.client.Enum.Delete().
 		Where(entEnum.Type(enumType)).
 		Exec(ctx)
 }
 
-func (this *EnumEntRepository) Exists(ctx context.Context, id model.Id) (bool, error) {
+func (this *EnumEntRepository) Exists(ctx crud.Context, id model.Id) (bool, error) {
 	return this.client.Enum.Query().
 		Where(entEnum.ID(id)).
 		Exist(ctx)
 }
 
-func (this *EnumEntRepository) ExistsMulti(ctx context.Context, ids []model.Id) (existing []model.Id, notExisting []model.Id, err error) {
+func (this *EnumEntRepository) ExistsMulti(ctx crud.Context, ids []model.Id) (existing []model.Id, notExisting []model.Id, err error) {
 	dbEntities, err := this.client.Enum.Query().
 		Where(entEnum.IDIn(ids...)).
 		Select(entEnum.FieldID).
@@ -91,21 +89,21 @@ func (this *EnumEntRepository) ExistsMulti(ctx context.Context, ids []model.Id) 
 	return existing, notExisting, nil
 }
 
-func (this *EnumEntRepository) FindById(ctx context.Context, id model.Id) (*it.Enum, error) {
+func (this *EnumEntRepository) FindById(ctx crud.Context, id model.Id) (*it.Enum, error) {
 	query := this.client.Enum.Query().
 		Where(entEnum.ID(id))
 
 	return db.FindOne(ctx, query, ent.IsNotFound, it.EntToEnum)
 }
 
-func (this *EnumEntRepository) FindByValue(ctx context.Context, value string, enumType string) (*it.Enum, error) {
+func (this *EnumEntRepository) FindByValue(ctx crud.Context, value string, enumType string) (*it.Enum, error) {
 	query := this.client.Enum.Query().
 		Where(entEnum.Value(value), entEnum.Type(enumType))
 
 	return db.FindOne(ctx, query, ent.IsNotFound, it.EntToEnum)
 }
 
-func (this *EnumEntRepository) List(ctx context.Context, param it.ListParam) (*crud.PagedResult[it.Enum], error) {
+func (this *EnumEntRepository) List(ctx crud.Context, param it.ListParam) (*crud.PagedResult[it.Enum], error) {
 	query := this.client.Enum.Query()
 
 	if param.PartialLabel != nil && len(*param.PartialLabel) > 0 {
@@ -137,7 +135,7 @@ func (this *EnumEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicat
 	return db.ParseSearchGraphStr[ent.Enum, it.Enum](criteria, entEnum.Label)
 }
 
-func (this *EnumEntRepository) Search(ctx context.Context, param it.SearchParam) (*crud.PagedResult[it.Enum], error) {
+func (this *EnumEntRepository) Search(ctx crud.Context, param it.SearchParam) (*crud.PagedResult[it.Enum], error) {
 	query := this.client.Enum.Query()
 
 	if param.TypePrefix != nil {

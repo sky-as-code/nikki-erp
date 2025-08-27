@@ -1,25 +1,22 @@
 package resource
 
 import (
-	"context"
-
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-
-	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type ResourceRepository interface {
-	Create(ctx context.Context, resource domain.Resource) (*domain.Resource, error)
-	FindByName(ctx context.Context, param FindByNameParam) (*domain.Resource, error)
-	FindById(ctx context.Context, param FindByIdParam) (*domain.Resource, error)
-	Update(ctx context.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error)
-	DeleteHard(ctx context.Context, param DeleteParam) (int, error)
+	Create(ctx crud.Context, resource domain.Resource) (*domain.Resource, error)
+	FindByName(ctx crud.Context, param FindByNameParam) (*domain.Resource, error)
+	FindById(ctx crud.Context, param FindByIdParam) (*domain.Resource, error)
+	Update(ctx crud.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error)
+	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
-	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.Resource], error)
-	Exist(ctx context.Context, param ExistParam) (bool, error)
+	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Resource], error)
+	Exist(ctx crud.Context, param ExistParam) (bool, error)
 }
 
 type FindByIdParam = GetResourceByIdQuery

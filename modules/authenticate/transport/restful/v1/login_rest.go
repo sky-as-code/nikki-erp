@@ -7,6 +7,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 )
 
@@ -54,7 +55,8 @@ func (this LoginRest) StartLoginFlow(echoCtx echo.Context) (err error) {
 		SubjectType:    request.SubjectType,
 		Username:       request.Username,
 	}
-	result, err := this.attemptSvc.CreateLoginAttempt(echoCtx.Request().Context(), cmd)
+	reqCtx := echoCtx.Request().Context().(crud.Context)
+	result, err := this.attemptSvc.CreateLoginAttempt(reqCtx, cmd)
 
 	if err != nil {
 		return err

@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
@@ -39,7 +39,7 @@ type RoleServiceImpl struct {
 	eventBus        event.EventBus
 }
 
-func (this *RoleServiceImpl) CreateRole(ctx context.Context, cmd itRole.CreateRoleCommand) (result *itRole.CreateRoleResult, err error) {
+func (this *RoleServiceImpl) CreateRole(ctx crud.Context, cmd itRole.CreateRoleCommand) (result *itRole.CreateRoleResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "create role"); e != nil {
 			err = e
@@ -237,7 +237,7 @@ func (this *RoleServiceImpl) GetRoleById(ctx context.Context, query itRole.GetRo
 	}, nil
 }
 
-func (this *RoleServiceImpl) SearchRoles(ctx context.Context, query itRole.SearchRolesQuery) (result *itRole.SearchRolesResult, err error) {
+func (this *RoleServiceImpl) SearchRoles(ctx crud.Context, query itRole.SearchRolesQuery) (result *itRole.SearchRolesResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "search roles"); e != nil {
 			err = e
@@ -282,7 +282,7 @@ func (this *RoleServiceImpl) SearchRoles(ctx context.Context, query itRole.Searc
 	}, nil
 }
 
-func (this *RoleServiceImpl) GetRolesBySubject(ctx context.Context, query itRole.GetRolesBySubjectQuery) (result *itRole.GetRolesBySubjectResult, err error) {
+func (this *RoleServiceImpl) GetRolesBySubject(ctx crud.Context, query itRole.GetRolesBySubjectQuery) (result *itRole.GetRolesBySubjectResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "get role by subject"); e != nil {
 			err = e
@@ -316,7 +316,7 @@ func (this *RoleServiceImpl) GetRolesBySubject(ctx context.Context, query itRole
 	}, nil
 }
 
-func (this *RoleServiceImpl) assertRoleExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbRole *domain.Role, err error) {
+func (this *RoleServiceImpl) assertRoleExistsById(ctx crud.Context, id model.Id, vErrs *fault.ValidationErrors) (dbRole *domain.Role, err error) {
 	dbRole, err = this.roleRepo.FindById(ctx, itRole.FindByIdParam{Id: id})
 	if dbRole == nil {
 		vErrs.AppendNotFound("role_id", "role")
@@ -324,7 +324,7 @@ func (this *RoleServiceImpl) assertRoleExistsById(ctx context.Context, id model.
 	return
 }
 
-func (this *RoleServiceImpl) assertRoleUnique(ctx context.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
+func (this *RoleServiceImpl) assertRoleUnique(ctx crud.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
 	dbRole, err := this.roleRepo.FindByName(ctx, itRole.FindByNameParam{Name: *role.Name})
 	fault.PanicOnErr(err)
 

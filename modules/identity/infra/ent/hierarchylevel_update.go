@@ -19,8 +19,9 @@ import (
 // HierarchyLevelUpdate is the builder for updating HierarchyLevel entities.
 type HierarchyLevelUpdate struct {
 	config
-	hooks    []Hook
-	mutation *HierarchyLevelMutation
+	hooks     []Hook
+	mutation  *HierarchyLevelMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the HierarchyLevelUpdate builder.
@@ -260,6 +261,12 @@ func (hlu *HierarchyLevelUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (hlu *HierarchyLevelUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *HierarchyLevelUpdate {
+	hlu.modifiers = append(hlu.modifiers, modifiers...)
+	return hlu
+}
+
 func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := hlu.check(); err != nil {
 		return n, err
@@ -415,6 +422,7 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(hlu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, hlu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{hierarchylevel.Label}
@@ -430,9 +438,10 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 // HierarchyLevelUpdateOne is the builder for updating a single HierarchyLevel entity.
 type HierarchyLevelUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *HierarchyLevelMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *HierarchyLevelMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // SetDeletedAt sets the "deleted_at" field.
@@ -679,6 +688,12 @@ func (hluo *HierarchyLevelUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (hluo *HierarchyLevelUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *HierarchyLevelUpdateOne {
+	hluo.modifiers = append(hluo.modifiers, modifiers...)
+	return hluo
+}
+
 func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *HierarchyLevel, err error) {
 	if err := hluo.check(); err != nil {
 		return _node, err
@@ -851,6 +866,7 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	_spec.AddModifiers(hluo.modifiers...)
 	_node = &HierarchyLevel{config: hluo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

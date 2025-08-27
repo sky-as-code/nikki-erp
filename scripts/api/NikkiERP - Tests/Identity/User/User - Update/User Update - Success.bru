@@ -12,56 +12,18 @@ put {
 
 body:json {
   {
-      "avatarUrl": "https://avatar.com/me.jpg",
-      "displayName": "Another Doe",
-      "email": "another.doe@nikkierp.com",
+      "avatarUrl": "{{$randomUrl}}/{{$randomWord}}.jpg",
+      "displayName": "{{$randomFullName}}",
+      "email": "{{$randomEmail}}",
       "etag": "{{etag}}",
-      "mustChangePassword": true,
-      "password": "t0psecret!",
       "statusValue": "archived"
   }
   
 }
 
-script:pre-request {
-  // Get original request body as raw text
-  let rawBody = req.getBody().raw;
-  
-  // Parse it as JSON
-  let payload;
-  try {
-      payload = JSON.parse(rawBody);
-  } catch (e) {
-      console.error("Failed to parse request body as JSON:", e);
-      return;
-  }
-  
-  // Generate a 6-char alphanumeric string
-  function randomString(length = 6) {
-      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let result = '';
-      for (let i = 0; i < length; i++) {
-          result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return result;
-  }
-  
-  const rand = randomString();
-  
-  if (payload.displayName) {
-      payload.displayName += ' ' + rand;
-  }
-  if (payload.email && payload.email.includes('@')) {
-      const [local, domain] = payload.email.split('@');
-      payload.email = `${local}-${rand}@${domain}`;
-  }
-  
-  // Write modified payload back to request
-  req.getBody().raw = JSON.stringify(payload, null, 2);
-  
-}
-
 script:post-response {
+  const tv4 = require('tv4');
+  
   const schema = {
       type: "object",
       required: ["id", "etag", "updatedAt"],
@@ -87,14 +49,15 @@ script:post-response {
   });
   
   test("Response matches expected JSON schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
+    const valid = tv4.validate(res.getBody(), schema);
+    expect(tv4.error).not.to.exist;
+    expect(valid).to.be.true;
   });
   
-  const requestBody = JSON.parse(req.getBody().raw);
+  const requestBody = req.getBody();
   bru.setVar('email', requestBody.email);
   
-  const payload = res.getBody();
-  const { id, etag, email } = payload;
+  const { id, etag, email } = res.getBody();
   const previousEtag = bru.getVar("etag");
   
   test("Response 'etag' is different from previous", () => {

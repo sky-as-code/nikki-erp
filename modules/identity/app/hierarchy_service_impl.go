@@ -1,16 +1,15 @@
 package app
 
 import (
-	"context"
 	"strings"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itHier "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/hierarchy"
 	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
@@ -28,7 +27,7 @@ type HierarchyServiceImpl struct {
 	hierarchyRepo itHier.HierarchyRepository
 }
 
-func (this *HierarchyServiceImpl) AddRemoveUsers(ctx context.Context, cmd itHier.AddRemoveUsersCommand) (result *itHier.AddRemoveUsersResult, err error) {
+func (this *HierarchyServiceImpl) AddRemoveUsers(ctx crud.Context, cmd itHier.AddRemoveUsersCommand) (result *itHier.AddRemoveUsersResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to add or remove users"); e != nil {
 			err = e
@@ -84,7 +83,7 @@ func (this *HierarchyServiceImpl) AddRemoveUsers(ctx context.Context, cmd itHier
 	}, nil
 }
 
-func (this *HierarchyServiceImpl) assertUserIdsExist(ctx context.Context, valErrs *ft.ValidationErrors, field string, userIds []string) error {
+func (this *HierarchyServiceImpl) assertUserIdsExist(ctx crud.Context, valErrs *ft.ValidationErrors, field string, userIds []string) error {
 	if len(userIds) == 0 {
 		return nil
 	}
@@ -109,7 +108,7 @@ func (this *HierarchyServiceImpl) assertUserIdsExist(ctx context.Context, valErr
 	return nil
 }
 
-func (this *HierarchyServiceImpl) CreateHierarchyLevel(ctx context.Context, cmd itHier.CreateHierarchyLevelCommand) (result *itHier.CreateHierarchyLevelResult, err error) {
+func (this *HierarchyServiceImpl) CreateHierarchyLevel(ctx crud.Context, cmd itHier.CreateHierarchyLevelCommand) (result *itHier.CreateHierarchyLevelResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to create hierarchy level"); e != nil {
 			err = e
@@ -155,7 +154,7 @@ func (this *HierarchyServiceImpl) sanitizeHierarchyLevel(hierarchyLevel *domain.
 	}
 }
 
-func (this *HierarchyServiceImpl) UpdateHierarchyLevel(ctx context.Context, cmd itHier.UpdateHierarchyLevelCommand) (result *itHier.UpdateHierarchyLevelResult, err error) {
+func (this *HierarchyServiceImpl) UpdateHierarchyLevel(ctx crud.Context, cmd itHier.UpdateHierarchyLevelCommand) (result *itHier.UpdateHierarchyLevelResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to update hierarchy level"); e != nil {
 			err = e
@@ -198,7 +197,7 @@ func (this *HierarchyServiceImpl) UpdateHierarchyLevel(ctx context.Context, cmd 
 	}, err
 }
 
-func (this *HierarchyServiceImpl) DeleteHierarchyLevel(ctx context.Context, cmd itHier.DeleteHierarchyLevelCommand) (result *itHier.DeleteHierarchyLevelResult, err error) {
+func (this *HierarchyServiceImpl) DeleteHierarchyLevel(ctx crud.Context, cmd itHier.DeleteHierarchyLevelCommand) (result *itHier.DeleteHierarchyLevelResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to delete hierarchy level"); e != nil {
 			err = e
@@ -228,7 +227,7 @@ func (this *HierarchyServiceImpl) DeleteHierarchyLevel(ctx context.Context, cmd 
 	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
-func (this *HierarchyServiceImpl) GetHierarchyLevelById(ctx context.Context, query itHier.GetHierarchyLevelByIdQuery) (result *itHier.GetHierarchyLevelByIdResult, err error) {
+func (this *HierarchyServiceImpl) GetHierarchyLevelById(ctx crud.Context, query itHier.GetHierarchyLevelByIdQuery) (result *itHier.GetHierarchyLevelByIdResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to get hierarchy level"); e != nil {
 			err = e
@@ -251,7 +250,7 @@ func (this *HierarchyServiceImpl) GetHierarchyLevelById(ctx context.Context, que
 	}, nil
 }
 
-func (thisSvc *HierarchyServiceImpl) SearchHierarchyLevels(ctx context.Context, query itHier.SearchHierarchyLevelsQuery) (result *itHier.SearchHierarchyLevelsResult, err error) {
+func (thisSvc *HierarchyServiceImpl) SearchHierarchyLevels(ctx crud.Context, query itHier.SearchHierarchyLevelsQuery) (result *itHier.SearchHierarchyLevelsResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to list hierarchy levels"); e != nil {
 			err = e
@@ -288,7 +287,7 @@ func (thisSvc *HierarchyServiceImpl) SearchHierarchyLevels(ctx context.Context, 
 	}, nil
 }
 
-func (this *HierarchyServiceImpl) assertCorrectHierarchyLevel(ctx context.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
+func (this *HierarchyServiceImpl) assertCorrectHierarchyLevel(ctx crud.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
 	dbHierarchyLevel, err := this.assertHierarchyLevelIdExists(ctx, id, vErrs)
 	if err != nil {
 		return err
@@ -302,7 +301,7 @@ func (this *HierarchyServiceImpl) assertCorrectHierarchyLevel(ctx context.Contex
 	return nil
 }
 
-func (this *HierarchyServiceImpl) assertHierarchyLevelIdExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.HierarchyLevel, error) {
+func (this *HierarchyServiceImpl) assertHierarchyLevelIdExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.HierarchyLevel, error) {
 	dbHierarchyLevel, err := this.hierarchyRepo.FindById(ctx, itHier.FindByIdParam{
 		Id: id,
 	})
@@ -317,7 +316,7 @@ func (this *HierarchyServiceImpl) assertHierarchyLevelIdExists(ctx context.Conte
 	return dbHierarchyLevel, nil
 }
 
-func (this *HierarchyServiceImpl) assertUniqueHierarchyLevelName(ctx context.Context, hierarchyLevel *domain.HierarchyLevel, vErrs *ft.ValidationErrors) error {
+func (this *HierarchyServiceImpl) assertUniqueHierarchyLevelName(ctx crud.Context, hierarchyLevel *domain.HierarchyLevel, vErrs *ft.ValidationErrors) error {
 	dbHierarchyLevel, err := this.hierarchyRepo.FindByName(ctx, itHier.FindByNameParam{
 		Name: *hierarchyLevel.Name,
 	})

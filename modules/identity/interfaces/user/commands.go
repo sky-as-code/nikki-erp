@@ -3,13 +3,12 @@ package user
 import (
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
@@ -80,6 +79,12 @@ type DeleteUserCommand struct {
 
 func (DeleteUserCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteUserCommandType
+}
+
+func (this DeleteUserCommand) ToDomainModel() *domain.User {
+	user := &domain.User{}
+	user.Id = &this.Id
+	return user
 }
 
 func (this DeleteUserCommand) Validate() ft.ValidationErrors {
@@ -157,8 +162,10 @@ var getUserByIdQueryType = cqrs.RequestType{
 }
 
 type GetUserByIdQuery struct {
-	Id     model.Id           `param:"id" json:"id"`
-	Status *domain.UserStatus `json:"status"`
+	Id        model.Id           `param:"id" json:"id"`
+	Status    *domain.UserStatus `json:"status" query:"status"`
+	WithGroup bool               `json:"withGroup" query:"withGroup"`
+	WithOrg   bool               `json:"withOrg" query:"withOrg"`
 }
 
 func (GetUserByIdQuery) CqrsRequestType() cqrs.RequestType {
@@ -244,28 +251,19 @@ var searchUsersQueryType = cqrs.RequestType{
 }
 
 type SearchUsersQuery struct {
-	Page            *int    `json:"page" query:"page"`
-	Size            *int    `json:"size" query:"size"`
-	Graph           *string `json:"graph" query:"graph"`
-	WithGroups      bool    `json:"withGroups" query:"withGroups"`
-	WithOrgs        bool    `json:"withOrgs" query:"withOrgs"`
-	WithHierarchies bool    `json:"withHierarchies" query:"withHierarchies"`
+	crud.SearchQuery
+
+	WithGroups      bool `json:"withGroups" query:"withGroups"`
+	WithOrgs        bool `json:"withOrgs" query:"withOrgs"`
+	WithHierarchies bool `json:"withHierarchies" query:"withHierarchies"`
 }
 
 func (SearchUsersQuery) CqrsRequestType() cqrs.RequestType {
 	return searchUsersQueryType
 }
 
-func (this *SearchUsersQuery) SetDefaults() {
-	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
-	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
-}
-
 func (this SearchUsersQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		crud.PageIndexValidateRule(&this.Page),
-		crud.PageSizeValidateRule(&this.Size),
-	}
+	rules := this.SearchQuery.ValidationRules()
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }

@@ -120,7 +120,3 @@ func NewValidationErrorsFromInvopop(rawErrors invopop.Errors) ValidationErrors {
 	}
 	return errors
 }
-
-type Validatable interface {
-	Validate() ValidationErrors
-}

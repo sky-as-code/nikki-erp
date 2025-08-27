@@ -6,7 +6,7 @@ import (
 	"go.bryk.io/pkg/errors"
 )
 
-func StartValidationFlow(startWith ...ft.Validatable) *ValidationFlow {
+func StartValidationFlow(startWith ...Validatable) *ValidationFlow {
 	flow := ValidationFlow{}
 	if len(startWith) > 0 {
 		return flow.Start().Step(func(vErrs *ft.ValidationErrors) error {
@@ -56,4 +56,8 @@ func (this *ValidationFlow) Step(fn func(vErrs *ft.ValidationErrors) error, igno
 
 func (this *ValidationFlow) End() (ft.ValidationErrors, error) {
 	return *this.vErrs, this.err
+}
+
+type Validatable interface {
+	Validate() ft.ValidationErrors
 }

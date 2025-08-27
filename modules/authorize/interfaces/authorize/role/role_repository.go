@@ -3,12 +3,11 @@ package role
 import (
 	"context"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-
-	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type RoleRepository interface {

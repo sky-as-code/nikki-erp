@@ -5,16 +5,16 @@ meta {
 }
 
 put {
-  url: {{api_host}}/v1/identity/organizations/{{org_id}}
+  url: {{api_host}}/v1/identity/organizations/{{org_slug}}
   body: json
   auth: inherit
 }
 
 body:json {
   {
-      "address": "291 An Duong Vuong , Phuong 3 , TP.HCM",
-      "displayName": "Company Zalo",
-      "phoneNumber": "023424234234",
+      "address": "{{$randomStreetAddress}}, TP.HCM",
+      "displayName": "{{$randomLoremWords}} Co.",
+      "phoneNumber": "{{$randomPhoneNumber}}",
       "etag": "{{etag}}"
   }
 }
