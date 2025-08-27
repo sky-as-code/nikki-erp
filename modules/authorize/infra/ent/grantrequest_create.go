@@ -103,6 +103,12 @@ func (grc *GrantRequestCreate) SetNillableTargetRoleID(s *string) *GrantRequestC
 	return grc
 }
 
+// SetTargetRoleName sets the "target_role_name" field.
+func (grc *GrantRequestCreate) SetTargetRoleName(s string) *GrantRequestCreate {
+	grc.mutation.SetTargetRoleName(s)
+	return grc
+}
+
 // SetTargetSuiteID sets the "target_suite_id" field.
 func (grc *GrantRequestCreate) SetTargetSuiteID(s string) *GrantRequestCreate {
 	grc.mutation.SetTargetSuiteID(s)
@@ -114,6 +120,12 @@ func (grc *GrantRequestCreate) SetNillableTargetSuiteID(s *string) *GrantRequest
 	if s != nil {
 		grc.SetTargetSuiteID(*s)
 	}
+	return grc
+}
+
+// SetTargetSuiteName sets the "target_suite_name" field.
+func (grc *GrantRequestCreate) SetTargetSuiteName(s string) *GrantRequestCreate {
+	grc.mutation.SetTargetSuiteName(s)
 	return grc
 }
 
@@ -245,6 +257,12 @@ func (grc *GrantRequestCreate) check() error {
 			return &ValidationError{Name: "target_type", err: fmt.Errorf(`ent: validator failed for field "GrantRequest.target_type": %w`, err)}
 		}
 	}
+	if _, ok := grc.mutation.TargetRoleName(); !ok {
+		return &ValidationError{Name: "target_role_name", err: errors.New(`ent: missing required field "GrantRequest.target_role_name"`)}
+	}
+	if _, ok := grc.mutation.TargetSuiteName(); !ok {
+		return &ValidationError{Name: "target_suite_name", err: errors.New(`ent: missing required field "GrantRequest.target_suite_name"`)}
+	}
 	if _, ok := grc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "GrantRequest.status"`)}
 	}
@@ -315,6 +333,14 @@ func (grc *GrantRequestCreate) createSpec() (*GrantRequest, *sqlgraph.CreateSpec
 	if value, ok := grc.mutation.TargetType(); ok {
 		_spec.SetField(grantrequest.FieldTargetType, field.TypeEnum, value)
 		_node.TargetType = value
+	}
+	if value, ok := grc.mutation.TargetRoleName(); ok {
+		_spec.SetField(grantrequest.FieldTargetRoleName, field.TypeString, value)
+		_node.TargetRoleName = value
+	}
+	if value, ok := grc.mutation.TargetSuiteName(); ok {
+		_spec.SetField(grantrequest.FieldTargetSuiteName, field.TypeString, value)
+		_node.TargetSuiteName = value
 	}
 	if value, ok := grc.mutation.Status(); ok {
 		_spec.SetField(grantrequest.FieldStatus, field.TypeEnum, value)

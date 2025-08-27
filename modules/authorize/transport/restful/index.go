@@ -44,10 +44,14 @@ func initV1(route *echo.Group, resourceRest *v1.ResourceRest, actionRest *v1.Act
 	route.DELETE("/entitlements/:id", entitlementRest.DeleteEntitlementHard)
 
 	route.POST("/roles", roleRest.CreateRole)
+	route.PUT("/roles/:id", roleRest.UpdateRole)
+	route.DELETE("/roles/:id", roleRest.DeleteRoleHard)
 	route.GET("/roles/:id", roleRest.GetRoleById)
 	route.GET("/roles", roleRest.SearchRoles)
 
 	route.POST("/role-suites", roleSuiteRest.CreateRoleSuite)
+	route.PUT("/role-suites/:id", roleSuiteRest.UpdateRoleSuite)
+	route.DELETE("/role-suites/:id", roleSuiteRest.DeleteRoleSuite)
 	route.GET("/role-suites/:id", roleSuiteRest.GetRoleSuiteById)
 	route.GET("/role-suites", roleSuiteRest.SearchRoleSuites)
 

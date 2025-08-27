@@ -61,6 +61,8 @@ func (EntitlementAssignment) Edges() []ent.Edge {
 			Immutable().
 			Required().
 			Unique(),
+		edge.From("permission_histories", PermissionHistory.Type).
+			Ref("entitlement_assignment"),
 	}
 }
 

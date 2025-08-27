@@ -1,0 +1,69 @@
+meta {
+  name: Role suite Delete - Client error (Role suite not found)
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{api_host}}/v1/authorize/role-suites/01JWP9MVYX0K24R9H8NOTFOUND
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const status = res.getStatus();
+  let body;
+  
+  try {
+    body = res.getBody();
+    console.log("📦 Response:", body);
+  } catch (e) {
+    console.warn("⚠️ Failed to parse body or body is empty:", e);
+    body = {};
+  }
+  
+  // ✅ Check status
+  test("status should be 2xx or 400", function () {
+    expect([200, 204, 400]).to.include(status);
+  });
+  
+  // ✅ Case 1: Success
+  if (status >= 200 && status < 300) {
+    test("response should contain id and deletedAt", function () {
+      expect(body).to.have.property("id").that.is.a("string");
+      expect(body).to.have.property("deletedAt").that.is.a("number");
+    });
+  
+    bru.deleteVar("role_suite_id");
+    console.log("🧹 Deleted variables: role_suite_id");
+  }
+  
+  // ✅ Case 2 & 3: Validation error
+  if (status === 400) {
+    test("should have code and details fields", function () {
+      expect(body).to.have.property("code", "validation_error");
+      expect(body).to.have.property("details").that.is.an("object");
+    });
+  
+    const details = body.details || {};
+  
+    // Case 2: Role suite not found
+    if (details.role_suite_id === "role suite not found") {
+      test("should catch role suite not found", function () {
+        expect(details.role_suite_id).to.equal("role suite not found");
+      });
+    }
+  
+    // Case 3: Invalid Id format
+    if (details.id === "the length must be exactly 26") {
+      test("should catch invalid id length", function () {
+        expect(details.id).to.equal("the length must be exactly 26");
+      });
+    }
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,8 +1,7 @@
 package v1
 
 import (
-	"github.com/thoas/go-funk"
-
+	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
@@ -23,30 +22,29 @@ type RoleSuiteDto struct {
 	IsRequiredComment    *bool    `json:"isRequiredComment,omitempty"`
 	CreatedBy            model.Id `json:"createdBy"`
 
-	Roles []RoleDto `json:"roles,omitempty"`
+	Roles []RoleSummaryDto `json:"roles,omitempty"`
 }
 
 func (this *RoleSuiteDto) FromRoleSuite(roleSuite domain.RoleSuite) {
-	this.Id = *roleSuite.Id
-	this.Name = *roleSuite.Name
-	this.Description = roleSuite.Description
-	this.Etag = *roleSuite.Etag
-	this.OwnerType = roleSuite.OwnerType.String()
-	this.OwnerRef = *roleSuite.OwnerRef
-	this.IsRequestable = roleSuite.IsRequestable
-	this.IsRequiredAttachment = roleSuite.IsRequiredAttachment
-	this.IsRequiredComment = roleSuite.IsRequiredComment
-	this.CreatedBy = *roleSuite.CreatedBy
+	model.MustCopy(roleSuite.AuditableBase, this)
+	model.MustCopy(roleSuite.ModelBase, this)
+	model.MustCopy(roleSuite, this)
 
-	this.Roles = funk.Map(roleSuite.Roles, func(role domain.Role) RoleDto {
-		item := RoleDto{}
-		item.FromRole(role)
+	this.Roles = array.Map(roleSuite.Roles, func(role domain.Role) RoleSummaryDto {
+		item := RoleSummaryDto{}
+		item.FromRole(&role)
 		return item
-	}).([]RoleDto)
+	})
 }
 
 type CreateRoleSuiteRequest = it.CreateRoleSuiteCommand
 type CreateRoleSuiteResponse = httpserver.RestCreateResponse
+
+type UpdateRoleSuiteRequest = it.UpdateRoleSuiteCommand
+type UpdateRoleSuiteResponse = httpserver.RestUpdateResponse
+
+type DeleteRoleSuiteRequest = it.DeleteRoleSuiteCommand
+type DeleteRoleSuiteResponse = httpserver.RestDeleteResponse
 
 type GetRoleSuiteByIdRequest = it.GetRoleSuiteByIdQuery
 type GetRoleSuiteByIdResponse = RoleSuiteDto
@@ -58,9 +56,9 @@ func (this *SearchRoleSuitesResponse) FromResult(result *it.SearchRoleSuitesResu
 	this.Total = result.Total
 	this.Page = result.Page
 	this.Size = result.Size
-	this.Items = funk.Map(result.Items, func(roleSuite domain.RoleSuite) RoleSuiteDto {
+	this.Items = array.Map(result.Items, func(roleSuite domain.RoleSuite) RoleSuiteDto {
 		item := RoleSuiteDto{}
 		item.FromRoleSuite(roleSuite)
 		return item
-	}).([]RoleSuiteDto)
+	})
 }

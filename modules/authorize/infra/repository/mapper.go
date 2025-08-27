@@ -33,6 +33,7 @@ func entToResources(dbResources []*ent.Resource) []domain.Resource {
 		return *entToResource(dbResource)
 	})
 }
+
 // END: Resource
 
 // START: Action
@@ -62,6 +63,7 @@ func entToActions(dbActions []*ent.Action) []domain.Action {
 		return *entToAction(dbAction)
 	})
 }
+
 // END: Action
 
 // START: Entitlement
@@ -89,59 +91,33 @@ func entToEntitlements(dbEntitlements []*ent.Entitlement) []domain.Entitlement {
 		return *entToEntitlement(dbEntitlement)
 	})
 }
+
 // END: Entitlement
 
 // START: Role
 func entToRole(dbRole *ent.Role) *domain.Role {
-	role := &domain.Role{
-		ModelBase: model.ModelBase{
-			Id:   &dbRole.ID,
-			Etag: &dbRole.Etag,
-		},
-		AuditableBase: model.AuditableBase{
-			CreatedAt: &dbRole.CreatedAt,
-		},
-		Name:                 &dbRole.Name,
-		Description:          dbRole.Description,
-		OwnerType:            domain.WrapRoleOwnerTypeEnt(dbRole.OwnerType),
-		OwnerRef:             &dbRole.OwnerRef,
-		IsRequestable:        &dbRole.IsRequestable,
-		IsRequiredAttachment: &dbRole.IsRequiredAttachment,
-		IsRequiredComment:    &dbRole.IsRequiredComment,
-		CreatedBy:            &dbRole.CreatedBy,
-	}
+	role := &domain.Role{}
+	model.MustCopy(dbRole, role)
 
 	return role
 }
 
-func entToRoles(dbRoles []*ent.Role) []*domain.Role {
-	roles := make([]*domain.Role, len(dbRoles))
-	for i, dbRole := range dbRoles {
-		roles[i] = entToRole(dbRole)
+func entToRoles(dbRoles []*ent.Role) []domain.Role {
+	if dbRoles == nil {
+		return nil
 	}
-	return roles
+
+	return array.Map(dbRoles, func(dbRole *ent.Role) domain.Role {
+		return *entToRole(dbRole)
+	})
 }
+
 // END: Role
 
 // START: RoleSuite
 func entToRoleSuite(dbRoleSuite *ent.RoleSuite) *domain.RoleSuite {
-	roleSuite := &domain.RoleSuite{
-		ModelBase: model.ModelBase{
-			Id:   &dbRoleSuite.ID,
-			Etag: &dbRoleSuite.Etag,
-		},
-		AuditableBase: model.AuditableBase{
-			CreatedAt: &dbRoleSuite.CreatedAt,
-		},
-		Name:                 &dbRoleSuite.Name,
-		Description:          &dbRoleSuite.Description,
-		OwnerType:            domain.WrapRoleSuiteOwnerTypeEnt(dbRoleSuite.OwnerType),
-		OwnerRef:             &dbRoleSuite.OwnerRef,
-		IsRequestable:        &dbRoleSuite.IsRequestable,
-		IsRequiredAttachment: &dbRoleSuite.IsRequiredAttachment,
-		IsRequiredComment:    &dbRoleSuite.IsRequiredComment,
-		CreatedBy:            &dbRoleSuite.CreatedBy,
-	}
+	roleSuite := &domain.RoleSuite{}
+	model.MustCopy(dbRoleSuite, roleSuite)
 
 	if dbRoleSuite.Edges.Roles != nil {
 		roleSuite.Roles = array.Map(dbRoleSuite.Edges.Roles, func(dbRole *ent.Role) domain.Role {
@@ -153,12 +129,15 @@ func entToRoleSuite(dbRoleSuite *ent.RoleSuite) *domain.RoleSuite {
 }
 
 func entToRoleSuites(dbRoleSuites []*ent.RoleSuite) []domain.RoleSuite {
-	roleSuites := make([]domain.RoleSuite, len(dbRoleSuites))
-	for i, dbRoleSuite := range dbRoleSuites {
-		roleSuites[i] = *entToRoleSuite(dbRoleSuite)
+	if dbRoleSuites == nil {
+		return nil
 	}
-	return roleSuites
+
+	return array.Map(dbRoleSuites, func(dbRoleSuite *ent.RoleSuite) domain.RoleSuite {
+		return *entToRoleSuite(dbRoleSuite)
+	})
 }
+
 // END: RoleSuite
 
 // START: EntitlementAssignment
@@ -242,6 +221,5 @@ func entToEntitlementAssignments(dbEntitlementAssignments []*ent.EntitlementAssi
 	}
 	return entitlementAssignments
 }
-
 
 // END: EntitlementAssignment

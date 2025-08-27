@@ -1928,20 +1928,23 @@ func (m *EntitlementMutation) ResetEdge(name string) error {
 // EntitlementAssignmentMutation represents an operation that mutates the EntitlementAssignment nodes in the graph.
 type EntitlementAssignmentMutation struct {
 	config
-	op                 Op
-	typ                string
-	id                 *string
-	subject_type       *entitlementassignment.SubjectType
-	subject_ref        *string
-	resolved_expr      *string
-	action_name        *string
-	resource_name      *string
-	clearedFields      map[string]struct{}
-	entitlement        *string
-	clearedentitlement bool
-	done               bool
-	oldValue           func(context.Context) (*EntitlementAssignment, error)
-	predicates         []predicate.EntitlementAssignment
+	op                          Op
+	typ                         string
+	id                          *string
+	subject_type                *entitlementassignment.SubjectType
+	subject_ref                 *string
+	resolved_expr               *string
+	action_name                 *string
+	resource_name               *string
+	clearedFields               map[string]struct{}
+	entitlement                 *string
+	clearedentitlement          bool
+	permission_histories        map[string]struct{}
+	removedpermission_histories map[string]struct{}
+	clearedpermission_histories bool
+	done                        bool
+	oldValue                    func(context.Context) (*EntitlementAssignment, error)
+	predicates                  []predicate.EntitlementAssignment
 }
 
 var _ ent.Mutation = (*EntitlementAssignmentMutation)(nil)
@@ -2317,6 +2320,60 @@ func (m *EntitlementAssignmentMutation) ResetEntitlement() {
 	m.clearedentitlement = false
 }
 
+// AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by ids.
+func (m *EntitlementAssignmentMutation) AddPermissionHistoryIDs(ids ...string) {
+	if m.permission_histories == nil {
+		m.permission_histories = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.permission_histories[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPermissionHistories clears the "permission_histories" edge to the PermissionHistory entity.
+func (m *EntitlementAssignmentMutation) ClearPermissionHistories() {
+	m.clearedpermission_histories = true
+}
+
+// PermissionHistoriesCleared reports if the "permission_histories" edge to the PermissionHistory entity was cleared.
+func (m *EntitlementAssignmentMutation) PermissionHistoriesCleared() bool {
+	return m.clearedpermission_histories
+}
+
+// RemovePermissionHistoryIDs removes the "permission_histories" edge to the PermissionHistory entity by IDs.
+func (m *EntitlementAssignmentMutation) RemovePermissionHistoryIDs(ids ...string) {
+	if m.removedpermission_histories == nil {
+		m.removedpermission_histories = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.permission_histories, ids[i])
+		m.removedpermission_histories[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPermissionHistories returns the removed IDs of the "permission_histories" edge to the PermissionHistory entity.
+func (m *EntitlementAssignmentMutation) RemovedPermissionHistoriesIDs() (ids []string) {
+	for id := range m.removedpermission_histories {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PermissionHistoriesIDs returns the "permission_histories" edge IDs in the mutation.
+func (m *EntitlementAssignmentMutation) PermissionHistoriesIDs() (ids []string) {
+	for id := range m.permission_histories {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPermissionHistories resets all changes to the "permission_histories" edge.
+func (m *EntitlementAssignmentMutation) ResetPermissionHistories() {
+	m.permission_histories = nil
+	m.clearedpermission_histories = false
+	m.removedpermission_histories = nil
+}
+
 // Where appends a list predicates to the EntitlementAssignmentMutation builder.
 func (m *EntitlementAssignmentMutation) Where(ps ...predicate.EntitlementAssignment) {
 	m.predicates = append(m.predicates, ps...)
@@ -2550,9 +2607,12 @@ func (m *EntitlementAssignmentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *EntitlementAssignmentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.entitlement != nil {
 		edges = append(edges, entitlementassignment.EdgeEntitlement)
+	}
+	if m.permission_histories != nil {
+		edges = append(edges, entitlementassignment.EdgePermissionHistories)
 	}
 	return edges
 }
@@ -2565,27 +2625,47 @@ func (m *EntitlementAssignmentMutation) AddedIDs(name string) []ent.Value {
 		if id := m.entitlement; id != nil {
 			return []ent.Value{*id}
 		}
+	case entitlementassignment.EdgePermissionHistories:
+		ids := make([]ent.Value, 0, len(m.permission_histories))
+		for id := range m.permission_histories {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *EntitlementAssignmentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removedpermission_histories != nil {
+		edges = append(edges, entitlementassignment.EdgePermissionHistories)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *EntitlementAssignmentMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case entitlementassignment.EdgePermissionHistories:
+		ids := make([]ent.Value, 0, len(m.removedpermission_histories))
+		for id := range m.removedpermission_histories {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *EntitlementAssignmentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedentitlement {
 		edges = append(edges, entitlementassignment.EdgeEntitlement)
+	}
+	if m.clearedpermission_histories {
+		edges = append(edges, entitlementassignment.EdgePermissionHistories)
 	}
 	return edges
 }
@@ -2596,6 +2676,8 @@ func (m *EntitlementAssignmentMutation) EdgeCleared(name string) bool {
 	switch name {
 	case entitlementassignment.EdgeEntitlement:
 		return m.clearedentitlement
+	case entitlementassignment.EdgePermissionHistories:
+		return m.clearedpermission_histories
 	}
 	return false
 }
@@ -2618,6 +2700,9 @@ func (m *EntitlementAssignmentMutation) ResetEdge(name string) error {
 	case entitlementassignment.EdgeEntitlement:
 		m.ResetEntitlement()
 		return nil
+	case entitlementassignment.EdgePermissionHistories:
+		m.ResetPermissionHistories()
+		return nil
 	}
 	return fmt.Errorf("unknown EntitlementAssignment edge %s", name)
 }
@@ -2635,6 +2720,8 @@ type GrantRequestMutation struct {
 	etag                        *string
 	receiver_id                 *string
 	target_type                 *grantrequest.TargetType
+	target_role_name            *string
+	target_suite_name           *string
 	status                      *grantrequest.Status
 	clearedFields               map[string]struct{}
 	permission_histories        map[string]struct{}
@@ -3080,6 +3167,42 @@ func (m *GrantRequestMutation) ResetTargetRoleID() {
 	delete(m.clearedFields, grantrequest.FieldTargetRoleID)
 }
 
+// SetTargetRoleName sets the "target_role_name" field.
+func (m *GrantRequestMutation) SetTargetRoleName(s string) {
+	m.target_role_name = &s
+}
+
+// TargetRoleName returns the value of the "target_role_name" field in the mutation.
+func (m *GrantRequestMutation) TargetRoleName() (r string, exists bool) {
+	v := m.target_role_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTargetRoleName returns the old "target_role_name" field's value of the GrantRequest entity.
+// If the GrantRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GrantRequestMutation) OldTargetRoleName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTargetRoleName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTargetRoleName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTargetRoleName: %w", err)
+	}
+	return oldValue.TargetRoleName, nil
+}
+
+// ResetTargetRoleName resets all changes to the "target_role_name" field.
+func (m *GrantRequestMutation) ResetTargetRoleName() {
+	m.target_role_name = nil
+}
+
 // SetTargetSuiteID sets the "target_suite_id" field.
 func (m *GrantRequestMutation) SetTargetSuiteID(s string) {
 	m.role_suite = &s
@@ -3127,6 +3250,42 @@ func (m *GrantRequestMutation) TargetSuiteIDCleared() bool {
 func (m *GrantRequestMutation) ResetTargetSuiteID() {
 	m.role_suite = nil
 	delete(m.clearedFields, grantrequest.FieldTargetSuiteID)
+}
+
+// SetTargetSuiteName sets the "target_suite_name" field.
+func (m *GrantRequestMutation) SetTargetSuiteName(s string) {
+	m.target_suite_name = &s
+}
+
+// TargetSuiteName returns the value of the "target_suite_name" field in the mutation.
+func (m *GrantRequestMutation) TargetSuiteName() (r string, exists bool) {
+	v := m.target_suite_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTargetSuiteName returns the old "target_suite_name" field's value of the GrantRequest entity.
+// If the GrantRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GrantRequestMutation) OldTargetSuiteName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTargetSuiteName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTargetSuiteName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTargetSuiteName: %w", err)
+	}
+	return oldValue.TargetSuiteName, nil
+}
+
+// ResetTargetSuiteName resets all changes to the "target_suite_name" field.
+func (m *GrantRequestMutation) ResetTargetSuiteName() {
+	m.target_suite_name = nil
 }
 
 // SetStatus sets the "status" field.
@@ -3333,7 +3492,7 @@ func (m *GrantRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GrantRequestMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 12)
 	if m.attachment_url != nil {
 		fields = append(fields, grantrequest.FieldAttachmentURL)
 	}
@@ -3358,8 +3517,14 @@ func (m *GrantRequestMutation) Fields() []string {
 	if m.role != nil {
 		fields = append(fields, grantrequest.FieldTargetRoleID)
 	}
+	if m.target_role_name != nil {
+		fields = append(fields, grantrequest.FieldTargetRoleName)
+	}
 	if m.role_suite != nil {
 		fields = append(fields, grantrequest.FieldTargetSuiteID)
+	}
+	if m.target_suite_name != nil {
+		fields = append(fields, grantrequest.FieldTargetSuiteName)
 	}
 	if m.status != nil {
 		fields = append(fields, grantrequest.FieldStatus)
@@ -3388,8 +3553,12 @@ func (m *GrantRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.TargetType()
 	case grantrequest.FieldTargetRoleID:
 		return m.TargetRoleID()
+	case grantrequest.FieldTargetRoleName:
+		return m.TargetRoleName()
 	case grantrequest.FieldTargetSuiteID:
 		return m.TargetSuiteID()
+	case grantrequest.FieldTargetSuiteName:
+		return m.TargetSuiteName()
 	case grantrequest.FieldStatus:
 		return m.Status()
 	}
@@ -3417,8 +3586,12 @@ func (m *GrantRequestMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldTargetType(ctx)
 	case grantrequest.FieldTargetRoleID:
 		return m.OldTargetRoleID(ctx)
+	case grantrequest.FieldTargetRoleName:
+		return m.OldTargetRoleName(ctx)
 	case grantrequest.FieldTargetSuiteID:
 		return m.OldTargetSuiteID(ctx)
+	case grantrequest.FieldTargetSuiteName:
+		return m.OldTargetSuiteName(ctx)
 	case grantrequest.FieldStatus:
 		return m.OldStatus(ctx)
 	}
@@ -3486,12 +3659,26 @@ func (m *GrantRequestMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTargetRoleID(v)
 		return nil
+	case grantrequest.FieldTargetRoleName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTargetRoleName(v)
+		return nil
 	case grantrequest.FieldTargetSuiteID:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTargetSuiteID(v)
+		return nil
+	case grantrequest.FieldTargetSuiteName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTargetSuiteName(v)
 		return nil
 	case grantrequest.FieldStatus:
 		v, ok := value.(grantrequest.Status)
@@ -3600,8 +3787,14 @@ func (m *GrantRequestMutation) ResetField(name string) error {
 	case grantrequest.FieldTargetRoleID:
 		m.ResetTargetRoleID()
 		return nil
+	case grantrequest.FieldTargetRoleName:
+		m.ResetTargetRoleName()
+		return nil
 	case grantrequest.FieldTargetSuiteID:
 		m.ResetTargetSuiteID()
+		return nil
+	case grantrequest.FieldTargetSuiteName:
+		m.ResetTargetSuiteName()
 		return nil
 	case grantrequest.FieldStatus:
 		m.ResetStatus()
@@ -6251,15 +6444,17 @@ type RevokeRequestMutation struct {
 	etag                        *string
 	receiver_id                 *string
 	target_type                 *revokerequest.TargetType
+	target_role_name            *string
+	target_suite_name           *string
 	status                      *revokerequest.Status
 	clearedFields               map[string]struct{}
+	permission_histories        map[string]struct{}
+	removedpermission_histories map[string]struct{}
+	clearedpermission_histories bool
 	role                        *string
 	clearedrole                 bool
 	role_suite                  *string
 	clearedrole_suite           bool
-	permission_histories        map[string]struct{}
-	removedpermission_histories map[string]struct{}
-	clearedpermission_histories bool
 	done                        bool
 	oldValue                    func(context.Context) (*RevokeRequest, error)
 	predicates                  []predicate.RevokeRequest
@@ -6696,6 +6891,42 @@ func (m *RevokeRequestMutation) ResetTargetRoleID() {
 	delete(m.clearedFields, revokerequest.FieldTargetRoleID)
 }
 
+// SetTargetRoleName sets the "target_role_name" field.
+func (m *RevokeRequestMutation) SetTargetRoleName(s string) {
+	m.target_role_name = &s
+}
+
+// TargetRoleName returns the value of the "target_role_name" field in the mutation.
+func (m *RevokeRequestMutation) TargetRoleName() (r string, exists bool) {
+	v := m.target_role_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTargetRoleName returns the old "target_role_name" field's value of the RevokeRequest entity.
+// If the RevokeRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevokeRequestMutation) OldTargetRoleName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTargetRoleName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTargetRoleName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTargetRoleName: %w", err)
+	}
+	return oldValue.TargetRoleName, nil
+}
+
+// ResetTargetRoleName resets all changes to the "target_role_name" field.
+func (m *RevokeRequestMutation) ResetTargetRoleName() {
+	m.target_role_name = nil
+}
+
 // SetTargetSuiteID sets the "target_suite_id" field.
 func (m *RevokeRequestMutation) SetTargetSuiteID(s string) {
 	m.role_suite = &s
@@ -6745,6 +6976,42 @@ func (m *RevokeRequestMutation) ResetTargetSuiteID() {
 	delete(m.clearedFields, revokerequest.FieldTargetSuiteID)
 }
 
+// SetTargetSuiteName sets the "target_suite_name" field.
+func (m *RevokeRequestMutation) SetTargetSuiteName(s string) {
+	m.target_suite_name = &s
+}
+
+// TargetSuiteName returns the value of the "target_suite_name" field in the mutation.
+func (m *RevokeRequestMutation) TargetSuiteName() (r string, exists bool) {
+	v := m.target_suite_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTargetSuiteName returns the old "target_suite_name" field's value of the RevokeRequest entity.
+// If the RevokeRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevokeRequestMutation) OldTargetSuiteName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTargetSuiteName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTargetSuiteName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTargetSuiteName: %w", err)
+	}
+	return oldValue.TargetSuiteName, nil
+}
+
+// ResetTargetSuiteName resets all changes to the "target_suite_name" field.
+func (m *RevokeRequestMutation) ResetTargetSuiteName() {
+	m.target_suite_name = nil
+}
+
 // SetStatus sets the "status" field.
 func (m *RevokeRequestMutation) SetStatus(r revokerequest.Status) {
 	m.status = &r
@@ -6779,6 +7046,60 @@ func (m *RevokeRequestMutation) OldStatus(ctx context.Context) (v revokerequest.
 // ResetStatus resets all changes to the "status" field.
 func (m *RevokeRequestMutation) ResetStatus() {
 	m.status = nil
+}
+
+// AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by ids.
+func (m *RevokeRequestMutation) AddPermissionHistoryIDs(ids ...string) {
+	if m.permission_histories == nil {
+		m.permission_histories = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.permission_histories[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPermissionHistories clears the "permission_histories" edge to the PermissionHistory entity.
+func (m *RevokeRequestMutation) ClearPermissionHistories() {
+	m.clearedpermission_histories = true
+}
+
+// PermissionHistoriesCleared reports if the "permission_histories" edge to the PermissionHistory entity was cleared.
+func (m *RevokeRequestMutation) PermissionHistoriesCleared() bool {
+	return m.clearedpermission_histories
+}
+
+// RemovePermissionHistoryIDs removes the "permission_histories" edge to the PermissionHistory entity by IDs.
+func (m *RevokeRequestMutation) RemovePermissionHistoryIDs(ids ...string) {
+	if m.removedpermission_histories == nil {
+		m.removedpermission_histories = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.permission_histories, ids[i])
+		m.removedpermission_histories[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPermissionHistories returns the removed IDs of the "permission_histories" edge to the PermissionHistory entity.
+func (m *RevokeRequestMutation) RemovedPermissionHistoriesIDs() (ids []string) {
+	for id := range m.removedpermission_histories {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PermissionHistoriesIDs returns the "permission_histories" edge IDs in the mutation.
+func (m *RevokeRequestMutation) PermissionHistoriesIDs() (ids []string) {
+	for id := range m.permission_histories {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPermissionHistories resets all changes to the "permission_histories" edge.
+func (m *RevokeRequestMutation) ResetPermissionHistories() {
+	m.permission_histories = nil
+	m.clearedpermission_histories = false
+	m.removedpermission_histories = nil
 }
 
 // SetRoleID sets the "role" edge to the Role entity by id.
@@ -6861,60 +7182,6 @@ func (m *RevokeRequestMutation) ResetRoleSuite() {
 	m.clearedrole_suite = false
 }
 
-// AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by ids.
-func (m *RevokeRequestMutation) AddPermissionHistoryIDs(ids ...string) {
-	if m.permission_histories == nil {
-		m.permission_histories = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.permission_histories[ids[i]] = struct{}{}
-	}
-}
-
-// ClearPermissionHistories clears the "permission_histories" edge to the PermissionHistory entity.
-func (m *RevokeRequestMutation) ClearPermissionHistories() {
-	m.clearedpermission_histories = true
-}
-
-// PermissionHistoriesCleared reports if the "permission_histories" edge to the PermissionHistory entity was cleared.
-func (m *RevokeRequestMutation) PermissionHistoriesCleared() bool {
-	return m.clearedpermission_histories
-}
-
-// RemovePermissionHistoryIDs removes the "permission_histories" edge to the PermissionHistory entity by IDs.
-func (m *RevokeRequestMutation) RemovePermissionHistoryIDs(ids ...string) {
-	if m.removedpermission_histories == nil {
-		m.removedpermission_histories = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.permission_histories, ids[i])
-		m.removedpermission_histories[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedPermissionHistories returns the removed IDs of the "permission_histories" edge to the PermissionHistory entity.
-func (m *RevokeRequestMutation) RemovedPermissionHistoriesIDs() (ids []string) {
-	for id := range m.removedpermission_histories {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// PermissionHistoriesIDs returns the "permission_histories" edge IDs in the mutation.
-func (m *RevokeRequestMutation) PermissionHistoriesIDs() (ids []string) {
-	for id := range m.permission_histories {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetPermissionHistories resets all changes to the "permission_histories" edge.
-func (m *RevokeRequestMutation) ResetPermissionHistories() {
-	m.permission_histories = nil
-	m.clearedpermission_histories = false
-	m.removedpermission_histories = nil
-}
-
 // Where appends a list predicates to the RevokeRequestMutation builder.
 func (m *RevokeRequestMutation) Where(ps ...predicate.RevokeRequest) {
 	m.predicates = append(m.predicates, ps...)
@@ -6949,7 +7216,7 @@ func (m *RevokeRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevokeRequestMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 12)
 	if m.attachment_url != nil {
 		fields = append(fields, revokerequest.FieldAttachmentURL)
 	}
@@ -6974,8 +7241,14 @@ func (m *RevokeRequestMutation) Fields() []string {
 	if m.role != nil {
 		fields = append(fields, revokerequest.FieldTargetRoleID)
 	}
+	if m.target_role_name != nil {
+		fields = append(fields, revokerequest.FieldTargetRoleName)
+	}
 	if m.role_suite != nil {
 		fields = append(fields, revokerequest.FieldTargetSuiteID)
+	}
+	if m.target_suite_name != nil {
+		fields = append(fields, revokerequest.FieldTargetSuiteName)
 	}
 	if m.status != nil {
 		fields = append(fields, revokerequest.FieldStatus)
@@ -7004,8 +7277,12 @@ func (m *RevokeRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.TargetType()
 	case revokerequest.FieldTargetRoleID:
 		return m.TargetRoleID()
+	case revokerequest.FieldTargetRoleName:
+		return m.TargetRoleName()
 	case revokerequest.FieldTargetSuiteID:
 		return m.TargetSuiteID()
+	case revokerequest.FieldTargetSuiteName:
+		return m.TargetSuiteName()
 	case revokerequest.FieldStatus:
 		return m.Status()
 	}
@@ -7033,8 +7310,12 @@ func (m *RevokeRequestMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldTargetType(ctx)
 	case revokerequest.FieldTargetRoleID:
 		return m.OldTargetRoleID(ctx)
+	case revokerequest.FieldTargetRoleName:
+		return m.OldTargetRoleName(ctx)
 	case revokerequest.FieldTargetSuiteID:
 		return m.OldTargetSuiteID(ctx)
+	case revokerequest.FieldTargetSuiteName:
+		return m.OldTargetSuiteName(ctx)
 	case revokerequest.FieldStatus:
 		return m.OldStatus(ctx)
 	}
@@ -7102,12 +7383,26 @@ func (m *RevokeRequestMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTargetRoleID(v)
 		return nil
+	case revokerequest.FieldTargetRoleName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTargetRoleName(v)
+		return nil
 	case revokerequest.FieldTargetSuiteID:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTargetSuiteID(v)
+		return nil
+	case revokerequest.FieldTargetSuiteName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTargetSuiteName(v)
 		return nil
 	case revokerequest.FieldStatus:
 		v, ok := value.(revokerequest.Status)
@@ -7216,8 +7511,14 @@ func (m *RevokeRequestMutation) ResetField(name string) error {
 	case revokerequest.FieldTargetRoleID:
 		m.ResetTargetRoleID()
 		return nil
+	case revokerequest.FieldTargetRoleName:
+		m.ResetTargetRoleName()
+		return nil
 	case revokerequest.FieldTargetSuiteID:
 		m.ResetTargetSuiteID()
+		return nil
+	case revokerequest.FieldTargetSuiteName:
+		m.ResetTargetSuiteName()
 		return nil
 	case revokerequest.FieldStatus:
 		m.ResetStatus()
@@ -7229,14 +7530,14 @@ func (m *RevokeRequestMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RevokeRequestMutation) AddedEdges() []string {
 	edges := make([]string, 0, 3)
+	if m.permission_histories != nil {
+		edges = append(edges, revokerequest.EdgePermissionHistories)
+	}
 	if m.role != nil {
 		edges = append(edges, revokerequest.EdgeRole)
 	}
 	if m.role_suite != nil {
 		edges = append(edges, revokerequest.EdgeRoleSuite)
-	}
-	if m.permission_histories != nil {
-		edges = append(edges, revokerequest.EdgePermissionHistories)
 	}
 	return edges
 }
@@ -7245,6 +7546,12 @@ func (m *RevokeRequestMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *RevokeRequestMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case revokerequest.EdgePermissionHistories:
+		ids := make([]ent.Value, 0, len(m.permission_histories))
+		for id := range m.permission_histories {
+			ids = append(ids, id)
+		}
+		return ids
 	case revokerequest.EdgeRole:
 		if id := m.role; id != nil {
 			return []ent.Value{*id}
@@ -7253,12 +7560,6 @@ func (m *RevokeRequestMutation) AddedIDs(name string) []ent.Value {
 		if id := m.role_suite; id != nil {
 			return []ent.Value{*id}
 		}
-	case revokerequest.EdgePermissionHistories:
-		ids := make([]ent.Value, 0, len(m.permission_histories))
-		for id := range m.permission_histories {
-			ids = append(ids, id)
-		}
-		return ids
 	}
 	return nil
 }
@@ -7289,14 +7590,14 @@ func (m *RevokeRequestMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RevokeRequestMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 3)
+	if m.clearedpermission_histories {
+		edges = append(edges, revokerequest.EdgePermissionHistories)
+	}
 	if m.clearedrole {
 		edges = append(edges, revokerequest.EdgeRole)
 	}
 	if m.clearedrole_suite {
 		edges = append(edges, revokerequest.EdgeRoleSuite)
-	}
-	if m.clearedpermission_histories {
-		edges = append(edges, revokerequest.EdgePermissionHistories)
 	}
 	return edges
 }
@@ -7305,12 +7606,12 @@ func (m *RevokeRequestMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *RevokeRequestMutation) EdgeCleared(name string) bool {
 	switch name {
+	case revokerequest.EdgePermissionHistories:
+		return m.clearedpermission_histories
 	case revokerequest.EdgeRole:
 		return m.clearedrole
 	case revokerequest.EdgeRoleSuite:
 		return m.clearedrole_suite
-	case revokerequest.EdgePermissionHistories:
-		return m.clearedpermission_histories
 	}
 	return false
 }
@@ -7333,14 +7634,14 @@ func (m *RevokeRequestMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *RevokeRequestMutation) ResetEdge(name string) error {
 	switch name {
+	case revokerequest.EdgePermissionHistories:
+		m.ResetPermissionHistories()
+		return nil
 	case revokerequest.EdgeRole:
 		m.ResetRole()
 		return nil
 	case revokerequest.EdgeRoleSuite:
 		m.ResetRoleSuite()
-		return nil
-	case revokerequest.EdgePermissionHistories:
-		m.ResetPermissionHistories()
 		return nil
 	}
 	return fmt.Errorf("unknown RevokeRequest edge %s", name)

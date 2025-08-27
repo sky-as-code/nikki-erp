@@ -26,21 +26,19 @@ script:post-response {
     expect([200, 204, 400]).to.include(status);
   });
   
-  // ✅ Thành công: Xóa entitlement
+  // ✅ Success: Delete entitlement
   if (status >= 200 && status < 300) {
     test("response should contain id and deletedAt", function () {
       expect(body).to.have.property("id").that.is.a("string");
       expect(body).to.have.property("deletedAt").that.is.a("number");
     });
   
-    // ✅ Xóa biến môi trường nếu xóa thành công
     bru.deleteVar("entitlement_id");
     bru.deleteVar("entitlement_name");
     bru.deleteVar("etag");
     console.log("🧹 Deleted variables: entitlement_id, etag");
   }
   
-  // ❌ Lỗi: validation hoặc entitlement không tồn tại
   if (status === 400) {
     test("should have code and details fields", function () {
       expect(body).to.have.property("code", "validation_error");

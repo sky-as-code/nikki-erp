@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 )
 
 // EntitlementAssignmentCreate is the builder for creating a EntitlementAssignment entity.
@@ -81,6 +82,21 @@ func (eac *EntitlementAssignmentCreate) SetID(s string) *EntitlementAssignmentCr
 // SetEntitlement sets the "entitlement" edge to the Entitlement entity.
 func (eac *EntitlementAssignmentCreate) SetEntitlement(e *Entitlement) *EntitlementAssignmentCreate {
 	return eac.SetEntitlementID(e.ID)
+}
+
+// AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by IDs.
+func (eac *EntitlementAssignmentCreate) AddPermissionHistoryIDs(ids ...string) *EntitlementAssignmentCreate {
+	eac.mutation.AddPermissionHistoryIDs(ids...)
+	return eac
+}
+
+// AddPermissionHistories adds the "permission_histories" edges to the PermissionHistory entity.
+func (eac *EntitlementAssignmentCreate) AddPermissionHistories(p ...*PermissionHistory) *EntitlementAssignmentCreate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return eac.AddPermissionHistoryIDs(ids...)
 }
 
 // Mutation returns the EntitlementAssignmentMutation object of the builder.
@@ -207,6 +223,22 @@ func (eac *EntitlementAssignmentCreate) createSpec() (*EntitlementAssignment, *s
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.EntitlementID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := eac.mutation.PermissionHistoriesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   entitlementassignment.PermissionHistoriesTable,
+			Columns: []string{entitlementassignment.PermissionHistoriesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(permissionhistory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

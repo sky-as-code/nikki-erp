@@ -3,8 +3,6 @@ package v1
 import (
 	"time"
 
-	"github.com/thoas/go-funk"
-
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -27,31 +25,39 @@ type RoleDto struct {
 	IsRequiredComment    bool     `json:"isRequiredComment"`
 	CreatedBy            model.Id `json:"createdBy"`
 
-	Entitlements []EntitlementDto `json:"entitlements,omitempty"`
+	Entitlements []EntitlementSummaryDto `json:"entitlements,omitempty"`
+}
+
+type RoleSummaryDto struct {
+	Id   model.Id `json:"id"`
+	Name string   `json:"name"`
 }
 
 func (this *RoleDto) FromRole(role domain.Role) {
-	this.Id = *role.Id
-	this.Etag = *role.Etag
-	this.CreatedAt = *role.CreatedAt
-	this.Name = *role.Name
-	this.Description = role.Description
-	this.OwnerType = role.OwnerType.String()
-	this.OwnerRef = *role.OwnerRef
-	this.IsRequestable = *role.IsRequestable
-	this.IsRequiredAttachment = *role.IsRequiredAttachment
-	this.IsRequiredComment = *role.IsRequiredComment
-	this.CreatedBy = *role.CreatedBy
+	model.MustCopy(role.AuditableBase, this)
+	model.MustCopy(role.ModelBase, this)
+	model.MustCopy(role, this)
 
-	this.Entitlements = array.Map(role.Entitlements, func(entitlement domain.Entitlement) EntitlementDto {
-		entitlementItem := EntitlementDto{}
-		entitlementItem.FromEntitlement(entitlement)
+	this.Entitlements = array.Map(role.Entitlements, func(entitlement domain.Entitlement) EntitlementSummaryDto {
+		entitlementItem := EntitlementSummaryDto{}
+		entitlementItem.FromEntitlement(&entitlement)
 		return entitlementItem
 	})
 }
 
+func (this *RoleSummaryDto) FromRole(role *domain.Role) {
+	this.Id = *role.Id
+	this.Name = *role.Name
+}
+
 type CreateRoleRequest = it.CreateRoleCommand
 type CreateRoleResponse = httpserver.RestCreateResponse
+
+type UpdateRoleRequest = it.UpdateRoleCommand
+type UpdateRoleResponse = httpserver.RestUpdateResponse
+
+type DeleteRoleHardRequest = it.DeleteRoleHardCommand
+type DeleteRoleHardResponse = httpserver.RestDeleteResponse
 
 type GetRoleByIdRequest = it.GetRoleByIdQuery
 type GetRoleByIdResponse = RoleDto
@@ -63,9 +69,9 @@ func (this *SearchRolesResponse) FromResult(result *it.SearchRolesResultData) {
 	this.Total = result.Total
 	this.Page = result.Page
 	this.Size = result.Size
-	this.Items = funk.Map(result.Items, func(role *domain.Role) RoleDto {
+	this.Items = array.Map(result.Items, func(role domain.Role) RoleDto {
 		item := RoleDto{}
-		item.FromRole(*role)
+		item.FromRole(role)
 		return item
-	}).([]RoleDto)
+	})
 }

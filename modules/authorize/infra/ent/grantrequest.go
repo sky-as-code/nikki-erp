@@ -33,10 +33,14 @@ type GrantRequest struct {
 	ReceiverID string `json:"receiver_id,omitempty"`
 	// TargetType holds the value of the "target_type" field.
 	TargetType grantrequest.TargetType `json:"target_type,omitempty"`
-	// TargetRoleID holds the value of the "target_role_id" field.
+	// Must be set NULL before the role is deleted
 	TargetRoleID *string `json:"target_role_id,omitempty"`
-	// TargetSuiteID holds the value of the "target_suite_id" field.
+	// Role name must be copied here before the role is deleted
+	TargetRoleName string `json:"target_role_name,omitempty"`
+	// Must be set NULL before the role suite is deleted
 	TargetSuiteID *string `json:"target_suite_id,omitempty"`
+	// Role suite name must be copied here before the role suite is deleted
+	TargetSuiteName string `json:"target_suite_name,omitempty"`
 	// Status holds the value of the "status" field.
 	Status grantrequest.Status `json:"status,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -94,7 +98,7 @@ func (*GrantRequest) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case grantrequest.FieldID, grantrequest.FieldAttachmentURL, grantrequest.FieldComment, grantrequest.FieldCreatedBy, grantrequest.FieldEtag, grantrequest.FieldReceiverID, grantrequest.FieldTargetType, grantrequest.FieldTargetRoleID, grantrequest.FieldTargetSuiteID, grantrequest.FieldStatus:
+		case grantrequest.FieldID, grantrequest.FieldAttachmentURL, grantrequest.FieldComment, grantrequest.FieldCreatedBy, grantrequest.FieldEtag, grantrequest.FieldReceiverID, grantrequest.FieldTargetType, grantrequest.FieldTargetRoleID, grantrequest.FieldTargetRoleName, grantrequest.FieldTargetSuiteID, grantrequest.FieldTargetSuiteName, grantrequest.FieldStatus:
 			values[i] = new(sql.NullString)
 		case grantrequest.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -170,12 +174,24 @@ func (gr *GrantRequest) assignValues(columns []string, values []any) error {
 				gr.TargetRoleID = new(string)
 				*gr.TargetRoleID = value.String
 			}
+		case grantrequest.FieldTargetRoleName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field target_role_name", values[i])
+			} else if value.Valid {
+				gr.TargetRoleName = value.String
+			}
 		case grantrequest.FieldTargetSuiteID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field target_suite_id", values[i])
 			} else if value.Valid {
 				gr.TargetSuiteID = new(string)
 				*gr.TargetSuiteID = value.String
+			}
+		case grantrequest.FieldTargetSuiteName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field target_suite_name", values[i])
+			} else if value.Valid {
+				gr.TargetSuiteName = value.String
 			}
 		case grantrequest.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -264,10 +280,16 @@ func (gr *GrantRequest) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
+	builder.WriteString("target_role_name=")
+	builder.WriteString(gr.TargetRoleName)
+	builder.WriteString(", ")
 	if v := gr.TargetSuiteID; v != nil {
 		builder.WriteString("target_suite_id=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
+	builder.WriteString("target_suite_name=")
+	builder.WriteString(gr.TargetSuiteName)
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", gr.Status))

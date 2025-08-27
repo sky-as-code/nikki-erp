@@ -26,9 +26,9 @@ type RevokeRequestQuery struct {
 	order                   []revokerequest.OrderOption
 	inters                  []Interceptor
 	predicates              []predicate.RevokeRequest
+	withPermissionHistories *PermissionHistoryQuery
 	withRole                *RoleQuery
 	withRoleSuite           *RoleSuiteQuery
-	withPermissionHistories *PermissionHistoryQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -63,6 +63,28 @@ func (rrq *RevokeRequestQuery) Unique(unique bool) *RevokeRequestQuery {
 func (rrq *RevokeRequestQuery) Order(o ...revokerequest.OrderOption) *RevokeRequestQuery {
 	rrq.order = append(rrq.order, o...)
 	return rrq
+}
+
+// QueryPermissionHistories chains the current query on the "permission_histories" edge.
+func (rrq *RevokeRequestQuery) QueryPermissionHistories() *PermissionHistoryQuery {
+	query := (&PermissionHistoryClient{config: rrq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rrq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rrq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revokerequest.Table, revokerequest.FieldID, selector),
+			sqlgraph.To(permissionhistory.Table, permissionhistory.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, revokerequest.PermissionHistoriesTable, revokerequest.PermissionHistoriesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rrq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryRole chains the current query on the "role" edge.
@@ -102,28 +124,6 @@ func (rrq *RevokeRequestQuery) QueryRoleSuite() *RoleSuiteQuery {
 			sqlgraph.From(revokerequest.Table, revokerequest.FieldID, selector),
 			sqlgraph.To(rolesuite.Table, rolesuite.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, revokerequest.RoleSuiteTable, revokerequest.RoleSuiteColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(rrq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryPermissionHistories chains the current query on the "permission_histories" edge.
-func (rrq *RevokeRequestQuery) QueryPermissionHistories() *PermissionHistoryQuery {
-	query := (&PermissionHistoryClient{config: rrq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := rrq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := rrq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(revokerequest.Table, revokerequest.FieldID, selector),
-			sqlgraph.To(permissionhistory.Table, permissionhistory.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, revokerequest.PermissionHistoriesTable, revokerequest.PermissionHistoriesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rrq.driver.Dialect(), step)
 		return fromU, nil
@@ -323,13 +323,24 @@ func (rrq *RevokeRequestQuery) Clone() *RevokeRequestQuery {
 		order:                   append([]revokerequest.OrderOption{}, rrq.order...),
 		inters:                  append([]Interceptor{}, rrq.inters...),
 		predicates:              append([]predicate.RevokeRequest{}, rrq.predicates...),
+		withPermissionHistories: rrq.withPermissionHistories.Clone(),
 		withRole:                rrq.withRole.Clone(),
 		withRoleSuite:           rrq.withRoleSuite.Clone(),
-		withPermissionHistories: rrq.withPermissionHistories.Clone(),
 		// clone intermediate query.
 		sql:  rrq.sql.Clone(),
 		path: rrq.path,
 	}
+}
+
+// WithPermissionHistories tells the query-builder to eager-load the nodes that are connected to
+// the "permission_histories" edge. The optional arguments are used to configure the query builder of the edge.
+func (rrq *RevokeRequestQuery) WithPermissionHistories(opts ...func(*PermissionHistoryQuery)) *RevokeRequestQuery {
+	query := (&PermissionHistoryClient{config: rrq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	rrq.withPermissionHistories = query
+	return rrq
 }
 
 // WithRole tells the query-builder to eager-load the nodes that are connected to
@@ -351,17 +362,6 @@ func (rrq *RevokeRequestQuery) WithRoleSuite(opts ...func(*RoleSuiteQuery)) *Rev
 		opt(query)
 	}
 	rrq.withRoleSuite = query
-	return rrq
-}
-
-// WithPermissionHistories tells the query-builder to eager-load the nodes that are connected to
-// the "permission_histories" edge. The optional arguments are used to configure the query builder of the edge.
-func (rrq *RevokeRequestQuery) WithPermissionHistories(opts ...func(*PermissionHistoryQuery)) *RevokeRequestQuery {
-	query := (&PermissionHistoryClient{config: rrq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	rrq.withPermissionHistories = query
 	return rrq
 }
 
@@ -444,9 +444,9 @@ func (rrq *RevokeRequestQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 		nodes       = []*RevokeRequest{}
 		_spec       = rrq.querySpec()
 		loadedTypes = [3]bool{
+			rrq.withPermissionHistories != nil,
 			rrq.withRole != nil,
 			rrq.withRoleSuite != nil,
-			rrq.withPermissionHistories != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -467,6 +467,15 @@ func (rrq *RevokeRequestQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := rrq.withPermissionHistories; query != nil {
+		if err := rrq.loadPermissionHistories(ctx, query, nodes,
+			func(n *RevokeRequest) { n.Edges.PermissionHistories = []*PermissionHistory{} },
+			func(n *RevokeRequest, e *PermissionHistory) {
+				n.Edges.PermissionHistories = append(n.Edges.PermissionHistories, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	if query := rrq.withRole; query != nil {
 		if err := rrq.loadRole(ctx, query, nodes, nil,
 			func(n *RevokeRequest, e *Role) { n.Edges.Role = e }); err != nil {
@@ -479,18 +488,42 @@ func (rrq *RevokeRequestQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 			return nil, err
 		}
 	}
-	if query := rrq.withPermissionHistories; query != nil {
-		if err := rrq.loadPermissionHistories(ctx, query, nodes,
-			func(n *RevokeRequest) { n.Edges.PermissionHistories = []*PermissionHistory{} },
-			func(n *RevokeRequest, e *PermissionHistory) {
-				n.Edges.PermissionHistories = append(n.Edges.PermissionHistories, e)
-			}); err != nil {
-			return nil, err
-		}
-	}
 	return nodes, nil
 }
 
+func (rrq *RevokeRequestQuery) loadPermissionHistories(ctx context.Context, query *PermissionHistoryQuery, nodes []*RevokeRequest, init func(*RevokeRequest), assign func(*RevokeRequest, *PermissionHistory)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*RevokeRequest)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(permissionhistory.FieldRevokeRequestID)
+	}
+	query.Where(predicate.PermissionHistory(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revokerequest.PermissionHistoriesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.RevokeRequestID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revoke_request_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revoke_request_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (rrq *RevokeRequestQuery) loadRole(ctx context.Context, query *RoleQuery, nodes []*RevokeRequest, init func(*RevokeRequest), assign func(*RevokeRequest, *Role)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*RevokeRequest)
@@ -552,39 +585,6 @@ func (rrq *RevokeRequestQuery) loadRoleSuite(ctx context.Context, query *RoleSui
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
-	}
-	return nil
-}
-func (rrq *RevokeRequestQuery) loadPermissionHistories(ctx context.Context, query *PermissionHistoryQuery, nodes []*RevokeRequest, init func(*RevokeRequest), assign func(*RevokeRequest, *PermissionHistory)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*RevokeRequest)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(permissionhistory.FieldRevokeRequestID)
-	}
-	query.Where(predicate.PermissionHistory(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(revokerequest.PermissionHistoriesColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.RevokeRequestID
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "revoke_request_id" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "revoke_request_id" returned %v for node %v`, *fk, n.ID)
-		}
-		assign(node, n)
 	}
 	return nil
 }

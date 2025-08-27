@@ -100,9 +100,19 @@ func TargetRoleID(v string) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldEQ(FieldTargetRoleID, v))
 }
 
+// TargetRoleName applies equality check predicate on the "target_role_name" field. It's identical to TargetRoleNameEQ.
+func TargetRoleName(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldEQ(FieldTargetRoleName, v))
+}
+
 // TargetSuiteID applies equality check predicate on the "target_suite_id" field. It's identical to TargetSuiteIDEQ.
 func TargetSuiteID(v string) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldEQ(FieldTargetSuiteID, v))
+}
+
+// TargetSuiteName applies equality check predicate on the "target_suite_name" field. It's identical to TargetSuiteNameEQ.
+func TargetSuiteName(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldEQ(FieldTargetSuiteName, v))
 }
 
 // AttachmentURLEQ applies the EQ predicate on the "attachment_url" field.
@@ -585,6 +595,71 @@ func TargetRoleIDContainsFold(v string) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldContainsFold(FieldTargetRoleID, v))
 }
 
+// TargetRoleNameEQ applies the EQ predicate on the "target_role_name" field.
+func TargetRoleNameEQ(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldEQ(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameNEQ applies the NEQ predicate on the "target_role_name" field.
+func TargetRoleNameNEQ(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldNEQ(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameIn applies the In predicate on the "target_role_name" field.
+func TargetRoleNameIn(vs ...string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldIn(FieldTargetRoleName, vs...))
+}
+
+// TargetRoleNameNotIn applies the NotIn predicate on the "target_role_name" field.
+func TargetRoleNameNotIn(vs ...string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldNotIn(FieldTargetRoleName, vs...))
+}
+
+// TargetRoleNameGT applies the GT predicate on the "target_role_name" field.
+func TargetRoleNameGT(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldGT(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameGTE applies the GTE predicate on the "target_role_name" field.
+func TargetRoleNameGTE(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldGTE(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameLT applies the LT predicate on the "target_role_name" field.
+func TargetRoleNameLT(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldLT(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameLTE applies the LTE predicate on the "target_role_name" field.
+func TargetRoleNameLTE(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldLTE(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameContains applies the Contains predicate on the "target_role_name" field.
+func TargetRoleNameContains(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldContains(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameHasPrefix applies the HasPrefix predicate on the "target_role_name" field.
+func TargetRoleNameHasPrefix(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldHasPrefix(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameHasSuffix applies the HasSuffix predicate on the "target_role_name" field.
+func TargetRoleNameHasSuffix(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldHasSuffix(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameEqualFold applies the EqualFold predicate on the "target_role_name" field.
+func TargetRoleNameEqualFold(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldEqualFold(FieldTargetRoleName, v))
+}
+
+// TargetRoleNameContainsFold applies the ContainsFold predicate on the "target_role_name" field.
+func TargetRoleNameContainsFold(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldContainsFold(FieldTargetRoleName, v))
+}
+
 // TargetSuiteIDEQ applies the EQ predicate on the "target_suite_id" field.
 func TargetSuiteIDEQ(v string) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldEQ(FieldTargetSuiteID, v))
@@ -660,6 +735,71 @@ func TargetSuiteIDContainsFold(v string) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldContainsFold(FieldTargetSuiteID, v))
 }
 
+// TargetSuiteNameEQ applies the EQ predicate on the "target_suite_name" field.
+func TargetSuiteNameEQ(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldEQ(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameNEQ applies the NEQ predicate on the "target_suite_name" field.
+func TargetSuiteNameNEQ(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldNEQ(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameIn applies the In predicate on the "target_suite_name" field.
+func TargetSuiteNameIn(vs ...string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldIn(FieldTargetSuiteName, vs...))
+}
+
+// TargetSuiteNameNotIn applies the NotIn predicate on the "target_suite_name" field.
+func TargetSuiteNameNotIn(vs ...string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldNotIn(FieldTargetSuiteName, vs...))
+}
+
+// TargetSuiteNameGT applies the GT predicate on the "target_suite_name" field.
+func TargetSuiteNameGT(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldGT(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameGTE applies the GTE predicate on the "target_suite_name" field.
+func TargetSuiteNameGTE(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldGTE(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameLT applies the LT predicate on the "target_suite_name" field.
+func TargetSuiteNameLT(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldLT(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameLTE applies the LTE predicate on the "target_suite_name" field.
+func TargetSuiteNameLTE(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldLTE(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameContains applies the Contains predicate on the "target_suite_name" field.
+func TargetSuiteNameContains(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldContains(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameHasPrefix applies the HasPrefix predicate on the "target_suite_name" field.
+func TargetSuiteNameHasPrefix(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldHasPrefix(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameHasSuffix applies the HasSuffix predicate on the "target_suite_name" field.
+func TargetSuiteNameHasSuffix(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldHasSuffix(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameEqualFold applies the EqualFold predicate on the "target_suite_name" field.
+func TargetSuiteNameEqualFold(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldEqualFold(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameContainsFold applies the ContainsFold predicate on the "target_suite_name" field.
+func TargetSuiteNameContainsFold(v string) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldContainsFold(FieldTargetSuiteName, v))
+}
+
 // StatusEQ applies the EQ predicate on the "status" field.
 func StatusEQ(v Status) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldEQ(FieldStatus, v))
@@ -678,6 +818,29 @@ func StatusIn(vs ...Status) predicate.RevokeRequest {
 // StatusNotIn applies the NotIn predicate on the "status" field.
 func StatusNotIn(vs ...Status) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// HasPermissionHistories applies the HasEdge predicate on the "permission_histories" edge.
+func HasPermissionHistories() predicate.RevokeRequest {
+	return predicate.RevokeRequest(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, PermissionHistoriesTable, PermissionHistoriesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPermissionHistoriesWith applies the HasEdge predicate on the "permission_histories" edge with a given conditions (other predicates).
+func HasPermissionHistoriesWith(preds ...predicate.PermissionHistory) predicate.RevokeRequest {
+	return predicate.RevokeRequest(func(s *sql.Selector) {
+		step := newPermissionHistoriesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // HasRole applies the HasEdge predicate on the "role" edge.
@@ -718,29 +881,6 @@ func HasRoleSuite() predicate.RevokeRequest {
 func HasRoleSuiteWith(preds ...predicate.RoleSuite) predicate.RevokeRequest {
 	return predicate.RevokeRequest(func(s *sql.Selector) {
 		step := newRoleSuiteStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasPermissionHistories applies the HasEdge predicate on the "permission_histories" edge.
-func HasPermissionHistories() predicate.RevokeRequest {
-	return predicate.RevokeRequest(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, PermissionHistoriesTable, PermissionHistoriesColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasPermissionHistoriesWith applies the HasEdge predicate on the "permission_histories" edge with a given conditions (other predicates).
-func HasPermissionHistoriesWith(preds ...predicate.PermissionHistory) predicate.RevokeRequest {
-	return predicate.RevokeRequest(func(s *sql.Selector) {
-		step := newPermissionHistoriesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

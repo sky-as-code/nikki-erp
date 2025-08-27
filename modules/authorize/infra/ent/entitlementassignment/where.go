@@ -476,6 +476,29 @@ func HasEntitlementWith(preds ...predicate.Entitlement) predicate.EntitlementAss
 	})
 }
 
+// HasPermissionHistories applies the HasEdge predicate on the "permission_histories" edge.
+func HasPermissionHistories() predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, PermissionHistoriesTable, PermissionHistoriesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPermissionHistoriesWith applies the HasEdge predicate on the "permission_histories" edge with a given conditions (other predicates).
+func HasPermissionHistoriesWith(preds ...predicate.PermissionHistory) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(func(s *sql.Selector) {
+		step := newPermissionHistoriesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.EntitlementAssignment) predicate.EntitlementAssignment {
 	return predicate.EntitlementAssignment(sql.AndPredicates(predicates...))

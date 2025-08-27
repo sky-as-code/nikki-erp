@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
@@ -13,6 +14,7 @@ import (
 	entEffectiveGroup "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/effectivegroupentitlement"
 	entEffectiveUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/effectiveuserentitlement"
 	entAssign "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
+	entPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
 )
 
@@ -24,37 +26,6 @@ func NewEntitlementAssignmentEntRepository(client *ent.Client) it.EntitlementAss
 
 type EntitlementAssignmentEntRepository struct {
 	client *ent.Client
-}
-
-func (this *EntitlementAssignmentEntRepository) Create(ctx context.Context, assignment domain.EntitlementAssignment) (*domain.EntitlementAssignment, error) {
-	creation := this.client.EntitlementAssignment.Create().
-		SetID(*assignment.Id).
-		SetEntitlementID(*assignment.EntitlementId).
-		SetSubjectType(entAssign.SubjectType(*assignment.SubjectType)).
-		SetSubjectRef(*assignment.SubjectRef).
-		SetResolvedExpr(*assignment.ResolvedExpr).
-		SetNillableActionName(assignment.ActionName).
-		SetNillableResourceName(assignment.ResourceName)
-
-	return database.Mutate(ctx, creation, ent.IsNotFound, entToEntitlementAssignment)
-}
-
-func (this *EntitlementAssignmentEntRepository) CreateBulk(ctx context.Context, assignments []domain.EntitlementAssignment) error {
-	builders := make([]*ent.EntitlementAssignmentCreate, len(assignments))
-
-	for i, assignment := range assignments {
-		builders[i] = this.client.EntitlementAssignment.Create().
-			SetID(*assignment.Id).
-			SetEntitlementID(*assignment.EntitlementId).
-			SetSubjectType(entAssign.SubjectType(*assignment.SubjectType)).
-			SetSubjectRef(*assignment.SubjectRef).
-			SetResolvedExpr(*assignment.ResolvedExpr).
-			SetNillableActionName(assignment.ActionName).
-			SetNillableResourceName(assignment.ResourceName)
-	}
-
-	_, err := this.client.EntitlementAssignment.CreateBulk(builders...).Save(ctx)
-	return err
 }
 
 func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx context.Context, param it.FindBySubjectParam) ([]*domain.EntitlementAssignment, error) {
@@ -129,10 +100,48 @@ func (this *EntitlementAssignmentEntRepository) DeleteHard(ctx context.Context, 
 		Exec(ctx)
 }
 
+func (this *EntitlementAssignmentEntRepository) DeleteHardTx(ctx context.Context, param it.DeleteEntitlementAssignmentByIdQuery) (int, error) {
+	tx, err := this.client.Tx(ctx)
+	fault.PanicOnErr(err)
+
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "delete entitlement assignment transaction"); e != nil {
+			_ = tx.Rollback()
+			err = e
+		}
+	}()
+
+	err = this.setEntitlementAssignmentIdNullTx(ctx, tx, param.Id)
+	fault.PanicOnErr(err)
+
+	deletedCount, err := this.deleteEntitlementAssignmentTx(ctx, tx, param.Id)
+	fault.PanicOnErr(err)
+
+	fault.PanicOnErr(tx.Commit())
+	return deletedCount, nil
+}
+
+func (this *EntitlementAssignmentEntRepository) deleteEntitlementAssignmentTx(ctx context.Context, tx *ent.Tx, entitlementAssignmentId model.Id) (int, error) {
+	deletedCount, err := tx.EntitlementAssignment.
+		Delete().
+		Where(entAssign.IDEQ(entitlementAssignmentId)).
+		Exec(ctx)
+	return deletedCount, err
+}
+
+func (this *EntitlementAssignmentEntRepository) setEntitlementAssignmentIdNullTx(ctx context.Context, tx *ent.Tx, entitlementAssignmentId string) error {
+	_, err := tx.PermissionHistory.
+		Update().
+		Where(entPermissionHistory.EntitlementAssignmentIDEQ(entitlementAssignmentId)).
+		ClearEntitlementAssignmentID().
+		Save(ctx)
+	return err
+}
+
 func (this *EntitlementAssignmentEntRepository) getUserEffectiveEntitlements(ctx context.Context, userId model.Id) ([]*domain.EntitlementAssignment, error) {
 	effectiveAssignments, err := this.client.EffectiveUserEntitlement.
 		Query().
-		Where(entEffectiveUser.UserIDEQ(string(userId))).
+		Where(entEffectiveUser.UserIDEQ(userId)).
 		All(ctx)
 
 	if err != nil {
@@ -145,7 +154,7 @@ func (this *EntitlementAssignmentEntRepository) getUserEffectiveEntitlements(ctx
 func (this *EntitlementAssignmentEntRepository) getGroupEffectiveEntitlements(ctx context.Context, groupId model.Id) ([]*domain.EntitlementAssignment, error) {
 	effectiveAssignments, err := this.client.EffectiveGroupEntitlement.
 		Query().
-		Where(entEffectiveGroup.GroupIDEQ(string(groupId))).
+		Where(entEffectiveGroup.GroupIDEQ(groupId)).
 		All(ctx)
 
 	if err != nil {

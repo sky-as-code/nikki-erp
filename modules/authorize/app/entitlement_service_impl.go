@@ -443,7 +443,7 @@ func (this *EntitlementServiceImpl) assertActionExprUnique(ctx context.Context, 
 	fault.PanicOnErr(err)
 
 	if dbEntitlement != nil {
-		vErrs.AppendAlreadyExists("action_expr", "action expresstion")
+		vErrs.AppendAlreadyExists("action_expr", "action expression")
 	}
 	return nil
 }

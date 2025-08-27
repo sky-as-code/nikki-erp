@@ -35,7 +35,7 @@ func (this *EntitlementAssignmentServiceImpl) FindAllBySubject(ctx context.Conte
 		}, nil
 	}
 
-	entitlementAssignments, err := this.entitlementAssignmentRepo.FindAllBySubject(ctx, it.FindBySubjectParam{
+	entitlementAssignments, err := this.entitlementAssignmentRepo.FindAllBySubject(ctx, it.GetAllEntitlementAssignmentBySubjectQuery{
 		SubjectType: query.SubjectType,
 		SubjectRef:  query.SubjectRef,
 	})

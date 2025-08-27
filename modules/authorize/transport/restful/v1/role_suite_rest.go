@@ -49,6 +49,52 @@ func (this RoleSuiteRest) CreateRoleSuite(echoCtx echo.Context) (err error) {
 	return err
 }
 
+func (this RoleSuiteRest) UpdateRoleSuite(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update role suite"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.roleSuiteService.UpdateRoleSuite,
+		func(request UpdateRoleSuiteRequest) it.UpdateRoleSuiteCommand {
+			return it.UpdateRoleSuiteCommand(request)
+		},
+		func(result it.UpdateRoleSuiteResult) UpdateRoleSuiteResponse {
+			response := UpdateRoleSuiteResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
+func (this RoleSuiteRest) DeleteRoleSuite(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete role suite"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.roleSuiteService.DeleteHardRoleSuite,
+		func(request DeleteRoleSuiteRequest) it.DeleteRoleSuiteCommand {
+			return it.DeleteRoleSuiteCommand(request)
+		},
+		func(result it.DeleteRoleSuiteResult) DeleteRoleSuiteResponse {
+			response := DeleteRoleSuiteResponse{}
+			response.FromNonEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
 func (this RoleSuiteRest) GetRoleSuiteById(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get role suite by id"); e != nil {

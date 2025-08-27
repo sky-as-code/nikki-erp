@@ -18,7 +18,12 @@ type ActionDto struct {
 	ResourceId  model.Id `json:"resourceId"`
 	CreatedBy   string   `json:"createdBy"`
 
-	Resource *ResourceDto `json:"resource,omitempty"`
+	Resource *ResourceSummaryDto `json:"resource,omitempty"`
+}
+
+type ActionSummaryDto struct {
+	Id   model.Id `json:"id"`
+	Name string   `json:"name"`
 }
 
 func (this *ActionDto) FromAction(action domain.Action) {
@@ -27,9 +32,14 @@ func (this *ActionDto) FromAction(action domain.Action) {
 	model.MustCopy(action, this)
 
 	if action.Resource != nil {
-		this.Resource = &ResourceDto{}
+		this.Resource = &ResourceSummaryDto{}
 		this.Resource.FromResource(*action.Resource)
 	}
+}
+
+func (this *ActionSummaryDto) FromAction(action domain.Action) {
+	this.Id = *action.Id
+	this.Name = *action.Name
 }
 
 type CreateActionRequest = it.CreateActionCommand

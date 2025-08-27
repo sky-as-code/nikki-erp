@@ -28,6 +28,8 @@ const (
 	FieldResourceName = "resource_name"
 	// EdgeEntitlement holds the string denoting the entitlement edge name in mutations.
 	EdgeEntitlement = "entitlement"
+	// EdgePermissionHistories holds the string denoting the permission_histories edge name in mutations.
+	EdgePermissionHistories = "permission_histories"
 	// Table holds the table name of the entitlementassignment in the database.
 	Table = "authz_entitlement_assignments"
 	// EntitlementTable is the table that holds the entitlement relation/edge.
@@ -37,6 +39,13 @@ const (
 	EntitlementInverseTable = "authz_entitlements"
 	// EntitlementColumn is the table column denoting the entitlement relation/edge.
 	EntitlementColumn = "entitlement_id"
+	// PermissionHistoriesTable is the table that holds the permission_histories relation/edge.
+	PermissionHistoriesTable = "authz_permission_histories"
+	// PermissionHistoriesInverseTable is the table name for the PermissionHistory entity.
+	// It exists in this package in order to avoid circular dependency with the "permissionhistory" package.
+	PermissionHistoriesInverseTable = "authz_permission_histories"
+	// PermissionHistoriesColumn is the table column denoting the permission_histories relation/edge.
+	PermissionHistoriesColumn = "entitlement_assignment_id"
 )
 
 // Columns holds all SQL columns for entitlementassignment fields.
@@ -130,6 +139,20 @@ func ByEntitlementField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByPermissionHistoriesCount orders the results by permission_histories count.
+func ByPermissionHistoriesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPermissionHistoriesStep(), opts...)
+	}
+}
+
+// ByPermissionHistories orders the results by permission_histories terms.
+func ByPermissionHistories(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPermissionHistoriesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
 func NewEntitlementStepNikki() *sqlgraph.Step {
 	return newEntitlementStep()
@@ -140,5 +163,18 @@ func newEntitlementStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(EntitlementInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, EntitlementTable, EntitlementColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewPermissionHistoriesStepNikki() *sqlgraph.Step {
+	return newPermissionHistoriesStep()
+}
+
+func newPermissionHistoriesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PermissionHistoriesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, PermissionHistoriesTable, PermissionHistoriesColumn),
 	)
 }

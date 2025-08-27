@@ -33,10 +33,14 @@ type RevokeRequest struct {
 	ReceiverID string `json:"receiver_id,omitempty"`
 	// TargetType holds the value of the "target_type" field.
 	TargetType revokerequest.TargetType `json:"target_type,omitempty"`
-	// TargetRoleID holds the value of the "target_role_id" field.
+	// Must be set NULL before the role is deleted
 	TargetRoleID *string `json:"target_role_id,omitempty"`
-	// TargetSuiteID holds the value of the "target_suite_id" field.
+	// Role name must be copied here before the role is deleted
+	TargetRoleName string `json:"target_role_name,omitempty"`
+	// Must be set NULL before the role suite is deleted
 	TargetSuiteID *string `json:"target_suite_id,omitempty"`
+	// Role suite name must be copied here before the role suite is deleted
+	TargetSuiteName string `json:"target_suite_name,omitempty"`
 	// Status holds the value of the "status" field.
 	Status revokerequest.Status `json:"status,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -47,15 +51,24 @@ type RevokeRequest struct {
 
 // RevokeRequestEdges holds the relations/edges for other nodes in the graph.
 type RevokeRequestEdges struct {
+	// PermissionHistories holds the value of the permission_histories edge.
+	PermissionHistories []*PermissionHistory `json:"permission_histories,omitempty"`
 	// Role holds the value of the role edge.
 	Role *Role `json:"role,omitempty"`
 	// RoleSuite holds the value of the role_suite edge.
 	RoleSuite *RoleSuite `json:"role_suite,omitempty"`
-	// PermissionHistories holds the value of the permission_histories edge.
-	PermissionHistories []*PermissionHistory `json:"permission_histories,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool
+}
+
+// PermissionHistoriesOrErr returns the PermissionHistories value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevokeRequestEdges) PermissionHistoriesOrErr() ([]*PermissionHistory, error) {
+	if e.loadedTypes[0] {
+		return e.PermissionHistories, nil
+	}
+	return nil, &NotLoadedError{edge: "permission_histories"}
 }
 
 // RoleOrErr returns the Role value or an error if the edge
@@ -63,7 +76,7 @@ type RevokeRequestEdges struct {
 func (e RevokeRequestEdges) RoleOrErr() (*Role, error) {
 	if e.Role != nil {
 		return e.Role, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: role.Label}
 	}
 	return nil, &NotLoadedError{edge: "role"}
@@ -74,19 +87,10 @@ func (e RevokeRequestEdges) RoleOrErr() (*Role, error) {
 func (e RevokeRequestEdges) RoleSuiteOrErr() (*RoleSuite, error) {
 	if e.RoleSuite != nil {
 		return e.RoleSuite, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: rolesuite.Label}
 	}
 	return nil, &NotLoadedError{edge: "role_suite"}
-}
-
-// PermissionHistoriesOrErr returns the PermissionHistories value or an error if the edge
-// was not loaded in eager-loading.
-func (e RevokeRequestEdges) PermissionHistoriesOrErr() ([]*PermissionHistory, error) {
-	if e.loadedTypes[2] {
-		return e.PermissionHistories, nil
-	}
-	return nil, &NotLoadedError{edge: "permission_histories"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -94,7 +98,7 @@ func (*RevokeRequest) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case revokerequest.FieldID, revokerequest.FieldAttachmentURL, revokerequest.FieldComment, revokerequest.FieldCreatedBy, revokerequest.FieldEtag, revokerequest.FieldReceiverID, revokerequest.FieldTargetType, revokerequest.FieldTargetRoleID, revokerequest.FieldTargetSuiteID, revokerequest.FieldStatus:
+		case revokerequest.FieldID, revokerequest.FieldAttachmentURL, revokerequest.FieldComment, revokerequest.FieldCreatedBy, revokerequest.FieldEtag, revokerequest.FieldReceiverID, revokerequest.FieldTargetType, revokerequest.FieldTargetRoleID, revokerequest.FieldTargetRoleName, revokerequest.FieldTargetSuiteID, revokerequest.FieldTargetSuiteName, revokerequest.FieldStatus:
 			values[i] = new(sql.NullString)
 		case revokerequest.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -170,12 +174,24 @@ func (rr *RevokeRequest) assignValues(columns []string, values []any) error {
 				rr.TargetRoleID = new(string)
 				*rr.TargetRoleID = value.String
 			}
+		case revokerequest.FieldTargetRoleName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field target_role_name", values[i])
+			} else if value.Valid {
+				rr.TargetRoleName = value.String
+			}
 		case revokerequest.FieldTargetSuiteID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field target_suite_id", values[i])
 			} else if value.Valid {
 				rr.TargetSuiteID = new(string)
 				*rr.TargetSuiteID = value.String
+			}
+		case revokerequest.FieldTargetSuiteName:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field target_suite_name", values[i])
+			} else if value.Valid {
+				rr.TargetSuiteName = value.String
 			}
 		case revokerequest.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -196,6 +212,11 @@ func (rr *RevokeRequest) Value(name string) (ent.Value, error) {
 	return rr.selectValues.Get(name)
 }
 
+// QueryPermissionHistories queries the "permission_histories" edge of the RevokeRequest entity.
+func (rr *RevokeRequest) QueryPermissionHistories() *PermissionHistoryQuery {
+	return NewRevokeRequestClient(rr.config).QueryPermissionHistories(rr)
+}
+
 // QueryRole queries the "role" edge of the RevokeRequest entity.
 func (rr *RevokeRequest) QueryRole() *RoleQuery {
 	return NewRevokeRequestClient(rr.config).QueryRole(rr)
@@ -204,11 +225,6 @@ func (rr *RevokeRequest) QueryRole() *RoleQuery {
 // QueryRoleSuite queries the "role_suite" edge of the RevokeRequest entity.
 func (rr *RevokeRequest) QueryRoleSuite() *RoleSuiteQuery {
 	return NewRevokeRequestClient(rr.config).QueryRoleSuite(rr)
-}
-
-// QueryPermissionHistories queries the "permission_histories" edge of the RevokeRequest entity.
-func (rr *RevokeRequest) QueryPermissionHistories() *PermissionHistoryQuery {
-	return NewRevokeRequestClient(rr.config).QueryPermissionHistories(rr)
 }
 
 // Update returns a builder for updating this RevokeRequest.
@@ -264,10 +280,16 @@ func (rr *RevokeRequest) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
+	builder.WriteString("target_role_name=")
+	builder.WriteString(rr.TargetRoleName)
+	builder.WriteString(", ")
 	if v := rr.TargetSuiteID; v != nil {
 		builder.WriteString("target_suite_id=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
+	builder.WriteString("target_suite_name=")
+	builder.WriteString(rr.TargetSuiteName)
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", rr.Status))
