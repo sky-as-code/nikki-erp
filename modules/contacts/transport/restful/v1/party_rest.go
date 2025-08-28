@@ -4,58 +4,129 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
-	it "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
-	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	tagder "github.com/sky-as-code/nikki-erp/modules/core/tag/derived"
 )
 
 type partyRestParams struct {
 	dig.In
 
-	Config   config.ConfigService
-	Logger   logging.LoggerService
-	PartySvc it.PartyService
-	CqrsBus  cqrs.CqrsBus
+	PartySvc party.PartyService
 }
 
 func NewPartyRest(params partyRestParams) *PartyRest {
 	return &PartyRest{
-		DerivedRest: tagder.DerivedRest{
-			RestBase: httpserver.RestBase{
-				ConfigSvc: params.Config,
-				Logger:    params.Logger,
-				CqrsBus:   params.CqrsBus,
-			},
-			TagSvc: params.PartySvc.TagSvc(),
-		},
 		PartySvc: params.PartySvc,
 	}
 }
 
 type PartyRest struct {
-	tagder.DerivedRest
-	PartySvc it.PartyTagService
+	httpserver.RestBase
+	PartySvc party.PartyService
 }
 
-func (this PartyRest) CreatePartyTag(echoCtx echo.Context) error {
-	return this.DerivedRest.CreateDerivedTag(echoCtx)
+func (this PartyRest) CreateParty(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create party"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest(
+		echoCtx, this.PartySvc.CreateParty,
+		func(request CreatePartyRequest) party.CreatePartyCommand {
+			return party.CreatePartyCommand(request)
+		},
+		func(result party.CreatePartyResult) CreatePartyResponse {
+			response := CreatePartyResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonCreated,
+	)
+	return err
 }
 
-func (this PartyRest) UpdatePartyTag(echoCtx echo.Context) error {
-	return this.DerivedRest.UpdateDerivedTag(echoCtx)
+func (this PartyRest) UpdateParty(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update party"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest(
+		echoCtx, this.PartySvc.UpdateParty,
+		func(request UpdatePartyRequest) party.UpdatePartyCommand {
+			return party.UpdatePartyCommand(request)
+		},
+		func(result party.UpdatePartyResult) UpdatePartyResponse {
+			response := UpdatePartyResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+	return err
 }
 
-func (this PartyRest) DeletePartyTag(echoCtx echo.Context) error {
-	return this.DerivedRest.DeleteDerivedTag(echoCtx)
+func (this PartyRest) DeleteParty(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete party"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest(
+		echoCtx, this.PartySvc.DeleteParty,
+		func(request DeletePartyRequest) party.DeletePartyCommand {
+			return party.DeletePartyCommand(request)
+		},
+		func(result party.DeletePartyResult) DeletePartyResponse {
+			response := DeletePartyResponse{}
+			response.FromNonEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+	return err
 }
 
-func (this PartyRest) GetPartyTagById(echoCtx echo.Context) error {
-	return this.DerivedRest.GetDerivedTagById(echoCtx)
+func (this PartyRest) GetPartyById(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get party by id"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest(
+		echoCtx, this.PartySvc.GetPartyById,
+		func(request GetPartyByIdRequest) party.GetPartyByIdQuery {
+			return party.GetPartyByIdQuery(request)
+		},
+		func(result party.GetPartyByIdResult) GetPartyByIdResponse {
+			response := GetPartyByIdResponse{}
+			response.FromParty(*result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+	return err
 }
 
-func (this PartyRest) ListPartyTags(echoCtx echo.Context) error {
-	return this.DerivedRest.ListDerivedTags(echoCtx)
+func (this PartyRest) SearchParties(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search parties"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest(
+		echoCtx, this.PartySvc.SearchParties,
+		func(request SearchPartiesRequest) party.SearchPartiesQuery {
+			return party.SearchPartiesQuery(request)
+		},
+		func(result party.SearchPartiesResult) SearchPartiesResponse {
+			response := SearchPartiesResponse{}
+			response.FromResult(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+	return err
 }

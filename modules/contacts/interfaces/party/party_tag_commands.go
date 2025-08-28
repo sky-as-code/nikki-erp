@@ -15,6 +15,7 @@ func init() {
 	req = (*DeletePartyTagCommand)(nil)
 	req = (*GetPartyByIdTagQuery)(nil)
 	req = (*ListPartyTagsQuery)(nil)
+	req = (*PartyTagExistsMultiQuery)(nil)
 	util.Unused(req)
 }
 
@@ -32,9 +33,9 @@ func (CreatePartyTagCommand) CqrsRequestType() cqrs.RequestType {
 	return createPartyTagCommandType
 }
 
-func (this CreatePartyTagCommand) ToTagCommand() tag.CreateTagCommand {
+func (cpt CreatePartyTagCommand) ToTagCommand() tag.CreateTagCommand {
 	return tag.CreateTagCommand{
-		Label: this.Label,
+		Label: cpt.Label,
 	}
 }
 
@@ -52,8 +53,8 @@ func (UpdatePartyTagCommand) CqrsRequestType() cqrs.RequestType {
 	return updatePartyTagCommandType
 }
 
-func (this UpdatePartyTagCommand) ToTagCommand() tag.UpdateTagCommand {
-	return tag.UpdateTagCommand(this)
+func (upt UpdatePartyTagCommand) ToTagCommand() tag.UpdateTagCommand {
+	return tag.UpdateTagCommand(upt)
 }
 
 type UpdatePartyTagResult = tag.UpdateTagResult
@@ -70,19 +71,11 @@ func (DeletePartyTagCommand) CqrsRequestType() cqrs.RequestType {
 	return deletePartyTagCommandType
 }
 
-func (this DeletePartyTagCommand) ToTagCommand() tag.DeleteTagCommand {
-	return tag.DeleteTagCommand(this)
+func (dpt DeletePartyTagCommand) ToTagCommand() tag.DeleteTagCommand {
+	return tag.DeleteTagCommand(dpt)
 }
 
 type DeletePartyTagResult = tag.DeleteTagResult
-
-var partyTagExistsQueryType = cqrs.RequestType{
-	Module:    "contacts",
-	Submodule: "party",
-	Action:    "partyTagExists",
-}
-
-type PartyTagExistsMultiQuery tag.TagExistsMultiQuery
 
 var partyTagExistsMultiQueryType = cqrs.RequestType{
 	Module:    "contacts",
@@ -90,14 +83,16 @@ var partyTagExistsMultiQueryType = cqrs.RequestType{
 	Action:    "partyTagExistsMulti",
 }
 
+type PartyTagExistsMultiQuery tag.TagExistsMultiQuery
+
 type PartyTagExistsMultiResult = tag.TagExistsMultiResult
 
 func (PartyTagExistsMultiQuery) CqrsRequestType() cqrs.RequestType {
 	return partyTagExistsMultiQueryType
 }
 
-func (this PartyTagExistsMultiQuery) ToTagQuery() tag.TagExistsMultiQuery {
-	return tag.TagExistsMultiQuery(this)
+func (ptem PartyTagExistsMultiQuery) ToTagQuery() tag.TagExistsMultiQuery {
+	return tag.TagExistsMultiQuery(ptem)
 }
 
 var getPartyTagByIdQueryType = cqrs.RequestType{
@@ -114,8 +109,8 @@ func (GetPartyByIdTagQuery) CqrsRequestType() cqrs.RequestType {
 	return getPartyTagByIdQueryType
 }
 
-func (this GetPartyByIdTagQuery) ToTagQuery() tag.GetTagByIdQuery {
-	return tag.GetTagByIdQuery(this)
+func (gptid GetPartyByIdTagQuery) ToTagQuery() tag.GetTagByIdQuery {
+	return tag.GetTagByIdQuery(gptid)
 }
 
 type GetPartyTagByIdResult = tag.GetTagByIdResult
@@ -128,12 +123,12 @@ var listPartyTagsCommandType = cqrs.RequestType{
 
 type ListPartyTagsQuery tag.ListTagsQuery
 
+type ListPartyTagsResult = tag.ListTagsResult
+
 func (ListPartyTagsQuery) CqrsRequestType() cqrs.RequestType {
 	return listPartyTagsCommandType
 }
 
-func (this ListPartyTagsQuery) ToTagQuery() tag.ListTagsQuery {
-	return tag.ListTagsQuery(this)
+func (lpt ListPartyTagsQuery) ToTagQuery() tag.ListTagsQuery {
+	return tag.ListTagsQuery(lpt)
 }
-
-type ListPartyTagsResult = tag.ListTagsResult
