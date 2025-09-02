@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
@@ -86,7 +85,7 @@ func (this *RoleServiceImpl) CreateRole(ctx crud.Context, cmd itRole.CreateRoleC
 	}, nil
 }
 
-func (this *RoleServiceImpl) UpdateRole(ctx context.Context, cmd itRole.UpdateRoleCommand) (update *itRole.UpdateRoleResult, err error) {
+func (this *RoleServiceImpl) UpdateRole(ctx crud.Context, cmd itRole.UpdateRoleCommand) (update *itRole.UpdateRoleResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "update role"); e != nil {
 			err = e
@@ -146,7 +145,7 @@ func (this *RoleServiceImpl) UpdateRole(ctx context.Context, cmd itRole.UpdateRo
 	}, err
 }
 
-func (this *RoleServiceImpl) DeleteRoleHard(ctx context.Context, cmd itRole.DeleteRoleHardCommand) (result *itRole.DeleteRoleHardResult, err error) {
+func (this *RoleServiceImpl) DeleteRoleHard(ctx crud.Context, cmd itRole.DeleteRoleHardCommand) (result *itRole.DeleteRoleHardResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "delete hard role"); e != nil {
 			err = e
@@ -195,7 +194,7 @@ func (this *RoleServiceImpl) DeleteRoleHard(ctx context.Context, cmd itRole.Dele
 	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
-func (this *RoleServiceImpl) GetRoleById(ctx context.Context, query itRole.GetRoleByIdQuery) (result *itRole.GetRoleByIdResult, err error) {
+func (this *RoleServiceImpl) GetRoleById(ctx crud.Context, query itRole.GetRoleByIdQuery) (result *itRole.GetRoleByIdResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "get role by id"); e != nil {
 			err = e
@@ -335,7 +334,7 @@ func (this *RoleServiceImpl) assertRoleUnique(ctx crud.Context, role *domain.Rol
 	return nil
 }
 
-func (this *RoleServiceImpl) assertRoleUniqueForUpdate(ctx context.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
+func (this *RoleServiceImpl) assertRoleUniqueForUpdate(ctx crud.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
 	dbRole, err := this.roleRepo.FindByName(ctx, itRole.FindByNameParam{Name: *role.Name})
 	fault.PanicOnErr(err)
 
@@ -362,7 +361,7 @@ func (this *RoleServiceImpl) setRoleDefaults(role *domain.Role) {
 	role.SetDefaults()
 }
 
-func (this *RoleServiceImpl) validateEntitlements(ctx context.Context, entitlementIds []model.Id, vErrs *fault.ValidationErrors) {
+func (this *RoleServiceImpl) validateEntitlements(ctx crud.Context, entitlementIds []model.Id, vErrs *fault.ValidationErrors) {
 	if len(entitlementIds) == 0 {
 		return
 	}
@@ -396,7 +395,7 @@ func (this *RoleServiceImpl) validateEntitlements(ctx context.Context, entitleme
 	}
 }
 
-func (this *RoleServiceImpl) getAssignmentsByRoleId(ctx context.Context, role *domain.Role) ([]*domain.EntitlementAssignment, error) {
+func (this *RoleServiceImpl) getAssignmentsByRoleId(ctx crud.Context, role *domain.Role) ([]*domain.EntitlementAssignment, error) {
 	assignmentsRes, err := this.assignmentRepo.FindAllBySubject(
 		ctx,
 		itAssign.GetAllEntitlementAssignmentBySubjectQuery{
@@ -408,7 +407,7 @@ func (this *RoleServiceImpl) getAssignmentsByRoleId(ctx context.Context, role *d
 	return assignmentsRes, nil
 }
 
-func (this *RoleServiceImpl) getEntitlementIdsByRoleId(ctx context.Context, role *domain.Role) ([]model.Id, error) {
+func (this *RoleServiceImpl) getEntitlementIdsByRoleId(ctx crud.Context, role *domain.Role) ([]model.Id, error) {
 	assignmentsRes, err := this.getAssignmentsByRoleId(ctx, role)
 
 	if len(assignmentsRes) == 0 {
@@ -432,7 +431,7 @@ func (this *RoleServiceImpl) getEntitlementIdsByRoleId(ctx context.Context, role
 	return uniqueEntitlementIds, nil
 }
 
-func (this *RoleServiceImpl) getAssignmentIdsByRoleId(ctx context.Context, role *domain.Role) ([]model.Id, error) {
+func (this *RoleServiceImpl) getAssignmentIdsByRoleId(ctx crud.Context, role *domain.Role) ([]model.Id, error) {
 	assignmentsRes, err := this.getAssignmentsByRoleId(ctx, role)
 
 	if len(assignmentsRes) == 0 {
@@ -456,7 +455,7 @@ func (this *RoleServiceImpl) getAssignmentIdsByRoleId(ctx context.Context, role 
 	return uniqueAssignmentIds, nil
 }
 
-func (this *RoleServiceImpl) getEntitlements(ctx context.Context, entitlementIds []model.Id) ([]domain.Entitlement, error) {
+func (this *RoleServiceImpl) getEntitlements(ctx crud.Context, entitlementIds []model.Id) ([]domain.Entitlement, error) {
 	entitlementsRes, err := this.entitlementRepo.FindAllByIds(ctx, itEntitlement.GetAllEntitlementByIdsQuery{Ids: entitlementIds})
 	fault.PanicOnErr(err)
 
@@ -494,7 +493,7 @@ func (this *RoleServiceImpl) diffEntitlementIds(oldIds, newIds []model.Id) (adde
 	return
 }
 
-func (this *RoleServiceImpl) deleteAssignments(ctx context.Context, assignmentIds []model.Id) error {
+func (this *RoleServiceImpl) deleteAssignments(ctx crud.Context, assignmentIds []model.Id) error {
 	for _, assignmentId := range assignmentIds {
 		deletedCount, err := this.assignmentRepo.DeleteHardTx(ctx, itAssign.DeleteEntitlementAssignmentByIdQuery{Id: assignmentId})
 		fault.PanicOnErr(err)

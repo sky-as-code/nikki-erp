@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -32,7 +31,7 @@ type RoleEntRepository struct {
 	client *ent.Client
 }
 
-func (this *RoleEntRepository) Create(ctx context.Context, role domain.Role) (*domain.Role, error) {
+func (this *RoleEntRepository) Create(ctx crud.Context, role domain.Role) (*domain.Role, error) {
 	creation := this.client.Role.Create().
 		SetID(*role.Id).
 		SetEtag(*role.Etag).
@@ -49,7 +48,7 @@ func (this *RoleEntRepository) Create(ctx context.Context, role domain.Role) (*d
 	return database.Mutate(ctx, creation, ent.IsNotFound, entToRole)
 }
 
-func (this *RoleEntRepository) CreateWithEntitlements(ctx context.Context, role domain.Role, entitlementIds []model.Id) (result *domain.Role, err error) {
+func (this *RoleEntRepository) CreateWithEntitlements(ctx crud.Context, role domain.Role, entitlementIds []model.Id) (result *domain.Role, err error) {
 	tx, err := this.client.Tx(ctx)
 	fault.PanicOnErr(err)
 
@@ -77,7 +76,7 @@ func (this *RoleEntRepository) CreateWithEntitlements(ctx context.Context, role 
 }
 
 // There is currently no update reason in permission histories for users/groups with this role.
-func (this *RoleEntRepository) UpdateTx(ctx context.Context, role domain.Role, prevEtag model.Etag, addEntitlementIds, removeEntitlementIds []model.Id) (*domain.Role, error) {
+func (this *RoleEntRepository) UpdateTx(ctx crud.Context, role domain.Role, prevEtag model.Etag, addEntitlementIds, removeEntitlementIds []model.Id) (*domain.Role, error) {
 	tx, err := this.client.Tx(ctx)
 	fault.PanicOnErr(err)
 
@@ -109,7 +108,7 @@ func (this *RoleEntRepository) UpdateTx(ctx context.Context, role domain.Role, p
 }
 
 // There is currently no delete reason in permission histories for users/groups with this role.
-func (this *RoleEntRepository) DeleteHardTx(ctx context.Context, param it.DeleteRoleHardParam) (int, error) {
+func (this *RoleEntRepository) DeleteHardTx(ctx crud.Context, param it.DeleteRoleHardParam) (int, error) {
 	tx, err := this.client.Tx(ctx)
 	fault.PanicOnErr(err)
 
@@ -136,21 +135,21 @@ func (this *RoleEntRepository) DeleteHardTx(ctx context.Context, param it.Delete
 	return deletedCount, nil
 }
 
-func (this *RoleEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Role, error) {
+func (this *RoleEntRepository) FindByName(ctx crud.Context, param it.FindByNameParam) (*domain.Role, error) {
 	query := this.client.Role.Query().
 		Where(entRole.NameEQ(param.Name))
 
 	return database.FindOne(ctx, query, ent.IsNotFound, entToRole)
 }
 
-func (this *RoleEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Role, error) {
+func (this *RoleEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.Role, error) {
 	query := this.client.Role.Query().
 		Where(entRole.IDEQ(param.Id))
 
 	return database.FindOne(ctx, query, ent.IsNotFound, entToRole)
 }
 
-func (this *RoleEntRepository) Exist(ctx context.Context, param it.ExistRoleParam) (bool, error) {
+func (this *RoleEntRepository) Exist(ctx crud.Context, param it.ExistRoleParam) (bool, error) {
 	return this.client.Role.Query().
 		Where(entRole.IDEQ(param.Id)).
 		Exist(ctx)
@@ -161,7 +160,7 @@ func (this *RoleEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicat
 }
 
 func (this *RoleEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.Role], error) {
 	query := this.client.Role.Query()
@@ -179,14 +178,14 @@ func (this *RoleEntRepository) Search(
 	)
 }
 
-func (this *RoleEntRepository) FindAllBySubject(ctx context.Context, param it.FindAllBySubjectParam) ([]domain.Role, error) {
+func (this *RoleEntRepository) FindAllBySubject(ctx crud.Context, param it.FindAllBySubjectParam) ([]domain.Role, error) {
 	query := this.client.Role.Query().
 		Where(entRole.HasRoleUsersWith(entRoleUser.ReceiverRefEQ(param.SubjectRef)))
 
 	return database.List(ctx, query, entToRoles)
 }
 
-func (this *RoleEntRepository) createRoleTx(ctx context.Context, tx *ent.Tx, role domain.Role) (*ent.Role, error) {
+func (this *RoleEntRepository) createRoleTx(ctx crud.Context, tx *ent.Tx, role domain.Role) (*ent.Role, error) {
 	return tx.Role.
 		Create().
 		SetID(*role.Id).
@@ -260,7 +259,7 @@ func (this *RoleEntRepository) createAssignmentTx(ctx crud.Context, tx *ent.Tx, 
 	return err
 }
 
-func (this *RoleEntRepository) updateRole(ctx context.Context, tx *ent.Tx, prevEtag model.Etag, role domain.Role) (*ent.Role, error) {
+func (this *RoleEntRepository) updateRole(ctx crud.Context, tx *ent.Tx, prevEtag model.Etag, role domain.Role) (*ent.Role, error) {
 	_, err := tx.Role.
 		UpdateOneID(*role.Id).
 		SetName(*role.Name).
@@ -278,7 +277,7 @@ func (this *RoleEntRepository) updateRole(ctx context.Context, tx *ent.Tx, prevE
 	return updatedRole, nil
 }
 
-func (r *RoleEntRepository) setAssignmentIdNull(ctx context.Context, tx *ent.Tx, assignmentId string) error {
+func (r *RoleEntRepository) setAssignmentIdNull(ctx crud.Context, tx *ent.Tx, assignmentId string) error {
 	_, err := tx.PermissionHistory.
 		Update().
 		Where(entPermissionHistory.EntitlementAssignmentIDEQ(assignmentId)).
@@ -287,7 +286,7 @@ func (r *RoleEntRepository) setAssignmentIdNull(ctx context.Context, tx *ent.Tx,
 	return err
 }
 
-func (this *RoleEntRepository) removeAssignmentTx(ctx context.Context, tx *ent.Tx, roleID model.Id, entitlementID model.Id) error {
+func (this *RoleEntRepository) removeAssignmentTx(ctx crud.Context, tx *ent.Tx, roleID model.Id, entitlementID model.Id) error {
 	_, err := tx.EntitlementAssignment.
 		Delete().
 		Where(
@@ -299,7 +298,7 @@ func (this *RoleEntRepository) removeAssignmentTx(ctx context.Context, tx *ent.T
 	return err
 }
 
-func (this *RoleEntRepository) deleteRoleTx(ctx context.Context, tx *ent.Tx, roleId model.Id) (int, error) {
+func (this *RoleEntRepository) deleteRoleTx(ctx crud.Context, tx *ent.Tx, roleId model.Id) (int, error) {
 	deletedCount, err := tx.Role.
 		Delete().
 		Where(entRole.IDEQ(roleId)).
@@ -307,7 +306,7 @@ func (this *RoleEntRepository) deleteRoleTx(ctx context.Context, tx *ent.Tx, rol
 	return deletedCount, err
 }
 
-func (this *RoleEntRepository) setGrantRequestBeforeDeleteTx(ctx context.Context, tx *ent.Tx, roleId, roleName string) error {
+func (this *RoleEntRepository) setGrantRequestBeforeDeleteTx(ctx crud.Context, tx *ent.Tx, roleId, roleName string) error {
 	_, err := tx.GrantRequest.
 		Update().
 		SetTargetRoleName(roleName).
@@ -317,7 +316,7 @@ func (this *RoleEntRepository) setGrantRequestBeforeDeleteTx(ctx context.Context
 	return err
 }
 
-func (this *RoleEntRepository) setRevokeRequestBeforeDeleteTx(ctx context.Context, tx *ent.Tx, roleId, roleName string) error {
+func (this *RoleEntRepository) setRevokeRequestBeforeDeleteTx(ctx crud.Context, tx *ent.Tx, roleId, roleName string) error {
 	_, err := tx.RevokeRequest.
 		Update().
 		SetTargetRoleName(roleName).
@@ -327,7 +326,7 @@ func (this *RoleEntRepository) setRevokeRequestBeforeDeleteTx(ctx context.Contex
 	return err
 }
 
-func (this *RoleEntRepository) setPermissionHistoryBeforeDeleteTx(ctx context.Context, tx *ent.Tx, roleId, roleName string) error {
+func (this *RoleEntRepository) setPermissionHistoryBeforeDeleteTx(ctx crud.Context, tx *ent.Tx, roleId, roleName string) error {
 	_, err := tx.PermissionHistory.
 		Update().
 		SetRoleName(roleName).

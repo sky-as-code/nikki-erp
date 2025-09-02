@@ -1,14 +1,14 @@
 package comm_channel
 
 import (
-	"context"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type CommChannelService interface {
-	CreateCommChannel(ctx context.Context, cmd CreateCommChannelCommand) (*CreateCommChannelResult, error)
-	DeleteCommChannel(ctx context.Context, cmd DeleteCommChannelCommand) (*DeleteCommChannelResult, error)
-	GetCommChannelById(ctx context.Context, query GetCommChannelByIdQuery) (*GetCommChannelByIdResult, error)
-	GetCommChannelsByParty(ctx context.Context, query GetCommChannelsByPartyQuery) (*GetCommChannelsByPartyResult, error)
-	SearchCommChannels(ctx context.Context, query SearchCommChannelsQuery) (*SearchCommChannelsResult, error)
-	UpdateCommChannel(ctx context.Context, cmd UpdateCommChannelCommand) (*UpdateCommChannelResult, error)
+	CreateCommChannel(ctx crud.Context, cmd CreateCommChannelCommand) (*CreateCommChannelResult, error)
+	DeleteCommChannel(ctx crud.Context, cmd DeleteCommChannelCommand) (*DeleteCommChannelResult, error)
+	GetCommChannelById(ctx crud.Context, query GetCommChannelByIdQuery) (*GetCommChannelByIdResult, error)
+	GetCommChannelsByParty(ctx crud.Context, query GetCommChannelsByPartyQuery) (*GetCommChannelsByPartyResult, error)
+	SearchCommChannels(ctx crud.Context, query SearchCommChannelsQuery) (*SearchCommChannelsResult, error)
+	UpdateCommChannel(ctx crud.Context, cmd UpdateCommChannelCommand) (*UpdateCommChannelResult, error)
 }

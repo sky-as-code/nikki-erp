@@ -1,8 +1,6 @@
 package role_suite
 
 import (
-	"context"
-
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -11,12 +9,12 @@ import (
 )
 
 type RoleSuiteRepository interface {
-	Create(ctx context.Context, roleSuite domain.RoleSuite, roleIds []model.Id) (*domain.RoleSuite, error)
-	UpdateTx(ctx context.Context, roleSuite domain.RoleSuite, prevEtag model.Etag, addRoleIds, removeRoleIds []model.Id) (*domain.RoleSuite, error)
-	DeleteHardTx(ctx context.Context, param DeleteRoleSuiteParam) (int, error)
-	FindByName(ctx context.Context, param FindByNameParam) (*domain.RoleSuite, error)
-	FindById(ctx context.Context, param FindByIdParam) (*domain.RoleSuite, error)
-	FindAllBySubject(ctx context.Context, param FindAllBySubjectParam) ([]domain.RoleSuite, error)
+	Create(ctx crud.Context, roleSuite domain.RoleSuite, roleIds []model.Id) (*domain.RoleSuite, error)
+	UpdateTx(ctx crud.Context, roleSuite domain.RoleSuite, prevEtag model.Etag, addRoleIds, removeRoleIds []model.Id) (*domain.RoleSuite, error)
+	DeleteHardTx(ctx crud.Context, param DeleteRoleSuiteParam) (int, error)
+	FindByName(ctx crud.Context, param FindByNameParam) (*domain.RoleSuite, error)
+	FindById(ctx crud.Context, param FindByIdParam) (*domain.RoleSuite, error)
+	FindAllBySubject(ctx crud.Context, param FindAllBySubjectParam) ([]domain.RoleSuite, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.RoleSuite], error)
 }

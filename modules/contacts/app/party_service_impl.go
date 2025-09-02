@@ -1,10 +1,8 @@
 package app
 
 import (
-	"context"
 	"strings"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -12,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 func NewPartyServiceImpl(
@@ -32,7 +31,7 @@ type PartyServiceImpl struct {
 	cqrsBus   cqrs.CqrsBus
 }
 
-func (ps *PartyServiceImpl) CreateParty(ctx context.Context, cmd it.CreatePartyCommand) (result *it.CreatePartyResult, err error) {
+func (ps *PartyServiceImpl) CreateParty(ctx crud.Context, cmd it.CreatePartyCommand) (result *it.CreatePartyResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to create party"); e != nil {
 			err = e
@@ -85,7 +84,7 @@ func (ps *PartyServiceImpl) sanitizeParty(party *domain.Party) {
 	}
 }
 
-func (ps *PartyServiceImpl) UpdateParty(ctx context.Context, cmd it.UpdatePartyCommand) (result *it.UpdatePartyResult, err error) {
+func (ps *PartyServiceImpl) UpdateParty(ctx crud.Context, cmd it.UpdatePartyCommand) (result *it.UpdatePartyResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to update party"); e != nil {
 			err = e
@@ -127,7 +126,7 @@ func (ps *PartyServiceImpl) UpdateParty(ctx context.Context, cmd it.UpdatePartyC
 	}, err
 }
 
-func (ps *PartyServiceImpl) DeleteParty(ctx context.Context, cmd it.DeletePartyCommand) (result *it.DeletePartyResult, err error) {
+func (ps *PartyServiceImpl) DeleteParty(ctx crud.Context, cmd it.DeletePartyCommand) (result *it.DeletePartyResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to delete party"); e != nil {
 			err = e
@@ -150,7 +149,7 @@ func (ps *PartyServiceImpl) DeleteParty(ctx context.Context, cmd it.DeletePartyC
 	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCopy), nil
 }
 
-func (ps *PartyServiceImpl) GetPartyById(ctx context.Context, query it.GetPartyByIdQuery) (result *it.GetPartyByIdResult, err error) {
+func (ps *PartyServiceImpl) GetPartyById(ctx crud.Context, query it.GetPartyByIdQuery) (result *it.GetPartyByIdResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to get party"); e != nil {
 			err = e
@@ -172,7 +171,7 @@ func (ps *PartyServiceImpl) GetPartyById(ctx context.Context, query it.GetPartyB
 	}, nil
 }
 
-func (ps *PartyServiceImpl) SearchParties(ctx context.Context, query it.SearchPartiesQuery) (result *it.SearchPartiesResult, err error) {
+func (ps *PartyServiceImpl) SearchParties(ctx crud.Context, query it.SearchPartiesQuery) (result *it.SearchPartiesResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to search parties"); e != nil {
 			err = e
@@ -206,7 +205,7 @@ func (ps *PartyServiceImpl) SearchParties(ctx context.Context, query it.SearchPa
 	}, nil
 }
 
-func (ps *PartyServiceImpl) assertCorrectParty(ctx context.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
+func (ps *PartyServiceImpl) assertCorrectParty(ctx crud.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
 	dbParty, err := ps.assertPartyIdExists(ctx, id, vErrs)
 	if err != nil {
 		return err
@@ -220,7 +219,7 @@ func (ps *PartyServiceImpl) assertCorrectParty(ctx context.Context, id model.Id,
 	return nil
 }
 
-func (ps *PartyServiceImpl) assertPartyIdExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.Party, error) {
+func (ps *PartyServiceImpl) assertPartyIdExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.Party, error) {
 	dbParty, err := ps.partyRepo.FindById(ctx, it.FindByIdParam{
 		Id: id,
 	})
@@ -235,7 +234,7 @@ func (ps *PartyServiceImpl) assertPartyIdExists(ctx context.Context, id model.Id
 	return dbParty, nil
 }
 
-func (ps *PartyServiceImpl) assertUniquePartyDisplayName(ctx context.Context, party *domain.Party, vErrs *ft.ValidationErrors) error {
+func (ps *PartyServiceImpl) assertUniquePartyDisplayName(ctx crud.Context, party *domain.Party, vErrs *ft.ValidationErrors) error {
 	if party.DisplayName == nil {
 		return nil
 	}

@@ -1,10 +1,8 @@
 package repository
 
 import (
-	"context"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -12,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent"
 	entParty "github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/party"
 	pt "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
@@ -25,7 +24,7 @@ type PartyEntRepository struct {
 	client *ent.Client
 }
 
-func (this *PartyEntRepository) Create(ctx context.Context, party domain.Party) (*domain.Party, error) {
+func (this *PartyEntRepository) Create(ctx crud.Context, party domain.Party) (*domain.Party, error) {
 	creation := this.client.Party.Create().
 		SetID(*party.Id).
 		SetEtag(*party.Etag).
@@ -54,7 +53,7 @@ func (this *PartyEntRepository) Create(ctx context.Context, party domain.Party) 
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToParty)
 }
 
-func (this *PartyEntRepository) Update(ctx context.Context, party domain.Party, prevEtag model.Etag) (*domain.Party, error) {
+func (this *PartyEntRepository) Update(ctx crud.Context, party domain.Party, prevEtag model.Etag) (*domain.Party, error) {
 	update := this.client.Party.UpdateOneID(*party.Id).
 		SetNillableAvatarURL(party.AvatarUrl).
 		SetNillableDisplayName(party.DisplayName).
@@ -89,13 +88,13 @@ func (this *PartyEntRepository) Update(ctx context.Context, party domain.Party, 
 	return db.Mutate(ctx, update, ent.IsNotFound, entToParty)
 }
 
-func (this *PartyEntRepository) DeleteHard(ctx context.Context, param pt.DeleteParam) (int, error) {
+func (this *PartyEntRepository) DeleteHard(ctx crud.Context, param pt.DeleteParam) (int, error) {
 	return this.client.Party.Delete().
 		Where(entParty.ID(param.Id)).
 		Exec(ctx)
 }
 
-func (this *PartyEntRepository) FindById(ctx context.Context, param pt.FindByIdParam) (*domain.Party, error) {
+func (this *PartyEntRepository) FindById(ctx crud.Context, param pt.FindByIdParam) (*domain.Party, error) {
 	query := this.client.Party.Query().
 		Where(entParty.ID(param.Id))
 
@@ -110,7 +109,7 @@ func (this *PartyEntRepository) FindById(ctx context.Context, param pt.FindByIdP
 	return db.FindOne(ctx, query, ent.IsNotFound, entToParty)
 }
 
-func (this *PartyEntRepository) FindByDisplayName(ctx context.Context, param pt.FindByDisplayNameParam) (*domain.Party, error) {
+func (this *PartyEntRepository) FindByDisplayName(ctx crud.Context, param pt.FindByDisplayNameParam) (*domain.Party, error) {
 	query := this.client.Party.Query().
 		Where(entParty.DisplayNameEQ(param.DisplayName)).
 		Where(entParty.TypeEQ(param.Type))
@@ -131,7 +130,7 @@ func (this *PartyEntRepository) ParseSearchGraph(criteria *string) (*orm.Predica
 }
 
 func (this *PartyEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param pt.SearchParam,
 ) (*crud.PagedResult[domain.Party], error) {
 	query := this.client.Party.Query()
