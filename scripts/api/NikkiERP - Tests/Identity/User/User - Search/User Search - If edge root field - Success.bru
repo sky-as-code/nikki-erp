@@ -5,29 +5,33 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/users?graph={"if": ["user_status.value", "!=", "active"]}
+  url: {{api_host}}/v1/identity/users?graph={"if": ["status", "!=", "active"]}
   body: none
   auth: inherit
 }
 
 params:query {
-  graph: {"if": ["user_status.value", "!=", "active"]}
+  graph: {"if": ["status", "!=", "active"]}
 }
 
 script:post-response {
+  const tv4 = require('tv4');
+  
   const schema = bru.getVar("search_schema");
   const payload = res.getBody();
   
   test("Status code is 200", function () {
-      expect(res.getStatus()).to.equal(200);
+    expect(res.getStatus()).to.equal(200);
   });
   
   test("Response matches expected JSON schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
+    const valid = tv4.validate(res.getBody(), schema);
+    expect(tv4.error).not.to.exist;
+    expect(valid).to.be.true;
   });
   
   test("Response has positive number of items", function () {
-      expect(payload.items.length).to.be.greaterThan(0)
+    expect(payload.items.length).to.be.greaterThan(0)
   });
   
 }

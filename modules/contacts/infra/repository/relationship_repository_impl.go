@@ -1,10 +1,8 @@
 package repository
 
 import (
-	"context"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -12,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent"
 	entRelationship "github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/relationship"
 	rel "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/relationship"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
@@ -25,7 +24,7 @@ type RelationshipEntRepository struct {
 	client *ent.Client
 }
 
-func (this *RelationshipEntRepository) Create(ctx context.Context, relationship domain.Relationship) (*domain.Relationship, error) {
+func (this *RelationshipEntRepository) Create(ctx crud.Context, relationship domain.Relationship) (*domain.Relationship, error) {
 	creation := this.client.Relationship.Create().
 		SetID(*relationship.Id).
 		SetEtag(*relationship.Etag).
@@ -42,7 +41,7 @@ func (this *RelationshipEntRepository) Create(ctx context.Context, relationship 
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToRelationship)
 }
 
-func (this *RelationshipEntRepository) Update(ctx context.Context, relationship domain.Relationship, prevEtag model.Etag) (*domain.Relationship, error) {
+func (this *RelationshipEntRepository) Update(ctx crud.Context, relationship domain.Relationship, prevEtag model.Etag) (*domain.Relationship, error) {
 	update := this.client.Relationship.UpdateOneID(*relationship.Id).
 		SetNillableNote(relationship.Note).
 		SetNillableTargetPartyID((*string)(relationship.TargetPartyId)).
@@ -62,20 +61,20 @@ func (this *RelationshipEntRepository) Update(ctx context.Context, relationship 
 	return db.Mutate(ctx, update, ent.IsNotFound, entToRelationship)
 }
 
-func (this *RelationshipEntRepository) DeleteHard(ctx context.Context, param rel.DeleteParam) (int, error) {
+func (this *RelationshipEntRepository) DeleteHard(ctx crud.Context, param rel.DeleteParam) (int, error) {
 	return this.client.Relationship.Delete().
 		Where(entRelationship.ID(param.Id)).
 		Exec(ctx)
 }
 
-func (this *RelationshipEntRepository) FindById(ctx context.Context, param rel.FindByIdParam) (*domain.Relationship, error) {
+func (this *RelationshipEntRepository) FindById(ctx crud.Context, param rel.FindByIdParam) (*domain.Relationship, error) {
 	query := this.client.Relationship.Query().
 		Where(entRelationship.ID(param.Id))
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToRelationship)
 }
 
-func (this *RelationshipEntRepository) FindByParty(ctx context.Context, param rel.FindByPartyParam) ([]*domain.Relationship, error) {
+func (this *RelationshipEntRepository) FindByParty(ctx crud.Context, param rel.FindByPartyParam) ([]*domain.Relationship, error) {
 	query := this.client.Relationship.Query().
 		Where(entRelationship.TargetPartyIDEQ(string(param.PartyId)))
 
@@ -96,7 +95,7 @@ func (this *RelationshipEntRepository) ParseSearchGraph(criteria *string) (*orm.
 }
 
 func (this *RelationshipEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param rel.SearchParam,
 ) (*crud.PagedResult[domain.Relationship], error) {
 	query := this.client.Relationship.Query()

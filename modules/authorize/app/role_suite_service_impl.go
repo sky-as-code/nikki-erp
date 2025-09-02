@@ -1,15 +1,14 @@
 package app
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
@@ -31,7 +30,7 @@ type RoleSuiteServiceImpl struct {
 	eventBus      event.EventBus
 }
 
-func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx context.Context, cmd it.CreateRoleSuiteCommand) (result *it.CreateRoleSuiteResult, err error) {
+func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx crud.Context, cmd it.CreateRoleSuiteCommand) (result *it.CreateRoleSuiteResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "create role suite"); e != nil {
 			err = e
@@ -73,7 +72,7 @@ func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx context.Context, cmd it.Cr
 	}, nil
 }
 
-func (this *RoleSuiteServiceImpl) UpdateRoleSuite(ctx context.Context, cmd it.UpdateRoleSuiteCommand) (update *it.UpdateRoleSuiteResult, err error) {
+func (this *RoleSuiteServiceImpl) UpdateRoleSuite(ctx crud.Context, cmd it.UpdateRoleSuiteCommand) (update *it.UpdateRoleSuiteResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "update role suite"); e != nil {
 			err = e
@@ -128,7 +127,7 @@ func (this *RoleSuiteServiceImpl) UpdateRoleSuite(ctx context.Context, cmd it.Up
 	}, err
 }
 
-func (this *RoleSuiteServiceImpl) DeleteHardRoleSuite(ctx context.Context, cmd it.DeleteRoleSuiteCommand) (result *it.DeleteRoleSuiteResult, err error) {
+func (this *RoleSuiteServiceImpl) DeleteHardRoleSuite(ctx crud.Context, cmd it.DeleteRoleSuiteCommand) (result *it.DeleteRoleSuiteResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "delete role suite"); e != nil {
 			err = e
@@ -172,7 +171,7 @@ func (this *RoleSuiteServiceImpl) DeleteHardRoleSuite(ctx context.Context, cmd i
 	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
-func (this *RoleSuiteServiceImpl) GetRoleSuiteById(ctx context.Context, query it.GetRoleSuiteByIdQuery) (result *it.GetRoleSuiteByIdResult, err error) {
+func (this *RoleSuiteServiceImpl) GetRoleSuiteById(ctx crud.Context, query it.GetRoleSuiteByIdQuery) (result *it.GetRoleSuiteByIdResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "get role suite by id"); e != nil {
 			err = e
@@ -196,7 +195,7 @@ func (this *RoleSuiteServiceImpl) GetRoleSuiteById(ctx context.Context, query it
 	}, nil
 }
 
-func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx context.Context, query it.SearchRoleSuitesCommand) (result *it.SearchRoleSuitesResult, err error) {
+func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx crud.Context, query it.SearchRoleSuitesCommand) (result *it.SearchRoleSuitesResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "search role suites"); e != nil {
 			err = e
@@ -229,7 +228,7 @@ func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx context.Context, query it
 	}, nil
 }
 
-func (this *RoleSuiteServiceImpl) GetRoleSuitesBySubject(ctx context.Context, query it.GetRoleSuitesBySubjectQuery) (result *it.GetRoleSuitesBySubjectResult, err error) {
+func (this *RoleSuiteServiceImpl) GetRoleSuitesBySubject(ctx crud.Context, query it.GetRoleSuitesBySubjectQuery) (result *it.GetRoleSuitesBySubjectResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "get role suites by subject"); e != nil {
 			err = e
@@ -262,7 +261,7 @@ func (this *RoleSuiteServiceImpl) GetRoleSuitesBySubject(ctx context.Context, qu
 	}, nil
 }
 
-func (this *RoleSuiteServiceImpl) assertRoleSuiteExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbRoleSuite *domain.RoleSuite, err error) {
+func (this *RoleSuiteServiceImpl) assertRoleSuiteExistsById(ctx crud.Context, id model.Id, vErrs *fault.ValidationErrors) (dbRoleSuite *domain.RoleSuite, err error) {
 	dbRoleSuite, err = this.roleSuiteRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	fault.PanicOnErr(err)
 
@@ -272,7 +271,7 @@ func (this *RoleSuiteServiceImpl) assertRoleSuiteExistsById(ctx context.Context,
 	return
 }
 
-func (this *RoleSuiteServiceImpl) assertRoleSuiteUnique(ctx context.Context, roleSuite *domain.RoleSuite, vErrs *fault.ValidationErrors) error {
+func (this *RoleSuiteServiceImpl) assertRoleSuiteUnique(ctx crud.Context, roleSuite *domain.RoleSuite, vErrs *fault.ValidationErrors) error {
 	dbRoleSuite, err := this.roleSuiteRepo.FindByName(ctx, it.FindByNameParam{Name: *roleSuite.Name})
 	fault.PanicOnErr(err)
 
@@ -283,7 +282,7 @@ func (this *RoleSuiteServiceImpl) assertRoleSuiteUnique(ctx context.Context, rol
 	return nil
 }
 
-func (this *RoleSuiteServiceImpl) assertRoleSuiteUniqueForUpdate(ctx context.Context, roleSuite *domain.RoleSuite, vErrs *fault.ValidationErrors) error {
+func (this *RoleSuiteServiceImpl) assertRoleSuiteUniqueForUpdate(ctx crud.Context, roleSuite *domain.RoleSuite, vErrs *fault.ValidationErrors) error {
 	dbRoleSuite, err := this.roleSuiteRepo.FindByName(ctx, it.FindByNameParam{Name: *roleSuite.Name})
 	fault.PanicOnErr(err)
 
@@ -304,7 +303,7 @@ func (this *RoleSuiteServiceImpl) setRoleSuiteDefaults(roleSuite *domain.RoleSui
 	roleSuite.SetDefaults()
 }
 
-func (this *RoleSuiteServiceImpl) validateRoles(ctx context.Context, roleIds []model.Id, vErrs *fault.ValidationErrors) {
+func (this *RoleSuiteServiceImpl) validateRoles(ctx crud.Context, roleIds []model.Id, vErrs *fault.ValidationErrors) {
 	if len(roleIds) == 0 {
 		return
 	}

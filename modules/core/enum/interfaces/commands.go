@@ -3,11 +3,11 @@ package interfaces
 import (
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type CreateEnumCommand struct {

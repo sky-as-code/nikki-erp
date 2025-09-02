@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"net/http"
-
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
@@ -36,18 +34,33 @@ func (this AuthorizeRest) IsAuthorized(echoCtx echo.Context) (err error) {
 		}
 	}()
 
-	query := IsAuthorizedRequest{}
-	err = echoCtx.Bind(&query)
-	if err != nil {
-		return err
-	}
+	// query := IsAuthorizedRequest{}
+	// err = echoCtx.Bind(&query)
+	// if err != nil {
+	// 	return err
+	// }
 
-	result, err := this.AuthorizeSvc.IsAuthorized(echoCtx.Request().Context(), query)
-	if err != nil {
-		return err
-	}
+	// result, err := this.AuthorizeSvc.IsAuthorized(echoCtx.Request().Context(), query)
+	// if err != nil {
+	// 	return err
+	// }
 
-	response := IsAuthorizedResponse{}
-	response.FromResult(result)
-	return echoCtx.JSON(http.StatusOK, response)
+	// response := IsAuthorizedResponse{}
+	// response.FromResult(result)
+	// return echoCtx.JSON(http.StatusOK, response)
+	err = httpserver.ServeRequest(
+		echoCtx,
+		this.AuthorizeSvc.IsAuthorized,
+		func(request IsAuthorizedRequest) it.IsAuthorizedQuery {
+			return it.IsAuthorizedQuery(request)
+		},
+		func(result it.IsAuthorizedResult) IsAuthorizedResponse {
+			response := IsAuthorizedResponse{}
+			response.FromResult(result)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
 }

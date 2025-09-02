@@ -14,7 +14,7 @@ import (
 
 const skippedCallStackDepth = 3
 
-func NewLogger(levels ...Level) *loggerImpl {
+func NewLogger(levels ...Level) LoggerService {
 	level := LevelInfo // default level
 	if len(levels) > 0 {
 		level = levels[0]
@@ -31,9 +31,23 @@ func NewLogger(levels ...Level) *loggerImpl {
 }
 
 type loggerImpl struct {
+	context  map[string]string
 	level    Level
 	levelVar *slog.LevelVar
 	slogger  *slog.Logger
+}
+
+func (this *loggerImpl) InnerLogger() any {
+	return this.slogger
+}
+
+func (this *loggerImpl) Clone() LoggerService {
+	return &loggerImpl{
+		context:  this.context,
+		level:    this.level,
+		levelVar: this.levelVar,
+		slogger:  this.slogger,
+	}
 }
 
 func (this *loggerImpl) Level() Level {
@@ -44,8 +58,16 @@ func (this *loggerImpl) SetLevel(lvl Level) {
 	this.levelVar.Set(slogLevelMap[lvl])
 }
 
-func (this *loggerImpl) InnerLogger() any {
-	return this.slogger
+func (this *loggerImpl) SetContext(key string, value string) {
+	this.context[key] = value
+}
+
+func (this *loggerImpl) GetContext(key string) string {
+	return this.context[key]
+}
+
+func (this *loggerImpl) RemoveContext(key string) {
+	delete(this.context, key)
 }
 
 func (this *loggerImpl) Debug(message string, data Attr) {

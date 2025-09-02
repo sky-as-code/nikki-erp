@@ -8,6 +8,7 @@ import (
 	"math"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
@@ -25,6 +26,7 @@ type UserOrgQuery struct {
 	predicates []predicate.UserOrg
 	withUser   *UserQuery
 	withOrg    *OrganizationQuery
+	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -228,8 +230,9 @@ func (uoq *UserOrgQuery) Clone() *UserOrgQuery {
 		withUser:   uoq.withUser.Clone(),
 		withOrg:    uoq.withOrg.Clone(),
 		// clone intermediate query.
-		sql:  uoq.sql.Clone(),
-		path: uoq.path,
+		sql:       uoq.sql.Clone(),
+		path:      uoq.path,
+		modifiers: append([]func(*sql.Selector){}, uoq.modifiers...),
 	}
 }
 
@@ -347,6 +350,9 @@ func (uoq *UserOrgQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Use
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(uoq.modifiers) > 0 {
+		_spec.Modifiers = uoq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -432,6 +438,9 @@ func (uoq *UserOrgQuery) loadOrg(ctx context.Context, query *OrganizationQuery, 
 
 func (uoq *UserOrgQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := uoq.querySpec()
+	if len(uoq.modifiers) > 0 {
+		_spec.Modifiers = uoq.modifiers
+	}
 	_spec.Unique = false
 	_spec.Node.Columns = nil
 	return sqlgraph.CountNodes(ctx, uoq.driver, _spec)
@@ -495,6 +504,9 @@ func (uoq *UserOrgQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if uoq.ctx.Unique != nil && *uoq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range uoq.modifiers {
+		m(selector)
+	}
 	for _, p := range uoq.predicates {
 		p(selector)
 	}
@@ -510,6 +522,38 @@ func (uoq *UserOrgQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// ForUpdate locks the selected rows against concurrent updates, and prevent them from being
+// updated, deleted or "selected ... for update" by other sessions, until the transaction is
+// either committed or rolled-back.
+func (uoq *UserOrgQuery) ForUpdate(opts ...sql.LockOption) *UserOrgQuery {
+	if uoq.driver.Dialect() == dialect.Postgres {
+		uoq.Unique(false)
+	}
+	uoq.modifiers = append(uoq.modifiers, func(s *sql.Selector) {
+		s.ForUpdate(opts...)
+	})
+	return uoq
+}
+
+// ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
+// on any rows that are read. Other sessions can read the rows, but cannot modify them
+// until your transaction commits.
+func (uoq *UserOrgQuery) ForShare(opts ...sql.LockOption) *UserOrgQuery {
+	if uoq.driver.Dialect() == dialect.Postgres {
+		uoq.Unique(false)
+	}
+	uoq.modifiers = append(uoq.modifiers, func(s *sql.Selector) {
+		s.ForShare(opts...)
+	})
+	return uoq
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (uoq *UserOrgQuery) Modify(modifiers ...func(s *sql.Selector)) *UserOrgSelect {
+	uoq.modifiers = append(uoq.modifiers, modifiers...)
+	return uoq.Select()
 }
 
 // UserOrgGroupBy is the group-by builder for UserOrg entities.
@@ -600,4 +644,10 @@ func (uos *UserOrgSelect) sqlScan(ctx context.Context, root *UserOrgQuery, v any
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (uos *UserOrgSelect) Modify(modifiers ...func(s *sql.Selector)) *UserOrgSelect {
+	uos.modifiers = append(uos.modifiers, modifiers...)
+	return uos
 }

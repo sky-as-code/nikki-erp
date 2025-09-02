@@ -1,12 +1,12 @@
 package role
 
-import "context"
+import "github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 type RoleService interface {
-	CreateRole(ctx context.Context, cmd CreateRoleCommand) (*CreateRoleResult, error)
-	UpdateRole(ctx context.Context, cmd UpdateRoleCommand) (*UpdateRoleResult, error)
-	DeleteRoleHard(ctx context.Context, cmd DeleteRoleHardCommand) (*DeleteRoleHardResult, error)
-	GetRoleById(ctx context.Context, query GetRoleByIdQuery) (*GetRoleByIdResult, error)
-	SearchRoles(ctx context.Context, query SearchRolesQuery) (*SearchRolesResult, error)
-	GetRolesBySubject(ctx context.Context, query GetRolesBySubjectQuery) (*GetRolesBySubjectResult, error)
+	CreateRole(ctx crud.Context, cmd CreateRoleCommand) (*CreateRoleResult, error)
+	UpdateRole(ctx crud.Context, cmd UpdateRoleCommand) (*UpdateRoleResult, error)
+	DeleteRoleHard(ctx crud.Context, cmd DeleteRoleHardCommand) (*DeleteRoleHardResult, error)
+	GetRoleById(ctx crud.Context, query GetRoleByIdQuery) (*GetRoleByIdResult, error)
+	SearchRoles(ctx crud.Context, query SearchRolesQuery) (*SearchRolesResult, error)
+	GetRolesBySubject(ctx crud.Context, query GetRolesBySubjectQuery) (*GetRolesBySubjectResult, error)
 }

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type NewLoginServiceParam struct {
@@ -47,7 +47,7 @@ type LoginServiceImpl struct {
 	attemptDurationSecs int
 }
 
-func (s *LoginServiceImpl) Authenticate(ctx context.Context, cmd it.AuthenticateCommand) (result *it.AuthenticateResult, err error) {
+func (s *LoginServiceImpl) Authenticate(ctx crud.Context, cmd it.AuthenticateCommand) (result *it.AuthenticateResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "authenticate"); e != nil {
 			err = e
@@ -75,7 +75,7 @@ func (s *LoginServiceImpl) Authenticate(ctx context.Context, cmd it.Authenticate
 	return s.buildAuthenticateResult(done, attempt), nil
 }
 
-func (s *LoginServiceImpl) validateAuthInput(ctx context.Context, cmd it.AuthenticateCommand) (*domain.LoginAttempt, *ft.ValidationErrors, error) {
+func (s *LoginServiceImpl) validateAuthInput(ctx crud.Context, cmd it.AuthenticateCommand) (*domain.LoginAttempt, *ft.ValidationErrors, error) {
 	var attempt *domain.LoginAttempt
 
 	flow := val.StartValidationFlow()
@@ -103,7 +103,7 @@ func (s *LoginServiceImpl) validateAuthInput(ctx context.Context, cmd it.Authent
 }
 
 func (s *LoginServiceImpl) performLoginMethods(
-	ctx context.Context,
+	ctx crud.Context,
 	cmd it.AuthenticateCommand,
 	attempt *domain.LoginAttempt,
 	vErrs *ft.ValidationErrors,
@@ -157,7 +157,7 @@ func (s *LoginServiceImpl) performLoginMethods(
 	return false, nil
 }
 
-func (s *LoginServiceImpl) updateAttemptStatus(ctx context.Context, attempt *domain.LoginAttempt) error {
+func (s *LoginServiceImpl) updateAttemptStatus(ctx crud.Context, attempt *domain.LoginAttempt) error {
 	attResult, err := s.attemptSvc.UpdateLoginAttempt(ctx, it.UpdateLoginAttemptCommand{
 		Id:            *attempt.Id,
 		CurrentMethod: attempt.CurrentMethod,
@@ -196,7 +196,7 @@ func (s *LoginServiceImpl) buildAuthenticateResult(done bool, attempt *domain.Lo
 	}
 }
 
-func (this *LoginServiceImpl) assertAttemptExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (attempt *domain.LoginAttempt, err error) {
+func (this *LoginServiceImpl) assertAttemptExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (attempt *domain.LoginAttempt, err error) {
 	result, err := this.attemptSvc.GetAttemptById(ctx, it.GetAttemptByIdQuery{Id: id})
 	if err != nil {
 		return nil, err
@@ -206,7 +206,7 @@ func (this *LoginServiceImpl) assertAttemptExists(ctx context.Context, id model.
 	return
 }
 
-func (this *LoginServiceImpl) assertAttemptValid(ctx context.Context, attempt *domain.LoginAttempt, vErrs *ft.ValidationErrors) {
+func (this *LoginServiceImpl) assertAttemptValid(ctx crud.Context, attempt *domain.LoginAttempt, vErrs *ft.ValidationErrors) {
 	if attempt.ExpiredAt.Before(time.Now()) {
 		vErrs.Append("attemptId", "attempt expired")
 	} else if *attempt.Status != domain.AttemptStatusPending {

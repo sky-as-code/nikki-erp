@@ -17,8 +17,9 @@ import (
 // UserGroupUpdate is the builder for updating UserGroup entities.
 type UserGroupUpdate struct {
 	config
-	hooks    []Hook
-	mutation *UserGroupMutation
+	hooks     []Hook
+	mutation  *UserGroupMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the UserGroupUpdate builder.
@@ -70,6 +71,12 @@ func (ugu *UserGroupUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (ugu *UserGroupUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *UserGroupUpdate {
+	ugu.modifiers = append(ugu.modifiers, modifiers...)
+	return ugu
+}
+
 func (ugu *UserGroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := ugu.check(); err != nil {
 		return n, err
@@ -82,6 +89,7 @@ func (ugu *UserGroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	_spec.AddModifiers(ugu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, ugu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{usergroup.Label}
@@ -97,9 +105,10 @@ func (ugu *UserGroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // UserGroupUpdateOne is the builder for updating a single UserGroup entity.
 type UserGroupUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *UserGroupMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *UserGroupMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Mutation returns the UserGroupMutation object of the builder.
@@ -158,6 +167,12 @@ func (uguo *UserGroupUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (uguo *UserGroupUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *UserGroupUpdateOne {
+	uguo.modifiers = append(uguo.modifiers, modifiers...)
+	return uguo
+}
+
 func (uguo *UserGroupUpdateOne) sqlSave(ctx context.Context) (_node *UserGroup, err error) {
 	if err := uguo.check(); err != nil {
 		return _node, err
@@ -189,6 +204,7 @@ func (uguo *UserGroupUpdateOne) sqlSave(ctx context.Context) (_node *UserGroup, 
 			}
 		}
 	}
+	_spec.AddModifiers(uguo.modifiers...)
 	_node = &UserGroup{config: uguo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

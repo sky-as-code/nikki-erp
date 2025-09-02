@@ -5,16 +5,18 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/users?graph={"or":[{"if":["display_name", "*", "Lead"]},{"if": ["user_status.value", "$", "d"]}]}
+  url: {{api_host}}/v1/identity/users?graph={"or":[{"if":["display_name", "*", "Lead"]},{"if": ["status", "$", "d"]}]}
   body: none
   auth: inherit
 }
 
 params:query {
-  graph: {"or":[{"if":["display_name", "*", "Lead"]},{"if": ["user_status.value", "$", "d"]}]}
+  graph: {"or":[{"if":["display_name", "*", "Lead"]},{"if": ["status", "$", "d"]}]}
 }
 
 script:post-response {
+  const tv4 = require('tv4');
+  
   const schema = bru.getVar("search_schema");
   const payload = res.getBody();
   
@@ -23,7 +25,9 @@ script:post-response {
   });
   
   test("Response matches expected JSON schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
+    const valid = tv4.validate(res.getBody(), schema);
+    expect(tv4.error).not.to.exist;
+    expect(valid).to.be.true;
   });
   
   test("Response has positive number of items", function () {

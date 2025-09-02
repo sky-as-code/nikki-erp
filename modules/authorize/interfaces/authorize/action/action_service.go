@@ -1,13 +1,11 @@
 package action
 
-import (
-	"context"
-)
+import "github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 type ActionService interface {
-	CreateAction(ctx context.Context, cmd CreateActionCommand) (*CreateActionResult, error)
-	UpdateAction(ctx context.Context, cmd UpdateActionCommand) (*UpdateActionResult, error)
-	DeleteActionHard(ctx context.Context, cmd DeleteActionHardByIdQuery) (*DeleteActionHardByIdResult, error)
-	GetActionById(ctx context.Context, query GetActionByIdQuery) (*GetActionByIdResult, error)
-	SearchActions(ctx context.Context, query SearchActionsCommand) (*SearchActionsResult, error)
+	CreateAction(ctx crud.Context, cmd CreateActionCommand) (*CreateActionResult, error)
+	UpdateAction(ctx crud.Context, cmd UpdateActionCommand) (*UpdateActionResult, error)
+	DeleteActionHard(ctx crud.Context, cmd DeleteActionHardByIdQuery) (*DeleteActionHardByIdResult, error)
+	GetActionById(ctx crud.Context, query GetActionByIdQuery) (*GetActionByIdResult, error)
+	SearchActions(ctx crud.Context, query SearchActionsCommand) (*SearchActionsResult, error)
 }

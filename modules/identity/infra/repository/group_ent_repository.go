@@ -1,13 +1,12 @@
 package repository
 
 import (
-	"context"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
@@ -25,7 +24,7 @@ type GroupEntRepository struct {
 	client *ent.Client
 }
 
-func (this *GroupEntRepository) Create(ctx context.Context, group domain.Group) (*domain.Group, error) {
+func (this *GroupEntRepository) Create(ctx crud.Context, group domain.Group) (*domain.Group, error) {
 	creation := this.client.Group.Create().
 		SetID(*group.Id).
 		SetName(*group.Name).
@@ -36,7 +35,7 @@ func (this *GroupEntRepository) Create(ctx context.Context, group domain.Group) 
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToGroup)
 }
 
-func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group, prevEtag model.Etag) (*domain.Group, error) {
+func (this *GroupEntRepository) Update(ctx crud.Context, group domain.Group, prevEtag model.Etag) (*domain.Group, error) {
 	update := this.client.Group.UpdateOneID(*group.Id).
 		SetNillableName(group.Name).
 		SetNillableDescription(group.Description).
@@ -54,13 +53,13 @@ func (this *GroupEntRepository) Update(ctx context.Context, group domain.Group, 
 	return db.Mutate(ctx, update, ent.IsNotFound, entToGroup)
 }
 
-func (this *GroupEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+func (this *GroupEntRepository) DeleteHard(ctx crud.Context, param it.DeleteParam) (int, error) {
 	return this.client.Group.Delete().
 		Where(entGroup.ID(param.Id)).
 		Exec(ctx)
 }
 
-func (this *GroupEntRepository) FindById(ctx context.Context, param it.GetGroupByIdQuery) (*domain.Group, error) {
+func (this *GroupEntRepository) FindById(ctx crud.Context, param it.GetGroupByIdQuery) (*domain.Group, error) {
 	dbQuery := this.client.Group.Query().
 		Where(entGroup.ID(param.Id))
 	if param.WithOrg != nil && *param.WithOrg {
@@ -69,7 +68,7 @@ func (this *GroupEntRepository) FindById(ctx context.Context, param it.GetGroupB
 	return db.FindOne(ctx, dbQuery, ent.IsNotFound, entToGroup)
 }
 
-func (this *GroupEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Group, error) {
+func (this *GroupEntRepository) FindByName(ctx crud.Context, param it.FindByNameParam) (*domain.Group, error) {
 	return db.FindOne(
 		ctx,
 		this.client.Group.Query().Where(entGroup.Name(param.Name)),
@@ -83,7 +82,7 @@ func (this *GroupEntRepository) ParseSearchGraph(criteria *string) (*orm.Predica
 }
 
 func (this *GroupEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.Group], error) {
 	query := this.client.Group.Query()
@@ -104,7 +103,7 @@ func (this *GroupEntRepository) Search(
 	)
 }
 
-func (this *GroupEntRepository) AddRemoveUsers(ctx context.Context, param it.AddRemoveUsersParam) (*ft.ClientError, error) {
+func (this *GroupEntRepository) AddRemoveUsers(ctx crud.Context, param it.AddRemoveUsersParam) (*ft.ClientError, error) {
 	if len(param.Add) == 0 && len(param.Remove) == 0 {
 		return nil, nil
 	}

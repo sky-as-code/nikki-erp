@@ -12,52 +12,21 @@ post {
 
 body:json {
   {
-      "displayName": "Tester Lead",
-      "email": "tester-lead@nikkierp.com",
-      "password": "p@sswo0rd"
+      "displayName": "Tester Lead {{$randomFirstName}}",
+      "email": "{{$randomEmail}}"
   }
 }
 
 script:pre-request {
-  // Get original request body as raw text
-  let rawBody = req.getBody().raw;
-  
-  // Parse it as JSON
-  let payload;
-  try {
-      payload = JSON.parse(rawBody);
-  } catch (e) {
-      console.error("Failed to parse request body as JSON:", e);
-      return;
-  }
-  
-  // Generate a 6-char alphanumeric string
-  function randomString(length = 6) {
-      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let result = '';
-      for (let i = 0; i < length; i++) {
-          result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return result;
-  }
-  
-  const rand = randomString();
-  
-  if (payload.displayName) {
-      payload.displayName += ' ' + rand;
-  }
-  if (payload.email && payload.email.includes('@')) {
-      const [local, domain] = payload.email.split('@');
-      payload.email = `${local}-${rand}@${domain}`;
-  }
-  
-  // Write modified payload back to request
-  req.getBody().raw = JSON.stringify(payload, null, 2);
-  
-  console.log('Creating test user: ', payload.displayName)
+  let body = req.getBody();
+  console.log('Creating test user: ', bru.interpolate(body.displayName));
 }
 
 script:post-response {
+  test("Status code is 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+  
   const schema = {
     type: "object",
     properties: {
@@ -127,11 +96,9 @@ script:post-response {
   const LOOP_COUNT = 100;
   bru.setVar("loop_count", LOOP_COUNT);
   
-  const UserSearch_CreateTestData_1_Loop_RequestId = "1c4510f0-91f5-46a0-a532-732f5a5fb741"
-  
   console.log(`Creating ${LOOP_COUNT} test records`)
   // console.log('Set next request: ', UserSearch_CreateTestData_1_Loop_RequestId)
-  bru.runner.setNextRequest(UserSearch_CreateTestData_1_Loop_RequestId);
+  bru.runner.setNextRequest('User Search - Create test data - Loop 100');
   
   
 }

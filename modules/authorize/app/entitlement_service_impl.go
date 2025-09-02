@@ -1,22 +1,20 @@
 package app
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/event"
-
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	itAction "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
 	itAssignment "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
 	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/event"
 )
 
 func NewEntitlementServiceImpl(entitlementRepo it.EntitlementRepository, assignmentRepo itAssignment.EntitlementAssignmentRepository, resourceRepo itResource.ResourceRepository, actionRepo itAction.ActionRepository, eventBus event.EventBus) it.EntitlementService {
@@ -37,7 +35,7 @@ type EntitlementServiceImpl struct {
 	eventBus        event.EventBus
 }
 
-func (this *EntitlementServiceImpl) CreateEntitlement(ctx context.Context, cmd it.CreateEntitlementCommand) (result *it.CreateEntitlementResult, err error) {
+func (this *EntitlementServiceImpl) CreateEntitlement(ctx crud.Context, cmd it.CreateEntitlementCommand) (result *it.CreateEntitlementResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "create entitlement"); e != nil {
 			err = e
@@ -92,7 +90,7 @@ func (this *EntitlementServiceImpl) CreateEntitlement(ctx context.Context, cmd i
 	}, err
 }
 
-func (this *EntitlementServiceImpl) EntitlementExists(ctx context.Context, cmd it.EntitlementExistsCommand) (result *it.EntitlementExistsResult, err error) {
+func (this *EntitlementServiceImpl) EntitlementExists(ctx crud.Context, cmd it.EntitlementExistsCommand) (result *it.EntitlementExistsResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "check entitlement exists"); e != nil {
 			err = e
@@ -126,7 +124,7 @@ func (this *EntitlementServiceImpl) EntitlementExists(ctx context.Context, cmd i
 	}, nil
 }
 
-func (this *EntitlementServiceImpl) UpdateEntitlement(ctx context.Context, cmd it.UpdateEntitlementCommand) (result *it.UpdateEntitlementResult, err error) {
+func (this *EntitlementServiceImpl) UpdateEntitlement(ctx crud.Context, cmd it.UpdateEntitlementCommand) (result *it.UpdateEntitlementResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "update entitlement"); e != nil {
 			err = e
@@ -174,7 +172,7 @@ func (this *EntitlementServiceImpl) UpdateEntitlement(ctx context.Context, cmd i
 	}, err
 }
 
-func (this *EntitlementServiceImpl) DeleteEntitlementHard(ctx context.Context, cmd it.DeleteEntitlementHardByIdQuery) (result *it.DeleteEntitlementHardByIdResult, err error) {
+func (this *EntitlementServiceImpl) DeleteEntitlementHard(ctx crud.Context, cmd it.DeleteEntitlementHardByIdQuery) (result *it.DeleteEntitlementHardByIdResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "delete entitlement hard"); e != nil {
 			err = e
@@ -216,7 +214,7 @@ func (this *EntitlementServiceImpl) DeleteEntitlementHard(ctx context.Context, c
 	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
-func (this *EntitlementServiceImpl) GetEntitlementById(ctx context.Context, query it.GetEntitlementByIdQuery) (result *it.GetEntitlementByIdResult, err error) {
+func (this *EntitlementServiceImpl) GetEntitlementById(ctx crud.Context, query it.GetEntitlementByIdQuery) (result *it.GetEntitlementByIdResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "get entitlement by id"); e != nil {
 			err = e
@@ -249,7 +247,7 @@ func (this *EntitlementServiceImpl) GetEntitlementById(ctx context.Context, quer
 	}, nil
 }
 
-func (this *EntitlementServiceImpl) GetAllEntitlementByIds(ctx context.Context, query it.GetAllEntitlementByIdsQuery) (result *it.GetAllEntitlementByIdsResult, err error) {
+func (this *EntitlementServiceImpl) GetAllEntitlementByIds(ctx crud.Context, query it.GetAllEntitlementByIdsQuery) (result *it.GetAllEntitlementByIdsResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "get all entitlement by ids"); e != nil {
 			err = e
@@ -290,7 +288,7 @@ func (this *EntitlementServiceImpl) GetAllEntitlementByIds(ctx context.Context, 
 	}, nil
 }
 
-func (this *EntitlementServiceImpl) SearchEntitlements(ctx context.Context, query it.SearchEntitlementsQuery) (result *it.SearchEntitlementsResult, err error) {
+func (this *EntitlementServiceImpl) SearchEntitlements(ctx crud.Context, query it.SearchEntitlementsQuery) (result *it.SearchEntitlementsResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "search entitlements"); e != nil {
 			err = e
@@ -329,7 +327,7 @@ func (this *EntitlementServiceImpl) assertCorrectEtag(updatedEtag model.Etag, db
 	}
 }
 
-func (this *EntitlementServiceImpl) assertEntitlementExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbEntitlement *domain.Entitlement, err error) {
+func (this *EntitlementServiceImpl) assertEntitlementExistsById(ctx crud.Context, id model.Id, vErrs *fault.ValidationErrors) (dbEntitlement *domain.Entitlement, err error) {
 	dbEntitlement, err = this.entitlementRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	fault.PanicOnErr(err)
 
@@ -349,7 +347,7 @@ func (this *EntitlementServiceImpl) setEntitlementDefaults(entitlement *domain.E
 	entitlement.SetDefaults()
 }
 
-func (this *EntitlementServiceImpl) assertEntitlementUnique(ctx context.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
+func (this *EntitlementServiceImpl) assertEntitlementUnique(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
 	dbEntitlement, err := this.entitlementRepo.FindByName(ctx, it.FindByNameParam{Name: *entitlement.Name})
 	fault.PanicOnErr(err)
 
@@ -359,7 +357,7 @@ func (this *EntitlementServiceImpl) assertEntitlementUnique(ctx context.Context,
 	return nil
 }
 
-func (this *EntitlementServiceImpl) configPermissionHistory(ctx context.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) (assignments []*domain.EntitlementAssignment, err error) {
+func (this *EntitlementServiceImpl) configPermissionHistory(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) (assignments []*domain.EntitlementAssignment, err error) {
 	assignments, err = this.assignmentRepo.FindAllByEntitlementId(ctx, itAssignment.FindAllByEntitlementIdParam{EntitlementId: *entitlement.Id})
 	fault.PanicOnErr(err)
 
@@ -372,7 +370,7 @@ func (this *EntitlementServiceImpl) configPermissionHistory(ctx context.Context,
 	return assignments, nil
 }
 
-func (this *EntitlementServiceImpl) deleteAssignments(ctx context.Context, assignments []*domain.EntitlementAssignment) (err error) {
+func (this *EntitlementServiceImpl) deleteAssignments(ctx crud.Context, assignments []*domain.EntitlementAssignment) (err error) {
 	for _, assignment := range assignments {
 		_, err = this.assignmentRepo.DeleteHard(ctx, itAssignment.DeleteEntitlementAssignmentByIdQuery{Id: *assignment.Id})
 		fault.PanicOnErr(err)
@@ -381,7 +379,7 @@ func (this *EntitlementServiceImpl) deleteAssignments(ctx context.Context, assig
 	return nil
 }
 
-func (this *EntitlementServiceImpl) assertResourceExists(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (resource *domain.Resource, err error) {
+func (this *EntitlementServiceImpl) assertResourceExists(ctx crud.Context, id model.Id, vErrs *fault.ValidationErrors) (resource *domain.Resource, err error) {
 	resource, err = this.resourceRepo.FindById(ctx, itResource.FindByIdParam{Id: id})
 	fault.PanicOnErr(err)
 
@@ -391,7 +389,7 @@ func (this *EntitlementServiceImpl) assertResourceExists(ctx context.Context, id
 	return resource, err
 }
 
-func (this *EntitlementServiceImpl) assertActionExists(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (action *domain.Action, err error) {
+func (this *EntitlementServiceImpl) assertActionExists(ctx crud.Context, id model.Id, vErrs *fault.ValidationErrors) (action *domain.Action, err error) {
 	action, err = this.actionRepo.FindById(ctx, itAction.FindByIdParam{Id: id})
 	fault.PanicOnErr(err)
 
@@ -438,7 +436,7 @@ func (this *EntitlementServiceImpl) assertActionExprValid(resource *domain.Resou
 	return nil
 }
 
-func (this *EntitlementServiceImpl) assertActionExprUnique(ctx context.Context, actionExpr string, vErrs *fault.ValidationErrors) error {
+func (this *EntitlementServiceImpl) assertActionExprUnique(ctx crud.Context, actionExpr string, vErrs *fault.ValidationErrors) error {
 	dbEntitlement, err := this.entitlementRepo.FindByActionExpr(ctx, it.GetEntitlementByActionExprQuery{ActionExpr: actionExpr})
 	fault.PanicOnErr(err)
 

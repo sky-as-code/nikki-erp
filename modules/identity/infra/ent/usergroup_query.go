@@ -8,6 +8,7 @@ import (
 	"math"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
@@ -25,6 +26,7 @@ type UserGroupQuery struct {
 	predicates []predicate.UserGroup
 	withUser   *UserQuery
 	withGroup  *GroupQuery
+	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -228,8 +230,9 @@ func (ugq *UserGroupQuery) Clone() *UserGroupQuery {
 		withUser:   ugq.withUser.Clone(),
 		withGroup:  ugq.withGroup.Clone(),
 		// clone intermediate query.
-		sql:  ugq.sql.Clone(),
-		path: ugq.path,
+		sql:       ugq.sql.Clone(),
+		path:      ugq.path,
+		modifiers: append([]func(*sql.Selector){}, ugq.modifiers...),
 	}
 }
 
@@ -347,6 +350,9 @@ func (ugq *UserGroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*U
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
+	if len(ugq.modifiers) > 0 {
+		_spec.Modifiers = ugq.modifiers
+	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
 	}
@@ -432,6 +438,9 @@ func (ugq *UserGroupQuery) loadGroup(ctx context.Context, query *GroupQuery, nod
 
 func (ugq *UserGroupQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := ugq.querySpec()
+	if len(ugq.modifiers) > 0 {
+		_spec.Modifiers = ugq.modifiers
+	}
 	_spec.Unique = false
 	_spec.Node.Columns = nil
 	return sqlgraph.CountNodes(ctx, ugq.driver, _spec)
@@ -495,6 +504,9 @@ func (ugq *UserGroupQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if ugq.ctx.Unique != nil && *ugq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range ugq.modifiers {
+		m(selector)
+	}
 	for _, p := range ugq.predicates {
 		p(selector)
 	}
@@ -510,6 +522,38 @@ func (ugq *UserGroupQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// ForUpdate locks the selected rows against concurrent updates, and prevent them from being
+// updated, deleted or "selected ... for update" by other sessions, until the transaction is
+// either committed or rolled-back.
+func (ugq *UserGroupQuery) ForUpdate(opts ...sql.LockOption) *UserGroupQuery {
+	if ugq.driver.Dialect() == dialect.Postgres {
+		ugq.Unique(false)
+	}
+	ugq.modifiers = append(ugq.modifiers, func(s *sql.Selector) {
+		s.ForUpdate(opts...)
+	})
+	return ugq
+}
+
+// ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
+// on any rows that are read. Other sessions can read the rows, but cannot modify them
+// until your transaction commits.
+func (ugq *UserGroupQuery) ForShare(opts ...sql.LockOption) *UserGroupQuery {
+	if ugq.driver.Dialect() == dialect.Postgres {
+		ugq.Unique(false)
+	}
+	ugq.modifiers = append(ugq.modifiers, func(s *sql.Selector) {
+		s.ForShare(opts...)
+	})
+	return ugq
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (ugq *UserGroupQuery) Modify(modifiers ...func(s *sql.Selector)) *UserGroupSelect {
+	ugq.modifiers = append(ugq.modifiers, modifiers...)
+	return ugq.Select()
 }
 
 // UserGroupGroupBy is the group-by builder for UserGroup entities.
@@ -600,4 +644,10 @@ func (ugs *UserGroupSelect) sqlScan(ctx context.Context, root *UserGroupQuery, v
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (ugs *UserGroupSelect) Modify(modifiers ...func(s *sql.Selector)) *UserGroupSelect {
+	ugs.modifiers = append(ugs.modifiers, modifiers...)
+	return ugs
 }

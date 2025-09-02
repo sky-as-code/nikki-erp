@@ -1,9 +1,6 @@
 package app
 
 import (
-	"context"
-
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -12,6 +9,7 @@ import (
 	pt "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	rel "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/relationship"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 func NewRelationshipServiceImpl(
@@ -32,7 +30,7 @@ type RelationshipServiceImpl struct {
 	cqrsBus          cqrs.CqrsBus
 }
 
-func (this *RelationshipServiceImpl) CreateRelationship(ctx context.Context, cmd rel.CreateRelationshipCommand) (result *rel.CreateRelationshipResult, err error) {
+func (this *RelationshipServiceImpl) CreateRelationship(ctx crud.Context, cmd rel.CreateRelationshipCommand) (result *rel.CreateRelationshipResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to create relationship"); e != nil {
 			err = e
@@ -74,7 +72,7 @@ func (this *RelationshipServiceImpl) sanitizeRelationship(relationship *domain.R
 	}
 }
 
-func (this *RelationshipServiceImpl) UpdateRelationship(ctx context.Context, cmd rel.UpdateRelationshipCommand) (result *rel.UpdateRelationshipResult, err error) {
+func (this *RelationshipServiceImpl) UpdateRelationship(ctx crud.Context, cmd rel.UpdateRelationshipCommand) (result *rel.UpdateRelationshipResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to update relationship"); e != nil {
 			err = e
@@ -119,7 +117,7 @@ func (this *RelationshipServiceImpl) UpdateRelationship(ctx context.Context, cmd
 	}, err
 }
 
-func (this *RelationshipServiceImpl) DeleteRelationship(ctx context.Context, cmd rel.DeleteRelationshipCommand) (result *rel.DeleteRelationshipResult, err error) {
+func (this *RelationshipServiceImpl) DeleteRelationship(ctx crud.Context, cmd rel.DeleteRelationshipCommand) (result *rel.DeleteRelationshipResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to delete relationship"); e != nil {
 			err = e
@@ -142,7 +140,7 @@ func (this *RelationshipServiceImpl) DeleteRelationship(ctx context.Context, cmd
 	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCopy), nil
 }
 
-func (this *RelationshipServiceImpl) GetRelationshipById(ctx context.Context, query rel.GetRelationshipByIdQuery) (result *rel.GetRelationshipByIdResult, err error) {
+func (this *RelationshipServiceImpl) GetRelationshipById(ctx crud.Context, query rel.GetRelationshipByIdQuery) (result *rel.GetRelationshipByIdResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to get relationship"); e != nil {
 			err = e
@@ -164,7 +162,7 @@ func (this *RelationshipServiceImpl) GetRelationshipById(ctx context.Context, qu
 	}, nil
 }
 
-func (this *RelationshipServiceImpl) SearchRelationships(ctx context.Context, query rel.SearchRelationshipsQuery) (result *rel.SearchRelationshipsResult, err error) {
+func (this *RelationshipServiceImpl) SearchRelationships(ctx crud.Context, query rel.SearchRelationshipsQuery) (result *rel.SearchRelationshipsResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to search relationships"); e != nil {
 			err = e
@@ -196,7 +194,7 @@ func (this *RelationshipServiceImpl) SearchRelationships(ctx context.Context, qu
 	}, nil
 }
 
-func (this *RelationshipServiceImpl) GetRelationshipsByParty(ctx context.Context, query rel.GetRelationshipsByPartyQuery) (result *rel.GetRelationshipsByPartyResult, err error) {
+func (this *RelationshipServiceImpl) GetRelationshipsByParty(ctx crud.Context, query rel.GetRelationshipsByPartyQuery) (result *rel.GetRelationshipsByPartyResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to get relationships by party"); e != nil {
 			err = e
@@ -224,7 +222,7 @@ func (this *RelationshipServiceImpl) GetRelationshipsByParty(ctx context.Context
 	}, nil
 }
 
-func (this *RelationshipServiceImpl) assertCorrectRelationship(ctx context.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
+func (this *RelationshipServiceImpl) assertCorrectRelationship(ctx crud.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
 	dbRelationship, err := this.assertRelationshipIdExists(ctx, id, vErrs)
 	if err != nil {
 		return err
@@ -238,7 +236,7 @@ func (this *RelationshipServiceImpl) assertCorrectRelationship(ctx context.Conte
 	return nil
 }
 
-func (this *RelationshipServiceImpl) assertRelationshipIdExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.Relationship, error) {
+func (this *RelationshipServiceImpl) assertRelationshipIdExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.Relationship, error) {
 	dbRelationship, err := this.relationshipRepo.FindById(ctx, rel.FindByIdParam{
 		Id: id,
 	})
@@ -253,7 +251,7 @@ func (this *RelationshipServiceImpl) assertRelationshipIdExists(ctx context.Cont
 	return dbRelationship, nil
 }
 
-func (this *RelationshipServiceImpl) assertPartiesExist(ctx context.Context, partyFromId, partyToId model.Id, vErrs *ft.ValidationErrors) error {
+func (this *RelationshipServiceImpl) assertPartiesExist(ctx crud.Context, partyFromId, partyToId model.Id, vErrs *ft.ValidationErrors) error {
 	err := this.assertPartyExists(ctx, partyFromId, vErrs)
 	if err != nil {
 		return err
@@ -262,7 +260,7 @@ func (this *RelationshipServiceImpl) assertPartiesExist(ctx context.Context, par
 	return this.assertPartyToExists(ctx, partyToId, vErrs)
 }
 
-func (this *RelationshipServiceImpl) assertPartyExists(ctx context.Context, partyId model.Id, vErrs *ft.ValidationErrors) error {
+func (this *RelationshipServiceImpl) assertPartyExists(ctx crud.Context, partyId model.Id, vErrs *ft.ValidationErrors) error {
 	dbParty, err := this.partyRepo.FindById(ctx, pt.FindByIdParam{
 		Id: partyId,
 	})
@@ -276,7 +274,7 @@ func (this *RelationshipServiceImpl) assertPartyExists(ctx context.Context, part
 	return nil
 }
 
-func (this *RelationshipServiceImpl) assertPartyToExists(ctx context.Context, partyId model.Id, vErrs *ft.ValidationErrors) error {
+func (this *RelationshipServiceImpl) assertPartyToExists(ctx crud.Context, partyId model.Id, vErrs *ft.ValidationErrors) error {
 	dbParty, err := this.partyRepo.FindById(ctx, pt.FindByIdParam{
 		Id: partyId,
 	})

@@ -1,10 +1,8 @@
 package app
 
 import (
-	"context"
 	"strings"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -13,6 +11,7 @@ import (
 	cc "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/comm_channel"
 	pt "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 func NewCommChannelServiceImpl(
@@ -33,7 +32,7 @@ type CommChannelServiceImpl struct {
 	cqrsBus         cqrs.CqrsBus
 }
 
-func (this *CommChannelServiceImpl) CreateCommChannel(ctx context.Context, cmd cc.CreateCommChannelCommand) (result *cc.CreateCommChannelResult, err error) {
+func (this *CommChannelServiceImpl) CreateCommChannel(ctx crud.Context, cmd cc.CreateCommChannelCommand) (result *cc.CreateCommChannelResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to create communication channel"); e != nil {
 			err = e
@@ -76,7 +75,7 @@ func (this *CommChannelServiceImpl) sanitizeCommChannel(commChannel *domain.Comm
 	}
 }
 
-func (this *CommChannelServiceImpl) UpdateCommChannel(ctx context.Context, cmd cc.UpdateCommChannelCommand) (result *cc.UpdateCommChannelResult, err error) {
+func (this *CommChannelServiceImpl) UpdateCommChannel(ctx crud.Context, cmd cc.UpdateCommChannelCommand) (result *cc.UpdateCommChannelResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to update communication channel"); e != nil {
 			err = e
@@ -118,7 +117,7 @@ func (this *CommChannelServiceImpl) UpdateCommChannel(ctx context.Context, cmd c
 	}, err
 }
 
-func (this *CommChannelServiceImpl) DeleteCommChannel(ctx context.Context, cmd cc.DeleteCommChannelCommand) (result *cc.DeleteCommChannelResult, err error) {
+func (this *CommChannelServiceImpl) DeleteCommChannel(ctx crud.Context, cmd cc.DeleteCommChannelCommand) (result *cc.DeleteCommChannelResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to delete communication channel"); e != nil {
 			err = e
@@ -143,7 +142,7 @@ func (this *CommChannelServiceImpl) DeleteCommChannel(ctx context.Context, cmd c
 	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCopy), nil
 }
 
-func (this *CommChannelServiceImpl) GetCommChannelById(ctx context.Context, query cc.GetCommChannelByIdQuery) (result *cc.GetCommChannelByIdResult, err error) {
+func (this *CommChannelServiceImpl) GetCommChannelById(ctx crud.Context, query cc.GetCommChannelByIdQuery) (result *cc.GetCommChannelByIdResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to get communication channel"); e != nil {
 			err = e
@@ -165,7 +164,7 @@ func (this *CommChannelServiceImpl) GetCommChannelById(ctx context.Context, quer
 	}, nil
 }
 
-func (this *CommChannelServiceImpl) SearchCommChannels(ctx context.Context, query cc.SearchCommChannelsQuery) (result *cc.SearchCommChannelsResult, err error) {
+func (this *CommChannelServiceImpl) SearchCommChannels(ctx crud.Context, query cc.SearchCommChannelsQuery) (result *cc.SearchCommChannelsResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to search communication channels"); e != nil {
 			err = e
@@ -198,7 +197,7 @@ func (this *CommChannelServiceImpl) SearchCommChannels(ctx context.Context, quer
 	}, nil
 }
 
-func (this *CommChannelServiceImpl) GetCommChannelsByParty(ctx context.Context, query cc.GetCommChannelsByPartyQuery) (result *cc.GetCommChannelsByPartyResult, err error) {
+func (this *CommChannelServiceImpl) GetCommChannelsByParty(ctx crud.Context, query cc.GetCommChannelsByPartyQuery) (result *cc.GetCommChannelsByPartyResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanic(recover(), "failed to get communication channels by party"); e != nil {
 			err = e
@@ -227,7 +226,7 @@ func (this *CommChannelServiceImpl) GetCommChannelsByParty(ctx context.Context, 
 	}, nil
 }
 
-func (this *CommChannelServiceImpl) assertCorrectCommChannel(ctx context.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
+func (this *CommChannelServiceImpl) assertCorrectCommChannel(ctx crud.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
 	dbChannel, err := this.assertCommChannelIdExists(ctx, id, vErrs)
 	if err != nil {
 		return err
@@ -241,7 +240,7 @@ func (this *CommChannelServiceImpl) assertCorrectCommChannel(ctx context.Context
 	return nil
 }
 
-func (this *CommChannelServiceImpl) assertCommChannelIdExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.CommChannel, error) {
+func (this *CommChannelServiceImpl) assertCommChannelIdExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.CommChannel, error) {
 	dbChannel, err := this.commChannelRepo.FindById(ctx, cc.FindByIdParam{
 		Id: id,
 	})
@@ -256,7 +255,7 @@ func (this *CommChannelServiceImpl) assertCommChannelIdExists(ctx context.Contex
 	return dbChannel, nil
 }
 
-func (this *CommChannelServiceImpl) assertPartyExists(ctx context.Context, partyId model.Id, vErrs *ft.ValidationErrors) error {
+func (this *CommChannelServiceImpl) assertPartyExists(ctx crud.Context, partyId model.Id, vErrs *ft.ValidationErrors) error {
 	dbParty, err := this.partyRepo.FindById(ctx, pt.FindByIdParam{
 		Id: partyId,
 	})

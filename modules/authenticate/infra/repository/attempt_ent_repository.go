@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -10,6 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/infra/ent"
 	entAtp "github.com/sky-as-code/nikki-erp/modules/authenticate/infra/ent/loginattempt"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
@@ -23,7 +23,7 @@ type AttemptEntRepository struct {
 	client *ent.Client
 }
 
-func (this *AttemptEntRepository) Create(ctx context.Context, attempt domain.LoginAttempt) (*domain.LoginAttempt, error) {
+func (this *AttemptEntRepository) Create(ctx crud.Context, attempt domain.LoginAttempt) (*domain.LoginAttempt, error) {
 	creation := this.client.LoginAttempt.Create().
 		SetID(*attempt.Id).
 		SetNillableCurrentMethod(attempt.CurrentMethod).
@@ -42,7 +42,7 @@ func (this *AttemptEntRepository) Create(ctx context.Context, attempt domain.Log
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToAttempt)
 }
 
-func (this *AttemptEntRepository) Update(ctx context.Context, attempt domain.LoginAttempt) (*domain.LoginAttempt, error) {
+func (this *AttemptEntRepository) Update(ctx crud.Context, attempt domain.LoginAttempt) (*domain.LoginAttempt, error) {
 	update := this.client.LoginAttempt.UpdateOneID(*attempt.Id).
 		SetNillableIsGenuine(attempt.IsGenuine).
 		SetNillableStatus(util.ToPtr(attempt.Status.String()))
@@ -60,7 +60,7 @@ func (this *AttemptEntRepository) Update(ctx context.Context, attempt domain.Log
 	return db.Mutate(ctx, update, ent.IsNotFound, entToAttempt)
 }
 
-func (this *AttemptEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.LoginAttempt, error) {
+func (this *AttemptEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.LoginAttempt, error) {
 	query := this.client.LoginAttempt.Query().
 		Where(entAtp.ID(param.Id))
 

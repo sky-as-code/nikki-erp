@@ -1,18 +1,18 @@
 package authorize
 
 import (
-	"context"
 	"regexp"
 
-	"github.com/sky-as-code/nikki-erp/common/fault"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/validator"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type AuthorizeService interface {
-	IsAuthorized(ctx context.Context, query IsAuthorizedQuery) (*IsAuthorizedResult, error)
+	IsAuthorized(ctx crud.Context, query IsAuthorizedQuery) (*IsAuthorizedResult, error)
 }
 
 type IsAuthorizedQuery struct {
@@ -23,7 +23,7 @@ type IsAuthorizedQuery struct {
 	SubjectRef   string               `json:"subjectRef"`
 }
 
-func (this IsAuthorizedQuery) Validate() fault.ValidationErrors {
+func (this IsAuthorizedQuery) Validate() ft.ValidationErrors {
 	rules := []*validator.FieldRules{
 		validator.Field(&this.ActionName,
 			validator.NotEmpty,
@@ -62,8 +62,16 @@ func SubjectTypeValidateRule(field *SubjectTypeAuthorize) *validator.FieldRules 
 }
 
 type IsAuthorizedResult struct {
-	Decision    *string            `json:"decision,omitempty"`
-	ClientError *fault.ClientError `json:"error,omitempty"`
+	Decision    *string         `json:"decision,omitempty"`
+	ClientError *ft.ClientError `json:"error,omitempty"`
+}
+
+func (this IsAuthorizedResult) GetClientError() *ft.ClientError {
+	return this.ClientError
+}
+
+func (this IsAuthorizedResult) GetHasData() bool {
+	return this.Decision != nil
 }
 
 const (

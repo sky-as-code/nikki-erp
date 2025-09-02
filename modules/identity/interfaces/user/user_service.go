@@ -1,17 +1,17 @@
 package user
 
 import (
-	"context"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type UserService interface {
-	CreateUser(ctx context.Context, cmd CreateUserCommand) (*CreateUserResult, error)
-	DeleteUser(ctx context.Context, cmd DeleteUserCommand) (*DeleteUserResult, error)
-	Exists(ctx context.Context, cmd UserExistsCommand) (*UserExistsResult, error)
-	ExistsMulti(ctx context.Context, cmd UserExistsMultiCommand) (*UserExistsMultiResult, error)
-	GetUserById(ctx context.Context, query GetUserByIdQuery) (*GetUserByIdResult, error)
-	GetUserByEmail(ctx context.Context, query GetUserByEmailQuery) (*GetUserByEmailResult, error)
-	MustGetActiveUser(ctx context.Context, query MustGetActiveUserQuery) (*MustGetActiveUserResult, error)
-	SearchUsers(ctx context.Context, query SearchUsersQuery) (*SearchUsersResult, error)
-	UpdateUser(ctx context.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)
+	CreateUser(ctx crud.Context, cmd CreateUserCommand) (*CreateUserResult, error)
+	DeleteUser(ctx crud.Context, cmd DeleteUserCommand) (*DeleteUserResult, error)
+	Exists(ctx crud.Context, cmd UserExistsCommand) (*UserExistsResult, error)
+	ExistsMulti(ctx crud.Context, cmd UserExistsMultiCommand) (*UserExistsMultiResult, error)
+	GetUserById(ctx crud.Context, query GetUserByIdQuery) (*GetUserByIdResult, error)
+	GetUserByEmail(ctx crud.Context, query GetUserByEmailQuery) (*GetUserByEmailResult, error)
+	MustGetActiveUser(ctx crud.Context, query MustGetActiveUserQuery) (*MustGetActiveUserResult, error)
+	SearchUsers(ctx crud.Context, query SearchUsersQuery) (*SearchUsersResult, error)
+	UpdateUser(ctx crud.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)
 }

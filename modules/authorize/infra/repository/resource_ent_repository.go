@@ -1,19 +1,17 @@
 package repository
 
 import (
-	"context"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
-
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entResource "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewResourceEntRepository(client *ent.Client) it.ResourceRepository {
@@ -26,7 +24,7 @@ type ResourceEntRepository struct {
 	client *ent.Client
 }
 
-func (this *ResourceEntRepository) Create(ctx context.Context, resource domain.Resource) (*domain.Resource, error) {
+func (this *ResourceEntRepository) Create(ctx crud.Context, resource domain.Resource) (*domain.Resource, error) {
 	creation := this.client.Resource.Create().
 		SetID(*resource.Id).
 		SetName(*resource.Name).
@@ -40,14 +38,14 @@ func (this *ResourceEntRepository) Create(ctx context.Context, resource domain.R
 	return database.Mutate(ctx, creation, ent.IsNotFound, entToResource)
 }
 
-func (this *ResourceEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Resource, error) {
+func (this *ResourceEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.Resource, error) {
 	query := this.client.Resource.Query().
 		Where(entResource.IDEQ(param.Id))
 
 	return database.FindOne(ctx, query, ent.IsNotFound, entToResource)
 }
 
-func (this *ResourceEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Resource, error) {
+func (this *ResourceEntRepository) FindByName(ctx crud.Context, param it.FindByNameParam) (*domain.Resource, error) {
 	query := this.client.Resource.Query().
 		Where(entResource.NameEQ(param.Name)).
 		WithActions().
@@ -56,7 +54,7 @@ func (this *ResourceEntRepository) FindByName(ctx context.Context, param it.Find
 	return database.FindOne(ctx, query, ent.IsNotFound, entToResource)
 }
 
-func (this *ResourceEntRepository) Update(ctx context.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error) {
+func (this *ResourceEntRepository) Update(ctx crud.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error) {
 	update := this.client.Resource.UpdateOneID(*resource.Id).
 		SetDescription(*resource.Description).
 		Where(entResource.EtagEQ(prevEtag))
@@ -69,7 +67,7 @@ func (this *ResourceEntRepository) Update(ctx context.Context, resource domain.R
 	return database.Mutate(ctx, update, ent.IsNotFound, entToResource)
 }
 
-func (this *ResourceEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+func (this *ResourceEntRepository) DeleteHard(ctx crud.Context, param it.DeleteParam) (int, error) {
 	return this.client.Resource.Delete().
 		Where(entResource.NameEQ(param.Name)).
 		Exec(ctx)
@@ -80,7 +78,7 @@ func (this *ResourceEntRepository) ParseSearchGraph(criteria *string) (*orm.Pred
 }
 
 func (this *ResourceEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.Resource], error) {
 	query := this.client.Resource.Query()
@@ -101,7 +99,7 @@ func (this *ResourceEntRepository) Search(
 	)
 }
 
-func (this *ResourceEntRepository) Exist(ctx context.Context, param it.ExistParam) (bool, error) {
+func (this *ResourceEntRepository) Exist(ctx crud.Context, param it.ExistParam) (bool, error) {
 	return this.client.Resource.Query().
 		Where(entResource.IDEQ(param.Id)).
 		Exist(ctx)

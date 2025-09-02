@@ -1,9 +1,8 @@
 package app
 
 import (
-	"context"
-
 	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
@@ -21,7 +20,7 @@ type EntitlementAssignmentServiceImpl struct {
 	eventBus                  event.EventBus
 }
 
-func (this *EntitlementAssignmentServiceImpl) FindAllBySubject(ctx context.Context, query it.GetAllEntitlementAssignmentBySubjectQuery) (result *it.GetAllEntitlementAssignmentBySubjectResult, err error) {
+func (this *EntitlementAssignmentServiceImpl) FindAllBySubject(ctx crud.Context, query it.GetAllEntitlementAssignmentBySubjectQuery) (result *it.GetAllEntitlementAssignmentBySubjectResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "get entitlement assignment by subject"); e != nil {
 			err = e

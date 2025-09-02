@@ -1,26 +1,25 @@
 package login
 
 import (
-	"context"
-
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type AttemptService interface {
-	CreateLoginAttempt(ctx context.Context, cmd CreateLoginAttemptCommand) (result *CreateLoginAttemptResult, err error)
-	GetAttemptById(ctx context.Context, query GetAttemptByIdQuery) (result *GetAttemptByIdResult, err error)
-	UpdateLoginAttempt(ctx context.Context, cmd UpdateLoginAttemptCommand) (result *UpdateLoginAttemptResult, err error)
+	CreateLoginAttempt(ctx crud.Context, cmd CreateLoginAttemptCommand) (result *CreateLoginAttemptResult, err error)
+	GetAttemptById(ctx crud.Context, query GetAttemptByIdQuery) (result *GetAttemptByIdResult, err error)
+	UpdateLoginAttempt(ctx crud.Context, cmd UpdateLoginAttemptCommand) (result *UpdateLoginAttemptResult, err error)
 }
 
 type LoginService interface {
-	Authenticate(ctx context.Context, cmd AuthenticateCommand) (result *AuthenticateResult, err error)
+	Authenticate(ctx crud.Context, cmd AuthenticateCommand) (result *AuthenticateResult, err error)
 }
 
 type AttemptRepository interface {
-	Create(ctx context.Context, attempt domain.LoginAttempt) (*domain.LoginAttempt, error)
-	Update(ctx context.Context, attempt domain.LoginAttempt) (*domain.LoginAttempt, error)
-	FindById(ctx context.Context, param FindByIdParam) (*domain.LoginAttempt, error)
+	Create(ctx crud.Context, attempt domain.LoginAttempt) (*domain.LoginAttempt, error)
+	Update(ctx crud.Context, attempt domain.LoginAttempt) (*domain.LoginAttempt, error)
+	FindById(ctx crud.Context, param FindByIdParam) (*domain.LoginAttempt, error)
 }
 
 type FindByIdParam = GetAttemptByIdQuery
@@ -32,7 +31,7 @@ type LoginParam struct {
 }
 
 type LoginMethod interface {
-	Execute(ctx context.Context, param LoginParam) (*ExecuteResult, error)
+	Execute(ctx crud.Context, param LoginParam) (*ExecuteResult, error)
 	Name() string
 	SkipMethod() *SkippedMethod
 }

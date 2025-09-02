@@ -1,18 +1,15 @@
 package app
 
 import (
-	"context"
-
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/event"
-
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/event"
 )
 
 func NewResourceServiceImpl(resourceRepo it.ResourceRepository, eventBus event.EventBus) it.ResourceService {
@@ -27,7 +24,7 @@ type ResourceServiceImpl struct {
 	eventBus     event.EventBus
 }
 
-func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.CreateResourceCommand) (result *it.CreateResourceResult, err error) {
+func (this *ResourceServiceImpl) CreateResource(ctx crud.Context, cmd it.CreateResourceCommand) (result *it.CreateResourceResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "create resource"); e != nil {
 			err = e
@@ -65,7 +62,7 @@ func (this *ResourceServiceImpl) CreateResource(ctx context.Context, cmd it.Crea
 	}, err
 }
 
-func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.UpdateResourceCommand) (result *it.UpdateResourceResult, err error) {
+func (this *ResourceServiceImpl) UpdateResource(ctx crud.Context, cmd it.UpdateResourceCommand) (result *it.UpdateResourceResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "update resource"); e != nil {
 			err = e
@@ -113,7 +110,7 @@ func (this *ResourceServiceImpl) UpdateResource(ctx context.Context, cmd it.Upda
 	}, err
 }
 
-func (this *ResourceServiceImpl) DeleteResourceHard(ctx context.Context, cmd it.DeleteResourceHardByNameQuery) (result *it.DeleteResourceHardByNameResult, err error) {
+func (this *ResourceServiceImpl) DeleteResourceHard(ctx crud.Context, cmd it.DeleteResourceHardByNameQuery) (result *it.DeleteResourceHardByNameResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "delete resource hard"); e != nil {
 			err = e
@@ -150,7 +147,7 @@ func (this *ResourceServiceImpl) DeleteResourceHard(ctx context.Context, cmd it.
 	return crud.NewSuccessDeletionResult(*dbResource.Id, &deletedCount), nil
 }
 
-func (this *ResourceServiceImpl) GetResourceByName(ctx context.Context, query it.GetResourceByNameQuery) (result *it.GetResourceByNameResult, err error) {
+func (this *ResourceServiceImpl) GetResourceByName(ctx crud.Context, query it.GetResourceByNameQuery) (result *it.GetResourceByNameResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "get resource by name"); e != nil {
 			err = e
@@ -183,7 +180,7 @@ func (this *ResourceServiceImpl) GetResourceByName(ctx context.Context, query it
 	}, nil
 }
 
-func (this *ResourceServiceImpl) SearchResources(ctx context.Context, query it.SearchResourcesQuery) (result *it.SearchResourcesResult, err error) {
+func (this *ResourceServiceImpl) SearchResources(ctx crud.Context, query it.SearchResourcesQuery) (result *it.SearchResourcesResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "search resources"); e != nil {
 			err = e
@@ -223,7 +220,7 @@ func (this *ResourceServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEta
 	}
 }
 
-func (this *ResourceServiceImpl) assertResourceExistsByName(ctx context.Context, name string, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
+func (this *ResourceServiceImpl) assertResourceExistsByName(ctx crud.Context, name string, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
 	dbResource, err = this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: name})
 	fault.PanicOnErr(err)
 
@@ -233,7 +230,7 @@ func (this *ResourceServiceImpl) assertResourceExistsByName(ctx context.Context,
 	return
 }
 
-func (this *ResourceServiceImpl) assertResourceExistsById(ctx context.Context, id model.Id, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
+func (this *ResourceServiceImpl) assertResourceExistsById(ctx crud.Context, id model.Id, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
 	dbResource, err = this.resourceRepo.FindById(ctx, it.FindByIdParam{Id: id})
 	fault.PanicOnErr(err)
 
@@ -253,7 +250,7 @@ func (this *ResourceServiceImpl) setResourceDefaults(resource *domain.Resource) 
 	resource.SetDefaults()
 }
 
-func (this *ResourceServiceImpl) assertResourceUnique(ctx context.Context, resource *domain.Resource, vErrs *fault.ValidationErrors) error {
+func (this *ResourceServiceImpl) assertResourceUnique(ctx crud.Context, resource *domain.Resource, vErrs *fault.ValidationErrors) error {
 	dbResource, err := this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: *resource.Name})
 	fault.PanicOnErr(err)
 

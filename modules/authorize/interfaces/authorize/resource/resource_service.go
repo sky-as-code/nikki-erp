@@ -1,13 +1,11 @@
 package resource
 
-import (
-	"context"
-)
+import "github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 type ResourceService interface {
-	CreateResource(ctx context.Context, cmd CreateResourceCommand) (*CreateResourceResult, error)
-	UpdateResource(ctx context.Context, cmd UpdateResourceCommand) (*UpdateResourceResult, error)
-	DeleteResourceHard(ctx context.Context, cmd DeleteResourceHardByNameQuery) (*DeleteResourceHardByNameResult, error)
-	GetResourceByName(ctx context.Context, query GetResourceByNameQuery) (*GetResourceByNameResult, error)
-	SearchResources(ctx context.Context, query SearchResourcesQuery) (*SearchResourcesResult, error)
+	CreateResource(ctx crud.Context, cmd CreateResourceCommand) (*CreateResourceResult, error)
+	UpdateResource(ctx crud.Context, cmd UpdateResourceCommand) (*UpdateResourceResult, error)
+	DeleteResourceHard(ctx crud.Context, cmd DeleteResourceHardByNameQuery) (*DeleteResourceHardByNameResult, error)
+	GetResourceByName(ctx crud.Context, query GetResourceByNameQuery) (*GetResourceByNameResult, error)
+	SearchResources(ctx crud.Context, query SearchResourcesQuery) (*SearchResourcesResult, error)
 }

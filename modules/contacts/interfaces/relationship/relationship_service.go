@@ -1,14 +1,14 @@
 package relationship
 
 import (
-	"context"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type RelationshipService interface {
-	CreateRelationship(ctx context.Context, cmd CreateRelationshipCommand) (*CreateRelationshipResult, error)
-	DeleteRelationship(ctx context.Context, cmd DeleteRelationshipCommand) (*DeleteRelationshipResult, error)
-	GetRelationshipById(ctx context.Context, query GetRelationshipByIdQuery) (*GetRelationshipByIdResult, error)
-	GetRelationshipsByParty(ctx context.Context, query GetRelationshipsByPartyQuery) (*GetRelationshipsByPartyResult, error)
-	SearchRelationships(ctx context.Context, query SearchRelationshipsQuery) (*SearchRelationshipsResult, error)
-	UpdateRelationship(ctx context.Context, cmd UpdateRelationshipCommand) (*UpdateRelationshipResult, error)
+	CreateRelationship(ctx crud.Context, cmd CreateRelationshipCommand) (*CreateRelationshipResult, error)
+	DeleteRelationship(ctx crud.Context, cmd DeleteRelationshipCommand) (*DeleteRelationshipResult, error)
+	GetRelationshipById(ctx crud.Context, query GetRelationshipByIdQuery) (*GetRelationshipByIdResult, error)
+	GetRelationshipsByParty(ctx crud.Context, query GetRelationshipsByPartyQuery) (*GetRelationshipsByPartyResult, error)
+	SearchRelationships(ctx crud.Context, query SearchRelationshipsQuery) (*SearchRelationshipsResult, error)
+	UpdateRelationship(ctx crud.Context, cmd UpdateRelationshipCommand) (*UpdateRelationshipResult, error)
 }

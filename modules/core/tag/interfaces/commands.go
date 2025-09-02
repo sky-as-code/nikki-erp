@@ -1,8 +1,8 @@
 package tag
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 )
 

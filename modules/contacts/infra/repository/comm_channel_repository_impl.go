@@ -1,10 +1,8 @@
 package repository
 
 import (
-	"context"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -12,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent"
 	entCommChannel "github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/commchannel"
 	cc "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/comm_channel"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
@@ -25,7 +24,7 @@ type CommChannelEntRepository struct {
 	client *ent.Client
 }
 
-func (this *CommChannelEntRepository) Create(ctx context.Context, commChannel domain.CommChannel) (*domain.CommChannel, error) {
+func (this *CommChannelEntRepository) Create(ctx crud.Context, commChannel domain.CommChannel) (*domain.CommChannel, error) {
 	creation := this.client.CommChannel.Create().
 		SetID(*commChannel.Id).
 		SetEtag(*commChannel.Etag).
@@ -44,7 +43,7 @@ func (this *CommChannelEntRepository) Create(ctx context.Context, commChannel do
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToCommChannel)
 }
 
-func (this *CommChannelEntRepository) Update(ctx context.Context, commChannel domain.CommChannel, prevEtag model.Etag) (*domain.CommChannel, error) {
+func (this *CommChannelEntRepository) Update(ctx crud.Context, commChannel domain.CommChannel, prevEtag model.Etag) (*domain.CommChannel, error) {
 	update := this.client.CommChannel.UpdateOneID(*commChannel.Id).
 		SetNillableNote(commChannel.Note).
 		SetNillableValue(commChannel.Value).
@@ -69,13 +68,13 @@ func (this *CommChannelEntRepository) Update(ctx context.Context, commChannel do
 	return db.Mutate(ctx, update, ent.IsNotFound, entToCommChannel)
 }
 
-func (this *CommChannelEntRepository) DeleteHard(ctx context.Context, param cc.DeleteParam) (int, error) {
+func (this *CommChannelEntRepository) DeleteHard(ctx crud.Context, param cc.DeleteParam) (int, error) {
 	return this.client.CommChannel.Delete().
 		Where(entCommChannel.ID(param.Id)).
 		Exec(ctx)
 }
 
-func (this *CommChannelEntRepository) FindById(ctx context.Context, param cc.FindByIdParam) (*domain.CommChannel, error) {
+func (this *CommChannelEntRepository) FindById(ctx crud.Context, param cc.FindByIdParam) (*domain.CommChannel, error) {
 	query := this.client.CommChannel.Query().
 		Where(entCommChannel.ID(param.Id))
 
@@ -86,7 +85,7 @@ func (this *CommChannelEntRepository) FindById(ctx context.Context, param cc.Fin
 	return db.FindOne(ctx, query, ent.IsNotFound, entToCommChannel)
 }
 
-func (this *CommChannelEntRepository) FindByParty(ctx context.Context, param cc.FindByPartyParam) ([]*domain.CommChannel, error) {
+func (this *CommChannelEntRepository) FindByParty(ctx crud.Context, param cc.FindByPartyParam) ([]*domain.CommChannel, error) {
 	query := this.client.CommChannel.Query().
 		Where(entCommChannel.PartyIDEQ(string(param.PartyId)))
 
@@ -111,7 +110,7 @@ func (this *CommChannelEntRepository) ParseSearchGraph(criteria *string) (*orm.P
 }
 
 func (this *CommChannelEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param cc.SearchParam,
 ) (*crud.PagedResult[domain.CommChannel], error) {
 	query := this.client.CommChannel.Query()

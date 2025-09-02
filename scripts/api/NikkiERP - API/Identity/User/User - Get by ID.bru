@@ -11,8 +11,7 @@ get {
 }
 
 script:post-response {
-  const payload = res.getBody();
-  const { etag } = payload;
+  const { etag } = res.getBody();
   etag && bru.setVar('etag', etag);
   
 }

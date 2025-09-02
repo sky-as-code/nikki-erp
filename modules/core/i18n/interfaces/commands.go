@@ -1,9 +1,9 @@
 package interfaces
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 var getCurrentLangCodeQuery = cqrs.RequestType{
