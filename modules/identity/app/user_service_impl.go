@@ -394,3 +394,67 @@ func (this *UserServiceImpl) SearchUsers(ctx context.Context, query it.SearchUse
 		HasData: users.Items != nil,
 	}, nil
 }
+
+func (this *UserServiceImpl) FindDirectApprover(ctx context.Context, query it.FindDirectApproverQuery) (result *it.FindDirectApproverResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "find direct approver"); e != nil {
+			err = e
+		}
+	}()
+
+	var dbUser *domain.User
+	var approver *domain.User
+
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = query.Validate()
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			dbUser, err = this.assertUserExists(ctx, query.Id, vErrs)
+			return err
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			if dbUser.HierarchyId == nil {
+				return nil
+			}
+
+			approver, err = this.findApproverInParentHierarchy(ctx, dbUser, vErrs)
+			return err
+		}).
+		End()
+	ft.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &it.FindDirectApproverResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	return &it.FindDirectApproverResult{
+		Data:    approver,
+		HasData: approver != nil,
+	}, nil
+}
+
+func (this *UserServiceImpl) assertUserExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (user *domain.User, err error) {
+	user, err = this.userRepo.FindById(ctx, it.FindByIdParam{Id: id})
+	ft.PanicOnErr(err)
+
+	if user == nil {
+		vErrs.AppendNotFound("user_id", "user")
+	}
+	return user, err
+}
+
+func (this *UserServiceImpl) findApproverInParentHierarchy(ctx context.Context, dbUser *domain.User, vErrs *ft.ValidationErrors) (*domain.User, error) {
+	directManager, err := this.userRepo.FindUsersByHierarchyId(ctx, it.FindByHierarchyIdParam{HierarchyId: *dbUser.HierarchyId})
+	ft.PanicOnErr(err)
+
+	if len(directManager) == 0 {
+		vErrs.AppendNotFound("hierarchy_id", "hierarchy")
+		return nil, nil
+	}
+	return &directManager[0], nil
+}

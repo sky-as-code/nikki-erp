@@ -43,3 +43,7 @@ func (this *GroupHandler) GetGroupById(ctx context.Context, packet *cqrs.Request
 func (this *GroupHandler) SearchGroups(ctx context.Context, packet *cqrs.RequestPacket[it.SearchGroupsQuery]) (*cqrs.Reply[it.SearchGroupsResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.GroupSvc.SearchGroups)
 }
+
+func (this *GroupHandler) GroupExists(ctx context.Context, packet *cqrs.RequestPacket[it.GroupExistsCommand]) (*cqrs.Reply[it.GroupExistsResult], error) {
+	return cqrs.HandlePacket(ctx, packet, this.GroupSvc.Exist)
+}

@@ -151,9 +151,23 @@ func (this *RoleEntRepository) FindById(ctx context.Context, param it.FindByIdPa
 	return database.FindOne(ctx, query, ent.IsNotFound, entToRole)
 }
 
+func (this *RoleEntRepository) FindAllBySubject(ctx context.Context, param it.FindAllBySubjectParam) ([]domain.Role, error) {
+	query := this.client.Role.Query().
+		Where(entRole.HasRoleUsersWith(entRoleUser.ReceiverRefEQ(param.SubjectRef)))
+
+	return database.List(ctx, query, entToRoles)
+}
+
 func (this *RoleEntRepository) Exist(ctx context.Context, param it.ExistRoleParam) (bool, error) {
 	return this.client.Role.Query().
 		Where(entRole.IDEQ(param.Id)).
+		Exist(ctx)
+}
+
+func (this *RoleEntRepository) ExistUserWithRole(ctx context.Context, param it.ExistUserWithRoleParam) (bool, error) {
+	return this.client.Role.Query().
+		Where(entRole.HasRoleUsersWith(entRoleUser.ReceiverTypeEQ(entRoleUser.ReceiverType(param.ReceiverType)))).
+		Where(entRole.HasRoleUsersWith(entRoleUser.ReceiverRefEQ(param.ReceiverId))).
 		Exist(ctx)
 }
 
@@ -180,11 +194,25 @@ func (this *RoleEntRepository) Search(
 	)
 }
 
-func (this *RoleEntRepository) FindAllBySubject(ctx context.Context, param it.FindAllBySubjectParam) ([]domain.Role, error) {
-	query := this.client.Role.Query().
-		Where(entRole.HasRoleUsersWith(entRoleUser.ReceiverRefEQ(param.SubjectRef)))
+func (this *RoleEntRepository) AddRemoveUser(ctx context.Context, param it.AddRemoveUserParam) error {
+	if param.Add {
+		_, err := this.client.RoleUser.Create().
+			SetApproverID(param.ApproverID).
+			SetReceiverRef(param.ReceiverID).
+			SetReceiverType(entRoleUser.ReceiverType(param.ReceiverType)).
+			SetRoleID(param.Id).
+			Save(ctx)
+		return err
+	}
 
-	return database.List(ctx, query, entToRoles)
+	_, err := this.client.RoleUser.Delete().
+		Where(
+			entRoleUser.ReceiverRefEQ(param.ReceiverID),
+			entRoleUser.ReceiverTypeEQ(entRoleUser.ReceiverType(param.ReceiverType)),
+			entRoleUser.RoleIDEQ(param.Id),
+		).
+		Exec(ctx)
+	return err
 }
 
 func (this *RoleEntRepository) createRoleTx(ctx context.Context, tx *ent.Tx, role domain.Role) (*ent.Role, error) {
@@ -210,9 +238,7 @@ func (this *RoleEntRepository) createAssignmentTx(ctx context.Context, tx *ent.T
 		WithAction().
 		WithResource().
 		Only(ctx)
-	if err != nil {
-		return err
-	}
+	fault.PanicOnErr(err)
 
 	var actionName *string
 	if entitlement.Edges.Action != nil {
@@ -243,9 +269,7 @@ func (this *RoleEntRepository) createAssignmentTx(ctx context.Context, tx *ent.T
 
 	// Generate new ID for entitlement assignment
 	assignmentID, err := model.NewId()
-	if err != nil {
-		return err
-	}
+	fault.PanicOnErr(err)
 
 	_, err = tx.EntitlementAssignment.
 		Create().

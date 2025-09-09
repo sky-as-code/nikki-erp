@@ -1,0 +1,27 @@
+meta {
+  name: Grant Request Create - Client Error (Invalid fields)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/grant-requests
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "attachmentUrl": "",
+    "comment": "",
+    "requestorId": "",
+    "receiverType": "",
+    "receiverId": "",
+    "targetType": "",
+    "targetRef": ""
+  }
+}
+
+settings {
+  encodeUrl: true
+}

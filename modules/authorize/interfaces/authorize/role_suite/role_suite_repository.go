@@ -18,13 +18,17 @@ type RoleSuiteRepository interface {
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.RoleSuite, error)
 	FindById(ctx context.Context, param FindByIdParam) (*domain.RoleSuite, error)
 	FindAllBySubject(ctx context.Context, param FindAllBySubjectParam) ([]domain.RoleSuite, error)
+	ExistUserWithRoleSuite(ctx context.Context, param ExistUserWithRoleSuiteParam) (bool, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.RoleSuite], error)
+	AddRemoveUser(ctx context.Context, param AddRemoveUserParam) error
 }
 
 type FindByIdParam = GetRoleSuiteByIdQuery
 type FindByNameParam = GetRoleSuiteByNameCommand
 type FindAllBySubjectParam = GetRoleSuitesBySubjectQuery
+type ExistUserWithRoleSuiteParam = ExistUserWithRoleSuiteQuery
+type AddRemoveUserParam = AddRemoveUserCommand
 
 type DeleteRoleSuiteParam struct {
 	Id   model.Id `json:"id"`

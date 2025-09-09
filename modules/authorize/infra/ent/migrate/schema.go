@@ -140,10 +140,11 @@ var (
 		{Name: "created_by", Type: field.TypeString},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "receiver_id", Type: field.TypeString},
+		{Name: "receiver_type", Type: field.TypeEnum, Enums: []string{"user", "group"}},
 		{Name: "target_type", Type: field.TypeEnum, Enums: []string{"role", "suite"}},
-		{Name: "target_role_name", Type: field.TypeString},
-		{Name: "target_suite_name", Type: field.TypeString},
-		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "approved", "rejected"}},
+		{Name: "target_role_name", Type: field.TypeString, Nullable: true},
+		{Name: "target_suite_name", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "approved", "rejected", "cancelled"}},
 		{Name: "target_role_id", Type: field.TypeString, Nullable: true},
 		{Name: "target_suite_id", Type: field.TypeString, Nullable: true},
 	}
@@ -155,15 +156,46 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_grant_requests_authz_roles_role",
-				Columns:    []*schema.Column{AuthzGrantRequestsColumns[11]},
+				Columns:    []*schema.Column{AuthzGrantRequestsColumns[12]},
 				RefColumns: []*schema.Column{AuthzRolesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "authz_grant_requests_authz_role_suites_role_suite",
-				Columns:    []*schema.Column{AuthzGrantRequestsColumns[12]},
+				Columns:    []*schema.Column{AuthzGrantRequestsColumns[13]},
 				RefColumns: []*schema.Column{AuthzRoleSuitesColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// AuthzGrantResponsesColumns holds the columns for the "authz_grant_responses" table.
+	AuthzGrantResponsesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "is_approved", Type: field.TypeBool},
+		{Name: "reason", Type: field.TypeString, Nullable: true},
+		{Name: "responder_id", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "etag", Type: field.TypeString},
+		{Name: "request_id", Type: field.TypeString},
+	}
+	// AuthzGrantResponsesTable holds the schema information for the "authz_grant_responses" table.
+	AuthzGrantResponsesTable = &schema.Table{
+		Name:       "authz_grant_responses",
+		Columns:    AuthzGrantResponsesColumns,
+		PrimaryKey: []*schema.Column{AuthzGrantResponsesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "authz_grant_responses_authz_grant_requests_grant_request",
+				Columns:    []*schema.Column{AuthzGrantResponsesColumns[6]},
+				RefColumns: []*schema.Column{AuthzGrantRequestsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "grantresponse_request_id_responder_id",
+				Unique:  true,
+				Columns: []*schema.Column{AuthzGrantResponsesColumns[6], AuthzGrantResponsesColumns[3]},
 			},
 		},
 	}
@@ -266,8 +298,8 @@ var (
 		{Name: "etag", Type: field.TypeString},
 		{Name: "receiver_id", Type: field.TypeString},
 		{Name: "target_type", Type: field.TypeEnum, Enums: []string{"role", "suite"}},
-		{Name: "target_role_name", Type: field.TypeString},
-		{Name: "target_suite_name", Type: field.TypeString},
+		{Name: "target_role_name", Type: field.TypeString, Nullable: true},
+		{Name: "target_suite_name", Type: field.TypeString, Nullable: true},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "approved", "rejected"}},
 		{Name: "target_role_id", Type: field.TypeString, Nullable: true},
 		{Name: "target_suite_id", Type: field.TypeString, Nullable: true},
@@ -435,6 +467,7 @@ var (
 		AuthzEntitlementsTable,
 		AuthzEntitlementAssignmentsTable,
 		AuthzGrantRequestsTable,
+		AuthzGrantResponsesTable,
 		AuthzPermissionHistoriesTable,
 		AuthzResourcesTable,
 		AuthzRevokeRequestsTable,
@@ -464,6 +497,10 @@ func init() {
 	AuthzGrantRequestsTable.ForeignKeys[1].RefTable = AuthzRoleSuitesTable
 	AuthzGrantRequestsTable.Annotation = &entsql.Annotation{
 		Table: "authz_grant_requests",
+	}
+	AuthzGrantResponsesTable.ForeignKeys[0].RefTable = AuthzGrantRequestsTable
+	AuthzGrantResponsesTable.Annotation = &entsql.Annotation{
+		Table: "authz_grant_responses",
 	}
 	AuthzPermissionHistoriesTable.ForeignKeys[0].RefTable = AuthzEntitlementsTable
 	AuthzPermissionHistoriesTable.ForeignKeys[1].RefTable = AuthzEntitlementAssignmentsTable

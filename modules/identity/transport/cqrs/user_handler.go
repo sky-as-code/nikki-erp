@@ -52,3 +52,7 @@ func (this *UserHandler) UserExists(ctx context.Context, packet *cqrs.RequestPac
 func (this *UserHandler) UserExistsMulti(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsMultiCommand]) (*cqrs.Reply[it.UserExistsMultiResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.ExistsMulti)
 }
+
+func (this *UserHandler) FindDirectApprover(ctx context.Context, packet *cqrs.RequestPacket[it.FindDirectApproverQuery]) (*cqrs.Reply[it.FindDirectApproverResult], error) {
+	return cqrs.HandlePacket(ctx, packet, this.UserSvc.FindDirectApprover)
+}

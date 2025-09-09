@@ -14,4 +14,5 @@ type UserService interface {
 	MustGetActiveUser(ctx context.Context, query MustGetActiveUserQuery) (*MustGetActiveUserResult, error)
 	SearchUsers(ctx context.Context, query SearchUsersQuery) (*SearchUsersResult, error)
 	UpdateUser(ctx context.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)
+	FindDirectApprover(ctx context.Context, query FindDirectApproverQuery) (*FindDirectApproverResult, error)
 }

@@ -78,6 +78,12 @@ func (rru *RevokeRequestUpdate) SetNillableTargetRoleName(s *string) *RevokeRequ
 	return rru
 }
 
+// ClearTargetRoleName clears the value of the "target_role_name" field.
+func (rru *RevokeRequestUpdate) ClearTargetRoleName() *RevokeRequestUpdate {
+	rru.mutation.ClearTargetRoleName()
+	return rru
+}
+
 // SetTargetSuiteID sets the "target_suite_id" field.
 func (rru *RevokeRequestUpdate) SetTargetSuiteID(s string) *RevokeRequestUpdate {
 	rru.mutation.SetTargetSuiteID(s)
@@ -109,6 +115,12 @@ func (rru *RevokeRequestUpdate) SetNillableTargetSuiteName(s *string) *RevokeReq
 	if s != nil {
 		rru.SetTargetSuiteName(*s)
 	}
+	return rru
+}
+
+// ClearTargetSuiteName clears the value of the "target_suite_name" field.
+func (rru *RevokeRequestUpdate) ClearTargetSuiteName() *RevokeRequestUpdate {
+	rru.mutation.ClearTargetSuiteName()
 	return rru
 }
 
@@ -278,8 +290,14 @@ func (rru *RevokeRequestUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	if value, ok := rru.mutation.TargetRoleName(); ok {
 		_spec.SetField(revokerequest.FieldTargetRoleName, field.TypeString, value)
 	}
+	if rru.mutation.TargetRoleNameCleared() {
+		_spec.ClearField(revokerequest.FieldTargetRoleName, field.TypeString)
+	}
 	if value, ok := rru.mutation.TargetSuiteName(); ok {
 		_spec.SetField(revokerequest.FieldTargetSuiteName, field.TypeString, value)
+	}
+	if rru.mutation.TargetSuiteNameCleared() {
+		_spec.ClearField(revokerequest.FieldTargetSuiteName, field.TypeString)
 	}
 	if value, ok := rru.mutation.Status(); ok {
 		_spec.SetField(revokerequest.FieldStatus, field.TypeEnum, value)
@@ -455,6 +473,12 @@ func (rruo *RevokeRequestUpdateOne) SetNillableTargetRoleName(s *string) *Revoke
 	return rruo
 }
 
+// ClearTargetRoleName clears the value of the "target_role_name" field.
+func (rruo *RevokeRequestUpdateOne) ClearTargetRoleName() *RevokeRequestUpdateOne {
+	rruo.mutation.ClearTargetRoleName()
+	return rruo
+}
+
 // SetTargetSuiteID sets the "target_suite_id" field.
 func (rruo *RevokeRequestUpdateOne) SetTargetSuiteID(s string) *RevokeRequestUpdateOne {
 	rruo.mutation.SetTargetSuiteID(s)
@@ -486,6 +510,12 @@ func (rruo *RevokeRequestUpdateOne) SetNillableTargetSuiteName(s *string) *Revok
 	if s != nil {
 		rruo.SetTargetSuiteName(*s)
 	}
+	return rruo
+}
+
+// ClearTargetSuiteName clears the value of the "target_suite_name" field.
+func (rruo *RevokeRequestUpdateOne) ClearTargetSuiteName() *RevokeRequestUpdateOne {
+	rruo.mutation.ClearTargetSuiteName()
 	return rruo
 }
 
@@ -685,8 +715,14 @@ func (rruo *RevokeRequestUpdateOne) sqlSave(ctx context.Context) (_node *RevokeR
 	if value, ok := rruo.mutation.TargetRoleName(); ok {
 		_spec.SetField(revokerequest.FieldTargetRoleName, field.TypeString, value)
 	}
+	if rruo.mutation.TargetRoleNameCleared() {
+		_spec.ClearField(revokerequest.FieldTargetRoleName, field.TypeString)
+	}
 	if value, ok := rruo.mutation.TargetSuiteName(); ok {
 		_spec.SetField(revokerequest.FieldTargetSuiteName, field.TypeString, value)
+	}
+	if rruo.mutation.TargetSuiteNameCleared() {
+		_spec.ClearField(revokerequest.FieldTargetSuiteName, field.TypeString)
 	}
 	if value, ok := rruo.mutation.Status(); ok {
 		_spec.SetField(revokerequest.FieldStatus, field.TypeEnum, value)

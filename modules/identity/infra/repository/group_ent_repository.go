@@ -127,6 +127,12 @@ func (this *GroupEntRepository) AddRemoveUsers(ctx context.Context, param it.Add
 	return nil, nil
 }
 
+func (this *GroupEntRepository) Exists(ctx context.Context, param it.ExistsParam) (bool, error) {
+	return this.client.Group.Query().
+		Where(entGroup.ID(param.Id)).
+		Exist(ctx)
+}
+
 func BuildGroupDescriptor() *orm.EntityDescriptor {
 	entity := ent.Group{}
 	builder := orm.DescribeEntity(entGroup.Label).

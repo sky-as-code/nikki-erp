@@ -11,4 +11,5 @@ type GroupService interface {
 	GetGroupById(ctx context.Context, query GetGroupByIdQuery) (*GetGroupByIdResult, error)
 	SearchGroups(ctx context.Context, query SearchGroupsQuery) (*SearchGroupsResult, error)
 	UpdateGroup(ctx context.Context, cmd UpdateGroupCommand) (*UpdateGroupResult, error)
+	Exist(ctx context.Context, cmd GroupExistsCommand) (*GroupExistsResult, error)
 }

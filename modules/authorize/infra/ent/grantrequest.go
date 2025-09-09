@@ -31,16 +31,18 @@ type GrantRequest struct {
 	Etag string `json:"etag,omitempty"`
 	// ReceiverID holds the value of the "receiver_id" field.
 	ReceiverID string `json:"receiver_id,omitempty"`
+	// ReceiverType holds the value of the "receiver_type" field.
+	ReceiverType grantrequest.ReceiverType `json:"receiver_type,omitempty"`
 	// TargetType holds the value of the "target_type" field.
 	TargetType grantrequest.TargetType `json:"target_type,omitempty"`
 	// Must be set NULL before the role is deleted
 	TargetRoleID *string `json:"target_role_id,omitempty"`
 	// Role name must be copied here before the role is deleted
-	TargetRoleName string `json:"target_role_name,omitempty"`
+	TargetRoleName *string `json:"target_role_name,omitempty"`
 	// Must be set NULL before the role suite is deleted
 	TargetSuiteID *string `json:"target_suite_id,omitempty"`
 	// Role suite name must be copied here before the role suite is deleted
-	TargetSuiteName string `json:"target_suite_name,omitempty"`
+	TargetSuiteName *string `json:"target_suite_name,omitempty"`
 	// Status holds the value of the "status" field.
 	Status grantrequest.Status `json:"status,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -57,9 +59,11 @@ type GrantRequestEdges struct {
 	Role *Role `json:"role,omitempty"`
 	// RoleSuite holds the value of the role_suite edge.
 	RoleSuite *RoleSuite `json:"role_suite,omitempty"`
+	// GrantResponses holds the value of the grant_responses edge.
+	GrantResponses []*GrantResponse `json:"grant_responses,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // PermissionHistoriesOrErr returns the PermissionHistories value or an error if the edge
@@ -93,12 +97,21 @@ func (e GrantRequestEdges) RoleSuiteOrErr() (*RoleSuite, error) {
 	return nil, &NotLoadedError{edge: "role_suite"}
 }
 
+// GrantResponsesOrErr returns the GrantResponses value or an error if the edge
+// was not loaded in eager-loading.
+func (e GrantRequestEdges) GrantResponsesOrErr() ([]*GrantResponse, error) {
+	if e.loadedTypes[3] {
+		return e.GrantResponses, nil
+	}
+	return nil, &NotLoadedError{edge: "grant_responses"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*GrantRequest) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case grantrequest.FieldID, grantrequest.FieldAttachmentURL, grantrequest.FieldComment, grantrequest.FieldCreatedBy, grantrequest.FieldEtag, grantrequest.FieldReceiverID, grantrequest.FieldTargetType, grantrequest.FieldTargetRoleID, grantrequest.FieldTargetRoleName, grantrequest.FieldTargetSuiteID, grantrequest.FieldTargetSuiteName, grantrequest.FieldStatus:
+		case grantrequest.FieldID, grantrequest.FieldAttachmentURL, grantrequest.FieldComment, grantrequest.FieldCreatedBy, grantrequest.FieldEtag, grantrequest.FieldReceiverID, grantrequest.FieldReceiverType, grantrequest.FieldTargetType, grantrequest.FieldTargetRoleID, grantrequest.FieldTargetRoleName, grantrequest.FieldTargetSuiteID, grantrequest.FieldTargetSuiteName, grantrequest.FieldStatus:
 			values[i] = new(sql.NullString)
 		case grantrequest.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -161,6 +174,12 @@ func (gr *GrantRequest) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				gr.ReceiverID = value.String
 			}
+		case grantrequest.FieldReceiverType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field receiver_type", values[i])
+			} else if value.Valid {
+				gr.ReceiverType = grantrequest.ReceiverType(value.String)
+			}
 		case grantrequest.FieldTargetType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field target_type", values[i])
@@ -178,7 +197,8 @@ func (gr *GrantRequest) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field target_role_name", values[i])
 			} else if value.Valid {
-				gr.TargetRoleName = value.String
+				gr.TargetRoleName = new(string)
+				*gr.TargetRoleName = value.String
 			}
 		case grantrequest.FieldTargetSuiteID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -191,7 +211,8 @@ func (gr *GrantRequest) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field target_suite_name", values[i])
 			} else if value.Valid {
-				gr.TargetSuiteName = value.String
+				gr.TargetSuiteName = new(string)
+				*gr.TargetSuiteName = value.String
 			}
 		case grantrequest.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -225,6 +246,11 @@ func (gr *GrantRequest) QueryRole() *RoleQuery {
 // QueryRoleSuite queries the "role_suite" edge of the GrantRequest entity.
 func (gr *GrantRequest) QueryRoleSuite() *RoleSuiteQuery {
 	return NewGrantRequestClient(gr.config).QueryRoleSuite(gr)
+}
+
+// QueryGrantResponses queries the "grant_responses" edge of the GrantRequest entity.
+func (gr *GrantRequest) QueryGrantResponses() *GrantResponseQuery {
+	return NewGrantRequestClient(gr.config).QueryGrantResponses(gr)
 }
 
 // Update returns a builder for updating this GrantRequest.
@@ -272,6 +298,9 @@ func (gr *GrantRequest) String() string {
 	builder.WriteString("receiver_id=")
 	builder.WriteString(gr.ReceiverID)
 	builder.WriteString(", ")
+	builder.WriteString("receiver_type=")
+	builder.WriteString(fmt.Sprintf("%v", gr.ReceiverType))
+	builder.WriteString(", ")
 	builder.WriteString("target_type=")
 	builder.WriteString(fmt.Sprintf("%v", gr.TargetType))
 	builder.WriteString(", ")
@@ -280,16 +309,20 @@ func (gr *GrantRequest) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("target_role_name=")
-	builder.WriteString(gr.TargetRoleName)
+	if v := gr.TargetRoleName; v != nil {
+		builder.WriteString("target_role_name=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	if v := gr.TargetSuiteID; v != nil {
 		builder.WriteString("target_suite_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("target_suite_name=")
-	builder.WriteString(gr.TargetSuiteName)
+	if v := gr.TargetSuiteName; v != nil {
+		builder.WriteString("target_suite_name=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", gr.Status))

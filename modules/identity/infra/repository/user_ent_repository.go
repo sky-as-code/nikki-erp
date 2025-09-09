@@ -115,6 +115,16 @@ func (this *UserEntRepository) FindByEmail(ctx context.Context, param it.FindByE
 	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
 
+func (this *UserEntRepository) FindUsersByHierarchyId(ctx context.Context, param it.FindByHierarchyIdParam) ([]domain.User, error) {
+	query := this.client.User.Query().
+		Where(entUser.HierarchyIDEQ(string(param.HierarchyId))).
+		WithHierarchy().
+		WithGroups().
+		WithOrgs()
+
+	return db.List(ctx, query, entToUsers)
+}
+
 func (this *UserEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
 	return db.ParseSearchGraphStr[ent.User, domain.User](criteria, entUser.Label)
 }

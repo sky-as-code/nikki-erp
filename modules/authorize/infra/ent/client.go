@@ -19,6 +19,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantresponse"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
@@ -46,6 +47,8 @@ type Client struct {
 	EntitlementAssignment *EntitlementAssignmentClient
 	// GrantRequest is the client for interacting with the GrantRequest builders.
 	GrantRequest *GrantRequestClient
+	// GrantResponse is the client for interacting with the GrantResponse builders.
+	GrantResponse *GrantResponseClient
 	// PermissionHistory is the client for interacting with the PermissionHistory builders.
 	PermissionHistory *PermissionHistoryClient
 	// Resource is the client for interacting with the Resource builders.
@@ -79,6 +82,7 @@ func (c *Client) init() {
 	c.Entitlement = NewEntitlementClient(c.config)
 	c.EntitlementAssignment = NewEntitlementAssignmentClient(c.config)
 	c.GrantRequest = NewGrantRequestClient(c.config)
+	c.GrantResponse = NewGrantResponseClient(c.config)
 	c.PermissionHistory = NewPermissionHistoryClient(c.config)
 	c.Resource = NewResourceClient(c.config)
 	c.RevokeRequest = NewRevokeRequestClient(c.config)
@@ -185,6 +189,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Entitlement:               NewEntitlementClient(cfg),
 		EntitlementAssignment:     NewEntitlementAssignmentClient(cfg),
 		GrantRequest:              NewGrantRequestClient(cfg),
+		GrantResponse:             NewGrantResponseClient(cfg),
 		PermissionHistory:         NewPermissionHistoryClient(cfg),
 		Resource:                  NewResourceClient(cfg),
 		RevokeRequest:             NewRevokeRequestClient(cfg),
@@ -218,6 +223,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Entitlement:               NewEntitlementClient(cfg),
 		EntitlementAssignment:     NewEntitlementAssignmentClient(cfg),
 		GrantRequest:              NewGrantRequestClient(cfg),
+		GrantResponse:             NewGrantResponseClient(cfg),
 		PermissionHistory:         NewPermissionHistoryClient(cfg),
 		Resource:                  NewResourceClient(cfg),
 		RevokeRequest:             NewRevokeRequestClient(cfg),
@@ -256,8 +262,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Action, c.Entitlement, c.EntitlementAssignment, c.GrantRequest,
-		c.PermissionHistory, c.Resource, c.RevokeRequest, c.Role, c.RoleRoleSuite,
-		c.RoleSuite, c.RoleSuiteUser, c.RoleUser,
+		c.GrantResponse, c.PermissionHistory, c.Resource, c.RevokeRequest, c.Role,
+		c.RoleRoleSuite, c.RoleSuite, c.RoleSuiteUser, c.RoleUser,
 	} {
 		n.Use(hooks...)
 	}
@@ -268,9 +274,9 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Action, c.EffectiveGroupEntitlement, c.EffectiveUserEntitlement,
-		c.Entitlement, c.EntitlementAssignment, c.GrantRequest, c.PermissionHistory,
-		c.Resource, c.RevokeRequest, c.Role, c.RoleRoleSuite, c.RoleSuite,
-		c.RoleSuiteUser, c.RoleUser,
+		c.Entitlement, c.EntitlementAssignment, c.GrantRequest, c.GrantResponse,
+		c.PermissionHistory, c.Resource, c.RevokeRequest, c.Role, c.RoleRoleSuite,
+		c.RoleSuite, c.RoleSuiteUser, c.RoleUser,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -287,6 +293,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.EntitlementAssignment.mutate(ctx, m)
 	case *GrantRequestMutation:
 		return c.GrantRequest.mutate(ctx, m)
+	case *GrantResponseMutation:
+		return c.GrantResponse.mutate(ctx, m)
 	case *PermissionHistoryMutation:
 		return c.PermissionHistory.mutate(ctx, m)
 	case *ResourceMutation:
@@ -1051,6 +1059,22 @@ func (c *GrantRequestClient) QueryRoleSuite(gr *GrantRequest) *RoleSuiteQuery {
 	return query
 }
 
+// QueryGrantResponses queries the grant_responses edge of a GrantRequest.
+func (c *GrantRequestClient) QueryGrantResponses(gr *GrantRequest) *GrantResponseQuery {
+	query := (&GrantResponseClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(grantrequest.Table, grantrequest.FieldID, id),
+			sqlgraph.To(grantresponse.Table, grantresponse.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, grantrequest.GrantResponsesTable, grantrequest.GrantResponsesColumn),
+		)
+		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *GrantRequestClient) Hooks() []Hook {
 	return c.hooks.GrantRequest
@@ -1073,6 +1097,155 @@ func (c *GrantRequestClient) mutate(ctx context.Context, m *GrantRequestMutation
 		return (&GrantRequestDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown GrantRequest mutation op: %q", m.Op())
+	}
+}
+
+// GrantResponseClient is a client for the GrantResponse schema.
+type GrantResponseClient struct {
+	config
+}
+
+// NewGrantResponseClient returns a client for the GrantResponse from the given config.
+func NewGrantResponseClient(c config) *GrantResponseClient {
+	return &GrantResponseClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `grantresponse.Hooks(f(g(h())))`.
+func (c *GrantResponseClient) Use(hooks ...Hook) {
+	c.hooks.GrantResponse = append(c.hooks.GrantResponse, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `grantresponse.Intercept(f(g(h())))`.
+func (c *GrantResponseClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrantResponse = append(c.inters.GrantResponse, interceptors...)
+}
+
+// Create returns a builder for creating a GrantResponse entity.
+func (c *GrantResponseClient) Create() *GrantResponseCreate {
+	mutation := newGrantResponseMutation(c.config, OpCreate)
+	return &GrantResponseCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrantResponse entities.
+func (c *GrantResponseClient) CreateBulk(builders ...*GrantResponseCreate) *GrantResponseCreateBulk {
+	return &GrantResponseCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrantResponseClient) MapCreateBulk(slice any, setFunc func(*GrantResponseCreate, int)) *GrantResponseCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrantResponseCreateBulk{err: fmt.Errorf("calling to GrantResponseClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrantResponseCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrantResponseCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrantResponse.
+func (c *GrantResponseClient) Update() *GrantResponseUpdate {
+	mutation := newGrantResponseMutation(c.config, OpUpdate)
+	return &GrantResponseUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrantResponseClient) UpdateOne(gr *GrantResponse) *GrantResponseUpdateOne {
+	mutation := newGrantResponseMutation(c.config, OpUpdateOne, withGrantResponse(gr))
+	return &GrantResponseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrantResponseClient) UpdateOneID(id string) *GrantResponseUpdateOne {
+	mutation := newGrantResponseMutation(c.config, OpUpdateOne, withGrantResponseID(id))
+	return &GrantResponseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrantResponse.
+func (c *GrantResponseClient) Delete() *GrantResponseDelete {
+	mutation := newGrantResponseMutation(c.config, OpDelete)
+	return &GrantResponseDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrantResponseClient) DeleteOne(gr *GrantResponse) *GrantResponseDeleteOne {
+	return c.DeleteOneID(gr.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrantResponseClient) DeleteOneID(id string) *GrantResponseDeleteOne {
+	builder := c.Delete().Where(grantresponse.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrantResponseDeleteOne{builder}
+}
+
+// Query returns a query builder for GrantResponse.
+func (c *GrantResponseClient) Query() *GrantResponseQuery {
+	return &GrantResponseQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrantResponse},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrantResponse entity by its id.
+func (c *GrantResponseClient) Get(ctx context.Context, id string) (*GrantResponse, error) {
+	return c.Query().Where(grantresponse.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrantResponseClient) GetX(ctx context.Context, id string) *GrantResponse {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGrantRequest queries the grant_request edge of a GrantResponse.
+func (c *GrantResponseClient) QueryGrantRequest(gr *GrantResponse) *GrantRequestQuery {
+	query := (&GrantRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := gr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(grantresponse.Table, grantresponse.FieldID, id),
+			sqlgraph.To(grantrequest.Table, grantrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, grantresponse.GrantRequestTable, grantresponse.GrantRequestColumn),
+		)
+		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GrantResponseClient) Hooks() []Hook {
+	return c.hooks.GrantResponse
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrantResponseClient) Interceptors() []Interceptor {
+	return c.inters.GrantResponse
+}
+
+func (c *GrantResponseClient) mutate(ctx context.Context, m *GrantResponseMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrantResponseCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrantResponseUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrantResponseUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrantResponseDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrantResponse mutation op: %q", m.Op())
 	}
 }
 
@@ -2526,14 +2699,14 @@ func (c *RoleUserClient) mutate(ctx context.Context, m *RoleUserMutation) (Value
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Action, Entitlement, EntitlementAssignment, GrantRequest, PermissionHistory,
-		Resource, RevokeRequest, Role, RoleRoleSuite, RoleSuite, RoleSuiteUser,
-		RoleUser []ent.Hook
+		Action, Entitlement, EntitlementAssignment, GrantRequest, GrantResponse,
+		PermissionHistory, Resource, RevokeRequest, Role, RoleRoleSuite, RoleSuite,
+		RoleSuiteUser, RoleUser []ent.Hook
 	}
 	inters struct {
 		Action, EffectiveGroupEntitlement, EffectiveUserEntitlement, Entitlement,
-		EntitlementAssignment, GrantRequest, PermissionHistory, Resource,
-		RevokeRequest, Role, RoleRoleSuite, RoleSuite, RoleSuiteUser,
+		EntitlementAssignment, GrantRequest, GrantResponse, PermissionHistory,
+		Resource, RevokeRequest, Role, RoleRoleSuite, RoleSuite, RoleSuiteUser,
 		RoleUser []ent.Interceptor
 	}
 )

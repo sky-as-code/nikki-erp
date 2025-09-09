@@ -1,0 +1,22 @@
+meta {
+  name: Respond to Grant - Client error (Invalid fields)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/authorize/grant-requests/01K4QNEJCEYMDG0T0T84DPK2A4/respond
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "decision": "",
+    "responderId": ""
+  }
+}
+
+settings {
+  encodeUrl: true
+}

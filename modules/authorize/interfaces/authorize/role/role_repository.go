@@ -18,16 +18,20 @@ type RoleRepository interface {
 	DeleteHardTx(ctx context.Context, param DeleteRoleHardParam) (int, error)
 	FindByName(ctx context.Context, param FindByNameParam) (*domain.Role, error)
 	FindById(ctx context.Context, param FindByIdParam) (*domain.Role, error)
-	Exist(ctx context.Context, param ExistRoleParam) (bool, error)
 	FindAllBySubject(ctx context.Context, param FindAllBySubjectParam) ([]domain.Role, error)
+	Exist(ctx context.Context, param ExistRoleParam) (bool, error)
+	ExistUserWithRole(ctx context.Context, param ExistUserWithRoleParam) (bool, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.Role], error)
+	AddRemoveUser(ctx context.Context, param AddRemoveUserParam) error
 }
 
 type FindByIdParam = GetRoleByIdQuery
 type ExistRoleParam = GetRoleByIdQuery
 type FindByNameParam = GetRoleByNameCommand
 type FindAllBySubjectParam = GetRolesBySubjectQuery
+type ExistUserWithRoleParam = ExistUserWithRoleQuery
+type AddRemoveUserParam = AddRemoveUserCommand
 type DeleteRoleHardParam struct {
 	Id   model.Id `json:"id"`
 	Name string   `json:"name"`

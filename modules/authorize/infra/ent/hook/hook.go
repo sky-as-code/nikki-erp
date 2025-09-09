@@ -57,6 +57,18 @@ func (f GrantRequestFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrantRequestMutation", m)
 }
 
+// The GrantResponseFunc type is an adapter to allow the use of ordinary
+// function as GrantResponse mutator.
+type GrantResponseFunc func(context.Context, *ent.GrantResponseMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrantResponseFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrantResponseMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrantResponseMutation", m)
+}
+
 // The PermissionHistoryFunc type is an adapter to allow the use of ordinary
 // function as PermissionHistory mutator.
 type PermissionHistoryFunc func(context.Context, *ent.PermissionHistoryMutation) (ent.Value, error)

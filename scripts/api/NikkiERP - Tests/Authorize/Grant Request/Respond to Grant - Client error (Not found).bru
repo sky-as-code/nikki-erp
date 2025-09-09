@@ -1,0 +1,22 @@
+meta {
+  name: Respond to Grant - Client error (Not found)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{api_host}}/v1/authorize/grant-requests/01K4QEC4SVR7PWG4R1NOTFOUND/respond
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "decision": "approve",
+    "responderId": "01JWNMZ36QHC7CQQ748H9NQ6J6"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

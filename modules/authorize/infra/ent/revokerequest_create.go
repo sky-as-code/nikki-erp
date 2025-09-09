@@ -109,6 +109,14 @@ func (rrc *RevokeRequestCreate) SetTargetRoleName(s string) *RevokeRequestCreate
 	return rrc
 }
 
+// SetNillableTargetRoleName sets the "target_role_name" field if the given value is not nil.
+func (rrc *RevokeRequestCreate) SetNillableTargetRoleName(s *string) *RevokeRequestCreate {
+	if s != nil {
+		rrc.SetTargetRoleName(*s)
+	}
+	return rrc
+}
+
 // SetTargetSuiteID sets the "target_suite_id" field.
 func (rrc *RevokeRequestCreate) SetTargetSuiteID(s string) *RevokeRequestCreate {
 	rrc.mutation.SetTargetSuiteID(s)
@@ -126,6 +134,14 @@ func (rrc *RevokeRequestCreate) SetNillableTargetSuiteID(s *string) *RevokeReque
 // SetTargetSuiteName sets the "target_suite_name" field.
 func (rrc *RevokeRequestCreate) SetTargetSuiteName(s string) *RevokeRequestCreate {
 	rrc.mutation.SetTargetSuiteName(s)
+	return rrc
+}
+
+// SetNillableTargetSuiteName sets the "target_suite_name" field if the given value is not nil.
+func (rrc *RevokeRequestCreate) SetNillableTargetSuiteName(s *string) *RevokeRequestCreate {
+	if s != nil {
+		rrc.SetTargetSuiteName(*s)
+	}
 	return rrc
 }
 
@@ -257,12 +273,6 @@ func (rrc *RevokeRequestCreate) check() error {
 			return &ValidationError{Name: "target_type", err: fmt.Errorf(`ent: validator failed for field "RevokeRequest.target_type": %w`, err)}
 		}
 	}
-	if _, ok := rrc.mutation.TargetRoleName(); !ok {
-		return &ValidationError{Name: "target_role_name", err: errors.New(`ent: missing required field "RevokeRequest.target_role_name"`)}
-	}
-	if _, ok := rrc.mutation.TargetSuiteName(); !ok {
-		return &ValidationError{Name: "target_suite_name", err: errors.New(`ent: missing required field "RevokeRequest.target_suite_name"`)}
-	}
 	if _, ok := rrc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "RevokeRequest.status"`)}
 	}
@@ -336,11 +346,11 @@ func (rrc *RevokeRequestCreate) createSpec() (*RevokeRequest, *sqlgraph.CreateSp
 	}
 	if value, ok := rrc.mutation.TargetRoleName(); ok {
 		_spec.SetField(revokerequest.FieldTargetRoleName, field.TypeString, value)
-		_node.TargetRoleName = value
+		_node.TargetRoleName = &value
 	}
 	if value, ok := rrc.mutation.TargetSuiteName(); ok {
 		_spec.SetField(revokerequest.FieldTargetSuiteName, field.TypeString, value)
-		_node.TargetSuiteName = value
+		_node.TargetSuiteName = &value
 	}
 	if value, ok := rrc.mutation.Status(); ok {
 		_spec.SetField(revokerequest.FieldStatus, field.TypeEnum, value)

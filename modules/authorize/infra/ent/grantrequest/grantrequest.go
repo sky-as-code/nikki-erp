@@ -27,6 +27,8 @@ const (
 	FieldEtag = "etag"
 	// FieldReceiverID holds the string denoting the receiver_id field in the database.
 	FieldReceiverID = "receiver_id"
+	// FieldReceiverType holds the string denoting the receiver_type field in the database.
+	FieldReceiverType = "receiver_type"
 	// FieldTargetType holds the string denoting the target_type field in the database.
 	FieldTargetType = "target_type"
 	// FieldTargetRoleID holds the string denoting the target_role_id field in the database.
@@ -45,6 +47,8 @@ const (
 	EdgeRole = "role"
 	// EdgeRoleSuite holds the string denoting the role_suite edge name in mutations.
 	EdgeRoleSuite = "role_suite"
+	// EdgeGrantResponses holds the string denoting the grant_responses edge name in mutations.
+	EdgeGrantResponses = "grant_responses"
 	// Table holds the table name of the grantrequest in the database.
 	Table = "authz_grant_requests"
 	// PermissionHistoriesTable is the table that holds the permission_histories relation/edge.
@@ -68,6 +72,13 @@ const (
 	RoleSuiteInverseTable = "authz_role_suites"
 	// RoleSuiteColumn is the table column denoting the role_suite relation/edge.
 	RoleSuiteColumn = "target_suite_id"
+	// GrantResponsesTable is the table that holds the grant_responses relation/edge.
+	GrantResponsesTable = "authz_grant_responses"
+	// GrantResponsesInverseTable is the table name for the GrantResponse entity.
+	// It exists in this package in order to avoid circular dependency with the "grantresponse" package.
+	GrantResponsesInverseTable = "authz_grant_responses"
+	// GrantResponsesColumn is the table column denoting the grant_responses relation/edge.
+	GrantResponsesColumn = "request_id"
 )
 
 // Columns holds all SQL columns for grantrequest fields.
@@ -79,6 +90,7 @@ var Columns = []string{
 	FieldCreatedBy,
 	FieldEtag,
 	FieldReceiverID,
+	FieldReceiverType,
 	FieldTargetType,
 	FieldTargetRoleID,
 	FieldTargetRoleName,
@@ -101,6 +113,29 @@ var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
+
+// ReceiverType defines the type for the "receiver_type" enum field.
+type ReceiverType string
+
+// ReceiverType values.
+const (
+	ReceiverTypeUser  ReceiverType = "user"
+	ReceiverTypeGroup ReceiverType = "group"
+)
+
+func (rt ReceiverType) String() string {
+	return string(rt)
+}
+
+// ReceiverTypeValidator is a validator for the "receiver_type" field enum values. It is called by the builders before save.
+func ReceiverTypeValidator(rt ReceiverType) error {
+	switch rt {
+	case ReceiverTypeUser, ReceiverTypeGroup:
+		return nil
+	default:
+		return fmt.Errorf("grantrequest: invalid enum value for receiver_type field: %q", rt)
+	}
+}
 
 // TargetType defines the type for the "target_type" enum field.
 type TargetType string
@@ -130,9 +165,10 @@ type Status string
 
 // Status values.
 const (
-	StatusPending  Status = "pending"
-	StatusApproved Status = "approved"
-	StatusRejected Status = "rejected"
+	StatusPending   Status = "pending"
+	StatusApproved  Status = "approved"
+	StatusRejected  Status = "rejected"
+	StatusCancelled Status = "cancelled"
 )
 
 func (s Status) String() string {
@@ -142,7 +178,7 @@ func (s Status) String() string {
 // StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
 func StatusValidator(s Status) error {
 	switch s {
-	case StatusPending, StatusApproved, StatusRejected:
+	case StatusPending, StatusApproved, StatusRejected, StatusCancelled:
 		return nil
 	default:
 		return fmt.Errorf("grantrequest: invalid enum value for status field: %q", s)
@@ -185,6 +221,11 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 // ByReceiverID orders the results by the receiver_id field.
 func ByReceiverID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReceiverID, opts...).ToFunc()
+}
+
+// ByReceiverType orders the results by the receiver_type field.
+func ByReceiverType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReceiverType, opts...).ToFunc()
 }
 
 // ByTargetType orders the results by the target_type field.
@@ -245,6 +286,20 @@ func ByRoleSuiteField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByGrantResponsesCount orders the results by grant_responses count.
+func ByGrantResponsesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGrantResponsesStep(), opts...)
+	}
+}
+
+// ByGrantResponses orders the results by grant_responses terms.
+func ByGrantResponses(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGrantResponsesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
 func NewPermissionHistoriesStepNikki() *sqlgraph.Step {
 	return newPermissionHistoriesStep()
@@ -281,5 +336,18 @@ func newRoleSuiteStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RoleSuiteInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, RoleSuiteTable, RoleSuiteColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewGrantResponsesStepNikki() *sqlgraph.Step {
+	return newGrantResponsesStep()
+}
+
+func newGrantResponsesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GrantResponsesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, GrantResponsesTable, GrantResponsesColumn),
 	)
 }

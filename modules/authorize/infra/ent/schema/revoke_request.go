@@ -53,6 +53,8 @@ func (RevokeRequestMixin) Fields() []ent.Field {
 			Comment("Must be set NULL before the role is deleted"),
 
 		field.String("target_role_name").
+			Nillable().
+			Optional().
 			Comment("Role name must be copied here before the role is deleted"),
 
 		field.String("target_suite_id").
@@ -61,6 +63,8 @@ func (RevokeRequestMixin) Fields() []ent.Field {
 			Comment("Must be set NULL before the role suite is deleted"),
 
 		field.String("target_suite_name").
+			Nillable().
+			Optional().
 			Comment("Role suite name must be copied here before the role suite is deleted"),
 
 		field.Enum("status").

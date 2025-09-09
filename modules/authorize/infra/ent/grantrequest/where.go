@@ -500,6 +500,26 @@ func ReceiverIDContainsFold(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldContainsFold(FieldReceiverID, v))
 }
 
+// ReceiverTypeEQ applies the EQ predicate on the "receiver_type" field.
+func ReceiverTypeEQ(v ReceiverType) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldEQ(FieldReceiverType, v))
+}
+
+// ReceiverTypeNEQ applies the NEQ predicate on the "receiver_type" field.
+func ReceiverTypeNEQ(v ReceiverType) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldNEQ(FieldReceiverType, v))
+}
+
+// ReceiverTypeIn applies the In predicate on the "receiver_type" field.
+func ReceiverTypeIn(vs ...ReceiverType) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldIn(FieldReceiverType, vs...))
+}
+
+// ReceiverTypeNotIn applies the NotIn predicate on the "receiver_type" field.
+func ReceiverTypeNotIn(vs ...ReceiverType) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldNotIn(FieldReceiverType, vs...))
+}
+
 // TargetTypeEQ applies the EQ predicate on the "target_type" field.
 func TargetTypeEQ(v TargetType) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldEQ(FieldTargetType, v))
@@ -650,6 +670,16 @@ func TargetRoleNameHasSuffix(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldHasSuffix(FieldTargetRoleName, v))
 }
 
+// TargetRoleNameIsNil applies the IsNil predicate on the "target_role_name" field.
+func TargetRoleNameIsNil() predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldIsNull(FieldTargetRoleName))
+}
+
+// TargetRoleNameNotNil applies the NotNil predicate on the "target_role_name" field.
+func TargetRoleNameNotNil() predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldNotNull(FieldTargetRoleName))
+}
+
 // TargetRoleNameEqualFold applies the EqualFold predicate on the "target_role_name" field.
 func TargetRoleNameEqualFold(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldEqualFold(FieldTargetRoleName, v))
@@ -790,6 +820,16 @@ func TargetSuiteNameHasSuffix(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldHasSuffix(FieldTargetSuiteName, v))
 }
 
+// TargetSuiteNameIsNil applies the IsNil predicate on the "target_suite_name" field.
+func TargetSuiteNameIsNil() predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldIsNull(FieldTargetSuiteName))
+}
+
+// TargetSuiteNameNotNil applies the NotNil predicate on the "target_suite_name" field.
+func TargetSuiteNameNotNil() predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldNotNull(FieldTargetSuiteName))
+}
+
 // TargetSuiteNameEqualFold applies the EqualFold predicate on the "target_suite_name" field.
 func TargetSuiteNameEqualFold(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldEqualFold(FieldTargetSuiteName, v))
@@ -881,6 +921,29 @@ func HasRoleSuite() predicate.GrantRequest {
 func HasRoleSuiteWith(preds ...predicate.RoleSuite) predicate.GrantRequest {
 	return predicate.GrantRequest(func(s *sql.Selector) {
 		step := newRoleSuiteStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGrantResponses applies the HasEdge predicate on the "grant_responses" edge.
+func HasGrantResponses() predicate.GrantRequest {
+	return predicate.GrantRequest(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, GrantResponsesTable, GrantResponsesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGrantResponsesWith applies the HasEdge predicate on the "grant_responses" edge with a given conditions (other predicates).
+func HasGrantResponsesWith(preds ...predicate.GrantResponse) predicate.GrantRequest {
+	return predicate.GrantRequest(func(s *sql.Selector) {
+		step := newGrantResponsesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

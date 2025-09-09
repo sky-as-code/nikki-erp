@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantresponse"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
@@ -29,6 +30,7 @@ type GrantRequestQuery struct {
 	withPermissionHistories *PermissionHistoryQuery
 	withRole                *RoleQuery
 	withRoleSuite           *RoleSuiteQuery
+	withGrantResponses      *GrantResponseQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -124,6 +126,28 @@ func (grq *GrantRequestQuery) QueryRoleSuite() *RoleSuiteQuery {
 			sqlgraph.From(grantrequest.Table, grantrequest.FieldID, selector),
 			sqlgraph.To(rolesuite.Table, rolesuite.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, grantrequest.RoleSuiteTable, grantrequest.RoleSuiteColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(grq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGrantResponses chains the current query on the "grant_responses" edge.
+func (grq *GrantRequestQuery) QueryGrantResponses() *GrantResponseQuery {
+	query := (&GrantResponseClient{config: grq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := grq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := grq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(grantrequest.Table, grantrequest.FieldID, selector),
+			sqlgraph.To(grantresponse.Table, grantresponse.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, grantrequest.GrantResponsesTable, grantrequest.GrantResponsesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(grq.driver.Dialect(), step)
 		return fromU, nil
@@ -326,6 +350,7 @@ func (grq *GrantRequestQuery) Clone() *GrantRequestQuery {
 		withPermissionHistories: grq.withPermissionHistories.Clone(),
 		withRole:                grq.withRole.Clone(),
 		withRoleSuite:           grq.withRoleSuite.Clone(),
+		withGrantResponses:      grq.withGrantResponses.Clone(),
 		// clone intermediate query.
 		sql:  grq.sql.Clone(),
 		path: grq.path,
@@ -362,6 +387,17 @@ func (grq *GrantRequestQuery) WithRoleSuite(opts ...func(*RoleSuiteQuery)) *Gran
 		opt(query)
 	}
 	grq.withRoleSuite = query
+	return grq
+}
+
+// WithGrantResponses tells the query-builder to eager-load the nodes that are connected to
+// the "grant_responses" edge. The optional arguments are used to configure the query builder of the edge.
+func (grq *GrantRequestQuery) WithGrantResponses(opts ...func(*GrantResponseQuery)) *GrantRequestQuery {
+	query := (&GrantResponseClient{config: grq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	grq.withGrantResponses = query
 	return grq
 }
 
@@ -443,10 +479,11 @@ func (grq *GrantRequestQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	var (
 		nodes       = []*GrantRequest{}
 		_spec       = grq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			grq.withPermissionHistories != nil,
 			grq.withRole != nil,
 			grq.withRoleSuite != nil,
+			grq.withGrantResponses != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -485,6 +522,13 @@ func (grq *GrantRequestQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([
 	if query := grq.withRoleSuite; query != nil {
 		if err := grq.loadRoleSuite(ctx, query, nodes, nil,
 			func(n *GrantRequest, e *RoleSuite) { n.Edges.RoleSuite = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := grq.withGrantResponses; query != nil {
+		if err := grq.loadGrantResponses(ctx, query, nodes,
+			func(n *GrantRequest) { n.Edges.GrantResponses = []*GrantResponse{} },
+			func(n *GrantRequest, e *GrantResponse) { n.Edges.GrantResponses = append(n.Edges.GrantResponses, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -585,6 +629,36 @@ func (grq *GrantRequestQuery) loadRoleSuite(ctx context.Context, query *RoleSuit
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
+	}
+	return nil
+}
+func (grq *GrantRequestQuery) loadGrantResponses(ctx context.Context, query *GrantResponseQuery, nodes []*GrantRequest, init func(*GrantRequest), assign func(*GrantRequest, *GrantResponse)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*GrantRequest)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(grantresponse.FieldRequestID)
+	}
+	query.Where(predicate.GrantResponse(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(grantrequest.GrantResponsesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.RequestID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "request_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

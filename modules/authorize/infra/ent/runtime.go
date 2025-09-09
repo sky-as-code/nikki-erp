@@ -8,6 +8,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/action"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantresponse"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
@@ -47,6 +48,15 @@ func init() {
 	grantrequestDescCreatedAt := grantrequestMixinFields0[3].Descriptor()
 	// grantrequest.DefaultCreatedAt holds the default value on creation for the created_at field.
 	grantrequest.DefaultCreatedAt = grantrequestDescCreatedAt.Default.(func() time.Time)
+	grantresponseMixin := schema.GrantResponse{}.Mixin()
+	grantresponseMixinFields0 := grantresponseMixin[0].Fields()
+	_ = grantresponseMixinFields0
+	grantresponseFields := schema.GrantResponse{}.Fields()
+	_ = grantresponseFields
+	// grantresponseDescCreatedAt is the schema descriptor for created_at field.
+	grantresponseDescCreatedAt := grantresponseMixinFields0[5].Descriptor()
+	// grantresponse.DefaultCreatedAt holds the default value on creation for the created_at field.
+	grantresponse.DefaultCreatedAt = grantresponseDescCreatedAt.Default.(func() time.Time)
 	permissionhistoryMixin := schema.PermissionHistory{}.Mixin()
 	permissionhistoryMixinFields0 := permissionhistoryMixin[0].Fields()
 	_ = permissionhistoryMixinFields0

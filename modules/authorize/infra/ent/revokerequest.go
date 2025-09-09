@@ -36,11 +36,11 @@ type RevokeRequest struct {
 	// Must be set NULL before the role is deleted
 	TargetRoleID *string `json:"target_role_id,omitempty"`
 	// Role name must be copied here before the role is deleted
-	TargetRoleName string `json:"target_role_name,omitempty"`
+	TargetRoleName *string `json:"target_role_name,omitempty"`
 	// Must be set NULL before the role suite is deleted
 	TargetSuiteID *string `json:"target_suite_id,omitempty"`
 	// Role suite name must be copied here before the role suite is deleted
-	TargetSuiteName string `json:"target_suite_name,omitempty"`
+	TargetSuiteName *string `json:"target_suite_name,omitempty"`
 	// Status holds the value of the "status" field.
 	Status revokerequest.Status `json:"status,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -178,7 +178,8 @@ func (rr *RevokeRequest) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field target_role_name", values[i])
 			} else if value.Valid {
-				rr.TargetRoleName = value.String
+				rr.TargetRoleName = new(string)
+				*rr.TargetRoleName = value.String
 			}
 		case revokerequest.FieldTargetSuiteID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -191,7 +192,8 @@ func (rr *RevokeRequest) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field target_suite_name", values[i])
 			} else if value.Valid {
-				rr.TargetSuiteName = value.String
+				rr.TargetSuiteName = new(string)
+				*rr.TargetSuiteName = value.String
 			}
 		case revokerequest.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -280,16 +282,20 @@ func (rr *RevokeRequest) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("target_role_name=")
-	builder.WriteString(rr.TargetRoleName)
+	if v := rr.TargetRoleName; v != nil {
+		builder.WriteString("target_role_name=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	if v := rr.TargetSuiteID; v != nil {
 		builder.WriteString("target_suite_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("target_suite_name=")
-	builder.WriteString(rr.TargetSuiteName)
+	if v := rr.TargetSuiteName; v != nil {
+		builder.WriteString("target_suite_name=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", rr.Status))

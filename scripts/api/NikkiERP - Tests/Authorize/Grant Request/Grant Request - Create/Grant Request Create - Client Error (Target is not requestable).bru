@@ -1,0 +1,27 @@
+meta {
+  name: Grant Request Create - Client Error (Target is not requestable)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{api_host}}/v1/authorize/grant-requests
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "attachmentUrl": "attachmentUrl",
+    "comment": "comment",
+    "requestorId": "01JWNMZ36QHC7CQQ748H9NQ6J6",
+    "receiverType": "user",
+    "receiverId": "01JZQFZFK6GM2D5X6MYHWH6FND",
+    "targetType": "role",
+    "targetRef": "01JWP72JJCDT4M0J8MSS51MN3T"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

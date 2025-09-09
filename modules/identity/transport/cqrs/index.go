@@ -34,6 +34,7 @@ func initUserHandlers() error {
 			cqrs.NewHandler(handler.Update),
 			cqrs.NewHandler(handler.UserExists),
 			cqrs.NewHandler(handler.UserExistsMulti),
+			cqrs.NewHandler(handler.FindDirectApprover),
 		)
 	})
 }
@@ -52,6 +53,7 @@ func initGroupHandlers() error {
 			cqrs.NewHandler(handler.SearchGroups),
 			cqrs.NewHandler(handler.UpdateGroup),
 			cqrs.NewHandler(handler.SearchGroups),
+			cqrs.NewHandler(handler.GroupExists),
 		)
 	})
 }

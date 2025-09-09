@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantresponse"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
@@ -78,6 +79,12 @@ func (gru *GrantRequestUpdate) SetNillableTargetRoleName(s *string) *GrantReques
 	return gru
 }
 
+// ClearTargetRoleName clears the value of the "target_role_name" field.
+func (gru *GrantRequestUpdate) ClearTargetRoleName() *GrantRequestUpdate {
+	gru.mutation.ClearTargetRoleName()
+	return gru
+}
+
 // SetTargetSuiteID sets the "target_suite_id" field.
 func (gru *GrantRequestUpdate) SetTargetSuiteID(s string) *GrantRequestUpdate {
 	gru.mutation.SetTargetSuiteID(s)
@@ -109,6 +116,12 @@ func (gru *GrantRequestUpdate) SetNillableTargetSuiteName(s *string) *GrantReque
 	if s != nil {
 		gru.SetTargetSuiteName(*s)
 	}
+	return gru
+}
+
+// ClearTargetSuiteName clears the value of the "target_suite_name" field.
+func (gru *GrantRequestUpdate) ClearTargetSuiteName() *GrantRequestUpdate {
+	gru.mutation.ClearTargetSuiteName()
 	return gru
 }
 
@@ -179,6 +192,21 @@ func (gru *GrantRequestUpdate) SetRoleSuite(r *RoleSuite) *GrantRequestUpdate {
 	return gru.SetRoleSuiteID(r.ID)
 }
 
+// AddGrantResponseIDs adds the "grant_responses" edge to the GrantResponse entity by IDs.
+func (gru *GrantRequestUpdate) AddGrantResponseIDs(ids ...string) *GrantRequestUpdate {
+	gru.mutation.AddGrantResponseIDs(ids...)
+	return gru
+}
+
+// AddGrantResponses adds the "grant_responses" edges to the GrantResponse entity.
+func (gru *GrantRequestUpdate) AddGrantResponses(g ...*GrantResponse) *GrantRequestUpdate {
+	ids := make([]string, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return gru.AddGrantResponseIDs(ids...)
+}
+
 // Mutation returns the GrantRequestMutation object of the builder.
 func (gru *GrantRequestUpdate) Mutation() *GrantRequestMutation {
 	return gru.mutation
@@ -215,6 +243,27 @@ func (gru *GrantRequestUpdate) ClearRole() *GrantRequestUpdate {
 func (gru *GrantRequestUpdate) ClearRoleSuite() *GrantRequestUpdate {
 	gru.mutation.ClearRoleSuite()
 	return gru
+}
+
+// ClearGrantResponses clears all "grant_responses" edges to the GrantResponse entity.
+func (gru *GrantRequestUpdate) ClearGrantResponses() *GrantRequestUpdate {
+	gru.mutation.ClearGrantResponses()
+	return gru
+}
+
+// RemoveGrantResponseIDs removes the "grant_responses" edge to GrantResponse entities by IDs.
+func (gru *GrantRequestUpdate) RemoveGrantResponseIDs(ids ...string) *GrantRequestUpdate {
+	gru.mutation.RemoveGrantResponseIDs(ids...)
+	return gru
+}
+
+// RemoveGrantResponses removes "grant_responses" edges to GrantResponse entities.
+func (gru *GrantRequestUpdate) RemoveGrantResponses(g ...*GrantResponse) *GrantRequestUpdate {
+	ids := make([]string, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return gru.RemoveGrantResponseIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -278,8 +327,14 @@ func (gru *GrantRequestUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := gru.mutation.TargetRoleName(); ok {
 		_spec.SetField(grantrequest.FieldTargetRoleName, field.TypeString, value)
 	}
+	if gru.mutation.TargetRoleNameCleared() {
+		_spec.ClearField(grantrequest.FieldTargetRoleName, field.TypeString)
+	}
 	if value, ok := gru.mutation.TargetSuiteName(); ok {
 		_spec.SetField(grantrequest.FieldTargetSuiteName, field.TypeString, value)
+	}
+	if gru.mutation.TargetSuiteNameCleared() {
+		_spec.ClearField(grantrequest.FieldTargetSuiteName, field.TypeString)
 	}
 	if value, ok := gru.mutation.Status(); ok {
 		_spec.SetField(grantrequest.FieldStatus, field.TypeEnum, value)
@@ -387,6 +442,51 @@ func (gru *GrantRequestUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if gru.mutation.GrantResponsesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   grantrequest.GrantResponsesTable,
+			Columns: []string{grantrequest.GrantResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grantresponse.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gru.mutation.RemovedGrantResponsesIDs(); len(nodes) > 0 && !gru.mutation.GrantResponsesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   grantrequest.GrantResponsesTable,
+			Columns: []string{grantrequest.GrantResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grantresponse.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gru.mutation.GrantResponsesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   grantrequest.GrantResponsesTable,
+			Columns: []string{grantrequest.GrantResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grantresponse.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, gru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{grantrequest.Label}
@@ -455,6 +555,12 @@ func (gruo *GrantRequestUpdateOne) SetNillableTargetRoleName(s *string) *GrantRe
 	return gruo
 }
 
+// ClearTargetRoleName clears the value of the "target_role_name" field.
+func (gruo *GrantRequestUpdateOne) ClearTargetRoleName() *GrantRequestUpdateOne {
+	gruo.mutation.ClearTargetRoleName()
+	return gruo
+}
+
 // SetTargetSuiteID sets the "target_suite_id" field.
 func (gruo *GrantRequestUpdateOne) SetTargetSuiteID(s string) *GrantRequestUpdateOne {
 	gruo.mutation.SetTargetSuiteID(s)
@@ -486,6 +592,12 @@ func (gruo *GrantRequestUpdateOne) SetNillableTargetSuiteName(s *string) *GrantR
 	if s != nil {
 		gruo.SetTargetSuiteName(*s)
 	}
+	return gruo
+}
+
+// ClearTargetSuiteName clears the value of the "target_suite_name" field.
+func (gruo *GrantRequestUpdateOne) ClearTargetSuiteName() *GrantRequestUpdateOne {
+	gruo.mutation.ClearTargetSuiteName()
 	return gruo
 }
 
@@ -556,6 +668,21 @@ func (gruo *GrantRequestUpdateOne) SetRoleSuite(r *RoleSuite) *GrantRequestUpdat
 	return gruo.SetRoleSuiteID(r.ID)
 }
 
+// AddGrantResponseIDs adds the "grant_responses" edge to the GrantResponse entity by IDs.
+func (gruo *GrantRequestUpdateOne) AddGrantResponseIDs(ids ...string) *GrantRequestUpdateOne {
+	gruo.mutation.AddGrantResponseIDs(ids...)
+	return gruo
+}
+
+// AddGrantResponses adds the "grant_responses" edges to the GrantResponse entity.
+func (gruo *GrantRequestUpdateOne) AddGrantResponses(g ...*GrantResponse) *GrantRequestUpdateOne {
+	ids := make([]string, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return gruo.AddGrantResponseIDs(ids...)
+}
+
 // Mutation returns the GrantRequestMutation object of the builder.
 func (gruo *GrantRequestUpdateOne) Mutation() *GrantRequestMutation {
 	return gruo.mutation
@@ -592,6 +719,27 @@ func (gruo *GrantRequestUpdateOne) ClearRole() *GrantRequestUpdateOne {
 func (gruo *GrantRequestUpdateOne) ClearRoleSuite() *GrantRequestUpdateOne {
 	gruo.mutation.ClearRoleSuite()
 	return gruo
+}
+
+// ClearGrantResponses clears all "grant_responses" edges to the GrantResponse entity.
+func (gruo *GrantRequestUpdateOne) ClearGrantResponses() *GrantRequestUpdateOne {
+	gruo.mutation.ClearGrantResponses()
+	return gruo
+}
+
+// RemoveGrantResponseIDs removes the "grant_responses" edge to GrantResponse entities by IDs.
+func (gruo *GrantRequestUpdateOne) RemoveGrantResponseIDs(ids ...string) *GrantRequestUpdateOne {
+	gruo.mutation.RemoveGrantResponseIDs(ids...)
+	return gruo
+}
+
+// RemoveGrantResponses removes "grant_responses" edges to GrantResponse entities.
+func (gruo *GrantRequestUpdateOne) RemoveGrantResponses(g ...*GrantResponse) *GrantRequestUpdateOne {
+	ids := make([]string, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return gruo.RemoveGrantResponseIDs(ids...)
 }
 
 // Where appends a list predicates to the GrantRequestUpdate builder.
@@ -685,8 +833,14 @@ func (gruo *GrantRequestUpdateOne) sqlSave(ctx context.Context) (_node *GrantReq
 	if value, ok := gruo.mutation.TargetRoleName(); ok {
 		_spec.SetField(grantrequest.FieldTargetRoleName, field.TypeString, value)
 	}
+	if gruo.mutation.TargetRoleNameCleared() {
+		_spec.ClearField(grantrequest.FieldTargetRoleName, field.TypeString)
+	}
 	if value, ok := gruo.mutation.TargetSuiteName(); ok {
 		_spec.SetField(grantrequest.FieldTargetSuiteName, field.TypeString, value)
+	}
+	if gruo.mutation.TargetSuiteNameCleared() {
+		_spec.ClearField(grantrequest.FieldTargetSuiteName, field.TypeString)
 	}
 	if value, ok := gruo.mutation.Status(); ok {
 		_spec.SetField(grantrequest.FieldStatus, field.TypeEnum, value)
@@ -787,6 +941,51 @@ func (gruo *GrantRequestUpdateOne) sqlSave(ctx context.Context) (_node *GrantReq
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(rolesuite.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if gruo.mutation.GrantResponsesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   grantrequest.GrantResponsesTable,
+			Columns: []string{grantrequest.GrantResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grantresponse.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gruo.mutation.RemovedGrantResponsesIDs(); len(nodes) > 0 && !gruo.mutation.GrantResponsesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   grantrequest.GrantResponsesTable,
+			Columns: []string{grantrequest.GrantResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grantresponse.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := gruo.mutation.GrantResponsesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   grantrequest.GrantResponsesTable,
+			Columns: []string{grantrequest.GrantResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grantresponse.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

@@ -18,6 +18,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantresponse"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
@@ -92,6 +93,7 @@ func checkColumn(table, column string) error {
 			entitlement.Table:               entitlement.ValidColumn,
 			entitlementassignment.Table:     entitlementassignment.ValidColumn,
 			grantrequest.Table:              grantrequest.ValidColumn,
+			grantresponse.Table:             grantresponse.ValidColumn,
 			permissionhistory.Table:         permissionhistory.ValidColumn,
 			resource.Table:                  resource.ValidColumn,
 			revokerequest.Table:             revokerequest.ValidColumn,

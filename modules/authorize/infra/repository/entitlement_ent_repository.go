@@ -98,7 +98,6 @@ func (this *EntitlementEntRepository) FindByActionExpr(ctx context.Context, para
 	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
 }
 
-
 func (this *EntitlementEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
 	return database.ParseSearchGraphStr[ent.Entitlement, domain.Entitlement](criteria, entEntitlement.Label)
 }

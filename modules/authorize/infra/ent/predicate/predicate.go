@@ -24,6 +24,9 @@ type EntitlementAssignment = func(*sql.Selector)
 // GrantRequest is the predicate function for grantrequest builders.
 type GrantRequest = func(*sql.Selector)
 
+// GrantResponse is the predicate function for grantresponse builders.
+type GrantResponse = func(*sql.Selector)
+
 // PermissionHistory is the predicate function for permissionhistory builders.
 type PermissionHistory = func(*sql.Selector)
 

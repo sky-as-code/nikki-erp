@@ -117,6 +117,14 @@ func (this *RoleSuiteEntRepository) ParseSearchGraph(criteria *string) (*orm.Pre
 	return database.ParseSearchGraphStr[ent.RoleSuite, domain.RoleSuite](criteria, entRoleSuite.Label)
 }
 
+func (this *RoleSuiteEntRepository) FindAllBySubject(ctx context.Context, param it.FindAllBySubjectParam) ([]domain.RoleSuite, error) {
+	query := this.client.RoleSuite.Query().
+		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverRefEQ(param.SubjectRef))).
+		WithRoles()
+
+	return database.List(ctx, query, entToRoleSuites)
+}
+
 func (this *RoleSuiteEntRepository) Search(
 	ctx context.Context,
 	param it.SearchParam,
@@ -137,12 +145,32 @@ func (this *RoleSuiteEntRepository) Search(
 	)
 }
 
-func (this *RoleSuiteEntRepository) FindAllBySubject(ctx context.Context, param it.FindAllBySubjectParam) ([]domain.RoleSuite, error) {
-	query := this.client.RoleSuite.Query().
-		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverRefEQ(param.SubjectRef))).
-		WithRoles()
+func (this *RoleSuiteEntRepository) ExistUserWithRoleSuite(ctx context.Context, param it.ExistUserWithRoleSuiteParam) (bool, error) {
+	return this.client.RoleSuite.Query().
+		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverTypeEQ(entRoleSuiteUser.ReceiverType(param.ReceiverType)))).
+		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverRefEQ(param.ReceiverId))).
+		Exist(ctx)
+}
 
-	return database.List(ctx, query, entToRoleSuites)
+func (this *RoleSuiteEntRepository) AddRemoveUser(ctx context.Context, param it.AddRemoveUserParam) error {
+	if param.Add {
+		_, err := this.client.RoleSuiteUser.Create().
+			SetApproverID(param.ApproverID).
+			SetReceiverRef(param.ReceiverID).
+			SetReceiverType(entRoleSuiteUser.ReceiverType(param.ReceiverType)).
+			SetRoleSuiteID(param.Id).
+			Save(ctx)
+		return err
+	}
+
+	_, err := this.client.RoleSuiteUser.Delete().
+		Where(
+			entRoleSuiteUser.ReceiverRefEQ(param.ReceiverID),
+			entRoleSuiteUser.ReceiverTypeEQ(entRoleSuiteUser.ReceiverType(param.ReceiverType)),
+			entRoleSuiteUser.RoleSuiteIDEQ(param.Id),
+		).
+		Exec(ctx)
+	return err
 }
 
 func (this *RoleSuiteEntRepository) deleteRoleSuiteTx(ctx context.Context, tx *ent.Tx, roleSuiteId model.Id) (int, error) {

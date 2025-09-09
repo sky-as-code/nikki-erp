@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantresponse"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
@@ -83,6 +84,12 @@ func (grc *GrantRequestCreate) SetReceiverID(s string) *GrantRequestCreate {
 	return grc
 }
 
+// SetReceiverType sets the "receiver_type" field.
+func (grc *GrantRequestCreate) SetReceiverType(gt grantrequest.ReceiverType) *GrantRequestCreate {
+	grc.mutation.SetReceiverType(gt)
+	return grc
+}
+
 // SetTargetType sets the "target_type" field.
 func (grc *GrantRequestCreate) SetTargetType(gt grantrequest.TargetType) *GrantRequestCreate {
 	grc.mutation.SetTargetType(gt)
@@ -109,6 +116,14 @@ func (grc *GrantRequestCreate) SetTargetRoleName(s string) *GrantRequestCreate {
 	return grc
 }
 
+// SetNillableTargetRoleName sets the "target_role_name" field if the given value is not nil.
+func (grc *GrantRequestCreate) SetNillableTargetRoleName(s *string) *GrantRequestCreate {
+	if s != nil {
+		grc.SetTargetRoleName(*s)
+	}
+	return grc
+}
+
 // SetTargetSuiteID sets the "target_suite_id" field.
 func (grc *GrantRequestCreate) SetTargetSuiteID(s string) *GrantRequestCreate {
 	grc.mutation.SetTargetSuiteID(s)
@@ -126,6 +141,14 @@ func (grc *GrantRequestCreate) SetNillableTargetSuiteID(s *string) *GrantRequest
 // SetTargetSuiteName sets the "target_suite_name" field.
 func (grc *GrantRequestCreate) SetTargetSuiteName(s string) *GrantRequestCreate {
 	grc.mutation.SetTargetSuiteName(s)
+	return grc
+}
+
+// SetNillableTargetSuiteName sets the "target_suite_name" field if the given value is not nil.
+func (grc *GrantRequestCreate) SetNillableTargetSuiteName(s *string) *GrantRequestCreate {
+	if s != nil {
+		grc.SetTargetSuiteName(*s)
+	}
 	return grc
 }
 
@@ -194,6 +217,21 @@ func (grc *GrantRequestCreate) SetRoleSuite(r *RoleSuite) *GrantRequestCreate {
 	return grc.SetRoleSuiteID(r.ID)
 }
 
+// AddGrantResponseIDs adds the "grant_responses" edge to the GrantResponse entity by IDs.
+func (grc *GrantRequestCreate) AddGrantResponseIDs(ids ...string) *GrantRequestCreate {
+	grc.mutation.AddGrantResponseIDs(ids...)
+	return grc
+}
+
+// AddGrantResponses adds the "grant_responses" edges to the GrantResponse entity.
+func (grc *GrantRequestCreate) AddGrantResponses(g ...*GrantResponse) *GrantRequestCreate {
+	ids := make([]string, len(g))
+	for i := range g {
+		ids[i] = g[i].ID
+	}
+	return grc.AddGrantResponseIDs(ids...)
+}
+
 // Mutation returns the GrantRequestMutation object of the builder.
 func (grc *GrantRequestCreate) Mutation() *GrantRequestMutation {
 	return grc.mutation
@@ -249,6 +287,14 @@ func (grc *GrantRequestCreate) check() error {
 	if _, ok := grc.mutation.ReceiverID(); !ok {
 		return &ValidationError{Name: "receiver_id", err: errors.New(`ent: missing required field "GrantRequest.receiver_id"`)}
 	}
+	if _, ok := grc.mutation.ReceiverType(); !ok {
+		return &ValidationError{Name: "receiver_type", err: errors.New(`ent: missing required field "GrantRequest.receiver_type"`)}
+	}
+	if v, ok := grc.mutation.ReceiverType(); ok {
+		if err := grantrequest.ReceiverTypeValidator(v); err != nil {
+			return &ValidationError{Name: "receiver_type", err: fmt.Errorf(`ent: validator failed for field "GrantRequest.receiver_type": %w`, err)}
+		}
+	}
 	if _, ok := grc.mutation.TargetType(); !ok {
 		return &ValidationError{Name: "target_type", err: errors.New(`ent: missing required field "GrantRequest.target_type"`)}
 	}
@@ -256,12 +302,6 @@ func (grc *GrantRequestCreate) check() error {
 		if err := grantrequest.TargetTypeValidator(v); err != nil {
 			return &ValidationError{Name: "target_type", err: fmt.Errorf(`ent: validator failed for field "GrantRequest.target_type": %w`, err)}
 		}
-	}
-	if _, ok := grc.mutation.TargetRoleName(); !ok {
-		return &ValidationError{Name: "target_role_name", err: errors.New(`ent: missing required field "GrantRequest.target_role_name"`)}
-	}
-	if _, ok := grc.mutation.TargetSuiteName(); !ok {
-		return &ValidationError{Name: "target_suite_name", err: errors.New(`ent: missing required field "GrantRequest.target_suite_name"`)}
 	}
 	if _, ok := grc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "GrantRequest.status"`)}
@@ -330,17 +370,21 @@ func (grc *GrantRequestCreate) createSpec() (*GrantRequest, *sqlgraph.CreateSpec
 		_spec.SetField(grantrequest.FieldReceiverID, field.TypeString, value)
 		_node.ReceiverID = value
 	}
+	if value, ok := grc.mutation.ReceiverType(); ok {
+		_spec.SetField(grantrequest.FieldReceiverType, field.TypeEnum, value)
+		_node.ReceiverType = value
+	}
 	if value, ok := grc.mutation.TargetType(); ok {
 		_spec.SetField(grantrequest.FieldTargetType, field.TypeEnum, value)
 		_node.TargetType = value
 	}
 	if value, ok := grc.mutation.TargetRoleName(); ok {
 		_spec.SetField(grantrequest.FieldTargetRoleName, field.TypeString, value)
-		_node.TargetRoleName = value
+		_node.TargetRoleName = &value
 	}
 	if value, ok := grc.mutation.TargetSuiteName(); ok {
 		_spec.SetField(grantrequest.FieldTargetSuiteName, field.TypeString, value)
-		_node.TargetSuiteName = value
+		_node.TargetSuiteName = &value
 	}
 	if value, ok := grc.mutation.Status(); ok {
 		_spec.SetField(grantrequest.FieldStatus, field.TypeEnum, value)
@@ -394,6 +438,22 @@ func (grc *GrantRequestCreate) createSpec() (*GrantRequest, *sqlgraph.CreateSpec
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.TargetSuiteID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := grc.mutation.GrantResponsesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   grantrequest.GrantResponsesTable,
+			Columns: []string{grantrequest.GrantResponsesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(grantresponse.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
