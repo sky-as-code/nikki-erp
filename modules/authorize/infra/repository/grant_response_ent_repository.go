@@ -1,15 +1,16 @@
 package repository
 
 import (
-	"context"
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entGrantResponse "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantresponse"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_response"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewGrantResponseEntRepository(client *ent.Client) it.GrantResponseRepository {
@@ -18,7 +19,7 @@ func NewGrantResponseEntRepository(client *ent.Client) it.GrantResponseRepositor
 	}
 }
 
-func (this *GrantResponseEntRepository) Create(ctx context.Context, grantResponse domain.GrantResponse) (*domain.GrantResponse, error) {
+func (this *GrantResponseEntRepository) Create(ctx crud.Context, grantResponse domain.GrantResponse) (*domain.GrantResponse, error) {
 	creation := this.client.GrantResponse.Create().
 		SetID(*grantResponse.Id).
 		SetRequestID(*grantResponse.RequestId).

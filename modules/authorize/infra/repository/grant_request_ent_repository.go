@@ -1,17 +1,18 @@
 package repository
 
 import (
-	"context"
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_request"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewGrantRequestEntRepository(client *ent.Client) it.GrantRequestRepository {
@@ -20,13 +21,17 @@ func NewGrantRequestEntRepository(client *ent.Client) it.GrantRequestRepository 
 	}
 }
 
-func (this *GrantRequestEntRepository) Tx(ctx context.Context) (*ent.Tx, error) {
+func (this *GrantRequestEntRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error) {
+	return this.client.Tx(ctx)
+}
+
+func (this *GrantRequestEntRepository) Tx(ctx crud.Context) (*ent.Tx, error) {
 	tx, err := this.client.Tx(ctx)
 	fault.PanicOnErr(err)
 	return tx, nil
 }
 
-func (this *GrantRequestEntRepository) Create(ctx context.Context, grantRequest domain.GrantRequest) (*domain.GrantRequest, error) {
+func (this *GrantRequestEntRepository) Create(ctx crud.Context, grantRequest domain.GrantRequest) (*domain.GrantRequest, error) {
 	creation := this.client.GrantRequest.Create().
 		SetID(*grantRequest.Id).
 		SetEtag(*grantRequest.Etag).
@@ -51,14 +56,14 @@ func (this *GrantRequestEntRepository) Create(ctx context.Context, grantRequest 
 	return database.Mutate(ctx, creation, ent.IsNotFound, entToGrantRequest)
 }
 
-func (this *GrantRequestEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.GrantRequest, error) {
+func (this *GrantRequestEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.GrantRequest, error) {
 	query := this.client.GrantRequest.Query().
 		Where(entGrantRequest.IDEQ(param.Id))
 
 	return database.FindOne(ctx, query, ent.IsNotFound, entToGrantRequest)
 }
 
-func (this *GrantRequestEntRepository) Update(ctx context.Context, grantRequest domain.GrantRequest) (*domain.GrantRequest, error) {
+func (this *GrantRequestEntRepository) Update(ctx crud.Context, grantRequest domain.GrantRequest) (*domain.GrantRequest, error) {
 	update := this.client.GrantRequest.UpdateOneID(*grantRequest.Id).
 		SetEtag(*grantRequest.Etag).
 		SetStatus(entGrantRequest.Status(*grantRequest.Status))
@@ -66,11 +71,11 @@ func (this *GrantRequestEntRepository) Update(ctx context.Context, grantRequest 
 	return database.Mutate(ctx, update, ent.IsNotFound, entToGrantRequest)
 }
 
-func (this *GrantRequestEntRepository) Delete(ctx context.Context, id model.Id) error {
+func (this *GrantRequestEntRepository) Delete(ctx crud.Context, id model.Id) error {
 	return this.client.GrantRequest.DeleteOneID(id).Exec(ctx)
 }
 
-func (this *GrantRequestEntRepository) FindPendingByReceiverAndTarget(ctx context.Context, receiverId model.Id, targetId model.Id, targetType domain.GrantRequestTargetType) ([]*domain.GrantRequest, error) {
+func (this *GrantRequestEntRepository) FindPendingByReceiverAndTarget(ctx crud.Context, receiverId model.Id, targetId model.Id, targetType domain.GrantRequestTargetType) ([]*domain.GrantRequest, error) {
 	query := this.client.GrantRequest.Query().
 		Where(
 			entGrantRequest.ReceiverIDEQ(receiverId),
