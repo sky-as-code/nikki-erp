@@ -152,8 +152,17 @@ func (this *RoleSuiteEntRepository) ExistUserWithRoleSuite(ctx crud.Context, par
 }
 
 func (this *RoleSuiteEntRepository) AddRemoveUser(ctx crud.Context, param it.AddRemoveUserParam) error {
+	var creation *ent.RoleSuiteUserCreate
+	tx := ctx.GetDbTranx().(*ent.Tx)
+
+	if tx != nil {
+		creation = tx.RoleSuiteUser.Create()
+	} else {
+		creation = this.client.RoleSuiteUser.Create()
+	}
+
 	if param.Add {
-		_, err := this.client.RoleSuiteUser.Create().
+		_, err := creation.
 			SetApproverID(param.ApproverID).
 			SetReceiverRef(param.ReceiverID).
 			SetReceiverType(entRoleSuiteUser.ReceiverType(param.ReceiverType)).
@@ -162,7 +171,7 @@ func (this *RoleSuiteEntRepository) AddRemoveUser(ctx crud.Context, param it.Add
 		return err
 	}
 
-	_, err := this.client.RoleSuiteUser.Delete().
+	_, err := tx.RoleSuiteUser.Delete().
 		Where(
 			entRoleSuiteUser.ReceiverRefEQ(param.ReceiverID),
 			entRoleSuiteUser.ReceiverTypeEQ(entRoleSuiteUser.ReceiverType(param.ReceiverType)),

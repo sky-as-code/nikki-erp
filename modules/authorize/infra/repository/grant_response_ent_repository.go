@@ -20,7 +20,15 @@ func NewGrantResponseEntRepository(client *ent.Client) it.GrantResponseRepositor
 }
 
 func (this *GrantResponseEntRepository) Create(ctx crud.Context, grantResponse domain.GrantResponse) (*domain.GrantResponse, error) {
-	creation := this.client.GrantResponse.Create().
+	var creation *ent.GrantResponseCreate
+	
+	if tx := ctx.GetDbTranx().(*ent.Tx); tx != nil {
+		creation = tx.GrantResponse.Create()
+	} else {
+		creation = this.client.GrantResponse.Create()
+	}
+
+	creation = creation.
 		SetID(*grantResponse.Id).
 		SetRequestID(*grantResponse.RequestId).
 		SetIsApproved(*grantResponse.IsApproved).

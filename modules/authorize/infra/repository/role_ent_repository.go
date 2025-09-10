@@ -187,8 +187,17 @@ func (this *RoleEntRepository) Search(
 }
 
 func (this *RoleEntRepository) AddRemoveUser(ctx crud.Context, param it.AddRemoveUserParam) error {
+	var creation *ent.RoleUserCreate
+	tx := ctx.GetDbTranx().(*ent.Tx)
+
+	if tx != nil {
+		creation = tx.RoleUser.Create()
+	} else {
+		creation = this.client.RoleUser.Create()
+	}
+
 	if param.Add {
-		_, err := this.client.RoleUser.Create().
+		_, err := creation.
 			SetApproverID(param.ApproverID).
 			SetReceiverRef(param.ReceiverID).
 			SetReceiverType(entRoleUser.ReceiverType(param.ReceiverType)).
@@ -197,7 +206,7 @@ func (this *RoleEntRepository) AddRemoveUser(ctx crud.Context, param it.AddRemov
 		return err
 	}
 
-	_, err := this.client.RoleUser.Delete().
+	_, err := tx.RoleUser.Delete().
 		Where(
 			entRoleUser.ReceiverRefEQ(param.ReceiverID),
 			entRoleUser.ReceiverTypeEQ(entRoleUser.ReceiverType(param.ReceiverType)),

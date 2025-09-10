@@ -3,7 +3,6 @@ package repository
 import (
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
@@ -23,12 +22,6 @@ func NewGrantRequestEntRepository(client *ent.Client) it.GrantRequestRepository 
 
 func (this *GrantRequestEntRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error) {
 	return this.client.Tx(ctx)
-}
-
-func (this *GrantRequestEntRepository) Tx(ctx crud.Context) (*ent.Tx, error) {
-	tx, err := this.client.Tx(ctx)
-	fault.PanicOnErr(err)
-	return tx, nil
 }
 
 func (this *GrantRequestEntRepository) Create(ctx crud.Context, grantRequest domain.GrantRequest) (*domain.GrantRequest, error) {
@@ -63,10 +56,22 @@ func (this *GrantRequestEntRepository) FindById(ctx crud.Context, param it.FindB
 	return database.FindOne(ctx, query, ent.IsNotFound, entToGrantRequest)
 }
 
-func (this *GrantRequestEntRepository) Update(ctx crud.Context, grantRequest domain.GrantRequest) (*domain.GrantRequest, error) {
-	update := this.client.GrantRequest.UpdateOneID(*grantRequest.Id).
-		SetEtag(*grantRequest.Etag).
-		SetStatus(entGrantRequest.Status(*grantRequest.Status))
+func (this *GrantRequestEntRepository) Update(ctx crud.Context, grantRequest domain.GrantRequest, prevEtag model.Etag) (*domain.GrantRequest, error) {
+	var update *ent.GrantRequestUpdateOne
+
+	if tx := ctx.GetDbTranx().(*ent.Tx); tx != nil {
+		update = tx.GrantRequest.UpdateOneID(*grantRequest.Id)
+	} else {
+		update = this.client.GrantRequest.UpdateOneID(*grantRequest.Id)
+	}
+
+	update = update.
+		SetStatus(entGrantRequest.Status(*grantRequest.Status)).
+		Where(entGrantRequest.EtagEQ(prevEtag))
+
+	if len(update.Mutation().Fields()) > 0 {
+		update = update.SetEtag(*grantRequest.Etag)
+	}
 
 	return database.Mutate(ctx, update, ent.IsNotFound, entToGrantRequest)
 }

@@ -1,8 +1,13 @@
 package repository
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/orm"
+	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/permission_history"
@@ -16,6 +21,39 @@ func NewPermissionHistoryEntRepository(client *ent.Client) it.PermissionHistoryR
 
 type PermissionHistoryEntRepository struct {
 	client *ent.Client
+}
+
+func (this *PermissionHistoryEntRepository) Create(ctx crud.Context, permissionHistory domain.PermissionHistory) (*domain.PermissionHistory, error) {
+	var creation *ent.PermissionHistoryCreate
+	tx := ctx.GetDbTranx().(*ent.Tx)
+
+	if tx != nil {
+		creation = tx.PermissionHistory.Create()
+	} else {
+		creation = this.client.PermissionHistory.Create()
+	}
+
+	creation = creation.
+		SetID(*permissionHistory.Id).
+		SetNillableApproverID(permissionHistory.ApproverId).
+		SetNillableApproverEmail(permissionHistory.ApproverEmail).
+		SetEffect(entPermissionHistory.Effect(*permissionHistory.Effect)).
+		SetReason(entPermissionHistory.Reason(*permissionHistory.Reason)).
+		SetNillableEntitlementID(permissionHistory.EntitlementId).
+		SetNillableEntitlementExpr(permissionHistory.EntitlementExpr).
+		SetNillableEntitlementAssignmentID(permissionHistory.EntitlementAssignmentId).
+		SetNillableResolvedExpr(permissionHistory.ResolvedExpr).
+		SetNillableReceiverID(permissionHistory.ReceiverId).
+		SetNillableReceiverEmail(permissionHistory.ReceiverEmail).
+		SetNillableGrantRequestID(permissionHistory.GrantRequestId).
+		SetNillableRevokeRequestID(permissionHistory.RevokeRequestId).
+		SetNillableRoleID(permissionHistory.RoleId).
+		SetNillableRoleName(permissionHistory.RoleName).
+		SetNillableRoleSuiteID(permissionHistory.RoleSuiteId).
+		SetNillableRoleSuiteName(permissionHistory.RoleSuiteName).
+		SetCreatedAt(time.Now())
+
+	return database.Mutate(ctx, creation, ent.IsNotFound, entToPermissionHistory)
 }
 
 func BuildPermissionHistoryDescriptor() *orm.EntityDescriptor {

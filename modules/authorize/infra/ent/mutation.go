@@ -4996,7 +4996,7 @@ func (m *PermissionHistoryMutation) ApproverEmail() (r string, exists bool) {
 // OldApproverEmail returns the old "approver_email" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldApproverEmail(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldApproverEmail(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldApproverEmail is only allowed on UpdateOne operations")
 	}
@@ -5010,9 +5010,22 @@ func (m *PermissionHistoryMutation) OldApproverEmail(ctx context.Context) (v str
 	return oldValue.ApproverEmail, nil
 }
 
+// ClearApproverEmail clears the value of the "approver_email" field.
+func (m *PermissionHistoryMutation) ClearApproverEmail() {
+	m.approver_email = nil
+	m.clearedFields[permissionhistory.FieldApproverEmail] = struct{}{}
+}
+
+// ApproverEmailCleared returns if the "approver_email" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) ApproverEmailCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldApproverEmail]
+	return ok
+}
+
 // ResetApproverEmail resets all changes to the "approver_email" field.
 func (m *PermissionHistoryMutation) ResetApproverEmail() {
 	m.approver_email = nil
+	delete(m.clearedFields, permissionhistory.FieldApproverEmail)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -5189,7 +5202,7 @@ func (m *PermissionHistoryMutation) EntitlementExpr() (r string, exists bool) {
 // OldEntitlementExpr returns the old "entitlement_expr" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldEntitlementExpr(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldEntitlementExpr(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldEntitlementExpr is only allowed on UpdateOne operations")
 	}
@@ -5203,9 +5216,22 @@ func (m *PermissionHistoryMutation) OldEntitlementExpr(ctx context.Context) (v s
 	return oldValue.EntitlementExpr, nil
 }
 
+// ClearEntitlementExpr clears the value of the "entitlement_expr" field.
+func (m *PermissionHistoryMutation) ClearEntitlementExpr() {
+	m.entitlement_expr = nil
+	m.clearedFields[permissionhistory.FieldEntitlementExpr] = struct{}{}
+}
+
+// EntitlementExprCleared returns if the "entitlement_expr" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) EntitlementExprCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldEntitlementExpr]
+	return ok
+}
+
 // ResetEntitlementExpr resets all changes to the "entitlement_expr" field.
 func (m *PermissionHistoryMutation) ResetEntitlementExpr() {
 	m.entitlement_expr = nil
+	delete(m.clearedFields, permissionhistory.FieldEntitlementExpr)
 }
 
 // SetEntitlementAssignmentID sets the "entitlement_assignment_id" field.
@@ -5274,7 +5300,7 @@ func (m *PermissionHistoryMutation) ResolvedExpr() (r string, exists bool) {
 // OldResolvedExpr returns the old "resolved_expr" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldResolvedExpr(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldResolvedExpr(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldResolvedExpr is only allowed on UpdateOne operations")
 	}
@@ -5288,9 +5314,22 @@ func (m *PermissionHistoryMutation) OldResolvedExpr(ctx context.Context) (v stri
 	return oldValue.ResolvedExpr, nil
 }
 
+// ClearResolvedExpr clears the value of the "resolved_expr" field.
+func (m *PermissionHistoryMutation) ClearResolvedExpr() {
+	m.resolved_expr = nil
+	m.clearedFields[permissionhistory.FieldResolvedExpr] = struct{}{}
+}
+
+// ResolvedExprCleared returns if the "resolved_expr" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) ResolvedExprCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldResolvedExpr]
+	return ok
+}
+
 // ResetResolvedExpr resets all changes to the "resolved_expr" field.
 func (m *PermissionHistoryMutation) ResetResolvedExpr() {
 	m.resolved_expr = nil
+	delete(m.clearedFields, permissionhistory.FieldResolvedExpr)
 }
 
 // SetReceiverID sets the "receiver_id" field.
@@ -5359,7 +5398,7 @@ func (m *PermissionHistoryMutation) ReceiverEmail() (r string, exists bool) {
 // OldReceiverEmail returns the old "receiver_email" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldReceiverEmail(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldReceiverEmail(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldReceiverEmail is only allowed on UpdateOne operations")
 	}
@@ -5373,9 +5412,22 @@ func (m *PermissionHistoryMutation) OldReceiverEmail(ctx context.Context) (v str
 	return oldValue.ReceiverEmail, nil
 }
 
+// ClearReceiverEmail clears the value of the "receiver_email" field.
+func (m *PermissionHistoryMutation) ClearReceiverEmail() {
+	m.receiver_email = nil
+	m.clearedFields[permissionhistory.FieldReceiverEmail] = struct{}{}
+}
+
+// ReceiverEmailCleared returns if the "receiver_email" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) ReceiverEmailCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldReceiverEmail]
+	return ok
+}
+
 // ResetReceiverEmail resets all changes to the "receiver_email" field.
 func (m *PermissionHistoryMutation) ResetReceiverEmail() {
 	m.receiver_email = nil
+	delete(m.clearedFields, permissionhistory.FieldReceiverEmail)
 }
 
 // SetGrantRequestID sets the "grant_request_id" field.
@@ -5542,7 +5594,7 @@ func (m *PermissionHistoryMutation) RoleName() (r string, exists bool) {
 // OldRoleName returns the old "role_name" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldRoleName(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldRoleName(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRoleName is only allowed on UpdateOne operations")
 	}
@@ -5556,9 +5608,22 @@ func (m *PermissionHistoryMutation) OldRoleName(ctx context.Context) (v string, 
 	return oldValue.RoleName, nil
 }
 
+// ClearRoleName clears the value of the "role_name" field.
+func (m *PermissionHistoryMutation) ClearRoleName() {
+	m.role_name = nil
+	m.clearedFields[permissionhistory.FieldRoleName] = struct{}{}
+}
+
+// RoleNameCleared returns if the "role_name" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) RoleNameCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldRoleName]
+	return ok
+}
+
 // ResetRoleName resets all changes to the "role_name" field.
 func (m *PermissionHistoryMutation) ResetRoleName() {
 	m.role_name = nil
+	delete(m.clearedFields, permissionhistory.FieldRoleName)
 }
 
 // SetRoleSuiteID sets the "role_suite_id" field.
@@ -5627,7 +5692,7 @@ func (m *PermissionHistoryMutation) RoleSuiteName() (r string, exists bool) {
 // OldRoleSuiteName returns the old "role_suite_name" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldRoleSuiteName(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldRoleSuiteName(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRoleSuiteName is only allowed on UpdateOne operations")
 	}
@@ -5641,9 +5706,22 @@ func (m *PermissionHistoryMutation) OldRoleSuiteName(ctx context.Context) (v str
 	return oldValue.RoleSuiteName, nil
 }
 
+// ClearRoleSuiteName clears the value of the "role_suite_name" field.
+func (m *PermissionHistoryMutation) ClearRoleSuiteName() {
+	m.role_suite_name = nil
+	m.clearedFields[permissionhistory.FieldRoleSuiteName] = struct{}{}
+}
+
+// RoleSuiteNameCleared returns if the "role_suite_name" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) RoleSuiteNameCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldRoleSuiteName]
+	return ok
+}
+
 // ResetRoleSuiteName resets all changes to the "role_suite_name" field.
 func (m *PermissionHistoryMutation) ResetRoleSuiteName() {
 	m.role_suite_name = nil
+	delete(m.clearedFields, permissionhistory.FieldRoleSuiteName)
 }
 
 // ClearEntitlement clears the "entitlement" edge to the Entitlement entity.
@@ -6140,14 +6218,26 @@ func (m *PermissionHistoryMutation) ClearedFields() []string {
 	if m.FieldCleared(permissionhistory.FieldApproverID) {
 		fields = append(fields, permissionhistory.FieldApproverID)
 	}
+	if m.FieldCleared(permissionhistory.FieldApproverEmail) {
+		fields = append(fields, permissionhistory.FieldApproverEmail)
+	}
 	if m.FieldCleared(permissionhistory.FieldEntitlementID) {
 		fields = append(fields, permissionhistory.FieldEntitlementID)
+	}
+	if m.FieldCleared(permissionhistory.FieldEntitlementExpr) {
+		fields = append(fields, permissionhistory.FieldEntitlementExpr)
 	}
 	if m.FieldCleared(permissionhistory.FieldEntitlementAssignmentID) {
 		fields = append(fields, permissionhistory.FieldEntitlementAssignmentID)
 	}
+	if m.FieldCleared(permissionhistory.FieldResolvedExpr) {
+		fields = append(fields, permissionhistory.FieldResolvedExpr)
+	}
 	if m.FieldCleared(permissionhistory.FieldReceiverID) {
 		fields = append(fields, permissionhistory.FieldReceiverID)
+	}
+	if m.FieldCleared(permissionhistory.FieldReceiverEmail) {
+		fields = append(fields, permissionhistory.FieldReceiverEmail)
 	}
 	if m.FieldCleared(permissionhistory.FieldGrantRequestID) {
 		fields = append(fields, permissionhistory.FieldGrantRequestID)
@@ -6158,8 +6248,14 @@ func (m *PermissionHistoryMutation) ClearedFields() []string {
 	if m.FieldCleared(permissionhistory.FieldRoleID) {
 		fields = append(fields, permissionhistory.FieldRoleID)
 	}
+	if m.FieldCleared(permissionhistory.FieldRoleName) {
+		fields = append(fields, permissionhistory.FieldRoleName)
+	}
 	if m.FieldCleared(permissionhistory.FieldRoleSuiteID) {
 		fields = append(fields, permissionhistory.FieldRoleSuiteID)
+	}
+	if m.FieldCleared(permissionhistory.FieldRoleSuiteName) {
+		fields = append(fields, permissionhistory.FieldRoleSuiteName)
 	}
 	return fields
 }
@@ -6178,14 +6274,26 @@ func (m *PermissionHistoryMutation) ClearField(name string) error {
 	case permissionhistory.FieldApproverID:
 		m.ClearApproverID()
 		return nil
+	case permissionhistory.FieldApproverEmail:
+		m.ClearApproverEmail()
+		return nil
 	case permissionhistory.FieldEntitlementID:
 		m.ClearEntitlementID()
+		return nil
+	case permissionhistory.FieldEntitlementExpr:
+		m.ClearEntitlementExpr()
 		return nil
 	case permissionhistory.FieldEntitlementAssignmentID:
 		m.ClearEntitlementAssignmentID()
 		return nil
+	case permissionhistory.FieldResolvedExpr:
+		m.ClearResolvedExpr()
+		return nil
 	case permissionhistory.FieldReceiverID:
 		m.ClearReceiverID()
+		return nil
+	case permissionhistory.FieldReceiverEmail:
+		m.ClearReceiverEmail()
 		return nil
 	case permissionhistory.FieldGrantRequestID:
 		m.ClearGrantRequestID()
@@ -6196,8 +6304,14 @@ func (m *PermissionHistoryMutation) ClearField(name string) error {
 	case permissionhistory.FieldRoleID:
 		m.ClearRoleID()
 		return nil
+	case permissionhistory.FieldRoleName:
+		m.ClearRoleName()
+		return nil
 	case permissionhistory.FieldRoleSuiteID:
 		m.ClearRoleSuiteID()
+		return nil
+	case permissionhistory.FieldRoleSuiteName:
+		m.ClearRoleSuiteName()
 		return nil
 	}
 	return fmt.Errorf("unknown PermissionHistory nullable field %s", name)

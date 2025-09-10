@@ -46,6 +46,14 @@ func (phc *PermissionHistoryCreate) SetApproverEmail(s string) *PermissionHistor
 	return phc
 }
 
+// SetNillableApproverEmail sets the "approver_email" field if the given value is not nil.
+func (phc *PermissionHistoryCreate) SetNillableApproverEmail(s *string) *PermissionHistoryCreate {
+	if s != nil {
+		phc.SetApproverEmail(*s)
+	}
+	return phc
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (phc *PermissionHistoryCreate) SetCreatedAt(t time.Time) *PermissionHistoryCreate {
 	phc.mutation.SetCreatedAt(t)
@@ -92,6 +100,14 @@ func (phc *PermissionHistoryCreate) SetEntitlementExpr(s string) *PermissionHist
 	return phc
 }
 
+// SetNillableEntitlementExpr sets the "entitlement_expr" field if the given value is not nil.
+func (phc *PermissionHistoryCreate) SetNillableEntitlementExpr(s *string) *PermissionHistoryCreate {
+	if s != nil {
+		phc.SetEntitlementExpr(*s)
+	}
+	return phc
+}
+
 // SetEntitlementAssignmentID sets the "entitlement_assignment_id" field.
 func (phc *PermissionHistoryCreate) SetEntitlementAssignmentID(s string) *PermissionHistoryCreate {
 	phc.mutation.SetEntitlementAssignmentID(s)
@@ -112,6 +128,14 @@ func (phc *PermissionHistoryCreate) SetResolvedExpr(s string) *PermissionHistory
 	return phc
 }
 
+// SetNillableResolvedExpr sets the "resolved_expr" field if the given value is not nil.
+func (phc *PermissionHistoryCreate) SetNillableResolvedExpr(s *string) *PermissionHistoryCreate {
+	if s != nil {
+		phc.SetResolvedExpr(*s)
+	}
+	return phc
+}
+
 // SetReceiverID sets the "receiver_id" field.
 func (phc *PermissionHistoryCreate) SetReceiverID(s string) *PermissionHistoryCreate {
 	phc.mutation.SetReceiverID(s)
@@ -129,6 +153,14 @@ func (phc *PermissionHistoryCreate) SetNillableReceiverID(s *string) *Permission
 // SetReceiverEmail sets the "receiver_email" field.
 func (phc *PermissionHistoryCreate) SetReceiverEmail(s string) *PermissionHistoryCreate {
 	phc.mutation.SetReceiverEmail(s)
+	return phc
+}
+
+// SetNillableReceiverEmail sets the "receiver_email" field if the given value is not nil.
+func (phc *PermissionHistoryCreate) SetNillableReceiverEmail(s *string) *PermissionHistoryCreate {
+	if s != nil {
+		phc.SetReceiverEmail(*s)
+	}
 	return phc
 }
 
@@ -180,6 +212,14 @@ func (phc *PermissionHistoryCreate) SetRoleName(s string) *PermissionHistoryCrea
 	return phc
 }
 
+// SetNillableRoleName sets the "role_name" field if the given value is not nil.
+func (phc *PermissionHistoryCreate) SetNillableRoleName(s *string) *PermissionHistoryCreate {
+	if s != nil {
+		phc.SetRoleName(*s)
+	}
+	return phc
+}
+
 // SetRoleSuiteID sets the "role_suite_id" field.
 func (phc *PermissionHistoryCreate) SetRoleSuiteID(s string) *PermissionHistoryCreate {
 	phc.mutation.SetRoleSuiteID(s)
@@ -197,6 +237,14 @@ func (phc *PermissionHistoryCreate) SetNillableRoleSuiteID(s *string) *Permissio
 // SetRoleSuiteName sets the "role_suite_name" field.
 func (phc *PermissionHistoryCreate) SetRoleSuiteName(s string) *PermissionHistoryCreate {
 	phc.mutation.SetRoleSuiteName(s)
+	return phc
+}
+
+// SetNillableRoleSuiteName sets the "role_suite_name" field if the given value is not nil.
+func (phc *PermissionHistoryCreate) SetNillableRoleSuiteName(s *string) *PermissionHistoryCreate {
+	if s != nil {
+		phc.SetRoleSuiteName(*s)
+	}
 	return phc
 }
 
@@ -279,9 +327,6 @@ func (phc *PermissionHistoryCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (phc *PermissionHistoryCreate) check() error {
-	if _, ok := phc.mutation.ApproverEmail(); !ok {
-		return &ValidationError{Name: "approver_email", err: errors.New(`ent: missing required field "PermissionHistory.approver_email"`)}
-	}
 	if _, ok := phc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "PermissionHistory.created_at"`)}
 	}
@@ -300,21 +345,6 @@ func (phc *PermissionHistoryCreate) check() error {
 		if err := permissionhistory.ReasonValidator(v); err != nil {
 			return &ValidationError{Name: "reason", err: fmt.Errorf(`ent: validator failed for field "PermissionHistory.reason": %w`, err)}
 		}
-	}
-	if _, ok := phc.mutation.EntitlementExpr(); !ok {
-		return &ValidationError{Name: "entitlement_expr", err: errors.New(`ent: missing required field "PermissionHistory.entitlement_expr"`)}
-	}
-	if _, ok := phc.mutation.ResolvedExpr(); !ok {
-		return &ValidationError{Name: "resolved_expr", err: errors.New(`ent: missing required field "PermissionHistory.resolved_expr"`)}
-	}
-	if _, ok := phc.mutation.ReceiverEmail(); !ok {
-		return &ValidationError{Name: "receiver_email", err: errors.New(`ent: missing required field "PermissionHistory.receiver_email"`)}
-	}
-	if _, ok := phc.mutation.RoleName(); !ok {
-		return &ValidationError{Name: "role_name", err: errors.New(`ent: missing required field "PermissionHistory.role_name"`)}
-	}
-	if _, ok := phc.mutation.RoleSuiteName(); !ok {
-		return &ValidationError{Name: "role_suite_name", err: errors.New(`ent: missing required field "PermissionHistory.role_suite_name"`)}
 	}
 	return nil
 }
@@ -357,7 +387,7 @@ func (phc *PermissionHistoryCreate) createSpec() (*PermissionHistory, *sqlgraph.
 	}
 	if value, ok := phc.mutation.ApproverEmail(); ok {
 		_spec.SetField(permissionhistory.FieldApproverEmail, field.TypeString, value)
-		_node.ApproverEmail = value
+		_node.ApproverEmail = &value
 	}
 	if value, ok := phc.mutation.CreatedAt(); ok {
 		_spec.SetField(permissionhistory.FieldCreatedAt, field.TypeTime, value)
@@ -373,11 +403,11 @@ func (phc *PermissionHistoryCreate) createSpec() (*PermissionHistory, *sqlgraph.
 	}
 	if value, ok := phc.mutation.EntitlementExpr(); ok {
 		_spec.SetField(permissionhistory.FieldEntitlementExpr, field.TypeString, value)
-		_node.EntitlementExpr = value
+		_node.EntitlementExpr = &value
 	}
 	if value, ok := phc.mutation.ResolvedExpr(); ok {
 		_spec.SetField(permissionhistory.FieldResolvedExpr, field.TypeString, value)
-		_node.ResolvedExpr = value
+		_node.ResolvedExpr = &value
 	}
 	if value, ok := phc.mutation.ReceiverID(); ok {
 		_spec.SetField(permissionhistory.FieldReceiverID, field.TypeString, value)
@@ -385,15 +415,15 @@ func (phc *PermissionHistoryCreate) createSpec() (*PermissionHistory, *sqlgraph.
 	}
 	if value, ok := phc.mutation.ReceiverEmail(); ok {
 		_spec.SetField(permissionhistory.FieldReceiverEmail, field.TypeString, value)
-		_node.ReceiverEmail = value
+		_node.ReceiverEmail = &value
 	}
 	if value, ok := phc.mutation.RoleName(); ok {
 		_spec.SetField(permissionhistory.FieldRoleName, field.TypeString, value)
-		_node.RoleName = value
+		_node.RoleName = &value
 	}
 	if value, ok := phc.mutation.RoleSuiteName(); ok {
 		_spec.SetField(permissionhistory.FieldRoleSuiteName, field.TypeString, value)
-		_node.RoleSuiteName = value
+		_node.RoleSuiteName = &value
 	}
 	if nodes := phc.mutation.EntitlementIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

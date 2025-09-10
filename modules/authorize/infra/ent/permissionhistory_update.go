@@ -67,6 +67,12 @@ func (phu *PermissionHistoryUpdate) SetNillableApproverEmail(s *string) *Permiss
 	return phu
 }
 
+// ClearApproverEmail clears the value of the "approver_email" field.
+func (phu *PermissionHistoryUpdate) ClearApproverEmail() *PermissionHistoryUpdate {
+	phu.mutation.ClearApproverEmail()
+	return phu
+}
+
 // SetEntitlementID sets the "entitlement_id" field.
 func (phu *PermissionHistoryUpdate) SetEntitlementID(s string) *PermissionHistoryUpdate {
 	phu.mutation.SetEntitlementID(s)
@@ -98,6 +104,12 @@ func (phu *PermissionHistoryUpdate) SetNillableEntitlementExpr(s *string) *Permi
 	if s != nil {
 		phu.SetEntitlementExpr(*s)
 	}
+	return phu
+}
+
+// ClearEntitlementExpr clears the value of the "entitlement_expr" field.
+func (phu *PermissionHistoryUpdate) ClearEntitlementExpr() *PermissionHistoryUpdate {
+	phu.mutation.ClearEntitlementExpr()
 	return phu
 }
 
@@ -135,6 +147,12 @@ func (phu *PermissionHistoryUpdate) SetNillableResolvedExpr(s *string) *Permissi
 	return phu
 }
 
+// ClearResolvedExpr clears the value of the "resolved_expr" field.
+func (phu *PermissionHistoryUpdate) ClearResolvedExpr() *PermissionHistoryUpdate {
+	phu.mutation.ClearResolvedExpr()
+	return phu
+}
+
 // SetReceiverID sets the "receiver_id" field.
 func (phu *PermissionHistoryUpdate) SetReceiverID(s string) *PermissionHistoryUpdate {
 	phu.mutation.SetReceiverID(s)
@@ -166,6 +184,12 @@ func (phu *PermissionHistoryUpdate) SetNillableReceiverEmail(s *string) *Permiss
 	if s != nil {
 		phu.SetReceiverEmail(*s)
 	}
+	return phu
+}
+
+// ClearReceiverEmail clears the value of the "receiver_email" field.
+func (phu *PermissionHistoryUpdate) ClearReceiverEmail() *PermissionHistoryUpdate {
+	phu.mutation.ClearReceiverEmail()
 	return phu
 }
 
@@ -243,6 +267,12 @@ func (phu *PermissionHistoryUpdate) SetNillableRoleName(s *string) *PermissionHi
 	return phu
 }
 
+// ClearRoleName clears the value of the "role_name" field.
+func (phu *PermissionHistoryUpdate) ClearRoleName() *PermissionHistoryUpdate {
+	phu.mutation.ClearRoleName()
+	return phu
+}
+
 // SetRoleSuiteID sets the "role_suite_id" field.
 func (phu *PermissionHistoryUpdate) SetRoleSuiteID(s string) *PermissionHistoryUpdate {
 	phu.mutation.SetRoleSuiteID(s)
@@ -274,6 +304,12 @@ func (phu *PermissionHistoryUpdate) SetNillableRoleSuiteName(s *string) *Permiss
 	if s != nil {
 		phu.SetRoleSuiteName(*s)
 	}
+	return phu
+}
+
+// ClearRoleSuiteName clears the value of the "role_suite_name" field.
+func (phu *PermissionHistoryUpdate) ClearRoleSuiteName() *PermissionHistoryUpdate {
+	phu.mutation.ClearRoleSuiteName()
 	return phu
 }
 
@@ -393,11 +429,20 @@ func (phu *PermissionHistoryUpdate) sqlSave(ctx context.Context) (n int, err err
 	if value, ok := phu.mutation.ApproverEmail(); ok {
 		_spec.SetField(permissionhistory.FieldApproverEmail, field.TypeString, value)
 	}
+	if phu.mutation.ApproverEmailCleared() {
+		_spec.ClearField(permissionhistory.FieldApproverEmail, field.TypeString)
+	}
 	if value, ok := phu.mutation.EntitlementExpr(); ok {
 		_spec.SetField(permissionhistory.FieldEntitlementExpr, field.TypeString, value)
 	}
+	if phu.mutation.EntitlementExprCleared() {
+		_spec.ClearField(permissionhistory.FieldEntitlementExpr, field.TypeString)
+	}
 	if value, ok := phu.mutation.ResolvedExpr(); ok {
 		_spec.SetField(permissionhistory.FieldResolvedExpr, field.TypeString, value)
+	}
+	if phu.mutation.ResolvedExprCleared() {
+		_spec.ClearField(permissionhistory.FieldResolvedExpr, field.TypeString)
 	}
 	if value, ok := phu.mutation.ReceiverID(); ok {
 		_spec.SetField(permissionhistory.FieldReceiverID, field.TypeString, value)
@@ -408,11 +453,20 @@ func (phu *PermissionHistoryUpdate) sqlSave(ctx context.Context) (n int, err err
 	if value, ok := phu.mutation.ReceiverEmail(); ok {
 		_spec.SetField(permissionhistory.FieldReceiverEmail, field.TypeString, value)
 	}
+	if phu.mutation.ReceiverEmailCleared() {
+		_spec.ClearField(permissionhistory.FieldReceiverEmail, field.TypeString)
+	}
 	if value, ok := phu.mutation.RoleName(); ok {
 		_spec.SetField(permissionhistory.FieldRoleName, field.TypeString, value)
 	}
+	if phu.mutation.RoleNameCleared() {
+		_spec.ClearField(permissionhistory.FieldRoleName, field.TypeString)
+	}
 	if value, ok := phu.mutation.RoleSuiteName(); ok {
 		_spec.SetField(permissionhistory.FieldRoleSuiteName, field.TypeString, value)
+	}
+	if phu.mutation.RoleSuiteNameCleared() {
+		_spec.ClearField(permissionhistory.FieldRoleSuiteName, field.TypeString)
 	}
 	if phu.mutation.EntitlementCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -642,6 +696,12 @@ func (phuo *PermissionHistoryUpdateOne) SetNillableApproverEmail(s *string) *Per
 	return phuo
 }
 
+// ClearApproverEmail clears the value of the "approver_email" field.
+func (phuo *PermissionHistoryUpdateOne) ClearApproverEmail() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearApproverEmail()
+	return phuo
+}
+
 // SetEntitlementID sets the "entitlement_id" field.
 func (phuo *PermissionHistoryUpdateOne) SetEntitlementID(s string) *PermissionHistoryUpdateOne {
 	phuo.mutation.SetEntitlementID(s)
@@ -673,6 +733,12 @@ func (phuo *PermissionHistoryUpdateOne) SetNillableEntitlementExpr(s *string) *P
 	if s != nil {
 		phuo.SetEntitlementExpr(*s)
 	}
+	return phuo
+}
+
+// ClearEntitlementExpr clears the value of the "entitlement_expr" field.
+func (phuo *PermissionHistoryUpdateOne) ClearEntitlementExpr() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearEntitlementExpr()
 	return phuo
 }
 
@@ -710,6 +776,12 @@ func (phuo *PermissionHistoryUpdateOne) SetNillableResolvedExpr(s *string) *Perm
 	return phuo
 }
 
+// ClearResolvedExpr clears the value of the "resolved_expr" field.
+func (phuo *PermissionHistoryUpdateOne) ClearResolvedExpr() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearResolvedExpr()
+	return phuo
+}
+
 // SetReceiverID sets the "receiver_id" field.
 func (phuo *PermissionHistoryUpdateOne) SetReceiverID(s string) *PermissionHistoryUpdateOne {
 	phuo.mutation.SetReceiverID(s)
@@ -741,6 +813,12 @@ func (phuo *PermissionHistoryUpdateOne) SetNillableReceiverEmail(s *string) *Per
 	if s != nil {
 		phuo.SetReceiverEmail(*s)
 	}
+	return phuo
+}
+
+// ClearReceiverEmail clears the value of the "receiver_email" field.
+func (phuo *PermissionHistoryUpdateOne) ClearReceiverEmail() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearReceiverEmail()
 	return phuo
 }
 
@@ -818,6 +896,12 @@ func (phuo *PermissionHistoryUpdateOne) SetNillableRoleName(s *string) *Permissi
 	return phuo
 }
 
+// ClearRoleName clears the value of the "role_name" field.
+func (phuo *PermissionHistoryUpdateOne) ClearRoleName() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearRoleName()
+	return phuo
+}
+
 // SetRoleSuiteID sets the "role_suite_id" field.
 func (phuo *PermissionHistoryUpdateOne) SetRoleSuiteID(s string) *PermissionHistoryUpdateOne {
 	phuo.mutation.SetRoleSuiteID(s)
@@ -849,6 +933,12 @@ func (phuo *PermissionHistoryUpdateOne) SetNillableRoleSuiteName(s *string) *Per
 	if s != nil {
 		phuo.SetRoleSuiteName(*s)
 	}
+	return phuo
+}
+
+// ClearRoleSuiteName clears the value of the "role_suite_name" field.
+func (phuo *PermissionHistoryUpdateOne) ClearRoleSuiteName() *PermissionHistoryUpdateOne {
+	phuo.mutation.ClearRoleSuiteName()
 	return phuo
 }
 
@@ -998,11 +1088,20 @@ func (phuo *PermissionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *Per
 	if value, ok := phuo.mutation.ApproverEmail(); ok {
 		_spec.SetField(permissionhistory.FieldApproverEmail, field.TypeString, value)
 	}
+	if phuo.mutation.ApproverEmailCleared() {
+		_spec.ClearField(permissionhistory.FieldApproverEmail, field.TypeString)
+	}
 	if value, ok := phuo.mutation.EntitlementExpr(); ok {
 		_spec.SetField(permissionhistory.FieldEntitlementExpr, field.TypeString, value)
 	}
+	if phuo.mutation.EntitlementExprCleared() {
+		_spec.ClearField(permissionhistory.FieldEntitlementExpr, field.TypeString)
+	}
 	if value, ok := phuo.mutation.ResolvedExpr(); ok {
 		_spec.SetField(permissionhistory.FieldResolvedExpr, field.TypeString, value)
+	}
+	if phuo.mutation.ResolvedExprCleared() {
+		_spec.ClearField(permissionhistory.FieldResolvedExpr, field.TypeString)
 	}
 	if value, ok := phuo.mutation.ReceiverID(); ok {
 		_spec.SetField(permissionhistory.FieldReceiverID, field.TypeString, value)
@@ -1013,11 +1112,20 @@ func (phuo *PermissionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *Per
 	if value, ok := phuo.mutation.ReceiverEmail(); ok {
 		_spec.SetField(permissionhistory.FieldReceiverEmail, field.TypeString, value)
 	}
+	if phuo.mutation.ReceiverEmailCleared() {
+		_spec.ClearField(permissionhistory.FieldReceiverEmail, field.TypeString)
+	}
 	if value, ok := phuo.mutation.RoleName(); ok {
 		_spec.SetField(permissionhistory.FieldRoleName, field.TypeString, value)
 	}
+	if phuo.mutation.RoleNameCleared() {
+		_spec.ClearField(permissionhistory.FieldRoleName, field.TypeString)
+	}
 	if value, ok := phuo.mutation.RoleSuiteName(); ok {
 		_spec.SetField(permissionhistory.FieldRoleSuiteName, field.TypeString, value)
+	}
+	if phuo.mutation.RoleSuiteNameCleared() {
+		_spec.ClearField(permissionhistory.FieldRoleSuiteName, field.TypeString)
 	}
 	if phuo.mutation.EntitlementCleared() {
 		edge := &sqlgraph.EdgeSpec{

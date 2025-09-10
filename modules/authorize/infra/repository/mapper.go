@@ -278,3 +278,13 @@ func entToGrantResponses(dbGrantResponses []*ent.GrantResponse) []domain.GrantRe
 }
 
 // END: GrantResponse
+
+// START: PermissionHistory
+func entToPermissionHistory(dbPermissionHistory *ent.PermissionHistory) *domain.PermissionHistory {
+	permissionHistory := &domain.PermissionHistory{}
+	model.MustCopy(dbPermissionHistory, permissionHistory)
+
+	return permissionHistory
+}
+
+// END: PermissionHistory
