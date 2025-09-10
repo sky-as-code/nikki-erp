@@ -9,6 +9,7 @@ import (
 	"math"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -31,6 +32,7 @@ type OrganizationQuery struct {
 	withHierarchies *HierarchyLevelQuery
 	withGroups      *GroupQuery
 	withUserOrgs    *UserOrgQuery
+	modifiers       []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -352,8 +354,9 @@ func (oq *OrganizationQuery) Clone() *OrganizationQuery {
 		withGroups:      oq.withGroups.Clone(),
 		withUserOrgs:    oq.withUserOrgs.Clone(),
 		// clone intermediate query.
-		sql:  oq.sql.Clone(),
-		path: oq.path,
+		sql:       oq.sql.Clone(),
+		path:      oq.path,
+		modifiers: append([]func(*sql.Selector){}, oq.modifiers...),
 	}
 }
 
@@ -494,6 +497,9 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
+	}
+	if len(oq.modifiers) > 0 {
+		_spec.Modifiers = oq.modifiers
 	}
 	for i := range hooks {
 		hooks[i](ctx, _spec)
@@ -692,6 +698,9 @@ func (oq *OrganizationQuery) loadUserOrgs(ctx context.Context, query *UserOrgQue
 
 func (oq *OrganizationQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := oq.querySpec()
+	if len(oq.modifiers) > 0 {
+		_spec.Modifiers = oq.modifiers
+	}
 	_spec.Node.Columns = oq.ctx.Fields
 	if len(oq.ctx.Fields) > 0 {
 		_spec.Unique = oq.ctx.Unique != nil && *oq.ctx.Unique
@@ -754,6 +763,9 @@ func (oq *OrganizationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	if oq.ctx.Unique != nil && *oq.ctx.Unique {
 		selector.Distinct()
 	}
+	for _, m := range oq.modifiers {
+		m(selector)
+	}
 	for _, p := range oq.predicates {
 		p(selector)
 	}
@@ -769,6 +781,38 @@ func (oq *OrganizationQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// ForUpdate locks the selected rows against concurrent updates, and prevent them from being
+// updated, deleted or "selected ... for update" by other sessions, until the transaction is
+// either committed or rolled-back.
+func (oq *OrganizationQuery) ForUpdate(opts ...sql.LockOption) *OrganizationQuery {
+	if oq.driver.Dialect() == dialect.Postgres {
+		oq.Unique(false)
+	}
+	oq.modifiers = append(oq.modifiers, func(s *sql.Selector) {
+		s.ForUpdate(opts...)
+	})
+	return oq
+}
+
+// ForShare behaves similarly to ForUpdate, except that it acquires a shared mode lock
+// on any rows that are read. Other sessions can read the rows, but cannot modify them
+// until your transaction commits.
+func (oq *OrganizationQuery) ForShare(opts ...sql.LockOption) *OrganizationQuery {
+	if oq.driver.Dialect() == dialect.Postgres {
+		oq.Unique(false)
+	}
+	oq.modifiers = append(oq.modifiers, func(s *sql.Selector) {
+		s.ForShare(opts...)
+	})
+	return oq
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (oq *OrganizationQuery) Modify(modifiers ...func(s *sql.Selector)) *OrganizationSelect {
+	oq.modifiers = append(oq.modifiers, modifiers...)
+	return oq.Select()
 }
 
 // OrganizationGroupBy is the group-by builder for Organization entities.
@@ -859,4 +903,10 @@ func (os *OrganizationSelect) sqlScan(ctx context.Context, root *OrganizationQue
 	}
 	defer rows.Close()
 	return sql.ScanSlice(rows, v)
+}
+
+// Modify adds a query modifier for attaching custom logic to queries.
+func (os *OrganizationSelect) Modify(modifiers ...func(s *sql.Selector)) *OrganizationSelect {
+	os.modifiers = append(os.modifiers, modifiers...)
+	return os
 }

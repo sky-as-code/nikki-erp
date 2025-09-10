@@ -29,9 +29,13 @@ var slogLevelMap = map[Level]slog.Level{
 }
 
 type LoggerService interface {
+	InnerLogger() any
+	Clone() LoggerService
 	Level() Level
 	SetLevel(lvl Level)
-	InnerLogger() any
+	SetContext(key string, value string)
+	GetContext(key string) string
+	RemoveContext(key string)
 	Debug(message string, data Attr)
 	Debugf(format string, args ...any)
 	Info(message string, data Attr)

@@ -2,8 +2,8 @@ package derived
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/array"
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	it "github.com/sky-as-code/nikki-erp/modules/core/tag/interfaces"
 )
 

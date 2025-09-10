@@ -1,19 +1,17 @@
 package repository
 
 import (
-	"context"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
-
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entAction "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/action"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewActionEntRepository(client *ent.Client) it.ActionRepository {
@@ -26,7 +24,7 @@ type ActionEntRepository struct {
 	client *ent.Client
 }
 
-func (this *ActionEntRepository) Create(ctx context.Context, action domain.Action) (*domain.Action, error) {
+func (this *ActionEntRepository) Create(ctx crud.Context, action domain.Action) (*domain.Action, error) {
 	creation := this.client.Action.Create().
 		SetID(*action.Id).
 		SetEtag(*action.Etag).
@@ -39,7 +37,7 @@ func (this *ActionEntRepository) Create(ctx context.Context, action domain.Actio
 	return database.Mutate(ctx, creation, ent.IsNotFound, entToAction)
 }
 
-func (this *ActionEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.Action, error) {
+func (this *ActionEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.Action, error) {
 	query := this.client.Action.Query().
 		Where(entAction.IDEQ(param.Id)).
 		WithResource().
@@ -48,7 +46,7 @@ func (this *ActionEntRepository) FindById(ctx context.Context, param it.FindById
 	return database.FindOne(ctx, query, ent.IsNotFound, entToAction)
 }
 
-func (this *ActionEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.Action, error) {
+func (this *ActionEntRepository) FindByName(ctx crud.Context, param it.FindByNameParam) (*domain.Action, error) {
 	query := this.client.Action.Query().
 		Where(entAction.NameEQ(param.Name)).
 		Where(entAction.ResourceIDEQ(param.ResourceId))
@@ -56,7 +54,7 @@ func (this *ActionEntRepository) FindByName(ctx context.Context, param it.FindBy
 	return database.FindOne(ctx, query, ent.IsNotFound, entToAction)
 }
 
-func (this *ActionEntRepository) Update(ctx context.Context, action domain.Action, prevEtag model.Etag) (*domain.Action, error) {
+func (this *ActionEntRepository) Update(ctx crud.Context, action domain.Action, prevEtag model.Etag) (*domain.Action, error) {
 	update := this.client.Action.UpdateOneID(*action.Id).
 		SetNillableDescription(action.Description).
 		Where(entAction.EtagEQ(prevEtag))
@@ -69,7 +67,7 @@ func (this *ActionEntRepository) Update(ctx context.Context, action domain.Actio
 	return database.Mutate(ctx, update, ent.IsNotFound, entToAction)
 }
 
-func (this *ActionEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+func (this *ActionEntRepository) DeleteHard(ctx crud.Context, param it.DeleteParam) (int, error) {
 	return this.client.Action.Delete().
 		Where(entAction.IDEQ(param.Id)).
 		Exec(ctx)
@@ -80,7 +78,7 @@ func (this *ActionEntRepository) ParseSearchGraph(criteria *string) (*orm.Predic
 }
 
 func (this *ActionEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.Action], error) {
 	query := this.client.Action.Query().

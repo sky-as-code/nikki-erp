@@ -1,11 +1,10 @@
 package methods
 
 import (
-	"context"
-
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	itLogin "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
 	itPass "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/password"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type LoginMethodPassword struct {
@@ -19,7 +18,7 @@ func (this *LoginMethodPassword) SkipMethod() *itLogin.SkippedMethod {
 	return nil
 }
 
-func (this *LoginMethodPassword) Execute(ctx context.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
+func (this *LoginMethodPassword) Execute(ctx crud.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
 	var result *itPass.VerifyPasswordResult
 	var err error
 	err = deps.Invoke(func(passwordService itPass.PasswordService) error {

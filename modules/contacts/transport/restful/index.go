@@ -1,8 +1,6 @@
 package restful
 
 import (
-	"errors"
-
 	"github.com/labstack/echo/v4"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
@@ -10,24 +8,33 @@ import (
 )
 
 func InitRestfulHandlers() error {
-	err := errors.Join(
-		initPartyRest(),
+	deps.Register(
+		v1.NewPartyRest,
+		v1.NewRelationshipRest,
+		v1.NewCommChannelRest,
 	)
-	return err
-}
-
-func initPartyRest() error {
-	deps.Register(v1.NewPartyRest)
-	return deps.Invoke(func(route *echo.Group, partyRest *v1.PartyRest) {
+	return deps.Invoke(func(route *echo.Group, partyRest *v1.PartyRest, relationshipRest *v1.RelationshipRest, commChannelRest *v1.CommChannelRest) {
 		v1 := route.Group("/v1/contacts")
-		initV1(v1, partyRest)
+		initV1(v1, partyRest, relationshipRest, commChannelRest)
 	})
 }
 
-func initV1(route *echo.Group, partyRest *v1.PartyRest) {
-	route.POST("/parties/tags", partyRest.CreatePartyTag)
-	route.DELETE("/parties/tags/:id", partyRest.DeletePartyTag)
-	route.GET("/parties/tags/:id", partyRest.GetPartyTagById)
-	route.GET("/parties/tags", partyRest.ListPartyTags)
-	route.PUT("/parties/tags/:id", partyRest.UpdatePartyTag)
+func initV1(route *echo.Group, partyRest *v1.PartyRest, relationshipRest *v1.RelationshipRest, commChannelRest *v1.CommChannelRest) {
+	route.POST("/parties", partyRest.CreateParty)
+	route.DELETE("/parties/:id", partyRest.DeleteParty)
+	route.GET("/parties/:id", partyRest.GetPartyById)
+	route.GET("/parties", partyRest.SearchParties)
+	route.PUT("/parties/:id", partyRest.UpdateParty)
+
+	route.POST("/relationships", relationshipRest.CreateRelationship)
+	route.DELETE("/relationships/:id", relationshipRest.DeleteRelationship)
+	route.GET("/relationships/:id", relationshipRest.GetRelationshipById)
+	route.GET("/relationships", relationshipRest.SearchRelationships)
+	route.PUT("/relationships/:id", relationshipRest.UpdateRelationship)
+
+	route.POST("/comm-channels", commChannelRest.CreateCommChannel)
+	route.DELETE("/comm-channels/:id", commChannelRest.DeleteCommChannel)
+	route.GET("/comm-channels/:id", commChannelRest.GetCommChannelById)
+	route.GET("/comm-channels", commChannelRest.SearchCommChannels)
+	route.PUT("/comm-channels/:id", commChannelRest.UpdateCommChannel)
 }

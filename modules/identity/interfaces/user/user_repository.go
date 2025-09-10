@@ -1,26 +1,26 @@
 package user
 
 import (
-	"context"
-
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
 type UserRepository interface {
-	Create(ctx context.Context, user domain.User) (*domain.User, error)
-	DeleteHard(ctx context.Context, param DeleteParam) (int, error)
-	Exists(ctx context.Context, id model.Id) (bool, error)
-	ExistsMulti(ctx context.Context, ids []model.Id) (existing []model.Id, notExisting []model.Id, err error)
-	FindById(ctx context.Context, param FindByIdParam) (*domain.User, error)
-	FindByEmail(ctx context.Context, param FindByEmailParam) (*domain.User, error)
-	FindUsersByHierarchyId(ctx context.Context, param FindByHierarchyIdParam) ([]domain.User, error)
+	Create(ctx crud.Context, user *domain.User) (*domain.User, error)
+	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
+	Exists(ctx crud.Context, id model.Id) (bool, error)
+	ExistsMulti(ctx crud.Context, ids []model.Id) (existing []model.Id, notExisting []model.Id, err error)
+	FindById(ctx crud.Context, param FindByIdParam) (*domain.User, error)
+	FindByIdForUpdate(ctx crud.Context, param FindByIdParam) (*domain.User, *db.DbLock, error)
+	FindByEmail(ctx crud.Context, param FindByEmailParam) (*domain.User, error)
+	FindUsersByHierarchyId(ctx crud.Context, param FindByHierarchyIdParam) ([]domain.User, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx context.Context, param SearchParam) (*crud.PagedResult[domain.User], error)
-	Update(ctx context.Context, user domain.User, prevEtag model.Etag) (*domain.User, error)
+	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.User], error)
+	Update(ctx crud.Context, user *domain.User, prevEtag model.Etag) (*domain.User, error)
 }
 
 type DeleteParam = DeleteUserCommand

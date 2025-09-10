@@ -7311,6 +7311,7 @@ type RevokeRequestMutation struct {
 	created_by                  *string
 	etag                        *string
 	receiver_id                 *string
+	receiver_type               *revokerequest.ReceiverType
 	target_type                 *revokerequest.TargetType
 	target_role_name            *string
 	target_suite_name           *string
@@ -7672,6 +7673,42 @@ func (m *RevokeRequestMutation) OldReceiverID(ctx context.Context) (v string, er
 // ResetReceiverID resets all changes to the "receiver_id" field.
 func (m *RevokeRequestMutation) ResetReceiverID() {
 	m.receiver_id = nil
+}
+
+// SetReceiverType sets the "receiver_type" field.
+func (m *RevokeRequestMutation) SetReceiverType(rt revokerequest.ReceiverType) {
+	m.receiver_type = &rt
+}
+
+// ReceiverType returns the value of the "receiver_type" field in the mutation.
+func (m *RevokeRequestMutation) ReceiverType() (r revokerequest.ReceiverType, exists bool) {
+	v := m.receiver_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReceiverType returns the old "receiver_type" field's value of the RevokeRequest entity.
+// If the RevokeRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevokeRequestMutation) OldReceiverType(ctx context.Context) (v revokerequest.ReceiverType, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReceiverType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReceiverType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReceiverType: %w", err)
+	}
+	return oldValue.ReceiverType, nil
+}
+
+// ResetReceiverType resets all changes to the "receiver_type" field.
+func (m *RevokeRequestMutation) ResetReceiverType() {
+	m.receiver_type = nil
 }
 
 // SetTargetType sets the "target_type" field.
@@ -8110,7 +8147,7 @@ func (m *RevokeRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevokeRequestMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.attachment_url != nil {
 		fields = append(fields, revokerequest.FieldAttachmentURL)
 	}
@@ -8128,6 +8165,9 @@ func (m *RevokeRequestMutation) Fields() []string {
 	}
 	if m.receiver_id != nil {
 		fields = append(fields, revokerequest.FieldReceiverID)
+	}
+	if m.receiver_type != nil {
+		fields = append(fields, revokerequest.FieldReceiverType)
 	}
 	if m.target_type != nil {
 		fields = append(fields, revokerequest.FieldTargetType)
@@ -8167,6 +8207,8 @@ func (m *RevokeRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.Etag()
 	case revokerequest.FieldReceiverID:
 		return m.ReceiverID()
+	case revokerequest.FieldReceiverType:
+		return m.ReceiverType()
 	case revokerequest.FieldTargetType:
 		return m.TargetType()
 	case revokerequest.FieldTargetRoleID:
@@ -8200,6 +8242,8 @@ func (m *RevokeRequestMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldEtag(ctx)
 	case revokerequest.FieldReceiverID:
 		return m.OldReceiverID(ctx)
+	case revokerequest.FieldReceiverType:
+		return m.OldReceiverType(ctx)
 	case revokerequest.FieldTargetType:
 		return m.OldTargetType(ctx)
 	case revokerequest.FieldTargetRoleID:
@@ -8262,6 +8306,13 @@ func (m *RevokeRequestMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetReceiverID(v)
+		return nil
+	case revokerequest.FieldReceiverType:
+		v, ok := value.(revokerequest.ReceiverType)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReceiverType(v)
 		return nil
 	case revokerequest.FieldTargetType:
 		v, ok := value.(revokerequest.TargetType)
@@ -8410,6 +8461,9 @@ func (m *RevokeRequestMutation) ResetField(name string) error {
 		return nil
 	case revokerequest.FieldReceiverID:
 		m.ResetReceiverID()
+		return nil
+	case revokerequest.FieldReceiverType:
+		m.ResetReceiverType()
 		return nil
 	case revokerequest.FieldTargetType:
 		m.ResetTargetType()

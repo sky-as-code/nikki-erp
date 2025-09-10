@@ -12,15 +12,15 @@ put {
 
 body:json {
   {
-      "name": "Your Team",
-      "description": "The people you are working with",
+      "name": "{{$randomJobArea}} Team",
+      "description": "This is {{$randomJobArea}} team",
       "etag": "{{etag}}"
   }
 }
 
 script:post-response {
-  const payload = res.getBody();
-  payload.etag && bru.setVar('etag', payload.etag);
+  const {etag} = res.getBody();
+  etag && bru.setVar('etag', etag);
   
 }
 

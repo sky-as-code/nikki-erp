@@ -1,12 +1,12 @@
 package role_suite
 
-import "context"
+import "github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 type RoleSuiteService interface {
-	CreateRoleSuite(ctx context.Context, cmd CreateRoleSuiteCommand) (*CreateRoleSuiteResult, error)
-	UpdateRoleSuite(ctx context.Context, cmd UpdateRoleSuiteCommand) (*UpdateRoleSuiteResult, error)
-	DeleteHardRoleSuite(ctx context.Context, cmd DeleteRoleSuiteCommand) (*DeleteRoleSuiteResult, error)
-	GetRoleSuiteById(ctx context.Context, cmd GetRoleSuiteByIdQuery) (*GetRoleSuiteByIdResult, error)
-	GetRoleSuitesBySubject(ctx context.Context, query GetRoleSuitesBySubjectQuery) (*GetRoleSuitesBySubjectResult, error)
-	SearchRoleSuites(ctx context.Context, query SearchRoleSuitesCommand) (*SearchRoleSuitesResult, error)
+	CreateRoleSuite(ctx crud.Context, cmd CreateRoleSuiteCommand) (*CreateRoleSuiteResult, error)
+	UpdateRoleSuite(ctx crud.Context, cmd UpdateRoleSuiteCommand) (*UpdateRoleSuiteResult, error)
+	DeleteHardRoleSuite(ctx crud.Context, cmd DeleteRoleSuiteCommand) (*DeleteRoleSuiteResult, error)
+	GetRoleSuiteById(ctx crud.Context, cmd GetRoleSuiteByIdQuery) (*GetRoleSuiteByIdResult, error)
+	GetRoleSuitesBySubject(ctx crud.Context, query GetRoleSuitesBySubjectQuery) (*GetRoleSuitesBySubjectResult, error)
+	SearchRoleSuites(ctx crud.Context, query SearchRoleSuitesCommand) (*SearchRoleSuitesResult, error)
 }

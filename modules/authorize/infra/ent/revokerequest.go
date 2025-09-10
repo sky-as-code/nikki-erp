@@ -31,6 +31,8 @@ type RevokeRequest struct {
 	Etag string `json:"etag,omitempty"`
 	// ReceiverID holds the value of the "receiver_id" field.
 	ReceiverID string `json:"receiver_id,omitempty"`
+	// ReceiverType holds the value of the "receiver_type" field.
+	ReceiverType revokerequest.ReceiverType `json:"receiver_type,omitempty"`
 	// TargetType holds the value of the "target_type" field.
 	TargetType revokerequest.TargetType `json:"target_type,omitempty"`
 	// Must be set NULL before the role is deleted
@@ -98,7 +100,7 @@ func (*RevokeRequest) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case revokerequest.FieldID, revokerequest.FieldAttachmentURL, revokerequest.FieldComment, revokerequest.FieldCreatedBy, revokerequest.FieldEtag, revokerequest.FieldReceiverID, revokerequest.FieldTargetType, revokerequest.FieldTargetRoleID, revokerequest.FieldTargetRoleName, revokerequest.FieldTargetSuiteID, revokerequest.FieldTargetSuiteName, revokerequest.FieldStatus:
+		case revokerequest.FieldID, revokerequest.FieldAttachmentURL, revokerequest.FieldComment, revokerequest.FieldCreatedBy, revokerequest.FieldEtag, revokerequest.FieldReceiverID, revokerequest.FieldReceiverType, revokerequest.FieldTargetType, revokerequest.FieldTargetRoleID, revokerequest.FieldTargetRoleName, revokerequest.FieldTargetSuiteID, revokerequest.FieldTargetSuiteName, revokerequest.FieldStatus:
 			values[i] = new(sql.NullString)
 		case revokerequest.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -160,6 +162,12 @@ func (rr *RevokeRequest) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field receiver_id", values[i])
 			} else if value.Valid {
 				rr.ReceiverID = value.String
+			}
+		case revokerequest.FieldReceiverType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field receiver_type", values[i])
+			} else if value.Valid {
+				rr.ReceiverType = revokerequest.ReceiverType(value.String)
 			}
 		case revokerequest.FieldTargetType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -273,6 +281,9 @@ func (rr *RevokeRequest) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("receiver_id=")
 	builder.WriteString(rr.ReceiverID)
+	builder.WriteString(", ")
+	builder.WriteString("receiver_type=")
+	builder.WriteString(fmt.Sprintf("%v", rr.ReceiverType))
 	builder.WriteString(", ")
 	builder.WriteString("target_type=")
 	builder.WriteString(fmt.Sprintf("%v", rr.TargetType))

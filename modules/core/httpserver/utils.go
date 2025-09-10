@@ -1,10 +1,10 @@
 package httpserver
 
 import (
-	"context"
-
 	"github.com/labstack/echo/v4"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type CmdResult interface {
@@ -14,7 +14,7 @@ type CmdResult interface {
 
 func ServeRequest[THttpReq any, THttpResp any, TSvcCommand any, TSvcResult CmdResult](
 	echoCtx echo.Context,
-	serviceFn func(ctx context.Context, cmd TSvcCommand) (*TSvcResult, error),
+	serviceFn func(ctx crud.Context, cmd TSvcCommand) (*TSvcResult, error),
 	requestToCommandFn func(request THttpReq) TSvcCommand,
 	resultToResponseFn func(result TSvcResult) THttpResp,
 	jsonSuccessFn func(echo.Context, any) error,
@@ -25,7 +25,8 @@ func ServeRequest[THttpReq any, THttpResp any, TSvcCommand any, TSvcResult CmdRe
 	}
 
 	cmd := requestToCommandFn(request)
-	result, err := serviceFn(echoCtx.Request().Context(), cmd)
+	reqCtx := echoCtx.Request().Context().(crud.Context)
+	result, err := serviceFn(reqCtx, cmd)
 
 	if err != nil {
 		return err

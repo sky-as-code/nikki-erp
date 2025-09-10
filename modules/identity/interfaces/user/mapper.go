@@ -5,13 +5,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
-func (this CreateUserCommand) ToUser() *domain.User {
+func (this CreateUserCommand) ToDomainModel() *domain.User {
 	user := &domain.User{}
 	model.MustCopy(this, user)
 	return user
 }
 
-func (this UpdateUserCommand) ToUser() *domain.User {
+func (this UpdateUserCommand) ToDomainModel() *domain.User {
 	user := &domain.User{}
 	model.MustCopy(this, user)
 	return user

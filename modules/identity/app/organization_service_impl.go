@@ -1,14 +1,12 @@
 package app
 
 import (
-	"context"
-
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
@@ -29,7 +27,7 @@ type OrganizationServiceImpl struct {
 	orgRepo itOrg.OrganizationRepository
 }
 
-func (this *OrganizationServiceImpl) CreateOrganization(ctx context.Context, cmd itOrg.CreateOrganizationCommand) (result *itOrg.CreateOrganizationResult, err error) {
+func (this *OrganizationServiceImpl) CreateOrganization(ctx crud.Context, cmd itOrg.CreateOrganizationCommand) (result *itOrg.CreateOrganizationResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "create organization"); e != nil {
 			err = e
@@ -67,7 +65,7 @@ func (this *OrganizationServiceImpl) CreateOrganization(ctx context.Context, cmd
 	}, nil
 }
 
-func (this *OrganizationServiceImpl) UpdateOrganization(ctx context.Context, cmd itOrg.UpdateOrganizationCommand) (result *itOrg.UpdateOrganizationResult, err error) {
+func (this *OrganizationServiceImpl) UpdateOrganization(ctx crud.Context, cmd itOrg.UpdateOrganizationCommand) (result *itOrg.UpdateOrganizationResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "update organization"); e != nil {
 			err = e
@@ -117,7 +115,7 @@ func (this *OrganizationServiceImpl) UpdateOrganization(ctx context.Context, cmd
 	}, nil
 }
 
-func (this *OrganizationServiceImpl) assertOrgUnique(ctx context.Context, newSlug *model.Slug, vErrs *ft.ValidationErrors) error {
+func (this *OrganizationServiceImpl) assertOrgUnique(ctx crud.Context, newSlug *model.Slug, vErrs *ft.ValidationErrors) error {
 	if newSlug == nil {
 		return nil
 	}
@@ -141,7 +139,7 @@ func (this *OrganizationServiceImpl) assertCorrectEtag(updatedEtag model.Etag, d
 	}
 }
 
-func (this *OrganizationServiceImpl) assertOrgExists(ctx context.Context, slug model.Slug, vErrs *ft.ValidationErrors) (dbOrg *domain.Organization, err error) {
+func (this *OrganizationServiceImpl) assertOrgExists(ctx crud.Context, slug model.Slug, vErrs *ft.ValidationErrors) (dbOrg *domain.Organization, err error) {
 	dbOrg, err = this.orgRepo.FindBySlug(ctx, itOrg.GetOrganizationBySlugQuery{
 		Slug:           slug,
 		IncludeDeleted: true,
@@ -164,12 +162,12 @@ func (this *OrganizationServiceImpl) sanitizeOrg(org *domain.Organization) {
 	}
 }
 
-func (this *OrganizationServiceImpl) setOrgDefaults(ctx context.Context, org *domain.Organization) {
+func (this *OrganizationServiceImpl) setOrgDefaults(ctx crud.Context, org *domain.Organization) {
 	org.SetDefaults()
 	org.Status = util.ToPtr(domain.OrgStatusActive)
 }
 
-func (this *OrganizationServiceImpl) DeleteOrganization(ctx context.Context, cmd itOrg.DeleteOrganizationCommand) (result *itOrg.DeleteOrganizationResult, err error) {
+func (this *OrganizationServiceImpl) DeleteOrganization(ctx crud.Context, cmd itOrg.DeleteOrganizationCommand) (result *itOrg.DeleteOrganizationResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "delete organization"); e != nil {
 			err = e
@@ -208,7 +206,7 @@ func (this *OrganizationServiceImpl) DeleteOrganization(ctx context.Context, cmd
 	return crud.NewSuccessDeletionResult(*dbOrg.Id, &deletedCount), nil
 }
 
-func (this *OrganizationServiceImpl) GetOrganizationBySlug(ctx context.Context, query itOrg.GetOrganizationBySlugQuery) (result *itOrg.GetOrganizationBySlugResult, err error) {
+func (this *OrganizationServiceImpl) GetOrganizationBySlug(ctx crud.Context, query itOrg.GetOrganizationBySlugQuery) (result *itOrg.GetOrganizationBySlugResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "get organization by slug"); e != nil {
 			err = e
@@ -241,7 +239,7 @@ func (this *OrganizationServiceImpl) GetOrganizationBySlug(ctx context.Context, 
 	}, nil
 }
 
-func (this *OrganizationServiceImpl) SearchOrganizations(ctx context.Context, query itOrg.SearchOrganizationsQuery) (result *itOrg.SearchOrganizationsResult, err error) {
+func (this *OrganizationServiceImpl) SearchOrganizations(ctx crud.Context, query itOrg.SearchOrganizationsQuery) (result *itOrg.SearchOrganizationsResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "search organizations"); e != nil {
 			err = e

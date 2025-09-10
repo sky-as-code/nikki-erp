@@ -500,6 +500,26 @@ func ReceiverIDContainsFold(v string) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldContainsFold(FieldReceiverID, v))
 }
 
+// ReceiverTypeEQ applies the EQ predicate on the "receiver_type" field.
+func ReceiverTypeEQ(v ReceiverType) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldEQ(FieldReceiverType, v))
+}
+
+// ReceiverTypeNEQ applies the NEQ predicate on the "receiver_type" field.
+func ReceiverTypeNEQ(v ReceiverType) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldNEQ(FieldReceiverType, v))
+}
+
+// ReceiverTypeIn applies the In predicate on the "receiver_type" field.
+func ReceiverTypeIn(vs ...ReceiverType) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldIn(FieldReceiverType, vs...))
+}
+
+// ReceiverTypeNotIn applies the NotIn predicate on the "receiver_type" field.
+func ReceiverTypeNotIn(vs ...ReceiverType) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldNotIn(FieldReceiverType, vs...))
+}
+
 // TargetTypeEQ applies the EQ predicate on the "target_type" field.
 func TargetTypeEQ(v TargetType) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldEQ(FieldTargetType, v))

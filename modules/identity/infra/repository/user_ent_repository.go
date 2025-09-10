@@ -1,14 +1,14 @@
 package repository
 
 import (
-	"context"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/common/array"
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
@@ -26,7 +26,7 @@ type UserEntRepository struct {
 	client *ent.Client
 }
 
-func (this *UserEntRepository) Create(ctx context.Context, user domain.User) (*domain.User, error) {
+func (this *UserEntRepository) Create(ctx crud.Context, user *domain.User) (*domain.User, error) {
 	creation := this.client.User.Create().
 		SetID(*user.Id).
 		SetNillableAvatarURL(user.AvatarUrl).
@@ -38,7 +38,7 @@ func (this *UserEntRepository) Create(ctx context.Context, user domain.User) (*d
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) Update(ctx context.Context, user domain.User, prevEtag model.Etag) (*domain.User, error) {
+func (this *UserEntRepository) Update(ctx crud.Context, user *domain.User, prevEtag model.Etag) (*domain.User, error) {
 	update := this.client.User.UpdateOneID(*user.Id).
 		SetNillableAvatarURL(user.AvatarUrl).
 		SetNillableDisplayName(user.DisplayName).
@@ -56,19 +56,19 @@ func (this *UserEntRepository) Update(ctx context.Context, user domain.User, pre
 	return db.Mutate(ctx, update, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) DeleteHard(ctx context.Context, param it.DeleteParam) (int, error) {
+func (this *UserEntRepository) DeleteHard(ctx crud.Context, param it.DeleteParam) (int, error) {
 	return this.client.User.Delete().
 		Where(entUser.ID(param.Id)).
 		Exec(ctx)
 }
 
-func (this *UserEntRepository) Exists(ctx context.Context, id model.Id) (bool, error) {
+func (this *UserEntRepository) Exists(ctx crud.Context, id model.Id) (bool, error) {
 	return this.client.User.Query().
 		Where(entUser.ID(id)).
 		Exist(ctx)
 }
 
-func (this *UserEntRepository) ExistsMulti(ctx context.Context, ids []model.Id) (existing []model.Id, notExisting []model.Id, err error) {
+func (this *UserEntRepository) ExistsMulti(ctx crud.Context, ids []model.Id) (existing []model.Id, notExisting []model.Id, err error) {
 	dbEntities, err := this.client.User.Query().
 		Where(entUser.IDIn(ids...)).
 		Select(entUser.FieldID).
@@ -89,11 +89,16 @@ func (this *UserEntRepository) ExistsMulti(ctx context.Context, ids []model.Id) 
 	return existing, notExisting, nil
 }
 
-func (this *UserEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.User, error) {
-	query := this.client.User.Query().
-		Where(entUser.ID(param.Id)).
-		WithGroups().
-		WithOrgs()
+func (this *UserEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.User, error) {
+	query := this.client.User.Query().Where(entUser.ID(param.Id))
+
+	if param.WithGroup {
+		query = query.WithGroups()
+	}
+
+	if param.WithOrg {
+		query = query.WithOrgs()
+	}
 
 	if param.Status != nil {
 		query = query.Where(entUser.StatusEQ(string(*param.Status)))
@@ -102,7 +107,20 @@ func (this *UserEntRepository) FindById(ctx context.Context, param it.FindByIdPa
 	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) FindByEmail(ctx context.Context, param it.FindByEmailParam) (*domain.User, error) {
+func (this *UserEntRepository) FindByIdForUpdate(ctx crud.Context, param it.FindByIdParam) (*domain.User, *db.DbLock, error) {
+	tx, _ := this.client.Tx(ctx)
+	query := tx.User.Query().
+		Where(entUser.ID(param.Id)).
+		ForUpdate(sql.WithLockAction(sql.NoWait))
+
+	if param.Status != nil {
+		query = query.Where(entUser.StatusEQ(string(*param.Status)))
+	}
+
+	return db.FindOneForUpdate[ent.User, domain.User](ctx, query, ent.IsNotFound, entToUser, tx)
+}
+
+func (this *UserEntRepository) FindByEmail(ctx crud.Context, param it.FindByEmailParam) (*domain.User, error) {
 	query := this.client.User.Query().
 		Where(entUser.EmailEQ(param.Email)).
 		WithGroups().
@@ -115,7 +133,7 @@ func (this *UserEntRepository) FindByEmail(ctx context.Context, param it.FindByE
 	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) FindUsersByHierarchyId(ctx context.Context, param it.FindByHierarchyIdParam) ([]domain.User, error) {
+func (this *UserEntRepository) FindUsersByHierarchyId(ctx crud.Context, param it.FindByHierarchyIdParam) ([]domain.User, error) {
 	query := this.client.User.Query().
 		Where(entUser.HierarchyIDEQ(string(param.HierarchyId))).
 		WithHierarchy().
@@ -130,7 +148,7 @@ func (this *UserEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicat
 }
 
 func (this *UserEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.User], error) {
 	query := this.client.User.Query()

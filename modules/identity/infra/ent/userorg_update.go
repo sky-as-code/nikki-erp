@@ -17,8 +17,9 @@ import (
 // UserOrgUpdate is the builder for updating UserOrg entities.
 type UserOrgUpdate struct {
 	config
-	hooks    []Hook
-	mutation *UserOrgMutation
+	hooks     []Hook
+	mutation  *UserOrgMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Where appends a list predicates to the UserOrgUpdate builder.
@@ -70,6 +71,12 @@ func (uou *UserOrgUpdate) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (uou *UserOrgUpdate) Modify(modifiers ...func(u *sql.UpdateBuilder)) *UserOrgUpdate {
+	uou.modifiers = append(uou.modifiers, modifiers...)
+	return uou
+}
+
 func (uou *UserOrgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := uou.check(); err != nil {
 		return n, err
@@ -82,6 +89,7 @@ func (uou *UserOrgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	_spec.AddModifiers(uou.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, uou.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{userorg.Label}
@@ -97,9 +105,10 @@ func (uou *UserOrgUpdate) sqlSave(ctx context.Context) (n int, err error) {
 // UserOrgUpdateOne is the builder for updating a single UserOrg entity.
 type UserOrgUpdateOne struct {
 	config
-	fields   []string
-	hooks    []Hook
-	mutation *UserOrgMutation
+	fields    []string
+	hooks     []Hook
+	mutation  *UserOrgMutation
+	modifiers []func(*sql.UpdateBuilder)
 }
 
 // Mutation returns the UserOrgMutation object of the builder.
@@ -158,6 +167,12 @@ func (uouo *UserOrgUpdateOne) check() error {
 	return nil
 }
 
+// Modify adds a statement modifier for attaching custom logic to the UPDATE statement.
+func (uouo *UserOrgUpdateOne) Modify(modifiers ...func(u *sql.UpdateBuilder)) *UserOrgUpdateOne {
+	uouo.modifiers = append(uouo.modifiers, modifiers...)
+	return uouo
+}
+
 func (uouo *UserOrgUpdateOne) sqlSave(ctx context.Context) (_node *UserOrg, err error) {
 	if err := uouo.check(); err != nil {
 		return _node, err
@@ -189,6 +204,7 @@ func (uouo *UserOrgUpdateOne) sqlSave(ctx context.Context) (_node *UserOrg, err 
 			}
 		}
 	}
+	_spec.AddModifiers(uouo.modifiers...)
 	_node = &UserOrg{config: uouo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues

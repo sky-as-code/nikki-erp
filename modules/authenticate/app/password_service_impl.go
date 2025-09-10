@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"regexp"
 	"time"
 
@@ -19,6 +18,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/password"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -51,7 +51,7 @@ type PasswordServiceImpl struct {
 	subjectHelper subjectHelper
 }
 
-func (this *PasswordServiceImpl) CreateOtpPassword(ctx context.Context, cmd it.CreateOtpPasswordCommand) (_ *it.CreateOtpPasswordResult, err error) {
+func (this *PasswordServiceImpl) CreateOtpPassword(ctx crud.Context, cmd it.CreateOtpPasswordCommand) (_ *it.CreateOtpPasswordResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "create otp password"); e != nil {
 			err = e
@@ -128,7 +128,7 @@ func (this *PasswordServiceImpl) createOtp(username string) createOtpResult {
 	return result
 }
 
-func (this *PasswordServiceImpl) ConfirmOtpPassword(ctx context.Context, cmd it.ConfirmOtpPasswordCommand) (_ *it.ConfirmOtpPasswordResult, err error) {
+func (this *PasswordServiceImpl) ConfirmOtpPassword(ctx crud.Context, cmd it.ConfirmOtpPasswordCommand) (_ *it.ConfirmOtpPasswordResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "confirm otp password"); e != nil {
 			err = e
@@ -199,7 +199,7 @@ func (this *PasswordServiceImpl) createOtpRecovery(cmd it.ConfirmOtpPasswordComm
 	return recoveryCodes
 }
 
-func (this *PasswordServiceImpl) CreateTempPassword(ctx context.Context, cmd it.CreateTempPasswordCommand) (_ *it.CreateTempPasswordResult, err error) {
+func (this *PasswordServiceImpl) CreateTempPassword(ctx crud.Context, cmd it.CreateTempPasswordCommand) (_ *it.CreateTempPasswordResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "create temp password"); e != nil {
 			err = e
@@ -253,7 +253,7 @@ func (this *PasswordServiceImpl) CreateTempPassword(ctx context.Context, cmd it.
 	}, nil
 }
 
-func (this *PasswordServiceImpl) SetPassword(ctx context.Context, cmd it.SetPasswordCommand) (_ *it.SetPasswordResult, err error) {
+func (this *PasswordServiceImpl) SetPassword(ctx crud.Context, cmd it.SetPasswordCommand) (_ *it.SetPasswordResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "create attempt attempt"); e != nil {
 			err = e
@@ -332,7 +332,7 @@ func (this *PasswordServiceImpl) validateNewPass(curPassHash []byte, newPass str
 	}
 }
 
-func (this *PasswordServiceImpl) VerifyPassword(ctx context.Context, cmd it.VerifyPasswordQuery) (_ *it.VerifyPasswordResult, err error) {
+func (this *PasswordServiceImpl) VerifyPassword(ctx crud.Context, cmd it.VerifyPasswordQuery) (_ *it.VerifyPasswordResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "verify password"); e != nil {
 			err = e
@@ -397,7 +397,7 @@ func (this *PasswordServiceImpl) validateCurrentPass(curPassHash []byte, curPass
 	return true, ""
 }
 
-func (this *PasswordServiceImpl) VerifyOtpCode(ctx context.Context, cmd it.VerifyOtpCodeQuery) (_ *it.VerifyOtpCodeResult, err error) {
+func (this *PasswordServiceImpl) VerifyOtpCode(ctx crud.Context, cmd it.VerifyOtpCodeQuery) (_ *it.VerifyOtpCodeResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "verify otp code"); e != nil {
 			err = e
@@ -492,7 +492,7 @@ func (this *PasswordServiceImpl) verifyOtpCode(otpCode domain.OtpCode, passStore
 	return true, ""
 }
 
-func (this *PasswordServiceImpl) tryFetchPassStore(ctx context.Context, subjectType domain.SubjectType, subjectRef *model.Id, username *string, vErrs *ft.ValidationErrors) (*domain.PasswordStore, *loginSubject, error) {
+func (this *PasswordServiceImpl) tryFetchPassStore(ctx crud.Context, subjectType domain.SubjectType, subjectRef *model.Id, username *string, vErrs *ft.ValidationErrors) (*domain.PasswordStore, *loginSubject, error) {
 	subject, err := this.subjectHelper.assertSubjectExists(ctx, subjectType, subjectRef, username, vErrs)
 	ft.PanicOnErr(err)
 
@@ -506,7 +506,7 @@ func (this *PasswordServiceImpl) tryFetchPassStore(ctx context.Context, subjectT
 	return passStore, subject, nil
 }
 
-func (this *PasswordServiceImpl) findPasswordStore(ctx context.Context, subjectType domain.SubjectType, subjectRef model.Id) (*domain.PasswordStore, error) {
+func (this *PasswordServiceImpl) findPasswordStore(ctx crud.Context, subjectType domain.SubjectType, subjectRef model.Id) (*domain.PasswordStore, error) {
 	pass, err := this.passwordRepo.FindBySubject(ctx, it.FindBySubjectParam{
 		SubjectType: subjectType,
 		SubjectRef:  subjectRef,
@@ -543,7 +543,7 @@ func checkPasswordPolicy(password string) bool {
 	return hasLowercase && hasUppercase && hasDigit && isOnlyAllowedChars
 }
 
-func (this *PasswordServiceImpl) upsertPassStore(ctx context.Context, curPassStore *domain.PasswordStore, newPassStore domain.PasswordStore) (*domain.PasswordStore, error) {
+func (this *PasswordServiceImpl) upsertPassStore(ctx crud.Context, curPassStore *domain.PasswordStore, newPassStore domain.PasswordStore) (*domain.PasswordStore, error) {
 	var passStore *domain.PasswordStore
 	var err error
 	if curPassStore != nil {

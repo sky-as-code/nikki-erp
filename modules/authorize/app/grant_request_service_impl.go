@@ -1,13 +1,12 @@
 package app
 
 import (
-	"context"
-
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	itGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_request"
@@ -50,7 +49,7 @@ type GrantRequestServiceImpl struct {
 	cqrsBus               cqrs.CqrsBus
 }
 
-func (this *GrantRequestServiceImpl) CreateGrantRequest(ctx context.Context, cmd itGrantRequest.CreateGrantRequestCommand) (result *itGrantRequest.CreateGrantRequestResult, err error) {
+func (this *GrantRequestServiceImpl) CreateGrantRequest(ctx crud.Context, cmd itGrantRequest.CreateGrantRequestCommand) (result *itGrantRequest.CreateGrantRequestResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "create grant request"); e != nil {
 			err = e
@@ -102,7 +101,7 @@ func (this *GrantRequestServiceImpl) CreateGrantRequest(ctx context.Context, cmd
 	}, nil
 }
 
-func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx context.Context, cmd itGrantRequest.RespondToGrantRequestCommand) (result *itGrantRequest.RespondToGrantRequestResult, err error) {
+func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx crud.Context, cmd itGrantRequest.RespondToGrantRequestCommand) (result *itGrantRequest.RespondToGrantRequestResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "respond to grant request"); e != nil {
 			err = e
@@ -146,7 +145,7 @@ func (this *GrantRequestServiceImpl) setGrantRequestDefaults(grantRequest *domai
 	grantRequest.SetDefaults()
 }
 
-func (this *GrantRequestServiceImpl) assertTarget(ctx context.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) {
+func (this *GrantRequestServiceImpl) assertTarget(ctx crud.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) {
 	switch *grantRequest.TargetType {
 	case domain.GrantRequestTargetTypeRole:
 		role, err := this.roleRepo.FindById(ctx, itRole.FindByIdParam{Id: *grantRequest.TargetRef})
@@ -169,7 +168,7 @@ func (this *GrantRequestServiceImpl) assertTarget(ctx context.Context, grantRequ
 	}
 }
 
-func (this *GrantRequestServiceImpl) assertReceiver(ctx context.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) {
+func (this *GrantRequestServiceImpl) assertReceiver(ctx crud.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) {
 	switch *grantRequest.ReceiverType {
 	case domain.ReceiverTypeUser:
 		existCmd := &itUser.UserExistsCommand{
@@ -227,7 +226,7 @@ func (this *GrantRequestServiceImpl) validateTarget(isRequestable, isRequiredAtt
 	}
 }
 
-func (this *GrantRequestServiceImpl) assertReceiverNotAlreadyGranted(ctx context.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) {
+func (this *GrantRequestServiceImpl) assertReceiverNotAlreadyGranted(ctx crud.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) {
 	switch *grantRequest.TargetType {
 	case domain.GrantRequestTargetTypeRole:
 		exist, err := this.roleRepo.ExistUserWithRole(ctx, itRole.ExistUserWithRoleParam{
@@ -252,7 +251,7 @@ func (this *GrantRequestServiceImpl) assertReceiverNotAlreadyGranted(ctx context
 	}
 }
 
-func (this *GrantRequestServiceImpl) assertNoPendingGrantRequest(ctx context.Context, cmd itGrantRequest.CreateGrantRequestCommand, vErrs *fault.ValidationErrors) error {
+func (this *GrantRequestServiceImpl) assertNoPendingGrantRequest(ctx crud.Context, cmd itGrantRequest.CreateGrantRequestCommand, vErrs *fault.ValidationErrors) error {
 	pendingRequests, err := this.grantRequestRepo.FindPendingByReceiverAndTarget(ctx, cmd.ReceiverId, cmd.TargetRef, domain.GrantRequestTargetType(cmd.TargetType))
 	fault.PanicOnErr(err)
 
@@ -263,7 +262,7 @@ func (this *GrantRequestServiceImpl) assertNoPendingGrantRequest(ctx context.Con
 	return nil
 }
 
-func (this *GrantRequestServiceImpl) setupApprovalChain(ctx context.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) error {
+func (this *GrantRequestServiceImpl) setupApprovalChain(ctx crud.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) error {
 	status := domain.PendingGrantRequestStatus
 	grantRequest.Status = &status
 
@@ -288,7 +287,7 @@ func (this *GrantRequestServiceImpl) setupApprovalChain(ctx context.Context, gra
 	return nil
 }
 
-func (this *GrantRequestServiceImpl) findDirectApprover(ctx context.Context, userId model.Id, vErrs *fault.ValidationErrors) (*string, error) {
+func (this *GrantRequestServiceImpl) findDirectApprover(ctx crud.Context, userId model.Id, vErrs *fault.ValidationErrors) (*string, error) {
 	existCmd := &itUser.FindDirectApproverQuery{
 		Id: userId,
 	}
@@ -311,7 +310,7 @@ func (this *GrantRequestServiceImpl) findDirectApprover(ctx context.Context, use
 	return existRes.Data.Id, nil
 }
 
-func (this *GrantRequestServiceImpl) findOwner(ctx context.Context, targetId string, targetType domain.GrantRequestTargetType, vErrs *fault.ValidationErrors) (*string, error) {
+func (this *GrantRequestServiceImpl) findOwner(ctx crud.Context, targetId string, targetType domain.GrantRequestTargetType, vErrs *fault.ValidationErrors) (*string, error) {
 	switch targetType {
 	case domain.GrantRequestTargetTypeRole:
 		role, err := this.roleRepo.FindById(ctx, itRole.FindByIdParam{Id: targetId})
@@ -343,7 +342,7 @@ func (this *GrantRequestServiceImpl) sendNotification(userId string, message str
 	return nil
 }
 
-func (this *GrantRequestServiceImpl) processGrantResponse(ctx context.Context, dbGrantRequest *domain.GrantRequest, cmd itGrantRequest.RespondToGrantRequestCommand) (*domain.GrantRequest, error) {
+func (this *GrantRequestServiceImpl) processGrantResponse(ctx crud.Context, dbGrantRequest *domain.GrantRequest, cmd itGrantRequest.RespondToGrantRequestCommand) (*domain.GrantRequest, error) {
 	if cmd.Decision == domain.GrantRequestDecisionDeny {
 		return this.handleGrantDenial(ctx, dbGrantRequest)
 	}
@@ -368,7 +367,7 @@ func (this *GrantRequestServiceImpl) processGrantResponse(ctx context.Context, d
 	}
 }
 
-func (this *GrantRequestServiceImpl) handleGrantDenial(ctx context.Context, dbGrantRequest *domain.GrantRequest) (*domain.GrantRequest, error) {
+func (this *GrantRequestServiceImpl) handleGrantDenial(ctx crud.Context, dbGrantRequest *domain.GrantRequest) (*domain.GrantRequest, error) {
 	status := domain.RejectedGrantRequestStatus
 	dbGrantRequest.Status = &status
 
@@ -378,7 +377,7 @@ func (this *GrantRequestServiceImpl) handleGrantDenial(ctx context.Context, dbGr
 	return updatedGrantRequest, this.sendNotification(*updatedGrantRequest.RequestorId, "Your grant request was rejected")
 }
 
-func (this *GrantRequestServiceImpl) createGrantResponse(ctx context.Context, cmd itGrantRequest.RespondToGrantRequestCommand) error {
+func (this *GrantRequestServiceImpl) createGrantResponse(ctx crud.Context, cmd itGrantRequest.RespondToGrantRequestCommand) error {
 	isApproved := true
 	grantResponse := &domain.GrantResponse{
 		RequestId:   &cmd.Id,
@@ -392,7 +391,7 @@ func (this *GrantRequestServiceImpl) createGrantResponse(ctx context.Context, cm
 	return err
 }
 
-func (this *GrantRequestServiceImpl) getApprovalChainInfo(ctx context.Context, dbGrantRequest *domain.GrantRequest) (*string, *string, error) {
+func (this *GrantRequestServiceImpl) getApprovalChainInfo(ctx crud.Context, dbGrantRequest *domain.GrantRequest) (*string, *string, error) {
 	managerId, err := this.findDirectApprover(ctx, *dbGrantRequest.ReceiverId, nil)
 	if err != nil {
 		return nil, nil, err
@@ -424,11 +423,11 @@ func (this *GrantRequestServiceImpl) determineApprovalType(responderId model.Id,
 	return ApprovalTypeNone
 }
 
-func (this *GrantRequestServiceImpl) handleManagerApproval(ctx context.Context, dbGrantRequest *domain.GrantRequest, ownerId *string) (*domain.GrantRequest, error) {
+func (this *GrantRequestServiceImpl) handleManagerApproval(ctx crud.Context, dbGrantRequest *domain.GrantRequest, ownerId *string) (*domain.GrantRequest, error) {
 	return dbGrantRequest, this.sendNotification(*ownerId, "Manager approved: You have a grant request to approve (final approval)")
 }
 
-func (this *GrantRequestServiceImpl) handleFinalApproval(ctx context.Context, dbGrantRequest *domain.GrantRequest, approverId model.Id) (*domain.GrantRequest, error) {
+func (this *GrantRequestServiceImpl) handleFinalApproval(ctx crud.Context, dbGrantRequest *domain.GrantRequest, approverId model.Id) (*domain.GrantRequest, error) {
 	status := domain.ApprovedGrantRequestStatus
 	dbGrantRequest.Status = &status
 	approverIdStr := string(approverId)
@@ -446,7 +445,7 @@ func (this *GrantRequestServiceImpl) handleFinalApproval(ctx context.Context, db
 	return updatedGrantRequest, this.sendNotification(*updatedGrantRequest.RequestorId, "Your grant request was approved and access has been granted")
 }
 
-func (this *GrantRequestServiceImpl) assertGrantRequestExists(ctx context.Context, grantRequestID model.Id, vErrs *fault.ValidationErrors) (dbGrantRequest *domain.GrantRequest, err error) {
+func (this *GrantRequestServiceImpl) assertGrantRequestExists(ctx crud.Context, grantRequestID model.Id, vErrs *fault.ValidationErrors) (dbGrantRequest *domain.GrantRequest, err error) {
 	dbGrantRequest, err = this.grantRequestRepo.FindById(ctx, itGrantRequest.FindByIdParam{Id: grantRequestID})
 	fault.PanicOnErr(err)
 
@@ -460,7 +459,7 @@ func (this *GrantRequestServiceImpl) assertGrantRequestExists(ctx context.Contex
 	return
 }
 
-func (this *GrantRequestServiceImpl) assertValidApprover(ctx context.Context, request *domain.GrantRequest, responderId model.Id, vErrs *fault.ValidationErrors) error {
+func (this *GrantRequestServiceImpl) assertValidApprover(ctx crud.Context, request *domain.GrantRequest, responderId model.Id, vErrs *fault.ValidationErrors) error {
 	if request == nil {
 		return nil
 	}
@@ -475,7 +474,7 @@ func (this *GrantRequestServiceImpl) assertValidApprover(ctx context.Context, re
 	return nil
 }
 
-func (this *GrantRequestServiceImpl) isValidApprover(ctx context.Context, request *domain.GrantRequest, responderId model.Id) (bool, error) {
+func (this *GrantRequestServiceImpl) isValidApprover(ctx crud.Context, request *domain.GrantRequest, responderId model.Id) (bool, error) {
 	managerId, err := this.findDirectApprover(ctx, *request.ReceiverId, nil)
 	if err != nil {
 		return false, err
@@ -497,7 +496,7 @@ func (this *GrantRequestServiceImpl) isValidApprover(ctx context.Context, reques
 	return false, nil
 }
 
-func (this *GrantRequestServiceImpl) grantAccess(ctx context.Context, request *domain.GrantRequest) error {
+func (this *GrantRequestServiceImpl) grantAccess(ctx crud.Context, request *domain.GrantRequest) error {
 	switch *request.TargetType {
 	case domain.GrantRequestTargetTypeRole:
 		return this.createRoleUser(ctx, request)
@@ -511,7 +510,7 @@ func (this *GrantRequestServiceImpl) grantAccess(ctx context.Context, request *d
 	}
 }
 
-func (this *GrantRequestServiceImpl) createRoleUser(ctx context.Context, request *domain.GrantRequest) error {
+func (this *GrantRequestServiceImpl) createRoleUser(ctx crud.Context, request *domain.GrantRequest) error {
 	err := this.roleRepo.AddRemoveUser(ctx, itRole.AddRemoveUserParam{
 		Id:           *request.TargetRef,
 		ApproverID:   *request.ApprovalId,
@@ -524,7 +523,7 @@ func (this *GrantRequestServiceImpl) createRoleUser(ctx context.Context, request
 	return nil
 }
 
-func (this *GrantRequestServiceImpl) createRoleSuiteUser(ctx context.Context, request *domain.GrantRequest) error {
+func (this *GrantRequestServiceImpl) createRoleSuiteUser(ctx crud.Context, request *domain.GrantRequest) error {
 	err := this.suiteRepo.AddRemoveUser(ctx, itRoleSuite.AddRemoveUserParam{
 		Id:           *request.TargetRef,
 		ApproverID:   *request.ApprovalId,
@@ -537,7 +536,7 @@ func (this *GrantRequestServiceImpl) createRoleSuiteUser(ctx context.Context, re
 	return nil
 }
 
-func (this *GrantRequestServiceImpl) createPermissionHistory(ctx context.Context, request *domain.GrantRequest, approverId model.Id) error {
+func (this *GrantRequestServiceImpl) createPermissionHistory(ctx crud.Context, request *domain.GrantRequest, approverId model.Id) error {
 	// TODO: Implement Permission History creation
 	// This will require PermissionHistory repository
 	// reason := "role_added"

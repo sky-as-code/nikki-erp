@@ -43,6 +43,10 @@ func (RevokeRequestMixin) Fields() []ent.Field {
 		field.String("receiver_id").
 			Immutable(),
 
+		field.Enum("receiver_type").
+			Values("user", "group").
+			Immutable(),
+
 		field.Enum("target_type").
 			Values("role", "suite").
 			Immutable(),

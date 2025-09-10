@@ -1,9 +1,7 @@
 package entitlement_assignment
 
-import (
-	"context"
-)
+import "github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 type EntitlementAssignmentService interface {
-	FindAllBySubject(ctx context.Context, query GetAllEntitlementAssignmentBySubjectQuery) (*GetAllEntitlementAssignmentBySubjectResult, error)
+	FindAllBySubject(ctx crud.Context, query GetAllEntitlementAssignmentBySubjectQuery) (*GetAllEntitlementAssignmentBySubjectResult, error)
 }

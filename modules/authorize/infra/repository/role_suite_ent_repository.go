@@ -1,13 +1,12 @@
 package repository
 
 import (
-	"context"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
@@ -30,7 +29,7 @@ type RoleSuiteEntRepository struct {
 	client *ent.Client
 }
 
-func (this *RoleSuiteEntRepository) Create(ctx context.Context, roleSuite domain.RoleSuite, roleIds []model.Id) (*domain.RoleSuite, error) {
+func (this *RoleSuiteEntRepository) Create(ctx crud.Context, roleSuite domain.RoleSuite, roleIds []model.Id) (*domain.RoleSuite, error) {
 	creation := this.client.RoleSuite.Create().
 		SetID(*roleSuite.Id).
 		SetName(*roleSuite.Name).
@@ -52,7 +51,7 @@ func (this *RoleSuiteEntRepository) Create(ctx context.Context, roleSuite domain
 }
 
 // There is currently no update reason in permission histories for users/groups with this role_suite.
-func (this *RoleSuiteEntRepository) UpdateTx(ctx context.Context, roleSuite domain.RoleSuite, prevEtag model.Etag, addRoleIds, removeRoleIds []model.Id) (*domain.RoleSuite, error) {
+func (this *RoleSuiteEntRepository) UpdateTx(ctx crud.Context, roleSuite domain.RoleSuite, prevEtag model.Etag, addRoleIds, removeRoleIds []model.Id) (*domain.RoleSuite, error) {
 	tx, err := this.client.Tx(ctx)
 	fault.PanicOnErr(err)
 
@@ -71,7 +70,7 @@ func (this *RoleSuiteEntRepository) UpdateTx(ctx context.Context, roleSuite doma
 }
 
 // There is currently no delete reason in permission histories for users/groups with this role_suite.
-func (this *RoleSuiteEntRepository) DeleteHardTx(ctx context.Context, param it.DeleteRoleSuiteParam) (int, error) {
+func (this *RoleSuiteEntRepository) DeleteHardTx(ctx crud.Context, param it.DeleteRoleSuiteParam) (int, error) {
 	tx, err := this.client.Tx(ctx)
 	fault.PanicOnErr(err)
 
@@ -98,7 +97,7 @@ func (this *RoleSuiteEntRepository) DeleteHardTx(ctx context.Context, param it.D
 	return deletedCount, nil
 }
 
-func (this *RoleSuiteEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.RoleSuite, error) {
+func (this *RoleSuiteEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.RoleSuite, error) {
 	query := this.client.RoleSuite.Query().
 		Where(entRoleSuite.IDEQ(param.Id)).
 		WithRoles()
@@ -106,7 +105,7 @@ func (this *RoleSuiteEntRepository) FindById(ctx context.Context, param it.FindB
 	return database.FindOne(ctx, query, ent.IsNotFound, entToRoleSuite)
 }
 
-func (this *RoleSuiteEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.RoleSuite, error) {
+func (this *RoleSuiteEntRepository) FindByName(ctx crud.Context, param it.FindByNameParam) (*domain.RoleSuite, error) {
 	query := this.client.RoleSuite.Query().
 		Where(entRoleSuite.NameEQ(param.Name))
 
@@ -117,7 +116,7 @@ func (this *RoleSuiteEntRepository) ParseSearchGraph(criteria *string) (*orm.Pre
 	return database.ParseSearchGraphStr[ent.RoleSuite, domain.RoleSuite](criteria, entRoleSuite.Label)
 }
 
-func (this *RoleSuiteEntRepository) FindAllBySubject(ctx context.Context, param it.FindAllBySubjectParam) ([]domain.RoleSuite, error) {
+func (this *RoleSuiteEntRepository) FindAllBySubject(ctx crud.Context, param it.FindAllBySubjectParam) ([]domain.RoleSuite, error) {
 	query := this.client.RoleSuite.Query().
 		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverRefEQ(param.SubjectRef))).
 		WithRoles()
@@ -126,7 +125,7 @@ func (this *RoleSuiteEntRepository) FindAllBySubject(ctx context.Context, param 
 }
 
 func (this *RoleSuiteEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.RoleSuite], error) {
 	query := this.client.RoleSuite.Query().
@@ -145,14 +144,14 @@ func (this *RoleSuiteEntRepository) Search(
 	)
 }
 
-func (this *RoleSuiteEntRepository) ExistUserWithRoleSuite(ctx context.Context, param it.ExistUserWithRoleSuiteParam) (bool, error) {
+func (this *RoleSuiteEntRepository) ExistUserWithRoleSuite(ctx crud.Context, param it.ExistUserWithRoleSuiteParam) (bool, error) {
 	return this.client.RoleSuite.Query().
 		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverTypeEQ(entRoleSuiteUser.ReceiverType(param.ReceiverType)))).
 		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverRefEQ(param.ReceiverId))).
 		Exist(ctx)
 }
 
-func (this *RoleSuiteEntRepository) AddRemoveUser(ctx context.Context, param it.AddRemoveUserParam) error {
+func (this *RoleSuiteEntRepository) AddRemoveUser(ctx crud.Context, param it.AddRemoveUserParam) error {
 	if param.Add {
 		_, err := this.client.RoleSuiteUser.Create().
 			SetApproverID(param.ApproverID).
@@ -173,7 +172,7 @@ func (this *RoleSuiteEntRepository) AddRemoveUser(ctx context.Context, param it.
 	return err
 }
 
-func (this *RoleSuiteEntRepository) deleteRoleSuiteTx(ctx context.Context, tx *ent.Tx, roleSuiteId model.Id) (int, error) {
+func (this *RoleSuiteEntRepository) deleteRoleSuiteTx(ctx crud.Context, tx *ent.Tx, roleSuiteId model.Id) (int, error) {
 	deletedCount, err := tx.RoleSuite.
 		Delete().
 		Where(entRoleSuite.IDEQ(roleSuiteId)).
@@ -181,7 +180,7 @@ func (this *RoleSuiteEntRepository) deleteRoleSuiteTx(ctx context.Context, tx *e
 	return deletedCount, err
 }
 
-func (this *RoleSuiteEntRepository) setGrantRequestBeforeDeleteTx(ctx context.Context, tx *ent.Tx, roleSuiteId, nameSuite string) error {
+func (this *RoleSuiteEntRepository) setGrantRequestBeforeDeleteTx(ctx crud.Context, tx *ent.Tx, roleSuiteId, nameSuite string) error {
 	_, err := tx.GrantRequest.
 		Update().
 		SetTargetSuiteName(nameSuite).
@@ -192,7 +191,7 @@ func (this *RoleSuiteEntRepository) setGrantRequestBeforeDeleteTx(ctx context.Co
 	return err
 }
 
-func (this *RoleSuiteEntRepository) setRevokeRequestBeforeDeleteTx(ctx context.Context, tx *ent.Tx, roleSuiteId, nameSuite string) error {
+func (this *RoleSuiteEntRepository) setRevokeRequestBeforeDeleteTx(ctx crud.Context, tx *ent.Tx, roleSuiteId, nameSuite string) error {
 	_, err := tx.RevokeRequest.
 		Update().
 		SetTargetSuiteName(nameSuite).
@@ -203,7 +202,7 @@ func (this *RoleSuiteEntRepository) setRevokeRequestBeforeDeleteTx(ctx context.C
 	return err
 }
 
-func (this *RoleSuiteEntRepository) setPermissionHistoryBeforeDeleteTx(ctx context.Context, tx *ent.Tx, roleSuiteId, nameSuite string) error {
+func (this *RoleSuiteEntRepository) setPermissionHistoryBeforeDeleteTx(ctx crud.Context, tx *ent.Tx, roleSuiteId, nameSuite string) error {
 	_, err := tx.PermissionHistory.
 		Update().
 		SetRoleSuiteName(nameSuite).
@@ -214,7 +213,7 @@ func (this *RoleSuiteEntRepository) setPermissionHistoryBeforeDeleteTx(ctx conte
 	return err
 }
 
-func (this *RoleSuiteEntRepository) updateRoleSuiteTx(ctx context.Context, tx *ent.Tx, roleSuite domain.RoleSuite, prevEtag model.Etag, addRoleIds, removeRoleIds []model.Id) (*domain.RoleSuite, error) {
+func (this *RoleSuiteEntRepository) updateRoleSuiteTx(ctx crud.Context, tx *ent.Tx, roleSuite domain.RoleSuite, prevEtag model.Etag, addRoleIds, removeRoleIds []model.Id) (*domain.RoleSuite, error) {
 	updation := tx.RoleSuite.UpdateOneID(*roleSuite.Id).
 		SetNillableName(roleSuite.Name).
 		SetNillableDescription(roleSuite.Description).

@@ -83,6 +83,12 @@ func (rrc *RevokeRequestCreate) SetReceiverID(s string) *RevokeRequestCreate {
 	return rrc
 }
 
+// SetReceiverType sets the "receiver_type" field.
+func (rrc *RevokeRequestCreate) SetReceiverType(rt revokerequest.ReceiverType) *RevokeRequestCreate {
+	rrc.mutation.SetReceiverType(rt)
+	return rrc
+}
+
 // SetTargetType sets the "target_type" field.
 func (rrc *RevokeRequestCreate) SetTargetType(rt revokerequest.TargetType) *RevokeRequestCreate {
 	rrc.mutation.SetTargetType(rt)
@@ -265,6 +271,14 @@ func (rrc *RevokeRequestCreate) check() error {
 	if _, ok := rrc.mutation.ReceiverID(); !ok {
 		return &ValidationError{Name: "receiver_id", err: errors.New(`ent: missing required field "RevokeRequest.receiver_id"`)}
 	}
+	if _, ok := rrc.mutation.ReceiverType(); !ok {
+		return &ValidationError{Name: "receiver_type", err: errors.New(`ent: missing required field "RevokeRequest.receiver_type"`)}
+	}
+	if v, ok := rrc.mutation.ReceiverType(); ok {
+		if err := revokerequest.ReceiverTypeValidator(v); err != nil {
+			return &ValidationError{Name: "receiver_type", err: fmt.Errorf(`ent: validator failed for field "RevokeRequest.receiver_type": %w`, err)}
+		}
+	}
 	if _, ok := rrc.mutation.TargetType(); !ok {
 		return &ValidationError{Name: "target_type", err: errors.New(`ent: missing required field "RevokeRequest.target_type"`)}
 	}
@@ -339,6 +353,10 @@ func (rrc *RevokeRequestCreate) createSpec() (*RevokeRequest, *sqlgraph.CreateSp
 	if value, ok := rrc.mutation.ReceiverID(); ok {
 		_spec.SetField(revokerequest.FieldReceiverID, field.TypeString, value)
 		_node.ReceiverID = value
+	}
+	if value, ok := rrc.mutation.ReceiverType(); ok {
+		_spec.SetField(revokerequest.FieldReceiverType, field.TypeEnum, value)
+		_node.ReceiverType = value
 	}
 	if value, ok := rrc.mutation.TargetType(); ok {
 		_spec.SetField(revokerequest.FieldTargetType, field.TypeEnum, value)

@@ -1,9 +1,8 @@
 package methods
 
 import (
-	"context"
-
 	itLogin "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 var (
@@ -22,7 +21,7 @@ func (this *LoginMethodCaptcha) SkipMethod() *itLogin.SkippedMethod {
 	return nil
 }
 
-func (this *LoginMethodCaptcha) Execute(ctx context.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
+func (this *LoginMethodCaptcha) Execute(ctx crud.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
 	result := &itLogin.ExecuteResult{}
 	switch param.Password {
 	case "NIKKI":

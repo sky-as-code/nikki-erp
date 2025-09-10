@@ -12,6 +12,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
+	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -45,6 +46,7 @@ func initHttpServer(params httpServerParams) httpServerResult {
 	httpServer.Use(middleware.Logger())
 	httpServer.Use(middleware.Recover())
 	httpServer.Use(middleware.CORSWithConfig(configCors(params.Config)))
+	httpServer.Use(m.RequestContextMiddleware)
 
 	return httpServerResult{
 		HttpServer: &httpServer,

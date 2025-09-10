@@ -1,10 +1,10 @@
 package grant_request
 
 import (
-	"context"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type GrantRequestService interface {
-	CreateGrantRequest(ctx context.Context, cmd CreateGrantRequestCommand) (*CreateGrantRequestResult, error)
-	RespondToGrantRequest(ctx context.Context, cmd RespondToGrantRequestCommand) (*RespondToGrantRequestResult, error)
+	CreateGrantRequest(ctx crud.Context, cmd CreateGrantRequestCommand) (*CreateGrantRequestResult, error)
+	RespondToGrantRequest(ctx crud.Context, cmd RespondToGrantRequestCommand) (*RespondToGrantRequestResult, error)
 }

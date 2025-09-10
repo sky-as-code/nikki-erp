@@ -6,24 +6,15 @@ auth {
   mode: none
 }
 
-vars:pre-request {
-  user_id: 
-  etag: 
-  group_id: 
-  email: 
-  partytag_id: 
-  org_slug: 
-  org_id: 
-  resource_id: 
-  resource_name: 
-  action_name: 
-  action_id: 
-  entitlement_name: 
-  entitlement_id: 
-  role_name: 
-  role_id: 
-  rolesuite_name: 
-  rolesuite_id: 
-  attemptId: 
-  password: 
+script:pre-request {
+  // Generate a 6-char alphanumeric string
+  function randomString(length = 6) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+  }
+  
 }

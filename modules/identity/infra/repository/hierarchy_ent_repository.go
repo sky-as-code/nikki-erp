@@ -1,13 +1,12 @@
 package repository
 
 import (
-	"context"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
@@ -25,7 +24,7 @@ type HierarchyLevelEntRepository struct {
 	client *ent.Client
 }
 
-func (this *HierarchyLevelEntRepository) Create(ctx context.Context, hierarchyLevel domain.HierarchyLevel) (*domain.HierarchyLevel, error) {
+func (this *HierarchyLevelEntRepository) Create(ctx crud.Context, hierarchyLevel domain.HierarchyLevel) (*domain.HierarchyLevel, error) {
 	creation := this.client.HierarchyLevel.Create().
 		SetID(*hierarchyLevel.Id).
 		SetName(*hierarchyLevel.Name).
@@ -36,7 +35,7 @@ func (this *HierarchyLevelEntRepository) Create(ctx context.Context, hierarchyLe
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToHierarchyLevel)
 }
 
-func (this *HierarchyLevelEntRepository) Update(ctx context.Context, hierarchyLevel domain.HierarchyLevel, prevEtag model.Etag) (*domain.HierarchyLevel, error) {
+func (this *HierarchyLevelEntRepository) Update(ctx crud.Context, hierarchyLevel domain.HierarchyLevel, prevEtag model.Etag) (*domain.HierarchyLevel, error) {
 	update := this.client.HierarchyLevel.UpdateOneID(*hierarchyLevel.Id).
 		SetNillableName(hierarchyLevel.Name).
 		SetNillableParentID(hierarchyLevel.ParentId).
@@ -52,13 +51,13 @@ func (this *HierarchyLevelEntRepository) Update(ctx context.Context, hierarchyLe
 	return db.Mutate(ctx, update, ent.IsNotFound, entToHierarchyLevel)
 }
 
-func (this *HierarchyLevelEntRepository) DeleteHard(ctx context.Context, id model.Id) (int, error) {
+func (this *HierarchyLevelEntRepository) DeleteHard(ctx crud.Context, id model.Id) (int, error) {
 	return this.client.HierarchyLevel.Delete().
 		Where(entHierarchy.ID(id)).
 		Exec(ctx)
 }
 
-func (this *HierarchyLevelEntRepository) FindById(ctx context.Context, param it.FindByIdParam) (*domain.HierarchyLevel, error) {
+func (this *HierarchyLevelEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.HierarchyLevel, error) {
 	dbQuery := this.client.HierarchyLevel.Query().
 		Where(entHierarchy.ID(param.Id))
 
@@ -74,7 +73,7 @@ func (this *HierarchyLevelEntRepository) FindById(ctx context.Context, param it.
 	return db.FindOne(ctx, dbQuery, ent.IsNotFound, entToHierarchyLevel)
 }
 
-func (this *HierarchyLevelEntRepository) FindByName(ctx context.Context, param it.FindByNameParam) (*domain.HierarchyLevel, error) {
+func (this *HierarchyLevelEntRepository) FindByName(ctx crud.Context, param it.FindByNameParam) (*domain.HierarchyLevel, error) {
 	return db.FindOne(
 		ctx,
 		this.client.HierarchyLevel.Query().Where(entHierarchy.Name(param.Name)),
@@ -88,7 +87,7 @@ func (this *HierarchyLevelEntRepository) ParseSearchGraph(criteria *string) (*or
 }
 
 func (this *HierarchyLevelEntRepository) Search(
-	ctx context.Context,
+	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.HierarchyLevel], error) {
 	query := this.client.HierarchyLevel.Query()
@@ -123,7 +122,7 @@ func (this *HierarchyLevelEntRepository) Search(
 	)
 }
 
-func (this *HierarchyLevelEntRepository) AddRemoveUsers(ctx context.Context, param it.AddRemoveUsersParam) (*ft.ClientError, error) {
+func (this *HierarchyLevelEntRepository) AddRemoveUsers(ctx crud.Context, param it.AddRemoveUsersParam) (*ft.ClientError, error) {
 	if len(param.Add) == 0 && len(param.Remove) == 0 {
 		return nil, nil
 	}

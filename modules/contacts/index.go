@@ -5,6 +5,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/app"
+	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/transport"
 )
 
@@ -29,6 +30,7 @@ func (*ContactsModule) Deps() []string {
 // Init implements NikkiModule.
 func (*ContactsModule) Init() error {
 	err := errors.Join(
+		repository.InitRepositories(),
 		app.InitServices(),
 		transport.InitTransport(),
 	)

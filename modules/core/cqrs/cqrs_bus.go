@@ -21,6 +21,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -136,7 +137,8 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 					continue
 				}
 				c, _ := context.WithTimeout(context.Background(), this.maxTimeout)
-				r, err := handler.Handle(c, reqPacket)
+				reqCtx := crud.NewRequestContext(c)
+				r, err := handler.Handle(reqCtx, reqPacket)
 				if err != nil {
 					this.logger.Error(
 						fmt.Sprintf("error occured from topic %s", topicName),

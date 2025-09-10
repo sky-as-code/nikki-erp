@@ -297,6 +297,7 @@ var (
 		{Name: "created_by", Type: field.TypeString},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "receiver_id", Type: field.TypeString},
+		{Name: "receiver_type", Type: field.TypeEnum, Enums: []string{"user", "group"}},
 		{Name: "target_type", Type: field.TypeEnum, Enums: []string{"role", "suite"}},
 		{Name: "target_role_name", Type: field.TypeString, Nullable: true},
 		{Name: "target_suite_name", Type: field.TypeString, Nullable: true},
@@ -312,13 +313,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_revoke_requests_authz_roles_role",
-				Columns:    []*schema.Column{AuthzRevokeRequestsColumns[11]},
+				Columns:    []*schema.Column{AuthzRevokeRequestsColumns[12]},
 				RefColumns: []*schema.Column{AuthzRolesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "authz_revoke_requests_authz_role_suites_role_suite",
-				Columns:    []*schema.Column{AuthzRevokeRequestsColumns[12]},
+				Columns:    []*schema.Column{AuthzRevokeRequestsColumns[13]},
 				RefColumns: []*schema.Column{AuthzRoleSuitesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

@@ -1,12 +1,11 @@
 package app
 
 import (
-	"context"
-
 	"github.com/sky-as-code/nikki-erp/common/convert"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
@@ -35,7 +34,7 @@ type AuthorizeServiceImpl struct {
 	entResourceRepo   itResource.ResourceRepository
 }
 
-func (this *AuthorizeServiceImpl) IsAuthorized(ctx context.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
+func (this *AuthorizeServiceImpl) IsAuthorized(ctx crud.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "check authorization"); e != nil {
 			err = e
@@ -78,7 +77,7 @@ func (this *AuthorizeServiceImpl) IsAuthorized(ctx context.Context, query itAuth
 	}
 }
 
-func (this *AuthorizeServiceImpl) isUserAuthorized(ctx context.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
+func (this *AuthorizeServiceImpl) isUserAuthorized(ctx crud.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
 	userAssignments, err := this.entAssignmentRepo.FindViewsById(ctx, itAssign.FindViewsByIdParam{
 		SubjectType: itAuthorize.SubjectTypeUser.String(),
 		SubjectRef:  query.SubjectRef,
@@ -98,7 +97,7 @@ func (this *AuthorizeServiceImpl) isUserAuthorized(ctx context.Context, query it
 	}, nil
 }
 
-func (this *AuthorizeServiceImpl) isGroupAuthorized(ctx context.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
+func (this *AuthorizeServiceImpl) isGroupAuthorized(ctx crud.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
 	groupAssignments, err := this.entAssignmentRepo.FindViewsById(ctx, itAssign.FindViewsByIdParam{
 		SubjectType: itAuthorize.SubjectTypeGroup.String(),
 		SubjectRef:  query.SubjectRef,
@@ -118,7 +117,7 @@ func (this *AuthorizeServiceImpl) isGroupAuthorized(ctx context.Context, query i
 	}, nil
 }
 
-func (this *AuthorizeServiceImpl) isAuthorizedLegacy(ctx context.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
+func (this *AuthorizeServiceImpl) isAuthorizedLegacy(ctx crud.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
 	subjects, err := this.expandSubjects(ctx, query.SubjectType.String(), query.SubjectRef)
 	fault.PanicOnErr(err)
 
@@ -140,7 +139,7 @@ func (this *AuthorizeServiceImpl) isAuthorizedLegacy(ctx context.Context, query 
 	}, nil
 }
 
-func (this *AuthorizeServiceImpl) expandSubjects(ctx context.Context, subjectType, subjectRef string) (subjects []itAuthorize.Subject, err error) {
+func (this *AuthorizeServiceImpl) expandSubjects(ctx crud.Context, subjectType, subjectRef string) (subjects []itAuthorize.Subject, err error) {
 	subjects = append(subjects, itAuthorize.Subject{Type: itAuthorize.SubjectTypeAuthorize(subjectType), Ref: subjectRef})
 
 	if subjectType == itAuthorize.SubjectTypeSuite.String() {
@@ -155,7 +154,7 @@ func (this *AuthorizeServiceImpl) expandSubjects(ctx context.Context, subjectTyp
 	return subjects, nil
 }
 
-func (this *AuthorizeServiceImpl) getSuiteRoles(ctx context.Context, suiteRef string) ([]itAuthorize.Subject, error) {
+func (this *AuthorizeServiceImpl) getSuiteRoles(ctx crud.Context, suiteRef string) ([]itAuthorize.Subject, error) {
 	suiteRes, err := this.entSuiteRepo.FindById(ctx, itSuite.FindByIdParam{
 		Id: suiteRef,
 	})
@@ -175,7 +174,7 @@ func (this *AuthorizeServiceImpl) getSuiteRoles(ctx context.Context, suiteRef st
 	return roles, nil
 }
 
-func (this *AuthorizeServiceImpl) getAssignmentsForSubjects(ctx context.Context, subjects []itAuthorize.Subject) ([]*domain.EntitlementAssignment, error) {
+func (this *AuthorizeServiceImpl) getAssignmentsForSubjects(ctx crud.Context, subjects []itAuthorize.Subject) ([]*domain.EntitlementAssignment, error) {
 	assignments := []*domain.EntitlementAssignment{}
 
 	for _, subject := range subjects {
@@ -233,7 +232,7 @@ func (this *AuthorizeServiceImpl) matchAssignment(assignment *domain.Entitlement
 	return true
 }
 
-func (this *AuthorizeServiceImpl) validateResource(ctx context.Context, resourceName string, vErrs *fault.ValidationErrors) (*domain.Resource, error) {
+func (this *AuthorizeServiceImpl) validateResource(ctx crud.Context, resourceName string, vErrs *fault.ValidationErrors) (*domain.Resource, error) {
 	resource, err := this.entResourceRepo.FindByName(ctx, itResource.FindByNameParam{Name: resourceName})
 	fault.PanicOnErr(err)
 
@@ -244,7 +243,7 @@ func (this *AuthorizeServiceImpl) validateResource(ctx context.Context, resource
 	return resource, nil
 }
 
-func (this *AuthorizeServiceImpl) validateAction(ctx context.Context, actionName string, resource *domain.Resource, vErrs *fault.ValidationErrors) error {
+func (this *AuthorizeServiceImpl) validateAction(ctx crud.Context, actionName string, resource *domain.Resource, vErrs *fault.ValidationErrors) error {
 	if resource == nil {
 		return nil
 	}

@@ -27,6 +27,8 @@ const (
 	FieldEtag = "etag"
 	// FieldReceiverID holds the string denoting the receiver_id field in the database.
 	FieldReceiverID = "receiver_id"
+	// FieldReceiverType holds the string denoting the receiver_type field in the database.
+	FieldReceiverType = "receiver_type"
 	// FieldTargetType holds the string denoting the target_type field in the database.
 	FieldTargetType = "target_type"
 	// FieldTargetRoleID holds the string denoting the target_role_id field in the database.
@@ -79,6 +81,7 @@ var Columns = []string{
 	FieldCreatedBy,
 	FieldEtag,
 	FieldReceiverID,
+	FieldReceiverType,
 	FieldTargetType,
 	FieldTargetRoleID,
 	FieldTargetRoleName,
@@ -101,6 +104,29 @@ var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
+
+// ReceiverType defines the type for the "receiver_type" enum field.
+type ReceiverType string
+
+// ReceiverType values.
+const (
+	ReceiverTypeUser  ReceiverType = "user"
+	ReceiverTypeGroup ReceiverType = "group"
+)
+
+func (rt ReceiverType) String() string {
+	return string(rt)
+}
+
+// ReceiverTypeValidator is a validator for the "receiver_type" field enum values. It is called by the builders before save.
+func ReceiverTypeValidator(rt ReceiverType) error {
+	switch rt {
+	case ReceiverTypeUser, ReceiverTypeGroup:
+		return nil
+	default:
+		return fmt.Errorf("revokerequest: invalid enum value for receiver_type field: %q", rt)
+	}
+}
 
 // TargetType defines the type for the "target_type" enum field.
 type TargetType string
@@ -185,6 +211,11 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 // ByReceiverID orders the results by the receiver_id field.
 func ByReceiverID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReceiverID, opts...).ToFunc()
+}
+
+// ByReceiverType orders the results by the receiver_type field.
+func ByReceiverType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReceiverType, opts...).ToFunc()
 }
 
 // ByTargetType orders the results by the target_type field.

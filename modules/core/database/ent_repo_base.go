@@ -3,11 +3,23 @@ package database
 import (
 	"context"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
+	"entgo.io/ent/dialect/sql"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/json"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 )
+
+type PagingOptions struct {
+	Page int `json:"page" query:"page"`
+	Size int `json:"size" query:"size"`
+}
+
+type PagedResult[T any] struct {
+	Items []T `json:"items"`
+	Total int `json:"total"`
+	Page  int `json:"page"`
+	Size  int `json:"size"`
+}
 
 type MutationBuilder[TDb any] interface {
 	Save(context.Context) (*TDb, error)
@@ -55,6 +67,37 @@ func FindOne[TDb any, TDomain any](
 		return nil, err
 	}
 	return convertFn(entEntity), nil
+}
+
+type DbLock struct {
+	Tranx DbTransaction
+}
+
+type DbTransaction interface {
+	Commit() error
+	Rollback() error
+}
+
+func FindOneForUpdate[TDb any, TDomain any, TQuery interface {
+	Only(context.Context) (*TDb, error)
+	ForUpdate(opts ...sql.LockOption) TQuery
+}](
+	ctx context.Context,
+	queryBuilder TQuery,
+	isNotFoundFn func(err error) bool,
+	convertFn EntToDomainFn[TDb, TDomain],
+	tranx DbTransaction,
+) (*TDomain, *DbLock, error) {
+	entEntity, err := queryBuilder.
+		ForUpdate().
+		Only(ctx)
+	if err != nil {
+		if isNotFoundFn(err) {
+			return nil, nil, nil
+		}
+		return nil, nil, err
+	}
+	return convertFn(entEntity), &DbLock{Tranx: tranx}, nil
 }
 
 func List[TDb any, TDomain any, TQuery interface {
@@ -111,10 +154,10 @@ func Search[TDb any, TDomain any, TQuery interface {
 	ctx context.Context,
 	predicate *orm.Predicate,
 	order []orm.OrderOption,
-	opts crud.PagingOptions,
+	opts PagingOptions,
 	query TQuery,
 	convertFn func([]*TDb) []TDomain,
-) (*crud.PagedResult[TDomain], error) {
+) (*PagedResult[TDomain], error) {
 	wholeQuery := query
 	if predicate != nil {
 		wholeQuery = wholeQuery.Where(*predicate)
@@ -138,7 +181,7 @@ func Search[TDb any, TDomain any, TQuery interface {
 		return nil, err
 	}
 
-	return &crud.PagedResult[TDomain]{
+	return &PagedResult[TDomain]{
 		Items: convertFn(dbEntities),
 		Total: total,
 		Page:  opts.Page,

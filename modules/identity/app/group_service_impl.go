@@ -1,16 +1,15 @@
 package app
 
 import (
-	"context"
 	"strings"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itGrp "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
 	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
@@ -28,7 +27,7 @@ type GroupServiceImpl struct {
 	groupRepo itGrp.GroupRepository
 }
 
-func (this *GroupServiceImpl) AddRemoveUsers(ctx context.Context, cmd itGrp.AddRemoveUsersCommand) (result *itGrp.AddRemoveUsersResult, err error) {
+func (this *GroupServiceImpl) AddRemoveUsers(ctx crud.Context, cmd itGrp.AddRemoveUsersCommand) (result *itGrp.AddRemoveUsersResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "add or remove users"); e != nil {
 			err = e
@@ -91,7 +90,7 @@ func (this *GroupServiceImpl) AddRemoveUsers(ctx context.Context, cmd itGrp.AddR
 	}, nil
 }
 
-func (this *GroupServiceImpl) assertUserIdsExist(ctx context.Context, valErrs *ft.ValidationErrors, field string, userIds []string) error {
+func (this *GroupServiceImpl) assertUserIdsExist(ctx crud.Context, valErrs *ft.ValidationErrors, field string, userIds []string) error {
 	if len(userIds) == 0 {
 		return nil
 	}
@@ -116,7 +115,7 @@ func (this *GroupServiceImpl) assertUserIdsExist(ctx context.Context, valErrs *f
 	return nil
 }
 
-func (this *GroupServiceImpl) CreateGroup(ctx context.Context, cmd itGrp.CreateGroupCommand) (result *itGrp.CreateGroupResult, err error) {
+func (this *GroupServiceImpl) CreateGroup(ctx crud.Context, cmd itGrp.CreateGroupCommand) (result *itGrp.CreateGroupResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "create group"); e != nil {
 			err = e
@@ -162,7 +161,7 @@ func (this *GroupServiceImpl) sanitizeGroup(group *domain.Group) {
 	}
 }
 
-func (this *GroupServiceImpl) UpdateGroup(ctx context.Context, cmd itGrp.UpdateGroupCommand) (result *itGrp.UpdateGroupResult, err error) {
+func (this *GroupServiceImpl) UpdateGroup(ctx crud.Context, cmd itGrp.UpdateGroupCommand) (result *itGrp.UpdateGroupResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "update group"); e != nil {
 			err = e
@@ -217,7 +216,7 @@ func (this *GroupServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag m
 	}
 }
 
-func (this *GroupServiceImpl) assertGroupExists(ctx context.Context, id model.Id, vErrs *ft.ValidationErrors) (dbGroup *domain.Group, err error) {
+func (this *GroupServiceImpl) assertGroupExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (dbGroup *domain.Group, err error) {
 	dbGroup, err = this.groupRepo.FindById(ctx, itGrp.FindByIdParam{Id: id})
 	if dbGroup == nil {
 		vErrs.AppendNotFound("id", "group id")
@@ -225,7 +224,7 @@ func (this *GroupServiceImpl) assertGroupExists(ctx context.Context, id model.Id
 	return
 }
 
-func (this *GroupServiceImpl) assertUniqueGroupName(ctx context.Context, group *domain.Group, vErrs *ft.ValidationErrors) error {
+func (this *GroupServiceImpl) assertUniqueGroupName(ctx crud.Context, group *domain.Group, vErrs *ft.ValidationErrors) error {
 	dbGroup, err := this.groupRepo.FindByName(ctx, itGrp.FindByNameParam{
 		Name: *group.Name,
 	})
@@ -239,7 +238,7 @@ func (this *GroupServiceImpl) assertUniqueGroupName(ctx context.Context, group *
 	return nil
 }
 
-func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd itGrp.DeleteGroupCommand) (result *itGrp.DeleteGroupResult, err error) {
+func (this *GroupServiceImpl) DeleteGroup(ctx crud.Context, cmd itGrp.DeleteGroupCommand) (result *itGrp.DeleteGroupResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "delete group"); e != nil {
 			err = e
@@ -266,7 +265,7 @@ func (this *GroupServiceImpl) DeleteGroup(ctx context.Context, cmd itGrp.DeleteG
 	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
-func (this *GroupServiceImpl) GetGroupById(ctx context.Context, query itGrp.GetGroupByIdQuery) (result *itGrp.GetGroupByIdResult, err error) {
+func (this *GroupServiceImpl) GetGroupById(ctx crud.Context, query itGrp.GetGroupByIdQuery) (result *itGrp.GetGroupByIdResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "get group by Id"); e != nil {
 			err = e
@@ -299,7 +298,7 @@ func (this *GroupServiceImpl) GetGroupById(ctx context.Context, query itGrp.GetG
 	}, nil
 }
 
-func (thisSvc *GroupServiceImpl) SearchGroups(ctx context.Context, query itGrp.SearchGroupsQuery) (result *itGrp.SearchGroupsResult, err error) {
+func (thisSvc *GroupServiceImpl) SearchGroups(ctx crud.Context, query itGrp.SearchGroupsQuery) (result *itGrp.SearchGroupsResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "list groups"); e != nil {
 			err = e
@@ -333,7 +332,7 @@ func (thisSvc *GroupServiceImpl) SearchGroups(ctx context.Context, query itGrp.S
 	}, nil
 }
 
-func (this *GroupServiceImpl) Exist(ctx context.Context, cmd itGrp.GroupExistsCommand) (result *itGrp.GroupExistsResult, err error) {
+func (this *GroupServiceImpl) Exist(ctx crud.Context, cmd itGrp.GroupExistsCommand) (result *itGrp.GroupExistsResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "check if group exists"); e != nil {
 			err = e

@@ -19,6 +19,8 @@ type Resource struct {
 	ResourceRef  *string            `json:"resourceRef,omitempty"`
 	ScopeType    *ResourceScopeType `json:"scopeType,omitempty"`
 
+	HierarchyRef *string `json:"hierarchyRef,omitempty"`
+
 	Actions      []Action      `json:"actions" model:"-"` // TODO: Handle copy
 	Entitlements []Entitlement `json:"entitlements" model:"-"`
 }

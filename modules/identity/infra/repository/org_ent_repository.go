@@ -1,13 +1,12 @@
 package repository
 
 import (
-	"context"
 	"time"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
@@ -25,7 +24,7 @@ type OrganizationEntRepository struct {
 	client *ent.Client
 }
 
-func (this *OrganizationEntRepository) Create(ctx context.Context, org domain.Organization) (*domain.Organization, error) {
+func (this *OrganizationEntRepository) Create(ctx crud.Context, org domain.Organization) (*domain.Organization, error) {
 	creation := this.client.Organization.Create().
 		SetID(*org.Id).
 		SetNillableAddress(org.Address).
@@ -39,7 +38,7 @@ func (this *OrganizationEntRepository) Create(ctx context.Context, org domain.Or
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Organization, prevEtag model.Etag) (*domain.Organization, error) {
+func (this *OrganizationEntRepository) Update(ctx crud.Context, org domain.Organization, prevEtag model.Etag) (*domain.Organization, error) {
 	update := this.client.Organization.UpdateOneID(*org.Id).
 		SetNillableAddress(org.Address).
 		SetNillableDisplayName(org.DisplayName).
@@ -58,20 +57,20 @@ func (this *OrganizationEntRepository) Update(ctx context.Context, org domain.Or
 	return db.Mutate(ctx, update, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) DeleteSoft(ctx context.Context, id model.Id) (*domain.Organization, error) {
+func (this *OrganizationEntRepository) DeleteSoft(ctx crud.Context, id model.Id) (*domain.Organization, error) {
 	update := this.client.Organization.UpdateOneID(id).
 		SetDeletedAt(time.Now())
 
 	return db.Mutate(ctx, update, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) DeleteHard(ctx context.Context, id model.Id) (int, error) {
+func (this *OrganizationEntRepository) DeleteHard(ctx crud.Context, id model.Id) (int, error) {
 	return this.client.Organization.Delete().
 		Where(entOrg.ID(id)).
 		Exec(ctx)
 }
 
-func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id) (*domain.Organization, error) {
+func (this *OrganizationEntRepository) FindById(ctx crud.Context, id model.Id) (*domain.Organization, error) {
 	query := this.client.Organization.Query().
 		Where(entOrg.ID(id)).
 		WithUsers()
@@ -79,7 +78,7 @@ func (this *OrganizationEntRepository) FindById(ctx context.Context, id model.Id
 	return db.FindOne(ctx, query, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) FindBySlug(ctx context.Context, param it.FindBySlugParam) (*domain.Organization, error) {
+func (this *OrganizationEntRepository) FindBySlug(ctx crud.Context, param it.FindBySlugParam) (*domain.Organization, error) {
 	query := this.client.Organization.Query().
 		Where(entOrg.Slug(param.Slug)).
 		WithUsers()
@@ -104,7 +103,7 @@ func (this *OrganizationEntRepository) ParseSearchGraph(criteria *string) (*orm.
 }
 
 func (this *OrganizationEntRepository) Search(
-	ctx context.Context, param it.SearchParam,
+	ctx crud.Context, param it.SearchParam,
 ) (*crud.PagedResult[domain.Organization], error) {
 	query := this.client.Organization.Query()
 

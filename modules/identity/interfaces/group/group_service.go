@@ -1,15 +1,15 @@
 package group
 
 import (
-	"context"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type GroupService interface {
-	AddRemoveUsers(ctx context.Context, cmd AddRemoveUsersCommand) (*AddRemoveUsersResult, error)
-	CreateGroup(ctx context.Context, cmd CreateGroupCommand) (*CreateGroupResult, error)
-	DeleteGroup(ctx context.Context, cmd DeleteGroupCommand) (*DeleteGroupResult, error)
-	GetGroupById(ctx context.Context, query GetGroupByIdQuery) (*GetGroupByIdResult, error)
-	SearchGroups(ctx context.Context, query SearchGroupsQuery) (*SearchGroupsResult, error)
-	UpdateGroup(ctx context.Context, cmd UpdateGroupCommand) (*UpdateGroupResult, error)
-	Exist(ctx context.Context, cmd GroupExistsCommand) (*GroupExistsResult, error)
+	AddRemoveUsers(ctx crud.Context, cmd AddRemoveUsersCommand) (*AddRemoveUsersResult, error)
+	CreateGroup(ctx crud.Context, cmd CreateGroupCommand) (*CreateGroupResult, error)
+	DeleteGroup(ctx crud.Context, cmd DeleteGroupCommand) (*DeleteGroupResult, error)
+	GetGroupById(ctx crud.Context, query GetGroupByIdQuery) (*GetGroupByIdResult, error)
+	SearchGroups(ctx crud.Context, query SearchGroupsQuery) (*SearchGroupsResult, error)
+	UpdateGroup(ctx crud.Context, cmd UpdateGroupCommand) (*UpdateGroupResult, error)
+	Exist(ctx crud.Context, cmd GroupExistsCommand) (*GroupExistsResult, error)
 }
