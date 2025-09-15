@@ -17,7 +17,7 @@ type UserRepository interface {
 	FindById(ctx crud.Context, param FindByIdParam) (*domain.User, error)
 	FindByIdForUpdate(ctx crud.Context, param FindByIdParam) (*domain.User, *db.DbLock, error)
 	FindByEmail(ctx crud.Context, param FindByEmailParam) (*domain.User, error)
-	FindUsersByHierarchyId(ctx crud.Context, param FindByHierarchyIdParam) ([]domain.User, error)
+	FindByHierarchyId(ctx crud.Context, param FindByHierarchyIdParam) ([]domain.User, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.User], error)
 	Update(ctx crud.Context, user *domain.User, prevEtag model.Etag) (*domain.User, error)
@@ -30,6 +30,7 @@ type FindByIdParam = GetUserByIdQuery
 type FindByEmailParam = GetUserByEmailQuery
 type FindByHierarchyIdParam struct {
 	HierarchyId model.Id
+	Status      *domain.UserStatus
 }
 type SearchParam struct {
 	Predicate  *orm.Predicate

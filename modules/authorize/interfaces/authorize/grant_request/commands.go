@@ -121,6 +121,7 @@ var respondToGrantRequestCommandType = cqrs.RequestType{
 type RespondToGrantRequestCommand struct {
 	Id          model.Id                    `param:"id" json:"id"`
 	Decision    domain.GrantRequestDecision `json:"decision"`
+	Reason      *string                     `json:"reason"`
 	ResponderId model.Id                    `json:"responderId"`
 }
 
@@ -136,6 +137,12 @@ func (this RespondToGrantRequestCommand) Validate() fault.ValidationErrors {
 			validator.OneOf(
 				domain.GrantRequestDecisionApprove,
 				domain.GrantRequestDecisionDeny,
+			),
+		),
+		validator.Field(&this.Reason,
+			validator.When(this.Reason != nil,
+				validator.NotEmpty,
+				validator.Length(1, model.MODEL_RULE_DESC_LENGTH),
 			),
 		),
 		model.IdValidateRule(&this.ResponderId, true),

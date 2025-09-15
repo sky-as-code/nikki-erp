@@ -3,6 +3,7 @@ package repository
 import (
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
@@ -21,7 +22,7 @@ func NewGrantResponseEntRepository(client *ent.Client) it.GrantResponseRepositor
 
 func (this *GrantResponseEntRepository) Create(ctx crud.Context, grantResponse domain.GrantResponse) (*domain.GrantResponse, error) {
 	var creation *ent.GrantResponseCreate
-	
+
 	if tx := ctx.GetDbTranx().(*ent.Tx); tx != nil {
 		creation = tx.GrantResponse.Create()
 	} else {
@@ -38,6 +39,16 @@ func (this *GrantResponseEntRepository) Create(ctx crud.Context, grantResponse d
 		SetEtag(*grantResponse.Etag)
 
 	return database.Mutate(ctx, creation, ent.IsNotFound, entToGrantResponse)
+}
+
+func (this *GrantResponseEntRepository) FindByRequestIdAndResponderId(ctx crud.Context, requestId model.Id, responderId model.Id) ([]domain.GrantResponse, error) {
+	query := this.client.GrantResponse.Query().
+		Where(
+			entGrantResponse.RequestIDEQ(string(requestId)),
+			entGrantResponse.ResponderIDEQ(string(responderId)),
+		)
+
+	return database.List(ctx, query, entToGrantResponses)
 }
 
 type GrantResponseEntRepository struct {

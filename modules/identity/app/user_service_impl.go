@@ -13,25 +13,29 @@ import (
 	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	itHierarchy "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/hierarchy"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
 func NewUserServiceImpl(
 	enumSvc enum.EnumService,
 	userRepo it.UserRepository,
+	hierarchyRepo itHierarchy.HierarchyRepository,
 	eventBus event.EventBus,
 ) it.UserService {
 	return &UserServiceImpl{
-		enumSvc:  enumSvc,
-		userRepo: userRepo,
-		eventBus: eventBus,
+		enumSvc:       enumSvc,
+		userRepo:      userRepo,
+		hierarchyRepo: hierarchyRepo,
+		eventBus:      eventBus,
 	}
 }
 
 type UserServiceImpl struct {
-	enumSvc  enum.EnumService
-	userRepo it.UserRepository
-	eventBus event.EventBus
+	enumSvc       enum.EnumService
+	userRepo      it.UserRepository
+	hierarchyRepo itHierarchy.HierarchyRepository
+	eventBus      event.EventBus
 }
 
 func (this *UserServiceImpl) CreateUser(ctx crud.Context, cmd it.CreateUserCommand) (*it.CreateUserResult, error) {
@@ -569,11 +573,7 @@ func (this *UserServiceImpl) FindDirectApprover(ctx crud.Context, query it.FindD
 			return err
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			if dbUser.HierarchyId == nil {
-				return nil
-			}
-
-			approver, err = this.findApproverInParentHierarchy(ctx, dbUser, vErrs)
+			approver, err = this.findDirectApproverInHierarchy(ctx, dbUser, vErrs)
 			return err
 		}).
 		End()
@@ -601,13 +601,25 @@ func (this *UserServiceImpl) assertUserExists(ctx crud.Context, id model.Id, vEr
 	return user, err
 }
 
-func (this *UserServiceImpl) findApproverInParentHierarchy(ctx crud.Context, dbUser *domain.User, vErrs *ft.ValidationErrors) (*domain.User, error) {
-	directManager, err := this.userRepo.FindUsersByHierarchyId(ctx, it.FindByHierarchyIdParam{HierarchyId: *dbUser.HierarchyId})
+func (this *UserServiceImpl) findDirectApproverInHierarchy(ctx crud.Context, dbUser *domain.User, vErrs *ft.ValidationErrors) (*domain.User, error) {
+	if dbUser.HierarchyId == nil {
+		return nil, nil
+	}
+
+	hierarchy, err := this.hierarchyRepo.FindById(ctx, itHierarchy.FindByIdParam{Id: *dbUser.HierarchyId})
 	ft.PanicOnErr(err)
 
-	if len(directManager) == 0 {
+	if hierarchy == nil {
 		vErrs.AppendNotFound("hierarchy_id", "hierarchy")
 		return nil, nil
 	}
+
+	if hierarchy.ParentId == nil {
+		return nil, nil
+	}
+
+	directManager, err := this.userRepo.FindByHierarchyId(ctx, it.FindByHierarchyIdParam{HierarchyId: *hierarchy.ParentId, Status: domain.WrapUserStatus(domain.UserStatusActive.String())})
+	ft.PanicOnErr(err)
+
 	return &directManager[0], nil
 }

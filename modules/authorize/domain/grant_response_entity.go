@@ -18,7 +18,6 @@ type GrantResponse struct {
 	ResponderId *model.Id  `json:"responderId,omitempty"`
 	CreatedAt   *time.Time `json:"createdAt,omitempty"`
 
-	// Related entities
 	GrantRequest *GrantRequest `json:"grantRequest,omitempty" model:"-"`
 }
 

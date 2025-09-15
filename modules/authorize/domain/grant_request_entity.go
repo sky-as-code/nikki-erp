@@ -140,6 +140,15 @@ const (
 	GrantRequestDecisionDeny    = GrantRequestDecision("deny")
 )
 
+func (this GrantRequestDecision) String() string {
+	return string(this)
+}
+
+func WrapGrantRequestDecision(s string) *GrantRequestDecision {
+	gd := GrantRequestDecision(s)
+	return &gd
+}
+
 type ReceiverType entGrantRequest.ReceiverType
 
 const (

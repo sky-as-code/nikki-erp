@@ -240,7 +240,7 @@ func (this *RoleEntRepository) createRoleTx(ctx crud.Context, tx *ent.Tx, role d
 }
 
 func (this *RoleEntRepository) createAssignmentTx(ctx crud.Context, tx *ent.Tx, roleID model.Id, entitlementID model.Id) error {
-	entitlement, err := tx.Entitlement.
+entitlement, err := tx.Entitlement.
 		Query().
 		Where(entEntitlement.IDEQ(entitlementID)).
 		WithAction().

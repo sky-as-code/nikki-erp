@@ -133,12 +133,16 @@ func (this *UserEntRepository) FindByEmail(ctx crud.Context, param it.FindByEmai
 	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) FindUsersByHierarchyId(ctx crud.Context, param it.FindByHierarchyIdParam) ([]domain.User, error) {
+func (this *UserEntRepository) FindByHierarchyId(ctx crud.Context, param it.FindByHierarchyIdParam) ([]domain.User, error) {
 	query := this.client.User.Query().
-		Where(entUser.HierarchyIDEQ(string(param.HierarchyId))).
+		Where(entUser.HierarchyIDEQ(param.HierarchyId)).
 		WithHierarchy().
 		WithGroups().
 		WithOrgs()
+
+	if param.Status != nil {
+		query = query.Where(entUser.StatusEQ(string(*param.Status)))
+	}
 
 	return db.List(ctx, query, entToUsers)
 }
