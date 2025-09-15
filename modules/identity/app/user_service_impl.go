@@ -560,7 +560,7 @@ func (this *UserServiceImpl) FindDirectApprover(ctx crud.Context, query it.FindD
 	}()
 
 	var dbUser *domain.User
-	var approver *domain.User
+	var approver []domain.User
 
 	flow := val.StartValidationFlow()
 	vErrs, err := flow.
@@ -601,7 +601,7 @@ func (this *UserServiceImpl) assertUserExists(ctx crud.Context, id model.Id, vEr
 	return user, err
 }
 
-func (this *UserServiceImpl) findDirectApproverInHierarchy(ctx crud.Context, dbUser *domain.User, vErrs *ft.ValidationErrors) (*domain.User, error) {
+func (this *UserServiceImpl) findDirectApproverInHierarchy(ctx crud.Context, dbUser *domain.User, vErrs *ft.ValidationErrors) ([]domain.User, error) {
 	if dbUser.HierarchyId == nil {
 		return nil, nil
 	}
@@ -621,5 +621,5 @@ func (this *UserServiceImpl) findDirectApproverInHierarchy(ctx crud.Context, dbU
 	directManager, err := this.userRepo.FindByHierarchyId(ctx, it.FindByHierarchyIdParam{HierarchyId: *hierarchy.ParentId, Status: domain.WrapUserStatus(domain.UserStatusActive.String())})
 	ft.PanicOnErr(err)
 
-	return &directManager[0], nil
+	return directManager, nil
 }

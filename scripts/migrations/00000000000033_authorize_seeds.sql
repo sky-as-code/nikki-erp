@@ -100,23 +100,23 @@ BEGIN
 		('01JWP80S5RXP8BD4YCY8ZHP7NZ', '01JWP9MVYX0K24R9H81SZEM7CE');
 	END IF;
 
-	IF EXISTS (
-		SELECT FROM information_schema.tables 
-		WHERE table_schema = 'public' AND table_name = 'authz_role_suite_user'
-	) THEN
-		INSERT INTO "authz_role_suite_user" ("role_suite_id", "receiver_type", "receiver_ref", "approver_id") VALUES
-		-- Domain User Suite => group Domain Users
-		('01JWP9MVYX0K24R9H81SZEM7CE', 'group', '01JWNXBR5QJBH7PE9PQ9FW746V', '01JWNNJGS70Y07MBEV3AQ0M526');
-	END IF;
+	-- IF EXISTS (
+	-- 	SELECT FROM information_schema.tables 
+	-- 	WHERE table_schema = 'public' AND table_name = 'authz_role_suite_user'
+	-- ) THEN
+	-- 	INSERT INTO "authz_role_suite_user" ("role_suite_id", "receiver_type", "receiver_ref", "approver_id") VALUES
+	-- 	-- Domain User Suite => group Domain Users
+	-- 	('01JWP9MVYX0K24R9H81SZEM7CE', 'group', '01JWNXBR5QJBH7PE9PQ9FW746V', '01JWNNJGS70Y07MBEV3AQ0M526');
+	-- END IF;
 
-	IF EXISTS (
-		SELECT FROM information_schema.tables 
-		WHERE table_schema = 'public' AND table_name = 'authz_role_user'
-	) THEN
-		INSERT INTO "authz_role_user" ("role_id", "receiver_type", "receiver_ref", "approver_id") VALUES
-		-- Identity module User Manager role => user 01JZQFDH0N51Q3BFQFMFFGSCSV
-		('01JWPB7TC3CG1EB567WYQCJM79', 'user', '01JZQFDH0N51Q3BFQFMFFGSCSV', '01JWNNJGS70Y07MBEV3AQ0M526');
-	END IF;
+	-- IF EXISTS (
+	-- 	SELECT FROM information_schema.tables 
+	-- 	WHERE table_schema = 'public' AND table_name = 'authz_role_user'
+	-- ) THEN
+	-- 	INSERT INTO "authz_role_user" ("role_id", "receiver_type", "receiver_ref", "approver_id") VALUES
+	-- 	-- Identity module User Manager role => user 01JZQFDH0N51Q3BFQFMFFGSCSV
+	-- 	('01JWPB7TC3CG1EB567WYQCJM79', 'user', '01JZQFDH0N51Q3BFQFMFFGSCSV', '01JWNNJGS70Y07MBEV3AQ0M526');
+	-- END IF;
 
 	IF EXISTS (
 		SELECT FROM information_schema.tables 

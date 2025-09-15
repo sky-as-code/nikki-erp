@@ -3,7 +3,6 @@ package role
 import (
 	"time"
 
-
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
@@ -238,6 +237,7 @@ var existUserWithRoleQueryType = cqrs.RequestType{
 type ExistUserWithRoleQuery struct {
 	ReceiverType domain.ReceiverType `param:"receiverType" json:"receiverType"`
 	ReceiverId   model.Id            `param:"receiverId" json:"receiverId"`
+	TargetId     model.Id            `param:"targetId" json:"targetId"`
 }
 
 func (ExistUserWithRoleQuery) CqrsRequestType() cqrs.RequestType {

@@ -294,4 +294,4 @@ func (this FindDirectApproverQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type FindDirectApproverResult = crud.OpResult[*domain.User]
+type FindDirectApproverResult = crud.OpResult[[]domain.User]

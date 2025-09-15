@@ -158,8 +158,13 @@ func (this *RoleEntRepository) Exist(ctx crud.Context, param it.ExistRoleParam) 
 
 func (this *RoleEntRepository) ExistUserWithRole(ctx crud.Context, param it.ExistUserWithRoleParam) (bool, error) {
 	return this.client.Role.Query().
-		Where(entRole.HasRoleUsersWith(entRoleUser.ReceiverTypeEQ(entRoleUser.ReceiverType(param.ReceiverType)))).
-		Where(entRole.HasRoleUsersWith(entRoleUser.ReceiverRefEQ(param.ReceiverId))).
+		Where(
+			entRole.HasRoleUsersWith(
+				entRoleUser.ReceiverTypeEQ(entRoleUser.ReceiverType(param.ReceiverType)),
+				entRoleUser.ReceiverRefEQ(param.ReceiverId),
+				entRoleUser.RoleIDEQ(param.TargetId),
+			),
+		).
 		Exist(ctx)
 }
 
@@ -240,7 +245,7 @@ func (this *RoleEntRepository) createRoleTx(ctx crud.Context, tx *ent.Tx, role d
 }
 
 func (this *RoleEntRepository) createAssignmentTx(ctx crud.Context, tx *ent.Tx, roleID model.Id, entitlementID model.Id) error {
-entitlement, err := tx.Entitlement.
+	entitlement, err := tx.Entitlement.
 		Query().
 		Where(entEntitlement.IDEQ(entitlementID)).
 		WithAction().

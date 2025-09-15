@@ -41,11 +41,10 @@ func (this *GrantResponseEntRepository) Create(ctx crud.Context, grantResponse d
 	return database.Mutate(ctx, creation, ent.IsNotFound, entToGrantResponse)
 }
 
-func (this *GrantResponseEntRepository) FindByRequestIdAndResponderId(ctx crud.Context, requestId model.Id, responderId model.Id) ([]domain.GrantResponse, error) {
+func (this *GrantResponseEntRepository) FindByRequestId(ctx crud.Context, requestId model.Id) ([]domain.GrantResponse, error) {
 	query := this.client.GrantResponse.Query().
 		Where(
-			entGrantResponse.RequestIDEQ(string(requestId)),
-			entGrantResponse.ResponderIDEQ(string(responderId)),
+			entGrantResponse.RequestIDEQ(requestId),
 		)
 
 	return database.List(ctx, query, entToGrantResponses)
