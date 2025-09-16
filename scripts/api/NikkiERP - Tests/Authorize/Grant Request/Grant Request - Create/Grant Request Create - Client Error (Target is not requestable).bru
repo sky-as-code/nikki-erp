@@ -1,7 +1,7 @@
 meta {
   name: Grant Request Create - Client Error (Target is not requestable)
   type: http
-  seq: 5
+  seq: 4
 }
 
 post {
@@ -14,12 +14,163 @@ body:json {
   {
     "attachmentUrl": "attachmentUrl",
     "comment": "comment",
-    "requestorId": "01JWNMZ36QHC7CQQ748H9NQ6J6",
+    "requestorId": "{{user_id}}",
     "receiverType": "user",
     "receiverId": "01JZQFZFK6GM2D5X6MYHWH6FND",
     "targetType": "role",
     "targetRef": "01JWP72JJCDT4M0J8MSS51MN3T"
   }
+}
+
+script:post-response {
+  // Post-response cho Create Grant Request
+  let body;
+  let isJson = true;
+  
+  try {
+      body = res.getBody();
+      console.log("📥 Response body:", body);
+  } catch (e) {
+      isJson = false;
+      expect.fail("❌ Response is not valid JSON");
+  }
+  
+  const statusCode = res.getStatus();
+  
+  // ================= SUCCESS =================
+  if (statusCode === 201 && isJson) {
+      test("✅ Status code is 201 Created", function () {
+          expect(statusCode).to.eql(201);
+      });
+  
+      test("✅ Response has required fields", function () {
+          expect(body).to.have.property("id");
+          expect(body).to.have.property("etag");
+          expect(body).to.have.property("createdAt");
+      });
+  
+      bru.setVar("grant_req_id", body.id);
+      bru.setVar("grant_req_etag", body.etag);
+      console.log("✅ Saved grant_req_id and grant_req_etag");
+  }
+  
+  // ================= VALIDATION ERRORS =================
+  else if (statusCode === 400 && isJson && body.code === "validation_error") {
+      test("❌ Validation error received", function () {
+          expect(body).to.have.property("code", "validation_error");
+          expect(body.details).to.be.an("object");
+      });
+  
+      const details = body.details || {};
+      console.warn("⚠️ Validation details:", JSON.stringify(details, null, 2));
+  
+      // ---------- Case: Invalid fields (all required missing) ----------
+      if (
+          details.attachmentUrl?.match(/cannot be blank/i) &&
+          details.comment?.match(/cannot be blank/i) &&
+          details.receiverId?.match(/cannot be blank/i) &&
+          details.receiverType?.match(/cannot be blank/i) &&
+          details.requestorId?.match(/cannot be blank/i) &&
+          details.targetRef?.match(/cannot be blank/i) &&
+          details.targetType?.match(/cannot be blank/i)
+      ) {
+          test("❌ Case: invalid_field (all required fields missing)", function () {
+              expect(Object.keys(details)).to.include.members([
+                  "attachmentUrl",
+                  "comment",
+                  "receiverId",
+                  "receiverType",
+                  "requestorId",
+                  "targetRef",
+                  "targetType"
+              ]);
+              [
+                  "attachmentUrl",
+                  "comment",
+                  "receiverId",
+                  "receiverType",
+                  "requestorId",
+                  "targetRef",
+                  "targetType"
+              ].forEach(k => {
+                  expect(details[k]).to.match(/cannot be blank/i);
+              });
+          });
+      }
+  
+      // ---------- Case: Not found receiver ----------
+      else if (details.receiver_id && /not (existing|found)|does not exist|not existing/i.test(details.receiver_id)) {
+          test("❌ Case: not_found_receiver", function () {
+              expect(details).to.have.property("receiver_id");
+              expect(details.receiver_id).to.match(/not (existing|found)|does not exist|not existing/i);
+          });
+      }
+  
+      // ---------- Case: Not found target ----------
+      else if (details.targetRef && /not found|not existing|does not exist/i.test(details.targetRef)) {
+          test("❌ Case: not_found_target", function () {
+              expect(details).to.have.property("targetRef");
+              expect(details.targetRef).to.match(/not found|not existing|does not exist/i);
+          });
+      }
+  
+      // ---------- Case: Target is not requestable (YOUR MISSING CASE) ----------
+      else if (details.targetRef && /not requestable/i.test(details.targetRef)) {
+          test("❌ Case: target_not_requestable", function () {
+              expect(details).to.have.property("targetRef");
+              // match "target is not requestable" or variants
+              expect(details.targetRef).to.match(/not requestable/i);
+          });
+      }
+  
+      // ---------- Case: Attachment/comment is required ----------
+      else if (
+          (details.attachmentUrl && /required/i.test(details.attachmentUrl)) ||
+          (details.comment && /required/i.test(details.comment))
+      ) {
+          test("❌ Case: attachment_comment_required", function () {
+              expect(details).to.be.an("object");
+              if (details.attachmentUrl) {
+                  expect(details.attachmentUrl).to.match(/required/i);
+              }
+              if (details.comment) {
+                  expect(details.comment).to.match(/required/i);
+              }
+          });
+      }
+  
+      // ---------- Case: Receiver already granted ----------
+      else if (details.receiver_id && /already exists|already granted/i.test(details.receiver_id)) {
+          test("❌ Case: receiver_already_granted", function () {
+              expect(details).to.have.property("receiver_id");
+              expect(details.receiver_id).to.match(/already exists|already granted/i);
+          });
+      }
+  
+      // ---------- Case: Receiver has pending request ----------
+      else if (details.receiver_id && /pending request|already has a pending/i.test(details.receiver_id)) {
+          test("❌ Case: receiver_already_has_pending_request", function () {
+              expect(details).to.have.property("receiver_id");
+              expect(details.receiver_id).to.match(/pending request|already has a pending/i);
+          });
+      }
+  
+      // ---------- Unknown validation shape ----------
+      else {
+          test("⚠️ Unrecognized validation error shape", function () {
+              // Fail so you are aware there's a new/unhandled validation response
+              expect.fail("Validation error did not match any known case. Details: " + JSON.stringify(details));
+          });
+      }
+  }
+  
+  // ================= UNEXPECTED (non-201/non-400) =================
+  else {
+      test("⚠️ Unexpected response", function () {
+          expect.fail(`Unexpected status ${statusCode}`);
+      });
+  }
+  
 }
 
 settings {

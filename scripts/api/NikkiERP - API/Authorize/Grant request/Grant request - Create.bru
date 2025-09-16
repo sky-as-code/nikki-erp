@@ -1,7 +1,7 @@
 meta {
-  name: Grant Request Create - Client Error (attachment/comment is required)
+  name: Grant request - Create
   type: http
-  seq: 5
+  seq: 1
 }
 
 post {
@@ -12,12 +12,30 @@ post {
 
 body:json {
   {
+    "attachmentUrl": "attachmentUrl",
+    "comment": "comment",
     "requestorId": "{{user_id}}",
-    "receiverType": "user",
-    "receiverId": "01JZQFZFK6GM2D5X6MYHWH6FND",
+    "receiverType": "group",
+    "receiverId": "01JWNXBR5QJBH7PE9PQ9FW746V",
     "targetType": "role",
     "targetRef": "{{role_id}}"
   }
+}
+
+script:pre-request {
+  // Pre-request script cho Create Grant Request
+  let payload;
+  try {
+      payload = req.getBody() || {};
+  } catch (e) {
+      console.error("❌ Failed to parse body:", e);
+      payload = {};
+  }
+  
+  req.setBody(payload);
+  
+  console.log("📤 Final payload:", payload);
+  
 }
 
 script:post-response {

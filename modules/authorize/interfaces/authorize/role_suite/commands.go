@@ -3,7 +3,6 @@ package role_suite
 import (
 	"time"
 
-
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
@@ -228,7 +227,8 @@ var existUserWithRoleSuiteQueryType = cqrs.RequestType{
 
 type ExistUserWithRoleSuiteQuery struct {
 	ReceiverType domain.ReceiverType `param:"receiverType" json:"receiverType"`
-	ReceiverId   model.Id              `param:"receiverId" json:"receiverId"`
+	ReceiverId   model.Id            `param:"receiverId" json:"receiverId"`
+	TargetId     model.Id            `param:"targetId" json:"targetId"`
 }
 
 func (ExistUserWithRoleSuiteQuery) CqrsRequestType() cqrs.RequestType {

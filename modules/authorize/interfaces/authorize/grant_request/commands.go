@@ -123,6 +123,7 @@ type RespondToGrantRequestCommand struct {
 	Decision    domain.GrantRequestDecision `json:"decision"`
 	Reason      *string                     `json:"reason"`
 	ResponderId model.Id                    `json:"responderId"`
+	Etag        model.Etag                  `json:"etag"`
 }
 
 func (RespondToGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
@@ -146,6 +147,7 @@ func (this RespondToGrantRequestCommand) Validate() fault.ValidationErrors {
 			),
 		),
 		model.IdValidateRule(&this.ResponderId, true),
+		model.EtagValidateRule(&this.Etag, true),
 	}
 
 	return validator.ApiBased.ValidateStruct(&this, rules...)

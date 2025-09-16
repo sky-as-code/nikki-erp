@@ -146,8 +146,13 @@ func (this *RoleSuiteEntRepository) Search(
 
 func (this *RoleSuiteEntRepository) ExistUserWithRoleSuite(ctx crud.Context, param it.ExistUserWithRoleSuiteParam) (bool, error) {
 	return this.client.RoleSuite.Query().
-		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverTypeEQ(entRoleSuiteUser.ReceiverType(param.ReceiverType)))).
-		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverRefEQ(param.ReceiverId))).
+		Where(
+			entRoleSuite.HasRolesuiteUsersWith(
+				entRoleSuiteUser.ReceiverTypeEQ(entRoleSuiteUser.ReceiverType(param.ReceiverType)),
+				entRoleSuiteUser.ReceiverRefEQ(param.ReceiverId),
+				entRoleSuiteUser.RoleSuiteIDEQ(param.TargetId),
+			),
+		).
 		Exist(ctx)
 }
 

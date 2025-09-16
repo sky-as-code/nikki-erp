@@ -71,7 +71,7 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'authz_roles'
 	) THEN
 		INSERT INTO "authz_roles" ("id", "name", "description", "owner_type", "owner_ref", "is_requestable", "is_required_attachment", "is_required_comment", "created_at", "created_by", "etag") VALUES
-		('01JWP72JJCDT4M0J8MSS51MN3T', 'Domain Administrator', 'Granted with all actions on all resources regardless of scope', 'user', '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, NOW(), '01JWNNJGS70Y07MBEV3AQ0M526', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
+		('01JWP72JJCDT4M0J8MSS51MN3T', 'Domain Administrator', 'Granted with all actions on all resources regardless of scope', 'user', '01JWNMZ36QHC7CQQ748H9NQ6J6', false, false, true, NOW(), '01JWNNJGS70Y07MBEV3AQ0M526', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
 		('01JWP80E084MTYF2C882WNR6MJ', 'Identity module Readonly', 'Granted with view action on Users and Groups in Identity module, except with Owner user', 'user', '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, NOW(), '01JWNNJGS70Y07MBEV3AQ0M526', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
 		('01JWP80NHTHXSZDB1MZJXQ0MGQ', 'Identity module Administrator', 'Granted with all actions on all resources in Identity module, except with Owner user', 'user', '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, NOW(), '01JWNNJGS70Y07MBEV3AQ0M526', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),
 		('01JWPB7TC3CG1EB567WYQCJM79', 'Identity module User Manager', 'Granted with all actions on on Users and Groups in Identity module, except with Owner user', 'user', '01JWNMZ36QHC7CQQ748H9NQ6J6', true, false, true, NOW(), '01JWNNJGS70Y07MBEV3AQ0M526', (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint),

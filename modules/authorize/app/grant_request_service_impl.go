@@ -142,6 +142,10 @@ func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx crud.Context, cmd
 			return err
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
+			this.assertCorrectEtag(cmd.Etag, *dbGrantRequest.Etag, vErrs)
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
 			managerIds, ownerId, err = this.assertValidApprover(ctx, dbGrantRequest, cmd.ResponderId, vErrs)
 			return err
 		}).
@@ -271,21 +275,23 @@ func (this *GrantRequestServiceImpl) assertReceiverNotAlreadyGranted(ctx crud.Co
 		exist, err := this.roleRepo.ExistUserWithRole(ctx, itRole.ExistUserWithRoleParam{
 			ReceiverType: *grantRequest.ReceiverType,
 			ReceiverId:   *grantRequest.ReceiverId,
+			TargetId:   *grantRequest.TargetRef,
 		})
 		fault.PanicOnErr(err)
 
 		if exist {
-			vErrs.AppendAlreadyExists("receiver_id", "receiver")
+			vErrs.AppendAlreadyExists("receiver_id", "granted receiver")
 		}
 	case domain.GrantRequestTargetTypeSuite:
 		exist, err := this.suiteRepo.ExistUserWithRoleSuite(ctx, itRoleSuite.ExistUserWithRoleSuiteParam{
 			ReceiverType: *grantRequest.ReceiverType,
 			ReceiverId:   *grantRequest.ReceiverId,
+			TargetId:   *grantRequest.TargetRef,
 		})
 		fault.PanicOnErr(err)
 
 		if exist {
-			vErrs.AppendAlreadyExists("receiver_id", "receiver")
+			vErrs.AppendAlreadyExists("receiver_id", "granted receiver")
 		}
 	}
 }
@@ -536,6 +542,12 @@ func (this *GrantRequestServiceImpl) assertGrantRequestExists(ctx crud.Context, 
 	}
 
 	return
+}
+
+func (this *GrantRequestServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *fault.ValidationErrors) {
+	if updatedEtag != dbEtag {
+		vErrs.AppendEtagMismatched()
+	}
 }
 
 func (this *GrantRequestServiceImpl) assertValidApprover(ctx crud.Context, request *domain.GrantRequest, responderId model.Id, vErrs *fault.ValidationErrors) ([]string, *string, error) {
