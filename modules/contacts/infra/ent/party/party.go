@@ -3,7 +3,6 @@
 package party
 
 import (
-	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -15,8 +14,8 @@ const (
 	Label = "party"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldAvatarURL holds the string denoting the avatar_url field in the database.
-	FieldAvatarURL = "avatar_url"
+	// FieldAvatarUrl holds the string denoting the avatarurl field in the database.
+	FieldAvatarUrl = "avatar_url"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
@@ -39,6 +38,8 @@ const (
 	FieldNationalityID = "nationality_id"
 	// FieldNote holds the string denoting the note field in the database.
 	FieldNote = "note"
+	// FieldOrgID holds the string denoting the org_id field in the database.
+	FieldOrgID = "org_id"
 	// FieldTaxID holds the string denoting the tax_id field in the database.
 	FieldTaxID = "tax_id"
 	// FieldTitle holds the string denoting the title field in the database.
@@ -51,8 +52,10 @@ const (
 	FieldWebsite = "website"
 	// EdgeCommChannels holds the string denoting the comm_channels edge name in mutations.
 	EdgeCommChannels = "comm_channels"
-	// EdgeRelationships holds the string denoting the relationships edge name in mutations.
-	EdgeRelationships = "relationships"
+	// EdgeRelationshipsAsSource holds the string denoting the relationships_as_source edge name in mutations.
+	EdgeRelationshipsAsSource = "relationships_as_source"
+	// EdgeRelationshipsAsTarget holds the string denoting the relationships_as_target edge name in mutations.
+	EdgeRelationshipsAsTarget = "relationships_as_target"
 	// Table holds the table name of the party in the database.
 	Table = "contacts_parties"
 	// CommChannelsTable is the table that holds the comm_channels relation/edge.
@@ -62,19 +65,26 @@ const (
 	CommChannelsInverseTable = "contacts_comm_channels"
 	// CommChannelsColumn is the table column denoting the comm_channels relation/edge.
 	CommChannelsColumn = "party_id"
-	// RelationshipsTable is the table that holds the relationships relation/edge.
-	RelationshipsTable = "contacts_relationships"
-	// RelationshipsInverseTable is the table name for the Relationship entity.
+	// RelationshipsAsSourceTable is the table that holds the relationships_as_source relation/edge.
+	RelationshipsAsSourceTable = "contacts_relationships"
+	// RelationshipsAsSourceInverseTable is the table name for the Relationship entity.
 	// It exists in this package in order to avoid circular dependency with the "relationship" package.
-	RelationshipsInverseTable = "contacts_relationships"
-	// RelationshipsColumn is the table column denoting the relationships relation/edge.
-	RelationshipsColumn = "target_party_id"
+	RelationshipsAsSourceInverseTable = "contacts_relationships"
+	// RelationshipsAsSourceColumn is the table column denoting the relationships_as_source relation/edge.
+	RelationshipsAsSourceColumn = "party_id"
+	// RelationshipsAsTargetTable is the table that holds the relationships_as_target relation/edge.
+	RelationshipsAsTargetTable = "contacts_relationships"
+	// RelationshipsAsTargetInverseTable is the table name for the Relationship entity.
+	// It exists in this package in order to avoid circular dependency with the "relationship" package.
+	RelationshipsAsTargetInverseTable = "contacts_relationships"
+	// RelationshipsAsTargetColumn is the table column denoting the relationships_as_target relation/edge.
+	RelationshipsAsTargetColumn = "target_party_id"
 )
 
 // Columns holds all SQL columns for party fields.
 var Columns = []string{
 	FieldID,
-	FieldAvatarURL,
+	FieldAvatarUrl,
 	FieldCreatedAt,
 	FieldDeletedAt,
 	FieldDeletedBy,
@@ -86,6 +96,7 @@ var Columns = []string{
 	FieldLegalName,
 	FieldNationalityID,
 	FieldNote,
+	FieldOrgID,
 	FieldTaxID,
 	FieldTitle,
 	FieldType,
@@ -112,32 +123,6 @@ var (
 	LegalNameValidator func(string) error
 )
 
-// Title defines the type for the "title" enum field.
-type Title string
-
-// Title values.
-const (
-	TitleMr     Title = "Mr"
-	TitleMrs    Title = "Mrs"
-	TitleMs     Title = "Ms"
-	TitleDoctor Title = "Doctor"
-	TitleSir    Title = "Sir"
-)
-
-func (t Title) String() string {
-	return string(t)
-}
-
-// TitleValidator is a validator for the "title" field enum values. It is called by the builders before save.
-func TitleValidator(t Title) error {
-	switch t {
-	case TitleMr, TitleMrs, TitleMs, TitleDoctor, TitleSir:
-		return nil
-	default:
-		return fmt.Errorf("party: invalid enum value for title field: %q", t)
-	}
-}
-
 // OrderOption defines the ordering options for the Party queries.
 type OrderOption = func(*sql.Selector)
 
@@ -146,9 +131,9 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByAvatarURL orders the results by the avatar_url field.
-func ByAvatarURL(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldAvatarURL, opts...).ToFunc()
+// ByAvatarUrl orders the results by the avatarUrl field.
+func ByAvatarUrl(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAvatarUrl, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.
@@ -206,6 +191,11 @@ func ByNote(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNote, opts...).ToFunc()
 }
 
+// ByOrgID orders the results by the org_id field.
+func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
+}
+
 // ByTaxID orders the results by the tax_id field.
 func ByTaxID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTaxID, opts...).ToFunc()
@@ -245,17 +235,31 @@ func ByCommChannels(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByRelationshipsCount orders the results by relationships count.
-func ByRelationshipsCount(opts ...sql.OrderTermOption) OrderOption {
+// ByRelationshipsAsSourceCount orders the results by relationships_as_source count.
+func ByRelationshipsAsSourceCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newRelationshipsStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipsAsSourceStep(), opts...)
 	}
 }
 
-// ByRelationships orders the results by relationships terms.
-func ByRelationships(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByRelationshipsAsSource orders the results by relationships_as_source terms.
+func ByRelationshipsAsSource(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newRelationshipsStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipsAsSourceStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRelationshipsAsTargetCount orders the results by relationships_as_target count.
+func ByRelationshipsAsTargetCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRelationshipsAsTargetStep(), opts...)
+	}
+}
+
+// ByRelationshipsAsTarget orders the results by relationships_as_target terms.
+func ByRelationshipsAsTarget(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRelationshipsAsTargetStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -273,14 +277,27 @@ func newCommChannelsStep() *sqlgraph.Step {
 }
 
 // Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
-func NewRelationshipsStepNikki() *sqlgraph.Step {
-	return newRelationshipsStep()
+func NewRelationshipsAsSourceStepNikki() *sqlgraph.Step {
+	return newRelationshipsAsSourceStep()
 }
 
-func newRelationshipsStep() *sqlgraph.Step {
+func newRelationshipsAsSourceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(RelationshipsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, true, RelationshipsTable, RelationshipsColumn),
+		sqlgraph.To(RelationshipsAsSourceInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, RelationshipsAsSourceTable, RelationshipsAsSourceColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewRelationshipsAsTargetStepNikki() *sqlgraph.Step {
+	return newRelationshipsAsTargetStep()
+}
+
+func newRelationshipsAsTargetStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RelationshipsAsTargetInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, RelationshipsAsTargetTable, RelationshipsAsTargetColumn),
 	)
 }

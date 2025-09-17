@@ -1,0 +1,19 @@
+meta {
+  name: Party - Get by ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/contacts/parties/{{party_id}}?withRelationships=true
+  body: none
+  auth: inherit
+}
+
+params:query {
+  withRelationships: true
+}
+
+settings {
+  encodeUrl: true
+}

@@ -3,7 +3,6 @@ package comm_channel
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
@@ -31,9 +30,10 @@ var createCommChannelCommandType = cqrs.RequestType{
 }
 
 type CreateCommChannelCommand struct {
+	OrgId     model.Id              `json:"orgId"`
 	Note      *string               `json:"note,omitempty"`
 	PartyId   model.Id              `json:"partyId"`
-	Type      *enum.Enum            `json:"type"`
+	Type      *string               `json:"type"`
 	Value     *string               `json:"value,omitempty"`
 	ValueJson *domain.ValueJsonData `json:"valueJson,omitempty"`
 }
@@ -74,8 +74,8 @@ var updateCommChannelCommandType = cqrs.RequestType{
 type UpdateCommChannelCommand struct {
 	Id        model.Id              `param:"id" json:"id"`
 	Note      *string               `json:"note,omitempty"`
-	PartyId   *model.Id             `json:"partyId,omitempty"`
-	Type      *enum.Enum            `json:"type,omitempty"`
+	PartyId   model.Id              `param:"partyId" json:"partyId"`
+	Type      *string               `json:"type,omitempty"`
 	Value     *string               `json:"value,omitempty"`
 	ValueJson *domain.ValueJsonData `json:"valueJson,omitempty"`
 	Etag      model.Etag            `json:"etag"`
@@ -100,7 +100,6 @@ func (this UpdateCommChannelCommand) Validate() ft.ValidationErrors {
 				val.Length(1, 255),
 			),
 		),
-		model.IdPtrValidateRule(&this.PartyId, false),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
@@ -120,6 +119,12 @@ type DeleteCommChannelCommand struct {
 
 func (DeleteCommChannelCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteCommChannelCommandType
+}
+
+func (this DeleteCommChannelCommand) ToDomainModel() *domain.CommChannel {
+	user := &domain.CommChannel{}
+	user.Id = &this.Id
+	return user
 }
 
 func (this DeleteCommChannelCommand) Validate() ft.ValidationErrors {
@@ -196,35 +201,15 @@ var searchCommChannelsQueryType = cqrs.RequestType{
 }
 
 type SearchCommChannelsQuery struct {
-	Page      *int       `json:"page" query:"page"`
-	Size      *int       `json:"size" query:"size"`
-	Graph     *string    `json:"graph" query:"graph"`
-	Type      *enum.Enum `json:"type" query:"type"`
-	PartyId   *model.Id  `json:"partyId" query:"partyId"`
-	WithParty bool       `json:"withParty" query:"withParty"`
+	crud.SearchQuery
 }
 
 func (SearchCommChannelsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchCommChannelsQueryType
 }
 
-func (this *SearchCommChannelsQuery) SetDefaults() {
-	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
-	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
-}
-
 func (this SearchCommChannelsQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		crud.PageIndexValidateRule(&this.Page),
-		crud.PageSizeValidateRule(&this.Size),
-		val.Field(&this.Type,
-			val.When(this.Type != nil,
-				val.NotEmpty,
-				val.OneOf("Phone", "Zalo", "Facebook", "Email", "Post"),
-			),
-		),
-		model.IdPtrValidateRule(&this.PartyId, false),
-	}
+	rules := this.SearchQuery.ValidationRules()
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }

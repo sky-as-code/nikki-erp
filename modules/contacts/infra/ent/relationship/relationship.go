@@ -3,7 +3,6 @@
 package relationship
 
 import (
-	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -25,23 +24,34 @@ const (
 	FieldEtag = "etag"
 	// FieldNote holds the string denoting the note field in the database.
 	FieldNote = "note"
+	// FieldPartyID holds the string denoting the party_id field in the database.
+	FieldPartyID = "party_id"
 	// FieldTargetPartyID holds the string denoting the target_party_id field in the database.
 	FieldTargetPartyID = "target_party_id"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// EdgeParty holds the string denoting the party edge name in mutations.
-	EdgeParty = "party"
+	// EdgeSourceParty holds the string denoting the source_party edge name in mutations.
+	EdgeSourceParty = "source_party"
+	// EdgeTargetParty holds the string denoting the target_party edge name in mutations.
+	EdgeTargetParty = "target_party"
 	// Table holds the table name of the relationship in the database.
 	Table = "contacts_relationships"
-	// PartyTable is the table that holds the party relation/edge.
-	PartyTable = "contacts_relationships"
-	// PartyInverseTable is the table name for the Party entity.
+	// SourcePartyTable is the table that holds the source_party relation/edge.
+	SourcePartyTable = "contacts_relationships"
+	// SourcePartyInverseTable is the table name for the Party entity.
 	// It exists in this package in order to avoid circular dependency with the "party" package.
-	PartyInverseTable = "contacts_parties"
-	// PartyColumn is the table column denoting the party relation/edge.
-	PartyColumn = "target_party_id"
+	SourcePartyInverseTable = "contacts_parties"
+	// SourcePartyColumn is the table column denoting the source_party relation/edge.
+	SourcePartyColumn = "party_id"
+	// TargetPartyTable is the table that holds the target_party relation/edge.
+	TargetPartyTable = "contacts_relationships"
+	// TargetPartyInverseTable is the table name for the Party entity.
+	// It exists in this package in order to avoid circular dependency with the "party" package.
+	TargetPartyInverseTable = "contacts_parties"
+	// TargetPartyColumn is the table column denoting the target_party relation/edge.
+	TargetPartyColumn = "target_party_id"
 )
 
 // Columns holds all SQL columns for relationship fields.
@@ -52,6 +62,7 @@ var Columns = []string{
 	FieldDeletedBy,
 	FieldEtag,
 	FieldNote,
+	FieldPartyID,
 	FieldTargetPartyID,
 	FieldType,
 	FieldUpdatedAt,
@@ -71,33 +82,6 @@ var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
-
-// Type defines the type for the "type" enum field.
-type Type string
-
-// Type values.
-const (
-	TypeEmployee   Type = "employee"
-	TypeSpouse     Type = "spouse"
-	TypeParent     Type = "parent"
-	TypeSibling    Type = "sibling"
-	TypeEmergency  Type = "emergency"
-	TypeSubsidiary Type = "subsidiary"
-)
-
-func (_type Type) String() string {
-	return string(_type)
-}
-
-// TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
-func TypeValidator(_type Type) error {
-	switch _type {
-	case TypeEmployee, TypeSpouse, TypeParent, TypeSibling, TypeEmergency, TypeSubsidiary:
-		return nil
-	default:
-		return fmt.Errorf("relationship: invalid enum value for type field: %q", _type)
-	}
-}
 
 // OrderOption defines the ordering options for the Relationship queries.
 type OrderOption = func(*sql.Selector)
@@ -132,6 +116,11 @@ func ByNote(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNote, opts...).ToFunc()
 }
 
+// ByPartyID orders the results by the party_id field.
+func ByPartyID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPartyID, opts...).ToFunc()
+}
+
 // ByTargetPartyID orders the results by the target_party_id field.
 func ByTargetPartyID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTargetPartyID, opts...).ToFunc()
@@ -147,22 +136,42 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// ByPartyField orders the results by party field.
-func ByPartyField(field string, opts ...sql.OrderTermOption) OrderOption {
+// BySourcePartyField orders the results by source_party field.
+func BySourcePartyField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newPartyStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newSourcePartyStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByTargetPartyField orders the results by target_party field.
+func ByTargetPartyField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTargetPartyStep(), sql.OrderByField(field, opts...))
 	}
 }
 
 // Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
-func NewPartyStepNikki() *sqlgraph.Step {
-	return newPartyStep()
+func NewSourcePartyStepNikki() *sqlgraph.Step {
+	return newSourcePartyStep()
 }
 
-func newPartyStep() *sqlgraph.Step {
+func newSourcePartyStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(PartyInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, PartyTable, PartyColumn),
+		sqlgraph.To(SourcePartyInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, SourcePartyTable, SourcePartyColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewTargetPartyStepNikki() *sqlgraph.Step {
+	return newTargetPartyStep()
+}
+
+func newTargetPartyStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TargetPartyInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, TargetPartyTable, TargetPartyColumn),
 	)
 }

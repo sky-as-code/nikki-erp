@@ -5,22 +5,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
 )
 
-func (this CreateRelationshipCommand) ToRelationship() *domain.Relationship {
+func (this CreateRelationshipCommand) ToDomainModel() *domain.Relationship {
 	relationship := &domain.Relationship{}
 	model.MustCopy(this, relationship)
 	return relationship
 }
 
-func (this CreateRelationshipCommand) ToEntity() *domain.Relationship {
-	return this.ToRelationship()
-}
-
-func (this UpdateRelationshipCommand) ToRelationship() *domain.Relationship {
+func (this UpdateRelationshipCommand) ToDomainModel() *domain.Relationship {
 	relationship := &domain.Relationship{}
 	model.MustCopy(this, relationship)
 	return relationship
-}
-
-func (this UpdateRelationshipCommand) ToEntity() *domain.Relationship {
-	return this.ToRelationship()
 }

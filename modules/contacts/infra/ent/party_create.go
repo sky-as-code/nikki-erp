@@ -22,16 +22,16 @@ type PartyCreate struct {
 	hooks    []Hook
 }
 
-// SetAvatarURL sets the "avatar_url" field.
-func (pc *PartyCreate) SetAvatarURL(s string) *PartyCreate {
-	pc.mutation.SetAvatarURL(s)
+// SetAvatarUrl sets the "avatarUrl" field.
+func (pc *PartyCreate) SetAvatarUrl(s string) *PartyCreate {
+	pc.mutation.SetAvatarUrl(s)
 	return pc
 }
 
-// SetNillableAvatarURL sets the "avatar_url" field if the given value is not nil.
-func (pc *PartyCreate) SetNillableAvatarURL(s *string) *PartyCreate {
+// SetNillableAvatarUrl sets the "avatarUrl" field if the given value is not nil.
+func (pc *PartyCreate) SetNillableAvatarUrl(s *string) *PartyCreate {
 	if s != nil {
-		pc.SetAvatarURL(*s)
+		pc.SetAvatarUrl(*s)
 	}
 	return pc
 }
@@ -174,6 +174,20 @@ func (pc *PartyCreate) SetNillableNote(s *string) *PartyCreate {
 	return pc
 }
 
+// SetOrgID sets the "org_id" field.
+func (pc *PartyCreate) SetOrgID(s string) *PartyCreate {
+	pc.mutation.SetOrgID(s)
+	return pc
+}
+
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (pc *PartyCreate) SetNillableOrgID(s *string) *PartyCreate {
+	if s != nil {
+		pc.SetOrgID(*s)
+	}
+	return pc
+}
+
 // SetTaxID sets the "tax_id" field.
 func (pc *PartyCreate) SetTaxID(s string) *PartyCreate {
 	pc.mutation.SetTaxID(s)
@@ -189,15 +203,15 @@ func (pc *PartyCreate) SetNillableTaxID(s *string) *PartyCreate {
 }
 
 // SetTitle sets the "title" field.
-func (pc *PartyCreate) SetTitle(pa party.Title) *PartyCreate {
-	pc.mutation.SetTitle(pa)
+func (pc *PartyCreate) SetTitle(s string) *PartyCreate {
+	pc.mutation.SetTitle(s)
 	return pc
 }
 
 // SetNillableTitle sets the "title" field if the given value is not nil.
-func (pc *PartyCreate) SetNillableTitle(pa *party.Title) *PartyCreate {
-	if pa != nil {
-		pc.SetTitle(*pa)
+func (pc *PartyCreate) SetNillableTitle(s *string) *PartyCreate {
+	if s != nil {
+		pc.SetTitle(*s)
 	}
 	return pc
 }
@@ -257,19 +271,34 @@ func (pc *PartyCreate) AddCommChannels(c ...*CommChannel) *PartyCreate {
 	return pc.AddCommChannelIDs(ids...)
 }
 
-// AddRelationshipIDs adds the "relationships" edge to the Relationship entity by IDs.
-func (pc *PartyCreate) AddRelationshipIDs(ids ...string) *PartyCreate {
-	pc.mutation.AddRelationshipIDs(ids...)
+// AddRelationshipsAsSourceIDs adds the "relationships_as_source" edge to the Relationship entity by IDs.
+func (pc *PartyCreate) AddRelationshipsAsSourceIDs(ids ...string) *PartyCreate {
+	pc.mutation.AddRelationshipsAsSourceIDs(ids...)
 	return pc
 }
 
-// AddRelationships adds the "relationships" edges to the Relationship entity.
-func (pc *PartyCreate) AddRelationships(r ...*Relationship) *PartyCreate {
+// AddRelationshipsAsSource adds the "relationships_as_source" edges to the Relationship entity.
+func (pc *PartyCreate) AddRelationshipsAsSource(r ...*Relationship) *PartyCreate {
 	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return pc.AddRelationshipIDs(ids...)
+	return pc.AddRelationshipsAsSourceIDs(ids...)
+}
+
+// AddRelationshipsAsTargetIDs adds the "relationships_as_target" edge to the Relationship entity by IDs.
+func (pc *PartyCreate) AddRelationshipsAsTargetIDs(ids ...string) *PartyCreate {
+	pc.mutation.AddRelationshipsAsTargetIDs(ids...)
+	return pc
+}
+
+// AddRelationshipsAsTarget adds the "relationships_as_target" edges to the Relationship entity.
+func (pc *PartyCreate) AddRelationshipsAsTarget(r ...*Relationship) *PartyCreate {
+	ids := make([]string, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return pc.AddRelationshipsAsTargetIDs(ids...)
 }
 
 // Mutation returns the PartyMutation object of the builder.
@@ -334,11 +363,6 @@ func (pc *PartyCreate) check() error {
 			return &ValidationError{Name: "legal_name", err: fmt.Errorf(`ent: validator failed for field "Party.legal_name": %w`, err)}
 		}
 	}
-	if v, ok := pc.mutation.Title(); ok {
-		if err := party.TitleValidator(v); err != nil {
-			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Party.title": %w`, err)}
-		}
-	}
 	if _, ok := pc.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "Party.type"`)}
 	}
@@ -377,9 +401,9 @@ func (pc *PartyCreate) createSpec() (*Party, *sqlgraph.CreateSpec) {
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := pc.mutation.AvatarURL(); ok {
-		_spec.SetField(party.FieldAvatarURL, field.TypeString, value)
-		_node.AvatarURL = &value
+	if value, ok := pc.mutation.AvatarUrl(); ok {
+		_spec.SetField(party.FieldAvatarUrl, field.TypeString, value)
+		_node.AvatarUrl = &value
 	}
 	if value, ok := pc.mutation.CreatedAt(); ok {
 		_spec.SetField(party.FieldCreatedAt, field.TypeTime, value)
@@ -425,12 +449,16 @@ func (pc *PartyCreate) createSpec() (*Party, *sqlgraph.CreateSpec) {
 		_spec.SetField(party.FieldNote, field.TypeString, value)
 		_node.Note = &value
 	}
+	if value, ok := pc.mutation.OrgID(); ok {
+		_spec.SetField(party.FieldOrgID, field.TypeString, value)
+		_node.OrgID = &value
+	}
 	if value, ok := pc.mutation.TaxID(); ok {
 		_spec.SetField(party.FieldTaxID, field.TypeString, value)
 		_node.TaxID = &value
 	}
 	if value, ok := pc.mutation.Title(); ok {
-		_spec.SetField(party.FieldTitle, field.TypeEnum, value)
+		_spec.SetField(party.FieldTitle, field.TypeString, value)
 		_node.Title = &value
 	}
 	if value, ok := pc.mutation.GetType(); ok {
@@ -461,12 +489,28 @@ func (pc *PartyCreate) createSpec() (*Party, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := pc.mutation.RelationshipsIDs(); len(nodes) > 0 {
+	if nodes := pc.mutation.RelationshipsAsSourceIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   party.RelationshipsTable,
-			Columns: []string{party.RelationshipsColumn},
+			Table:   party.RelationshipsAsSourceTable,
+			Columns: []string{party.RelationshipsAsSourceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.RelationshipsAsTargetIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   party.RelationshipsAsTargetTable,
+			Columns: []string{party.RelationshipsAsTargetColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),

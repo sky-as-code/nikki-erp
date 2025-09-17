@@ -30,23 +30,23 @@ func (pu *PartyUpdate) Where(ps ...predicate.Party) *PartyUpdate {
 	return pu
 }
 
-// SetAvatarURL sets the "avatar_url" field.
-func (pu *PartyUpdate) SetAvatarURL(s string) *PartyUpdate {
-	pu.mutation.SetAvatarURL(s)
+// SetAvatarUrl sets the "avatarUrl" field.
+func (pu *PartyUpdate) SetAvatarUrl(s string) *PartyUpdate {
+	pu.mutation.SetAvatarUrl(s)
 	return pu
 }
 
-// SetNillableAvatarURL sets the "avatar_url" field if the given value is not nil.
-func (pu *PartyUpdate) SetNillableAvatarURL(s *string) *PartyUpdate {
+// SetNillableAvatarUrl sets the "avatarUrl" field if the given value is not nil.
+func (pu *PartyUpdate) SetNillableAvatarUrl(s *string) *PartyUpdate {
 	if s != nil {
-		pu.SetAvatarURL(*s)
+		pu.SetAvatarUrl(*s)
 	}
 	return pu
 }
 
-// ClearAvatarURL clears the value of the "avatar_url" field.
-func (pu *PartyUpdate) ClearAvatarURL() *PartyUpdate {
-	pu.mutation.ClearAvatarURL()
+// ClearAvatarUrl clears the value of the "avatarUrl" field.
+func (pu *PartyUpdate) ClearAvatarUrl() *PartyUpdate {
+	pu.mutation.ClearAvatarUrl()
 	return pu
 }
 
@@ -238,6 +238,26 @@ func (pu *PartyUpdate) ClearNote() *PartyUpdate {
 	return pu
 }
 
+// SetOrgID sets the "org_id" field.
+func (pu *PartyUpdate) SetOrgID(s string) *PartyUpdate {
+	pu.mutation.SetOrgID(s)
+	return pu
+}
+
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (pu *PartyUpdate) SetNillableOrgID(s *string) *PartyUpdate {
+	if s != nil {
+		pu.SetOrgID(*s)
+	}
+	return pu
+}
+
+// ClearOrgID clears the value of the "org_id" field.
+func (pu *PartyUpdate) ClearOrgID() *PartyUpdate {
+	pu.mutation.ClearOrgID()
+	return pu
+}
+
 // SetTaxID sets the "tax_id" field.
 func (pu *PartyUpdate) SetTaxID(s string) *PartyUpdate {
 	pu.mutation.SetTaxID(s)
@@ -259,15 +279,15 @@ func (pu *PartyUpdate) ClearTaxID() *PartyUpdate {
 }
 
 // SetTitle sets the "title" field.
-func (pu *PartyUpdate) SetTitle(pa party.Title) *PartyUpdate {
-	pu.mutation.SetTitle(pa)
+func (pu *PartyUpdate) SetTitle(s string) *PartyUpdate {
+	pu.mutation.SetTitle(s)
 	return pu
 }
 
 // SetNillableTitle sets the "title" field if the given value is not nil.
-func (pu *PartyUpdate) SetNillableTitle(pa *party.Title) *PartyUpdate {
-	if pa != nil {
-		pu.SetTitle(*pa)
+func (pu *PartyUpdate) SetNillableTitle(s *string) *PartyUpdate {
+	if s != nil {
+		pu.SetTitle(*s)
 	}
 	return pu
 }
@@ -347,19 +367,34 @@ func (pu *PartyUpdate) AddCommChannels(c ...*CommChannel) *PartyUpdate {
 	return pu.AddCommChannelIDs(ids...)
 }
 
-// AddRelationshipIDs adds the "relationships" edge to the Relationship entity by IDs.
-func (pu *PartyUpdate) AddRelationshipIDs(ids ...string) *PartyUpdate {
-	pu.mutation.AddRelationshipIDs(ids...)
+// AddRelationshipsAsSourceIDs adds the "relationships_as_source" edge to the Relationship entity by IDs.
+func (pu *PartyUpdate) AddRelationshipsAsSourceIDs(ids ...string) *PartyUpdate {
+	pu.mutation.AddRelationshipsAsSourceIDs(ids...)
 	return pu
 }
 
-// AddRelationships adds the "relationships" edges to the Relationship entity.
-func (pu *PartyUpdate) AddRelationships(r ...*Relationship) *PartyUpdate {
+// AddRelationshipsAsSource adds the "relationships_as_source" edges to the Relationship entity.
+func (pu *PartyUpdate) AddRelationshipsAsSource(r ...*Relationship) *PartyUpdate {
 	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return pu.AddRelationshipIDs(ids...)
+	return pu.AddRelationshipsAsSourceIDs(ids...)
+}
+
+// AddRelationshipsAsTargetIDs adds the "relationships_as_target" edge to the Relationship entity by IDs.
+func (pu *PartyUpdate) AddRelationshipsAsTargetIDs(ids ...string) *PartyUpdate {
+	pu.mutation.AddRelationshipsAsTargetIDs(ids...)
+	return pu
+}
+
+// AddRelationshipsAsTarget adds the "relationships_as_target" edges to the Relationship entity.
+func (pu *PartyUpdate) AddRelationshipsAsTarget(r ...*Relationship) *PartyUpdate {
+	ids := make([]string, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return pu.AddRelationshipsAsTargetIDs(ids...)
 }
 
 // Mutation returns the PartyMutation object of the builder.
@@ -388,25 +423,46 @@ func (pu *PartyUpdate) RemoveCommChannels(c ...*CommChannel) *PartyUpdate {
 	return pu.RemoveCommChannelIDs(ids...)
 }
 
-// ClearRelationships clears all "relationships" edges to the Relationship entity.
-func (pu *PartyUpdate) ClearRelationships() *PartyUpdate {
-	pu.mutation.ClearRelationships()
+// ClearRelationshipsAsSource clears all "relationships_as_source" edges to the Relationship entity.
+func (pu *PartyUpdate) ClearRelationshipsAsSource() *PartyUpdate {
+	pu.mutation.ClearRelationshipsAsSource()
 	return pu
 }
 
-// RemoveRelationshipIDs removes the "relationships" edge to Relationship entities by IDs.
-func (pu *PartyUpdate) RemoveRelationshipIDs(ids ...string) *PartyUpdate {
-	pu.mutation.RemoveRelationshipIDs(ids...)
+// RemoveRelationshipsAsSourceIDs removes the "relationships_as_source" edge to Relationship entities by IDs.
+func (pu *PartyUpdate) RemoveRelationshipsAsSourceIDs(ids ...string) *PartyUpdate {
+	pu.mutation.RemoveRelationshipsAsSourceIDs(ids...)
 	return pu
 }
 
-// RemoveRelationships removes "relationships" edges to Relationship entities.
-func (pu *PartyUpdate) RemoveRelationships(r ...*Relationship) *PartyUpdate {
+// RemoveRelationshipsAsSource removes "relationships_as_source" edges to Relationship entities.
+func (pu *PartyUpdate) RemoveRelationshipsAsSource(r ...*Relationship) *PartyUpdate {
 	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return pu.RemoveRelationshipIDs(ids...)
+	return pu.RemoveRelationshipsAsSourceIDs(ids...)
+}
+
+// ClearRelationshipsAsTarget clears all "relationships_as_target" edges to the Relationship entity.
+func (pu *PartyUpdate) ClearRelationshipsAsTarget() *PartyUpdate {
+	pu.mutation.ClearRelationshipsAsTarget()
+	return pu
+}
+
+// RemoveRelationshipsAsTargetIDs removes the "relationships_as_target" edge to Relationship entities by IDs.
+func (pu *PartyUpdate) RemoveRelationshipsAsTargetIDs(ids ...string) *PartyUpdate {
+	pu.mutation.RemoveRelationshipsAsTargetIDs(ids...)
+	return pu
+}
+
+// RemoveRelationshipsAsTarget removes "relationships_as_target" edges to Relationship entities.
+func (pu *PartyUpdate) RemoveRelationshipsAsTarget(r ...*Relationship) *PartyUpdate {
+	ids := make([]string, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return pu.RemoveRelationshipsAsTargetIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -448,11 +504,6 @@ func (pu *PartyUpdate) check() error {
 			return &ValidationError{Name: "legal_name", err: fmt.Errorf(`ent: validator failed for field "Party.legal_name": %w`, err)}
 		}
 	}
-	if v, ok := pu.mutation.Title(); ok {
-		if err := party.TitleValidator(v); err != nil {
-			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Party.title": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -468,11 +519,11 @@ func (pu *PartyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := pu.mutation.AvatarURL(); ok {
-		_spec.SetField(party.FieldAvatarURL, field.TypeString, value)
+	if value, ok := pu.mutation.AvatarUrl(); ok {
+		_spec.SetField(party.FieldAvatarUrl, field.TypeString, value)
 	}
-	if pu.mutation.AvatarURLCleared() {
-		_spec.ClearField(party.FieldAvatarURL, field.TypeString)
+	if pu.mutation.AvatarUrlCleared() {
+		_spec.ClearField(party.FieldAvatarUrl, field.TypeString)
 	}
 	if value, ok := pu.mutation.DeletedAt(); ok {
 		_spec.SetField(party.FieldDeletedAt, field.TypeTime, value)
@@ -528,6 +579,12 @@ func (pu *PartyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if pu.mutation.NoteCleared() {
 		_spec.ClearField(party.FieldNote, field.TypeString)
 	}
+	if value, ok := pu.mutation.OrgID(); ok {
+		_spec.SetField(party.FieldOrgID, field.TypeString, value)
+	}
+	if pu.mutation.OrgIDCleared() {
+		_spec.ClearField(party.FieldOrgID, field.TypeString)
+	}
 	if value, ok := pu.mutation.TaxID(); ok {
 		_spec.SetField(party.FieldTaxID, field.TypeString, value)
 	}
@@ -535,10 +592,10 @@ func (pu *PartyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.ClearField(party.FieldTaxID, field.TypeString)
 	}
 	if value, ok := pu.mutation.Title(); ok {
-		_spec.SetField(party.FieldTitle, field.TypeEnum, value)
+		_spec.SetField(party.FieldTitle, field.TypeString, value)
 	}
 	if pu.mutation.TitleCleared() {
-		_spec.ClearField(party.FieldTitle, field.TypeEnum)
+		_spec.ClearField(party.FieldTitle, field.TypeString)
 	}
 	if value, ok := pu.mutation.GetType(); ok {
 		_spec.SetField(party.FieldType, field.TypeString, value)
@@ -600,12 +657,12 @@ func (pu *PartyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if pu.mutation.RelationshipsCleared() {
+	if pu.mutation.RelationshipsAsSourceCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   party.RelationshipsTable,
-			Columns: []string{party.RelationshipsColumn},
+			Table:   party.RelationshipsAsSourceTable,
+			Columns: []string{party.RelationshipsAsSourceColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
@@ -613,12 +670,12 @@ func (pu *PartyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.RemovedRelationshipsIDs(); len(nodes) > 0 && !pu.mutation.RelationshipsCleared() {
+	if nodes := pu.mutation.RemovedRelationshipsAsSourceIDs(); len(nodes) > 0 && !pu.mutation.RelationshipsAsSourceCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   party.RelationshipsTable,
-			Columns: []string{party.RelationshipsColumn},
+			Table:   party.RelationshipsAsSourceTable,
+			Columns: []string{party.RelationshipsAsSourceColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
@@ -629,12 +686,57 @@ func (pu *PartyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := pu.mutation.RelationshipsIDs(); len(nodes) > 0 {
+	if nodes := pu.mutation.RelationshipsAsSourceIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   party.RelationshipsTable,
-			Columns: []string{party.RelationshipsColumn},
+			Table:   party.RelationshipsAsSourceTable,
+			Columns: []string{party.RelationshipsAsSourceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.RelationshipsAsTargetCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   party.RelationshipsAsTargetTable,
+			Columns: []string{party.RelationshipsAsTargetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedRelationshipsAsTargetIDs(); len(nodes) > 0 && !pu.mutation.RelationshipsAsTargetCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   party.RelationshipsAsTargetTable,
+			Columns: []string{party.RelationshipsAsTargetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RelationshipsAsTargetIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   party.RelationshipsAsTargetTable,
+			Columns: []string{party.RelationshipsAsTargetColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
@@ -665,23 +767,23 @@ type PartyUpdateOne struct {
 	mutation *PartyMutation
 }
 
-// SetAvatarURL sets the "avatar_url" field.
-func (puo *PartyUpdateOne) SetAvatarURL(s string) *PartyUpdateOne {
-	puo.mutation.SetAvatarURL(s)
+// SetAvatarUrl sets the "avatarUrl" field.
+func (puo *PartyUpdateOne) SetAvatarUrl(s string) *PartyUpdateOne {
+	puo.mutation.SetAvatarUrl(s)
 	return puo
 }
 
-// SetNillableAvatarURL sets the "avatar_url" field if the given value is not nil.
-func (puo *PartyUpdateOne) SetNillableAvatarURL(s *string) *PartyUpdateOne {
+// SetNillableAvatarUrl sets the "avatarUrl" field if the given value is not nil.
+func (puo *PartyUpdateOne) SetNillableAvatarUrl(s *string) *PartyUpdateOne {
 	if s != nil {
-		puo.SetAvatarURL(*s)
+		puo.SetAvatarUrl(*s)
 	}
 	return puo
 }
 
-// ClearAvatarURL clears the value of the "avatar_url" field.
-func (puo *PartyUpdateOne) ClearAvatarURL() *PartyUpdateOne {
-	puo.mutation.ClearAvatarURL()
+// ClearAvatarUrl clears the value of the "avatarUrl" field.
+func (puo *PartyUpdateOne) ClearAvatarUrl() *PartyUpdateOne {
+	puo.mutation.ClearAvatarUrl()
 	return puo
 }
 
@@ -873,6 +975,26 @@ func (puo *PartyUpdateOne) ClearNote() *PartyUpdateOne {
 	return puo
 }
 
+// SetOrgID sets the "org_id" field.
+func (puo *PartyUpdateOne) SetOrgID(s string) *PartyUpdateOne {
+	puo.mutation.SetOrgID(s)
+	return puo
+}
+
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (puo *PartyUpdateOne) SetNillableOrgID(s *string) *PartyUpdateOne {
+	if s != nil {
+		puo.SetOrgID(*s)
+	}
+	return puo
+}
+
+// ClearOrgID clears the value of the "org_id" field.
+func (puo *PartyUpdateOne) ClearOrgID() *PartyUpdateOne {
+	puo.mutation.ClearOrgID()
+	return puo
+}
+
 // SetTaxID sets the "tax_id" field.
 func (puo *PartyUpdateOne) SetTaxID(s string) *PartyUpdateOne {
 	puo.mutation.SetTaxID(s)
@@ -894,15 +1016,15 @@ func (puo *PartyUpdateOne) ClearTaxID() *PartyUpdateOne {
 }
 
 // SetTitle sets the "title" field.
-func (puo *PartyUpdateOne) SetTitle(pa party.Title) *PartyUpdateOne {
-	puo.mutation.SetTitle(pa)
+func (puo *PartyUpdateOne) SetTitle(s string) *PartyUpdateOne {
+	puo.mutation.SetTitle(s)
 	return puo
 }
 
 // SetNillableTitle sets the "title" field if the given value is not nil.
-func (puo *PartyUpdateOne) SetNillableTitle(pa *party.Title) *PartyUpdateOne {
-	if pa != nil {
-		puo.SetTitle(*pa)
+func (puo *PartyUpdateOne) SetNillableTitle(s *string) *PartyUpdateOne {
+	if s != nil {
+		puo.SetTitle(*s)
 	}
 	return puo
 }
@@ -982,19 +1104,34 @@ func (puo *PartyUpdateOne) AddCommChannels(c ...*CommChannel) *PartyUpdateOne {
 	return puo.AddCommChannelIDs(ids...)
 }
 
-// AddRelationshipIDs adds the "relationships" edge to the Relationship entity by IDs.
-func (puo *PartyUpdateOne) AddRelationshipIDs(ids ...string) *PartyUpdateOne {
-	puo.mutation.AddRelationshipIDs(ids...)
+// AddRelationshipsAsSourceIDs adds the "relationships_as_source" edge to the Relationship entity by IDs.
+func (puo *PartyUpdateOne) AddRelationshipsAsSourceIDs(ids ...string) *PartyUpdateOne {
+	puo.mutation.AddRelationshipsAsSourceIDs(ids...)
 	return puo
 }
 
-// AddRelationships adds the "relationships" edges to the Relationship entity.
-func (puo *PartyUpdateOne) AddRelationships(r ...*Relationship) *PartyUpdateOne {
+// AddRelationshipsAsSource adds the "relationships_as_source" edges to the Relationship entity.
+func (puo *PartyUpdateOne) AddRelationshipsAsSource(r ...*Relationship) *PartyUpdateOne {
 	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return puo.AddRelationshipIDs(ids...)
+	return puo.AddRelationshipsAsSourceIDs(ids...)
+}
+
+// AddRelationshipsAsTargetIDs adds the "relationships_as_target" edge to the Relationship entity by IDs.
+func (puo *PartyUpdateOne) AddRelationshipsAsTargetIDs(ids ...string) *PartyUpdateOne {
+	puo.mutation.AddRelationshipsAsTargetIDs(ids...)
+	return puo
+}
+
+// AddRelationshipsAsTarget adds the "relationships_as_target" edges to the Relationship entity.
+func (puo *PartyUpdateOne) AddRelationshipsAsTarget(r ...*Relationship) *PartyUpdateOne {
+	ids := make([]string, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return puo.AddRelationshipsAsTargetIDs(ids...)
 }
 
 // Mutation returns the PartyMutation object of the builder.
@@ -1023,25 +1160,46 @@ func (puo *PartyUpdateOne) RemoveCommChannels(c ...*CommChannel) *PartyUpdateOne
 	return puo.RemoveCommChannelIDs(ids...)
 }
 
-// ClearRelationships clears all "relationships" edges to the Relationship entity.
-func (puo *PartyUpdateOne) ClearRelationships() *PartyUpdateOne {
-	puo.mutation.ClearRelationships()
+// ClearRelationshipsAsSource clears all "relationships_as_source" edges to the Relationship entity.
+func (puo *PartyUpdateOne) ClearRelationshipsAsSource() *PartyUpdateOne {
+	puo.mutation.ClearRelationshipsAsSource()
 	return puo
 }
 
-// RemoveRelationshipIDs removes the "relationships" edge to Relationship entities by IDs.
-func (puo *PartyUpdateOne) RemoveRelationshipIDs(ids ...string) *PartyUpdateOne {
-	puo.mutation.RemoveRelationshipIDs(ids...)
+// RemoveRelationshipsAsSourceIDs removes the "relationships_as_source" edge to Relationship entities by IDs.
+func (puo *PartyUpdateOne) RemoveRelationshipsAsSourceIDs(ids ...string) *PartyUpdateOne {
+	puo.mutation.RemoveRelationshipsAsSourceIDs(ids...)
 	return puo
 }
 
-// RemoveRelationships removes "relationships" edges to Relationship entities.
-func (puo *PartyUpdateOne) RemoveRelationships(r ...*Relationship) *PartyUpdateOne {
+// RemoveRelationshipsAsSource removes "relationships_as_source" edges to Relationship entities.
+func (puo *PartyUpdateOne) RemoveRelationshipsAsSource(r ...*Relationship) *PartyUpdateOne {
 	ids := make([]string, len(r))
 	for i := range r {
 		ids[i] = r[i].ID
 	}
-	return puo.RemoveRelationshipIDs(ids...)
+	return puo.RemoveRelationshipsAsSourceIDs(ids...)
+}
+
+// ClearRelationshipsAsTarget clears all "relationships_as_target" edges to the Relationship entity.
+func (puo *PartyUpdateOne) ClearRelationshipsAsTarget() *PartyUpdateOne {
+	puo.mutation.ClearRelationshipsAsTarget()
+	return puo
+}
+
+// RemoveRelationshipsAsTargetIDs removes the "relationships_as_target" edge to Relationship entities by IDs.
+func (puo *PartyUpdateOne) RemoveRelationshipsAsTargetIDs(ids ...string) *PartyUpdateOne {
+	puo.mutation.RemoveRelationshipsAsTargetIDs(ids...)
+	return puo
+}
+
+// RemoveRelationshipsAsTarget removes "relationships_as_target" edges to Relationship entities.
+func (puo *PartyUpdateOne) RemoveRelationshipsAsTarget(r ...*Relationship) *PartyUpdateOne {
+	ids := make([]string, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return puo.RemoveRelationshipsAsTargetIDs(ids...)
 }
 
 // Where appends a list predicates to the PartyUpdate builder.
@@ -1096,11 +1254,6 @@ func (puo *PartyUpdateOne) check() error {
 			return &ValidationError{Name: "legal_name", err: fmt.Errorf(`ent: validator failed for field "Party.legal_name": %w`, err)}
 		}
 	}
-	if v, ok := puo.mutation.Title(); ok {
-		if err := party.TitleValidator(v); err != nil {
-			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "Party.title": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -1133,11 +1286,11 @@ func (puo *PartyUpdateOne) sqlSave(ctx context.Context) (_node *Party, err error
 			}
 		}
 	}
-	if value, ok := puo.mutation.AvatarURL(); ok {
-		_spec.SetField(party.FieldAvatarURL, field.TypeString, value)
+	if value, ok := puo.mutation.AvatarUrl(); ok {
+		_spec.SetField(party.FieldAvatarUrl, field.TypeString, value)
 	}
-	if puo.mutation.AvatarURLCleared() {
-		_spec.ClearField(party.FieldAvatarURL, field.TypeString)
+	if puo.mutation.AvatarUrlCleared() {
+		_spec.ClearField(party.FieldAvatarUrl, field.TypeString)
 	}
 	if value, ok := puo.mutation.DeletedAt(); ok {
 		_spec.SetField(party.FieldDeletedAt, field.TypeTime, value)
@@ -1193,6 +1346,12 @@ func (puo *PartyUpdateOne) sqlSave(ctx context.Context) (_node *Party, err error
 	if puo.mutation.NoteCleared() {
 		_spec.ClearField(party.FieldNote, field.TypeString)
 	}
+	if value, ok := puo.mutation.OrgID(); ok {
+		_spec.SetField(party.FieldOrgID, field.TypeString, value)
+	}
+	if puo.mutation.OrgIDCleared() {
+		_spec.ClearField(party.FieldOrgID, field.TypeString)
+	}
 	if value, ok := puo.mutation.TaxID(); ok {
 		_spec.SetField(party.FieldTaxID, field.TypeString, value)
 	}
@@ -1200,10 +1359,10 @@ func (puo *PartyUpdateOne) sqlSave(ctx context.Context) (_node *Party, err error
 		_spec.ClearField(party.FieldTaxID, field.TypeString)
 	}
 	if value, ok := puo.mutation.Title(); ok {
-		_spec.SetField(party.FieldTitle, field.TypeEnum, value)
+		_spec.SetField(party.FieldTitle, field.TypeString, value)
 	}
 	if puo.mutation.TitleCleared() {
-		_spec.ClearField(party.FieldTitle, field.TypeEnum)
+		_spec.ClearField(party.FieldTitle, field.TypeString)
 	}
 	if value, ok := puo.mutation.GetType(); ok {
 		_spec.SetField(party.FieldType, field.TypeString, value)
@@ -1265,12 +1424,12 @@ func (puo *PartyUpdateOne) sqlSave(ctx context.Context) (_node *Party, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if puo.mutation.RelationshipsCleared() {
+	if puo.mutation.RelationshipsAsSourceCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   party.RelationshipsTable,
-			Columns: []string{party.RelationshipsColumn},
+			Table:   party.RelationshipsAsSourceTable,
+			Columns: []string{party.RelationshipsAsSourceColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
@@ -1278,12 +1437,12 @@ func (puo *PartyUpdateOne) sqlSave(ctx context.Context) (_node *Party, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.RemovedRelationshipsIDs(); len(nodes) > 0 && !puo.mutation.RelationshipsCleared() {
+	if nodes := puo.mutation.RemovedRelationshipsAsSourceIDs(); len(nodes) > 0 && !puo.mutation.RelationshipsAsSourceCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   party.RelationshipsTable,
-			Columns: []string{party.RelationshipsColumn},
+			Table:   party.RelationshipsAsSourceTable,
+			Columns: []string{party.RelationshipsAsSourceColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
@@ -1294,12 +1453,57 @@ func (puo *PartyUpdateOne) sqlSave(ctx context.Context) (_node *Party, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := puo.mutation.RelationshipsIDs(); len(nodes) > 0 {
+	if nodes := puo.mutation.RelationshipsAsSourceIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: true,
-			Table:   party.RelationshipsTable,
-			Columns: []string{party.RelationshipsColumn},
+			Table:   party.RelationshipsAsSourceTable,
+			Columns: []string{party.RelationshipsAsSourceColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.RelationshipsAsTargetCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   party.RelationshipsAsTargetTable,
+			Columns: []string{party.RelationshipsAsTargetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedRelationshipsAsTargetIDs(); len(nodes) > 0 && !puo.mutation.RelationshipsAsTargetCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   party.RelationshipsAsTargetTable,
+			Columns: []string{party.RelationshipsAsTargetColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RelationshipsAsTargetIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   party.RelationshipsAsTargetTable,
+			Columns: []string{party.RelationshipsAsTargetColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationship.FieldID, field.TypeString),

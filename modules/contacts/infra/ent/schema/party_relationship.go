@@ -40,10 +40,12 @@ func (RelationshipMixin) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 
+		field.String("party_id"),
+
 		field.String("target_party_id"),
 
-		field.Enum("type").
-			Values("employee", "spouse", "parent", "sibling", "emergency", "subsidiary"),
+		field.String("type").
+			Comment("Type of relationship such as parent, child, sibling, friend, colleague"),
 
 		field.Time("updated_at").
 			Optional().
@@ -68,7 +70,15 @@ func (Relationship) Fields() []ent.Field {
 
 func (Relationship) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("party", Party.Type).
+		edge.To("source_party", Party.Type).
+			Field("party_id").
+			Unique().
+			Required().
+			Annotations(entsql.Annotation{
+				OnDelete: entsql.Cascade,
+			}),
+
+		edge.To("target_party", Party.Type).
 			Field("target_party_id").
 			Unique().
 			Required().

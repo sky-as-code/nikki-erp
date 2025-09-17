@@ -3,10 +3,8 @@ package repository
 import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent"
-	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 )
 
 // entToCommChannel converts ENT CommChannel entity to domain CommChannel
@@ -14,17 +12,11 @@ func entToCommChannel(entCommChannel *ent.CommChannel) *domain.CommChannel {
 	commChannel := &domain.CommChannel{}
 	model.MustCopy(entCommChannel, commChannel)
 
-	// Handle type conversion
-	if entCommChannel.Type != "" {
-		commChannel.Type = &enum.Enum{
-			Value: util.ToPtr(string(entCommChannel.Type)),
-		}
-	}
-
 	// Handle Party relation if loaded
-	if entCommChannel.Edges.Party != nil {
-		commChannel.Party = entToParty(entCommChannel.Edges.Party)
-	}
+	// if entCommChannel.Edges.Party != nil {
+	// 	commChannel.Party = entToParty(entCommChannel.Edges.Party)
+	// }
+	commChannel.ValueJson = &entCommChannel.ValueJSON
 
 	return commChannel
 }
@@ -62,8 +54,8 @@ func entToParty(entParty *ent.Party) *domain.Party {
 	}
 
 	// Handle Relationships relation if loaded
-	if entParty.Edges.Relationships != nil {
-		party.Relationships = array.Map(entParty.Edges.Relationships, func(entRelationship *ent.Relationship) domain.Relationship {
+	if entParty.Edges.RelationshipsAsSource != nil {
+		party.Relationships = array.Map(entParty.Edges.RelationshipsAsSource, func(entRelationship *ent.Relationship) domain.Relationship {
 			return *entToRelationship(entRelationship)
 		})
 	}
@@ -95,13 +87,6 @@ func entToPartiesNonPtr(entParties []*ent.Party) []domain.Party {
 func entToRelationship(entRelationship *ent.Relationship) *domain.Relationship {
 	relationship := &domain.Relationship{}
 	model.MustCopy(entRelationship, relationship)
-
-	// Handle type conversion
-	if entRelationship.Type != "" {
-		relationship.Type = &enum.Enum{
-			Value: util.ToPtr(string(entRelationship.Type)),
-		}
-	}
 
 	// Note: Relationship entity doesn't have a Party field in domain
 	// The target party reference is handled by TargetPartyId field

@@ -10,6 +10,7 @@ import (
 
 type CommChannelDto struct {
 	Id        string                `json:"id"`
+	OrgId     string                `json:"orgId"`
 	PartyId   string                `json:"partyId"`
 	Type      string                `json:"type"`
 	Value     *string               `json:"value"`

@@ -10,7 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/commchannel"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/party"
 )
@@ -84,6 +84,12 @@ func (ccc *CommChannelCreate) SetNillableNote(s *string) *CommChannelCreate {
 	return ccc
 }
 
+// SetOrgID sets the "org_id" field.
+func (ccc *CommChannelCreate) SetOrgID(s string) *CommChannelCreate {
+	ccc.mutation.SetOrgID(s)
+	return ccc
+}
+
 // SetPartyID sets the "party_id" field.
 func (ccc *CommChannelCreate) SetPartyID(s string) *CommChannelCreate {
 	ccc.mutation.SetPartyID(s)
@@ -91,8 +97,8 @@ func (ccc *CommChannelCreate) SetPartyID(s string) *CommChannelCreate {
 }
 
 // SetType sets the "type" field.
-func (ccc *CommChannelCreate) SetType(c commchannel.Type) *CommChannelCreate {
-	ccc.mutation.SetType(c)
+func (ccc *CommChannelCreate) SetType(s string) *CommChannelCreate {
+	ccc.mutation.SetType(s)
 	return ccc
 }
 
@@ -125,16 +131,8 @@ func (ccc *CommChannelCreate) SetNillableValue(s *string) *CommChannelCreate {
 }
 
 // SetValueJSON sets the "value_json" field.
-func (ccc *CommChannelCreate) SetValueJSON(djd domain.ValueJsonData) *CommChannelCreate {
-	ccc.mutation.SetValueJSON(djd)
-	return ccc
-}
-
-// SetNillableValueJSON sets the "value_json" field if the given value is not nil.
-func (ccc *CommChannelCreate) SetNillableValueJSON(djd *domain.ValueJsonData) *CommChannelCreate {
-	if djd != nil {
-		ccc.SetValueJSON(*djd)
-	}
+func (ccc *CommChannelCreate) SetValueJSON(mj model.LangJson) *CommChannelCreate {
+	ccc.mutation.SetValueJSON(mj)
 	return ccc
 }
 
@@ -198,16 +196,14 @@ func (ccc *CommChannelCreate) check() error {
 	if _, ok := ccc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "CommChannel.etag"`)}
 	}
+	if _, ok := ccc.mutation.OrgID(); !ok {
+		return &ValidationError{Name: "org_id", err: errors.New(`ent: missing required field "CommChannel.org_id"`)}
+	}
 	if _, ok := ccc.mutation.PartyID(); !ok {
 		return &ValidationError{Name: "party_id", err: errors.New(`ent: missing required field "CommChannel.party_id"`)}
 	}
 	if _, ok := ccc.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "CommChannel.type"`)}
-	}
-	if v, ok := ccc.mutation.GetType(); ok {
-		if err := commchannel.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "CommChannel.type": %w`, err)}
-		}
 	}
 	if len(ccc.mutation.PartyIDs()) == 0 {
 		return &ValidationError{Name: "party", err: errors.New(`ent: missing required edge "CommChannel.party"`)}
@@ -267,8 +263,12 @@ func (ccc *CommChannelCreate) createSpec() (*CommChannel, *sqlgraph.CreateSpec) 
 		_spec.SetField(commchannel.FieldNote, field.TypeString, value)
 		_node.Note = &value
 	}
+	if value, ok := ccc.mutation.OrgID(); ok {
+		_spec.SetField(commchannel.FieldOrgID, field.TypeString, value)
+		_node.OrgID = value
+	}
 	if value, ok := ccc.mutation.GetType(); ok {
-		_spec.SetField(commchannel.FieldType, field.TypeEnum, value)
+		_spec.SetField(commchannel.FieldType, field.TypeString, value)
 		_node.Type = value
 	}
 	if value, ok := ccc.mutation.UpdatedAt(); ok {

@@ -41,10 +41,6 @@ func initRelationshipHandlers() error {
 		return cqrsBus.SubscribeRequests(
 			ctx,
 			cqrs.NewHandler(handler.CreateRelationship),
-			cqrs.NewHandler(handler.UpdateRelationship),
-			cqrs.NewHandler(handler.DeleteRelationship),
-			cqrs.NewHandler(handler.GetRelationshipById),
-			cqrs.NewHandler(handler.SearchRelationships),
 		)
 	})
 }

@@ -41,10 +41,14 @@ func (CommChannelMixin) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 
-		field.String("party_id"),
+		field.String("org_id").
+			Comment("Organization ID"),
 
-		field.Enum("type").
-			Values("Phone", "Zalo", "Facebook", "Email", "Post"),
+		field.String("party_id").
+			Comment("Party ID"),
+
+		field.String("type").
+			Comment("Channel type including email, phone, facebook, twitter, post , etc"),
 
 		field.Time("updated_at").
 			Optional().

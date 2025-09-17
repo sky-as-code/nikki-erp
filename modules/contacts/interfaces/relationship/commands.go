@@ -31,9 +31,10 @@ var createRelationshipCommandType = cqrs.RequestType{
 }
 
 type CreateRelationshipCommand struct {
-	Note          *string    `json:"note,omitempty"`
-	TargetPartyId model.Id   `json:"targetPartyId"`
-	Type          *enum.Enum `json:"type"`
+	PartyId       model.Id `json:"partyId"`
+	Note          *string  `json:"note,omitempty"`
+	TargetPartyId model.Id `json:"targetPartyId"`
+	Type          string   `json:"type"`
 }
 
 func (CreateRelationshipCommand) CqrsRequestType() cqrs.RequestType {
@@ -44,7 +45,7 @@ func (this CreateRelationshipCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Type,
 			val.NotNil,
-			val.When(this.Type != nil,
+			val.When(this.Type != "",
 				val.NotEmpty,
 				val.OneOf("employee", "spouse", "parent", "sibling", "emergency", "subsidiary"),
 			),

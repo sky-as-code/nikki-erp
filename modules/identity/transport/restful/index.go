@@ -46,4 +46,5 @@ func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, o
 	route.GET("/hierarchy/:id", hierarchyRest.GetHierarchyLevelById)
 	route.GET("/hierarchy", hierarchyRest.SearchHierarchyLevels)
 	route.PUT("/hierarchy/:id", hierarchyRest.UpdateHierarchyLevel)
+	route.POST("/hierarchy/:hierarchyId/manage-users", hierarchyRest.ManageHierarchyUsers)
 }

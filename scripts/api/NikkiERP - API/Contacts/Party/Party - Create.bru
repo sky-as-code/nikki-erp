@@ -1,0 +1,23 @@
+meta {
+  name: Party - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/contacts/parties
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "displayName": "{{$randomFullName}}",
+      "type": "individual",
+      "orgId": "{{org_id}}"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

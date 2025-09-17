@@ -11,7 +11,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/commchannel"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/party"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/predicate"
@@ -43,10 +43,11 @@ type CommChannelMutation struct {
 	deleted_at    *time.Time
 	etag          *string
 	note          *string
-	_type         *commchannel.Type
+	org_id        *string
+	_type         *string
 	updated_at    *time.Time
 	value         *string
-	value_json    *domain.ValueJsonData
+	value_json    *model.LangJson
 	clearedFields map[string]struct{}
 	party         *string
 	clearedparty  bool
@@ -378,6 +379,42 @@ func (m *CommChannelMutation) ResetNote() {
 	delete(m.clearedFields, commchannel.FieldNote)
 }
 
+// SetOrgID sets the "org_id" field.
+func (m *CommChannelMutation) SetOrgID(s string) {
+	m.org_id = &s
+}
+
+// OrgID returns the value of the "org_id" field in the mutation.
+func (m *CommChannelMutation) OrgID() (r string, exists bool) {
+	v := m.org_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrgID returns the old "org_id" field's value of the CommChannel entity.
+// If the CommChannel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommChannelMutation) OldOrgID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrgID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrgID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrgID: %w", err)
+	}
+	return oldValue.OrgID, nil
+}
+
+// ResetOrgID resets all changes to the "org_id" field.
+func (m *CommChannelMutation) ResetOrgID() {
+	m.org_id = nil
+}
+
 // SetPartyID sets the "party_id" field.
 func (m *CommChannelMutation) SetPartyID(s string) {
 	m.party = &s
@@ -415,12 +452,12 @@ func (m *CommChannelMutation) ResetPartyID() {
 }
 
 // SetType sets the "type" field.
-func (m *CommChannelMutation) SetType(c commchannel.Type) {
-	m._type = &c
+func (m *CommChannelMutation) SetType(s string) {
+	m._type = &s
 }
 
 // GetType returns the value of the "type" field in the mutation.
-func (m *CommChannelMutation) GetType() (r commchannel.Type, exists bool) {
+func (m *CommChannelMutation) GetType() (r string, exists bool) {
 	v := m._type
 	if v == nil {
 		return
@@ -431,7 +468,7 @@ func (m *CommChannelMutation) GetType() (r commchannel.Type, exists bool) {
 // OldType returns the old "type" field's value of the CommChannel entity.
 // If the CommChannel object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CommChannelMutation) OldType(ctx context.Context) (v commchannel.Type, err error) {
+func (m *CommChannelMutation) OldType(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldType is only allowed on UpdateOne operations")
 	}
@@ -549,12 +586,12 @@ func (m *CommChannelMutation) ResetValue() {
 }
 
 // SetValueJSON sets the "value_json" field.
-func (m *CommChannelMutation) SetValueJSON(djd domain.ValueJsonData) {
-	m.value_json = &djd
+func (m *CommChannelMutation) SetValueJSON(mj model.LangJson) {
+	m.value_json = &mj
 }
 
 // ValueJSON returns the value of the "value_json" field in the mutation.
-func (m *CommChannelMutation) ValueJSON() (r domain.ValueJsonData, exists bool) {
+func (m *CommChannelMutation) ValueJSON() (r model.LangJson, exists bool) {
 	v := m.value_json
 	if v == nil {
 		return
@@ -565,7 +602,7 @@ func (m *CommChannelMutation) ValueJSON() (r domain.ValueJsonData, exists bool) 
 // OldValueJSON returns the old "value_json" field's value of the CommChannel entity.
 // If the CommChannel object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CommChannelMutation) OldValueJSON(ctx context.Context) (v domain.ValueJsonData, err error) {
+func (m *CommChannelMutation) OldValueJSON(ctx context.Context) (v model.LangJson, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldValueJSON is only allowed on UpdateOne operations")
 	}
@@ -658,7 +695,7 @@ func (m *CommChannelMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CommChannelMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, commchannel.FieldCreatedAt)
 	}
@@ -673,6 +710,9 @@ func (m *CommChannelMutation) Fields() []string {
 	}
 	if m.note != nil {
 		fields = append(fields, commchannel.FieldNote)
+	}
+	if m.org_id != nil {
+		fields = append(fields, commchannel.FieldOrgID)
 	}
 	if m.party != nil {
 		fields = append(fields, commchannel.FieldPartyID)
@@ -707,6 +747,8 @@ func (m *CommChannelMutation) Field(name string) (ent.Value, bool) {
 		return m.Etag()
 	case commchannel.FieldNote:
 		return m.Note()
+	case commchannel.FieldOrgID:
+		return m.OrgID()
 	case commchannel.FieldPartyID:
 		return m.PartyID()
 	case commchannel.FieldType:
@@ -736,6 +778,8 @@ func (m *CommChannelMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldEtag(ctx)
 	case commchannel.FieldNote:
 		return m.OldNote(ctx)
+	case commchannel.FieldOrgID:
+		return m.OldOrgID(ctx)
 	case commchannel.FieldPartyID:
 		return m.OldPartyID(ctx)
 	case commchannel.FieldType:
@@ -790,6 +834,13 @@ func (m *CommChannelMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetNote(v)
 		return nil
+	case commchannel.FieldOrgID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrgID(v)
+		return nil
 	case commchannel.FieldPartyID:
 		v, ok := value.(string)
 		if !ok {
@@ -798,7 +849,7 @@ func (m *CommChannelMutation) SetField(name string, value ent.Value) error {
 		m.SetPartyID(v)
 		return nil
 	case commchannel.FieldType:
-		v, ok := value.(commchannel.Type)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -819,7 +870,7 @@ func (m *CommChannelMutation) SetField(name string, value ent.Value) error {
 		m.SetValue(v)
 		return nil
 	case commchannel.FieldValueJSON:
-		v, ok := value.(domain.ValueJsonData)
+		v, ok := value.(model.LangJson)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -928,6 +979,9 @@ func (m *CommChannelMutation) ResetField(name string) error {
 	case commchannel.FieldNote:
 		m.ResetNote()
 		return nil
+	case commchannel.FieldOrgID:
+		m.ResetOrgID()
+		return nil
 	case commchannel.FieldPartyID:
 		m.ResetPartyID()
 		return nil
@@ -1024,36 +1078,40 @@ func (m *CommChannelMutation) ResetEdge(name string) error {
 // PartyMutation represents an operation that mutates the Party nodes in the graph.
 type PartyMutation struct {
 	config
-	op                   Op
-	typ                  string
-	id                   *string
-	avatar_url           *string
-	created_at           *time.Time
-	deleted_at           *time.Time
-	deleted_by           *string
-	display_name         *string
-	etag                 *string
-	job_position         *string
-	language_id          *string
-	legal_address        *string
-	legal_name           *string
-	nationality_id       *string
-	note                 *string
-	tax_id               *string
-	title                *party.Title
-	_type                *string
-	updated_at           *time.Time
-	website              *string
-	clearedFields        map[string]struct{}
-	comm_channels        map[string]struct{}
-	removedcomm_channels map[string]struct{}
-	clearedcomm_channels bool
-	relationships        map[string]struct{}
-	removedrelationships map[string]struct{}
-	clearedrelationships bool
-	done                 bool
-	oldValue             func(context.Context) (*Party, error)
-	predicates           []predicate.Party
+	op                             Op
+	typ                            string
+	id                             *string
+	avatarUrl                      *string
+	created_at                     *time.Time
+	deleted_at                     *time.Time
+	deleted_by                     *string
+	display_name                   *string
+	etag                           *string
+	job_position                   *string
+	language_id                    *string
+	legal_address                  *string
+	legal_name                     *string
+	nationality_id                 *string
+	note                           *string
+	org_id                         *string
+	tax_id                         *string
+	title                          *string
+	_type                          *string
+	updated_at                     *time.Time
+	website                        *string
+	clearedFields                  map[string]struct{}
+	comm_channels                  map[string]struct{}
+	removedcomm_channels           map[string]struct{}
+	clearedcomm_channels           bool
+	relationships_as_source        map[string]struct{}
+	removedrelationships_as_source map[string]struct{}
+	clearedrelationships_as_source bool
+	relationships_as_target        map[string]struct{}
+	removedrelationships_as_target map[string]struct{}
+	clearedrelationships_as_target bool
+	done                           bool
+	oldValue                       func(context.Context) (*Party, error)
+	predicates                     []predicate.Party
 }
 
 var _ ent.Mutation = (*PartyMutation)(nil)
@@ -1160,53 +1218,53 @@ func (m *PartyMutation) IDs(ctx context.Context) ([]string, error) {
 	}
 }
 
-// SetAvatarURL sets the "avatar_url" field.
-func (m *PartyMutation) SetAvatarURL(s string) {
-	m.avatar_url = &s
+// SetAvatarUrl sets the "avatarUrl" field.
+func (m *PartyMutation) SetAvatarUrl(s string) {
+	m.avatarUrl = &s
 }
 
-// AvatarURL returns the value of the "avatar_url" field in the mutation.
-func (m *PartyMutation) AvatarURL() (r string, exists bool) {
-	v := m.avatar_url
+// AvatarUrl returns the value of the "avatarUrl" field in the mutation.
+func (m *PartyMutation) AvatarUrl() (r string, exists bool) {
+	v := m.avatarUrl
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldAvatarURL returns the old "avatar_url" field's value of the Party entity.
+// OldAvatarUrl returns the old "avatarUrl" field's value of the Party entity.
 // If the Party object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PartyMutation) OldAvatarURL(ctx context.Context) (v *string, err error) {
+func (m *PartyMutation) OldAvatarUrl(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAvatarURL is only allowed on UpdateOne operations")
+		return v, errors.New("OldAvatarUrl is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAvatarURL requires an ID field in the mutation")
+		return v, errors.New("OldAvatarUrl requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAvatarURL: %w", err)
+		return v, fmt.Errorf("querying old value for OldAvatarUrl: %w", err)
 	}
-	return oldValue.AvatarURL, nil
+	return oldValue.AvatarUrl, nil
 }
 
-// ClearAvatarURL clears the value of the "avatar_url" field.
-func (m *PartyMutation) ClearAvatarURL() {
-	m.avatar_url = nil
-	m.clearedFields[party.FieldAvatarURL] = struct{}{}
+// ClearAvatarUrl clears the value of the "avatarUrl" field.
+func (m *PartyMutation) ClearAvatarUrl() {
+	m.avatarUrl = nil
+	m.clearedFields[party.FieldAvatarUrl] = struct{}{}
 }
 
-// AvatarURLCleared returns if the "avatar_url" field was cleared in this mutation.
-func (m *PartyMutation) AvatarURLCleared() bool {
-	_, ok := m.clearedFields[party.FieldAvatarURL]
+// AvatarUrlCleared returns if the "avatarUrl" field was cleared in this mutation.
+func (m *PartyMutation) AvatarUrlCleared() bool {
+	_, ok := m.clearedFields[party.FieldAvatarUrl]
 	return ok
 }
 
-// ResetAvatarURL resets all changes to the "avatar_url" field.
-func (m *PartyMutation) ResetAvatarURL() {
-	m.avatar_url = nil
-	delete(m.clearedFields, party.FieldAvatarURL)
+// ResetAvatarUrl resets all changes to the "avatarUrl" field.
+func (m *PartyMutation) ResetAvatarUrl() {
+	m.avatarUrl = nil
+	delete(m.clearedFields, party.FieldAvatarUrl)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -1709,6 +1767,55 @@ func (m *PartyMutation) ResetNote() {
 	delete(m.clearedFields, party.FieldNote)
 }
 
+// SetOrgID sets the "org_id" field.
+func (m *PartyMutation) SetOrgID(s string) {
+	m.org_id = &s
+}
+
+// OrgID returns the value of the "org_id" field in the mutation.
+func (m *PartyMutation) OrgID() (r string, exists bool) {
+	v := m.org_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrgID returns the old "org_id" field's value of the Party entity.
+// If the Party object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PartyMutation) OldOrgID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrgID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrgID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrgID: %w", err)
+	}
+	return oldValue.OrgID, nil
+}
+
+// ClearOrgID clears the value of the "org_id" field.
+func (m *PartyMutation) ClearOrgID() {
+	m.org_id = nil
+	m.clearedFields[party.FieldOrgID] = struct{}{}
+}
+
+// OrgIDCleared returns if the "org_id" field was cleared in this mutation.
+func (m *PartyMutation) OrgIDCleared() bool {
+	_, ok := m.clearedFields[party.FieldOrgID]
+	return ok
+}
+
+// ResetOrgID resets all changes to the "org_id" field.
+func (m *PartyMutation) ResetOrgID() {
+	m.org_id = nil
+	delete(m.clearedFields, party.FieldOrgID)
+}
+
 // SetTaxID sets the "tax_id" field.
 func (m *PartyMutation) SetTaxID(s string) {
 	m.tax_id = &s
@@ -1759,12 +1866,12 @@ func (m *PartyMutation) ResetTaxID() {
 }
 
 // SetTitle sets the "title" field.
-func (m *PartyMutation) SetTitle(pa party.Title) {
-	m.title = &pa
+func (m *PartyMutation) SetTitle(s string) {
+	m.title = &s
 }
 
 // Title returns the value of the "title" field in the mutation.
-func (m *PartyMutation) Title() (r party.Title, exists bool) {
+func (m *PartyMutation) Title() (r string, exists bool) {
 	v := m.title
 	if v == nil {
 		return
@@ -1775,7 +1882,7 @@ func (m *PartyMutation) Title() (r party.Title, exists bool) {
 // OldTitle returns the old "title" field's value of the Party entity.
 // If the Party object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PartyMutation) OldTitle(ctx context.Context) (v *party.Title, err error) {
+func (m *PartyMutation) OldTitle(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
 	}
@@ -1995,58 +2102,112 @@ func (m *PartyMutation) ResetCommChannels() {
 	m.removedcomm_channels = nil
 }
 
-// AddRelationshipIDs adds the "relationships" edge to the Relationship entity by ids.
-func (m *PartyMutation) AddRelationshipIDs(ids ...string) {
-	if m.relationships == nil {
-		m.relationships = make(map[string]struct{})
+// AddRelationshipsAsSourceIDs adds the "relationships_as_source" edge to the Relationship entity by ids.
+func (m *PartyMutation) AddRelationshipsAsSourceIDs(ids ...string) {
+	if m.relationships_as_source == nil {
+		m.relationships_as_source = make(map[string]struct{})
 	}
 	for i := range ids {
-		m.relationships[ids[i]] = struct{}{}
+		m.relationships_as_source[ids[i]] = struct{}{}
 	}
 }
 
-// ClearRelationships clears the "relationships" edge to the Relationship entity.
-func (m *PartyMutation) ClearRelationships() {
-	m.clearedrelationships = true
+// ClearRelationshipsAsSource clears the "relationships_as_source" edge to the Relationship entity.
+func (m *PartyMutation) ClearRelationshipsAsSource() {
+	m.clearedrelationships_as_source = true
 }
 
-// RelationshipsCleared reports if the "relationships" edge to the Relationship entity was cleared.
-func (m *PartyMutation) RelationshipsCleared() bool {
-	return m.clearedrelationships
+// RelationshipsAsSourceCleared reports if the "relationships_as_source" edge to the Relationship entity was cleared.
+func (m *PartyMutation) RelationshipsAsSourceCleared() bool {
+	return m.clearedrelationships_as_source
 }
 
-// RemoveRelationshipIDs removes the "relationships" edge to the Relationship entity by IDs.
-func (m *PartyMutation) RemoveRelationshipIDs(ids ...string) {
-	if m.removedrelationships == nil {
-		m.removedrelationships = make(map[string]struct{})
+// RemoveRelationshipsAsSourceIDs removes the "relationships_as_source" edge to the Relationship entity by IDs.
+func (m *PartyMutation) RemoveRelationshipsAsSourceIDs(ids ...string) {
+	if m.removedrelationships_as_source == nil {
+		m.removedrelationships_as_source = make(map[string]struct{})
 	}
 	for i := range ids {
-		delete(m.relationships, ids[i])
-		m.removedrelationships[ids[i]] = struct{}{}
+		delete(m.relationships_as_source, ids[i])
+		m.removedrelationships_as_source[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedRelationships returns the removed IDs of the "relationships" edge to the Relationship entity.
-func (m *PartyMutation) RemovedRelationshipsIDs() (ids []string) {
-	for id := range m.removedrelationships {
+// RemovedRelationshipsAsSource returns the removed IDs of the "relationships_as_source" edge to the Relationship entity.
+func (m *PartyMutation) RemovedRelationshipsAsSourceIDs() (ids []string) {
+	for id := range m.removedrelationships_as_source {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// RelationshipsIDs returns the "relationships" edge IDs in the mutation.
-func (m *PartyMutation) RelationshipsIDs() (ids []string) {
-	for id := range m.relationships {
+// RelationshipsAsSourceIDs returns the "relationships_as_source" edge IDs in the mutation.
+func (m *PartyMutation) RelationshipsAsSourceIDs() (ids []string) {
+	for id := range m.relationships_as_source {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetRelationships resets all changes to the "relationships" edge.
-func (m *PartyMutation) ResetRelationships() {
-	m.relationships = nil
-	m.clearedrelationships = false
-	m.removedrelationships = nil
+// ResetRelationshipsAsSource resets all changes to the "relationships_as_source" edge.
+func (m *PartyMutation) ResetRelationshipsAsSource() {
+	m.relationships_as_source = nil
+	m.clearedrelationships_as_source = false
+	m.removedrelationships_as_source = nil
+}
+
+// AddRelationshipsAsTargetIDs adds the "relationships_as_target" edge to the Relationship entity by ids.
+func (m *PartyMutation) AddRelationshipsAsTargetIDs(ids ...string) {
+	if m.relationships_as_target == nil {
+		m.relationships_as_target = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.relationships_as_target[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRelationshipsAsTarget clears the "relationships_as_target" edge to the Relationship entity.
+func (m *PartyMutation) ClearRelationshipsAsTarget() {
+	m.clearedrelationships_as_target = true
+}
+
+// RelationshipsAsTargetCleared reports if the "relationships_as_target" edge to the Relationship entity was cleared.
+func (m *PartyMutation) RelationshipsAsTargetCleared() bool {
+	return m.clearedrelationships_as_target
+}
+
+// RemoveRelationshipsAsTargetIDs removes the "relationships_as_target" edge to the Relationship entity by IDs.
+func (m *PartyMutation) RemoveRelationshipsAsTargetIDs(ids ...string) {
+	if m.removedrelationships_as_target == nil {
+		m.removedrelationships_as_target = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.relationships_as_target, ids[i])
+		m.removedrelationships_as_target[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRelationshipsAsTarget returns the removed IDs of the "relationships_as_target" edge to the Relationship entity.
+func (m *PartyMutation) RemovedRelationshipsAsTargetIDs() (ids []string) {
+	for id := range m.removedrelationships_as_target {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RelationshipsAsTargetIDs returns the "relationships_as_target" edge IDs in the mutation.
+func (m *PartyMutation) RelationshipsAsTargetIDs() (ids []string) {
+	for id := range m.relationships_as_target {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRelationshipsAsTarget resets all changes to the "relationships_as_target" edge.
+func (m *PartyMutation) ResetRelationshipsAsTarget() {
+	m.relationships_as_target = nil
+	m.clearedrelationships_as_target = false
+	m.removedrelationships_as_target = nil
 }
 
 // Where appends a list predicates to the PartyMutation builder.
@@ -2083,9 +2244,9 @@ func (m *PartyMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PartyMutation) Fields() []string {
-	fields := make([]string, 0, 17)
-	if m.avatar_url != nil {
-		fields = append(fields, party.FieldAvatarURL)
+	fields := make([]string, 0, 18)
+	if m.avatarUrl != nil {
+		fields = append(fields, party.FieldAvatarUrl)
 	}
 	if m.created_at != nil {
 		fields = append(fields, party.FieldCreatedAt)
@@ -2120,6 +2281,9 @@ func (m *PartyMutation) Fields() []string {
 	if m.note != nil {
 		fields = append(fields, party.FieldNote)
 	}
+	if m.org_id != nil {
+		fields = append(fields, party.FieldOrgID)
+	}
 	if m.tax_id != nil {
 		fields = append(fields, party.FieldTaxID)
 	}
@@ -2143,8 +2307,8 @@ func (m *PartyMutation) Fields() []string {
 // schema.
 func (m *PartyMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case party.FieldAvatarURL:
-		return m.AvatarURL()
+	case party.FieldAvatarUrl:
+		return m.AvatarUrl()
 	case party.FieldCreatedAt:
 		return m.CreatedAt()
 	case party.FieldDeletedAt:
@@ -2167,6 +2331,8 @@ func (m *PartyMutation) Field(name string) (ent.Value, bool) {
 		return m.NationalityID()
 	case party.FieldNote:
 		return m.Note()
+	case party.FieldOrgID:
+		return m.OrgID()
 	case party.FieldTaxID:
 		return m.TaxID()
 	case party.FieldTitle:
@@ -2186,8 +2352,8 @@ func (m *PartyMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *PartyMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case party.FieldAvatarURL:
-		return m.OldAvatarURL(ctx)
+	case party.FieldAvatarUrl:
+		return m.OldAvatarUrl(ctx)
 	case party.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case party.FieldDeletedAt:
@@ -2210,6 +2376,8 @@ func (m *PartyMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldNationalityID(ctx)
 	case party.FieldNote:
 		return m.OldNote(ctx)
+	case party.FieldOrgID:
+		return m.OldOrgID(ctx)
 	case party.FieldTaxID:
 		return m.OldTaxID(ctx)
 	case party.FieldTitle:
@@ -2229,12 +2397,12 @@ func (m *PartyMutation) OldField(ctx context.Context, name string) (ent.Value, e
 // type.
 func (m *PartyMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case party.FieldAvatarURL:
+	case party.FieldAvatarUrl:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetAvatarURL(v)
+		m.SetAvatarUrl(v)
 		return nil
 	case party.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -2313,6 +2481,13 @@ func (m *PartyMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetNote(v)
 		return nil
+	case party.FieldOrgID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrgID(v)
+		return nil
 	case party.FieldTaxID:
 		v, ok := value.(string)
 		if !ok {
@@ -2321,7 +2496,7 @@ func (m *PartyMutation) SetField(name string, value ent.Value) error {
 		m.SetTaxID(v)
 		return nil
 	case party.FieldTitle:
-		v, ok := value.(party.Title)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -2378,8 +2553,8 @@ func (m *PartyMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *PartyMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(party.FieldAvatarURL) {
-		fields = append(fields, party.FieldAvatarURL)
+	if m.FieldCleared(party.FieldAvatarUrl) {
+		fields = append(fields, party.FieldAvatarUrl)
 	}
 	if m.FieldCleared(party.FieldDeletedAt) {
 		fields = append(fields, party.FieldDeletedAt)
@@ -2404,6 +2579,9 @@ func (m *PartyMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(party.FieldNote) {
 		fields = append(fields, party.FieldNote)
+	}
+	if m.FieldCleared(party.FieldOrgID) {
+		fields = append(fields, party.FieldOrgID)
 	}
 	if m.FieldCleared(party.FieldTaxID) {
 		fields = append(fields, party.FieldTaxID)
@@ -2431,8 +2609,8 @@ func (m *PartyMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *PartyMutation) ClearField(name string) error {
 	switch name {
-	case party.FieldAvatarURL:
-		m.ClearAvatarURL()
+	case party.FieldAvatarUrl:
+		m.ClearAvatarUrl()
 		return nil
 	case party.FieldDeletedAt:
 		m.ClearDeletedAt()
@@ -2458,6 +2636,9 @@ func (m *PartyMutation) ClearField(name string) error {
 	case party.FieldNote:
 		m.ClearNote()
 		return nil
+	case party.FieldOrgID:
+		m.ClearOrgID()
+		return nil
 	case party.FieldTaxID:
 		m.ClearTaxID()
 		return nil
@@ -2478,8 +2659,8 @@ func (m *PartyMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *PartyMutation) ResetField(name string) error {
 	switch name {
-	case party.FieldAvatarURL:
-		m.ResetAvatarURL()
+	case party.FieldAvatarUrl:
+		m.ResetAvatarUrl()
 		return nil
 	case party.FieldCreatedAt:
 		m.ResetCreatedAt()
@@ -2514,6 +2695,9 @@ func (m *PartyMutation) ResetField(name string) error {
 	case party.FieldNote:
 		m.ResetNote()
 		return nil
+	case party.FieldOrgID:
+		m.ResetOrgID()
+		return nil
 	case party.FieldTaxID:
 		m.ResetTaxID()
 		return nil
@@ -2535,12 +2719,15 @@ func (m *PartyMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PartyMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.comm_channels != nil {
 		edges = append(edges, party.EdgeCommChannels)
 	}
-	if m.relationships != nil {
-		edges = append(edges, party.EdgeRelationships)
+	if m.relationships_as_source != nil {
+		edges = append(edges, party.EdgeRelationshipsAsSource)
+	}
+	if m.relationships_as_target != nil {
+		edges = append(edges, party.EdgeRelationshipsAsTarget)
 	}
 	return edges
 }
@@ -2555,9 +2742,15 @@ func (m *PartyMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case party.EdgeRelationships:
-		ids := make([]ent.Value, 0, len(m.relationships))
-		for id := range m.relationships {
+	case party.EdgeRelationshipsAsSource:
+		ids := make([]ent.Value, 0, len(m.relationships_as_source))
+		for id := range m.relationships_as_source {
+			ids = append(ids, id)
+		}
+		return ids
+	case party.EdgeRelationshipsAsTarget:
+		ids := make([]ent.Value, 0, len(m.relationships_as_target))
+		for id := range m.relationships_as_target {
 			ids = append(ids, id)
 		}
 		return ids
@@ -2567,12 +2760,15 @@ func (m *PartyMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PartyMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedcomm_channels != nil {
 		edges = append(edges, party.EdgeCommChannels)
 	}
-	if m.removedrelationships != nil {
-		edges = append(edges, party.EdgeRelationships)
+	if m.removedrelationships_as_source != nil {
+		edges = append(edges, party.EdgeRelationshipsAsSource)
+	}
+	if m.removedrelationships_as_target != nil {
+		edges = append(edges, party.EdgeRelationshipsAsTarget)
 	}
 	return edges
 }
@@ -2587,9 +2783,15 @@ func (m *PartyMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case party.EdgeRelationships:
-		ids := make([]ent.Value, 0, len(m.removedrelationships))
-		for id := range m.removedrelationships {
+	case party.EdgeRelationshipsAsSource:
+		ids := make([]ent.Value, 0, len(m.removedrelationships_as_source))
+		for id := range m.removedrelationships_as_source {
+			ids = append(ids, id)
+		}
+		return ids
+	case party.EdgeRelationshipsAsTarget:
+		ids := make([]ent.Value, 0, len(m.removedrelationships_as_target))
+		for id := range m.removedrelationships_as_target {
 			ids = append(ids, id)
 		}
 		return ids
@@ -2599,12 +2801,15 @@ func (m *PartyMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PartyMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedcomm_channels {
 		edges = append(edges, party.EdgeCommChannels)
 	}
-	if m.clearedrelationships {
-		edges = append(edges, party.EdgeRelationships)
+	if m.clearedrelationships_as_source {
+		edges = append(edges, party.EdgeRelationshipsAsSource)
+	}
+	if m.clearedrelationships_as_target {
+		edges = append(edges, party.EdgeRelationshipsAsTarget)
 	}
 	return edges
 }
@@ -2615,8 +2820,10 @@ func (m *PartyMutation) EdgeCleared(name string) bool {
 	switch name {
 	case party.EdgeCommChannels:
 		return m.clearedcomm_channels
-	case party.EdgeRelationships:
-		return m.clearedrelationships
+	case party.EdgeRelationshipsAsSource:
+		return m.clearedrelationships_as_source
+	case party.EdgeRelationshipsAsTarget:
+		return m.clearedrelationships_as_target
 	}
 	return false
 }
@@ -2636,8 +2843,11 @@ func (m *PartyMutation) ResetEdge(name string) error {
 	case party.EdgeCommChannels:
 		m.ResetCommChannels()
 		return nil
-	case party.EdgeRelationships:
-		m.ResetRelationships()
+	case party.EdgeRelationshipsAsSource:
+		m.ResetRelationshipsAsSource()
+		return nil
+	case party.EdgeRelationshipsAsTarget:
+		m.ResetRelationshipsAsTarget()
 		return nil
 	}
 	return fmt.Errorf("unknown Party edge %s", name)
@@ -2646,22 +2856,24 @@ func (m *PartyMutation) ResetEdge(name string) error {
 // RelationshipMutation represents an operation that mutates the Relationship nodes in the graph.
 type RelationshipMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *string
-	created_at    *time.Time
-	deleted_at    *time.Time
-	deleted_by    *string
-	etag          *string
-	note          *string
-	_type         *relationship.Type
-	updated_at    *time.Time
-	clearedFields map[string]struct{}
-	party         *string
-	clearedparty  bool
-	done          bool
-	oldValue      func(context.Context) (*Relationship, error)
-	predicates    []predicate.Relationship
+	op                  Op
+	typ                 string
+	id                  *string
+	created_at          *time.Time
+	deleted_at          *time.Time
+	deleted_by          *string
+	etag                *string
+	note                *string
+	_type               *string
+	updated_at          *time.Time
+	clearedFields       map[string]struct{}
+	source_party        *string
+	clearedsource_party bool
+	target_party        *string
+	clearedtarget_party bool
+	done                bool
+	oldValue            func(context.Context) (*Relationship, error)
+	predicates          []predicate.Relationship
 }
 
 var _ ent.Mutation = (*RelationshipMutation)(nil)
@@ -2987,14 +3199,50 @@ func (m *RelationshipMutation) ResetNote() {
 	delete(m.clearedFields, relationship.FieldNote)
 }
 
+// SetPartyID sets the "party_id" field.
+func (m *RelationshipMutation) SetPartyID(s string) {
+	m.source_party = &s
+}
+
+// PartyID returns the value of the "party_id" field in the mutation.
+func (m *RelationshipMutation) PartyID() (r string, exists bool) {
+	v := m.source_party
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPartyID returns the old "party_id" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldPartyID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPartyID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPartyID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPartyID: %w", err)
+	}
+	return oldValue.PartyID, nil
+}
+
+// ResetPartyID resets all changes to the "party_id" field.
+func (m *RelationshipMutation) ResetPartyID() {
+	m.source_party = nil
+}
+
 // SetTargetPartyID sets the "target_party_id" field.
 func (m *RelationshipMutation) SetTargetPartyID(s string) {
-	m.party = &s
+	m.target_party = &s
 }
 
 // TargetPartyID returns the value of the "target_party_id" field in the mutation.
 func (m *RelationshipMutation) TargetPartyID() (r string, exists bool) {
-	v := m.party
+	v := m.target_party
 	if v == nil {
 		return
 	}
@@ -3020,16 +3268,16 @@ func (m *RelationshipMutation) OldTargetPartyID(ctx context.Context) (v string, 
 
 // ResetTargetPartyID resets all changes to the "target_party_id" field.
 func (m *RelationshipMutation) ResetTargetPartyID() {
-	m.party = nil
+	m.target_party = nil
 }
 
 // SetType sets the "type" field.
-func (m *RelationshipMutation) SetType(r relationship.Type) {
-	m._type = &r
+func (m *RelationshipMutation) SetType(s string) {
+	m._type = &s
 }
 
 // GetType returns the value of the "type" field in the mutation.
-func (m *RelationshipMutation) GetType() (r relationship.Type, exists bool) {
+func (m *RelationshipMutation) GetType() (r string, exists bool) {
 	v := m._type
 	if v == nil {
 		return
@@ -3040,7 +3288,7 @@ func (m *RelationshipMutation) GetType() (r relationship.Type, exists bool) {
 // OldType returns the old "type" field's value of the Relationship entity.
 // If the Relationship object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RelationshipMutation) OldType(ctx context.Context) (v relationship.Type, err error) {
+func (m *RelationshipMutation) OldType(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldType is only allowed on UpdateOne operations")
 	}
@@ -3108,44 +3356,71 @@ func (m *RelationshipMutation) ResetUpdatedAt() {
 	delete(m.clearedFields, relationship.FieldUpdatedAt)
 }
 
-// SetPartyID sets the "party" edge to the Party entity by id.
-func (m *RelationshipMutation) SetPartyID(id string) {
-	m.party = &id
+// SetSourcePartyID sets the "source_party" edge to the Party entity by id.
+func (m *RelationshipMutation) SetSourcePartyID(id string) {
+	m.source_party = &id
 }
 
-// ClearParty clears the "party" edge to the Party entity.
-func (m *RelationshipMutation) ClearParty() {
-	m.clearedparty = true
-	m.clearedFields[relationship.FieldTargetPartyID] = struct{}{}
+// ClearSourceParty clears the "source_party" edge to the Party entity.
+func (m *RelationshipMutation) ClearSourceParty() {
+	m.clearedsource_party = true
+	m.clearedFields[relationship.FieldPartyID] = struct{}{}
 }
 
-// PartyCleared reports if the "party" edge to the Party entity was cleared.
-func (m *RelationshipMutation) PartyCleared() bool {
-	return m.clearedparty
+// SourcePartyCleared reports if the "source_party" edge to the Party entity was cleared.
+func (m *RelationshipMutation) SourcePartyCleared() bool {
+	return m.clearedsource_party
 }
 
-// PartyID returns the "party" edge ID in the mutation.
-func (m *RelationshipMutation) PartyID() (id string, exists bool) {
-	if m.party != nil {
-		return *m.party, true
+// SourcePartyID returns the "source_party" edge ID in the mutation.
+func (m *RelationshipMutation) SourcePartyID() (id string, exists bool) {
+	if m.source_party != nil {
+		return *m.source_party, true
 	}
 	return
 }
 
-// PartyIDs returns the "party" edge IDs in the mutation.
+// SourcePartyIDs returns the "source_party" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// PartyID instead. It exists only for internal usage by the builders.
-func (m *RelationshipMutation) PartyIDs() (ids []string) {
-	if id := m.party; id != nil {
+// SourcePartyID instead. It exists only for internal usage by the builders.
+func (m *RelationshipMutation) SourcePartyIDs() (ids []string) {
+	if id := m.source_party; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetParty resets all changes to the "party" edge.
-func (m *RelationshipMutation) ResetParty() {
-	m.party = nil
-	m.clearedparty = false
+// ResetSourceParty resets all changes to the "source_party" edge.
+func (m *RelationshipMutation) ResetSourceParty() {
+	m.source_party = nil
+	m.clearedsource_party = false
+}
+
+// ClearTargetParty clears the "target_party" edge to the Party entity.
+func (m *RelationshipMutation) ClearTargetParty() {
+	m.clearedtarget_party = true
+	m.clearedFields[relationship.FieldTargetPartyID] = struct{}{}
+}
+
+// TargetPartyCleared reports if the "target_party" edge to the Party entity was cleared.
+func (m *RelationshipMutation) TargetPartyCleared() bool {
+	return m.clearedtarget_party
+}
+
+// TargetPartyIDs returns the "target_party" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TargetPartyID instead. It exists only for internal usage by the builders.
+func (m *RelationshipMutation) TargetPartyIDs() (ids []string) {
+	if id := m.target_party; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTargetParty resets all changes to the "target_party" edge.
+func (m *RelationshipMutation) ResetTargetParty() {
+	m.target_party = nil
+	m.clearedtarget_party = false
 }
 
 // Where appends a list predicates to the RelationshipMutation builder.
@@ -3182,7 +3457,7 @@ func (m *RelationshipMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RelationshipMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.created_at != nil {
 		fields = append(fields, relationship.FieldCreatedAt)
 	}
@@ -3198,7 +3473,10 @@ func (m *RelationshipMutation) Fields() []string {
 	if m.note != nil {
 		fields = append(fields, relationship.FieldNote)
 	}
-	if m.party != nil {
+	if m.source_party != nil {
+		fields = append(fields, relationship.FieldPartyID)
+	}
+	if m.target_party != nil {
 		fields = append(fields, relationship.FieldTargetPartyID)
 	}
 	if m._type != nil {
@@ -3225,6 +3503,8 @@ func (m *RelationshipMutation) Field(name string) (ent.Value, bool) {
 		return m.Etag()
 	case relationship.FieldNote:
 		return m.Note()
+	case relationship.FieldPartyID:
+		return m.PartyID()
 	case relationship.FieldTargetPartyID:
 		return m.TargetPartyID()
 	case relationship.FieldType:
@@ -3250,6 +3530,8 @@ func (m *RelationshipMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldEtag(ctx)
 	case relationship.FieldNote:
 		return m.OldNote(ctx)
+	case relationship.FieldPartyID:
+		return m.OldPartyID(ctx)
 	case relationship.FieldTargetPartyID:
 		return m.OldTargetPartyID(ctx)
 	case relationship.FieldType:
@@ -3300,6 +3582,13 @@ func (m *RelationshipMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetNote(v)
 		return nil
+	case relationship.FieldPartyID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPartyID(v)
+		return nil
 	case relationship.FieldTargetPartyID:
 		v, ok := value.(string)
 		if !ok {
@@ -3308,7 +3597,7 @@ func (m *RelationshipMutation) SetField(name string, value ent.Value) error {
 		m.SetTargetPartyID(v)
 		return nil
 	case relationship.FieldType:
-		v, ok := value.(relationship.Type)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -3412,6 +3701,9 @@ func (m *RelationshipMutation) ResetField(name string) error {
 	case relationship.FieldNote:
 		m.ResetNote()
 		return nil
+	case relationship.FieldPartyID:
+		m.ResetPartyID()
+		return nil
 	case relationship.FieldTargetPartyID:
 		m.ResetTargetPartyID()
 		return nil
@@ -3427,9 +3719,12 @@ func (m *RelationshipMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RelationshipMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.party != nil {
-		edges = append(edges, relationship.EdgeParty)
+	edges := make([]string, 0, 2)
+	if m.source_party != nil {
+		edges = append(edges, relationship.EdgeSourceParty)
+	}
+	if m.target_party != nil {
+		edges = append(edges, relationship.EdgeTargetParty)
 	}
 	return edges
 }
@@ -3438,8 +3733,12 @@ func (m *RelationshipMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *RelationshipMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case relationship.EdgeParty:
-		if id := m.party; id != nil {
+	case relationship.EdgeSourceParty:
+		if id := m.source_party; id != nil {
+			return []ent.Value{*id}
+		}
+	case relationship.EdgeTargetParty:
+		if id := m.target_party; id != nil {
 			return []ent.Value{*id}
 		}
 	}
@@ -3448,7 +3747,7 @@ func (m *RelationshipMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RelationshipMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -3460,9 +3759,12 @@ func (m *RelationshipMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RelationshipMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedparty {
-		edges = append(edges, relationship.EdgeParty)
+	edges := make([]string, 0, 2)
+	if m.clearedsource_party {
+		edges = append(edges, relationship.EdgeSourceParty)
+	}
+	if m.clearedtarget_party {
+		edges = append(edges, relationship.EdgeTargetParty)
 	}
 	return edges
 }
@@ -3471,8 +3773,10 @@ func (m *RelationshipMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *RelationshipMutation) EdgeCleared(name string) bool {
 	switch name {
-	case relationship.EdgeParty:
-		return m.clearedparty
+	case relationship.EdgeSourceParty:
+		return m.clearedsource_party
+	case relationship.EdgeTargetParty:
+		return m.clearedtarget_party
 	}
 	return false
 }
@@ -3481,8 +3785,11 @@ func (m *RelationshipMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *RelationshipMutation) ClearEdge(name string) error {
 	switch name {
-	case relationship.EdgeParty:
-		m.ClearParty()
+	case relationship.EdgeSourceParty:
+		m.ClearSourceParty()
+		return nil
+	case relationship.EdgeTargetParty:
+		m.ClearTargetParty()
 		return nil
 	}
 	return fmt.Errorf("unknown Relationship unique edge %s", name)
@@ -3492,8 +3799,11 @@ func (m *RelationshipMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *RelationshipMutation) ResetEdge(name string) error {
 	switch name {
-	case relationship.EdgeParty:
-		m.ResetParty()
+	case relationship.EdgeSourceParty:
+		m.ResetSourceParty()
+		return nil
+	case relationship.EdgeTargetParty:
+		m.ResetTargetParty()
 		return nil
 	}
 	return fmt.Errorf("unknown Relationship edge %s", name)

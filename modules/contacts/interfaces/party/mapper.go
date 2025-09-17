@@ -5,22 +5,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
 )
 
-func (this CreatePartyCommand) ToParty() *domain.Party {
+func (this CreatePartyCommand) ToDomainModel() *domain.Party {
 	party := &domain.Party{}
 	model.MustCopy(this, party)
 	return party
 }
 
-func (this CreatePartyCommand) ToEntity() *domain.Party {
-	return this.ToParty()
-}
-
-func (this UpdatePartyCommand) ToParty() *domain.Party {
+func (this UpdatePartyCommand) ToDomainModel() *domain.Party {
 	party := &domain.Party{}
 	model.MustCopy(this, party)
 	return party
-}
-
-func (this UpdatePartyCommand) ToEntity() *domain.Party {
-	return this.ToParty()
 }

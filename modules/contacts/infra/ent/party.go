@@ -19,7 +19,7 @@ type Party struct {
 	// ULID
 	ID string `json:"id,omitempty"`
 	// URL to avatar image
-	AvatarURL *string `json:"avatar_url,omitempty"`
+	AvatarUrl *string `json:"avatarUrl,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
@@ -42,10 +42,12 @@ type Party struct {
 	NationalityID *string `json:"nationality_id,omitempty"`
 	// Notes
 	Note *string `json:"note,omitempty"`
+	// Organization ID
+	OrgID *string `json:"org_id,omitempty"`
 	// Tax Identification Number
 	TaxID *string `json:"tax_id,omitempty"`
 	// Title holds the value of the "title" field.
-	Title *party.Title `json:"title,omitempty"`
+	Title *string `json:"title,omitempty"`
 	// "individual" for person, "company" for organization
 	Type string `json:"type,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -62,11 +64,13 @@ type Party struct {
 type PartyEdges struct {
 	// CommChannels holds the value of the comm_channels edge.
 	CommChannels []*CommChannel `json:"comm_channels,omitempty"`
-	// Relationships holds the value of the relationships edge.
-	Relationships []*Relationship `json:"relationships,omitempty"`
+	// RelationshipsAsSource holds the value of the relationships_as_source edge.
+	RelationshipsAsSource []*Relationship `json:"relationships_as_source,omitempty"`
+	// RelationshipsAsTarget holds the value of the relationships_as_target edge.
+	RelationshipsAsTarget []*Relationship `json:"relationships_as_target,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // CommChannelsOrErr returns the CommChannels value or an error if the edge
@@ -78,13 +82,22 @@ func (e PartyEdges) CommChannelsOrErr() ([]*CommChannel, error) {
 	return nil, &NotLoadedError{edge: "comm_channels"}
 }
 
-// RelationshipsOrErr returns the Relationships value or an error if the edge
+// RelationshipsAsSourceOrErr returns the RelationshipsAsSource value or an error if the edge
 // was not loaded in eager-loading.
-func (e PartyEdges) RelationshipsOrErr() ([]*Relationship, error) {
+func (e PartyEdges) RelationshipsAsSourceOrErr() ([]*Relationship, error) {
 	if e.loadedTypes[1] {
-		return e.Relationships, nil
+		return e.RelationshipsAsSource, nil
 	}
-	return nil, &NotLoadedError{edge: "relationships"}
+	return nil, &NotLoadedError{edge: "relationships_as_source"}
+}
+
+// RelationshipsAsTargetOrErr returns the RelationshipsAsTarget value or an error if the edge
+// was not loaded in eager-loading.
+func (e PartyEdges) RelationshipsAsTargetOrErr() ([]*Relationship, error) {
+	if e.loadedTypes[2] {
+		return e.RelationshipsAsTarget, nil
+	}
+	return nil, &NotLoadedError{edge: "relationships_as_target"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -92,7 +105,7 @@ func (*Party) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case party.FieldID, party.FieldAvatarURL, party.FieldDeletedBy, party.FieldDisplayName, party.FieldEtag, party.FieldJobPosition, party.FieldLanguageID, party.FieldLegalAddress, party.FieldLegalName, party.FieldNationalityID, party.FieldNote, party.FieldTaxID, party.FieldTitle, party.FieldType, party.FieldWebsite:
+		case party.FieldID, party.FieldAvatarUrl, party.FieldDeletedBy, party.FieldDisplayName, party.FieldEtag, party.FieldJobPosition, party.FieldLanguageID, party.FieldLegalAddress, party.FieldLegalName, party.FieldNationalityID, party.FieldNote, party.FieldOrgID, party.FieldTaxID, party.FieldTitle, party.FieldType, party.FieldWebsite:
 			values[i] = new(sql.NullString)
 		case party.FieldCreatedAt, party.FieldDeletedAt, party.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -117,12 +130,12 @@ func (pa *Party) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pa.ID = value.String
 			}
-		case party.FieldAvatarURL:
+		case party.FieldAvatarUrl:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field avatar_url", values[i])
+				return fmt.Errorf("unexpected type %T for field avatarUrl", values[i])
 			} else if value.Valid {
-				pa.AvatarURL = new(string)
-				*pa.AvatarURL = value.String
+				pa.AvatarUrl = new(string)
+				*pa.AvatarUrl = value.String
 			}
 		case party.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -198,6 +211,13 @@ func (pa *Party) assignValues(columns []string, values []any) error {
 				pa.Note = new(string)
 				*pa.Note = value.String
 			}
+		case party.FieldOrgID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field org_id", values[i])
+			} else if value.Valid {
+				pa.OrgID = new(string)
+				*pa.OrgID = value.String
+			}
 		case party.FieldTaxID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field tax_id", values[i])
@@ -209,8 +229,8 @@ func (pa *Party) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field title", values[i])
 			} else if value.Valid {
-				pa.Title = new(party.Title)
-				*pa.Title = party.Title(value.String)
+				pa.Title = new(string)
+				*pa.Title = value.String
 			}
 		case party.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -250,9 +270,14 @@ func (pa *Party) QueryCommChannels() *CommChannelQuery {
 	return NewPartyClient(pa.config).QueryCommChannels(pa)
 }
 
-// QueryRelationships queries the "relationships" edge of the Party entity.
-func (pa *Party) QueryRelationships() *RelationshipQuery {
-	return NewPartyClient(pa.config).QueryRelationships(pa)
+// QueryRelationshipsAsSource queries the "relationships_as_source" edge of the Party entity.
+func (pa *Party) QueryRelationshipsAsSource() *RelationshipQuery {
+	return NewPartyClient(pa.config).QueryRelationshipsAsSource(pa)
+}
+
+// QueryRelationshipsAsTarget queries the "relationships_as_target" edge of the Party entity.
+func (pa *Party) QueryRelationshipsAsTarget() *RelationshipQuery {
+	return NewPartyClient(pa.config).QueryRelationshipsAsTarget(pa)
 }
 
 // Update returns a builder for updating this Party.
@@ -278,8 +303,8 @@ func (pa *Party) String() string {
 	var builder strings.Builder
 	builder.WriteString("Party(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pa.ID))
-	if v := pa.AvatarURL; v != nil {
-		builder.WriteString("avatar_url=")
+	if v := pa.AvatarUrl; v != nil {
+		builder.WriteString("avatarUrl=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
@@ -332,6 +357,11 @@ func (pa *Party) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
+	if v := pa.OrgID; v != nil {
+		builder.WriteString("org_id=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
 	if v := pa.TaxID; v != nil {
 		builder.WriteString("tax_id=")
 		builder.WriteString(*v)
@@ -339,7 +369,7 @@ func (pa *Party) String() string {
 	builder.WriteString(", ")
 	if v := pa.Title; v != nil {
 		builder.WriteString("title=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
+		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
 	builder.WriteString("type=")

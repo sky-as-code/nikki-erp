@@ -1,0 +1,15 @@
+meta {
+  name: CommChannel - Get By ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/contacts/parties/channels/{{channel_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

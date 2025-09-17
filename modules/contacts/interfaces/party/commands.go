@@ -3,13 +3,11 @@ package party
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 )
 
 func init() {
@@ -31,19 +29,19 @@ var createPartyCommandType = cqrs.RequestType{
 }
 
 type CreatePartyCommand struct {
-	AvatarUrl    *string    `json:"avatarUrl,omitempty"`
-	DisplayName  string     `json:"displayName"`
-	LegalName    *string    `json:"legalName,omitempty"`
-	LegalAddress *string    `json:"legalAddress,omitempty"`
-	TaxId        *string    `json:"taxId,omitempty"`
-	JobPosition  *string    `json:"jobPosition,omitempty"`
-	Title        *enum.Enum `json:"title,omitempty"`
-	Type         string     `json:"type"`
-	Note         *string    `json:"note,omitempty"`
-	Nationality  *model.Id  `json:"nationality,omitempty"`
-	Org          *model.Id  `json:"org,omitempty" param:"org"`
-	Language     *model.Id  `json:"language,omitempty"`
-	Website      *string    `json:"website,omitempty"`
+	OrgId        model.Id  `json:"orgId" param:"orgId"`
+	AvatarUrl    *string   `json:"avatarUrl,omitempty"`
+	DisplayName  string    `json:"displayName"`
+	LegalName    *string   `json:"legalName,omitempty"`
+	LegalAddress *string   `json:"legalAddress,omitempty"`
+	TaxId        *string   `json:"taxId,omitempty"`
+	JobPosition  *string   `json:"jobPosition,omitempty"`
+	Title        *string   `json:"title,omitempty"`
+	Type         string    `json:"type"`
+	Note         *string   `json:"note,omitempty"`
+	Nationality  *model.Id `json:"nationality,omitempty"`
+	Language     *model.Id `json:"language,omitempty"`
+	Website      *string   `json:"website,omitempty"`
 }
 
 func (CreatePartyCommand) CqrsRequestType() cqrs.RequestType {
@@ -63,7 +61,6 @@ func (this CreatePartyCommand) Validate() ft.ValidationErrors {
 
 		model.IdPtrValidateRule(&this.Nationality, true),
 		model.IdPtrValidateRule(&this.Language, true),
-		model.IdPtrValidateRule(&this.Org, true),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
@@ -85,7 +82,7 @@ type UpdatePartyCommand struct {
 	LegalAddress *string    `json:"legalAddress,omitempty"`
 	TaxId        *string    `json:"taxId,omitempty"`
 	JobPosition  *string    `json:"jobPosition,omitempty"`
-	Title        *enum.Enum `json:"title,omitempty"`
+	Title        *string    `json:"title,omitempty"`
 	Type         *string    `json:"type,omitempty"`
 	Note         *string    `json:"note,omitempty"`
 	Nationality  *model.Id  `json:"nationality,omitempty"`
@@ -138,6 +135,12 @@ func (DeletePartyCommand) CqrsRequestType() cqrs.RequestType {
 	return deletePartyCommandType
 }
 
+func (this DeletePartyCommand) ToDomainModel() *domain.Party {
+	party := &domain.Party{}
+	party.Id = &this.Id
+	return party
+}
+
 func (this DeletePartyCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
@@ -182,7 +185,6 @@ var getPartyByDisplayNameQueryType = cqrs.RequestType{
 
 type GetPartyByDisplayNameQuery struct {
 	DisplayName       string `param:"displayName" json:"displayName"`
-	Type              string `json:"type" query:"type"`
 	WithCommChannels  bool   `json:"withCommChannels" query:"withCommChannels"`
 	WithRelationships bool   `json:"withRelationships" query:"withRelationships"`
 }
@@ -196,10 +198,6 @@ func (this GetPartyByDisplayNameQuery) Validate() ft.ValidationErrors {
 		val.Field(&this.DisplayName,
 			val.NotEmpty,
 			val.Length(1, 50),
-		),
-		val.Field(&this.Type,
-			val.NotEmpty,
-			val.OneOf("individual", "company"),
 		),
 	}
 
@@ -215,9 +213,7 @@ var searchPartiesQueryType = cqrs.RequestType{
 }
 
 type SearchPartiesQuery struct {
-	Page              *int    `json:"page" query:"page"`
-	Size              *int    `json:"size" query:"size"`
-	Graph             *string `json:"graph" query:"graph"`
+	crud.SearchQuery
 	Type              *string `json:"type" query:"type"`
 	WithCommChannels  bool    `json:"withCommChannels" query:"withCommChannels"`
 	WithRelationships bool    `json:"withRelationships" query:"withRelationships"`
@@ -227,22 +223,8 @@ func (SearchPartiesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchPartiesQueryType
 }
 
-func (this *SearchPartiesQuery) SetDefaults() {
-	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
-	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
-}
-
 func (this SearchPartiesQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		crud.PageIndexValidateRule(&this.Page),
-		crud.PageSizeValidateRule(&this.Size),
-		val.Field(&this.Type,
-			val.When(this.Type != nil,
-				val.NotEmpty,
-				val.OneOf("individual", "company"),
-			),
-		),
-	}
+	rules := this.SearchQuery.ValidationRules()
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }

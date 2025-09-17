@@ -103,6 +103,20 @@ func (ru *RelationshipUpdate) ClearNote() *RelationshipUpdate {
 	return ru
 }
 
+// SetPartyID sets the "party_id" field.
+func (ru *RelationshipUpdate) SetPartyID(s string) *RelationshipUpdate {
+	ru.mutation.SetPartyID(s)
+	return ru
+}
+
+// SetNillablePartyID sets the "party_id" field if the given value is not nil.
+func (ru *RelationshipUpdate) SetNillablePartyID(s *string) *RelationshipUpdate {
+	if s != nil {
+		ru.SetPartyID(*s)
+	}
+	return ru
+}
+
 // SetTargetPartyID sets the "target_party_id" field.
 func (ru *RelationshipUpdate) SetTargetPartyID(s string) *RelationshipUpdate {
 	ru.mutation.SetTargetPartyID(s)
@@ -118,15 +132,15 @@ func (ru *RelationshipUpdate) SetNillableTargetPartyID(s *string) *RelationshipU
 }
 
 // SetType sets the "type" field.
-func (ru *RelationshipUpdate) SetType(r relationship.Type) *RelationshipUpdate {
-	ru.mutation.SetType(r)
+func (ru *RelationshipUpdate) SetType(s string) *RelationshipUpdate {
+	ru.mutation.SetType(s)
 	return ru
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (ru *RelationshipUpdate) SetNillableType(r *relationship.Type) *RelationshipUpdate {
-	if r != nil {
-		ru.SetType(*r)
+func (ru *RelationshipUpdate) SetNillableType(s *string) *RelationshipUpdate {
+	if s != nil {
+		ru.SetType(*s)
 	}
 	return ru
 }
@@ -151,15 +165,20 @@ func (ru *RelationshipUpdate) ClearUpdatedAt() *RelationshipUpdate {
 	return ru
 }
 
-// SetPartyID sets the "party" edge to the Party entity by ID.
-func (ru *RelationshipUpdate) SetPartyID(id string) *RelationshipUpdate {
-	ru.mutation.SetPartyID(id)
+// SetSourcePartyID sets the "source_party" edge to the Party entity by ID.
+func (ru *RelationshipUpdate) SetSourcePartyID(id string) *RelationshipUpdate {
+	ru.mutation.SetSourcePartyID(id)
 	return ru
 }
 
-// SetParty sets the "party" edge to the Party entity.
-func (ru *RelationshipUpdate) SetParty(p *Party) *RelationshipUpdate {
-	return ru.SetPartyID(p.ID)
+// SetSourceParty sets the "source_party" edge to the Party entity.
+func (ru *RelationshipUpdate) SetSourceParty(p *Party) *RelationshipUpdate {
+	return ru.SetSourcePartyID(p.ID)
+}
+
+// SetTargetParty sets the "target_party" edge to the Party entity.
+func (ru *RelationshipUpdate) SetTargetParty(p *Party) *RelationshipUpdate {
+	return ru.SetTargetPartyID(p.ID)
 }
 
 // Mutation returns the RelationshipMutation object of the builder.
@@ -167,9 +186,15 @@ func (ru *RelationshipUpdate) Mutation() *RelationshipMutation {
 	return ru.mutation
 }
 
-// ClearParty clears the "party" edge to the Party entity.
-func (ru *RelationshipUpdate) ClearParty() *RelationshipUpdate {
-	ru.mutation.ClearParty()
+// ClearSourceParty clears the "source_party" edge to the Party entity.
+func (ru *RelationshipUpdate) ClearSourceParty() *RelationshipUpdate {
+	ru.mutation.ClearSourceParty()
+	return ru
+}
+
+// ClearTargetParty clears the "target_party" edge to the Party entity.
+func (ru *RelationshipUpdate) ClearTargetParty() *RelationshipUpdate {
+	ru.mutation.ClearTargetParty()
 	return ru
 }
 
@@ -202,13 +227,11 @@ func (ru *RelationshipUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (ru *RelationshipUpdate) check() error {
-	if v, ok := ru.mutation.GetType(); ok {
-		if err := relationship.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Relationship.type": %w`, err)}
-		}
+	if ru.mutation.SourcePartyCleared() && len(ru.mutation.SourcePartyIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Relationship.source_party"`)
 	}
-	if ru.mutation.PartyCleared() && len(ru.mutation.PartyIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Relationship.party"`)
+	if ru.mutation.TargetPartyCleared() && len(ru.mutation.TargetPartyIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Relationship.target_party"`)
 	}
 	return nil
 }
@@ -247,7 +270,7 @@ func (ru *RelationshipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.ClearField(relationship.FieldNote, field.TypeString)
 	}
 	if value, ok := ru.mutation.GetType(); ok {
-		_spec.SetField(relationship.FieldType, field.TypeEnum, value)
+		_spec.SetField(relationship.FieldType, field.TypeString, value)
 	}
 	if value, ok := ru.mutation.UpdatedAt(); ok {
 		_spec.SetField(relationship.FieldUpdatedAt, field.TypeTime, value)
@@ -255,12 +278,12 @@ func (ru *RelationshipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if ru.mutation.UpdatedAtCleared() {
 		_spec.ClearField(relationship.FieldUpdatedAt, field.TypeTime)
 	}
-	if ru.mutation.PartyCleared() {
+	if ru.mutation.SourcePartyCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   relationship.PartyTable,
-			Columns: []string{relationship.PartyColumn},
+			Table:   relationship.SourcePartyTable,
+			Columns: []string{relationship.SourcePartyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(party.FieldID, field.TypeString),
@@ -268,12 +291,41 @@ func (ru *RelationshipUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ru.mutation.PartyIDs(); len(nodes) > 0 {
+	if nodes := ru.mutation.SourcePartyIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   relationship.PartyTable,
-			Columns: []string{relationship.PartyColumn},
+			Table:   relationship.SourcePartyTable,
+			Columns: []string{relationship.SourcePartyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(party.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ru.mutation.TargetPartyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   relationship.TargetPartyTable,
+			Columns: []string{relationship.TargetPartyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(party.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.TargetPartyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   relationship.TargetPartyTable,
+			Columns: []string{relationship.TargetPartyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(party.FieldID, field.TypeString),
@@ -378,6 +430,20 @@ func (ruo *RelationshipUpdateOne) ClearNote() *RelationshipUpdateOne {
 	return ruo
 }
 
+// SetPartyID sets the "party_id" field.
+func (ruo *RelationshipUpdateOne) SetPartyID(s string) *RelationshipUpdateOne {
+	ruo.mutation.SetPartyID(s)
+	return ruo
+}
+
+// SetNillablePartyID sets the "party_id" field if the given value is not nil.
+func (ruo *RelationshipUpdateOne) SetNillablePartyID(s *string) *RelationshipUpdateOne {
+	if s != nil {
+		ruo.SetPartyID(*s)
+	}
+	return ruo
+}
+
 // SetTargetPartyID sets the "target_party_id" field.
 func (ruo *RelationshipUpdateOne) SetTargetPartyID(s string) *RelationshipUpdateOne {
 	ruo.mutation.SetTargetPartyID(s)
@@ -393,15 +459,15 @@ func (ruo *RelationshipUpdateOne) SetNillableTargetPartyID(s *string) *Relations
 }
 
 // SetType sets the "type" field.
-func (ruo *RelationshipUpdateOne) SetType(r relationship.Type) *RelationshipUpdateOne {
-	ruo.mutation.SetType(r)
+func (ruo *RelationshipUpdateOne) SetType(s string) *RelationshipUpdateOne {
+	ruo.mutation.SetType(s)
 	return ruo
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (ruo *RelationshipUpdateOne) SetNillableType(r *relationship.Type) *RelationshipUpdateOne {
-	if r != nil {
-		ruo.SetType(*r)
+func (ruo *RelationshipUpdateOne) SetNillableType(s *string) *RelationshipUpdateOne {
+	if s != nil {
+		ruo.SetType(*s)
 	}
 	return ruo
 }
@@ -426,15 +492,20 @@ func (ruo *RelationshipUpdateOne) ClearUpdatedAt() *RelationshipUpdateOne {
 	return ruo
 }
 
-// SetPartyID sets the "party" edge to the Party entity by ID.
-func (ruo *RelationshipUpdateOne) SetPartyID(id string) *RelationshipUpdateOne {
-	ruo.mutation.SetPartyID(id)
+// SetSourcePartyID sets the "source_party" edge to the Party entity by ID.
+func (ruo *RelationshipUpdateOne) SetSourcePartyID(id string) *RelationshipUpdateOne {
+	ruo.mutation.SetSourcePartyID(id)
 	return ruo
 }
 
-// SetParty sets the "party" edge to the Party entity.
-func (ruo *RelationshipUpdateOne) SetParty(p *Party) *RelationshipUpdateOne {
-	return ruo.SetPartyID(p.ID)
+// SetSourceParty sets the "source_party" edge to the Party entity.
+func (ruo *RelationshipUpdateOne) SetSourceParty(p *Party) *RelationshipUpdateOne {
+	return ruo.SetSourcePartyID(p.ID)
+}
+
+// SetTargetParty sets the "target_party" edge to the Party entity.
+func (ruo *RelationshipUpdateOne) SetTargetParty(p *Party) *RelationshipUpdateOne {
+	return ruo.SetTargetPartyID(p.ID)
 }
 
 // Mutation returns the RelationshipMutation object of the builder.
@@ -442,9 +513,15 @@ func (ruo *RelationshipUpdateOne) Mutation() *RelationshipMutation {
 	return ruo.mutation
 }
 
-// ClearParty clears the "party" edge to the Party entity.
-func (ruo *RelationshipUpdateOne) ClearParty() *RelationshipUpdateOne {
-	ruo.mutation.ClearParty()
+// ClearSourceParty clears the "source_party" edge to the Party entity.
+func (ruo *RelationshipUpdateOne) ClearSourceParty() *RelationshipUpdateOne {
+	ruo.mutation.ClearSourceParty()
+	return ruo
+}
+
+// ClearTargetParty clears the "target_party" edge to the Party entity.
+func (ruo *RelationshipUpdateOne) ClearTargetParty() *RelationshipUpdateOne {
+	ruo.mutation.ClearTargetParty()
 	return ruo
 }
 
@@ -490,13 +567,11 @@ func (ruo *RelationshipUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (ruo *RelationshipUpdateOne) check() error {
-	if v, ok := ruo.mutation.GetType(); ok {
-		if err := relationship.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Relationship.type": %w`, err)}
-		}
+	if ruo.mutation.SourcePartyCleared() && len(ruo.mutation.SourcePartyIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Relationship.source_party"`)
 	}
-	if ruo.mutation.PartyCleared() && len(ruo.mutation.PartyIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Relationship.party"`)
+	if ruo.mutation.TargetPartyCleared() && len(ruo.mutation.TargetPartyIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Relationship.target_party"`)
 	}
 	return nil
 }
@@ -552,7 +627,7 @@ func (ruo *RelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Relations
 		_spec.ClearField(relationship.FieldNote, field.TypeString)
 	}
 	if value, ok := ruo.mutation.GetType(); ok {
-		_spec.SetField(relationship.FieldType, field.TypeEnum, value)
+		_spec.SetField(relationship.FieldType, field.TypeString, value)
 	}
 	if value, ok := ruo.mutation.UpdatedAt(); ok {
 		_spec.SetField(relationship.FieldUpdatedAt, field.TypeTime, value)
@@ -560,12 +635,12 @@ func (ruo *RelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Relations
 	if ruo.mutation.UpdatedAtCleared() {
 		_spec.ClearField(relationship.FieldUpdatedAt, field.TypeTime)
 	}
-	if ruo.mutation.PartyCleared() {
+	if ruo.mutation.SourcePartyCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   relationship.PartyTable,
-			Columns: []string{relationship.PartyColumn},
+			Table:   relationship.SourcePartyTable,
+			Columns: []string{relationship.SourcePartyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(party.FieldID, field.TypeString),
@@ -573,12 +648,41 @@ func (ruo *RelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Relations
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := ruo.mutation.PartyIDs(); len(nodes) > 0 {
+	if nodes := ruo.mutation.SourcePartyIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   relationship.PartyTable,
-			Columns: []string{relationship.PartyColumn},
+			Table:   relationship.SourcePartyTable,
+			Columns: []string{relationship.SourcePartyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(party.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.TargetPartyCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   relationship.TargetPartyTable,
+			Columns: []string{relationship.TargetPartyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(party.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.TargetPartyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   relationship.TargetPartyTable,
+			Columns: []string{relationship.TargetPartyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(party.FieldID, field.TypeString),
