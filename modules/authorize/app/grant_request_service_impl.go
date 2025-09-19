@@ -29,15 +29,6 @@ const (
 	ApprovalTypeNone
 )
 
-type ApprovalContext struct {
-	Request      *domain.GrantRequest
-	ManagerIds   []string
-	OwnerUserIds []string
-	OwnerId      *string
-	ResponderId  string
-	Responses    []domain.GrantResponse
-}
-
 type ResponseState struct {
 	AnyManagerResponded bool
 	AnyManagerDenied    bool
@@ -184,6 +175,47 @@ func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx crud.Context, cmd
 	}, nil
 }
 
+func (this *GrantRequestServiceImpl) CancelGrantRequest(ctx crud.Context, cmd itGrantRequest.CancelGrantRequestCommand) (result *itGrantRequest.CancelGrantRequestResult, err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "cancel grant request"); e != nil {
+			err = e
+		}
+	}()
+
+	var dbGrantRequest *domain.GrantRequest
+
+	flow := validator.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			dbGrantRequest, err = this.assertGrantRequestExists(ctx, cmd.Id, vErrs)
+			return err
+		}).
+		End()
+	fault.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &itGrantRequest.CancelGrantRequestResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	prevEtag := dbGrantRequest.Etag
+	dbGrantRequest.Etag = model.NewEtag()
+	status := domain.CancelledGrantRequestStatus
+	dbGrantRequest.Status = &status
+	update, err := this.grantRequestRepo.Update(ctx, *dbGrantRequest, *prevEtag)
+	fault.PanicOnErr(err)
+
+	return &itGrantRequest.CancelGrantRequestResult{
+		Data:    update,
+		HasData: true,
+	}, nil
+}
+
 func (this *GrantRequestServiceImpl) setGrantRequestDefaults(grantRequest *domain.GrantRequest) {
 	grantRequest.SetDefaults()
 }
@@ -227,7 +259,7 @@ func (this *GrantRequestServiceImpl) assertReceiver(ctx crud.Context, grantReque
 		}
 
 		if !existRes.Data {
-			vErrs.Append("receiver_id", "not existing user")
+			vErrs.Append("receiverId", "not existing user")
 		}
 		return
 	case domain.ReceiverTypeGroup:
@@ -244,7 +276,7 @@ func (this *GrantRequestServiceImpl) assertReceiver(ctx crud.Context, grantReque
 		}
 
 		if !existRes.Data {
-			vErrs.Append("receiver_id", "not existing group")
+			vErrs.Append("receiverId", "not existing group")
 		}
 		return
 	}
@@ -275,23 +307,23 @@ func (this *GrantRequestServiceImpl) assertReceiverNotAlreadyGranted(ctx crud.Co
 		exist, err := this.roleRepo.ExistUserWithRole(ctx, itRole.ExistUserWithRoleParam{
 			ReceiverType: *grantRequest.ReceiverType,
 			ReceiverId:   *grantRequest.ReceiverId,
-			TargetId:   *grantRequest.TargetRef,
+			TargetId:     *grantRequest.TargetRef,
 		})
 		fault.PanicOnErr(err)
 
 		if exist {
-			vErrs.AppendAlreadyExists("receiver_id", "granted receiver")
+			vErrs.AppendAlreadyExists("receiverId", "granted receiver")
 		}
 	case domain.GrantRequestTargetTypeSuite:
 		exist, err := this.suiteRepo.ExistUserWithRoleSuite(ctx, itRoleSuite.ExistUserWithRoleSuiteParam{
 			ReceiverType: *grantRequest.ReceiverType,
 			ReceiverId:   *grantRequest.ReceiverId,
-			TargetId:   *grantRequest.TargetRef,
+			TargetId:     *grantRequest.TargetRef,
 		})
 		fault.PanicOnErr(err)
 
 		if exist {
-			vErrs.AppendAlreadyExists("receiver_id", "granted receiver")
+			vErrs.AppendAlreadyExists("receiverId", "granted receiver")
 		}
 	}
 }
@@ -301,7 +333,7 @@ func (this *GrantRequestServiceImpl) assertNoPendingGrantRequest(ctx crud.Contex
 	fault.PanicOnErr(err)
 
 	if len(pendingRequests) > 0 {
-		vErrs.AppendAlreadyExists("receiver_id", "receiver already has a pending request for this role/suite")
+		vErrs.AppendAlreadyExists("receiverId", "receiver already has a pending request for this role/suite already exists")
 	}
 
 	return nil
@@ -375,7 +407,7 @@ func (this *GrantRequestServiceImpl) findOwner(ctx crud.Context, targetId string
 		fault.PanicOnErr(err)
 
 		if role == nil {
-			vErrs.AppendNotFound("targetRef", "target")
+			vErrs.AppendNotFound("targetRef", "target role")
 			return nil, nil
 		}
 		return role.OwnerRef, nil
@@ -385,7 +417,7 @@ func (this *GrantRequestServiceImpl) findOwner(ctx crud.Context, targetId string
 		fault.PanicOnErr(err)
 
 		if suite == nil {
-			vErrs.AppendNotFound("targetRef", "target")
+			vErrs.AppendNotFound("targetRef", "target suite")
 			return nil, nil
 		}
 		return suite.OwnerRef, nil
@@ -402,7 +434,7 @@ func (this *GrantRequestServiceImpl) findOwnerInfo(ctx crud.Context, targetId st
 		fault.PanicOnErr(err)
 
 		if role == nil {
-			vErrs.AppendNotFound("targetRef", "target")
+			vErrs.AppendNotFound("targetRef", "target role")
 			return nil, nil, nil
 		}
 		ownerType := string(*role.OwnerType)
@@ -413,7 +445,7 @@ func (this *GrantRequestServiceImpl) findOwnerInfo(ctx crud.Context, targetId st
 		fault.PanicOnErr(err)
 
 		if suite == nil {
-			vErrs.AppendNotFound("targetRef", "target")
+			vErrs.AppendNotFound("targetRef", "target suite")
 			return nil, nil, nil
 		}
 		ownerType := string(*suite.OwnerType)
@@ -444,90 +476,46 @@ func (this *GrantRequestServiceImpl) findOwnerUserIds(ctx crud.Context, targetId
 }
 
 func (this *GrantRequestServiceImpl) getUsersInGroup(ctx crud.Context, groupId string) ([]string, error) {
-	graph := fmt.Sprintf("{\"if\":[\"groups.id\", \"=\", \"%s\"]}", groupId)
-	searchParam := &crud.SearchQuery{Graph: &graph}
-	expandedUserQuery := &itUser.SearchUsersQuery{SearchQuery: *searchParam}
+	var allUserIds []string
+	page := model.MODEL_RULE_PAGE_INDEX_START
+	size := model.MODEL_RULE_PAGE_DEFAULT_SIZE
 
-	searchRes := itUser.SearchUsersResult{}
-	err := this.cqrsBus.Request(ctx, *expandedUserQuery, &searchRes)
-	fault.PanicOnErr(err)
-
-	if searchRes.ClientError != nil {
-		return nil, fmt.Errorf("failed to search users in group: %v", searchRes.ClientError)
-	}
-
-	if searchRes.Data == nil || searchRes.Data.Items == nil || len(searchRes.Data.Items) == 0 {
-		return nil, fmt.Errorf("no users found in group: %s", groupId)
-	}
-
-	var userIds []string
-	for _, user := range searchRes.Data.Items {
-		userIds = append(userIds, string(*user.Id))
-	}
-
-	return userIds, nil
-}
-
-func (ctx *ApprovalContext) IsGroupReceiver() bool {
-	return *ctx.Request.ReceiverType == domain.ReceiverTypeGroup
-}
-
-func (ctx *ApprovalContext) IsResponderManager() bool {
-	for _, managerId := range ctx.ManagerIds {
-		if ctx.ResponderId == managerId {
-			return true
+	for {
+		graph := fmt.Sprintf("{\"if\":[\"groups.id\", \"=\", \"%s\"]}", groupId)
+		searchParam := &crud.SearchQuery{
+			Graph: &graph,
+			Page:  &page,
+			Size:  &size,
 		}
-	}
-	return false
-}
+		expandedUserQuery := &itUser.SearchUsersQuery{SearchQuery: *searchParam}
 
-func (ctx *ApprovalContext) IsResponderOwnerUser() bool {
-	for _, ownerUserId := range ctx.OwnerUserIds {
-		if ctx.ResponderId == ownerUserId {
-			return true
-		}
-	}
-	return false
-}
+		searchRes := itUser.SearchUsersResult{}
+		err := this.cqrsBus.Request(ctx, *expandedUserQuery, &searchRes)
+		fault.PanicOnErr(err)
 
-func (ctx *ApprovalContext) HasAlreadyResponded() bool {
-	for _, response := range ctx.Responses {
-		if response.ResponderId != nil && *response.ResponderId == ctx.ResponderId {
-			return true
-		}
-	}
-	return false
-}
-
-func (ctx *ApprovalContext) GetResponseState() ResponseState {
-	state := ResponseState{}
-
-	for _, response := range ctx.Responses {
-		for _, managerId := range ctx.ManagerIds {
-			if *response.ResponderId == managerId {
-				state.AnyManagerResponded = true
-				if !*response.IsApproved {
-					state.AnyManagerDenied = true
-				} else {
-					state.AnyManagerApproved = true
-				}
-				break
-			}
+		if searchRes.ClientError != nil {
+			return nil, searchRes.ClientError
 		}
 
-		for _, ownerUserId := range ctx.OwnerUserIds {
-			if *response.ResponderId == ownerUserId {
-				if !*response.IsApproved {
-					state.AnyOwnerDenied = true
-				} else {
-					state.AnyOwnerApproved = true
-				}
-				break
-			}
+		if searchRes.Data == nil || searchRes.Data.Items == nil || len(searchRes.Data.Items) == 0 {
+			break
 		}
+
+		for _, user := range searchRes.Data.Items {
+			allUserIds = append(allUserIds, string(*user.Id))
+		}
+
+		currentPageCount := len(searchRes.Data.Items)
+		totalFetched := len(allUserIds)
+
+		if currentPageCount < size || totalFetched >= searchRes.Data.Total {
+			break
+		}
+
+		page++
 	}
 
-	return state
+	return allUserIds, nil
 }
 
 func (this *GrantRequestServiceImpl) assertGrantRequestExists(ctx crud.Context, grantRequestID model.Id, vErrs *fault.ValidationErrors) (dbGrantRequest *domain.GrantRequest, err error) {
@@ -578,10 +566,9 @@ func (this *GrantRequestServiceImpl) isValidApprover(ctx crud.Context, request *
 	return canApprove, approvalCtx.ManagerIds, approvalCtx.OwnerId, nil
 }
 
-func (this *GrantRequestServiceImpl) buildApprovalContext(ctx crud.Context, request *domain.GrantRequest, responderId string) (*ApprovalContext, error) {
+func (this *GrantRequestServiceImpl) buildApprovalContext(ctx crud.Context, request *domain.GrantRequest, responderId string) (*domain.ApprovalContext, error) {
 	grantResponses, err := this.grantResponseRepo.FindByRequestId(ctx, *request.Id)
 	fault.PanicOnErr(err)
-
 
 	ownerId, err := this.findOwner(ctx, *request.TargetRef, *request.TargetType, nil)
 	fault.PanicOnErr(err)
@@ -595,7 +582,7 @@ func (this *GrantRequestServiceImpl) buildApprovalContext(ctx crud.Context, requ
 		fault.PanicOnErr(err)
 	}
 
-	return &ApprovalContext{
+	return &domain.ApprovalContext{
 		Request:      request,
 		ManagerIds:   managerIds,
 		OwnerUserIds: ownerUserIds,
@@ -605,22 +592,22 @@ func (this *GrantRequestServiceImpl) buildApprovalContext(ctx crud.Context, requ
 	}, nil
 }
 
-func (this *GrantRequestServiceImpl) determineCanApprove(ctx *ApprovalContext) bool {
-	state := ctx.GetResponseState()
+func (this *GrantRequestServiceImpl) determineCanApprove(approvalCtx *domain.ApprovalContext) bool {
+	state := approvalCtx.GetResponseState()
 
-	if ctx.IsGroupReceiver() {
-		if !ctx.IsResponderOwnerUser() {
+	if approvalCtx.IsGroupReceiver() {
+		if !approvalCtx.IsResponderOwnerUser() {
 			return false
 		}
 		return !state.AnyOwnerDenied && !state.AnyOwnerApproved
 	}
 
-	if !ctx.IsResponderManager() && !ctx.IsResponderOwnerUser() {
+	if !approvalCtx.IsResponderManager() && !approvalCtx.IsResponderOwnerUser() {
 		return false
 	}
 
-	if len(ctx.ManagerIds) == 0 {
-		return ctx.IsResponderOwnerUser() && !state.AnyOwnerDenied && !state.AnyOwnerApproved
+	if len(approvalCtx.ManagerIds) == 0 {
+		return approvalCtx.IsResponderOwnerUser() && !state.AnyOwnerDenied && !state.AnyOwnerApproved
 	}
 
 	if state.AnyManagerDenied {
@@ -628,11 +615,11 @@ func (this *GrantRequestServiceImpl) determineCanApprove(ctx *ApprovalContext) b
 	}
 
 	if !state.AnyManagerResponded {
-		return ctx.IsResponderManager()
+		return approvalCtx.IsResponderManager()
 	}
 
 	if state.AnyManagerApproved {
-		return ctx.IsResponderOwnerUser() && !state.AnyOwnerDenied && !state.AnyOwnerApproved
+		return approvalCtx.IsResponderOwnerUser() && !state.AnyOwnerDenied && !state.AnyOwnerApproved
 	}
 
 	return false
@@ -659,7 +646,7 @@ func (this *GrantRequestServiceImpl) processGrantResponse(ctx crud.Context, dbGr
 	return this.handleGrantApproval(ctx, dbGrantRequest, prevEtag, cmd, approvalCtx)
 }
 
-func (this *GrantRequestServiceImpl) handleGrantApproval(ctx crud.Context, dbGrantRequest *domain.GrantRequest, prevEtag model.Etag, cmd itGrantRequest.RespondToGrantRequestCommand, approvalCtx *ApprovalContext) (*domain.GrantRequest, error) {
+func (this *GrantRequestServiceImpl) handleGrantApproval(ctx crud.Context, dbGrantRequest *domain.GrantRequest, prevEtag model.Etag, cmd itGrantRequest.RespondToGrantRequestCommand, approvalCtx *domain.ApprovalContext) (*domain.GrantRequest, error) {
 	approvedStatus := domain.ApprovedGrantRequestStatus
 	dbGrantRequest.Status = &approvedStatus
 
@@ -714,8 +701,8 @@ func (this *GrantRequestServiceImpl) handleFinalApproval(ctx crud.Context, dbGra
 	err := this.grantAccess(ctx, dbGrantRequest)
 	fault.PanicOnErr(err)
 
-	err = this.createPermissionHistory(ctx, dbGrantRequest, cmd)
-	fault.PanicOnErr(err)
+	// err = this.createPermissionHistory(ctx, dbGrantRequest, cmd)
+	// fault.PanicOnErr(err)
 
 	updatedGrantRequest, err := this.grantRequestRepo.Update(ctx, *dbGrantRequest, prevEtag)
 	fault.PanicOnErr(err)
@@ -763,68 +750,68 @@ func (this *GrantRequestServiceImpl) createRoleSuiteUser(ctx crud.Context, reque
 	return nil
 }
 
-func (this *GrantRequestServiceImpl) createPermissionHistory(ctx crud.Context, dbGrantRequest *domain.GrantRequest, cmd itGrantRequest.RespondToGrantRequestCommand) error {
-	receivers, err := this.getAffectedUsers(ctx, dbGrantRequest)
-	fault.PanicOnErr(err)
+// func (this *GrantRequestServiceImpl) createPermissionHistory(ctx crud.Context, dbGrantRequest *domain.GrantRequest, cmd itGrantRequest.RespondToGrantRequestCommand) error {
+// 	receivers, err := this.getAffectedUsers(ctx, dbGrantRequest)
+// 	fault.PanicOnErr(err)
 
-	reason := this.determinePermissionHistoryReason(dbGrantRequest)
+// 	reason := this.determinePermissionHistoryReason(dbGrantRequest)
 
-	for _, receiverId := range receivers {
-		permissionHistory := this.buildPermissionHistory(dbGrantRequest, cmd, receiverId, reason)
-		_, err := this.permissionHistoryRepo.Create(ctx, *permissionHistory)
-		fault.PanicOnErr(err)
-	}
+// 	for _, receiverId := range receivers {
+// 		permissionHistory := this.buildPermissionHistory(dbGrantRequest, cmd, receiverId, reason)
+// 		_, err := this.permissionHistoryRepo.Create(ctx, *permissionHistory)
+// 		fault.PanicOnErr(err)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
-func (this *GrantRequestServiceImpl) getAffectedUsers(ctx crud.Context, dbGrantRequest *domain.GrantRequest) ([]model.Id, error) {
-	if *dbGrantRequest.ReceiverType == domain.ReceiverTypeUser {
-		return []model.Id{*dbGrantRequest.ReceiverId}, nil
-	}
+// func (this *GrantRequestServiceImpl) getAffectedUsers(ctx crud.Context, dbGrantRequest *domain.GrantRequest) ([]model.Id, error) {
+// 	if *dbGrantRequest.ReceiverType == domain.ReceiverTypeUser {
+// 		return []model.Id{*dbGrantRequest.ReceiverId}, nil
+// 	}
 
-	receivers, err := this.getUsersInGroup(ctx, *dbGrantRequest.ReceiverId)
-	fault.PanicOnErr(err)
+// 	receivers, err := this.getUsersInGroup(ctx, *dbGrantRequest.ReceiverId)
+// 	fault.PanicOnErr(err)
 
-	return receivers, nil
-}
+// 	return receivers, nil
+// }
 
-func (this *GrantRequestServiceImpl) determinePermissionHistoryReason(dbGrantRequest *domain.GrantRequest) domain.PermissionHistoryReason {
-	isRole := *dbGrantRequest.TargetType == domain.GrantRequestTargetTypeRole
-	isUser := *dbGrantRequest.ReceiverType == domain.ReceiverTypeUser
+// func (this *GrantRequestServiceImpl) determinePermissionHistoryReason(dbGrantRequest *domain.GrantRequest) domain.PermissionHistoryReason {
+// 	isRole := *dbGrantRequest.TargetType == domain.GrantRequestTargetTypeRole
+// 	isUser := *dbGrantRequest.ReceiverType == domain.ReceiverTypeUser
 
-	if isRole {
-		if isUser {
-			return domain.PermissionHistoryReasonRoleAdded
-		}
-		return domain.PermissionHistoryReasonRoleAddedGroup
-	} else {
-		if isUser {
-			return domain.PermissionHistoryReasonSuiteAdded
-		}
-		return domain.PermissionHistoryReasonSuiteAddedGroup
-	}
-}
+// 	if isRole {
+// 		if isUser {
+// 			return domain.PermissionHistoryReasonRoleAdded
+// 		}
+// 		return domain.PermissionHistoryReasonRoleAddedGroup
+// 	} else {
+// 		if isUser {
+// 			return domain.PermissionHistoryReasonSuiteAdded
+// 		}
+// 		return domain.PermissionHistoryReasonSuiteAddedGroup
+// 	}
+// }
 
-func (this *GrantRequestServiceImpl) buildPermissionHistory(dbGrantRequest *domain.GrantRequest, cmd itGrantRequest.RespondToGrantRequestCommand, receiverId model.Id, reason domain.PermissionHistoryReason) *domain.PermissionHistory {
-	effect := domain.PermissionHistoryEffectGrant
+// func (this *GrantRequestServiceImpl) buildPermissionHistory(dbGrantRequest *domain.GrantRequest, cmd itGrantRequest.RespondToGrantRequestCommand, receiverId model.Id, reason domain.PermissionHistoryReason) *domain.PermissionHistory {
+// 	effect := domain.PermissionHistoryEffectGrant
 
-	permissionHistory := &domain.PermissionHistory{
-		ApproverId:     &cmd.ResponderId,
-		Effect:         &effect,
-		Reason:         &reason,
-		ReceiverId:     &receiverId,
-		GrantRequestId: dbGrantRequest.Id,
-	}
+// 	permissionHistory := &domain.PermissionHistory{
+// 		ApproverId:     &cmd.ResponderId,
+// 		Effect:         &effect,
+// 		Reason:         &reason,
+// 		ReceiverId:     &receiverId,
+// 		GrantRequestId: dbGrantRequest.Id,
+// 	}
 
-	permissionHistory.SetDefaults()
+// 	permissionHistory.SetDefaults()
 
-	switch *dbGrantRequest.TargetType {
-	case domain.GrantRequestTargetTypeRole:
-		permissionHistory.RoleId = dbGrantRequest.TargetRef
-	case domain.GrantRequestTargetTypeSuite:
-		permissionHistory.RoleSuiteId = dbGrantRequest.TargetRef
-	}
+// 	switch *dbGrantRequest.TargetType {
+// 	case domain.GrantRequestTargetTypeRole:
+// 		permissionHistory.RoleId = dbGrantRequest.TargetRef
+// 	case domain.GrantRequestTargetTypeSuite:
+// 		permissionHistory.RoleSuiteId = dbGrantRequest.TargetRef
+// 	}
 
-	return permissionHistory
-}
+// 	return permissionHistory
+// }

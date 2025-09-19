@@ -1,9 +1,6 @@
 package repository
 
 import (
-	"context"
-	"time"
-
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -30,22 +27,6 @@ type EntitlementAssignmentEntRepository struct {
 }
 
 func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx crud.Context, param it.FindBySubjectParam) ([]*domain.EntitlementAssignment, error) {
-	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	countQuery := this.client.EntitlementAssignment.Query().
-		Where(entAssign.SubjectTypeEQ(entAssign.SubjectType(param.SubjectType))).
-		Where(entAssign.SubjectRefEQ(param.SubjectRef))
-
-	count, err := countQuery.Count(timeoutCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	if count == 0 {
-		return []*domain.EntitlementAssignment{}, nil
-	}
-
 	query := this.client.EntitlementAssignment.Query().
 		Where(entAssign.SubjectTypeEQ(entAssign.SubjectType(param.SubjectType))).
 		Where(entAssign.SubjectRefEQ(param.SubjectRef)).
@@ -53,7 +34,7 @@ func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx crud.Contex
 			eq.WithResource()
 		})
 
-	return database.List(timeoutCtx, query, func(assignments []*ent.EntitlementAssignment) []*domain.EntitlementAssignment {
+	return database.List(ctx, query, func(assignments []*ent.EntitlementAssignment) []*domain.EntitlementAssignment {
 		result := make([]*domain.EntitlementAssignment, len(assignments))
 		for i, assignment := range assignments {
 			result[i] = entToEntitlementAssignment(assignment)
@@ -86,13 +67,10 @@ func (this *EntitlementAssignmentEntRepository) FindViewsById(ctx crud.Context, 
 }
 
 func (this *EntitlementAssignmentEntRepository) FindAllByEntitlementId(ctx crud.Context, param it.FindAllByEntitlementIdParam) ([]*domain.EntitlementAssignment, error) {
-	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
 	query := this.client.EntitlementAssignment.Query().
 		Where(entAssign.EntitlementIDEQ(param.EntitlementId))
 
-	return database.List(timeoutCtx, query, entToEntitlementAssignments)
+	return database.List(ctx, query, entToEntitlementAssignments)
 }
 
 func (this *EntitlementAssignmentEntRepository) DeleteHard(ctx crud.Context, param it.DeleteEntitlementAssignmentByIdQuery) (int, error) {

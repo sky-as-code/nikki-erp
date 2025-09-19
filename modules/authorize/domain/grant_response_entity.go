@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"time"
-
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/validator"
@@ -12,11 +10,10 @@ type GrantResponse struct {
 	model.ModelBase
 	model.AuditableBase
 
-	RequestId   *model.Id  `json:"requestId,omitempty"`
-	IsApproved  *bool      `json:"isApproved,omitempty"`
-	Reason      *string    `json:"reason,omitempty"`
-	ResponderId *model.Id  `json:"responderId,omitempty"`
-	CreatedAt   *time.Time `json:"createdAt,omitempty"`
+	RequestId   *model.Id `json:"requestId,omitempty"`
+	IsApproved  *bool     `json:"isApproved,omitempty"`
+	Reason      *string   `json:"reason,omitempty"`
+	ResponderId *model.Id `json:"responderId,omitempty"`
 
 	GrantRequest *GrantRequest `json:"grantRequest,omitempty" model:"-"`
 }

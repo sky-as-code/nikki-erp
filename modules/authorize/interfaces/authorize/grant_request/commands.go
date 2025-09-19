@@ -1,8 +1,6 @@
 package grant_request
 
 import (
-	"time"
-
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -100,14 +98,22 @@ var cancelGrantRequestCommandType = cqrs.RequestType{
 }
 
 type CancelGrantRequestCommand struct {
-	Id *model.Id `json:"id"`
+	Id model.Id `json:"id"`
+}
+
+func (this CancelGrantRequestCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
 func (CancelGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
 	return cancelGrantRequestCommandType
 }
 
-type CancelGrantRequestResult = crud.OpResult[*time.Time]
+type CancelGrantRequestResult = crud.OpResult[*domain.GrantRequest]
 
 // END: CancelGrantRequestCommand
 
