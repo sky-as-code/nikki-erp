@@ -77,8 +77,18 @@ func (this *GrantRequestEntRepository) Update(ctx crud.Context, grantRequest dom
 	return database.Mutate(ctx, update, ent.IsNotFound, entToGrantRequest)
 }
 
-func (this *GrantRequestEntRepository) Delete(ctx crud.Context, id model.Id) error {
-	return this.client.GrantRequest.DeleteOneID(id).Exec(ctx)
+func (this *GrantRequestEntRepository) Delete(ctx crud.Context, param it.DeleteParam) (int, error) {
+	var deletion *ent.GrantRequestDelete
+	tx := ctx.GetDbTranx()
+
+	if tx != nil {
+		deletion = tx.(*ent.Tx).GrantRequest.Delete()
+	} else {
+		deletion = this.client.GrantRequest.Delete()
+	}
+
+	deletion = deletion.Where(entGrantRequest.IDEQ(param.Id))
+	return deletion.Exec(ctx)
 }
 
 func (this *GrantRequestEntRepository) FindPendingByReceiverAndTarget(ctx crud.Context, receiverId model.Id, targetId model.Id, targetType domain.GrantRequestTargetType) ([]*domain.GrantRequest, error) {

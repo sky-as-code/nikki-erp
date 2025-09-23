@@ -1,0 +1,78 @@
+meta {
+  name: Grant Request Delete - Client error (Not found)
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{api_host}}/v1/authorize/grant-requests/01K5TTPCKKYDPKBWX9NOTFOUND
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  let body;
+  let isJson = true;
+  
+  try {
+      body = res.getBody();
+      console.log("📥 Response body:", body);
+  } catch (e) {
+      isJson = false;
+      expect.fail("❌ Response is not valid JSON");
+  }
+  
+  const statusCode = res.getStatus();
+  
+  // ================= SUCCESS =================
+  if (statusCode === 200 && isJson) {
+      test("✅ Status code is 200 OK", function () {
+          expect(statusCode).to.eql(200);
+      });
+  
+      test("✅ Response has required fields", function () {
+          expect(body).to.have.property("id");
+          expect(body).to.have.property("deletedAt");
+      });
+  
+      bru.deleteVar("grant_req_id");
+      bru.deleteVar("grant_requestor_id");
+      bru.deleteVar("grant_req_etag");
+      console.log("🗑️ Removed variables: grant_req_id, grant_requestor_id, grant_req_etag");
+  }
+  
+  // ================= VALIDATION ERRORS =================
+  else if (statusCode === 400 && isJson && body.code === "validation_error") {
+      test("❌ Validation error received", function () {
+          expect(body).to.have.property("code", "validation_error");
+          expect(body.details).to.be.an("object");
+      });
+  
+      const details = body.details || {};
+      console.warn("⚠️ Validation details:", JSON.stringify(details, null, 2));
+  
+      // ---------- Case: Not found ----------
+      if (details.grant_request_id && /not found/i.test(details.grant_request_id)) {
+          test("❌ Case: grant_request_not_found", function () {
+              expect(details).to.have.property("grant_request_id");
+              expect(details.grant_request_id).to.match(/not found/i);
+          });
+      } else {
+          test("⚠️ Unrecognized validation error shape", function () {
+              expect.fail("Validation error did not match any known case. Details: " + JSON.stringify(details));
+          });
+      }
+  }
+  
+  // ================= UNEXPECTED (non-200/non-400) =================
+  else {
+      test("⚠️ Unexpected response", function () {
+          expect.fail(`Unexpected status ${statusCode}`);
+      });
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

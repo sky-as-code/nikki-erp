@@ -111,6 +111,83 @@ func (this *GrantRequestServiceImpl) CreateGrantRequest(ctx crud.Context, cmd it
 	}, nil
 }
 
+func (this *GrantRequestServiceImpl) CancelGrantRequest(ctx crud.Context, cmd itGrantRequest.CancelGrantRequestCommand) (result *itGrantRequest.CancelGrantRequestResult, err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "cancel grant request"); e != nil {
+			err = e
+		}
+	}()
+
+	grantRequest := cmd.ToGrantRequest()
+	var dbGrantRequest *domain.GrantRequest
+
+	flow := validator.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			dbGrantRequest, err = this.assertGrantRequestExists(ctx, grantRequest, vErrs)
+
+			if *dbGrantRequest.Status != domain.PendingGrantRequestStatus {
+				vErrs.Append("grant_request_id", "grant request is not pending")
+			}
+			return err
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			this.assertCorrectEtag(*grantRequest.Etag, *dbGrantRequest.Etag, vErrs)
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			if *dbGrantRequest.RequestorId != cmd.ResponderId {
+				vErrs.Append("responder_id", "not authorized to cancel this request")
+			}
+			return nil
+		}).
+		End()
+	fault.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &itGrantRequest.CancelGrantRequestResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	prevEtag := dbGrantRequest.Etag
+	grantRequest.Etag = model.NewEtag()
+	status := domain.CancelledGrantRequestStatus
+	grantRequest.Status = &status
+	update, err := this.grantRequestRepo.Update(ctx, *grantRequest, *prevEtag)
+	fault.PanicOnErr(err)
+
+	return &itGrantRequest.CancelGrantRequestResult{
+		Data:    update,
+		HasData: true,
+	}, nil
+}
+
+func (this *GrantRequestServiceImpl) DeleteGrantRequest(ctx crud.Context, cmd itGrantRequest.DeleteGrantRequestCommand) (*itGrantRequest.DeleteGrantRequestResult, error) {
+	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.GrantRequest, itGrantRequest.DeleteGrantRequestCommand, itGrantRequest.DeleteGrantRequestResult]{
+		Action:       "delete grant request",
+		Command:      cmd,
+		AssertExists: this.assertGrantRequestExists,
+		RepoDelete: func(ctx crud.Context, model *domain.GrantRequest) (int, error) {
+			return this.processDeleteGrantRequest(ctx, model)
+		},
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *itGrantRequest.DeleteGrantRequestResult {
+			return &itGrantRequest.DeleteGrantRequestResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.GrantRequest, deletedCount int) *itGrantRequest.DeleteGrantRequestResult {
+			return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount)
+		},
+	})
+
+	return result, err
+}
+
 func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx crud.Context, cmd itGrantRequest.RespondToGrantRequestCommand) (result *itGrantRequest.RespondToGrantRequestResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "respond to grant request"); e != nil {
@@ -118,6 +195,7 @@ func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx crud.Context, cmd
 		}
 	}()
 
+	grantRequest := cmd.ToGrantRequest()
 	var dbGrantRequest *domain.GrantRequest
 	var managerIds []string
 	var ownerId *string
@@ -129,7 +207,11 @@ func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx crud.Context, cmd
 			return nil
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
-			dbGrantRequest, err = this.assertGrantRequestExists(ctx, cmd.Id, vErrs)
+			dbGrantRequest, err = this.assertGrantRequestExists(ctx, grantRequest, vErrs)
+
+			if *dbGrantRequest.Status != domain.PendingGrantRequestStatus {
+				vErrs.Append("grant_request_id", "grant request is not pending")
+			}
 			return err
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
@@ -171,58 +253,6 @@ func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx crud.Context, cmd
 
 	return &itGrantRequest.RespondToGrantRequestResult{
 		Data:    respondGrantRequest,
-		HasData: true,
-	}, nil
-}
-
-func (this *GrantRequestServiceImpl) CancelGrantRequest(ctx crud.Context, cmd itGrantRequest.CancelGrantRequestCommand) (result *itGrantRequest.CancelGrantRequestResult, err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "cancel grant request"); e != nil {
-			err = e
-		}
-	}()
-
-	grantRequest := cmd.ToGrantRequest()
-	var dbGrantRequest *domain.GrantRequest
-
-	flow := validator.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *fault.ValidationErrors) error {
-			*vErrs = cmd.Validate()
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			dbGrantRequest, err = this.assertGrantRequestExists(ctx, *grantRequest.Id, vErrs)
-			return err
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			this.assertCorrectEtag(*grantRequest.Etag, *dbGrantRequest.Etag, vErrs)
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			if *dbGrantRequest.RequestorId != cmd.ResponderId {
-				vErrs.Append("responder_id", "not authorized to cancel this request")
-			}
-			return nil
-		}).
-		End()
-	fault.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &itGrantRequest.CancelGrantRequestResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	prevEtag := dbGrantRequest.Etag
-	grantRequest.Etag = model.NewEtag()
-	status := domain.CancelledGrantRequestStatus
-	grantRequest.Status = &status
-	update, err := this.grantRequestRepo.Update(ctx, *grantRequest, *prevEtag)
-	fault.PanicOnErr(err)
-
-	return &itGrantRequest.CancelGrantRequestResult{
-		Data:    update,
 		HasData: true,
 	}, nil
 }
@@ -529,15 +559,12 @@ func (this *GrantRequestServiceImpl) getUsersInGroup(ctx crud.Context, groupId s
 	return allUserIds, nil
 }
 
-func (this *GrantRequestServiceImpl) assertGrantRequestExists(ctx crud.Context, grantRequestID model.Id, vErrs *fault.ValidationErrors) (dbGrantRequest *domain.GrantRequest, err error) {
-	dbGrantRequest, err = this.grantRequestRepo.FindById(ctx, itGrantRequest.FindByIdParam{Id: grantRequestID})
+func (this *GrantRequestServiceImpl) assertGrantRequestExists(ctx crud.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) (dbGrantRequest *domain.GrantRequest, err error) {
+	dbGrantRequest, err = this.grantRequestRepo.FindById(ctx, itGrantRequest.FindByIdParam{Id: *grantRequest.Id})
 	fault.PanicOnErr(err)
 
 	if dbGrantRequest == nil {
 		vErrs.AppendNotFound("grant_request_id", "grant request")
-	} else if *dbGrantRequest.Status != domain.PendingGrantRequestStatus {
-		vErrs.Append("grant_request_id", "grant request is not pending")
-
 	}
 
 	return
@@ -826,3 +853,51 @@ func (this *GrantRequestServiceImpl) createRoleSuiteUser(ctx crud.Context, reque
 
 // 	return permissionHistory
 // }
+
+func (this *GrantRequestServiceImpl) processDeleteGrantRequest(ctx crud.Context, dbGrantRequest *domain.GrantRequest) (int, error) {
+	tx, err := this.grantRequestRepo.BeginTransaction(ctx)
+	fault.PanicOnErr(err)
+
+	ctx.SetDbTranx(tx)
+
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "transaction process delete grant request"); e != nil {
+			err = e
+			tx.Rollback()
+			return
+		}
+
+		tx.Commit()
+	}()
+
+	deletion, err := this.grantRequestRepo.Delete(ctx, itGrantRequest.DeleteParam{Id: *dbGrantRequest.Id})
+	fault.PanicOnErr(err)
+
+	if *dbGrantRequest.Status != domain.ApprovedGrantRequestStatus {
+		return deletion, err
+	}
+
+	if *dbGrantRequest.TargetType == domain.GrantRequestTargetTypeRole {
+		err := this.roleRepo.AddRemoveUser(ctx, itRole.AddRemoveUserParam{
+			Id:           *dbGrantRequest.TargetRef,
+			ReceiverID:   *dbGrantRequest.ReceiverId,
+			ReceiverType: *dbGrantRequest.ReceiverType,
+			Add:          false,
+		})
+
+		fault.PanicOnErr(err)
+	}
+
+	if *dbGrantRequest.TargetType == domain.GrantRequestTargetTypeSuite {
+		err := this.suiteRepo.AddRemoveUser(ctx, itRoleSuite.AddRemoveUserParam{
+			Id:           *dbGrantRequest.TargetRef,
+			ReceiverID:   *dbGrantRequest.ReceiverId,
+			ReceiverType: *dbGrantRequest.ReceiverType,
+			Add:          false,
+		})
+
+		fault.PanicOnErr(err)
+	}
+
+	return deletion, err
+}

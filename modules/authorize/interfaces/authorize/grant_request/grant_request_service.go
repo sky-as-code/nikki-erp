@@ -7,5 +7,6 @@ import (
 type GrantRequestService interface {
 	CreateGrantRequest(ctx crud.Context, cmd CreateGrantRequestCommand) (*CreateGrantRequestResult, error)
 	CancelGrantRequest(ctx crud.Context, cmd CancelGrantRequestCommand) (*CancelGrantRequestResult, error)
+	DeleteGrantRequest(ctx crud.Context, cmd DeleteGrantRequestCommand) (*DeleteGrantRequestResult, error)
 	RespondToGrantRequest(ctx crud.Context, cmd RespondToGrantRequestCommand) (*RespondToGrantRequestResult, error)
 }

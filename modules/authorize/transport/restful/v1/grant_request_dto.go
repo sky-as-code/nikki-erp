@@ -58,14 +58,11 @@ type CreateGrantRequestResponse = httpserver.RestCreateResponse
 type CancelGrantRequestRequest = it.CancelGrantRequestCommand
 type CancelGrantRequestResponse = httpserver.RestUpdateResponse
 
+type DeleteGrantRequestRequest = it.DeleteGrantRequestCommand
+type DeleteGrantRequestResponse = httpserver.RestDeleteResponse
+
 type RespondToGrantRequestRequest = it.RespondToGrantRequestCommand
 type RespondToGrantRequestResponse = httpserver.RestUpdateResponse
-
-// type UpdateGrantRequestRequest = it.UpdateGrantRequestCommand
-// type UpdateGrantRequestResponse = httpserver.RestUpdateResponse
-
-// type DeleteGrantRequestHardByIdRequest = it.DeleteGrantRequestHardByIdQuery
-// type DeleteGrantRequestHardByIdResponse = httpserver.RestDeleteResponse
 
 // type GetGrantRequestByIdRequest = it.GetGrantRequestByIdQuery
 // type GetGrantRequestByIdResponse = GrantRequestDto

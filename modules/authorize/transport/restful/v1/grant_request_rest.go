@@ -73,6 +73,29 @@ func (this GrantRequestRest) CancelGrantRequest(echoCtx echo.Context) (err error
 	return err
 }
 
+func (this GrantRequestRest) DeleteGrantRequest(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete grant request"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.GrantRequestSvc.DeleteGrantRequest,
+		func(request DeleteGrantRequestRequest) it.DeleteGrantRequestCommand {
+			return it.DeleteGrantRequestCommand(request)
+		},
+		func(result it.DeleteGrantRequestResult) DeleteGrantRequestResponse {
+			response := DeleteGrantRequestResponse{}
+			response.FromNonEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
 func (this GrantRequestRest) RespondToGrantRequest(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST respond to grant request"); e != nil {
