@@ -182,6 +182,7 @@ func (this *GrantRequestServiceImpl) CancelGrantRequest(ctx crud.Context, cmd it
 		}
 	}()
 
+	grantRequest := cmd.ToGrantRequest()
 	var dbGrantRequest *domain.GrantRequest
 
 	flow := validator.StartValidationFlow()
@@ -191,8 +192,12 @@ func (this *GrantRequestServiceImpl) CancelGrantRequest(ctx crud.Context, cmd it
 			return nil
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
-			dbGrantRequest, err = this.assertGrantRequestExists(ctx, cmd.Id, vErrs)
+			dbGrantRequest, err = this.assertGrantRequestExists(ctx, *grantRequest.Id, vErrs)
 			return err
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			this.assertCorrectEtag(*grantRequest.Etag, *dbGrantRequest.Etag, vErrs)
+			return nil
 		}).
 		End()
 	fault.PanicOnErr(err)
@@ -204,10 +209,10 @@ func (this *GrantRequestServiceImpl) CancelGrantRequest(ctx crud.Context, cmd it
 	}
 
 	prevEtag := dbGrantRequest.Etag
-	dbGrantRequest.Etag = model.NewEtag()
+	grantRequest.Etag = model.NewEtag()
 	status := domain.CancelledGrantRequestStatus
-	dbGrantRequest.Status = &status
-	update, err := this.grantRequestRepo.Update(ctx, *dbGrantRequest, *prevEtag)
+	grantRequest.Status = &status
+	update, err := this.grantRequestRepo.Update(ctx, *grantRequest, *prevEtag)
 	fault.PanicOnErr(err)
 
 	return &itGrantRequest.CancelGrantRequestResult{

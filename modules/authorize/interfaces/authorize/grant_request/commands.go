@@ -98,12 +98,14 @@ var cancelGrantRequestCommandType = cqrs.RequestType{
 }
 
 type CancelGrantRequestCommand struct {
-	Id model.Id `json:"id"`
+	Id   model.Id   `json:"id" param:"id"`
+	Etag model.Etag `json:"etag"`
 }
 
 func (this CancelGrantRequestCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.EtagValidateRule(&this.Etag, true),
 	}
 
 	return validator.ApiBased.ValidateStruct(&this, rules...)

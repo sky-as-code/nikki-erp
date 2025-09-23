@@ -11,3 +11,10 @@ func (this *CreateGrantRequestCommand) ToGrantRequest() *domain.GrantRequest {
 
 	return grantRequest
 }
+
+func (this *CancelGrantRequestCommand) ToGrantRequest() *domain.GrantRequest {
+	grantRequest := &domain.GrantRequest{}
+	model.MustCopy(this, grantRequest)
+
+	return grantRequest
+}

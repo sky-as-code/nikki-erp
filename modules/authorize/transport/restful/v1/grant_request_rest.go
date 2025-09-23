@@ -50,13 +50,36 @@ func (this GrantRequestRest) CreateGrantRequest(echoCtx echo.Context) (err error
 	return err
 }
 
+func (this GrantRequestRest) CancelGrantRequest(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST cancel grant request"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.GrantRequestSvc.CancelGrantRequest,
+		func(request CancelGrantRequestRequest) it.CancelGrantRequestCommand {
+			return it.CancelGrantRequestCommand(request)
+		},
+		func(result it.CancelGrantRequestResult) CancelGrantRequestResponse {
+			response := CancelGrantRequestResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
 func (this GrantRequestRest) RespondToGrantRequest(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST respond to grant request"); e != nil {
 			err = e
 		}
 	}()
-	
+
 	err = httpserver.ServeRequest(
 		echoCtx, this.GrantRequestSvc.RespondToGrantRequest,
 		func(request RespondToGrantRequestRequest) it.RespondToGrantRequestCommand {

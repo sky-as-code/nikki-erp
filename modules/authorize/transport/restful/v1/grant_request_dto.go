@@ -55,6 +55,9 @@ func (this *GrantRequestDto) FromGrantRequest(grantRequest domain.GrantRequest) 
 type CreateGrantRequestRequest = it.CreateGrantRequestCommand
 type CreateGrantRequestResponse = httpserver.RestCreateResponse
 
+type CancelGrantRequestRequest = it.CancelGrantRequestCommand
+type CancelGrantRequestResponse = httpserver.RestUpdateResponse
+
 type RespondToGrantRequestRequest = it.RespondToGrantRequestCommand
 type RespondToGrantRequestResponse = httpserver.RestUpdateResponse
 

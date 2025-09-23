@@ -25,10 +25,10 @@ type PermissionHistoryEntRepository struct {
 
 func (this *PermissionHistoryEntRepository) Create(ctx crud.Context, permissionHistory domain.PermissionHistory) (*domain.PermissionHistory, error) {
 	var creation *ent.PermissionHistoryCreate
-	tx := ctx.GetDbTranx().(*ent.Tx)
+	tx := ctx.GetDbTranx()
 
 	if tx != nil {
-		creation = tx.PermissionHistory.Create()
+		creation = tx.(*ent.Tx).PermissionHistory.Create()
 	} else {
 		creation = this.client.PermissionHistory.Create()
 	}

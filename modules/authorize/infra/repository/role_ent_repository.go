@@ -193,12 +193,15 @@ func (this *RoleEntRepository) Search(
 
 func (this *RoleEntRepository) AddRemoveUser(ctx crud.Context, param it.AddRemoveUserParam) error {
 	var creation *ent.RoleUserCreate
-	tx := ctx.GetDbTranx().(*ent.Tx)
+	var deletion *ent.RoleUserDelete
+	tx := ctx.GetDbTranx()
 
 	if tx != nil {
-		creation = tx.RoleUser.Create()
+		creation = tx.(*ent.Tx).RoleUser.Create()
+		deletion = tx.(*ent.Tx).RoleUser.Delete()
 	} else {
 		creation = this.client.RoleUser.Create()
+		deletion = this.client.RoleUser.Delete()
 	}
 
 	if param.Add {
@@ -211,7 +214,7 @@ func (this *RoleEntRepository) AddRemoveUser(ctx crud.Context, param it.AddRemov
 		return err
 	}
 
-	_, err := tx.RoleUser.Delete().
+	_, err := deletion.
 		Where(
 			entRoleUser.ReceiverRefEQ(param.ReceiverID),
 			entRoleUser.ReceiverTypeEQ(entRoleUser.ReceiverType(param.ReceiverType)),

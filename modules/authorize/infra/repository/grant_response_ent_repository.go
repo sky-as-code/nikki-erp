@@ -22,9 +22,10 @@ func NewGrantResponseEntRepository(client *ent.Client) it.GrantResponseRepositor
 
 func (this *GrantResponseEntRepository) Create(ctx crud.Context, grantResponse domain.GrantResponse) (*domain.GrantResponse, error) {
 	var creation *ent.GrantResponseCreate
+	tx := ctx.GetDbTranx()
 
-	if tx := ctx.GetDbTranx().(*ent.Tx); tx != nil {
-		creation = tx.GrantResponse.Create()
+	if tx != nil {
+		creation = tx.(*ent.Tx).GrantResponse.Create()
 	} else {
 		creation = this.client.GrantResponse.Create()
 	}

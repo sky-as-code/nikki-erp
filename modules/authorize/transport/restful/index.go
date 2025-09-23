@@ -58,5 +58,7 @@ func initV1(route *echo.Group, resourceRest *v1.ResourceRest, actionRest *v1.Act
 	route.POST("/isauthorized", authorizedRest.IsAuthorized)
 
 	route.POST("/grant-requests", grantRequestRest.CreateGrantRequest)
+	route.POST("/grant-requests/:id/cancel", grantRequestRest.CancelGrantRequest)
+	// delete api
 	route.POST("/grant-requests/:id/respond", grantRequestRest.RespondToGrantRequest)
 }

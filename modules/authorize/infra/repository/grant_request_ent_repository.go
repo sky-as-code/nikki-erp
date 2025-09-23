@@ -58,9 +58,10 @@ func (this *GrantRequestEntRepository) FindById(ctx crud.Context, param it.FindB
 
 func (this *GrantRequestEntRepository) Update(ctx crud.Context, grantRequest domain.GrantRequest, prevEtag model.Etag) (*domain.GrantRequest, error) {
 	var update *ent.GrantRequestUpdateOne
+	tx := ctx.GetDbTranx()
 
-	if tx := ctx.GetDbTranx().(*ent.Tx); tx != nil {
-		update = tx.GrantRequest.UpdateOneID(*grantRequest.Id)
+	if tx != nil {
+		update = tx.(*ent.Tx).GrantRequest.UpdateOneID(*grantRequest.Id)
 	} else {
 		update = this.client.GrantRequest.UpdateOneID(*grantRequest.Id)
 	}
