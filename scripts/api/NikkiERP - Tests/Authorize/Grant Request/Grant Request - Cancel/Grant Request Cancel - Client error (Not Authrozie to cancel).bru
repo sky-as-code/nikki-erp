@@ -1,7 +1,7 @@
 meta {
-  name: Grant Request Cancel - Client error (Grant not pending)
+  name: Grant Request Cancel - Client error (Not Authrozie to cancel)
   type: http
-  seq: 6
+  seq: 4
 }
 
 post {
@@ -12,7 +12,7 @@ post {
 
 body:json {
   {
-    "responderId": "{{grant_requestor_id}}",
+    "responderId": "01JWNMZ36QHC7CQQ74NOTFOUND",
     "etag": "{{grant_req_etag}}"
   }
 }

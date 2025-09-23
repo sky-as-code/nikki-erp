@@ -199,6 +199,12 @@ func (this *GrantRequestServiceImpl) CancelGrantRequest(ctx crud.Context, cmd it
 			this.assertCorrectEtag(*grantRequest.Etag, *dbGrantRequest.Etag, vErrs)
 			return nil
 		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			if *dbGrantRequest.RequestorId != cmd.ResponderId {
+				vErrs.Append("responder_id", "not authorized to cancel this request")
+			}
+			return nil
+		}).
 		End()
 	fault.PanicOnErr(err)
 

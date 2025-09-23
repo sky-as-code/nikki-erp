@@ -1,7 +1,7 @@
 meta {
-  name: Grant Request Cancel - Client error (Grant not pending)
+  name: Grant Request Cancel - Client error (Invalid fields)
   type: http
-  seq: 6
+  seq: 1
 }
 
 post {
@@ -12,8 +12,6 @@ post {
 
 body:json {
   {
-    "responderId": "{{grant_requestor_id}}",
-    "etag": "{{grant_req_etag}}"
   }
 }
 

@@ -33,6 +33,7 @@ script:pre-request {
   }
   
   req.setBody(payload);
+  bru.setVar("grant_requestor_id",payload.requestorId)
   
   console.log("📤 Final payload:", payload);
   

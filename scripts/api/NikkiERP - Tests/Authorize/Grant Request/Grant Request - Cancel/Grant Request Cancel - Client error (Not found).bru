@@ -1,7 +1,7 @@
 meta {
   name: Grant Request Cancel - Client error (Not found)
   type: http
-  seq: 2
+  seq: 3
 }
 
 post {
@@ -12,6 +12,7 @@ post {
 
 body:json {
   {
+    "responderId": "{{grant_requestor_id}}",
     "etag": "1758272141847676000"
   }
 }
@@ -41,6 +42,7 @@ script:post-response {
           expect(body).to.have.property("etag");
           expect(body).to.have.property("updatedAt");
       });
+  
       bru.setVar("grant_req_id", body.id);
       bru.setVar("grant_req_etag", body.etag);
       console.log("✅ Saved grant_req_id and grant_req_etag");
@@ -77,6 +79,25 @@ script:post-response {
           test("❌ Case: grant_request_not_pending", function () {
               expect(details).to.have.property("grant_request_id");
               expect(details.grant_request_id).to.match(/not pending/i);
+          });
+      }
+  
+      // ---------- Case: Invalid fields (cannot be blank) ----------
+      else if (
+          Object.values(details).some(v => /cannot be blank/i.test(v))
+      ) {
+          test("❌ Case: invalid_fields", function () {
+              Object.keys(details).forEach(k => {
+                  expect(details[k]).to.match(/cannot be blank/i);
+              });
+          });
+      }
+  
+      // ---------- Case: Not authorized ----------
+      else if (details.responder_id && /not authorized/i.test(details.responder_id)) {
+          test("❌ Case: not_authorized", function () {
+              expect(details).to.have.property("responder_id");
+              expect(details.responder_id).to.match(/not authorized/i);
           });
       }
   
