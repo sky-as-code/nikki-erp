@@ -31,7 +31,9 @@ func BuildRevokeRequestDescriptor() *orm.EntityDescriptor {
 		Field(entRevokeRequest.FieldTargetType, entity.TargetType).
 		Field(entRevokeRequest.FieldTargetRoleID, entity.TargetRoleID).
 		Field(entRevokeRequest.FieldTargetSuiteID, entity.TargetSuiteID).
-		Field(entRevokeRequest.FieldStatus, entity.Status)
+		Field(entRevokeRequest.FieldStatus, entity.Status).
+		Field(entRevokeRequest.FieldTargetRoleName, entity.TargetRoleName).
+		Field(entRevokeRequest.FieldTargetSuiteName, entity.TargetSuiteName)
 
 	return builder.Descriptor()
 }

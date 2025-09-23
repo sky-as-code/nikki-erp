@@ -7,6 +7,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
@@ -17,8 +20,6 @@ import (
 	entRole "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
 	entRoleUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/roleuser"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewRoleEntRepository(client *ent.Client) it.RoleRepository {
@@ -155,6 +156,18 @@ func (this *RoleEntRepository) Exist(ctx crud.Context, param it.ExistRoleParam) 
 		Exist(ctx)
 }
 
+func (this *RoleEntRepository) ExistUserWithRole(ctx crud.Context, param it.ExistUserWithRoleParam) (bool, error) {
+	return this.client.Role.Query().
+		Where(
+			entRole.HasRoleUsersWith(
+				entRoleUser.ReceiverTypeEQ(entRoleUser.ReceiverType(param.ReceiverType)),
+				entRoleUser.ReceiverRefEQ(param.ReceiverId),
+				entRoleUser.RoleIDEQ(param.TargetId),
+			),
+		).
+		Exist(ctx)
+}
+
 func (this *RoleEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
 	return database.ParseSearchGraphStr[ent.Role, domain.Role](criteria, entRole.Label)
 }
@@ -176,6 +189,39 @@ func (this *RoleEntRepository) Search(
 		query,
 		entToRoles,
 	)
+}
+
+func (this *RoleEntRepository) AddRemoveUser(ctx crud.Context, param it.AddRemoveUserParam) error {
+	var creation *ent.RoleUserCreate
+	var deletion *ent.RoleUserDelete
+	tx := ctx.GetDbTranx()
+
+	if tx != nil {
+		creation = tx.(*ent.Tx).RoleUser.Create()
+		deletion = tx.(*ent.Tx).RoleUser.Delete()
+	} else {
+		creation = this.client.RoleUser.Create()
+		deletion = this.client.RoleUser.Delete()
+	}
+
+	if param.Add {
+		_, err := creation.
+			SetApproverID(param.ApproverID).
+			SetReceiverRef(param.ReceiverID).
+			SetReceiverType(entRoleUser.ReceiverType(param.ReceiverType)).
+			SetRoleID(param.Id).
+			Save(ctx)
+		return err
+	}
+
+	_, err := deletion.
+		Where(
+			entRoleUser.ReceiverRefEQ(param.ReceiverID),
+			entRoleUser.ReceiverTypeEQ(entRoleUser.ReceiverType(param.ReceiverType)),
+			entRoleUser.RoleIDEQ(param.Id),
+		).
+		Exec(ctx)
+	return err
 }
 
 func (this *RoleEntRepository) FindAllBySubject(ctx crud.Context, param it.FindAllBySubjectParam) ([]domain.Role, error) {
@@ -208,9 +254,7 @@ func (this *RoleEntRepository) createAssignmentTx(ctx crud.Context, tx *ent.Tx, 
 		WithAction().
 		WithResource().
 		Only(ctx)
-	if err != nil {
-		return err
-	}
+	fault.PanicOnErr(err)
 
 	var actionName *string
 	if entitlement.Edges.Action != nil {
@@ -241,9 +285,7 @@ func (this *RoleEntRepository) createAssignmentTx(ctx crud.Context, tx *ent.Tx, 
 
 	// Generate new ID for entitlement assignment
 	assignmentID, err := model.NewId()
-	if err != nil {
-		return err
-	}
+	fault.PanicOnErr(err)
 
 	_, err = tx.EntitlementAssignment.
 		Create().

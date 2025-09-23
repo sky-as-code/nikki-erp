@@ -15,6 +15,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantresponse"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
@@ -41,6 +42,7 @@ const (
 	TypeEntitlement               = "Entitlement"
 	TypeEntitlementAssignment     = "EntitlementAssignment"
 	TypeGrantRequest              = "GrantRequest"
+	TypeGrantResponse             = "GrantResponse"
 	TypePermissionHistory         = "PermissionHistory"
 	TypeResource                  = "Resource"
 	TypeRevokeRequest             = "RevokeRequest"
@@ -2719,6 +2721,7 @@ type GrantRequestMutation struct {
 	created_by                  *string
 	etag                        *string
 	receiver_id                 *string
+	receiver_type               *grantrequest.ReceiverType
 	target_type                 *grantrequest.TargetType
 	target_role_name            *string
 	target_suite_name           *string
@@ -2731,6 +2734,9 @@ type GrantRequestMutation struct {
 	clearedrole                 bool
 	role_suite                  *string
 	clearedrole_suite           bool
+	grant_responses             map[string]struct{}
+	removedgrant_responses      map[string]struct{}
+	clearedgrant_responses      bool
 	done                        bool
 	oldValue                    func(context.Context) (*GrantRequest, error)
 	predicates                  []predicate.GrantRequest
@@ -3082,6 +3088,42 @@ func (m *GrantRequestMutation) ResetReceiverID() {
 	m.receiver_id = nil
 }
 
+// SetReceiverType sets the "receiver_type" field.
+func (m *GrantRequestMutation) SetReceiverType(gt grantrequest.ReceiverType) {
+	m.receiver_type = &gt
+}
+
+// ReceiverType returns the value of the "receiver_type" field in the mutation.
+func (m *GrantRequestMutation) ReceiverType() (r grantrequest.ReceiverType, exists bool) {
+	v := m.receiver_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReceiverType returns the old "receiver_type" field's value of the GrantRequest entity.
+// If the GrantRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GrantRequestMutation) OldReceiverType(ctx context.Context) (v grantrequest.ReceiverType, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReceiverType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReceiverType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReceiverType: %w", err)
+	}
+	return oldValue.ReceiverType, nil
+}
+
+// ResetReceiverType resets all changes to the "receiver_type" field.
+func (m *GrantRequestMutation) ResetReceiverType() {
+	m.receiver_type = nil
+}
+
 // SetTargetType sets the "target_type" field.
 func (m *GrantRequestMutation) SetTargetType(gt grantrequest.TargetType) {
 	m.target_type = &gt
@@ -3184,7 +3226,7 @@ func (m *GrantRequestMutation) TargetRoleName() (r string, exists bool) {
 // OldTargetRoleName returns the old "target_role_name" field's value of the GrantRequest entity.
 // If the GrantRequest object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrantRequestMutation) OldTargetRoleName(ctx context.Context) (v string, err error) {
+func (m *GrantRequestMutation) OldTargetRoleName(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldTargetRoleName is only allowed on UpdateOne operations")
 	}
@@ -3198,9 +3240,22 @@ func (m *GrantRequestMutation) OldTargetRoleName(ctx context.Context) (v string,
 	return oldValue.TargetRoleName, nil
 }
 
+// ClearTargetRoleName clears the value of the "target_role_name" field.
+func (m *GrantRequestMutation) ClearTargetRoleName() {
+	m.target_role_name = nil
+	m.clearedFields[grantrequest.FieldTargetRoleName] = struct{}{}
+}
+
+// TargetRoleNameCleared returns if the "target_role_name" field was cleared in this mutation.
+func (m *GrantRequestMutation) TargetRoleNameCleared() bool {
+	_, ok := m.clearedFields[grantrequest.FieldTargetRoleName]
+	return ok
+}
+
 // ResetTargetRoleName resets all changes to the "target_role_name" field.
 func (m *GrantRequestMutation) ResetTargetRoleName() {
 	m.target_role_name = nil
+	delete(m.clearedFields, grantrequest.FieldTargetRoleName)
 }
 
 // SetTargetSuiteID sets the "target_suite_id" field.
@@ -3269,7 +3324,7 @@ func (m *GrantRequestMutation) TargetSuiteName() (r string, exists bool) {
 // OldTargetSuiteName returns the old "target_suite_name" field's value of the GrantRequest entity.
 // If the GrantRequest object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrantRequestMutation) OldTargetSuiteName(ctx context.Context) (v string, err error) {
+func (m *GrantRequestMutation) OldTargetSuiteName(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldTargetSuiteName is only allowed on UpdateOne operations")
 	}
@@ -3283,9 +3338,22 @@ func (m *GrantRequestMutation) OldTargetSuiteName(ctx context.Context) (v string
 	return oldValue.TargetSuiteName, nil
 }
 
+// ClearTargetSuiteName clears the value of the "target_suite_name" field.
+func (m *GrantRequestMutation) ClearTargetSuiteName() {
+	m.target_suite_name = nil
+	m.clearedFields[grantrequest.FieldTargetSuiteName] = struct{}{}
+}
+
+// TargetSuiteNameCleared returns if the "target_suite_name" field was cleared in this mutation.
+func (m *GrantRequestMutation) TargetSuiteNameCleared() bool {
+	_, ok := m.clearedFields[grantrequest.FieldTargetSuiteName]
+	return ok
+}
+
 // ResetTargetSuiteName resets all changes to the "target_suite_name" field.
 func (m *GrantRequestMutation) ResetTargetSuiteName() {
 	m.target_suite_name = nil
+	delete(m.clearedFields, grantrequest.FieldTargetSuiteName)
 }
 
 // SetStatus sets the "status" field.
@@ -3458,6 +3526,60 @@ func (m *GrantRequestMutation) ResetRoleSuite() {
 	m.clearedrole_suite = false
 }
 
+// AddGrantResponseIDs adds the "grant_responses" edge to the GrantResponse entity by ids.
+func (m *GrantRequestMutation) AddGrantResponseIDs(ids ...string) {
+	if m.grant_responses == nil {
+		m.grant_responses = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.grant_responses[ids[i]] = struct{}{}
+	}
+}
+
+// ClearGrantResponses clears the "grant_responses" edge to the GrantResponse entity.
+func (m *GrantRequestMutation) ClearGrantResponses() {
+	m.clearedgrant_responses = true
+}
+
+// GrantResponsesCleared reports if the "grant_responses" edge to the GrantResponse entity was cleared.
+func (m *GrantRequestMutation) GrantResponsesCleared() bool {
+	return m.clearedgrant_responses
+}
+
+// RemoveGrantResponseIDs removes the "grant_responses" edge to the GrantResponse entity by IDs.
+func (m *GrantRequestMutation) RemoveGrantResponseIDs(ids ...string) {
+	if m.removedgrant_responses == nil {
+		m.removedgrant_responses = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.grant_responses, ids[i])
+		m.removedgrant_responses[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedGrantResponses returns the removed IDs of the "grant_responses" edge to the GrantResponse entity.
+func (m *GrantRequestMutation) RemovedGrantResponsesIDs() (ids []string) {
+	for id := range m.removedgrant_responses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// GrantResponsesIDs returns the "grant_responses" edge IDs in the mutation.
+func (m *GrantRequestMutation) GrantResponsesIDs() (ids []string) {
+	for id := range m.grant_responses {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetGrantResponses resets all changes to the "grant_responses" edge.
+func (m *GrantRequestMutation) ResetGrantResponses() {
+	m.grant_responses = nil
+	m.clearedgrant_responses = false
+	m.removedgrant_responses = nil
+}
+
 // Where appends a list predicates to the GrantRequestMutation builder.
 func (m *GrantRequestMutation) Where(ps ...predicate.GrantRequest) {
 	m.predicates = append(m.predicates, ps...)
@@ -3492,7 +3614,7 @@ func (m *GrantRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GrantRequestMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.attachment_url != nil {
 		fields = append(fields, grantrequest.FieldAttachmentURL)
 	}
@@ -3510,6 +3632,9 @@ func (m *GrantRequestMutation) Fields() []string {
 	}
 	if m.receiver_id != nil {
 		fields = append(fields, grantrequest.FieldReceiverID)
+	}
+	if m.receiver_type != nil {
+		fields = append(fields, grantrequest.FieldReceiverType)
 	}
 	if m.target_type != nil {
 		fields = append(fields, grantrequest.FieldTargetType)
@@ -3549,6 +3674,8 @@ func (m *GrantRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.Etag()
 	case grantrequest.FieldReceiverID:
 		return m.ReceiverID()
+	case grantrequest.FieldReceiverType:
+		return m.ReceiverType()
 	case grantrequest.FieldTargetType:
 		return m.TargetType()
 	case grantrequest.FieldTargetRoleID:
@@ -3582,6 +3709,8 @@ func (m *GrantRequestMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldEtag(ctx)
 	case grantrequest.FieldReceiverID:
 		return m.OldReceiverID(ctx)
+	case grantrequest.FieldReceiverType:
+		return m.OldReceiverType(ctx)
 	case grantrequest.FieldTargetType:
 		return m.OldTargetType(ctx)
 	case grantrequest.FieldTargetRoleID:
@@ -3644,6 +3773,13 @@ func (m *GrantRequestMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetReceiverID(v)
+		return nil
+	case grantrequest.FieldReceiverType:
+		v, ok := value.(grantrequest.ReceiverType)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReceiverType(v)
 		return nil
 	case grantrequest.FieldTargetType:
 		v, ok := value.(grantrequest.TargetType)
@@ -3726,8 +3862,14 @@ func (m *GrantRequestMutation) ClearedFields() []string {
 	if m.FieldCleared(grantrequest.FieldTargetRoleID) {
 		fields = append(fields, grantrequest.FieldTargetRoleID)
 	}
+	if m.FieldCleared(grantrequest.FieldTargetRoleName) {
+		fields = append(fields, grantrequest.FieldTargetRoleName)
+	}
 	if m.FieldCleared(grantrequest.FieldTargetSuiteID) {
 		fields = append(fields, grantrequest.FieldTargetSuiteID)
+	}
+	if m.FieldCleared(grantrequest.FieldTargetSuiteName) {
+		fields = append(fields, grantrequest.FieldTargetSuiteName)
 	}
 	return fields
 }
@@ -3752,8 +3894,14 @@ func (m *GrantRequestMutation) ClearField(name string) error {
 	case grantrequest.FieldTargetRoleID:
 		m.ClearTargetRoleID()
 		return nil
+	case grantrequest.FieldTargetRoleName:
+		m.ClearTargetRoleName()
+		return nil
 	case grantrequest.FieldTargetSuiteID:
 		m.ClearTargetSuiteID()
+		return nil
+	case grantrequest.FieldTargetSuiteName:
+		m.ClearTargetSuiteName()
 		return nil
 	}
 	return fmt.Errorf("unknown GrantRequest nullable field %s", name)
@@ -3781,6 +3929,9 @@ func (m *GrantRequestMutation) ResetField(name string) error {
 	case grantrequest.FieldReceiverID:
 		m.ResetReceiverID()
 		return nil
+	case grantrequest.FieldReceiverType:
+		m.ResetReceiverType()
+		return nil
 	case grantrequest.FieldTargetType:
 		m.ResetTargetType()
 		return nil
@@ -3805,7 +3956,7 @@ func (m *GrantRequestMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GrantRequestMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.permission_histories != nil {
 		edges = append(edges, grantrequest.EdgePermissionHistories)
 	}
@@ -3814,6 +3965,9 @@ func (m *GrantRequestMutation) AddedEdges() []string {
 	}
 	if m.role_suite != nil {
 		edges = append(edges, grantrequest.EdgeRoleSuite)
+	}
+	if m.grant_responses != nil {
+		edges = append(edges, grantrequest.EdgeGrantResponses)
 	}
 	return edges
 }
@@ -3836,15 +3990,24 @@ func (m *GrantRequestMutation) AddedIDs(name string) []ent.Value {
 		if id := m.role_suite; id != nil {
 			return []ent.Value{*id}
 		}
+	case grantrequest.EdgeGrantResponses:
+		ids := make([]ent.Value, 0, len(m.grant_responses))
+		for id := range m.grant_responses {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GrantRequestMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedpermission_histories != nil {
 		edges = append(edges, grantrequest.EdgePermissionHistories)
+	}
+	if m.removedgrant_responses != nil {
+		edges = append(edges, grantrequest.EdgeGrantResponses)
 	}
 	return edges
 }
@@ -3859,13 +4022,19 @@ func (m *GrantRequestMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case grantrequest.EdgeGrantResponses:
+		ids := make([]ent.Value, 0, len(m.removedgrant_responses))
+		for id := range m.removedgrant_responses {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GrantRequestMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedpermission_histories {
 		edges = append(edges, grantrequest.EdgePermissionHistories)
 	}
@@ -3874,6 +4043,9 @@ func (m *GrantRequestMutation) ClearedEdges() []string {
 	}
 	if m.clearedrole_suite {
 		edges = append(edges, grantrequest.EdgeRoleSuite)
+	}
+	if m.clearedgrant_responses {
+		edges = append(edges, grantrequest.EdgeGrantResponses)
 	}
 	return edges
 }
@@ -3888,6 +4060,8 @@ func (m *GrantRequestMutation) EdgeCleared(name string) bool {
 		return m.clearedrole
 	case grantrequest.EdgeRoleSuite:
 		return m.clearedrole_suite
+	case grantrequest.EdgeGrantResponses:
+		return m.clearedgrant_responses
 	}
 	return false
 }
@@ -3919,8 +4093,702 @@ func (m *GrantRequestMutation) ResetEdge(name string) error {
 	case grantrequest.EdgeRoleSuite:
 		m.ResetRoleSuite()
 		return nil
+	case grantrequest.EdgeGrantResponses:
+		m.ResetGrantResponses()
+		return nil
 	}
 	return fmt.Errorf("unknown GrantRequest edge %s", name)
+}
+
+// GrantResponseMutation represents an operation that mutates the GrantResponse nodes in the graph.
+type GrantResponseMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *string
+	is_approved          *bool
+	reason               *string
+	responder_id         *string
+	created_at           *time.Time
+	etag                 *string
+	clearedFields        map[string]struct{}
+	grant_request        *string
+	clearedgrant_request bool
+	done                 bool
+	oldValue             func(context.Context) (*GrantResponse, error)
+	predicates           []predicate.GrantResponse
+}
+
+var _ ent.Mutation = (*GrantResponseMutation)(nil)
+
+// grantresponseOption allows management of the mutation configuration using functional options.
+type grantresponseOption func(*GrantResponseMutation)
+
+// newGrantResponseMutation creates new mutation for the GrantResponse entity.
+func newGrantResponseMutation(c config, op Op, opts ...grantresponseOption) *GrantResponseMutation {
+	m := &GrantResponseMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeGrantResponse,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withGrantResponseID sets the ID field of the mutation.
+func withGrantResponseID(id string) grantresponseOption {
+	return func(m *GrantResponseMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *GrantResponse
+		)
+		m.oldValue = func(ctx context.Context) (*GrantResponse, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().GrantResponse.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withGrantResponse sets the old GrantResponse of the mutation.
+func withGrantResponse(node *GrantResponse) grantresponseOption {
+	return func(m *GrantResponseMutation) {
+		m.oldValue = func(context.Context) (*GrantResponse, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m GrantResponseMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m GrantResponseMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of GrantResponse entities.
+func (m *GrantResponseMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *GrantResponseMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *GrantResponseMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().GrantResponse.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetRequestID sets the "request_id" field.
+func (m *GrantResponseMutation) SetRequestID(s string) {
+	m.grant_request = &s
+}
+
+// RequestID returns the value of the "request_id" field in the mutation.
+func (m *GrantResponseMutation) RequestID() (r string, exists bool) {
+	v := m.grant_request
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestID returns the old "request_id" field's value of the GrantResponse entity.
+// If the GrantResponse object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GrantResponseMutation) OldRequestID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestID: %w", err)
+	}
+	return oldValue.RequestID, nil
+}
+
+// ResetRequestID resets all changes to the "request_id" field.
+func (m *GrantResponseMutation) ResetRequestID() {
+	m.grant_request = nil
+}
+
+// SetIsApproved sets the "is_approved" field.
+func (m *GrantResponseMutation) SetIsApproved(b bool) {
+	m.is_approved = &b
+}
+
+// IsApproved returns the value of the "is_approved" field in the mutation.
+func (m *GrantResponseMutation) IsApproved() (r bool, exists bool) {
+	v := m.is_approved
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsApproved returns the old "is_approved" field's value of the GrantResponse entity.
+// If the GrantResponse object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GrantResponseMutation) OldIsApproved(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsApproved is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsApproved requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsApproved: %w", err)
+	}
+	return oldValue.IsApproved, nil
+}
+
+// ResetIsApproved resets all changes to the "is_approved" field.
+func (m *GrantResponseMutation) ResetIsApproved() {
+	m.is_approved = nil
+}
+
+// SetReason sets the "reason" field.
+func (m *GrantResponseMutation) SetReason(s string) {
+	m.reason = &s
+}
+
+// Reason returns the value of the "reason" field in the mutation.
+func (m *GrantResponseMutation) Reason() (r string, exists bool) {
+	v := m.reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReason returns the old "reason" field's value of the GrantResponse entity.
+// If the GrantResponse object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GrantResponseMutation) OldReason(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReason: %w", err)
+	}
+	return oldValue.Reason, nil
+}
+
+// ClearReason clears the value of the "reason" field.
+func (m *GrantResponseMutation) ClearReason() {
+	m.reason = nil
+	m.clearedFields[grantresponse.FieldReason] = struct{}{}
+}
+
+// ReasonCleared returns if the "reason" field was cleared in this mutation.
+func (m *GrantResponseMutation) ReasonCleared() bool {
+	_, ok := m.clearedFields[grantresponse.FieldReason]
+	return ok
+}
+
+// ResetReason resets all changes to the "reason" field.
+func (m *GrantResponseMutation) ResetReason() {
+	m.reason = nil
+	delete(m.clearedFields, grantresponse.FieldReason)
+}
+
+// SetResponderID sets the "responder_id" field.
+func (m *GrantResponseMutation) SetResponderID(s string) {
+	m.responder_id = &s
+}
+
+// ResponderID returns the value of the "responder_id" field in the mutation.
+func (m *GrantResponseMutation) ResponderID() (r string, exists bool) {
+	v := m.responder_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResponderID returns the old "responder_id" field's value of the GrantResponse entity.
+// If the GrantResponse object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GrantResponseMutation) OldResponderID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResponderID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResponderID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResponderID: %w", err)
+	}
+	return oldValue.ResponderID, nil
+}
+
+// ResetResponderID resets all changes to the "responder_id" field.
+func (m *GrantResponseMutation) ResetResponderID() {
+	m.responder_id = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *GrantResponseMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *GrantResponseMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the GrantResponse entity.
+// If the GrantResponse object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GrantResponseMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *GrantResponseMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetEtag sets the "etag" field.
+func (m *GrantResponseMutation) SetEtag(s string) {
+	m.etag = &s
+}
+
+// Etag returns the value of the "etag" field in the mutation.
+func (m *GrantResponseMutation) Etag() (r string, exists bool) {
+	v := m.etag
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEtag returns the old "etag" field's value of the GrantResponse entity.
+// If the GrantResponse object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GrantResponseMutation) OldEtag(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEtag is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEtag requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEtag: %w", err)
+	}
+	return oldValue.Etag, nil
+}
+
+// ResetEtag resets all changes to the "etag" field.
+func (m *GrantResponseMutation) ResetEtag() {
+	m.etag = nil
+}
+
+// SetGrantRequestID sets the "grant_request" edge to the GrantRequest entity by id.
+func (m *GrantResponseMutation) SetGrantRequestID(id string) {
+	m.grant_request = &id
+}
+
+// ClearGrantRequest clears the "grant_request" edge to the GrantRequest entity.
+func (m *GrantResponseMutation) ClearGrantRequest() {
+	m.clearedgrant_request = true
+	m.clearedFields[grantresponse.FieldRequestID] = struct{}{}
+}
+
+// GrantRequestCleared reports if the "grant_request" edge to the GrantRequest entity was cleared.
+func (m *GrantResponseMutation) GrantRequestCleared() bool {
+	return m.clearedgrant_request
+}
+
+// GrantRequestID returns the "grant_request" edge ID in the mutation.
+func (m *GrantResponseMutation) GrantRequestID() (id string, exists bool) {
+	if m.grant_request != nil {
+		return *m.grant_request, true
+	}
+	return
+}
+
+// GrantRequestIDs returns the "grant_request" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GrantRequestID instead. It exists only for internal usage by the builders.
+func (m *GrantResponseMutation) GrantRequestIDs() (ids []string) {
+	if id := m.grant_request; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGrantRequest resets all changes to the "grant_request" edge.
+func (m *GrantResponseMutation) ResetGrantRequest() {
+	m.grant_request = nil
+	m.clearedgrant_request = false
+}
+
+// Where appends a list predicates to the GrantResponseMutation builder.
+func (m *GrantResponseMutation) Where(ps ...predicate.GrantResponse) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the GrantResponseMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *GrantResponseMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.GrantResponse, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *GrantResponseMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *GrantResponseMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (GrantResponse).
+func (m *GrantResponseMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *GrantResponseMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.grant_request != nil {
+		fields = append(fields, grantresponse.FieldRequestID)
+	}
+	if m.is_approved != nil {
+		fields = append(fields, grantresponse.FieldIsApproved)
+	}
+	if m.reason != nil {
+		fields = append(fields, grantresponse.FieldReason)
+	}
+	if m.responder_id != nil {
+		fields = append(fields, grantresponse.FieldResponderID)
+	}
+	if m.created_at != nil {
+		fields = append(fields, grantresponse.FieldCreatedAt)
+	}
+	if m.etag != nil {
+		fields = append(fields, grantresponse.FieldEtag)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *GrantResponseMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case grantresponse.FieldRequestID:
+		return m.RequestID()
+	case grantresponse.FieldIsApproved:
+		return m.IsApproved()
+	case grantresponse.FieldReason:
+		return m.Reason()
+	case grantresponse.FieldResponderID:
+		return m.ResponderID()
+	case grantresponse.FieldCreatedAt:
+		return m.CreatedAt()
+	case grantresponse.FieldEtag:
+		return m.Etag()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *GrantResponseMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case grantresponse.FieldRequestID:
+		return m.OldRequestID(ctx)
+	case grantresponse.FieldIsApproved:
+		return m.OldIsApproved(ctx)
+	case grantresponse.FieldReason:
+		return m.OldReason(ctx)
+	case grantresponse.FieldResponderID:
+		return m.OldResponderID(ctx)
+	case grantresponse.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case grantresponse.FieldEtag:
+		return m.OldEtag(ctx)
+	}
+	return nil, fmt.Errorf("unknown GrantResponse field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GrantResponseMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case grantresponse.FieldRequestID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestID(v)
+		return nil
+	case grantresponse.FieldIsApproved:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsApproved(v)
+		return nil
+	case grantresponse.FieldReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReason(v)
+		return nil
+	case grantresponse.FieldResponderID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResponderID(v)
+		return nil
+	case grantresponse.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case grantresponse.FieldEtag:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEtag(v)
+		return nil
+	}
+	return fmt.Errorf("unknown GrantResponse field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *GrantResponseMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *GrantResponseMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GrantResponseMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown GrantResponse numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *GrantResponseMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(grantresponse.FieldReason) {
+		fields = append(fields, grantresponse.FieldReason)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *GrantResponseMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *GrantResponseMutation) ClearField(name string) error {
+	switch name {
+	case grantresponse.FieldReason:
+		m.ClearReason()
+		return nil
+	}
+	return fmt.Errorf("unknown GrantResponse nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *GrantResponseMutation) ResetField(name string) error {
+	switch name {
+	case grantresponse.FieldRequestID:
+		m.ResetRequestID()
+		return nil
+	case grantresponse.FieldIsApproved:
+		m.ResetIsApproved()
+		return nil
+	case grantresponse.FieldReason:
+		m.ResetReason()
+		return nil
+	case grantresponse.FieldResponderID:
+		m.ResetResponderID()
+		return nil
+	case grantresponse.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case grantresponse.FieldEtag:
+		m.ResetEtag()
+		return nil
+	}
+	return fmt.Errorf("unknown GrantResponse field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *GrantResponseMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.grant_request != nil {
+		edges = append(edges, grantresponse.EdgeGrantRequest)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *GrantResponseMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case grantresponse.EdgeGrantRequest:
+		if id := m.grant_request; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *GrantResponseMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *GrantResponseMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *GrantResponseMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedgrant_request {
+		edges = append(edges, grantresponse.EdgeGrantRequest)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *GrantResponseMutation) EdgeCleared(name string) bool {
+	switch name {
+	case grantresponse.EdgeGrantRequest:
+		return m.clearedgrant_request
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *GrantResponseMutation) ClearEdge(name string) error {
+	switch name {
+	case grantresponse.EdgeGrantRequest:
+		m.ClearGrantRequest()
+		return nil
+	}
+	return fmt.Errorf("unknown GrantResponse unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *GrantResponseMutation) ResetEdge(name string) error {
+	switch name {
+	case grantresponse.EdgeGrantRequest:
+		m.ResetGrantRequest()
+		return nil
+	}
+	return fmt.Errorf("unknown GrantResponse edge %s", name)
 }
 
 // PermissionHistoryMutation represents an operation that mutates the PermissionHistory nodes in the graph.
@@ -4128,7 +4996,7 @@ func (m *PermissionHistoryMutation) ApproverEmail() (r string, exists bool) {
 // OldApproverEmail returns the old "approver_email" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldApproverEmail(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldApproverEmail(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldApproverEmail is only allowed on UpdateOne operations")
 	}
@@ -4142,9 +5010,22 @@ func (m *PermissionHistoryMutation) OldApproverEmail(ctx context.Context) (v str
 	return oldValue.ApproverEmail, nil
 }
 
+// ClearApproverEmail clears the value of the "approver_email" field.
+func (m *PermissionHistoryMutation) ClearApproverEmail() {
+	m.approver_email = nil
+	m.clearedFields[permissionhistory.FieldApproverEmail] = struct{}{}
+}
+
+// ApproverEmailCleared returns if the "approver_email" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) ApproverEmailCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldApproverEmail]
+	return ok
+}
+
 // ResetApproverEmail resets all changes to the "approver_email" field.
 func (m *PermissionHistoryMutation) ResetApproverEmail() {
 	m.approver_email = nil
+	delete(m.clearedFields, permissionhistory.FieldApproverEmail)
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -4321,7 +5202,7 @@ func (m *PermissionHistoryMutation) EntitlementExpr() (r string, exists bool) {
 // OldEntitlementExpr returns the old "entitlement_expr" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldEntitlementExpr(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldEntitlementExpr(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldEntitlementExpr is only allowed on UpdateOne operations")
 	}
@@ -4335,9 +5216,22 @@ func (m *PermissionHistoryMutation) OldEntitlementExpr(ctx context.Context) (v s
 	return oldValue.EntitlementExpr, nil
 }
 
+// ClearEntitlementExpr clears the value of the "entitlement_expr" field.
+func (m *PermissionHistoryMutation) ClearEntitlementExpr() {
+	m.entitlement_expr = nil
+	m.clearedFields[permissionhistory.FieldEntitlementExpr] = struct{}{}
+}
+
+// EntitlementExprCleared returns if the "entitlement_expr" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) EntitlementExprCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldEntitlementExpr]
+	return ok
+}
+
 // ResetEntitlementExpr resets all changes to the "entitlement_expr" field.
 func (m *PermissionHistoryMutation) ResetEntitlementExpr() {
 	m.entitlement_expr = nil
+	delete(m.clearedFields, permissionhistory.FieldEntitlementExpr)
 }
 
 // SetEntitlementAssignmentID sets the "entitlement_assignment_id" field.
@@ -4406,7 +5300,7 @@ func (m *PermissionHistoryMutation) ResolvedExpr() (r string, exists bool) {
 // OldResolvedExpr returns the old "resolved_expr" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldResolvedExpr(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldResolvedExpr(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldResolvedExpr is only allowed on UpdateOne operations")
 	}
@@ -4420,9 +5314,22 @@ func (m *PermissionHistoryMutation) OldResolvedExpr(ctx context.Context) (v stri
 	return oldValue.ResolvedExpr, nil
 }
 
+// ClearResolvedExpr clears the value of the "resolved_expr" field.
+func (m *PermissionHistoryMutation) ClearResolvedExpr() {
+	m.resolved_expr = nil
+	m.clearedFields[permissionhistory.FieldResolvedExpr] = struct{}{}
+}
+
+// ResolvedExprCleared returns if the "resolved_expr" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) ResolvedExprCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldResolvedExpr]
+	return ok
+}
+
 // ResetResolvedExpr resets all changes to the "resolved_expr" field.
 func (m *PermissionHistoryMutation) ResetResolvedExpr() {
 	m.resolved_expr = nil
+	delete(m.clearedFields, permissionhistory.FieldResolvedExpr)
 }
 
 // SetReceiverID sets the "receiver_id" field.
@@ -4491,7 +5398,7 @@ func (m *PermissionHistoryMutation) ReceiverEmail() (r string, exists bool) {
 // OldReceiverEmail returns the old "receiver_email" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldReceiverEmail(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldReceiverEmail(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldReceiverEmail is only allowed on UpdateOne operations")
 	}
@@ -4505,9 +5412,22 @@ func (m *PermissionHistoryMutation) OldReceiverEmail(ctx context.Context) (v str
 	return oldValue.ReceiverEmail, nil
 }
 
+// ClearReceiverEmail clears the value of the "receiver_email" field.
+func (m *PermissionHistoryMutation) ClearReceiverEmail() {
+	m.receiver_email = nil
+	m.clearedFields[permissionhistory.FieldReceiverEmail] = struct{}{}
+}
+
+// ReceiverEmailCleared returns if the "receiver_email" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) ReceiverEmailCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldReceiverEmail]
+	return ok
+}
+
 // ResetReceiverEmail resets all changes to the "receiver_email" field.
 func (m *PermissionHistoryMutation) ResetReceiverEmail() {
 	m.receiver_email = nil
+	delete(m.clearedFields, permissionhistory.FieldReceiverEmail)
 }
 
 // SetGrantRequestID sets the "grant_request_id" field.
@@ -4674,7 +5594,7 @@ func (m *PermissionHistoryMutation) RoleName() (r string, exists bool) {
 // OldRoleName returns the old "role_name" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldRoleName(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldRoleName(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRoleName is only allowed on UpdateOne operations")
 	}
@@ -4688,9 +5608,22 @@ func (m *PermissionHistoryMutation) OldRoleName(ctx context.Context) (v string, 
 	return oldValue.RoleName, nil
 }
 
+// ClearRoleName clears the value of the "role_name" field.
+func (m *PermissionHistoryMutation) ClearRoleName() {
+	m.role_name = nil
+	m.clearedFields[permissionhistory.FieldRoleName] = struct{}{}
+}
+
+// RoleNameCleared returns if the "role_name" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) RoleNameCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldRoleName]
+	return ok
+}
+
 // ResetRoleName resets all changes to the "role_name" field.
 func (m *PermissionHistoryMutation) ResetRoleName() {
 	m.role_name = nil
+	delete(m.clearedFields, permissionhistory.FieldRoleName)
 }
 
 // SetRoleSuiteID sets the "role_suite_id" field.
@@ -4759,7 +5692,7 @@ func (m *PermissionHistoryMutation) RoleSuiteName() (r string, exists bool) {
 // OldRoleSuiteName returns the old "role_suite_name" field's value of the PermissionHistory entity.
 // If the PermissionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PermissionHistoryMutation) OldRoleSuiteName(ctx context.Context) (v string, err error) {
+func (m *PermissionHistoryMutation) OldRoleSuiteName(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldRoleSuiteName is only allowed on UpdateOne operations")
 	}
@@ -4773,9 +5706,22 @@ func (m *PermissionHistoryMutation) OldRoleSuiteName(ctx context.Context) (v str
 	return oldValue.RoleSuiteName, nil
 }
 
+// ClearRoleSuiteName clears the value of the "role_suite_name" field.
+func (m *PermissionHistoryMutation) ClearRoleSuiteName() {
+	m.role_suite_name = nil
+	m.clearedFields[permissionhistory.FieldRoleSuiteName] = struct{}{}
+}
+
+// RoleSuiteNameCleared returns if the "role_suite_name" field was cleared in this mutation.
+func (m *PermissionHistoryMutation) RoleSuiteNameCleared() bool {
+	_, ok := m.clearedFields[permissionhistory.FieldRoleSuiteName]
+	return ok
+}
+
 // ResetRoleSuiteName resets all changes to the "role_suite_name" field.
 func (m *PermissionHistoryMutation) ResetRoleSuiteName() {
 	m.role_suite_name = nil
+	delete(m.clearedFields, permissionhistory.FieldRoleSuiteName)
 }
 
 // ClearEntitlement clears the "entitlement" edge to the Entitlement entity.
@@ -5272,14 +6218,26 @@ func (m *PermissionHistoryMutation) ClearedFields() []string {
 	if m.FieldCleared(permissionhistory.FieldApproverID) {
 		fields = append(fields, permissionhistory.FieldApproverID)
 	}
+	if m.FieldCleared(permissionhistory.FieldApproverEmail) {
+		fields = append(fields, permissionhistory.FieldApproverEmail)
+	}
 	if m.FieldCleared(permissionhistory.FieldEntitlementID) {
 		fields = append(fields, permissionhistory.FieldEntitlementID)
+	}
+	if m.FieldCleared(permissionhistory.FieldEntitlementExpr) {
+		fields = append(fields, permissionhistory.FieldEntitlementExpr)
 	}
 	if m.FieldCleared(permissionhistory.FieldEntitlementAssignmentID) {
 		fields = append(fields, permissionhistory.FieldEntitlementAssignmentID)
 	}
+	if m.FieldCleared(permissionhistory.FieldResolvedExpr) {
+		fields = append(fields, permissionhistory.FieldResolvedExpr)
+	}
 	if m.FieldCleared(permissionhistory.FieldReceiverID) {
 		fields = append(fields, permissionhistory.FieldReceiverID)
+	}
+	if m.FieldCleared(permissionhistory.FieldReceiverEmail) {
+		fields = append(fields, permissionhistory.FieldReceiverEmail)
 	}
 	if m.FieldCleared(permissionhistory.FieldGrantRequestID) {
 		fields = append(fields, permissionhistory.FieldGrantRequestID)
@@ -5290,8 +6248,14 @@ func (m *PermissionHistoryMutation) ClearedFields() []string {
 	if m.FieldCleared(permissionhistory.FieldRoleID) {
 		fields = append(fields, permissionhistory.FieldRoleID)
 	}
+	if m.FieldCleared(permissionhistory.FieldRoleName) {
+		fields = append(fields, permissionhistory.FieldRoleName)
+	}
 	if m.FieldCleared(permissionhistory.FieldRoleSuiteID) {
 		fields = append(fields, permissionhistory.FieldRoleSuiteID)
+	}
+	if m.FieldCleared(permissionhistory.FieldRoleSuiteName) {
+		fields = append(fields, permissionhistory.FieldRoleSuiteName)
 	}
 	return fields
 }
@@ -5310,14 +6274,26 @@ func (m *PermissionHistoryMutation) ClearField(name string) error {
 	case permissionhistory.FieldApproverID:
 		m.ClearApproverID()
 		return nil
+	case permissionhistory.FieldApproverEmail:
+		m.ClearApproverEmail()
+		return nil
 	case permissionhistory.FieldEntitlementID:
 		m.ClearEntitlementID()
+		return nil
+	case permissionhistory.FieldEntitlementExpr:
+		m.ClearEntitlementExpr()
 		return nil
 	case permissionhistory.FieldEntitlementAssignmentID:
 		m.ClearEntitlementAssignmentID()
 		return nil
+	case permissionhistory.FieldResolvedExpr:
+		m.ClearResolvedExpr()
+		return nil
 	case permissionhistory.FieldReceiverID:
 		m.ClearReceiverID()
+		return nil
+	case permissionhistory.FieldReceiverEmail:
+		m.ClearReceiverEmail()
 		return nil
 	case permissionhistory.FieldGrantRequestID:
 		m.ClearGrantRequestID()
@@ -5328,8 +6304,14 @@ func (m *PermissionHistoryMutation) ClearField(name string) error {
 	case permissionhistory.FieldRoleID:
 		m.ClearRoleID()
 		return nil
+	case permissionhistory.FieldRoleName:
+		m.ClearRoleName()
+		return nil
 	case permissionhistory.FieldRoleSuiteID:
 		m.ClearRoleSuiteID()
+		return nil
+	case permissionhistory.FieldRoleSuiteName:
+		m.ClearRoleSuiteName()
 		return nil
 	}
 	return fmt.Errorf("unknown PermissionHistory nullable field %s", name)
@@ -6443,6 +7425,7 @@ type RevokeRequestMutation struct {
 	created_by                  *string
 	etag                        *string
 	receiver_id                 *string
+	receiver_type               *revokerequest.ReceiverType
 	target_type                 *revokerequest.TargetType
 	target_role_name            *string
 	target_suite_name           *string
@@ -6806,6 +7789,42 @@ func (m *RevokeRequestMutation) ResetReceiverID() {
 	m.receiver_id = nil
 }
 
+// SetReceiverType sets the "receiver_type" field.
+func (m *RevokeRequestMutation) SetReceiverType(rt revokerequest.ReceiverType) {
+	m.receiver_type = &rt
+}
+
+// ReceiverType returns the value of the "receiver_type" field in the mutation.
+func (m *RevokeRequestMutation) ReceiverType() (r revokerequest.ReceiverType, exists bool) {
+	v := m.receiver_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReceiverType returns the old "receiver_type" field's value of the RevokeRequest entity.
+// If the RevokeRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevokeRequestMutation) OldReceiverType(ctx context.Context) (v revokerequest.ReceiverType, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReceiverType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReceiverType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReceiverType: %w", err)
+	}
+	return oldValue.ReceiverType, nil
+}
+
+// ResetReceiverType resets all changes to the "receiver_type" field.
+func (m *RevokeRequestMutation) ResetReceiverType() {
+	m.receiver_type = nil
+}
+
 // SetTargetType sets the "target_type" field.
 func (m *RevokeRequestMutation) SetTargetType(rt revokerequest.TargetType) {
 	m.target_type = &rt
@@ -6908,7 +7927,7 @@ func (m *RevokeRequestMutation) TargetRoleName() (r string, exists bool) {
 // OldTargetRoleName returns the old "target_role_name" field's value of the RevokeRequest entity.
 // If the RevokeRequest object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RevokeRequestMutation) OldTargetRoleName(ctx context.Context) (v string, err error) {
+func (m *RevokeRequestMutation) OldTargetRoleName(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldTargetRoleName is only allowed on UpdateOne operations")
 	}
@@ -6922,9 +7941,22 @@ func (m *RevokeRequestMutation) OldTargetRoleName(ctx context.Context) (v string
 	return oldValue.TargetRoleName, nil
 }
 
+// ClearTargetRoleName clears the value of the "target_role_name" field.
+func (m *RevokeRequestMutation) ClearTargetRoleName() {
+	m.target_role_name = nil
+	m.clearedFields[revokerequest.FieldTargetRoleName] = struct{}{}
+}
+
+// TargetRoleNameCleared returns if the "target_role_name" field was cleared in this mutation.
+func (m *RevokeRequestMutation) TargetRoleNameCleared() bool {
+	_, ok := m.clearedFields[revokerequest.FieldTargetRoleName]
+	return ok
+}
+
 // ResetTargetRoleName resets all changes to the "target_role_name" field.
 func (m *RevokeRequestMutation) ResetTargetRoleName() {
 	m.target_role_name = nil
+	delete(m.clearedFields, revokerequest.FieldTargetRoleName)
 }
 
 // SetTargetSuiteID sets the "target_suite_id" field.
@@ -6993,7 +8025,7 @@ func (m *RevokeRequestMutation) TargetSuiteName() (r string, exists bool) {
 // OldTargetSuiteName returns the old "target_suite_name" field's value of the RevokeRequest entity.
 // If the RevokeRequest object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RevokeRequestMutation) OldTargetSuiteName(ctx context.Context) (v string, err error) {
+func (m *RevokeRequestMutation) OldTargetSuiteName(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldTargetSuiteName is only allowed on UpdateOne operations")
 	}
@@ -7007,9 +8039,22 @@ func (m *RevokeRequestMutation) OldTargetSuiteName(ctx context.Context) (v strin
 	return oldValue.TargetSuiteName, nil
 }
 
+// ClearTargetSuiteName clears the value of the "target_suite_name" field.
+func (m *RevokeRequestMutation) ClearTargetSuiteName() {
+	m.target_suite_name = nil
+	m.clearedFields[revokerequest.FieldTargetSuiteName] = struct{}{}
+}
+
+// TargetSuiteNameCleared returns if the "target_suite_name" field was cleared in this mutation.
+func (m *RevokeRequestMutation) TargetSuiteNameCleared() bool {
+	_, ok := m.clearedFields[revokerequest.FieldTargetSuiteName]
+	return ok
+}
+
 // ResetTargetSuiteName resets all changes to the "target_suite_name" field.
 func (m *RevokeRequestMutation) ResetTargetSuiteName() {
 	m.target_suite_name = nil
+	delete(m.clearedFields, revokerequest.FieldTargetSuiteName)
 }
 
 // SetStatus sets the "status" field.
@@ -7216,7 +8261,7 @@ func (m *RevokeRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevokeRequestMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.attachment_url != nil {
 		fields = append(fields, revokerequest.FieldAttachmentURL)
 	}
@@ -7234,6 +8279,9 @@ func (m *RevokeRequestMutation) Fields() []string {
 	}
 	if m.receiver_id != nil {
 		fields = append(fields, revokerequest.FieldReceiverID)
+	}
+	if m.receiver_type != nil {
+		fields = append(fields, revokerequest.FieldReceiverType)
 	}
 	if m.target_type != nil {
 		fields = append(fields, revokerequest.FieldTargetType)
@@ -7273,6 +8321,8 @@ func (m *RevokeRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.Etag()
 	case revokerequest.FieldReceiverID:
 		return m.ReceiverID()
+	case revokerequest.FieldReceiverType:
+		return m.ReceiverType()
 	case revokerequest.FieldTargetType:
 		return m.TargetType()
 	case revokerequest.FieldTargetRoleID:
@@ -7306,6 +8356,8 @@ func (m *RevokeRequestMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldEtag(ctx)
 	case revokerequest.FieldReceiverID:
 		return m.OldReceiverID(ctx)
+	case revokerequest.FieldReceiverType:
+		return m.OldReceiverType(ctx)
 	case revokerequest.FieldTargetType:
 		return m.OldTargetType(ctx)
 	case revokerequest.FieldTargetRoleID:
@@ -7368,6 +8420,13 @@ func (m *RevokeRequestMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetReceiverID(v)
+		return nil
+	case revokerequest.FieldReceiverType:
+		v, ok := value.(revokerequest.ReceiverType)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReceiverType(v)
 		return nil
 	case revokerequest.FieldTargetType:
 		v, ok := value.(revokerequest.TargetType)
@@ -7450,8 +8509,14 @@ func (m *RevokeRequestMutation) ClearedFields() []string {
 	if m.FieldCleared(revokerequest.FieldTargetRoleID) {
 		fields = append(fields, revokerequest.FieldTargetRoleID)
 	}
+	if m.FieldCleared(revokerequest.FieldTargetRoleName) {
+		fields = append(fields, revokerequest.FieldTargetRoleName)
+	}
 	if m.FieldCleared(revokerequest.FieldTargetSuiteID) {
 		fields = append(fields, revokerequest.FieldTargetSuiteID)
+	}
+	if m.FieldCleared(revokerequest.FieldTargetSuiteName) {
+		fields = append(fields, revokerequest.FieldTargetSuiteName)
 	}
 	return fields
 }
@@ -7476,8 +8541,14 @@ func (m *RevokeRequestMutation) ClearField(name string) error {
 	case revokerequest.FieldTargetRoleID:
 		m.ClearTargetRoleID()
 		return nil
+	case revokerequest.FieldTargetRoleName:
+		m.ClearTargetRoleName()
+		return nil
 	case revokerequest.FieldTargetSuiteID:
 		m.ClearTargetSuiteID()
+		return nil
+	case revokerequest.FieldTargetSuiteName:
+		m.ClearTargetSuiteName()
 		return nil
 	}
 	return fmt.Errorf("unknown RevokeRequest nullable field %s", name)
@@ -7504,6 +8575,9 @@ func (m *RevokeRequestMutation) ResetField(name string) error {
 		return nil
 	case revokerequest.FieldReceiverID:
 		m.ResetReceiverID()
+		return nil
+	case revokerequest.FieldReceiverType:
+		m.ResetReceiverType()
 		return nil
 	case revokerequest.FieldTargetType:
 		m.ResetTargetType()

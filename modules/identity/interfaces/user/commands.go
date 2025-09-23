@@ -23,6 +23,7 @@ func init() {
 	req = (*SearchUsersQuery)(nil)
 	req = (*UserExistsCommand)(nil)
 	req = (*UserExistsMultiCommand)(nil)
+	req = (*FindDirectApproverQuery)(nil)
 	util.Unused(req)
 }
 
@@ -270,3 +271,27 @@ func (this SearchUsersQuery) Validate() ft.ValidationErrors {
 
 type SearchUsersResultData = crud.PagedResult[domain.User]
 type SearchUsersResult = crud.OpResult[*SearchUsersResultData]
+
+var findDirectApproverQueryType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "findDirectApprover",
+}
+
+type FindDirectApproverQuery struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (FindDirectApproverQuery) CqrsRequestType() cqrs.RequestType {
+	return findDirectApproverQueryType
+}
+
+func (this FindDirectApproverQuery) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type FindDirectApproverResult = crud.OpResult[[]domain.User]

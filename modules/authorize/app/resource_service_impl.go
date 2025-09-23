@@ -6,10 +6,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
-	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
+
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
 )
 
 func NewResourceServiceImpl(resourceRepo it.ResourceRepository, eventBus event.EventBus) it.ResourceService {

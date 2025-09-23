@@ -33,6 +33,8 @@ func (PermissionHistoryMixin) Fields() []ent.Field {
 			Comment("Must be set NULL before the approver account is deleted"),
 
 		field.String("approver_email").
+			Optional().
+			Nillable().
 			Comment("Approver email must be copied here before the approver account is deleted"),
 
 		field.Time("created_at").
@@ -65,6 +67,8 @@ func (PermissionHistoryMixin) Fields() []ent.Field {
 			Comment("Must be set NULL before the entitlement is deleted"),
 
 		field.String("entitlement_expr").
+			Optional().
+			Nillable().
 			Comment("Entitlement expression must be copied here before the entitlement is deleted"),
 
 		field.String("entitlement_assignment_id").
@@ -73,6 +77,8 @@ func (PermissionHistoryMixin) Fields() []ent.Field {
 			Comment("Must be set NULL before the entitlement assignment is deleted"),
 
 		field.String("resolved_expr").
+			Optional().
+			Nillable().
 			Comment("Resolved expression must be copied here before the entitlement assignment is deleted"),
 
 		field.String("receiver_id").
@@ -81,15 +87,19 @@ func (PermissionHistoryMixin) Fields() []ent.Field {
 			Comment("Must be set NULL before the receiver account is deleted"),
 
 		field.String("receiver_email").
+			Optional().
+			Nillable().
 			Comment("Receiver email must be copied here before the receiver account is deleted"),
 
 		field.String("grant_request_id").
 			Optional().
-			Nillable(),
+			Nillable().
+			Comment("Must be set NULL before the grant request is deleted"),
 
 		field.String("revoke_request_id").
 			Optional().
-			Nillable(),
+			Nillable().
+			Comment("Must be set NULL before the revoke request is deleted"),
 
 		field.String("role_id").
 			Optional().
@@ -97,6 +107,8 @@ func (PermissionHistoryMixin) Fields() []ent.Field {
 			Comment("Must be set NULL before the role is deleted"),
 
 		field.String("role_name").
+			Optional().
+			Nillable().
 			Comment("Role name must be copied here before the role is deleted"),
 
 		field.String("role_suite_id").
@@ -105,6 +117,8 @@ func (PermissionHistoryMixin) Fields() []ent.Field {
 			Comment("Must be set NULL before the role suite is deleted"),
 
 		field.String("role_suite_name").
+			Optional().
+			Nillable().
 			Comment("Role suite name must be copied here before the role suite is deleted"),
 	}
 }

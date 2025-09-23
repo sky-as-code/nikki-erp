@@ -17,14 +17,14 @@ func InitRestfulHandlers() error {
 }
 
 func initAuthorizeRest() error {
-	deps.Register(v1.NewResourceRest, v1.NewActionRest, v1.NewEntitlementRest, v1.NewRoleRest, v1.NewRoleSuiteRest, v1.NewAuthorizeRest)
-	return deps.Invoke(func(route *echo.Group, resourceRest *v1.ResourceRest, actionRest *v1.ActionRest, entitlementRest *v1.EntitlementRest, roleRest *v1.RoleRest, roleSuiteRest *v1.RoleSuiteRest, authorizedRest *v1.AuthorizeRest) {
+	deps.Register(v1.NewResourceRest, v1.NewActionRest, v1.NewEntitlementRest, v1.NewRoleRest, v1.NewRoleSuiteRest, v1.NewAuthorizeRest, v1.NewGrantRequestRest)
+	return deps.Invoke(func(route *echo.Group, resourceRest *v1.ResourceRest, actionRest *v1.ActionRest, entitlementRest *v1.EntitlementRest, roleRest *v1.RoleRest, roleSuiteRest *v1.RoleSuiteRest, authorizedRest *v1.AuthorizeRest, grantRequestRest *v1.GrantRequestRest) {
 		v1 := route.Group("/v1/authorize")
-		initV1(v1, resourceRest, actionRest, entitlementRest, roleRest, roleSuiteRest, authorizedRest)
+		initV1(v1, resourceRest, actionRest, entitlementRest, roleRest, roleSuiteRest, authorizedRest, grantRequestRest)
 	})
 }
 
-func initV1(route *echo.Group, resourceRest *v1.ResourceRest, actionRest *v1.ActionRest, entitlementRest *v1.EntitlementRest, roleRest *v1.RoleRest, roleSuiteRest *v1.RoleSuiteRest, authorizedRest *v1.AuthorizeRest) {
+func initV1(route *echo.Group, resourceRest *v1.ResourceRest, actionRest *v1.ActionRest, entitlementRest *v1.EntitlementRest, roleRest *v1.RoleRest, roleSuiteRest *v1.RoleSuiteRest, authorizedRest *v1.AuthorizeRest, grantRequestRest *v1.GrantRequestRest) {
 	route.POST("/resources", resourceRest.CreateResource)
 	route.PUT("/resources/:id", resourceRest.UpdateResource)
 	route.GET("/resources/:name", resourceRest.GetResourceByName)
@@ -56,4 +56,9 @@ func initV1(route *echo.Group, resourceRest *v1.ResourceRest, actionRest *v1.Act
 	route.GET("/role-suites", roleSuiteRest.SearchRoleSuites)
 
 	route.POST("/isauthorized", authorizedRest.IsAuthorized)
+
+	route.POST("/grant-requests", grantRequestRest.CreateGrantRequest)
+	route.POST("/grant-requests/:id/cancel", grantRequestRest.CancelGrantRequest)
+	// delete api
+	route.POST("/grant-requests/:id/respond", grantRequestRest.RespondToGrantRequest)
 }

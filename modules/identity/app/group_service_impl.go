@@ -331,3 +331,19 @@ func (thisSvc *GroupServiceImpl) SearchGroups(ctx crud.Context, query itGrp.Sear
 		HasData: groups.Items != nil,
 	}, nil
 }
+
+func (this *GroupServiceImpl) Exist(ctx crud.Context, cmd itGrp.GroupExistsCommand) (result *itGrp.GroupExistsResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "check if group exists"); e != nil {
+			err = e
+		}
+	}()
+
+	exists, err := this.groupRepo.Exists(ctx, cmd)
+	ft.PanicOnErr(err)
+
+	return &itGrp.GroupExistsResult{
+		Data:    exists,
+		HasData: true,
+	}, nil
+}

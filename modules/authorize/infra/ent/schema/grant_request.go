@@ -43,6 +43,10 @@ func (GrantRequestMixin) Fields() []ent.Field {
 		field.String("receiver_id").
 			Immutable(),
 
+		field.Enum("receiver_type").
+			Values("user", "group").
+			Immutable(),
+
 		field.Enum("target_type").
 			Values("role", "suite").
 			Immutable(),
@@ -53,6 +57,8 @@ func (GrantRequestMixin) Fields() []ent.Field {
 			Comment("Must be set NULL before the role is deleted"),
 
 		field.String("target_role_name").
+			Nillable().
+			Optional().
 			Comment("Role name must be copied here before the role is deleted"),
 
 		field.String("target_suite_id").
@@ -61,10 +67,12 @@ func (GrantRequestMixin) Fields() []ent.Field {
 			Comment("Must be set NULL before the role suite is deleted"),
 
 		field.String("target_suite_name").
+			Nillable().
+			Optional().
 			Comment("Role suite name must be copied here before the role suite is deleted"),
 
 		field.Enum("status").
-			Values("pending", "approved", "rejected"),
+			Values("pending", "approved", "rejected", "cancelled"),
 	}
 }
 
@@ -89,6 +97,9 @@ func (GrantRequest) Edges() []ent.Edge {
 		edge.To("role_suite", RoleSuite.Type).
 			Field("target_suite_id").
 			Unique(),
+
+		edge.From("grant_responses", GrantResponse.Type).
+			Ref("grant_request"),
 	}
 }
 

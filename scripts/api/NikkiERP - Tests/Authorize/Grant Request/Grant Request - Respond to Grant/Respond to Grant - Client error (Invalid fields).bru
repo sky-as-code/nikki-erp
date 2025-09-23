@@ -1,0 +1,117 @@
+meta {
+  name: Respond to Grant - Client error (Invalid fields)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/grant-requests/{{grant_req_id}}/respond
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "decision": "",
+    "responderId": ""
+  }
+}
+
+script:post-response {
+  // Post-response for Respond to Grant Request
+  let body;
+  let isJson = true;
+  
+  try {
+      body = res.getBody();
+      console.log("📥 Response body:", body);
+  } catch (e) {
+      isJson = false;
+      expect.fail("❌ Response is not valid JSON");
+  }
+  
+  const statusCode = res.getStatus();
+  
+  // ================= SUCCESS =================
+  if (statusCode === 200 && isJson) {
+      test("✅ Status code is 200 OK", function () {
+          expect(statusCode).to.eql(200);
+      });
+  
+      test("✅ Response has required fields", function () {
+          expect(body).to.have.property("id");
+          expect(body).to.have.property("etag");
+          expect(body).to.have.property("updatedAt");
+      });
+    
+      bru.setVar("grant_req_etag", body.etag);
+      console.log("✅ Saved grant_req_etag");
+  }
+  
+  // ================= VALIDATION ERRORS =================
+  else if (statusCode === 400 && isJson && body.code === "validation_error") {
+      test("❌ Validation error received", function () {
+          expect(body).to.have.property("code", "validation_error");
+          expect(body.details).to.be.an("object");
+      });
+  
+      const details = body.details || {};
+      console.warn("⚠️ Validation details:", JSON.stringify(details, null, 2));
+  
+      // ---------- Case: Invalid fields ----------
+      if (
+          details.decision?.match(/cannot be blank/i) &&
+          details.etag?.match(/cannot be blank/i) &&
+          details.responderId?.match(/cannot be blank/i)
+      ) {
+          test("❌ Case: invalid_field", function () {
+              expect(details.decision).to.match(/cannot be blank/i);
+              expect(details.etag).to.match(/cannot be blank/i);
+              expect(details.responderId).to.match(/cannot be blank/i);
+          });
+      }
+  
+      // ---------- Case: Grant request not found ----------
+      else if (details.grant_request_id?.match(/not found/i)) {
+          test("❌ Case: not_found", function () {
+              expect(details).to.have.property("grant_request_id");
+              expect(details.grant_request_id).to.match(/not found/i);
+          });
+      }
+  
+      // ---------- Case: Grant request not pending ----------
+      else if (details.grant_request_id?.match(/not pending/i)) {
+          test("❌ Case: grant_request_not_pending", function () {
+              expect(details).to.have.property("grant_request_id");
+              expect(details.grant_request_id).to.match(/not pending/i);
+          });
+      }
+  
+      // ---------- Case: Not authorized ----------
+      else if (details.responder_id?.match(/not authorized/i)) {
+          test("❌ Case: not_authorized", function () {
+              expect(details).to.have.property("responder_id");
+              expect(details.responder_id).to.match(/not authorized/i);
+          });
+      }
+  
+      // ---------- Unknown validation shape ----------
+      else {
+          test("⚠️ Unrecognized validation error shape", function () {
+              expect.fail("Validation error did not match any known case. Details: " + JSON.stringify(details));
+          });
+      }
+  }
+  
+  // ================= UNEXPECTED (non-200/non-400) =================
+  else {
+      test("⚠️ Unexpected response", function () {
+          expect.fail(`Unexpected status ${statusCode}`);
+      });
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

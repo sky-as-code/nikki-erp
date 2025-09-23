@@ -6,6 +6,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
@@ -14,8 +17,6 @@ import (
 	entRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
 	entRoleSuiteUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuiteuser"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewRoleSuiteEntRepository(client *ent.Client) it.RoleSuiteRepository {
@@ -115,6 +116,14 @@ func (this *RoleSuiteEntRepository) ParseSearchGraph(criteria *string) (*orm.Pre
 	return database.ParseSearchGraphStr[ent.RoleSuite, domain.RoleSuite](criteria, entRoleSuite.Label)
 }
 
+func (this *RoleSuiteEntRepository) FindAllBySubject(ctx crud.Context, param it.FindAllBySubjectParam) ([]domain.RoleSuite, error) {
+	query := this.client.RoleSuite.Query().
+		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverRefEQ(param.SubjectRef))).
+		WithRoles()
+
+	return database.List(ctx, query, entToRoleSuites)
+}
+
 func (this *RoleSuiteEntRepository) Search(
 	ctx crud.Context,
 	param it.SearchParam,
@@ -135,12 +144,49 @@ func (this *RoleSuiteEntRepository) Search(
 	)
 }
 
-func (this *RoleSuiteEntRepository) FindAllBySubject(ctx crud.Context, param it.FindAllBySubjectParam) ([]domain.RoleSuite, error) {
-	query := this.client.RoleSuite.Query().
-		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverRefEQ(param.SubjectRef))).
-		WithRoles()
+func (this *RoleSuiteEntRepository) ExistUserWithRoleSuite(ctx crud.Context, param it.ExistUserWithRoleSuiteParam) (bool, error) {
+	return this.client.RoleSuite.Query().
+		Where(
+			entRoleSuite.HasRolesuiteUsersWith(
+				entRoleSuiteUser.ReceiverTypeEQ(entRoleSuiteUser.ReceiverType(param.ReceiverType)),
+				entRoleSuiteUser.ReceiverRefEQ(param.ReceiverId),
+				entRoleSuiteUser.RoleSuiteIDEQ(param.TargetId),
+			),
+		).
+		Exist(ctx)
+}
 
-	return database.List(ctx, query, entToRoleSuites)
+func (this *RoleSuiteEntRepository) AddRemoveUser(ctx crud.Context, param it.AddRemoveUserParam) error {
+	var creation *ent.RoleSuiteUserCreate
+	var deletion *ent.RoleSuiteUserDelete
+	tx := ctx.GetDbTranx()
+
+	if tx != nil {
+		creation = tx.(*ent.Tx).RoleSuiteUser.Create()
+		deletion = tx.(*ent.Tx).RoleSuiteUser.Delete()
+	} else {
+		creation = this.client.RoleSuiteUser.Create()
+		deletion = this.client.RoleSuiteUser.Delete()
+	}
+
+	if param.Add {
+		_, err := creation.
+			SetApproverID(param.ApproverID).
+			SetReceiverRef(param.ReceiverID).
+			SetReceiverType(entRoleSuiteUser.ReceiverType(param.ReceiverType)).
+			SetRoleSuiteID(param.Id).
+			Save(ctx)
+		return err
+	}
+
+	_, err := deletion.
+		Where(
+			entRoleSuiteUser.ReceiverRefEQ(param.ReceiverID),
+			entRoleSuiteUser.ReceiverTypeEQ(entRoleSuiteUser.ReceiverType(param.ReceiverType)),
+			entRoleSuiteUser.RoleSuiteIDEQ(param.Id),
+		).
+		Exec(ctx)
+	return err
 }
 
 func (this *RoleSuiteEntRepository) deleteRoleSuiteTx(ctx crud.Context, tx *ent.Tx, roleSuiteId model.Id) (int, error) {

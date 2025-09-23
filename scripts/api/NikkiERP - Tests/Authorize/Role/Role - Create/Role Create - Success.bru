@@ -15,9 +15,9 @@ body:json {
       "name": "Authorize module Product Manager",
       "ownerType": "user",
       "ownerRef": "{{user_id}}",
-      "isRequestable": false,
-      "isRequiredAttachment": false,
-      "isRequiredComment": false,
+      "isRequestable": true,
+      "isRequiredAttachment": true,
+      "isRequiredComment": true,
       "createdBy": "{{user_id}}",
       "entitlementIds": ["{{entitlement_id}}"]
   }
@@ -34,7 +34,7 @@ script:pre-request {
   
   // Utility to generate random alphanumeric string
   function randomString(length = 6) {
-      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
   }
   
@@ -48,12 +48,7 @@ script:pre-request {
       payload.name = payload.name.trim() + " " + randomString();
   }
   
-  // Random ownerType: "user" or "group"
-  const ownerTypes = ["user", "group"];
-  payload.ownerType = ownerTypes[Math.floor(Math.random() * ownerTypes.length)];
-  
   // Fill required fields with dummy ULIDs
-  payload.ownerRef = generateULID();
   payload.createdBy = generateULID();
   
   // Optional: set default values if not present

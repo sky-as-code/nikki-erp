@@ -500,6 +500,26 @@ func ReceiverIDContainsFold(v string) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldContainsFold(FieldReceiverID, v))
 }
 
+// ReceiverTypeEQ applies the EQ predicate on the "receiver_type" field.
+func ReceiverTypeEQ(v ReceiverType) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldEQ(FieldReceiverType, v))
+}
+
+// ReceiverTypeNEQ applies the NEQ predicate on the "receiver_type" field.
+func ReceiverTypeNEQ(v ReceiverType) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldNEQ(FieldReceiverType, v))
+}
+
+// ReceiverTypeIn applies the In predicate on the "receiver_type" field.
+func ReceiverTypeIn(vs ...ReceiverType) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldIn(FieldReceiverType, vs...))
+}
+
+// ReceiverTypeNotIn applies the NotIn predicate on the "receiver_type" field.
+func ReceiverTypeNotIn(vs ...ReceiverType) predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldNotIn(FieldReceiverType, vs...))
+}
+
 // TargetTypeEQ applies the EQ predicate on the "target_type" field.
 func TargetTypeEQ(v TargetType) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldEQ(FieldTargetType, v))
@@ -650,6 +670,16 @@ func TargetRoleNameHasSuffix(v string) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldHasSuffix(FieldTargetRoleName, v))
 }
 
+// TargetRoleNameIsNil applies the IsNil predicate on the "target_role_name" field.
+func TargetRoleNameIsNil() predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldIsNull(FieldTargetRoleName))
+}
+
+// TargetRoleNameNotNil applies the NotNil predicate on the "target_role_name" field.
+func TargetRoleNameNotNil() predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldNotNull(FieldTargetRoleName))
+}
+
 // TargetRoleNameEqualFold applies the EqualFold predicate on the "target_role_name" field.
 func TargetRoleNameEqualFold(v string) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldEqualFold(FieldTargetRoleName, v))
@@ -788,6 +818,16 @@ func TargetSuiteNameHasPrefix(v string) predicate.RevokeRequest {
 // TargetSuiteNameHasSuffix applies the HasSuffix predicate on the "target_suite_name" field.
 func TargetSuiteNameHasSuffix(v string) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldHasSuffix(FieldTargetSuiteName, v))
+}
+
+// TargetSuiteNameIsNil applies the IsNil predicate on the "target_suite_name" field.
+func TargetSuiteNameIsNil() predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldIsNull(FieldTargetSuiteName))
+}
+
+// TargetSuiteNameNotNil applies the NotNil predicate on the "target_suite_name" field.
+func TargetSuiteNameNotNil() predicate.RevokeRequest {
+	return predicate.RevokeRequest(sql.FieldNotNull(FieldTargetSuiteName))
 }
 
 // TargetSuiteNameEqualFold applies the EqualFold predicate on the "target_suite_name" field.

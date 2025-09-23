@@ -23,6 +23,7 @@ func init() {
 	req = (*UpdateGroupCommand)(nil)
 	req = (*DeleteGroupCommand)(nil)
 	req = (*GetGroupByIdQuery)(nil)
+	req = (*GroupExistsCommand)(nil)
 	util.Unused(req)
 }
 
@@ -197,3 +198,26 @@ func (this SearchGroupsQuery) Validate() ft.ValidationErrors {
 
 type SearchGroupsResultData = crud.PagedResult[domain.Group]
 type SearchGroupsResult = crud.OpResult[*SearchGroupsResultData]
+
+var existsCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "group",
+	Action:    "exists",
+}
+
+type GroupExistsCommand struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (GroupExistsCommand) CqrsRequestType() cqrs.RequestType {
+	return existsCommandType
+}
+
+func (this GroupExistsCommand) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type GroupExistsResult = crud.OpResult[bool]

@@ -16,9 +16,9 @@ type User struct {
 	HierarchyId *model.Id   `json:"hierarchyId"`
 	Status      *UserStatus `json:"status,omitempty"`
 
-	Groups      []Group          `json:"groups,omitempty" model:"-"` // TODO: Handle copy
-	Hierarchies []HierarchyLevel `json:"hierarchies,omitempty" model:"-"`
-	Orgs        []Organization   `json:"orgs,omitempty" model:"-"`
+	Groups    []Group        `json:"groups,omitempty" model:"-"` // TODO: Handle copy
+	Hierarchy HierarchyLevel `json:"hierarchy,omitempty" model:"-"`
+	Orgs      []Organization `json:"orgs,omitempty" model:"-"`
 }
 
 func (this *User) SetDefaults() {

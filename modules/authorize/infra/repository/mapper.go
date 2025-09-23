@@ -6,6 +6,7 @@ import (
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
+	entGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 )
 
 // START: Resource
@@ -223,3 +224,67 @@ func entToEntitlementAssignments(dbEntitlementAssignments []*ent.EntitlementAssi
 }
 
 // END: EntitlementAssignment
+
+// START: GrantRequest
+func entToGrantRequest(dbGrantRequest *ent.GrantRequest) *domain.GrantRequest {
+	grantRequest := &domain.GrantRequest{}
+	model.MustCopy(dbGrantRequest, grantRequest)
+
+	if dbGrantRequest.TargetType == entGrantRequest.TargetTypeRole {
+		grantRequest.TargetType = domain.WrapGrantRequestTargetTypeEnt(entGrantRequest.TargetTypeRole)
+		grantRequest.TargetRef = dbGrantRequest.TargetRoleID
+	} else if dbGrantRequest.TargetType == entGrantRequest.TargetTypeSuite {
+		grantRequest.TargetType = domain.WrapGrantRequestTargetTypeEnt(entGrantRequest.TargetTypeSuite)
+		grantRequest.TargetRef = dbGrantRequest.TargetSuiteID
+	}
+
+	if dbGrantRequest.CreatedBy != "" {
+		grantRequest.RequestorId = &dbGrantRequest.CreatedBy
+	}
+
+	if dbGrantRequest.Edges.Role != nil {
+		grantRequest.Role = entToRole(dbGrantRequest.Edges.Role)
+	}
+
+	if dbGrantRequest.Edges.RoleSuite != nil {
+		grantRequest.RoleSuite = entToRoleSuite(dbGrantRequest.Edges.RoleSuite)
+	}
+
+	if dbGrantRequest.Edges.GrantResponses != nil {
+		grantRequest.GrantResponses = entToGrantResponses(dbGrantRequest.Edges.GrantResponses)
+	}
+
+	return grantRequest
+}
+
+// END: GrantRequest
+
+// START: GrantResponse
+func entToGrantResponse(dbGrantResponse *ent.GrantResponse) *domain.GrantResponse {
+	grantResponse := &domain.GrantResponse{}
+	model.MustCopy(dbGrantResponse, grantResponse)
+
+	return grantResponse
+}
+
+func entToGrantResponses(dbGrantResponses []*ent.GrantResponse) []domain.GrantResponse {
+	if dbGrantResponses == nil {
+		return nil
+	}
+
+	return array.Map(dbGrantResponses, func(dbGrantResponse *ent.GrantResponse) domain.GrantResponse {
+		return *entToGrantResponse(dbGrantResponse)
+	})
+}
+
+// END: GrantResponse
+
+// START: PermissionHistory
+func entToPermissionHistory(dbPermissionHistory *ent.PermissionHistory) *domain.PermissionHistory {
+	permissionHistory := &domain.PermissionHistory{}
+	model.MustCopy(dbPermissionHistory, permissionHistory)
+
+	return permissionHistory
+}
+
+// END: PermissionHistory

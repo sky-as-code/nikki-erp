@@ -17,11 +17,13 @@ type GroupRepository interface {
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Group], error)
 	Update(ctx crud.Context, group domain.Group, prevEtag model.Etag) (*domain.Group, error)
+	Exists(ctx crud.Context, param ExistsParam) (bool, error)
 }
 
 type AddRemoveUsersParam = AddRemoveUsersCommand
 type DeleteParam = DeleteGroupCommand
 type FindByIdParam = GetGroupByIdQuery
+type ExistsParam = GroupExistsCommand
 type FindByNameParam struct {
 	Name string
 }

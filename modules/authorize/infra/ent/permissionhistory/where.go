@@ -270,6 +270,16 @@ func ApproverEmailHasSuffix(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldApproverEmail, v))
 }
 
+// ApproverEmailIsNil applies the IsNil predicate on the "approver_email" field.
+func ApproverEmailIsNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIsNull(FieldApproverEmail))
+}
+
+// ApproverEmailNotNil applies the NotNil predicate on the "approver_email" field.
+func ApproverEmailNotNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotNull(FieldApproverEmail))
+}
+
 // ApproverEmailEqualFold applies the EqualFold predicate on the "approver_email" field.
 func ApproverEmailEqualFold(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEqualFold(FieldApproverEmail, v))
@@ -490,6 +500,16 @@ func EntitlementExprHasSuffix(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldEntitlementExpr, v))
 }
 
+// EntitlementExprIsNil applies the IsNil predicate on the "entitlement_expr" field.
+func EntitlementExprIsNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIsNull(FieldEntitlementExpr))
+}
+
+// EntitlementExprNotNil applies the NotNil predicate on the "entitlement_expr" field.
+func EntitlementExprNotNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotNull(FieldEntitlementExpr))
+}
+
 // EntitlementExprEqualFold applies the EqualFold predicate on the "entitlement_expr" field.
 func EntitlementExprEqualFold(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEqualFold(FieldEntitlementExpr, v))
@@ -630,6 +650,16 @@ func ResolvedExprHasSuffix(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldResolvedExpr, v))
 }
 
+// ResolvedExprIsNil applies the IsNil predicate on the "resolved_expr" field.
+func ResolvedExprIsNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIsNull(FieldResolvedExpr))
+}
+
+// ResolvedExprNotNil applies the NotNil predicate on the "resolved_expr" field.
+func ResolvedExprNotNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotNull(FieldResolvedExpr))
+}
+
 // ResolvedExprEqualFold applies the EqualFold predicate on the "resolved_expr" field.
 func ResolvedExprEqualFold(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEqualFold(FieldResolvedExpr, v))
@@ -768,6 +798,16 @@ func ReceiverEmailHasPrefix(v string) predicate.PermissionHistory {
 // ReceiverEmailHasSuffix applies the HasSuffix predicate on the "receiver_email" field.
 func ReceiverEmailHasSuffix(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldReceiverEmail, v))
+}
+
+// ReceiverEmailIsNil applies the IsNil predicate on the "receiver_email" field.
+func ReceiverEmailIsNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIsNull(FieldReceiverEmail))
+}
+
+// ReceiverEmailNotNil applies the NotNil predicate on the "receiver_email" field.
+func ReceiverEmailNotNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotNull(FieldReceiverEmail))
 }
 
 // ReceiverEmailEqualFold applies the EqualFold predicate on the "receiver_email" field.
@@ -1060,6 +1100,16 @@ func RoleNameHasSuffix(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldRoleName, v))
 }
 
+// RoleNameIsNil applies the IsNil predicate on the "role_name" field.
+func RoleNameIsNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIsNull(FieldRoleName))
+}
+
+// RoleNameNotNil applies the NotNil predicate on the "role_name" field.
+func RoleNameNotNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotNull(FieldRoleName))
+}
+
 // RoleNameEqualFold applies the EqualFold predicate on the "role_name" field.
 func RoleNameEqualFold(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldEqualFold(FieldRoleName, v))
@@ -1198,6 +1248,16 @@ func RoleSuiteNameHasPrefix(v string) predicate.PermissionHistory {
 // RoleSuiteNameHasSuffix applies the HasSuffix predicate on the "role_suite_name" field.
 func RoleSuiteNameHasSuffix(v string) predicate.PermissionHistory {
 	return predicate.PermissionHistory(sql.FieldHasSuffix(FieldRoleSuiteName, v))
+}
+
+// RoleSuiteNameIsNil applies the IsNil predicate on the "role_suite_name" field.
+func RoleSuiteNameIsNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldIsNull(FieldRoleSuiteName))
+}
+
+// RoleSuiteNameNotNil applies the NotNil predicate on the "role_suite_name" field.
+func RoleSuiteNameNotNil() predicate.PermissionHistory {
+	return predicate.PermissionHistory(sql.FieldNotNull(FieldRoleSuiteName))
 }
 
 // RoleSuiteNameEqualFold applies the EqualFold predicate on the "role_suite_name" field.

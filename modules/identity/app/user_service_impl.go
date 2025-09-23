@@ -5,6 +5,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	util "github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
@@ -12,25 +13,29 @@ import (
 	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	itHierarchy "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/hierarchy"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
 func NewUserServiceImpl(
 	enumSvc enum.EnumService,
 	userRepo it.UserRepository,
+	hierarchyRepo itHierarchy.HierarchyRepository,
 	eventBus event.EventBus,
 ) it.UserService {
 	return &UserServiceImpl{
-		enumSvc:  enumSvc,
-		userRepo: userRepo,
-		eventBus: eventBus,
+		enumSvc:       enumSvc,
+		userRepo:      userRepo,
+		hierarchyRepo: hierarchyRepo,
+		eventBus:      eventBus,
 	}
 }
 
 type UserServiceImpl struct {
-	enumSvc  enum.EnumService
-	userRepo it.UserRepository
-	eventBus event.EventBus
+	enumSvc       enum.EnumService
+	userRepo      it.UserRepository
+	hierarchyRepo itHierarchy.HierarchyRepository
+	eventBus      event.EventBus
 }
 
 func (this *UserServiceImpl) CreateUser(ctx crud.Context, cmd it.CreateUserCommand) (*it.CreateUserResult, error) {
@@ -545,4 +550,76 @@ func (this *UserServiceImpl) SearchUsers(ctx crud.Context, query it.SearchUsersQ
 	// 	Data:    users,
 	// 	HasData: users.Items != nil,
 	// }, nil
+}
+
+func (this *UserServiceImpl) FindDirectApprover(ctx crud.Context, query it.FindDirectApproverQuery) (result *it.FindDirectApproverResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "find direct approver"); e != nil {
+			err = e
+		}
+	}()
+
+	var dbUser *domain.User
+	var approver []domain.User
+
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = query.Validate()
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			dbUser, err = this.assertUserExists(ctx, query.Id, vErrs)
+			return err
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			approver, err = this.findDirectApproverInHierarchy(ctx, dbUser, vErrs)
+			return err
+		}).
+		End()
+	ft.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &it.FindDirectApproverResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	return &it.FindDirectApproverResult{
+		Data:    approver,
+		HasData: approver != nil,
+	}, nil
+}
+
+func (this *UserServiceImpl) assertUserExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (user *domain.User, err error) {
+	user, err = this.userRepo.FindById(ctx, it.FindByIdParam{Id: id})
+	ft.PanicOnErr(err)
+
+	if user == nil {
+		vErrs.AppendNotFound("user_id", "user")
+	}
+	return user, err
+}
+
+func (this *UserServiceImpl) findDirectApproverInHierarchy(ctx crud.Context, dbUser *domain.User, vErrs *ft.ValidationErrors) ([]domain.User, error) {
+	if dbUser.HierarchyId == nil {
+		return nil, nil
+	}
+
+	hierarchy, err := this.hierarchyRepo.FindById(ctx, itHierarchy.FindByIdParam{Id: *dbUser.HierarchyId})
+	ft.PanicOnErr(err)
+
+	if hierarchy == nil {
+		vErrs.AppendNotFound("hierarchy_id", "hierarchy")
+		return nil, nil
+	}
+
+	if hierarchy.ParentId == nil {
+		return nil, nil
+	}
+
+	directManager, err := this.userRepo.FindByHierarchyId(ctx, it.FindByHierarchyIdParam{HierarchyId: *hierarchy.ParentId, Status: domain.WrapUserStatus(domain.UserStatusActive.String())})
+	ft.PanicOnErr(err)
+
+	return directManager, nil
 }

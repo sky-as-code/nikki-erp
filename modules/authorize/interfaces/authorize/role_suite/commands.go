@@ -1,6 +1,8 @@
 package role_suite
 
 import (
+	"time"
+
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
@@ -17,9 +19,13 @@ func init() {
 	req = (*CreateRoleSuiteCommand)(nil)
 	req = (*UpdateRoleSuiteCommand)(nil)
 	req = (*DeleteRoleSuiteCommand)(nil)
+	req = (*UpdateRoleSuiteCommand)(nil)
+	req = (*DeleteRoleSuiteCommand)(nil)
 	req = (*GetRoleSuiteByIdQuery)(nil)
-	req = (*SearchRoleSuitesCommand)(nil)
 	req = (*GetRoleSuitesBySubjectQuery)(nil)
+	req = (*ExistUserWithRoleSuiteQuery)(nil)
+	req = (*SearchRoleSuitesCommand)(nil)
+	req = (*AddRemoveUserCommand)(nil)
 	util.Unused(req)
 }
 
@@ -211,3 +217,63 @@ func (GetRoleSuitesBySubjectQuery) CqrsRequestType() cqrs.RequestType {
 type GetRoleSuitesBySubjectResult = crud.OpResult[[]domain.RoleSuite]
 
 // END: GetRoleSuitesBySubjectQuery
+
+// START: ExistUserWithRoleSuiteQuery
+var existUserWithRoleSuiteQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role_suite",
+	Action:    "existUserWithRoleSuite",
+}
+
+type ExistUserWithRoleSuiteQuery struct {
+	ReceiverType domain.ReceiverType `param:"receiverType" json:"receiverType"`
+	ReceiverId   model.Id            `param:"receiverId" json:"receiverId"`
+	TargetId     model.Id            `param:"targetId" json:"targetId"`
+}
+
+func (ExistUserWithRoleSuiteQuery) CqrsRequestType() cqrs.RequestType {
+	return existUserWithRoleSuiteQueryType
+}
+
+type ExistUserWithRoleSuiteResult = crud.OpResult[bool]
+
+// END: ExistUserWithRoleSuiteQuery
+
+// START: AddRemoveUser
+var addRemoveUserCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role_suite",
+	Action:    "addRemoveUser",
+}
+
+type AddRemoveUserCommand struct {
+	Id           model.Id            `param:"id" json:"id"`
+	ApproverID   model.Id            `json:"approverId"`
+	ReceiverID   model.Id            `json:"receiverId"`
+	ReceiverType domain.ReceiverType `json:"receiverType"`
+	Add          bool                `json:"add"`
+}
+
+func (AddRemoveUserCommand) CqrsRequestType() cqrs.RequestType {
+	return addRemoveUserCommandType
+}
+
+func (this AddRemoveUserCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+		model.IdValidateRule(&this.ApproverID, true),
+		model.IdValidateRule(&this.ReceiverID, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type AddRemoveUserResultData struct {
+	Id        model.Id   `json:"id"`
+	Etag      model.Etag `json:"etag"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+}
+
+type AddRemoveUserResult = crud.OpResult[*AddRemoveUserResultData]
+
+// END: AddRemoveUser
