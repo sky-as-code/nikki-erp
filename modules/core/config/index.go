@@ -20,8 +20,9 @@ var configSvc ConfigService
 func InitSubModule() (modErr error) {
 	err := deps.Register(func(logger logging.LoggerService) ConfigService {
 		var configService *configServiceImpl
-		jsonLoader := NewJsonConfigLoader(logger)
-		envVarLoader := NewEnvVarConfigLoader(jsonLoader, logger)
+		// jsonLoader := NewJsonConfigLoader(logger)
+		yamlLoader := NewYamlConfigLoader(logger)
+		envVarLoader := NewEnvVarConfigLoader(yamlLoader, logger)
 		secretFileLoader := NewSecretFileConfigLoader(envVarLoader, logger)
 		configService = NewConfigService(secretFileLoader)
 		modErr = configService.Init()

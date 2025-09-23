@@ -14,33 +14,33 @@ clean:
 
 build-static: clean
 	@echo "Building static binary..."
-	GOOS=$(goos) GOARCH=$(goarch) go build -tags staticmods -work -o dist/$(outfile) cmd/main.go
+	GOOS=$(goos) GOARCH=$(goarch) go build -tags staticmods -work -o dist/$(outfile) main.go
 	@echo "Static build completed"
 
 # Build all modules as plugins
 build-mods:
 	@echo "Building all modules..."
-	@mkdir -p cmd/modules
+	@mkdir -p ./modules
 	@for module_dir in ./modules/*/; do \
 		if [ -d "$$module_dir" ]; then \
 			module_name=$$(basename "$$module_dir"); \
 			echo "Building $$module_name..."; \
-			CGO_ENABLED=1 GOOS=$(goos) GOARCH=$(goarch) go build -buildmode=plugin -o ./cmd/modules/$$module_name.so ./modules/$$module_name; \
+			CGO_ENABLED=1 GOOS=$(goos) GOARCH=$(goarch) go build -buildmode=plugin -o ./modules/$$module_name.so ./modules/$$module_name; \
 		fi \
 	done
 	@echo "All modules built successfully"
 
 build-dynamic: build-mods clean
 	@echo "Building dynamic binary..."
-	GOOS=$(goos) GOARCH=$(goarch) go build -tags dynamicmods -work -tags dynamicmods -o dist/$(outfile) cmd/main.go
-	@cp -rf cmd/modules dist/
+	GOOS=$(goos) GOARCH=$(goarch) go build -tags dynamicmods -work -tags dynamicmods -o dist/$(outfile) main.go
+	@cp -rf ./modules dist/
 	@echo "Dynamic build completed"
 
 # Build application and copy config files
 build: build-dynamic
 	@echo "Copying config files..."
 	@mkdir -p dist/config
-	@cp cmd/config/config.json dist/config/config.json
+	@cp ./config/config.json dist/config/config.json
 	@echo "Build completed successfully"
 
 # END: Go builds
@@ -135,8 +135,9 @@ install-tools:
 # curl -sSf https://atlasgo.sh | sh
 
 nikki:
-	@[ -f cmd/config/local.env ] || cp cmd/config/local.env.sample cmd/config/local.env
-	APP_ENV=$(env) WORKING_DIR="$(cwd)/cmd" LOG_LEVEL="info" go run -tags=staticmods cmd/*.go
+	@[ -f config/local.env ] || cp config/local.env.sample config/local.env
+	@[ -f config/config.yaml ] || cp config/config.default.yaml config/config.yaml
+	APP_ENV=$(env) WORKING_DIR="$(cwd)" GENERAL_LOG_LEVEL="info" go run -tags=staticmods *.go
 
 # END: Local development
 

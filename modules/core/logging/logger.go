@@ -56,6 +56,7 @@ func (this *loggerImpl) Level() Level {
 
 func (this *loggerImpl) SetLevel(lvl Level) {
 	this.levelVar.Set(slogLevelMap[lvl])
+	this.Infof("Log level is set to %s", lvl)
 }
 
 func (this *loggerImpl) SetContext(key string, value string) {

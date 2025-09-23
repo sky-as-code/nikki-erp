@@ -33,8 +33,8 @@ type httpServerResult struct {
 func initHttpServer(params httpServerParams) httpServerResult {
 	echoServer := newEchoServer()
 
-	httpHost := params.Config.GetStr(c.HttpHost, "127.0.0.1")
-	httpPort := params.Config.GetInt32(c.HttpPort, "80")
+	httpHost := params.Config.GetStr(c.HttpHost)
+	httpPort := params.Config.GetInt32(c.HttpPort)
 	httpServer := HttpServer{
 		Name:       params.Config.GetStr(c.AppName),
 		EchoServer: echoServer,
@@ -55,7 +55,7 @@ func initHttpServer(params httpServerParams) httpServerResult {
 }
 
 func configCors(config config.ConfigService) middleware.CORSConfig {
-	corsOrigins := config.GetStrArr(c.HttpCorsOrigins, "*")
+	corsOrigins := config.GetStrArr(c.HttpCorsOrigins)
 	corsHeaders := config.GetStrArr(c.HttpCorsHeaders, "")
 	if len(corsHeaders) == 0 {
 		corsHeaders = []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization}
@@ -74,7 +74,7 @@ func configCors(config config.ConfigService) middleware.CORSConfig {
 }
 
 func initRoutes(mainServer HttpServer, config config.ConfigService) *echo.Group {
-	basePath := config.GetStr(c.HttpBasePath, "") // or "/api"
+	basePath := config.GetStr(c.HttpBasePath) // or "/api"
 	routeGroup := mainServer.EchoServer.Group(basePath)
 	return routeGroup
 }

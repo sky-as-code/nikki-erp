@@ -13,7 +13,7 @@ var logger LoggerService
 func InitSubModule() {
 	defaultLvl := LevelWarn
 	logger = NewLogger(defaultLvl)
-	levelEnv := strings.ToLower(os.Getenv(string(c.LogLevel)))
+	levelEnv := strings.ToLower(os.Getenv(strings.ReplaceAll(string(c.LogLevel), ".", "_")))
 	logLevel, ok := levelNameMap[levelEnv]
 	if !ok {
 		logLevel = defaultLvl

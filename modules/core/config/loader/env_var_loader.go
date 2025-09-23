@@ -14,21 +14,21 @@ import (
 
 var localEnvPath = filepath.Join("config", "local.env")
 
-func NewEnvVarConfigLoader(jsonLoader *JsonConfigLoader, logger logging.LoggerService) *EnvVarConfigLoader {
+func NewEnvVarConfigLoader(nextLoader ConfigLoader, logger logging.LoggerService) *EnvVarConfigLoader {
 	return &EnvVarConfigLoader{
-		jsonLoader,
+		nextLoader,
 		logger,
 	}
 }
 
 // EnvVarConfigLoader gets configuration from OS environment variables
 type EnvVarConfigLoader struct {
-	jsonLoader *JsonConfigLoader
+	nextLoader ConfigLoader
 	logger     logging.LoggerService
 }
 
 func (this *EnvVarConfigLoader) Init() (appErr error) {
-	appErr = this.jsonLoader.Init()
+	appErr = this.nextLoader.Init()
 	if appErr != nil {
 		return
 	}
@@ -42,10 +42,10 @@ func (this *EnvVarConfigLoader) Init() (appErr error) {
 }
 
 func (this *EnvVarConfigLoader) Get(name string) (string, error) {
-	if val := os.Getenv(string(name)); len(val) > 0 {
+	if val := os.Getenv(strings.ReplaceAll(name, ".", "_")); len(val) > 0 {
 		return val, nil
 	}
-	return this.jsonLoader.Get(name)
+	return this.nextLoader.Get(name)
 }
 
 func (this *EnvVarConfigLoader) loadLocalEnvFile() error {
@@ -57,5 +57,5 @@ func (this *EnvVarConfigLoader) loadLocalEnvFile() error {
 			"for local development to store passwords and other secrets")
 		return nil
 	}
-	return errors.Wrap(err, "EnvVarConfigLoader.loadLocalEnvFile()")
+	return errors.Wrap(err, "failed to load local.env file")
 }

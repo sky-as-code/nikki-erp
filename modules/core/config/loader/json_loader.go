@@ -34,26 +34,6 @@ func (loader *JsonConfigLoader) Init() (err error) {
 	return err
 }
 
-func (loader *JsonConfigLoader) CreateConfigDB(mapCfg interface{}) error {
-	// logging.Logger().Infof("JsonConfigLoader.CreateConfigDB mapCfg: %+v", mapCfg)
-	if mapCfg == nil {
-		return errors.New("mapCfg nil")
-	}
-	currentEnv := env.AppEnv()
-	if len(currentEnv) == 0 {
-		currentEnv = "default"
-	}
-
-	dataBase, err := json.Marshal(mapCfg)
-	if err != nil {
-		return errors.Wrap(err, "JsonConfigLoader.CreateConfigDB Marshal()")
-	}
-	data := fmt.Sprintf(`{"%s":%s}`, currentEnv, dataBase)
-	// logging.Logger().Infof("JsonConfigLoader.CreateConfigDB: %v", string(data))
-	loader.jsonResult = gjson.Parse(data)
-	return nil
-}
-
 func (loader *JsonConfigLoader) Get(name string) (string, error) {
 	currentEnv := env.AppEnv()
 

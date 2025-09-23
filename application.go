@@ -6,8 +6,9 @@ import (
 
 	"go.bryk.io/pkg/errors"
 
-	"github.com/sky-as-code/nikki-erp/cmd/loader"
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/loader"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
@@ -25,60 +26,60 @@ type Application struct {
 	logger  logging.LoggerService
 }
 
-func (thisApp *Application) Config() config.ConfigService {
-	return thisApp.config
+func (this *Application) Config() config.ConfigService {
+	return this.config
 }
 
-func (thisApp *Application) Start() {
+func (this *Application) Start() {
 	var modules []modules.NikkiModule
 	var err error
 
 	modules, err = loader.LoadModules()
 	if err != nil {
-		thisApp.logger.Errorf("failed to load modules: %v", err)
+		this.logger.Errorf("failed to load modules: %v", err)
 	}
 
-	thisApp.modules = append(thisApp.modules, modules...)
+	this.modules = append(this.modules, modules...)
 
-	err = thisApp.initModules()
+	err = this.initModules()
 	if err != nil {
-		thisApp.logger.Error("failed to initialize modules", err)
+		this.logger.Error("failed to initialize modules", err)
 		os.Exit(1)
 	}
-	thisApp.config = config.ConfigSvcSingleton()
+	this.config = config.ConfigSvcSingleton()
 }
 
-func (thisApp *Application) initModules() error {
-	moduleMap := thisApp.buildModuleMap()
+func (this *Application) initModules() error {
+	moduleMap := this.buildModuleMap()
 
-	depGraph, err := thisApp.buildDependencyGraph(moduleMap)
+	depGraph, err := this.buildDependencyGraph(moduleMap)
 	if err != nil {
 		return err
 	}
 
-	if err := thisApp.validateDependencies(depGraph); err != nil {
+	if err := this.validateDependencies(depGraph); err != nil {
 		return err
 	}
 
-	return thisApp.initializeInOrder(moduleMap, depGraph)
+	return this.initializeInOrder(moduleMap, depGraph)
 }
 
-func (thisApp *Application) buildModuleMap() map[string]modules.NikkiModule {
+func (this *Application) buildModuleMap() map[string]modules.NikkiModule {
 	moduleMap := make(map[string]modules.NikkiModule)
-	for _, mod := range thisApp.modules {
+	for _, mod := range this.modules {
 		moduleMap[mod.Name()] = mod
 	}
 	return moduleMap
 }
 
-func (thisApp *Application) buildDependencyGraph(moduleMap map[string]modules.NikkiModule) (map[string][]string, error) {
+func (this *Application) buildDependencyGraph(moduleMap map[string]modules.NikkiModule) (map[string][]string, error) {
 	depGraph := make(map[string][]string)
 
-	for _, mod := range thisApp.modules {
+	for _, mod := range this.modules {
 		deps := mod.Deps()
 		for _, dep := range deps {
 			if _, exists := moduleMap[dep]; !exists {
-				return nil, errors.New(fmt.Errorf("Module '%s' requires '%s' but it's not loaded", mod.Name(), dep))
+				return nil, errors.New(fmt.Errorf("module '%s' requires '%s' but it's not loaded", mod.Name(), dep))
 			}
 		}
 		depGraph[mod.Name()] = deps
@@ -87,33 +88,45 @@ func (thisApp *Application) buildDependencyGraph(moduleMap map[string]modules.Ni
 	return depGraph, nil
 }
 
-func (thisApp *Application) validateDependencies(depGraph map[string][]string) error {
+func (this *Application) validateDependencies(depGraph map[string][]string) error {
 	if hasCycle := detectCycle(depGraph); hasCycle {
-		return errors.New("Modules have circular dependencies")
+		return errors.New("modules have circular dependencies")
 	}
 	return nil
 }
 
-func (thisApp *Application) initializeInOrder(moduleMap map[string]modules.NikkiModule, depGraph map[string][]string) error {
+func (this *Application) initializeInOrder(moduleMap map[string]modules.NikkiModule, depGraph map[string][]string) error {
 	initOrder, err := topologicalSort(depGraph)
 	if err != nil {
-		return errors.Wrap(err, "Failed to determine module initialization order")
+		return errors.Wrap(err, "failed to determine module initialization order")
 	}
 
 	orderedMods := make([]modules.NikkiModule, 0)
 	for _, modName := range initOrder {
 		mod := moduleMap[modName]
-		if err := mod.Init(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Failed to initialize module '%s'", mod.Name()))
+		if err := this.initModule(mod); err != nil {
+			return err
 		}
 		orderedMods = append(orderedMods, mod)
-		thisApp.logger.Infof("Initialized module %s done", mod.Name())
+		this.logger.Infof("Initialized module %s done", mod.Name())
 	}
 
 	deps.Register(func() []modules.NikkiModule {
 		return orderedMods
 	})
 
+	return nil
+}
+
+func (this *Application) initModule(mod modules.NikkiModule) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicf(recover(), "failed to initialize module '%s'", mod.Name()); e != nil {
+			err = e
+		}
+	}()
+	if err := mod.Init(); err != nil {
+		panic(err)
+	}
 	return nil
 }
 

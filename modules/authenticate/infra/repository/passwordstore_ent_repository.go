@@ -24,8 +24,16 @@ type PasswordStoreEntRepository struct {
 	client *ent.Client
 }
 
+func (this *PasswordStoreEntRepository) passwordStoreClient(ctx crud.Context) *ent.PasswordStoreClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.PasswordStore
+	}
+	return this.client.PasswordStore
+}
+
 func (this *PasswordStoreEntRepository) Create(ctx crud.Context, pass domain.PasswordStore) (*domain.PasswordStore, error) {
-	creation := this.client.PasswordStore.Create().
+	creation := this.passwordStoreClient(ctx).Create().
 		SetID(*pass.Id).
 		SetNillablePasswordExpiredAt(pass.PasswordExpiredAt).
 		SetNillablePasswordotp(pass.Passwordotp).
@@ -47,7 +55,7 @@ func (this *PasswordStoreEntRepository) Create(ctx crud.Context, pass domain.Pas
 }
 
 func (this *PasswordStoreEntRepository) Update(ctx crud.Context, pass domain.PasswordStore) (*domain.PasswordStore, error) {
-	update := this.client.PasswordStore.UpdateOneID(*pass.Id)
+	update := this.passwordStoreClient(ctx).UpdateOneID(*pass.Id)
 
 	if pass.Password != nil {
 		pass.PasswordUpdatedAt = util.ToPtr(time.Now())
@@ -107,7 +115,7 @@ func (this *PasswordStoreEntRepository) Update(ctx crud.Context, pass domain.Pas
 }
 
 func (this *PasswordStoreEntRepository) FindBySubject(ctx crud.Context, param it.FindBySubjectParam) (*domain.PasswordStore, error) {
-	query := this.client.PasswordStore.Query().
+	query := this.passwordStoreClient(ctx).Query().
 		Where(
 			entPass.SubjectRef(param.SubjectRef),
 			entPass.SubjectType(param.SubjectType.String()),

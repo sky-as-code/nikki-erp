@@ -7,15 +7,6 @@ import (
 )
 
 //go:generate mockgen -package mock -destination ../mock/config_loader_mock.go gitlab.cloudokyo.dev/backcommon/pkg/core/config/types ConfigLoader
-type ConfigLoader interface {
-	// Init must be called before using other methods in this interface
-	// because it gives the strategy implementation a chance to load and cache
-	// configuration values.
-	Init() error
-	Get(name string) (string, error)
-}
-
-//go:generate mockgen -package mock -destination ../mock/config_loader_mock.go gitlab.cloudokyo.dev/backcommon/pkg/core/config/types ConfigLoader
 type ConfigService interface {
 	// Init must be called before using other methods in this interface
 	Init() error
@@ -31,17 +22,4 @@ type ConfigService interface {
 	GetInt32(configName c.ConfigName, defaultVal ...any) int32
 	GetInt64(configName c.ConfigName, defaultVal ...any) int64
 	GetFloat32(configName c.ConfigName, defaultVal ...any) float32
-}
-
-type MapConfig struct {
-	DbConnMaxLifeMinutes string `json:"DB_CONN_MAX_LIFE_MINUTES,omitempty"`
-	DbHost               string `json:"DB_HOST,omitempty"`
-	DbMaxOpenConns       string `json:"DB_MAX_OPEN_CONNS,omitempty"`
-	DbMaxIdleConns       string `json:"DB_MAX_IDLE_CONNS,omitempty"`
-	DbName               string `json:"DB_NAME,omitempty"`
-	DbPassword           string `json:"DB_PASSWORD,omitempty"`
-	DbPort               string `json:"DB_PORT,omitempty"`
-	DbSslEnabled         string `json:"DB_SSL_ENABLED,omitempty"`
-	DbUser               string `json:"DB_USER,omitempty"`
-	//...//
 }
