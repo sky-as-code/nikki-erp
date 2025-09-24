@@ -9,4 +9,5 @@ type GrantRequestService interface {
 	CancelGrantRequest(ctx crud.Context, cmd CancelGrantRequestCommand) (*CancelGrantRequestResult, error)
 	DeleteGrantRequest(ctx crud.Context, cmd DeleteGrantRequestCommand) (*DeleteGrantRequestResult, error)
 	RespondToGrantRequest(ctx crud.Context, cmd RespondToGrantRequestCommand) (*RespondToGrantRequestResult, error)
+	GetGrantRequestById(ctx crud.Context, query GetGrantRequestByIdQuery) (*GetGrantRequestByIdResult, error)
 }

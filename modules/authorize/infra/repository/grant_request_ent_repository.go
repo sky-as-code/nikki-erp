@@ -51,7 +51,10 @@ func (this *GrantRequestEntRepository) Create(ctx crud.Context, grantRequest dom
 
 func (this *GrantRequestEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.GrantRequest, error) {
 	query := this.client.GrantRequest.Query().
-		Where(entGrantRequest.IDEQ(param.Id))
+		Where(entGrantRequest.IDEQ(param.Id)).
+		WithGrantResponses().
+		WithRole().
+		WithRoleSuite()
 
 	return database.FindOne(ctx, query, ent.IsNotFound, entToGrantRequest)
 }
@@ -96,7 +99,10 @@ func (this *GrantRequestEntRepository) FindPendingByReceiverAndTarget(ctx crud.C
 		Where(
 			entGrantRequest.ReceiverIDEQ(receiverId),
 			entGrantRequest.StatusEQ(entGrantRequest.StatusPending),
-		)
+		).
+		WithGrantResponses().
+		WithRole().
+		WithRoleSuite()
 
 	switch targetType {
 	case domain.GrantRequestTargetTypeRole:

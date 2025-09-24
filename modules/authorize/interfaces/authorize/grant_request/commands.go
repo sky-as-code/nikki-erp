@@ -14,9 +14,9 @@ func init() {
 	// Assert interface implementation
 	var req cqrs.Request
 	req = (*CreateGrantRequestCommand)(nil)
-	req = (*GetGrantRequestQuery)(nil)
 	req = (*CancelGrantRequestCommand)(nil)
 	req = (*DeleteGrantRequestCommand)(nil)
+	req = (*GetGrantRequestByIdQuery)(nil)
 	req = (*RespondToGrantRequestCommand)(nil)
 	util.Unused(req)
 }
@@ -196,24 +196,32 @@ type RespondToGrantRequestResult = crud.OpResult[*domain.GrantRequest]
 
 // END: RespondToGrantRequestCommand
 
-// START: GetGrantRequestQuery
-var getGrantRequestQueryType = cqrs.RequestType{
+// START: GetGrantRequestByIdQuery
+var getGrantRequestByIdQuery = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "grant_request",
-	Action:    "get",
+	Action:    "getById",
 }
 
-type GetGrantRequestQuery struct {
+type GetGrantRequestByIdQuery struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (GetGrantRequestQuery) CqrsRequestType() cqrs.RequestType {
-	return getGrantRequestQueryType
+func (this GetGrantRequestByIdQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetGrantRequestResult = crud.OpResult[*domain.GrantRequest]
+func (GetGrantRequestByIdQuery) CqrsRequestType() cqrs.RequestType {
+	return getGrantRequestByIdQuery
+}
 
-// END: GetGrantRequestQuery
+type GetGrantRequestByIdResult = crud.OpResult[*domain.GrantRequest]
+
+// END: GetGrantRequestByIdQuery
 
 // START: ListGrantRequestsQuery
 type ListGrantRequestsQuery struct {

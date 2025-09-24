@@ -10,10 +10,11 @@ type GrantResponse struct {
 	model.ModelBase
 	model.AuditableBase
 
-	RequestId   *model.Id `json:"requestId,omitempty"`
-	IsApproved  *bool     `json:"isApproved,omitempty"`
-	Reason      *string   `json:"reason,omitempty"`
-	ResponderId *model.Id `json:"responderId,omitempty"`
+	RequestId     *model.Id `json:"requestId,omitempty"`
+	IsApproved    *bool     `json:"isApproved,omitempty"`
+	Reason        *string   `json:"reason,omitempty"`
+	ResponderId   *model.Id `json:"responderId,omitempty"`
+	ResponderName *string   `json:"responderName,omitempty"`
 
 	GrantRequest *GrantRequest `json:"grantRequest,omitempty" model:"-"`
 }

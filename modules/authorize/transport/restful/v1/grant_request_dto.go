@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
@@ -14,16 +15,15 @@ type GrantRequestDto struct {
 
 	AttachmentUrl *string   `json:"attachmentUrl,omitempty"`
 	Comment       *string   `json:"comment,omitempty"`
-	ApprovalId    *model.Id `json:"approvalId,omitempty"`
-	RequestorId   *model.Id `json:"requestorId,omitempty"`
-	ReceiverId    *model.Id `json:"receiverId,omitempty"`
 	TargetType    string    `json:"targetType,omitempty"`
 	TargetRef     *model.Id `json:"targetRef,omitempty"`
 	ResponseId    *model.Id `json:"responseId,omitempty"`
 	Status        string    `json:"status,omitempty"`
 
-	Role      *RoleDto      `json:"role,omitempty"`
-	RoleSuite *RoleSuiteDto `json:"roleSuite,omitempty"`
+	GrantResponses []GrantResponseDto `json:"grantResponses,omitempty"`
+	Receiver       *UserSummaryDto    `json:"receiver,omitempty"`
+	Requestor      *UserSummaryDto    `json:"requestor,omitempty"`
+	Target         *TargetSummaryDto  `json:"target,omitempty"`
 }
 
 type GrantRequestSummaryDto struct {
@@ -36,21 +36,39 @@ func (this *GrantRequestDto) FromGrantRequest(grantRequest domain.GrantRequest) 
 	model.MustCopy(grantRequest.AuditableBase, this)
 	model.MustCopy(grantRequest, this)
 
+	this.Requestor = &UserSummaryDto{}
+	this.Requestor.FromUserSummary(*grantRequest.RequestorId, grantRequest.RequestorName)
+
+	this.Receiver = &UserSummaryDto{}
+	this.Receiver.FromUserSummary(*grantRequest.ReceiverId, grantRequest.ReceiverName)
+
+	this.Target = &TargetSummaryDto{}
 	if grantRequest.Role != nil {
-		this.Role = &RoleDto{}
-		this.Role.FromRole(*grantRequest.Role)
+		this.Target.FromTargetSummary(*grantRequest.TargetRef, grantRequest.Role.Name)
+	} else if grantRequest.RoleSuite != nil {
+		this.Target.FromTargetSummary(*grantRequest.TargetRef, grantRequest.RoleSuite.Name)
 	}
 
-	if grantRequest.RoleSuite != nil {
-		this.RoleSuite = &RoleSuiteDto{}
-		this.RoleSuite.FromRoleSuite(*grantRequest.RoleSuite)
+	if grantRequest.GrantResponses != nil {
+		this.GrantResponses = array.Map(grantRequest.GrantResponses, func(grantResponse domain.GrantResponse) GrantResponseDto {
+			grantResponseDto := GrantResponseDto{}
+			grantResponseDto.FromGrantResponse(grantResponse)
+			return grantResponseDto
+		})
 	}
 }
 
-// func (this *GrantRequestSummaryDto) FromGrantRequest(grantRequest domain.GrantRequest) {
-// 	this.Id = *grantRequest.Id
-// 	this.Name = *grantRequest.TargetType.String()
-// }
+type GrantResponseDto struct {
+	Id            model.Id `json:"id"`
+	ResponderName *string  `json:"responderName,omitempty"`
+	IsApproved    *bool    `json:"isApproved,omitempty"`
+}
+
+func (this *GrantResponseDto) FromGrantResponse(grantResponse domain.GrantResponse) {
+	model.MustCopy(grantResponse.ModelBase, this)
+	model.MustCopy(grantResponse.AuditableBase, this)
+	model.MustCopy(grantResponse, this)
+}
 
 type CreateGrantRequestRequest = it.CreateGrantRequestCommand
 type CreateGrantRequestResponse = httpserver.RestCreateResponse
@@ -61,11 +79,11 @@ type CancelGrantRequestResponse = httpserver.RestUpdateResponse
 type DeleteGrantRequestRequest = it.DeleteGrantRequestCommand
 type DeleteGrantRequestResponse = httpserver.RestDeleteResponse
 
+type GetGrantRequestByIdRequest = it.GetGrantRequestByIdQuery
+type GetGrantRequestByIdResponse = GrantRequestDto
+
 type RespondToGrantRequestRequest = it.RespondToGrantRequestCommand
 type RespondToGrantRequestResponse = httpserver.RestUpdateResponse
-
-// type GetGrantRequestByIdRequest = it.GetGrantRequestByIdQuery
-// type GetGrantRequestByIdResponse = GrantRequestDto
 
 // type SearchGrantRequestsRequest = it.SearchGrantRequestsCommand
 // type SearchGrantRequestsResponse httpserver.RestSearchResponse[GrantRequestDto]

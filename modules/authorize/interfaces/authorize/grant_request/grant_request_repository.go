@@ -17,5 +17,5 @@ type GrantRequestRepository interface {
 	BeginTransaction(ctx crud.Context) (*ent.Tx, error)
 }
 
-type FindByIdParam = GetGrantRequestQuery
+type FindByIdParam = GetGrantRequestByIdQuery
 type DeleteParam = DeleteGrantRequestCommand
