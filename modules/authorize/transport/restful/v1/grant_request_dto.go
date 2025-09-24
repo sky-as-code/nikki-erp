@@ -82,19 +82,19 @@ type DeleteGrantRequestResponse = httpserver.RestDeleteResponse
 type GetGrantRequestByIdRequest = it.GetGrantRequestByIdQuery
 type GetGrantRequestByIdResponse = GrantRequestDto
 
+type SearchGrantRequestsRequest = it.SearchGrantRequestsQuery
+type SearchGrantRequestsResponse httpserver.RestSearchResponse[GrantRequestDto]
+
+func (this *SearchGrantRequestsResponse) FromResult(result *it.SearchGrantRequestsResultData) {
+	this.Total = result.Total
+	this.Page = result.Page
+	this.Size = result.Size
+	this.Items = array.Map(result.Items, func(grantRequest domain.GrantRequest) GrantRequestDto {
+		item := GrantRequestDto{}
+		item.FromGrantRequest(grantRequest)
+		return item
+	})
+}
+
 type RespondToGrantRequestRequest = it.RespondToGrantRequestCommand
 type RespondToGrantRequestResponse = httpserver.RestUpdateResponse
-
-// type SearchGrantRequestsRequest = it.SearchGrantRequestsCommand
-// type SearchGrantRequestsResponse httpserver.RestSearchResponse[GrantRequestDto]
-
-// func (this *SearchGrantRequestsResponse) FromResult(result *it.SearchGrantRequestsResultData) {
-// 	this.Total = result.Total
-// 	this.Page = result.Page
-// 	this.Size = result.Size
-// 	this.Items = array.Map(result.Items, func(grantRequest domain.GrantRequest) GrantRequestDto {
-// 		item := GrantRequestDto{}
-// 		item.FromGrantRequest(grantRequest)
-// 		return item
-// 	})
-// }

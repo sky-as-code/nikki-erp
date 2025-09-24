@@ -1,0 +1,20 @@
+meta {
+  name: Grant Request Search - Client error (Invalid paging)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api_host}}/v1/authorize/grant-requests?page=-1&size=99999999
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: -1
+  size: 99999999
+}
+
+settings {
+  encodeUrl: true
+}

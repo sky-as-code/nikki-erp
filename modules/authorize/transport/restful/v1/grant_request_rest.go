@@ -121,6 +121,29 @@ func (this GrantRequestRest) GetGrantRequestById(echoCtx echo.Context) (err erro
 	return err
 }
 
+func (this GrantRequestRest) SearchGrantRequests(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search grant requests"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.GrantRequestSvc.SearchGrantRequests,
+		func(request SearchGrantRequestsRequest) it.SearchGrantRequestsQuery {
+			return it.SearchGrantRequestsQuery(request)
+		},
+		func(result it.SearchGrantRequestsResult) SearchGrantRequestsResponse {
+			response := SearchGrantRequestsResponse{}
+			response.FromResult(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
 func (this GrantRequestRest) RespondToGrantRequest(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST respond to grant request"); e != nil {

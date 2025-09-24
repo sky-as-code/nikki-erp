@@ -5,6 +5,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
@@ -271,6 +272,45 @@ func (this *GrantRequestServiceImpl) GetGrantRequestById(ctx crud.Context, query
 			return &itGrantRequest.GetGrantRequestByIdResult{
 				Data:    model,
 				HasData: model != nil,
+			}
+		},
+	})
+
+	return result, err
+}
+
+func (this *GrantRequestServiceImpl) SearchGrantRequests(ctx crud.Context, query itGrantRequest.SearchGrantRequestsQuery) (*itGrantRequest.SearchGrantRequestsResult, error) {
+	result, err := crud.Search(ctx, crud.SearchParam[domain.GrantRequest, itGrantRequest.SearchGrantRequestsQuery, itGrantRequest.SearchGrantRequestsResult]{
+		Action: "search grant requests",
+		Query:  query,
+		SetQueryDefaults: func(query *itGrantRequest.SearchGrantRequestsQuery) {
+			query.SetDefaults()
+		},
+		ParseSearchGraph: this.grantRequestRepo.ParseSearchGraph,
+		RepoSearch: func(ctx crud.Context, query itGrantRequest.SearchGrantRequestsQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.GrantRequest], error) {
+			result, err := this.grantRequestRepo.Search(ctx, itGrantRequest.SearchParam{
+				Predicate: predicate,
+				Order:     order,
+				Page:      *query.Page,
+				Size:      *query.Size,
+			})
+
+			for i := range result.Items {
+				err := this.populateGrantRequestDetails(ctx, &result.Items[i])
+				fault.PanicOnErr(err)
+			}
+
+			return result, err
+		},
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *itGrantRequest.SearchGrantRequestsResult {
+			return &itGrantRequest.SearchGrantRequestsResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(pagedResult *crud.PagedResult[domain.GrantRequest]) *itGrantRequest.SearchGrantRequestsResult {
+			return &itGrantRequest.SearchGrantRequestsResult{
+				Data:    pagedResult,
+				HasData: pagedResult.Items != nil,
 			}
 		},
 	})
@@ -931,18 +971,25 @@ func (this *GrantRequestServiceImpl) getGrantRequestById(ctx crud.Context, query
 		return
 	}
 
-	dbGrantRequest.RequestorName, err = this.getUserDisplayName(ctx, *dbGrantRequest.RequestorId, "user", vErrs)
+	err = this.populateGrantRequestDetails(ctx, dbGrantRequest)
+	fault.PanicOnErr(err)
+
+	return
+}
+
+func (this *GrantRequestServiceImpl) populateGrantRequestDetails(ctx crud.Context, dbGrantRequest *domain.GrantRequest) (err error) {
+	dbGrantRequest.RequestorName, err = this.getUserDisplayName(ctx, *dbGrantRequest.RequestorId, "user", nil)
 	fault.PanicOnErr(err)
 
 	if *dbGrantRequest.ReceiverType == domain.ReceiverTypeGroup {
-		dbGrantRequest.ReceiverName, err = this.getUserDisplayName(ctx, *dbGrantRequest.ReceiverId, "group", vErrs)
+		dbGrantRequest.ReceiverName, err = this.getUserDisplayName(ctx, *dbGrantRequest.ReceiverId, "group", nil)
 	} else {
-		dbGrantRequest.ReceiverName, err = this.getUserDisplayName(ctx, *dbGrantRequest.ReceiverId, "user", vErrs)
+		dbGrantRequest.ReceiverName, err = this.getUserDisplayName(ctx, *dbGrantRequest.ReceiverId, "user", nil)
 	}
 	fault.PanicOnErr(err)
 
 	for i, grantResponse := range dbGrantRequest.GrantResponses {
-		dbGrantRequest.GrantResponses[i].ResponderName, err = this.getUserDisplayName(ctx, *grantResponse.ResponderId, "user", vErrs)
+		dbGrantRequest.GrantResponses[i].ResponderName, err = this.getUserDisplayName(ctx, *grantResponse.ResponderId, "user", nil)
 		fault.PanicOnErr(err)
 	}
 

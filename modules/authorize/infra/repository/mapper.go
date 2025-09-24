@@ -257,6 +257,16 @@ func entToGrantRequest(dbGrantRequest *ent.GrantRequest) *domain.GrantRequest {
 	return grantRequest
 }
 
+func entToGrantRequests(dbGrantRequests []*ent.GrantRequest) []domain.GrantRequest {
+	if dbGrantRequests == nil {
+		return nil
+	}
+
+	return array.Map(dbGrantRequests, func(dbGrantRequest *ent.GrantRequest) domain.GrantRequest {
+		return *entToGrantRequest(dbGrantRequest)
+	})
+}
+
 // END: GrantRequest
 
 // START: GrantResponse

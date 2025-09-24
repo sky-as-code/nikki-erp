@@ -223,15 +223,28 @@ type GetGrantRequestByIdResult = crud.OpResult[*domain.GrantRequest]
 
 // END: GetGrantRequestByIdQuery
 
-// START: ListGrantRequestsQuery
-type ListGrantRequestsQuery struct {
-	Page       *int                    `json:"page,omitempty"`
-	Size       *int                    `json:"size,omitempty"`
-	Graph      *map[string]interface{} `json:"graph,omitempty"`
-	Status     *string                 `json:"status,omitempty"`
-	ApprovalId *model.Id               `json:"approvalId,omitempty"`
+// START: SearchGrantRequestsQuery
+var searchGrantRequestsQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "grant_request",
+	Action:    "search",
 }
 
-type ListGrantRequestsResult = crud.OpResult[[]*domain.GrantRequest]
+type SearchGrantRequestsQuery struct {
+	crud.SearchQuery
+}
 
-// END: ListGrantRequestsQuery
+func (SearchGrantRequestsQuery) CqrsRequestType() cqrs.RequestType {
+	return searchGrantRequestsQueryType
+}
+
+func (this SearchGrantRequestsQuery) Validate() fault.ValidationErrors {
+	rules := this.SearchQuery.ValidationRules()
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type SearchGrantRequestsResultData = crud.PagedResult[domain.GrantRequest]
+type SearchGrantRequestsResult = crud.OpResult[*SearchGrantRequestsResultData]
+
+// END: SearchGrantRequestsQuery
