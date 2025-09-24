@@ -10,7 +10,10 @@ func StartValidationFlow(startWith ...Validatable) *ValidationFlow {
 	flow := ValidationFlow{}
 	if len(startWith) > 0 {
 		return flow.Start().Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = startWith[0].Validate()
+			result := startWith[0].Validate()
+			if result != nil {
+				*vErrs = result
+			}
 			return nil
 		})
 	}

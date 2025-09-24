@@ -52,8 +52,16 @@ func (*CoreModule) Init() error {
 }
 
 func newCoreClient(clientOpts *db.EntClientOptions) *ent.Client {
+	var client *ent.Client
 	if clientOpts.DebugEnabled {
-		return ent.NewClient(ent.Driver(clientOpts.Driver), ent.Debug())
+		client = ent.NewClient(ent.Driver(clientOpts.Driver), ent.Debug())
 	}
-	return ent.NewClient(ent.Driver(clientOpts.Driver))
+	client = ent.NewClient(ent.Driver(clientOpts.Driver))
+
+	err := client.DB().Ping()
+	if err != nil {
+		panic(err)
+	}
+
+	return client
 }
