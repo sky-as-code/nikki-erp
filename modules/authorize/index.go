@@ -23,7 +23,6 @@ func (*AuthorizeModule) Name() string {
 // Deps implements NikkiModule.
 func (*AuthorizeModule) Deps() []string {
 	return []string{
-		"core",
 		"identity",
 	}
 }

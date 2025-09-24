@@ -6,10 +6,12 @@ import (
 
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/loader"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/core"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
@@ -31,7 +33,7 @@ func (this *Application) Config() config.ConfigService {
 }
 
 func (this *Application) Start() {
-	var modules []modules.NikkiModule
+	modules := []modules.NikkiModule{}
 	var err error
 
 	modules, err = loader.LoadModules()
@@ -66,6 +68,7 @@ func (this *Application) initModules() error {
 
 func (this *Application) buildModuleMap() map[string]modules.NikkiModule {
 	moduleMap := make(map[string]modules.NikkiModule)
+	moduleMap["core"] = core.ModuleSingleton
 	for _, mod := range this.modules {
 		moduleMap[mod.Name()] = mod
 	}
@@ -101,6 +104,7 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.NikkiMod
 		return errors.Wrap(err, "failed to determine module initialization order")
 	}
 
+	initOrder = array.Prepend(initOrder, "core")
 	orderedMods := make([]modules.NikkiModule, 0)
 	for _, modName := range initOrder {
 		mod := moduleMap[modName]

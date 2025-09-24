@@ -22,9 +22,7 @@ func (*IdentityModule) Name() string {
 
 // Deps implements NikkiModule.
 func (*IdentityModule) Deps() []string {
-	return []string{
-		"core",
-	}
+	return []string{}
 }
 
 // Init implements NikkiModule.

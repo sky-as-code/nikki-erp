@@ -8,8 +8,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authenticate"
 	"github.com/sky-as-code/nikki-erp/modules/authorize"
 	"github.com/sky-as-code/nikki-erp/modules/contacts"
-
-	"github.com/sky-as-code/nikki-erp/modules/core"
 	"github.com/sky-as-code/nikki-erp/modules/identity"
 )
 
@@ -23,7 +21,6 @@ func getStaticModules() []modules.NikkiModule {
 		authorize.ModuleSingleton,
 		authenticate.ModuleSingleton,
 		contacts.ModuleSingleton,
-		core.ModuleSingleton,
 		identity.ModuleSingleton,
 	}
 
