@@ -130,6 +130,19 @@ infra-up:
 infra-down:
 	docker compose -f "${cwd}/scripts/docker/docker-compose.local.yml" down -v
 
+infra-swarm-up:
+	./scripts/docker/infra-up.sh $(shell pwd)
+
+infra-swarm-down:
+	./scripts/docker/infra-down.sh
+
+infra-swarm-svc:
+	@if [ -z "$(svc)" ]; then \
+		echo "Error: svc parameter is required. Usage: make infra-swarm-svc svc=<service_name>"; \
+		exit 1; \
+	fi
+	docker service ps nikki_infra_$(svc) --no-trunc --format "table {{.ID}}\t{{.Node}}\t{{.DesiredState}}\t{{.CurrentState}}\t{{.Error}}"
+
 install-tools:
 	go install go.uber.org/mock/mockgen@latest
 # curl -sSf https://atlasgo.sh | sh
