@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:17.4-alpine3.21
@@ -57,6 +55,27 @@ services:
     networks:
       - nikki_net
 
+  rabbitmq:
+    image: rabbitmq:4.1.4-management-alpine
+    container_name: nikki_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: nikki_admin
+      RABBITMQ_DEFAULT_PASS: nikki_password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq_enabled_plugins:/etc/rabbitmq/enabled_plugins
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI port
+      - "1883:1883"   # MQTT port
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nikki_net
+
 networks:
   nikki_net:
     driver: bridge
@@ -66,3 +85,4 @@ volumes:
   pgadmin_data:
   keydb_data:
   redis_data:
+  rabbitmq_data:

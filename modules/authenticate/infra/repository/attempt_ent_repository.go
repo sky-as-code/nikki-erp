@@ -23,8 +23,16 @@ type AttemptEntRepository struct {
 	client *ent.Client
 }
 
+func (this *AttemptEntRepository) attemptClient(ctx crud.Context) *ent.LoginAttemptClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.LoginAttempt
+	}
+	return this.client.LoginAttempt
+}
+
 func (this *AttemptEntRepository) Create(ctx crud.Context, attempt domain.LoginAttempt) (*domain.LoginAttempt, error) {
-	creation := this.client.LoginAttempt.Create().
+	creation := this.attemptClient(ctx).Create().
 		SetID(*attempt.Id).
 		SetNillableCurrentMethod(attempt.CurrentMethod).
 		SetNillableDeviceIP(attempt.DeviceIp).
@@ -43,7 +51,7 @@ func (this *AttemptEntRepository) Create(ctx crud.Context, attempt domain.LoginA
 }
 
 func (this *AttemptEntRepository) Update(ctx crud.Context, attempt domain.LoginAttempt) (*domain.LoginAttempt, error) {
-	update := this.client.LoginAttempt.UpdateOneID(*attempt.Id).
+	update := this.attemptClient(ctx).UpdateOneID(*attempt.Id).
 		SetNillableIsGenuine(attempt.IsGenuine).
 		SetNillableStatus(util.ToPtr(attempt.Status.String()))
 
@@ -61,7 +69,7 @@ func (this *AttemptEntRepository) Update(ctx crud.Context, attempt domain.LoginA
 }
 
 func (this *AttemptEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.LoginAttempt, error) {
-	query := this.client.LoginAttempt.Query().
+	query := this.attemptClient(ctx).Query().
 		Where(entAtp.ID(param.Id))
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToAttempt)

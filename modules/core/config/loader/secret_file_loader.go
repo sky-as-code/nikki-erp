@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"go.bryk.io/pkg/errors"
 
@@ -13,9 +14,9 @@ import (
 
 const SECRET_FILE_SUFFIX = "_FILE"
 
-func NewSecretFileConfigLoader(envVarLoader *EnvVarConfigLoader, logger logging.LoggerService) *SecretFileConfigLoader {
+func NewSecretFileConfigLoader(nextLoader ConfigLoader, logger logging.LoggerService) *SecretFileConfigLoader {
 	return &SecretFileConfigLoader{
-		envVarLoader,
+		nextLoader,
 		logger,
 	}
 }
@@ -23,40 +24,46 @@ func NewSecretFileConfigLoader(envVarLoader *EnvVarConfigLoader, logger logging.
 // SecretFileConfigLoader gets configuration from a secret file,
 // usually mapped by K8S of Docker to container.
 type SecretFileConfigLoader struct {
-	envVarLoader *EnvVarConfigLoader
-	logger       logging.LoggerService
+	nextLoader ConfigLoader
+	logger     logging.LoggerService
 }
 
-func (fileLoader *SecretFileConfigLoader) Init() error {
-	appErr := fileLoader.envVarLoader.Init()
+func (this *SecretFileConfigLoader) Init() error {
+	appErr := this.nextLoader.Init()
 	return appErr
 }
 
 func (fileLoader *SecretFileConfigLoader) Get(name string) (string, error) {
 	hasSecretFile, secretFilePath := fileLoader.getSecretFilePath(name)
 	if !hasSecretFile {
-		return fileLoader.envVarLoader.Get(name)
+		return fileLoader.nextLoader.Get(name)
 	}
 
-	workDir := env.Cwd()
-	bytes, err := os.ReadFile(filepath.Join(workDir, secretFilePath))
+	var fullPath string
+	isRelativePath := strings.HasPrefix(secretFilePath, ".")
+	if isRelativePath {
+		workDir := env.Cwd()
+		fullPath = filepath.Join(workDir, secretFilePath)
+	} else {
+		fullPath = secretFilePath
+	}
+	bytes, err := os.ReadFile(fullPath)
 
 	if err != nil {
 		return "", errors.Wrap(
 			err,
-			fmt.Sprintf("SecretFileConfigLoader.Get('%s') failed to read secret from file %s", name, secretFilePath),
+			fmt.Sprintf("failed to read secret for key '%s' from file %s", name, secretFilePath),
 		)
 	}
 	return string(bytes), nil
 }
 
 func (fileLoader *SecretFileConfigLoader) getSecretFilePath(name string) (bool, string) {
-	// For example with name=DB_PASSWORD, we try getting the secret file path from config DB_PASSWORD_FILE.
-	// If the path is specified, we read the secret content from that file path, otherwise we
-	// load DB_PASSWORD from env var.
+	// For example with name=CORE.DB.PASSWORD, we try getting the secret file path from config CORE.DB.PASSWORD_FILE.
+	// If a value representing a path is specified, we read the secret content from that file path, otherwise we skip to next loader.
 
-	fileNameConfig := fmt.Sprintf("%s%s", string(name), SECRET_FILE_SUFFIX)
-	secretFilePath, err := fileLoader.envVarLoader.Get(fileNameConfig)
+	fileNameConfig := fmt.Sprintf("%s%s", name, SECRET_FILE_SUFFIX)
+	secretFilePath, err := fileLoader.nextLoader.Get(fileNameConfig)
 	hasSecretFile := (err == nil)
 	return hasSecretFile, secretFilePath
 }

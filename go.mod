@@ -10,6 +10,7 @@ require (
 	github.com/ThreeDotsLabs/watermill-redisstream v1.4.3
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/go-sanitize/sanitize v1.1.0
+	github.com/goccy/go-yaml v1.18.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang/mock v1.7.0-rc.1

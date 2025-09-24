@@ -1,0 +1,56 @@
+GENERAL:
+  APP_NAME: "Nikki ERP"
+
+CORE:
+  CQRS:
+    # Number of seconds before a CQRS request is timed out
+    REQUEST_TIMEOUT_SECS: 50
+  DB:
+    # Supported dialects: postgres | mysql
+    DIALECT: postgres
+    # Host:Port pair of the database server
+    HOST_PORT: localhost:5432
+    # Database name
+    DATABASE: nikki_erp
+    # Database username can be specified in env var CORE_DB_USER or
+    # in config item CORE.DB.USER_FILE which contains a secret file path.
+    #USER: "Do not specify here"
+    # Database password can be specified in env var CORE_DB_PASSWORD or
+    # in config item CORE.DB.PASSWORD_FILE which contains a secret file path.
+    #PASSWORD: "Do not specify here"
+    # Whether to establish TLS connection to database
+    TLS_ENABLED: true
+    # Whether to write ORM debug SQL queries
+    ORM_DEBUG_ENABLED: false
+    MAX_IDLE_CONNS: 100
+    MAX_OPEN_CONNS: 1000
+    CONN_MAX_LIFETIME_SECS: 3600
+  EVENT:
+    REDIS_HOST: localhost
+    # A comma-separated list of Redis hosts for cluster mode
+    # REDIS_HOSTS:
+    # Redis port, applied for all hosts in REDIS_HOSTS
+    REDIS_PORT: 6379
+    # Regis database. See: https://redis.io/docs/latest/commands/select/
+    REDIS_DB: 1
+    # Redis password can be specified in env var CORE_EVENT_REDIS_PASSWORD or
+    # in config item CORE.EVENT.REDIS_PASSWORD_FILE which contains a secret file path.
+    #REDIS_PASSWORD: "Do not specify here"
+  HTTP:
+    # Base path to access REST API, default is "/" which means API URL is http://example.com/,
+    # Example: BASE_PATH="/api", the API URL would be http://example.com/api.
+    BASE_PATH: ""
+    # Host name for HTTP Server to bind
+    HOST: "127.0.0.1"
+    # Port number for HTTP Server to listen
+    PORT: 8080
+    # Allowed origins for Cross-Origin Resource Sharing
+    CORS_ORIGINS: "*"
+    # Allowed headers for Cross-Origin Resource Sharing
+    CORS_HEADERS: "Accept,Authorization,Content-Type,Origin"
+    # Allowed methods for Cross-Origin Resource Sharing
+    CORS_METHODS: "HEAD,GET,POST,PATCH,POST,DELETE"
+
+AUTHENTICATE:
+  # Number of seconds before a login attempt expires
+  LOGIN_ATTEMPT_DURATION_SECS: 300

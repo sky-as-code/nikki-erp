@@ -5,5 +5,5 @@ import (
 )
 
 const (
-	LoginAttemptDurationSecs core.ConfigName = "LOGIN_ATTEMPT_DURATION_SECS"
+	LoginAttemptDurationSecs core.ConfigName = "AUTHENTICATE.LOGIN_ATTEMPT_DURATION_SECS"
 )

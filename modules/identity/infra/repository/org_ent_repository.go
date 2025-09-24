@@ -24,8 +24,16 @@ type OrganizationEntRepository struct {
 	client *ent.Client
 }
 
+func (this *OrganizationEntRepository) orgClient(ctx crud.Context) *ent.OrganizationClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.Organization
+	}
+	return this.client.Organization
+}
+
 func (this *OrganizationEntRepository) Create(ctx crud.Context, org domain.Organization) (*domain.Organization, error) {
-	creation := this.client.Organization.Create().
+	creation := this.orgClient(ctx).Create().
 		SetID(*org.Id).
 		SetNillableAddress(org.Address).
 		SetDisplayName(*org.DisplayName).
@@ -39,7 +47,7 @@ func (this *OrganizationEntRepository) Create(ctx crud.Context, org domain.Organ
 }
 
 func (this *OrganizationEntRepository) Update(ctx crud.Context, org domain.Organization, prevEtag model.Etag) (*domain.Organization, error) {
-	update := this.client.Organization.UpdateOneID(*org.Id).
+	update := this.orgClient(ctx).UpdateOneID(*org.Id).
 		SetNillableAddress(org.Address).
 		SetNillableDisplayName(org.DisplayName).
 		SetNillableLegalName(org.LegalName).
@@ -58,20 +66,20 @@ func (this *OrganizationEntRepository) Update(ctx crud.Context, org domain.Organ
 }
 
 func (this *OrganizationEntRepository) DeleteSoft(ctx crud.Context, id model.Id) (*domain.Organization, error) {
-	update := this.client.Organization.UpdateOneID(id).
+	update := this.orgClient(ctx).UpdateOneID(id).
 		SetDeletedAt(time.Now())
 
 	return db.Mutate(ctx, update, ent.IsNotFound, entToOrganization)
 }
 
 func (this *OrganizationEntRepository) DeleteHard(ctx crud.Context, id model.Id) (int, error) {
-	return this.client.Organization.Delete().
+	return this.orgClient(ctx).Delete().
 		Where(entOrg.ID(id)).
 		Exec(ctx)
 }
 
 func (this *OrganizationEntRepository) FindById(ctx crud.Context, id model.Id) (*domain.Organization, error) {
-	query := this.client.Organization.Query().
+	query := this.orgClient(ctx).Query().
 		Where(entOrg.ID(id)).
 		WithUsers()
 
@@ -79,7 +87,7 @@ func (this *OrganizationEntRepository) FindById(ctx crud.Context, id model.Id) (
 }
 
 func (this *OrganizationEntRepository) FindBySlug(ctx crud.Context, param it.FindBySlugParam) (*domain.Organization, error) {
-	query := this.client.Organization.Query().
+	query := this.orgClient(ctx).Query().
 		Where(entOrg.Slug(param.Slug)).
 		WithUsers()
 
@@ -105,7 +113,7 @@ func (this *OrganizationEntRepository) ParseSearchGraph(criteria *string) (*orm.
 func (this *OrganizationEntRepository) Search(
 	ctx crud.Context, param it.SearchParam,
 ) (*crud.PagedResult[domain.Organization], error) {
-	query := this.client.Organization.Query()
+	query := this.orgClient(ctx).Query()
 
 	query = this.queryIncludeDeleted(query, param.IncludeDeleted)
 

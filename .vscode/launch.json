@@ -9,11 +9,11 @@
 			"type": "go",
 			"request": "launch",
 			"mode": "debug",
-			"program": "${workspaceRoot}/cmd",
+			"program": "${workspaceRoot}",
 			"env": {
 				"APP_ENV": "local",
-				"WORKING_DIR": "${workspaceRoot}/cmd",
-				"LOG_LEVEL": "debug",
+				"WORKING_DIR": "${workspaceRoot}",
+				"GENERAL_LOG_LEVEL": "debug",
 			}
 		}
 	]

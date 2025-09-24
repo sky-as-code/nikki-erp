@@ -24,8 +24,16 @@ type GroupEntRepository struct {
 	client *ent.Client
 }
 
+func (this *GroupEntRepository) groupClient(ctx crud.Context) *ent.GroupClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.Group
+	}
+	return this.client.Group
+}
+
 func (this *GroupEntRepository) Create(ctx crud.Context, group domain.Group) (*domain.Group, error) {
-	creation := this.client.Group.Create().
+	creation := this.groupClient(ctx).Create().
 		SetID(*group.Id).
 		SetName(*group.Name).
 		SetNillableDescription(group.Description).
@@ -36,7 +44,7 @@ func (this *GroupEntRepository) Create(ctx crud.Context, group domain.Group) (*d
 }
 
 func (this *GroupEntRepository) Update(ctx crud.Context, group domain.Group, prevEtag model.Etag) (*domain.Group, error) {
-	update := this.client.Group.UpdateOneID(*group.Id).
+	update := this.groupClient(ctx).UpdateOneID(*group.Id).
 		SetNillableName(group.Name).
 		SetNillableDescription(group.Description).
 		SetEtag(*group.Etag).
@@ -54,13 +62,13 @@ func (this *GroupEntRepository) Update(ctx crud.Context, group domain.Group, pre
 }
 
 func (this *GroupEntRepository) DeleteHard(ctx crud.Context, param it.DeleteParam) (int, error) {
-	return this.client.Group.Delete().
+	return this.groupClient(ctx).Delete().
 		Where(entGroup.ID(param.Id)).
 		Exec(ctx)
 }
 
 func (this *GroupEntRepository) FindById(ctx crud.Context, param it.GetGroupByIdQuery) (*domain.Group, error) {
-	dbQuery := this.client.Group.Query().
+	dbQuery := this.groupClient(ctx).Query().
 		Where(entGroup.ID(param.Id))
 	if param.WithOrg != nil && *param.WithOrg {
 		dbQuery = dbQuery.WithOrg()
@@ -71,7 +79,7 @@ func (this *GroupEntRepository) FindById(ctx crud.Context, param it.GetGroupById
 func (this *GroupEntRepository) FindByName(ctx crud.Context, param it.FindByNameParam) (*domain.Group, error) {
 	return db.FindOne(
 		ctx,
-		this.client.Group.Query().Where(entGroup.Name(param.Name)),
+		this.groupClient(ctx).Query().Where(entGroup.Name(param.Name)),
 		ent.IsNotFound,
 		entToGroup,
 	)
@@ -85,7 +93,7 @@ func (this *GroupEntRepository) Search(
 	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.Group], error) {
-	query := this.client.Group.Query()
+	query := this.groupClient(ctx).Query()
 	if param.WithOrg {
 		query = query.WithOrg()
 	}
@@ -107,7 +115,7 @@ func (this *GroupEntRepository) AddRemoveUsers(ctx crud.Context, param it.AddRem
 	if len(param.Add) == 0 && len(param.Remove) == 0 {
 		return nil, nil
 	}
-	err := this.client.Group.UpdateOneID(param.GroupId).
+	err := this.groupClient(ctx).UpdateOneID(param.GroupId).
 		AddUserIDs(param.Add...).
 		RemoveUserIDs(param.Remove...).
 		SetEtag(param.Etag).

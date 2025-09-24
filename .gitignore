@@ -25,3 +25,4 @@
 *.tmp.sql
 
 dist
+config/config.yaml

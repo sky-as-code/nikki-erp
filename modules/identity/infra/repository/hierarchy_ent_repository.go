@@ -24,8 +24,16 @@ type HierarchyLevelEntRepository struct {
 	client *ent.Client
 }
 
+func (this *HierarchyLevelEntRepository) hierarchyClient(ctx crud.Context) *ent.HierarchyLevelClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.HierarchyLevel
+	}
+	return this.client.HierarchyLevel
+}
+
 func (this *HierarchyLevelEntRepository) Create(ctx crud.Context, hierarchyLevel domain.HierarchyLevel) (*domain.HierarchyLevel, error) {
-	creation := this.client.HierarchyLevel.Create().
+	creation := this.hierarchyClient(ctx).Create().
 		SetID(*hierarchyLevel.Id).
 		SetName(*hierarchyLevel.Name).
 		SetOrgID(string(*hierarchyLevel.OrgId)).
@@ -36,7 +44,7 @@ func (this *HierarchyLevelEntRepository) Create(ctx crud.Context, hierarchyLevel
 }
 
 func (this *HierarchyLevelEntRepository) Update(ctx crud.Context, hierarchyLevel domain.HierarchyLevel, prevEtag model.Etag) (*domain.HierarchyLevel, error) {
-	update := this.client.HierarchyLevel.UpdateOneID(*hierarchyLevel.Id).
+	update := this.hierarchyClient(ctx).UpdateOneID(*hierarchyLevel.Id).
 		SetNillableName(hierarchyLevel.Name).
 		SetNillableParentID(hierarchyLevel.ParentId).
 		SetEtag(*hierarchyLevel.Etag).
@@ -52,13 +60,13 @@ func (this *HierarchyLevelEntRepository) Update(ctx crud.Context, hierarchyLevel
 }
 
 func (this *HierarchyLevelEntRepository) DeleteHard(ctx crud.Context, id model.Id) (int, error) {
-	return this.client.HierarchyLevel.Delete().
+	return this.hierarchyClient(ctx).Delete().
 		Where(entHierarchy.ID(id)).
 		Exec(ctx)
 }
 
 func (this *HierarchyLevelEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.HierarchyLevel, error) {
-	dbQuery := this.client.HierarchyLevel.Query().
+	dbQuery := this.hierarchyClient(ctx).Query().
 		Where(entHierarchy.ID(param.Id))
 
 	if param.WithChildren {
@@ -76,7 +84,7 @@ func (this *HierarchyLevelEntRepository) FindById(ctx crud.Context, param it.Fin
 func (this *HierarchyLevelEntRepository) FindByName(ctx crud.Context, param it.FindByNameParam) (*domain.HierarchyLevel, error) {
 	return db.FindOne(
 		ctx,
-		this.client.HierarchyLevel.Query().Where(entHierarchy.Name(param.Name)),
+		this.hierarchyClient(ctx).Query().Where(entHierarchy.Name(param.Name)),
 		ent.IsNotFound,
 		entToHierarchyLevel,
 	)
@@ -90,7 +98,7 @@ func (this *HierarchyLevelEntRepository) Search(
 	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.HierarchyLevel], error) {
-	query := this.client.HierarchyLevel.Query()
+	query := this.hierarchyClient(ctx).Query()
 
 	if param.WithOrg {
 		query = query.WithOrg()
@@ -127,7 +135,7 @@ func (this *HierarchyLevelEntRepository) AddRemoveUsers(ctx crud.Context, param 
 		return nil, nil
 	}
 
-	err := this.client.HierarchyLevel.UpdateOneID(param.HierarchyId).
+	err := this.hierarchyClient(ctx).UpdateOneID(param.HierarchyId).
 		AddUserIDs(param.Add...).
 		RemoveUserIDs(param.Remove...).
 		SetEtag(param.Etag).

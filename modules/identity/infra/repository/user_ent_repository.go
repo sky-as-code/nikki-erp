@@ -26,8 +26,16 @@ type UserEntRepository struct {
 	client *ent.Client
 }
 
+func (this *UserEntRepository) userClient(ctx crud.Context) *ent.UserClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.User
+	}
+	return this.client.User
+}
+
 func (this *UserEntRepository) Create(ctx crud.Context, user *domain.User) (*domain.User, error) {
-	creation := this.client.User.Create().
+	creation := this.userClient(ctx).Create().
 		SetID(*user.Id).
 		SetNillableAvatarURL(user.AvatarUrl).
 		SetDisplayName(*user.DisplayName).
@@ -39,7 +47,7 @@ func (this *UserEntRepository) Create(ctx crud.Context, user *domain.User) (*dom
 }
 
 func (this *UserEntRepository) Update(ctx crud.Context, user *domain.User, prevEtag model.Etag) (*domain.User, error) {
-	update := this.client.User.UpdateOneID(*user.Id).
+	update := this.userClient(ctx).UpdateOneID(*user.Id).
 		SetNillableAvatarURL(user.AvatarUrl).
 		SetNillableDisplayName(user.DisplayName).
 		SetNillableEmail(user.Email).
@@ -57,19 +65,19 @@ func (this *UserEntRepository) Update(ctx crud.Context, user *domain.User, prevE
 }
 
 func (this *UserEntRepository) DeleteHard(ctx crud.Context, param it.DeleteParam) (int, error) {
-	return this.client.User.Delete().
+	return this.userClient(ctx).Delete().
 		Where(entUser.ID(param.Id)).
 		Exec(ctx)
 }
 
 func (this *UserEntRepository) Exists(ctx crud.Context, id model.Id) (bool, error) {
-	return this.client.User.Query().
+	return this.userClient(ctx).Query().
 		Where(entUser.ID(id)).
 		Exist(ctx)
 }
 
 func (this *UserEntRepository) ExistsMulti(ctx crud.Context, ids []model.Id) (existing []model.Id, notExisting []model.Id, err error) {
-	dbEntities, err := this.client.User.Query().
+	dbEntities, err := this.userClient(ctx).Query().
 		Where(entUser.IDIn(ids...)).
 		Select(entUser.FieldID).
 		All(ctx)
@@ -90,7 +98,7 @@ func (this *UserEntRepository) ExistsMulti(ctx crud.Context, ids []model.Id) (ex
 }
 
 func (this *UserEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.User, error) {
-	query := this.client.User.Query().Where(entUser.ID(param.Id))
+	query := this.userClient(ctx).Query().Where(entUser.ID(param.Id))
 
 	if param.WithGroup {
 		query = query.WithGroups()
@@ -121,7 +129,7 @@ func (this *UserEntRepository) FindByIdForUpdate(ctx crud.Context, param it.Find
 }
 
 func (this *UserEntRepository) FindByEmail(ctx crud.Context, param it.FindByEmailParam) (*domain.User, error) {
-	query := this.client.User.Query().
+	query := this.userClient(ctx).Query().
 		Where(entUser.EmailEQ(param.Email)).
 		WithGroups().
 		WithOrgs()
@@ -155,7 +163,7 @@ func (this *UserEntRepository) Search(
 	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.User], error) {
-	query := this.client.User.Query()
+	query := this.userClient(ctx).Query()
 
 	if param.WithGroups {
 		query = query.WithGroups()

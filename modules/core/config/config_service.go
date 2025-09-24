@@ -11,6 +11,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	. "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/core/config/loader"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 )
 
@@ -25,14 +26,14 @@ var CommitId = func() string {
 	return "N/A"
 }()
 
-func NewConfigService(loader ConfigLoader) *configServiceImpl {
+func NewConfigService(loader loader.ConfigLoader) *configServiceImpl {
 	return &configServiceImpl{
 		loader,
 	}
 }
 
 type configServiceImpl struct {
-	Loader ConfigLoader
+	Loader loader.ConfigLoader
 }
 
 func (this *configServiceImpl) Init() error {
