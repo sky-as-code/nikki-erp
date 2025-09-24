@@ -24,18 +24,20 @@ type PartyEntRepository struct {
 	client *ent.Client
 }
 
-func (this *PartyEntRepository) Create(ctx crud.Context, party domain.Party) (*domain.Party, error) {
+func (this *PartyEntRepository) Create(ctx crud.Context, party *domain.Party) (*domain.Party, error) {
 	creation := this.client.Party.Create().
 		SetID(*party.Id).
 		SetEtag(*party.Etag).
 		SetDisplayName(*party.DisplayName).
 		SetType(*party.Type).
-		SetNillableAvatarURL(party.AvatarUrl).
+		SetNillableAvatarUrl(party.AvatarUrl).
 		SetNillableLegalName(party.LegalName).
 		SetNillableLegalAddress(party.LegalAddress).
 		SetNillableTaxID(party.TaxId).
+		SetNillableTitle(party.Title).
 		SetNillableJobPosition(party.JobPosition).
 		SetNillableNote(party.Note).
+		SetOrgID(*party.OrgId).
 		SetNillableWebsite(party.Website)
 
 	if party.Language != nil {
@@ -46,22 +48,19 @@ func (this *PartyEntRepository) Create(ctx crud.Context, party domain.Party) (*d
 		creation = creation.SetNillableNationalityID((*string)(party.Nationality))
 	}
 
-	if party.Title != nil && party.Title.Value != nil {
-		creation = creation.SetTitle(entParty.Title(*party.Title.Value))
-	}
-
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToParty)
 }
 
-func (this *PartyEntRepository) Update(ctx crud.Context, party domain.Party, prevEtag model.Etag) (*domain.Party, error) {
+func (this *PartyEntRepository) Update(ctx crud.Context, party *domain.Party, prevEtag model.Etag) (*domain.Party, error) {
 	update := this.client.Party.UpdateOneID(*party.Id).
-		SetNillableAvatarURL(party.AvatarUrl).
+		SetNillableAvatarUrl(party.AvatarUrl).
 		SetNillableDisplayName(party.DisplayName).
 		SetNillableLegalName(party.LegalName).
 		SetNillableLegalAddress(party.LegalAddress).
 		SetNillableTaxID(party.TaxId).
 		SetNillableJobPosition(party.JobPosition).
 		SetNillableType(party.Type).
+		SetNillableTitle(party.Title).
 		SetNillableNote(party.Note).
 		SetNillableWebsite(party.Website).
 		// IMPORTANT: Must have!
@@ -73,10 +72,6 @@ func (this *PartyEntRepository) Update(ctx crud.Context, party domain.Party, pre
 
 	if party.Nationality != nil {
 		update = update.SetNillableNationalityID((*string)(party.Nationality))
-	}
-
-	if party.Title != nil && party.Title.Value != nil {
-		update = update.SetTitle(entParty.Title(*party.Title.Value))
 	}
 
 	if len(update.Mutation().Fields()) > 0 {
@@ -103,7 +98,7 @@ func (this *PartyEntRepository) FindById(ctx crud.Context, param pt.FindByIdPara
 	}
 
 	if param.WithRelationships {
-		query = query.WithRelationships()
+		query = query.WithRelationshipsAsSource()
 	}
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToParty)
@@ -111,15 +106,14 @@ func (this *PartyEntRepository) FindById(ctx crud.Context, param pt.FindByIdPara
 
 func (this *PartyEntRepository) FindByDisplayName(ctx crud.Context, param pt.FindByDisplayNameParam) (*domain.Party, error) {
 	query := this.client.Party.Query().
-		Where(entParty.DisplayNameEQ(param.DisplayName)).
-		Where(entParty.TypeEQ(param.Type))
+		Where(entParty.DisplayName(param.DisplayName))
 
 	if param.WithCommChannels {
 		query = query.WithCommChannels()
 	}
 
 	if param.WithRelationships {
-		query = query.WithRelationships()
+		query = query.WithRelationshipsAsSource()
 	}
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToParty)
@@ -140,7 +134,7 @@ func (this *PartyEntRepository) Search(
 	}
 
 	if param.WithRelationships {
-		query = query.WithRelationships()
+		query = query.WithRelationshipsAsSource()
 	}
 
 	return db.Search(
@@ -160,7 +154,7 @@ func BuildPartyDescriptor() *orm.EntityDescriptor {
 	entity := ent.Party{}
 	builder := orm.DescribeEntity(entParty.Label).
 		Aliases("parties").
-		Field(entParty.FieldAvatarURL, entity.AvatarURL).
+		Field(entParty.FieldAvatarUrl, entity.AvatarUrl).
 		Field(entParty.FieldCreatedAt, entity.CreatedAt).
 		Field(entParty.FieldDisplayName, entity.DisplayName).
 		Field(entParty.FieldEtag, entity.Etag).
@@ -175,7 +169,7 @@ func BuildPartyDescriptor() *orm.EntityDescriptor {
 		Field(entParty.FieldUpdatedAt, entity.UpdatedAt).
 		Field(entParty.FieldWebsite, entity.Website).
 		Edge(entParty.EdgeCommChannels, orm.ToEdgePredicate(entParty.HasCommChannelsWith)).
-		Edge(entParty.EdgeRelationships, orm.ToEdgePredicate(entParty.HasRelationshipsWith))
+		Edge(entParty.EdgeRelationshipsAsSource, orm.ToEdgePredicate(entParty.HasRelationshipsAsSourceWith))
 
 	return builder.Descriptor()
 }

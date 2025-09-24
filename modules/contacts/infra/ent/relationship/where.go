@@ -90,9 +90,19 @@ func Note(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldNote, v))
 }
 
+// PartyID applies equality check predicate on the "party_id" field. It's identical to PartyIDEQ.
+func PartyID(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldPartyID, v))
+}
+
 // TargetPartyID applies equality check predicate on the "target_party_id" field. It's identical to TargetPartyIDEQ.
 func TargetPartyID(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldTargetPartyID, v))
+}
+
+// Type applies equality check predicate on the "type" field. It's identical to TypeEQ.
+func Type(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldType, v))
 }
 
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
@@ -405,6 +415,71 @@ func NoteContainsFold(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldContainsFold(FieldNote, v))
 }
 
+// PartyIDEQ applies the EQ predicate on the "party_id" field.
+func PartyIDEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldPartyID, v))
+}
+
+// PartyIDNEQ applies the NEQ predicate on the "party_id" field.
+func PartyIDNEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldPartyID, v))
+}
+
+// PartyIDIn applies the In predicate on the "party_id" field.
+func PartyIDIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldPartyID, vs...))
+}
+
+// PartyIDNotIn applies the NotIn predicate on the "party_id" field.
+func PartyIDNotIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldPartyID, vs...))
+}
+
+// PartyIDGT applies the GT predicate on the "party_id" field.
+func PartyIDGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldPartyID, v))
+}
+
+// PartyIDGTE applies the GTE predicate on the "party_id" field.
+func PartyIDGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldPartyID, v))
+}
+
+// PartyIDLT applies the LT predicate on the "party_id" field.
+func PartyIDLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldPartyID, v))
+}
+
+// PartyIDLTE applies the LTE predicate on the "party_id" field.
+func PartyIDLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldPartyID, v))
+}
+
+// PartyIDContains applies the Contains predicate on the "party_id" field.
+func PartyIDContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldPartyID, v))
+}
+
+// PartyIDHasPrefix applies the HasPrefix predicate on the "party_id" field.
+func PartyIDHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldPartyID, v))
+}
+
+// PartyIDHasSuffix applies the HasSuffix predicate on the "party_id" field.
+func PartyIDHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldPartyID, v))
+}
+
+// PartyIDEqualFold applies the EqualFold predicate on the "party_id" field.
+func PartyIDEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldPartyID, v))
+}
+
+// PartyIDContainsFold applies the ContainsFold predicate on the "party_id" field.
+func PartyIDContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldPartyID, v))
+}
+
 // TargetPartyIDEQ applies the EQ predicate on the "target_party_id" field.
 func TargetPartyIDEQ(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldTargetPartyID, v))
@@ -471,23 +546,68 @@ func TargetPartyIDContainsFold(v string) predicate.Relationship {
 }
 
 // TypeEQ applies the EQ predicate on the "type" field.
-func TypeEQ(v Type) predicate.Relationship {
+func TypeEQ(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldType, v))
 }
 
 // TypeNEQ applies the NEQ predicate on the "type" field.
-func TypeNEQ(v Type) predicate.Relationship {
+func TypeNEQ(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldNEQ(FieldType, v))
 }
 
 // TypeIn applies the In predicate on the "type" field.
-func TypeIn(vs ...Type) predicate.Relationship {
+func TypeIn(vs ...string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldIn(FieldType, vs...))
 }
 
 // TypeNotIn applies the NotIn predicate on the "type" field.
-func TypeNotIn(vs ...Type) predicate.Relationship {
+func TypeNotIn(vs ...string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldNotIn(FieldType, vs...))
+}
+
+// TypeGT applies the GT predicate on the "type" field.
+func TypeGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldType, v))
+}
+
+// TypeGTE applies the GTE predicate on the "type" field.
+func TypeGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldType, v))
+}
+
+// TypeLT applies the LT predicate on the "type" field.
+func TypeLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldType, v))
+}
+
+// TypeLTE applies the LTE predicate on the "type" field.
+func TypeLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldType, v))
+}
+
+// TypeContains applies the Contains predicate on the "type" field.
+func TypeContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldType, v))
+}
+
+// TypeHasPrefix applies the HasPrefix predicate on the "type" field.
+func TypeHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldType, v))
+}
+
+// TypeHasSuffix applies the HasSuffix predicate on the "type" field.
+func TypeHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldType, v))
+}
+
+// TypeEqualFold applies the EqualFold predicate on the "type" field.
+func TypeEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldType, v))
+}
+
+// TypeContainsFold applies the ContainsFold predicate on the "type" field.
+func TypeContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldType, v))
 }
 
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
@@ -540,21 +660,44 @@ func UpdatedAtNotNil() predicate.Relationship {
 	return predicate.Relationship(sql.FieldNotNull(FieldUpdatedAt))
 }
 
-// HasParty applies the HasEdge predicate on the "party" edge.
-func HasParty() predicate.Relationship {
+// HasSourceParty applies the HasEdge predicate on the "source_party" edge.
+func HasSourceParty() predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, PartyTable, PartyColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, SourcePartyTable, SourcePartyColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasPartyWith applies the HasEdge predicate on the "party" edge with a given conditions (other predicates).
-func HasPartyWith(preds ...predicate.Party) predicate.Relationship {
+// HasSourcePartyWith applies the HasEdge predicate on the "source_party" edge with a given conditions (other predicates).
+func HasSourcePartyWith(preds ...predicate.Party) predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {
-		step := newPartyStep()
+		step := newSourcePartyStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasTargetParty applies the HasEdge predicate on the "target_party" edge.
+func HasTargetParty() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, TargetPartyTable, TargetPartyColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTargetPartyWith applies the HasEdge predicate on the "target_party" edge with a given conditions (other predicates).
+func HasTargetPartyWith(preds ...predicate.Party) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newTargetPartyStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

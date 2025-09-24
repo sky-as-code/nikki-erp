@@ -65,9 +65,9 @@ func IDContainsFold(id string) predicate.Party {
 	return predicate.Party(sql.FieldContainsFold(FieldID, id))
 }
 
-// AvatarURL applies equality check predicate on the "avatar_url" field. It's identical to AvatarURLEQ.
-func AvatarURL(v string) predicate.Party {
-	return predicate.Party(sql.FieldEQ(FieldAvatarURL, v))
+// AvatarUrl applies equality check predicate on the "avatarUrl" field. It's identical to AvatarUrlEQ.
+func AvatarUrl(v string) predicate.Party {
+	return predicate.Party(sql.FieldEQ(FieldAvatarUrl, v))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
@@ -125,9 +125,19 @@ func Note(v string) predicate.Party {
 	return predicate.Party(sql.FieldEQ(FieldNote, v))
 }
 
+// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
+func OrgID(v string) predicate.Party {
+	return predicate.Party(sql.FieldEQ(FieldOrgID, v))
+}
+
 // TaxID applies equality check predicate on the "tax_id" field. It's identical to TaxIDEQ.
 func TaxID(v string) predicate.Party {
 	return predicate.Party(sql.FieldEQ(FieldTaxID, v))
+}
+
+// Title applies equality check predicate on the "title" field. It's identical to TitleEQ.
+func Title(v string) predicate.Party {
+	return predicate.Party(sql.FieldEQ(FieldTitle, v))
 }
 
 // Type applies equality check predicate on the "type" field. It's identical to TypeEQ.
@@ -145,79 +155,79 @@ func Website(v string) predicate.Party {
 	return predicate.Party(sql.FieldEQ(FieldWebsite, v))
 }
 
-// AvatarURLEQ applies the EQ predicate on the "avatar_url" field.
-func AvatarURLEQ(v string) predicate.Party {
-	return predicate.Party(sql.FieldEQ(FieldAvatarURL, v))
+// AvatarUrlEQ applies the EQ predicate on the "avatarUrl" field.
+func AvatarUrlEQ(v string) predicate.Party {
+	return predicate.Party(sql.FieldEQ(FieldAvatarUrl, v))
 }
 
-// AvatarURLNEQ applies the NEQ predicate on the "avatar_url" field.
-func AvatarURLNEQ(v string) predicate.Party {
-	return predicate.Party(sql.FieldNEQ(FieldAvatarURL, v))
+// AvatarUrlNEQ applies the NEQ predicate on the "avatarUrl" field.
+func AvatarUrlNEQ(v string) predicate.Party {
+	return predicate.Party(sql.FieldNEQ(FieldAvatarUrl, v))
 }
 
-// AvatarURLIn applies the In predicate on the "avatar_url" field.
-func AvatarURLIn(vs ...string) predicate.Party {
-	return predicate.Party(sql.FieldIn(FieldAvatarURL, vs...))
+// AvatarUrlIn applies the In predicate on the "avatarUrl" field.
+func AvatarUrlIn(vs ...string) predicate.Party {
+	return predicate.Party(sql.FieldIn(FieldAvatarUrl, vs...))
 }
 
-// AvatarURLNotIn applies the NotIn predicate on the "avatar_url" field.
-func AvatarURLNotIn(vs ...string) predicate.Party {
-	return predicate.Party(sql.FieldNotIn(FieldAvatarURL, vs...))
+// AvatarUrlNotIn applies the NotIn predicate on the "avatarUrl" field.
+func AvatarUrlNotIn(vs ...string) predicate.Party {
+	return predicate.Party(sql.FieldNotIn(FieldAvatarUrl, vs...))
 }
 
-// AvatarURLGT applies the GT predicate on the "avatar_url" field.
-func AvatarURLGT(v string) predicate.Party {
-	return predicate.Party(sql.FieldGT(FieldAvatarURL, v))
+// AvatarUrlGT applies the GT predicate on the "avatarUrl" field.
+func AvatarUrlGT(v string) predicate.Party {
+	return predicate.Party(sql.FieldGT(FieldAvatarUrl, v))
 }
 
-// AvatarURLGTE applies the GTE predicate on the "avatar_url" field.
-func AvatarURLGTE(v string) predicate.Party {
-	return predicate.Party(sql.FieldGTE(FieldAvatarURL, v))
+// AvatarUrlGTE applies the GTE predicate on the "avatarUrl" field.
+func AvatarUrlGTE(v string) predicate.Party {
+	return predicate.Party(sql.FieldGTE(FieldAvatarUrl, v))
 }
 
-// AvatarURLLT applies the LT predicate on the "avatar_url" field.
-func AvatarURLLT(v string) predicate.Party {
-	return predicate.Party(sql.FieldLT(FieldAvatarURL, v))
+// AvatarUrlLT applies the LT predicate on the "avatarUrl" field.
+func AvatarUrlLT(v string) predicate.Party {
+	return predicate.Party(sql.FieldLT(FieldAvatarUrl, v))
 }
 
-// AvatarURLLTE applies the LTE predicate on the "avatar_url" field.
-func AvatarURLLTE(v string) predicate.Party {
-	return predicate.Party(sql.FieldLTE(FieldAvatarURL, v))
+// AvatarUrlLTE applies the LTE predicate on the "avatarUrl" field.
+func AvatarUrlLTE(v string) predicate.Party {
+	return predicate.Party(sql.FieldLTE(FieldAvatarUrl, v))
 }
 
-// AvatarURLContains applies the Contains predicate on the "avatar_url" field.
-func AvatarURLContains(v string) predicate.Party {
-	return predicate.Party(sql.FieldContains(FieldAvatarURL, v))
+// AvatarUrlContains applies the Contains predicate on the "avatarUrl" field.
+func AvatarUrlContains(v string) predicate.Party {
+	return predicate.Party(sql.FieldContains(FieldAvatarUrl, v))
 }
 
-// AvatarURLHasPrefix applies the HasPrefix predicate on the "avatar_url" field.
-func AvatarURLHasPrefix(v string) predicate.Party {
-	return predicate.Party(sql.FieldHasPrefix(FieldAvatarURL, v))
+// AvatarUrlHasPrefix applies the HasPrefix predicate on the "avatarUrl" field.
+func AvatarUrlHasPrefix(v string) predicate.Party {
+	return predicate.Party(sql.FieldHasPrefix(FieldAvatarUrl, v))
 }
 
-// AvatarURLHasSuffix applies the HasSuffix predicate on the "avatar_url" field.
-func AvatarURLHasSuffix(v string) predicate.Party {
-	return predicate.Party(sql.FieldHasSuffix(FieldAvatarURL, v))
+// AvatarUrlHasSuffix applies the HasSuffix predicate on the "avatarUrl" field.
+func AvatarUrlHasSuffix(v string) predicate.Party {
+	return predicate.Party(sql.FieldHasSuffix(FieldAvatarUrl, v))
 }
 
-// AvatarURLIsNil applies the IsNil predicate on the "avatar_url" field.
-func AvatarURLIsNil() predicate.Party {
-	return predicate.Party(sql.FieldIsNull(FieldAvatarURL))
+// AvatarUrlIsNil applies the IsNil predicate on the "avatarUrl" field.
+func AvatarUrlIsNil() predicate.Party {
+	return predicate.Party(sql.FieldIsNull(FieldAvatarUrl))
 }
 
-// AvatarURLNotNil applies the NotNil predicate on the "avatar_url" field.
-func AvatarURLNotNil() predicate.Party {
-	return predicate.Party(sql.FieldNotNull(FieldAvatarURL))
+// AvatarUrlNotNil applies the NotNil predicate on the "avatarUrl" field.
+func AvatarUrlNotNil() predicate.Party {
+	return predicate.Party(sql.FieldNotNull(FieldAvatarUrl))
 }
 
-// AvatarURLEqualFold applies the EqualFold predicate on the "avatar_url" field.
-func AvatarURLEqualFold(v string) predicate.Party {
-	return predicate.Party(sql.FieldEqualFold(FieldAvatarURL, v))
+// AvatarUrlEqualFold applies the EqualFold predicate on the "avatarUrl" field.
+func AvatarUrlEqualFold(v string) predicate.Party {
+	return predicate.Party(sql.FieldEqualFold(FieldAvatarUrl, v))
 }
 
-// AvatarURLContainsFold applies the ContainsFold predicate on the "avatar_url" field.
-func AvatarURLContainsFold(v string) predicate.Party {
-	return predicate.Party(sql.FieldContainsFold(FieldAvatarURL, v))
+// AvatarUrlContainsFold applies the ContainsFold predicate on the "avatarUrl" field.
+func AvatarUrlContainsFold(v string) predicate.Party {
+	return predicate.Party(sql.FieldContainsFold(FieldAvatarUrl, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -965,6 +975,81 @@ func NoteContainsFold(v string) predicate.Party {
 	return predicate.Party(sql.FieldContainsFold(FieldNote, v))
 }
 
+// OrgIDEQ applies the EQ predicate on the "org_id" field.
+func OrgIDEQ(v string) predicate.Party {
+	return predicate.Party(sql.FieldEQ(FieldOrgID, v))
+}
+
+// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
+func OrgIDNEQ(v string) predicate.Party {
+	return predicate.Party(sql.FieldNEQ(FieldOrgID, v))
+}
+
+// OrgIDIn applies the In predicate on the "org_id" field.
+func OrgIDIn(vs ...string) predicate.Party {
+	return predicate.Party(sql.FieldIn(FieldOrgID, vs...))
+}
+
+// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
+func OrgIDNotIn(vs ...string) predicate.Party {
+	return predicate.Party(sql.FieldNotIn(FieldOrgID, vs...))
+}
+
+// OrgIDGT applies the GT predicate on the "org_id" field.
+func OrgIDGT(v string) predicate.Party {
+	return predicate.Party(sql.FieldGT(FieldOrgID, v))
+}
+
+// OrgIDGTE applies the GTE predicate on the "org_id" field.
+func OrgIDGTE(v string) predicate.Party {
+	return predicate.Party(sql.FieldGTE(FieldOrgID, v))
+}
+
+// OrgIDLT applies the LT predicate on the "org_id" field.
+func OrgIDLT(v string) predicate.Party {
+	return predicate.Party(sql.FieldLT(FieldOrgID, v))
+}
+
+// OrgIDLTE applies the LTE predicate on the "org_id" field.
+func OrgIDLTE(v string) predicate.Party {
+	return predicate.Party(sql.FieldLTE(FieldOrgID, v))
+}
+
+// OrgIDContains applies the Contains predicate on the "org_id" field.
+func OrgIDContains(v string) predicate.Party {
+	return predicate.Party(sql.FieldContains(FieldOrgID, v))
+}
+
+// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
+func OrgIDHasPrefix(v string) predicate.Party {
+	return predicate.Party(sql.FieldHasPrefix(FieldOrgID, v))
+}
+
+// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
+func OrgIDHasSuffix(v string) predicate.Party {
+	return predicate.Party(sql.FieldHasSuffix(FieldOrgID, v))
+}
+
+// OrgIDIsNil applies the IsNil predicate on the "org_id" field.
+func OrgIDIsNil() predicate.Party {
+	return predicate.Party(sql.FieldIsNull(FieldOrgID))
+}
+
+// OrgIDNotNil applies the NotNil predicate on the "org_id" field.
+func OrgIDNotNil() predicate.Party {
+	return predicate.Party(sql.FieldNotNull(FieldOrgID))
+}
+
+// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
+func OrgIDEqualFold(v string) predicate.Party {
+	return predicate.Party(sql.FieldEqualFold(FieldOrgID, v))
+}
+
+// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
+func OrgIDContainsFold(v string) predicate.Party {
+	return predicate.Party(sql.FieldContainsFold(FieldOrgID, v))
+}
+
 // TaxIDEQ applies the EQ predicate on the "tax_id" field.
 func TaxIDEQ(v string) predicate.Party {
 	return predicate.Party(sql.FieldEQ(FieldTaxID, v))
@@ -1041,23 +1126,58 @@ func TaxIDContainsFold(v string) predicate.Party {
 }
 
 // TitleEQ applies the EQ predicate on the "title" field.
-func TitleEQ(v Title) predicate.Party {
+func TitleEQ(v string) predicate.Party {
 	return predicate.Party(sql.FieldEQ(FieldTitle, v))
 }
 
 // TitleNEQ applies the NEQ predicate on the "title" field.
-func TitleNEQ(v Title) predicate.Party {
+func TitleNEQ(v string) predicate.Party {
 	return predicate.Party(sql.FieldNEQ(FieldTitle, v))
 }
 
 // TitleIn applies the In predicate on the "title" field.
-func TitleIn(vs ...Title) predicate.Party {
+func TitleIn(vs ...string) predicate.Party {
 	return predicate.Party(sql.FieldIn(FieldTitle, vs...))
 }
 
 // TitleNotIn applies the NotIn predicate on the "title" field.
-func TitleNotIn(vs ...Title) predicate.Party {
+func TitleNotIn(vs ...string) predicate.Party {
 	return predicate.Party(sql.FieldNotIn(FieldTitle, vs...))
+}
+
+// TitleGT applies the GT predicate on the "title" field.
+func TitleGT(v string) predicate.Party {
+	return predicate.Party(sql.FieldGT(FieldTitle, v))
+}
+
+// TitleGTE applies the GTE predicate on the "title" field.
+func TitleGTE(v string) predicate.Party {
+	return predicate.Party(sql.FieldGTE(FieldTitle, v))
+}
+
+// TitleLT applies the LT predicate on the "title" field.
+func TitleLT(v string) predicate.Party {
+	return predicate.Party(sql.FieldLT(FieldTitle, v))
+}
+
+// TitleLTE applies the LTE predicate on the "title" field.
+func TitleLTE(v string) predicate.Party {
+	return predicate.Party(sql.FieldLTE(FieldTitle, v))
+}
+
+// TitleContains applies the Contains predicate on the "title" field.
+func TitleContains(v string) predicate.Party {
+	return predicate.Party(sql.FieldContains(FieldTitle, v))
+}
+
+// TitleHasPrefix applies the HasPrefix predicate on the "title" field.
+func TitleHasPrefix(v string) predicate.Party {
+	return predicate.Party(sql.FieldHasPrefix(FieldTitle, v))
+}
+
+// TitleHasSuffix applies the HasSuffix predicate on the "title" field.
+func TitleHasSuffix(v string) predicate.Party {
+	return predicate.Party(sql.FieldHasSuffix(FieldTitle, v))
 }
 
 // TitleIsNil applies the IsNil predicate on the "title" field.
@@ -1068,6 +1188,16 @@ func TitleIsNil() predicate.Party {
 // TitleNotNil applies the NotNil predicate on the "title" field.
 func TitleNotNil() predicate.Party {
 	return predicate.Party(sql.FieldNotNull(FieldTitle))
+}
+
+// TitleEqualFold applies the EqualFold predicate on the "title" field.
+func TitleEqualFold(v string) predicate.Party {
+	return predicate.Party(sql.FieldEqualFold(FieldTitle, v))
+}
+
+// TitleContainsFold applies the ContainsFold predicate on the "title" field.
+func TitleContainsFold(v string) predicate.Party {
+	return predicate.Party(sql.FieldContainsFold(FieldTitle, v))
 }
 
 // TypeEQ applies the EQ predicate on the "type" field.
@@ -1283,21 +1413,44 @@ func HasCommChannelsWith(preds ...predicate.CommChannel) predicate.Party {
 	})
 }
 
-// HasRelationships applies the HasEdge predicate on the "relationships" edge.
-func HasRelationships() predicate.Party {
+// HasRelationshipsAsSource applies the HasEdge predicate on the "relationships_as_source" edge.
+func HasRelationshipsAsSource() predicate.Party {
 	return predicate.Party(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, RelationshipsTable, RelationshipsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, RelationshipsAsSourceTable, RelationshipsAsSourceColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasRelationshipsWith applies the HasEdge predicate on the "relationships" edge with a given conditions (other predicates).
-func HasRelationshipsWith(preds ...predicate.Relationship) predicate.Party {
+// HasRelationshipsAsSourceWith applies the HasEdge predicate on the "relationships_as_source" edge with a given conditions (other predicates).
+func HasRelationshipsAsSourceWith(preds ...predicate.Relationship) predicate.Party {
 	return predicate.Party(func(s *sql.Selector) {
-		step := newRelationshipsStep()
+		step := newRelationshipsAsSourceStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRelationshipsAsTarget applies the HasEdge predicate on the "relationships_as_target" edge.
+func HasRelationshipsAsTarget() predicate.Party {
+	return predicate.Party(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, RelationshipsAsTargetTable, RelationshipsAsTargetColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRelationshipsAsTargetWith applies the HasEdge predicate on the "relationships_as_target" edge with a given conditions (other predicates).
+func HasRelationshipsAsTargetWith(preds ...predicate.Relationship) predicate.Party {
+	return predicate.Party(func(s *sql.Selector) {
+		step := newRelationshipsAsTargetStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

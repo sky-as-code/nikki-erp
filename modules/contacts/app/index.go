@@ -8,7 +8,7 @@ import (
 
 func InitServices() error {
 	err := errors.Join(
-		deps.Register(NewPartyTagServiceImpl),
+		deps.Register(NewContactsEnumServiceImpl),
 		deps.Register(NewPartyServiceImpl),
 		deps.Register(NewCommChannelServiceImpl),
 		deps.Register(NewRelationshipServiceImpl),

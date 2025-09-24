@@ -83,6 +83,12 @@ func (rc *RelationshipCreate) SetNillableNote(s *string) *RelationshipCreate {
 	return rc
 }
 
+// SetPartyID sets the "party_id" field.
+func (rc *RelationshipCreate) SetPartyID(s string) *RelationshipCreate {
+	rc.mutation.SetPartyID(s)
+	return rc
+}
+
 // SetTargetPartyID sets the "target_party_id" field.
 func (rc *RelationshipCreate) SetTargetPartyID(s string) *RelationshipCreate {
 	rc.mutation.SetTargetPartyID(s)
@@ -90,8 +96,8 @@ func (rc *RelationshipCreate) SetTargetPartyID(s string) *RelationshipCreate {
 }
 
 // SetType sets the "type" field.
-func (rc *RelationshipCreate) SetType(r relationship.Type) *RelationshipCreate {
-	rc.mutation.SetType(r)
+func (rc *RelationshipCreate) SetType(s string) *RelationshipCreate {
+	rc.mutation.SetType(s)
 	return rc
 }
 
@@ -115,15 +121,20 @@ func (rc *RelationshipCreate) SetID(s string) *RelationshipCreate {
 	return rc
 }
 
-// SetPartyID sets the "party" edge to the Party entity by ID.
-func (rc *RelationshipCreate) SetPartyID(id string) *RelationshipCreate {
-	rc.mutation.SetPartyID(id)
+// SetSourcePartyID sets the "source_party" edge to the Party entity by ID.
+func (rc *RelationshipCreate) SetSourcePartyID(id string) *RelationshipCreate {
+	rc.mutation.SetSourcePartyID(id)
 	return rc
 }
 
-// SetParty sets the "party" edge to the Party entity.
-func (rc *RelationshipCreate) SetParty(p *Party) *RelationshipCreate {
-	return rc.SetPartyID(p.ID)
+// SetSourceParty sets the "source_party" edge to the Party entity.
+func (rc *RelationshipCreate) SetSourceParty(p *Party) *RelationshipCreate {
+	return rc.SetSourcePartyID(p.ID)
+}
+
+// SetTargetParty sets the "target_party" edge to the Party entity.
+func (rc *RelationshipCreate) SetTargetParty(p *Party) *RelationshipCreate {
+	return rc.SetTargetPartyID(p.ID)
 }
 
 // Mutation returns the RelationshipMutation object of the builder.
@@ -175,19 +186,20 @@ func (rc *RelationshipCreate) check() error {
 	if _, ok := rc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Relationship.etag"`)}
 	}
+	if _, ok := rc.mutation.PartyID(); !ok {
+		return &ValidationError{Name: "party_id", err: errors.New(`ent: missing required field "Relationship.party_id"`)}
+	}
 	if _, ok := rc.mutation.TargetPartyID(); !ok {
 		return &ValidationError{Name: "target_party_id", err: errors.New(`ent: missing required field "Relationship.target_party_id"`)}
 	}
 	if _, ok := rc.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "Relationship.type"`)}
 	}
-	if v, ok := rc.mutation.GetType(); ok {
-		if err := relationship.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "Relationship.type": %w`, err)}
-		}
+	if len(rc.mutation.SourcePartyIDs()) == 0 {
+		return &ValidationError{Name: "source_party", err: errors.New(`ent: missing required edge "Relationship.source_party"`)}
 	}
-	if len(rc.mutation.PartyIDs()) == 0 {
-		return &ValidationError{Name: "party", err: errors.New(`ent: missing required edge "Relationship.party"`)}
+	if len(rc.mutation.TargetPartyIDs()) == 0 {
+		return &ValidationError{Name: "target_party", err: errors.New(`ent: missing required edge "Relationship.target_party"`)}
 	}
 	return nil
 }
@@ -245,19 +257,36 @@ func (rc *RelationshipCreate) createSpec() (*Relationship, *sqlgraph.CreateSpec)
 		_node.Note = &value
 	}
 	if value, ok := rc.mutation.GetType(); ok {
-		_spec.SetField(relationship.FieldType, field.TypeEnum, value)
+		_spec.SetField(relationship.FieldType, field.TypeString, value)
 		_node.Type = value
 	}
 	if value, ok := rc.mutation.UpdatedAt(); ok {
 		_spec.SetField(relationship.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = &value
 	}
-	if nodes := rc.mutation.PartyIDs(); len(nodes) > 0 {
+	if nodes := rc.mutation.SourcePartyIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: false,
-			Table:   relationship.PartyTable,
-			Columns: []string{relationship.PartyColumn},
+			Table:   relationship.SourcePartyTable,
+			Columns: []string{relationship.SourcePartyColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(party.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.PartyID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.TargetPartyIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   relationship.TargetPartyTable,
+			Columns: []string{relationship.TargetPartyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(party.FieldID, field.TypeString),

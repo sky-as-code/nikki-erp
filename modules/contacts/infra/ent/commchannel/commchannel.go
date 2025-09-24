@@ -3,7 +3,6 @@
 package commchannel
 
 import (
-	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -25,6 +24,8 @@ const (
 	FieldEtag = "etag"
 	// FieldNote holds the string denoting the note field in the database.
 	FieldNote = "note"
+	// FieldOrgID holds the string denoting the org_id field in the database.
+	FieldOrgID = "org_id"
 	// FieldPartyID holds the string denoting the party_id field in the database.
 	FieldPartyID = "party_id"
 	// FieldType holds the string denoting the type field in the database.
@@ -56,6 +57,7 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldEtag,
 	FieldNote,
+	FieldOrgID,
 	FieldPartyID,
 	FieldType,
 	FieldUpdatedAt,
@@ -77,32 +79,6 @@ var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
-
-// Type defines the type for the "type" enum field.
-type Type string
-
-// Type values.
-const (
-	TypePhone    Type = "Phone"
-	TypeZalo     Type = "Zalo"
-	TypeFacebook Type = "Facebook"
-	TypeEmail    Type = "Email"
-	TypePost     Type = "Post"
-)
-
-func (_type Type) String() string {
-	return string(_type)
-}
-
-// TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
-func TypeValidator(_type Type) error {
-	switch _type {
-	case TypePhone, TypeZalo, TypeFacebook, TypeEmail, TypePost:
-		return nil
-	default:
-		return fmt.Errorf("commchannel: invalid enum value for type field: %q", _type)
-	}
-}
 
 // OrderOption defines the ordering options for the CommChannel queries.
 type OrderOption = func(*sql.Selector)
@@ -135,6 +111,11 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 // ByNote orders the results by the note field.
 func ByNote(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNote, opts...).ToFunc()
+}
+
+// ByOrgID orders the results by the org_id field.
+func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
 }
 
 // ByPartyID orders the results by the party_id field.

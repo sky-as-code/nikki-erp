@@ -23,7 +23,7 @@ func (PartyMixin) Fields() []ent.Field {
 			StorageKey("id").
 			Comment("ULID"),
 
-		field.String("avatar_url").
+		field.String("avatarUrl").
 			Optional().
 			Nillable().
 			Comment("URL to avatar image"),
@@ -75,13 +75,17 @@ func (PartyMixin) Fields() []ent.Field {
 			Nillable().
 			Comment("Notes"),
 
+		field.String("org_id").
+			Optional().
+			Nillable().
+			Comment("Organization ID"),
+
 		field.String("tax_id").
 			Optional().
 			Nillable().
 			Comment("Tax Identification Number"),
 
-		field.Enum("title").
-			Values("Mr", "Mrs", "Ms", "Doctor", "Sir").
+		field.String("title").
 			Optional().
 			Nillable(),
 
@@ -118,8 +122,11 @@ func (Party) Edges() []ent.Edge {
 		edge.From("comm_channels", CommChannel.Type).
 			Ref("party"),
 
-		edge.From("relationships", Relationship.Type).
-			Ref("party"),
+		edge.From("relationships_as_source", Relationship.Type).
+			Ref("source_party"),
+
+		edge.From("relationships_as_target", Relationship.Type).
+			Ref("target_party"),
 	}
 }
 

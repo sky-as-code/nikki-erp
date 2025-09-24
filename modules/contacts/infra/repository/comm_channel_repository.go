@@ -24,17 +24,16 @@ type CommChannelEntRepository struct {
 	client *ent.Client
 }
 
-func (this *CommChannelEntRepository) Create(ctx crud.Context, commChannel domain.CommChannel) (*domain.CommChannel, error) {
+func (this *CommChannelEntRepository) Create(ctx crud.Context, commChannel *domain.CommChannel) (*domain.CommChannel, error) {
 	creation := this.client.CommChannel.Create().
 		SetID(*commChannel.Id).
 		SetEtag(*commChannel.Etag).
 		SetPartyID(string(*commChannel.PartyId)).
 		SetNillableNote(commChannel.Note).
-		SetNillableValue(commChannel.Value)
-
-	if commChannel.Type != nil && commChannel.Type.Value != nil {
-		creation = creation.SetType(entCommChannel.Type(*commChannel.Type.Value))
-	}
+		SetOrgID(*commChannel.OrgId).
+		SetNillableValue(commChannel.Value).
+		//etNillableValueJSON(commChannel.ValueJson).
+		SetType(*commChannel.Type)
 
 	if commChannel.ValueJson != nil {
 		creation = creation.SetValueJSON(*commChannel.ValueJson)
@@ -43,17 +42,14 @@ func (this *CommChannelEntRepository) Create(ctx crud.Context, commChannel domai
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToCommChannel)
 }
 
-func (this *CommChannelEntRepository) Update(ctx crud.Context, commChannel domain.CommChannel, prevEtag model.Etag) (*domain.CommChannel, error) {
+func (this *CommChannelEntRepository) Update(ctx crud.Context, commChannel *domain.CommChannel, prevEtag model.Etag) (*domain.CommChannel, error) {
 	update := this.client.CommChannel.UpdateOneID(*commChannel.Id).
 		SetNillableNote(commChannel.Note).
 		SetNillableValue(commChannel.Value).
 		SetNillablePartyID((*string)(commChannel.PartyId)).
+		//SetNi(commChannel.ValueJson).
 		// IMPORTANT: Must have!
 		Where(entCommChannel.EtagEQ(prevEtag))
-
-	if commChannel.Type != nil && commChannel.Type.Value != nil {
-		update = update.SetType(entCommChannel.Type(*commChannel.Type.Value))
-	}
 
 	if commChannel.ValueJson != nil {
 		update = update.SetValueJSON(*commChannel.ValueJson)
@@ -85,26 +81,6 @@ func (this *CommChannelEntRepository) FindById(ctx crud.Context, param cc.FindBy
 	return db.FindOne(ctx, query, ent.IsNotFound, entToCommChannel)
 }
 
-func (this *CommChannelEntRepository) FindByParty(ctx crud.Context, param cc.FindByPartyParam) ([]*domain.CommChannel, error) {
-	query := this.client.CommChannel.Query().
-		Where(entCommChannel.PartyIDEQ(string(param.PartyId)))
-
-	if param.Type != nil && param.Type.Value != nil {
-		query = query.Where(entCommChannel.TypeEQ(entCommChannel.Type(*param.Type.Value)))
-	}
-
-	if param.WithParty {
-		query = query.WithParty()
-	}
-
-	dbEntities, err := query.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return entToCommChannels(dbEntities), nil
-}
-
 func (this *CommChannelEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
 	return db.ParseSearchGraphStr[ent.CommChannel, domain.CommChannel](criteria, entCommChannel.Label)
 }
@@ -114,10 +90,6 @@ func (this *CommChannelEntRepository) Search(
 	param cc.SearchParam,
 ) (*crud.PagedResult[domain.CommChannel], error) {
 	query := this.client.CommChannel.Query()
-
-	if param.WithParty {
-		query = query.WithParty()
-	}
 
 	return db.Search(
 		ctx,

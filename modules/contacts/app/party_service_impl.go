@@ -1,227 +1,215 @@
 package app
 
 import (
-	"strings"
-
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
+	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 func NewPartyServiceImpl(
-	partyTagSvc it.PartyTagService,
-	partyRepo it.PartyRepository,
+	partyRepo itParty.PartyRepository,
 	cqrsBus cqrs.CqrsBus,
-) it.PartyService {
+	contactsEnumSvc ContactsEnumServiceImpl,
+) itParty.PartyService {
 	return &PartyServiceImpl{
-		PartyTagService: partyTagSvc,
 		partyRepo:       partyRepo,
 		cqrsBus:         cqrsBus,
+		contactsEnumSvc: contactsEnumSvc,
 	}
 }
 
 type PartyServiceImpl struct {
-	it.PartyTagService
-	partyRepo it.PartyRepository
-	cqrsBus   cqrs.CqrsBus
+	partyRepo       itParty.PartyRepository
+	cqrsBus         cqrs.CqrsBus
+	contactsEnumSvc ContactsEnumServiceImpl
 }
 
-func (ps *PartyServiceImpl) CreateParty(ctx crud.Context, cmd it.CreatePartyCommand) (result *it.CreatePartyResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to create party"); e != nil {
-			err = e
-		}
-	}()
-
-	party := cmd.ToEntity()
-	party.SetDefaults()
-
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = party.Validate(false)
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			ps.sanitizeParty(party)
-			return ps.assertUniquePartyDisplayName(ctx, party, vErrs)
-		}).
-		End()
-	ft.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &it.CreatePartyResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	createdParty, err := ps.partyRepo.Create(ctx, *party)
-	ft.PanicOnErr(err)
-
-	return &it.CreatePartyResult{Data: createdParty}, err
-}
-
-func (ps *PartyServiceImpl) sanitizeParty(party *domain.Party) {
-	if party.DisplayName != nil {
-		cleanedName := strings.TrimSpace(*party.DisplayName)
-		cleanedName = defense.SanitizePlainText(cleanedName)
-		party.DisplayName = &cleanedName
-	}
-	if party.LegalName != nil {
-		cleanedName := strings.TrimSpace(*party.LegalName)
-		cleanedName = defense.SanitizePlainText(cleanedName)
-		party.LegalName = &cleanedName
-	}
-	if party.Note != nil {
-		cleanedNote := strings.TrimSpace(*party.Note)
-		cleanedNote = defense.SanitizePlainText(cleanedNote)
-		party.Note = &cleanedNote
-	}
-}
-
-func (ps *PartyServiceImpl) UpdateParty(ctx crud.Context, cmd it.UpdatePartyCommand) (result *it.UpdatePartyResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to update party"); e != nil {
-			err = e
-		}
-	}()
-
-	party := cmd.ToEntity()
-
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = party.Validate(true)
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			return ps.assertCorrectParty(ctx, *party.Id, *party.Etag, vErrs)
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			ps.sanitizeParty(party)
-			return ps.assertUniquePartyDisplayName(ctx, party, vErrs)
-		}).
-		End()
-	ft.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &it.UpdatePartyResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	prevEtag := party.Etag
-	party.Etag = model.NewEtag()
-	updatedParty, err := ps.partyRepo.Update(ctx, *party, *prevEtag)
-	ft.PanicOnErr(err)
-
-	return &it.UpdatePartyResult{
-		Data:    updatedParty,
-		HasData: true,
-	}, err
-}
-
-func (ps *PartyServiceImpl) DeleteParty(ctx crud.Context, cmd it.DeletePartyCommand) (result *it.DeletePartyResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to delete party"); e != nil {
-			err = e
-		}
-	}()
-
-	vErrs := cmd.Validate()
-	_, err = ps.assertPartyIdExists(ctx, cmd.Id, &vErrs)
-	ft.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &it.DeletePartyResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	deleted, err := ps.partyRepo.DeleteHard(ctx, it.DeleteParam(cmd))
-	ft.PanicOnErr(err)
-	deletedCopy := deleted
-	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCopy), nil
-}
-
-func (ps *PartyServiceImpl) GetPartyById(ctx crud.Context, query it.GetPartyByIdQuery) (result *it.GetPartyByIdResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get party"); e != nil {
-			err = e
-		}
-	}()
-
-	vErrs := query.Validate()
-	dbParty, err := ps.assertPartyIdExists(ctx, query.Id, &vErrs)
-	ft.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &it.GetPartyByIdResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	return &it.GetPartyByIdResult{
-		Data: dbParty,
-	}, nil
-}
-
-func (ps *PartyServiceImpl) SearchParties(ctx crud.Context, query it.SearchPartiesQuery) (result *it.SearchPartiesResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to search parties"); e != nil {
-			err = e
-		}
-	}()
-
-	vErrsModel := query.Validate()
-	predicate, order, vErrsGraph := ps.partyRepo.ParseSearchGraph(query.Graph)
-
-	vErrsModel.Merge(vErrsGraph)
-
-	if vErrsModel.Count() > 0 {
-		return &it.SearchPartiesResult{
-			ClientError: vErrsModel.ToClientError(),
-		}, nil
-	}
-	query.SetDefaults()
-
-	parties, err := ps.partyRepo.Search(ctx, it.SearchParam{
-		Predicate:         predicate,
-		Order:             order,
-		Page:              *query.Page,
-		Size:              *query.Size,
-		WithCommChannels:  query.WithCommChannels,
-		WithRelationships: query.WithRelationships,
+func (this *PartyServiceImpl) CreateParty(ctx crud.Context, cmd itParty.CreatePartyCommand) (*itParty.CreatePartyResult, error) {
+	result, err := crud.Create(ctx, crud.CreateParam[*domain.Party, itParty.CreatePartyCommand, itParty.CreatePartyResult]{
+		Action:              "create party",
+		Command:             cmd,
+		AssertBusinessRules: this.assertCreateRules,
+		RepoCreate:          this.partyRepo.Create,
+		SetDefault:          this.setPartyDefaults,
+		Sanitize:            this.sanitizeParty,
+		ToFailureResult: func(vErrs *ft.ValidationErrors) *itParty.CreatePartyResult {
+			return &itParty.CreatePartyResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Party) *itParty.CreatePartyResult {
+			return &itParty.CreatePartyResult{
+				HasData: true,
+				Data:    model,
+			}
+		},
 	})
-	ft.PanicOnErr(err)
 
-	return &it.SearchPartiesResult{
-		Data: parties,
-	}, nil
+	return result, err
 }
 
-func (ps *PartyServiceImpl) assertCorrectParty(ctx crud.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
-	dbParty, err := ps.assertPartyIdExists(ctx, id, vErrs)
+func (this *PartyServiceImpl) UpdateParty(ctx crud.Context, cmd itParty.UpdatePartyCommand) (*itParty.UpdatePartyResult, error) {
+	result, err := crud.Update(ctx, crud.UpdateParam[*domain.Party, itParty.UpdatePartyCommand, itParty.UpdatePartyResult]{
+		Action:              "update party",
+		Command:             cmd,
+		AssertBusinessRules: this.assertUpdateRules,
+		AssertExists:        this.assertPartyIdExists,
+		RepoUpdate:          this.partyRepo.Update,
+		Sanitize:            this.sanitizeParty,
+		ToFailureResult: func(vErrs *ft.ValidationErrors) *itParty.UpdatePartyResult {
+			return &itParty.UpdatePartyResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Party) *itParty.UpdatePartyResult {
+			return &itParty.UpdatePartyResult{
+				HasData: true,
+				Data:    model,
+			}
+		},
+	})
+
+	return result, err
+}
+
+func (this *PartyServiceImpl) DeleteParty(ctx crud.Context, cmd itParty.DeletePartyCommand) (*itParty.DeletePartyResult, error) {
+	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Party, itParty.DeletePartyCommand, itParty.DeletePartyResult]{
+		Action:       "delete party",
+		Command:      cmd,
+		AssertExists: this.assertPartyIdExists,
+		RepoDelete: func(ctx crud.Context, model *domain.Party) (int, error) {
+			return this.partyRepo.DeleteHard(ctx, itParty.DeleteParam{Id: *model.Id})
+		},
+		ToFailureResult: func(vErrs *ft.ValidationErrors) *itParty.DeletePartyResult {
+			return &itParty.DeletePartyResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Party, deletedCount int) *itParty.DeletePartyResult {
+			return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount)
+		},
+	})
+
+	return result, err
+}
+
+func (this *PartyServiceImpl) GetPartyById(ctx crud.Context, query itParty.GetPartyByIdQuery) (*itParty.GetPartyByIdResult, error) {
+	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.Party, itParty.GetPartyByIdQuery, itParty.GetPartyByIdResult]{
+		Action:      "get party by id",
+		Query:       query,
+		RepoFindOne: this.getPartyByIdFull,
+		ToFailureResult: func(vErrs *ft.ValidationErrors) *itParty.GetPartyByIdResult {
+			return &itParty.GetPartyByIdResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Party) *itParty.GetPartyByIdResult {
+			return &itParty.GetPartyByIdResult{
+				HasData: true,
+				Data:    model,
+			}
+		},
+	})
+
+	return result, err
+}
+
+func (this *PartyServiceImpl) SearchParties(ctx crud.Context, query itParty.SearchPartiesQuery) (*itParty.SearchPartiesResult, error) {
+	result, err := crud.Search(ctx, crud.SearchParam[domain.Party, itParty.SearchPartiesQuery, itParty.SearchPartiesResult]{
+		Action: "search parties",
+		Query:  query,
+		SetQueryDefaults: func(query *itParty.SearchPartiesQuery) {
+			query.SetDefaults()
+		},
+		ParseSearchGraph: this.partyRepo.ParseSearchGraph,
+		RepoSearch: func(ctx crud.Context, query itParty.SearchPartiesQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.Party], error) {
+			return this.partyRepo.Search(ctx, itParty.SearchParam{
+				Predicate: predicate,
+				Order:     order,
+				Page:      *query.Page,
+				Size:      *query.Size,
+			})
+		},
+		ToFailureResult: func(vErrs *ft.ValidationErrors) *itParty.SearchPartiesResult {
+			return &itParty.SearchPartiesResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(pagedResult *crud.PagedResult[domain.Party]) *itParty.SearchPartiesResult {
+			return &itParty.SearchPartiesResult{
+				Data:    pagedResult,
+				HasData: pagedResult.Items != nil,
+			}
+		},
+	})
+
+	return result, err
+}
+
+// assert methods
+//---------------------------------------------------------------------------------------------------------------------------------------------//
+
+func (this *PartyServiceImpl) assertCreateRules(ctx crud.Context, party *domain.Party, vErrs *ft.ValidationErrors) error {
+	err := this.assertUniquePartyDisplayName(ctx, party, vErrs) // display name must be unique
 	if err != nil {
 		return err
 	}
 
-	if dbParty != nil && *dbParty.Etag != etag {
-		vErrs.Append("etag", "party has been modified by another user")
-		return nil
+	if party.Title != nil {
+		err = this.assertEnumParty(ctx, "contacts_party_title", *party.Title, vErrs) // title must exist
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (ps *PartyServiceImpl) assertPartyIdExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.Party, error) {
-	dbParty, err := ps.partyRepo.FindById(ctx, it.FindByIdParam{
-		Id: id,
+func (this *PartyServiceImpl) assertUpdateRules(ctx crud.Context, party *domain.Party, _ *domain.Party, vErrs *ft.ValidationErrors) error {
+
+	err := this.assertUniquePartyDisplayName(ctx, party, vErrs) // display name must be unique
+	if err != nil {
+		return err
+	}
+
+	if party.Title != nil {
+		err = this.assertEnumParty(ctx, "contacts_party_title", *party.Title, vErrs) // title must exist
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------//
+
+func (this *PartyServiceImpl) setPartyDefaults(party *domain.Party) {
+	party.SetDefaults()
+}
+
+func (this *PartyServiceImpl) sanitizeParty(party *domain.Party) {
+	if party.DisplayName != nil {
+		cleanedName := defense.SanitizePlainText(*party.DisplayName, true)
+		party.DisplayName = &cleanedName
+	}
+	if party.LegalName != nil {
+		cleanedName := defense.SanitizePlainText(*party.LegalName, true)
+		party.LegalName = &cleanedName
+	}
+	if party.Note != nil {
+		cleanedNote := defense.SanitizePlainText(*party.Note, true)
+		party.Note = &cleanedNote
+	}
+}
+
+func (this *PartyServiceImpl) assertPartyIdExists(ctx crud.Context, party *domain.Party, vErrs *ft.ValidationErrors) (*domain.Party, error) {
+	dbParty, err := this.partyRepo.FindById(ctx, itParty.FindByIdParam{
+		Id: *party.Id,
 	})
 	if err != nil {
 		return nil, err
@@ -234,12 +222,12 @@ func (ps *PartyServiceImpl) assertPartyIdExists(ctx crud.Context, id model.Id, v
 	return dbParty, nil
 }
 
-func (ps *PartyServiceImpl) assertUniquePartyDisplayName(ctx crud.Context, party *domain.Party, vErrs *ft.ValidationErrors) error {
+func (this *PartyServiceImpl) assertUniquePartyDisplayName(ctx crud.Context, party *domain.Party, vErrs *ft.ValidationErrors) error {
 	if party.DisplayName == nil {
 		return nil
 	}
 
-	dbParty, err := ps.partyRepo.FindByDisplayName(ctx, it.FindByDisplayNameParam{
+	dbParty, err := this.partyRepo.FindByDisplayName(ctx, itParty.FindByDisplayNameParam{
 		DisplayName: *party.DisplayName,
 	})
 	if err != nil {
@@ -251,3 +239,78 @@ func (ps *PartyServiceImpl) assertUniquePartyDisplayName(ctx crud.Context, party
 	}
 	return nil
 }
+
+func (this *PartyServiceImpl) assertEnumParty(ctx crud.Context, typeEnum, valueEnum string, vErrs *ft.ValidationErrors) error {
+	enum, err := this.contactsEnumSvc.GetEnum(ctx, typeEnum, valueEnum, vErrs)
+	if err != nil {
+		return err
+	}
+
+	if enum.Data == nil {
+		vErrs.Append("title", "title does not exist")
+		return nil
+	}
+	return nil
+}
+
+func (this *PartyServiceImpl) getPartyByIdFull(ctx crud.Context, query itParty.FindByIdParam, vErrs *ft.ValidationErrors) (dbParty *domain.Party, err error) {
+	dbParty, err = this.partyRepo.FindById(ctx, query)
+	if dbParty == nil {
+		vErrs.AppendNotFound("id", "party id")
+	}
+	return
+}
+
+// func (this *PartyServiceImpl) assertNationalityExists(ctx crud.Context, id model.Id, valErrs *ft.ValidationErrors) error {
+// 	if id == "" {
+// 		return nil
+// 	}
+
+// 	existCmd := &eif.EnumExistsQuery{
+// 		Id:         id,
+// 		EntityName: "nationality",
+// 	}
+
+// 	existRes := eif.EnumExistsResult{}
+
+// 	err := this.cqrsBus.Request(ctx, existCmd, &existRes)
+// 	ft.PanicOnErr(err)
+
+// 	if existRes.ClientError != nil {
+// 		valErrs.MergeClientError(existRes.ClientError)
+// 		return nil
+// 	}
+
+// 	if existRes.Data == true {
+// 		valErrs.Append("nationality", "nationality already exists")
+// 	}
+
+// 	return nil
+// }
+
+// func (this *PartyServiceImpl) assertLanguageExists(ctx crud.Context, id model.Id, valErrs *ft.ValidationErrors) error {
+// 	if id == "" {
+// 		return nil
+// 	}
+
+// 	existCmd := &eif.EnumExistsQuery{
+// 		Id:         id,
+// 		EntityName: "language",
+// 	}
+
+// 	existRes := eif.EnumExistsResult{}
+
+// 	err := this.cqrsBus.Request(ctx, existCmd, &existRes)
+// 	ft.PanicOnErr(err)
+
+// 	if existRes.ClientError != nil {
+// 		valErrs.MergeClientError(existRes.ClientError)
+// 		return nil
+// 	}
+
+// 	if existRes.Data == true {
+// 		valErrs.Append("language", "language already exists")
+// 	}
+
+// 	return nil
+// }

@@ -19,11 +19,12 @@ import (
 // RelationshipQuery is the builder for querying Relationship entities.
 type RelationshipQuery struct {
 	config
-	ctx        *QueryContext
-	order      []relationship.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Relationship
-	withParty  *PartyQuery
+	ctx             *QueryContext
+	order           []relationship.OrderOption
+	inters          []Interceptor
+	predicates      []predicate.Relationship
+	withSourceParty *PartyQuery
+	withTargetParty *PartyQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -60,8 +61,8 @@ func (rq *RelationshipQuery) Order(o ...relationship.OrderOption) *RelationshipQ
 	return rq
 }
 
-// QueryParty chains the current query on the "party" edge.
-func (rq *RelationshipQuery) QueryParty() *PartyQuery {
+// QuerySourceParty chains the current query on the "source_party" edge.
+func (rq *RelationshipQuery) QuerySourceParty() *PartyQuery {
 	query := (&PartyClient{config: rq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := rq.prepareQuery(ctx); err != nil {
@@ -74,7 +75,29 @@ func (rq *RelationshipQuery) QueryParty() *PartyQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
 			sqlgraph.To(party.Table, party.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, relationship.PartyTable, relationship.PartyColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, relationship.SourcePartyTable, relationship.SourcePartyColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryTargetParty chains the current query on the "target_party" edge.
+func (rq *RelationshipQuery) QueryTargetParty() *PartyQuery {
+	query := (&PartyClient{config: rq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
+			sqlgraph.To(party.Table, party.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, relationship.TargetPartyTable, relationship.TargetPartyColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -269,26 +292,38 @@ func (rq *RelationshipQuery) Clone() *RelationshipQuery {
 		return nil
 	}
 	return &RelationshipQuery{
-		config:     rq.config,
-		ctx:        rq.ctx.Clone(),
-		order:      append([]relationship.OrderOption{}, rq.order...),
-		inters:     append([]Interceptor{}, rq.inters...),
-		predicates: append([]predicate.Relationship{}, rq.predicates...),
-		withParty:  rq.withParty.Clone(),
+		config:          rq.config,
+		ctx:             rq.ctx.Clone(),
+		order:           append([]relationship.OrderOption{}, rq.order...),
+		inters:          append([]Interceptor{}, rq.inters...),
+		predicates:      append([]predicate.Relationship{}, rq.predicates...),
+		withSourceParty: rq.withSourceParty.Clone(),
+		withTargetParty: rq.withTargetParty.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
 		path: rq.path,
 	}
 }
 
-// WithParty tells the query-builder to eager-load the nodes that are connected to
-// the "party" edge. The optional arguments are used to configure the query builder of the edge.
-func (rq *RelationshipQuery) WithParty(opts ...func(*PartyQuery)) *RelationshipQuery {
+// WithSourceParty tells the query-builder to eager-load the nodes that are connected to
+// the "source_party" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RelationshipQuery) WithSourceParty(opts ...func(*PartyQuery)) *RelationshipQuery {
 	query := (&PartyClient{config: rq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	rq.withParty = query
+	rq.withSourceParty = query
+	return rq
+}
+
+// WithTargetParty tells the query-builder to eager-load the nodes that are connected to
+// the "target_party" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RelationshipQuery) WithTargetParty(opts ...func(*PartyQuery)) *RelationshipQuery {
+	query := (&PartyClient{config: rq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withTargetParty = query
 	return rq
 }
 
@@ -370,8 +405,9 @@ func (rq *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	var (
 		nodes       = []*Relationship{}
 		_spec       = rq.querySpec()
-		loadedTypes = [1]bool{
-			rq.withParty != nil,
+		loadedTypes = [2]bool{
+			rq.withSourceParty != nil,
+			rq.withTargetParty != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -392,16 +428,51 @@ func (rq *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := rq.withParty; query != nil {
-		if err := rq.loadParty(ctx, query, nodes, nil,
-			func(n *Relationship, e *Party) { n.Edges.Party = e }); err != nil {
+	if query := rq.withSourceParty; query != nil {
+		if err := rq.loadSourceParty(ctx, query, nodes, nil,
+			func(n *Relationship, e *Party) { n.Edges.SourceParty = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := rq.withTargetParty; query != nil {
+		if err := rq.loadTargetParty(ctx, query, nodes, nil,
+			func(n *Relationship, e *Party) { n.Edges.TargetParty = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (rq *RelationshipQuery) loadParty(ctx context.Context, query *PartyQuery, nodes []*Relationship, init func(*Relationship), assign func(*Relationship, *Party)) error {
+func (rq *RelationshipQuery) loadSourceParty(ctx context.Context, query *PartyQuery, nodes []*Relationship, init func(*Relationship), assign func(*Relationship, *Party)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*Relationship)
+	for i := range nodes {
+		fk := nodes[i].PartyID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(party.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "party_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (rq *RelationshipQuery) loadTargetParty(ctx context.Context, query *PartyQuery, nodes []*Relationship, init func(*Relationship), assign func(*Relationship, *Party)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Relationship)
 	for i := range nodes {
@@ -456,7 +527,10 @@ func (rq *RelationshipQuery) querySpec() *sqlgraph.QuerySpec {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
-		if rq.withParty != nil {
+		if rq.withSourceParty != nil {
+			_spec.Node.AddColumnOnce(relationship.FieldPartyID)
+		}
+		if rq.withTargetParty != nil {
 			_spec.Node.AddColumnOnce(relationship.FieldTargetPartyID)
 		}
 	}

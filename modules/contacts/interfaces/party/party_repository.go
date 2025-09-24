@@ -9,13 +9,13 @@ import (
 )
 
 type PartyRepository interface {
-	Create(ctx crud.Context, party domain.Party) (*domain.Party, error)
+	Create(ctx crud.Context, party *domain.Party) (*domain.Party, error)
 	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
 	FindById(ctx crud.Context, param FindByIdParam) (*domain.Party, error)
 	FindByDisplayName(ctx crud.Context, param FindByDisplayNameParam) (*domain.Party, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Party], error)
-	Update(ctx crud.Context, party domain.Party, prevEtag model.Etag) (*domain.Party, error)
+	Update(ctx crud.Context, party *domain.Party, prevEtag model.Etag) (*domain.Party, error)
 }
 
 type DeleteParam = DeletePartyCommand

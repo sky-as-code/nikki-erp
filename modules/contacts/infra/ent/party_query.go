@@ -21,12 +21,13 @@ import (
 // PartyQuery is the builder for querying Party entities.
 type PartyQuery struct {
 	config
-	ctx               *QueryContext
-	order             []party.OrderOption
-	inters            []Interceptor
-	predicates        []predicate.Party
-	withCommChannels  *CommChannelQuery
-	withRelationships *RelationshipQuery
+	ctx                       *QueryContext
+	order                     []party.OrderOption
+	inters                    []Interceptor
+	predicates                []predicate.Party
+	withCommChannels          *CommChannelQuery
+	withRelationshipsAsSource *RelationshipQuery
+	withRelationshipsAsTarget *RelationshipQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -85,8 +86,8 @@ func (pq *PartyQuery) QueryCommChannels() *CommChannelQuery {
 	return query
 }
 
-// QueryRelationships chains the current query on the "relationships" edge.
-func (pq *PartyQuery) QueryRelationships() *RelationshipQuery {
+// QueryRelationshipsAsSource chains the current query on the "relationships_as_source" edge.
+func (pq *PartyQuery) QueryRelationshipsAsSource() *RelationshipQuery {
 	query := (&RelationshipClient{config: pq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
@@ -99,7 +100,29 @@ func (pq *PartyQuery) QueryRelationships() *RelationshipQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(party.Table, party.FieldID, selector),
 			sqlgraph.To(relationship.Table, relationship.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, party.RelationshipsTable, party.RelationshipsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, party.RelationshipsAsSourceTable, party.RelationshipsAsSourceColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRelationshipsAsTarget chains the current query on the "relationships_as_target" edge.
+func (pq *PartyQuery) QueryRelationshipsAsTarget() *RelationshipQuery {
+	query := (&RelationshipClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(party.Table, party.FieldID, selector),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, party.RelationshipsAsTargetTable, party.RelationshipsAsTargetColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -294,13 +317,14 @@ func (pq *PartyQuery) Clone() *PartyQuery {
 		return nil
 	}
 	return &PartyQuery{
-		config:            pq.config,
-		ctx:               pq.ctx.Clone(),
-		order:             append([]party.OrderOption{}, pq.order...),
-		inters:            append([]Interceptor{}, pq.inters...),
-		predicates:        append([]predicate.Party{}, pq.predicates...),
-		withCommChannels:  pq.withCommChannels.Clone(),
-		withRelationships: pq.withRelationships.Clone(),
+		config:                    pq.config,
+		ctx:                       pq.ctx.Clone(),
+		order:                     append([]party.OrderOption{}, pq.order...),
+		inters:                    append([]Interceptor{}, pq.inters...),
+		predicates:                append([]predicate.Party{}, pq.predicates...),
+		withCommChannels:          pq.withCommChannels.Clone(),
+		withRelationshipsAsSource: pq.withRelationshipsAsSource.Clone(),
+		withRelationshipsAsTarget: pq.withRelationshipsAsTarget.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
@@ -318,14 +342,25 @@ func (pq *PartyQuery) WithCommChannels(opts ...func(*CommChannelQuery)) *PartyQu
 	return pq
 }
 
-// WithRelationships tells the query-builder to eager-load the nodes that are connected to
-// the "relationships" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *PartyQuery) WithRelationships(opts ...func(*RelationshipQuery)) *PartyQuery {
+// WithRelationshipsAsSource tells the query-builder to eager-load the nodes that are connected to
+// the "relationships_as_source" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PartyQuery) WithRelationshipsAsSource(opts ...func(*RelationshipQuery)) *PartyQuery {
 	query := (&RelationshipClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	pq.withRelationships = query
+	pq.withRelationshipsAsSource = query
+	return pq
+}
+
+// WithRelationshipsAsTarget tells the query-builder to eager-load the nodes that are connected to
+// the "relationships_as_target" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PartyQuery) WithRelationshipsAsTarget(opts ...func(*RelationshipQuery)) *PartyQuery {
+	query := (&RelationshipClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withRelationshipsAsTarget = query
 	return pq
 }
 
@@ -335,12 +370,12 @@ func (pq *PartyQuery) WithRelationships(opts ...func(*RelationshipQuery)) *Party
 // Example:
 //
 //	var v []struct {
-//		AvatarURL string `json:"avatar_url,omitempty"`
+//		AvatarUrl string `json:"avatarUrl,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Party.Query().
-//		GroupBy(party.FieldAvatarURL).
+//		GroupBy(party.FieldAvatarUrl).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *PartyQuery) GroupBy(field string, fields ...string) *PartyGroupBy {
@@ -358,11 +393,11 @@ func (pq *PartyQuery) GroupBy(field string, fields ...string) *PartyGroupBy {
 // Example:
 //
 //	var v []struct {
-//		AvatarURL string `json:"avatar_url,omitempty"`
+//		AvatarUrl string `json:"avatarUrl,omitempty"`
 //	}
 //
 //	client.Party.Query().
-//		Select(party.FieldAvatarURL).
+//		Select(party.FieldAvatarUrl).
 //		Scan(ctx, &v)
 func (pq *PartyQuery) Select(fields ...string) *PartySelect {
 	pq.ctx.Fields = append(pq.ctx.Fields, fields...)
@@ -407,9 +442,10 @@ func (pq *PartyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Party,
 	var (
 		nodes       = []*Party{}
 		_spec       = pq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			pq.withCommChannels != nil,
-			pq.withRelationships != nil,
+			pq.withRelationshipsAsSource != nil,
+			pq.withRelationshipsAsTarget != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -437,10 +473,21 @@ func (pq *PartyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Party,
 			return nil, err
 		}
 	}
-	if query := pq.withRelationships; query != nil {
-		if err := pq.loadRelationships(ctx, query, nodes,
-			func(n *Party) { n.Edges.Relationships = []*Relationship{} },
-			func(n *Party, e *Relationship) { n.Edges.Relationships = append(n.Edges.Relationships, e) }); err != nil {
+	if query := pq.withRelationshipsAsSource; query != nil {
+		if err := pq.loadRelationshipsAsSource(ctx, query, nodes,
+			func(n *Party) { n.Edges.RelationshipsAsSource = []*Relationship{} },
+			func(n *Party, e *Relationship) {
+				n.Edges.RelationshipsAsSource = append(n.Edges.RelationshipsAsSource, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withRelationshipsAsTarget; query != nil {
+		if err := pq.loadRelationshipsAsTarget(ctx, query, nodes,
+			func(n *Party) { n.Edges.RelationshipsAsTarget = []*Relationship{} },
+			func(n *Party, e *Relationship) {
+				n.Edges.RelationshipsAsTarget = append(n.Edges.RelationshipsAsTarget, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -477,7 +524,37 @@ func (pq *PartyQuery) loadCommChannels(ctx context.Context, query *CommChannelQu
 	}
 	return nil
 }
-func (pq *PartyQuery) loadRelationships(ctx context.Context, query *RelationshipQuery, nodes []*Party, init func(*Party), assign func(*Party, *Relationship)) error {
+func (pq *PartyQuery) loadRelationshipsAsSource(ctx context.Context, query *RelationshipQuery, nodes []*Party, init func(*Party), assign func(*Party, *Relationship)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*Party)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(relationship.FieldPartyID)
+	}
+	query.Where(predicate.Relationship(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(party.RelationshipsAsSourceColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.PartyID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "party_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pq *PartyQuery) loadRelationshipsAsTarget(ctx context.Context, query *RelationshipQuery, nodes []*Party, init func(*Party), assign func(*Party, *Relationship)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[string]*Party)
 	for i := range nodes {
@@ -491,7 +568,7 @@ func (pq *PartyQuery) loadRelationships(ctx context.Context, query *Relationship
 		query.ctx.AppendFieldOnce(relationship.FieldTargetPartyID)
 	}
 	query.Where(predicate.Relationship(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(party.RelationshipsColumn), fks...))
+		s.Where(sql.InValues(s.C(party.RelationshipsAsTargetColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

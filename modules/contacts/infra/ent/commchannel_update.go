@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/commchannel"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/party"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/predicate"
@@ -104,6 +104,20 @@ func (ccu *CommChannelUpdate) ClearNote() *CommChannelUpdate {
 	return ccu
 }
 
+// SetOrgID sets the "org_id" field.
+func (ccu *CommChannelUpdate) SetOrgID(s string) *CommChannelUpdate {
+	ccu.mutation.SetOrgID(s)
+	return ccu
+}
+
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (ccu *CommChannelUpdate) SetNillableOrgID(s *string) *CommChannelUpdate {
+	if s != nil {
+		ccu.SetOrgID(*s)
+	}
+	return ccu
+}
+
 // SetPartyID sets the "party_id" field.
 func (ccu *CommChannelUpdate) SetPartyID(s string) *CommChannelUpdate {
 	ccu.mutation.SetPartyID(s)
@@ -119,15 +133,15 @@ func (ccu *CommChannelUpdate) SetNillablePartyID(s *string) *CommChannelUpdate {
 }
 
 // SetType sets the "type" field.
-func (ccu *CommChannelUpdate) SetType(c commchannel.Type) *CommChannelUpdate {
-	ccu.mutation.SetType(c)
+func (ccu *CommChannelUpdate) SetType(s string) *CommChannelUpdate {
+	ccu.mutation.SetType(s)
 	return ccu
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (ccu *CommChannelUpdate) SetNillableType(c *commchannel.Type) *CommChannelUpdate {
-	if c != nil {
-		ccu.SetType(*c)
+func (ccu *CommChannelUpdate) SetNillableType(s *string) *CommChannelUpdate {
+	if s != nil {
+		ccu.SetType(*s)
 	}
 	return ccu
 }
@@ -173,16 +187,8 @@ func (ccu *CommChannelUpdate) ClearValue() *CommChannelUpdate {
 }
 
 // SetValueJSON sets the "value_json" field.
-func (ccu *CommChannelUpdate) SetValueJSON(djd domain.ValueJsonData) *CommChannelUpdate {
-	ccu.mutation.SetValueJSON(djd)
-	return ccu
-}
-
-// SetNillableValueJSON sets the "value_json" field if the given value is not nil.
-func (ccu *CommChannelUpdate) SetNillableValueJSON(djd *domain.ValueJsonData) *CommChannelUpdate {
-	if djd != nil {
-		ccu.SetValueJSON(*djd)
-	}
+func (ccu *CommChannelUpdate) SetValueJSON(mj model.LangJson) *CommChannelUpdate {
+	ccu.mutation.SetValueJSON(mj)
 	return ccu
 }
 
@@ -237,11 +243,6 @@ func (ccu *CommChannelUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (ccu *CommChannelUpdate) check() error {
-	if v, ok := ccu.mutation.GetType(); ok {
-		if err := commchannel.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "CommChannel.type": %w`, err)}
-		}
-	}
 	if ccu.mutation.PartyCleared() && len(ccu.mutation.PartyIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CommChannel.party"`)
 	}
@@ -281,8 +282,11 @@ func (ccu *CommChannelUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if ccu.mutation.NoteCleared() {
 		_spec.ClearField(commchannel.FieldNote, field.TypeString)
 	}
+	if value, ok := ccu.mutation.OrgID(); ok {
+		_spec.SetField(commchannel.FieldOrgID, field.TypeString, value)
+	}
 	if value, ok := ccu.mutation.GetType(); ok {
-		_spec.SetField(commchannel.FieldType, field.TypeEnum, value)
+		_spec.SetField(commchannel.FieldType, field.TypeString, value)
 	}
 	if value, ok := ccu.mutation.UpdatedAt(); ok {
 		_spec.SetField(commchannel.FieldUpdatedAt, field.TypeTime, value)
@@ -425,6 +429,20 @@ func (ccuo *CommChannelUpdateOne) ClearNote() *CommChannelUpdateOne {
 	return ccuo
 }
 
+// SetOrgID sets the "org_id" field.
+func (ccuo *CommChannelUpdateOne) SetOrgID(s string) *CommChannelUpdateOne {
+	ccuo.mutation.SetOrgID(s)
+	return ccuo
+}
+
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (ccuo *CommChannelUpdateOne) SetNillableOrgID(s *string) *CommChannelUpdateOne {
+	if s != nil {
+		ccuo.SetOrgID(*s)
+	}
+	return ccuo
+}
+
 // SetPartyID sets the "party_id" field.
 func (ccuo *CommChannelUpdateOne) SetPartyID(s string) *CommChannelUpdateOne {
 	ccuo.mutation.SetPartyID(s)
@@ -440,15 +458,15 @@ func (ccuo *CommChannelUpdateOne) SetNillablePartyID(s *string) *CommChannelUpda
 }
 
 // SetType sets the "type" field.
-func (ccuo *CommChannelUpdateOne) SetType(c commchannel.Type) *CommChannelUpdateOne {
-	ccuo.mutation.SetType(c)
+func (ccuo *CommChannelUpdateOne) SetType(s string) *CommChannelUpdateOne {
+	ccuo.mutation.SetType(s)
 	return ccuo
 }
 
 // SetNillableType sets the "type" field if the given value is not nil.
-func (ccuo *CommChannelUpdateOne) SetNillableType(c *commchannel.Type) *CommChannelUpdateOne {
-	if c != nil {
-		ccuo.SetType(*c)
+func (ccuo *CommChannelUpdateOne) SetNillableType(s *string) *CommChannelUpdateOne {
+	if s != nil {
+		ccuo.SetType(*s)
 	}
 	return ccuo
 }
@@ -494,16 +512,8 @@ func (ccuo *CommChannelUpdateOne) ClearValue() *CommChannelUpdateOne {
 }
 
 // SetValueJSON sets the "value_json" field.
-func (ccuo *CommChannelUpdateOne) SetValueJSON(djd domain.ValueJsonData) *CommChannelUpdateOne {
-	ccuo.mutation.SetValueJSON(djd)
-	return ccuo
-}
-
-// SetNillableValueJSON sets the "value_json" field if the given value is not nil.
-func (ccuo *CommChannelUpdateOne) SetNillableValueJSON(djd *domain.ValueJsonData) *CommChannelUpdateOne {
-	if djd != nil {
-		ccuo.SetValueJSON(*djd)
-	}
+func (ccuo *CommChannelUpdateOne) SetValueJSON(mj model.LangJson) *CommChannelUpdateOne {
+	ccuo.mutation.SetValueJSON(mj)
 	return ccuo
 }
 
@@ -571,11 +581,6 @@ func (ccuo *CommChannelUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (ccuo *CommChannelUpdateOne) check() error {
-	if v, ok := ccuo.mutation.GetType(); ok {
-		if err := commchannel.TypeValidator(v); err != nil {
-			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "CommChannel.type": %w`, err)}
-		}
-	}
 	if ccuo.mutation.PartyCleared() && len(ccuo.mutation.PartyIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "CommChannel.party"`)
 	}
@@ -632,8 +637,11 @@ func (ccuo *CommChannelUpdateOne) sqlSave(ctx context.Context) (_node *CommChann
 	if ccuo.mutation.NoteCleared() {
 		_spec.ClearField(commchannel.FieldNote, field.TypeString)
 	}
+	if value, ok := ccuo.mutation.OrgID(); ok {
+		_spec.SetField(commchannel.FieldOrgID, field.TypeString, value)
+	}
 	if value, ok := ccuo.mutation.GetType(); ok {
-		_spec.SetField(commchannel.FieldType, field.TypeEnum, value)
+		_spec.SetField(commchannel.FieldType, field.TypeString, value)
 	}
 	if value, ok := ccuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(commchannel.FieldUpdatedAt, field.TypeTime, value)

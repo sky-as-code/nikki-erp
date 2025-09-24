@@ -90,9 +90,19 @@ func Note(v string) predicate.CommChannel {
 	return predicate.CommChannel(sql.FieldEQ(FieldNote, v))
 }
 
+// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
+func OrgID(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldEQ(FieldOrgID, v))
+}
+
 // PartyID applies equality check predicate on the "party_id" field. It's identical to PartyIDEQ.
 func PartyID(v string) predicate.CommChannel {
 	return predicate.CommChannel(sql.FieldEQ(FieldPartyID, v))
+}
+
+// Type applies equality check predicate on the "type" field. It's identical to TypeEQ.
+func Type(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldEQ(FieldType, v))
 }
 
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
@@ -410,6 +420,71 @@ func NoteContainsFold(v string) predicate.CommChannel {
 	return predicate.CommChannel(sql.FieldContainsFold(FieldNote, v))
 }
 
+// OrgIDEQ applies the EQ predicate on the "org_id" field.
+func OrgIDEQ(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldEQ(FieldOrgID, v))
+}
+
+// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
+func OrgIDNEQ(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldNEQ(FieldOrgID, v))
+}
+
+// OrgIDIn applies the In predicate on the "org_id" field.
+func OrgIDIn(vs ...string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldIn(FieldOrgID, vs...))
+}
+
+// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
+func OrgIDNotIn(vs ...string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldNotIn(FieldOrgID, vs...))
+}
+
+// OrgIDGT applies the GT predicate on the "org_id" field.
+func OrgIDGT(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldGT(FieldOrgID, v))
+}
+
+// OrgIDGTE applies the GTE predicate on the "org_id" field.
+func OrgIDGTE(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldGTE(FieldOrgID, v))
+}
+
+// OrgIDLT applies the LT predicate on the "org_id" field.
+func OrgIDLT(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldLT(FieldOrgID, v))
+}
+
+// OrgIDLTE applies the LTE predicate on the "org_id" field.
+func OrgIDLTE(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldLTE(FieldOrgID, v))
+}
+
+// OrgIDContains applies the Contains predicate on the "org_id" field.
+func OrgIDContains(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldContains(FieldOrgID, v))
+}
+
+// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
+func OrgIDHasPrefix(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldHasPrefix(FieldOrgID, v))
+}
+
+// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
+func OrgIDHasSuffix(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldHasSuffix(FieldOrgID, v))
+}
+
+// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
+func OrgIDEqualFold(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldEqualFold(FieldOrgID, v))
+}
+
+// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
+func OrgIDContainsFold(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldContainsFold(FieldOrgID, v))
+}
+
 // PartyIDEQ applies the EQ predicate on the "party_id" field.
 func PartyIDEQ(v string) predicate.CommChannel {
 	return predicate.CommChannel(sql.FieldEQ(FieldPartyID, v))
@@ -476,23 +551,68 @@ func PartyIDContainsFold(v string) predicate.CommChannel {
 }
 
 // TypeEQ applies the EQ predicate on the "type" field.
-func TypeEQ(v Type) predicate.CommChannel {
+func TypeEQ(v string) predicate.CommChannel {
 	return predicate.CommChannel(sql.FieldEQ(FieldType, v))
 }
 
 // TypeNEQ applies the NEQ predicate on the "type" field.
-func TypeNEQ(v Type) predicate.CommChannel {
+func TypeNEQ(v string) predicate.CommChannel {
 	return predicate.CommChannel(sql.FieldNEQ(FieldType, v))
 }
 
 // TypeIn applies the In predicate on the "type" field.
-func TypeIn(vs ...Type) predicate.CommChannel {
+func TypeIn(vs ...string) predicate.CommChannel {
 	return predicate.CommChannel(sql.FieldIn(FieldType, vs...))
 }
 
 // TypeNotIn applies the NotIn predicate on the "type" field.
-func TypeNotIn(vs ...Type) predicate.CommChannel {
+func TypeNotIn(vs ...string) predicate.CommChannel {
 	return predicate.CommChannel(sql.FieldNotIn(FieldType, vs...))
+}
+
+// TypeGT applies the GT predicate on the "type" field.
+func TypeGT(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldGT(FieldType, v))
+}
+
+// TypeGTE applies the GTE predicate on the "type" field.
+func TypeGTE(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldGTE(FieldType, v))
+}
+
+// TypeLT applies the LT predicate on the "type" field.
+func TypeLT(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldLT(FieldType, v))
+}
+
+// TypeLTE applies the LTE predicate on the "type" field.
+func TypeLTE(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldLTE(FieldType, v))
+}
+
+// TypeContains applies the Contains predicate on the "type" field.
+func TypeContains(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldContains(FieldType, v))
+}
+
+// TypeHasPrefix applies the HasPrefix predicate on the "type" field.
+func TypeHasPrefix(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldHasPrefix(FieldType, v))
+}
+
+// TypeHasSuffix applies the HasSuffix predicate on the "type" field.
+func TypeHasSuffix(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldHasSuffix(FieldType, v))
+}
+
+// TypeEqualFold applies the EqualFold predicate on the "type" field.
+func TypeEqualFold(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldEqualFold(FieldType, v))
+}
+
+// TypeContainsFold applies the ContainsFold predicate on the "type" field.
+func TypeContainsFold(v string) predicate.CommChannel {
+	return predicate.CommChannel(sql.FieldContainsFold(FieldType, v))
 }
 
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.

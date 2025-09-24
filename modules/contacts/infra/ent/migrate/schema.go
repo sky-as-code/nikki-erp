@@ -17,7 +17,8 @@ var (
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "note", Type: field.TypeString, Nullable: true},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"Phone", "Zalo", "Facebook", "Email", "Post"}},
+		{Name: "org_id", Type: field.TypeString},
+		{Name: "type", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "value", Type: field.TypeString, Nullable: true},
 		{Name: "value_json", Type: field.TypeJSON, Nullable: true},
@@ -31,7 +32,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "contacts_comm_channels_contacts_parties_party",
-				Columns:    []*schema.Column{ContactsCommChannelsColumns[10]},
+				Columns:    []*schema.Column{ContactsCommChannelsColumns[11]},
 				RefColumns: []*schema.Column{ContactsPartiesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -52,8 +53,9 @@ var (
 		{Name: "legal_name", Type: field.TypeString, Nullable: true, Size: 100},
 		{Name: "nationality_id", Type: field.TypeString, Nullable: true},
 		{Name: "note", Type: field.TypeString, Nullable: true},
+		{Name: "org_id", Type: field.TypeString, Nullable: true},
 		{Name: "tax_id", Type: field.TypeString, Nullable: true},
-		{Name: "title", Type: field.TypeEnum, Nullable: true, Enums: []string{"Mr", "Mrs", "Ms", "Doctor", "Sir"}},
+		{Name: "title", Type: field.TypeString, Nullable: true},
 		{Name: "type", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "website", Type: field.TypeString, Nullable: true},
@@ -72,8 +74,9 @@ var (
 		{Name: "deleted_by", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "note", Type: field.TypeString, Nullable: true},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"employee", "spouse", "parent", "sibling", "emergency", "subsidiary"}},
+		{Name: "type", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "party_id", Type: field.TypeString},
 		{Name: "target_party_id", Type: field.TypeString},
 	}
 	// ContactsRelationshipsTable holds the schema information for the "contacts_relationships" table.
@@ -83,8 +86,14 @@ var (
 		PrimaryKey: []*schema.Column{ContactsRelationshipsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "contacts_relationships_contacts_parties_party",
+				Symbol:     "contacts_relationships_contacts_parties_source_party",
 				Columns:    []*schema.Column{ContactsRelationshipsColumns[8]},
+				RefColumns: []*schema.Column{ContactsPartiesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "contacts_relationships_contacts_parties_target_party",
+				Columns:    []*schema.Column{ContactsRelationshipsColumns[9]},
 				RefColumns: []*schema.Column{ContactsPartiesColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -107,6 +116,7 @@ func init() {
 		Table: "contacts_parties",
 	}
 	ContactsRelationshipsTable.ForeignKeys[0].RefTable = ContactsPartiesTable
+	ContactsRelationshipsTable.ForeignKeys[1].RefTable = ContactsPartiesTable
 	ContactsRelationshipsTable.Annotation = &entsql.Annotation{
 		Table: "contacts_relationships",
 	}

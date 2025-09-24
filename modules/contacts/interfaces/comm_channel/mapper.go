@@ -5,22 +5,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
 )
 
-func (this CreateCommChannelCommand) ToCommChannel() *domain.CommChannel {
+func (this CreateCommChannelCommand) ToDomainModel() *domain.CommChannel {
 	commChannel := &domain.CommChannel{}
 	model.MustCopy(this, commChannel)
 	return commChannel
 }
 
-func (this CreateCommChannelCommand) ToEntity() *domain.CommChannel {
-	return this.ToCommChannel()
-}
-
-func (this UpdateCommChannelCommand) ToCommChannel() *domain.CommChannel {
+func (this UpdateCommChannelCommand) ToDomainModel() *domain.CommChannel {
 	commChannel := &domain.CommChannel{}
 	model.MustCopy(this, commChannel)
 	return commChannel
-}
-
-func (this UpdateCommChannelCommand) ToEntity() *domain.CommChannel {
-	return this.ToCommChannel()
 }

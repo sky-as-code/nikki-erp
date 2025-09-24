@@ -10,7 +10,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/commchannel"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/party"
 )
@@ -31,16 +31,18 @@ type CommChannel struct {
 	Etag string `json:"etag,omitempty"`
 	// Note holds the value of the "note" field.
 	Note *string `json:"note,omitempty"`
-	// PartyID holds the value of the "party_id" field.
+	// Organization ID
+	OrgID string `json:"org_id,omitempty"`
+	// Party ID
 	PartyID string `json:"party_id,omitempty"`
-	// Type holds the value of the "type" field.
-	Type commchannel.Type `json:"type,omitempty"`
+	// Channel type including email, phone, facebook, twitter, post , etc
+	Type string `json:"type,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Value holds the value of the "value" field.
 	Value *string `json:"value,omitempty"`
 	// ValueJSON holds the value of the "value_json" field.
-	ValueJSON domain.ValueJsonData `json:"value_json,omitempty"`
+	ValueJSON model.LangJson `json:"value_json,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CommChannelQuery when eager-loading is set.
 	Edges        CommChannelEdges `json:"edges"`
@@ -74,7 +76,7 @@ func (*CommChannel) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case commchannel.FieldValueJSON:
 			values[i] = new([]byte)
-		case commchannel.FieldID, commchannel.FieldDeletedBy, commchannel.FieldEtag, commchannel.FieldNote, commchannel.FieldPartyID, commchannel.FieldType, commchannel.FieldValue:
+		case commchannel.FieldID, commchannel.FieldDeletedBy, commchannel.FieldEtag, commchannel.FieldNote, commchannel.FieldOrgID, commchannel.FieldPartyID, commchannel.FieldType, commchannel.FieldValue:
 			values[i] = new(sql.NullString)
 		case commchannel.FieldCreatedAt, commchannel.FieldDeletedAt, commchannel.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -132,6 +134,12 @@ func (cc *CommChannel) assignValues(columns []string, values []any) error {
 				cc.Note = new(string)
 				*cc.Note = value.String
 			}
+		case commchannel.FieldOrgID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field org_id", values[i])
+			} else if value.Valid {
+				cc.OrgID = value.String
+			}
 		case commchannel.FieldPartyID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field party_id", values[i])
@@ -142,7 +150,7 @@ func (cc *CommChannel) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
-				cc.Type = commchannel.Type(value.String)
+				cc.Type = value.String
 			}
 		case commchannel.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -228,11 +236,14 @@ func (cc *CommChannel) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
+	builder.WriteString("org_id=")
+	builder.WriteString(cc.OrgID)
+	builder.WriteString(", ")
 	builder.WriteString("party_id=")
 	builder.WriteString(cc.PartyID)
 	builder.WriteString(", ")
 	builder.WriteString("type=")
-	builder.WriteString(fmt.Sprintf("%v", cc.Type))
+	builder.WriteString(cc.Type)
 	builder.WriteString(", ")
 	if v := cc.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")

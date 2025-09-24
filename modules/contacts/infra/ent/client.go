@@ -490,15 +490,31 @@ func (c *PartyClient) QueryCommChannels(pa *Party) *CommChannelQuery {
 	return query
 }
 
-// QueryRelationships queries the relationships edge of a Party.
-func (c *PartyClient) QueryRelationships(pa *Party) *RelationshipQuery {
+// QueryRelationshipsAsSource queries the relationships_as_source edge of a Party.
+func (c *PartyClient) QueryRelationshipsAsSource(pa *Party) *RelationshipQuery {
 	query := (&RelationshipClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pa.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(party.Table, party.FieldID, id),
 			sqlgraph.To(relationship.Table, relationship.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, party.RelationshipsTable, party.RelationshipsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, party.RelationshipsAsSourceTable, party.RelationshipsAsSourceColumn),
+		)
+		fromV = sqlgraph.Neighbors(pa.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationshipsAsTarget queries the relationships_as_target edge of a Party.
+func (c *PartyClient) QueryRelationshipsAsTarget(pa *Party) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pa.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(party.Table, party.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, party.RelationshipsAsTargetTable, party.RelationshipsAsTargetColumn),
 		)
 		fromV = sqlgraph.Neighbors(pa.driver.Dialect(), step)
 		return fromV, nil
@@ -639,15 +655,31 @@ func (c *RelationshipClient) GetX(ctx context.Context, id string) *Relationship 
 	return obj
 }
 
-// QueryParty queries the party edge of a Relationship.
-func (c *RelationshipClient) QueryParty(r *Relationship) *PartyQuery {
+// QuerySourceParty queries the source_party edge of a Relationship.
+func (c *RelationshipClient) QuerySourceParty(r *Relationship) *PartyQuery {
 	query := (&PartyClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := r.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(relationship.Table, relationship.FieldID, id),
 			sqlgraph.To(party.Table, party.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, relationship.PartyTable, relationship.PartyColumn),
+			sqlgraph.Edge(sqlgraph.M2O, false, relationship.SourcePartyTable, relationship.SourcePartyColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryTargetParty queries the target_party edge of a Relationship.
+func (c *RelationshipClient) QueryTargetParty(r *Relationship) *PartyQuery {
+	query := (&PartyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(party.Table, party.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, relationship.TargetPartyTable, relationship.TargetPartyColumn),
 		)
 		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
 		return fromV, nil

@@ -1,0 +1,23 @@
+meta {
+  name: Hierarchy - Add / Remove Hierarchy
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{api_host}}/v1/identity/hierarchy/{{hierarchy_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "add": ["01JZQFZFK6GM2D5X6MYHWH6FND", "01JZQFY6EXRG0959Z95Y2EM3AM"],
+      "remove": [],
+      "etag": "1758162656807107700"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -29,10 +29,12 @@ type Relationship struct {
 	Etag string `json:"etag,omitempty"`
 	// Note holds the value of the "note" field.
 	Note *string `json:"note,omitempty"`
+	// PartyID holds the value of the "party_id" field.
+	PartyID string `json:"party_id,omitempty"`
 	// TargetPartyID holds the value of the "target_party_id" field.
 	TargetPartyID string `json:"target_party_id,omitempty"`
-	// Type holds the value of the "type" field.
-	Type relationship.Type `json:"type,omitempty"`
+	// Type of relationship such as parent, child, sibling, friend, colleague
+	Type string `json:"type,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -43,22 +45,35 @@ type Relationship struct {
 
 // RelationshipEdges holds the relations/edges for other nodes in the graph.
 type RelationshipEdges struct {
-	// Party holds the value of the party edge.
-	Party *Party `json:"party,omitempty"`
+	// SourceParty holds the value of the source_party edge.
+	SourceParty *Party `json:"source_party,omitempty"`
+	// TargetParty holds the value of the target_party edge.
+	TargetParty *Party `json:"target_party,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
-// PartyOrErr returns the Party value or an error if the edge
+// SourcePartyOrErr returns the SourceParty value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e RelationshipEdges) PartyOrErr() (*Party, error) {
-	if e.Party != nil {
-		return e.Party, nil
+func (e RelationshipEdges) SourcePartyOrErr() (*Party, error) {
+	if e.SourceParty != nil {
+		return e.SourceParty, nil
 	} else if e.loadedTypes[0] {
 		return nil, &NotFoundError{label: party.Label}
 	}
-	return nil, &NotLoadedError{edge: "party"}
+	return nil, &NotLoadedError{edge: "source_party"}
+}
+
+// TargetPartyOrErr returns the TargetParty value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e RelationshipEdges) TargetPartyOrErr() (*Party, error) {
+	if e.TargetParty != nil {
+		return e.TargetParty, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: party.Label}
+	}
+	return nil, &NotLoadedError{edge: "target_party"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -66,7 +81,7 @@ func (*Relationship) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case relationship.FieldID, relationship.FieldDeletedBy, relationship.FieldEtag, relationship.FieldNote, relationship.FieldTargetPartyID, relationship.FieldType:
+		case relationship.FieldID, relationship.FieldDeletedBy, relationship.FieldEtag, relationship.FieldNote, relationship.FieldPartyID, relationship.FieldTargetPartyID, relationship.FieldType:
 			values[i] = new(sql.NullString)
 		case relationship.FieldCreatedAt, relationship.FieldDeletedAt, relationship.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -124,6 +139,12 @@ func (r *Relationship) assignValues(columns []string, values []any) error {
 				r.Note = new(string)
 				*r.Note = value.String
 			}
+		case relationship.FieldPartyID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field party_id", values[i])
+			} else if value.Valid {
+				r.PartyID = value.String
+			}
 		case relationship.FieldTargetPartyID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field target_party_id", values[i])
@@ -134,7 +155,7 @@ func (r *Relationship) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
-				r.Type = relationship.Type(value.String)
+				r.Type = value.String
 			}
 		case relationship.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -156,9 +177,14 @@ func (r *Relationship) Value(name string) (ent.Value, error) {
 	return r.selectValues.Get(name)
 }
 
-// QueryParty queries the "party" edge of the Relationship entity.
-func (r *Relationship) QueryParty() *PartyQuery {
-	return NewRelationshipClient(r.config).QueryParty(r)
+// QuerySourceParty queries the "source_party" edge of the Relationship entity.
+func (r *Relationship) QuerySourceParty() *PartyQuery {
+	return NewRelationshipClient(r.config).QuerySourceParty(r)
+}
+
+// QueryTargetParty queries the "target_party" edge of the Relationship entity.
+func (r *Relationship) QueryTargetParty() *PartyQuery {
+	return NewRelationshipClient(r.config).QueryTargetParty(r)
 }
 
 // Update returns a builder for updating this Relationship.
@@ -205,11 +231,14 @@ func (r *Relationship) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
+	builder.WriteString("party_id=")
+	builder.WriteString(r.PartyID)
+	builder.WriteString(", ")
 	builder.WriteString("target_party_id=")
 	builder.WriteString(r.TargetPartyID)
 	builder.WriteString(", ")
 	builder.WriteString("type=")
-	builder.WriteString(fmt.Sprintf("%v", r.Type))
+	builder.WriteString(r.Type)
 	builder.WriteString(", ")
 	if v := r.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")

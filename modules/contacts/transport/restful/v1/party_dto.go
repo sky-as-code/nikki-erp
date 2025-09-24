@@ -20,7 +20,9 @@ type PartyDto struct {
 	Title        *string `json:"title,omitempty"`
 	Type         string  `json:"type"`
 	Note         *string `json:"note,omitempty"`
+	OrgId        string  `json:"orgId"`
 	Nationality  *string `json:"nationality,omitempty"`
+	Language     *string `json:"language,omitempty"`
 	Website      *string `json:"website,omitempty"`
 	Etag         string  `json:"etag"`
 	UpdatedAt    *int64  `json:"updatedAt,omitempty"`
@@ -34,12 +36,6 @@ func (this *PartyDto) FromParty(partyEntity domain.Party) {
 	model.MustCopy(partyEntity.AuditableBase, this)
 	model.MustCopy(partyEntity.ModelBase, this)
 	model.MustCopy(partyEntity, this)
-
-	// Handle Title enum
-	if partyEntity.Title != nil && partyEntity.Title.Value != nil {
-		this.Title = partyEntity.Title.Value
-	}
-
 	// Handle related entities
 	this.CommChannels = array.Map(partyEntity.CommChannels, func(commChannel domain.CommChannel) CommChannelDto {
 		commChannelDto := CommChannelDto{}

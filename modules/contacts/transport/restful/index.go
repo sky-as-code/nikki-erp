@@ -26,15 +26,11 @@ func initV1(route *echo.Group, partyRest *v1.PartyRest, relationshipRest *v1.Rel
 	route.GET("/parties", partyRest.SearchParties)
 	route.PUT("/parties/:id", partyRest.UpdateParty)
 
-	route.POST("/relationships", relationshipRest.CreateRelationship)
-	route.DELETE("/relationships/:id", relationshipRest.DeleteRelationship)
-	route.GET("/relationships/:id", relationshipRest.GetRelationshipById)
-	route.GET("/relationships", relationshipRest.SearchRelationships)
-	route.PUT("/relationships/:id", relationshipRest.UpdateRelationship)
+	route.POST("/parties/relationships", relationshipRest.CreateRelationship)
 
-	route.POST("/comm-channels", commChannelRest.CreateCommChannel)
-	route.DELETE("/comm-channels/:id", commChannelRest.DeleteCommChannel)
-	route.GET("/comm-channels/:id", commChannelRest.GetCommChannelById)
-	route.GET("/comm-channels", commChannelRest.SearchCommChannels)
-	route.PUT("/comm-channels/:id", commChannelRest.UpdateCommChannel)
+	route.POST("/parties/channels", commChannelRest.CreateCommChannel)
+	route.DELETE("/parties/channels/:id", commChannelRest.DeleteCommChannel)
+	route.GET("/parties/channels/:id", commChannelRest.GetCommChannelById)
+	route.GET("/parties/channels", commChannelRest.SearchCommChannels)
+	route.PUT("/parties/channels/:id", commChannelRest.UpdateCommChannel)
 }

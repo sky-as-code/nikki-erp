@@ -9,13 +9,12 @@ import (
 )
 
 type CommChannelRepository interface {
-	Create(ctx crud.Context, commChannel domain.CommChannel) (*domain.CommChannel, error)
+	Create(ctx crud.Context, commChannel *domain.CommChannel) (*domain.CommChannel, error)
 	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
 	FindById(ctx crud.Context, param FindByIdParam) (*domain.CommChannel, error)
-	FindByParty(ctx crud.Context, param FindByPartyParam) ([]*domain.CommChannel, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.CommChannel], error)
-	Update(ctx crud.Context, commChannel domain.CommChannel, prevEtag model.Etag) (*domain.CommChannel, error)
+	Update(ctx crud.Context, commChannel *domain.CommChannel, prevEtag model.Etag) (*domain.CommChannel, error)
 }
 
 type DeleteParam = DeleteCommChannelCommand
@@ -26,5 +25,4 @@ type SearchParam struct {
 	Order     []orm.OrderOption
 	Page      int
 	Size      int
-	WithParty bool
 }
