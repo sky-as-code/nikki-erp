@@ -10,13 +10,13 @@ import (
 
 type HierarchyRepository interface {
 	AddRemoveUsers(ctx crud.Context, param AddRemoveUsersParam) (*ft.ClientError, error)
-	Create(ctx crud.Context, hierarchyLevel domain.HierarchyLevel) (*domain.HierarchyLevel, error)
-	DeleteHard(ctx crud.Context, id model.Id) (int, error)
+	Create(ctx crud.Context, hierarchyLevel *domain.HierarchyLevel) (*domain.HierarchyLevel, error)
+	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
 	FindById(ctx crud.Context, param FindByIdParam) (*domain.HierarchyLevel, error)
 	FindByName(ctx crud.Context, param FindByNameParam) (*domain.HierarchyLevel, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.HierarchyLevel], error)
-	Update(ctx crud.Context, hierarchyLevel domain.HierarchyLevel, prevEtag model.Etag) (*domain.HierarchyLevel, error)
+	Update(ctx crud.Context, hierarchyLevel *domain.HierarchyLevel, prevEtag model.Etag) (*domain.HierarchyLevel, error)
 }
 
 type AddRemoveUsersParam = AddRemoveUsersCommand

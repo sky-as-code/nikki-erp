@@ -126,6 +126,12 @@ func (DeleteGroupCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteGroupCommandType
 }
 
+func (this DeleteGroupCommand) ToDomainModel() *domain.Group {
+	group := &domain.Group{}
+	group.Id = &this.Id
+	return group
+}
+
 func (this DeleteGroupCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
@@ -149,19 +155,20 @@ var getGroupByIdQueryType = cqrs.RequestType{
 
 type GetGroupByIdQuery struct {
 	Id      model.Id `param:"id" json:"id"`
-	WithOrg *bool    `query:"withOrg" json:"withOrg"`
+	WithOrg bool     `query:"withOrg" json:"withOrg"`
 }
 
 func (GetGroupByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getGroupByIdQueryType
 }
 
-func (this *GetGroupByIdQuery) Validate() ft.ValidationErrors {
+func (this GetGroupByIdQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
 
-	return val.ApiBased.ValidateStruct(this, rules...)
+	return val.ApiBased.ValidateStruct(&this, rules...)
+	// return nil
 }
 
 type GetGroupByIdResult = crud.OpResult[*domain.Group]
@@ -173,10 +180,8 @@ var searchGroupsQueryType = cqrs.RequestType{
 }
 
 type SearchGroupsQuery struct {
-	Page    *int    `json:"page" query:"page"`
-	Size    *int    `json:"size" query:"size"`
-	Graph   *string `json:"graph" query:"graph"`
-	WithOrg bool    `json:"withOrg" query:"withOrg"`
+	crud.SearchQuery
+	WithOrg bool `json:"withOrg" query:"withOrg"`
 }
 
 func (SearchGroupsQuery) CqrsRequestType() cqrs.RequestType {

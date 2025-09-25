@@ -32,7 +32,7 @@ func (this *HierarchyLevelEntRepository) hierarchyClient(ctx crud.Context) *ent.
 	return this.client.HierarchyLevel
 }
 
-func (this *HierarchyLevelEntRepository) Create(ctx crud.Context, hierarchyLevel domain.HierarchyLevel) (*domain.HierarchyLevel, error) {
+func (this *HierarchyLevelEntRepository) Create(ctx crud.Context, hierarchyLevel *domain.HierarchyLevel) (*domain.HierarchyLevel, error) {
 	creation := this.hierarchyClient(ctx).Create().
 		SetID(*hierarchyLevel.Id).
 		SetName(*hierarchyLevel.Name).
@@ -43,7 +43,7 @@ func (this *HierarchyLevelEntRepository) Create(ctx crud.Context, hierarchyLevel
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToHierarchyLevel)
 }
 
-func (this *HierarchyLevelEntRepository) Update(ctx crud.Context, hierarchyLevel domain.HierarchyLevel, prevEtag model.Etag) (*domain.HierarchyLevel, error) {
+func (this *HierarchyLevelEntRepository) Update(ctx crud.Context, hierarchyLevel *domain.HierarchyLevel, prevEtag model.Etag) (*domain.HierarchyLevel, error) {
 	update := this.hierarchyClient(ctx).UpdateOneID(*hierarchyLevel.Id).
 		SetNillableName(hierarchyLevel.Name).
 		SetNillableParentID(hierarchyLevel.ParentId).
@@ -59,9 +59,9 @@ func (this *HierarchyLevelEntRepository) Update(ctx crud.Context, hierarchyLevel
 	return db.Mutate(ctx, update, ent.IsNotFound, entToHierarchyLevel)
 }
 
-func (this *HierarchyLevelEntRepository) DeleteHard(ctx crud.Context, id model.Id) (int, error) {
+func (this *HierarchyLevelEntRepository) DeleteHard(ctx crud.Context, param it.DeleteParam) (int, error) {
 	return this.hierarchyClient(ctx).Delete().
-		Where(entHierarchy.ID(id)).
+		Where(entHierarchy.ID(param.Id)).
 		Exec(ctx)
 }
 

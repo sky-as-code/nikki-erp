@@ -5,13 +5,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
-func (cmd CreateHierarchyLevelCommand) ToHierarchyLevel() *domain.HierarchyLevel {
+func (cmd CreateHierarchyLevelCommand) ToDomainModel() *domain.HierarchyLevel {
 	hierarchyLevel := &domain.HierarchyLevel{}
 	model.MustCopy(cmd, hierarchyLevel)
 	return hierarchyLevel
 }
 
-func (cmd UpdateHierarchyLevelCommand) ToHierarchyLevel() *domain.HierarchyLevel {
+func (cmd UpdateHierarchyLevelCommand) ToDomainModel() *domain.HierarchyLevel {
 	hierarchyLevel := &domain.HierarchyLevel{}
 	model.MustCopy(cmd, hierarchyLevel)
 	return hierarchyLevel

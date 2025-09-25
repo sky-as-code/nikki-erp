@@ -84,7 +84,13 @@ func (DeleteHierarchyLevelCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteHierarchyLevelCommandType
 }
 
-func (this *DeleteHierarchyLevelCommand) Validate() ft.ValidationErrors {
+func (this DeleteHierarchyLevelCommand) ToDomainModel() *domain.HierarchyLevel {
+	hier := &domain.HierarchyLevel{}
+	hier.Id = &this.Id
+	return hier
+}
+
+func (this DeleteHierarchyLevelCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
@@ -110,11 +116,12 @@ func (GetHierarchyLevelByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getHierarchyLevelByIdQueryType
 }
 
-func (this *GetHierarchyLevelByIdQuery) Validate() ft.ValidationErrors {
+func (this GetHierarchyLevelByIdQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
-	return val.ApiBased.ValidateStruct(this, rules...)
+
+	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type GetHierarchyLevelByIdResult = crud.OpResult[*domain.HierarchyLevel]
@@ -127,13 +134,11 @@ var searchHierarchyLevelsQueryType = cqrs.RequestType{
 }
 
 type SearchHierarchyLevelsQuery struct {
-	Page           *int    `json:"page" query:"page"`
-	Size           *int    `json:"size" query:"size"`
-	Graph          *string `json:"graph" query:"graph"`
-	IncludeDeleted bool    `query:"includeDeleted" json:"includeDeleted"`
-	WithChildren   bool    `query:"withChildren" json:"withChildren"`
-	WithOrg        bool    `query:"withOrg" json:"withOrg"`
-	WithParent     bool    `query:"withParent" json:"withParent"`
+	crud.SearchQuery
+	IncludeDeleted bool `query:"includeDeleted" json:"includeDeleted"`
+	WithChildren   bool `query:"withChildren" json:"withChildren"`
+	WithOrg        bool `query:"withOrg" json:"withOrg"`
+	WithParent     bool `query:"withParent" json:"withParent"`
 }
 
 func (SearchHierarchyLevelsQuery) CqrsRequestType() cqrs.RequestType {
@@ -159,7 +164,7 @@ type SearchHierarchyLevelsResult = crud.OpResult[*SearchHierarchyLevelsResultDat
 
 // AddRemoveUsersCommand
 type AddRemoveUsersCommand struct {
-	HierarchyId model.Id   `param:"groupId" json:"groupId"`
+	HierarchyId model.Id   `param:"hierarchyId" json:"hierarchyId"`
 	Add         []model.Id `json:"add"`
 	Remove      []model.Id `json:"remove"`
 	Etag        model.Etag `json:"etag"`

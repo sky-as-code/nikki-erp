@@ -32,7 +32,7 @@ func (this *OrganizationEntRepository) orgClient(ctx crud.Context) *ent.Organiza
 	return this.client.Organization
 }
 
-func (this *OrganizationEntRepository) Create(ctx crud.Context, org domain.Organization) (*domain.Organization, error) {
+func (this *OrganizationEntRepository) Create(ctx crud.Context, org *domain.Organization) (*domain.Organization, error) {
 	creation := this.orgClient(ctx).Create().
 		SetID(*org.Id).
 		SetNillableAddress(org.Address).
@@ -46,7 +46,7 @@ func (this *OrganizationEntRepository) Create(ctx crud.Context, org domain.Organ
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) Update(ctx crud.Context, org domain.Organization, prevEtag model.Etag) (*domain.Organization, error) {
+func (this *OrganizationEntRepository) Update(ctx crud.Context, org *domain.Organization, prevEtag model.Etag) (*domain.Organization, error) {
 	update := this.orgClient(ctx).UpdateOneID(*org.Id).
 		SetNillableAddress(org.Address).
 		SetNillableDisplayName(org.DisplayName).
@@ -65,16 +65,16 @@ func (this *OrganizationEntRepository) Update(ctx crud.Context, org domain.Organ
 	return db.Mutate(ctx, update, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) DeleteSoft(ctx crud.Context, id model.Id) (*domain.Organization, error) {
-	update := this.orgClient(ctx).UpdateOneID(id).
+func (this *OrganizationEntRepository) DeleteSoft(ctx crud.Context, param it.DeleteParam) (*domain.Organization, error) {
+	update := this.orgClient(ctx).UpdateOneID(param.Slug).
 		SetDeletedAt(time.Now())
 
 	return db.Mutate(ctx, update, ent.IsNotFound, entToOrganization)
 }
 
-func (this *OrganizationEntRepository) DeleteHard(ctx crud.Context, id model.Id) (int, error) {
+func (this *OrganizationEntRepository) DeleteHard(ctx crud.Context, param it.DeleteParam) (int, error) {
 	return this.orgClient(ctx).Delete().
-		Where(entOrg.ID(id)).
+		Where(entOrg.Slug(param.Slug)).
 		Exec(ctx)
 }
 

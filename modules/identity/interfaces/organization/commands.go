@@ -92,6 +92,12 @@ func (DeleteOrganizationCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteOrganizationCommandType
 }
 
+func (this DeleteOrganizationCommand) ToDomainModel() *domain.Organization {
+	org := &domain.Organization{}
+	org.Slug = &this.Slug
+	return org
+}
+
 func (this DeleteOrganizationCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.SlugValidateRule(&this.Slug, true),
@@ -101,16 +107,33 @@ func (this DeleteOrganizationCommand) Validate() ft.ValidationErrors {
 }
 
 type DeleteOrganizationResultData struct {
-	Id        model.Id  `json:"id"`
-	DeletedAt time.Time `json:"deletedAt"`
+	Slug         model.Slug `json:"slug"`
+	DeletedAt    time.Time  `json:"deletedAt"`
+	DeletedCount *int       `json:"deletedCount,omitempty"`
 }
 
-type DeleteOrganizationResult = crud.DeletionResult
+type DeleteOrganizationResult = crud.OpResult[*DeleteOrganizationResultData]
 
 var getOrganizationByIdQueryType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "organization",
 	Action:    "getOrganizationById",
+}
+
+type GetOrganizationByIdQuery struct {
+	Id             model.Id `param:"id" json:"id"`
+	IncludeDeleted bool     `query:"includeDeleted" json:"includeDeleted,omitempty"`
+}
+
+func (GetOrganizationByIdQuery) CqrsRequestType() cqrs.RequestType {
+	return getOrganizationByIdQueryType
+}
+
+func (this GetOrganizationByIdQuery) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type GetOrganizationByIdResult = crud.OpResult[*domain.Organization]
@@ -147,10 +170,8 @@ var searchOrganizationsQueryType = cqrs.RequestType{
 }
 
 type SearchOrganizationsQuery struct {
-	Page           *int    `json:"page" query:"page"`
-	Size           *int    `json:"size" query:"size"`
-	Graph          *string `json:"graph" query:"graph"`
-	IncludeDeleted bool    `json:"includeDeleted" query:"includeDeleted"`
+	crud.SearchQuery
+	IncludeDeleted bool `json:"includeDeleted" query:"includeDeleted"`
 }
 
 func (SearchOrganizationsQuery) CqrsRequestType() cqrs.RequestType {

@@ -1,19 +1,22 @@
 package app
 
 import (
+	"time"
+
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
+	itEnum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 )
 
 func NewOrganizationServiceImpl(
-	enumSvc enum.EnumService,
+	enumSvc itEnum.EnumService,
 	orgRepo itOrg.OrganizationRepository,
 ) itOrg.OrganizationService {
 	return &OrganizationServiceImpl{
@@ -23,46 +26,68 @@ func NewOrganizationServiceImpl(
 }
 
 type OrganizationServiceImpl struct {
-	enumSvc enum.EnumService
+	enumSvc itEnum.EnumService
 	orgRepo itOrg.OrganizationRepository
 }
 
-func (this *OrganizationServiceImpl) CreateOrganization(ctx crud.Context, cmd itOrg.CreateOrganizationCommand) (result *itOrg.CreateOrganizationResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "create organization"); e != nil {
-			err = e
-		}
-	}()
+func (this *OrganizationServiceImpl) CreateOrganization(ctx crud.Context, cmd itOrg.CreateOrganizationCommand) (*itOrg.CreateOrganizationResult, error) {
+	result, err := crud.Create(ctx, crud.CreateParam[*domain.Organization, itOrg.CreateOrganizationCommand, itOrg.CreateOrganizationResult]{
+		Action:              "create organization",
+		Command:             cmd,
+		AssertBusinessRules: this.assertCreateRules,
+		RepoCreate:          this.orgRepo.Create,
+		SetDefault:          this.setOrgDefaults,
+		Sanitize:            this.sanitizeOrg,
+		ToFailureResult: func(vErrs *ft.ValidationErrors) *itOrg.CreateOrganizationResult {
+			return &itOrg.CreateOrganizationResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Organization) *itOrg.CreateOrganizationResult {
+			return &itOrg.CreateOrganizationResult{
+				HasData: true,
+				Data:    model,
+			}
+		},
+	})
 
-	org := cmd.ToOrganization()
-	this.setOrgDefaults(ctx, org)
+	return result, err
 
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = org.Validate(false)
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			this.sanitizeOrg(org)
-			return this.assertOrgUnique(ctx, org.Slug, vErrs)
-		}).
-		End()
-	ft.PanicOnErr(err)
+	// defer func() {
+	// 	if e := ft.RecoverPanicFailedTo(recover(), "create organization"); e != nil {
+	// 		err = e
+	// 	}
+	// }()
 
-	if vErrs.Count() > 0 {
-		return &itOrg.CreateOrganizationResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
+	// org := cmd.ToOrganization()
+	// this.setOrgDefaults(ctx, org)
 
-	org, err = this.orgRepo.Create(ctx, *org)
-	ft.PanicOnErr(err)
+	// flow := val.StartValidationFlow()
+	// vErrs, err := flow.
+	// 	Step(func(vErrs *ft.ValidationErrors) error {
+	// 		*vErrs = org.Validate(false)
+	// 		return nil
+	// 	}).
+	// 	Step(func(vErrs *ft.ValidationErrors) error {
+	// 		this.sanitizeOrg(org)
+	// 		return this.assertOrgUnique(ctx, org.Slug, vErrs)
+	// 	}).
+	// 	End()
+	// ft.PanicOnErr(err)
 
-	return &itOrg.CreateOrganizationResult{
-		Data:    org,
-		HasData: org != nil,
-	}, nil
+	// if vErrs.Count() > 0 {
+	// 	return &itOrg.CreateOrganizationResult{
+	// 		ClientError: vErrs.ToClientError(),
+	// 	}, nil
+	// }
+
+	// org, err = this.orgRepo.Create(ctx, *org)
+	// ft.PanicOnErr(err)
+
+	// return &itOrg.CreateOrganizationResult{
+	// 	Data:    org,
+	// 	HasData: org != nil,
+	// }, nil
 }
 
 func (this *OrganizationServiceImpl) UpdateOrganization(ctx crud.Context, cmd itOrg.UpdateOrganizationCommand) (result *itOrg.UpdateOrganizationResult, err error) {
@@ -72,7 +97,7 @@ func (this *OrganizationServiceImpl) UpdateOrganization(ctx crud.Context, cmd it
 		}
 	}()
 
-	updatedOrg := cmd.ToOrganization()
+	updatedOrg := cmd.ToDomainModel()
 
 	var dbOrg *domain.Organization
 	flow := val.StartValidationFlow()
@@ -82,16 +107,9 @@ func (this *OrganizationServiceImpl) UpdateOrganization(ctx crud.Context, cmd it
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			dbOrg, err = this.assertOrgExists(ctx, *updatedOrg.Slug, vErrs)
-			return err
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			this.assertCorrectEtag(*updatedOrg.Etag, *dbOrg.Etag, vErrs)
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
 			this.sanitizeOrg(updatedOrg)
-			return this.assertOrgUnique(ctx, cmd.NewSlug, vErrs)
+			dbOrg, err = this.assertCorrectOrg(ctx, updatedOrg, vErrs)
+			return err
 		}).
 		End()
 	ft.PanicOnErr(err)
@@ -106,7 +124,7 @@ func (this *OrganizationServiceImpl) UpdateOrganization(ctx crud.Context, cmd it
 
 	prevEtag := *updatedOrg.Etag
 	updatedOrg.Etag = model.NewEtag()
-	updatedOrg, err = this.orgRepo.Update(ctx, *updatedOrg, prevEtag)
+	updatedOrg, err = this.orgRepo.Update(ctx, updatedOrg, prevEtag)
 	ft.PanicOnErr(err)
 
 	return &itOrg.UpdateOrganizationResult{
@@ -115,40 +133,132 @@ func (this *OrganizationServiceImpl) UpdateOrganization(ctx crud.Context, cmd it
 	}, nil
 }
 
-func (this *OrganizationServiceImpl) assertOrgUnique(ctx crud.Context, newSlug *model.Slug, vErrs *ft.ValidationErrors) error {
-	if newSlug == nil {
-		return nil
-	}
+func (this *OrganizationServiceImpl) DeleteOrganization(ctx crud.Context, cmd itOrg.DeleteOrganizationCommand) (*itOrg.DeleteOrganizationResult, error) {
+	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Organization, itOrg.DeleteOrganizationCommand, itOrg.DeleteOrganizationResult]{
+		Action:       "delete organization",
+		Command:      cmd,
+		AssertExists: this.assertOrgExists,
+		RepoDelete: func(ctx crud.Context, model *domain.Organization) (int, error) {
+			return this.orgRepo.DeleteHard(ctx, itOrg.DeleteParam{Slug: *model.Slug})
+		},
+		ToFailureResult: func(vErrs *ft.ValidationErrors) *itOrg.DeleteOrganizationResult {
+			return &itOrg.DeleteOrganizationResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Organization, deletedCount int) *itOrg.DeleteOrganizationResult {
+			var del *int
+			if deletedCount > 0 {
+				del = &deletedCount
+			}
+			return &itOrg.DeleteOrganizationResult{
+				Data: &itOrg.DeleteOrganizationResultData{
+					Slug:         *model.Slug,
+					DeletedAt:    time.Now(),
+					DeletedCount: del,
+				},
+				HasData: true,
+			}
+		},
+	})
+
+	return result, err
+}
+
+func (this *OrganizationServiceImpl) GetOrganizationBySlug(ctx crud.Context, query itOrg.GetOrganizationBySlugQuery) (*itOrg.GetOrganizationBySlugResult, error) {
+	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.Organization, itOrg.GetOrganizationBySlugQuery, itOrg.GetOrganizationBySlugResult]{
+		Action:      "get organization by slug",
+		Query:       query,
+		RepoFindOne: this.getOrgBySlugFull,
+		ToFailureResult: func(vErrs *ft.ValidationErrors) *itOrg.GetOrganizationBySlugResult {
+			return &itOrg.GetOrganizationBySlugResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Organization) *itOrg.GetOrganizationBySlugResult {
+			return &itOrg.GetOrganizationBySlugResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
+	})
+
+	return result, err
+}
+
+func (this *OrganizationServiceImpl) GetOrganizationById(ctx crud.Context, query itOrg.GetOrganizationByIdQuery) (*itOrg.GetOrganizationByIdResult, error) {
+	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.Organization, itOrg.GetOrganizationByIdQuery, itOrg.GetOrganizationByIdResult]{
+		Action:      "get organization by id",
+		Query:       query,
+		RepoFindOne: this.getOrgByIdFull,
+		ToFailureResult: func(vErrs *ft.ValidationErrors) *itOrg.GetOrganizationByIdResult {
+			return &itOrg.GetOrganizationByIdResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Organization) *itOrg.GetOrganizationByIdResult {
+			return &itOrg.GetOrganizationByIdResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
+	})
+	return result, err
+}
+
+func (this *OrganizationServiceImpl) SearchOrganizations(ctx crud.Context, query itOrg.SearchOrganizationsQuery) (*itOrg.SearchOrganizationsResult, error) {
+	result, err := crud.Search(ctx, crud.SearchParam[domain.Organization, itOrg.SearchOrganizationsQuery, itOrg.SearchOrganizationsResult]{
+		Action: "search organizations",
+		Query:  query,
+		SetQueryDefaults: func(query *itOrg.SearchOrganizationsQuery) {
+			query.SetDefaults()
+		},
+		ParseSearchGraph: this.orgRepo.ParseSearchGraph,
+		RepoSearch: func(ctx crud.Context, query itOrg.SearchOrganizationsQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.Organization], error) {
+			return this.orgRepo.Search(ctx, itOrg.SearchParam{
+				Predicate:      predicate,
+				Order:          order,
+				Page:           *query.Page,
+				Size:           *query.Size,
+				IncludeDeleted: query.IncludeDeleted,
+			})
+		},
+		ToFailureResult: func(vErrs *ft.ValidationErrors) *itOrg.SearchOrganizationsResult {
+			return &itOrg.SearchOrganizationsResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(pagedResult *crud.PagedResult[domain.Organization]) *itOrg.SearchOrganizationsResult {
+			return &itOrg.SearchOrganizationsResult{
+				Data:    pagedResult,
+				HasData: pagedResult.Items != nil,
+			}
+		},
+	})
+
+	return result, err
+}
+
+// assert methods
+//---------------------------------------------------------------------------------------------------------------------------------------------//
+
+func (this *OrganizationServiceImpl) assertCreateRules(ctx crud.Context, org *domain.Organization, vErrs *ft.ValidationErrors) error {
 	dbOrg, err := this.orgRepo.FindBySlug(ctx, itOrg.GetOrganizationBySlugQuery{
-		Slug:           *newSlug,
-		IncludeDeleted: true,
+		Slug: *org.Slug,
 	})
 	if err != nil {
 		return err
 	}
 
 	if dbOrg != nil {
-		vErrs.AppendAlreadyExists("slug", "organization slug")
+		vErrs.Append("slug", "organization slug exists")
+		return nil
 	}
+
 	return nil
 }
 
-func (this *OrganizationServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *ft.ValidationErrors) {
-	if updatedEtag != dbEtag {
-		vErrs.AppendEtagMismatched()
-	}
-}
-
-func (this *OrganizationServiceImpl) assertOrgExists(ctx crud.Context, slug model.Slug, vErrs *ft.ValidationErrors) (dbOrg *domain.Organization, err error) {
-	dbOrg, err = this.orgRepo.FindBySlug(ctx, itOrg.GetOrganizationBySlugQuery{
-		Slug:           slug,
-		IncludeDeleted: true,
-	})
-	if dbOrg == nil {
-		vErrs.AppendNotFound("slug", "organization slug")
-	}
-	return
-}
+//---------------------------------------------------------------------------------------------------------------------------------------------//
 
 func (this *OrganizationServiceImpl) sanitizeOrg(org *domain.Organization) {
 	if org.Address != nil {
@@ -162,113 +272,86 @@ func (this *OrganizationServiceImpl) sanitizeOrg(org *domain.Organization) {
 	}
 }
 
-func (this *OrganizationServiceImpl) setOrgDefaults(ctx crud.Context, org *domain.Organization) {
+func (this *OrganizationServiceImpl) setOrgDefaults(org *domain.Organization) {
 	org.SetDefaults()
 	org.Status = util.ToPtr(domain.OrgStatusActive)
 }
 
-func (this *OrganizationServiceImpl) DeleteOrganization(ctx crud.Context, cmd itOrg.DeleteOrganizationCommand) (result *itOrg.DeleteOrganizationResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "delete organization"); e != nil {
-			err = e
-		}
-	}()
+// func (this *OrganizationServiceImpl) assertOrgUnique(ctx crud.Context, newSlug *model.Slug, vErrs *ft.ValidationErrors) error {
+// 	if newSlug == nil {
+// 		return nil
+// 	}
+// 	dbOrg, err := this.orgRepo.FindBySlug(ctx, itOrg.GetOrganizationBySlugQuery{
+// 		Slug:           *newSlug,
+// 		IncludeDeleted: true,
+// 	})
+// 	if err != nil {
+// 		return err
+// 	}
 
-	var dbOrg *domain.Organization
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = cmd.Validate()
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			dbOrg, err = this.assertOrgExists(ctx, cmd.Slug, vErrs)
-			return err
-		}).
-		End()
-	ft.PanicOnErr(err)
+// 	if dbOrg != nil {
+// 		vErrs.AppendAlreadyExists("slug", "organization slug")
+// 	}
+// 	return nil
+// }
 
-	if vErrs.Count() > 0 {
-		return &itOrg.DeleteOrganizationResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
+func (this *OrganizationServiceImpl) assertCorrectOrg(ctx crud.Context, org *domain.Organization, vErrs *ft.ValidationErrors) (*domain.Organization, error) {
+	dbOrg, err := this.assertOrgExists(ctx, org, vErrs)
+	if err != nil {
+		return nil, err
 	}
 
-	deletedCount, err := this.orgRepo.DeleteHard(ctx, *dbOrg.Id)
-	ft.PanicOnErr(err)
-
-	// In case the org was deleted by another concurrent process,
-	// right after checking org existence.
-	if deletedCount == 0 {
-		vErrs.AppendNotFound("slug", "organization slug")
+	if dbOrg == nil {
+		vErrs.Append("slug", "organization slug not found")
+		return nil, nil
 	}
 
-	return crud.NewSuccessDeletionResult(*dbOrg.Id, &deletedCount), nil
+	if org.Etag == nil || *dbOrg.Etag != *org.Etag {
+		vErrs.Append("etag", "invalid etag")
+		return nil, nil
+	}
+
+	return dbOrg, nil
 }
 
-func (this *OrganizationServiceImpl) GetOrganizationBySlug(ctx crud.Context, query itOrg.GetOrganizationBySlugQuery) (result *itOrg.GetOrganizationBySlugResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "get organization by slug"); e != nil {
-			err = e
-		}
-	}()
-
-	var dbOrg *domain.Organization
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = query.Validate()
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			dbOrg, err = this.assertOrgExists(ctx, query.Slug, vErrs)
-			return err
-		}).
-		End()
-	ft.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &itOrg.GetOrganizationBySlugResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	return &itOrg.GetOrganizationBySlugResult{
-		Data:    dbOrg,
-		HasData: dbOrg != nil,
-	}, nil
-}
-
-func (this *OrganizationServiceImpl) SearchOrganizations(ctx crud.Context, query itOrg.SearchOrganizationsQuery) (result *itOrg.SearchOrganizationsResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "search organizations"); e != nil {
-			err = e
-		}
-	}()
-
-	query.SetDefaults()
-	vErrsModel := query.Validate()
-	predicate, order, vErrsGraph := this.orgRepo.ParseSearchGraph(query.Graph)
-
-	vErrsModel.Merge(vErrsGraph)
-
-	if vErrsModel.Count() > 0 {
-		return &itOrg.SearchOrganizationsResult{
-			ClientError: vErrsModel.ToClientError(),
-		}, nil
-	}
-
-	orgs, err := this.orgRepo.Search(ctx, itOrg.SearchParam{
-		Predicate:      predicate,
-		Order:          order,
-		Page:           *query.Page,
-		Size:           *query.Size,
-		IncludeDeleted: query.IncludeDeleted,
+func (this *OrganizationServiceImpl) assertOrgExists(ctx crud.Context, org *domain.Organization, vErrs *ft.ValidationErrors) (dbOrg *domain.Organization, err error) {
+	dbOrg, err = this.orgRepo.FindBySlug(ctx, itOrg.GetOrganizationBySlugQuery{
+		Slug:           *org.Slug,
+		IncludeDeleted: true,
 	})
-	ft.PanicOnErr(err)
+	if err != nil {
+		return nil, err
+	}
 
-	return &itOrg.SearchOrganizationsResult{
-		Data:    orgs,
-		HasData: orgs.Items != nil,
-	}, nil
+	if dbOrg == nil {
+		vErrs.Append("slug", "organization slug not found")
+		return nil, nil
+	}
+
+	return dbOrg, nil
+}
+
+func (this *OrganizationServiceImpl) getOrgBySlugFull(ctx crud.Context, query itOrg.GetOrganizationBySlugQuery, vErrs *ft.ValidationErrors) (dbOrg *domain.Organization, err error) {
+	dbOrg, err = this.orgRepo.FindBySlug(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	if dbOrg == nil {
+		vErrs.Append("slug", "organization slug not found")
+	}
+	return dbOrg, err
+}
+
+func (this *OrganizationServiceImpl) getOrgByIdFull(ctx crud.Context, query itOrg.GetOrganizationByIdQuery, vErrs *ft.ValidationErrors) (dbOrg *domain.Organization, err error) {
+	dbOrg, err = this.orgRepo.FindById(ctx, query.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	if dbOrg == nil {
+		vErrs.Append("id", "organization not found")
+	}
+
+	return dbOrg, err
 }
