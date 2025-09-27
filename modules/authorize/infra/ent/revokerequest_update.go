@@ -124,20 +124,6 @@ func (rru *RevokeRequestUpdate) ClearTargetSuiteName() *RevokeRequestUpdate {
 	return rru
 }
 
-// SetStatus sets the "status" field.
-func (rru *RevokeRequestUpdate) SetStatus(r revokerequest.Status) *RevokeRequestUpdate {
-	rru.mutation.SetStatus(r)
-	return rru
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (rru *RevokeRequestUpdate) SetNillableStatus(r *revokerequest.Status) *RevokeRequestUpdate {
-	if r != nil {
-		rru.SetStatus(*r)
-	}
-	return rru
-}
-
 // AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by IDs.
 func (rru *RevokeRequestUpdate) AddPermissionHistoryIDs(ids ...string) *RevokeRequestUpdate {
 	rru.mutation.AddPermissionHistoryIDs(ids...)
@@ -256,20 +242,7 @@ func (rru *RevokeRequestUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (rru *RevokeRequestUpdate) check() error {
-	if v, ok := rru.mutation.Status(); ok {
-		if err := revokerequest.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RevokeRequest.status": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (rru *RevokeRequestUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := rru.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(revokerequest.Table, revokerequest.Columns, sqlgraph.NewFieldSpec(revokerequest.FieldID, field.TypeString))
 	if ps := rru.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -298,9 +271,6 @@ func (rru *RevokeRequestUpdate) sqlSave(ctx context.Context) (n int, err error) 
 	}
 	if rru.mutation.TargetSuiteNameCleared() {
 		_spec.ClearField(revokerequest.FieldTargetSuiteName, field.TypeString)
-	}
-	if value, ok := rru.mutation.Status(); ok {
-		_spec.SetField(revokerequest.FieldStatus, field.TypeEnum, value)
 	}
 	if rru.mutation.PermissionHistoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -519,20 +489,6 @@ func (rruo *RevokeRequestUpdateOne) ClearTargetSuiteName() *RevokeRequestUpdateO
 	return rruo
 }
 
-// SetStatus sets the "status" field.
-func (rruo *RevokeRequestUpdateOne) SetStatus(r revokerequest.Status) *RevokeRequestUpdateOne {
-	rruo.mutation.SetStatus(r)
-	return rruo
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (rruo *RevokeRequestUpdateOne) SetNillableStatus(r *revokerequest.Status) *RevokeRequestUpdateOne {
-	if r != nil {
-		rruo.SetStatus(*r)
-	}
-	return rruo
-}
-
 // AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by IDs.
 func (rruo *RevokeRequestUpdateOne) AddPermissionHistoryIDs(ids ...string) *RevokeRequestUpdateOne {
 	rruo.mutation.AddPermissionHistoryIDs(ids...)
@@ -664,20 +620,7 @@ func (rruo *RevokeRequestUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (rruo *RevokeRequestUpdateOne) check() error {
-	if v, ok := rruo.mutation.Status(); ok {
-		if err := revokerequest.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RevokeRequest.status": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (rruo *RevokeRequestUpdateOne) sqlSave(ctx context.Context) (_node *RevokeRequest, err error) {
-	if err := rruo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(revokerequest.Table, revokerequest.Columns, sqlgraph.NewFieldSpec(revokerequest.FieldID, field.TypeString))
 	id, ok := rruo.mutation.ID()
 	if !ok {
@@ -723,9 +666,6 @@ func (rruo *RevokeRequestUpdateOne) sqlSave(ctx context.Context) (_node *RevokeR
 	}
 	if rruo.mutation.TargetSuiteNameCleared() {
 		_spec.ClearField(revokerequest.FieldTargetSuiteName, field.TypeString)
-	}
-	if value, ok := rruo.mutation.Status(); ok {
-		_spec.SetField(revokerequest.FieldStatus, field.TypeEnum, value)
 	}
 	if rruo.mutation.PermissionHistoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -7429,7 +7429,6 @@ type RevokeRequestMutation struct {
 	target_type                 *revokerequest.TargetType
 	target_role_name            *string
 	target_suite_name           *string
-	status                      *revokerequest.Status
 	clearedFields               map[string]struct{}
 	permission_histories        map[string]struct{}
 	removedpermission_histories map[string]struct{}
@@ -8057,42 +8056,6 @@ func (m *RevokeRequestMutation) ResetTargetSuiteName() {
 	delete(m.clearedFields, revokerequest.FieldTargetSuiteName)
 }
 
-// SetStatus sets the "status" field.
-func (m *RevokeRequestMutation) SetStatus(r revokerequest.Status) {
-	m.status = &r
-}
-
-// Status returns the value of the "status" field in the mutation.
-func (m *RevokeRequestMutation) Status() (r revokerequest.Status, exists bool) {
-	v := m.status
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldStatus returns the old "status" field's value of the RevokeRequest entity.
-// If the RevokeRequest object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RevokeRequestMutation) OldStatus(ctx context.Context) (v revokerequest.Status, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
-	}
-	return oldValue.Status, nil
-}
-
-// ResetStatus resets all changes to the "status" field.
-func (m *RevokeRequestMutation) ResetStatus() {
-	m.status = nil
-}
-
 // AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by ids.
 func (m *RevokeRequestMutation) AddPermissionHistoryIDs(ids ...string) {
 	if m.permission_histories == nil {
@@ -8261,7 +8224,7 @@ func (m *RevokeRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevokeRequestMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 12)
 	if m.attachment_url != nil {
 		fields = append(fields, revokerequest.FieldAttachmentURL)
 	}
@@ -8298,9 +8261,6 @@ func (m *RevokeRequestMutation) Fields() []string {
 	if m.target_suite_name != nil {
 		fields = append(fields, revokerequest.FieldTargetSuiteName)
 	}
-	if m.status != nil {
-		fields = append(fields, revokerequest.FieldStatus)
-	}
 	return fields
 }
 
@@ -8333,8 +8293,6 @@ func (m *RevokeRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.TargetSuiteID()
 	case revokerequest.FieldTargetSuiteName:
 		return m.TargetSuiteName()
-	case revokerequest.FieldStatus:
-		return m.Status()
 	}
 	return nil, false
 }
@@ -8368,8 +8326,6 @@ func (m *RevokeRequestMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldTargetSuiteID(ctx)
 	case revokerequest.FieldTargetSuiteName:
 		return m.OldTargetSuiteName(ctx)
-	case revokerequest.FieldStatus:
-		return m.OldStatus(ctx)
 	}
 	return nil, fmt.Errorf("unknown RevokeRequest field %s", name)
 }
@@ -8462,13 +8418,6 @@ func (m *RevokeRequestMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTargetSuiteName(v)
-		return nil
-	case revokerequest.FieldStatus:
-		v, ok := value.(revokerequest.Status)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetStatus(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RevokeRequest field %s", name)
@@ -8593,9 +8542,6 @@ func (m *RevokeRequestMutation) ResetField(name string) error {
 		return nil
 	case revokerequest.FieldTargetSuiteName:
 		m.ResetTargetSuiteName()
-		return nil
-	case revokerequest.FieldStatus:
-		m.ResetStatus()
 		return nil
 	}
 	return fmt.Errorf("unknown RevokeRequest field %s", name)

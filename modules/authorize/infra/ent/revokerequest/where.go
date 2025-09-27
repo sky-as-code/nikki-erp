@@ -840,26 +840,6 @@ func TargetSuiteNameContainsFold(v string) predicate.RevokeRequest {
 	return predicate.RevokeRequest(sql.FieldContainsFold(FieldTargetSuiteName, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v Status) predicate.RevokeRequest {
-	return predicate.RevokeRequest(sql.FieldEQ(FieldStatus, v))
-}
-
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v Status) predicate.RevokeRequest {
-	return predicate.RevokeRequest(sql.FieldNEQ(FieldStatus, v))
-}
-
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...Status) predicate.RevokeRequest {
-	return predicate.RevokeRequest(sql.FieldIn(FieldStatus, vs...))
-}
-
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...Status) predicate.RevokeRequest {
-	return predicate.RevokeRequest(sql.FieldNotIn(FieldStatus, vs...))
-}
-
 // HasPermissionHistories applies the HasEdge predicate on the "permission_histories" edge.
 func HasPermissionHistories() predicate.RevokeRequest {
 	return predicate.RevokeRequest(func(s *sql.Selector) {

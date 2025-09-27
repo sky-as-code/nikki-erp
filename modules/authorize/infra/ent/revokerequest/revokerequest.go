@@ -39,8 +39,6 @@ const (
 	FieldTargetSuiteID = "target_suite_id"
 	// FieldTargetSuiteName holds the string denoting the target_suite_name field in the database.
 	FieldTargetSuiteName = "target_suite_name"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
 	// EdgePermissionHistories holds the string denoting the permission_histories edge name in mutations.
 	EdgePermissionHistories = "permission_histories"
 	// EdgeRole holds the string denoting the role edge name in mutations.
@@ -87,7 +85,6 @@ var Columns = []string{
 	FieldTargetRoleName,
 	FieldTargetSuiteID,
 	FieldTargetSuiteName,
-	FieldStatus,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -148,30 +145,6 @@ func TargetTypeValidator(tt TargetType) error {
 		return nil
 	default:
 		return fmt.Errorf("revokerequest: invalid enum value for target_type field: %q", tt)
-	}
-}
-
-// Status defines the type for the "status" enum field.
-type Status string
-
-// Status values.
-const (
-	StatusPending  Status = "pending"
-	StatusApproved Status = "approved"
-	StatusRejected Status = "rejected"
-)
-
-func (s Status) String() string {
-	return string(s)
-}
-
-// StatusValidator is a validator for the "status" field enum values. It is called by the builders before save.
-func StatusValidator(s Status) error {
-	switch s {
-	case StatusPending, StatusApproved, StatusRejected:
-		return nil
-	default:
-		return fmt.Errorf("revokerequest: invalid enum value for status field: %q", s)
 	}
 }
 
@@ -241,11 +214,6 @@ func ByTargetSuiteID(opts ...sql.OrderTermOption) OrderOption {
 // ByTargetSuiteName orders the results by the target_suite_name field.
 func ByTargetSuiteName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTargetSuiteName, opts...).ToFunc()
-}
-
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
 // ByPermissionHistoriesCount orders the results by permission_histories count.

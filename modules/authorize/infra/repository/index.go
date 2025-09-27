@@ -12,16 +12,16 @@ import (
 
 func InitRepositories() error {
 	err := stdErr.Join(
-		orm.RegisterEntity(BuildResourceDescriptor()),
 		orm.RegisterEntity(BuildActionDescriptor()),
-		orm.RegisterEntity(BuildEntitlementDescriptor()),
 		orm.RegisterEntity(BuildEntitlementAssignmentDescriptor()),
-		orm.RegisterEntity(BuildRoleDescriptor()),
-		orm.RegisterEntity(BuildRoleSuiteDescriptor()),
+		orm.RegisterEntity(BuildEntitlementDescriptor()),
 		orm.RegisterEntity(BuildGrantRequestDescriptor()),
 		orm.RegisterEntity(BuildGrantResponseDescriptor()),
 		orm.RegisterEntity(BuildPermissionHistoryDescriptor()),
+		orm.RegisterEntity(BuildResourceDescriptor()),
 		orm.RegisterEntity(BuildRevokeRequestDescriptor()),
+		orm.RegisterEntity(BuildRoleDescriptor()),
+		orm.RegisterEntity(BuildRoleSuiteDescriptor()),
 	)
 	if err != nil {
 		return err
@@ -29,16 +29,16 @@ func InitRepositories() error {
 
 	err = stdErr.Join(
 		deps.Register(newAuthorizeClient),
-		deps.Register(NewResourceEntRepository),
 		deps.Register(NewActionEntRepository),
-		deps.Register(NewEntitlementEntRepository),
 		deps.Register(NewEntitlementAssignmentEntRepository),
-		deps.Register(NewRoleEntRepository),
-		deps.Register(NewRoleSuiteEntRepository),
+		deps.Register(NewEntitlementEntRepository),
 		deps.Register(NewGrantRequestEntRepository),
 		deps.Register(NewGrantResponseEntRepository),
 		deps.Register(NewPermissionHistoryEntRepository),
+		deps.Register(NewResourceEntRepository),
 		deps.Register(NewRevokeRequestEntRepository),
+		deps.Register(NewRoleEntRepository),
+		deps.Register(NewRoleSuiteEntRepository),
 	)
 
 	return err
