@@ -151,12 +151,6 @@ func (rrc *RevokeRequestCreate) SetNillableTargetSuiteName(s *string) *RevokeReq
 	return rrc
 }
 
-// SetStatus sets the "status" field.
-func (rrc *RevokeRequestCreate) SetStatus(r revokerequest.Status) *RevokeRequestCreate {
-	rrc.mutation.SetStatus(r)
-	return rrc
-}
-
 // SetID sets the "id" field.
 func (rrc *RevokeRequestCreate) SetID(s string) *RevokeRequestCreate {
 	rrc.mutation.SetID(s)
@@ -287,14 +281,6 @@ func (rrc *RevokeRequestCreate) check() error {
 			return &ValidationError{Name: "target_type", err: fmt.Errorf(`ent: validator failed for field "RevokeRequest.target_type": %w`, err)}
 		}
 	}
-	if _, ok := rrc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "RevokeRequest.status"`)}
-	}
-	if v, ok := rrc.mutation.Status(); ok {
-		if err := revokerequest.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "RevokeRequest.status": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -369,10 +355,6 @@ func (rrc *RevokeRequestCreate) createSpec() (*RevokeRequest, *sqlgraph.CreateSp
 	if value, ok := rrc.mutation.TargetSuiteName(); ok {
 		_spec.SetField(revokerequest.FieldTargetSuiteName, field.TypeString, value)
 		_node.TargetSuiteName = &value
-	}
-	if value, ok := rrc.mutation.Status(); ok {
-		_spec.SetField(revokerequest.FieldStatus, field.TypeEnum, value)
-		_node.Status = value
 	}
 	if nodes := rrc.mutation.PermissionHistoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

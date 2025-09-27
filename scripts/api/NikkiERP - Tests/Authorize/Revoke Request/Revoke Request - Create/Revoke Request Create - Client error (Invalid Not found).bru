@@ -1,0 +1,121 @@
+meta {
+  name: Revoke Request Create - Client error (Invalid Not found)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/revoke-request
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+  }
+}
+
+script:post-response {
+  // Post-response for Create Revoke Request
+  let body;
+  let isJson = true;
+  
+  try {
+      body = res.getBody();
+      console.log("📥 Response body:", body);
+  } catch (e) {
+      isJson = false;
+      expect.fail("❌ Response is not valid JSON");
+  }
+  
+  const statusCode = res.getStatus();
+  
+  // ================= SUCCESS =================
+  if (statusCode === 201 && isJson) {
+      test("✅ Status code is 201 Created", function () {
+          expect(statusCode).to.eql(201);
+      });
+  
+      test("✅ Response has required fields", function () {
+          expect(body).to.have.property("id");
+          expect(body).to.have.property("etag");
+          expect(body).to.have.property("createdAt");
+      });
+  
+      bru.setVar("revoke_req_id", body.id);
+      bru.setVar("revoke_req_etag", body.etag);
+      console.log("✅ Saved revoke_req_id and revoke_req_etag");
+  }
+  
+  // ================= VALIDATION ERRORS =================
+  else if (statusCode === 400 && isJson && body.code === "validation_error") {
+      test("❌ Validation error received", function () {
+          expect(body).to.have.property("code", "validation_error");
+          expect(body.details).to.be.an("object");
+      });
+  
+      const details = body.details || {};
+      console.warn("⚠️ Validation details:", JSON.stringify(details, null, 2));
+  
+      // ---------- Case 1: Invalid fields (all required missing) ----------
+      if (
+          (details.attachmentUrl && /is required|cannot be blank/i.test(details.attachmentUrl)) &&
+          (details.comment && /is required|cannot be blank/i.test(details.comment)) &&
+          (details.receiverId && /cannot be blank|is required/i.test(details.receiverId)) &&
+          (details.receiverType && /cannot be blank|is required/i.test(details.receiverType)) &&
+          (details.requestorId && /cannot be blank|is required/i.test(details.requestorId)) &&
+          (details.targetRef && /cannot be blank|is required/i.test(details.targetRef)) &&
+          (details.targetType && /cannot be blank|is required/i.test(details.targetType))
+      ) {
+          test("❌ Case: invalid_fields (all required fields missing)", function () {
+              expect(Object.keys(details)).to.include.members([
+                  "attachmentUrl",
+                  "comment",
+                  "receiverId",
+                  "receiverType",
+                  "requestorId",
+                  "targetRef",
+                  "targetType"
+              ]);
+              [
+                  "attachmentUrl",
+                  "comment",
+                  "receiverId",
+                  "receiverType",
+                  "requestorId",
+                  "targetRef",
+                  "targetType"
+              ].forEach(k => {
+                  expect(details[k]).to.match(/is required|cannot be blank/i);
+              });
+          });
+      }
+  
+      // ---------- Case 2: Not Exist Access (target not found) ----------
+      else if (details.target && /not found|not existing|does not exist/i.test(details.target)) {
+          test("❌ Case: not_exist_access (target not found)", function () {
+              expect(details).to.have.property("target");
+              expect(details.target).to.match(/not found|not existing|does not exist/i);
+          });
+      }
+  
+      // ---------- Unknown validation shape ----------
+      else {
+          test("⚠️ Unrecognized validation error shape", function () {
+              expect.fail("Validation error did not match any known case. Details: " + JSON.stringify(details));
+          });
+      }
+  }
+  
+  // ================= UNEXPECTED (non-201/non-400) =================
+  else {
+      test("⚠️ Unexpected response", function () {
+          expect.fail(`Unexpected status ${statusCode}`);
+      });
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

@@ -298,3 +298,13 @@ func entToPermissionHistory(dbPermissionHistory *ent.PermissionHistory) *domain.
 }
 
 // END: PermissionHistory
+
+// START: RevokeRequest
+func entToRevokeRequest(dbRevokeRequest *ent.RevokeRequest) *domain.RevokeRequest {
+	revokeRequest := &domain.RevokeRequest{}
+	model.MustCopy(dbRevokeRequest, revokeRequest)
+
+	return revokeRequest
+}
+
+// END:

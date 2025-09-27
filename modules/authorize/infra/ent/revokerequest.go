@@ -43,8 +43,6 @@ type RevokeRequest struct {
 	TargetSuiteID *string `json:"target_suite_id,omitempty"`
 	// Role suite name must be copied here before the role suite is deleted
 	TargetSuiteName *string `json:"target_suite_name,omitempty"`
-	// Status holds the value of the "status" field.
-	Status revokerequest.Status `json:"status,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RevokeRequestQuery when eager-loading is set.
 	Edges        RevokeRequestEdges `json:"edges"`
@@ -100,7 +98,7 @@ func (*RevokeRequest) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case revokerequest.FieldID, revokerequest.FieldAttachmentURL, revokerequest.FieldComment, revokerequest.FieldCreatedBy, revokerequest.FieldEtag, revokerequest.FieldReceiverID, revokerequest.FieldReceiverType, revokerequest.FieldTargetType, revokerequest.FieldTargetRoleID, revokerequest.FieldTargetRoleName, revokerequest.FieldTargetSuiteID, revokerequest.FieldTargetSuiteName, revokerequest.FieldStatus:
+		case revokerequest.FieldID, revokerequest.FieldAttachmentURL, revokerequest.FieldComment, revokerequest.FieldCreatedBy, revokerequest.FieldEtag, revokerequest.FieldReceiverID, revokerequest.FieldReceiverType, revokerequest.FieldTargetType, revokerequest.FieldTargetRoleID, revokerequest.FieldTargetRoleName, revokerequest.FieldTargetSuiteID, revokerequest.FieldTargetSuiteName:
 			values[i] = new(sql.NullString)
 		case revokerequest.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -203,12 +201,6 @@ func (rr *RevokeRequest) assignValues(columns []string, values []any) error {
 				rr.TargetSuiteName = new(string)
 				*rr.TargetSuiteName = value.String
 			}
-		case revokerequest.FieldStatus:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value.Valid {
-				rr.Status = revokerequest.Status(value.String)
-			}
 		default:
 			rr.selectValues.Set(columns[i], values[i])
 		}
@@ -307,9 +299,6 @@ func (rr *RevokeRequest) String() string {
 		builder.WriteString("target_suite_name=")
 		builder.WriteString(*v)
 	}
-	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(fmt.Sprintf("%v", rr.Status))
 	builder.WriteByte(')')
 	return builder.String()
 }

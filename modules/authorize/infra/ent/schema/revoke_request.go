@@ -70,9 +70,6 @@ func (RevokeRequestMixin) Fields() []ent.Field {
 			Nillable().
 			Optional().
 			Comment("Role suite name must be copied here before the role suite is deleted"),
-
-		field.Enum("status").
-			Values("pending", "approved", "rejected"),
 	}
 }
 
