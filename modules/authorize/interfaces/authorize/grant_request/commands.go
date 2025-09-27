@@ -15,6 +15,8 @@ func init() {
 	var req cqrs.Request
 	req = (*CreateGrantRequestCommand)(nil)
 	req = (*GetGrantRequestQuery)(nil)
+	req = (*CancelGrantRequestCommand)(nil)
+	req = (*DeleteGrantRequestCommand)(nil)
 	req = (*RespondToGrantRequestCommand)(nil)
 	util.Unused(req)
 }
@@ -120,6 +122,33 @@ func (CancelGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
 type CancelGrantRequestResult = crud.OpResult[*domain.GrantRequest]
 
 // END: CancelGrantRequestCommand
+
+// START: DeleteGrantRequestCommand
+var deleteGrantRequestCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "grant_request",
+	Action:    "delete",
+}
+
+type DeleteGrantRequestCommand struct {
+	Id model.Id `json:"id" param:"id"`
+}
+
+func (this DeleteGrantRequestCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+func (DeleteGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteGrantRequestCommandType
+}
+
+type DeleteGrantRequestResult = crud.DeletionResult
+
+// END: DeleteGrantRequestCommand
 
 // START: RespondToGrantRequestCommand
 var respondToGrantRequestCommandType = cqrs.RequestType{

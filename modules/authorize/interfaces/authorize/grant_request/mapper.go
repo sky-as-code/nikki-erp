@@ -18,3 +18,16 @@ func (this *CancelGrantRequestCommand) ToGrantRequest() *domain.GrantRequest {
 
 	return grantRequest
 }
+
+func (this DeleteGrantRequestCommand) ToDomainModel() *domain.GrantRequest {
+	grantRequest := &domain.GrantRequest{}
+	grantRequest.Id = &this.Id
+	return grantRequest
+}
+
+func (this *RespondToGrantRequestCommand) ToGrantRequest() *domain.GrantRequest {
+	grantRequest := &domain.GrantRequest{}
+	model.MustCopy(this, grantRequest)
+	
+	return grantRequest
+}
