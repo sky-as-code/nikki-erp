@@ -5,6 +5,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
@@ -255,6 +256,66 @@ func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx crud.Context, cmd
 		Data:    respondGrantRequest,
 		HasData: true,
 	}, nil
+}
+
+func (this *GrantRequestServiceImpl) GetGrantRequestById(ctx crud.Context, query itGrantRequest.GetGrantRequestByIdQuery) (*itGrantRequest.GetGrantRequestByIdResult, error) {
+	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.GrantRequest, itGrantRequest.GetGrantRequestByIdQuery, itGrantRequest.GetGrantRequestByIdResult]{
+		Action:      "get user by Id",
+		Query:       query,
+		RepoFindOne: this.getGrantRequestById,
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *itGrantRequest.GetGrantRequestByIdResult {
+			return &itGrantRequest.GetGrantRequestByIdResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.GrantRequest) *itGrantRequest.GetGrantRequestByIdResult {
+			return &itGrantRequest.GetGrantRequestByIdResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
+	})
+
+	return result, err
+}
+
+func (this *GrantRequestServiceImpl) SearchGrantRequests(ctx crud.Context, query itGrantRequest.SearchGrantRequestsQuery) (*itGrantRequest.SearchGrantRequestsResult, error) {
+	result, err := crud.Search(ctx, crud.SearchParam[domain.GrantRequest, itGrantRequest.SearchGrantRequestsQuery, itGrantRequest.SearchGrantRequestsResult]{
+		Action: "search grant requests",
+		Query:  query,
+		SetQueryDefaults: func(query *itGrantRequest.SearchGrantRequestsQuery) {
+			query.SetDefaults()
+		},
+		ParseSearchGraph: this.grantRequestRepo.ParseSearchGraph,
+		RepoSearch: func(ctx crud.Context, query itGrantRequest.SearchGrantRequestsQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.GrantRequest], error) {
+			result, err := this.grantRequestRepo.Search(ctx, itGrantRequest.SearchParam{
+				Predicate: predicate,
+				Order:     order,
+				Page:      *query.Page,
+				Size:      *query.Size,
+			})
+
+			for i := range result.Items {
+				err := this.populateGrantRequestDetails(ctx, &result.Items[i])
+				fault.PanicOnErr(err)
+			}
+
+			return result, err
+		},
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *itGrantRequest.SearchGrantRequestsResult {
+			return &itGrantRequest.SearchGrantRequestsResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(pagedResult *crud.PagedResult[domain.GrantRequest]) *itGrantRequest.SearchGrantRequestsResult {
+			return &itGrantRequest.SearchGrantRequestsResult{
+				Data:    pagedResult,
+				HasData: pagedResult.Items != nil,
+			}
+		},
+	})
+
+	return result, err
 }
 
 func (this *GrantRequestServiceImpl) setGrantRequestDefaults(grantRequest *domain.GrantRequest) {
@@ -853,7 +914,6 @@ func (this *GrantRequestServiceImpl) createRoleSuiteUser(ctx crud.Context, reque
 
 // 	return permissionHistory
 // }
-
 func (this *GrantRequestServiceImpl) processDeleteGrantRequest(ctx crud.Context, dbGrantRequest *domain.GrantRequest) (int, error) {
 	tx, err := this.grantRequestRepo.BeginTransaction(ctx)
 	fault.PanicOnErr(err)
@@ -900,4 +960,76 @@ func (this *GrantRequestServiceImpl) processDeleteGrantRequest(ctx crud.Context,
 	}
 
 	return deletion, err
+}
+
+func (this *GrantRequestServiceImpl) getGrantRequestById(ctx crud.Context, query itGrantRequest.GetGrantRequestByIdQuery, vErrs *fault.ValidationErrors) (dbGrantRequest *domain.GrantRequest, err error) {
+	dbGrantRequest, err = this.grantRequestRepo.FindById(ctx, query)
+	fault.PanicOnErr(err)
+
+	if dbGrantRequest == nil {
+		vErrs.AppendNotFound("id", "grant request id")
+		return
+	}
+
+	err = this.populateGrantRequestDetails(ctx, dbGrantRequest)
+	fault.PanicOnErr(err)
+
+	return
+}
+
+func (this *GrantRequestServiceImpl) populateGrantRequestDetails(ctx crud.Context, dbGrantRequest *domain.GrantRequest) (err error) {
+	dbGrantRequest.RequestorName, err = this.getUserDisplayName(ctx, *dbGrantRequest.RequestorId, "user", nil)
+	fault.PanicOnErr(err)
+
+	if *dbGrantRequest.ReceiverType == domain.ReceiverTypeGroup {
+		dbGrantRequest.ReceiverName, err = this.getUserDisplayName(ctx, *dbGrantRequest.ReceiverId, "group", nil)
+	} else {
+		dbGrantRequest.ReceiverName, err = this.getUserDisplayName(ctx, *dbGrantRequest.ReceiverId, "user", nil)
+	}
+	fault.PanicOnErr(err)
+
+	for i, grantResponse := range dbGrantRequest.GrantResponses {
+		dbGrantRequest.GrantResponses[i].ResponderName, err = this.getUserDisplayName(ctx, *grantResponse.ResponderId, "user", nil)
+		fault.PanicOnErr(err)
+	}
+
+	return
+}
+
+func (this *GrantRequestServiceImpl) getUserDisplayName(ctx crud.Context, id model.Id, entityType string, vErrs *fault.ValidationErrors) (*string, error) {
+	switch entityType {
+	case "user":
+		cmd := &itUser.GetUserByIdQuery{Id: id}
+		res := itUser.GetUserByIdResult{}
+		err := this.cqrsBus.Request(ctx, *cmd, &res)
+		fault.PanicOnErr(err)
+
+		if res.ClientError != nil {
+			vErrs.MergeClientError(res.ClientError)
+			return nil, nil
+		}
+		if res.Data == nil {
+			return nil, nil
+		}
+
+		return res.Data.DisplayName, nil
+
+	case "group":
+		cmd := &itGroup.GetGroupByIdQuery{Id: id}
+		res := itGroup.GetGroupByIdResult{}
+		err := this.cqrsBus.Request(ctx, *cmd, &res)
+		fault.PanicOnErr(err)
+
+		if res.ClientError != nil {
+			vErrs.MergeClientError(res.ClientError)
+			return nil, nil
+		}
+		if res.Data == nil {
+			return nil, nil
+		}
+
+		return res.Data.Name, nil
+	}
+
+	return nil, nil
 }

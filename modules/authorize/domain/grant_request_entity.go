@@ -15,14 +15,16 @@ type GrantRequest struct {
 	Comment         *string                 `json:"comment,omitempty"`
 	ApprovalId      *model.Id               `json:"approvalId,omitempty"`
 	RequestorId     *model.Id               `json:"requestorId,omitempty"`
-	ReceiverId      *model.Id               `json:"receiverId,omitempty"`
+	RequestorName   *string                 `json:"requestorName,omitempty"`
 	ReceiverType    *ReceiverType           `json:"receiverType,omitempty"`
+	ReceiverId      *model.Id               `json:"receiverId,omitempty"`
+	ReceiverName    *string                 `json:"receiverName,omitempty"`
 	TargetType      *GrantRequestTargetType `json:"targetType,omitempty"`
 	TargetRef       *model.Id               `json:"targetRef,omitempty"`
 	ResponseId      *model.Id               `json:"responseId,omitempty"` // Only set after response
 	Status          *GrantRequestStatus     `json:"status,omitempty"`
-	TargetRoleName  *string                 `json:"targetRoleName,omitempty"`
-	TargetSuiteName *string                 `json:"targetSuiteName,omitempty"`
+	TargetRoleName  *string                 `json:"targetRoleName,omitempty"`  // Set after role is deleted
+	TargetSuiteName *string                 `json:"targetSuiteName,omitempty"` // Set after role suite is deleted
 
 	Role           *Role           `json:"role,omitempty" model:"-"` // TODO: Handle copy
 	RoleSuite      *RoleSuite      `json:"roleSuite,omitempty" model:"-"`

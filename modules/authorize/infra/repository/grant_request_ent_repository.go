@@ -3,6 +3,7 @@ package repository
 import (
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
@@ -51,7 +52,10 @@ func (this *GrantRequestEntRepository) Create(ctx crud.Context, grantRequest dom
 
 func (this *GrantRequestEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.GrantRequest, error) {
 	query := this.client.GrantRequest.Query().
-		Where(entGrantRequest.IDEQ(param.Id))
+		Where(entGrantRequest.IDEQ(param.Id)).
+		WithGrantResponses().
+		WithRole().
+		WithRoleSuite()
 
 	return database.FindOne(ctx, query, ent.IsNotFound, entToGrantRequest)
 }
@@ -96,7 +100,10 @@ func (this *GrantRequestEntRepository) FindPendingByReceiverAndTarget(ctx crud.C
 		Where(
 			entGrantRequest.ReceiverIDEQ(receiverId),
 			entGrantRequest.StatusEQ(entGrantRequest.StatusPending),
-		)
+		).
+		WithGrantResponses().
+		WithRole().
+		WithRoleSuite()
 
 	switch targetType {
 	case domain.GrantRequestTargetTypeRole:
@@ -122,6 +129,32 @@ func (this *GrantRequestEntRepository) FindPendingByReceiverAndTarget(ctx crud.C
 	}
 
 	return results, nil
+}
+
+func (this *GrantRequestEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
+	return database.ParseSearchGraphStr[ent.GrantRequest, domain.GrantRequest](criteria, entGrantRequest.Label)
+}
+
+func (this *GrantRequestEntRepository) Search(
+	ctx crud.Context,
+	param it.SearchParam,
+) (*crud.PagedResult[domain.GrantRequest], error) {
+	query := this.client.GrantRequest.Query().
+		WithGrantResponses().
+		WithRole().
+		WithRoleSuite()
+
+	return database.Search(
+		ctx,
+		param.Predicate,
+		param.Order,
+		crud.PagingOptions{
+			Page: param.Page,
+			Size: param.Size,
+		},
+		query,
+		entToGrantRequests,
+	)
 }
 
 type GrantRequestEntRepository struct {

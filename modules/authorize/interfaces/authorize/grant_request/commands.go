@@ -14,9 +14,9 @@ func init() {
 	// Assert interface implementation
 	var req cqrs.Request
 	req = (*CreateGrantRequestCommand)(nil)
-	req = (*GetGrantRequestQuery)(nil)
 	req = (*CancelGrantRequestCommand)(nil)
 	req = (*DeleteGrantRequestCommand)(nil)
+	req = (*GetGrantRequestByIdQuery)(nil)
 	req = (*RespondToGrantRequestCommand)(nil)
 	util.Unused(req)
 }
@@ -196,34 +196,55 @@ type RespondToGrantRequestResult = crud.OpResult[*domain.GrantRequest]
 
 // END: RespondToGrantRequestCommand
 
-// START: GetGrantRequestQuery
-var getGrantRequestQueryType = cqrs.RequestType{
+// START: GetGrantRequestByIdQuery
+var getGrantRequestByIdQuery = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "grant_request",
-	Action:    "get",
+	Action:    "getById",
 }
 
-type GetGrantRequestQuery struct {
+type GetGrantRequestByIdQuery struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (GetGrantRequestQuery) CqrsRequestType() cqrs.RequestType {
-	return getGrantRequestQueryType
+func (this GetGrantRequestByIdQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetGrantRequestResult = crud.OpResult[*domain.GrantRequest]
-
-// END: GetGrantRequestQuery
-
-// START: ListGrantRequestsQuery
-type ListGrantRequestsQuery struct {
-	Page       *int                    `json:"page,omitempty"`
-	Size       *int                    `json:"size,omitempty"`
-	Graph      *map[string]interface{} `json:"graph,omitempty"`
-	Status     *string                 `json:"status,omitempty"`
-	ApprovalId *model.Id               `json:"approvalId,omitempty"`
+func (GetGrantRequestByIdQuery) CqrsRequestType() cqrs.RequestType {
+	return getGrantRequestByIdQuery
 }
 
-type ListGrantRequestsResult = crud.OpResult[[]*domain.GrantRequest]
+type GetGrantRequestByIdResult = crud.OpResult[*domain.GrantRequest]
 
-// END: ListGrantRequestsQuery
+// END: GetGrantRequestByIdQuery
+
+// START: SearchGrantRequestsQuery
+var searchGrantRequestsQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "grant_request",
+	Action:    "search",
+}
+
+type SearchGrantRequestsQuery struct {
+	crud.SearchQuery
+}
+
+func (SearchGrantRequestsQuery) CqrsRequestType() cqrs.RequestType {
+	return searchGrantRequestsQueryType
+}
+
+func (this SearchGrantRequestsQuery) Validate() fault.ValidationErrors {
+	rules := this.SearchQuery.ValidationRules()
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type SearchGrantRequestsResultData = crud.PagedResult[domain.GrantRequest]
+type SearchGrantRequestsResult = crud.OpResult[*SearchGrantRequestsResultData]
+
+// END: SearchGrantRequestsQuery

@@ -1,0 +1,21 @@
+meta {
+  name: Grant Request Search - Success (Full params)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/authorize/grant-requests?page=0&size=4&graph={"if":["created_by", "=", "01JWNMZ36QHC7CQQ748H9NQ6J6"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 4
+  graph: {"if":["created_by", "=", "01JWNMZ36QHC7CQQ748H9NQ6J6"]}
+}
+
+settings {
+  encodeUrl: true
+}
