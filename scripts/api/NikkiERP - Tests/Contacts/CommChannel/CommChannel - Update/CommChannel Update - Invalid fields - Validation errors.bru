@@ -1,0 +1,23 @@
+meta {
+  name: CommChannel Update - Invalid fields - Validation errors
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{api_host}}/v1/contacts/parties/channels/{{channel_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "type": "123dbcd",
+      "etag": "______________"
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

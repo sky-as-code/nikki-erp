@@ -1,0 +1,15 @@
+meta {
+  name: CommChannel Delete Again - Not found ID - Validation errors
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{api_host}}/v1/contacts/parties/channels/{{channel_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Party Update - Unmatched etag - Validation errors
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{api_host}}/v1/contacts/parties/{{party_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "etag": "_______"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

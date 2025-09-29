@@ -1,0 +1,19 @@
+meta {
+  name: Party Search - Success (1 level criteria)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/contacts/parties?graph={"if":["type", "=", "company"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"if":["type", "=", "company"]}
+}
+
+settings {
+  encodeUrl: true
+}

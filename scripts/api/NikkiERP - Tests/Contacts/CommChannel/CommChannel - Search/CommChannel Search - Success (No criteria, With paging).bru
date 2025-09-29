@@ -1,0 +1,20 @@
+meta {
+  name: CommChannel Search - Success (No criteria, With paging)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/contacts/parties/channels?page=0&size=2
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 2
+}
+
+settings {
+  encodeUrl: true
+}

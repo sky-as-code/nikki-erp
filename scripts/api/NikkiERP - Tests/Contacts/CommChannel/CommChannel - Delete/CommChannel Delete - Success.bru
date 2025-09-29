@@ -1,0 +1,15 @@
+meta {
+  name: CommChannel Delete - Success
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{api_host}}/v1/contacts/parties/channels/{{channel_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

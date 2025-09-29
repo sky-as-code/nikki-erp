@@ -1,0 +1,23 @@
+meta {
+  name: Party Create - Existing Display Name
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{api_host}}/v1/contacts/parties
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "displayName": "Hannah Smith",
+      "type": "individual",
+      "orgId": "01K69NSC1HGV56HFG94Z9AXV3G"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

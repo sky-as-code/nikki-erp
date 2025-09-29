@@ -1,0 +1,19 @@
+meta {
+  name: CommChannel Search - Client error (Invalid criteria fields)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api_host}}/v1/contacts/parties/channels?graph={"if":["type", "=", "post1"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"if":["type", "=", "post1"]}
+}
+
+settings {
+  encodeUrl: true
+}

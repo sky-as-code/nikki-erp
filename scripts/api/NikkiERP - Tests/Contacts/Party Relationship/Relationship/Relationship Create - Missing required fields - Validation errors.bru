@@ -1,0 +1,20 @@
+meta {
+  name: Relationship Create - Missing required fields - Validation errors
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/contacts/parties/relationships
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+  }
+}
+
+settings {
+  encodeUrl: true
+}

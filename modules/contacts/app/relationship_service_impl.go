@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
 	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	pt "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
@@ -57,7 +58,12 @@ func (this *RelationshipServiceImpl) CreateRelationship(ctx crud.Context, cmd it
 }
 
 func (this *RelationshipServiceImpl) assertCreateRules(ctx crud.Context, relationship *domain.Relationship, vErrs *ft.ValidationErrors) error {
-	err := this.assertPartyExists(ctx, relationship, vErrs) // check party exists
+	err := this.assertPartyExists(ctx, *relationship.PartyId, vErrs) // check party exists
+	if err != nil {
+		return err
+	}
+
+	err = this.assertPartyExists(ctx, *relationship.TargetPartyId, vErrs) // check party exists
 	if err != nil {
 		return err
 	}
@@ -77,16 +83,16 @@ func (this *RelationshipServiceImpl) sanitizeRelationship(relationship *domain.R
 	}
 }
 
-func (this *RelationshipServiceImpl) assertPartyExists(ctx crud.Context, channel *domain.Relationship, vErrs *ft.ValidationErrors) error {
+func (this *RelationshipServiceImpl) assertPartyExists(ctx crud.Context, partyId model.Id, vErrs *ft.ValidationErrors) error {
 	dbParty, err := this.partySvc.GetPartyById(ctx, pt.FindByIdParam{
-		Id: *channel.PartyId,
+		Id: partyId,
 	})
 	if err != nil {
 		return err
 	}
 
 	if dbParty.Data == nil {
-		vErrs.Append("partyId", "party not found")
+		vErrs.Append("partyId", "party or target party not found")
 	}
 	return nil
 }

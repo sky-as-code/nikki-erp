@@ -1,11 +1,11 @@
 meta {
-  name: Party Tag - List
+  name: Party Get - Success
   type: http
-  seq: 4
+  seq: 1
 }
 
 get {
-  url: {{api_host}}/v1/contacts/parties/tags
+  url: {{api_host}}/v1/contacts/parties/{{party_id}}
   body: none
   auth: inherit
 }

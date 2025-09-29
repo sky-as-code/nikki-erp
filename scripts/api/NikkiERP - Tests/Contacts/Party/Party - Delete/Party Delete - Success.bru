@@ -1,0 +1,15 @@
+meta {
+  name: Party Delete - Success
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{api_host}}/v1/contacts/parties/{{party_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
