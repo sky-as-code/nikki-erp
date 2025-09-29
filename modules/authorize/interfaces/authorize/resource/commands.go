@@ -85,7 +85,7 @@ func (DeleteResourceHardByNameQuery) CqrsRequestType() cqrs.RequestType {
 	return deleteResourceHardByNameQueryType
 }
 
-func (this *DeleteResourceHardByNameQuery) Validate() fault.ValidationErrors {
+func (this DeleteResourceHardByNameQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		validator.Field(&this.Name,
 			validator.NotEmpty,
@@ -94,7 +94,7 @@ func (this *DeleteResourceHardByNameQuery) Validate() fault.ValidationErrors {
 		),
 	}
 
-	return validator.ApiBased.ValidateStruct(this, rules...)
+	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type DeleteResourceHardByNameResult = crud.DeletionResult
@@ -133,16 +133,16 @@ func (GetResourceByNameQuery) CqrsRequestType() cqrs.RequestType {
 	return getResourceByNameQueryType
 }
 
-func (this *GetResourceByNameQuery) Validate() fault.ValidationErrors {
+func (this GetResourceByNameQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		validator.Field(&this.Name,
 			validator.NotEmpty,
-			validator.RegExp(regexp.MustCompile(`^[a-zA-Z0-9]+$`)), // alphanumeric
+			validator.RegExp(regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
 			validator.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
 		),
 	}
 
-	return validator.ApiBased.ValidateStruct(this, rules...)
+	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type GetResourceByNameResult = crud.OpResult[*domain.Resource]
@@ -157,10 +157,9 @@ var searchResourcesQueryType = cqrs.RequestType{
 }
 
 type SearchResourcesQuery struct {
-	Page        *int    `json:"page" query:"page"`
-	Size        *int    `json:"size" query:"size"`
-	Graph       *string `json:"graph" query:"graph"`
-	WithActions bool    `json:"withActions" query:"withActions"`
+	crud.SearchQuery
+
+	WithActions bool `json:"withActions" query:"withActions"`
 }
 
 func (SearchResourcesQuery) CqrsRequestType() cqrs.RequestType {

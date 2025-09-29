@@ -3,9 +3,8 @@ package app
 import (
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
@@ -47,204 +46,109 @@ func (this *ResourceServiceImpl) CreateResource(ctx crud.Context, cmd it.CreateR
 	})
 
 	return result, err
-
-	// defer func() {
-	// 	if e := fault.RecoverPanicFailedTo(recover(), "create resource"); e != nil {
-	// 		err = e
-	// 	}
-	// }()
-
-	// resource := cmd.ToResource()
-	// this.setResourceDefaults(resource)
-
-	// flow := validator.StartValidationFlow()
-	// vErrs, err := flow.
-	// 	Step(func(vErrs *fault.ValidationErrors) error {
-	// 		*vErrs = resource.Validate(false)
-	// 		return nil
-	// 	}).
-	// 	Step(func(vErrs *fault.ValidationErrors) error {
-	// 		this.sanitizeResource(resource)
-	// 		return this.assertResourceUnique(ctx, resource, vErrs)
-	// 	}).
-	// 	End()
-	// fault.PanicOnErr(err)
-
-	// if vErrs.Count() > 0 {
-	// 	return &it.CreateResourceResult{
-	// 		ClientError: vErrs.ToClientError(),
-	// 	}, nil
-	// }
-
-	// resource, err = this.resourceRepo.Create(ctx, *resource)
-	// fault.PanicOnErr(err)
-
-	// return &it.CreateResourceResult{
-	// 	Data:    resource,
-	// 	HasData: resource != nil,
-	// }, err
 }
 
-func (this *ResourceServiceImpl) UpdateResource(ctx crud.Context, cmd it.UpdateResourceCommand) (result *it.UpdateResourceResult, err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "update resource"); e != nil {
-			err = e
-		}
-	}()
-
-	resource := cmd.ToResource()
-	var dbResource *domain.Resource
-
-	flow := validator.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *fault.ValidationErrors) error {
-			*vErrs = resource.Validate(true)
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			dbResource, err = this.assertResourceExistsById(ctx, *resource.Id, vErrs)
-			return err
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			this.assertCorrectEtag(*resource.Etag, *dbResource.Etag, vErrs)
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			this.sanitizeResource(resource)
-			return nil
-		}).
-		End()
-	fault.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &it.UpdateResourceResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	prevEtag := resource.Etag
-	resource.Etag = model.NewEtag()
-	resource, err = this.resourceRepo.Update(ctx, *resource, *prevEtag)
-	fault.PanicOnErr(err)
-
-	return &it.UpdateResourceResult{
-		Data:    resource,
-		HasData: resource != nil,
-	}, err
-}
-
-func (this *ResourceServiceImpl) DeleteResourceHard(ctx crud.Context, cmd it.DeleteResourceHardByNameQuery) (result *it.DeleteResourceHardByNameResult, err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "delete resource hard"); e != nil {
-			err = e
-		}
-	}()
-
-	var dbResource *domain.Resource
-
-	flow := validator.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *fault.ValidationErrors) error {
-			*vErrs = cmd.Validate()
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			dbResource, err = this.assertResourceExistsByName(ctx, cmd.Name, vErrs)
-			return err
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			return this.assertConstraintViolated(dbResource, vErrs)
-		}).
-		End()
-	fault.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &it.DeleteResourceHardByNameResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	deletedCount, err := this.resourceRepo.DeleteHard(ctx, cmd)
-	fault.PanicOnErr(err)
-
-	return crud.NewSuccessDeletionResult(*dbResource.Id, &deletedCount), nil
-}
-
-func (this *ResourceServiceImpl) GetResourceByName(ctx crud.Context, query it.GetResourceByNameQuery) (result *it.GetResourceByNameResult, err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "get resource by name"); e != nil {
-			err = e
-		}
-	}()
-
-	var dbResource *domain.Resource
-	flow := validator.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *fault.ValidationErrors) error {
-			*vErrs = query.Validate()
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			dbResource, err = this.assertResourceExistsByName(ctx, query.Name, vErrs)
-			return err
-		}).
-		End()
-	fault.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &it.GetResourceByNameResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	return &it.GetResourceByNameResult{
-		Data:    dbResource,
-		HasData: dbResource != nil,
-	}, nil
-}
-
-func (this *ResourceServiceImpl) SearchResources(ctx crud.Context, query it.SearchResourcesQuery) (result *it.SearchResourcesResult, err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "search resources"); e != nil {
-			err = e
-		}
-	}()
-
-	query.SetDefaults()
-	vErrsModel := query.Validate()
-	predicate, order, vErrsGraph := this.resourceRepo.ParseSearchGraph(query.Graph)
-
-	vErrsModel.Merge(vErrsGraph)
-
-	if vErrsModel.Count() > 0 {
-		return &it.SearchResourcesResult{
-			ClientError: vErrsModel.ToClientError(),
-		}, nil
-	}
-
-	resources, err := this.resourceRepo.Search(ctx, it.SearchParam{
-		Predicate:   predicate,
-		Order:       order,
-		Page:        *query.Page,
-		Size:        *query.Size,
-		WithActions: query.WithActions,
+func (this *ResourceServiceImpl) UpdateResource(ctx crud.Context, cmd it.UpdateResourceCommand) (*it.UpdateResourceResult, error) {
+	result, err := crud.Update(ctx, crud.UpdateParam[*domain.Resource, it.UpdateResourceCommand, it.UpdateResourceResult]{
+		Action:       "update resource",
+		Command:      cmd,
+		AssertExists: this.assertResourceExistsById,
+		RepoUpdate:   this.resourceRepo.Update,
+		Sanitize:     this.sanitizeResource,
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *it.UpdateResourceResult {
+			return &it.UpdateResourceResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Resource) *it.UpdateResourceResult {
+			return &it.UpdateResourceResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
 	})
-	fault.PanicOnErr(err)
 
-	return &it.SearchResourcesResult{
-		Data:    resources,
-		HasData: resources.Items != nil,
-	}, nil
+	return result, err
 }
 
-func (this *ResourceServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *fault.ValidationErrors) {
-	if updatedEtag != dbEtag {
-		vErrs.AppendEtagMismatched()
-	}
+func (this *ResourceServiceImpl) DeleteResourceHard(ctx crud.Context, cmd it.DeleteResourceHardByNameQuery) (*it.DeleteResourceHardByNameResult, error) {
+	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Resource, it.DeleteResourceHardByNameQuery, it.DeleteResourceHardByNameResult]{
+		Action:              "delete resource",
+		Command:             cmd,
+		AssertExists:        this.assertResourceExistsByName,
+		AssertBusinessRules: this.assertDeleteRules,
+		RepoDelete: func(ctx crud.Context, model *domain.Resource) (int, error) {
+			return this.resourceRepo.DeleteHard(ctx, it.DeleteParam{Name: *model.Name})
+		},
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *it.DeleteResourceHardByNameResult {
+			return &it.DeleteResourceHardByNameResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Resource, deletedCount int) *it.DeleteResourceHardByNameResult {
+			return crud.NewSuccessDeletionResult(*model.Id, &deletedCount)
+		},
+	})
+
+	return result, err
 }
 
-func (this *ResourceServiceImpl) assertResourceExistsByName(ctx crud.Context, name string, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
-	dbResource, err = this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: name})
+func (this *ResourceServiceImpl) GetResourceByName(ctx crud.Context, query it.GetResourceByNameQuery) (*it.GetResourceByNameResult, error) {
+	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.Resource, it.GetResourceByNameQuery, it.GetResourceByNameResult]{
+		Action:      "get resource by name",
+		Query:       query,
+		RepoFindOne: this.getResourceByNameFull,
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *it.GetResourceByNameResult {
+			return &it.GetResourceByNameResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Resource) *it.GetResourceByNameResult {
+			return &it.GetResourceByNameResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
+	})
+
+	return result, err
+}
+
+func (this *ResourceServiceImpl) SearchResources(ctx crud.Context, query it.SearchResourcesQuery) (*it.SearchResourcesResult, error) {
+	result, err := crud.Search(ctx, crud.SearchParam[domain.Resource, it.SearchResourcesQuery, it.SearchResourcesResult]{
+		Action: "search resources",
+		Query:  query,
+		SetQueryDefaults: func(query *it.SearchResourcesQuery) {
+			query.SetDefaults()
+		},
+		ParseSearchGraph: this.resourceRepo.ParseSearchGraph,
+		RepoSearch: func(ctx crud.Context, query it.SearchResourcesQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.Resource], error) {
+			return this.resourceRepo.Search(ctx, it.SearchParam{
+				Predicate:   predicate,
+				Order:       order,
+				Page:        *query.Page,
+				Size:        *query.Size,
+				WithActions: query.WithActions,
+			})
+		},
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *it.SearchResourcesResult {
+			return &it.SearchResourcesResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(pagedResult *crud.PagedResult[domain.Resource]) *it.SearchResourcesResult {
+			return &it.SearchResourcesResult{
+				Data:    pagedResult,
+				HasData: pagedResult.Items != nil,
+			}
+		},
+	})
+
+	return result, err
+}
+
+func (this *ResourceServiceImpl) getResourceByNameFull(ctx crud.Context, query it.GetResourceByNameQuery, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
+	dbResource, err = this.resourceRepo.FindByName(ctx, query)
 	fault.PanicOnErr(err)
 
 	if dbResource == nil {
@@ -253,8 +157,18 @@ func (this *ResourceServiceImpl) assertResourceExistsByName(ctx crud.Context, na
 	return
 }
 
-func (this *ResourceServiceImpl) assertResourceExistsById(ctx crud.Context, id model.Id, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
-	dbResource, err = this.resourceRepo.FindById(ctx, it.FindByIdParam{Id: id})
+func (this *ResourceServiceImpl) assertResourceExistsByName(ctx crud.Context, resource *domain.Resource, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
+	dbResource, err = this.resourceRepo.FindByName(ctx, it.FindByNameParam{Name: *resource.Name})
+	fault.PanicOnErr(err)
+
+	if dbResource == nil {
+		vErrs.AppendNotFound("resource_name", "resource")
+	}
+	return
+}
+
+func (this *ResourceServiceImpl) assertResourceExistsById(ctx crud.Context, resource *domain.Resource, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
+	dbResource, err = this.resourceRepo.FindById(ctx, it.FindByIdParam{Id: *resource.Id})
 	fault.PanicOnErr(err)
 
 	if dbResource == nil {
@@ -282,6 +196,10 @@ func (this *ResourceServiceImpl) assertResourceUnique(ctx crud.Context, resource
 	}
 
 	return nil
+}
+
+func (this *ResourceServiceImpl) assertDeleteRules(ctx crud.Context, _ it.DeleteResourceHardByNameQuery, deletedResource *domain.Resource, vErrs *fault.ValidationErrors) error {
+	return this.assertConstraintViolated(deletedResource, vErrs)
 }
 
 func (this *ResourceServiceImpl) assertConstraintViolated(resource *domain.Resource, vErrs *fault.ValidationErrors) error {

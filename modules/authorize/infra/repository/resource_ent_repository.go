@@ -55,7 +55,7 @@ func (this *ResourceEntRepository) FindByName(ctx crud.Context, param it.FindByN
 	return database.FindOne(ctx, query, ent.IsNotFound, entToResource)
 }
 
-func (this *ResourceEntRepository) Update(ctx crud.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error) {
+func (this *ResourceEntRepository) Update(ctx crud.Context, resource *domain.Resource, prevEtag model.Etag) (*domain.Resource, error) {
 	update := this.client.Resource.UpdateOneID(*resource.Id).
 		SetDescription(*resource.Description).
 		Where(entResource.EtagEQ(prevEtag))
