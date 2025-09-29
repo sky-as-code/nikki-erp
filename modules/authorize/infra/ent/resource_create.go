@@ -63,8 +63,8 @@ func (rc *ResourceCreate) SetEtag(s string) *ResourceCreate {
 }
 
 // SetResourceType sets the "resource_type" field.
-func (rc *ResourceCreate) SetResourceType(rt resource.ResourceType) *ResourceCreate {
-	rc.mutation.SetResourceType(rt)
+func (rc *ResourceCreate) SetResourceType(s string) *ResourceCreate {
+	rc.mutation.SetResourceType(s)
 	return rc
 }
 
@@ -83,8 +83,8 @@ func (rc *ResourceCreate) SetNillableResourceRef(s *string) *ResourceCreate {
 }
 
 // SetScopeType sets the "scope_type" field.
-func (rc *ResourceCreate) SetScopeType(rt resource.ScopeType) *ResourceCreate {
-	rc.mutation.SetScopeType(rt)
+func (rc *ResourceCreate) SetScopeType(s string) *ResourceCreate {
+	rc.mutation.SetScopeType(s)
 	return rc
 }
 
@@ -179,18 +179,8 @@ func (rc *ResourceCreate) check() error {
 	if _, ok := rc.mutation.ResourceType(); !ok {
 		return &ValidationError{Name: "resource_type", err: errors.New(`ent: missing required field "Resource.resource_type"`)}
 	}
-	if v, ok := rc.mutation.ResourceType(); ok {
-		if err := resource.ResourceTypeValidator(v); err != nil {
-			return &ValidationError{Name: "resource_type", err: fmt.Errorf(`ent: validator failed for field "Resource.resource_type": %w`, err)}
-		}
-	}
 	if _, ok := rc.mutation.ScopeType(); !ok {
 		return &ValidationError{Name: "scope_type", err: errors.New(`ent: missing required field "Resource.scope_type"`)}
-	}
-	if v, ok := rc.mutation.ScopeType(); ok {
-		if err := resource.ScopeTypeValidator(v); err != nil {
-			return &ValidationError{Name: "scope_type", err: fmt.Errorf(`ent: validator failed for field "Resource.scope_type": %w`, err)}
-		}
 	}
 	return nil
 }
@@ -244,7 +234,7 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 		_node.Etag = value
 	}
 	if value, ok := rc.mutation.ResourceType(); ok {
-		_spec.SetField(resource.FieldResourceType, field.TypeEnum, value)
+		_spec.SetField(resource.FieldResourceType, field.TypeString, value)
 		_node.ResourceType = value
 	}
 	if value, ok := rc.mutation.ResourceRef(); ok {
@@ -252,7 +242,7 @@ func (rc *ResourceCreate) createSpec() (*Resource, *sqlgraph.CreateSpec) {
 		_node.ResourceRef = value
 	}
 	if value, ok := rc.mutation.ScopeType(); ok {
-		_spec.SetField(resource.FieldScopeType, field.TypeEnum, value)
+		_spec.SetField(resource.FieldScopeType, field.TypeString, value)
 		_node.ScopeType = value
 	}
 	if nodes := rc.mutation.ActionsIDs(); len(nodes) > 0 {

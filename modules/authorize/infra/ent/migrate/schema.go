@@ -271,9 +271,9 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "resource_type", Type: field.TypeEnum, Enums: []string{"nikki_application", "custom"}},
+		{Name: "resource_type", Type: field.TypeString},
 		{Name: "resource_ref", Type: field.TypeString, Nullable: true},
-		{Name: "scope_type", Type: field.TypeEnum, Enums: []string{"domain", "org", "hierarchy", "private"}},
+		{Name: "scope_type", Type: field.TypeString},
 	}
 	// AuthzResourcesTable holds the schema information for the "authz_resources" table.
 	AuthzResourcesTable = &schema.Table{

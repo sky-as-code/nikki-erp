@@ -3,15 +3,16 @@ package repository
 import (
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entResource "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewResourceEntRepository(client *ent.Client) it.ResourceRepository {
@@ -24,14 +25,14 @@ type ResourceEntRepository struct {
 	client *ent.Client
 }
 
-func (this *ResourceEntRepository) Create(ctx crud.Context, resource domain.Resource) (*domain.Resource, error) {
+func (this *ResourceEntRepository) Create(ctx crud.Context, resource *domain.Resource) (*domain.Resource, error) {
 	creation := this.client.Resource.Create().
 		SetID(*resource.Id).
 		SetName(*resource.Name).
 		SetNillableDescription(resource.Description).
-		SetResourceType(entResource.ResourceType(*resource.ResourceType)).
+		SetResourceType(domain.ResourceType(*resource.ResourceType).String()).
 		SetResourceRef(*resource.ResourceRef).
-		SetScopeType(entResource.ScopeType(*resource.ScopeType)).
+		SetScopeType(domain.ResourceScopeType(*resource.ScopeType).String()).
 		SetEtag(*resource.Etag).
 		SetCreatedAt(time.Now())
 
@@ -54,7 +55,7 @@ func (this *ResourceEntRepository) FindByName(ctx crud.Context, param it.FindByN
 	return database.FindOne(ctx, query, ent.IsNotFound, entToResource)
 }
 
-func (this *ResourceEntRepository) Update(ctx crud.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error) {
+func (this *ResourceEntRepository) Update(ctx crud.Context, resource *domain.Resource, prevEtag model.Etag) (*domain.Resource, error) {
 	update := this.client.Resource.UpdateOneID(*resource.Id).
 		SetDescription(*resource.Description).
 		Where(entResource.EtagEQ(prevEtag))

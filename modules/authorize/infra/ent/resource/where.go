@@ -85,9 +85,19 @@ func Etag(v string) predicate.Resource {
 	return predicate.Resource(sql.FieldEQ(FieldEtag, v))
 }
 
+// ResourceType applies equality check predicate on the "resource_type" field. It's identical to ResourceTypeEQ.
+func ResourceType(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldEQ(FieldResourceType, v))
+}
+
 // ResourceRef applies equality check predicate on the "resource_ref" field. It's identical to ResourceRefEQ.
 func ResourceRef(v string) predicate.Resource {
 	return predicate.Resource(sql.FieldEQ(FieldResourceRef, v))
+}
+
+// ScopeType applies equality check predicate on the "scope_type" field. It's identical to ScopeTypeEQ.
+func ScopeType(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldEQ(FieldScopeType, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -336,23 +346,68 @@ func EtagContainsFold(v string) predicate.Resource {
 }
 
 // ResourceTypeEQ applies the EQ predicate on the "resource_type" field.
-func ResourceTypeEQ(v ResourceType) predicate.Resource {
+func ResourceTypeEQ(v string) predicate.Resource {
 	return predicate.Resource(sql.FieldEQ(FieldResourceType, v))
 }
 
 // ResourceTypeNEQ applies the NEQ predicate on the "resource_type" field.
-func ResourceTypeNEQ(v ResourceType) predicate.Resource {
+func ResourceTypeNEQ(v string) predicate.Resource {
 	return predicate.Resource(sql.FieldNEQ(FieldResourceType, v))
 }
 
 // ResourceTypeIn applies the In predicate on the "resource_type" field.
-func ResourceTypeIn(vs ...ResourceType) predicate.Resource {
+func ResourceTypeIn(vs ...string) predicate.Resource {
 	return predicate.Resource(sql.FieldIn(FieldResourceType, vs...))
 }
 
 // ResourceTypeNotIn applies the NotIn predicate on the "resource_type" field.
-func ResourceTypeNotIn(vs ...ResourceType) predicate.Resource {
+func ResourceTypeNotIn(vs ...string) predicate.Resource {
 	return predicate.Resource(sql.FieldNotIn(FieldResourceType, vs...))
+}
+
+// ResourceTypeGT applies the GT predicate on the "resource_type" field.
+func ResourceTypeGT(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldGT(FieldResourceType, v))
+}
+
+// ResourceTypeGTE applies the GTE predicate on the "resource_type" field.
+func ResourceTypeGTE(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldGTE(FieldResourceType, v))
+}
+
+// ResourceTypeLT applies the LT predicate on the "resource_type" field.
+func ResourceTypeLT(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldLT(FieldResourceType, v))
+}
+
+// ResourceTypeLTE applies the LTE predicate on the "resource_type" field.
+func ResourceTypeLTE(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldLTE(FieldResourceType, v))
+}
+
+// ResourceTypeContains applies the Contains predicate on the "resource_type" field.
+func ResourceTypeContains(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldContains(FieldResourceType, v))
+}
+
+// ResourceTypeHasPrefix applies the HasPrefix predicate on the "resource_type" field.
+func ResourceTypeHasPrefix(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldHasPrefix(FieldResourceType, v))
+}
+
+// ResourceTypeHasSuffix applies the HasSuffix predicate on the "resource_type" field.
+func ResourceTypeHasSuffix(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldHasSuffix(FieldResourceType, v))
+}
+
+// ResourceTypeEqualFold applies the EqualFold predicate on the "resource_type" field.
+func ResourceTypeEqualFold(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldEqualFold(FieldResourceType, v))
+}
+
+// ResourceTypeContainsFold applies the ContainsFold predicate on the "resource_type" field.
+func ResourceTypeContainsFold(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldContainsFold(FieldResourceType, v))
 }
 
 // ResourceRefEQ applies the EQ predicate on the "resource_ref" field.
@@ -431,23 +486,68 @@ func ResourceRefContainsFold(v string) predicate.Resource {
 }
 
 // ScopeTypeEQ applies the EQ predicate on the "scope_type" field.
-func ScopeTypeEQ(v ScopeType) predicate.Resource {
+func ScopeTypeEQ(v string) predicate.Resource {
 	return predicate.Resource(sql.FieldEQ(FieldScopeType, v))
 }
 
 // ScopeTypeNEQ applies the NEQ predicate on the "scope_type" field.
-func ScopeTypeNEQ(v ScopeType) predicate.Resource {
+func ScopeTypeNEQ(v string) predicate.Resource {
 	return predicate.Resource(sql.FieldNEQ(FieldScopeType, v))
 }
 
 // ScopeTypeIn applies the In predicate on the "scope_type" field.
-func ScopeTypeIn(vs ...ScopeType) predicate.Resource {
+func ScopeTypeIn(vs ...string) predicate.Resource {
 	return predicate.Resource(sql.FieldIn(FieldScopeType, vs...))
 }
 
 // ScopeTypeNotIn applies the NotIn predicate on the "scope_type" field.
-func ScopeTypeNotIn(vs ...ScopeType) predicate.Resource {
+func ScopeTypeNotIn(vs ...string) predicate.Resource {
 	return predicate.Resource(sql.FieldNotIn(FieldScopeType, vs...))
+}
+
+// ScopeTypeGT applies the GT predicate on the "scope_type" field.
+func ScopeTypeGT(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldGT(FieldScopeType, v))
+}
+
+// ScopeTypeGTE applies the GTE predicate on the "scope_type" field.
+func ScopeTypeGTE(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldGTE(FieldScopeType, v))
+}
+
+// ScopeTypeLT applies the LT predicate on the "scope_type" field.
+func ScopeTypeLT(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldLT(FieldScopeType, v))
+}
+
+// ScopeTypeLTE applies the LTE predicate on the "scope_type" field.
+func ScopeTypeLTE(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldLTE(FieldScopeType, v))
+}
+
+// ScopeTypeContains applies the Contains predicate on the "scope_type" field.
+func ScopeTypeContains(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldContains(FieldScopeType, v))
+}
+
+// ScopeTypeHasPrefix applies the HasPrefix predicate on the "scope_type" field.
+func ScopeTypeHasPrefix(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldHasPrefix(FieldScopeType, v))
+}
+
+// ScopeTypeHasSuffix applies the HasSuffix predicate on the "scope_type" field.
+func ScopeTypeHasSuffix(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldHasSuffix(FieldScopeType, v))
+}
+
+// ScopeTypeEqualFold applies the EqualFold predicate on the "scope_type" field.
+func ScopeTypeEqualFold(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldEqualFold(FieldScopeType, v))
+}
+
+// ScopeTypeContainsFold applies the ContainsFold predicate on the "scope_type" field.
+func ScopeTypeContainsFold(v string) predicate.Resource {
+	return predicate.Resource(sql.FieldContainsFold(FieldScopeType, v))
 }
 
 // HasActions applies the HasEdge predicate on the "actions" edge.
