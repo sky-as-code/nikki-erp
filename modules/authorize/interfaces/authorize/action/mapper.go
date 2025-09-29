@@ -6,14 +6,20 @@ import (
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
-func (this CreateActionCommand) ToAction() *domain.Action {
+func (this CreateActionCommand) ToDomainModel() *domain.Action {
 	action := &domain.Action{}
 	model.MustCopy(this, action)
 
 	return action
 }
 
-func (this UpdateActionCommand) ToAction() *domain.Action {
+func (this UpdateActionCommand) ToDomainModel() *domain.Action {
+	action := &domain.Action{}
+	model.MustCopy(this, action)
+	return action
+}
+
+func (this DeleteActionHardByIdCommand) ToDomainModel() *domain.Action {
 	action := &domain.Action{}
 	model.MustCopy(this, action)
 	return action

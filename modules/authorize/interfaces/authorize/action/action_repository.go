@@ -9,10 +9,10 @@ import (
 )
 
 type ActionRepository interface {
-	Create(ctx crud.Context, action domain.Action) (*domain.Action, error)
+	Create(ctx crud.Context, action *domain.Action) (*domain.Action, error)
 	FindById(ctx crud.Context, param FindByIdParam) (*domain.Action, error)
 	FindByName(ctx crud.Context, param FindByNameParam) (*domain.Action, error)
-	Update(ctx crud.Context, action domain.Action, prevEtag model.Etag) (*domain.Action, error)
+	Update(ctx crud.Context, action *domain.Action, prevEtag model.Etag) (*domain.Action, error)
 	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Action], error)
@@ -20,7 +20,7 @@ type ActionRepository interface {
 
 type FindByIdParam = GetActionByIdQuery
 type FindByNameParam = GetActionByNameCommand
-type DeleteParam = DeleteActionHardByIdQuery
+type DeleteParam = DeleteActionHardByIdCommand
 
 type SearchParam struct {
 	Predicate *orm.Predicate

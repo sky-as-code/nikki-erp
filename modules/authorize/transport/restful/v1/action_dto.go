@@ -48,13 +48,13 @@ type CreateActionResponse = httpserver.RestCreateResponse
 type UpdateActionRequest = it.UpdateActionCommand
 type UpdateActionResponse = httpserver.RestUpdateResponse
 
-type DeleteActionHardByIdRequest = it.DeleteActionHardByIdQuery
+type DeleteActionHardByIdRequest = it.DeleteActionHardByIdCommand
 type DeleteActionHardByIdResponse = httpserver.RestDeleteResponse
 
 type GetActionByIdRequest = it.GetActionByIdQuery
 type GetActionByIdResponse = ActionDto
 
-type SearchActionsRequest = it.SearchActionsCommand
+type SearchActionsRequest = it.SearchActionsQuery
 type SearchActionsResponse httpserver.RestSearchResponse[ActionDto]
 
 func (this *SearchActionsResponse) FromResult(result *it.SearchActionsResultData) {
