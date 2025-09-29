@@ -9,14 +9,14 @@ import (
 )
 
 type OrganizationRepository interface {
-	Create(ctx crud.Context, organization domain.Organization) (*domain.Organization, error)
-	DeleteHard(ctx crud.Context, id model.Id) (int, error)
-	DeleteSoft(ctx crud.Context, id model.Id) (*domain.Organization, error)
+	Create(ctx crud.Context, organization *domain.Organization) (*domain.Organization, error)
+	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
+	DeleteSoft(ctx crud.Context, param DeleteParam) (*domain.Organization, error)
 	FindById(ctx crud.Context, id model.Id) (*domain.Organization, error)
 	FindBySlug(ctx crud.Context, query FindBySlugParam) (*domain.Organization, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Organization], error)
-	Update(ctx crud.Context, organization domain.Organization, prevEtag model.Etag) (*domain.Organization, error)
+	Update(ctx crud.Context, organization *domain.Organization, prevEtag model.Etag) (*domain.Organization, error)
 }
 
 type DeleteParam = DeleteOrganizationCommand

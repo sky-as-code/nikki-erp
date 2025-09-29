@@ -14,7 +14,7 @@ type Organization struct {
 	DisplayName *string     `json:"displayName"`
 	LegalName   *string     `json:"legalName"`
 	PhoneNumber *string     `json:"phoneNumber"`
-	Slug        *model.Slug `json:"slug"`
+	Slug        *model.Slug `param:"slug" json:"slug"`
 	Status      *OrgStatus  `json:"status,omitempty"`
 }
 

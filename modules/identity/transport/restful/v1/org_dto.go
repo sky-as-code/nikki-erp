@@ -34,7 +34,14 @@ type UpdateOrganizationRequest = itOrg.UpdateOrganizationCommand
 type UpdateOrganizationResponse = httpserver.RestUpdateResponse
 
 type DeleteOrganizationRequest = itOrg.DeleteOrganizationCommand
-type DeleteOrganizationResponse = httpserver.RestDeleteResponse
+type DeleteOrganizationResponse struct {
+	Slug      model.Slug `json:"slug"`
+	DeletedAt int64      `json:"deletedAt"`
+}
+
+func (this *DeleteOrganizationResponse) FromNonEntity(src any) {
+	model.MustCopy(src, this)
+}
 
 type GetOrganizationBySlugRequest = itOrg.GetOrganizationBySlugQuery
 type GetOrganizationBySlugResponse = OrganizationDto

@@ -32,7 +32,7 @@ func (this *GroupEntRepository) groupClient(ctx crud.Context) *ent.GroupClient {
 	return this.client.Group
 }
 
-func (this *GroupEntRepository) Create(ctx crud.Context, group domain.Group) (*domain.Group, error) {
+func (this *GroupEntRepository) Create(ctx crud.Context, group *domain.Group) (*domain.Group, error) {
 	creation := this.groupClient(ctx).Create().
 		SetID(*group.Id).
 		SetName(*group.Name).
@@ -43,7 +43,7 @@ func (this *GroupEntRepository) Create(ctx crud.Context, group domain.Group) (*d
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToGroup)
 }
 
-func (this *GroupEntRepository) Update(ctx crud.Context, group domain.Group, prevEtag model.Etag) (*domain.Group, error) {
+func (this *GroupEntRepository) Update(ctx crud.Context, group *domain.Group, prevEtag model.Etag) (*domain.Group, error) {
 	update := this.groupClient(ctx).UpdateOneID(*group.Id).
 		SetNillableName(group.Name).
 		SetNillableDescription(group.Description).
@@ -70,7 +70,7 @@ func (this *GroupEntRepository) DeleteHard(ctx crud.Context, param it.DeletePara
 func (this *GroupEntRepository) FindById(ctx crud.Context, param it.GetGroupByIdQuery) (*domain.Group, error) {
 	dbQuery := this.groupClient(ctx).Query().
 		Where(entGroup.ID(param.Id))
-	if param.WithOrg != nil && *param.WithOrg {
+	if param.WithOrg != false {
 		dbQuery = dbQuery.WithOrg()
 	}
 	return db.FindOne(ctx, dbQuery, ent.IsNotFound, entToGroup)

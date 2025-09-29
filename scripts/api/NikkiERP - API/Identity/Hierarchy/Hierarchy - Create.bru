@@ -12,9 +12,16 @@ post {
 
 body:json {
   {
-      "name": "Giam Doc Cong ty Co Phan ABCD",
-      "orgID": "01K5DA404ZZAHF2SS33FSWC0VP"
+      "name": "Giam Doc Cong ty Co Phan Core Vision",
+      "orgID": "{{org_id}}"
   }
+}
+
+script:post-response {
+  const { id, etag } = res.getBody();
+  id && bru.setVar('hierarchy_id', id);
+  etag && bru.setVar('etag', etag);
+  
 }
 
 settings {
