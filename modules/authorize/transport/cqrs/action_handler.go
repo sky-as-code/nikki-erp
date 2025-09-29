@@ -31,6 +31,6 @@ func (this *ActionHandler) GetActionById(ctx context.Context, packet *cqrs.Reque
 	return cqrs.HandlePacket(ctx, packet, this.ActionSvc.GetActionById)
 }
 
-func (this *ActionHandler) SearchActions(ctx context.Context, packet *cqrs.RequestPacket[it.SearchActionsCommand]) (*cqrs.Reply[it.SearchActionsResult], error) {
+func (this *ActionHandler) SearchActions(ctx context.Context, packet *cqrs.RequestPacket[it.SearchActionsQuery]) (*cqrs.Reply[it.SearchActionsResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.ActionSvc.SearchActions)
 }

@@ -82,8 +82,8 @@ func (this ActionRest) DeleteActionHard(echoCtx echo.Context) (err error) {
 
 	err = httpserver.ServeRequest(
 		echoCtx, this.ActionSvc.DeleteActionHard,
-		func(request DeleteActionHardByIdRequest) it.DeleteActionHardByIdQuery {
-			return it.DeleteActionHardByIdQuery(request)
+		func(request DeleteActionHardByIdRequest) it.DeleteActionHardByIdCommand {
+			return it.DeleteActionHardByIdCommand(request)
 		},
 		func(result it.DeleteActionHardByIdResult) DeleteActionHardByIdResponse {
 			response := DeleteActionHardByIdResponse{}
@@ -128,8 +128,8 @@ func (this ActionRest) SearchActions(echoCtx echo.Context) (err error) {
 
 	err = httpserver.ServeRequest(
 		echoCtx, this.ActionSvc.SearchActions,
-		func(request SearchActionsRequest) it.SearchActionsCommand {
-			return it.SearchActionsCommand(request)
+		func(request SearchActionsRequest) it.SearchActionsQuery {
+			return it.SearchActionsQuery(request)
 		},
 		func(result it.SearchActionsResult) SearchActionsResponse {
 			response := SearchActionsResponse{}

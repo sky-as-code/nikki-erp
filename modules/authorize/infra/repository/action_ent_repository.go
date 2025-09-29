@@ -6,12 +6,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entAction "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/action"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
 func NewActionEntRepository(client *ent.Client) it.ActionRepository {
@@ -24,7 +25,7 @@ type ActionEntRepository struct {
 	client *ent.Client
 }
 
-func (this *ActionEntRepository) Create(ctx crud.Context, action domain.Action) (*domain.Action, error) {
+func (this *ActionEntRepository) Create(ctx crud.Context, action *domain.Action) (*domain.Action, error) {
 	creation := this.client.Action.Create().
 		SetID(*action.Id).
 		SetEtag(*action.Etag).
@@ -54,7 +55,7 @@ func (this *ActionEntRepository) FindByName(ctx crud.Context, param it.FindByNam
 	return database.FindOne(ctx, query, ent.IsNotFound, entToAction)
 }
 
-func (this *ActionEntRepository) Update(ctx crud.Context, action domain.Action, prevEtag model.Etag) (*domain.Action, error) {
+func (this *ActionEntRepository) Update(ctx crud.Context, action *domain.Action, prevEtag model.Etag) (*domain.Action, error) {
 	update := this.client.Action.UpdateOneID(*action.Id).
 		SetNillableDescription(action.Description).
 		Where(entAction.EtagEQ(prevEtag))

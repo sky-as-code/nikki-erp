@@ -16,10 +16,10 @@ func init() {
 	var req cqrs.Request
 	req = (*CreateActionCommand)(nil)
 	req = (*UpdateActionCommand)(nil)
-	req = (*DeleteActionHardByIdQuery)(nil)
+	req = (*DeleteActionHardByIdCommand)(nil)
 	req = (*GetActionByIdQuery)(nil)
 	req = (*GetActionByNameCommand)(nil)
-	req = (*SearchActionsCommand)(nil)
+	req = (*SearchActionsQuery)(nil)
 	util.Unused(req)
 }
 
@@ -67,22 +67,22 @@ type UpdateActionResult = crud.OpResult[*domain.Action]
 
 // END: UpdateResourceCommand
 
-// START: DeleteActionHardByIdQuery
-var deleteActionHardByIdQueryType = cqrs.RequestType{
+// START: DeleteActionHardByIdCommand
+var deleteActionHardByIdCommandType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "action",
 	Action:    "delete",
 }
 
-type DeleteActionHardByIdQuery struct {
+type DeleteActionHardByIdCommand struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (DeleteActionHardByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return deleteActionHardByIdQueryType
+func (DeleteActionHardByIdCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteActionHardByIdCommandType
 }
 
-func (this DeleteActionHardByIdQuery) Validate() fault.ValidationErrors {
+func (this DeleteActionHardByIdCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
@@ -92,7 +92,7 @@ func (this DeleteActionHardByIdQuery) Validate() fault.ValidationErrors {
 
 type DeleteActionHardByIdResult = crud.DeletionResult
 
-// END: DeleteActionHardByIdQuery
+// END: DeleteActionHardByIdCommand
 
 // START: GetActionByIdQuery
 var getActionByIdQueryType = cqrs.RequestType{
@@ -141,29 +141,27 @@ type GetActionByNameResult = crud.OpResult[*domain.Action]
 
 // END: GetResourceByNameCommand
 
-// START: SearchActionsCommand
-var searchActionsCommandType = cqrs.RequestType{
+// START: SearchActionsQuery
+var searchActionsQueryType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "action",
 	Action:    "list",
 }
 
-type SearchActionsCommand struct {
-	Page  *int    `json:"page" query:"page"`
-	Size  *int    `json:"size" query:"size"`
-	Graph *string `json:"graph" query:"graph"`
+type SearchActionsQuery struct {
+	crud.SearchQuery
 }
 
-func (SearchActionsCommand) CqrsRequestType() cqrs.RequestType {
-	return searchActionsCommandType
+func (SearchActionsQuery) CqrsRequestType() cqrs.RequestType {
+	return searchActionsQueryType
 }
 
-func (this *SearchActionsCommand) SetDefaults() {
+func (this *SearchActionsQuery) SetDefaults() {
 	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
 	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
 }
 
-func (this SearchActionsCommand) Validate() fault.ValidationErrors {
+func (this SearchActionsQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		crud.PageIndexValidateRule(&this.Page),
 		crud.PageSizeValidateRule(&this.Size),
@@ -174,4 +172,4 @@ func (this SearchActionsCommand) Validate() fault.ValidationErrors {
 type SearchActionsResultData = crud.PagedResult[domain.Action]
 type SearchActionsResult = crud.OpResult[*SearchActionsResultData]
 
-// END: SearchActionsCommand
+// END: SearchActionsQuery
