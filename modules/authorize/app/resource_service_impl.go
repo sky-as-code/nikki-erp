@@ -25,42 +25,64 @@ type ResourceServiceImpl struct {
 	eventBus     event.EventBus
 }
 
-func (this *ResourceServiceImpl) CreateResource(ctx crud.Context, cmd it.CreateResourceCommand) (result *it.CreateResourceResult, err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "create resource"); e != nil {
-			err = e
-		}
-	}()
+func (this *ResourceServiceImpl) CreateResource(ctx crud.Context, cmd it.CreateResourceCommand) (*it.CreateResourceResult, error) {
+	result, err := crud.Create(ctx, crud.CreateParam[*domain.Resource, it.CreateResourceCommand, it.CreateResourceResult]{
+		Action:              "create resource",
+		Command:             cmd,
+		AssertBusinessRules: this.assertResourceUnique,
+		RepoCreate:          this.resourceRepo.Create,
+		SetDefault:          this.setResourceDefaults,
+		Sanitize:            this.sanitizeResource,
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *it.CreateResourceResult {
+			return &it.CreateResourceResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Resource) *it.CreateResourceResult {
+			return &it.CreateResourceResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
+	})
 
-	resource := cmd.ToResource()
-	this.setResourceDefaults(resource)
+	return result, err
 
-	flow := validator.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *fault.ValidationErrors) error {
-			*vErrs = resource.Validate(false)
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			this.sanitizeResource(resource)
-			return this.assertResourceUnique(ctx, resource, vErrs)
-		}).
-		End()
-	fault.PanicOnErr(err)
+	// defer func() {
+	// 	if e := fault.RecoverPanicFailedTo(recover(), "create resource"); e != nil {
+	// 		err = e
+	// 	}
+	// }()
 
-	if vErrs.Count() > 0 {
-		return &it.CreateResourceResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
+	// resource := cmd.ToResource()
+	// this.setResourceDefaults(resource)
 
-	resource, err = this.resourceRepo.Create(ctx, *resource)
-	fault.PanicOnErr(err)
+	// flow := validator.StartValidationFlow()
+	// vErrs, err := flow.
+	// 	Step(func(vErrs *fault.ValidationErrors) error {
+	// 		*vErrs = resource.Validate(false)
+	// 		return nil
+	// 	}).
+	// 	Step(func(vErrs *fault.ValidationErrors) error {
+	// 		this.sanitizeResource(resource)
+	// 		return this.assertResourceUnique(ctx, resource, vErrs)
+	// 	}).
+	// 	End()
+	// fault.PanicOnErr(err)
 
-	return &it.CreateResourceResult{
-		Data:    resource,
-		HasData: resource != nil,
-	}, err
+	// if vErrs.Count() > 0 {
+	// 	return &it.CreateResourceResult{
+	// 		ClientError: vErrs.ToClientError(),
+	// 	}, nil
+	// }
+
+	// resource, err = this.resourceRepo.Create(ctx, *resource)
+	// fault.PanicOnErr(err)
+
+	// return &it.CreateResourceResult{
+	// 	Data:    resource,
+	// 	HasData: resource != nil,
+	// }, err
 }
 
 func (this *ResourceServiceImpl) UpdateResource(ctx crud.Context, cmd it.UpdateResourceCommand) (result *it.UpdateResourceResult, err error) {

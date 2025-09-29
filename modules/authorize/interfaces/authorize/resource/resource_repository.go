@@ -9,7 +9,7 @@ import (
 )
 
 type ResourceRepository interface {
-	Create(ctx crud.Context, resource domain.Resource) (*domain.Resource, error)
+	Create(ctx crud.Context, resource *domain.Resource) (*domain.Resource, error)
 	FindByName(ctx crud.Context, param FindByNameParam) (*domain.Resource, error)
 	FindById(ctx crud.Context, param FindByIdParam) (*domain.Resource, error)
 	Update(ctx crud.Context, resource domain.Resource, prevEtag model.Etag) (*domain.Resource, error)

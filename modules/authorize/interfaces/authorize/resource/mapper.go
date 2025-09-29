@@ -13,6 +13,12 @@ func (this CreateResourceCommand) ToResource() *domain.Resource {
 	return resource
 }
 
+func (this CreateResourceCommand) ToDomainModel() *domain.Resource {
+	resource := &domain.Resource{}
+	model.MustCopy(this, resource)
+	return resource
+}
+
 func (this UpdateResourceCommand) ToResource() *domain.Resource {
 	resource := &domain.Resource{}
 	model.MustCopy(this, resource)

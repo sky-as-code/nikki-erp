@@ -3,7 +3,6 @@
 package resource
 
 import (
-	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -77,54 +76,6 @@ var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
-
-// ResourceType defines the type for the "resource_type" enum field.
-type ResourceType string
-
-// ResourceType values.
-const (
-	ResourceTypeNikkiApplication ResourceType = "nikki_application"
-	ResourceTypeCustom           ResourceType = "custom"
-)
-
-func (rt ResourceType) String() string {
-	return string(rt)
-}
-
-// ResourceTypeValidator is a validator for the "resource_type" field enum values. It is called by the builders before save.
-func ResourceTypeValidator(rt ResourceType) error {
-	switch rt {
-	case ResourceTypeNikkiApplication, ResourceTypeCustom:
-		return nil
-	default:
-		return fmt.Errorf("resource: invalid enum value for resource_type field: %q", rt)
-	}
-}
-
-// ScopeType defines the type for the "scope_type" enum field.
-type ScopeType string
-
-// ScopeType values.
-const (
-	ScopeTypeDomain    ScopeType = "domain"
-	ScopeTypeOrg       ScopeType = "org"
-	ScopeTypeHierarchy ScopeType = "hierarchy"
-	ScopeTypePrivate   ScopeType = "private"
-)
-
-func (st ScopeType) String() string {
-	return string(st)
-}
-
-// ScopeTypeValidator is a validator for the "scope_type" field enum values. It is called by the builders before save.
-func ScopeTypeValidator(st ScopeType) error {
-	switch st {
-	case ScopeTypeDomain, ScopeTypeOrg, ScopeTypeHierarchy, ScopeTypePrivate:
-		return nil
-	default:
-		return fmt.Errorf("resource: invalid enum value for scope_type field: %q", st)
-	}
-}
 
 // OrderOption defines the ordering options for the Resource queries.
 type OrderOption = func(*sql.Selector)

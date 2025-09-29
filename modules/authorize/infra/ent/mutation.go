@@ -6550,9 +6550,9 @@ type ResourceMutation struct {
 	name                *string
 	description         *string
 	etag                *string
-	resource_type       *resource.ResourceType
+	resource_type       *string
 	resource_ref        *string
-	scope_type          *resource.ScopeType
+	scope_type          *string
 	clearedFields       map[string]struct{}
 	actions             map[string]struct{}
 	removedactions      map[string]struct{}
@@ -6827,12 +6827,12 @@ func (m *ResourceMutation) ResetEtag() {
 }
 
 // SetResourceType sets the "resource_type" field.
-func (m *ResourceMutation) SetResourceType(rt resource.ResourceType) {
-	m.resource_type = &rt
+func (m *ResourceMutation) SetResourceType(s string) {
+	m.resource_type = &s
 }
 
 // ResourceType returns the value of the "resource_type" field in the mutation.
-func (m *ResourceMutation) ResourceType() (r resource.ResourceType, exists bool) {
+func (m *ResourceMutation) ResourceType() (r string, exists bool) {
 	v := m.resource_type
 	if v == nil {
 		return
@@ -6843,7 +6843,7 @@ func (m *ResourceMutation) ResourceType() (r resource.ResourceType, exists bool)
 // OldResourceType returns the old "resource_type" field's value of the Resource entity.
 // If the Resource object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ResourceMutation) OldResourceType(ctx context.Context) (v resource.ResourceType, err error) {
+func (m *ResourceMutation) OldResourceType(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldResourceType is only allowed on UpdateOne operations")
 	}
@@ -6912,12 +6912,12 @@ func (m *ResourceMutation) ResetResourceRef() {
 }
 
 // SetScopeType sets the "scope_type" field.
-func (m *ResourceMutation) SetScopeType(rt resource.ScopeType) {
-	m.scope_type = &rt
+func (m *ResourceMutation) SetScopeType(s string) {
+	m.scope_type = &s
 }
 
 // ScopeType returns the value of the "scope_type" field in the mutation.
-func (m *ResourceMutation) ScopeType() (r resource.ScopeType, exists bool) {
+func (m *ResourceMutation) ScopeType() (r string, exists bool) {
 	v := m.scope_type
 	if v == nil {
 		return
@@ -6928,7 +6928,7 @@ func (m *ResourceMutation) ScopeType() (r resource.ScopeType, exists bool) {
 // OldScopeType returns the old "scope_type" field's value of the Resource entity.
 // If the Resource object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ResourceMutation) OldScopeType(ctx context.Context) (v resource.ScopeType, err error) {
+func (m *ResourceMutation) OldScopeType(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldScopeType is only allowed on UpdateOne operations")
 	}
@@ -7194,7 +7194,7 @@ func (m *ResourceMutation) SetField(name string, value ent.Value) error {
 		m.SetEtag(v)
 		return nil
 	case resource.FieldResourceType:
-		v, ok := value.(resource.ResourceType)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -7208,7 +7208,7 @@ func (m *ResourceMutation) SetField(name string, value ent.Value) error {
 		m.SetResourceRef(v)
 		return nil
 	case resource.FieldScopeType:
-		v, ok := value.(resource.ScopeType)
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

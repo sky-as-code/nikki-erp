@@ -26,11 +26,11 @@ type Resource struct {
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// A resource can be a Nikki Application (lifecycle and access managed by Nikki) or a custom string
-	ResourceType resource.ResourceType `json:"resource_type,omitempty"`
+	ResourceType string `json:"resource_type,omitempty"`
 	// Some resource type requires identifier (ID)
 	ResourceRef string `json:"resource_ref,omitempty"`
 	// This field cannot be changed to avoid breaking existing entitlements
-	ScopeType resource.ScopeType `json:"scope_type,omitempty"`
+	ScopeType string `json:"scope_type,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ResourceQuery when eager-loading is set.
 	Edges        ResourceEdges `json:"edges"`
@@ -124,7 +124,7 @@ func (r *Resource) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field resource_type", values[i])
 			} else if value.Valid {
-				r.ResourceType = resource.ResourceType(value.String)
+				r.ResourceType = value.String
 			}
 		case resource.FieldResourceRef:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -136,7 +136,7 @@ func (r *Resource) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field scope_type", values[i])
 			} else if value.Valid {
-				r.ScopeType = resource.ScopeType(value.String)
+				r.ScopeType = value.String
 			}
 		default:
 			r.selectValues.Set(columns[i], values[i])
@@ -197,13 +197,13 @@ func (r *Resource) String() string {
 	builder.WriteString(r.Etag)
 	builder.WriteString(", ")
 	builder.WriteString("resource_type=")
-	builder.WriteString(fmt.Sprintf("%v", r.ResourceType))
+	builder.WriteString(r.ResourceType)
 	builder.WriteString(", ")
 	builder.WriteString("resource_ref=")
 	builder.WriteString(r.ResourceRef)
 	builder.WriteString(", ")
 	builder.WriteString("scope_type=")
-	builder.WriteString(fmt.Sprintf("%v", r.ScopeType))
+	builder.WriteString(r.ScopeType)
 	builder.WriteByte(')')
 	return builder.String()
 }

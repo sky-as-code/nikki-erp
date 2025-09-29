@@ -3,10 +3,9 @@ package domain
 import (
 	"regexp"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
-	entResource "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
+	"github.com/sky-as-code/nikki-erp/common/validator"
 )
 
 type Resource struct {
@@ -19,26 +18,26 @@ type Resource struct {
 	ResourceRef  *string            `json:"resourceRef,omitempty"`
 	ScopeType    *ResourceScopeType `json:"scopeType,omitempty"`
 
-	HierarchyRef *string `json:"hierarchyRef,omitempty"`
+	// HierarchyRef *string `json:"hierarchyRef,omitempty"`
 
 	Actions      []Action      `json:"actions" model:"-"` // TODO: Handle copy
 	Entitlements []Entitlement `json:"entitlements" model:"-"`
 }
 
-func (this *Resource) Validate(forEdit bool) ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.Name,
-			val.NotNilWhen(!forEdit),
-			val.When(this.Name != nil,
-				val.NotEmpty,
-				val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9]+$`)), // alphanumeric
-				val.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
+func (this *Resource) Validate(forEdit bool) fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		validator.Field(&this.Name,
+			validator.NotNilWhen(!forEdit),
+			validator.When(this.Name != nil,
+				validator.NotEmpty,
+				validator.RegExp(regexp.MustCompile(`^[a-zA-Z0-9]+$`)), // alphanumeric
+				validator.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
 			),
 		),
-		val.Field(&this.Description,
-			val.When(this.Description != nil,
-				val.NotEmpty,
-				val.Length(1, model.MODEL_RULE_DESC_LENGTH),
+		validator.Field(&this.Description,
+			validator.When(this.Description != nil,
+				validator.NotEmpty,
+				validator.Length(1, model.MODEL_RULE_DESC_LENGTH),
 			),
 		),
 		ResourceTypeValidateRule(&this.ResourceType, !forEdit),
@@ -47,14 +46,14 @@ func (this *Resource) Validate(forEdit bool) ft.ValidationErrors {
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 
-	return val.ApiBased.ValidateStruct(this, rules...)
+	return validator.ApiBased.ValidateStruct(this, rules...)
 }
 
-type ResourceType entResource.ResourceType
+type ResourceType string
 
 const (
-	ResourceTypeNikkiApplication = ResourceType(entResource.ResourceTypeNikkiApplication)
-	ResourceTypeCustom           = ResourceType(entResource.ResourceTypeCustom)
+	ResourceTypeNikkiApplication = ResourceType("nikki_application")
+	ResourceTypeCustom           = ResourceType("custom")
 )
 
 func (this ResourceType) String() string {
@@ -66,27 +65,26 @@ func WrapResourceType(s string) *ResourceType {
 	return &st
 }
 
-func WrapResourceTypeEnt(s entResource.ResourceType) *ResourceType {
-	st := ResourceType(s)
-	return &st
-}
-
-func ResourceTypeValidateRule(field **ResourceType, isRequired bool) *val.FieldRules {
-	return val.Field(field,
-		val.NotNilWhen(isRequired),
-		val.When(*field != nil,
-			val.NotEmpty,
-			val.OneOf(ResourceTypeNikkiApplication, ResourceTypeCustom),
+func ResourceTypeValidateRule(field **ResourceType, isRequired bool) *validator.FieldRules {
+	return validator.Field(field,
+		validator.NotNilWhen(isRequired),
+		validator.When(*field != nil,
+			validator.NotEmpty,
+			validator.OneOf(
+				ResourceTypeNikkiApplication,
+				ResourceTypeCustom,
+			),
 		),
 	)
 }
 
-type ResourceScopeType entResource.ScopeType
+type ResourceScopeType string
 
 const (
-	ResourceScopeTypeOrg       = ResourceScopeType(entResource.ScopeTypeOrg)
-	ResourceScopeTypeHierarchy = ResourceScopeType(entResource.ScopeTypeHierarchy)
-	ResourceScopeTypePrivate   = ResourceScopeType(entResource.ScopeTypePrivate)
+	ResourceScopeTypeDomain    = ResourceScopeType("domain")
+	ResourceScopeTypeOrg       = ResourceScopeType("org")
+	ResourceScopeTypeHierarchy = ResourceScopeType("hierarchy")
+	ResourceScopeTypePrivate   = ResourceScopeType("private")
 )
 
 func (this ResourceScopeType) String() string {
@@ -98,28 +96,28 @@ func WrapResourceScopeType(s string) *ResourceScopeType {
 	return &st
 }
 
-func WrapResourceScopeTypeEnt(s entResource.ScopeType) *ResourceScopeType {
-	st := ResourceScopeType(s)
-	return &st
-}
-
-func ResourceScopeTypeValidateRule(field **ResourceScopeType, isRequired bool) *val.FieldRules {
-	return val.Field(field,
-		val.NotNilWhen(isRequired),
-		val.When(*field != nil,
-			val.NotEmpty,
-			val.OneOf(ResourceScopeTypeOrg, ResourceScopeTypeHierarchy, ResourceScopeTypePrivate),
+func ResourceScopeTypeValidateRule(field **ResourceScopeType, isRequired bool) *validator.FieldRules {
+	return validator.Field(field,
+		validator.NotNilWhen(isRequired),
+		validator.When(*field != nil,
+			validator.NotEmpty,
+			validator.OneOf(
+				ResourceScopeTypeDomain,
+				ResourceScopeTypeOrg,
+				ResourceScopeTypeHierarchy,
+				ResourceScopeTypePrivate,
+			),
 		),
 	)
 }
 
-func ResourceRefValidateRule(ref **string, resourceType **ResourceType, isRequired bool) *val.FieldRules {
-	return val.Field(ref,
-		val.NotNilWhen(isRequired),
-		val.When(*ref != nil,
-			val.When(resourceType != nil && *resourceType != nil && **resourceType == ResourceTypeNikkiApplication,
-				val.NotEmpty,
-				val.Length(model.MODEL_RULE_ULID_LENGTH, model.MODEL_RULE_ULID_LENGTH),
+func ResourceRefValidateRule(ref **string, resourceType **ResourceType, isRequired bool) *validator.FieldRules {
+	return validator.Field(ref,
+		validator.NotNilWhen(isRequired),
+		validator.When(*ref != nil,
+			validator.When(resourceType != nil && *resourceType != nil && **resourceType == ResourceTypeNikkiApplication,
+				validator.NotEmpty,
+				validator.Length(model.MODEL_RULE_ULID_LENGTH, model.MODEL_RULE_ULID_LENGTH),
 			),
 		),
 	)
