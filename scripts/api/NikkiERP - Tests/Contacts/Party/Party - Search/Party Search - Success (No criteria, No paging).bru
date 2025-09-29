@@ -1,0 +1,15 @@
+meta {
+  name: Party Search - Success (No criteria, No paging)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/contacts/parties
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

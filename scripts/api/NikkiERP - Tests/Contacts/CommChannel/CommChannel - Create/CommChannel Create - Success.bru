@@ -1,0 +1,29 @@
+meta {
+  name: CommChannel Create - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/contacts/parties/channels
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "orgId": "{{org_id}}",
+    "partyId": "{{party_id}}",
+    "type": "post",
+    "valueJson" : {
+      "numberStreet": "297 An Duong Vuong",
+      "district": "Quan 5",
+      "country" : "Ho Chi Minh",
+      "note": "Gan Truong Hoc Su Pham"
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+}

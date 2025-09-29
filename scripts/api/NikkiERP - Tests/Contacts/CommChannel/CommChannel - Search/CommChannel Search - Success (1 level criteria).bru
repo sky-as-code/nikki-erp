@@ -1,0 +1,19 @@
+meta {
+  name: CommChannel Search - Success (1 level criteria)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/contacts/parties/channels?graph={"if":["type", "=", "post"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"if":["type", "=", "post"]}
+}
+
+settings {
+  encodeUrl: true
+}

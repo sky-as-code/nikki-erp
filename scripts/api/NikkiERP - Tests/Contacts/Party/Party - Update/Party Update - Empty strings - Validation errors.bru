@@ -1,0 +1,24 @@
+meta {
+  name: Party Update - Empty strings - Validation errors
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{api_host}}/v1/contacts/parties/{{party_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "avatarUrl": "",
+      "displayName": "",
+      "etag": ""
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

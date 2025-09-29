@@ -1,0 +1,21 @@
+meta {
+  name: CommChannel Search - Client error (Invalid paging fields)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{api_host}}/v1/contacts/parties/channels?page=-1&size=99999999999&graph={"if":["type", "=", "post"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: -1
+  size: 99999999999
+  graph: {"if":["type", "=", "post"]}
+}
+
+settings {
+  encodeUrl: true
+}

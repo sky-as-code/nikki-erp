@@ -1,0 +1,21 @@
+meta {
+  name: Party Search - Client error (Invalid criteria fields)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api_host}}/v1/contacts/parties?page=0&size=4&graph={"if":["type", "=", "company1"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 4
+  graph: {"if":["type", "=", "company1"]}
+}
+
+settings {
+  encodeUrl: true
+}

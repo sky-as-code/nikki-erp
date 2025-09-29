@@ -1,7 +1,7 @@
 meta {
-  name: Party - Create
+  name: Party Create - Missing required fields - Validation errors
   type: http
-  seq: 1
+  seq: 2
 }
 
 post {
@@ -12,9 +12,6 @@ post {
 
 body:json {
   {
-      "displayName": "{{$randomFullName}}",
-      "type": "company",
-      "orgId": "{{org_id}}"
   }
 }
 

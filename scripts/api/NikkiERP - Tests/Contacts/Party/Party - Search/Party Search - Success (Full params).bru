@@ -1,0 +1,21 @@
+meta {
+  name: Party Search - Success (Full params)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/contacts/parties?page=0&size=2&graph={"if":["type", "=", "company"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 2
+  graph: {"if":["type", "=", "company"]}
+}
+
+settings {
+  encodeUrl: true
+}

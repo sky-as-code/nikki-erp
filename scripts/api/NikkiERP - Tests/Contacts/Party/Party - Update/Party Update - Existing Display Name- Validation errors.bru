@@ -1,0 +1,24 @@
+meta {
+  name: Party Update - Existing Display Name- Validation errors
+  type: http
+  seq: 7
+}
+
+put {
+  url: {{api_host}}/v1/contacts/parties/{{party_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "avatarUrl": "{{$randomUrl}}/{{$randomWord}}.jpg",
+      "displayName": "Hannah Smith",
+      "etag": "1759114825782046200"
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

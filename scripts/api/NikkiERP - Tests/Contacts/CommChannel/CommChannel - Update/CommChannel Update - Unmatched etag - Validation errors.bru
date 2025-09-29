@@ -1,0 +1,27 @@
+meta {
+  name: CommChannel Update - Unmatched etag - Validation errors
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{api_host}}/v1/contacts/parties/channels/{{channel_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "partyId": "{{party_id}}",
+    "type": "post",
+    "valueJson" : {
+      "numberStreet": "297 An Duong Vuong",
+      "ward": "phuong 3"
+    },
+    "etag": "{{etag}}"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Relationship Create - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/contacts/parties/relationships
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "partyId" : "{{party_id}}",
+    "targetPartyId" : "{{target_party_id}}",
+    "type": "employee"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

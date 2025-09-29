@@ -1,0 +1,23 @@
+meta {
+  name: CommChannel Create - Invalid fields - Validation errors
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/contacts/parties/channels
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "orgId": "orgid",
+    "partyId": "partyid",
+    "type": "type"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
