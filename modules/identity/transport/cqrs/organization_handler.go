@@ -39,3 +39,7 @@ func (this *OrganizationHandler) GetOrganizationBySlug(ctx context.Context, pack
 func (this *OrganizationHandler) SearchOrganizations(ctx context.Context, packet *cqrs.RequestPacket[itOrg.SearchOrganizationsQuery]) (*cqrs.Reply[itOrg.SearchOrganizationsResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.OrgSvc.SearchOrganizations)
 }
+
+func (this *OrganizationHandler) ExistsOrgById(ctx context.Context, packet *cqrs.RequestPacket[itOrg.ExistsOrgByIdCommand]) (*cqrs.Reply[itOrg.ExistsOrgByIdResult], error) {
+	return cqrs.HandlePacket(ctx, packet, this.OrgSvc.ExistsOrgById)
+}

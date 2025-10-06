@@ -88,6 +88,11 @@ func ResourceName(v string) predicate.EntitlementAssignment {
 	return predicate.EntitlementAssignment(sql.FieldEQ(FieldResourceName, v))
 }
 
+// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
+func OrgID(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldEQ(FieldOrgID, v))
+}
+
 // EntitlementIDEQ applies the EQ predicate on the "entitlement_id" field.
 func EntitlementIDEQ(v string) predicate.EntitlementAssignment {
 	return predicate.EntitlementAssignment(sql.FieldEQ(FieldEntitlementID, v))
@@ -451,6 +456,81 @@ func ResourceNameEqualFold(v string) predicate.EntitlementAssignment {
 // ResourceNameContainsFold applies the ContainsFold predicate on the "resource_name" field.
 func ResourceNameContainsFold(v string) predicate.EntitlementAssignment {
 	return predicate.EntitlementAssignment(sql.FieldContainsFold(FieldResourceName, v))
+}
+
+// OrgIDEQ applies the EQ predicate on the "org_id" field.
+func OrgIDEQ(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldEQ(FieldOrgID, v))
+}
+
+// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
+func OrgIDNEQ(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldNEQ(FieldOrgID, v))
+}
+
+// OrgIDIn applies the In predicate on the "org_id" field.
+func OrgIDIn(vs ...string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldIn(FieldOrgID, vs...))
+}
+
+// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
+func OrgIDNotIn(vs ...string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldNotIn(FieldOrgID, vs...))
+}
+
+// OrgIDGT applies the GT predicate on the "org_id" field.
+func OrgIDGT(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldGT(FieldOrgID, v))
+}
+
+// OrgIDGTE applies the GTE predicate on the "org_id" field.
+func OrgIDGTE(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldGTE(FieldOrgID, v))
+}
+
+// OrgIDLT applies the LT predicate on the "org_id" field.
+func OrgIDLT(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldLT(FieldOrgID, v))
+}
+
+// OrgIDLTE applies the LTE predicate on the "org_id" field.
+func OrgIDLTE(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldLTE(FieldOrgID, v))
+}
+
+// OrgIDContains applies the Contains predicate on the "org_id" field.
+func OrgIDContains(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldContains(FieldOrgID, v))
+}
+
+// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
+func OrgIDHasPrefix(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldHasPrefix(FieldOrgID, v))
+}
+
+// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
+func OrgIDHasSuffix(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldHasSuffix(FieldOrgID, v))
+}
+
+// OrgIDIsNil applies the IsNil predicate on the "org_id" field.
+func OrgIDIsNil() predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldIsNull(FieldOrgID))
+}
+
+// OrgIDNotNil applies the NotNil predicate on the "org_id" field.
+func OrgIDNotNil() predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldNotNull(FieldOrgID))
+}
+
+// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
+func OrgIDEqualFold(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldEqualFold(FieldOrgID, v))
+}
+
+// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
+func OrgIDContainsFold(v string) predicate.EntitlementAssignment {
+	return predicate.EntitlementAssignment(sql.FieldContainsFold(FieldOrgID, v))
 }
 
 // HasEntitlement applies the HasEdge predicate on the "entitlement" edge.

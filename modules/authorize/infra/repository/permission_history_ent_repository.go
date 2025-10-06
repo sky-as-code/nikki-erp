@@ -23,17 +23,16 @@ type PermissionHistoryEntRepository struct {
 	client *ent.Client
 }
 
-func (this *PermissionHistoryEntRepository) Create(ctx crud.Context, permissionHistory domain.PermissionHistory) (*domain.PermissionHistory, error) {
-	var creation *ent.PermissionHistoryCreate
-	tx := ctx.GetDbTranx()
-
-	if tx != nil {
-		creation = tx.(*ent.Tx).PermissionHistory.Create()
-	} else {
-		creation = this.client.PermissionHistory.Create()
+func (this *PermissionHistoryEntRepository) permissionHistoryClient(ctx crud.Context) *ent.PermissionHistoryClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.PermissionHistory
 	}
+	return this.client.PermissionHistory
+}
 
-	creation = creation.
+func (this *PermissionHistoryEntRepository) Create(ctx crud.Context, permissionHistory *domain.PermissionHistory) (*domain.PermissionHistory, error) {
+	creation := this.permissionHistoryClient(ctx).Create().
 		SetID(*permissionHistory.Id).
 		SetNillableApproverID(permissionHistory.ApproverId).
 		SetNillableApproverEmail(permissionHistory.ApproverEmail).
@@ -54,6 +53,37 @@ func (this *PermissionHistoryEntRepository) Create(ctx crud.Context, permissionH
 		SetCreatedAt(time.Now())
 
 	return database.Mutate(ctx, creation, ent.IsNotFound, entToPermissionHistory)
+}
+
+func (this *PermissionHistoryEntRepository) EnableField(ctx crud.Context, params it.EnableFieldParam) error {
+	enableField := this.permissionHistoryClient(ctx).Update()
+
+	// Enable Entitlement
+	if params.EntitlementId != nil {
+		enableField.Where(
+			entPermissionHistory.EntitlementIDEQ(*params.EntitlementId),
+		).
+			ClearEntitlementID().
+			SetEntitlementExpr(params.EntitlementExpr)
+	}
+
+	// Enable Assignment
+	if params.AssignmentId != nil {
+		enableField.Where(
+			entPermissionHistory.EntitlementAssignmentIDEQ(*params.AssignmentId),
+		).
+			ClearEntitlementAssignmentID().
+			SetResolvedExpr(params.ResolvedExpr)
+	}
+
+	return enableField.Exec(ctx)
+}
+
+func (this *PermissionHistoryEntRepository) FindAllByEntitlementId(ctx crud.Context, param it.FindAllByEntitlementIdParam) ([]domain.PermissionHistory, error) {
+	query := this.permissionHistoryClient(ctx).Query().
+		Where(entPermissionHistory.EntitlementIDEQ(param.EntitlementId))
+
+	return database.List(ctx, query, entToPermissionHistories)
 }
 
 func BuildPermissionHistoryDescriptor() *orm.EntityDescriptor {

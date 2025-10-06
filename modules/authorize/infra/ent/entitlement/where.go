@@ -105,9 +105,9 @@ func ResourceID(v string) predicate.Entitlement {
 	return predicate.Entitlement(sql.FieldEQ(FieldResourceID, v))
 }
 
-// ScopeRef applies equality check predicate on the "scope_ref" field. It's identical to ScopeRefEQ.
-func ScopeRef(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldEQ(FieldScopeRef, v))
+// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
+func OrgID(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldEQ(FieldOrgID, v))
 }
 
 // ActionIDEQ applies the EQ predicate on the "action_id" field.
@@ -635,79 +635,79 @@ func ResourceIDContainsFold(v string) predicate.Entitlement {
 	return predicate.Entitlement(sql.FieldContainsFold(FieldResourceID, v))
 }
 
-// ScopeRefEQ applies the EQ predicate on the "scope_ref" field.
-func ScopeRefEQ(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldEQ(FieldScopeRef, v))
+// OrgIDEQ applies the EQ predicate on the "org_id" field.
+func OrgIDEQ(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldEQ(FieldOrgID, v))
 }
 
-// ScopeRefNEQ applies the NEQ predicate on the "scope_ref" field.
-func ScopeRefNEQ(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldNEQ(FieldScopeRef, v))
+// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
+func OrgIDNEQ(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldNEQ(FieldOrgID, v))
 }
 
-// ScopeRefIn applies the In predicate on the "scope_ref" field.
-func ScopeRefIn(vs ...string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldIn(FieldScopeRef, vs...))
+// OrgIDIn applies the In predicate on the "org_id" field.
+func OrgIDIn(vs ...string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldIn(FieldOrgID, vs...))
 }
 
-// ScopeRefNotIn applies the NotIn predicate on the "scope_ref" field.
-func ScopeRefNotIn(vs ...string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldNotIn(FieldScopeRef, vs...))
+// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
+func OrgIDNotIn(vs ...string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldNotIn(FieldOrgID, vs...))
 }
 
-// ScopeRefGT applies the GT predicate on the "scope_ref" field.
-func ScopeRefGT(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldGT(FieldScopeRef, v))
+// OrgIDGT applies the GT predicate on the "org_id" field.
+func OrgIDGT(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldGT(FieldOrgID, v))
 }
 
-// ScopeRefGTE applies the GTE predicate on the "scope_ref" field.
-func ScopeRefGTE(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldGTE(FieldScopeRef, v))
+// OrgIDGTE applies the GTE predicate on the "org_id" field.
+func OrgIDGTE(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldGTE(FieldOrgID, v))
 }
 
-// ScopeRefLT applies the LT predicate on the "scope_ref" field.
-func ScopeRefLT(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldLT(FieldScopeRef, v))
+// OrgIDLT applies the LT predicate on the "org_id" field.
+func OrgIDLT(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldLT(FieldOrgID, v))
 }
 
-// ScopeRefLTE applies the LTE predicate on the "scope_ref" field.
-func ScopeRefLTE(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldLTE(FieldScopeRef, v))
+// OrgIDLTE applies the LTE predicate on the "org_id" field.
+func OrgIDLTE(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldLTE(FieldOrgID, v))
 }
 
-// ScopeRefContains applies the Contains predicate on the "scope_ref" field.
-func ScopeRefContains(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldContains(FieldScopeRef, v))
+// OrgIDContains applies the Contains predicate on the "org_id" field.
+func OrgIDContains(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldContains(FieldOrgID, v))
 }
 
-// ScopeRefHasPrefix applies the HasPrefix predicate on the "scope_ref" field.
-func ScopeRefHasPrefix(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldHasPrefix(FieldScopeRef, v))
+// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
+func OrgIDHasPrefix(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldHasPrefix(FieldOrgID, v))
 }
 
-// ScopeRefHasSuffix applies the HasSuffix predicate on the "scope_ref" field.
-func ScopeRefHasSuffix(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldHasSuffix(FieldScopeRef, v))
+// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
+func OrgIDHasSuffix(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldHasSuffix(FieldOrgID, v))
 }
 
-// ScopeRefIsNil applies the IsNil predicate on the "scope_ref" field.
-func ScopeRefIsNil() predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldIsNull(FieldScopeRef))
+// OrgIDIsNil applies the IsNil predicate on the "org_id" field.
+func OrgIDIsNil() predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldIsNull(FieldOrgID))
 }
 
-// ScopeRefNotNil applies the NotNil predicate on the "scope_ref" field.
-func ScopeRefNotNil() predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldNotNull(FieldScopeRef))
+// OrgIDNotNil applies the NotNil predicate on the "org_id" field.
+func OrgIDNotNil() predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldNotNull(FieldOrgID))
 }
 
-// ScopeRefEqualFold applies the EqualFold predicate on the "scope_ref" field.
-func ScopeRefEqualFold(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldEqualFold(FieldScopeRef, v))
+// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
+func OrgIDEqualFold(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldEqualFold(FieldOrgID, v))
 }
 
-// ScopeRefContainsFold applies the ContainsFold predicate on the "scope_ref" field.
-func ScopeRefContainsFold(v string) predicate.Entitlement {
-	return predicate.Entitlement(sql.FieldContainsFold(FieldScopeRef, v))
+// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
+func OrgIDContainsFold(v string) predicate.Entitlement {
+	return predicate.Entitlement(sql.FieldContainsFold(FieldOrgID, v))
 }
 
 // HasPermissionHistories applies the HasEdge predicate on the "permission_histories" edge.

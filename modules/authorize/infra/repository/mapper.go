@@ -162,8 +162,8 @@ func entToEntitlementAssignment(dbEntitlementAssignment *ent.EntitlementAssignme
 	return entitlementAssignment
 }
 
-func entFromEffectiveUserEntitlement(dbEffectiveUserEntitlement *ent.EffectiveUserEntitlement) *domain.EntitlementAssignment {
-	entitlementAssignment := &domain.EntitlementAssignment{
+func entFromEffectiveUserEntitlement(dbEffectiveUserEntitlement *ent.EffectiveUserEntitlement) domain.EntitlementAssignment {
+	entitlementAssignment := domain.EntitlementAssignment{
 		SubjectRef:   &dbEffectiveUserEntitlement.UserID,
 		ActionName:   dbEffectiveUserEntitlement.ActionName,
 		ResourceName: dbEffectiveUserEntitlement.ResourceName,
@@ -180,8 +180,8 @@ func entFromEffectiveUserEntitlement(dbEffectiveUserEntitlement *ent.EffectiveUs
 	return entitlementAssignment
 }
 
-func entFromEffectiveGroupEntitlement(dbEffectiveGroupEntitlement *ent.EffectiveGroupEntitlement) *domain.EntitlementAssignment {
-	entitlementAssignment := &domain.EntitlementAssignment{
+func entFromEffectiveGroupEntitlement(dbEffectiveGroupEntitlement *ent.EffectiveGroupEntitlement) domain.EntitlementAssignment {
+	entitlementAssignment := domain.EntitlementAssignment{
 		SubjectRef:   &dbEffectiveGroupEntitlement.GroupID,
 		ActionName:   dbEffectiveGroupEntitlement.ActionName,
 		ResourceName: dbEffectiveGroupEntitlement.ResourceName,
@@ -198,27 +198,27 @@ func entFromEffectiveGroupEntitlement(dbEffectiveGroupEntitlement *ent.Effective
 	return entitlementAssignment
 }
 
-func effectiveEntToEntitlementAssignments(dbEffectiveUserEntitlements []*ent.EffectiveUserEntitlement, dbEffectiveGroupEntitlements []*ent.EffectiveGroupEntitlement) []*domain.EntitlementAssignment {
-	assignments := make([]*domain.EntitlementAssignment, 0)
+func effectiveEntToEntitlementAssignments(dbEffectiveUserEntitlements []*ent.EffectiveUserEntitlement, dbEffectiveGroupEntitlements []*ent.EffectiveGroupEntitlement) []domain.EntitlementAssignment {
+	assignments := make([]domain.EntitlementAssignment, 0)
 
 	if dbEffectiveUserEntitlements != nil {
-		assignments = append(assignments, array.Map(dbEffectiveUserEntitlements, func(dbEffectiveUserEntitlement *ent.EffectiveUserEntitlement) *domain.EntitlementAssignment {
+		assignments = append(assignments, array.Map(dbEffectiveUserEntitlements, func(dbEffectiveUserEntitlement *ent.EffectiveUserEntitlement) domain.EntitlementAssignment {
 			return entFromEffectiveUserEntitlement(dbEffectiveUserEntitlement)
 		})...)
 	}
 
 	if dbEffectiveGroupEntitlements != nil {
-		assignments = append(assignments, array.Map(dbEffectiveGroupEntitlements, func(dbEffectiveGroupEntitlement *ent.EffectiveGroupEntitlement) *domain.EntitlementAssignment {
+		assignments = append(assignments, array.Map(dbEffectiveGroupEntitlements, func(dbEffectiveGroupEntitlement *ent.EffectiveGroupEntitlement) domain.EntitlementAssignment {
 			return entFromEffectiveGroupEntitlement(dbEffectiveGroupEntitlement)
 		})...)
 	}
 	return assignments
 }
 
-func entToEntitlementAssignments(dbEntitlementAssignments []*ent.EntitlementAssignment) []*domain.EntitlementAssignment {
-	entitlementAssignments := make([]*domain.EntitlementAssignment, len(dbEntitlementAssignments))
+func entToEntitlementAssignments(dbEntitlementAssignments []*ent.EntitlementAssignment) []domain.EntitlementAssignment {
+	entitlementAssignments := make([]domain.EntitlementAssignment, len(dbEntitlementAssignments))
 	for i, dbEntitlementAssignment := range dbEntitlementAssignments {
-		entitlementAssignments[i] = entToEntitlementAssignment(dbEntitlementAssignment)
+		entitlementAssignments[i] = *entToEntitlementAssignment(dbEntitlementAssignment)
 	}
 	return entitlementAssignments
 }
@@ -295,6 +295,15 @@ func entToPermissionHistory(dbPermissionHistory *ent.PermissionHistory) *domain.
 	model.MustCopy(dbPermissionHistory, permissionHistory)
 
 	return permissionHistory
+}
+
+func entToPermissionHistories(dbPermissionHistories []*ent.PermissionHistory) []domain.PermissionHistory {
+	if dbPermissionHistories == nil {
+		return nil
+	}
+	return array.Map(dbPermissionHistories, func(dbPermissionHistory *ent.PermissionHistory) domain.PermissionHistory {
+		return *entToPermissionHistory(dbPermissionHistory)
+	})
 }
 
 // END: PermissionHistory

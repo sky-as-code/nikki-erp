@@ -17,9 +17,10 @@ type Entitlement struct {
 	ResourceId  *model.Id `json:"resourceId,omitempty"`
 	ScopeRef    *string   `json:"scopeRef,omitempty"`
 	CreatedBy   *string   `json:"createdBy,omitempty"`
+	OrgId       *model.Id `json:"orgId,omitempty"`
 
-	Action   *Action   `json:"action,omitempty" model:"-"`   // TODO: Handle copy
-	Resource *Resource `json:"resource,omitempty" model:"-"` // TODO: Handle copy
+	Action   *Action   `json:"action,omitempty" model:"-"` // TODO: Handle copy
+	Resource *Resource `json:"resource,omitempty" model:"-"`
 }
 
 func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {
@@ -44,7 +45,7 @@ func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {
 				val.Length(1, model.MODEL_RULE_DESC_LENGTH),
 			),
 		),
-		EntitlementScopeRefValidateRule(&this.ScopeRef),
+		// EntitlementScopeRefValidateRule(&this.ScopeRef),
 		model.IdPtrValidateRule(&this.ResourceId, !forEdit),
 		model.IdPtrValidateRule(&this.CreatedBy, !forEdit),
 	}

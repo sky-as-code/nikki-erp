@@ -104,16 +104,16 @@ func (ec *EntitlementCreate) SetNillableResourceID(s *string) *EntitlementCreate
 	return ec
 }
 
-// SetScopeRef sets the "scope_ref" field.
-func (ec *EntitlementCreate) SetScopeRef(s string) *EntitlementCreate {
-	ec.mutation.SetScopeRef(s)
+// SetOrgID sets the "org_id" field.
+func (ec *EntitlementCreate) SetOrgID(s string) *EntitlementCreate {
+	ec.mutation.SetOrgID(s)
 	return ec
 }
 
-// SetNillableScopeRef sets the "scope_ref" field if the given value is not nil.
-func (ec *EntitlementCreate) SetNillableScopeRef(s *string) *EntitlementCreate {
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (ec *EntitlementCreate) SetNillableOrgID(s *string) *EntitlementCreate {
 	if s != nil {
-		ec.SetScopeRef(*s)
+		ec.SetOrgID(*s)
 	}
 	return ec
 }
@@ -281,9 +281,9 @@ func (ec *EntitlementCreate) createSpec() (*Entitlement, *sqlgraph.CreateSpec) {
 		_spec.SetField(entitlement.FieldEtag, field.TypeString, value)
 		_node.Etag = value
 	}
-	if value, ok := ec.mutation.ScopeRef(); ok {
-		_spec.SetField(entitlement.FieldScopeRef, field.TypeString, value)
-		_node.ScopeRef = &value
+	if value, ok := ec.mutation.OrgID(); ok {
+		_spec.SetField(entitlement.FieldOrgID, field.TypeString, value)
+		_node.OrgID = &value
 	}
 	if nodes := ec.mutation.PermissionHistoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

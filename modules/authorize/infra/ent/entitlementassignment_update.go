@@ -168,6 +168,9 @@ func (eau *EntitlementAssignmentUpdate) sqlSave(ctx context.Context) (n int, err
 	if eau.mutation.ResourceNameCleared() {
 		_spec.ClearField(entitlementassignment.FieldResourceName, field.TypeString)
 	}
+	if eau.mutation.OrgIDCleared() {
+		_spec.ClearField(entitlementassignment.FieldOrgID, field.TypeString)
+	}
 	if eau.mutation.PermissionHistoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -402,6 +405,9 @@ func (eauo *EntitlementAssignmentUpdateOne) sqlSave(ctx context.Context) (_node 
 	}
 	if eauo.mutation.ResourceNameCleared() {
 		_spec.ClearField(entitlementassignment.FieldResourceName, field.TypeString)
+	}
+	if eauo.mutation.OrgIDCleared() {
+		_spec.ClearField(entitlementassignment.FieldOrgID, field.TypeString)
 	}
 	if eauo.mutation.PermissionHistoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{

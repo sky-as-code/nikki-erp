@@ -130,6 +130,12 @@ func (this *OrganizationEntRepository) Search(
 	)
 }
 
+func (this *OrganizationEntRepository) Exists(ctx crud.Context, id model.Id) (bool, error) {
+	return this.orgClient(ctx).Query().
+		Where(entOrg.ID(id)).
+		Exist(ctx)
+}
+
 func BuildOrganizationDescriptor() *orm.EntityDescriptor {
 	entity := ent.Organization{}
 	builder := orm.DescribeEntity(entOrg.Label).

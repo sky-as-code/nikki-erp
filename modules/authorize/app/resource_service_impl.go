@@ -6,22 +6,19 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
 )
 
-func NewResourceServiceImpl(resourceRepo it.ResourceRepository, eventBus event.EventBus) it.ResourceService {
+func NewResourceServiceImpl(resourceRepo it.ResourceRepository) it.ResourceService {
 	return &ResourceServiceImpl{
 		resourceRepo: resourceRepo,
-		eventBus:     eventBus,
 	}
 }
 
 type ResourceServiceImpl struct {
 	resourceRepo it.ResourceRepository
-	eventBus     event.EventBus
 }
 
 func (this *ResourceServiceImpl) CreateResource(ctx crud.Context, cmd it.CreateResourceCommand) (*it.CreateResourceResult, error) {
@@ -93,6 +90,25 @@ func (this *ResourceServiceImpl) DeleteResourceHard(ctx crud.Context, cmd it.Del
 	return result, err
 }
 
+func (this *ResourceServiceImpl) GetResourceById(ctx crud.Context, query it.GetResourceByIdQuery) (*it.GetResourceByIdResult, error) {
+	return crud.GetOne(ctx, crud.GetOneParam[*domain.Resource, it.GetResourceByIdQuery, it.GetResourceByIdResult]{
+		Action:      "get resource by id",
+		Query:       query,
+		RepoFindOne: this.getResourceByIdFull,
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *it.GetResourceByIdResult {
+			return &it.GetResourceByIdResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Resource) *it.GetResourceByIdResult {
+			return &it.GetResourceByIdResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
+	})
+}
+
 func (this *ResourceServiceImpl) GetResourceByName(ctx crud.Context, query it.GetResourceByNameQuery) (*it.GetResourceByNameResult, error) {
 	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.Resource, it.GetResourceByNameQuery, it.GetResourceByNameResult]{
 		Action:      "get resource by name",
@@ -147,6 +163,16 @@ func (this *ResourceServiceImpl) SearchResources(ctx crud.Context, query it.Sear
 	return result, err
 }
 
+func (this *ResourceServiceImpl) getResourceByIdFull(ctx crud.Context, query it.GetResourceByIdQuery, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
+	dbResource, err = this.resourceRepo.FindById(ctx, query)
+	fault.PanicOnErr(err)
+
+	if dbResource == nil {
+		vErrs.AppendNotFound("resource_id", "resource")
+	}
+	return
+}
+
 func (this *ResourceServiceImpl) getResourceByNameFull(ctx crud.Context, query it.GetResourceByNameQuery, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {
 	dbResource, err = this.resourceRepo.FindByName(ctx, query)
 	fault.PanicOnErr(err)
@@ -180,6 +206,10 @@ func (this *ResourceServiceImpl) assertResourceExistsById(ctx crud.Context, reso
 func (this *ResourceServiceImpl) sanitizeResource(resource *domain.Resource) {
 	if resource.Description != nil {
 		resource.Description = util.ToPtr(defense.SanitizePlainText(*resource.Description, true))
+	}
+
+	if resource.Name != nil {
+		resource.Name = util.ToPtr(defense.SanitizePlainText(*resource.Name, true))
 	}
 }
 

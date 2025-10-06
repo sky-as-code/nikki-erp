@@ -17,7 +17,7 @@ func init() {
 	req = (*CreateEntitlementCommand)(nil)
 	req = (*EntitlementExistsCommand)(nil)
 	req = (*UpdateEntitlementCommand)(nil)
-	req = (*DeleteEntitlementHardByIdQuery)(nil)
+	req = (*DeleteEntitlementHardByIdCommand)(nil)
 	req = (*GetEntitlementByIdQuery)(nil)
 	req = (*GetEntitlementByNameQuery)(nil)
 	req = (*GetAllEntitlementByIdsQuery)(nil)
@@ -38,9 +38,10 @@ type CreateEntitlementCommand struct {
 	Description *string   `json:"description,omitempty"`
 	ActionId    *model.Id `json:"actionId,omitempty"`
 	ResourceId  *model.Id `json:"resourceId,omitempty"`
-	ScopeRef    *model.Id `json:"scopeRef,omitempty"`
 	ActionExpr  string    `json:"actionExpr"`
 	CreatedBy   string    `json:"createdBy"`
+	OrgId       *model.Id `json:"orgId,omitempty"`
+	// ScopeRef    *model.Id `json:"scopeRef,omitempty"`
 }
 
 func (CreateEntitlementCommand) CqrsRequestType() cqrs.RequestType {
@@ -100,22 +101,22 @@ type UpdateEntitlementResult = crud.OpResult[*domain.Entitlement]
 
 // END: UpdateEntitlementCommand
 
-// START: DeleteEntitlementHardByIdQuery
-var deleteEntitlementHardByIdQueryType = cqrs.RequestType{
+// START: DeleteEntitlementHardByIdCommand
+var deleteEntitlementHardByIdCommandType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "entitlement",
 	Action:    "deleteHardById",
 }
 
-type DeleteEntitlementHardByIdQuery struct {
+type DeleteEntitlementHardByIdCommand struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (DeleteEntitlementHardByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return deleteEntitlementHardByIdQueryType
+func (DeleteEntitlementHardByIdCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteEntitlementHardByIdCommandType
 }
 
-func (this DeleteEntitlementHardByIdQuery) Validate() fault.ValidationErrors {
+func (this DeleteEntitlementHardByIdCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
@@ -124,7 +125,7 @@ func (this DeleteEntitlementHardByIdQuery) Validate() fault.ValidationErrors {
 
 type DeleteEntitlementHardByIdResult = crud.DeletionResult
 
-// END: DeleteEntitlementHardByIdQuery
+// END: DeleteEntitlementHardByIdCommand
 
 // START: GetEntitlementByIdQuery
 var getEntitlementByIdQueryType = cqrs.RequestType{
@@ -160,7 +161,8 @@ var getEntitlementByNameQueryType = cqrs.RequestType{
 }
 
 type GetEntitlementByNameQuery struct {
-	Name string `param:"name" json:"name"`
+	Name  string    `param:"name" json:"name"`
+	OrgId *model.Id `json:"orgId,omitempty"`
 }
 
 func (GetEntitlementByNameQuery) CqrsRequestType() cqrs.RequestType {
@@ -205,7 +207,8 @@ var getEntitlementByActionExprQueryType = cqrs.RequestType{
 }
 
 type GetEntitlementByActionExprQuery struct {
-	ActionExpr string `param:"actionExpr" json:"actionExpr"`
+	ActionExpr string    `param:"actionExpr" json:"actionExpr"`
+	OrgId      *model.Id `json:"orgId,omitempty"`
 }
 
 func (GetEntitlementByActionExprQuery) CqrsRequestType() cqrs.RequestType {
@@ -224,9 +227,7 @@ var searchEntitlementsQueryType = cqrs.RequestType{
 }
 
 type SearchEntitlementsQuery struct {
-	Page  *int    `json:"page" query:"page"`
-	Size  *int    `json:"size" query:"size"`
-	Graph *string `json:"graph" query:"graph"`
+	crud.SearchQuery
 }
 
 func (SearchEntitlementsQuery) CqrsRequestType() cqrs.RequestType {

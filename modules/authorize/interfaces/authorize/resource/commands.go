@@ -20,6 +20,7 @@ func init() {
 	req = (*UpdateResourceCommand)(nil)
 	req = (*DeleteResourceHardByNameQuery)(nil)
 	req = (*GetResourceByNameQuery)(nil)
+	req = (*GetResourceByIdQuery)(nil)
 	req = (*SearchResourcesQuery)(nil)
 	req = (*ExistResourceParam)(nil)
 	util.Unused(req)
@@ -115,6 +116,16 @@ type GetResourceByIdQuery struct {
 func (GetResourceByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getResourceByIdQueryType
 }
+
+func (this GetResourceByIdQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type GetResourceByIdResult = crud.OpResult[*domain.Resource]
 
 // END: GetResourceByIdQuery
 

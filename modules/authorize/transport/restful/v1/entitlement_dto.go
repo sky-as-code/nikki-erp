@@ -17,9 +17,9 @@ type EntitlementDto struct {
 	Description *string   `json:"description,omitempty"`
 	ActionId    *model.Id `json:"actionId,omitempty"`
 	ResourceId  *model.Id `json:"resourceId,omitempty"`
-	ScopeRef    *model.Id `json:"scopeRef,omitempty"`
 	ActionExpr  *string   `json:"actionExpr,omitempty"`
 	CreatedBy   model.Id  `json:"createdBy"`
+	OrgId       *model.Id `json:"orgId,omitempty"`
 
 	Resource *ResourceSummaryDto `json:"resource,omitempty"`
 	Action   *ActionSummaryDto   `json:"action,omitempty"`
@@ -63,7 +63,7 @@ type CreateEntitlementResponse = httpserver.RestCreateResponse
 type UpdateEntitlementRequest = it.UpdateEntitlementCommand
 type UpdateEntitlementResponse = httpserver.RestUpdateResponse
 
-type DeleteEntitlementHardByIdRequest = it.DeleteEntitlementHardByIdQuery
+type DeleteEntitlementHardByIdRequest = it.DeleteEntitlementHardByIdCommand
 type DeleteEntitlementHardByIdResponse = httpserver.RestDeleteResponse
 
 type GetEntitlementByIdRequest = it.GetEntitlementByIdQuery

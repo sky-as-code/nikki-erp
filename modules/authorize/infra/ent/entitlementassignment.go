@@ -23,12 +23,14 @@ type EntitlementAssignment struct {
 	SubjectType entitlementassignment.SubjectType `json:"subject_type,omitempty"`
 	// SubjectRef holds the value of the "subject_ref" field.
 	SubjectRef string `json:"subject_ref,omitempty"`
-	// Format: '{subjectRef}:{actionName}:{scopeRef}.{resourceName}' E.g: '01JWNXT3EY7FG47VDJTEPTDC98:create:01JWNZ5KW6WC643VXGKV1D0J64.user'
+	// Format: '{subjectRef}:{scopeRef}:{resourceName}:{actionName}' E.g: '01JWNXT3EY7FG47VDJTEPTDC98:01JWNZ5KW6WC643VXGKV1D0J64.user:create'
 	ResolvedExpr string `json:"resolved_expr,omitempty"`
 	// Denormalized action name for easier search and display
 	ActionName *string `json:"action_name,omitempty"`
 	// Denormalized resource name for easier search and display
 	ResourceName *string `json:"resource_name,omitempty"`
+	// OrgID holds the value of the "org_id" field.
+	OrgID *string `json:"org_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EntitlementAssignmentQuery when eager-loading is set.
 	Edges        EntitlementAssignmentEdges `json:"edges"`
@@ -71,7 +73,7 @@ func (*EntitlementAssignment) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case entitlementassignment.FieldID, entitlementassignment.FieldEntitlementID, entitlementassignment.FieldSubjectType, entitlementassignment.FieldSubjectRef, entitlementassignment.FieldResolvedExpr, entitlementassignment.FieldActionName, entitlementassignment.FieldResourceName:
+		case entitlementassignment.FieldID, entitlementassignment.FieldEntitlementID, entitlementassignment.FieldSubjectType, entitlementassignment.FieldSubjectRef, entitlementassignment.FieldResolvedExpr, entitlementassignment.FieldActionName, entitlementassignment.FieldResourceName, entitlementassignment.FieldOrgID:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -131,6 +133,13 @@ func (ea *EntitlementAssignment) assignValues(columns []string, values []any) er
 			} else if value.Valid {
 				ea.ResourceName = new(string)
 				*ea.ResourceName = value.String
+			}
+		case entitlementassignment.FieldOrgID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field org_id", values[i])
+			} else if value.Valid {
+				ea.OrgID = new(string)
+				*ea.OrgID = value.String
 			}
 		default:
 			ea.selectValues.Set(columns[i], values[i])
@@ -197,6 +206,11 @@ func (ea *EntitlementAssignment) String() string {
 	builder.WriteString(", ")
 	if v := ea.ResourceName; v != nil {
 		builder.WriteString("resource_name=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := ea.OrgID; v != nil {
+		builder.WriteString("org_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteByte(')')

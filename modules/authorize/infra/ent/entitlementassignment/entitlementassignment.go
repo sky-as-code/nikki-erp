@@ -26,6 +26,8 @@ const (
 	FieldActionName = "action_name"
 	// FieldResourceName holds the string denoting the resource_name field in the database.
 	FieldResourceName = "resource_name"
+	// FieldOrgID holds the string denoting the org_id field in the database.
+	FieldOrgID = "org_id"
 	// EdgeEntitlement holds the string denoting the entitlement edge name in mutations.
 	EdgeEntitlement = "entitlement"
 	// EdgePermissionHistories holds the string denoting the permission_histories edge name in mutations.
@@ -57,6 +59,7 @@ var Columns = []string{
 	FieldResolvedExpr,
 	FieldActionName,
 	FieldResourceName,
+	FieldOrgID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -130,6 +133,11 @@ func ByActionName(opts ...sql.OrderTermOption) OrderOption {
 // ByResourceName orders the results by the resource_name field.
 func ByResourceName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResourceName, opts...).ToFunc()
+}
+
+// ByOrgID orders the results by the org_id field.
+func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
 }
 
 // ByEntitlementField orders the results by entitlement field.

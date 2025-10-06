@@ -260,7 +260,7 @@ func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx crud.Context, cmd
 
 func (this *GrantRequestServiceImpl) GetGrantRequestById(ctx crud.Context, query itGrantRequest.GetGrantRequestByIdQuery) (*itGrantRequest.GetGrantRequestByIdResult, error) {
 	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.GrantRequest, itGrantRequest.GetGrantRequestByIdQuery, itGrantRequest.GetGrantRequestByIdResult]{
-		Action:      "get user by Id",
+		Action:      "get grant request by Id",
 		Query:       query,
 		RepoFindOne: this.getGrantRequestById,
 		ToFailureResult: func(vErrs *fault.ValidationErrors) *itGrantRequest.GetGrantRequestByIdResult {

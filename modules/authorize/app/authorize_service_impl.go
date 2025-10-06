@@ -85,7 +85,7 @@ func (this *AuthorizeServiceImpl) isUserAuthorized(ctx crud.Context, query itAut
 	fault.PanicOnErr(err)
 
 	for _, assignment := range userAssignments {
-		if this.matchAssignment(assignment, query) {
+		if this.matchAssignment(&assignment, query) {
 			return &itAuthorize.IsAuthorizedResult{
 				Decision: convert.StringPtr(itAuthorize.DecisionAllow),
 			}, nil
@@ -105,7 +105,7 @@ func (this *AuthorizeServiceImpl) isGroupAuthorized(ctx crud.Context, query itAu
 	fault.PanicOnErr(err)
 
 	for _, assignment := range groupAssignments {
-		if this.matchAssignment(assignment, query) {
+		if this.matchAssignment(&assignment, query) {
 			return &itAuthorize.IsAuthorizedResult{
 				Decision: convert.StringPtr(itAuthorize.DecisionAllow),
 			}, nil
@@ -127,7 +127,7 @@ func (this *AuthorizeServiceImpl) isAuthorizedLegacy(ctx crud.Context, query itA
 	fault.PanicOnErr(err)
 
 	for _, assignment := range assignments {
-		if this.matchAssignment(assignment, query) {
+		if this.matchAssignment(&assignment, query) {
 			return &itAuthorize.IsAuthorizedResult{
 				Decision: convert.StringPtr(itAuthorize.DecisionAllow),
 			}, nil
@@ -174,8 +174,8 @@ func (this *AuthorizeServiceImpl) getSuiteRoles(ctx crud.Context, suiteRef strin
 	return roles, nil
 }
 
-func (this *AuthorizeServiceImpl) getAssignmentsForSubjects(ctx crud.Context, subjects []itAuthorize.Subject) ([]*domain.EntitlementAssignment, error) {
-	assignments := []*domain.EntitlementAssignment{}
+func (this *AuthorizeServiceImpl) getAssignmentsForSubjects(ctx crud.Context, subjects []itAuthorize.Subject) ([]domain.EntitlementAssignment, error) {
+	assignments := []domain.EntitlementAssignment{}
 
 	for _, subject := range subjects {
 		res, err := this.entAssignmentRepo.FindAllBySubject(ctx, itAssign.FindBySubjectParam{

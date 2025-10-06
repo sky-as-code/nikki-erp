@@ -84,8 +84,8 @@ func (this EntitlementRest) DeleteEntitlementHard(echoCtx echo.Context) (err err
 	err = httpserver.ServeRequest(
 		echoCtx,
 		this.EntitlementSvc.DeleteEntitlementHard,
-		func(request DeleteEntitlementHardByIdRequest) it.DeleteEntitlementHardByIdQuery {
-			return it.DeleteEntitlementHardByIdQuery(request)
+		func(request DeleteEntitlementHardByIdRequest) it.DeleteEntitlementHardByIdCommand {
+			return it.DeleteEntitlementHardByIdCommand(request)
 		},
 		func(result it.DeleteEntitlementHardByIdResult) DeleteEntitlementHardByIdResponse {
 			response := DeleteEntitlementHardByIdResponse{}

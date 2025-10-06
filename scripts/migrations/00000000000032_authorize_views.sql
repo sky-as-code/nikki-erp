@@ -23,9 +23,10 @@ BEGIN
 				entitlement.action_expr,
 				entitlement.resource_id,
 				assignment.resource_name,
-				entitlement.scope_ref,
+				entitlement.org_id,
 				resource.scope_type,
 				entitlement.action_id,
+				assignment.scope_ref,
 				assignment.action_name,
 				'nikki_user' AS source
 			FROM authz_entitlement_assignments assignment
@@ -45,9 +46,10 @@ BEGIN
 				entitlement.action_expr,
 				entitlement.resource_id,
 				assignment.resource_name,
-				entitlement.scope_ref,
+				entitlement.org_id,
 				resource.scope_type,
 				entitlement.action_id,
+				assignment.scope_ref,
 				assignment.action_name,
 				'nikki_group' AS source
 			FROM authz_entitlement_assignments assignment
@@ -68,9 +70,10 @@ BEGIN
 				entitlement.action_expr,
 				entitlement.resource_id,
 				assignment.resource_name,
-				entitlement.scope_ref,
+				entitlement.org_id,
 				resource.scope_type,
 				entitlement.action_id,
+				assignment.scope_ref,
 				assignment.action_name,
 				'nikki_role' AS source
 			FROM authz_entitlement_assignments assignment
@@ -97,9 +100,10 @@ BEGIN
 				entitlement.action_expr,
 				entitlement.resource_id,
 				assignment.resource_name,
-				entitlement.scope_ref,
+				entitlement.org_id,
 				resource.scope_type,
 				entitlement.action_id,
+				assignment.scope_ref,
 				assignment.action_name,
 				'nikki_suite' AS source
 			FROM authz_entitlement_assignments assignment
@@ -120,9 +124,10 @@ BEGIN
 				entitlement.action_expr,
 				entitlement.resource_id,
 				assignment.resource_name,
-				entitlement.scope_ref,
+				entitlement.org_id,
 				resource.scope_type,
 				entitlement.action_id,
+				assignment.scope_ref,
 				assignment.action_name,
 				'nikki_group_role' AS source
 			FROM authz_entitlement_assignments assignment
@@ -149,9 +154,10 @@ BEGIN
 				entitlement.action_expr,
 				entitlement.resource_id,
 				assignment.resource_name,
-				entitlement.scope_ref,
+				entitlement.org_id,
 				resource.scope_type,
 				entitlement.action_id,
+				assignment.scope_ref,
 				assignment.action_name,
 				'nikki_group_suite' AS source
 			FROM authz_entitlement_assignments assignment
@@ -182,9 +188,10 @@ BEGIN
 				entitlement.action_expr,
 				entitlement.resource_id,
 				assignment.resource_name,
-				entitlement.scope_ref,
+				entitlement.org_id,
 				resource.scope_type,
 				entitlement.action_id,
+				assignment.scope_ref,
 				assignment.action_name,
 				'nikki_group' AS source
 			FROM authz_entitlement_assignments assignment
@@ -205,9 +212,10 @@ BEGIN
 				entitlement.action_expr,
 				entitlement.resource_id,
 				assignment.resource_name,
-				entitlement.scope_ref,
+				entitlement.org_id,
 				resource.scope_type,
 				entitlement.action_id,
+				assignment.scope_ref,
 				assignment.action_name,
 				'nikki_group_role' AS source
 			FROM authz_entitlement_assignments assignment
@@ -234,9 +242,10 @@ BEGIN
 				entitlement.action_expr,
 				entitlement.resource_id,
 				assignment.resource_name,
-				entitlement.scope_ref,
+				entitlement.org_id,
 				resource.scope_type,
 				entitlement.action_id,
+				assignment.scope_ref,
 				assignment.action_name,
 				'nikki_group_suite' AS source
 			FROM authz_entitlement_assignments assignment
