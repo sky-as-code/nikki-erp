@@ -16,7 +16,7 @@ type OrganizationRepository interface {
 	FindBySlug(ctx crud.Context, query FindBySlugParam) (*domain.Organization, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Organization], error)
-	Update(ctx crud.Context, organization domain.Organization, prevEtag model.Etag) (*domain.Organization, error)
+	Update(ctx crud.Context, organization *domain.Organization, prevEtag model.Etag) (*domain.Organization, error)
 	Exists(ctx crud.Context, id model.Id) (bool, error)
 }
 
