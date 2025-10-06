@@ -32,7 +32,7 @@ func (EntitlementAssignmentMixin) Fields() []ent.Field {
 
 		field.String("resolved_expr").
 			Immutable().
-			Comment("Format: '{subjectRef}:{actionName}:{scopeRef}.{resourceName}' E.g: '01JWNXT3EY7FG47VDJTEPTDC98:create:01JWNZ5KW6WC643VXGKV1D0J64.user'"),
+			Comment("Format: '{subjectRef}:{scopeRef}:{resourceName}:{actionName}' E.g: '01JWNXT3EY7FG47VDJTEPTDC98:01JWNZ5KW6WC643VXGKV1D0J64.user:create'"),
 
 		field.String("action_name").
 			Optional().
@@ -43,6 +43,18 @@ func (EntitlementAssignmentMixin) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("Denormalized resource name for easier search and display"),
+
+		// NULL means regardless of scope
+		// field.String("scope_ref").
+		// 	Optional().
+		// 	Nillable().
+		// 	Immutable(),
+
+		// NULL means regardless of level
+		field.String("org_id").
+			Optional().
+			Nillable().
+			Immutable(),
 	}
 }
 
@@ -74,7 +86,7 @@ func (EntitlementAssignment) Annotations() []schema.Annotation {
 
 func (EntitlementAssignment) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("entitlement_id", "subject_type", "subject_ref").Unique(),
+		index.Fields("entitlement_id", "subject_type", "subject_ref", "org_id").Unique(),
 		index.Fields("resolved_expr"),
 		index.Fields("action_name"),
 		index.Fields("resource_name"),

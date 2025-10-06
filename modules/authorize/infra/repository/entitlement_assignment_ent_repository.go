@@ -26,7 +26,15 @@ type EntitlementAssignmentEntRepository struct {
 	client *ent.Client
 }
 
-func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx crud.Context, param it.FindBySubjectParam) ([]*domain.EntitlementAssignment, error) {
+func (this *EntitlementAssignmentEntRepository) assignmentClient(ctx crud.Context) *ent.EntitlementAssignmentClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.EntitlementAssignment
+	}
+	return this.client.EntitlementAssignment
+}
+
+func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx crud.Context, param it.FindBySubjectParam) ([]domain.EntitlementAssignment, error) {
 	query := this.client.EntitlementAssignment.Query().
 		Where(entAssign.SubjectTypeEQ(entAssign.SubjectType(param.SubjectType))).
 		Where(entAssign.SubjectRefEQ(param.SubjectRef)).
@@ -34,17 +42,17 @@ func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx crud.Contex
 			eq.WithResource()
 		})
 
-	return database.List(ctx, query, func(assignments []*ent.EntitlementAssignment) []*domain.EntitlementAssignment {
-		result := make([]*domain.EntitlementAssignment, len(assignments))
+	return database.List(ctx, query, func(assignments []*ent.EntitlementAssignment) []domain.EntitlementAssignment {
+		result := make([]domain.EntitlementAssignment, len(assignments))
 		for i, assignment := range assignments {
-			result[i] = entToEntitlementAssignment(assignment)
+			result[i] = *entToEntitlementAssignment(assignment)
 		}
 		return result
 	})
 }
 
-func (this *EntitlementAssignmentEntRepository) FindViewsById(ctx crud.Context, param it.FindViewsByIdParam) ([]*domain.EntitlementAssignment, error) {
-	assignments := make([]*domain.EntitlementAssignment, 0)
+func (this *EntitlementAssignmentEntRepository) FindViewsById(ctx crud.Context, param it.FindViewsByIdParam) ([]domain.EntitlementAssignment, error) {
+	assignments := make([]domain.EntitlementAssignment, 0)
 
 	switch param.SubjectType {
 	case domain.EntitlementAssignmentSubjectTypeNikkiUser.String():
@@ -66,20 +74,26 @@ func (this *EntitlementAssignmentEntRepository) FindViewsById(ctx crud.Context, 
 	return assignments, nil
 }
 
-func (this *EntitlementAssignmentEntRepository) FindAllByEntitlementId(ctx crud.Context, param it.FindAllByEntitlementIdParam) ([]*domain.EntitlementAssignment, error) {
+func (this *EntitlementAssignmentEntRepository) FindAllByEntitlementId(ctx crud.Context, param it.FindAllByEntitlementIdParam) ([]domain.EntitlementAssignment, error) {
 	query := this.client.EntitlementAssignment.Query().
 		Where(entAssign.EntitlementIDEQ(param.EntitlementId))
 
 	return database.List(ctx, query, entToEntitlementAssignments)
 }
 
-func (this *EntitlementAssignmentEntRepository) DeleteHard(ctx crud.Context, param it.DeleteEntitlementAssignmentByIdQuery) (int, error) {
-	return this.client.EntitlementAssignment.Delete().
+func (this *EntitlementAssignmentEntRepository) DeleteHard(ctx crud.Context, param it.DeleteHardParam) (int, error) {
+	return this.assignmentClient(ctx).Delete().
 		Where(entAssign.IDEQ(param.Id)).
 		Exec(ctx)
 }
 
-func (this *EntitlementAssignmentEntRepository) DeleteHardTx(ctx crud.Context, param it.DeleteEntitlementAssignmentByIdQuery) (int, error) {
+func (this *EntitlementAssignmentEntRepository) DeleteHardByEntitlementId(ctx crud.Context, param it.DeleteHardByEntitlementIdParam) (int, error) {
+	return this.assignmentClient(ctx).Delete().
+		Where(entAssign.EntitlementIDEQ(param.EntitlementId)).
+		Exec(ctx)
+}
+
+func (this *EntitlementAssignmentEntRepository) DeleteHardTx(ctx crud.Context, param it.DeleteHardParam) (int, error) {
 	tx, err := this.client.Tx(ctx)
 	fault.PanicOnErr(err)
 
@@ -117,7 +131,7 @@ func (this *EntitlementAssignmentEntRepository) setEntitlementAssignmentIdNullTx
 	return err
 }
 
-func (this *EntitlementAssignmentEntRepository) getUserEffectiveEntitlements(ctx crud.Context, userId model.Id) ([]*domain.EntitlementAssignment, error) {
+func (this *EntitlementAssignmentEntRepository) getUserEffectiveEntitlements(ctx crud.Context, userId model.Id) ([]domain.EntitlementAssignment, error) {
 	effectiveAssignments, err := this.client.EffectiveUserEntitlement.
 		Query().
 		Where(entEffectiveUser.UserIDEQ(userId)).
@@ -130,7 +144,7 @@ func (this *EntitlementAssignmentEntRepository) getUserEffectiveEntitlements(ctx
 	return effectiveEntToEntitlementAssignments(effectiveAssignments, nil), nil
 }
 
-func (this *EntitlementAssignmentEntRepository) getGroupEffectiveEntitlements(ctx crud.Context, groupId model.Id) ([]*domain.EntitlementAssignment, error) {
+func (this *EntitlementAssignmentEntRepository) getGroupEffectiveEntitlements(ctx crud.Context, groupId model.Id) ([]domain.EntitlementAssignment, error) {
 	effectiveAssignments, err := this.client.EffectiveGroupEntitlement.
 		Query().
 		Where(entEffectiveGroup.GroupIDEQ(groupId)).
@@ -141,6 +155,14 @@ func (this *EntitlementAssignmentEntRepository) getGroupEffectiveEntitlements(ct
 	}
 
 	return effectiveEntToEntitlementAssignments(nil, effectiveAssignments), nil
+}
+
+func (this *EntitlementAssignmentEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.EntitlementAssignment, error) {
+	query := this.assignmentClient(ctx).Query().
+		Where(entAssign.IDEQ(param.Id)).
+		WithEntitlement()
+
+	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlementAssignment)
 }
 
 func BuildEntitlementAssignmentDescriptor() *orm.EntityDescriptor {

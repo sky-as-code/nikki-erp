@@ -169,8 +169,11 @@ func DeleteHard[
 	flow := val.StartValidationFlow(param.Command)
 	vErrs, err := flow.
 		Step(func(vErrs *ft.ValidationErrors) error {
-			modelFromDb, err = param.AssertExists(ctx, modelToDel, vErrs)
-			return err
+			if param.AssertExists != nil {
+				modelFromDb, err = param.AssertExists(ctx, modelToDel, vErrs)
+				return err
+			}
+			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			if param.AssertBusinessRules != nil {

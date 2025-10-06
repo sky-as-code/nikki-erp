@@ -21,7 +21,7 @@ type Entitlement struct {
 	ID string `json:"id,omitempty"`
 	// ActionID holds the value of the "action_id" field.
 	ActionID *string `json:"action_id,omitempty"`
-	// Format: '{actionName}:{scopeRef}.{resourceName}' E.g: 'create:01JWNZ5KW6WC643VXGKV1D0J64.user', '*:01JWNZ5KW6WC643VXGKV1D0J64.*'
+	// Format: '{resourceName}:{actionName}' E.g: 'user:create', '*:*'
 	ActionExpr string `json:"action_expr,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
@@ -35,8 +35,8 @@ type Entitlement struct {
 	Etag string `json:"etag,omitempty"`
 	// ResourceID holds the value of the "resource_id" field.
 	ResourceID *string `json:"resource_id,omitempty"`
-	// ScopeRef holds the value of the "scope_ref" field.
-	ScopeRef *string `json:"scope_ref,omitempty"`
+	// OrgID holds the value of the "org_id" field.
+	OrgID *string `json:"org_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EntitlementQuery when eager-loading is set.
 	Edges        EntitlementEdges `json:"edges"`
@@ -103,7 +103,7 @@ func (*Entitlement) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case entitlement.FieldID, entitlement.FieldActionID, entitlement.FieldActionExpr, entitlement.FieldCreatedBy, entitlement.FieldName, entitlement.FieldDescription, entitlement.FieldEtag, entitlement.FieldResourceID, entitlement.FieldScopeRef:
+		case entitlement.FieldID, entitlement.FieldActionID, entitlement.FieldActionExpr, entitlement.FieldCreatedBy, entitlement.FieldName, entitlement.FieldDescription, entitlement.FieldEtag, entitlement.FieldResourceID, entitlement.FieldOrgID:
 			values[i] = new(sql.NullString)
 		case entitlement.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -179,12 +179,12 @@ func (e *Entitlement) assignValues(columns []string, values []any) error {
 				e.ResourceID = new(string)
 				*e.ResourceID = value.String
 			}
-		case entitlement.FieldScopeRef:
+		case entitlement.FieldOrgID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field scope_ref", values[i])
+				return fmt.Errorf("unexpected type %T for field org_id", values[i])
 			} else if value.Valid {
-				e.ScopeRef = new(string)
-				*e.ScopeRef = value.String
+				e.OrgID = new(string)
+				*e.OrgID = value.String
 			}
 		default:
 			e.selectValues.Set(columns[i], values[i])
@@ -272,8 +272,8 @@ func (e *Entitlement) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	if v := e.ScopeRef; v != nil {
-		builder.WriteString("scope_ref=")
+	if v := e.OrgID; v != nil {
+		builder.WriteString("org_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteByte(')')

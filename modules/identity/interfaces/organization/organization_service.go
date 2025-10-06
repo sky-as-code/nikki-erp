@@ -11,4 +11,5 @@ type OrganizationService interface {
 	GetOrganizationById(ctx crud.Context, query GetOrganizationByIdQuery) (*GetOrganizationByIdResult, error)
 	SearchOrganizations(ctx crud.Context, query SearchOrganizationsQuery) (*SearchOrganizationsResult, error)
 	UpdateOrganization(ctx crud.Context, cmd UpdateOrganizationCommand) (*UpdateOrganizationResult, error)
+	ExistsOrgById(ctx crud.Context, cmd ExistsOrgByIdCommand) (*ExistsOrgByIdResult, error)
 }

@@ -355,3 +355,19 @@ func (this *OrganizationServiceImpl) getOrgByIdFull(ctx crud.Context, query itOr
 
 	return dbOrg, err
 }
+
+func (this *OrganizationServiceImpl) ExistsOrgById(ctx crud.Context, cmd itOrg.ExistsOrgByIdCommand) (result *itOrg.ExistsOrgByIdResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "check if organization exists"); e != nil {
+			err = e
+		}
+	}()
+
+	exists, err := this.orgRepo.Exists(ctx, cmd.Id)
+	ft.PanicOnErr(err)
+
+	return &itOrg.ExistsOrgByIdResult{
+		Data:    exists,
+		HasData: true,
+	}, nil
+}

@@ -21,6 +21,7 @@ func init() {
 	req = (*DeleteOrganizationCommand)(nil)
 	req = (*GetOrganizationBySlugQuery)(nil)
 	req = (*SearchOrganizationsQuery)(nil)
+	req = (*ExistsOrgByIdCommand)(nil)
 	util.Unused(req)
 }
 
@@ -194,3 +195,26 @@ func (this SearchOrganizationsQuery) Validate() ft.ValidationErrors {
 
 type SearchOrganizationsResultData = crud.PagedResult[domain.Organization]
 type SearchOrganizationsResult = crud.OpResult[*SearchOrganizationsResultData]
+
+var existsOrgById = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "organization",
+	Action:    "existsOrgById",
+}
+
+type ExistsOrgByIdCommand struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (ExistsOrgByIdCommand) CqrsRequestType() cqrs.RequestType {
+	return existsOrgById
+}
+
+func (this ExistsOrgByIdCommand) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type ExistsOrgByIdResult = crud.OpResult[bool]

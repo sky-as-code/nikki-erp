@@ -395,7 +395,7 @@ func (this *RoleServiceImpl) validateEntitlements(ctx crud.Context, entitlementI
 	}
 }
 
-func (this *RoleServiceImpl) getAssignmentsByRoleId(ctx crud.Context, role *domain.Role) ([]*domain.EntitlementAssignment, error) {
+func (this *RoleServiceImpl) getAssignmentsByRoleId(ctx crud.Context, role *domain.Role) ([]domain.EntitlementAssignment, error) {
 	assignmentsRes, err := this.assignmentRepo.FindAllBySubject(
 		ctx,
 		itAssign.GetAllEntitlementAssignmentBySubjectQuery{
@@ -495,7 +495,7 @@ func (this *RoleServiceImpl) diffEntitlementIds(oldIds, newIds []model.Id) (adde
 
 func (this *RoleServiceImpl) deleteAssignments(ctx crud.Context, assignmentIds []model.Id) error {
 	for _, assignmentId := range assignmentIds {
-		deletedCount, err := this.assignmentRepo.DeleteHardTx(ctx, itAssign.DeleteEntitlementAssignmentByIdQuery{Id: assignmentId})
+		deletedCount, err := this.assignmentRepo.DeleteHardTx(ctx, itAssign.DeleteEntitlementAssignmentByIdCommand{Id: assignmentId})
 		fault.PanicOnErr(err)
 
 		if deletedCount == 0 {

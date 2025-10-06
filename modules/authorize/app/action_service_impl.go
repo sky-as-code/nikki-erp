@@ -152,10 +152,24 @@ func (this *ActionServiceImpl) sanitizeAction(action *domain.Action) {
 	if action.Description != nil {
 		action.Description = util.ToPtr(defense.SanitizePlainText(*action.Description, true))
 	}
+
+	if action.Name != nil {
+		action.Name = util.ToPtr(defense.SanitizePlainText(*action.Name, true))
+	}
 }
 
 func (this *ActionServiceImpl) setActionDefaults(action *domain.Action) {
 	action.SetDefaults()
+}
+
+func (this *ActionServiceImpl) assertBusinessRuleCreateAction(ctx crud.Context, action *domain.Action, vErrs *fault.ValidationErrors) error {
+	err := this.assertActionUnique(ctx, action, vErrs)
+	fault.PanicOnErr(err)
+
+	err = this.assertResourceExists(ctx, *action.ResourceId, vErrs)
+	fault.PanicOnErr(err)
+
+	return nil
 }
 
 func (this *ActionServiceImpl) assertActionUnique(ctx crud.Context, action *domain.Action, vErrs *fault.ValidationErrors) error {
@@ -204,16 +218,6 @@ func (this *ActionServiceImpl) assertConstraintViolated(action *domain.Action, v
 			vErrs.AppendConstraintViolated("entitlements", *entitlement.Name)
 		}
 	}
-
-	return nil
-}
-
-func (this *ActionServiceImpl) assertBusinessRuleCreateAction(ctx crud.Context, action *domain.Action, vErrs *fault.ValidationErrors) error {
-	err := this.assertResourceExists(ctx, *action.ResourceId, vErrs)
-	fault.PanicOnErr(err)
-
-	err = this.assertActionUnique(ctx, action, vErrs)
-	fault.PanicOnErr(err)
 
 	return nil
 }

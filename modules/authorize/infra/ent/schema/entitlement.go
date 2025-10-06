@@ -30,7 +30,7 @@ func (EntitlementMixin) Fields() []ent.Field {
 
 		field.String("action_expr").
 			Immutable().
-			Comment("Format: '{actionName}:{scopeRef}.{resourceName}' E.g: 'create:01JWNZ5KW6WC643VXGKV1D0J64.user', '*:01JWNZ5KW6WC643VXGKV1D0J64.*'"),
+			Comment("Format: '{resourceName}:{actionName}' E.g: 'user:create', '*:*'"),
 
 		field.Time("created_at").
 			Default(time.Now).
@@ -56,7 +56,13 @@ func (EntitlementMixin) Fields() []ent.Field {
 			Immutable(),
 
 		// NULL means regardless of scope
-		field.String("scope_ref").
+		// field.String("scope_ref").
+		// 	Optional().
+		// 	Nillable().
+		// 	Immutable(),
+
+		// NULL means regardless of level
+		field.String("org_id").
 			Optional().
 			Nillable().
 			Immutable(),
@@ -99,7 +105,7 @@ func (Entitlement) Annotations() []schema.Annotation {
 
 func (Entitlement) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("action_expr").Unique(),
+		index.Fields("action_expr", "org_id").Unique(),
 	}
 }
 

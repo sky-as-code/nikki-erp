@@ -266,10 +266,10 @@ func (this *RoleEntRepository) createAssignmentTx(ctx crud.Context, tx *ent.Tx, 
 		resourceName = &entitlement.Edges.Resource.Name
 	}
 
-	scopeRef := "*"
-	if entitlement.ScopeRef != nil {
-		scopeRef = *entitlement.ScopeRef
-	}
+	// scopeRef := "*"
+	// if entitlement.ScopeRef != nil {
+	// 	scopeRef = *entitlement.ScopeRef
+	// }
 
 	actionExpr := "*"
 	if actionName != nil {
@@ -281,7 +281,8 @@ func (this *RoleEntRepository) createAssignmentTx(ctx crud.Context, tx *ent.Tx, 
 		resourceExpr = *resourceName
 	}
 
-	resolvedExpr := fmt.Sprintf("%s:%s:%s.%s", roleID, actionExpr, scopeRef, resourceExpr)
+	// resolvedExpr := fmt.Sprintf("%s:%s:%s.%s", roleID, actionExpr, scopeRef, resourceExpr)
+	resolvedExpr := fmt.Sprintf("%s:%s:%s", roleID, actionExpr, resourceExpr)
 
 	// Generate new ID for entitlement assignment
 	assignmentID, err := model.NewId()

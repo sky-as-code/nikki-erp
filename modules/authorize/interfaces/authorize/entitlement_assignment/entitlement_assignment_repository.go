@@ -6,14 +6,18 @@ import (
 )
 
 type EntitlementAssignmentRepository interface {
-	FindAllBySubject(ctx crud.Context, param FindBySubjectParam) ([]*domain.EntitlementAssignment, error)
-	FindViewsById(ctx crud.Context, param FindViewsByIdParam) ([]*domain.EntitlementAssignment, error)
-	FindAllByEntitlementId(ctx crud.Context, param FindAllByEntitlementIdParam) ([]*domain.EntitlementAssignment, error)
-	DeleteHard(ctx crud.Context, param DeleteHard) (int, error)
-	DeleteHardTx(ctx crud.Context, param DeleteHard) (int, error)
+	FindAllByEntitlementId(ctx crud.Context, param FindAllByEntitlementIdParam) ([]domain.EntitlementAssignment, error)
+	FindAllBySubject(ctx crud.Context, param FindBySubjectParam) ([]domain.EntitlementAssignment, error)
+	FindById(ctx crud.Context, param FindByIdParam) (*domain.EntitlementAssignment, error)
+	FindViewsById(ctx crud.Context, param FindViewsByIdParam) ([]domain.EntitlementAssignment, error)
+	DeleteHard(ctx crud.Context, param DeleteHardParam) (int, error)
+	DeleteHardByEntitlementId(ctx crud.Context, param DeleteHardByEntitlementIdParam) (int, error)
+	DeleteHardTx(ctx crud.Context, param DeleteHardParam) (int, error)
 }
 
+type FindAllByEntitlementIdParam = GetAllEntitlementAssignmentByEntitlementIdQuery
+type FindByIdParam = GetByIdQuery
 type FindBySubjectParam = GetAllEntitlementAssignmentBySubjectQuery
 type FindViewsByIdParam = GetViewsByIdQuery
-type FindAllByEntitlementIdParam = GetAllEntitlementAssignmentByEntitlementIdQuery
-type DeleteHard = DeleteEntitlementAssignmentByIdQuery
+type DeleteHardByEntitlementIdParam = DeleteEntitlementAssignmentByEntitlementIdCommand
+type DeleteHardParam = DeleteEntitlementAssignmentByIdCommand
