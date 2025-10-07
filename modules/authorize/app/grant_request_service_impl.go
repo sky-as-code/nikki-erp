@@ -9,7 +9,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	itGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_request"
@@ -38,14 +37,20 @@ type ResponseState struct {
 	AnyOwnerApproved    bool
 }
 
-func NewGrantRequestServiceImpl(grantRequestRepo itGrantRequest.GrantRequestRepository, grantResponseRepo itGrantResponse.GrantResponseRepository, roleRepo itRole.RoleRepository, suiteRepo itRoleSuite.RoleSuiteRepository, permissionHistoryRepo itPermissionHistory.PermissionHistoryRepository, eventBus event.EventBus, cqrsBus cqrs.CqrsBus) itGrantRequest.GrantRequestService {
+func NewGrantRequestServiceImpl(
+	grantRequestRepo itGrantRequest.GrantRequestRepository,
+	grantResponseRepo itGrantResponse.GrantResponseRepository,
+	roleRepo itRole.RoleRepository,
+	suiteRepo itRoleSuite.RoleSuiteRepository,
+	permissionHistoryRepo itPermissionHistory.PermissionHistoryRepository,
+	cqrsBus cqrs.CqrsBus,
+) itGrantRequest.GrantRequestService {
 	return &GrantRequestServiceImpl{
 		grantRequestRepo:      grantRequestRepo,
 		grantResponseRepo:     grantResponseRepo,
 		roleRepo:              roleRepo,
 		suiteRepo:             suiteRepo,
 		permissionHistoryRepo: permissionHistoryRepo,
-		eventBus:              eventBus,
 		cqrsBus:               cqrsBus,
 	}
 }
@@ -56,8 +61,53 @@ type GrantRequestServiceImpl struct {
 	roleRepo              itRole.RoleRepository
 	suiteRepo             itRoleSuite.RoleSuiteRepository
 	permissionHistoryRepo itPermissionHistory.PermissionHistoryRepository
-	eventBus              event.EventBus
 	cqrsBus               cqrs.CqrsBus
+}
+
+func (this *GrantRequestServiceImpl) TargetIsDeleted(ctx crud.Context, cmd itGrantRequest.TargetIsDeletedCommand) (result *itGrantRequest.TargetIsDeletedResult, err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "role id deleted"); e != nil {
+			err = e
+		}
+	}()
+
+	var grantRequests []domain.GrantRequest
+
+	flow := validator.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			grantRequests, err = this.findGrantRequestsByTarget(ctx, cmd.TargetType, cmd.TargetRef)
+			return err
+		}).
+		End()
+	fault.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &itGrantRequest.TargetIsDeletedResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	for _, grantRequest := range grantRequests {
+		prevEtag := grantRequest.Etag
+		grantRequest.Etag = model.NewEtag()
+		if grantRequest.Status != nil && *grantRequest.Status == domain.PendingGrantRequestStatus {
+			cancelStatus := domain.CancelledGrantRequestStatus
+			grantRequest.Status = &cancelStatus
+		}
+
+		err = this.grantRequestRepo.ConfigTargetFields(ctx, &grantRequest, cmd.TargetName, *prevEtag)
+		fault.PanicOnErr(err)
+	}
+
+	return &itGrantRequest.TargetIsDeletedResult{
+		Data:    true,
+		HasData: false,
+	}, nil
 }
 
 func (this *GrantRequestServiceImpl) CreateGrantRequest(ctx crud.Context, cmd itGrantRequest.CreateGrantRequestCommand) (result *itGrantRequest.CreateGrantRequestResult, err error) {
@@ -103,7 +153,7 @@ func (this *GrantRequestServiceImpl) CreateGrantRequest(ctx crud.Context, cmd it
 		}, nil
 	}
 
-	createdGrantRequest, err := this.grantRequestRepo.Create(ctx, *grantRequest)
+	createdGrantRequest, err := this.grantRequestRepo.Create(ctx, grantRequest)
 	fault.PanicOnErr(err)
 
 	return &itGrantRequest.CreateGrantRequestResult{
@@ -159,7 +209,7 @@ func (this *GrantRequestServiceImpl) CancelGrantRequest(ctx crud.Context, cmd it
 	grantRequest.Etag = model.NewEtag()
 	status := domain.CancelledGrantRequestStatus
 	grantRequest.Status = &status
-	update, err := this.grantRequestRepo.Update(ctx, *grantRequest, *prevEtag)
+	update, err := this.grantRequestRepo.Update(ctx, grantRequest, *prevEtag)
 	fault.PanicOnErr(err)
 
 	return &itGrantRequest.CancelGrantRequestResult{
@@ -776,7 +826,7 @@ func (this *GrantRequestServiceImpl) createGrantResponse(ctx crud.Context, cmd i
 }
 
 func (this *GrantRequestServiceImpl) handleGrantDenial(ctx crud.Context, dbGrantRequest *domain.GrantRequest, prevEtag model.Etag, cmd itGrantRequest.RespondToGrantRequestCommand) (*domain.GrantRequest, error) {
-	updatedGrantRequest, err := this.grantRequestRepo.Update(ctx, *dbGrantRequest, prevEtag)
+	updatedGrantRequest, err := this.grantRequestRepo.Update(ctx, dbGrantRequest, prevEtag)
 	fault.PanicOnErr(err)
 
 	return updatedGrantRequest, this.sendNotification(*updatedGrantRequest.RequestorId, "Your grant request was rejected")
@@ -803,7 +853,7 @@ func (this *GrantRequestServiceImpl) handleFinalApproval(ctx crud.Context, dbGra
 	// err = this.createPermissionHistory(ctx, dbGrantRequest, cmd)
 	// fault.PanicOnErr(err)
 
-	updatedGrantRequest, err := this.grantRequestRepo.Update(ctx, *dbGrantRequest, prevEtag)
+	updatedGrantRequest, err := this.grantRequestRepo.Update(ctx, dbGrantRequest, prevEtag)
 	fault.PanicOnErr(err)
 
 	return updatedGrantRequest, this.sendNotification(*updatedGrantRequest.RequestorId, "Your grant request was approved and access has been granted")
@@ -912,8 +962,8 @@ func (this *GrantRequestServiceImpl) createRoleSuiteUser(ctx crud.Context, reque
 // 		permissionHistory.RoleSuiteId = dbGrantRequest.TargetRef
 // 	}
 
-// 	return permissionHistory
-// }
+//		return permissionHistory
+//	}
 func (this *GrantRequestServiceImpl) processDeleteGrantRequest(ctx crud.Context, dbGrantRequest *domain.GrantRequest) (int, error) {
 	tx, err := this.grantRequestRepo.BeginTransaction(ctx)
 	fault.PanicOnErr(err)
@@ -1032,4 +1082,11 @@ func (this *GrantRequestServiceImpl) getUserDisplayName(ctx crud.Context, id mod
 	}
 
 	return nil, nil
+}
+
+func (this *GrantRequestServiceImpl) findGrantRequestsByTarget(ctx crud.Context, targetType domain.GrantRequestTargetType, targetRef model.Id) ([]domain.GrantRequest, error) {
+	return this.grantRequestRepo.FindAllByTarget(ctx, itGrantRequest.FindAllByTargetParam{
+		TargetType: targetType,
+		TargetRef:  targetRef,
+	})
 }

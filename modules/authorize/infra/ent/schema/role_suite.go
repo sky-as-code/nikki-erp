@@ -46,6 +46,12 @@ func (RoleSuiteMixin) Fields() []ent.Field {
 		field.Bool("is_required_attachment"),
 
 		field.Bool("is_required_comment"),
+
+		// NULL means regardless of level
+		field.String("org_id").
+			Optional().
+			Nillable().
+			Immutable(),
 	}
 }
 
@@ -77,7 +83,7 @@ func (RoleSuite) Edges() []ent.Edge {
 
 func (RoleSuite) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("name").Unique(),
+		index.Fields("name", "org_id").Unique(),
 	}
 }
 

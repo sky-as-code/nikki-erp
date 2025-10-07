@@ -56,7 +56,6 @@ func (this *EntitlementEntRepository) Create(ctx crud.Context, entitlement *doma
 
 func (this *EntitlementEntRepository) Update(ctx crud.Context, entitlement *domain.Entitlement, prevEtag model.Etag) (*domain.Entitlement, error) {
 	updation := this.entitlementClient(ctx).UpdateOneID(*entitlement.Id).
-		SetEtag(*entitlement.Etag).
 		SetNillableDescription(entitlement.Description).
 		Where(entEntitlement.EtagEQ(prevEtag))
 
