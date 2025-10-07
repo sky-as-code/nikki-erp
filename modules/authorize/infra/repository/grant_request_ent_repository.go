@@ -25,8 +25,16 @@ func (this *GrantRequestEntRepository) BeginTransaction(ctx crud.Context) (*ent.
 	return this.client.Tx(ctx)
 }
 
-func (this *GrantRequestEntRepository) Create(ctx crud.Context, grantRequest domain.GrantRequest) (*domain.GrantRequest, error) {
-	creation := this.client.GrantRequest.Create().
+func (this *GrantRequestEntRepository) grantRequestClient(ctx crud.Context) *ent.GrantRequestClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.GrantRequest
+	}
+	return this.client.GrantRequest
+}
+
+func (this *GrantRequestEntRepository) Create(ctx crud.Context, grantRequest *domain.GrantRequest) (*domain.GrantRequest, error) {
+	creation := this.grantRequestClient(ctx).Create().
 		SetID(*grantRequest.Id).
 		SetEtag(*grantRequest.Etag).
 		SetNillableAttachmentURL(grantRequest.AttachmentUrl).
@@ -50,8 +58,27 @@ func (this *GrantRequestEntRepository) Create(ctx crud.Context, grantRequest dom
 	return database.Mutate(ctx, creation, ent.IsNotFound, entToGrantRequest)
 }
 
+func (this *GrantRequestEntRepository) FindAllByTarget(ctx crud.Context, param it.FindAllByTargetParam) ([]domain.GrantRequest, error) {
+	query := this.grantRequestClient(ctx).Query()
+
+	switch param.TargetType {
+	case domain.GrantRequestTargetTypeRole:
+		query = query.Where(
+			entGrantRequest.TargetTypeEQ(entGrantRequest.TargetTypeRole),
+			entGrantRequest.TargetRoleIDEQ(param.TargetRef),
+		)
+	case domain.GrantRequestTargetTypeSuite:
+		query = query.Where(
+			entGrantRequest.TargetTypeEQ(entGrantRequest.TargetTypeSuite),
+			entGrantRequest.TargetSuiteIDEQ(param.TargetRef),
+		)
+	}
+
+	return database.List(ctx, query, entToGrantRequests)
+}
+
 func (this *GrantRequestEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.GrantRequest, error) {
-	query := this.client.GrantRequest.Query().
+	query := this.grantRequestClient(ctx).Query().
 		Where(entGrantRequest.IDEQ(param.Id)).
 		WithGrantResponses().
 		WithRole().
@@ -60,17 +87,8 @@ func (this *GrantRequestEntRepository) FindById(ctx crud.Context, param it.FindB
 	return database.FindOne(ctx, query, ent.IsNotFound, entToGrantRequest)
 }
 
-func (this *GrantRequestEntRepository) Update(ctx crud.Context, grantRequest domain.GrantRequest, prevEtag model.Etag) (*domain.GrantRequest, error) {
-	var update *ent.GrantRequestUpdateOne
-	tx := ctx.GetDbTranx()
-
-	if tx != nil {
-		update = tx.(*ent.Tx).GrantRequest.UpdateOneID(*grantRequest.Id)
-	} else {
-		update = this.client.GrantRequest.UpdateOneID(*grantRequest.Id)
-	}
-
-	update = update.
+func (this *GrantRequestEntRepository) Update(ctx crud.Context, grantRequest *domain.GrantRequest, prevEtag model.Etag) (*domain.GrantRequest, error) {
+	update := this.grantRequestClient(ctx).UpdateOneID(*grantRequest.Id).
 		SetStatus(entGrantRequest.Status(*grantRequest.Status)).
 		Where(entGrantRequest.EtagEQ(prevEtag))
 
@@ -81,22 +99,38 @@ func (this *GrantRequestEntRepository) Update(ctx crud.Context, grantRequest dom
 	return database.Mutate(ctx, update, ent.IsNotFound, entToGrantRequest)
 }
 
-func (this *GrantRequestEntRepository) Delete(ctx crud.Context, param it.DeleteParam) (int, error) {
-	var deletion *ent.GrantRequestDelete
-	tx := ctx.GetDbTranx()
+func (this *GrantRequestEntRepository) ConfigTargetFields(ctx crud.Context, grantRequest *domain.GrantRequest, name string, prevEtag model.Etag) error {
+	update := this.grantRequestClient(ctx).Update().
+		Where(entGrantRequest.IDEQ(*grantRequest.Id)).
+		Where(entGrantRequest.EtagEQ(prevEtag)).
+		SetStatus(entGrantRequest.Status(*grantRequest.Status))
 
-	if tx != nil {
-		deletion = tx.(*ent.Tx).GrantRequest.Delete()
-	} else {
-		deletion = this.client.GrantRequest.Delete()
+	switch *grantRequest.TargetType {
+	case domain.GrantRequestTargetTypeRole:
+		update = update.
+			ClearTargetRoleID().
+			SetTargetRoleName(name)
+	case domain.GrantRequestTargetTypeSuite:
+		update = update.
+			ClearTargetSuiteID().
+			SetTargetSuiteName(name)
 	}
 
-	deletion = deletion.Where(entGrantRequest.IDEQ(param.Id))
-	return deletion.Exec(ctx)
+	if len(update.Mutation().Fields()) > 0 {
+		update = update.SetEtag(*grantRequest.Etag)
+	}
+
+	return update.Exec(ctx)
 }
 
-func (this *GrantRequestEntRepository) FindPendingByReceiverAndTarget(ctx crud.Context, receiverId model.Id, targetId model.Id, targetType domain.GrantRequestTargetType) ([]*domain.GrantRequest, error) {
-	query := this.client.GrantRequest.Query().
+func (this *GrantRequestEntRepository) Delete(ctx crud.Context, param it.DeleteParam) (int, error) {
+	return this.grantRequestClient(ctx).Delete().
+		Where(entGrantRequest.IDEQ(param.Id)).
+		Exec(ctx)
+}
+
+func (this *GrantRequestEntRepository) FindPendingByReceiverAndTarget(ctx crud.Context, receiverId model.Id, targetId model.Id, targetType domain.GrantRequestTargetType) ([]domain.GrantRequest, error) {
+	query := this.grantRequestClient(ctx).Query().
 		Where(
 			entGrantRequest.ReceiverIDEQ(receiverId),
 			entGrantRequest.StatusEQ(entGrantRequest.StatusPending),
@@ -118,17 +152,7 @@ func (this *GrantRequestEntRepository) FindPendingByReceiverAndTarget(ctx crud.C
 		)
 	}
 
-	entResults, err := query.All(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var results []*domain.GrantRequest
-	for _, entResult := range entResults {
-		results = append(results, entToGrantRequest(entResult))
-	}
-
-	return results, nil
+	return database.List(ctx, query, entToGrantRequests)
 }
 
 func (this *GrantRequestEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
@@ -139,7 +163,7 @@ func (this *GrantRequestEntRepository) Search(
 	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.GrantRequest], error) {
-	query := this.client.GrantRequest.Query().
+	query := this.grantRequestClient(ctx).Query().
 		WithGrantResponses().
 		WithRole().
 		WithRoleSuite()

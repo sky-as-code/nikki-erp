@@ -49,7 +49,7 @@ func (this *EntitlementAssignmentServiceImpl) FindAllBySubject(ctx crud.Context,
 	}, nil
 }
 
-func (this *EntitlementAssignmentServiceImpl) DeleteAssignment(ctx crud.Context, cmd it.DeleteEntitlementAssignmentByIdCommand) (*it.DeleteEntitlementAssignmentByIdResult, error) {
+func (this *EntitlementAssignmentServiceImpl) DeleteHardAssignment(ctx crud.Context, cmd it.DeleteEntitlementAssignmentByIdCommand) (*it.DeleteEntitlementAssignmentByIdResult, error) {
 	// Not implement IncludeTransaction yet (wait new code base)
 	//
 	//
