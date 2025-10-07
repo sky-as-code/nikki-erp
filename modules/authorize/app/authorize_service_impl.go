@@ -41,7 +41,6 @@ func (this *AuthorizeServiceImpl) IsAuthorized(ctx crud.Context, query itAuthori
 		}
 	}()
 
-	// resource variable is used to store the resource object after validation
 	var resource *domain.Resource
 
 	flow := validator.StartValidationFlow()
