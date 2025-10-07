@@ -18,6 +18,8 @@ func init() {
 	req = (*DeleteGrantRequestCommand)(nil)
 	req = (*GetGrantRequestByIdQuery)(nil)
 	req = (*RespondToGrantRequestCommand)(nil)
+	req = (*TargetIsDeletedCommand)(nil)
+	req = (*GetGrantRequestsByTargetQuery)(nil)
 	util.Unused(req)
 }
 
@@ -248,3 +250,64 @@ type SearchGrantRequestsResultData = crud.PagedResult[domain.GrantRequest]
 type SearchGrantRequestsResult = crud.OpResult[*SearchGrantRequestsResultData]
 
 // END: SearchGrantRequestsQuery
+
+// START: TargetIsDeletedCommand
+var targetIsDeletedCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "grant_request",
+	Action:    "roleIdDeleted",
+}
+
+type TargetIsDeletedCommand struct {
+	Id         model.Id                      `json:"id"`
+	TargetType domain.GrantRequestTargetType `json:"targetType"`
+	TargetRef  model.Id                      `json:"targetRef"`
+	TargetName string                        `json:"targetName"`
+}
+
+func (TargetIsDeletedCommand) CqrsRequestType() cqrs.RequestType {
+	return targetIsDeletedCommandType
+}
+
+func (this TargetIsDeletedCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.TargetRef, true),
+		validator.Field(&this.TargetName, validator.NotEmpty),
+		GrantRequestTargetTypeValidateRule(&this.TargetType),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type TargetIsDeletedResult = crud.OpResult[bool]
+
+// END: TargetIsDeletedCommand
+
+// START: GetGrantRequestsByTarget
+var getGrantRequestsByTargetQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "grant_request",
+	Action:    "getByTarget",
+}
+
+type GetGrantRequestsByTargetQuery struct {
+	TargetType domain.GrantRequestTargetType
+	TargetRef  model.Id
+}
+
+func (GetGrantRequestsByTargetQuery) CqrsRequestType() cqrs.RequestType {
+	return getGrantRequestsByTargetQueryType
+}
+
+func (this GetGrantRequestsByTargetQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		GrantRequestTargetTypeValidateRule(&this.TargetType),
+		model.IdValidateRule(&this.TargetRef, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type GetGrantRequestsByTargetResult = crud.OpResult[[]domain.GrantRequest]
+
+// END: GetGrantRequestsByTarget
