@@ -11,7 +11,7 @@ CREATE UNIQUE INDEX "action_name_resource_id" ON "authz_actions" ("name", "resou
 -- Create "authz_entitlements" table
 CREATE TABLE "authz_entitlements" ("id" character varying NOT NULL, "action_expr" character varying NOT NULL, "created_at" timestamptz NOT NULL, "created_by" character varying NOT NULL, "name" character varying NOT NULL, "description" character varying NULL, "etag" character varying NOT NULL, "action_id" character varying NULL, "resource_id" character varying NULL, "org_id" character varying NULL, PRIMARY KEY ("id"), CONSTRAINT "authz_entitlements_authz_actions_action" FOREIGN KEY ("action_id") REFERENCES "authz_actions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "authz_entitlements_authz_resources_resource" FOREIGN KEY ("resource_id") REFERENCES "authz_resources" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION);
 -- Create index "authz_entitlements_name_key" to table: "authz_entitlements"
-CREATE UNIQUE INDEX "authz_entitlements_name_key" ON "authz_entitlements" ("name");
+CREATE UNIQUE INDEX "authz_entitlements_name_key" ON "authz_entitlements" ("name", "org_id");
 -- Create index "entitlement_action_expr" to table: "authz_entitlements"
 CREATE UNIQUE INDEX "entitlement_action_expr" ON "authz_entitlements" ("action_expr", "org_id");
 -- Create "authz_entitlement_assignments" table
@@ -25,13 +25,13 @@ CREATE INDEX "entitlementassignment_resolved_expr" ON "authz_entitlement_assignm
 -- Create index "entitlementassignment_resource_name" to table: "authz_entitlement_assignments"
 CREATE INDEX "entitlementassignment_resource_name" ON "authz_entitlement_assignments" ("resource_name");
 -- Create "authz_role_suites" table
-CREATE TABLE "authz_role_suites" ("id" character varying NOT NULL, "created_at" timestamptz NOT NULL, "created_by" character varying NOT NULL, "name" character varying NOT NULL, "description" character varying NULL, "etag" character varying NOT NULL, "owner_type" character varying NOT NULL, "owner_ref" character varying NOT NULL, "is_requestable" boolean NOT NULL, "is_required_attachment" boolean NOT NULL, "is_required_comment" boolean NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "authz_role_suites" ("id" character varying NOT NULL, "created_at" timestamptz NOT NULL, "created_by" character varying NOT NULL, "name" character varying NOT NULL, "description" character varying NULL, "etag" character varying NOT NULL, "owner_type" character varying NOT NULL, "owner_ref" character varying NOT NULL, "is_requestable" boolean NOT NULL, "is_required_attachment" boolean NOT NULL, "is_required_comment" boolean NOT NULL, "org_id" character varying NULL, PRIMARY KEY ("id"));
 -- Create index "rolesuite_name" to table: "authz_role_suites"
-CREATE UNIQUE INDEX "rolesuite_name" ON "authz_role_suites" ("name");
+CREATE UNIQUE INDEX "rolesuite_name" ON "authz_role_suites" ("name", "org_id");
 -- Create "authz_roles" table
-CREATE TABLE "authz_roles" ("id" character varying NOT NULL, "created_at" timestamptz NOT NULL, "created_by" character varying NOT NULL, "name" character varying NOT NULL, "description" character varying NULL, "etag" character varying NOT NULL, "owner_type" character varying NOT NULL, "owner_ref" character varying NOT NULL, "is_requestable" boolean NOT NULL, "is_required_attachment" boolean NOT NULL, "is_required_comment" boolean NOT NULL, PRIMARY KEY ("id"));
+CREATE TABLE "authz_roles" ("id" character varying NOT NULL, "created_at" timestamptz NOT NULL, "created_by" character varying NOT NULL, "name" character varying NOT NULL, "description" character varying NULL, "etag" character varying NOT NULL, "owner_type" character varying NOT NULL, "owner_ref" character varying NOT NULL, "is_requestable" boolean NOT NULL, "is_required_attachment" boolean NOT NULL, "is_required_comment" boolean NOT NULL, "org_id" character varying NULL, PRIMARY KEY ("id"));
 -- Create index "role_name" to table: "authz_roles"
-CREATE UNIQUE INDEX "role_name" ON "authz_roles" ("name");
+CREATE UNIQUE INDEX "role_name" ON "authz_roles" ("name", "org_id");
 -- Create "authz_grant_requests" table
 CREATE TABLE "authz_grant_requests" ("id" character varying NOT NULL, "attachment_url" character varying NULL, "comment" character varying NULL, "created_at" timestamptz NOT NULL, "created_by" character varying NOT NULL, "etag" character varying NOT NULL, "receiver_id" character varying NOT NULL, "receiver_type" character varying NOT NULL, "target_type" character varying NOT NULL, "status" character varying NOT NULL, "target_role_id" character varying NULL, "target_role_name" character varying NULL, "target_suite_id" character varying NULL, "target_suite_name" character varying NULL, PRIMARY KEY ("id"), CONSTRAINT "authz_grant_requests_authz_role_suites_role_suite" FOREIGN KEY ("target_suite_id") REFERENCES "authz_role_suites" ("id") ON UPDATE NO ACTION ON DELETE SET NULL, CONSTRAINT "authz_grant_requests_authz_roles_role" FOREIGN KEY ("target_role_id") REFERENCES "authz_roles" ("id") ON UPDATE NO ACTION ON DELETE SET NULL);
 -- Create "authz_grant_responses" table

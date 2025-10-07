@@ -45,10 +45,10 @@ func (EntitlementAssignmentMixin) Fields() []ent.Field {
 			Comment("Denormalized resource name for easier search and display"),
 
 		// NULL means regardless of scope
-		// field.String("scope_ref").
-		// 	Optional().
-		// 	Nillable().
-		// 	Immutable(),
+		field.String("scope_ref").
+			Optional().
+			Nillable().
+			Immutable(),
 
 		// NULL means regardless of level
 		field.String("org_id").

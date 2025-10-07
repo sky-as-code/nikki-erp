@@ -126,7 +126,7 @@ func (this *EntitlementServiceImpl) UpdateEntitlement(ctx crud.Context, cmd it.U
 	return result, err
 }
 
-func (this *EntitlementServiceImpl) DeleteEntitlementHard(ctx crud.Context, cmd it.DeleteEntitlementHardByIdCommand) (*it.DeleteEntitlementHardByIdResult, error) {
+func (this *EntitlementServiceImpl) DeleteEntitlementHard(ctx crud.Context, cmd it.DeleteEntitlementHardByIdCommand) (result *it.DeleteEntitlementHardByIdResult, err error) {
 	tx, err := this.entitlementRepo.BeginTransaction(ctx)
 	fault.PanicOnErr(err)
 
@@ -137,10 +137,16 @@ func (this *EntitlementServiceImpl) DeleteEntitlementHard(ctx crud.Context, cmd 
 			tx.Rollback()
 			return
 		}
+
+		if result != nil && result.ClientError != nil {
+			tx.Rollback()
+			return
+		}
+
 		tx.Commit()
 	}()
 
-	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Entitlement, it.DeleteEntitlementHardByIdCommand, it.DeleteEntitlementHardByIdResult]{
+	result, err = crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Entitlement, it.DeleteEntitlementHardByIdCommand, it.DeleteEntitlementHardByIdResult]{
 		Action:              "delete entitlement",
 		Command:             cmd,
 		AssertExists:        this.assertEntitlementExistsById,

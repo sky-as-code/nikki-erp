@@ -8,5 +8,6 @@ import (
 func (this CreateRevokeRequestCommand) ToDomainModel() *domain.RevokeRequest {
 	revokeRequest := &domain.RevokeRequest{}
 	model.MustCopy(this, revokeRequest)
+
 	return revokeRequest
 }

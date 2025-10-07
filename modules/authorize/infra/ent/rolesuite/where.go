@@ -110,6 +110,11 @@ func IsRequiredComment(v bool) predicate.RoleSuite {
 	return predicate.RoleSuite(sql.FieldEQ(FieldIsRequiredComment, v))
 }
 
+// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
+func OrgID(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldEQ(FieldOrgID, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.RoleSuite {
 	return predicate.RoleSuite(sql.FieldEQ(FieldCreatedAt, v))
@@ -533,6 +538,81 @@ func IsRequiredCommentEQ(v bool) predicate.RoleSuite {
 // IsRequiredCommentNEQ applies the NEQ predicate on the "is_required_comment" field.
 func IsRequiredCommentNEQ(v bool) predicate.RoleSuite {
 	return predicate.RoleSuite(sql.FieldNEQ(FieldIsRequiredComment, v))
+}
+
+// OrgIDEQ applies the EQ predicate on the "org_id" field.
+func OrgIDEQ(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldEQ(FieldOrgID, v))
+}
+
+// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
+func OrgIDNEQ(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldNEQ(FieldOrgID, v))
+}
+
+// OrgIDIn applies the In predicate on the "org_id" field.
+func OrgIDIn(vs ...string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldIn(FieldOrgID, vs...))
+}
+
+// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
+func OrgIDNotIn(vs ...string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldNotIn(FieldOrgID, vs...))
+}
+
+// OrgIDGT applies the GT predicate on the "org_id" field.
+func OrgIDGT(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldGT(FieldOrgID, v))
+}
+
+// OrgIDGTE applies the GTE predicate on the "org_id" field.
+func OrgIDGTE(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldGTE(FieldOrgID, v))
+}
+
+// OrgIDLT applies the LT predicate on the "org_id" field.
+func OrgIDLT(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldLT(FieldOrgID, v))
+}
+
+// OrgIDLTE applies the LTE predicate on the "org_id" field.
+func OrgIDLTE(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldLTE(FieldOrgID, v))
+}
+
+// OrgIDContains applies the Contains predicate on the "org_id" field.
+func OrgIDContains(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldContains(FieldOrgID, v))
+}
+
+// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
+func OrgIDHasPrefix(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldHasPrefix(FieldOrgID, v))
+}
+
+// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
+func OrgIDHasSuffix(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldHasSuffix(FieldOrgID, v))
+}
+
+// OrgIDIsNil applies the IsNil predicate on the "org_id" field.
+func OrgIDIsNil() predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldIsNull(FieldOrgID))
+}
+
+// OrgIDNotNil applies the NotNil predicate on the "org_id" field.
+func OrgIDNotNil() predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldNotNull(FieldOrgID))
+}
+
+// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
+func OrgIDEqualFold(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldEqualFold(FieldOrgID, v))
+}
+
+// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
+func OrgIDContainsFold(v string) predicate.RoleSuite {
+	return predicate.RoleSuite(sql.FieldContainsFold(FieldOrgID, v))
 }
 
 // HasRolesuiteUsers applies the HasEdge predicate on the "rolesuite_users" edge.
