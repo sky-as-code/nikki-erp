@@ -54,3 +54,12 @@ func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {
 
 	return val.ApiBased.ValidateStruct(this, rules...)
 }
+
+func EntitlementScopeRefValidateRule(field **string) *val.FieldRules {
+	return val.Field(field,
+		val.When(*field != nil,
+			val.NotEmpty,
+			val.Length(model.MODEL_RULE_ULID_LENGTH, model.MODEL_RULE_ULID_LENGTH),
+		),
+	)
+}

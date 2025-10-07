@@ -47,12 +47,6 @@ func (RoleMixin) Fields() []ent.Field {
 		field.Bool("is_required_attachment"),
 
 		field.Bool("is_required_comment"),
-
-		// NULL means regardless of level
-		field.String("org_id").
-			Optional().
-			Nillable().
-			Immutable(),
 	}
 }
 
@@ -84,7 +78,7 @@ func (Role) Edges() []ent.Edge {
 
 func (Role) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("name", "org_id").Unique(),
+		index.Fields("name").Unique(),
 	}
 }
 

@@ -11,5 +11,4 @@ type GrantRequestService interface {
 	GetGrantRequestById(ctx crud.Context, query GetGrantRequestByIdQuery) (*GetGrantRequestByIdResult, error)
 	SearchGrantRequests(ctx crud.Context, query SearchGrantRequestsQuery) (*SearchGrantRequestsResult, error)
 	RespondToGrantRequest(ctx crud.Context, cmd RespondToGrantRequestCommand) (*RespondToGrantRequestResult, error)
-	TargetIsDeleted(ctx crud.Context, cmd TargetIsDeletedCommand) (*TargetIsDeletedResult, error)
 }

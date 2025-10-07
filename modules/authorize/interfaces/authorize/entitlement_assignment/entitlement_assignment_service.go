@@ -4,6 +4,6 @@ import "github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 type EntitlementAssignmentService interface {
 	FindAllBySubject(ctx crud.Context, query GetAllEntitlementAssignmentBySubjectQuery) (*GetAllEntitlementAssignmentBySubjectResult, error)
-	DeleteHardAssignment(ctx crud.Context, cmd DeleteEntitlementAssignmentByIdCommand) (*DeleteEntitlementAssignmentByIdResult, error)
+	DeleteAssignment(ctx crud.Context, cmd DeleteEntitlementAssignmentByIdCommand) (*DeleteEntitlementAssignmentByIdResult, error)
 	DeleteByEntitlementId(ctx crud.Context, cmd DeleteEntitlementAssignmentByEntitlementIdCommand) (*DeleteEntitlementAssignmentByEntitlementIdResult, error)
 }

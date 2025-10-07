@@ -101,20 +101,6 @@ func (rc *RoleCreate) SetIsRequiredComment(b bool) *RoleCreate {
 	return rc
 }
 
-// SetOrgID sets the "org_id" field.
-func (rc *RoleCreate) SetOrgID(s string) *RoleCreate {
-	rc.mutation.SetOrgID(s)
-	return rc
-}
-
-// SetNillableOrgID sets the "org_id" field if the given value is not nil.
-func (rc *RoleCreate) SetNillableOrgID(s *string) *RoleCreate {
-	if s != nil {
-		rc.SetOrgID(*s)
-	}
-	return rc
-}
-
 // SetID sets the "id" field.
 func (rc *RoleCreate) SetID(s string) *RoleCreate {
 	rc.mutation.SetID(s)
@@ -345,10 +331,6 @@ func (rc *RoleCreate) createSpec() (*Role, *sqlgraph.CreateSpec) {
 	if value, ok := rc.mutation.IsRequiredComment(); ok {
 		_spec.SetField(role.FieldIsRequiredComment, field.TypeBool, value)
 		_node.IsRequiredComment = value
-	}
-	if value, ok := rc.mutation.OrgID(); ok {
-		_spec.SetField(role.FieldOrgID, field.TypeString, value)
-		_node.OrgID = &value
 	}
 	if nodes := rc.mutation.RoleSuitesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

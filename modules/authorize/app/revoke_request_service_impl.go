@@ -5,8 +5,6 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
@@ -51,56 +49,6 @@ func (this *RevokeRequestServiceImpl) Create(ctx crud.Context, cmd itRevokeReque
 	})
 
 	return result, err
-}
-
-func (this *RevokeRequestServiceImpl) TargetIsDeleted(ctx crud.Context, cmd itRevokeRequest.TargetIsDeletedCommand) (result *itRevokeRequest.TargetIsDeletedResult, err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "target deleted"); e != nil {
-			err = e
-		}
-	}()
-
-	var revokeRequests []domain.RevokeRequest
-
-	flow := validator.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *fault.ValidationErrors) error {
-			*vErrs = cmd.Validate()
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			revokeRequests, err = this.findRevokeRequestsByTarget(ctx, cmd.TargetType, cmd.TargetRef)
-			return err
-		}).
-		End()
-	fault.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &itRevokeRequest.TargetIsDeletedResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	for _, revokeRequest := range revokeRequests {
-		prevEtag := revokeRequest.Etag
-		revokeRequest.Etag = model.NewEtag()
-
-		targetType := domain.GrantRequestTargetType(cmd.TargetType)
-		switch targetType {
-		case domain.GrantRequestTargetTypeRole:
-			revokeRequest.TargetRoleName = &cmd.TargetName
-		case domain.GrantRequestTargetTypeSuite:
-			revokeRequest.TargetSuiteName = &cmd.TargetName
-		}
-
-		err = this.revokeRequestRepo.UpdateTargetFields(ctx, &revokeRequest, *prevEtag)
-		fault.PanicOnErr(err)
-	}
-
-	return &itRevokeRequest.TargetIsDeletedResult{
-		Data:    true,
-		HasData: false,
-	}, nil
 }
 
 func (this *RevokeRequestServiceImpl) setRevokeRequestDefaults(revokeRequest *domain.RevokeRequest) {
@@ -195,11 +143,4 @@ func (this *RevokeRequestServiceImpl) classifyReceiverType(targetType *domain.Re
 	} else {
 		return domain.ReceiverTypeGroup
 	}
-}
-
-func (this *RevokeRequestServiceImpl) findRevokeRequestsByTarget(ctx crud.Context, targetType domain.GrantRequestTargetType, targetRef model.Id) ([]domain.RevokeRequest, error) {
-	return this.revokeRequestRepo.FindAllByTarget(ctx, itRevokeRequest.FindAllByTargetParam{
-		TargetType: targetType,
-		TargetRef:  targetRef,
-	})
 }

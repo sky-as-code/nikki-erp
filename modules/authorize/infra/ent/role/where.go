@@ -110,11 +110,6 @@ func IsRequiredComment(v bool) predicate.Role {
 	return predicate.Role(sql.FieldEQ(FieldIsRequiredComment, v))
 }
 
-// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
-func OrgID(v string) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldOrgID, v))
-}
-
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.Role {
 	return predicate.Role(sql.FieldEQ(FieldCreatedAt, v))
@@ -538,81 +533,6 @@ func IsRequiredCommentEQ(v bool) predicate.Role {
 // IsRequiredCommentNEQ applies the NEQ predicate on the "is_required_comment" field.
 func IsRequiredCommentNEQ(v bool) predicate.Role {
 	return predicate.Role(sql.FieldNEQ(FieldIsRequiredComment, v))
-}
-
-// OrgIDEQ applies the EQ predicate on the "org_id" field.
-func OrgIDEQ(v string) predicate.Role {
-	return predicate.Role(sql.FieldEQ(FieldOrgID, v))
-}
-
-// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
-func OrgIDNEQ(v string) predicate.Role {
-	return predicate.Role(sql.FieldNEQ(FieldOrgID, v))
-}
-
-// OrgIDIn applies the In predicate on the "org_id" field.
-func OrgIDIn(vs ...string) predicate.Role {
-	return predicate.Role(sql.FieldIn(FieldOrgID, vs...))
-}
-
-// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
-func OrgIDNotIn(vs ...string) predicate.Role {
-	return predicate.Role(sql.FieldNotIn(FieldOrgID, vs...))
-}
-
-// OrgIDGT applies the GT predicate on the "org_id" field.
-func OrgIDGT(v string) predicate.Role {
-	return predicate.Role(sql.FieldGT(FieldOrgID, v))
-}
-
-// OrgIDGTE applies the GTE predicate on the "org_id" field.
-func OrgIDGTE(v string) predicate.Role {
-	return predicate.Role(sql.FieldGTE(FieldOrgID, v))
-}
-
-// OrgIDLT applies the LT predicate on the "org_id" field.
-func OrgIDLT(v string) predicate.Role {
-	return predicate.Role(sql.FieldLT(FieldOrgID, v))
-}
-
-// OrgIDLTE applies the LTE predicate on the "org_id" field.
-func OrgIDLTE(v string) predicate.Role {
-	return predicate.Role(sql.FieldLTE(FieldOrgID, v))
-}
-
-// OrgIDContains applies the Contains predicate on the "org_id" field.
-func OrgIDContains(v string) predicate.Role {
-	return predicate.Role(sql.FieldContains(FieldOrgID, v))
-}
-
-// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
-func OrgIDHasPrefix(v string) predicate.Role {
-	return predicate.Role(sql.FieldHasPrefix(FieldOrgID, v))
-}
-
-// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
-func OrgIDHasSuffix(v string) predicate.Role {
-	return predicate.Role(sql.FieldHasSuffix(FieldOrgID, v))
-}
-
-// OrgIDIsNil applies the IsNil predicate on the "org_id" field.
-func OrgIDIsNil() predicate.Role {
-	return predicate.Role(sql.FieldIsNull(FieldOrgID))
-}
-
-// OrgIDNotNil applies the NotNil predicate on the "org_id" field.
-func OrgIDNotNil() predicate.Role {
-	return predicate.Role(sql.FieldNotNull(FieldOrgID))
-}
-
-// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
-func OrgIDEqualFold(v string) predicate.Role {
-	return predicate.Role(sql.FieldEqualFold(FieldOrgID, v))
-}
-
-// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
-func OrgIDContainsFold(v string) predicate.Role {
-	return predicate.Role(sql.FieldContainsFold(FieldOrgID, v))
 }
 
 // HasRoleSuites applies the HasEdge predicate on the "role_suites" edge.

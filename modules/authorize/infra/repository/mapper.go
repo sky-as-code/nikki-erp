@@ -316,14 +316,4 @@ func entToRevokeRequest(dbRevokeRequest *ent.RevokeRequest) *domain.RevokeReques
 	return revokeRequest
 }
 
-func entToRevokeRequests(dbRevokeRequests []*ent.RevokeRequest) []domain.RevokeRequest {
-	if dbRevokeRequests == nil {
-		return nil
-	}
-
-	return array.Map(dbRevokeRequests, func(dbRevokeRequest *ent.RevokeRequest) domain.RevokeRequest {
-		return *entToRevokeRequest(dbRevokeRequest)
-	})
-}
-
 // END:

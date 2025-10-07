@@ -411,9 +411,6 @@ func (ru *RoleUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := ru.mutation.IsRequiredComment(); ok {
 		_spec.SetField(role.FieldIsRequiredComment, field.TypeBool, value)
 	}
-	if ru.mutation.OrgIDCleared() {
-		_spec.ClearField(role.FieldOrgID, field.TypeString)
-	}
 	if ru.mutation.RoleSuitesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -1067,9 +1064,6 @@ func (ruo *RoleUpdateOne) sqlSave(ctx context.Context) (_node *Role, err error) 
 	}
 	if value, ok := ruo.mutation.IsRequiredComment(); ok {
 		_spec.SetField(role.FieldIsRequiredComment, field.TypeBool, value)
-	}
-	if ruo.mutation.OrgIDCleared() {
-		_spec.ClearField(role.FieldOrgID, field.TypeString)
 	}
 	if ruo.mutation.RoleSuitesCleared() {
 		edge := &sqlgraph.EdgeSpec{

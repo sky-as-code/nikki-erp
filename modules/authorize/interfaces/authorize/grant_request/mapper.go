@@ -28,6 +28,6 @@ func (this DeleteGrantRequestCommand) ToDomainModel() *domain.GrantRequest {
 func (this *RespondToGrantRequestCommand) ToGrantRequest() *domain.GrantRequest {
 	grantRequest := &domain.GrantRequest{}
 	model.MustCopy(this, grantRequest)
-
+	
 	return grantRequest
 }

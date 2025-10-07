@@ -411,9 +411,6 @@ func (rsu *RoleSuiteUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := rsu.mutation.IsRequiredComment(); ok {
 		_spec.SetField(rolesuite.FieldIsRequiredComment, field.TypeBool, value)
 	}
-	if rsu.mutation.OrgIDCleared() {
-		_spec.ClearField(rolesuite.FieldOrgID, field.TypeString)
-	}
 	if rsu.mutation.RolesuiteUsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -1067,9 +1064,6 @@ func (rsuo *RoleSuiteUpdateOne) sqlSave(ctx context.Context) (_node *RoleSuite, 
 	}
 	if value, ok := rsuo.mutation.IsRequiredComment(); ok {
 		_spec.SetField(rolesuite.FieldIsRequiredComment, field.TypeBool, value)
-	}
-	if rsuo.mutation.OrgIDCleared() {
-		_spec.ClearField(rolesuite.FieldOrgID, field.TypeString)
 	}
 	if rsuo.mutation.RolesuiteUsersCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -19,7 +19,6 @@ type Role struct {
 	IsRequiredAttachment *bool          `json:"isRequiredAttachment,omitempty"`
 	IsRequiredComment    *bool          `json:"isRequiredComment,omitempty"`
 	CreatedBy            *model.Id      `json:"createdBy,omitempty"`
-	OrgId                *model.Id      `json:"orgId,omitempty"`
 
 	Entitlements   []Entitlement   `json:"entitlements,omitempty" model:"-"` // TODO: Handle copy
 	GrantRequests  []GrantRequest  `json:"grantRequests,omitempty" model:"-"`

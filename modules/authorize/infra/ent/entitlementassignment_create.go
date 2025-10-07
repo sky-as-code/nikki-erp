@@ -73,20 +73,6 @@ func (eac *EntitlementAssignmentCreate) SetNillableResourceName(s *string) *Enti
 	return eac
 }
 
-// SetScopeRef sets the "scope_ref" field.
-func (eac *EntitlementAssignmentCreate) SetScopeRef(s string) *EntitlementAssignmentCreate {
-	eac.mutation.SetScopeRef(s)
-	return eac
-}
-
-// SetNillableScopeRef sets the "scope_ref" field if the given value is not nil.
-func (eac *EntitlementAssignmentCreate) SetNillableScopeRef(s *string) *EntitlementAssignmentCreate {
-	if s != nil {
-		eac.SetScopeRef(*s)
-	}
-	return eac
-}
-
 // SetOrgID sets the "org_id" field.
 func (eac *EntitlementAssignmentCreate) SetOrgID(s string) *EntitlementAssignmentCreate {
 	eac.mutation.SetOrgID(s)
@@ -235,10 +221,6 @@ func (eac *EntitlementAssignmentCreate) createSpec() (*EntitlementAssignment, *s
 	if value, ok := eac.mutation.ResourceName(); ok {
 		_spec.SetField(entitlementassignment.FieldResourceName, field.TypeString, value)
 		_node.ResourceName = &value
-	}
-	if value, ok := eac.mutation.ScopeRef(); ok {
-		_spec.SetField(entitlementassignment.FieldScopeRef, field.TypeString, value)
-		_node.ScopeRef = &value
 	}
 	if value, ok := eac.mutation.OrgID(); ok {
 		_spec.SetField(entitlementassignment.FieldOrgID, field.TypeString, value)

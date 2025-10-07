@@ -101,20 +101,6 @@ func (rsc *RoleSuiteCreate) SetIsRequiredComment(b bool) *RoleSuiteCreate {
 	return rsc
 }
 
-// SetOrgID sets the "org_id" field.
-func (rsc *RoleSuiteCreate) SetOrgID(s string) *RoleSuiteCreate {
-	rsc.mutation.SetOrgID(s)
-	return rsc
-}
-
-// SetNillableOrgID sets the "org_id" field if the given value is not nil.
-func (rsc *RoleSuiteCreate) SetNillableOrgID(s *string) *RoleSuiteCreate {
-	if s != nil {
-		rsc.SetOrgID(*s)
-	}
-	return rsc
-}
-
 // SetID sets the "id" field.
 func (rsc *RoleSuiteCreate) SetID(s string) *RoleSuiteCreate {
 	rsc.mutation.SetID(s)
@@ -345,10 +331,6 @@ func (rsc *RoleSuiteCreate) createSpec() (*RoleSuite, *sqlgraph.CreateSpec) {
 	if value, ok := rsc.mutation.IsRequiredComment(); ok {
 		_spec.SetField(rolesuite.FieldIsRequiredComment, field.TypeBool, value)
 		_node.IsRequiredComment = value
-	}
-	if value, ok := rsc.mutation.OrgID(); ok {
-		_spec.SetField(rolesuite.FieldOrgID, field.TypeString, value)
-		_node.OrgID = &value
 	}
 	if nodes := rsc.mutation.RolesuiteUsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -37,8 +37,6 @@ type Role struct {
 	IsRequiredAttachment bool `json:"is_required_attachment,omitempty"`
 	// IsRequiredComment holds the value of the "is_required_comment" field.
 	IsRequiredComment bool `json:"is_required_comment,omitempty"`
-	// OrgID holds the value of the "org_id" field.
-	OrgID *string `json:"org_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RoleQuery when eager-loading is set.
 	Edges        RoleEdges `json:"edges"`
@@ -125,7 +123,7 @@ func (*Role) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case role.FieldIsRequestable, role.FieldIsRequiredAttachment, role.FieldIsRequiredComment:
 			values[i] = new(sql.NullBool)
-		case role.FieldID, role.FieldCreatedBy, role.FieldName, role.FieldDescription, role.FieldEtag, role.FieldOwnerType, role.FieldOwnerRef, role.FieldOrgID:
+		case role.FieldID, role.FieldCreatedBy, role.FieldName, role.FieldDescription, role.FieldEtag, role.FieldOwnerType, role.FieldOwnerRef:
 			values[i] = new(sql.NullString)
 		case role.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -210,13 +208,6 @@ func (r *Role) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field is_required_comment", values[i])
 			} else if value.Valid {
 				r.IsRequiredComment = value.Bool
-			}
-		case role.FieldOrgID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field org_id", values[i])
-			} else if value.Valid {
-				r.OrgID = new(string)
-				*r.OrgID = value.String
 			}
 		default:
 			r.selectValues.Set(columns[i], values[i])
@@ -315,11 +306,6 @@ func (r *Role) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("is_required_comment=")
 	builder.WriteString(fmt.Sprintf("%v", r.IsRequiredComment))
-	builder.WriteString(", ")
-	if v := r.OrgID; v != nil {
-		builder.WriteString("org_id=")
-		builder.WriteString(*v)
-	}
 	builder.WriteByte(')')
 	return builder.String()
 }

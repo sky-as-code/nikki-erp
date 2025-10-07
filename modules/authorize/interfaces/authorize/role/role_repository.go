@@ -10,12 +10,10 @@ import (
 
 type RoleRepository interface {
 	AddRemoveUser(ctx crud.Context, param AddRemoveUserParam) error
-	Create(ctx crud.Context, role *domain.Role) (*domain.Role, error)
-	// CreateWithEntitlements(ctx crud.Context, role domain.Role, entitlementIds []model.Id) (*domain.Role, error)
-	// DeleteHardTx(ctx crud.Context, param DeleteRoleHardParam) (int, error)
-	// UpdateTx(ctx crud.Context, role domain.Role, prevEtag model.Etag, addEntitlementIds, removeEntitlementIds []model.Id) (*domain.Role, error)
-	DeleteHard(ctx crud.Context, param DeleteRoleHardParam) (int, error)
-	Update(ctx crud.Context, role *domain.Role, prevEtag model.Etag) (*domain.Role, error)
+	Create(ctx crud.Context, role domain.Role) (*domain.Role, error)
+	CreateWithEntitlements(ctx crud.Context, role domain.Role, entitlementIds []model.Id) (*domain.Role, error)
+	DeleteHardTx(ctx crud.Context, param DeleteRoleHardParam) (int, error)
+	UpdateTx(ctx crud.Context, role domain.Role, prevEtag model.Etag, addEntitlementIds, removeEntitlementIds []model.Id) (*domain.Role, error)
 	Exist(ctx crud.Context, param ExistRoleParam) (bool, error)
 	ExistUserWithRole(ctx crud.Context, param ExistUserWithRoleParam) (bool, error)
 	FindByName(ctx crud.Context, param FindByNameParam) (*domain.Role, error)
@@ -31,7 +29,10 @@ type FindByNameParam = GetRoleByNameCommand
 type FindAllBySubjectParam = GetRolesBySubjectQuery
 type ExistUserWithRoleParam = ExistUserWithRoleQuery
 type AddRemoveUserParam = AddRemoveUserCommand
-type DeleteRoleHardParam = DeleteRoleHardCommand
+type DeleteRoleHardParam struct {
+	Id   model.Id `json:"id"`
+	Name string   `json:"name"`
+}
 
 type SearchParam struct {
 	Predicate        *orm.Predicate

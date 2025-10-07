@@ -12,14 +12,14 @@ post {
 
 body:json {
   {
-    "name": "Authorize module Product Manager",
-    "ownerType": "user",
-    "ownerRef": "{{user_id}}",
-    "isRequestable": true,
-    "isRequiredAttachment": true,
-    "isRequiredComment": true,
-    "orgId": "01JWNY20G23KD4RV5VWYABQYHD",
-    "createdBy": "{{user_id}}"
+      "name": "Authorize module Product Manager",
+      "ownerType": "user",
+      "ownerRef": "{{user_id}}",
+      "isRequestable": true,
+      "isRequiredAttachment": true,
+      "isRequiredComment": true,
+      "createdBy": "{{user_id}}",
+      "entitlementIds": ["{{entitlement_id}}"]
   }
 }
 
@@ -38,10 +38,18 @@ script:pre-request {
       return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
   }
   
+  // Generate ULID-like string (starts with "01", total 26 chars)
+  function generateULID() {
+      return "01" + randomString(24);
+  }
+  
   // Randomize name (append 6-char string, alphanumeric only)
   if (payload.name) {
       payload.name = payload.name.trim() + " " + randomString();
   }
+  
+  // Fill required fields with dummy ULIDs
+  payload.createdBy = generateULID();
   
   // Optional: set default values if not present
   if (typeof payload.isRequestable !== "boolean") {

@@ -55,6 +55,12 @@ func (EntitlementMixin) Fields() []ent.Field {
 			Nillable().
 			Immutable(),
 
+		// NULL means regardless of scope
+		// field.String("scope_ref").
+		// 	Optional().
+		// 	Nillable().
+		// 	Immutable(),
+
 		// NULL means regardless of level
 		field.String("org_id").
 			Optional().
@@ -100,7 +106,6 @@ func (Entitlement) Annotations() []schema.Annotation {
 func (Entitlement) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("action_expr", "org_id").Unique(),
-		index.Fields("name", "org_id").Unique(),
 	}
 }
 

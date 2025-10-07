@@ -12,6 +12,7 @@ type EntitlementAssignmentRepository interface {
 	FindViewsById(ctx crud.Context, param FindViewsByIdParam) ([]domain.EntitlementAssignment, error)
 	DeleteHard(ctx crud.Context, param DeleteHardParam) (int, error)
 	DeleteHardByEntitlementId(ctx crud.Context, param DeleteHardByEntitlementIdParam) (int, error)
+	DeleteHardTx(ctx crud.Context, param DeleteHardParam) (int, error)
 }
 
 type FindAllByEntitlementIdParam = GetAllEntitlementAssignmentByEntitlementIdQuery
