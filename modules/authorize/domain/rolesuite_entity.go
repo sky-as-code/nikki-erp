@@ -21,6 +21,7 @@ type RoleSuite struct {
 	IsRequiredAttachment *bool               `json:"isRequiredAttachment,omitempty"`
 	IsRequiredComment    *bool               `json:"isRequiredComment,omitempty"`
 	CreatedBy            *model.Id           `json:"createdBy,omitempty"`
+	OrgId                *model.Id           `json:"orgId,omitempty"`
 
 	Roles []Role `json:"roles,omitempty" model:"-"` // TODO: Handle copy
 }

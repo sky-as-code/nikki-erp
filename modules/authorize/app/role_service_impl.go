@@ -24,7 +24,7 @@ import (
 func NewRoleServiceImpl(
 	assignmentService itAssign.EntitlementAssignmentService,
 	cqrsBus cqrs.CqrsBus,
-	entitlementRepo itEntitlement.EntitlementRepository,
+	entitlementService itEntitlement.EntitlementService,
 	grantRequestService itGrantRequest.GrantRequestService,
 	revokeRequestService itRevokeRequest.RevokeRequestService,
 	roleRepo itRole.RoleRepository,
@@ -32,7 +32,7 @@ func NewRoleServiceImpl(
 	return &RoleServiceImpl{
 		assignmentService:    assignmentService,
 		cqrsBus:              cqrsBus,
-		entitlementRepo:      entitlementRepo,
+		entitlementService:   entitlementService,
 		grantRequestService:  grantRequestService,
 		revokeRequestService: revokeRequestService,
 		roleRepo:             roleRepo,
@@ -42,7 +42,7 @@ func NewRoleServiceImpl(
 type RoleServiceImpl struct {
 	assignmentService    itAssign.EntitlementAssignmentService
 	cqrsBus              cqrs.CqrsBus
-	entitlementRepo      itEntitlement.EntitlementRepository
+	entitlementService   itEntitlement.EntitlementService
 	grantRequestService  itGrantRequest.GrantRequestService
 	revokeRequestService itRevokeRequest.RevokeRequestService
 	roleRepo             itRole.RoleRepository
@@ -93,7 +93,7 @@ func (this *RoleServiceImpl) UpdateRole(ctx crud.Context, cmd itRole.UpdateRoleC
 }
 
 func (this *RoleServiceImpl) DeleteRoleHard(ctx crud.Context, cmd itRole.DeleteRoleHardCommand) (result *itRole.DeleteRoleHardResult, err error) {
-	tx, err := this.entitlementRepo.BeginTransaction(ctx)
+	tx, err := this.roleRepo.BeginTransaction(ctx)
 	fault.PanicOnErr(err)
 
 	ctx.SetDbTranx(tx)
@@ -113,7 +113,7 @@ func (this *RoleServiceImpl) DeleteRoleHard(ctx crud.Context, cmd itRole.DeleteR
 	}()
 
 	result, err = crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Role, itRole.DeleteRoleHardCommand, itRole.DeleteRoleHardResult]{
-		Action:              "delete Role",
+		Action:              "delete role",
 		Command:             cmd,
 		AssertExists:        this.assertRoleExistsById,
 		AssertBusinessRules: this.assertBusinessRuleDeleteRole,
@@ -234,6 +234,10 @@ func (this *RoleServiceImpl) assertRoleExistsById(ctx crud.Context, role *domain
 }
 
 func (this *RoleServiceImpl) assertRoleUnique(ctx crud.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
+	if role.Name == nil {
+		return nil
+	}
+
 	dbRole, err := this.roleRepo.FindByName(
 		ctx,
 		itRole.FindByNameParam{
@@ -250,6 +254,10 @@ func (this *RoleServiceImpl) assertRoleUnique(ctx crud.Context, role *domain.Rol
 }
 
 func (this *RoleServiceImpl) assertRoleNameUniqueForUpdate(ctx crud.Context, role *domain.Role, dbRole *domain.Role, vErrs *fault.ValidationErrors) error {
+	if role.Name == nil {
+		return nil
+	}
+
 	dbRole, err := this.roleRepo.FindByName(
 		ctx,
 		itRole.FindByNameParam{
@@ -343,10 +351,14 @@ func (this *RoleServiceImpl) getAssignmentIdsByRoleId(ctx crud.Context, role *do
 }
 
 func (this *RoleServiceImpl) getEntitlements(ctx crud.Context, entitlementIds []model.Id) ([]domain.Entitlement, error) {
-	entitlementsRes, err := this.entitlementRepo.FindAllByIds(ctx, itEntitlement.GetAllEntitlementByIdsQuery{Ids: entitlementIds})
+	entitlementsRes, err := this.entitlementService.GetAllEntitlementByIds(ctx, itEntitlement.GetAllEntitlementByIdsQuery{Ids: entitlementIds})
 	fault.PanicOnErr(err)
 
-	return entitlementsRes, nil
+	if entitlementsRes.ClientError != nil {
+		return nil, entitlementsRes.ClientError
+	}
+
+	return entitlementsRes.Data, nil
 }
 
 func (this *RoleServiceImpl) deleteAssignments(ctx crud.Context, assignmentIds []model.Id) error {
@@ -401,7 +413,8 @@ func (this *RoleServiceImpl) assertBusinessRuleUpdateRole(ctx crud.Context, role
 
 	return nil
 }
-func (this *RoleServiceImpl) roleIdDeleted(ctx crud.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
+
+func (this *RoleServiceImpl) roleIsDeleted(ctx crud.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
 	updateGrantRequest, err := this.grantRequestService.TargetIsDeleted(
 		ctx,
 		itGrantRequest.TargetIsDeletedCommand{
@@ -454,7 +467,7 @@ func (this *RoleServiceImpl) assertBusinessRuleDeleteRole(ctx crud.Context, cmd 
 		fault.PanicOnErr(err)
 	}
 
-	err = this.roleIdDeleted(ctx, role, vErrs)
+	err = this.roleIsDeleted(ctx, role, vErrs)
 	fault.PanicOnErr(err)
 
 	return nil
@@ -466,6 +479,7 @@ func (this *RoleServiceImpl) getRoleByIdFull(ctx crud.Context, query itRole.GetR
 
 	if dbRole == nil {
 		vErrs.AppendNotFound("role_id", "role")
+		return
 	}
 
 	entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, dbRole)
