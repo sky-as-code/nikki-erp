@@ -16,13 +16,13 @@ type ResourceRepository interface {
 	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Resource], error)
-	Exist(ctx crud.Context, param ExistParam) (bool, error)
+	Exists(ctx crud.Context, param ExistsParam) (bool, error)
 }
 
 type FindByIdParam = GetResourceByIdQuery
 type FindByNameParam = GetResourceByNameQuery
 type DeleteParam = DeleteResourceHardByNameQuery
-type ExistParam = ExistResourceParam
+type ExistsParam = ExistsResourceQuery
 
 type SearchParam struct {
 	Predicate   *orm.Predicate

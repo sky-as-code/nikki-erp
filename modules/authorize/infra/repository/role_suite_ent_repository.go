@@ -11,9 +11,6 @@ import (
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
-	entGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
-	entPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
-	entRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
 	entRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
 	entRoleSuiteUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuiteuser"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
@@ -25,12 +22,20 @@ func NewRoleSuiteEntRepository(client *ent.Client) it.RoleSuiteRepository {
 	}
 }
 
-type RoleSuiteEntRepository struct {
-	client *ent.Client
+func (this *RoleSuiteEntRepository) suiteClient(ctx crud.Context) *ent.RoleSuiteClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.RoleSuite
+	}
+	return this.client.RoleSuite
+}
+
+func (this *RoleSuiteEntRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error) {
+	return this.client.Tx(ctx)
 }
 
 func (this *RoleSuiteEntRepository) Create(ctx crud.Context, roleSuite domain.RoleSuite, roleIds []model.Id) (*domain.RoleSuite, error) {
-	creation := this.client.RoleSuite.Create().
+	creation := this.suiteClient(ctx).Create().
 		SetID(*roleSuite.Id).
 		SetName(*roleSuite.Name).
 		SetNillableDescription(roleSuite.Description).
@@ -41,6 +46,7 @@ func (this *RoleSuiteEntRepository) Create(ctx crud.Context, roleSuite domain.Ro
 		SetIsRequiredAttachment(*roleSuite.IsRequiredAttachment).
 		SetIsRequiredComment(*roleSuite.IsRequiredComment).
 		SetCreatedBy(*roleSuite.CreatedBy).
+		SetNillableOrgID(roleSuite.OrgId).
 		SetCreatedAt(time.Now())
 
 	if len(roleIds) > 0 {
@@ -50,51 +56,34 @@ func (this *RoleSuiteEntRepository) Create(ctx crud.Context, roleSuite domain.Ro
 	return database.Mutate(ctx, creation, ent.IsNotFound, entToRoleSuite)
 }
 
-// There is currently no update reason in permission histories for users/groups with this role_suite.
-func (this *RoleSuiteEntRepository) UpdateTx(ctx crud.Context, roleSuite domain.RoleSuite, prevEtag model.Etag, addRoleIds, removeRoleIds []model.Id) (*domain.RoleSuite, error) {
-	tx, err := this.client.Tx(ctx)
-	fault.PanicOnErr(err)
+func (this *RoleSuiteEntRepository) Update(ctx crud.Context, roleSuite domain.RoleSuite, prevEtag model.Etag, addRoleIds, removeRoleIds []model.Id) (*domain.RoleSuite, error) {
+	update := this.suiteClient(ctx).UpdateOneID(*roleSuite.Id).
+		SetNillableName(roleSuite.Name).
+		SetNillableDescription(roleSuite.Description).
+		Where(
+			entRoleSuite.EtagEQ(prevEtag),
+		)
 
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "update role suite transaction"); e != nil {
-			_ = tx.Rollback()
-			err = e
-		}
-	}()
+	if len(addRoleIds) > 0 {
+		update.AddRoleIDs(addRoleIds...)
+	}
 
-	updatedRoleSuite, err := this.updateRoleSuiteTx(ctx, tx, roleSuite, prevEtag, addRoleIds, removeRoleIds)
-	fault.PanicOnErr(err)
+	if len(removeRoleIds) > 0 {
+		update.RemoveRoleIDs(removeRoleIds...)
+	}
 
-	fault.PanicOnErr(tx.Commit())
-	return updatedRoleSuite, nil
+	if len(update.Mutation().Fields()) > 0 {
+		update.
+			SetEtag(*roleSuite.Etag)
+	}
+
+	return database.Mutate(ctx, update, ent.IsNotFound, entToRoleSuite)
 }
 
-// There is currently no delete reason in permission histories for users/groups with this role_suite.
-func (this *RoleSuiteEntRepository) DeleteHardTx(ctx crud.Context, param it.DeleteRoleSuiteParam) (int, error) {
-	tx, err := this.client.Tx(ctx)
-	fault.PanicOnErr(err)
-
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "delete role suite transaction"); e != nil {
-			_ = tx.Rollback()
-			err = e
-		}
-	}()
-
-	err = this.setGrantRequestBeforeDeleteTx(ctx, tx, param.Id, param.Name)
-	fault.PanicOnErr(err)
-
-	err = this.setRevokeRequestBeforeDeleteTx(ctx, tx, param.Id, param.Name)
-	fault.PanicOnErr(err)
-
-	err = this.setPermissionHistoryBeforeDeleteTx(ctx, tx, param.Id, param.Name)
-	fault.PanicOnErr(err)
-
-	deletedCount, err := this.deleteRoleSuiteTx(ctx, tx, param.Id)
-	fault.PanicOnErr(err)
-
-	fault.PanicOnErr(tx.Commit())
-	return deletedCount, nil
+func (this *RoleSuiteEntRepository) DeleteHard(ctx crud.Context, param it.DeleteRoleSuiteParam) (int, error) {
+	return this.suiteClient(ctx).Delete().
+		Where(entRoleSuite.IDEQ(param.Id)).
+		Exec(ctx)
 }
 
 func (this *RoleSuiteEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.RoleSuite, error) {
@@ -109,6 +98,12 @@ func (this *RoleSuiteEntRepository) FindByName(ctx crud.Context, param it.FindBy
 	query := this.client.RoleSuite.Query().
 		Where(entRoleSuite.NameEQ(param.Name))
 
+	if param.OrgId != nil {
+		query = query.Where(entRoleSuite.OrgIDEQ(*param.OrgId))
+	} else {
+		query = query.Where(entRoleSuite.OrgIDIsNil())
+	}
+
 	return database.FindOne(ctx, query, ent.IsNotFound, entToRoleSuite)
 }
 
@@ -117,7 +112,7 @@ func (this *RoleSuiteEntRepository) ParseSearchGraph(criteria *string) (*orm.Pre
 }
 
 func (this *RoleSuiteEntRepository) FindAllBySubject(ctx crud.Context, param it.FindAllBySubjectParam) ([]domain.RoleSuite, error) {
-	query := this.client.RoleSuite.Query().
+	query := this.suiteClient(ctx).Query().
 		Where(entRoleSuite.HasRolesuiteUsersWith(entRoleSuiteUser.ReceiverRefEQ(param.SubjectRef))).
 		WithRoles()
 
@@ -128,7 +123,7 @@ func (this *RoleSuiteEntRepository) Search(
 	ctx crud.Context,
 	param it.SearchParam,
 ) (*crud.PagedResult[domain.RoleSuite], error) {
-	query := this.client.RoleSuite.Query().
+	query := this.suiteClient(ctx).Query().
 		WithRoles()
 
 	return database.Search(
@@ -145,7 +140,7 @@ func (this *RoleSuiteEntRepository) Search(
 }
 
 func (this *RoleSuiteEntRepository) ExistUserWithRoleSuite(ctx crud.Context, param it.ExistUserWithRoleSuiteParam) (bool, error) {
-	return this.client.RoleSuite.Query().
+	return this.suiteClient(ctx).Query().
 		Where(
 			entRoleSuite.HasRolesuiteUsersWith(
 				entRoleSuiteUser.ReceiverTypeEQ(entRoleSuiteUser.ReceiverType(param.ReceiverType)),
@@ -157,8 +152,8 @@ func (this *RoleSuiteEntRepository) ExistUserWithRoleSuite(ctx crud.Context, par
 }
 
 func (this *RoleSuiteEntRepository) AddRemoveUser(ctx crud.Context, param it.AddRemoveUserParam) error {
-	var creation *ent.RoleSuiteUserCreate
-	var deletion *ent.RoleSuiteUserDelete
+	creation := this.client.RoleSuiteUser.Create()
+	deletion := this.client.RoleSuiteUser.Delete()
 	tx := ctx.GetDbTranx()
 
 	if tx != nil {
@@ -189,69 +184,8 @@ func (this *RoleSuiteEntRepository) AddRemoveUser(ctx crud.Context, param it.Add
 	return err
 }
 
-func (this *RoleSuiteEntRepository) deleteRoleSuiteTx(ctx crud.Context, tx *ent.Tx, roleSuiteId model.Id) (int, error) {
-	deletedCount, err := tx.RoleSuite.
-		Delete().
-		Where(entRoleSuite.IDEQ(roleSuiteId)).
-		Exec(ctx)
-	return deletedCount, err
-}
-
-func (this *RoleSuiteEntRepository) setGrantRequestBeforeDeleteTx(ctx crud.Context, tx *ent.Tx, roleSuiteId, nameSuite string) error {
-	_, err := tx.GrantRequest.
-		Update().
-		SetTargetSuiteName(nameSuite).
-		Where(entGrantRequest.TargetSuiteID(roleSuiteId)).
-		ClearTargetSuiteID().
-		Save(ctx)
-
-	return err
-}
-
-func (this *RoleSuiteEntRepository) setRevokeRequestBeforeDeleteTx(ctx crud.Context, tx *ent.Tx, roleSuiteId, nameSuite string) error {
-	_, err := tx.RevokeRequest.
-		Update().
-		SetTargetSuiteName(nameSuite).
-		Where(entRevokeRequest.TargetSuiteID(roleSuiteId)).
-		ClearTargetSuiteID().
-		Save(ctx)
-
-	return err
-}
-
-func (this *RoleSuiteEntRepository) setPermissionHistoryBeforeDeleteTx(ctx crud.Context, tx *ent.Tx, roleSuiteId, nameSuite string) error {
-	_, err := tx.PermissionHistory.
-		Update().
-		SetRoleSuiteName(nameSuite).
-		Where(entPermissionHistory.RoleSuiteID(roleSuiteId)).
-		ClearRoleSuiteID().
-		Save(ctx)
-
-	return err
-}
-
-func (this *RoleSuiteEntRepository) updateRoleSuiteTx(ctx crud.Context, tx *ent.Tx, roleSuite domain.RoleSuite, prevEtag model.Etag, addRoleIds, removeRoleIds []model.Id) (*domain.RoleSuite, error) {
-	updation := tx.RoleSuite.UpdateOneID(*roleSuite.Id).
-		SetNillableName(roleSuite.Name).
-		SetNillableDescription(roleSuite.Description).
-		SetEtag(*roleSuite.Etag).
-		Where(
-			entRoleSuite.IDEQ(*roleSuite.Id),
-			entRoleSuite.EtagEQ(prevEtag),
-		)
-
-	if len(addRoleIds) > 0 {
-		updation.AddRoleIDs(addRoleIds...)
-	}
-
-	if len(removeRoleIds) > 0 {
-		updation.RemoveRoleIDs(removeRoleIds...)
-	}
-
-	updatedRoleSuite, err := updation.Save(ctx)
-	fault.PanicOnErr(err)
-
-	return entToRoleSuite(updatedRoleSuite), nil
+type RoleSuiteEntRepository struct {
+	client *ent.Client
 }
 
 func BuildRoleSuiteDescriptor() *orm.EntityDescriptor {
@@ -268,6 +202,7 @@ func BuildRoleSuiteDescriptor() *orm.EntityDescriptor {
 		Field(entRoleSuite.FieldIsRequiredAttachment, entity.IsRequiredAttachment).
 		Field(entRoleSuite.FieldIsRequiredComment, entity.IsRequiredComment).
 		Field(entRoleSuite.FieldCreatedBy, entity.CreatedBy).
+		Field(entRoleSuite.FieldOrgID, entity.OrgID).
 		Field(entRoleSuite.FieldCreatedAt, entity.CreatedAt)
 
 	return builder.Descriptor()

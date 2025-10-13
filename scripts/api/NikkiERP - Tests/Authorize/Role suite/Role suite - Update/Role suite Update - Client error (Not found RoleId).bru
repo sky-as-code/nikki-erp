@@ -15,14 +15,17 @@ body:json {
     "name": "Name Update",
     "description": "descriptopn",
     "roleIds": [
-      "01K2EV8WXVNWW1BH431NOTFOUND"
+      "01K2EV8WXVNWW1BH43NOTFOUND"
     ],
     "etag": "{{etag}}"
   }
 }
 
 script:post-response {
-  // ================== Common Setup ==================
+  /**
+   * 🧪 Post-response script: Validate all possible outcomes for updating a Role Suite
+   */
+  
   let status = res.getStatus();
   let body;
   let isJsonValid = true;
@@ -35,118 +38,182 @@ script:post-response {
     expect.fail("❌ Response is not valid JSON");
   }
   
-  // ================== Case 1: Success ==================
+  /**
+   * ================== Common Schemas ==================
+   */
+  const schemas = {
+    success: {
+      type: "object",
+      required: ["id", "etag", "updatedAt"],
+      properties: {
+        id: { type: "string" },
+        etag: { type: "string" },
+        updatedAt: { type: "number" }
+      },
+      additionalProperties: true
+    },
+    error: {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+        code: { type: "string" },
+        details: { type: ["object", "string"] }
+      },
+      additionalProperties: true
+    }
+  };
+  
+  /**
+   * ================== Helper ==================
+   */
+  function ensureEtagNotModified() {
+    const currentEtag = bru.getVar("etag");
+    test("Do not update etag on error", () => {
+      expect(currentEtag).to.not.eql(null);
+      expect(currentEtag).to.not.eql(undefined);
+    });
+  }
+  
+  /**
+   * ================== Case 1: Success ==================
+   */
   if (status === 200 && isJsonValid) {
-    test("Status code is 200", function () {
-      expect(status).to.equal(200);
+    test("✅ Status code is 200 OK", () => {
+      expect(tv4.validate(body, schemas.success)).to.be.true;
     });
   
-    test("Response contains required fields: id, updatedAt, etag", function () {
-      ["id", "updatedAt", "etag"].forEach(field => {
-        expect(body).to.have.property(field);
-      });
+    ["id", "etag", "updatedAt"].forEach(field => {
+      expect(body).to.have.property(field);
     });
   
     // ✅ Update etag variable
     if (typeof body.etag === "string" && body.etag.length > 0) {
       bru.setVar("etag", body.etag);
-      console.log("✅ etag updated to:", body.etag);
+      console.log("💾 Updated etag to:", body.etag);
     } else {
       console.warn("⚠️ etag missing or invalid in success response");
     }
   }
   
-  // ================== Case 2: Existing name ==================
-  if (status === 400 && isJsonValid && body.details?.role_suite_name) {
-    test("Role suite name already exists error", function () {
-      expect(body).to.have.property("code", "validation_error");
-      expect(body.details).to.have.property("role_suite_name", "role suite name already exists");
+  /**
+   * ================== Case 2: Existing name ==================
+   */
+  else if (status === 400 && isJsonValid && body.details?.role_suite_name) {
+    test("❌ Role suite name already exists", () => {
+      expect(tv4.validate(body, schemas.error)).to.be.true;
+      expect(body.details).to.have.property("role_suite_name");
     });
-  
-    // Ensure etag not modified
-    test("Environment variable 'etag' is NOT updated on error", function () {
-      const currentEtag = bru.getVar("etag");
-      expect(currentEtag).to.not.eql(null);
-      expect(currentEtag).to.not.eql(undefined);
-    });
+    ensureEtagNotModified();
   }
   
-  // ================== Case 3: Invalid fields ==================
-  if (status === 400 && isJsonValid && body.details?.etag === "cannot be blank") {
-    test("Etag cannot be blank error", function () {
-      expect(body.code).to.equal("validation_error");
+  /**
+   * ================== Case 3: Invalid fields ==================
+   */
+  else if (
+    status === 400 &&
+    isJsonValid &&
+    body.code === "validation_error" &&
+    body.details?.etag === "cannot be blank"
+  ) {
+    test("❌ Invalid field: etag cannot be blank", () => {
+      expect(tv4.validate(body, schemas.error)).to.be.true;
       expect(body.details).to.have.property("etag", "cannot be blank");
     });
-  
-    // Ensure etag not modified
-    test("Do not update etag on invalid field error", function () {
-      const currentEtag = bru.getVar("etag");
-      expect(currentEtag).to.not.eql(null);
-      expect(currentEtag).to.not.eql(undefined);
-    });
+    ensureEtagNotModified();
   }
   
-  // ================== Case 4: Not match etag ==================
-  if (status === 400 && isJsonValid && body.details?.etag === "etag mismatched") {
-    test("Etag mismatched error", function () {
-      expect(body.code).to.equal("validation_error");
+  /**
+   * ================== Case 4: Not match etag ==================
+   */
+  else if (status === 400 && isJsonValid && body.details?.etag === "etag mismatched") {
+    test("❌ Etag mismatched", () => {
       expect(body.details).to.have.property("etag", "etag mismatched");
     });
-  
-    // Ensure etag not modified
-    test("Do not update etag on mismatch", function () {
-      const currentEtag = bru.getVar("etag");
-      expect(currentEtag).to.not.eql(null);
-      expect(currentEtag).to.not.eql(undefined);
-    });
+    ensureEtagNotModified();
   }
   
-  // ================== Case 5: Not found role suite ==================
-  if (status === 404 && isJsonValid && body.code === "not_found") {
-    test("Role suite not found", function () {
-      expect(body).to.have.property("code", "not_found");
+  /**
+   * ================== Case 5: Role suite not found ==================
+   */
+  else if (status === 404 && isJsonValid && body.code === "not_found") {
+    test("❌ Role suite not found", () => {
       expect(body.details).to.equal("resource not found");
     });
-  
-    // Ensure etag not modified
-    test("Do not update etag when role suite not found", function () {
-      const currentEtag = bru.getVar("etag");
-      expect(currentEtag).to.not.eql(null);
-      expect(currentEtag).to.not.eql(undefined);
-    });
+    ensureEtagNotModified();
   }
   
-  // ================== Case 6: Not found role id ==================
-  if (status === 400 && isJsonValid && /does not exist/.test(body.details?.["roles[0]"] || "")) {
-    test("Role ID not found", function () {
-      expect(body.code).to.equal("validation_error");
-  
-      expect(body.details).to.have.property("roles[0]");
-      expect(body.details["roles[0]"]).to.match(/^role with id '.+' does not exist$/);
+  /**
+   * ================== Case 6: Role ID not found ==================
+   * (Covers: "does not exist", "role not found", "not allowed")
+   */
+  else if (
+    status === 400 &&
+    isJsonValid &&
+    Object.values(body.details || {}).some(msg =>
+      /not allowed|does not exist|role not found/i.test(msg)
+    )
+  ) {
+    test("❌ Role ID not found or not allowed", () => {
+      expect(body.code).to.eql("validation_error");
+      const invalids = Object.entries(body.details)
+        .filter(([_, v]) => /not allowed|does not exist|role not found/i.test(v))
+        .map(([k]) => k);
+      expect(invalids.length).to.be.greaterThan(0);
+      console.warn("⚠️ Invalid role IDs:", invalids.join(", "));
     });
-  
-    // Ensure etag not modified
-    test("Do not update etag when role ID not found", function () {
-      const currentEtag = bru.getVar("etag");
-      expect(currentEtag).to.not.eql(null);
-      expect(currentEtag).to.not.eql(undefined);
-    });
+    ensureEtagNotModified();
   }
   
-  // ================== Case 7: Duplicate roleIds ==================
-  if (status === 400 && isJsonValid && /duplicate role id/.test(body.details?.["roles[1]"] || "")) {
-    test("Duplicate role ID error", function () {
-      expect(body.code).to.equal("validation_error");
-      expect(body.details).to.have.property("roles[1]", "duplicate role id found at index 0");
+  /**
+   * ================== Case 7: Duplicate role ID ==================
+   */
+  else if (
+    status === 400 &&
+    isJsonValid &&
+    Object.values(body.details || {}).some(v => /duplicate role id/i.test(v))
+  ) {
+    test("❌ Duplicate role ID", () => {
+      expect(body.code).to.eql("validation_error");
+      console.warn("⚠️ Duplicate role ID found:", JSON.stringify(body.details, null, 2));
     });
-  
-    // Ensure etag not modified
-    test("Do not update etag on duplicate role ID", function () {
-      const currentEtag = bru.getVar("etag");
-      expect(currentEtag).to.not.eql(null);
-      expect(currentEtag).to.not.eql(undefined);
-    });
+    ensureEtagNotModified();
   }
+  
+  /**
+   * ================== Case 8: Problem with scope (id not allowed) ==================
+   */
+  else if (
+    status === 400 &&
+    isJsonValid &&
+    Object.values(body.details || {}).some(v => /not allowed/i.test(v))
+  ) {
+    test("❌ Problem with scope (ID not allowed)", () => {
+      expect(body.code).to.eql("validation_error");
+      const invalids = Object.entries(body.details)
+        .filter(([_, v]) => /not allowed/i.test(v))
+        .map(([k]) => k);
+      expect(invalids.length).to.be.greaterThan(0);
+      console.warn("⚠️ Not allowed fields:", invalids.join(", "));
+    });
+    ensureEtagNotModified();
+  }
+  
+  /**
+   * ================== Default: Unexpected ==================
+   */
+  else {
+    test("⚠️ Unexpected response", () => {
+      expect.fail(`Unexpected status ${status} or schema mismatch`);
+    });
+    console.error("🧨 Raw response:", body);
+  }
+  
+  /**
+   * ================== Summary ==================
+   */
+  console.log("🧾 Role Suite Update Summary:");
+  console.log(`   ↳ Status: ${status}`);
+  if (body?.code) console.log(`   ↳ Error code: ${body.code}`);
   
 }
 

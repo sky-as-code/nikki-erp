@@ -100,7 +100,7 @@ func (this *ResourceEntRepository) Search(
 	)
 }
 
-func (this *ResourceEntRepository) Exist(ctx crud.Context, param it.ExistParam) (bool, error) {
+func (this *ResourceEntRepository) Exists(ctx crud.Context, param it.ExistsParam) (bool, error) {
 	return this.client.Resource.Query().
 		Where(entResource.IDEQ(param.Id)).
 		Exist(ctx)

@@ -69,7 +69,7 @@ func (this *EntitlementServiceImpl) CreateEntitlement(ctx crud.Context, cmd it.C
 	})
 }
 
-func (this *EntitlementServiceImpl) EntitlementExists(ctx crud.Context, cmd it.EntitlementExistsCommand) (result *it.EntitlementExistsResult, err error) {
+func (this *EntitlementServiceImpl) EntitlementExists(ctx crud.Context, cmd it.EntitlementExistsQuery) (result *it.EntitlementExistsResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "check entitlement exists"); e != nil {
 			err = e
@@ -294,6 +294,10 @@ func (this *EntitlementServiceImpl) setEntitlementDefaults(entitlement *domain.E
 }
 
 func (this *EntitlementServiceImpl) assertEntitlementUnique(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
+	if entitlement.Name == nil {
+		return nil
+	}
+
 	dbEntitlement, err := this.entitlementRepo.FindByName(
 		ctx,
 		it.FindByNameParam{
@@ -360,9 +364,15 @@ func (this *EntitlementServiceImpl) assertActionExprUnique(ctx crud.Context, ent
 func (this *EntitlementServiceImpl) assertBusinessRuleCreateEntitlement(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
 	resource, err := this.resourceService.GetResourceById(ctx, itResource.GetResourceByIdQuery{Id: *entitlement.ResourceId})
 	fault.PanicOnErr(err)
+	if resource.ClientError != nil {
+		return resource.ClientError
+	}
 
 	action, err := this.actionService.GetActionById(ctx, itAction.GetActionByIdQuery{Id: *entitlement.ActionId})
 	fault.PanicOnErr(err)
+	if action.ClientError != nil {
+		return action.ClientError
+	}
 
 	err = this.assertActionExprValid(resource.Data, action.Data, entitlement, vErrs)
 	fault.PanicOnErr(err)

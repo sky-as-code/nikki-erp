@@ -5,15 +5,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type RoleRepository interface {
 	AddRemoveUser(ctx crud.Context, param AddRemoveUserParam) error
 	Create(ctx crud.Context, role *domain.Role) (*domain.Role, error)
-	// CreateWithEntitlements(ctx crud.Context, role domain.Role, entitlementIds []model.Id) (*domain.Role, error)
-	// DeleteHardTx(ctx crud.Context, param DeleteRoleHardParam) (int, error)
-	// UpdateTx(ctx crud.Context, role domain.Role, prevEtag model.Etag, addEntitlementIds, removeEntitlementIds []model.Id) (*domain.Role, error)
 	DeleteHard(ctx crud.Context, param DeleteRoleHardParam) (int, error)
 	Update(ctx crud.Context, role *domain.Role, prevEtag model.Etag) (*domain.Role, error)
 	Exist(ctx crud.Context, param ExistRoleParam) (bool, error)
@@ -23,6 +21,8 @@ type RoleRepository interface {
 	FindAllBySubject(ctx crud.Context, param FindAllBySubjectParam) ([]domain.Role, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Role], error)
+
+	BeginTransaction(ctx crud.Context) (*ent.Tx, error)
 }
 
 type FindByIdParam = GetRoleByIdQuery

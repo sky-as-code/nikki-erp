@@ -22,7 +22,7 @@ func (this *EntitlementHandler) CreateEntitlement(ctx context.Context, packet *c
 	return cqrs.HandlePacket(ctx, packet, this.EntitlementSvc.CreateEntitlement)
 }
 
-func (this *EntitlementHandler) EntitlementExists(ctx context.Context, packet *cqrs.RequestPacket[it.EntitlementExistsCommand]) (*cqrs.Reply[it.EntitlementExistsResult], error) {
+func (this *EntitlementHandler) EntitlementExists(ctx context.Context, packet *cqrs.RequestPacket[it.EntitlementExistsQuery]) (*cqrs.Reply[it.EntitlementExistsResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.EntitlementSvc.EntitlementExists)
 }
 
