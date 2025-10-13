@@ -5,6 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
@@ -161,6 +162,40 @@ func (this *ResourceServiceImpl) SearchResources(ctx crud.Context, query it.Sear
 	})
 
 	return result, err
+}
+
+func (this *ResourceServiceImpl) Exists(ctx crud.Context, cmd it.ExistsResourceQuery) (result *it.ExistsResourceResult, err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "check resource exists"); e != nil {
+			err = e
+		}
+	}()
+
+	var existsResource bool
+
+	flow := validator.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			existsResource, err = this.resourceRepo.Exists(ctx, it.ExistsResourceQuery{Id: cmd.Id})
+			return err
+		}).
+		End()
+	fault.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &it.ExistsResourceResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	return &it.ExistsResourceResult{
+		Data:    existsResource,
+		HasData: true,
+	}, nil
 }
 
 func (this *ResourceServiceImpl) getResourceByIdFull(ctx crud.Context, query it.GetResourceByIdQuery, vErrs *fault.ValidationErrors) (dbResource *domain.Resource, err error) {

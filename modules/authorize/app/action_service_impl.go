@@ -7,23 +7,25 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
 	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
 )
 
-func NewActionServiceImpl(actionRepo it.ActionRepository, resourceRepo itResource.ResourceRepository, eventBus event.EventBus) it.ActionService {
+func NewActionServiceImpl(
+	actionRepo it.ActionRepository,
+	resourceService itResource.ResourceService,
+) it.ActionService {
 	return &ActionServiceImpl{
-		actionRepo:   actionRepo,
-		resourceRepo: resourceRepo,
+		actionRepo:      actionRepo,
+		resourceService: resourceService,
 	}
 }
 
 type ActionServiceImpl struct {
-	actionRepo   it.ActionRepository
-	resourceRepo itResource.ResourceRepository
+	actionRepo      it.ActionRepository
+	resourceService itResource.ResourceService
 }
 
 func (this *ActionServiceImpl) CreateAction(ctx crud.Context, cmd it.CreateActionCommand) (*it.CreateActionResult, error) {
@@ -173,6 +175,10 @@ func (this *ActionServiceImpl) assertBusinessRuleCreateAction(ctx crud.Context, 
 }
 
 func (this *ActionServiceImpl) assertActionUnique(ctx crud.Context, action *domain.Action, vErrs *fault.ValidationErrors) error {
+	if action.Name == nil {
+		return nil
+	}
+
 	dbAction, err := this.actionRepo.FindByName(ctx, it.FindByNameParam{Name: *action.Name, ResourceId: *action.ResourceId})
 	fault.PanicOnErr(err)
 
@@ -203,10 +209,15 @@ func (this *ActionServiceImpl) assertActionExistsById(ctx crud.Context, action *
 }
 
 func (this *ActionServiceImpl) assertResourceExists(ctx crud.Context, id model.Id, vErrs *fault.ValidationErrors) (err error) {
-	exist, err := this.resourceRepo.Exist(ctx, itResource.ExistParam{Id: id})
+	exist, err := this.resourceService.Exists(ctx, itResource.ExistsParam{Id: id})
 	fault.PanicOnErr(err)
 
-	if !exist {
+	if exist.ClientError != nil {
+		vErrs.MergeClientError(exist.ClientError)
+		return
+	}
+
+	if !exist.Data {
 		vErrs.AppendNotFound("resource_id", "resource")
 	}
 	return err

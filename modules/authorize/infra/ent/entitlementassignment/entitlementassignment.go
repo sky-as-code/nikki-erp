@@ -26,6 +26,8 @@ const (
 	FieldActionName = "action_name"
 	// FieldResourceName holds the string denoting the resource_name field in the database.
 	FieldResourceName = "resource_name"
+	// FieldScopeRef holds the string denoting the scope_ref field in the database.
+	FieldScopeRef = "scope_ref"
 	// FieldOrgID holds the string denoting the org_id field in the database.
 	FieldOrgID = "org_id"
 	// EdgeEntitlement holds the string denoting the entitlement edge name in mutations.
@@ -59,6 +61,7 @@ var Columns = []string{
 	FieldResolvedExpr,
 	FieldActionName,
 	FieldResourceName,
+	FieldScopeRef,
 	FieldOrgID,
 }
 
@@ -133,6 +136,11 @@ func ByActionName(opts ...sql.OrderTermOption) OrderOption {
 // ByResourceName orders the results by the resource_name field.
 func ByResourceName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResourceName, opts...).ToFunc()
+}
+
+// ByScopeRef orders the results by the scope_ref field.
+func ByScopeRef(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScopeRef, opts...).ToFunc()
 }
 
 // ByOrgID orders the results by the org_id field.

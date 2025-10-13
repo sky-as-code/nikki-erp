@@ -15,7 +15,7 @@ func init() {
 	// Assert interface implementation
 	var req cqrs.Request
 	req = (*CreateEntitlementCommand)(nil)
-	req = (*EntitlementExistsCommand)(nil)
+	req = (*EntitlementExistsQuery)(nil)
 	req = (*UpdateEntitlementCommand)(nil)
 	req = (*DeleteEntitlementHardByIdCommand)(nil)
 	req = (*GetEntitlementByIdQuery)(nil)
@@ -52,22 +52,22 @@ type CreateEntitlementResult = crud.OpResult[*domain.Entitlement]
 
 // END: CreateEntitlementCommand
 
-// START: EntitlementExistsCommand
-var existsCommandType = cqrs.RequestType{
+// START: EntitlementExistsQuery
+var existsQueryType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "entitlement",
 	Action:    "exists",
 }
 
-type EntitlementExistsCommand struct {
+type EntitlementExistsQuery struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (EntitlementExistsCommand) CqrsRequestType() cqrs.RequestType {
-	return existsCommandType
+func (EntitlementExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return existsQueryType
 }
 
-func (this EntitlementExistsCommand) Validate() fault.ValidationErrors {
+func (this EntitlementExistsQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
@@ -77,7 +77,7 @@ func (this EntitlementExistsCommand) Validate() fault.ValidationErrors {
 
 type EntitlementExistsResult = crud.OpResult[bool]
 
-// END: EntitlementExistsCommand
+// END: EntitlementExistsQuery
 
 // START: UpdateEntitlementCommand
 var updateEntitlementCommandType = cqrs.RequestType{

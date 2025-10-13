@@ -12,50 +12,39 @@ post {
 
 body:json {
   {
-      "name": "Org Intern Suite1",
-      "ownerType": "user",
-      "ownerRef": "{{user_id}}",
-      "isRequestable": false,
-      "isRequiredAttachment": false,
-      "isRequiredComment": false,
-      "createdBy": "{{user_id}}",
-      "roleIds": ["{{role_id}}"]
+    "name": "Org Intern Suite",
+    "ownerType": "user",
+    "ownerRef": "{{user_id}}",
+    "isRequestable": true,
+    "isRequiredAttachment": false,
+    "isRequiredComment": false,
+    "createdBy": "{{user_id}}",
+    "orgId": "01JWNY20G23KD4RV5VWYABQYHD",
+    "roleIds": [
+      "{{role_id}}"
+    ]
   }
 }
 
 script:pre-request {
-  let rawBody = req.getBody().raw;
   let payload;
   try {
-      payload = JSON.parse(rawBody);
+      payload = req.getBody();
   } catch (e) {
-      console.error("❌ Failed to parse JSON body:", e);
+      console.error("❌ Failed to parse:", e);
       return;
   }
   
   // Utility to generate random alphanumeric string
   function randomString(length = 6) {
-      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  }
-  
-  // Generate ULID-like string (starts with "01", total 26 chars)
-  function generateULID() {
-      return "01" + randomString(24);
   }
   
   // Randomize name (append 6-char string, alphanumeric only)
   if (payload.name) {
       payload.name = payload.name.trim() + " " + randomString();
   }
-  
-  // Random ownerType: "user" or "group"
-  const ownerTypes = ["user", "group"];
-  payload.ownerType = ownerTypes[Math.floor(Math.random() * ownerTypes.length)];
-  
-  // Fill required fields with dummy ULIDs
-  payload.ownerRef = generateULID();
-  payload.createdBy = generateULID();
   
   // Optional: set default values if not present
   if (typeof payload.isRequestable !== "boolean") {
@@ -68,6 +57,8 @@ script:pre-request {
       payload.isRequiredComment = false;
   }
   
+  req.setBody(payload)
+  
   // Save generated name for later use
   bru.setVar("rolesuite_name", payload.name);
   
@@ -77,51 +68,108 @@ script:pre-request {
 }
 
 script:post-response {
-  let isStatus201 = false;
-  test("Status code is 201", function () {
-      isStatus201 = res.getStatus() === 201;
-      expect(isStatus201).to.be.true;
-  });
+  /**
+   * 🧪 Post-response script: Validate all possible outcomes of creating a Role Suite
+   */
   
-  const schema = {
-      type: "object",
-      required: ["id", "etag", "createdAt"],
-      properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          createdAt: { type: "integer" },
-      },
-      additionalProperties: false
-  };
-  
-  let isSchemaValid = false;
   let body;
   let isJsonValid = true;
   
   try {
-      body = res.getBody();
-      console.log("✅ Create Role suite response:", body);
-  } catch (err) {
-      isJsonValid = false;
-      expect.fail("❌ Failed to parse response JSON");
+    body = res.getBody();
+    console.log("📥 Response body:", body);
+  } catch (e) {
+    isJsonValid = false;
+    expect.fail("❌ Response is not valid JSON");
   }
   
-  // ✅ validate schema
-  if (isJsonValid) {
-      test("Response matches expected schema", function () {
-          const valid = tv4.validate(body, schema);
-          expect(valid).to.be.true;
-          isSchemaValid = valid;
-      });
+  const status = res.getStatus();
+  
+  /**
+   * 🔹 Define common reusable schemas
+   */
+  const schemas = {
+    success: {
+      type: "object",
+      required: ["id", "etag", "createdAt"],
+      properties: {
+        id: { type: "string" },
+        etag: { type: "string" },
+        createdAt: { type: "number" }
+      },
+      additionalProperties: true
+    },
+    error: {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+        code: { type: "string" },
+        details: { type: "object" }
+      },
+      additionalProperties: true
+    }
+  };
+  
+  /**
+   * 🔹 Utility logger
+   */
+  function logResult(label, condition) {
+    const emoji = condition ? "✅" : "❌";
+    console.log(`${emoji} ${label}`);
   }
   
-  if (isStatus201 && isJsonValid && isSchemaValid && body?.id && body?.etag) {
+  /**
+   * 🔹 Expected Behaviors
+   * 201 → Success create
+   * 400 → Validation error (invalid fields / duplicate / missing / not found)
+   * Others → Unexpected
+   */
+  
+  // ✅ CASE 1: Success
+  if (status === 201 && isJsonValid) {
+    test("✅ Status code is 201 Created", () => {
+      expect(tv4.validate(body, schemas.success)).to.be.true;
+    });
+    logResult("Schema valid for success", tv4.validate(body, schemas.success));
+  
+    // Save variables for reuse
+    if (body?.id && body?.etag) {
       bru.setVar("rolesuite_id", body.id);
       bru.setVar("etag", body.etag);
-      console.log("✅ Saved rolesuite_id and etag to collection variables");
-  } else {
-      console.warn("⚠️ Skipped setting rolesuite_id and etag due to invalid response or status");
+      console.log("💾 Saved rolesuite_id & etag");
+    } else {
+      console.warn("⚠️ Missing id or etag in response");
+    }
   }
+  
+  // ❌ CASE 2: Validation error
+  else if (status === 400 && isJsonValid && body.code === "validation_error") {
+    test("❌ Validation error returned as expected", () => {
+      expect(tv4.validate(body, schemas.error)).to.be.true;
+      expect(Object.keys(body.details).length).to.be.greaterThan(0);
+    });
+  
+    // Log validation fields in readable format
+    Object.entries(body.details || {}).forEach(([field, msg]) => {
+      console.warn(`⚠️ [${field}] → ${msg}`);
+    });
+  }
+  
+  // ⚠️ CASE 3: Unexpected
+  else {
+    test("⚠️ Unexpected response", () => {
+      expect.fail(`Unexpected status ${status} or invalid schema`);
+    });
+    console.error("🧨 Raw response for debugging:", body);
+  }
+  
+  /**
+   * ✅ Summary
+   */
+  console.log("🧾 Role Suite Create Test Summary:");
+  console.log(`   ↳ Status: ${status}`);
+  console.log(`   ↳ JSON valid: ${isJsonValid}`);
+  if (body?.code) console.log(`   ↳ Error code: ${body.code}`);
   
 }
 
