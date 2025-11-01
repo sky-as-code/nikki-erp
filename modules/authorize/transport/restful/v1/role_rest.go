@@ -140,3 +140,49 @@ func (this RoleRest) SearchRoles(echoCtx echo.Context) (err error) {
 
 	return err
 }
+
+func (this RoleRest) AddEntitlements(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST add entitlements"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.roleService.AddEntitlements,
+		func(request AddEntitlementsRequest) it.AddEntitlementsCommand {
+			return it.AddEntitlementsCommand(request)
+		},
+		func(result it.AddEntitlementsResult) AddEntitlementsResponse {
+			response := AddEntitlementsResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
+func (this RoleRest) RemoveEntitlements(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST remove entitlements"); e != nil {
+			err = e
+		}
+	}()
+	
+	err = httpserver.ServeRequest(
+		echoCtx, this.roleService.RemoveEntitlements,
+		func(request RemoveEntitlementsRequest) it.RemoveEntitlementsCommand {
+			return it.RemoveEntitlementsCommand(request)
+		},
+		func(result it.RemoveEntitlementsResult) RemoveEntitlementsResponse {
+			response := RemoveEntitlementsResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}

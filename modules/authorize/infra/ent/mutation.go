@@ -1939,7 +1939,6 @@ type EntitlementAssignmentMutation struct {
 	action_name                 *string
 	resource_name               *string
 	scope_ref                   *string
-	org_id                      *string
 	clearedFields               map[string]struct{}
 	entitlement                 *string
 	clearedentitlement          bool
@@ -2346,55 +2345,6 @@ func (m *EntitlementAssignmentMutation) ResetScopeRef() {
 	delete(m.clearedFields, entitlementassignment.FieldScopeRef)
 }
 
-// SetOrgID sets the "org_id" field.
-func (m *EntitlementAssignmentMutation) SetOrgID(s string) {
-	m.org_id = &s
-}
-
-// OrgID returns the value of the "org_id" field in the mutation.
-func (m *EntitlementAssignmentMutation) OrgID() (r string, exists bool) {
-	v := m.org_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldOrgID returns the old "org_id" field's value of the EntitlementAssignment entity.
-// If the EntitlementAssignment object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EntitlementAssignmentMutation) OldOrgID(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldOrgID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldOrgID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldOrgID: %w", err)
-	}
-	return oldValue.OrgID, nil
-}
-
-// ClearOrgID clears the value of the "org_id" field.
-func (m *EntitlementAssignmentMutation) ClearOrgID() {
-	m.org_id = nil
-	m.clearedFields[entitlementassignment.FieldOrgID] = struct{}{}
-}
-
-// OrgIDCleared returns if the "org_id" field was cleared in this mutation.
-func (m *EntitlementAssignmentMutation) OrgIDCleared() bool {
-	_, ok := m.clearedFields[entitlementassignment.FieldOrgID]
-	return ok
-}
-
-// ResetOrgID resets all changes to the "org_id" field.
-func (m *EntitlementAssignmentMutation) ResetOrgID() {
-	m.org_id = nil
-	delete(m.clearedFields, entitlementassignment.FieldOrgID)
-}
-
 // ClearEntitlement clears the "entitlement" edge to the Entitlement entity.
 func (m *EntitlementAssignmentMutation) ClearEntitlement() {
 	m.clearedentitlement = true
@@ -2510,7 +2460,7 @@ func (m *EntitlementAssignmentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EntitlementAssignmentMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 7)
 	if m.entitlement != nil {
 		fields = append(fields, entitlementassignment.FieldEntitlementID)
 	}
@@ -2531,9 +2481,6 @@ func (m *EntitlementAssignmentMutation) Fields() []string {
 	}
 	if m.scope_ref != nil {
 		fields = append(fields, entitlementassignment.FieldScopeRef)
-	}
-	if m.org_id != nil {
-		fields = append(fields, entitlementassignment.FieldOrgID)
 	}
 	return fields
 }
@@ -2557,8 +2504,6 @@ func (m *EntitlementAssignmentMutation) Field(name string) (ent.Value, bool) {
 		return m.ResourceName()
 	case entitlementassignment.FieldScopeRef:
 		return m.ScopeRef()
-	case entitlementassignment.FieldOrgID:
-		return m.OrgID()
 	}
 	return nil, false
 }
@@ -2582,8 +2527,6 @@ func (m *EntitlementAssignmentMutation) OldField(ctx context.Context, name strin
 		return m.OldResourceName(ctx)
 	case entitlementassignment.FieldScopeRef:
 		return m.OldScopeRef(ctx)
-	case entitlementassignment.FieldOrgID:
-		return m.OldOrgID(ctx)
 	}
 	return nil, fmt.Errorf("unknown EntitlementAssignment field %s", name)
 }
@@ -2642,13 +2585,6 @@ func (m *EntitlementAssignmentMutation) SetField(name string, value ent.Value) e
 		}
 		m.SetScopeRef(v)
 		return nil
-	case entitlementassignment.FieldOrgID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetOrgID(v)
-		return nil
 	}
 	return fmt.Errorf("unknown EntitlementAssignment field %s", name)
 }
@@ -2688,9 +2624,6 @@ func (m *EntitlementAssignmentMutation) ClearedFields() []string {
 	if m.FieldCleared(entitlementassignment.FieldScopeRef) {
 		fields = append(fields, entitlementassignment.FieldScopeRef)
 	}
-	if m.FieldCleared(entitlementassignment.FieldOrgID) {
-		fields = append(fields, entitlementassignment.FieldOrgID)
-	}
 	return fields
 }
 
@@ -2713,9 +2646,6 @@ func (m *EntitlementAssignmentMutation) ClearField(name string) error {
 		return nil
 	case entitlementassignment.FieldScopeRef:
 		m.ClearScopeRef()
-		return nil
-	case entitlementassignment.FieldOrgID:
-		m.ClearOrgID()
 		return nil
 	}
 	return fmt.Errorf("unknown EntitlementAssignment nullable field %s", name)
@@ -2745,9 +2675,6 @@ func (m *EntitlementAssignmentMutation) ResetField(name string) error {
 		return nil
 	case entitlementassignment.FieldScopeRef:
 		m.ResetScopeRef()
-		return nil
-	case entitlementassignment.FieldOrgID:
-		m.ResetOrgID()
 		return nil
 	}
 	return fmt.Errorf("unknown EntitlementAssignment field %s", name)

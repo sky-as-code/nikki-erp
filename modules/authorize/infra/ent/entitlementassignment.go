@@ -31,8 +31,6 @@ type EntitlementAssignment struct {
 	ResourceName *string `json:"resource_name,omitempty"`
 	// ScopeRef holds the value of the "scope_ref" field.
 	ScopeRef *string `json:"scope_ref,omitempty"`
-	// OrgID holds the value of the "org_id" field.
-	OrgID *string `json:"org_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EntitlementAssignmentQuery when eager-loading is set.
 	Edges        EntitlementAssignmentEdges `json:"edges"`
@@ -75,7 +73,7 @@ func (*EntitlementAssignment) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case entitlementassignment.FieldID, entitlementassignment.FieldEntitlementID, entitlementassignment.FieldSubjectType, entitlementassignment.FieldSubjectRef, entitlementassignment.FieldResolvedExpr, entitlementassignment.FieldActionName, entitlementassignment.FieldResourceName, entitlementassignment.FieldScopeRef, entitlementassignment.FieldOrgID:
+		case entitlementassignment.FieldID, entitlementassignment.FieldEntitlementID, entitlementassignment.FieldSubjectType, entitlementassignment.FieldSubjectRef, entitlementassignment.FieldResolvedExpr, entitlementassignment.FieldActionName, entitlementassignment.FieldResourceName, entitlementassignment.FieldScopeRef:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -142,13 +140,6 @@ func (ea *EntitlementAssignment) assignValues(columns []string, values []any) er
 			} else if value.Valid {
 				ea.ScopeRef = new(string)
 				*ea.ScopeRef = value.String
-			}
-		case entitlementassignment.FieldOrgID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field org_id", values[i])
-			} else if value.Valid {
-				ea.OrgID = new(string)
-				*ea.OrgID = value.String
 			}
 		default:
 			ea.selectValues.Set(columns[i], values[i])
@@ -220,11 +211,6 @@ func (ea *EntitlementAssignment) String() string {
 	builder.WriteString(", ")
 	if v := ea.ScopeRef; v != nil {
 		builder.WriteString("scope_ref=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	if v := ea.OrgID; v != nil {
-		builder.WriteString("org_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteByte(')')

@@ -213,13 +213,13 @@ func (this *EntitlementServiceImpl) GetAllEntitlementByIds(ctx crud.Context, que
 		}, nil
 	}
 
-	if len(dbEntitlements) == 0 {
-		vErrs.AppendNotFound("id", "entitlement")
+	// if len(dbEntitlements) == 0 {
+	// 	vErrs.AppendNotFound("id", "entitlement")
 
-		return &it.GetAllEntitlementByIdsResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
+	// 	return &it.GetAllEntitlementByIdsResult{
+	// 		ClientError: vErrs.ToClientError(),
+	// 	}, nil
+	// }
 
 	return &it.GetAllEntitlementByIdsResult{
 		Data:    dbEntitlements,
@@ -386,6 +386,9 @@ func (this *EntitlementServiceImpl) assertBusinessRuleCreateEntitlement(ctx crud
 	err = this.assertOrgExists(ctx, entitlement, vErrs)
 	fault.PanicOnErr(err)
 
+	err = this.assertScopeLevelConsistency(entitlement, resource.Data, vErrs)
+	fault.PanicOnErr(err)
+
 	return nil
 }
 
@@ -409,6 +412,36 @@ func (this *EntitlementServiceImpl) assertOrgExists(ctx crud.Context, entitlemen
 	if !existRes.Data {
 		vErrs.Append("orgId", "not existing organization")
 	}
+	return nil
+}
+
+func (this *EntitlementServiceImpl) assertScopeLevelConsistency(entitlement *domain.Entitlement, resource *domain.Resource, vErrs *fault.ValidationErrors) error {
+	if resource == nil || resource.ScopeType == nil {
+		return nil
+	}
+
+	scopeType := *resource.ScopeType
+
+	if entitlement.OrgId == nil {
+		switch scopeType {
+		case domain.ResourceScopeTypeDomain:
+			return nil
+		case domain.ResourceScopeTypePrivate:
+			return nil
+		case domain.ResourceScopeTypeOrg:
+			vErrs.AppendNotAllow("resource_id", *entitlement.ResourceId)
+			return nil
+		case domain.ResourceScopeTypeHierarchy:
+			vErrs.AppendNotAllow("resource_id", *entitlement.ResourceId)
+			return nil
+		}
+	} else {
+		if scopeType == domain.ResourceScopeTypeDomain {
+			vErrs.AppendNotAllow("resource_id", *entitlement.ResourceId)
+			return nil
+		}
+	}
+
 	return nil
 }
 

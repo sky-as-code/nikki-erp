@@ -23,6 +23,7 @@ func init() {
 	util.Unused(req)
 }
 
+// START: CreateEntitlementAssignmentCommand
 var createEntitlementAssignmentCommandType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "entitlement_assignment",
@@ -30,12 +31,13 @@ var createEntitlementAssignmentCommandType = cqrs.RequestType{
 }
 
 type CreateEntitlementAssignmentCommand struct {
-	SubjectType   *string   `json:"subjectType"`
-	SubjectRef    *string   `json:"subjectRef"`
-	ActionName    *string   `json:"actionName"`
-	ResourceName  *string   `json:"resourceName"`
-	ResolvedExpr  *string   `json:"resolvedExpr"`
-	EntitlementId *model.Id `json:"entitlementId"`
+	EntitlementId model.Id                                `json:"entitlementId"`
+	SubjectType   domain.EntitlementAssignmentSubjectType `json:"subjectType"`
+	SubjectRef    model.Id                                `json:"subjectRef"`
+	ActionName    *string                                 `json:"actionName"`
+	ResourceName  *string                                 `json:"resourceName"`
+	ResolvedExpr  string                                  `json:"resolvedExpr"`
+	ScopeRef      *string                                 `json:"scopeRef"`
 }
 
 func (CreateEntitlementAssignmentCommand) CqrsRequestType() cqrs.RequestType {
@@ -44,6 +46,9 @@ func (CreateEntitlementAssignmentCommand) CqrsRequestType() cqrs.RequestType {
 
 type CreateEntitlementAssignmentResult = crud.OpResult[*domain.EntitlementAssignment]
 
+// END: CreateEntitlementAssignmentCommand
+
+// START: GetAllEntitlementAssignmentBySubjectQuery
 var getAllEntitlementAssignmentBySubjectQueryType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "entitlement_assignment",
@@ -77,6 +82,9 @@ func (GetAllEntitlementAssignmentBySubjectQuery) CqrsRequestType() cqrs.RequestT
 
 type GetAllEntitlementAssignmentBySubjectResult = crud.OpResult[[]domain.EntitlementAssignment]
 
+// END: GetAllEntitlementAssignmentBySubjectQuery
+
+// START: GetAllEntitlementAssignmentByEntitlementIdQuery
 var getAllEntitlementAssignmentByEntitlementIdQueryType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "entitlement_assignment",
@@ -100,6 +108,9 @@ func (GetAllEntitlementAssignmentByEntitlementIdQuery) CqrsRequestType() cqrs.Re
 
 type GetAllEntitlementAssignmentByEntitlementIdResult = crud.OpResult[[]domain.EntitlementAssignment]
 
+// END: GetAllEntitlementAssignmentByEntitlementIdQuery
+
+// START: DeleteEntitlementAssignmentByIdCommand
 var deleteEntitlementAssignmentByIdCommandType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "entitlement_assignment",
@@ -123,6 +134,9 @@ func (DeleteEntitlementAssignmentByIdCommand) CqrsRequestType() cqrs.RequestType
 
 type DeleteEntitlementAssignmentByIdResult = crud.DeletionResult
 
+// END: DeleteEntitlementAssignmentByIdCommand
+
+// START: DeleteEntitlementAssignmentByEntitlementIdCommand
 var deleteEntitlementAssignmentByEntitlementIdCommandType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "entitlement_assignment",
@@ -146,6 +160,9 @@ func (DeleteEntitlementAssignmentByEntitlementIdCommand) CqrsRequestType() cqrs.
 
 type DeleteEntitlementAssignmentByEntitlementIdResult = crud.DeletionResult
 
+// END: DeleteEntitlementAssignmentByEntitlementIdCommand
+
+// START: GetViewsByIdQuery
 var getViewsByIdQueryType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "entitlement_assignment",
@@ -177,6 +194,9 @@ func (GetViewsByIdQuery) CqrsRequestType() cqrs.RequestType {
 
 type GetViewsByIdResult = crud.OpResult[[]domain.EntitlementAssignment]
 
+// END: GetViewsByIdQuery
+
+// START: GetByIdQuery
 var getByIdQueryType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "entitlement_assignment",
@@ -198,4 +218,51 @@ func (GetByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getByIdQueryType
 }
 
-type GetByIdResult = crud.OpResult[*domain.EntitlementAssignment]	
+type GetByIdResult = crud.OpResult[*domain.EntitlementAssignment]
+
+// END: GetByIdQuery
+
+// START: GetEntitlementAssignmentByFilterQuery
+var getEntitlementAssignmentByFilterQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "entitlement_assignment",
+	Action:    "getByFilter",
+}
+
+type GetEntitlementAssignmentByFilterQuery struct {
+	SubjectType   domain.EntitlementAssignmentSubjectType `param:"subjectType" json:"subjectType"`
+	SubjectRef    string                                  `param:"subjectRef" json:"subjectRef"`
+	EntitlementId model.Id                                `param:"entitlementId" json:"entitlementId"`
+	ScopeRef      *string                                 `param:"scopeRef" json:"scopeRef"`
+}
+
+func (this GetEntitlementAssignmentByFilterQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		validator.Field(&this.SubjectType,
+			validator.NotEmpty,
+			validator.OneOf(
+				domain.EntitlementAssignmentSubjectTypeNikkiUser,
+				domain.EntitlementAssignmentSubjectTypeNikkiGroup,
+				domain.EntitlementAssignmentSubjectTypeNikkiRole,
+				domain.EntitlementAssignmentSubjectTypeCustom,
+			),
+		),
+		model.IdValidateRule(&this.SubjectRef, true),
+		model.IdValidateRule(&this.EntitlementId, true),
+		validator.Field(&this.ScopeRef,
+			validator.When(this.ScopeRef != nil,
+				validator.NotEmpty,
+				validator.Length(1, model.MODEL_RULE_ULID_LENGTH),
+			),
+		),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+func (GetEntitlementAssignmentByFilterQuery) CqrsRequestType() cqrs.RequestType {
+	return getEntitlementAssignmentByFilterQueryType
+}
+
+type GetEntitlementAssignmentByFilterResult = crud.OpResult[*domain.EntitlementAssignment]
+
+// END: GetEntitlementAssignmentByFilterQuery

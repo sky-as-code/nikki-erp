@@ -99,7 +99,6 @@ var (
 		{Name: "action_name", Type: field.TypeString, Nullable: true},
 		{Name: "resource_name", Type: field.TypeString, Nullable: true},
 		{Name: "scope_ref", Type: field.TypeString, Nullable: true},
-		{Name: "org_id", Type: field.TypeString, Nullable: true},
 		{Name: "entitlement_id", Type: field.TypeString},
 	}
 	// AuthzEntitlementAssignmentsTable holds the schema information for the "authz_entitlement_assignments" table.
@@ -110,16 +109,16 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_entitlement_assignments_authz_entitlements_entitlement",
-				Columns:    []*schema.Column{AuthzEntitlementAssignmentsColumns[8]},
+				Columns:    []*schema.Column{AuthzEntitlementAssignmentsColumns[7]},
 				RefColumns: []*schema.Column{AuthzEntitlementsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "entitlementassignment_entitlement_id_subject_type_subject_ref_org_id",
+				Name:    "entitlementassignment_entitlement_id_scope_ref_subject_type_subject_ref",
 				Unique:  true,
-				Columns: []*schema.Column{AuthzEntitlementAssignmentsColumns[8], AuthzEntitlementAssignmentsColumns[1], AuthzEntitlementAssignmentsColumns[2], AuthzEntitlementAssignmentsColumns[7]},
+				Columns: []*schema.Column{AuthzEntitlementAssignmentsColumns[7], AuthzEntitlementAssignmentsColumns[6], AuthzEntitlementAssignmentsColumns[1], AuthzEntitlementAssignmentsColumns[2]},
 			},
 			{
 				Name:    "entitlementassignment_resolved_expr",

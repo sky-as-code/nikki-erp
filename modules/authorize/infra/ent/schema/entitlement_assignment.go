@@ -49,12 +49,6 @@ func (EntitlementAssignmentMixin) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Immutable(),
-
-		// NULL means regardless of level
-		field.String("org_id").
-			Optional().
-			Nillable().
-			Immutable(),
 	}
 }
 
@@ -86,7 +80,7 @@ func (EntitlementAssignment) Annotations() []schema.Annotation {
 
 func (EntitlementAssignment) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("entitlement_id", "subject_type", "subject_ref", "org_id").Unique(),
+		index.Fields("entitlement_id", "scope_ref", "subject_type", "subject_ref").Unique(),
 		index.Fields("resolved_expr"),
 		index.Fields("action_name"),
 		index.Fields("resource_name"),

@@ -87,6 +87,7 @@ func initHierarchyHandlers() error {
 			cqrs.NewHandler(handler.DeleteHierarchyLevel),
 			cqrs.NewHandler(handler.GetHierarchyLevelById),
 			cqrs.NewHandler(handler.SearchHierarchyLevels),
+			cqrs.NewHandler(handler.ExistsHierarchyById),
 		)
 	})
 }

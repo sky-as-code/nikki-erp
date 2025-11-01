@@ -17,11 +17,13 @@ type HierarchyRepository interface {
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.HierarchyLevel], error)
 	Update(ctx crud.Context, hierarchyLevel *domain.HierarchyLevel, prevEtag model.Etag) (*domain.HierarchyLevel, error)
+	Exists(ctx crud.Context, param ExistsParam) (bool, error)
 }
 
 type AddRemoveUsersParam = AddRemoveUsersCommand
 type DeleteParam = DeleteHierarchyLevelCommand
 type FindByIdParam = GetHierarchyLevelByIdQuery
+type ExistsParam = ExistsHierarchyLevelByIdQuery
 type FindByNameParam struct {
 	Name string
 }

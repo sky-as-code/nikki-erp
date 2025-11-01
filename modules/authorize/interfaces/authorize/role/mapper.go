@@ -23,3 +23,15 @@ func (this DeleteRoleHardCommand) ToDomainModel() *domain.Role {
 	model.MustCopy(this, role)
 	return role
 }
+
+func (this AddEntitlementsCommand) ToDomainModel() *domain.Role {
+	role := &domain.Role{}
+	model.MustCopy(this, role)
+	return role
+}
+
+func (this RemoveEntitlementsCommand) ToDomainModel() *domain.Role {
+	role := &domain.Role{}
+	model.MustCopy(this, role)
+	return role
+}

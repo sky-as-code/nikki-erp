@@ -282,3 +282,66 @@ type AddRemoveUserResultData struct {
 type AddRemoveUserResult = crud.OpResult[*AddRemoveUserResultData]
 
 // END: AddRemoveUser
+
+// START: AddEntitlementsCommand
+var addEntitlementsCommand = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role",
+	Action:    "addEntitlements",
+}
+
+type AddEntitlementsCommand struct {
+	Id                model.Id           `param:"id" json:"id"`
+	Etag              model.Etag         `json:"etag"`
+	EntitlementInputs []EntitlementInput `json:"entitlementInputs"`
+}
+
+type EntitlementInput struct {
+	EntitlementId model.Id  `json:"entitlementId"`
+	ScopeRef      *model.Id `json:"scopeRef,omitempty"`
+}
+
+func (AddEntitlementsCommand) CqrsRequestType() cqrs.RequestType {
+	return addEntitlementsCommand
+}
+
+func (this AddEntitlementsCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type AddEntitlementsResult = crud.OpResult[*domain.Role]
+
+// END: AddEntitlementsCommand
+
+// START: RemoveEntitlementsCommand
+var removeEntitlementsCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role",
+	Action:    "removeEntitlements",
+}
+
+type RemoveEntitlementsCommand struct {
+	Id                model.Id           `param:"id" json:"id"`
+	Etag              model.Etag         `json:"etag"`
+	EntitlementInputs []EntitlementInput `json:"entitlementInputs"`
+}
+
+func (RemoveEntitlementsCommand) CqrsRequestType() cqrs.RequestType {
+	return removeEntitlementsCommandType
+}
+
+func (this RemoveEntitlementsCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type RemoveEntitlementsResult = crud.OpResult[*domain.Role]
+
+// END: RemoveEntitlementsCommand

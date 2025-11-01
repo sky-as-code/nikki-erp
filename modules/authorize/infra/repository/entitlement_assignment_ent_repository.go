@@ -28,6 +28,20 @@ func (this *EntitlementAssignmentEntRepository) assignmentClient(ctx crud.Contex
 	return this.client.EntitlementAssignment
 }
 
+func (this *EntitlementAssignmentEntRepository) Create(ctx crud.Context, assignment *domain.EntitlementAssignment) (*domain.EntitlementAssignment, error) {
+	creation := this.assignmentClient(ctx).Create().
+		SetID(*assignment.Id).
+		SetSubjectType(entAssign.SubjectType(*assignment.SubjectType)).
+		SetSubjectRef(*assignment.SubjectRef).
+		SetResolvedExpr(*assignment.ResolvedExpr).
+		SetNillableActionName(assignment.ActionName).
+		SetNillableResourceName(assignment.ResourceName).
+		SetEntitlementID(*assignment.EntitlementId).
+		SetNillableScopeRef(assignment.ScopeRef)
+
+	return database.Mutate(ctx, creation, ent.IsNotFound, entToEntitlementAssignment)
+}
+
 func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx crud.Context, param it.FindBySubjectParam) ([]domain.EntitlementAssignment, error) {
 	query := this.assignmentClient(ctx).Query().
 		Where(entAssign.SubjectTypeEQ(entAssign.SubjectType(param.SubjectType))).
@@ -95,6 +109,24 @@ func (this *EntitlementAssignmentEntRepository) FindById(ctx crud.Context, param
 	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlementAssignment)
 }
 
+func (this *EntitlementAssignmentEntRepository) FindByFilter(ctx crud.Context, param it.FindByFilterParam) (*domain.EntitlementAssignment, error) {
+	query := this.assignmentClient(ctx).Query().
+		Where(
+			entAssign.SubjectTypeEQ(entAssign.SubjectType(param.SubjectType)),
+			entAssign.SubjectRefEQ(param.SubjectRef),
+			entAssign.EntitlementIDEQ(param.EntitlementId),
+		).
+		WithEntitlement()
+
+	if param.ScopeRef != nil {
+		query = query.Where(entAssign.ScopeRefEQ(*param.ScopeRef))
+	} else {
+		query = query.Where(entAssign.ScopeRefIsNil())
+	}
+
+	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlementAssignment)
+}
+
 func (this *EntitlementAssignmentEntRepository) getUserEffectiveEntitlements(ctx crud.Context, userId model.Id) ([]domain.EntitlementAssignment, error) {
 	effectiveAssignments, err := this.client.EffectiveUserEntitlement.
 		Query().
@@ -136,8 +168,7 @@ func BuildEntitlementAssignmentDescriptor() *orm.EntityDescriptor {
 		Field(entAssign.FieldResourceName, entity.ResourceName).
 		Field(entAssign.FieldResolvedExpr, entity.ResolvedExpr).
 		Field(entAssign.FieldEntitlementID, entity.EntitlementID).
-		Field(entAssign.FieldScopeRef, entity.ScopeRef).
-		Field(entAssign.FieldOrgID, entity.OrgID)
+		Field(entAssign.FieldScopeRef, entity.ScopeRef)
 
 	return builder.Descriptor()
 }

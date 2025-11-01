@@ -87,20 +87,6 @@ func (eac *EntitlementAssignmentCreate) SetNillableScopeRef(s *string) *Entitlem
 	return eac
 }
 
-// SetOrgID sets the "org_id" field.
-func (eac *EntitlementAssignmentCreate) SetOrgID(s string) *EntitlementAssignmentCreate {
-	eac.mutation.SetOrgID(s)
-	return eac
-}
-
-// SetNillableOrgID sets the "org_id" field if the given value is not nil.
-func (eac *EntitlementAssignmentCreate) SetNillableOrgID(s *string) *EntitlementAssignmentCreate {
-	if s != nil {
-		eac.SetOrgID(*s)
-	}
-	return eac
-}
-
 // SetID sets the "id" field.
 func (eac *EntitlementAssignmentCreate) SetID(s string) *EntitlementAssignmentCreate {
 	eac.mutation.SetID(s)
@@ -239,10 +225,6 @@ func (eac *EntitlementAssignmentCreate) createSpec() (*EntitlementAssignment, *s
 	if value, ok := eac.mutation.ScopeRef(); ok {
 		_spec.SetField(entitlementassignment.FieldScopeRef, field.TypeString, value)
 		_node.ScopeRef = &value
-	}
-	if value, ok := eac.mutation.OrgID(); ok {
-		_spec.SetField(entitlementassignment.FieldOrgID, field.TypeString, value)
-		_node.OrgID = &value
 	}
 	if nodes := eac.mutation.EntitlementIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

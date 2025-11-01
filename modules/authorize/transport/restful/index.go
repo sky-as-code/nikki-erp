@@ -87,6 +87,8 @@ func initV1(
 	route.DELETE("/roles/:id", roleRest.DeleteRoleHard)
 	route.GET("/roles/:id", roleRest.GetRoleById)
 	route.GET("/roles", roleRest.SearchRoles)
+	route.POST("/roles/:id/entitlement-assignment", roleRest.AddEntitlements)
+	route.DELETE("/roles/:id/entitlement-assignment", roleRest.RemoveEntitlements)
 
 	route.POST("/role-suites", roleSuiteRest.CreateRoleSuite)
 	route.PUT("/role-suites/:id", roleSuiteRest.UpdateRoleSuite)

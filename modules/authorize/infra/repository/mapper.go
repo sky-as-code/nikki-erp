@@ -153,6 +153,7 @@ func entToEntitlementAssignment(dbEntitlementAssignment *ent.EntitlementAssignme
 		ResourceName:  dbEntitlementAssignment.ResourceName,
 		ResolvedExpr:  &dbEntitlementAssignment.ResolvedExpr,
 		EntitlementId: &dbEntitlementAssignment.EntitlementID,
+		ScopeRef:      dbEntitlementAssignment.ScopeRef,
 	}
 
 	if dbEntitlementAssignment.Edges.Entitlement != nil {

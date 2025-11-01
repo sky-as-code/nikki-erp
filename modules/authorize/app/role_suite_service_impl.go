@@ -12,6 +12,7 @@ import (
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
 	itGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_request"
 	itRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/revoke_request"
 	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
@@ -19,27 +20,30 @@ import (
 )
 
 func NewRoleSuiteServiceImpl(
+	assignmentService itAssign.EntitlementAssignmentService,
 	cqrsBus cqrs.CqrsBus,
-	roleSuiteRepo it.RoleSuiteRepository,
-	roleService itRole.RoleService,
 	grantRequestService itGrantRequest.GrantRequestService,
 	revokeRequestService itRevokeRequest.RevokeRequestService,
+	roleService itRole.RoleService,
+	roleSuiteRepo it.RoleSuiteRepository,
 ) it.RoleSuiteService {
 	return &RoleSuiteServiceImpl{
+		assignmentService:    assignmentService,
 		cqrsBus:              cqrsBus,
 		grantRequestService:  grantRequestService,
 		revokeRequestService: revokeRequestService,
-		roleSuiteRepo:        roleSuiteRepo,
 		roleService:          roleService,
+		roleSuiteRepo:        roleSuiteRepo,
 	}
 }
 
 type RoleSuiteServiceImpl struct {
+	assignmentService    itAssign.EntitlementAssignmentService
 	cqrsBus              cqrs.CqrsBus
 	grantRequestService  itGrantRequest.GrantRequestService
 	revokeRequestService itRevokeRequest.RevokeRequestService
-	roleSuiteRepo        it.RoleSuiteRepository
 	roleService          itRole.RoleService
+	roleSuiteRepo        it.RoleSuiteRepository
 }
 
 func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx crud.Context, cmd it.CreateRoleSuiteCommand) (result *it.CreateRoleSuiteResult, err error) {

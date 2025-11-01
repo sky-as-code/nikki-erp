@@ -15,11 +15,11 @@ CREATE UNIQUE INDEX "authz_entitlements_name_key" ON "authz_entitlements" ("name
 -- Create index "entitlement_action_expr" to table: "authz_entitlements"
 CREATE UNIQUE INDEX "entitlement_action_expr" ON "authz_entitlements" ("action_expr", "org_id");
 -- Create "authz_entitlement_assignments" table
-CREATE TABLE "authz_entitlement_assignments" ("id" character varying NOT NULL, "subject_type" character varying NOT NULL, "subject_ref" character varying NOT NULL, "resolved_expr" character varying NOT NULL, "action_name" character varying NULL, "resource_name" character varying NULL, "entitlement_id" character varying NOT NULL, "org_id" character varying NULL, "scope_ref" character varying NULL, PRIMARY KEY ("id"), CONSTRAINT "authz_entitlement_assignments_authz_entitlements_entitlement" FOREIGN KEY ("entitlement_id") REFERENCES "authz_entitlements" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION);
+CREATE TABLE "authz_entitlement_assignments" ("id" character varying NOT NULL, "subject_type" character varying NOT NULL, "subject_ref" character varying NOT NULL, "resolved_expr" character varying NOT NULL, "action_name" character varying NULL, "resource_name" character varying NULL, "entitlement_id" character varying NOT NULL, "scope_ref" character varying NULL, PRIMARY KEY ("id"), CONSTRAINT "authz_entitlement_assignments_authz_entitlements_entitlement" FOREIGN KEY ("entitlement_id") REFERENCES "authz_entitlements" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION);
 -- Create index "entitlementassignment_action_name" to table: "authz_entitlement_assignments"
 CREATE INDEX "entitlementassignment_action_name" ON "authz_entitlement_assignments" ("action_name");
 -- Create index "entitlementassignment_entitlement_id_subject_type_subject_ref" to table: "authz_entitlement_assignments"
-CREATE UNIQUE INDEX "entitlementassignment_entitlement_id_subject_type_subject_ref" ON "authz_entitlement_assignments" ("entitlement_id", "subject_type", "subject_ref", "org_id");
+CREATE UNIQUE INDEX "entitlementassignment_entitlement_id_scope_ref_subject_type_subject_ref" ON "authz_entitlement_assignments" ("entitlement_id", "scope_ref", "subject_type", "subject_ref");
 -- Create index "entitlementassignment_resolved_expr" to table: "authz_entitlement_assignments"
 CREATE INDEX "entitlementassignment_resolved_expr" ON "authz_entitlement_assignments" ("resolved_expr");
 -- Create index "entitlementassignment_resource_name" to table: "authz_entitlement_assignments"
