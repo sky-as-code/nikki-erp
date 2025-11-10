@@ -348,7 +348,7 @@ func (this *GrantRequestServiceImpl) assertTarget(ctx crud.Context, grantRequest
 func (this *GrantRequestServiceImpl) assertReceiver(ctx crud.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) {
 	switch *grantRequest.ReceiverType {
 	case domain.ReceiverTypeUser:
-		existCmd := &itUser.UserExistsCommand{
+		existCmd := &itUser.UserExistsQuery{
 			Id: *grantRequest.ReceiverId,
 		}
 		existRes := itUser.UserExistsResult{}

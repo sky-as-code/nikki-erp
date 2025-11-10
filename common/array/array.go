@@ -28,3 +28,7 @@ func RemoveString(array []string, str string) ([]string, bool) {
 	}
 	return array, found
 }
+
+func Prepend[TSrc any](array []TSrc, value TSrc) []TSrc {
+	return append([]TSrc{value}, array...)
+}

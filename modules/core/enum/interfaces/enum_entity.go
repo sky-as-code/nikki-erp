@@ -26,7 +26,7 @@ func (this *Enum) Validate(forEdit bool) ft.ValidationErrors {
 
 func (this *Enum) ValidateRules(forEdit bool) []*val.FieldRules {
 	rules := []*val.FieldRules{
-		model.LangJsonValidateRule(&this.Label, true, 1, model.MODEL_RULE_TINY_NAME_LENGTH),
+		model.LangJsonPtrValidateRule(&this.Label, true, 1, model.MODEL_RULE_TINY_NAME_LENGTH),
 		EnumTypeValidateRule(&this.Type, !forEdit),
 		EnumValueValidateRule(&this.Value, false),
 	}

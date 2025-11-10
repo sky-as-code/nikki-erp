@@ -332,7 +332,7 @@ func (this *GroupServiceImpl) assertUserIdsExist(ctx crud.Context, valErrs *ft.V
 		return nil
 	}
 
-	existCmd := &itUser.UserExistsMultiCommand{
+	existCmd := &itUser.UserExistsMultiQuery{
 		Ids: userIds,
 	}
 	existRes := itUser.UserExistsMultiResult{}

@@ -1,8 +1,6 @@
 package user
 
 import (
-	"time"
-
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -21,8 +19,8 @@ func init() {
 	req = (*GetUserByIdQuery)(nil)
 	req = (*GetUserByEmailQuery)(nil)
 	req = (*SearchUsersQuery)(nil)
-	req = (*UserExistsCommand)(nil)
-	req = (*UserExistsMultiCommand)(nil)
+	req = (*UserExistsQuery)(nil)
+	req = (*UserExistsMultiQuery)(nil)
 	req = (*FindDirectApproverQuery)(nil)
 	util.Unused(req)
 }
@@ -82,23 +80,12 @@ func (DeleteUserCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteUserCommandType
 }
 
-func (this DeleteUserCommand) ToDomainModel() *domain.User {
-	user := &domain.User{}
-	user.Id = &this.Id
-	return user
-}
-
 func (this DeleteUserCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type DeleteUserResultData struct {
-	Id        model.Id  `json:"id"`
-	DeletedAt time.Time `json:"deletedAt"`
 }
 
 type DeleteUserResult = crud.DeletionResult
@@ -109,15 +96,15 @@ var existsCommandType = cqrs.RequestType{
 	Action:    "exists",
 }
 
-type UserExistsCommand struct {
+type UserExistsQuery struct {
 	Id model.Id `param:"id" json:"id"`
 }
 
-func (UserExistsCommand) CqrsRequestType() cqrs.RequestType {
+func (UserExistsQuery) CqrsRequestType() cqrs.RequestType {
 	return existsCommandType
 }
 
-func (this UserExistsCommand) Validate() ft.ValidationErrors {
+func (this UserExistsQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
@@ -133,15 +120,15 @@ var existsMultiCommandType = cqrs.RequestType{
 	Action:    "existsMulti",
 }
 
-type UserExistsMultiCommand struct {
+type UserExistsMultiQuery struct {
 	Ids []model.Id `json:"ids"`
 }
 
-func (UserExistsMultiCommand) CqrsRequestType() cqrs.RequestType {
+func (UserExistsMultiQuery) CqrsRequestType() cqrs.RequestType {
 	return existsMultiCommandType
 }
 
-func (this UserExistsMultiCommand) Validate() ft.ValidationErrors {
+func (this UserExistsMultiQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRuleMulti(&this.Ids, true, 1, model.MODEL_RULE_ID_ARR_MAX),
 	}

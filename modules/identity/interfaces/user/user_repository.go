@@ -24,8 +24,8 @@ type UserRepository interface {
 }
 
 type DeleteParam = DeleteUserCommand
-type ExistsParam = UserExistsCommand
-type ExistsMultiParam = UserExistsMultiCommand
+type ExistsParam = UserExistsQuery
+type ExistsMultiParam = UserExistsMultiQuery
 type FindByIdParam = GetUserByIdQuery
 type FindByEmailParam = GetUserByEmailQuery
 type FindByHierarchyIdParam struct {

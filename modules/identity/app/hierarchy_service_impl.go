@@ -277,7 +277,7 @@ func (this *HierarchyServiceImpl) assertUserIdsExist(ctx crud.Context, valErrs *
 		return nil
 	}
 
-	existCmd := &itUser.UserExistsMultiCommand{
+	existCmd := &itUser.UserExistsMultiQuery{
 		Ids: userIds,
 	}
 	existRes := itUser.UserExistsMultiResult{}
