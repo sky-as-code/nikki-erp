@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
@@ -17,7 +18,7 @@ import (
 )
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
-var ModuleSingleton modules.NikkiModule = &CoreModule{}
+var ModuleSingleton modules.InCodeModule = &CoreModule{}
 
 type CoreModule struct {
 }
@@ -27,9 +28,19 @@ func (*CoreModule) Name() string {
 	return "core"
 }
 
+// LabelKey implements NikkiModule.
+func (*CoreModule) LabelKey() string {
+	return "core.moduleLabel"
+}
+
 // Deps implements NikkiModule.
 func (*CoreModule) Deps() []string {
 	return nil
+}
+
+// Version implements NikkiModule.
+func (*CoreModule) Version() semver.SemVer {
+	return *semver.MustParseSemVer("v1.0.0")
 }
 
 // Init implements NikkiModule.

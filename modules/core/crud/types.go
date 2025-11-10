@@ -14,7 +14,11 @@ type DomainModelProducer[TDomain any] interface {
 	ToDomainModel() TDomain
 }
 
-type Deletable[TDomain any] interface {
+type DomainModelBulkProducer[TDomain any] interface {
+	ToDomainModels() []TDomain
+}
+
+type DeleteCommander[TDomain any] interface {
 	DomainModelProducer[TDomain]
 	Validatable
 }
@@ -24,8 +28,7 @@ type Searchable interface {
 	GetGraph() *string
 }
 
-type Updateable interface {
-	ValidatableForEdit
+type Etagger interface {
 	GetEtag() *model.Etag
 	SetEtag(etag model.Etag)
 }
@@ -84,6 +87,15 @@ func NewSuccessDeletionResult(id model.Id, deletedCount ...*int) *DeletionResult
 			DeletedAt:    time.Now(),
 			DeletedCount: del,
 		},
+		HasData: true,
+	}
+}
+
+type ExistsResult = OpResult[bool]
+
+func NewSuccessExistsResult(isExisting bool) *ExistsResult {
+	return &ExistsResult{
+		Data:    isExisting,
 		HasData: true,
 	}
 }

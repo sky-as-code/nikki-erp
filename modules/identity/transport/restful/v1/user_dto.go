@@ -74,5 +74,5 @@ func (this *SearchUsersResponse) FromResult(result *it.SearchUsersResultData) {
 	})
 }
 
-type UserExistsMultiRequest = it.UserExistsMultiCommand
+type UserExistsMultiRequest = it.UserExistsMultiQuery
 type UserExistsMultiResponse = it.ExistsMultiResultData

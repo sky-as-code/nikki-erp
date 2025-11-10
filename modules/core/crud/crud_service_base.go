@@ -2,10 +2,34 @@ package crud
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
+	modelLib "github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
+
+// Function signature types for CRUD operations
+type SetDefaultFunc[TDomain any] func(model TDomain)
+type SanitizeFunc[TDomain any] func(model TDomain)
+type AssertBusinessRulesForCreateFunc[TDomain ValidatableForEdit] func(ctx Context, model TDomain, vErrs *ft.ValidationErrors) error
+type AssertBusinessRulesForUpdateFunc[TDomain ValidatableForEdit] func(ctx Context, domainModel TDomain, modelFromDb TDomain, vErrs *ft.ValidationErrors) error
+type AssertBusinessRulesForDeleteFunc[TDomain any, TCommand DeleteCommander[TDomain]] func(ctx Context, command TCommand, modelFromDb TDomain, vErrs *ft.ValidationErrors) error
+type AssertExistsFunc[TDomain any] func(ctx Context, domainModel TDomain, vErrs *ft.ValidationErrors) (TDomain, error)
+type RepoCreateFunc[TDomain any] func(ctx Context, model TDomain) (TDomain, error)
+type RepoCreateBulkFunc[TDomain any] func(ctx Context, models []TDomain) ([]TDomain, error)
+type RepoUpdateFunc[TDomain any] func(ctx Context, domainModel TDomain, prevEtag modelLib.Etag) (TDomain, error)
+type RepoDeleteFunc[TDomain any] func(ctx Context, model TDomain) (int, error)
+type RepoExistsOneFunc[TQuery any] func(ctx Context, query TQuery, vErrs *ft.ValidationErrors) (bool, error)
+type RepoFindOneFunc[TDomain any, TQuery any] func(ctx Context, query TQuery, vErrs *ft.ValidationErrors) (TDomain, error)
+type RepoListAllFunc[TDomain any, TQuery any] func(ctx Context, query TQuery, vErrs *ft.ValidationErrors) ([]TDomain, error)
+type RepoSearchFunc[TDomain any, TQuery any] func(ctx Context, query TQuery, predicate *orm.Predicate, order []orm.OrderOption) (*PagedResult[TDomain], error)
+type ParseSearchGraphFunc func(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
+type SetQueryDefaultsFunc[TQuery any] func(query *TQuery)
+type ToFailureResultFunc[TResult any] func(vErrs *ft.ValidationErrors) *TResult
+type ToSuccessResultFunc[TDomain any, TResult any] func(model TDomain) *TResult
+type ToSuccessResultBulkFunc[TDomain any, TResult any] func(models []TDomain) *TResult
+type ToSuccessResultWithCountFunc[TDomain any, TResult any] func(model TDomain, deletedCount int) *TResult
+type ToSuccessResultBoolFunc[TResult any] func(existing bool) *TResult
+type ToSuccessResultPagedFunc[TDomain any, TResult any] func(pagedResult *PagedResult[TDomain]) *TResult
 
 type CreateParam[
 	TDomain ValidatableForEdit,
@@ -15,12 +39,12 @@ type CreateParam[
 	Action  string
 	Command TCommand
 
-	AssertBusinessRules func(ctx Context, model TDomain, vErrs *ft.ValidationErrors) error
-	RepoCreate          func(ctx Context, model TDomain) (TDomain, error)
-	SetDefault          func(model TDomain)
-	Sanitize            func(model TDomain)
-	ToFailureResult     func(vErrs *ft.ValidationErrors) *TResult
-	ToSuccessResult     func(model TDomain) *TResult
+	AssertBusinessRules AssertBusinessRulesForCreateFunc[TDomain]
+	RepoCreate          RepoCreateFunc[TDomain]
+	SetDefault          SetDefaultFunc[TDomain]
+	Sanitize            SanitizeFunc[TDomain]
+	ToFailureResult     ToFailureResultFunc[TResult]
+	ToSuccessResult     ToSuccessResultFunc[TDomain, TResult]
 }
 
 func Create[
@@ -35,26 +59,11 @@ func Create[
 	}()
 
 	modelToCreate := param.Command.ToDomainModel()
-	param.SetDefault(modelToCreate)
-
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = modelToCreate.Validate(false)
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			param.Sanitize(modelToCreate)
-			if param.AssertBusinessRules != nil {
-				return param.AssertBusinessRules(ctx, modelToCreate, vErrs)
-			}
-			return nil
-		}).
-		End()
+	vErrs, err := validateForCreate(ctx, modelToCreate, param.SetDefault, param.Sanitize, param.AssertBusinessRules)
 	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
-		return param.ToFailureResult(&vErrs), nil
+		return param.ToFailureResult(vErrs), nil
 	}
 
 	createdModel, err := param.RepoCreate(ctx, modelToCreate)
@@ -63,24 +72,93 @@ func Create[
 	return param.ToSuccessResult(createdModel), nil
 }
 
+type CreateBulkParam[
+	TDomain ValidatableForEdit,
+	TCommand DomainModelBulkProducer[TDomain],
+	TResult any,
+] struct {
+	Action  string
+	Command TCommand
+
+	AssertBusinessRules AssertBusinessRulesForCreateFunc[TDomain]
+	RepoCreateBulk      RepoCreateBulkFunc[TDomain]
+	SetDefault          SetDefaultFunc[TDomain]
+	Sanitize            SanitizeFunc[TDomain]
+	ToFailureResult     ToFailureResultFunc[TResult]
+	ToSuccessResult     ToSuccessResultBulkFunc[TDomain, TResult]
+}
+
+func CreateBulk[
+	TDomain ValidatableForEdit,
+	TCommand DomainModelBulkProducer[TDomain],
+	TResult any,
+](ctx Context, param CreateBulkParam[TDomain, TCommand, TResult]) (result *TResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), param.Action); e != nil {
+			err = e
+		}
+	}()
+
+	vErrs := ft.NewValidationErrors()
+	modelsToCreate := param.Command.ToDomainModels()
+
+	for _, model := range modelsToCreate {
+		modelVErrs, err := validateForCreate(ctx, model, param.SetDefault, param.Sanitize, param.AssertBusinessRules)
+		ft.PanicOnErr(err)
+		vErrs.Merge(*modelVErrs)
+	}
+
+	if vErrs.Count() > 0 {
+		return param.ToFailureResult(&vErrs), nil
+	}
+
+	createdModels, err := param.RepoCreateBulk(ctx, modelsToCreate)
+	ft.PanicOnErr(err)
+
+	return param.ToSuccessResult(createdModels), nil
+}
+
+func validateForCreate[
+	TDomain ValidatableForEdit,
+](ctx Context, model TDomain, setDefault SetDefaultFunc[TDomain], sanitize SanitizeFunc[TDomain], assertBusinessRules AssertBusinessRulesForCreateFunc[TDomain]) (*ft.ValidationErrors, error) {
+	setDefault(model)
+
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = model.Validate(false)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			sanitize(model)
+			if assertBusinessRules != nil {
+				return assertBusinessRules(ctx, model, vErrs)
+			}
+			return nil
+		}).
+		End()
+
+	return &vErrs, err
+}
+
 type UpdateParam[
-	TDomain Updateable,
+	TDomain ValidatableForEdit,
 	TCommand DomainModelProducer[TDomain],
 	TResult any,
 ] struct {
 	Action  string
 	Command TCommand
 
-	AssertBusinessRules func(ctx Context, domainModel TDomain, modelFromDb TDomain, vErrs *ft.ValidationErrors) error
-	AssertExists        func(ctx Context, domainModel TDomain, vErrs *ft.ValidationErrors) (TDomain, error)
-	RepoUpdate          func(ctx Context, domainModel TDomain, prevEtag model.Etag) (TDomain, error)
-	Sanitize            func(model TDomain)
-	ToFailureResult     func(vErrs *ft.ValidationErrors) *TResult
-	ToSuccessResult     func(model TDomain) *TResult
+	AssertBusinessRules AssertBusinessRulesForUpdateFunc[TDomain]
+	AssertExists        AssertExistsFunc[TDomain]
+	RepoUpdate          RepoUpdateFunc[TDomain]
+	Sanitize            SanitizeFunc[TDomain]
+	ToFailureResult     ToFailureResultFunc[TResult]
+	ToSuccessResult     ToSuccessResultFunc[TDomain, TResult]
 }
 
 func Update[
-	TDomain Updateable,
+	TDomain ValidatableForEdit,
 	TCommand DomainModelProducer[TDomain],
 	TResult any,
 ](ctx Context, param UpdateParam[TDomain, TCommand, TResult]) (result *TResult, err error) {
@@ -91,41 +169,21 @@ func Update[
 	}()
 
 	modelToUpdate := param.Command.ToDomainModel()
+	etagger, hasEtag := any(modelToUpdate).(Etagger)
 
-	var modelFromDb TDomain
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = modelToUpdate.Validate(true)
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			modelFromDb, err = param.AssertExists(ctx, modelToUpdate, vErrs)
-			return err
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			if *modelToUpdate.GetEtag() != *modelFromDb.GetEtag() {
-				vErrs.AppendEtagMismatched()
-			}
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			param.Sanitize(modelToUpdate)
-			if param.AssertBusinessRules != nil {
-				return param.AssertBusinessRules(ctx, modelToUpdate, modelFromDb, vErrs)
-			}
-			return nil
-			// return param.AssertUnique(ctx, modelToUpdate, modelFromDb, vErrs)
-		}).
-		End()
+	vErrs, err := validateForUpdate(ctx, modelToUpdate, param.AssertExists, param.Sanitize, param.AssertBusinessRules)
 	ft.PanicOnErr(err)
 
 	if vErrs.Count() > 0 {
-		return param.ToFailureResult(&vErrs), nil
+		return param.ToFailureResult(vErrs), nil
 	}
 
-	prevEtag := modelToUpdate.GetEtag()
-	modelToUpdate.SetEtag(*model.NewEtag())
+	var prevEtag *modelLib.Etag
+	if hasEtag {
+		prevEtag = etagger.GetEtag()
+		etagger.SetEtag(*modelLib.NewEtag())
+	}
+	// TODO: Passing nuillable prevTag
 	updatedModel, err := param.RepoUpdate(ctx, modelToUpdate, *prevEtag)
 	ft.PanicOnErr(err)
 
@@ -137,25 +195,129 @@ func Update[
 	return param.ToSuccessResult(updatedModel), nil
 }
 
-type DeleteHardParam[
-	TDomain Updateable,
-	TCommand Deletable[TDomain],
+type UpdateBulkParam[
+	TDomain ValidatableForEdit,
+	TCommand DomainModelBulkProducer[TDomain],
 	TResult any,
 ] struct {
 	Action  string
 	Command TCommand
 
-	AssertBusinessRules func(ctx Context, command TCommand, modelFromDb TDomain, vErrs *ft.ValidationErrors) error
-	AssertExists        func(ctx Context, domainModel TDomain, vErrs *ft.ValidationErrors) (TDomain, error)
-	//AssertExists        func(ctx Context, command TCommand, vErrs *ft.ValidationErrors) (*TDomain, error)
-	RepoDelete      func(ctx Context, model TDomain) (int, error)
-	ToFailureResult func(vErrs *ft.ValidationErrors) *TResult
-	ToSuccessResult func(model TDomain, deletedCount int) *TResult
+	AssertBusinessRules AssertBusinessRulesForUpdateFunc[TDomain]
+	AssertExists        AssertExistsFunc[TDomain]
+	RepoUpdate          RepoUpdateFunc[TDomain]
+	Sanitize            SanitizeFunc[TDomain]
+	ToFailureResult     ToFailureResultFunc[TResult]
+	ToSuccessResult     ToSuccessResultBulkFunc[TDomain, TResult]
+}
+
+func UpdateBulk[
+	TDomain ValidatableForEdit,
+	TCommand DomainModelBulkProducer[TDomain],
+	TResult any,
+](ctx Context, param UpdateBulkParam[TDomain, TCommand, TResult]) (result *TResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), param.Action); e != nil {
+			err = e
+		}
+	}()
+
+	var vErrs ft.ValidationErrors
+	modelsToUpdate := param.Command.ToDomainModels()
+
+	for _, model := range modelsToUpdate {
+		modelVErrs, err := validateForUpdate(ctx, model, param.AssertExists, param.Sanitize, param.AssertBusinessRules)
+		ft.PanicOnErr(err)
+		vErrs.Merge(*modelVErrs)
+	}
+
+	if vErrs.Count() > 0 {
+		return param.ToFailureResult(&vErrs), nil
+	}
+
+	var updatedModels []TDomain
+	var prevEtag *modelLib.Etag
+	for _, modelToUpdate := range modelsToUpdate {
+		etagger, hasEtag := any(modelToUpdate).(Etagger)
+		if hasEtag {
+			prevEtag = etagger.GetEtag()
+			etagger.SetEtag(*modelLib.NewEtag())
+		}
+		// TODO: Passing nuillable prevTag
+		updated, err := param.RepoUpdate(ctx, modelToUpdate, *prevEtag)
+		updatedModels = append(updatedModels, updated)
+		ft.PanicOnErr(err)
+	}
+
+	// if updatedModel == nil {
+	// 	vErrs.Appendf(param.Resource, "not found")
+	// 	return nil, errors.New("model was not found during update execution")
+	// }
+
+	return param.ToSuccessResult(updatedModels), nil
+}
+
+func validateForUpdate[
+	TDomain ValidatableForEdit,
+](
+	ctx Context, model TDomain,
+	assertExists AssertExistsFunc[TDomain],
+	sanitize SanitizeFunc[TDomain],
+	assertBusinessRules AssertBusinessRulesForUpdateFunc[TDomain],
+) (*ft.ValidationErrors, error) {
+	etagger, hasEtag := any(model).(Etagger)
+
+	var modelFromDb *TDomain
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = model.Validate(true)
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			// var err error
+			found, err := assertExists(ctx, model, vErrs)
+			modelFromDb = &found
+			return err
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			if hasEtag {
+				if *etagger.GetEtag() != *any(*modelFromDb).(Etagger).GetEtag() {
+					vErrs.AppendEtagMismatched()
+				}
+			}
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			sanitize(model)
+			if assertBusinessRules != nil {
+				return assertBusinessRules(ctx, model, *modelFromDb, vErrs)
+			}
+			return nil
+		}).
+		End()
+
+	return &vErrs, err
+}
+
+type DeleteHardParam[
+	TDomain any,
+	TCommand DeleteCommander[TDomain],
+	TResult any,
+] struct {
+	Action  string
+	Command TCommand
+
+	AssertBusinessRules AssertBusinessRulesForDeleteFunc[TDomain, TCommand]
+	AssertExists        AssertExistsFunc[TDomain]
+	RepoDelete          RepoDeleteFunc[TDomain]
+	ToFailureResult     ToFailureResultFunc[TResult]
+	ToSuccessResult     ToSuccessResultWithCountFunc[TDomain, TResult]
 }
 
 func DeleteHard[
-	TDomain Updateable,
-	TCommand Deletable[TDomain],
+	TDomain any,
+	TCommand DeleteCommander[TDomain],
 	TResult any,
 ](ctx Context, param DeleteHardParam[TDomain, TCommand, TResult]) (result *TResult, err error) {
 	defer func() {
@@ -194,21 +356,62 @@ func DeleteHard[
 	return param.ToSuccessResult(modelFromDb, deletedCount), nil
 }
 
-type GetOneParam[
-	TDomain Updateable,
+type ExistsOneParam[
+	TDomain any,
 	TQuery Validatable,
 	TResult any,
 ] struct {
 	Action string
 	Query  TQuery
 
-	RepoFindOne     func(ctx Context, query TQuery, vErrs *ft.ValidationErrors) (TDomain, error)
-	ToFailureResult func(vErrs *ft.ValidationErrors) *TResult
-	ToSuccessResult func(model TDomain) *TResult
+	RepoExistsOne   RepoExistsOneFunc[TQuery]
+	ToFailureResult ToFailureResultFunc[TResult]
+	ToSuccessResult ToSuccessResultBoolFunc[TResult]
+}
+
+func ExistsOne[
+	TDomain any,
+	TQuery Validatable,
+	TResult any,
+](ctx Context, param ExistsOneParam[TDomain, TQuery, TResult]) (result *TResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), param.Action); e != nil {
+			err = e
+		}
+	}()
+
+	var existing bool
+	flow := val.StartValidationFlow(param.Query)
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			existing, err = param.RepoExistsOne(ctx, param.Query, vErrs)
+			return err
+		}).
+		End()
+	ft.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return param.ToFailureResult(&vErrs), nil
+	}
+
+	return param.ToSuccessResult(existing), nil
+}
+
+type GetOneParam[
+	TDomain any,
+	TQuery Validatable,
+	TResult any,
+] struct {
+	Action string
+	Query  TQuery
+
+	RepoFindOne     RepoFindOneFunc[TDomain, TQuery]
+	ToFailureResult ToFailureResultFunc[TResult]
+	ToSuccessResult ToSuccessResultFunc[TDomain, TResult]
 }
 
 func GetOne[
-	TDomain Updateable,
+	TDomain any,
 	TQuery Validatable,
 	TResult any,
 ](ctx Context, param GetOneParam[TDomain, TQuery, TResult]) (result *TResult, err error) {
@@ -235,6 +438,47 @@ func GetOne[
 	return param.ToSuccessResult(modelFromDb), nil
 }
 
+type ListAllParam[
+	TDomain any,
+	TQuery Validatable,
+	TResult any,
+] struct {
+	Action string
+	Query  TQuery
+
+	RepoListAll     RepoListAllFunc[TDomain, TQuery]
+	ToFailureResult ToFailureResultFunc[TResult]
+	ToSuccessResult ToSuccessResultBulkFunc[TDomain, TResult]
+}
+
+func ListAll[
+	TDomain any,
+	TQuery Validatable,
+	TResult any,
+](ctx Context, param ListAllParam[TDomain, TQuery, TResult]) (result *TResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), param.Action); e != nil {
+			err = e
+		}
+	}()
+
+	var modelsFromDb []TDomain
+	flow := val.StartValidationFlow(param.Query)
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			modelsFromDb, err = param.RepoListAll(ctx, param.Query, vErrs)
+			return err
+		}).
+		End()
+	ft.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return param.ToFailureResult(&vErrs), nil
+	}
+
+	return param.ToSuccessResult(modelsFromDb), nil
+}
+
 type SearchParam[
 	TDomain any,
 	TQuery Searchable,
@@ -243,11 +487,11 @@ type SearchParam[
 	Action string
 	Query  TQuery
 
-	ParseSearchGraph func(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	RepoSearch       func(ctx Context, query TQuery, predicate *orm.Predicate, order []orm.OrderOption) (*PagedResult[TDomain], error)
-	SetQueryDefaults func(query *TQuery)
-	ToFailureResult  func(vErrs *ft.ValidationErrors) *TResult
-	ToSuccessResult  func(pagedResult *PagedResult[TDomain]) *TResult
+	ParseSearchGraph ParseSearchGraphFunc
+	RepoSearch       RepoSearchFunc[TDomain, TQuery]
+	SetQueryDefaults SetQueryDefaultsFunc[TQuery]
+	ToFailureResult  ToFailureResultFunc[TResult]
+	ToSuccessResult  ToSuccessResultPagedFunc[TDomain, TResult]
 }
 
 func Search[

@@ -60,43 +60,6 @@ func (this *UserServiceImpl) CreateUser(ctx crud.Context, cmd it.CreateUserComma
 	})
 
 	return result, err
-	// defer func() {
-	// 	if e := ft.RecoverPanicFailedTo(recover(), "create user"); e != nil {
-	// 		err = e
-	// 	}
-	// }()
-
-	// user := cmd.ToUser()
-	// this.setUserDefaults(ctx, user)
-
-	// flow := val.StartValidationFlow()
-	// vErrs, err := flow.
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		*vErrs = user.Validate(false)
-	// 		return nil
-	// 	}).
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		this.sanitizeUser(user)
-	// 		return this.assertUserUnique(ctx, user.Email, vErrs)
-	// 	}).
-	// 	End()
-	// ft.PanicOnErr(err)
-
-	// if vErrs.Count() > 0 {
-	// 	return &it.CreateUserResult{
-	// 		ClientError: vErrs.ToClientError(),
-	// 	}, nil
-	// }
-
-	// user, err = this.userRepo.Create(ctx, *user)
-	// ft.PanicOnErr(err)
-
-	// // TODO: If OrgIds is specified, add this user to the orgs
-
-	// return &it.CreateUserResult{
-	// 	Data:    user,
-	// 	HasData: user != nil, // In rare case, new user was deleted after created. Maybe due to a concurrent cleanup process.
-	// }, err
 }
 
 func (this *UserServiceImpl) UpdateUser(ctx crud.Context, cmd it.UpdateUserCommand) (*it.UpdateUserResult, error) {
@@ -121,53 +84,6 @@ func (this *UserServiceImpl) UpdateUser(ctx crud.Context, cmd it.UpdateUserComma
 	})
 
 	return result, err
-
-	// defer func() {
-	// 	if e := ft.RecoverPanicFailedTo(recover(), "update user"); e != nil {
-	// 		err = e
-	// 	}
-	// }()
-
-	// user := cmd.ToUser()
-
-	// var dbUser *domain.User
-	// flow := val.StartValidationFlow()
-	// vErrs, err := flow.
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		*vErrs = user.Validate(true)
-	// 		return nil
-	// 	}).
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		dbUser, err = this.assertUserIdExists(ctx, *user.Id, nil, vErrs)
-	// 		return err
-	// 	}).
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		this.assertCorrectEtag(*user.Etag, *dbUser.Etag, vErrs)
-	// 		return nil
-	// 	}).
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		// Sanitize after we've made sure this is the correct user
-	// 		this.sanitizeUser(user)
-	// 		return this.assertUserUnique(ctx, user.Email, vErrs)
-	// 	}).
-	// 	End()
-	// ft.PanicOnErr(err)
-
-	// if vErrs.Count() > 0 {
-	// 	return &it.UpdateUserResult{
-	// 		ClientError: vErrs.ToClientError(),
-	// 	}, nil
-	// }
-
-	// prevEtag := user.Etag
-	// user.Etag = model.NewEtag()
-	// user, err = this.userRepo.Update(ctx, *user, *prevEtag)
-	// ft.PanicOnErr(err)
-
-	// return &it.UpdateUserResult{
-	// 	Data:    user,
-	// 	HasData: user != nil,
-	// }, err
 }
 
 func (this *UserServiceImpl) sanitizeUser(user *domain.User) {
@@ -205,12 +121,6 @@ func (this *UserServiceImpl) assertUserUnique(ctx crud.Context, user *domain.Use
 	return nil
 }
 
-// func (this *UserServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *ft.ValidationErrors) {
-// 	if updatedEtag != dbEtag {
-// 		vErrs.AppendEtagMismatched()
-// 	}
-// }
-
 func (this *UserServiceImpl) assertUserIdExists(ctx crud.Context, user *domain.User, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {
 	dbUser, err = this.userRepo.FindById(ctx, it.FindByIdParam{Id: *user.Id})
 	if dbUser == nil {
@@ -246,51 +156,28 @@ func (this *UserServiceImpl) DeleteUser(ctx crud.Context, cmd it.DeleteUserComma
 	})
 
 	return result, err
-
-	// defer func() {
-	// 	if e := ft.RecoverPanicFailedTo(recover(), "delete user"); e != nil {
-	// 		err = e
-	// 	}
-	// }()
-
-	// vErrs := cmd.Validate()
-
-	// if vErrs.Count() > 0 {
-	// 	return &it.DeleteUserResult{
-	// 		ClientError: vErrs.ToClientError(),
-	// 	}, nil
-	// }
-
-	// deletedCount, err := this.userRepo.DeleteHard(ctx, it.DeleteParam{Id: cmd.Id})
-	// ft.PanicOnErr(err)
-	// if deletedCount == 0 {
-	// 	vErrs.AppendNotFound("id", "user id")
-	// 	return &it.DeleteUserResult{
-	// 		ClientError: vErrs.ToClientError(),
-	// 	}, nil
-	// }
-
-	// return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
 }
 
-func (this *UserServiceImpl) Exists(ctx crud.Context, cmd it.UserExistsCommand) (result *it.UserExistsResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "check if user exists"); e != nil {
-			err = e
-		}
-	}()
+func (this *UserServiceImpl) Exists(ctx crud.Context, query it.UserExistsQuery) (*it.UserExistsResult, error) {
+	result, err := crud.ExistsOne(ctx, crud.ExistsOneParam[*domain.User, it.UserExistsQuery, it.UserExistsResult]{
+		Action: "check if user exists",
+		Query:  query,
+		RepoExistsOne: func(ctx crud.Context, query it.UserExistsQuery, vErrs *ft.ValidationErrors) (bool, error) {
+			return this.userRepo.Exists(ctx, query.Id)
+		},
+		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.UserExistsResult {
+			return &it.UserExistsResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: crud.NewSuccessExistsResult,
+	})
 
-	exists, err := this.userRepo.Exists(ctx, cmd.Id)
-	ft.PanicOnErr(err)
-
-	return &it.UserExistsResult{
-		Data:    exists,
-		HasData: true,
-	}, nil
+	return result, err
 }
 
-func (this *UserServiceImpl) ExistsMulti(ctx crud.Context, cmd it.UserExistsMultiCommand) (result *it.UserExistsMultiResult, err error) {
-	exists, notExisting, err := this.userRepo.ExistsMulti(ctx, cmd.Ids)
+func (this *UserServiceImpl) ExistsMulti(ctx crud.Context, query it.UserExistsMultiQuery) (result *it.UserExistsMultiResult, err error) {
+	exists, notExisting, err := this.userRepo.ExistsMulti(ctx, query.Ids)
 	ft.PanicOnErr(err)
 
 	return &it.UserExistsMultiResult{
@@ -321,37 +208,6 @@ func (this *UserServiceImpl) GetUserById(ctx crud.Context, query it.GetUserByIdQ
 	})
 
 	return result, err
-
-	// defer func() {
-	// 	if e := ft.RecoverPanicFailedTo(recover(), "get user by Id"); e != nil {
-	// 		err = e
-	// 	}
-	// }()
-
-	// var dbUser *domain.User
-	// flow := val.StartValidationFlow()
-	// vErrs, err := flow.
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		*vErrs = query.Validate()
-	// 		return nil
-	// 	}).
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		dbUser, err = this.assertUserIdExists(ctx, query.Id, query.Status, vErrs)
-	// 		return err
-	// 	}).
-	// 	End()
-	// ft.PanicOnErr(err)
-
-	// if vErrs.Count() > 0 {
-	// 	return &it.GetUserByIdResult{
-	// 		ClientError: vErrs.ToClientError(),
-	// 	}, nil
-	// }
-
-	// return &it.GetUserByIdResult{
-	// 	Data:    dbUser,
-	// 	HasData: dbUser != nil,
-	// }, nil
 }
 
 func (this *UserServiceImpl) getUserByIdFull(ctx crud.Context, query it.GetUserByIdQuery, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {
@@ -449,43 +305,6 @@ func (this *UserServiceImpl) GetUserByEmail(ctx crud.Context, query it.GetUserBy
 	})
 
 	return result, err
-	// defer func() {
-	// 	if e := ft.RecoverPanicFailedTo(recover(), "get user by email"); e != nil {
-	// 		err = e
-	// 	}
-	// }()
-
-	// var dbUser *domain.User
-	// flow := val.StartValidationFlow()
-	// vErrs, err := flow.
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		*vErrs = query.Validate()
-	// 		return nil
-	// 	}).
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		query.Email = strings.ToLower(query.Email)
-	// 		dbUser, err = this.userRepo.FindByEmail(ctx, it.FindByEmailParam{Email: query.Email, Status: query.Status})
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		if dbUser == nil {
-	// 			vErrs.AppendNotFound("email", "user email")
-	// 		}
-	// 		return nil
-	// 	}).
-	// 	End()
-	// ft.PanicOnErr(err)
-
-	// if vErrs.Count() > 0 {
-	// 	return &it.GetUserByIdResult{
-	// 		ClientError: vErrs.ToClientError(),
-	// 	}, nil
-	// }
-
-	// return &it.GetUserByIdResult{
-	// 	Data:    dbUser,
-	// 	HasData: dbUser != nil,
-	// }, nil
 }
 
 func (this *UserServiceImpl) SearchUsers(ctx crud.Context, query it.SearchUsersQuery) (*it.SearchUsersResult, error) {
@@ -519,37 +338,6 @@ func (this *UserServiceImpl) SearchUsers(ctx crud.Context, query it.SearchUsersQ
 	})
 
 	return result, err
-	// defer func() {
-	// 	if e := ft.RecoverPanicFailedTo(recover(), "list users"); e != nil {
-	// 		err = e
-	// 	}
-	// }()
-
-	// query.SetDefaults()
-	// vErrsModel := query.Validate()
-	// predicate, order, vErrsGraph := this.userRepo.ParseSearchGraph(query.Graph)
-
-	// vErrsModel.Merge(vErrsGraph)
-
-	// if vErrsModel.Count() > 0 {
-	// 	return &it.SearchUsersResult{
-	// 		ClientError: vErrsModel.ToClientError(),
-	// 	}, nil
-	// }
-
-	// users, err := this.userRepo.Search(ctx, it.SearchParam{
-	// 	Predicate:  predicate,
-	// 	Order:      order,
-	// 	Page:       *query.Page,
-	// 	Size:       *query.Size,
-	// 	WithGroups: query.WithGroups,
-	// })
-	// ft.PanicOnErr(err)
-
-	// return &it.SearchUsersResult{
-	// 	Data:    users,
-	// 	HasData: users.Items != nil,
-	// }, nil
 }
 
 func (this *UserServiceImpl) FindDirectApprover(ctx crud.Context, query it.FindDirectApproverQuery) (result *it.FindDirectApproverResult, err error) {

@@ -1,6 +1,11 @@
 package model
 
-import "math"
+import (
+	"math"
+	"regexp"
+
+	val "github.com/sky-as-code/nikki-erp/common/validator"
+)
 
 const (
 	MODEL_RULE_ID_ARR_MAX          = 100
@@ -24,3 +29,5 @@ const (
 	MODEL_RULE_URL_LENGTH          = 2000
 	MODEL_RULE_USERNAME_LENGTH     = 254
 )
+
+var ModelRuleCodeName = val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9_]+$`))

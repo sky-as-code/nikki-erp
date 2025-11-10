@@ -139,8 +139,8 @@ func (this UserRest) UserExistsMulti(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.UserSvc.ExistsMulti,
-		func(request UserExistsMultiRequest) it.UserExistsMultiCommand {
-			return it.UserExistsMultiCommand(request)
+		func(request UserExistsMultiRequest) it.UserExistsMultiQuery {
+			return it.UserExistsMultiQuery(request)
 		},
 		func(result it.UserExistsMultiResult) UserExistsMultiResponse {
 			return *result.Data

@@ -45,11 +45,11 @@ func (this *UserHandler) SearchUsers(ctx context.Context, packet *cqrs.RequestPa
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.SearchUsers)
 }
 
-func (this *UserHandler) UserExists(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsCommand]) (*cqrs.Reply[it.UserExistsResult], error) {
+func (this *UserHandler) UserExists(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsQuery]) (*cqrs.Reply[it.UserExistsResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.Exists)
 }
 
-func (this *UserHandler) UserExistsMulti(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsMultiCommand]) (*cqrs.Reply[it.UserExistsMultiResult], error) {
+func (this *UserHandler) UserExistsMulti(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsMultiQuery]) (*cqrs.Reply[it.UserExistsMultiResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.ExistsMulti)
 }
 

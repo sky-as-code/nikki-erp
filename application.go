@@ -23,7 +23,7 @@ func newApplication(logger logging.LoggerService) *Application {
 }
 
 type Application struct {
-	modules []modules.NikkiModule
+	modules []modules.InCodeModule
 	config  config.ConfigService
 	logger  logging.LoggerService
 }
@@ -33,7 +33,7 @@ func (this *Application) Config() config.ConfigService {
 }
 
 func (this *Application) Start() {
-	modules := []modules.NikkiModule{}
+	modules := []modules.InCodeModule{}
 	var err error
 
 	modules, err = loader.LoadModules()
@@ -66,8 +66,8 @@ func (this *Application) initModules() error {
 	return this.initializeInOrder(moduleMap, depGraph)
 }
 
-func (this *Application) buildModuleMap() map[string]modules.NikkiModule {
-	moduleMap := make(map[string]modules.NikkiModule)
+func (this *Application) buildModuleMap() map[string]modules.InCodeModule {
+	moduleMap := make(map[string]modules.InCodeModule)
 	moduleMap["core"] = core.ModuleSingleton
 	for _, mod := range this.modules {
 		moduleMap[mod.Name()] = mod
@@ -75,7 +75,7 @@ func (this *Application) buildModuleMap() map[string]modules.NikkiModule {
 	return moduleMap
 }
 
-func (this *Application) buildDependencyGraph(moduleMap map[string]modules.NikkiModule) (map[string][]string, error) {
+func (this *Application) buildDependencyGraph(moduleMap map[string]modules.InCodeModule) (map[string][]string, error) {
 	depGraph := make(map[string][]string)
 
 	for _, mod := range this.modules {
@@ -98,31 +98,43 @@ func (this *Application) validateDependencies(depGraph map[string][]string) erro
 	return nil
 }
 
-func (this *Application) initializeInOrder(moduleMap map[string]modules.NikkiModule, depGraph map[string][]string) error {
+func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeModule, depGraph map[string][]string) error {
+	this.logger.Info("Start initializing modules", nil)
+
 	initOrder, err := topologicalSort(depGraph)
 	if err != nil {
 		return errors.Wrap(err, "failed to determine module initialization order")
 	}
 
 	initOrder = array.Prepend(initOrder, "core")
-	orderedMods := make([]modules.NikkiModule, 0)
+	orderedMods := make([]modules.InCodeModule, 0)
 	for _, modName := range initOrder {
 		mod := moduleMap[modName]
 		if err := this.initModule(mod); err != nil {
 			return err
 		}
 		orderedMods = append(orderedMods, mod)
-		this.logger.Infof("Initialized module %s done", mod.Name())
+		this.logger.Debugf("Initialized module %s", mod.Name())
 	}
 
-	deps.Register(func() []modules.NikkiModule {
+	deps.Register(func() []modules.InCodeModule {
 		return orderedMods
 	})
+
+	for _, mod := range orderedMods {
+		modWithAppStarted, ok := mod.(modules.InCodeModuleAppStarted)
+		if ok {
+			if err := modWithAppStarted.OnAppStarted(); err != nil {
+				return err
+			}
+		}
+		this.logger.Infof("Invoked OnAppStarted() on module %s", mod.Name())
+	}
 
 	return nil
 }
 
-func (this *Application) initModule(mod modules.NikkiModule) (err error) {
+func (this *Application) initModule(mod modules.InCodeModule) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicf(recover(), "failed to initialize module '%s'", mod.Name()); e != nil {
 			err = e

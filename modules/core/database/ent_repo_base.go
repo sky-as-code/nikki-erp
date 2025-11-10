@@ -25,12 +25,16 @@ type MutationBuilder[TDb any] interface {
 	Save(context.Context) (*TDb, error)
 }
 
+type MutationBulkBuilder[TDb any] interface {
+	Save(context.Context) ([]*TDb, error)
+}
+
 type QueryOneBuilder[TDb any] interface {
 	Only(context.Context) (*TDb, error)
 }
 
 type EntToDomainFn[TDb any, TDomain any] func(*TDb) *TDomain
-type EntToDomainArrFn[TDb any, TDomain any] func([]*TDb) []*TDomain
+type EntToDomainArrFn[TDb any, TDomain any] func([]*TDb) []TDomain
 
 type EntRepositoryBase struct {
 }
@@ -51,6 +55,24 @@ func Mutate[TDb any, TDomain any](
 
 	domainEntity := convertFn(entEntity)
 	return domainEntity, nil
+}
+
+func MutateBulk[TDb any, TDomain any](
+	ctx context.Context,
+	mutationBuilder MutationBulkBuilder[TDb],
+	isNotFoundFn func(err error) bool,
+	convertFn EntToDomainArrFn[TDb, TDomain],
+) ([]TDomain, error) {
+	entEntities, err := mutationBuilder.Save(ctx)
+	if err != nil {
+		if isNotFoundFn(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	domainEntities := convertFn(entEntities)
+	return domainEntities, nil
 }
 
 func FindOne[TDb any, TDomain any](
@@ -167,9 +189,12 @@ func Search[TDb any, TDomain any, TQuery interface {
 		wholeQuery = wholeQuery.Order(order...)
 	}
 
-	pagedQuery := wholeQuery.Clone().
-		Offset(opts.Page * opts.Size).
-		Limit(opts.Size)
+	pagedQuery := wholeQuery.Clone()
+	if opts.Size > 0 {
+		pagedQuery = pagedQuery.
+			Offset(opts.Page * opts.Size).
+			Limit(opts.Size)
+	}
 
 	total, err := wholeQuery.Count(ctx)
 	if err != nil {

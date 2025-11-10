@@ -146,7 +146,7 @@ func (this *ListEnumsQuery) SetDefaults() {
 func (this ListEnumsQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		EnumTypeValidateRule(&this.Type, false),
-		model.LanguageCodeValidateRule(&this.SortByLang, false),
+		model.LanguageCodePtrValidateRule(&this.SortByLang, false),
 		crud.PageIndexValidateRule(&this.Page),
 		crud.PageSizeValidateRule(&this.Size),
 		val.Field(&this.PartialLabel,
@@ -200,7 +200,7 @@ func (this ListDerivedEnumsQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		crud.PageIndexValidateRule(&this.Page),
 		crud.PageSizeValidateRule(&this.Size),
-		model.LanguageCodeValidateRule(&this.SortByLang, false),
+		model.LanguageCodePtrValidateRule(&this.SortByLang, false),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
