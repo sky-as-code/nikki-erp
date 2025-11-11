@@ -1,0 +1,16 @@
+meta {
+  name: Variant - Get By Id
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/variants/{{variant_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

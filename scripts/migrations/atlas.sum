@@ -1,4 +1,4 @@
-h1:xDwOagnwjSG9zhWX8mR/eJWz5l/gXuIq0RamO9un7EI=
+h1:KWawjhaLQH4fOsz9uRBzzq3S2eyqcpMMtUBrONayeK8=
 00000000000011_core_schema.sql h1:ZXKv8cGKUzycmWMFyq7/PSp7r4k6tz8OjsV/hI7ON7g=
 00000000000012_essential.sql h1:7d1d+uOv8IOq7P0uSDMD3LOAocfhWlRLR9EHDY61i5M=
 00000000000021_identity_schema.sql h1:HLCDXHeA2qXhCv4fzMQJufGhM8rmPuOH3FMFSCbAbLI=
@@ -8,3 +8,4 @@ h1:xDwOagnwjSG9zhWX8mR/eJWz5l/gXuIq0RamO9un7EI=
 00000000000033_authorize_seeds.sql h1:5tzB+uOd5TCQKLMECiHsJ7l6u+k2fh+zg+fXHPpRylY=
 00000000000041_authenticate_schema.sql h1:wQHJjHiiKQMCRmBq6DH87H8+hpGd9lxUsZqx2x8tEGY=
 00000000000051_contacts_schema.sql h1:xNDBjAxbRrlg/qx5p3Kfc4k5sJJ8Rrwg7Zdyidr6kjQ=
+00000000000061_inventory_schema.sql h1:GKUfkCadUN1MdLcHJ2S/RjMQTD2doi5pbd8oFS6aM60=

@@ -9,12 +9,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent"
 	entCommChannel "github.com/sky-as-code/nikki-erp/modules/contacts/infra/ent/commchannel"
-	cc "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/comm_channel"
+	itCommChannel "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/commchannel"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
-func NewCommChannelEntRepository(client *ent.Client) cc.CommChannelRepository {
+func NewCommChannelEntRepository(client *ent.Client) itCommChannel.CommChannelRepository {
 	return &CommChannelEntRepository{
 		client: client,
 	}
@@ -64,13 +64,13 @@ func (this *CommChannelEntRepository) Update(ctx crud.Context, commChannel *doma
 	return db.Mutate(ctx, update, ent.IsNotFound, entToCommChannel)
 }
 
-func (this *CommChannelEntRepository) DeleteHard(ctx crud.Context, param cc.DeleteParam) (int, error) {
+func (this *CommChannelEntRepository) DeleteHard(ctx crud.Context, param itCommChannel.DeleteParam) (int, error) {
 	return this.client.CommChannel.Delete().
 		Where(entCommChannel.ID(param.Id)).
 		Exec(ctx)
 }
 
-func (this *CommChannelEntRepository) FindById(ctx crud.Context, param cc.FindByIdParam) (*domain.CommChannel, error) {
+func (this *CommChannelEntRepository) FindById(ctx crud.Context, param itCommChannel.FindByIdParam) (*domain.CommChannel, error) {
 	query := this.client.CommChannel.Query().
 		Where(entCommChannel.ID(param.Id))
 
@@ -87,7 +87,7 @@ func (this *CommChannelEntRepository) ParseSearchGraph(criteria *string) (*orm.P
 
 func (this *CommChannelEntRepository) Search(
 	ctx crud.Context,
-	param cc.SearchParam,
+	param itCommChannel.SearchParam,
 ) (*crud.PagedResult[domain.CommChannel], error) {
 	query := this.client.CommChannel.Query()
 

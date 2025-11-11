@@ -1,0 +1,28 @@
+meta {
+  name: Attribute - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/attributes/{{attribute_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "codeName": "CrimsonWolf",
+    "displayName": {
+      "district": "Quan 5",
+      "country" : "Ho Chi Minh",
+      "note": "Gan Truong Hoc Su Pham"
+    },
+    "etag": "1762227957926084300"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -4,7 +4,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
-	"github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/comm_channel"
+	itCommChannel "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/commchannel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 )
 
@@ -34,23 +34,23 @@ func (this *CommChannelDto) FromCommChannel(commChannelEntity domain.CommChannel
 	}
 }
 
-type CreateCommChannelRequest = comm_channel.CreateCommChannelCommand
+type CreateCommChannelRequest = itCommChannel.CreateCommChannelCommand
 type CreateCommChannelResponse = httpserver.RestCreateResponse
 
-type UpdateCommChannelRequest = comm_channel.UpdateCommChannelCommand
+type UpdateCommChannelRequest = itCommChannel.UpdateCommChannelCommand
 type UpdateCommChannelResponse = httpserver.RestUpdateResponse
 
-type DeleteCommChannelRequest = comm_channel.DeleteCommChannelCommand
+type DeleteCommChannelRequest = itCommChannel.DeleteCommChannelCommand
 type DeleteCommChannelResponse = httpserver.RestDeleteResponse
 
-type GetCommChannelByIdRequest = comm_channel.GetCommChannelByIdQuery
+type GetCommChannelByIdRequest = itCommChannel.GetCommChannelByIdQuery
 type GetCommChannelByIdResponse = CommChannelDto
 
-type SearchCommChannelsRequest = comm_channel.SearchCommChannelsQuery
+type SearchCommChannelsRequest = itCommChannel.SearchCommChannelsQuery
 
 type SearchCommChannelsResponse httpserver.RestSearchResponse[CommChannelDto]
 
-func (this *SearchCommChannelsResponse) FromResult(result *comm_channel.SearchCommChannelsResultData) {
+func (this *SearchCommChannelsResponse) FromResult(result *itCommChannel.SearchCommChannelsResultData) {
 	this.Total = result.Total
 	this.Page = result.Page
 	this.Size = result.Size

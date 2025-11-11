@@ -5,6 +5,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
+	itContactEnum "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/contactenum"
 	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
@@ -13,7 +14,7 @@ import (
 func NewPartyServiceImpl(
 	partyRepo itParty.PartyRepository,
 	cqrsBus cqrs.CqrsBus,
-	contactsEnumSvc ContactsEnumServiceImpl,
+	contactsEnumSvc itContactEnum.ContactsEnumService,
 ) itParty.PartyService {
 	return &PartyServiceImpl{
 		partyRepo:       partyRepo,
@@ -25,7 +26,7 @@ func NewPartyServiceImpl(
 type PartyServiceImpl struct {
 	partyRepo       itParty.PartyRepository
 	cqrsBus         cqrs.CqrsBus
-	contactsEnumSvc ContactsEnumServiceImpl
+	contactsEnumSvc itContactEnum.ContactsEnumService
 }
 
 func (this *PartyServiceImpl) CreateParty(ctx crud.Context, cmd itParty.CreatePartyCommand) (*itParty.CreatePartyResult, error) {

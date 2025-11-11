@@ -1,0 +1,27 @@
+meta {
+  name: Product - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": {
+      "numberStreet": "123 Tran Binh Trong",
+      "district": "Quan 5",
+      "country" : "Ho Chi Minh"
+    },
+    "unit": "{{unit_id}}"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

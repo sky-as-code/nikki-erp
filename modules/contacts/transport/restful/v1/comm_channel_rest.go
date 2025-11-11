@@ -5,14 +5,14 @@ import (
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/comm_channel"
+	itCommChannel "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/commchannel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 )
 
 type commChannelRestParams struct {
 	dig.In
 
-	CommChannelSvc comm_channel.CommChannelService
+	CommChannelSvc itCommChannel.CommChannelService
 }
 
 func NewCommChannelRest(params commChannelRestParams) *CommChannelRest {
@@ -23,7 +23,7 @@ func NewCommChannelRest(params commChannelRestParams) *CommChannelRest {
 
 type CommChannelRest struct {
 	httpserver.RestBase
-	CommChannelSvc comm_channel.CommChannelService
+	CommChannelSvc itCommChannel.CommChannelService
 }
 
 func (this CommChannelRest) CreateCommChannel(echoCtx echo.Context) (err error) {
@@ -34,10 +34,10 @@ func (this CommChannelRest) CreateCommChannel(echoCtx echo.Context) (err error) 
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.CommChannelSvc.CreateCommChannel,
-		func(request CreateCommChannelRequest) comm_channel.CreateCommChannelCommand {
-			return comm_channel.CreateCommChannelCommand(request)
+		func(request CreateCommChannelRequest) itCommChannel.CreateCommChannelCommand {
+			return itCommChannel.CreateCommChannelCommand(request)
 		},
-		func(result comm_channel.CreateCommChannelResult) CreateCommChannelResponse {
+		func(result itCommChannel.CreateCommChannelResult) CreateCommChannelResponse {
 			response := CreateCommChannelResponse{}
 			response.FromEntity(result.Data)
 			return response
@@ -55,10 +55,10 @@ func (this CommChannelRest) UpdateCommChannel(echoCtx echo.Context) (err error) 
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.CommChannelSvc.UpdateCommChannel,
-		func(request UpdateCommChannelRequest) comm_channel.UpdateCommChannelCommand {
-			return comm_channel.UpdateCommChannelCommand(request)
+		func(request UpdateCommChannelRequest) itCommChannel.UpdateCommChannelCommand {
+			return itCommChannel.UpdateCommChannelCommand(request)
 		},
-		func(result comm_channel.UpdateCommChannelResult) UpdateCommChannelResponse {
+		func(result itCommChannel.UpdateCommChannelResult) UpdateCommChannelResponse {
 			response := UpdateCommChannelResponse{}
 			response.FromEntity(result.Data)
 			return response
@@ -76,10 +76,10 @@ func (this CommChannelRest) DeleteCommChannel(echoCtx echo.Context) (err error) 
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.CommChannelSvc.DeleteCommChannel,
-		func(request DeleteCommChannelRequest) comm_channel.DeleteCommChannelCommand {
-			return comm_channel.DeleteCommChannelCommand(request)
+		func(request DeleteCommChannelRequest) itCommChannel.DeleteCommChannelCommand {
+			return itCommChannel.DeleteCommChannelCommand(request)
 		},
-		func(result comm_channel.DeleteCommChannelResult) DeleteCommChannelResponse {
+		func(result itCommChannel.DeleteCommChannelResult) DeleteCommChannelResponse {
 			response := DeleteCommChannelResponse{}
 			response.FromNonEntity(result.Data)
 			return response
@@ -97,10 +97,10 @@ func (this CommChannelRest) GetCommChannelById(echoCtx echo.Context) (err error)
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.CommChannelSvc.GetCommChannelById,
-		func(request GetCommChannelByIdRequest) comm_channel.GetCommChannelByIdQuery {
-			return comm_channel.GetCommChannelByIdQuery(request)
+		func(request GetCommChannelByIdRequest) itCommChannel.GetCommChannelByIdQuery {
+			return itCommChannel.GetCommChannelByIdQuery(request)
 		},
-		func(result comm_channel.GetCommChannelByIdResult) GetCommChannelByIdResponse {
+		func(result itCommChannel.GetCommChannelByIdResult) GetCommChannelByIdResponse {
 			response := GetCommChannelByIdResponse{}
 			response.FromCommChannel(*result.Data)
 			return response
@@ -118,10 +118,10 @@ func (this CommChannelRest) SearchCommChannels(echoCtx echo.Context) (err error)
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.CommChannelSvc.SearchCommChannels,
-		func(request SearchCommChannelsRequest) comm_channel.SearchCommChannelsQuery {
-			return comm_channel.SearchCommChannelsQuery(request)
+		func(request SearchCommChannelsRequest) itCommChannel.SearchCommChannelsQuery {
+			return itCommChannel.SearchCommChannelsQuery(request)
 		},
-		func(result comm_channel.SearchCommChannelsResult) SearchCommChannelsResponse {
+		func(result itCommChannel.SearchCommChannelsResult) SearchCommChannelsResponse {
 			response := SearchCommChannelsResponse{}
 			response.FromResult(result.Data)
 			return response

@@ -1,0 +1,28 @@
+meta {
+  name: Attribute - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/attributes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "codeName": "size_option",
+    "displayName": {
+      "en_US": "Size",
+      "vi_VN": "Kích cỡ"
+    },
+    "dataType": "text",
+    "IsRequired" : true
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

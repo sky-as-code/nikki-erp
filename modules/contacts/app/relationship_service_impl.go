@@ -5,6 +5,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
+	itContactEnum "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/contactenum"
 	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	pt "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	itRelationship "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/relationship"
@@ -14,7 +15,7 @@ import (
 
 func NewRelationshipServiceImpl(
 	relationshipRepo itRelationship.RelationshipRepository,
-	contactsEnumServiceImpl ContactsEnumServiceImpl,
+	contactsEnumServiceImpl itContactEnum.ContactsEnumService,
 	partySvc itParty.PartyService,
 	cqrsBus cqrs.CqrsBus,
 ) itRelationship.RelationshipService {
@@ -30,7 +31,7 @@ type RelationshipServiceImpl struct {
 	relationshipRepo        itRelationship.RelationshipRepository
 	partySvc                itParty.PartyService
 	cqrsBus                 cqrs.CqrsBus
-	contactsEnumServiceImpl ContactsEnumServiceImpl
+	contactsEnumServiceImpl itContactEnum.ContactsEnumService
 }
 
 func (this *RelationshipServiceImpl) CreateRelationship(ctx crud.Context, cmd itRelationship.CreateRelationshipCommand) (*itRelationship.CreateRelationshipResult, error) {

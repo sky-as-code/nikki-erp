@@ -1,0 +1,16 @@
+meta {
+  name: Attribute Value - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/attributes/{{attribute_id}}/values/{{attribute_value_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
