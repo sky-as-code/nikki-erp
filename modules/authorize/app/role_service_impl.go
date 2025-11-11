@@ -624,7 +624,7 @@ func (this *RoleServiceImpl) validateUniqueEntitlementInputs(inputs []itRole.Ent
 	for _, input := range inputs {
 		key := this.makeEntitlementKey(input.EntitlementId, input.ScopeRef)
 		if seen[key] {
-			vErrs.AppendNotAllow("entitlementId", input.EntitlementId)
+			vErrs.AppendNotAllowed("entitlementId", input.EntitlementId)
 			return nil, false
 		}
 		seen[key] = true
@@ -654,42 +654,33 @@ func (this *RoleServiceImpl) fetchAndMapEntitlements(ctx crud.Context, inputs []
 	return entitlementMap, nil
 }
 
-// validateEntitlementOrgConsistency validates organization-level consistency between entitlements and role
-// This prevents cross-org violations and ensures proper tenant isolation
-//
-// Valid cases:
-//   - Case 1: ent.OrgId=nil + role.OrgId=nil (both domain-level) ✅
-//   - Case 2: ent.OrgId=nil + role.OrgId!=nil (global ent for org role) ✅
-//   - Case 5: ent.OrgId==role.OrgId (same org) ✅
-//
-// Invalid cases:
-//   - Case 3: ent.OrgId!=nil + role.OrgId=nil (org ent in domain role) ❌
-//   - Case 4: ent.OrgId!=role.OrgId (different orgs) ❌
 func (this *RoleServiceImpl) validateEntitlementOrgConsistency(inputs []itRole.EntitlementInput, entitlementMap map[model.Id]*domain.Entitlement, dbRole *domain.Role, vErrs *fault.ValidationErrors) bool {
 	for _, input := range inputs {
-		entitlement := entitlementMap[input.EntitlementId]
-		if entitlement == nil {
+		ent := entitlementMap[input.EntitlementId]
+		if ent == nil {
 			vErrs.AppendNotFound("entitlementId", input.EntitlementId)
 			return false
 		}
 
-		// Case 3: Reject org-specific entitlement in domain-level role
-		// This violates tenant isolation as domain roles can be assigned to users in any org
-		if entitlement.OrgId != nil && dbRole.OrgId == nil {
+		if ent.OrgId != nil && dbRole.OrgId != nil && *ent.OrgId == *dbRole.OrgId {
+			continue
+		}
+
+		if ent.OrgId != nil && dbRole.OrgId == nil {
 			vErrs.Append("entitlementId", "cannot add org-specific entitlement to domain-level role")
 			return false
 		}
 
-		// Case 4: Reject cross-org assignment
-		// Entitlement from OrgA cannot be added to role in OrgB
-		if entitlement.OrgId != nil && dbRole.OrgId != nil && *entitlement.OrgId != *dbRole.OrgId {
+		if ent.OrgId != nil && dbRole.OrgId != nil && *ent.OrgId != *dbRole.OrgId {
 			vErrs.Append("entitlementId", "entitlement belongs to different organization than role")
 			return false
 		}
 
-		// Cases 1, 2, 5 are valid and will pass through
-		// Note: Case 2 (global ent + org role) is allowed, but scopeRef validation
-		// will be handled by EntitlementAssignmentService to ensure proper scope isolation
+		if dbRole.OrgId == nil && ent.OrgId == nil && ent.Resource != nil && ent.Resource.ScopeType != nil &&
+			*ent.Resource.ScopeType == domain.ResourceScopeTypeOrg {
+			vErrs.Append("entitlementId", "domain-level role cannot include global entitlement with org-scoped resource")
+			return false
+		}
 	}
 
 	return true
@@ -713,33 +704,33 @@ func (this *RoleServiceImpl) getExistingAssignmentKeys(ctx crud.Context, roleId 
 	return existingAssignments, nil
 }
 
-func (this *RoleServiceImpl) buildResolvedExpression(roleId model.Id, scopeRef *model.Id, resourceName string, actionName string) string {
+func (this *RoleServiceImpl) buildResolvedExpression(roleId model.Id, scopeRef *model.Id, actionExpr string) string {
 	if scopeRef != nil {
-		return fmt.Sprintf("%s:%s:%s:%s", roleId, *scopeRef, resourceName, actionName)
+		return fmt.Sprintf("%s:%s:%s", roleId, *scopeRef, actionExpr)
 	}
-	return fmt.Sprintf("%s::%s:%s", roleId, resourceName, actionName)
+
+	return fmt.Sprintf("%s:*:%s", roleId, actionExpr)
 }
 
 func (this *RoleServiceImpl) createNewEntitlementAssignment(ctx crud.Context, input itRole.EntitlementInput, entitlement *domain.Entitlement, roleId model.Id, vErrs *fault.ValidationErrors) error {
-	actionName := ""
-	resourceName := ""
+	var actionName, resourceName *string
 
 	if entitlement.Action != nil && entitlement.Action.Name != nil {
-		actionName = *entitlement.Action.Name
+		actionName = entitlement.Action.Name
 	}
 	if entitlement.Resource != nil && entitlement.Resource.Name != nil {
-		resourceName = *entitlement.Resource.Name
+		resourceName = entitlement.Resource.Name
 	}
 
-	resolvedExpr := this.buildResolvedExpression(roleId, input.ScopeRef, resourceName, actionName)
+	resolvedExpr := this.buildResolvedExpression(roleId, input.ScopeRef, *entitlement.ActionExpr)
 
 	creation, err := this.assignmentService.CreateEntitlementAssignment(ctx, itAssign.CreateEntitlementAssignmentCommand{
 		SubjectType:   domain.EntitlementAssignmentSubjectTypeNikkiRole,
 		SubjectRef:    roleId,
 		EntitlementId: input.EntitlementId,
 		ScopeRef:      input.ScopeRef,
-		ActionName:    &actionName,
-		ResourceName:  &resourceName,
+		ActionName:    actionName,
+		ResourceName:  resourceName,
 		ResolvedExpr:  resolvedExpr,
 	})
 	fault.PanicOnErr(err)
@@ -813,7 +804,7 @@ func (this *RoleServiceImpl) assertBusinessRuleAddEntitlements(ctx crud.Context,
 		key := this.makeEntitlementKey(input.EntitlementId, input.ScopeRef)
 
 		if existingAssignments[key] {
-			vErrs.AppendNotAllow("entitlementId", input.EntitlementId)
+			vErrs.AppendNotAllowed("entitlementId", input.EntitlementId)
 			return nil
 		}
 

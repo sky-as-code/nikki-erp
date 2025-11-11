@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
@@ -184,18 +186,6 @@ func (this *EntitlementAssignmentServiceImpl) setEntitlementAssignmentDefaults(a
 	assignment.SetDefaults()
 }
 
-// assertBusinessRuleCreateEntitlementAssignment validates assignment creation rules
-// This ensures proper scope isolation and prevents cross-org data leaks
-//
-// Responsibility: Validate scopeRef against resource's ScopeType
-// - For domain-level resources: scopeRef must be nil
-// - For org-level resources: scopeRef must be a valid orgId
-// - For hierarchy-level resources: scopeRef must be a valid hierarchyLevelId
-// - For private resources: scopeRef must be provided (not fully implemented yet)
-//
-//
-//	When a global entitlement (ent.OrgId=nil) is added to an org-level role,
-//	the scopeRef validation here ensures the scope stays within the org boundary
 func (this *EntitlementAssignmentServiceImpl) assertBusinessRuleCreateEntitlementAssignment(ctx crud.Context, assignment *domain.EntitlementAssignment, vErrs *fault.ValidationErrors) error {
 	entRes, err := this.entitlementService.GetEntitlementById(ctx, itEntitlement.GetEntitlementByIdQuery{
 		Id: *assignment.EntitlementId,
@@ -212,10 +202,9 @@ func (this *EntitlementAssignmentServiceImpl) assertBusinessRuleCreateEntitlemen
 		return nil
 	}
 
-	// Global entitlement (no resource): scopeRef must be nil
 	if ent.ResourceId == nil {
 		if assignment.ScopeRef != nil {
-			vErrs.AppendNotAllow("scope_ref", "scopeRef of global entitlement")
+			vErrs.AppendNotAllowed("scope_ref", "global entitlement must not have scopeRef")
 			return nil
 		}
 
@@ -223,29 +212,35 @@ func (this *EntitlementAssignmentServiceImpl) assertBusinessRuleCreateEntitlemen
 		return nil
 	}
 
-	resourceRes, err := this.resourceService.GetResourceById(ctx, itResource.GetResourceByIdQuery{Id: *ent.ResourceId})
+	err = this.assertScopeRefByScopeType(ctx, ent, assignment, vErrs)
 	fault.PanicOnErr(err)
 
-	if resourceRes.ClientError != nil {
-		return resourceRes.ClientError
+	if ent.OrgId != nil && ent.Resource != nil && ent.Resource.ScopeType != nil {
+		if *ent.Resource.ScopeType == domain.ResourceScopeTypeOrg && assignment.ScopeRef != nil {
+			if *ent.OrgId != *assignment.ScopeRef {
+				vErrs.AppendNotAllowed("scope_ref", "scopeRef must match entitlement orgId")
+				return nil
+			}
+		}
 	}
 
-	resource := resourceRes.Data
-	if resource == nil {
-		vErrs.AppendNotFound("resource_id", *ent.ResourceId)
-		return nil
-	}
+	this.validateFields(ent, assignment, vErrs)
+	this.assertEntitlementAssignmentUnique(ctx, assignment, vErrs)
 
-	switch *resource.ScopeType {
+	return nil
+}
+
+func (this *EntitlementAssignmentServiceImpl) assertScopeRefByScopeType(ctx crud.Context, ent *domain.Entitlement, assignment *domain.EntitlementAssignment, vErrs *fault.ValidationErrors) error {
+	switch *ent.Resource.ScopeType {
 	case domain.ResourceScopeTypeDomain:
 		if assignment.ScopeRef != nil {
-			vErrs.AppendNotAllow("scope_ref", "scopeRef of domain-level resource")
+			vErrs.AppendNotAllowed("scope_ref", "scopeRef of domain-level resource")
 			return nil
 		}
 
 	case domain.ResourceScopeTypeOrg:
 		if assignment.ScopeRef == nil {
-			vErrs.AppendNotAllow("scope_ref", "scopeRef of org-level resource")
+			vErrs.AppendNotAllowed("scope_ref", "scopeRef of org-level resource")
 			return nil
 		}
 
@@ -253,7 +248,7 @@ func (this *EntitlementAssignmentServiceImpl) assertBusinessRuleCreateEntitlemen
 			Id: *assignment.ScopeRef,
 		}
 		existRes := itOrg.ExistsOrgByIdResult{}
-		err = this.cqrsBus.Request(ctx, *existCmd, &existRes)
+		err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
 		fault.PanicOnErr(err)
 
 		if existRes.ClientError != nil {
@@ -268,7 +263,7 @@ func (this *EntitlementAssignmentServiceImpl) assertBusinessRuleCreateEntitlemen
 
 	case domain.ResourceScopeTypeHierarchy:
 		if assignment.ScopeRef == nil {
-			vErrs.AppendNotAllow("scope_ref", "scopeRef of hierarchy-level resource")
+			vErrs.AppendNotAllowed("scope_ref", "scopeRef of hierarchy-level resource")
 			return nil
 		}
 
@@ -292,17 +287,15 @@ func (this *EntitlementAssignmentServiceImpl) assertBusinessRuleCreateEntitlemen
 
 	case domain.ResourceScopeTypePrivate:
 		if assignment.ScopeRef == nil {
-			vErrs.AppendNotAllow("scope_ref", "scopeRef of private resource")
+			vErrs.AppendNotAllowed("scope_ref", "scopeRef of private resource")
 			return nil
 		}
 		// Temporary not implement yet
 
 	default:
-		vErrs.AppendNotAllow("resource.scope_type", "scope type")
+		vErrs.AppendNotAllowed("resource.scope_type", "scope type")
 		return nil
 	}
-
-	this.assertEntitlementAssignmentUnique(ctx, assignment, vErrs)
 
 	return nil
 }
@@ -318,5 +311,42 @@ func (this *EntitlementAssignmentServiceImpl) assertEntitlementAssignmentUnique(
 
 	if exists != nil {
 		vErrs.AppendAlreadyExists("subject_type", "subject type")
+	}
+}
+
+func (this *EntitlementAssignmentServiceImpl) validateFields(entitlement *domain.Entitlement, assignment *domain.EntitlementAssignment, vErrs *fault.ValidationErrors) {
+	var expectedResourceName = entitlement.Resource.Name
+
+	var expectedActionName *string
+	if entitlement.Action != nil {
+		expectedActionName = entitlement.Action.Name
+	}
+
+	if expectedActionName == nil {
+		if assignment.ActionName != nil {
+			vErrs.AppendNotAllowed("action_name", "action name")
+		}
+	} else if assignment.ActionName == nil || *assignment.ActionName != *expectedActionName {
+		vErrs.AppendNotAllowed("action_name", "action name")
+	}
+
+	if assignment.ResourceName == nil || *assignment.ResourceName != *expectedResourceName {
+		vErrs.AppendNotAllowed("resource_name", "resource name")
+	}
+
+	this.validateResolvedExpr(entitlement, assignment, vErrs)
+}
+
+func (this *EntitlementAssignmentServiceImpl) validateResolvedExpr(entitlement *domain.Entitlement, assignment *domain.EntitlementAssignment, vErrs *fault.ValidationErrors) {
+	var expectedResolvedExpr string
+	scopePart := "*"
+	if assignment.ScopeRef != nil {
+		scopePart = *assignment.ScopeRef
+	}
+
+	expectedResolvedExpr = fmt.Sprintf("%s:%s:%s", *assignment.SubjectRef, scopePart, *entitlement.ActionExpr)
+
+	if *assignment.ResolvedExpr != expectedResolvedExpr {
+		vErrs.AppendNotAllowed("resolved_expr", "resolvedExpr")
 	}
 }

@@ -327,7 +327,7 @@ func (this *RoleSuiteServiceImpl) validateRoles(ctx crud.Context, roleIds []mode
 	seenIds := make(map[model.Id]int)
 	for i, roleId := range roleIds {
 		if _, exists := seenIds[roleId]; exists {
-			vErrs.AppendNotAllow("role_id", roleId)
+			vErrs.AppendNotAllowed("role_id", roleId)
 			continue
 		}
 		seenIds[roleId] = i
@@ -353,9 +353,9 @@ func (this *RoleSuiteServiceImpl) validateRoles(ctx crud.Context, roleIds []mode
 
 		if role.Data.OrgId != nil {
 			if suiteOrgId == nil {
-				vErrs.AppendNotAllow("role_id", roleId)
+				vErrs.AppendNotAllowed("role_id", roleId)
 			} else if *role.Data.OrgId != *suiteOrgId {
-				vErrs.AppendNotAllow("role_id", roleId)
+				vErrs.AppendNotAllowed("role_id", roleId)
 			}
 		}
 	}

@@ -46,7 +46,7 @@ func (this *ValidationErrors) AppendConstraintViolated(fieldName string, fieldLa
 	this.Appendf(fieldName, "%s constraint violated", fieldLabel)
 }
 
-func (this *ValidationErrors) AppendNotAllow(fieldName string, fieldLabel string) {
+func (this *ValidationErrors) AppendNotAllowed(fieldName string, fieldLabel string) {
 	this.Appendf(fieldName, "%s not allowed", fieldLabel)
 }
 

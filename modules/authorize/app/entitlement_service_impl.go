@@ -293,7 +293,7 @@ func (this *EntitlementServiceImpl) setEntitlementDefaults(entitlement *domain.E
 	entitlement.SetDefaults()
 }
 
-func (this *EntitlementServiceImpl) assertEntitlementUnique(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
+func (this *EntitlementServiceImpl) assertEntitlementNameUnique(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
 	if entitlement.Name == nil {
 		return nil
 	}
@@ -313,36 +313,24 @@ func (this *EntitlementServiceImpl) assertEntitlementUnique(ctx crud.Context, en
 	return nil
 }
 
-func (this *EntitlementServiceImpl) assertActionExprValid(resource *domain.Resource, action *domain.Action, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
-	var actionName *string
-	if action != nil {
-		actionName = action.Name
+func (this *EntitlementServiceImpl) assertActionExprValid(resource *domain.Resource, action *domain.Action, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) {
+	resourceName := "*"
+	if resource != nil && resource.Name != nil {
+		resourceName = *resource.Name
 	}
 
-	var resourceName *string
-	if resource != nil {
-		resourceName = resource.Name
+	actionName := "*"
+	if action != nil && action.Name != nil {
+		actionName = *action.Name
 	}
 
-	actionDefault := "*"
-	if actionName != nil {
-		actionDefault = *actionName
-	}
-
-	resourceDefault := "*"
-	if resourceName != nil {
-		resourceDefault = *resourceName
-	}
-
-	actionExpr := fmt.Sprintf("%s:%s", resourceDefault, actionDefault)
+	expectedExpr := fmt.Sprintf("%s:%s", resourceName, actionName)
 
 	if entitlement.ActionExpr != nil {
-		if *entitlement.ActionExpr != actionExpr {
-			vErrs.Append("action_expr", "action_expr is not valid")
+		if *entitlement.ActionExpr != expectedExpr {
+			vErrs.Append("action_expr", fmt.Sprintf("action_expr must be %q", expectedExpr))
 		}
 	}
-
-	return nil
 }
 
 func (this *EntitlementServiceImpl) assertActionExprUnique(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
@@ -362,32 +350,53 @@ func (this *EntitlementServiceImpl) assertActionExprUnique(ctx crud.Context, ent
 }
 
 func (this *EntitlementServiceImpl) assertBusinessRuleCreateEntitlement(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
-	resource, err := this.resourceService.GetResourceById(ctx, itResource.GetResourceByIdQuery{Id: *entitlement.ResourceId})
-	fault.PanicOnErr(err)
-	if resource.ClientError != nil {
-		return resource.ClientError
-	}
-
-	action, err := this.actionService.GetActionById(ctx, itAction.GetActionByIdQuery{Id: *entitlement.ActionId})
-	fault.PanicOnErr(err)
-	if action.ClientError != nil {
-		return action.ClientError
-	}
-
-	err = this.assertActionExprValid(resource.Data, action.Data, entitlement, vErrs)
-	fault.PanicOnErr(err)
-
-	err = this.assertEntitlementUnique(ctx, entitlement, vErrs)
-	fault.PanicOnErr(err)
-
-	err = this.assertActionExprUnique(ctx, entitlement, vErrs)
+	err := this.assertEntitlementNameUnique(ctx, entitlement, vErrs)
 	fault.PanicOnErr(err)
 
 	err = this.assertOrgExists(ctx, entitlement, vErrs)
 	fault.PanicOnErr(err)
 
-	err = this.assertScopeLevelConsistency(entitlement, resource.Data, vErrs)
+	err = this.assertActionExprUnique(ctx, entitlement, vErrs)
 	fault.PanicOnErr(err)
+
+	if entitlement.ActionId != nil && entitlement.ResourceId == nil {
+		vErrs.Append("resource_id", "resource_id is required when action_id is specified")
+		return nil
+	}
+
+	var resource *domain.Resource
+	if entitlement.ResourceId != nil {
+		resRes, err := this.resourceService.GetResourceById(ctx, itResource.GetResourceByIdQuery{
+			Id: *entitlement.ResourceId,
+		})
+		fault.PanicOnErr(err)
+
+		if resRes.ClientError != nil {
+			return resRes.ClientError
+		}
+		resource = resRes.Data
+	}
+
+	var action *domain.Action
+	if entitlement.ActionId != nil {
+		actRes, err := this.actionService.GetActionById(ctx, itAction.GetActionByIdQuery{
+			Id: *entitlement.ActionId,
+		})
+		fault.PanicOnErr(err)
+
+		if actRes.ClientError != nil {
+			return actRes.ClientError
+		}
+		action = actRes.Data
+
+		if resource != nil && action.ResourceId != nil && *action.ResourceId != *resource.Id {
+			vErrs.Append("action_id", "action does not belong to the specified resource")
+			return nil
+		}
+	}
+
+	this.assertActionExprValid(resource, action, entitlement, vErrs)
+	this.assertScopeLevelConsistency(entitlement, resource, vErrs)
 
 	return nil
 }
@@ -410,39 +419,40 @@ func (this *EntitlementServiceImpl) assertOrgExists(ctx crud.Context, entitlemen
 	}
 
 	if !existRes.Data {
-		vErrs.Append("orgId", "not existing organization")
+		vErrs.Append("org_id", "not existing organization")
 	}
 	return nil
 }
 
-func (this *EntitlementServiceImpl) assertScopeLevelConsistency(entitlement *domain.Entitlement, resource *domain.Resource, vErrs *fault.ValidationErrors) error {
-	if resource == nil || resource.ScopeType == nil {
-		return nil
+func (this *EntitlementServiceImpl) assertScopeLevelConsistency(entitlement *domain.Entitlement, resource *domain.Resource, vErrs *fault.ValidationErrors) {
+	if resource == nil {
+		if entitlement.OrgId != nil {
+			vErrs.AppendNotAllowed("org_id", "org id")
+		}
+		return
+	}
+
+	if resource.ScopeType == nil {
+		return
 	}
 
 	scopeType := *resource.ScopeType
 
-	if entitlement.OrgId == nil {
-		switch scopeType {
-		case domain.ResourceScopeTypeDomain:
-			return nil
-		case domain.ResourceScopeTypePrivate:
-			return nil
-		case domain.ResourceScopeTypeOrg:
-			vErrs.AppendNotAllow("resource_id", *entitlement.ResourceId)
-			return nil
-		case domain.ResourceScopeTypeHierarchy:
-			vErrs.AppendNotAllow("resource_id", *entitlement.ResourceId)
-			return nil
-		}
-	} else {
-		if scopeType == domain.ResourceScopeTypeDomain {
-			vErrs.AppendNotAllow("resource_id", *entitlement.ResourceId)
-			return nil
-		}
+	if entitlement.OrgId != nil && scopeType == domain.ResourceScopeTypeDomain {
+		vErrs.AppendNotAllowed("resource_id", "resource id")
+		return
 	}
 
-	return nil
+	if entitlement.OrgId == nil {
+		if scopeType == domain.ResourceScopeTypePrivate {
+			vErrs.AppendNotAllowed("resource_id", "resource id")
+			return
+		}
+		if scopeType == domain.ResourceScopeTypeHierarchy {
+			vErrs.AppendNotAllowed("resource_id", "resource id")
+			return
+		}
+	}
 }
 
 func (this *EntitlementServiceImpl) assertBusinessRuleDeleteEntitlement(ctx crud.Context, command it.DeleteEntitlementHardByIdCommand, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
