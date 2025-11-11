@@ -1,0 +1,16 @@
+meta {
+  name: Attribute - Delete
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/attributes/{{attribute_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

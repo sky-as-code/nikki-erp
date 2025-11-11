@@ -2,6 +2,7 @@ package app
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	itContactEnum "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/contactenum"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	itEnum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 )
@@ -10,8 +11,8 @@ type ContactsEnumServiceImpl struct {
 	enumSvc itEnum.EnumService
 }
 
-func NewContactsEnumServiceImpl(enumSvc itEnum.EnumService) ContactsEnumServiceImpl {
-	return ContactsEnumServiceImpl{
+func NewContactsEnumServiceImpl(enumSvc itEnum.EnumService) itContactEnum.ContactsEnumService {
+	return &ContactsEnumServiceImpl{
 		enumSvc: enumSvc,
 	}
 }

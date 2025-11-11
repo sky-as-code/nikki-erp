@@ -1,0 +1,16 @@
+meta {
+  name: Attribute Group - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/{{org_id}}/inventory/attribute-groups
+  body: json
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

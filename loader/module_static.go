@@ -25,6 +25,7 @@ func getStaticModules() []modules.InCodeModule {
 		// contacts.ModuleSingleton,
 		essential.ModuleSingleton,
 		identity.ModuleSingleton,
+		// inventory.ModuleSingleton,
 	}
 
 	return modules

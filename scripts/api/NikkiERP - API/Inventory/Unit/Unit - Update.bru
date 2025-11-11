@@ -1,0 +1,29 @@
+meta {
+  name: Unit - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/{{org_id}}/inventory/units/{{unit_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": {
+      "en": "Kilogram",
+      "vi": "Kilogram"
+    },
+    "symbol": "kg",
+    "baseUnit": "01K8HS6H3WR25T7XHGT2XMGQF7",
+    "etag": "1762226207003109400",
+    "multiplier": 1000 
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

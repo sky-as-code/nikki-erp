@@ -1,0 +1,16 @@
+meta {
+  name: Unit - Search
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/{{org_id}}/inventory/units
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

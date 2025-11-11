@@ -1,0 +1,15 @@
+meta {
+  name: Product - Search
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/{{org_id}}/inventory/products
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

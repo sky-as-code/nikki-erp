@@ -5,7 +5,8 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
-	itChannel "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/comm_channel"
+	itChannel "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/commchannel"
+	itContactEnum "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/contactenum"
 	itParty "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	pt "github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/party"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
@@ -14,7 +15,7 @@ import (
 
 func NewCommChannelServiceImpl(
 	commChannelRepo itChannel.CommChannelRepository,
-	contactsEnumSvc ContactsEnumServiceImpl,
+	contactsEnumSvc itContactEnum.ContactsEnumService,
 	partySvc itParty.PartyService,
 	cqrsBus cqrs.CqrsBus,
 ) itChannel.CommChannelService {
@@ -28,7 +29,7 @@ func NewCommChannelServiceImpl(
 
 type CommChannelServiceImpl struct {
 	commChannelRepo itChannel.CommChannelRepository
-	contactsEnumSvc ContactsEnumServiceImpl
+	contactsEnumSvc itContactEnum.ContactsEnumService
 	partySvc        itParty.PartyService
 	cqrsBus         cqrs.CqrsBus
 }

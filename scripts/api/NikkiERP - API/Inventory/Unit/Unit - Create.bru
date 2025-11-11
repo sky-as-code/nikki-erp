@@ -1,0 +1,28 @@
+meta {
+  name: Unit - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/{{org_id}}/inventory/units
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": {
+      "en": "Kilogram",
+      "vi": "Kilogram"
+    },
+    "baseUnit": "01K96DZGE82C793MWTEM1DHCV7",
+    "symbol": "kg",
+    "multiplier": 1000
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
