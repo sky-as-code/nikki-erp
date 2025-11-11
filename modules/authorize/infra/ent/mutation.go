@@ -1938,7 +1938,7 @@ type EntitlementAssignmentMutation struct {
 	resolved_expr               *string
 	action_name                 *string
 	resource_name               *string
-	org_id                      *string
+	scope_ref                   *string
 	clearedFields               map[string]struct{}
 	entitlement                 *string
 	clearedentitlement          bool
@@ -2296,53 +2296,53 @@ func (m *EntitlementAssignmentMutation) ResetResourceName() {
 	delete(m.clearedFields, entitlementassignment.FieldResourceName)
 }
 
-// SetOrgID sets the "org_id" field.
-func (m *EntitlementAssignmentMutation) SetOrgID(s string) {
-	m.org_id = &s
+// SetScopeRef sets the "scope_ref" field.
+func (m *EntitlementAssignmentMutation) SetScopeRef(s string) {
+	m.scope_ref = &s
 }
 
-// OrgID returns the value of the "org_id" field in the mutation.
-func (m *EntitlementAssignmentMutation) OrgID() (r string, exists bool) {
-	v := m.org_id
+// ScopeRef returns the value of the "scope_ref" field in the mutation.
+func (m *EntitlementAssignmentMutation) ScopeRef() (r string, exists bool) {
+	v := m.scope_ref
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldOrgID returns the old "org_id" field's value of the EntitlementAssignment entity.
+// OldScopeRef returns the old "scope_ref" field's value of the EntitlementAssignment entity.
 // If the EntitlementAssignment object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EntitlementAssignmentMutation) OldOrgID(ctx context.Context) (v *string, err error) {
+func (m *EntitlementAssignmentMutation) OldScopeRef(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldOrgID is only allowed on UpdateOne operations")
+		return v, errors.New("OldScopeRef is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldOrgID requires an ID field in the mutation")
+		return v, errors.New("OldScopeRef requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldOrgID: %w", err)
+		return v, fmt.Errorf("querying old value for OldScopeRef: %w", err)
 	}
-	return oldValue.OrgID, nil
+	return oldValue.ScopeRef, nil
 }
 
-// ClearOrgID clears the value of the "org_id" field.
-func (m *EntitlementAssignmentMutation) ClearOrgID() {
-	m.org_id = nil
-	m.clearedFields[entitlementassignment.FieldOrgID] = struct{}{}
+// ClearScopeRef clears the value of the "scope_ref" field.
+func (m *EntitlementAssignmentMutation) ClearScopeRef() {
+	m.scope_ref = nil
+	m.clearedFields[entitlementassignment.FieldScopeRef] = struct{}{}
 }
 
-// OrgIDCleared returns if the "org_id" field was cleared in this mutation.
-func (m *EntitlementAssignmentMutation) OrgIDCleared() bool {
-	_, ok := m.clearedFields[entitlementassignment.FieldOrgID]
+// ScopeRefCleared returns if the "scope_ref" field was cleared in this mutation.
+func (m *EntitlementAssignmentMutation) ScopeRefCleared() bool {
+	_, ok := m.clearedFields[entitlementassignment.FieldScopeRef]
 	return ok
 }
 
-// ResetOrgID resets all changes to the "org_id" field.
-func (m *EntitlementAssignmentMutation) ResetOrgID() {
-	m.org_id = nil
-	delete(m.clearedFields, entitlementassignment.FieldOrgID)
+// ResetScopeRef resets all changes to the "scope_ref" field.
+func (m *EntitlementAssignmentMutation) ResetScopeRef() {
+	m.scope_ref = nil
+	delete(m.clearedFields, entitlementassignment.FieldScopeRef)
 }
 
 // ClearEntitlement clears the "entitlement" edge to the Entitlement entity.
@@ -2479,8 +2479,8 @@ func (m *EntitlementAssignmentMutation) Fields() []string {
 	if m.resource_name != nil {
 		fields = append(fields, entitlementassignment.FieldResourceName)
 	}
-	if m.org_id != nil {
-		fields = append(fields, entitlementassignment.FieldOrgID)
+	if m.scope_ref != nil {
+		fields = append(fields, entitlementassignment.FieldScopeRef)
 	}
 	return fields
 }
@@ -2502,8 +2502,8 @@ func (m *EntitlementAssignmentMutation) Field(name string) (ent.Value, bool) {
 		return m.ActionName()
 	case entitlementassignment.FieldResourceName:
 		return m.ResourceName()
-	case entitlementassignment.FieldOrgID:
-		return m.OrgID()
+	case entitlementassignment.FieldScopeRef:
+		return m.ScopeRef()
 	}
 	return nil, false
 }
@@ -2525,8 +2525,8 @@ func (m *EntitlementAssignmentMutation) OldField(ctx context.Context, name strin
 		return m.OldActionName(ctx)
 	case entitlementassignment.FieldResourceName:
 		return m.OldResourceName(ctx)
-	case entitlementassignment.FieldOrgID:
-		return m.OldOrgID(ctx)
+	case entitlementassignment.FieldScopeRef:
+		return m.OldScopeRef(ctx)
 	}
 	return nil, fmt.Errorf("unknown EntitlementAssignment field %s", name)
 }
@@ -2578,12 +2578,12 @@ func (m *EntitlementAssignmentMutation) SetField(name string, value ent.Value) e
 		}
 		m.SetResourceName(v)
 		return nil
-	case entitlementassignment.FieldOrgID:
+	case entitlementassignment.FieldScopeRef:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetOrgID(v)
+		m.SetScopeRef(v)
 		return nil
 	}
 	return fmt.Errorf("unknown EntitlementAssignment field %s", name)
@@ -2621,8 +2621,8 @@ func (m *EntitlementAssignmentMutation) ClearedFields() []string {
 	if m.FieldCleared(entitlementassignment.FieldResourceName) {
 		fields = append(fields, entitlementassignment.FieldResourceName)
 	}
-	if m.FieldCleared(entitlementassignment.FieldOrgID) {
-		fields = append(fields, entitlementassignment.FieldOrgID)
+	if m.FieldCleared(entitlementassignment.FieldScopeRef) {
+		fields = append(fields, entitlementassignment.FieldScopeRef)
 	}
 	return fields
 }
@@ -2644,8 +2644,8 @@ func (m *EntitlementAssignmentMutation) ClearField(name string) error {
 	case entitlementassignment.FieldResourceName:
 		m.ClearResourceName()
 		return nil
-	case entitlementassignment.FieldOrgID:
-		m.ClearOrgID()
+	case entitlementassignment.FieldScopeRef:
+		m.ClearScopeRef()
 		return nil
 	}
 	return fmt.Errorf("unknown EntitlementAssignment nullable field %s", name)
@@ -2673,8 +2673,8 @@ func (m *EntitlementAssignmentMutation) ResetField(name string) error {
 	case entitlementassignment.FieldResourceName:
 		m.ResetResourceName()
 		return nil
-	case entitlementassignment.FieldOrgID:
-		m.ResetOrgID()
+	case entitlementassignment.FieldScopeRef:
+		m.ResetScopeRef()
 		return nil
 	}
 	return fmt.Errorf("unknown EntitlementAssignment field %s", name)
@@ -8756,6 +8756,7 @@ type RoleMutation struct {
 	is_requestable              *bool
 	is_required_attachment      *bool
 	is_required_comment         *bool
+	org_id                      *string
 	clearedFields               map[string]struct{}
 	role_suites                 map[string]struct{}
 	removedrole_suites          map[string]struct{}
@@ -9254,6 +9255,55 @@ func (m *RoleMutation) ResetIsRequiredComment() {
 	m.is_required_comment = nil
 }
 
+// SetOrgID sets the "org_id" field.
+func (m *RoleMutation) SetOrgID(s string) {
+	m.org_id = &s
+}
+
+// OrgID returns the value of the "org_id" field in the mutation.
+func (m *RoleMutation) OrgID() (r string, exists bool) {
+	v := m.org_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrgID returns the old "org_id" field's value of the Role entity.
+// If the Role object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleMutation) OldOrgID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrgID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrgID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrgID: %w", err)
+	}
+	return oldValue.OrgID, nil
+}
+
+// ClearOrgID clears the value of the "org_id" field.
+func (m *RoleMutation) ClearOrgID() {
+	m.org_id = nil
+	m.clearedFields[role.FieldOrgID] = struct{}{}
+}
+
+// OrgIDCleared returns if the "org_id" field was cleared in this mutation.
+func (m *RoleMutation) OrgIDCleared() bool {
+	_, ok := m.clearedFields[role.FieldOrgID]
+	return ok
+}
+
+// ResetOrgID resets all changes to the "org_id" field.
+func (m *RoleMutation) ResetOrgID() {
+	m.org_id = nil
+	delete(m.clearedFields, role.FieldOrgID)
+}
+
 // AddRoleSuiteIDs adds the "role_suites" edge to the RoleSuite entity by ids.
 func (m *RoleMutation) AddRoleSuiteIDs(ids ...string) {
 	if m.role_suites == nil {
@@ -9558,7 +9608,7 @@ func (m *RoleMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RoleMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, role.FieldCreatedAt)
 	}
@@ -9589,6 +9639,9 @@ func (m *RoleMutation) Fields() []string {
 	if m.is_required_comment != nil {
 		fields = append(fields, role.FieldIsRequiredComment)
 	}
+	if m.org_id != nil {
+		fields = append(fields, role.FieldOrgID)
+	}
 	return fields
 }
 
@@ -9617,6 +9670,8 @@ func (m *RoleMutation) Field(name string) (ent.Value, bool) {
 		return m.IsRequiredAttachment()
 	case role.FieldIsRequiredComment:
 		return m.IsRequiredComment()
+	case role.FieldOrgID:
+		return m.OrgID()
 	}
 	return nil, false
 }
@@ -9646,6 +9701,8 @@ func (m *RoleMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldIsRequiredAttachment(ctx)
 	case role.FieldIsRequiredComment:
 		return m.OldIsRequiredComment(ctx)
+	case role.FieldOrgID:
+		return m.OldOrgID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Role field %s", name)
 }
@@ -9725,6 +9782,13 @@ func (m *RoleMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIsRequiredComment(v)
 		return nil
+	case role.FieldOrgID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrgID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Role field %s", name)
 }
@@ -9758,6 +9822,9 @@ func (m *RoleMutation) ClearedFields() []string {
 	if m.FieldCleared(role.FieldDescription) {
 		fields = append(fields, role.FieldDescription)
 	}
+	if m.FieldCleared(role.FieldOrgID) {
+		fields = append(fields, role.FieldOrgID)
+	}
 	return fields
 }
 
@@ -9774,6 +9841,9 @@ func (m *RoleMutation) ClearField(name string) error {
 	switch name {
 	case role.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case role.FieldOrgID:
+		m.ClearOrgID()
 		return nil
 	}
 	return fmt.Errorf("unknown Role nullable field %s", name)
@@ -9812,6 +9882,9 @@ func (m *RoleMutation) ResetField(name string) error {
 		return nil
 	case role.FieldIsRequiredComment:
 		m.ResetIsRequiredComment()
+		return nil
+	case role.FieldOrgID:
+		m.ResetOrgID()
 		return nil
 	}
 	return fmt.Errorf("unknown Role field %s", name)
@@ -10400,6 +10473,7 @@ type RoleSuiteMutation struct {
 	is_requestable              *bool
 	is_required_attachment      *bool
 	is_required_comment         *bool
+	org_id                      *string
 	clearedFields               map[string]struct{}
 	rolesuite_users             map[int]struct{}
 	removedrolesuite_users      map[int]struct{}
@@ -10898,6 +10972,55 @@ func (m *RoleSuiteMutation) ResetIsRequiredComment() {
 	m.is_required_comment = nil
 }
 
+// SetOrgID sets the "org_id" field.
+func (m *RoleSuiteMutation) SetOrgID(s string) {
+	m.org_id = &s
+}
+
+// OrgID returns the value of the "org_id" field in the mutation.
+func (m *RoleSuiteMutation) OrgID() (r string, exists bool) {
+	v := m.org_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrgID returns the old "org_id" field's value of the RoleSuite entity.
+// If the RoleSuite object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleSuiteMutation) OldOrgID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrgID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrgID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrgID: %w", err)
+	}
+	return oldValue.OrgID, nil
+}
+
+// ClearOrgID clears the value of the "org_id" field.
+func (m *RoleSuiteMutation) ClearOrgID() {
+	m.org_id = nil
+	m.clearedFields[rolesuite.FieldOrgID] = struct{}{}
+}
+
+// OrgIDCleared returns if the "org_id" field was cleared in this mutation.
+func (m *RoleSuiteMutation) OrgIDCleared() bool {
+	_, ok := m.clearedFields[rolesuite.FieldOrgID]
+	return ok
+}
+
+// ResetOrgID resets all changes to the "org_id" field.
+func (m *RoleSuiteMutation) ResetOrgID() {
+	m.org_id = nil
+	delete(m.clearedFields, rolesuite.FieldOrgID)
+}
+
 // AddRolesuiteUserIDs adds the "rolesuite_users" edge to the RoleSuiteUser entity by ids.
 func (m *RoleSuiteMutation) AddRolesuiteUserIDs(ids ...int) {
 	if m.rolesuite_users == nil {
@@ -11202,7 +11325,7 @@ func (m *RoleSuiteMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RoleSuiteMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, rolesuite.FieldCreatedAt)
 	}
@@ -11233,6 +11356,9 @@ func (m *RoleSuiteMutation) Fields() []string {
 	if m.is_required_comment != nil {
 		fields = append(fields, rolesuite.FieldIsRequiredComment)
 	}
+	if m.org_id != nil {
+		fields = append(fields, rolesuite.FieldOrgID)
+	}
 	return fields
 }
 
@@ -11261,6 +11387,8 @@ func (m *RoleSuiteMutation) Field(name string) (ent.Value, bool) {
 		return m.IsRequiredAttachment()
 	case rolesuite.FieldIsRequiredComment:
 		return m.IsRequiredComment()
+	case rolesuite.FieldOrgID:
+		return m.OrgID()
 	}
 	return nil, false
 }
@@ -11290,6 +11418,8 @@ func (m *RoleSuiteMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldIsRequiredAttachment(ctx)
 	case rolesuite.FieldIsRequiredComment:
 		return m.OldIsRequiredComment(ctx)
+	case rolesuite.FieldOrgID:
+		return m.OldOrgID(ctx)
 	}
 	return nil, fmt.Errorf("unknown RoleSuite field %s", name)
 }
@@ -11369,6 +11499,13 @@ func (m *RoleSuiteMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIsRequiredComment(v)
 		return nil
+	case rolesuite.FieldOrgID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrgID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown RoleSuite field %s", name)
 }
@@ -11402,6 +11539,9 @@ func (m *RoleSuiteMutation) ClearedFields() []string {
 	if m.FieldCleared(rolesuite.FieldDescription) {
 		fields = append(fields, rolesuite.FieldDescription)
 	}
+	if m.FieldCleared(rolesuite.FieldOrgID) {
+		fields = append(fields, rolesuite.FieldOrgID)
+	}
 	return fields
 }
 
@@ -11418,6 +11558,9 @@ func (m *RoleSuiteMutation) ClearField(name string) error {
 	switch name {
 	case rolesuite.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case rolesuite.FieldOrgID:
+		m.ClearOrgID()
 		return nil
 	}
 	return fmt.Errorf("unknown RoleSuite nullable field %s", name)
@@ -11456,6 +11599,9 @@ func (m *RoleSuiteMutation) ResetField(name string) error {
 		return nil
 	case rolesuite.FieldIsRequiredComment:
 		m.ResetIsRequiredComment()
+		return nil
+	case rolesuite.FieldOrgID:
+		m.ResetOrgID()
 		return nil
 	}
 	return fmt.Errorf("unknown RoleSuite field %s", name)

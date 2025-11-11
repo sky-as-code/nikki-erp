@@ -69,7 +69,7 @@ func (this *EntitlementServiceImpl) CreateEntitlement(ctx crud.Context, cmd it.C
 	})
 }
 
-func (this *EntitlementServiceImpl) EntitlementExists(ctx crud.Context, cmd it.EntitlementExistsCommand) (result *it.EntitlementExistsResult, err error) {
+func (this *EntitlementServiceImpl) EntitlementExists(ctx crud.Context, cmd it.EntitlementExistsQuery) (result *it.EntitlementExistsResult, err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "check entitlement exists"); e != nil {
 			err = e
@@ -126,7 +126,7 @@ func (this *EntitlementServiceImpl) UpdateEntitlement(ctx crud.Context, cmd it.U
 	return result, err
 }
 
-func (this *EntitlementServiceImpl) DeleteEntitlementHard(ctx crud.Context, cmd it.DeleteEntitlementHardByIdCommand) (*it.DeleteEntitlementHardByIdResult, error) {
+func (this *EntitlementServiceImpl) DeleteEntitlementHard(ctx crud.Context, cmd it.DeleteEntitlementHardByIdCommand) (result *it.DeleteEntitlementHardByIdResult, err error) {
 	tx, err := this.entitlementRepo.BeginTransaction(ctx)
 	fault.PanicOnErr(err)
 
@@ -137,10 +137,16 @@ func (this *EntitlementServiceImpl) DeleteEntitlementHard(ctx crud.Context, cmd 
 			tx.Rollback()
 			return
 		}
+
+		if result != nil && result.ClientError != nil {
+			tx.Rollback()
+			return
+		}
+
 		tx.Commit()
 	}()
 
-	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Entitlement, it.DeleteEntitlementHardByIdCommand, it.DeleteEntitlementHardByIdResult]{
+	result, err = crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Entitlement, it.DeleteEntitlementHardByIdCommand, it.DeleteEntitlementHardByIdResult]{
 		Action:              "delete entitlement",
 		Command:             cmd,
 		AssertExists:        this.assertEntitlementExistsById,
@@ -207,13 +213,13 @@ func (this *EntitlementServiceImpl) GetAllEntitlementByIds(ctx crud.Context, que
 		}, nil
 	}
 
-	if len(dbEntitlements) == 0 {
-		vErrs.AppendNotFound("id", "entitlement")
+	// if len(dbEntitlements) == 0 {
+	// 	vErrs.AppendNotFound("id", "entitlement")
 
-		return &it.GetAllEntitlementByIdsResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
+	// 	return &it.GetAllEntitlementByIdsResult{
+	// 		ClientError: vErrs.ToClientError(),
+	// 	}, nil
+	// }
 
 	return &it.GetAllEntitlementByIdsResult{
 		Data:    dbEntitlements,
@@ -287,7 +293,11 @@ func (this *EntitlementServiceImpl) setEntitlementDefaults(entitlement *domain.E
 	entitlement.SetDefaults()
 }
 
-func (this *EntitlementServiceImpl) assertEntitlementUnique(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
+func (this *EntitlementServiceImpl) assertEntitlementNameUnique(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
+	if entitlement.Name == nil {
+		return nil
+	}
+
 	dbEntitlement, err := this.entitlementRepo.FindByName(
 		ctx,
 		it.FindByNameParam{
@@ -303,36 +313,24 @@ func (this *EntitlementServiceImpl) assertEntitlementUnique(ctx crud.Context, en
 	return nil
 }
 
-func (this *EntitlementServiceImpl) assertActionExprValid(resource *domain.Resource, action *domain.Action, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
-	var actionName *string
-	if action != nil {
-		actionName = action.Name
+func (this *EntitlementServiceImpl) assertActionExprValid(resource *domain.Resource, action *domain.Action, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) {
+	resourceName := "*"
+	if resource != nil && resource.Name != nil {
+		resourceName = *resource.Name
 	}
 
-	var resourceName *string
-	if resource != nil {
-		resourceName = resource.Name
+	actionName := "*"
+	if action != nil && action.Name != nil {
+		actionName = *action.Name
 	}
 
-	actionDefault := "*"
-	if actionName != nil {
-		actionDefault = *actionName
-	}
-
-	resourceDefault := "*"
-	if resourceName != nil {
-		resourceDefault = *resourceName
-	}
-
-	actionExpr := fmt.Sprintf("%s:%s", resourceDefault, actionDefault)
+	expectedExpr := fmt.Sprintf("%s:%s", resourceName, actionName)
 
 	if entitlement.ActionExpr != nil {
-		if *entitlement.ActionExpr != actionExpr {
-			vErrs.Append("action_expr", "action_expr is not valid")
+		if *entitlement.ActionExpr != expectedExpr {
+			vErrs.Append("action_expr", fmt.Sprintf("action_expr must be %q", expectedExpr))
 		}
 	}
-
-	return nil
 }
 
 func (this *EntitlementServiceImpl) assertActionExprUnique(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
@@ -352,23 +350,53 @@ func (this *EntitlementServiceImpl) assertActionExprUnique(ctx crud.Context, ent
 }
 
 func (this *EntitlementServiceImpl) assertBusinessRuleCreateEntitlement(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
-	resource, err := this.resourceService.GetResourceById(ctx, itResource.GetResourceByIdQuery{Id: *entitlement.ResourceId})
+	err := this.assertEntitlementNameUnique(ctx, entitlement, vErrs)
 	fault.PanicOnErr(err)
 
-	action, err := this.actionService.GetActionById(ctx, itAction.GetActionByIdQuery{Id: *entitlement.ActionId})
-	fault.PanicOnErr(err)
-
-	err = this.assertActionExprValid(resource.Data, action.Data, entitlement, vErrs)
-	fault.PanicOnErr(err)
-
-	err = this.assertEntitlementUnique(ctx, entitlement, vErrs)
+	err = this.assertOrgExists(ctx, entitlement, vErrs)
 	fault.PanicOnErr(err)
 
 	err = this.assertActionExprUnique(ctx, entitlement, vErrs)
 	fault.PanicOnErr(err)
 
-	err = this.assertOrgExists(ctx, entitlement, vErrs)
-	fault.PanicOnErr(err)
+	if entitlement.ActionId != nil && entitlement.ResourceId == nil {
+		vErrs.Append("resource_id", "resource_id is required when action_id is specified")
+		return nil
+	}
+
+	var resource *domain.Resource
+	if entitlement.ResourceId != nil {
+		resRes, err := this.resourceService.GetResourceById(ctx, itResource.GetResourceByIdQuery{
+			Id: *entitlement.ResourceId,
+		})
+		fault.PanicOnErr(err)
+
+		if resRes.ClientError != nil {
+			return resRes.ClientError
+		}
+		resource = resRes.Data
+	}
+
+	var action *domain.Action
+	if entitlement.ActionId != nil {
+		actRes, err := this.actionService.GetActionById(ctx, itAction.GetActionByIdQuery{
+			Id: *entitlement.ActionId,
+		})
+		fault.PanicOnErr(err)
+
+		if actRes.ClientError != nil {
+			return actRes.ClientError
+		}
+		action = actRes.Data
+
+		if resource != nil && action.ResourceId != nil && *action.ResourceId != *resource.Id {
+			vErrs.Append("action_id", "action does not belong to the specified resource")
+			return nil
+		}
+	}
+
+	this.assertActionExprValid(resource, action, entitlement, vErrs)
+	this.assertScopeLevelConsistency(entitlement, resource, vErrs)
 
 	return nil
 }
@@ -391,9 +419,40 @@ func (this *EntitlementServiceImpl) assertOrgExists(ctx crud.Context, entitlemen
 	}
 
 	if !existRes.Data {
-		vErrs.Append("orgId", "not existing organization")
+		vErrs.Append("org_id", "not existing organization")
 	}
 	return nil
+}
+
+func (this *EntitlementServiceImpl) assertScopeLevelConsistency(entitlement *domain.Entitlement, resource *domain.Resource, vErrs *fault.ValidationErrors) {
+	if resource == nil {
+		if entitlement.OrgId != nil {
+			vErrs.AppendNotAllowed("org_id", "org id")
+		}
+		return
+	}
+
+	if resource.ScopeType == nil {
+		return
+	}
+
+	scopeType := *resource.ScopeType
+
+	if entitlement.OrgId != nil && scopeType == domain.ResourceScopeTypeDomain {
+		vErrs.AppendNotAllowed("resource_id", "resource id")
+		return
+	}
+
+	if entitlement.OrgId == nil {
+		if scopeType == domain.ResourceScopeTypePrivate {
+			vErrs.AppendNotAllowed("resource_id", "resource id")
+			return
+		}
+		if scopeType == domain.ResourceScopeTypeHierarchy {
+			vErrs.AppendNotAllowed("resource_id", "resource id")
+			return
+		}
+	}
 }
 
 func (this *EntitlementServiceImpl) assertBusinessRuleDeleteEntitlement(ctx crud.Context, command it.DeleteEntitlementHardByIdCommand, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {

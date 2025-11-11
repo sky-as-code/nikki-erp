@@ -38,16 +38,15 @@ var createRoleCommandType = cqrs.RequestType{
 }
 
 type CreateRoleCommand struct {
-	Name                 string  `json:"name"`
-	Description          *string `json:"description,omitempty"`
-	OwnerType            string  `json:"ownerType"`
-	OwnerRef             string  `json:"ownerRef"`
-	IsRequestable        bool    `json:"isRequestable"`
-	IsRequiredAttachment bool    `json:"isRequiredAttachment"`
-	IsRequiredComment    bool    `json:"isRequiredComment"`
-	CreatedBy            string  `json:"createdBy"`
-
-	EntitlementIds []model.Id `json:"entitlementIds,omitempty"`
+	Name                 string    `json:"name"`
+	Description          *string   `json:"description,omitempty"`
+	OwnerType            string    `json:"ownerType"`
+	OwnerRef             string    `json:"ownerRef"`
+	IsRequestable        bool      `json:"isRequestable"`
+	IsRequiredAttachment bool      `json:"isRequiredAttachment"`
+	IsRequiredComment    bool      `json:"isRequiredComment"`
+	CreatedBy            string    `json:"createdBy"`
+	OrgId                *model.Id `json:"orgId,omitempty"`
 }
 
 func (CreateRoleCommand) CqrsRequestType() cqrs.RequestType {
@@ -70,8 +69,6 @@ type UpdateRoleCommand struct {
 	Etag        model.Etag `json:"etag"`
 	Name        *string    `json:"name,omitempty"`
 	Description *string    `json:"description,omitempty"`
-
-	EntitlementIds []model.Id `json:"entitlementIds,omitempty"`
 }
 
 func (UpdateRoleCommand) CqrsRequestType() cqrs.RequestType {
@@ -144,7 +141,8 @@ var getRoleByNameCommandType = cqrs.RequestType{
 }
 
 type GetRoleByNameCommand struct {
-	Name string `param:"name" json:"name"`
+	Name  string    `param:"name" json:"name"`
+	OrgId *model.Id `json:"orgId,omitempty"`
 }
 
 func (GetRoleByNameCommand) CqrsRequestType() cqrs.RequestType {
@@ -163,9 +161,7 @@ var searchRolesQueryType = cqrs.RequestType{
 }
 
 type SearchRolesQuery struct {
-	Page  *int    `json:"page" query:"page"`
-	Size  *int    `json:"size" query:"size"`
-	Graph *string `json:"graph" query:"graph"`
+	crud.SearchQuery
 }
 
 func (SearchRolesQuery) CqrsRequestType() cqrs.RequestType {
@@ -286,3 +282,66 @@ type AddRemoveUserResultData struct {
 type AddRemoveUserResult = crud.OpResult[*AddRemoveUserResultData]
 
 // END: AddRemoveUser
+
+// START: AddEntitlementsCommand
+var addEntitlementsCommand = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role",
+	Action:    "addEntitlements",
+}
+
+type AddEntitlementsCommand struct {
+	Id                model.Id           `param:"id" json:"id"`
+	Etag              model.Etag         `json:"etag"`
+	EntitlementInputs []EntitlementInput `json:"entitlementInputs"`
+}
+
+type EntitlementInput struct {
+	EntitlementId model.Id  `json:"entitlementId"`
+	ScopeRef      *model.Id `json:"scopeRef,omitempty"`
+}
+
+func (AddEntitlementsCommand) CqrsRequestType() cqrs.RequestType {
+	return addEntitlementsCommand
+}
+
+func (this AddEntitlementsCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type AddEntitlementsResult = crud.OpResult[*domain.Role]
+
+// END: AddEntitlementsCommand
+
+// START: RemoveEntitlementsCommand
+var removeEntitlementsCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "role",
+	Action:    "removeEntitlements",
+}
+
+type RemoveEntitlementsCommand struct {
+	Id                model.Id           `param:"id" json:"id"`
+	Etag              model.Etag         `json:"etag"`
+	EntitlementInputs []EntitlementInput `json:"entitlementInputs"`
+}
+
+func (RemoveEntitlementsCommand) CqrsRequestType() cqrs.RequestType {
+	return removeEntitlementsCommandType
+}
+
+func (this RemoveEntitlementsCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type RemoveEntitlementsResult = crud.OpResult[*domain.Role]
+
+// END: RemoveEntitlementsCommand

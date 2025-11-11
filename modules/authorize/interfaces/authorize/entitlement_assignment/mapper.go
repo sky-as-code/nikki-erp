@@ -5,15 +5,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
-func (this CreateEntitlementAssignmentCommand) ToEntitlementAssignment() *domain.EntitlementAssignment {
-	return &domain.EntitlementAssignment{
-		SubjectType:   domain.WrapEntitlementAssignmentSubjectType(*this.SubjectType),
-		SubjectRef:    this.SubjectRef,
-		ActionName:    this.ActionName,
-		ResourceName:  this.ResourceName,
-		ResolvedExpr:  this.ResolvedExpr,
-		EntitlementId: this.EntitlementId,
-	}
+func (this CreateEntitlementAssignmentCommand) ToDomainModel() *domain.EntitlementAssignment {
+	assignment := &domain.EntitlementAssignment{}
+	model.MustCopy(this, assignment)
+
+	return assignment
 }
 
 func (this DeleteEntitlementAssignmentByIdCommand) ToDomainModel() *domain.EntitlementAssignment {

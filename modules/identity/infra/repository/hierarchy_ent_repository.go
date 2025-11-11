@@ -154,6 +154,12 @@ func (this *HierarchyLevelEntRepository) AddRemoveUsers(ctx crud.Context, param 
 	return nil, nil
 }
 
+func (this *HierarchyLevelEntRepository) Exists(ctx crud.Context, param it.ExistsParam) (bool, error) {
+	return this.hierarchyClient(ctx).Query().
+		Where(entHierarchy.ID(param.Id)).
+		Exist(ctx)
+}
+
 func BuildHierarchyLevelDescriptor() *orm.EntityDescriptor {
 	entity := ent.HierarchyLevel{}
 	builder := orm.DescribeEntity(entHierarchy.Label).

@@ -153,6 +153,7 @@ func entToEntitlementAssignment(dbEntitlementAssignment *ent.EntitlementAssignme
 		ResourceName:  dbEntitlementAssignment.ResourceName,
 		ResolvedExpr:  &dbEntitlementAssignment.ResolvedExpr,
 		EntitlementId: &dbEntitlementAssignment.EntitlementID,
+		ScopeRef:      dbEntitlementAssignment.ScopeRef,
 	}
 
 	if dbEntitlementAssignment.Edges.Entitlement != nil {
@@ -314,6 +315,16 @@ func entToRevokeRequest(dbRevokeRequest *ent.RevokeRequest) *domain.RevokeReques
 	model.MustCopy(dbRevokeRequest, revokeRequest)
 
 	return revokeRequest
+}
+
+func entToRevokeRequests(dbRevokeRequests []*ent.RevokeRequest) []domain.RevokeRequest {
+	if dbRevokeRequests == nil {
+		return nil
+	}
+
+	return array.Map(dbRevokeRequests, func(dbRevokeRequest *ent.RevokeRequest) domain.RevokeRequest {
+		return *entToRevokeRequest(dbRevokeRequest)
+	})
 }
 
 // END:

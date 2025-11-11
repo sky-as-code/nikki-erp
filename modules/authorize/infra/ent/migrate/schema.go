@@ -83,6 +83,11 @@ var (
 				Unique:  true,
 				Columns: []*schema.Column{AuthzEntitlementsColumns[1], AuthzEntitlementsColumns[7]},
 			},
+			{
+				Name:    "entitlement_name_org_id",
+				Unique:  true,
+				Columns: []*schema.Column{AuthzEntitlementsColumns[4], AuthzEntitlementsColumns[7]},
+			},
 		},
 	}
 	// AuthzEntitlementAssignmentsColumns holds the columns for the "authz_entitlement_assignments" table.
@@ -93,7 +98,7 @@ var (
 		{Name: "resolved_expr", Type: field.TypeString},
 		{Name: "action_name", Type: field.TypeString, Nullable: true},
 		{Name: "resource_name", Type: field.TypeString, Nullable: true},
-		{Name: "org_id", Type: field.TypeString, Nullable: true},
+		{Name: "scope_ref", Type: field.TypeString, Nullable: true},
 		{Name: "entitlement_id", Type: field.TypeString},
 	}
 	// AuthzEntitlementAssignmentsTable holds the schema information for the "authz_entitlement_assignments" table.
@@ -111,9 +116,9 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "entitlementassignment_entitlement_id_subject_type_subject_ref_org_id",
+				Name:    "entitlementassignment_entitlement_id_scope_ref_subject_type_subject_ref",
 				Unique:  true,
-				Columns: []*schema.Column{AuthzEntitlementAssignmentsColumns[7], AuthzEntitlementAssignmentsColumns[1], AuthzEntitlementAssignmentsColumns[2], AuthzEntitlementAssignmentsColumns[6]},
+				Columns: []*schema.Column{AuthzEntitlementAssignmentsColumns[7], AuthzEntitlementAssignmentsColumns[6], AuthzEntitlementAssignmentsColumns[1], AuthzEntitlementAssignmentsColumns[2]},
 			},
 			{
 				Name:    "entitlementassignment_resolved_expr",
@@ -338,6 +343,7 @@ var (
 		{Name: "is_requestable", Type: field.TypeBool},
 		{Name: "is_required_attachment", Type: field.TypeBool},
 		{Name: "is_required_comment", Type: field.TypeBool},
+		{Name: "org_id", Type: field.TypeString, Nullable: true},
 	}
 	// AuthzRolesTable holds the schema information for the "authz_roles" table.
 	AuthzRolesTable = &schema.Table{
@@ -346,9 +352,9 @@ var (
 		PrimaryKey: []*schema.Column{AuthzRolesColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "role_name",
+				Name:    "role_name_org_id",
 				Unique:  true,
-				Columns: []*schema.Column{AuthzRolesColumns[3]},
+				Columns: []*schema.Column{AuthzRolesColumns[3], AuthzRolesColumns[11]},
 			},
 		},
 	}
@@ -390,6 +396,7 @@ var (
 		{Name: "is_requestable", Type: field.TypeBool},
 		{Name: "is_required_attachment", Type: field.TypeBool},
 		{Name: "is_required_comment", Type: field.TypeBool},
+		{Name: "org_id", Type: field.TypeString, Nullable: true},
 	}
 	// AuthzRoleSuitesTable holds the schema information for the "authz_role_suites" table.
 	AuthzRoleSuitesTable = &schema.Table{
@@ -398,9 +405,9 @@ var (
 		PrimaryKey: []*schema.Column{AuthzRoleSuitesColumns[0]},
 		Indexes: []*schema.Index{
 			{
-				Name:    "rolesuite_name",
+				Name:    "rolesuite_name_org_id",
 				Unique:  true,
-				Columns: []*schema.Column{AuthzRoleSuitesColumns[3]},
+				Columns: []*schema.Column{AuthzRoleSuitesColumns[3], AuthzRoleSuitesColumns[11]},
 			},
 		},
 	}

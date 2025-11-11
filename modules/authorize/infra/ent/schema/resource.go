@@ -65,6 +65,7 @@ func (Resource) Edges() []ent.Edge {
 			Ref("resource"),
 		edge.From("entitlements", Entitlement.Type).
 			Ref("resource"),
+			
 	}
 }
 

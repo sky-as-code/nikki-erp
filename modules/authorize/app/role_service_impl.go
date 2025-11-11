@@ -6,279 +6,282 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/event"
+	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	itEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
 	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
+	itGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_request"
+	itRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/revoke_request"
 	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
 )
 
 func NewRoleServiceImpl(
+	assignmentService itAssign.EntitlementAssignmentService,
+	cqrsBus cqrs.CqrsBus,
+	entitlementService itEntitlement.EntitlementService,
+	grantRequestService itGrantRequest.GrantRequestService,
+	revokeRequestService itRevokeRequest.RevokeRequestService,
 	roleRepo itRole.RoleRepository,
-	entitlementRepo itEntitlement.EntitlementRepository,
-	assignmentRepo itAssign.EntitlementAssignmentRepository,
-	eventBus event.EventBus,
 ) itRole.RoleService {
 	return &RoleServiceImpl{
-		roleRepo:        roleRepo,
-		entitlementRepo: entitlementRepo,
-		assignmentRepo:  assignmentRepo,
-		eventBus:        eventBus,
+		assignmentService:    assignmentService,
+		cqrsBus:              cqrsBus,
+		entitlementService:   entitlementService,
+		grantRequestService:  grantRequestService,
+		revokeRequestService: revokeRequestService,
+		roleRepo:             roleRepo,
 	}
 }
 
 type RoleServiceImpl struct {
-	roleRepo        itRole.RoleRepository
-	entitlementRepo itEntitlement.EntitlementRepository
-	assignmentRepo  itAssign.EntitlementAssignmentRepository
-	eventBus        event.EventBus
+	assignmentService    itAssign.EntitlementAssignmentService
+	cqrsBus              cqrs.CqrsBus
+	entitlementService   itEntitlement.EntitlementService
+	grantRequestService  itGrantRequest.GrantRequestService
+	revokeRequestService itRevokeRequest.RevokeRequestService
+	roleRepo             itRole.RoleRepository
 }
 
-func (this *RoleServiceImpl) CreateRole(ctx crud.Context, cmd itRole.CreateRoleCommand) (result *itRole.CreateRoleResult, err error) {
+func (this *RoleServiceImpl) AddEntitlements(ctx crud.Context, cmd itRole.AddEntitlementsCommand) (result *itRole.AddEntitlementsResult, err error) {
+	tx, err := this.roleRepo.BeginTransaction(ctx)
+	fault.PanicOnErr(err)
+
+	ctx.SetDbTranx(tx)
+
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "create role"); e != nil {
-			err = e
+		if err != nil {
+			tx.Rollback()
+			return
 		}
+
+		if result != nil && result.ClientError != nil {
+			tx.Rollback()
+			return
+		}
+
+		tx.Commit()
 	}()
 
-	role := cmd.ToRole()
-	this.setRoleDefaults(role)
+	result, err = crud.Update(ctx, crud.UpdateParam[*domain.Role, itRole.AddEntitlementsCommand, itRole.AddEntitlementsResult]{
+		Action:       "add entitlements",
+		Command:      cmd,
+		AssertExists: this.assertRoleExistsById,
+		AssertBusinessRules: func(ctx crud.Context, role *domain.Role, dbRole *domain.Role, vErrs *fault.ValidationErrors) error {
+			return this.assertBusinessRuleAddEntitlements(ctx, cmd, dbRole, vErrs)
+		},
+		RepoUpdate: func(ctx crud.Context, role *domain.Role, prevEtag model.Etag) (*domain.Role, error) {
+			return this.roleRepo.Update(ctx, role, prevEtag)
+		},
+		Sanitize: this.sanitizeRole,
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *itRole.AddEntitlementsResult {
+			return &itRole.AddEntitlementsResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Role) *itRole.AddEntitlementsResult {
+			return &itRole.AddEntitlementsResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
+	})
 
-	flow := validator.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *fault.ValidationErrors) error {
-			*vErrs = role.Validate(false)
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			this.sanitizeRole(role)
-			return this.assertRoleUnique(ctx, role, vErrs)
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			this.validateEntitlements(ctx, cmd.EntitlementIds, vErrs)
-			return nil
-		}).
-		End()
-	fault.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &itRole.CreateRoleResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	var createdRole *domain.Role
-	if len(cmd.EntitlementIds) > 0 {
-		createdRole, err = this.roleRepo.CreateWithEntitlements(ctx, *role, cmd.EntitlementIds)
-	} else {
-		createdRole, err = this.roleRepo.Create(ctx, *role)
-	}
-	fault.PanicOnErr(err)
-
-	return &itRole.CreateRoleResult{
-		Data:    createdRole,
-		HasData: createdRole != nil,
-	}, nil
+	return result, err
 }
 
-func (this *RoleServiceImpl) UpdateRole(ctx crud.Context, cmd itRole.UpdateRoleCommand) (update *itRole.UpdateRoleResult, err error) {
+func (this *RoleServiceImpl) RemoveEntitlements(ctx crud.Context, cmd itRole.RemoveEntitlementsCommand) (result *itRole.RemoveEntitlementsResult, err error) {
+	tx, err := this.roleRepo.BeginTransaction(ctx)
+	fault.PanicOnErr(err)
+
+	ctx.SetDbTranx(tx)
+
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "update role"); e != nil {
-			err = e
+		if err != nil {
+			tx.Rollback()
+			return
 		}
+
+		if result != nil && result.ClientError != nil {
+			tx.Rollback()
+			return
+		}
+
+		tx.Commit()
 	}()
 
-	role := cmd.ToRole()
-	var dbRole *domain.Role
+	result, err = crud.Update(ctx, crud.UpdateParam[*domain.Role, itRole.RemoveEntitlementsCommand, itRole.RemoveEntitlementsResult]{
+		Action:       "remove entitlements",
+		Command:      cmd,
+		AssertExists: this.assertRoleExistsById,
+		AssertBusinessRules: func(ctx crud.Context, role *domain.Role, dbRole *domain.Role, vErrs *fault.ValidationErrors) error {
+			return this.assertBusinessRuleRemoveEntitlements(ctx, cmd, dbRole, vErrs)
+		},
+		RepoUpdate: func(ctx crud.Context, role *domain.Role, prevEtag model.Etag) (*domain.Role, error) {
+			return this.roleRepo.Update(ctx, role, prevEtag)
+		},
+		Sanitize: this.sanitizeRole,
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *itRole.RemoveEntitlementsResult {
+			return &itRole.RemoveEntitlementsResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Role) *itRole.RemoveEntitlementsResult {
+			return &itRole.RemoveEntitlementsResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
+	})
 
-	var oldEntitlementIds []model.Id
-	var addEntitlementIds, removeEntitlementIds []model.Id
+	return result, err
+}
 
-	flow := validator.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *fault.ValidationErrors) error {
-			*vErrs = role.Validate(true)
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			dbRole, err = this.assertRoleExistsById(ctx, *role.Id, vErrs)
-			return err
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			this.assertCorrectEtag(*role.Etag, *dbRole.Etag, vErrs)
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			this.sanitizeRole(role)
-			return this.assertRoleUniqueForUpdate(ctx, role, vErrs)
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			oldEntitlementIds, err = this.getEntitlementIdsByRoleId(ctx, role)
-			return err
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			this.validateEntitlements(ctx, cmd.EntitlementIds, vErrs)
-			addEntitlementIds, removeEntitlementIds = this.diffEntitlementIds(oldEntitlementIds, cmd.EntitlementIds)
-			return nil
-		}).
-		End()
-	fault.PanicOnErr(err)
+func (this *RoleServiceImpl) CreateRole(ctx crud.Context, cmd itRole.CreateRoleCommand) (*itRole.CreateRoleResult, error) {
+	return crud.Create(ctx, crud.CreateParam[*domain.Role, itRole.CreateRoleCommand, itRole.CreateRoleResult]{
+		Action:              "create role",
+		Command:             cmd,
+		AssertBusinessRules: this.assertBusinessRuleCreateRole,
+		RepoCreate:          this.roleRepo.Create,
+		SetDefault:          this.setRoleDefaults,
+		Sanitize:            this.sanitizeRole,
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *itRole.CreateRoleResult {
+			return &itRole.CreateRoleResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Role) *itRole.CreateRoleResult {
+			return &itRole.CreateRoleResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
+	})
+}
 
-	if vErrs.Count() > 0 {
-		return &itRole.UpdateRoleResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	prevEtag := role.Etag
-	role.Etag = model.NewEtag()
-	role, err = this.roleRepo.UpdateTx(ctx, *role, *prevEtag, addEntitlementIds, removeEntitlementIds)
-	fault.PanicOnErr(err)
-
-	return &itRole.UpdateRoleResult{
-		Data:    role,
-		HasData: role != nil,
-	}, err
+func (this *RoleServiceImpl) UpdateRole(ctx crud.Context, cmd itRole.UpdateRoleCommand) (*itRole.UpdateRoleResult, error) {
+	return crud.Update(ctx, crud.UpdateParam[*domain.Role, itRole.UpdateRoleCommand, itRole.UpdateRoleResult]{
+		Action:              "update role",
+		Command:             cmd,
+		AssertExists:        this.assertRoleExistsById,
+		AssertBusinessRules: this.assertBusinessRuleUpdateRole,
+		RepoUpdate:          this.roleRepo.Update,
+		Sanitize:            this.sanitizeRole,
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *itRole.UpdateRoleResult {
+			return &itRole.UpdateRoleResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Role) *itRole.UpdateRoleResult {
+			return &itRole.UpdateRoleResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
+	})
 }
 
 func (this *RoleServiceImpl) DeleteRoleHard(ctx crud.Context, cmd itRole.DeleteRoleHardCommand) (result *itRole.DeleteRoleHardResult, err error) {
+	tx, err := this.roleRepo.BeginTransaction(ctx)
+	fault.PanicOnErr(err)
+
+	ctx.SetDbTranx(tx)
+
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "delete hard role"); e != nil {
-			err = e
+		if err != nil {
+			tx.Rollback()
+			return
 		}
+
+		if result != nil && result.ClientError != nil {
+			tx.Rollback()
+			return
+		}
+
+		tx.Commit()
 	}()
 
-	var dbRole *domain.Role
-	var assignmentIds []model.Id
+	result, err = crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Role, itRole.DeleteRoleHardCommand, itRole.DeleteRoleHardResult]{
+		Action:              "delete role",
+		Command:             cmd,
+		AssertExists:        this.assertRoleExistsById,
+		AssertBusinessRules: this.assertBusinessRuleDeleteRole,
+		RepoDelete: func(ctx crud.Context, model *domain.Role) (int, error) {
+			return this.roleRepo.DeleteHard(ctx, itRole.DeleteRoleHardCommand{Id: *model.Id})
+		},
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *itRole.DeleteRoleHardResult {
+			return &itRole.DeleteRoleHardResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Role, deletedCount int) *itRole.DeleteRoleHardResult {
+			return crud.NewSuccessDeletionResult(*model.Id, &deletedCount)
+		},
+	})
 
-	flow := validator.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *fault.ValidationErrors) error {
-			*vErrs = cmd.Validate()
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			dbRole, err = this.assertRoleExistsById(ctx, cmd.Id, vErrs)
-			return err
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			assignmentIds, err = this.getAssignmentIdsByRoleId(ctx, dbRole)
-			return err
-		}).
-		End()
-	fault.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &itRole.DeleteRoleHardResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	deletedCount, err := this.roleRepo.DeleteHardTx(ctx, itRole.DeleteRoleHardParam{Id: cmd.Id, Name: *dbRole.Name})
-	fault.PanicOnErr(err)
-
-	err = this.deleteAssignments(ctx, assignmentIds)
-	fault.PanicOnErr(err)
-
-	if deletedCount == 0 {
-		vErrs.AppendNotFound("role_id", "role")
-		return &itRole.DeleteRoleHardResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount), nil
+	return result, err
 }
 
 func (this *RoleServiceImpl) GetRoleById(ctx crud.Context, query itRole.GetRoleByIdQuery) (result *itRole.GetRoleByIdResult, err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "get role by id"); e != nil {
-			err = e
-		}
-	}()
-
-	var dbRole *domain.Role
-	flow := validator.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *fault.ValidationErrors) error {
-			*vErrs = query.Validate()
-			return nil
-		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			dbRole, err = this.assertRoleExistsById(ctx, query.Id, vErrs)
-			return err
-		}).
-		End()
-	fault.PanicOnErr(err)
-
-	if vErrs.Count() > 0 {
-		return &itRole.GetRoleByIdResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, dbRole)
-	fault.PanicOnErr(err)
-
-	if len(entitlementIds) > 0 {
-		entitlements, err := this.getEntitlements(ctx, entitlementIds)
-		fault.PanicOnErr(err)
-		dbRole.Entitlements = entitlements
-	}
-
-	return &itRole.GetRoleByIdResult{
-		Data:    dbRole,
-		HasData: dbRole != nil,
-	}, nil
+	return crud.GetOne(ctx, crud.GetOneParam[*domain.Role, itRole.GetRoleByIdQuery, itRole.GetRoleByIdResult]{
+		Action:      "get role by Id",
+		Query:       query,
+		RepoFindOne: this.getRoleByIdFull,
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *itRole.GetRoleByIdResult {
+			return &itRole.GetRoleByIdResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(model *domain.Role) *itRole.GetRoleByIdResult {
+			return &itRole.GetRoleByIdResult{
+				Data:    model,
+				HasData: model != nil,
+			}
+		},
+	})
 }
 
 func (this *RoleServiceImpl) SearchRoles(ctx crud.Context, query itRole.SearchRolesQuery) (result *itRole.SearchRolesResult, err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "search roles"); e != nil {
-			err = e
-		}
-	}()
-
-	query.SetDefaults()
-	vErrsModel := query.Validate()
-	predicate, order, vErrsGraph := this.roleRepo.ParseSearchGraph(query.Graph)
-
-	vErrsModel.Merge(vErrsGraph)
-
-	if vErrsModel.Count() > 0 {
-		return &itRole.SearchRolesResult{
-			ClientError: vErrsModel.ToClientError(),
-		}, nil
-	}
-
-	roles, err := this.roleRepo.Search(ctx, itRole.SearchParam{
-		Predicate:        predicate,
-		Order:            order,
-		Page:             *query.Page,
-		Size:             *query.Size,
-		WithEntitlements: false,
-	})
-	fault.PanicOnErr(err)
-
-	for i := range roles.Items {
-		entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, &roles.Items[i])
-		fault.PanicOnErr(err)
-
-		if len(entitlementIds) > 0 {
-			entitlements, err := this.getEntitlements(ctx, entitlementIds)
+	result, err = crud.Search(ctx, crud.SearchParam[domain.Role, itRole.SearchRolesQuery, itRole.SearchRolesResult]{
+		Action: "search roles",
+		Query:  query,
+		SetQueryDefaults: func(query *itRole.SearchRolesQuery) {
+			query.SetDefaults()
+		},
+		ParseSearchGraph: this.roleRepo.ParseSearchGraph,
+		RepoSearch: func(ctx crud.Context, query itRole.SearchRolesQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.Role], error) {
+			result, err := this.roleRepo.Search(ctx, itRole.SearchParam{
+				Predicate: predicate,
+				Order:     order,
+				Page:      *query.Page,
+				Size:      *query.Size,
+			})
 			fault.PanicOnErr(err)
-			roles.Items[i].Entitlements = entitlements
-		}
-	}
 
-	return &itRole.SearchRolesResult{
-		Data:    roles,
-		HasData: roles.Items != nil,
-	}, nil
+			err = this.populateRoleDetails(ctx, result.Items)
+			fault.PanicOnErr(err)
+
+			return result, err
+		},
+		ToFailureResult: func(vErrs *fault.ValidationErrors) *itRole.SearchRolesResult {
+			return &itRole.SearchRolesResult{
+				ClientError: vErrs.ToClientError(),
+			}
+		},
+		ToSuccessResult: func(pagedResult *crud.PagedResult[domain.Role]) *itRole.SearchRolesResult {
+			return &itRole.SearchRolesResult{
+				Data:    pagedResult,
+				HasData: pagedResult.Items != nil,
+			}
+		},
+	})
+
+	return result, err
 }
 
 func (this *RoleServiceImpl) GetRolesBySubject(ctx crud.Context, query itRole.GetRolesBySubjectQuery) (result *itRole.GetRolesBySubjectResult, err error) {
@@ -315,16 +318,30 @@ func (this *RoleServiceImpl) GetRolesBySubject(ctx crud.Context, query itRole.Ge
 	}, nil
 }
 
-func (this *RoleServiceImpl) assertRoleExistsById(ctx crud.Context, id model.Id, vErrs *fault.ValidationErrors) (dbRole *domain.Role, err error) {
-	dbRole, err = this.roleRepo.FindById(ctx, itRole.FindByIdParam{Id: id})
+func (this *RoleServiceImpl) assertRoleExistsById(ctx crud.Context, role *domain.Role, vErrs *fault.ValidationErrors) (dbRole *domain.Role, err error) {
+	dbRole, err = this.roleRepo.FindById(ctx, itRole.FindByIdParam{Id: *role.Id})
 	if dbRole == nil {
 		vErrs.AppendNotFound("role_id", "role")
+	} else {
+		if role.Name == nil {
+			role.Name = dbRole.Name
+		}
 	}
+
 	return
 }
 
 func (this *RoleServiceImpl) assertRoleUnique(ctx crud.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
-	dbRole, err := this.roleRepo.FindByName(ctx, itRole.FindByNameParam{Name: *role.Name})
+	if role.Name == nil {
+		return nil
+	}
+
+	dbRole, err := this.roleRepo.FindByName(
+		ctx,
+		itRole.FindByNameParam{
+			Name:  *role.Name,
+			OrgId: role.OrgId,
+		})
 	fault.PanicOnErr(err)
 
 	if dbRole != nil {
@@ -334,8 +351,18 @@ func (this *RoleServiceImpl) assertRoleUnique(ctx crud.Context, role *domain.Rol
 	return nil
 }
 
-func (this *RoleServiceImpl) assertRoleUniqueForUpdate(ctx crud.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
-	dbRole, err := this.roleRepo.FindByName(ctx, itRole.FindByNameParam{Name: *role.Name})
+func (this *RoleServiceImpl) assertRoleNameUniqueForUpdate(ctx crud.Context, role *domain.Role, dbRole *domain.Role, vErrs *fault.ValidationErrors) error {
+	if role.Name == nil {
+		return nil
+	}
+
+	dbRole, err := this.roleRepo.FindByName(
+		ctx,
+		itRole.FindByNameParam{
+			Name:  *role.Name,
+			OrgId: dbRole.OrgId,
+		},
+	)
 	fault.PanicOnErr(err)
 
 	if dbRole != nil && *dbRole.Id != *role.Id {
@@ -361,50 +388,16 @@ func (this *RoleServiceImpl) setRoleDefaults(role *domain.Role) {
 	role.SetDefaults()
 }
 
-func (this *RoleServiceImpl) validateEntitlements(ctx crud.Context, entitlementIds []model.Id, vErrs *fault.ValidationErrors) {
-	if len(entitlementIds) == 0 {
-		return
-	}
-
-	// Check for duplicate entitlement IDs and null IDs first
-	seenIds := make(map[model.Id]int)
-	validEntitlementIds := make([]model.Id, 0)
-
-	for i, entId := range entitlementIds {
-		if firstIndex, exists := seenIds[entId]; exists {
-			vErrs.Append(fmt.Sprintf("entitlements[%d]", i), fmt.Sprintf("duplicate entitlement id found at index %d", firstIndex))
-			continue
-		}
-
-		seenIds[entId] = i
-		validEntitlementIds = append(validEntitlementIds, entId)
-	}
-
-	if vErrs.Count() > 0 {
-		return
-	}
-
-	for _, entId := range validEntitlementIds {
-		existsRes, err := this.entitlementRepo.Exists(ctx, itEntitlement.FindByIdParam{Id: entId})
-		fault.PanicOnErr(err)
-
-		if !existsRes {
-			originalIndex := seenIds[entId]
-			vErrs.Append(fmt.Sprintf("entitlements[%d]", originalIndex), "entitlement not found")
-		}
-	}
-}
-
 func (this *RoleServiceImpl) getAssignmentsByRoleId(ctx crud.Context, role *domain.Role) ([]domain.EntitlementAssignment, error) {
-	assignmentsRes, err := this.assignmentRepo.FindAllBySubject(
+	assignmentsRes, err := this.assignmentService.FindAllBySubject(
 		ctx,
 		itAssign.GetAllEntitlementAssignmentBySubjectQuery{
-			SubjectType: *domain.WrapEntitlementAssignmentSubjectType(domain.EntitlementAssignmentSubjectTypeNikkiRole.String()),
+			SubjectType: domain.EntitlementAssignmentSubjectTypeNikkiRole,
 			SubjectRef:  *role.Id,
 		})
 	fault.PanicOnErr(err)
 
-	return assignmentsRes, nil
+	return assignmentsRes.Data, nil
 }
 
 func (this *RoleServiceImpl) getEntitlementIdsByRoleId(ctx crud.Context, role *domain.Role) ([]model.Id, error) {
@@ -456,52 +449,382 @@ func (this *RoleServiceImpl) getAssignmentIdsByRoleId(ctx crud.Context, role *do
 }
 
 func (this *RoleServiceImpl) getEntitlements(ctx crud.Context, entitlementIds []model.Id) ([]domain.Entitlement, error) {
-	entitlementsRes, err := this.entitlementRepo.FindAllByIds(ctx, itEntitlement.GetAllEntitlementByIdsQuery{Ids: entitlementIds})
+	entitlementsRes, err := this.entitlementService.GetAllEntitlementByIds(ctx, itEntitlement.GetAllEntitlementByIdsQuery{Ids: entitlementIds})
 	fault.PanicOnErr(err)
 
-	return entitlementsRes, nil
+	if entitlementsRes.ClientError != nil {
+		return nil, entitlementsRes.ClientError
+	}
+
+	return entitlementsRes.Data, nil
 }
 
-func (this *RoleServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag model.Etag, vErrs *fault.ValidationErrors) {
-	if updatedEtag != dbEtag {
-		vErrs.AppendEtagMismatched()
+func (this *RoleServiceImpl) deleteAssignments(ctx crud.Context, assignmentIds []model.Id) error {
+	for _, assignmentId := range assignmentIds {
+		deletedCount, err := this.assignmentService.DeleteHardAssignment(ctx, itAssign.DeleteEntitlementAssignmentByIdCommand{Id: assignmentId})
+		fault.PanicOnErr(err)
+
+		if deletedCount.ClientError != nil {
+			return deletedCount.ClientError
+		}
 	}
+
+	return nil
 }
 
-func (this *RoleServiceImpl) diffEntitlementIds(oldIds, newIds []model.Id) (added, removed []model.Id) {
-	oldMap := make(map[model.Id]bool)
-	newMap := make(map[model.Id]bool)
+func (this *RoleServiceImpl) assertBusinessRuleCreateRole(ctx crud.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
+	err := this.assertOrgExists(ctx, role, vErrs)
+	fault.PanicOnErr(err)
 
-	for _, id := range oldIds {
-		oldMap[id] = true
-	}
-	for _, id := range newIds {
-		newMap[id] = true
+	err = this.assertRoleUnique(ctx, role, vErrs)
+	fault.PanicOnErr(err)
+
+	return nil
+}
+
+func (this *RoleServiceImpl) assertOrgExists(ctx crud.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
+	if role.OrgId == nil {
+		return nil
 	}
 
-	for _, id := range newIds {
-		if !oldMap[id] {
-			added = append(added, id)
-		}
+	existCmd := &itOrg.ExistsOrgByIdCommand{
+		Id: *role.OrgId,
 	}
-	for _, id := range oldIds {
-		if !newMap[id] {
-			removed = append(removed, id)
-		}
+	existRes := itOrg.ExistsOrgByIdResult{}
+	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
+	fault.PanicOnErr(err)
+
+	if existRes.ClientError != nil {
+		vErrs.MergeClientError(existRes.ClientError)
+		return nil
+	}
+
+	if !existRes.Data {
+		vErrs.Append("orgId", "not existing organization")
+	}
+	return nil
+}
+
+func (this *RoleServiceImpl) assertBusinessRuleUpdateRole(ctx crud.Context, role *domain.Role, dbRole *domain.Role, vErrs *fault.ValidationErrors) error {
+	err := this.assertRoleNameUniqueForUpdate(ctx, role, dbRole, vErrs)
+	fault.PanicOnErr(err)
+
+	return nil
+}
+
+func (this *RoleServiceImpl) roleIsDeleted(ctx crud.Context, role *domain.Role, vErrs *fault.ValidationErrors) error {
+	updateGrantRequest, err := this.grantRequestService.TargetIsDeleted(
+		ctx,
+		itGrantRequest.TargetIsDeletedCommand{
+			TargetType: domain.GrantRequestTargetTypeRole,
+			TargetRef:  *role.Id,
+			TargetName: *role.Name,
+		},
+	)
+	fault.PanicOnErr(err)
+
+	if updateGrantRequest.ClientError != nil {
+		vErrs.MergeClientError(updateGrantRequest.ClientError)
+		return nil
+	}
+	if !updateGrantRequest.Data {
+		vErrs.Append("role_id", "can not delete role with grant requests")
+		return nil
+	}
+
+	updateRevokeRequest, err := this.revokeRequestService.TargetIsDeleted(
+		ctx,
+		itRevokeRequest.TargetIsDeletedCommand{
+			TargetType: domain.GrantRequestTargetTypeRole,
+			TargetRef:  *role.Id,
+			TargetName: *role.Name,
+		},
+	)
+	fault.PanicOnErr(err)
+
+	if updateRevokeRequest.ClientError != nil {
+		vErrs.MergeClientError(updateRevokeRequest.ClientError)
+		return nil
+	}
+	if !updateRevokeRequest.Data {
+		vErrs.Append("role_id", "can not delete role with revoke requests")
+		return nil
+	}
+
+	return nil
+}
+
+func (this *RoleServiceImpl) assertBusinessRuleDeleteRole(ctx crud.Context, cmd itRole.DeleteRoleHardCommand, role *domain.Role, vErrs *fault.ValidationErrors) error {
+	var assignmentIds []model.Id
+
+	assignmentIds, err := this.getAssignmentIdsByRoleId(ctx, role)
+	fault.PanicOnErr(err)
+
+	if len(assignmentIds) > 0 {
+		err = this.deleteAssignments(ctx, assignmentIds)
+		fault.PanicOnErr(err)
+	}
+
+	err = this.roleIsDeleted(ctx, role, vErrs)
+	fault.PanicOnErr(err)
+
+	return nil
+}
+
+func (this *RoleServiceImpl) getRoleByIdFull(ctx crud.Context, query itRole.GetRoleByIdQuery, vErrs *fault.ValidationErrors) (dbRole *domain.Role, err error) {
+	dbRole, err = this.roleRepo.FindById(ctx, itRole.FindByIdParam{Id: query.Id})
+	fault.PanicOnErr(err)
+
+	if dbRole == nil {
+		vErrs.AppendNotFound("role_id", "role")
+		return
+	}
+
+	entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, dbRole)
+	fault.PanicOnErr(err)
+
+	if len(entitlementIds) > 0 {
+		entitlements, err := this.getEntitlements(ctx, entitlementIds)
+		fault.PanicOnErr(err)
+
+		dbRole.Entitlements = entitlements
 	}
 
 	return
 }
 
-func (this *RoleServiceImpl) deleteAssignments(ctx crud.Context, assignmentIds []model.Id) error {
-	for _, assignmentId := range assignmentIds {
-		deletedCount, err := this.assignmentRepo.DeleteHardTx(ctx, itAssign.DeleteEntitlementAssignmentByIdCommand{Id: assignmentId})
+func (this *RoleServiceImpl) populateRoleDetails(ctx crud.Context, dbRoles []domain.Role) error {
+	for i := range dbRoles {
+		entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, &dbRoles[i])
 		fault.PanicOnErr(err)
 
-		if deletedCount == 0 {
-			return fmt.Errorf("failed to delete assignment with ID %s", assignmentId)
+		if len(entitlementIds) > 0 {
+			entitlements, err := this.getEntitlements(ctx, entitlementIds)
+			fault.PanicOnErr(err)
+
+			dbRoles[i].Entitlements = entitlements
 		}
 	}
 
+	return nil
+}
+
+// makeEntitlementKey create composite key
+func (this *RoleServiceImpl) makeEntitlementKey(entitlementId model.Id, scopeRef *model.Id) string {
+	if scopeRef == nil {
+		return string(entitlementId) + ":_"
+	}
+	return string(entitlementId) + ":" + string(*scopeRef)
+}
+
+func (this *RoleServiceImpl) validateUniqueEntitlementInputs(inputs []itRole.EntitlementInput, vErrs *fault.ValidationErrors) ([]itRole.EntitlementInput, bool) {
+	seen := make(map[string]bool)
+	uniqueInputs := make([]itRole.EntitlementInput, 0, len(inputs))
+
+	for _, input := range inputs {
+		key := this.makeEntitlementKey(input.EntitlementId, input.ScopeRef)
+		if seen[key] {
+			vErrs.AppendNotAllowed("entitlementId", input.EntitlementId)
+			return nil, false
+		}
+		seen[key] = true
+		uniqueInputs = append(uniqueInputs, input)
+	}
+
+	return uniqueInputs, true
+}
+
+func (this *RoleServiceImpl) fetchAndMapEntitlements(ctx crud.Context, inputs []itRole.EntitlementInput) (map[model.Id]*domain.Entitlement, error) {
+	entitlementIds := make([]model.Id, len(inputs))
+	for i, input := range inputs {
+		entitlementIds[i] = input.EntitlementId
+	}
+
+	entitlements, err := this.getEntitlements(ctx, entitlementIds)
+	if err != nil {
+		return nil, err
+	}
+
+	entitlementMap := make(map[model.Id]*domain.Entitlement)
+	for i := range entitlements {
+		e := entitlements[i]
+		entitlementMap[*e.Id] = &e
+	}
+
+	return entitlementMap, nil
+}
+
+func (this *RoleServiceImpl) validateEntitlementOrgConsistency(inputs []itRole.EntitlementInput, entitlementMap map[model.Id]*domain.Entitlement, dbRole *domain.Role, vErrs *fault.ValidationErrors) bool {
+	for _, input := range inputs {
+		ent := entitlementMap[input.EntitlementId]
+		if ent == nil {
+			vErrs.AppendNotFound("entitlementId", input.EntitlementId)
+			return false
+		}
+
+		if ent.OrgId != nil && dbRole.OrgId != nil && *ent.OrgId == *dbRole.OrgId {
+			continue
+		}
+
+		if ent.OrgId != nil && dbRole.OrgId == nil {
+			vErrs.Append("entitlementId", "cannot add org-specific entitlement to domain-level role")
+			return false
+		}
+
+		if ent.OrgId != nil && dbRole.OrgId != nil && *ent.OrgId != *dbRole.OrgId {
+			vErrs.Append("entitlementId", "entitlement belongs to different organization than role")
+			return false
+		}
+
+		if dbRole.OrgId == nil && ent.OrgId == nil && ent.Resource != nil && ent.Resource.ScopeType != nil &&
+			*ent.Resource.ScopeType == domain.ResourceScopeTypeOrg {
+			vErrs.Append("entitlementId", "domain-level role cannot include global entitlement with org-scoped resource")
+			return false
+		}
+	}
+
+	return true
+}
+
+func (this *RoleServiceImpl) getExistingAssignmentKeys(ctx crud.Context, roleId model.Id) (map[string]bool, error) {
+	assignmentsRes, err := this.assignmentService.FindAllBySubject(ctx, itAssign.GetAllEntitlementAssignmentBySubjectQuery{
+		SubjectType: domain.EntitlementAssignmentSubjectTypeNikkiRole,
+		SubjectRef:  roleId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	existingAssignments := make(map[string]bool)
+	for _, a := range assignmentsRes.Data {
+		key := this.makeEntitlementKey(*a.EntitlementId, a.ScopeRef)
+		existingAssignments[key] = true
+	}
+
+	return existingAssignments, nil
+}
+
+func (this *RoleServiceImpl) buildResolvedExpression(roleId model.Id, scopeRef *model.Id, actionExpr string) string {
+	if scopeRef != nil {
+		return fmt.Sprintf("%s:%s:%s", roleId, *scopeRef, actionExpr)
+	}
+
+	return fmt.Sprintf("%s:*:%s", roleId, actionExpr)
+}
+
+func (this *RoleServiceImpl) createNewEntitlementAssignment(ctx crud.Context, input itRole.EntitlementInput, entitlement *domain.Entitlement, roleId model.Id, vErrs *fault.ValidationErrors) error {
+	var actionName, resourceName *string
+
+	if entitlement.Action != nil && entitlement.Action.Name != nil {
+		actionName = entitlement.Action.Name
+	}
+	if entitlement.Resource != nil && entitlement.Resource.Name != nil {
+		resourceName = entitlement.Resource.Name
+	}
+
+	resolvedExpr := this.buildResolvedExpression(roleId, input.ScopeRef, *entitlement.ActionExpr)
+
+	creation, err := this.assignmentService.CreateEntitlementAssignment(ctx, itAssign.CreateEntitlementAssignmentCommand{
+		SubjectType:   domain.EntitlementAssignmentSubjectTypeNikkiRole,
+		SubjectRef:    roleId,
+		EntitlementId: input.EntitlementId,
+		ScopeRef:      input.ScopeRef,
+		ActionName:    actionName,
+		ResourceName:  resourceName,
+		ResolvedExpr:  resolvedExpr,
+	})
+	fault.PanicOnErr(err)
+
+	if creation.ClientError != nil {
+		vErrs.MergeClientError(creation.ClientError)
+		return nil
+	}
+
+	return nil
+}
+
+// assertBusinessRuleAddEntitlements validates and creates entitlement assignments for a role
+//
+// This function orchestrates the entire process of adding entitlements to a role with the following steps:
+//  1. Validate unique inputs (no duplicates in the request)
+//  2. Fetch and map entitlements by ID
+//  3. Validate organization-level consistency (cross-org prevention)
+//  4. Get existing assignments to avoid duplicates
+//  5. Create new assignments for valid, non-existing entitlements
+//
+// Cross-Org Validation Strategy:
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │ Layer 1: RoleService (this function)                                        │
+// │ - Validates org-level consistency between entitlements and roles            │
+// │ - Prevents Case 3: org-specific entitlement in domain-level role            │
+// │ - Prevents Case 4: cross-org assignments (OrgA ent → OrgB role)             │
+// │ - Allows Case 1, 2, 5, 6 to pass through                                    │
+// └─────────────────────────────────────────────────────────────────────────────┘
+//
+//	↓
+//
+// ┌─────────────────────────────────────────────────────────────────────────────┐
+// │ Layer 2: EntitlementAssignmentService                                       │
+// │ - Validates scopeRef against resource's ScopeType                           │
+// │ - Ensures scope stays within proper boundaries (org/hierarchy/domain)       │
+// │ - Handles Case 2/6: global ent + org role with proper scope isolation       │
+// └─────────────────────────────────────────────────────────────────────────────┘
+//
+// Valid Cases:
+//
+//	✅ Case 1: ent.OrgId=nil + role.OrgId=nil (both domain-level)
+//	✅ Case 2: ent.OrgId=nil + role.OrgId!=nil (global ent for org role, scope validated in Layer 2)
+//	✅ Case 5: ent.OrgId==role.OrgId (same org boundary)
+//
+// Invalid Cases (rejected in this layer):
+//
+//	❌ Case 3: ent.OrgId!=nil + role.OrgId=nil (org ent in domain role → isolation violation)
+//	❌ Case 4: ent.OrgId!=role.OrgId (cross-org → tenant isolation violation)
+func (this *RoleServiceImpl) assertBusinessRuleAddEntitlements(ctx crud.Context, cmd itRole.AddEntitlementsCommand, dbRole *domain.Role, vErrs *fault.ValidationErrors) error {
+	if len(cmd.EntitlementInputs) == 0 {
+		return nil
+	}
+
+	uniqueInputs, isValid := this.validateUniqueEntitlementInputs(cmd.EntitlementInputs, vErrs)
+	if !isValid {
+		return nil
+	}
+
+	entitlementMap, err := this.fetchAndMapEntitlements(ctx, uniqueInputs)
+	fault.PanicOnErr(err)
+
+	if !this.validateEntitlementOrgConsistency(uniqueInputs, entitlementMap, dbRole, vErrs) {
+		return nil
+	}
+
+	existingAssignments, err := this.getExistingAssignmentKeys(ctx, *dbRole.Id)
+	fault.PanicOnErr(err)
+
+	for _, input := range uniqueInputs {
+		key := this.makeEntitlementKey(input.EntitlementId, input.ScopeRef)
+
+		if existingAssignments[key] {
+			vErrs.AppendNotAllowed("entitlementId", input.EntitlementId)
+			return nil
+		}
+
+		entitlement := entitlementMap[input.EntitlementId]
+		if entitlement == nil {
+			vErrs.AppendNotFound("entitlementId", input.EntitlementId)
+			return nil
+		}
+
+		err = this.createNewEntitlementAssignment(ctx, input, entitlement, *dbRole.Id, vErrs)
+		fault.PanicOnErr(err)
+
+		if vErrs.Count() > 0 {
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (this *RoleServiceImpl) assertBusinessRuleRemoveEntitlements(ctx crud.Context, cmd itRole.RemoveEntitlementsCommand, dbRole *domain.Role, vErrs *fault.ValidationErrors) error {
 	return nil
 }

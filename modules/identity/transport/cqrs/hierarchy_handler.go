@@ -39,3 +39,7 @@ func (this *HierarchyHandler) GetHierarchyLevelById(ctx context.Context, packet 
 func (this *HierarchyHandler) SearchHierarchyLevels(ctx context.Context, packet *cqrs.RequestPacket[it.SearchHierarchyLevelsQuery]) (*cqrs.Reply[it.SearchHierarchyLevelsResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.HierarchySvc.SearchHierarchyLevels)
 }
+
+func (this *HierarchyHandler) ExistsHierarchyById(ctx context.Context, packet *cqrs.RequestPacket[it.ExistsHierarchyLevelByIdQuery]) (*cqrs.Reply[it.ExistsHierarchyLevelByIdResult], error) {
+	return cqrs.HandlePacket(ctx, packet, this.HierarchySvc.ExistsHierarchyById)
+}

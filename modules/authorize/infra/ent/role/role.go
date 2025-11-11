@@ -35,6 +35,8 @@ const (
 	FieldIsRequiredAttachment = "is_required_attachment"
 	// FieldIsRequiredComment holds the string denoting the is_required_comment field in the database.
 	FieldIsRequiredComment = "is_required_comment"
+	// FieldOrgID holds the string denoting the org_id field in the database.
+	FieldOrgID = "org_id"
 	// EdgeRoleSuites holds the string denoting the role_suites edge name in mutations.
 	EdgeRoleSuites = "role_suites"
 	// EdgeRoleUsers holds the string denoting the role_users edge name in mutations.
@@ -104,6 +106,7 @@ var Columns = []string{
 	FieldIsRequestable,
 	FieldIsRequiredAttachment,
 	FieldIsRequiredComment,
+	FieldOrgID,
 }
 
 var (
@@ -206,6 +209,11 @@ func ByIsRequiredAttachment(opts ...sql.OrderTermOption) OrderOption {
 // ByIsRequiredComment orders the results by the is_required_comment field.
 func ByIsRequiredComment(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsRequiredComment, opts...).ToFunc()
+}
+
+// ByOrgID orders the results by the org_id field.
+func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
 }
 
 // ByRoleSuitesCount orders the results by role_suites count.

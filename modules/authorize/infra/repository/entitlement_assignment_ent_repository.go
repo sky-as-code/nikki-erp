@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
@@ -12,7 +11,6 @@ import (
 	entEffectiveGroup "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/effectivegroupentitlement"
 	entEffectiveUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/effectiveuserentitlement"
 	entAssign "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
-	entPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
 )
 
@@ -20,10 +18,6 @@ func NewEntitlementAssignmentEntRepository(client *ent.Client) it.EntitlementAss
 	return &EntitlementAssignmentEntRepository{
 		client: client,
 	}
-}
-
-type EntitlementAssignmentEntRepository struct {
-	client *ent.Client
 }
 
 func (this *EntitlementAssignmentEntRepository) assignmentClient(ctx crud.Context) *ent.EntitlementAssignmentClient {
@@ -34,8 +28,22 @@ func (this *EntitlementAssignmentEntRepository) assignmentClient(ctx crud.Contex
 	return this.client.EntitlementAssignment
 }
 
+func (this *EntitlementAssignmentEntRepository) Create(ctx crud.Context, assignment *domain.EntitlementAssignment) (*domain.EntitlementAssignment, error) {
+	creation := this.assignmentClient(ctx).Create().
+		SetID(*assignment.Id).
+		SetSubjectType(entAssign.SubjectType(*assignment.SubjectType)).
+		SetSubjectRef(*assignment.SubjectRef).
+		SetResolvedExpr(*assignment.ResolvedExpr).
+		SetNillableActionName(assignment.ActionName).
+		SetNillableResourceName(assignment.ResourceName).
+		SetEntitlementID(*assignment.EntitlementId).
+		SetNillableScopeRef(assignment.ScopeRef)
+
+	return database.Mutate(ctx, creation, ent.IsNotFound, entToEntitlementAssignment)
+}
+
 func (this *EntitlementAssignmentEntRepository) FindAllBySubject(ctx crud.Context, param it.FindBySubjectParam) ([]domain.EntitlementAssignment, error) {
-	query := this.client.EntitlementAssignment.Query().
+	query := this.assignmentClient(ctx).Query().
 		Where(entAssign.SubjectTypeEQ(entAssign.SubjectType(param.SubjectType))).
 		Where(entAssign.SubjectRefEQ(param.SubjectRef)).
 		WithEntitlement(func(eq *ent.EntitlementQuery) {
@@ -75,7 +83,7 @@ func (this *EntitlementAssignmentEntRepository) FindViewsById(ctx crud.Context, 
 }
 
 func (this *EntitlementAssignmentEntRepository) FindAllByEntitlementId(ctx crud.Context, param it.FindAllByEntitlementIdParam) ([]domain.EntitlementAssignment, error) {
-	query := this.client.EntitlementAssignment.Query().
+	query := this.assignmentClient(ctx).Query().
 		Where(entAssign.EntitlementIDEQ(param.EntitlementId))
 
 	return database.List(ctx, query, entToEntitlementAssignments)
@@ -93,42 +101,30 @@ func (this *EntitlementAssignmentEntRepository) DeleteHardByEntitlementId(ctx cr
 		Exec(ctx)
 }
 
-func (this *EntitlementAssignmentEntRepository) DeleteHardTx(ctx crud.Context, param it.DeleteHardParam) (int, error) {
-	tx, err := this.client.Tx(ctx)
-	fault.PanicOnErr(err)
+func (this *EntitlementAssignmentEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.EntitlementAssignment, error) {
+	query := this.assignmentClient(ctx).Query().
+		Where(entAssign.IDEQ(param.Id)).
+		WithEntitlement()
 
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "delete entitlement assignment transaction"); e != nil {
-			_ = tx.Rollback()
-			err = e
-		}
-	}()
-
-	err = this.setEntitlementAssignmentIdNullTx(ctx, tx, param.Id)
-	fault.PanicOnErr(err)
-
-	deletedCount, err := this.deleteEntitlementAssignmentTx(ctx, tx, param.Id)
-	fault.PanicOnErr(err)
-
-	fault.PanicOnErr(tx.Commit())
-	return deletedCount, nil
+	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlementAssignment)
 }
 
-func (this *EntitlementAssignmentEntRepository) deleteEntitlementAssignmentTx(ctx crud.Context, tx *ent.Tx, entitlementAssignmentId model.Id) (int, error) {
-	deletedCount, err := tx.EntitlementAssignment.
-		Delete().
-		Where(entAssign.IDEQ(entitlementAssignmentId)).
-		Exec(ctx)
-	return deletedCount, err
-}
+func (this *EntitlementAssignmentEntRepository) FindByFilter(ctx crud.Context, param it.FindByFilterParam) (*domain.EntitlementAssignment, error) {
+	query := this.assignmentClient(ctx).Query().
+		Where(
+			entAssign.SubjectTypeEQ(entAssign.SubjectType(param.SubjectType)),
+			entAssign.SubjectRefEQ(param.SubjectRef),
+			entAssign.EntitlementIDEQ(param.EntitlementId),
+		).
+		WithEntitlement()
 
-func (this *EntitlementAssignmentEntRepository) setEntitlementAssignmentIdNullTx(ctx crud.Context, tx *ent.Tx, entitlementAssignmentId string) error {
-	_, err := tx.PermissionHistory.
-		Update().
-		Where(entPermissionHistory.EntitlementAssignmentIDEQ(entitlementAssignmentId)).
-		ClearEntitlementAssignmentID().
-		Save(ctx)
-	return err
+	if param.ScopeRef != nil {
+		query = query.Where(entAssign.ScopeRefEQ(*param.ScopeRef))
+	} else {
+		query = query.Where(entAssign.ScopeRefIsNil())
+	}
+
+	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlementAssignment)
 }
 
 func (this *EntitlementAssignmentEntRepository) getUserEffectiveEntitlements(ctx crud.Context, userId model.Id) ([]domain.EntitlementAssignment, error) {
@@ -157,12 +153,8 @@ func (this *EntitlementAssignmentEntRepository) getGroupEffectiveEntitlements(ct
 	return effectiveEntToEntitlementAssignments(nil, effectiveAssignments), nil
 }
 
-func (this *EntitlementAssignmentEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.EntitlementAssignment, error) {
-	query := this.assignmentClient(ctx).Query().
-		Where(entAssign.IDEQ(param.Id)).
-		WithEntitlement()
-
-	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlementAssignment)
+type EntitlementAssignmentEntRepository struct {
+	client *ent.Client
 }
 
 func BuildEntitlementAssignmentDescriptor() *orm.EntityDescriptor {
@@ -175,7 +167,8 @@ func BuildEntitlementAssignmentDescriptor() *orm.EntityDescriptor {
 		Field(entAssign.FieldActionName, entity.ActionName).
 		Field(entAssign.FieldResourceName, entity.ResourceName).
 		Field(entAssign.FieldResolvedExpr, entity.ResolvedExpr).
-		Field(entAssign.FieldEntitlementID, entity.EntitlementID)
+		Field(entAssign.FieldEntitlementID, entity.EntitlementID).
+		Field(entAssign.FieldScopeRef, entity.ScopeRef)
 
 	return builder.Descriptor()
 }

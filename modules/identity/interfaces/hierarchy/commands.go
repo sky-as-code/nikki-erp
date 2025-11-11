@@ -21,6 +21,7 @@ func init() {
 	req = (*DeleteHierarchyLevelCommand)(nil)
 	req = (*GetHierarchyLevelByIdQuery)(nil)
 	req = (*SearchHierarchyLevelsQuery)(nil)
+	req = (*ExistsHierarchyLevelByIdQuery)(nil)
 	util.Unused(req)
 }
 
@@ -197,3 +198,26 @@ type AddRemoveUsersResultData struct {
 }
 
 type AddRemoveUsersResult = crud.OpResult[*AddRemoveUsersResultData]
+
+var existsHierarchyLevelByIdQuery = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "hierarchy",
+	Action:    "existsHierarchyLevelById",
+}
+
+type ExistsHierarchyLevelByIdQuery struct {
+	Id model.Id `param:"id" json:"id"`
+}
+
+func (ExistsHierarchyLevelByIdQuery) CqrsRequestType() cqrs.RequestType {
+	return existsHierarchyLevelByIdQuery
+}
+
+func (this ExistsHierarchyLevelByIdQuery) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type ExistsHierarchyLevelByIdResult = crud.OpResult[bool]

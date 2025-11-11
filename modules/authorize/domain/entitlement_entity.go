@@ -25,7 +25,7 @@ type Entitlement struct {
 
 func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.IdPtrValidateRule(&this.ActionId, !forEdit),
+		// model.IdPtrValidateRule(&this.ActionId, !forEdit),
 		val.Field(&this.ActionExpr,
 			val.NotNilWhen(!forEdit),
 			val.When(this.ActionExpr != nil,
@@ -46,20 +46,11 @@ func (this *Entitlement) Validate(forEdit bool) ft.ValidationErrors {
 			),
 		),
 		// EntitlementScopeRefValidateRule(&this.ScopeRef),
-		model.IdPtrValidateRule(&this.ResourceId, !forEdit),
+		// model.IdPtrValidateRule(&this.ResourceId, !forEdit),
 		model.IdPtrValidateRule(&this.CreatedBy, !forEdit),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
 
 	return val.ApiBased.ValidateStruct(this, rules...)
-}
-
-func EntitlementScopeRefValidateRule(field **string) *val.FieldRules {
-	return val.Field(field,
-		val.When(*field != nil,
-			val.NotEmpty,
-			val.Length(model.MODEL_RULE_ULID_LENGTH, model.MODEL_RULE_ULID_LENGTH),
-		),
-	)
 }

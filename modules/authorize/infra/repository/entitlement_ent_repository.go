@@ -45,7 +45,6 @@ func (this *EntitlementEntRepository) Create(ctx crud.Context, entitlement *doma
 		SetNillableDescription(entitlement.Description).
 		SetNillableResourceID(entitlement.ResourceId).
 		SetNillableActionID(entitlement.ActionId).
-		// SetNillableScopeRef(entitlement.ScopeRef).
 		SetActionExpr(*entitlement.ActionExpr).
 		SetNillableOrgID(entitlement.OrgId).
 		SetCreatedBy(*entitlement.CreatedBy).
@@ -56,7 +55,6 @@ func (this *EntitlementEntRepository) Create(ctx crud.Context, entitlement *doma
 
 func (this *EntitlementEntRepository) Update(ctx crud.Context, entitlement *domain.Entitlement, prevEtag model.Etag) (*domain.Entitlement, error) {
 	updation := this.entitlementClient(ctx).UpdateOneID(*entitlement.Id).
-		SetEtag(*entitlement.Etag).
 		SetNillableDescription(entitlement.Description).
 		Where(entEntitlement.EtagEQ(prevEtag))
 
@@ -104,7 +102,9 @@ func (this *EntitlementEntRepository) FindByName(ctx crud.Context, param it.Find
 
 func (this *EntitlementEntRepository) FindAllByIds(ctx crud.Context, param it.FindAllByIdsParam) ([]domain.Entitlement, error) {
 	query := this.entitlementClient(ctx).Query().
-		Where(entEntitlement.IDIn(param.Ids...))
+		Where(entEntitlement.IDIn(param.Ids...)).
+		WithAction().
+		WithResource()
 
 	return database.List(ctx, query, entToEntitlements)
 }

@@ -1,0 +1,28 @@
+meta {
+  name: Role Add Entitlement org-specific - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/roles/01JWPB7TC3CG1EB567WYQCJM79/entitlement-assignment
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "entitlementInputs": [
+      {
+        "entitlementId": "01K8WR97JWZH5W9SBEFQRWVFPM",
+        "scopeRef": "01K02G6J1CYAN9K8V4PAGSQ5Z8"
+      }
+    ],
+    "etag": "1761966339318860000"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

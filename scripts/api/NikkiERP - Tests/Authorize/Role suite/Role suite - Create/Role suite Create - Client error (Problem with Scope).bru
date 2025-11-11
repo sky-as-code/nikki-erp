@@ -1,0 +1,137 @@
+meta {
+  name: Role suite Create - Client error (Problem with Scope)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{api_host}}/v1/authorize/role-suites
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Org Intern Suite",
+    "ownerType": "user",
+    "ownerRef": "{{user_id}}",
+    "isRequestable": true,
+    "isRequiredAttachment": false,
+    "isRequiredComment": false,
+    "createdBy": "{{user_id}}",
+    "orgId": "01K02G6J1CYAN9K8V4PAGSQ5Z8",
+    "roleIds": [
+      "{{role_id}}"
+    ]
+  }
+}
+
+script:post-response {
+  /**
+   * 🧪 Post-response script: Validate all possible outcomes of creating a Role Suite
+   */
+  
+  let body;
+  let isJsonValid = true;
+  
+  try {
+    body = res.getBody();
+    console.log("📥 Response body:", body);
+  } catch (e) {
+    isJsonValid = false;
+    expect.fail("❌ Response is not valid JSON");
+  }
+  
+  const status = res.getStatus();
+  
+  /**
+   * 🔹 Define common reusable schemas
+   */
+  const schemas = {
+    success: {
+      type: "object",
+      required: ["id", "etag", "createdAt"],
+      properties: {
+        id: { type: "string" },
+        etag: { type: "string" },
+        createdAt: { type: "number" }
+      },
+      additionalProperties: true
+    },
+    error: {
+      type: "object",
+      required: ["code", "details"],
+      properties: {
+        code: { type: "string" },
+        details: { type: "object" }
+      },
+      additionalProperties: true
+    }
+  };
+  
+  /**
+   * 🔹 Utility logger
+   */
+  function logResult(label, condition) {
+    const emoji = condition ? "✅" : "❌";
+    console.log(`${emoji} ${label}`);
+  }
+  
+  /**
+   * 🔹 Expected Behaviors
+   * 201 → Success create
+   * 400 → Validation error (invalid fields / duplicate / missing / not found)
+   * Others → Unexpected
+   */
+  
+  // ✅ CASE 1: Success
+  if (status === 201 && isJsonValid) {
+    test("✅ Status code is 201 Created", () => {
+      expect(tv4.validate(body, schemas.success)).to.be.true;
+    });
+    logResult("Schema valid for success", tv4.validate(body, schemas.success));
+  
+    // Save variables for reuse
+    if (body?.id && body?.etag) {
+      bru.setVar("rolesuite_id", body.id);
+      bru.setVar("etag", body.etag);
+      console.log("💾 Saved rolesuite_id & etag");
+    } else {
+      console.warn("⚠️ Missing id or etag in response");
+    }
+  }
+  
+  // ❌ CASE 2: Validation error
+  else if (status === 400 && isJsonValid && body.code === "validation_error") {
+    test("❌ Validation error returned as expected", () => {
+      expect(tv4.validate(body, schemas.error)).to.be.true;
+      expect(Object.keys(body.details).length).to.be.greaterThan(0);
+    });
+  
+    // Log validation fields in readable format
+    Object.entries(body.details || {}).forEach(([field, msg]) => {
+      console.warn(`⚠️ [${field}] → ${msg}`);
+    });
+  }
+  
+  // ⚠️ CASE 3: Unexpected
+  else {
+    test("⚠️ Unexpected response", () => {
+      expect.fail(`Unexpected status ${status} or invalid schema`);
+    });
+    console.error("🧨 Raw response for debugging:", body);
+  }
+  
+  /**
+   * ✅ Summary
+   */
+  console.log("🧾 Role Suite Create Test Summary:");
+  console.log(`   ↳ Status: ${status}`);
+  console.log(`   ↳ JSON valid: ${isJsonValid}`);
+  if (body?.code) console.log(`   ↳ Error code: ${body.code}`);
+  
+}
+
+settings {
+  encodeUrl: true
+}

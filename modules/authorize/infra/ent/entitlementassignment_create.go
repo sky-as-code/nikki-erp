@@ -73,16 +73,16 @@ func (eac *EntitlementAssignmentCreate) SetNillableResourceName(s *string) *Enti
 	return eac
 }
 
-// SetOrgID sets the "org_id" field.
-func (eac *EntitlementAssignmentCreate) SetOrgID(s string) *EntitlementAssignmentCreate {
-	eac.mutation.SetOrgID(s)
+// SetScopeRef sets the "scope_ref" field.
+func (eac *EntitlementAssignmentCreate) SetScopeRef(s string) *EntitlementAssignmentCreate {
+	eac.mutation.SetScopeRef(s)
 	return eac
 }
 
-// SetNillableOrgID sets the "org_id" field if the given value is not nil.
-func (eac *EntitlementAssignmentCreate) SetNillableOrgID(s *string) *EntitlementAssignmentCreate {
+// SetNillableScopeRef sets the "scope_ref" field if the given value is not nil.
+func (eac *EntitlementAssignmentCreate) SetNillableScopeRef(s *string) *EntitlementAssignmentCreate {
 	if s != nil {
-		eac.SetOrgID(*s)
+		eac.SetScopeRef(*s)
 	}
 	return eac
 }
@@ -222,9 +222,9 @@ func (eac *EntitlementAssignmentCreate) createSpec() (*EntitlementAssignment, *s
 		_spec.SetField(entitlementassignment.FieldResourceName, field.TypeString, value)
 		_node.ResourceName = &value
 	}
-	if value, ok := eac.mutation.OrgID(); ok {
-		_spec.SetField(entitlementassignment.FieldOrgID, field.TypeString, value)
-		_node.OrgID = &value
+	if value, ok := eac.mutation.ScopeRef(); ok {
+		_spec.SetField(entitlementassignment.FieldScopeRef, field.TypeString, value)
+		_node.ScopeRef = &value
 	}
 	if nodes := eac.mutation.EntitlementIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -212,6 +213,21 @@ func (this *HierarchyServiceImpl) SearchHierarchyLevels(ctx crud.Context, query 
 	})
 
 	return result, err
+}
+
+func (this *HierarchyServiceImpl) ExistsHierarchyById(ctx crud.Context, cmd itHier.ExistsHierarchyLevelByIdQuery) (result *itHier.ExistsHierarchyLevelByIdResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "check if hierarchy level exists"); e != nil {
+			err = e
+		}
+	}()
+
+	exists, err := this.hierarchyRepo.Exists(ctx, itHier.ExistsHierarchyLevelByIdQuery{Id: cmd.Id})
+	fault.PanicOnErr(err)
+
+	return &itHier.ExistsHierarchyLevelByIdResult{
+		Data: exists,
+	}, nil
 }
 
 // assert methods

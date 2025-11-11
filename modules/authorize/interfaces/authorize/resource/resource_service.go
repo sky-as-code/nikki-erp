@@ -6,6 +6,7 @@ type ResourceService interface {
 	CreateResource(ctx crud.Context, cmd CreateResourceCommand) (*CreateResourceResult, error)
 	UpdateResource(ctx crud.Context, cmd UpdateResourceCommand) (*UpdateResourceResult, error)
 	DeleteResourceHard(ctx crud.Context, cmd DeleteResourceHardByNameQuery) (*DeleteResourceHardByNameResult, error)
+	Exists(ctx crud.Context, query ExistsResourceQuery) (*ExistsResourceResult, error)
 	GetResourceById(ctx crud.Context, query GetResourceByIdQuery) (*GetResourceByIdResult, error)
 	GetResourceByName(ctx crud.Context, query GetResourceByNameQuery) (*GetResourceByNameResult, error)
 	SearchResources(ctx crud.Context, query SearchResourcesQuery) (*SearchResourcesResult, error)

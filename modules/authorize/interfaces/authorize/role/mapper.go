@@ -6,13 +6,31 @@ import (
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 )
 
-func (this CreateRoleCommand) ToRole() *domain.Role {
+func (this CreateRoleCommand) ToDomainModel() *domain.Role {
 	role := &domain.Role{}
 	model.MustCopy(this, role)
 	return role
 }
 
-func (this UpdateRoleCommand) ToRole() *domain.Role {
+func (this UpdateRoleCommand) ToDomainModel() *domain.Role {
+	role := &domain.Role{}
+	model.MustCopy(this, role)
+	return role
+}
+
+func (this DeleteRoleHardCommand) ToDomainModel() *domain.Role {
+	role := &domain.Role{}
+	model.MustCopy(this, role)
+	return role
+}
+
+func (this AddEntitlementsCommand) ToDomainModel() *domain.Role {
+	role := &domain.Role{}
+	model.MustCopy(this, role)
+	return role
+}
+
+func (this RemoveEntitlementsCommand) ToDomainModel() *domain.Role {
 	role := &domain.Role{}
 	model.MustCopy(this, role)
 	return role

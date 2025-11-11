@@ -12,85 +12,124 @@ post {
 
 body:json {
   {
-      "name": "Org Intern Suite",
-      "ownerType": "user",
-      "ownerRef": "{{user_id}}",
-      "isRequestable": false,
-      "isRequiredAttachment": false,
-      "isRequiredComment": false,
-      "createdBy": "{{user_id}}",
-      "roleIds": [
-          "{{role_id}}",
-          "{{role_id}}"
-      ]
+    "name": "Org Intern Suite",
+    "ownerType": "user",
+    "ownerRef": "{{user_id}}",
+    "isRequestable": false,
+    "isRequiredAttachment": false,
+    "isRequiredComment": false,
+    "createdBy": "{{user_id}}",
+    "orgId": "01JWNY20G23KD4RV5VWYABQYHD",
+    "roleIds": [
+      "{{role_id}}",
+      "{{role_id}}"
+    ]
   }
 }
 
 script:post-response {
-  // ✅ Expected success schema
-  const successSchema = {
+  /**
+   * 🧪 Post-response script: Validate all possible outcomes of creating a Role Suite
+   */
+  
+  let body;
+  let isJsonValid = true;
+  
+  try {
+    body = res.getBody();
+    console.log("📥 Response body:", body);
+  } catch (e) {
+    isJsonValid = false;
+    expect.fail("❌ Response is not valid JSON");
+  }
+  
+  const status = res.getStatus();
+  
+  /**
+   * 🔹 Define common reusable schemas
+   */
+  const schemas = {
+    success: {
       type: "object",
       required: ["id", "etag", "createdAt"],
       properties: {
-          id: { type: "string" },
-          etag: { type: "string" },
-          createdAt: { type: "number" }
+        id: { type: "string" },
+        etag: { type: "string" },
+        createdAt: { type: "number" }
       },
       additionalProperties: true
-  };
-  
-  // ✅ Expected error schema (validation error)
-  const errorSchema = {
+    },
+    error: {
       type: "object",
       required: ["code", "details"],
       properties: {
-          code: { type: "string" },
-          details: { type: "object" }
+        code: { type: "string" },
+        details: { type: "object" }
       },
       additionalProperties: true
+    }
   };
   
-  let isJsonValid = true;
-  let body;
-  
-  try {
-      body = res.getBody();
-      console.log("📥 Response body:", body);
-  } catch (e) {
-      isJsonValid = false;
-      expect.fail("❌ Response is not valid JSON");
+  /**
+   * 🔹 Utility logger
+   */
+  function logResult(label, condition) {
+    const emoji = condition ? "✅" : "❌";
+    console.log(`${emoji} ${label}`);
   }
   
-  const statusCode = res.getStatus();
+  /**
+   * 🔹 Expected Behaviors
+   * 201 → Success create
+   * 400 → Validation error (invalid fields / duplicate / missing / not found)
+   * Others → Unexpected
+   */
   
-  // ✅ Handle success case
-  if (isJsonValid && statusCode === 201) {
-      test("✅ Status code is 201 Created", function () {
-          expect(statusCode).to.eql(201);
-      });
+  // ✅ CASE 1: Success
+  if (status === 201 && isJsonValid) {
+    test("✅ Status code is 201 Created", () => {
+      expect(tv4.validate(body, schemas.success)).to.be.true;
+    });
+    logResult("Schema valid for success", tv4.validate(body, schemas.success));
   
-      test("✅ Response matches success schema", function () {
-          expect(tv4.validate(body, successSchema)).to.be.true;
-      });
-  
+    // Save variables for reuse
+    if (body?.id && body?.etag) {
+      bru.setVar("rolesuite_id", body.id);
       bru.setVar("etag", body.etag);
-      console.log("✅ etag saved.");
+      console.log("💾 Saved rolesuite_id & etag");
+    } else {
+      console.warn("⚠️ Missing id or etag in response");
+    }
   }
   
-  // ❌ Handle validation error
-  else if (isJsonValid && statusCode === 400 && body.code === "validation_error") {
-      test("❌ Validation error received", function () {
-          expect(body.details).to.be.an("object");
-          console.warn("⚠️ Validation errors:", JSON.stringify(body.details, null, 2));
-      });
-  } 
+  // ❌ CASE 2: Validation error
+  else if (status === 400 && isJsonValid && body.code === "validation_error") {
+    test("❌ Validation error returned as expected", () => {
+      expect(tv4.validate(body, schemas.error)).to.be.true;
+      expect(Object.keys(body.details).length).to.be.greaterThan(0);
+    });
   
-  // ❓ Unexpected status
+    // Log validation fields in readable format
+    Object.entries(body.details || {}).forEach(([field, msg]) => {
+      console.warn(`⚠️ [${field}] → ${msg}`);
+    });
+  }
+  
+  // ⚠️ CASE 3: Unexpected
   else {
-      test("⚠️ Unexpected response", function () {
-          expect.fail(`Unexpected status ${statusCode}`);
-      });
+    test("⚠️ Unexpected response", () => {
+      expect.fail(`Unexpected status ${status} or invalid schema`);
+    });
+    console.error("🧨 Raw response for debugging:", body);
   }
+  
+  /**
+   * ✅ Summary
+   */
+  console.log("🧾 Role Suite Create Test Summary:");
+  console.log(`   ↳ Status: ${status}`);
+  console.log(`   ↳ JSON valid: ${isJsonValid}`);
+  if (body?.code) console.log(`   ↳ Error code: ${body.code}`);
   
 }
 

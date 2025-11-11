@@ -5,13 +5,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type RoleSuiteRepository interface {
 	Create(ctx crud.Context, roleSuite domain.RoleSuite, roleIds []model.Id) (*domain.RoleSuite, error)
-	UpdateTx(ctx crud.Context, roleSuite domain.RoleSuite, prevEtag model.Etag, addRoleIds, removeRoleIds []model.Id) (*domain.RoleSuite, error)
-	DeleteHardTx(ctx crud.Context, param DeleteRoleSuiteParam) (int, error)
+	Update(ctx crud.Context, roleSuite domain.RoleSuite, prevEtag model.Etag, addRoleIds, removeRoleIds []model.Id) (*domain.RoleSuite, error)
+	DeleteHard(ctx crud.Context, param DeleteRoleSuiteParam) (int, error)
 	FindByName(ctx crud.Context, param FindByNameParam) (*domain.RoleSuite, error)
 	FindById(ctx crud.Context, param FindByIdParam) (*domain.RoleSuite, error)
 	FindAllBySubject(ctx crud.Context, param FindAllBySubjectParam) ([]domain.RoleSuite, error)
@@ -19,6 +20,8 @@ type RoleSuiteRepository interface {
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.RoleSuite], error)
 	AddRemoveUser(ctx crud.Context, param AddRemoveUserParam) error
+
+	BeginTransaction(ctx crud.Context) (*ent.Tx, error)
 }
 
 type FindByIdParam = GetRoleSuiteByIdQuery
@@ -27,10 +30,7 @@ type FindAllBySubjectParam = GetRoleSuitesBySubjectQuery
 type ExistUserWithRoleSuiteParam = ExistUserWithRoleSuiteQuery
 type AddRemoveUserParam = AddRemoveUserCommand
 
-type DeleteRoleSuiteParam struct {
-	Id   model.Id `json:"id"`
-	Name string   `json:"name"`
-}
+type DeleteRoleSuiteParam = DeleteRoleSuiteCommand
 
 type SearchParam struct {
 	Predicate *orm.Predicate

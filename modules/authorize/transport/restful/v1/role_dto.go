@@ -50,6 +50,12 @@ func (this *RoleSummaryDto) FromRole(role *domain.Role) {
 	this.Name = *role.Name
 }
 
+type AddEntitlementsRequest = it.AddEntitlementsCommand
+type AddEntitlementsResponse = httpserver.RestUpdateResponse
+
+type RemoveEntitlementsRequest = it.RemoveEntitlementsCommand
+type RemoveEntitlementsResponse = httpserver.RestUpdateResponse
+
 type CreateRoleRequest = it.CreateRoleCommand
 type CreateRoleResponse = httpserver.RestCreateResponse
 

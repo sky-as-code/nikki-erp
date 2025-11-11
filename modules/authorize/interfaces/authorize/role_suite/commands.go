@@ -37,14 +37,15 @@ var createRoleSuiteCommandType = cqrs.RequestType{
 }
 
 type CreateRoleSuiteCommand struct {
-	Name                 string   `json:"name"`
-	Description          *string  `json:"description,omitempty"`
-	OwnerType            string   `json:"ownerType"`
-	OwnerRef             model.Id `json:"ownerRef"`
-	IsRequestable        *bool    `json:"isRequestable,omitempty"`
-	IsRequiredAttachment *bool    `json:"isRequiredAttachment,omitempty"`
-	IsRequiredComment    *bool    `json:"isRequiredComment,omitempty"`
-	CreatedBy            model.Id `json:"createdBy"`
+	Name                 string    `json:"name"`
+	Description          *string   `json:"description,omitempty"`
+	OwnerType            string    `json:"ownerType"`
+	OwnerRef             model.Id  `json:"ownerRef"`
+	IsRequestable        *bool     `json:"isRequestable,omitempty"`
+	IsRequiredAttachment *bool     `json:"isRequiredAttachment,omitempty"`
+	IsRequiredComment    *bool     `json:"isRequiredComment,omitempty"`
+	CreatedBy            model.Id  `json:"createdBy"`
+	OrgId                *model.Id `json:"orgId,omitempty"`
 
 	RoleIds []model.Id `json:"roleIds,omitempty"`
 }
@@ -123,6 +124,14 @@ func (GetRoleSuiteByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getRoleSuiteByIdQueryType
 }
 
+func (this GetRoleSuiteByIdQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
 type GetRoleSuiteByIdResult = crud.OpResult[*domain.RoleSuite]
 
 // END: GetRoleSuiteByIdQuery
@@ -135,7 +144,8 @@ var getRoleSuiteByNameCommandType = cqrs.RequestType{
 }
 
 type GetRoleSuiteByNameCommand struct {
-	Name string `param:"name" json:"name"`
+	Name  string    `param:"name" json:"name"`
+	OrgId *model.Id `json:"orgId,omitempty"`
 }
 
 func (GetRoleSuiteByNameCommand) CqrsRequestType() cqrs.RequestType {
@@ -154,9 +164,7 @@ var searchRoleSuitesCommandType = cqrs.RequestType{
 }
 
 type SearchRoleSuitesCommand struct {
-	Page  *int    `json:"page" query:"page"`
-	Size  *int    `json:"size" query:"size"`
-	Graph *string `json:"graph" query:"graph"`
+	crud.SearchQuery
 }
 
 func (SearchRoleSuitesCommand) CqrsRequestType() cqrs.RequestType {

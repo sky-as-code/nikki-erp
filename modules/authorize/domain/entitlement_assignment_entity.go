@@ -17,6 +17,7 @@ type EntitlementAssignment struct {
 	ResourceName  *string                           `json:"resourceName,omitempty"`
 	ResolvedExpr  *string                           `json:"resolvedExpr,omitempty"`
 	EntitlementId *model.Id                         `json:"entitlementId,omitempty"`
+	ScopeRef      *string                           `json:"scopeRef,omitempty"`
 
 	Entitlement *Entitlement `json:"entitlement,omitempty" model:"-"` // TODO: Handle copy
 	Role        *Role        `json:"role,omitempty" model:"-"`
@@ -53,6 +54,7 @@ func (this *EntitlementAssignment) Validate(forEdit bool) fault.ValidationErrors
 				EntitlementAssignmentSubjectTypeCustom,
 			),
 		),
+		AssignmentScopeRefValidateRule(&this.ScopeRef),
 		model.IdPtrValidateRule(&this.SubjectRef, !forEdit),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
@@ -81,4 +83,13 @@ func WrapEntitlementAssignmentSubjectType(s string) *EntitlementAssignmentSubjec
 func WrapEntitlementAssignmentSubjectTypeEnt(s entEntitlementAssignment.SubjectType) *EntitlementAssignmentSubjectType {
 	st := EntitlementAssignmentSubjectType(s)
 	return &st
+}
+
+func AssignmentScopeRefValidateRule(field **string) *validator.FieldRules {
+	return validator.Field(field,
+		validator.When(*field != nil,
+			validator.NotEmpty,
+			validator.Length(model.MODEL_RULE_ULID_LENGTH, model.MODEL_RULE_ULID_LENGTH),
+		),
+	)
 }

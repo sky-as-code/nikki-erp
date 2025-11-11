@@ -11,4 +11,5 @@ type HierarchyService interface {
 	GetHierarchyLevelById(ctx crud.Context, query GetHierarchyLevelByIdQuery) (*GetHierarchyLevelByIdResult, error)
 	SearchHierarchyLevels(ctx crud.Context, query SearchHierarchyLevelsQuery) (*SearchHierarchyLevelsResult, error)
 	UpdateHierarchyLevel(ctx crud.Context, cmd UpdateHierarchyLevelCommand) (*UpdateHierarchyLevelResult, error)
+	ExistsHierarchyById(ctx crud.Context, query ExistsHierarchyLevelByIdQuery) (*ExistsHierarchyLevelByIdResult, error)
 }
