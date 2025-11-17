@@ -52,12 +52,26 @@ type OneOfRule = apiVal.InRule[any]
 type Rule = apiVal.Rule
 type ThresholdRule = apiVal.ThresholdRule
 type WhenRule = apiVal.WhenRule
+type Errors = apiVal.Errors
 
 type ApiBasedValidator struct {
 }
 
 func (v ApiBasedValidator) ValidateRaw(value interface{}, rules ...apiVal.Rule) error {
 	return apiVal.Validate(value, rules...)
+}
+
+func (v ApiBasedValidator) Validate(targetPtr any, rules ...apiVal.Rule) ft.ValidationErrors {
+	err := apiVal.Validate(targetPtr, rules...)
+	if err != nil {
+		invopopErr, isOk := err.(apiVal.Errors)
+		if isOk {
+			return ft.NewValidationErrorsFromInvopop(invopopErr)
+		} else {
+			panic(errors.Wrap(err, "failed to validate struct"))
+		}
+	}
+	return ft.NewValidationErrors()
 }
 
 func (v ApiBasedValidator) ValidateStruct(structPtr any, fields ...*apiVal.FieldRules) ft.ValidationErrors {

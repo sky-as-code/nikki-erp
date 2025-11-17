@@ -1,6 +1,7 @@
 package user
 
 import (
+	dymodel "github.com/sky-as-code/nikki-erp/common/dynamicentity/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -31,12 +32,18 @@ var createUserCommandType = cqrs.RequestType{
 	Action:    "create",
 }
 
+func NewCreateUserCommand() *CreateUserCommand {
+	return &CreateUserCommand{}
+}
+
 type CreateUserCommand struct {
-	DisplayName        string     `json:"displayName"`
+	dymodel.DynamicBase
+
+	DisplayName        string     `json:"display_name"`
 	Email              string     `json:"email"`
-	MustChangePassword bool       `json:"mustChangePassword"`
+	MustChangePassword bool       `json:"must_change_password"`
 	Password           string     `json:"password"`
-	OrgIds             []model.Id `json:"orgIds"`
+	OrgIds             []model.Id `json:"org_ids"`
 }
 
 func (CreateUserCommand) CqrsRequestType() cqrs.RequestType {

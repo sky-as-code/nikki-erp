@@ -4,6 +4,8 @@ import (
 	"github.com/labstack/echo/v4"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/common/middleware"
+	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 	v1 "github.com/sky-as-code/nikki-erp/modules/identity/transport/restful/v1"
 )
 
@@ -21,6 +23,12 @@ func InitRestfulHandlers() error {
 }
 
 func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, orgRest *v1.OrganizationRest, hierarchyRest *v1.HierarchyRest) {
+	route.POST(
+		"/users/dynamic",
+		middleware.DynamicAutoMapper[it.CreateUserCommand](userRest.DynamicCreateUser),
+		middleware.DynamicValidator("identity.createUserRequest"),
+	)
+
 	route.POST("/users", userRest.CreateUser)
 	route.DELETE("/users/:id", userRest.DeleteUser)
 	route.GET("/users/:id", userRest.GetUserById)

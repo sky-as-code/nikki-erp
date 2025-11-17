@@ -4,7 +4,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
@@ -24,6 +26,25 @@ func NewUserRest(params userRestParams) *UserRest {
 type UserRest struct {
 	httpserver.RestBase
 	UserSvc it.UserService
+}
+
+func init() {
+	schema.AdhocRegistry().Add(
+		"identity.createUserRequest",
+		schema.DefineAdhoc().
+			AdhocField(schema.CloneField("identity.user", "display_name").Required()).
+			FieldHolder("contact", true,
+				schema.DefineAdhoc().
+					AdhocField(schema.CloneField("identity.user", "email").Required()).
+					AdhocField(schema.CloneField("identity.user", "hierarchy_id").Required()),
+			).
+			Build(),
+	)
+}
+
+func (this UserRest) DynamicCreateUser(request any, echoCtx echo.Context) (err error) {
+	util.Unused(request)
+	return nil
 }
 
 func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
