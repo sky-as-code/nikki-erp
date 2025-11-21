@@ -6,7 +6,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/infra/ent"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
+	dbOrm "github.com/sky-as-code/nikki-erp/modules/core/database/orm"
 )
 
 func InitRepositories() error {
@@ -27,7 +27,7 @@ func InitRepositories() error {
 	return err
 }
 
-func newAuthenticateClient(clientOpts *db.EntClientOptions) *ent.Client {
+func newAuthenticateClient(clientOpts *dbOrm.EntClientOptions) *ent.Client {
 	if clientOpts.DebugEnabled {
 		return ent.NewClient(ent.Driver(clientOpts.Driver), ent.Debug())
 	}

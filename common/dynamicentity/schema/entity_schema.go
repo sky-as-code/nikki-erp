@@ -76,6 +76,7 @@ type EntityField struct {
 	dataType        FieldDataType
 	dataTypeOptions FieldDataTypeOptions
 	description     model.LangJson
+	isArray         bool
 	isRequired      bool
 	rules           []*FieldRule
 	defaultValue    any
@@ -102,6 +103,10 @@ func (f *EntityField) Description() model.LangJson {
 	return f.description
 }
 
+func (f *EntityField) IsArray() bool {
+	return f.isArray
+}
+
 func (f *EntityField) IsRequired() bool {
 	return f.isRequired
 }
@@ -113,39 +118,6 @@ func (f *EntityField) Rules() []*FieldRule {
 func (f *EntityField) Default() any {
 	return f.defaultValue
 }
-
-// Setter methods
-// func (f *EntityField) SetName(name string) {
-// 	f.name = name
-// }
-
-// func (f *EntityField) SetLabel(label model.LangJson) {
-// 	f.label = label
-// }
-
-// func (f *EntityField) SetDataType(dataType FieldDataType) {
-// 	f.dataType = dataType
-// }
-
-// func (f *EntityField) SetDataTypeOptions(options FieldDataTypeOptions) {
-// 	f.dataTypeOptions = options
-// }
-
-// func (f *EntityField) SetDescription(description model.LangJson) {
-// 	f.description = description
-// }
-
-// func (f *EntityField) SetIsRequired(isRequired bool) {
-// 	f.isRequired = isRequired
-// }
-
-// func (f *EntityField) SetRules(rules []FieldRule) {
-// 	f.rules = rules
-// }
-
-// func (f *EntityField) SetDefault(value any) {
-// 	f.defaultValue = value
-// }
 
 type FieldDataType string
 
@@ -215,13 +187,14 @@ func (r FieldRule) RuleOptions() any {
 type FieldRuleName string
 
 const (
-	FieldRuleMaxType     = FieldRuleName("max")
-	FieldRuleMinType     = FieldRuleName("min")
-	FieldRuleLengthType  = FieldRuleName("length")
-	FieldRuleOneOfType   = FieldRuleName("oneOf")
-	FieldRulePrimaryType = FieldRuleName("primary")
-	FieldRuleTenantType  = FieldRuleName("tenant")
-	FieldRuleUniqueType  = FieldRuleName("unique")
+	FieldRuleMaxType         = FieldRuleName("max")
+	FieldRuleMinType         = FieldRuleName("min")
+	FieldRuleArrayLengthType = FieldRuleName("arrlength")
+	FieldRuleLengthType      = FieldRuleName("length")
+	FieldRuleOneOfType       = FieldRuleName("oneOf")
+	FieldRulePrimaryType     = FieldRuleName("primary")
+	FieldRuleTenantType      = FieldRuleName("tenant")
+	FieldRuleUniqueType      = FieldRuleName("unique")
 )
 
 func FieldRuleMax(value any) FieldRule {
@@ -230,6 +203,10 @@ func FieldRuleMax(value any) FieldRule {
 
 func FieldRuleMin(value any) FieldRule {
 	return FieldRule{FieldRuleMinType, value}
+}
+
+func FieldRuleArrayLength(min, max int) FieldRule {
+	return FieldRule{FieldRuleArrayLengthType, []int{min, max}}
 }
 
 func FieldRuleLength(min, max int) FieldRule {
@@ -259,6 +236,7 @@ func (f *EntityField) Clone() *EntityField {
 		dataType:        f.dataType,
 		dataTypeOptions: make(FieldDataTypeOptions),
 		description:     f.description,
+		isArray:         f.isArray,
 		isRequired:      f.isRequired,
 		rules:           make([]*FieldRule, len(f.rules)),
 		defaultValue:    f.defaultValue,

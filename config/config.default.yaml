@@ -22,9 +22,10 @@ CORE:
     TLS_ENABLED: true
     # Whether to write ORM debug SQL queries
     ORM_DEBUG_ENABLED: false
-    MAX_IDLE_CONNS: 100
-    MAX_OPEN_CONNS: 1000
-    CONN_MAX_LIFETIME_SECS: 3600
+    MAX_OPEN_CONNS: 100
+    MAX_IDLE_CONNS: 40
+    CONN_MAX_LIFETIME_MINS: 60
+    CONN_MAX_IDLE_TIME_MINS: 10
   EVENT:
     REDIS_HOST: localhost
     # A comma-separated list of Redis hosts for cluster mode

@@ -9,6 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
+	dbOrm "github.com/sky-as-code/nikki-erp/modules/core/database/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/enum"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -62,7 +63,7 @@ func (*CoreModule) Init() error {
 	return err
 }
 
-func newCoreClient(clientOpts *db.EntClientOptions) *ent.Client {
+func newCoreClient(clientOpts *dbOrm.EntClientOptions) *ent.Client {
 	var client *ent.Client
 	if clientOpts.DebugEnabled {
 		client = ent.NewClient(ent.Driver(clientOpts.Driver), ent.Debug())

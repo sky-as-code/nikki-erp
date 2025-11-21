@@ -16,7 +16,8 @@ const (
 	DbTlsEnabled          ConfigName = "CORE.DB.TLS_ENABLED"
 	DbMaxIdleConns        ConfigName = "CORE.DB.MAX_IDLE_CONNS"
 	DbMaxOpenConns        ConfigName = "CORE.DB.MAX_OPEN_CONNS"
-	DbConnMaxLifetimeSecs ConfigName = "CORE.DB.CONN_MAX_LIFETIME_SECS"
+	DbConnMaxLifetimeMins ConfigName = "CORE.DB.CONN_MAX_LIFETIME_MINS"
+	DbConnMaxIdleTimeMins ConfigName = "CORE.DB.CONN_MAX_IDLE_TIME_MINS"
 
 	// Database Postgres-specific
 	// DbPgSslMode ConfigName = "DB_PG_SSL_MODE"

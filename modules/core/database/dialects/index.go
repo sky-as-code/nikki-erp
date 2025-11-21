@@ -4,9 +4,15 @@ import (
 	"database/sql"
 	"time"
 
-	"entgo.io/ent/dialect"
-	entsql "entgo.io/ent/dialect/sql"
 	"go.bryk.io/pkg/errors"
+)
+
+type DialectName string
+
+const (
+	MySql    DialectName = "mysql"
+	Sqlite   DialectName = "sqlite3"
+	Postgres DialectName = "postgres"
 )
 
 type DialectOptions struct {
@@ -15,6 +21,11 @@ type DialectOptions struct {
 	User         string
 	Password     string
 	IsTlsEnabled bool
+
+	ConnMaxLifetimeSecs uint
+	ConnMaxIdleTimeSecs uint
+	MaxIdleConns        uint
+	MaxOpenConns        uint
 }
 
 type DbDialect interface {
@@ -22,43 +33,29 @@ type DbDialect interface {
 	Open(opts DialectOptions) (*sql.DB, error)
 }
 
-type EntDriverOptions struct {
-	DialectOptions
-
-	DialectName     string
-	ConnMaxLifetime time.Duration
-	MaxIdleConns    uint
-	MaxOpenConns    uint
-}
-
-func NewEntDriver(opts EntDriverOptions) (*entsql.Driver, error) {
-	dialectName := opts.DialectName
-
+func OpenConnection(dialectName DialectName, opts DialectOptions) (conn *sql.DB, err error) {
 	switch dialectName {
-	case dialect.MySQL:
-		conn, err := MysqlDialect{}.Open(opts.DialectOptions)
-		if err != nil {
-			return nil, err
-		}
-
+	case MySql:
+		conn, err = MysqlDialect{}.Open(opts)
 		setConnOptions(conn, opts)
-		return entsql.OpenDB(dialect.MySQL, conn), nil
-	case dialect.Postgres:
-		conn, err := PostgresqlDialect{}.Open(opts.DialectOptions)
-		if err != nil {
-			return nil, err
-		}
-
+	case Postgres:
+		conn, err = PostgresqlDialect{}.Open(opts)
 		setConnOptions(conn, opts)
-		return entsql.OpenDB(dialect.Postgres, conn), nil
-	// case dialect.SQLite:
 	default:
-		return nil, errors.Errorf("unsupported dialect: %s", dialectName)
+		err = errors.Errorf("unsupported dialect: %s", dialectName)
+		return nil, err
 	}
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open database connection")
+	}
+
+	return conn, nil
 }
 
-func setConnOptions(conn *sql.DB, opts EntDriverOptions) {
+func setConnOptions(conn *sql.DB, opts DialectOptions) {
 	conn.SetMaxIdleConns(int(opts.MaxIdleConns))
 	conn.SetMaxOpenConns(int(opts.MaxOpenConns))
-	conn.SetConnMaxLifetime(opts.ConnMaxLifetime)
+	conn.SetConnMaxLifetime(time.Duration(opts.ConnMaxLifetimeSecs) * time.Second)
+	conn.SetConnMaxIdleTime(time.Duration(opts.ConnMaxIdleTimeSecs) * time.Second)
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"entgo.io/ent/dialect"
+	_ "github.com/lib/pq"
 )
 
 type PostgresqlDialect struct {
@@ -35,9 +35,10 @@ func (this PostgresqlDialect) Open(opts DialectOptions) (*sql.DB, error) {
 		return nil, err
 	}
 
-	conn, err := sql.Open(dialect.Postgres, dsn)
+	conn, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, err
 	}
+
 	return conn, nil
 }

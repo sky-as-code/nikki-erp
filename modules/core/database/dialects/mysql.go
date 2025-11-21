@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
-
-	"entgo.io/ent/dialect"
 )
 
 type MysqlDialect struct {
@@ -35,7 +33,7 @@ func (this MysqlDialect) Open(opts DialectOptions) (*sql.DB, error) {
 		return nil, err
 	}
 
-	conn, err := sql.Open(dialect.MySQL, dsn)
+	conn, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
 	}

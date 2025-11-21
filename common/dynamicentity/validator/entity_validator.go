@@ -43,28 +43,14 @@ func (this *EntityValidator) ValidateStruct(entity any, forEdit bool, isQuick bo
 }
 
 func (this *EntityValidator) ValidateMap(data map[string]any, forEdit bool, isQuick bool) ft.ValidationErrors {
-	return validateMap(data, this.fields, forEdit, isQuick)
-}
-
-func (this *EntityValidator) buildStructFieldRules(fieldPtr any, field *dschema.EntityField, forEdit bool, isQuick bool) *val.FieldRules {
-	minLength, maxLength := extractLengthOpts(field.Rules())
-
-	modelRules := buildCustomTypeRules(field.DataType(), field.IsRequired() && !forEdit, minLength, maxLength, isQuick)
-	if modelRules != nil {
-		return val.Field(fieldPtr, modelRules...)
-	}
-	return val.Field(fieldPtr, buildCoreRules(field, forEdit)...)
-}
-
-func validateMap(data map[string]any, fields map[string]*dschema.EntityField, forEdit bool, isQuick bool) ft.ValidationErrors {
-	keyRulesList := make([]*val.KeyRules, 0, len(fields))
+	keyRulesList := make([]*val.KeyRules, 0, len(this.fields))
 	targetMap := make(map[string]any)
 
-	for fieldName, field := range fields {
+	for fieldName, field := range this.fields {
 		// Copy from `data` to `targetMap` to set nil to missing key, so that the validator will return the isNil's error
 		// instead of the map's "Key missing" error.
 		targetMap[fieldName] = data[fieldName]
-		rules := buildMapKeyRules(field, forEdit, isQuick)
+		rules := buildFieldRules(field, forEdit, isQuick)
 		keyRulesList = append(keyRulesList, val.Key(fieldName, rules...))
 	}
 
@@ -72,20 +58,44 @@ func validateMap(data map[string]any, fields map[string]*dschema.EntityField, fo
 	return val.ApiBased.Validate(targetMap, mapRule)
 }
 
-func buildMapKeyRules(field *dschema.EntityField, forEdit bool, isQuick bool) []val.Rule {
-	minLength, maxLength := extractLengthOpts(field.Rules())
-
-	modelRules := buildCustomTypeRules(field.DataType(), field.IsRequired() && !forEdit, minLength, maxLength, isQuick)
-	if modelRules != nil {
-		return modelRules
-	}
-
-	coreRules := buildCoreRules(field, forEdit)
-	return coreRules
+func (this *EntityValidator) buildStructFieldRules(fieldPtr any, fieldDef *dschema.EntityField, forEdit bool, isQuick bool) *val.FieldRules {
+	rules := buildFieldRules(fieldDef, forEdit, isQuick)
+	return val.Field(fieldPtr, rules...)
 }
 
-func validateEntityFieldName(field *dschema.EntityField) error {
-	if strings.TrimSpace(field.Name()) == "" {
+func buildFieldRules(fieldDef *dschema.EntityField, forEdit bool, isQuick bool) []val.Rule {
+	commonRules := buildIsRequiredRules(fieldDef, forEdit)
+
+	var rules []val.Rule
+	minLength, maxLength := extractLengthOpts(fieldDef.Rules())
+	rules = buildCustomTypeRules(fieldDef, forEdit, minLength, maxLength, isQuick)
+	if rules == nil { // Not a custom type
+		rules = buildCoreRules(fieldDef, forEdit, isQuick)
+	}
+
+	return append(commonRules, rules...)
+}
+
+// func buildMapKeyRules(fieldDef *dschema.EntityField, forEdit bool, isQuick bool) []val.Rule {
+// 	minLength, maxLength := extractLengthOpts(fieldDef.Rules())
+
+// 	modelRules := buildCustomTypeRules(fieldDef, fieldDef.IsRequired() && !forEdit, minLength, maxLength, isQuick)
+// 	if modelRules != nil {
+// 		if fieldDef.IsArray() {
+// 			return buildArrayRules(fieldDef, forEdit, modelRules)
+// 		}
+// 		return modelRules
+// 	}
+
+// 	coreRules := buildCoreRules(fieldDef, forEdit, isQuick)
+// 	if fieldDef.IsArray() {
+// 		return buildArrayRules(fieldDef, forEdit, coreRules)
+// 	}
+// 	return coreRules
+// }
+
+func validateEntityFieldName(fieldDef *dschema.EntityField) error {
+	if strings.TrimSpace(fieldDef.Name()) == "" {
 		return fmt.Errorf("field name is required")
 	}
 	return nil
@@ -122,8 +132,8 @@ func getFieldPointerByTag(entity any, fieldName string) (any, error) {
 	return nil, fmt.Errorf("field %s not found with %s tag", fieldName, dschema.SchemaStructTag)
 }
 
-func extractLengthOpts(rules []*dschema.FieldRule) (minLength int, maxLength int) {
-	for _, rule := range rules {
+func extractLengthOpts(rulesDef []*dschema.FieldRule) (minLength int, maxLength int) {
+	for _, rule := range rulesDef {
 		ruleName := rule.RuleName()
 		if ruleName == dschema.FieldRuleLengthType {
 			ruleOptions := rule.RuleOptions()
@@ -135,55 +145,33 @@ func extractLengthOpts(rules []*dschema.FieldRule) (minLength int, maxLength int
 	return 1, model.MODEL_RULE_DESC_LENGTH
 }
 
-func buildCoreRules(field *dschema.EntityField, forEdit bool) []val.Rule {
-	rules := buildIsRequiredRules(field, forEdit)
-	rules = append(rules, buildSpecialTypeRules(field.DataType())...)
-	rules = append(rules, buildNormalRules(field)...)
+func extractArrayLengthRule(rulesDef []*dschema.FieldRule) val.Rule {
+	for _, rule := range rulesDef {
+		ruleName := rule.RuleName()
+		if ruleName == dschema.FieldRuleArrayLengthType {
+			ruleOptions := rule.RuleOptions()
+			lengthArr := ruleOptions.([]int)
+			return val.Length(lengthArr[0], lengthArr[1])
+		}
+	}
+	return nil
+}
+
+func buildCoreRules(fieldDef *dschema.EntityField, forEdit bool, isQuick bool) []val.Rule {
+	rules := buildSpecialTypeRules(fieldDef.DataType(), isQuick)
+	rules = append(rules, buildNormalRules(fieldDef)...)
+
+	if fieldDef.IsArray() {
+		rules = buildArrayRules(fieldDef, forEdit, rules)
+	}
 
 	return rules
 }
 
-func buildCustomTypeRules(dataType dschema.FieldDataType, isRequired bool, minLength int, maxLength int, isQuick bool) []val.Rule {
-	switch dataType {
-	case dschema.FieldDataTypeEtag:
-		if isQuick {
-			return model.EtagRuleQuick(isRequired)
-		}
-		return model.EtagRule(isRequired)
-
-	case dschema.FieldDataTypeLangJson:
-		if isQuick {
-			return model.LangJsonRuleQuick(isRequired)
-		}
-		return model.LangJsonRule(isRequired, minLength, maxLength)
-
-	case dschema.FieldDataTypeLangCode:
-		if isQuick {
-			return model.LanguageCodeRuleQuick(isRequired)
-		}
-		return model.LanguageCodeRule(isRequired)
-
-	case dschema.FieldDataTypeModelId, dschema.FieldDataTypeUlid:
-		if isQuick {
-			return model.IdRuleQuick(isRequired)
-		}
-		return model.IdRule(isRequired)
-
-	case dschema.FieldDataTypeSlug:
-		if isQuick {
-			return model.SlugRuleQuick(isRequired)
-		}
-		return model.SlugRule(isRequired)
-
-	default:
-		return nil // Not a special data type
-	}
-}
-
-func buildIsRequiredRules(field *dschema.EntityField, forEdit bool) []val.Rule {
+func buildIsRequiredRules(fieldDef *dschema.EntityField, forEdit bool) []val.Rule {
 	rules := make([]val.Rule, 0)
 
-	if field.IsRequired() {
+	if fieldDef.IsRequired() {
 		rules = append(rules,
 			val.NotNilWhen(!forEdit),
 			val.NotEmptyWhen(!forEdit),
@@ -193,25 +181,88 @@ func buildIsRequiredRules(field *dschema.EntityField, forEdit bool) []val.Rule {
 	return rules
 }
 
-func buildSpecialTypeRules(dataType dschema.FieldDataType) []val.Rule {
+func buildCustomTypeRules(fieldDef *dschema.EntityField, forEdit bool, minLength int, maxLength int, isQuick bool) []val.Rule {
+	dataType := fieldDef.DataType()
+	isRequired := fieldDef.IsRequired() && !forEdit
+
+	var rules []val.Rule
+	switch dataType {
+	case dschema.FieldDataTypeEtag:
+		if isQuick {
+			rules = model.EtagRuleQuick(isRequired)
+		} else {
+			rules = model.EtagRule(isRequired)
+		}
+
+	case dschema.FieldDataTypeLangJson:
+		if isQuick {
+			rules = model.LangJsonRuleQuick(isRequired)
+		} else {
+			rules = model.LangJsonRule(isRequired, minLength, maxLength)
+		}
+
+	case dschema.FieldDataTypeLangCode:
+		if isQuick {
+			rules = model.LanguageCodeRuleQuick(isRequired)
+		} else {
+			rules = model.LanguageCodeRule(isRequired)
+		}
+
+	case dschema.FieldDataTypeModelId, dschema.FieldDataTypeUlid:
+		if isQuick {
+			rules = model.IdRuleQuick(isRequired)
+		} else {
+			rules = model.IdRule(isRequired)
+		}
+
+	case dschema.FieldDataTypeSlug:
+		if isQuick {
+			rules = model.SlugRuleQuick(isRequired)
+		} else {
+			rules = model.SlugRule(isRequired)
+		}
+
+	default:
+		rules = nil // Not a special data type
+	}
+
+	if fieldDef.IsArray() {
+		return buildArrayRules(fieldDef, forEdit, rules)
+	}
+	return rules
+}
+
+func buildSpecialTypeRules(dataType dschema.FieldDataType, isQuick bool) []val.Rule {
 	rules := make([]val.Rule, 0)
 
 	switch dataType {
 	case dschema.FieldDataTypeEmail:
-		rules = append(rules, val.IsEmail)
+		if isQuick {
+			rules = append(rules, val.Length(5, model.MODEL_RULE_USERNAME_LENGTH))
+		} else {
+			rules = append(rules, val.IsEmail)
+		}
 	case dschema.FieldDataTypeUrl:
-		rules = append(rules, val.IsUrl)
+		if isQuick {
+			rules = append(rules, val.Length(1, model.MODEL_RULE_URL_LENGTH))
+		} else {
+			rules = append(rules, val.IsUrl)
+		}
 	case dschema.FieldDataTypeUuid:
-		rules = append(rules, val.IsUuid)
+		if isQuick {
+			rules = append(rules, val.IsUuid)
+		} else {
+			rules = append(rules, val.Length(36, 36))
+		}
 	}
 
 	return rules
 }
 
-func buildNormalRules(field *dschema.EntityField) []val.Rule {
+func buildNormalRules(fieldDef *dschema.EntityField) []val.Rule {
 	rules := make([]val.Rule, 0)
 
-	for _, rule := range field.Rules() {
+	for _, rule := range fieldDef.Rules() {
 		ruleName := rule.RuleName()
 		if ruleName == "" {
 			continue
@@ -234,3 +285,93 @@ func buildNormalRules(field *dschema.EntityField) []val.Rule {
 
 	return rules
 }
+
+func buildArrayRules(fieldDef *dschema.EntityField, forEdit bool, itemRules []val.Rule) []val.Rule {
+	arrayRules := make([]val.Rule, 0)
+
+	// Array-level rules
+	if fieldDef.IsRequired() {
+		arrayRules = append(arrayRules,
+			val.NotNilWhen(!forEdit),
+			val.NotEmptyWhen(!forEdit),
+		)
+	}
+
+	arrayLengthRule := extractArrayLengthRule(fieldDef.Rules())
+	if arrayLengthRule != nil {
+		arrayRules = append(arrayRules, arrayLengthRule)
+	}
+
+	// Determine if elementRules are custom type rules or core rules
+	// Custom type rules come from buildCustomTypeRules and should be wrapped directly
+	// Core rules come from buildCoreRules and need to be rebuilt to avoid duplication
+	// isCustomTypeRules := isCustomTypeRulesForField(field)
+
+	// var elementRulesToWrap []val.Rule
+	// if isCustomTypeRules {
+	// 	// Custom type rules: wrap directly (they already contain element-level validation)
+	// 	elementRulesToWrap = elementRules
+	// } else {
+	// 	// Core rules: rebuild element rules from field schema (excluding array-level rules)
+	// 	elementRulesToWrap = buildElementRulesForArray(field, nil)
+	// }
+
+	// If we have element rules, wrap them with val.Each
+	// if len(elementRulesToWrap) > 0 {
+	// 	arrayRules = append(arrayRules, val.Each(elementRulesToWrap...))
+	// }
+
+	return append(arrayRules, val.Each(itemRules...))
+}
+
+// isCustomTypeRulesForField checks if the field has a custom data type
+// that would use buildCustomTypeRules instead of buildCoreRules.
+// func isCustomTypeRulesForField(field *dschema.EntityField) bool {
+// 	dataType := field.DataType()
+// 	customTypes := dschema.CustomDataTypes
+// 	for _, customType := range customTypes {
+// 		if dataType == customType {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
+
+// buildElementRulesForArray extracts element-level rules from the provided rules,
+// excluding array-level rules (NotNil, NotEmpty, ArrayLength).
+// func buildElementRulesForArray(field *dschema.EntityField, allRules []val.Rule) []val.Rule {
+// 	elementRules := make([]val.Rule, 0)
+
+// 	// Build element-level rules from scratch to avoid duplication
+// 	// Special type rules apply to elements
+// 	elementRules = append(elementRules, buildSpecialTypeRules(field.DataType())...)
+
+// 	// Normal rules apply to elements
+// 	// FieldRuleLengthType is for element length, FieldRuleArrayLengthType is for array length
+// 	for _, rule := range field.Rules() {
+// 		ruleName := rule.RuleName()
+// 		if ruleName == "" {
+// 			continue
+// 		}
+
+// 		ruleOptions := rule.RuleOptions()
+// 		switch ruleName {
+// 		case dschema.FieldRuleArrayLengthType:
+// 			// Skip ArrayLength - it's handled as array-level rule
+// 			continue
+// 		case dschema.FieldRuleLengthType:
+// 			// Length applies to element length
+// 			lengthArr := ruleOptions.([]int)
+// 			elementRules = append(elementRules, val.Length(lengthArr[0], lengthArr[1]))
+// 		case dschema.FieldRuleMaxType:
+// 			elementRules = append(elementRules, val.Max(ruleOptions))
+// 		case dschema.FieldRuleMinType:
+// 			elementRules = append(elementRules, val.Min(ruleOptions))
+// 		case dschema.FieldRuleOneOfType:
+// 			values := ruleOptions.([]any)
+// 			elementRules = append(elementRules, val.OneOf(values...))
+// 		}
+// 	}
+
+// 	return elementRules
+// }

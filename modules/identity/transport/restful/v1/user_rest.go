@@ -32,11 +32,11 @@ func init() {
 	schema.AdhocRegistry().Add(
 		"identity.createUserRequest",
 		schema.DefineAdhoc().
-			AdhocField(schema.CloneField("identity.user", "display_name").Required()).
+			Field(schema.CloneField("identity.user", "display_name").Required()).
 			FieldHolder("contact", true,
 				schema.DefineAdhoc().
-					AdhocField(schema.CloneField("identity.user", "email").Required()).
-					AdhocField(schema.CloneField("identity.user", "hierarchy_id").Required()),
+					Field(schema.CloneField("identity.user", "email").Required()).
+					Field(schema.CloneField("identity.user", "hierarchy_id").Required()),
 			).
 			Build(),
 	)

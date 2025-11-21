@@ -63,9 +63,13 @@ func (this *ValidationErrors) Has(field string) bool {
 	return ok
 }
 
-func (this *ValidationErrors) Merge(other ValidationErrors) {
+func (this *ValidationErrors) Merge(other ValidationErrors, keyPrefix ...string) {
+	prefix := ""
+	if len(keyPrefix) > 0 {
+		prefix = keyPrefix[0]
+	}
 	for field, err := range other {
-		(*this)[field] = err
+		(*this)[prefix+field] = err
 	}
 }
 

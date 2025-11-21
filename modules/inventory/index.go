@@ -6,7 +6,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
+	dbOrm "github.com/sky-as-code/nikki-erp/modules/core/database/orm"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/attribute"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/attributegroup"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
@@ -59,7 +59,7 @@ func (*InventoryModule) Init() error {
 	return err
 }
 
-func newInventoryClient(clientOpts *db.EntClientOptions) *ent.Client {
+func newInventoryClient(clientOpts *dbOrm.EntClientOptions) *ent.Client {
 	var client *ent.Client
 	if clientOpts.DebugEnabled {
 		client = ent.NewClient(ent.Driver(clientOpts.Driver), ent.Debug())

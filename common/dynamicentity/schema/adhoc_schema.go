@@ -22,15 +22,13 @@ func (this *AdhocSchema) Field(name string) (*AdhocField, bool) {
 }
 
 type AdhocField struct {
-	name         string
 	field        *EntityField
 	isHolder     bool
-	isRequired   bool
 	holderSchema *AdhocSchema
 }
 
 func (f *AdhocField) Name() string {
-	return f.name
+	return f.field.name
 }
 
 func (f *AdhocField) Field() *EntityField {
@@ -38,7 +36,7 @@ func (f *AdhocField) Field() *EntityField {
 }
 
 func (f *AdhocField) IsRequired() bool {
-	return f.isRequired
+	return f.field.isRequired
 }
 
 func (f *AdhocField) IsHolder() bool {
@@ -61,20 +59,7 @@ func DefineAdhoc() *AdhocSchemaBuilder {
 	}
 }
 
-func (this *AdhocSchemaBuilder) FieldFrom(name string, field *EntityField) *AdhocSchemaBuilder {
-	if field == nil {
-		panic(errors.New("field cannot be nil"))
-	}
-
-	this.schema.fields[name] = &AdhocField{
-		name:  name,
-		field: field,
-	}
-
-	return this
-}
-
-func (this *AdhocSchemaBuilder) AdhocField(fieldBuilder *FieldBuilder) *AdhocSchemaBuilder {
+func (this *AdhocSchemaBuilder) Field(fieldBuilder *FieldBuilder) *AdhocSchemaBuilder {
 	if fieldBuilder == nil {
 		panic(errors.New("field builder cannot be nil"))
 	}
@@ -83,8 +68,8 @@ func (this *AdhocSchemaBuilder) AdhocField(fieldBuilder *FieldBuilder) *AdhocSch
 	if err := validateFieldName(field); err != nil {
 		panic(err)
 	}
+
 	this.schema.fields[field.name] = &AdhocField{
-		name:  field.name,
 		field: field,
 	}
 	return this
@@ -97,7 +82,6 @@ func (this *AdhocSchemaBuilder) FieldHolder(name string, isRequired bool, holder
 	holderSchema := holderSchemaBuilder.Build()
 
 	this.schema.fields[name] = &AdhocField{
-		name:         name,
 		isHolder:     true,
 		field:        DefineField().Name(name).IsRequired(isRequired).Build(),
 		holderSchema: holderSchema,
