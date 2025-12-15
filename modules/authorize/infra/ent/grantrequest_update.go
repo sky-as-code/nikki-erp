@@ -339,6 +339,9 @@ func (gru *GrantRequestUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := gru.mutation.Status(); ok {
 		_spec.SetField(grantrequest.FieldStatus, field.TypeEnum, value)
 	}
+	if gru.mutation.OrgIDCleared() {
+		_spec.ClearField(grantrequest.FieldOrgID, field.TypeString)
+	}
 	if gru.mutation.PermissionHistoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -844,6 +847,9 @@ func (gruo *GrantRequestUpdateOne) sqlSave(ctx context.Context) (_node *GrantReq
 	}
 	if value, ok := gruo.mutation.Status(); ok {
 		_spec.SetField(grantrequest.FieldStatus, field.TypeEnum, value)
+	}
+	if gruo.mutation.OrgIDCleared() {
+		_spec.ClearField(grantrequest.FieldOrgID, field.TypeString)
 	}
 	if gruo.mutation.PermissionHistoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{

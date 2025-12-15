@@ -13,7 +13,8 @@ post {
 body:json {
   {
     "decision": "approve",
-    "responderId": "01JWNMZ36QHC7CQQ74NOTFOUND"
+    "responderId": "01JWNMZ36QHC7CQQ74NOTFOUND",
+    "etag": "{{grant_req_etag}}"
   }
 }
 
@@ -114,4 +115,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

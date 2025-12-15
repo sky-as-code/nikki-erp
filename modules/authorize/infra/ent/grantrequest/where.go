@@ -115,6 +115,11 @@ func TargetSuiteName(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldEQ(FieldTargetSuiteName, v))
 }
 
+// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
+func OrgID(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldEQ(FieldOrgID, v))
+}
+
 // AttachmentURLEQ applies the EQ predicate on the "attachment_url" field.
 func AttachmentURLEQ(v string) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldEQ(FieldAttachmentURL, v))
@@ -858,6 +863,81 @@ func StatusIn(vs ...Status) predicate.GrantRequest {
 // StatusNotIn applies the NotIn predicate on the "status" field.
 func StatusNotIn(vs ...Status) predicate.GrantRequest {
 	return predicate.GrantRequest(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// OrgIDEQ applies the EQ predicate on the "org_id" field.
+func OrgIDEQ(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldEQ(FieldOrgID, v))
+}
+
+// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
+func OrgIDNEQ(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldNEQ(FieldOrgID, v))
+}
+
+// OrgIDIn applies the In predicate on the "org_id" field.
+func OrgIDIn(vs ...string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldIn(FieldOrgID, vs...))
+}
+
+// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
+func OrgIDNotIn(vs ...string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldNotIn(FieldOrgID, vs...))
+}
+
+// OrgIDGT applies the GT predicate on the "org_id" field.
+func OrgIDGT(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldGT(FieldOrgID, v))
+}
+
+// OrgIDGTE applies the GTE predicate on the "org_id" field.
+func OrgIDGTE(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldGTE(FieldOrgID, v))
+}
+
+// OrgIDLT applies the LT predicate on the "org_id" field.
+func OrgIDLT(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldLT(FieldOrgID, v))
+}
+
+// OrgIDLTE applies the LTE predicate on the "org_id" field.
+func OrgIDLTE(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldLTE(FieldOrgID, v))
+}
+
+// OrgIDContains applies the Contains predicate on the "org_id" field.
+func OrgIDContains(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldContains(FieldOrgID, v))
+}
+
+// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
+func OrgIDHasPrefix(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldHasPrefix(FieldOrgID, v))
+}
+
+// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
+func OrgIDHasSuffix(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldHasSuffix(FieldOrgID, v))
+}
+
+// OrgIDIsNil applies the IsNil predicate on the "org_id" field.
+func OrgIDIsNil() predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldIsNull(FieldOrgID))
+}
+
+// OrgIDNotNil applies the NotNil predicate on the "org_id" field.
+func OrgIDNotNil() predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldNotNull(FieldOrgID))
+}
+
+// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
+func OrgIDEqualFold(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldEqualFold(FieldOrgID, v))
+}
+
+// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
+func OrgIDContainsFold(v string) predicate.GrantRequest {
+	return predicate.GrantRequest(sql.FieldContainsFold(FieldOrgID, v))
 }
 
 // HasPermissionHistories applies the HasEdge predicate on the "permission_histories" edge.

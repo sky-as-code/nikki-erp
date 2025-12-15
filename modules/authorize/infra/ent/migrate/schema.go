@@ -151,6 +151,7 @@ var (
 		{Name: "target_role_name", Type: field.TypeString, Nullable: true},
 		{Name: "target_suite_name", Type: field.TypeString, Nullable: true},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "approved", "rejected", "cancelled"}},
+		{Name: "org_id", Type: field.TypeString, Nullable: true},
 		{Name: "target_role_id", Type: field.TypeString, Nullable: true},
 		{Name: "target_suite_id", Type: field.TypeString, Nullable: true},
 	}
@@ -162,13 +163,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_grant_requests_authz_roles_role",
-				Columns:    []*schema.Column{AuthzGrantRequestsColumns[12]},
+				Columns:    []*schema.Column{AuthzGrantRequestsColumns[13]},
 				RefColumns: []*schema.Column{AuthzRolesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "authz_grant_requests_authz_role_suites_role_suite",
-				Columns:    []*schema.Column{AuthzGrantRequestsColumns[13]},
+				Columns:    []*schema.Column{AuthzGrantRequestsColumns[14]},
 				RefColumns: []*schema.Column{AuthzRoleSuitesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

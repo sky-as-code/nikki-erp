@@ -181,7 +181,7 @@ func (this *GrantRequestServiceImpl) CancelGrantRequest(ctx crud.Context, cmd it
 		Step(func(vErrs *fault.ValidationErrors) error {
 			dbGrantRequest, err = this.assertGrantRequestExists(ctx, grantRequest, vErrs)
 
-			if *dbGrantRequest.Status != domain.PendingGrantRequestStatus {
+			if dbGrantRequest != nil && *dbGrantRequest.Status != domain.PendingGrantRequestStatus {
 				vErrs.Append("grant_request_id", "grant request is not pending")
 			}
 			return err
@@ -260,7 +260,7 @@ func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx crud.Context, cmd
 		Step(func(vErrs *fault.ValidationErrors) error {
 			dbGrantRequest, err = this.assertGrantRequestExists(ctx, grantRequest, vErrs)
 
-			if *dbGrantRequest.Status != domain.PendingGrantRequestStatus {
+			if dbGrantRequest != nil && *dbGrantRequest.Status != domain.PendingGrantRequestStatus {
 				vErrs.Append("grant_request_id", "grant request is not pending")
 			}
 			return err
@@ -373,6 +373,8 @@ func (this *GrantRequestServiceImpl) setGrantRequestDefaults(grantRequest *domai
 }
 
 func (this *GrantRequestServiceImpl) assertTarget(ctx crud.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) {
+	var targetOrgId *model.Id
+
 	switch *grantRequest.TargetType {
 	case domain.GrantRequestTargetTypeRole:
 		role, err := this.roleRepo.FindById(ctx, itRole.FindByIdParam{Id: *grantRequest.TargetRef})
@@ -382,6 +384,8 @@ func (this *GrantRequestServiceImpl) assertTarget(ctx crud.Context, grantRequest
 			vErrs.AppendNotFound("targetRef", "target")
 			return
 		}
+
+		targetOrgId = role.OrgId
 		this.validateTarget(role.IsRequestable, role.IsRequiredAttachment, role.IsRequiredComment, grantRequest, vErrs)
 	case domain.GrantRequestTargetTypeSuite:
 		suite, err := this.suiteRepo.FindById(ctx, itRoleSuite.FindByIdParam{Id: *grantRequest.TargetRef})
@@ -391,7 +395,13 @@ func (this *GrantRequestServiceImpl) assertTarget(ctx crud.Context, grantRequest
 			vErrs.AppendNotFound("targetRef", "target")
 			return
 		}
+
+		targetOrgId = suite.OrgId
 		this.validateTarget(suite.IsRequestable, suite.IsRequiredAttachment, suite.IsRequiredComment, grantRequest, vErrs)
+	}
+
+	if targetOrgId != nil {
+		grantRequest.OrgId = targetOrgId
 	}
 }
 

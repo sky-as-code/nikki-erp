@@ -13,14 +13,15 @@ type RoleSuiteDto struct {
 	Id   model.Id   `json:"id"`
 	Etag model.Etag `json:"etag"`
 
-	Name                 string   `json:"name"`
-	Description          *string  `json:"description,omitempty"`
-	OwnerType            string   `json:"ownerType"`
-	OwnerRef             string   `json:"ownerRef"`
-	IsRequestable        *bool    `json:"isRequestable,omitempty"`
-	IsRequiredAttachment *bool    `json:"isRequiredAttachment,omitempty"`
-	IsRequiredComment    *bool    `json:"isRequiredComment,omitempty"`
-	CreatedBy            model.Id `json:"createdBy"`
+	Name                 string    `json:"name"`
+	Description          *string   `json:"description,omitempty"`
+	OwnerType            string    `json:"ownerType"`
+	OwnerRef             string    `json:"ownerRef"`
+	IsRequestable        *bool     `json:"isRequestable,omitempty"`
+	IsRequiredAttachment *bool     `json:"isRequiredAttachment,omitempty"`
+	IsRequiredComment    *bool     `json:"isRequiredComment,omitempty"`
+	CreatedBy            model.Id  `json:"createdBy"`
+	OrgId                *model.Id `json:"orgId,omitempty"`
 
 	Roles []RoleSummaryDto `json:"roles,omitempty"`
 }

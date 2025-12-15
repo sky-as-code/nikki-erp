@@ -46,7 +46,8 @@ func (this *GrantRequestEntRepository) Create(ctx crud.Context, grantRequest *do
 		SetStatus(entGrantRequest.Status(*grantRequest.Status)).
 		SetNillableTargetRoleName(grantRequest.TargetRoleName).
 		SetNillableTargetSuiteName(grantRequest.TargetSuiteName).
-		SetCreatedAt(time.Now())
+		SetCreatedAt(time.Now()).
+		SetNillableOrgID(grantRequest.OrgId)
 
 	switch *grantRequest.TargetType {
 	case domain.GrantRequestTargetTypeRole:

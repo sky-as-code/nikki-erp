@@ -45,6 +45,8 @@ type GrantRequest struct {
 	TargetSuiteName *string `json:"target_suite_name,omitempty"`
 	// Status holds the value of the "status" field.
 	Status grantrequest.Status `json:"status,omitempty"`
+	// Get the value from Target's original source when creating a grant request.
+	OrgID *string `json:"org_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GrantRequestQuery when eager-loading is set.
 	Edges        GrantRequestEdges `json:"edges"`
@@ -111,7 +113,7 @@ func (*GrantRequest) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case grantrequest.FieldID, grantrequest.FieldAttachmentURL, grantrequest.FieldComment, grantrequest.FieldCreatedBy, grantrequest.FieldEtag, grantrequest.FieldReceiverID, grantrequest.FieldReceiverType, grantrequest.FieldTargetType, grantrequest.FieldTargetRoleID, grantrequest.FieldTargetRoleName, grantrequest.FieldTargetSuiteID, grantrequest.FieldTargetSuiteName, grantrequest.FieldStatus:
+		case grantrequest.FieldID, grantrequest.FieldAttachmentURL, grantrequest.FieldComment, grantrequest.FieldCreatedBy, grantrequest.FieldEtag, grantrequest.FieldReceiverID, grantrequest.FieldReceiverType, grantrequest.FieldTargetType, grantrequest.FieldTargetRoleID, grantrequest.FieldTargetRoleName, grantrequest.FieldTargetSuiteID, grantrequest.FieldTargetSuiteName, grantrequest.FieldStatus, grantrequest.FieldOrgID:
 			values[i] = new(sql.NullString)
 		case grantrequest.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -220,6 +222,13 @@ func (gr *GrantRequest) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				gr.Status = grantrequest.Status(value.String)
 			}
+		case grantrequest.FieldOrgID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field org_id", values[i])
+			} else if value.Valid {
+				gr.OrgID = new(string)
+				*gr.OrgID = value.String
+			}
 		default:
 			gr.selectValues.Set(columns[i], values[i])
 		}
@@ -326,6 +335,11 @@ func (gr *GrantRequest) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", gr.Status))
+	builder.WriteString(", ")
+	if v := gr.OrgID; v != nil {
+		builder.WriteString("org_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

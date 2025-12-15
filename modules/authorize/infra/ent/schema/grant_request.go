@@ -73,6 +73,12 @@ func (GrantRequestMixin) Fields() []ent.Field {
 
 		field.Enum("status").
 			Values("pending", "approved", "rejected", "cancelled"),
+
+		field.String("org_id").
+			Nillable().
+			Optional().
+			Immutable().
+			Comment("Get the value from Target's original source when creating a grant request."),
 	}
 }
 

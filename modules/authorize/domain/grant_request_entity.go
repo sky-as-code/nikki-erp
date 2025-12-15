@@ -25,6 +25,7 @@ type GrantRequest struct {
 	Status          *GrantRequestStatus     `json:"status,omitempty"`
 	TargetRoleName  *string                 `json:"targetRoleName,omitempty"`  // Set after role is deleted
 	TargetSuiteName *string                 `json:"targetSuiteName,omitempty"` // Set after role suite is deleted
+	OrgId           *model.Id               `json:"orgId,omitempty"`
 
 	Role           *Role           `json:"role,omitempty" model:"-"` // TODO: Handle copy
 	RoleSuite      *RoleSuite      `json:"roleSuite,omitempty" model:"-"`

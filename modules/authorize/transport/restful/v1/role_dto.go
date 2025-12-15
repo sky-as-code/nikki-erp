@@ -16,14 +16,15 @@ type RoleDto struct {
 	Etag      model.Etag `json:"etag"`
 	CreatedAt time.Time  `json:"createdAt"`
 
-	Name                 string   `json:"name"`
-	Description          *string  `json:"description,omitempty"`
-	OwnerType            string   `json:"ownerType"`
-	OwnerRef             model.Id `json:"ownerRef"`
-	IsRequestable        bool     `json:"isRequestable"`
-	IsRequiredAttachment bool     `json:"isRequiredAttachment"`
-	IsRequiredComment    bool     `json:"isRequiredComment"`
-	CreatedBy            model.Id `json:"createdBy"`
+	Name                 string    `json:"name"`
+	Description          *string   `json:"description,omitempty"`
+	OwnerType            string    `json:"ownerType"`
+	OwnerRef             model.Id  `json:"ownerRef"`
+	IsRequestable        bool      `json:"isRequestable"`
+	IsRequiredAttachment bool      `json:"isRequiredAttachment"`
+	IsRequiredComment    bool      `json:"isRequiredComment"`
+	CreatedBy            model.Id  `json:"createdBy"`
+	OrgId                *model.Id `json:"orgId,omitempty"`
 
 	Entitlements []EntitlementSummaryDto `json:"entitlements,omitempty"`
 }
