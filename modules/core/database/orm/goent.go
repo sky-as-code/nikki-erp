@@ -1,6 +1,8 @@
 package orm
 
 import (
+	"database/sql"
+
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
 
@@ -9,38 +11,26 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/database/dialects"
 )
 
-type EntDriverOptions struct {
-	dialects.DialectOptions
-
-	DialectName  dialects.DialectName
-	DebugEnabled bool
-}
-
 type EntClientOptions struct {
 	Driver       *entsql.Driver
 	DebugEnabled bool
 }
 
-func InitEntOrm(opts EntDriverOptions) error {
-	conn, err := dialects.OpenConnection(opts.DialectName, opts.DialectOptions)
-	if err != nil {
-		return err
-	}
-
+func InitEntOrm(dbDialect dialects.DialectName, conn *sql.DB, isDebugEnabled bool) error {
 	var driver *entsql.Driver
-	switch opts.DialectName {
+	switch dbDialect {
 	case dialect.MySQL:
 		driver = entsql.OpenDB(dialect.MySQL, conn)
 	case dialect.Postgres:
 		driver = entsql.OpenDB(dialect.Postgres, conn)
 	default:
-		return errors.Errorf("unsupported dialect: %s", opts.DialectName)
+		return errors.Errorf("unsupported dialect: %s", dbDialect)
 	}
 
 	return deps.Register(func() *EntClientOptions {
 		return &EntClientOptions{
 			Driver:       driver,
-			DebugEnabled: opts.DebugEnabled,
+			DebugEnabled: isDebugEnabled,
 		}
 	})
 }

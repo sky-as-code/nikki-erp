@@ -16,6 +16,9 @@ const (
 )
 
 type DialectOptions struct {
+	DialectName    DialectName
+	IsDebugEnabled bool
+
 	Database     string
 	HostPort     string
 	User         string
@@ -29,12 +32,11 @@ type DialectOptions struct {
 }
 
 type DbDialect interface {
-	BuildDataSourceName(opts DialectOptions) (string, error)
 	Open(opts DialectOptions) (*sql.DB, error)
 }
 
-func OpenConnection(dialectName DialectName, opts DialectOptions) (conn *sql.DB, err error) {
-	switch dialectName {
+func OpenConnection(opts DialectOptions) (conn *sql.DB, err error) {
+	switch opts.DialectName {
 	case MySql:
 		conn, err = MysqlDialect{}.Open(opts)
 		setConnOptions(conn, opts)
@@ -42,7 +44,7 @@ func OpenConnection(dialectName DialectName, opts DialectOptions) (conn *sql.DB,
 		conn, err = PostgresqlDialect{}.Open(opts)
 		setConnOptions(conn, opts)
 	default:
-		err = errors.Errorf("unsupported dialect: %s", dialectName)
+		err = errors.Errorf("unsupported dialect: %s", opts.DialectName)
 		return nil, err
 	}
 

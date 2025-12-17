@@ -7,43 +7,47 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/go-model"
+	"github.com/sky-as-code/nikki-erp/common/module"
 	"github.com/sky-as-code/nikki-erp/common/semver"
-	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
 	repo "github.com/sky-as-code/nikki-erp/modules/essential/infra/repository"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 	"github.com/sky-as-code/nikki-erp/modules/essential/transport"
 )
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
-var ModuleSingleton modules.InCodeModule = &EssentialModule{}
+var ModuleSingleton module.InCodeModule = &EssentialModule{}
 
 type EssentialModule struct {
 }
 
-// LabelKey implements NikkiModule.
+// LabelKey implements InCodeModule.
 func (*EssentialModule) LabelKey() string {
-	return "essentialzz.moduleLabel"
+	return "essential.moduleLabel"
 }
 
-// Name implements NikkiModule.
+// Name implements InCodeModule.
 func (*EssentialModule) Name() string {
 	return "essential"
 }
 
-// Deps implements NikkiModule.
+// Deps implements InCodeModule.
 func (*EssentialModule) Deps() []string {
 	return nil
 }
 
-// Version implements NikkiModule.
+// Version implements InCodeModule.
 func (*EssentialModule) Version() semver.SemVer {
-	return *semver.MustParseSemVer("v1.0.1")
+	return *semver.MustParseSemVer("v1.0.0")
 }
 
-// Init implements NikkiModule.
-func (*EssentialModule) Init() error {
+// Init implements InCodeModule.
+func (this *EssentialModule) Init(opts module.ModuleInitOptions) error {
+	opts.RegisterSchema(domain.EntitySchemaBuilder(), this.Name())
+	opts.RegisterSchema(domain.EntityRelationSchemaBuilder(), this.Name())
+
 	err := errors.Join(
 		repo.InitRepositories(),
 		app.InitServices(),
@@ -54,7 +58,7 @@ func (*EssentialModule) Init() error {
 
 // OnAppStarted implements NikkiModuleAppStarted.
 func (*EssentialModule) OnAppStarted() error {
-	return deps.Invoke(func(modules []modules.InCodeModule, moduleSvc it.ModuleService) error {
+	return deps.Invoke(func(modules []module.InCodeModule, moduleSvc it.ModuleService) error {
 		ctx := crud.NewRequestContext(context.Background())
 		_, err := moduleSvc.SyncModuleMetadata(ctx, modules)
 		return err

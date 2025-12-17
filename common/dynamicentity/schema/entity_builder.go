@@ -11,10 +11,9 @@ type EntitySchemaBuilder struct {
 	schema EntitySchema
 }
 
-func DefineEntity(name string) *EntitySchemaBuilder {
+func DefineEntity() *EntitySchemaBuilder {
 	return &EntitySchemaBuilder{
 		schema: EntitySchema{
-			name:   name,
 			fields: make(map[string]*EntityField),
 		},
 	}
@@ -34,6 +33,11 @@ func (b *EntitySchemaBuilder) Description(description model.LangJson) *EntitySch
 	return b
 }
 
+func (b *EntitySchemaBuilder) Name(name string) *EntitySchemaBuilder {
+	b.schema.name = name
+	return b
+}
+
 func (b *EntitySchemaBuilder) Field(fieldBuilder *FieldBuilder) *EntitySchemaBuilder {
 	if fieldBuilder == nil {
 		return b
@@ -47,6 +51,14 @@ func (b *EntitySchemaBuilder) Field(fieldBuilder *FieldBuilder) *EntitySchemaBui
 		b.schema.fields = make(map[string]*EntityField)
 	}
 	b.schema.fields[field.name] = field
+
+	if field.relation != nil {
+		rel := field.relation
+		rel.SrcField = field.name
+		b.schema.relations = append(b.schema.relations, *rel)
+		field.relation = nil
+	}
+
 	return b
 }
 
@@ -61,6 +73,11 @@ func (b *EntitySchemaBuilder) Rule(name any, args ...any) *EntitySchemaBuilder {
 	rule := EntityRule{name}
 	rule = append(rule, args...)
 	b.schema.rules = append(b.schema.rules, rule)
+	return b
+}
+
+func (b *EntitySchemaBuilder) TableName(tableName string) *EntitySchemaBuilder {
+	b.schema.tableName = tableName
 	return b
 }
 
@@ -141,9 +158,55 @@ func (b *FieldBuilder) Default(value any) *FieldBuilder {
 	return b
 }
 
+func (b *FieldBuilder) Foreign(relationBuilder *RelationBuilder) *FieldBuilder {
+	if relationBuilder == nil {
+		return b
+	}
+	b.field.relation = relationBuilder.Build()
+	return b
+}
+
 func (b *FieldBuilder) Build() *EntityField {
 	if b.field.name == "" {
 		panic("field name is required")
 	}
 	return b.field
+}
+
+type RelationBuilder struct {
+	relation *EntityRelation
+}
+
+func Edge(edgeName string) *RelationBuilder {
+	return &RelationBuilder{
+		relation: &EntityRelation{
+			Edge: edgeName,
+		},
+	}
+}
+
+func (b *RelationBuilder) OneToOne(entityName string, destField string) *RelationBuilder {
+	b.relation.RelationType = RelationTypeOneToOne
+	b.relation.DestEntityName = entityName
+	b.relation.DestField = destField
+	return b
+}
+
+func (b *RelationBuilder) ManyToOne(entityName string, targetField string) *RelationBuilder {
+	b.relation.RelationType = RelationTypeManyToOne
+	b.relation.DestEntityName = entityName
+	b.relation.DestField = targetField
+	return b
+}
+
+func (b *RelationBuilder) ManyToMany(throughTableName string, throughSrcCol string, throughDestCol string) *RelationBuilder {
+	b.relation.RelationType = RelationTypeManyToMany
+	b.relation.ThroughTableName = throughTableName
+	b.relation.ThroughSrcCol = throughSrcCol
+	b.relation.ThroughDestCol = throughDestCol
+	return b
+}
+
+func (b *RelationBuilder) Build() *EntityRelation {
+	return b.relation
 }

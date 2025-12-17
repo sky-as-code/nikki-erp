@@ -1,7 +1,7 @@
 package module
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/common/module"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
@@ -12,5 +12,5 @@ type ModuleService interface {
 	GetModule(ctx crud.Context, query GetModuleByIdQuery) (result *GetModuleResult, err error)
 	ListModules(ctx crud.Context, query ListModulesQuery) (result *ListModulesResult, err error)
 	UpdateModule(ctx crud.Context, cmd UpdateModuleCommand) (*UpdateModuleResult, error)
-	SyncModuleMetadata(ctx crud.Context, installedModules []modules.InCodeModule) (bool, error)
+	SyncModuleMetadata(ctx crud.Context, installedModules []module.InCodeModule) (bool, error)
 }

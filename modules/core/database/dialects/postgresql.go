@@ -11,7 +11,21 @@ import (
 type PostgresqlDialect struct {
 }
 
-func (PostgresqlDialect) BuildDataSourceName(opts DialectOptions) (string, error) {
+func (this PostgresqlDialect) Open(opts DialectOptions) (*sql.DB, error) {
+	dsn, err := this.buildDataSourceName(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn, nil
+}
+
+func (PostgresqlDialect) buildDataSourceName(opts DialectOptions) (string, error) {
 	var sslmode string
 
 	if opts.IsTlsEnabled {
@@ -27,18 +41,4 @@ func (PostgresqlDialect) BuildDataSourceName(opts DialectOptions) (string, error
 		opts.User, escapedPassword, opts.HostPort, opts.Database, sslmode)
 
 	return dsn, nil
-}
-
-func (this PostgresqlDialect) Open(opts DialectOptions) (*sql.DB, error) {
-	dsn, err := this.BuildDataSourceName(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	conn, err := sql.Open("postgres", dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	return conn, nil
 }

@@ -5,16 +5,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
-func init() {
-	schema.AddSchema(schema.DefineEntity("identity.user").
-		Field(
-			schema.DefineField().
-				Name("email").
-				Label(model.LangJson{"en-US": "Email"}).
-				DataType(schema.FieldDataTypeEmail).
-				Required().
-				Rule(schema.FieldRuleUnique()),
-		).
+func UserSchemaBuilder() *schema.EntitySchemaBuilder {
+	return schema.DefineEntity().
 		Field(
 			schema.DefineField().
 				Name("display_name").
@@ -42,6 +34,5 @@ func init() {
 			schema.DefineField().
 				Name("hierarchy_id").
 				DataType(schema.FieldDataTypeUlid),
-		).
-		Build())
+		)
 }

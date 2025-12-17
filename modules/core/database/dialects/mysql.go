@@ -9,7 +9,20 @@ import (
 type MysqlDialect struct {
 }
 
-func (MysqlDialect) BuildDataSourceName(opts DialectOptions) (string, error) {
+func (this MysqlDialect) Open(opts DialectOptions) (*sql.DB, error) {
+	dsn, err := this.buildDataSourceName(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
+}
+
+func (MysqlDialect) buildDataSourceName(opts DialectOptions) (string, error) {
 	var tls string
 
 	if opts.IsTlsEnabled {
@@ -25,17 +38,4 @@ func (MysqlDialect) BuildDataSourceName(opts DialectOptions) (string, error) {
 		opts.User, escapedPassword, opts.HostPort, opts.Database, tls)
 
 	return dsn, nil
-}
-
-func (this MysqlDialect) Open(opts DialectOptions) (*sql.DB, error) {
-	dsn, err := this.BuildDataSourceName(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	conn, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return nil, err
-	}
-	return conn, nil
 }

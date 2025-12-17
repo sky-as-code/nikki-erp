@@ -15,52 +15,63 @@ type EntitySchema struct {
 	fields      map[string]*EntityField `json:"fields"`
 	rules       []EntityRule            `json:"rules"`
 	relations   []EntityRelation        `json:"relations"`
+	tableName   string                  `json:"table_name"`
 }
 
-func (s EntitySchema) Name() string {
-	return s.name
+func (this EntitySchema) Name() string {
+	return this.name
 }
 
-func (s EntitySchema) Label() model.LangJson {
-	return s.label
+func (this EntitySchema) Label() model.LangJson {
+	return this.label
 }
 
-func (s EntitySchema) Description() model.LangJson {
-	return s.description
+func (this EntitySchema) Description() model.LangJson {
+	return this.description
 }
 
-func (s EntitySchema) Fields() map[string]*EntityField {
-	return s.fields
+func (this EntitySchema) Fields() map[string]*EntityField {
+	return this.fields
 }
 
-func (s EntitySchema) Rules() []EntityRule {
-	return s.rules
+func (this EntitySchema) Rules() []EntityRule {
+	return this.rules
 }
 
-func (s EntitySchema) Relations() []EntityRelation {
-	return s.relations
+func (this EntitySchema) Relations() []EntityRelation {
+	return this.relations
 }
 
-func (s EntitySchema) Field(name string) (*EntityField, bool) {
-	field, ok := s.fields[name]
+func (this EntitySchema) Field(name string) (*EntityField, bool) {
+	field, ok := this.fields[name]
 	return field, ok
 }
 
+// TableName returns the table name associated with this schema.
+func (this EntitySchema) TableName() string {
+	return this.tableName
+}
+
 type EntityRelation struct {
-	SourceField   string        `json:"source_field"`
-	RelationType  RelationType  `json:"relation_type"`
-	ThroughEntity *EntitySchema `json:"through_entity"`
-	ForeignEntity EntitySchema  `json:"foreign_entity"`
-	ForeignField  string        `json:"foreign_field"`
+	Edge           string        `json:"edge"`
+	SrcField       string        `json:"src_field"`
+	RelationType   RelationType  `json:"relation_type"`
+	DestEntityName string        `json:"dest_entity_name"`
+	DestEntity     *EntitySchema `json:"dest_entity"`
+	DestField      string        `json:"dest_field"`
+
+	ThroughEntity    *EntitySchema `json:"through_entity,omitempty"`
+	ThroughTableName string        `json:"through_table_name,omitempty"`
+	ThroughSrcCol    string        `json:"through_foreign_col,omitempty"`
+	ThroughDestCol   string        `json:"through_dest_col,omitempty"`
 }
 
 type RelationType string
 
 const (
-	RelationTypeBelongsToOne  = RelationType("belongsToOne")
-	RelationTypeHasOne        = RelationType("hasOne")
-	RelationTypeHasMany       = RelationType("hasMany")
-	RelationTypeBelongsToMany = RelationType("belongsToMany")
+	RelationTypeOneToOne   = RelationType("one:one")
+	RelationTypeManyToOne  = RelationType("many:one")
+	RelationTypeManyToMany = RelationType("many:many")
 )
 
 type EntityRule []any
@@ -80,43 +91,44 @@ type EntityField struct {
 	isRequired      bool
 	rules           []*FieldRule
 	defaultValue    any
+	relation        *EntityRelation
 }
 
 // Getter methods
-func (f *EntityField) Name() string {
-	return f.name
+func (this *EntityField) Name() string {
+	return this.name
 }
 
-func (f *EntityField) Label() model.LangJson {
-	return f.label
+func (this *EntityField) Label() model.LangJson {
+	return this.label
 }
 
-func (f *EntityField) DataType() FieldDataType {
-	return f.dataType
+func (this *EntityField) DataType() FieldDataType {
+	return this.dataType
 }
 
-func (f *EntityField) DataTypeOptions() FieldDataTypeOptions {
-	return f.dataTypeOptions
+func (this *EntityField) DataTypeOptions() FieldDataTypeOptions {
+	return this.dataTypeOptions
 }
 
-func (f *EntityField) Description() model.LangJson {
-	return f.description
+func (this *EntityField) Description() model.LangJson {
+	return this.description
 }
 
-func (f *EntityField) IsArray() bool {
-	return f.isArray
+func (this *EntityField) IsArray() bool {
+	return this.isArray
 }
 
-func (f *EntityField) IsRequired() bool {
-	return f.isRequired
+func (this *EntityField) IsRequired() bool {
+	return this.isRequired
 }
 
-func (f *EntityField) Rules() []*FieldRule {
-	return f.rules
+func (this *EntityField) Rules() []*FieldRule {
+	return this.rules
 }
 
-func (f *EntityField) Default() any {
-	return f.defaultValue
+func (this *EntityField) Default() any {
+	return this.defaultValue
 }
 
 type FieldDataType string
@@ -162,26 +174,27 @@ type FieldDataTypeOptName string
 type FieldDataTypeOptions map[FieldDataTypeOptName]any
 
 const (
-	FieldDataTypeOptPrecision = FieldDataTypeOptName("precision")
+	FieldDataTypeOptEnumValues = FieldDataTypeOptName("enumValues")
+	FieldDataTypeOptPrecision  = FieldDataTypeOptName("precision")
 )
 
 type FieldRule []any
 
-func (r FieldRule) RuleName() FieldRuleName {
-	if len(r) == 0 {
+func (this FieldRule) RuleName() FieldRuleName {
+	if len(this) == 0 {
 		return ""
 	}
-	if name, ok := r[0].(FieldRuleName); ok {
+	if name, ok := this[0].(FieldRuleName); ok {
 		return name
 	}
-	return FieldRuleName(fmt.Sprint(r[0]))
+	return FieldRuleName(fmt.Sprint(this[0]))
 }
 
-func (r FieldRule) RuleOptions() any {
-	if len(r) < 2 {
+func (this FieldRule) RuleOptions() any {
+	if len(this) < 2 {
 		return nil
 	}
-	return r[1]
+	return this[1]
 }
 
 type FieldRuleName string
@@ -229,28 +242,29 @@ func FieldRuleUnique() FieldRule {
 	return FieldRule{FieldRuleUniqueType}
 }
 
-func (f *EntityField) Clone() *EntityField {
+func (this *EntityField) Clone() *EntityField {
 	cloned := &EntityField{
-		name:            f.name,
-		label:           f.label,
-		dataType:        f.dataType,
+		name:            this.name,
+		label:           this.label,
+		dataType:        this.dataType,
 		dataTypeOptions: make(FieldDataTypeOptions),
-		description:     f.description,
-		isArray:         f.isArray,
-		isRequired:      f.isRequired,
-		rules:           make([]*FieldRule, len(f.rules)),
-		defaultValue:    f.defaultValue,
+		description:     this.description,
+		isArray:         this.isArray,
+		isRequired:      this.isRequired,
+		rules:           make([]*FieldRule, len(this.rules)),
+		defaultValue:    this.defaultValue,
+		relation:        this.relation,
 	}
 
 	// Deep copy DataTypeOptions
-	if f.dataTypeOptions != nil {
-		for k, v := range f.dataTypeOptions {
+	if this.dataTypeOptions != nil {
+		for k, v := range this.dataTypeOptions {
 			cloned.dataTypeOptions[k] = v
 		}
 	}
 
 	// Deep copy Rules
-	copy(cloned.rules, f.rules)
+	copy(cloned.rules, this.rules)
 
 	return cloned
 }

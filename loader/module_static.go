@@ -4,7 +4,7 @@
 package loader
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/common/module"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate"
 	"github.com/sky-as-code/nikki-erp/modules/authorize"
 
@@ -13,12 +13,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity"
 )
 
-func LoadModules() ([]modules.InCodeModule, error) {
+func LoadModules() ([]module.InCodeModule, error) {
 	return getStaticModules(), nil
 }
 
-func getStaticModules() []modules.InCodeModule {
-	modules := []modules.InCodeModule{
+func getStaticModules() []module.InCodeModule {
+	modules := []module.InCodeModule{
 		// Sort alphabetically. The order of initialization will be handled properly.
 		authorize.ModuleSingleton,
 		authenticate.ModuleSingleton,

@@ -65,18 +65,17 @@ func IdValidateRuleMulti(field *[]Id, isRequired bool, minLength int, maxLength 
 
 var ulidRegExp = val.RegExp(regexp.MustCompile(`(?i)^[0-9A-HJKMNP-TV-Z]{26}$`))
 
-func IdRuleQuick(isRequired bool) []val.Rule {
-	return []val.Rule{
-		val.NotNilWhen(isRequired),
-		val.NotEmpty,
-		val.Length(MODEL_RULE_ULID_LENGTH, MODEL_RULE_ULID_LENGTH),
-	}
+var idRules = []val.Rule{
+	val.Length(MODEL_RULE_ULID_LENGTH, MODEL_RULE_ULID_LENGTH),
+	ulidRegExp,
+}
+
+func IdRules() []val.Rule {
+	return idRules
 }
 
 func IdRule(isRequired bool) []val.Rule {
-	rules := IdRuleQuick(isRequired)
-	rules = append(rules, ulidRegExp)
-	return rules
+	return append(idRules, ulidRegExp)
 }
 
 type Etag = string
@@ -108,6 +107,10 @@ var etagQuickRules = []val.Rule{
 	val.Length(MODEL_RULE_ETAG_MIN_LENGTH, MODEL_RULE_ETAG_MAX_LENGTH),
 }
 
+var etagRules = []val.Rule{
+	val.Length(MODEL_RULE_ETAG_MIN_LENGTH, MODEL_RULE_ETAG_MAX_LENGTH),
+}
+
 func EtagRuleQuick(isRequired bool) []val.Rule {
 	rules := []val.Rule{}
 	rules = append(rules, val.NotNilWhen(isRequired))
@@ -117,6 +120,10 @@ func EtagRuleQuick(isRequired bool) []val.Rule {
 
 func EtagRule(isRequired bool) []val.Rule {
 	return EtagRuleQuick(isRequired)
+}
+
+func EtagRules() []val.Rule {
+	return etagRules
 }
 
 type Slug = string
@@ -142,18 +149,17 @@ func SlugValidateRule(field *Slug, isRequired bool) *val.FieldRules {
 
 var slugRegExp = val.RegExp(regexp.MustCompile(`(?i)^[a-z0-9]+(?:-[a-z0-9]+)*$`))
 
-func SlugRuleQuick(isRequired bool) []val.Rule {
-	return []val.Rule{
-		val.NotNilWhen(isRequired),
-		val.NotEmpty,
-		val.Length(1, MODEL_RULE_SHORT_NAME_LENGTH),
-	}
+var slugRules = []val.Rule{
+	val.Length(1, MODEL_RULE_SHORT_NAME_LENGTH),
+	slugRegExp,
+}
+
+func SlugRules() []val.Rule {
+	return slugRules
 }
 
 func SlugRule(isRequired bool) []val.Rule {
-	rules := SlugRuleQuick(isRequired)
-	rules = append(rules, slugRegExp)
-	return rules
+	return append(slugRules, slugRegExp)
 }
 
 // LanguageCode is a BCP47-compliant language code with region part.
@@ -214,7 +220,6 @@ var langCodeRule = val.By(func(value any) error {
 })
 
 var langCodeRules = []val.Rule{
-	val.NotEmpty,
 	val.Length(2, MODEL_RULE_BCP47_LANGUAGE_CODE_LENGTH),
 	langCodeRule,
 }
@@ -239,6 +244,10 @@ func LanguageCodeRule(isRequired bool) []val.Rule {
 	rules := LanguageCodeRuleQuick(isRequired)
 	rules = append(rules, langCodeRule)
 	return rules
+}
+
+func LanguageCodeRules() []val.Rule {
+	return langCodeRules
 }
 
 type LangJson map[LanguageCode]string
@@ -346,6 +355,49 @@ func LangJsonRuleQuick(isRequired bool) []val.Rule {
 	return []val.Rule{
 		val.NotNilWhen(isRequired),
 		val.NotEmpty,
+	}
+}
+
+func LangJsonRules(minLength int, maxLength int) []val.Rule {
+	keyRules := []val.Rule{
+		val.NotEmpty,
+		val.Length(minLength, maxLength),
+	}
+
+	return []val.Rule{
+		val.By(func(value any) error {
+			langJson, ok := value.(LangJson)
+			if !ok {
+				langJsonPtr, _ := value.(*LangJson)
+				if langJsonPtr == nil {
+					return nil
+				}
+				langJson = *langJsonPtr
+			}
+
+			errs := val.Errors{}
+			for langCode, valStr := range langJson {
+				if err := val.ApiBased.ValidateRaw(langCode, langCodeRules...); err != nil {
+					errs[invalidKey(langCode)] = err
+				}
+
+				if langCode == LabelRefLanguageCode {
+					if err := translationKeyRules.Validate(valStr); err != nil {
+						errs[langCode] = err
+					}
+				} else {
+					if err := val.ApiBased.ValidateRaw(valStr, keyRules...); err != nil {
+						errs[langCode] = err
+					}
+				}
+			}
+
+			if len(errs) > 0 {
+				return errs
+			}
+
+			return nil
+		}),
 	}
 }
 

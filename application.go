@@ -8,9 +8,10 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	dschema "github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/module"
 	"github.com/sky-as-code/nikki-erp/loader"
-	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
@@ -23,7 +24,7 @@ func newApplication(logger logging.LoggerService) *Application {
 }
 
 type Application struct {
-	modules []modules.InCodeModule
+	modules []module.InCodeModule
 	config  config.ConfigService
 	logger  logging.LoggerService
 }
@@ -33,7 +34,7 @@ func (this *Application) Config() config.ConfigService {
 }
 
 func (this *Application) Start() {
-	modules := []modules.InCodeModule{}
+	modules := []module.InCodeModule{}
 	var err error
 
 	modules, err = loader.LoadModules()
@@ -66,8 +67,8 @@ func (this *Application) initModules() error {
 	return this.initializeInOrder(moduleMap, depGraph)
 }
 
-func (this *Application) buildModuleMap() map[string]modules.InCodeModule {
-	moduleMap := make(map[string]modules.InCodeModule)
+func (this *Application) buildModuleMap() map[string]module.InCodeModule {
+	moduleMap := make(map[string]module.InCodeModule)
 	moduleMap["core"] = core.ModuleSingleton
 	for _, mod := range this.modules {
 		moduleMap[mod.Name()] = mod
@@ -75,7 +76,7 @@ func (this *Application) buildModuleMap() map[string]modules.InCodeModule {
 	return moduleMap
 }
 
-func (this *Application) buildDependencyGraph(moduleMap map[string]modules.InCodeModule) (map[string][]string, error) {
+func (this *Application) buildDependencyGraph(moduleMap map[string]module.InCodeModule) (map[string][]string, error) {
 	depGraph := make(map[string][]string)
 
 	for _, mod := range this.modules {
@@ -98,7 +99,7 @@ func (this *Application) validateDependencies(depGraph map[string][]string) erro
 	return nil
 }
 
-func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeModule, depGraph map[string][]string) error {
+func (this *Application) initializeInOrder(moduleMap map[string]module.InCodeModule, depGraph map[string][]string) error {
 	this.logger.Info("Start initializing modules", nil)
 
 	initOrder, err := topologicalSort(depGraph)
@@ -107,7 +108,7 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 	}
 
 	initOrder = array.Prepend(initOrder, "core")
-	orderedMods := make([]modules.InCodeModule, 0)
+	orderedMods := make([]module.InCodeModule, 0)
 	for _, modName := range initOrder {
 		mod := moduleMap[modName]
 		if err := this.initModule(mod); err != nil {
@@ -117,12 +118,12 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 		this.logger.Debugf("Initialized module %s", mod.Name())
 	}
 
-	deps.Register(func() []modules.InCodeModule {
+	deps.Register(func() []module.InCodeModule {
 		return orderedMods
 	})
 
 	for _, mod := range orderedMods {
-		modWithAppStarted, ok := mod.(modules.InCodeModuleAppStarted)
+		modWithAppStarted, ok := mod.(module.InCodeModuleAppStarted)
 		if ok {
 			if err := modWithAppStarted.OnAppStarted(); err != nil {
 				return err
@@ -134,13 +135,17 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 	return nil
 }
 
-func (this *Application) initModule(mod modules.InCodeModule) (err error) {
+func (this *Application) initModule(mod module.InCodeModule) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicf(recover(), "failed to initialize module '%s'", mod.Name()); e != nil {
 			err = e
 		}
 	}()
-	if err := mod.Init(); err != nil {
+
+	opts := module.ModuleInitOptions{
+		RegisterSchema: dschema.RegisterSchema,
+	}
+	if err := mod.Init(opts); err != nil {
 		panic(err)
 	}
 	return nil
