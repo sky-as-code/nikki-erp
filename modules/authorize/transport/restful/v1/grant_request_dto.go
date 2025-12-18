@@ -15,10 +15,12 @@ type GrantRequestDto struct {
 
 	AttachmentUrl *string   `json:"attachmentUrl,omitempty"`
 	Comment       *string   `json:"comment,omitempty"`
-	TargetType    string    `json:"targetType,omitempty"`
+	TargetType    string    `json:"targetType"`
 	TargetRef     *model.Id `json:"targetRef,omitempty"`
+	ReceiverType  string    `json:"receiverType"`
 	ResponseId    *model.Id `json:"responseId,omitempty"`
 	Status        string    `json:"status,omitempty"`
+	OrgId         *model.Id `json:"orgId,omitempty"`
 
 	GrantResponses []GrantResponseDto `json:"grantResponses,omitempty"`
 	Receiver       *UserSummaryDto    `json:"receiver,omitempty"`

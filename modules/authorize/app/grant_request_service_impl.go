@@ -17,6 +17,7 @@ import (
 	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
 	itRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
 	itGroup "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
+	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -140,6 +141,9 @@ func (this *GrantRequestServiceImpl) CreateGrantRequest(ctx crud.Context, cmd it
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
 			return this.assertNoPendingGrantRequest(ctx, cmd, vErrs)
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
+			return this.assertOrgExists(ctx, grantRequest, vErrs)
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
 			return this.setupApprovalChain(ctx, grantRequest, vErrs)
@@ -370,6 +374,29 @@ func (this *GrantRequestServiceImpl) SearchGrantRequests(ctx crud.Context, query
 
 func (this *GrantRequestServiceImpl) setGrantRequestDefaults(grantRequest *domain.GrantRequest) {
 	grantRequest.SetDefaults()
+}
+
+func (this *GrantRequestServiceImpl) assertOrgExists(ctx crud.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) error {
+	if grantRequest.OrgId == nil {
+		return nil
+	}
+
+	existCmd := &itOrg.ExistsOrgByIdCommand{
+		Id: *grantRequest.OrgId,
+	}
+	existRes := itOrg.ExistsOrgByIdResult{}
+	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
+	fault.PanicOnErr(err)
+
+	if existRes.ClientError != nil {
+		vErrs.MergeClientError(existRes.ClientError)
+		return nil
+	}
+
+	if !existRes.Data {
+		vErrs.Append("org_id", "not existing organization")
+	}
+	return nil
 }
 
 func (this *GrantRequestServiceImpl) assertTarget(ctx crud.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) {

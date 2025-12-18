@@ -38,6 +38,7 @@ type CreateGrantRequestCommand struct {
 	ReceiverId    model.Id                      `json:"receiverId"`
 	TargetType    domain.GrantRequestTargetType `json:"targetType"`
 	TargetRef     model.Id                      `json:"targetRef"`
+	OrgId         *model.Id                     `json:"orgId"`
 }
 
 func (CreateGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
@@ -56,6 +57,12 @@ func (this CreateGrantRequestCommand) Validate() fault.ValidationErrors {
 			validator.When(this.Comment != nil,
 				validator.NotEmpty,
 				validator.Length(1, model.MODEL_RULE_DESC_LENGTH),
+			),
+		),
+		validator.Field(&this.OrgId,
+			validator.When(this.OrgId != nil,
+				validator.NotEmpty,
+				validator.Length(1, model.MODEL_RULE_ULID_LENGTH),
 			),
 		),
 		GrantRequestTargetTypeValidateRule(&this.TargetType),
