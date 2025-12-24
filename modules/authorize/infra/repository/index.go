@@ -22,6 +22,8 @@ func InitRepositories() error {
 		orm.RegisterEntity(BuildRevokeRequestDescriptor()),
 		orm.RegisterEntity(BuildRoleDescriptor()),
 		orm.RegisterEntity(BuildRoleSuiteDescriptor()),
+		orm.RegisterEntity(BuildRoleUserDescriptor()),
+		orm.RegisterEntity(BuildRoleSuiteUserDescriptor()),
 	)
 	if err != nil {
 		return err
@@ -39,6 +41,8 @@ func InitRepositories() error {
 		deps.Register(NewRevokeRequestEntRepository),
 		deps.Register(NewRoleEntRepository),
 		deps.Register(NewRoleSuiteEntRepository),
+		deps.Register(NewRoleUserEntRepository),
+		deps.Register(NewRoleSuiteUserEntRepository),
 	)
 
 	return err

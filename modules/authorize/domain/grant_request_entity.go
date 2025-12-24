@@ -11,7 +11,7 @@ type GrantRequest struct {
 	model.ModelBase
 	model.AuditableBase
 
-	AttachmentUrl   *string                 `json:"attachmentUrl,omitempty"`
+	AttachmentURL   *string                 `json:"attachmentUrl,omitempty"`
 	Comment         *string                 `json:"comment,omitempty"`
 	ApprovalId      *model.Id               `json:"approvalId,omitempty"`
 	RequestorId     *model.Id               `json:"requestorId,omitempty"`
@@ -40,8 +40,8 @@ func (this *GrantRequest) Validate(forEdit bool) fault.ValidationErrors {
 				validator.NotEmpty,
 			),
 		),
-		validator.Field(&this.AttachmentUrl,
-			validator.When(this.AttachmentUrl != nil,
+		validator.Field(&this.AttachmentURL,
+			validator.When(this.AttachmentURL != nil,
 				validator.NotEmpty,
 				validator.Length(1, model.MODEL_RULE_URL_LENGTH),
 			),

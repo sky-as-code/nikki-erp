@@ -11,11 +11,13 @@ type RevokeRequest struct {
 	model.ModelBase
 	model.AuditableBase
 
-	AttachmentUrl   *string                  `json:"attachmentUrl,omitempty"`
+	AttachmentURL   *string                  `json:"attachmentUrl,omitempty"`
 	Comment         *string                  `json:"comment,omitempty"`
 	RequestorId     *model.Id                `json:"requestorId,omitempty"`
+	RequestorName   *string                  `json:"requestorName,omitempty"`
 	ReceiverType    *ReceiverType            `json:"receiverType,omitempty"`
 	ReceiverId      *model.Id                `json:"receiverId,omitempty"`
+	ReceiverName    *string                  `json:"receiverName,omitempty"`
 	TargetType      *RevokeRequestTargetType `json:"targetType,omitempty"`
 	TargetRef       *model.Id                `json:"targetRef,omitempty"`
 	TargetRoleName  *string                  `json:"targetRoleName,omitempty"`  // Only set after role is deleted
@@ -23,13 +25,13 @@ type RevokeRequest struct {
 
 	Role      *Role      `json:"role,omitempty" model:"-"` // TODO: Handle copy
 	RoleSuite *RoleSuite `json:"roleSuite,omitempty" model:"-"`
-} 
+}
 
 func (this *RevokeRequest) Validate(forEdit bool) fault.ValidationErrors {
 	rules := []*validator.FieldRules{
-		validator.Field(&this.AttachmentUrl,
+		validator.Field(&this.AttachmentURL,
 			validator.NotNilWhen(!forEdit),
-			validator.When(this.AttachmentUrl != nil,
+			validator.When(this.AttachmentURL != nil,
 				validator.NotEmpty,
 				validator.Length(1, model.MODEL_RULE_URL_LENGTH),
 			),

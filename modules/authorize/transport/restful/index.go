@@ -80,7 +80,11 @@ func initV1(
 	route.GET("/resources", resourceRest.SearchResources)
 	route.DELETE("/resources/:name", resourceRest.DeleteResourceHard)
 
-	route.POST("/revoke-request", revokeRequestRest.Create)
+	route.POST("/revoke-requests", revokeRequestRest.Create)
+	route.POST("/revoke-requests/bulk", revokeRequestRest.CreateBulk)
+	route.GET("/revoke-requests/:id", revokeRequestRest.GetById)
+	route.GET("/revoke-requests", revokeRequestRest.Search)
+	route.DELETE("/revoke-requests/:id", revokeRequestRest.Delete)
 
 	route.POST("/roles", roleRest.CreateRole)
 	route.PUT("/roles/:id", roleRest.UpdateRole)

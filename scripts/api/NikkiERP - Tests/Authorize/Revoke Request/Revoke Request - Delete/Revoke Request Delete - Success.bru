@@ -1,0 +1,16 @@
+meta {
+  name: Revoke Request Delete - Success
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{api_host}}/v1/authorize/revoke-requests/01KCTZZNW8BHSTYP5E0EWKF326
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

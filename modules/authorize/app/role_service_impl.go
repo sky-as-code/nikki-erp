@@ -676,7 +676,8 @@ func (this *RoleServiceImpl) validateEntitlementOrgConsistency(inputs []itRole.E
 			return false
 		}
 
-		if dbRole.OrgId == nil && ent.OrgId == nil && ent.Resource != nil && ent.Resource.ScopeType != nil &&
+		if dbRole.OrgId == nil && ent.OrgId == nil &&
+			ent.Resource != nil && ent.Resource.ScopeType != nil &&
 			*ent.Resource.ScopeType == domain.ResourceScopeTypeOrg {
 			vErrs.Append("entitlementId", "domain-level role cannot include global entitlement with org-scoped resource")
 			return false
@@ -826,5 +827,39 @@ func (this *RoleServiceImpl) assertBusinessRuleAddEntitlements(ctx crud.Context,
 }
 
 func (this *RoleServiceImpl) assertBusinessRuleRemoveEntitlements(ctx crud.Context, cmd itRole.RemoveEntitlementsCommand, dbRole *domain.Role, vErrs *fault.ValidationErrors) error {
+	if len(cmd.EntitlementInputs) == 0 {
+		return nil
+	}
+
+	uniqueInputs, isValid := this.validateUniqueEntitlementInputs(cmd.EntitlementInputs, vErrs)
+	if !isValid {
+		return nil
+	}
+
+	assignments, err := this.getAssignmentsByRoleId(ctx, dbRole)
+	fault.PanicOnErr(err)
+
+	assignmentMap := make(map[string]*domain.EntitlementAssignment)
+	for i := range assignments {
+		assignment := &assignments[i]
+		key := this.makeEntitlementKey(*assignment.EntitlementId, assignment.ScopeRef)
+		assignmentMap[key] = assignment
+	}
+
+	for _, input := range uniqueInputs {
+		key := this.makeEntitlementKey(input.EntitlementId, input.ScopeRef)
+
+		assignment, exists := assignmentMap[key]
+		if !exists {
+			vErrs.AppendNotFound("entitlementId", input.EntitlementId)
+			return nil
+		}
+
+		_, err = this.assignmentService.DeleteHardAssignment(ctx, itAssign.DeleteEntitlementAssignmentByIdCommand{
+			Id: *assignment.Id,
+		})
+		fault.PanicOnErr(err)
+	}
+
 	return nil
 }

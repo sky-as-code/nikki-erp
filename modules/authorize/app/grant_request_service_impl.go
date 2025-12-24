@@ -478,7 +478,7 @@ func (this *GrantRequestServiceImpl) validateTarget(isRequestable, isRequiredAtt
 	}
 
 	if isRequiredAttachment != nil && *isRequiredAttachment {
-		if grantRequest.AttachmentUrl == nil || *grantRequest.AttachmentUrl == "" {
+		if grantRequest.AttachmentURL == nil || *grantRequest.AttachmentURL == "" {
 			vErrs.Append("attachmentUrl", "attachment is required")
 		}
 	}

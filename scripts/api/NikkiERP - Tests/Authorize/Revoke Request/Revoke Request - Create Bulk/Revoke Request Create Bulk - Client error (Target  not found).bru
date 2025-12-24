@@ -1,0 +1,32 @@
+meta {
+  name: Revoke Request Create Bulk - Client error (Target  not found)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authorize/revoke-requests/bulk
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "requests": [
+      {
+        "attachmentUrl": "attachmentUrl",
+        "comment": "comment",
+        "requestorId": "{{user_id}}",
+        "receiverType": "group",
+        "receiverId": "01JWNXBR5QJBH7PE9NNOTFOUND",
+        "targetType": "role",
+        "targetRef": "01K621B9RX2T2J3K61NOTFOUND"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

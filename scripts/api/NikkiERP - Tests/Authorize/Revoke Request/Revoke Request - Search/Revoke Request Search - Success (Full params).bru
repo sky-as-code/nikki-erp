@@ -1,0 +1,16 @@
+meta {
+  name: Revoke Request Search - Success (Full params)
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/authorize/revoke-requests
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

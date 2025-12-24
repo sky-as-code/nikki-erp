@@ -26,6 +26,11 @@ type RoleSuiteDto struct {
 	Roles []RoleSummaryDto `json:"roles,omitempty"`
 }
 
+type RoleSuiteSummaryDto struct {
+	Id   model.Id `json:"id"`
+	Name string   `json:"name"`
+}
+
 func (this *RoleSuiteDto) FromRoleSuite(roleSuite domain.RoleSuite) {
 	model.MustCopy(roleSuite.AuditableBase, this)
 	model.MustCopy(roleSuite.ModelBase, this)

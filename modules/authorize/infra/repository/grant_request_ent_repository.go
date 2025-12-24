@@ -37,7 +37,7 @@ func (this *GrantRequestEntRepository) Create(ctx crud.Context, grantRequest *do
 	creation := this.grantRequestClient(ctx).Create().
 		SetID(*grantRequest.Id).
 		SetEtag(*grantRequest.Etag).
-		SetNillableAttachmentURL(grantRequest.AttachmentUrl).
+		SetNillableAttachmentURL(grantRequest.AttachmentURL).
 		SetNillableComment(grantRequest.Comment).
 		SetCreatedBy(*grantRequest.RequestorId).
 		SetReceiverType(entGrantRequest.ReceiverType(*grantRequest.ReceiverType)).

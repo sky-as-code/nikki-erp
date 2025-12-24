@@ -191,7 +191,8 @@ func BuildRoleDescriptor() *orm.EntityDescriptor {
 		Field(entRole.FieldIsRequiredAttachment, entity.IsRequiredAttachment).
 		Field(entRole.FieldIsRequiredComment, entity.IsRequiredComment).
 		Field(entRole.FieldCreatedBy, entity.CreatedBy).
-		Field(entRole.FieldCreatedAt, entity.CreatedAt)
+		Field(entRole.FieldCreatedAt, entity.CreatedAt).
+		Edge(entRole.EdgeRoleUsers, orm.ToEdgePredicate(entRole.HasRoleUsersWith))
 
 	return builder.Descriptor()
 }

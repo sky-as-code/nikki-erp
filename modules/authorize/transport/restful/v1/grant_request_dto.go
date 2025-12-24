@@ -13,7 +13,7 @@ type GrantRequestDto struct {
 	Id   model.Id   `json:"id"`
 	Etag model.Etag `json:"etag"`
 
-	AttachmentUrl *string   `json:"attachmentUrl,omitempty"`
+	AttachmentURL *string   `json:"attachmentUrl,omitempty"`
 	Comment       *string   `json:"comment,omitempty"`
 	TargetType    string    `json:"targetType"`
 	TargetRef     *model.Id `json:"targetRef,omitempty"`

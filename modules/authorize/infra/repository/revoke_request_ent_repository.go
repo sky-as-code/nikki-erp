@@ -3,6 +3,8 @@ package repository
 import (
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
@@ -10,7 +12,6 @@ import (
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
-	entGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
 	entRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/revoke_request"
 )
@@ -38,10 +39,25 @@ func (this *RevokeRequestEntRepository) revokeRequestClient(ctx crud.Context) *e
 }
 
 func (this *RevokeRequestEntRepository) Create(ctx crud.Context, revokeRequest *domain.RevokeRequest) (*domain.RevokeRequest, error) {
+	creation := this.entCreation(ctx, revokeRequest)
+
+	return database.Mutate(ctx, creation, ent.IsNotFound, entToRevokeRequest)
+}
+
+func (this *RevokeRequestEntRepository) CreateBulk(ctx crud.Context, revokeRequests []*domain.RevokeRequest) ([]*domain.RevokeRequest, error) {
+	creations := array.Map(revokeRequests, func(revokeRequest *domain.RevokeRequest) *ent.RevokeRequestCreate {
+		return this.entCreation(ctx, revokeRequest)
+	})
+	creation := this.revokeRequestClient(ctx).CreateBulk(creations...)
+
+	return database.MutateBulk(ctx, creation, ent.IsNotFound, entToRevokeRequestPtrs)
+}
+
+func (this *RevokeRequestEntRepository) entCreation(ctx crud.Context, revokeRequest *domain.RevokeRequest) *ent.RevokeRequestCreate {
 	creation := this.revokeRequestClient(ctx).Create().
 		SetID(*revokeRequest.Id).
 		SetEtag(*revokeRequest.Etag).
-		SetNillableAttachmentURL(revokeRequest.AttachmentUrl).
+		SetNillableAttachmentURL(revokeRequest.AttachmentURL).
 		SetNillableComment(revokeRequest.Comment).
 		SetCreatedBy(*revokeRequest.RequestorId).
 		SetReceiverType(entRevokeRequest.ReceiverType(*revokeRequest.ReceiverType)).
@@ -58,12 +74,12 @@ func (this *RevokeRequestEntRepository) Create(ctx crud.Context, revokeRequest *
 		creation = creation.SetNillableTargetSuiteID(revokeRequest.TargetRef)
 	}
 
-	return database.Mutate(ctx, creation, ent.IsNotFound, entToRevokeRequest)
+	return creation
 }
 
 func (this *RevokeRequestEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.RevokeRequest, error) {
 	query := this.revokeRequestClient(ctx).Query().
-		Where(entGrantRequest.IDEQ(param.Id)).
+		Where(entRevokeRequest.IDEQ(param.Id)).
 		WithRole().
 		WithRoleSuite()
 
@@ -111,6 +127,37 @@ func (this *RevokeRequestEntRepository) UpdateTargetFields(ctx crud.Context, rev
 	}
 
 	return update.Exec(ctx)
+}
+
+func (this *RevokeRequestEntRepository) Delete(ctx crud.Context, param it.DeleteParam) (int, error) {
+	return this.revokeRequestClient(ctx).Delete().
+		Where(entRevokeRequest.IDEQ(param.Id)).
+		Exec(ctx)
+}
+
+func (this *RevokeRequestEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
+	return database.ParseSearchGraphStr[ent.RevokeRequest, domain.RevokeRequest](criteria, entRevokeRequest.Label)
+}
+
+func (this *RevokeRequestEntRepository) Search(
+	ctx crud.Context,
+	param it.SearchParam,
+) (*crud.PagedResult[domain.RevokeRequest], error) {
+	query := this.revokeRequestClient(ctx).Query().
+		WithRole().
+		WithRoleSuite()
+
+	return database.Search(
+		ctx,
+		param.Predicate,
+		param.Order,
+		crud.PagingOptions{
+			Page: param.Page,
+			Size: param.Size,
+		},
+		query,
+		entToRevokeRequests,
+	)
 }
 
 func BuildRevokeRequestDescriptor() *orm.EntityDescriptor {

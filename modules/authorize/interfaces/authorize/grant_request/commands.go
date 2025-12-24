@@ -31,7 +31,7 @@ var createGrantRequestCommandType = cqrs.RequestType{
 }
 
 type CreateGrantRequestCommand struct {
-	AttachmentUrl *string                       `json:"attachmentUrl"`
+	AttachmentURL *string                       `json:"attachmentUrl"`
 	Comment       *string                       `json:"comment"`
 	RequestorId   model.Id                      `json:"requestorId"`
 	ReceiverType  domain.ReceiverType           `json:"receiverType"`
@@ -47,8 +47,8 @@ func (CreateGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
 
 func (this CreateGrantRequestCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
-		validator.Field(&this.AttachmentUrl,
-			validator.When(this.AttachmentUrl != nil,
+		validator.Field(&this.AttachmentURL,
+			validator.When(this.AttachmentURL != nil,
 				validator.NotEmpty,
 				validator.Length(1, model.MODEL_RULE_URL_LENGTH),
 			),

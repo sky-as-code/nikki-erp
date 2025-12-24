@@ -1,0 +1,32 @@
+meta {
+  name: Revoke Request Create Bulk - Success
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/authorize/revoke-requests/bulk
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "items": [
+      {
+        "attachmentUrl": "attachmentUrl",
+        "comment": "comment",
+        "requestorId": "{{user_id}}",
+        "receiverType": "group",
+        "receiverId": "01JWNXBR5QJBH7PE9PQ9FW746V",
+        "targetType": "role",
+        "targetRef": "{{role_id}}"
+      }
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -40,7 +40,7 @@ type CreateEntitlementCommand struct {
 	ResourceId  *model.Id `json:"resourceId,omitempty"`
 	ActionExpr  string    `json:"actionExpr"`
 	CreatedBy   string    `json:"createdBy"`
-	OrgId       *model.Id `json:"orgId,omitempty"`
+	// OrgId       *model.Id `json:"orgId,omitempty"` // Temporary disabled for now. Because entitlement will be created in the domain level.
 	// ScopeRef    *model.Id `json:"scopeRef,omitempty"`
 }
 
