@@ -9,11 +9,11 @@ CREATE UNIQUE INDEX "action_id_resource_id" ON "authz_actions" ("id", "resource_
 -- Create index "action_name_resource_id" to table: "authz_actions"
 CREATE UNIQUE INDEX "action_name_resource_id" ON "authz_actions" ("name", "resource_id");
 -- Create "authz_entitlements" table
-CREATE TABLE "authz_entitlements" ("id" character varying NOT NULL, "action_expr" character varying NOT NULL, "created_at" timestamptz NOT NULL, "created_by" character varying NOT NULL, "name" character varying NOT NULL, "description" character varying NULL, "etag" character varying NOT NULL, "action_id" character varying NULL, "resource_id" character varying NULL, "org_id" character varying NULL, PRIMARY KEY ("id"), CONSTRAINT "authz_entitlements_authz_actions_action" FOREIGN KEY ("action_id") REFERENCES "authz_actions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "authz_entitlements_authz_resources_resource" FOREIGN KEY ("resource_id") REFERENCES "authz_resources" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION);
+CREATE TABLE "authz_entitlements" ("id" character varying NOT NULL, "action_expr" character varying NOT NULL, "created_at" timestamptz NOT NULL, "created_by" character varying NOT NULL, "name" character varying NOT NULL, "description" character varying NULL, "etag" character varying NOT NULL, "action_id" character varying NULL, "resource_id" character varying NULL, PRIMARY KEY ("id"), CONSTRAINT "authz_entitlements_authz_actions_action" FOREIGN KEY ("action_id") REFERENCES "authz_actions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION, CONSTRAINT "authz_entitlements_authz_resources_resource" FOREIGN KEY ("resource_id") REFERENCES "authz_resources" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION);
 -- Create index "authz_entitlements_name_key" to table: "authz_entitlements"
-CREATE UNIQUE INDEX "authz_entitlements_name_key" ON "authz_entitlements" ("name", "org_id");
+CREATE UNIQUE INDEX "authz_entitlements_name_key" ON "authz_entitlements" ("name");
 -- Create index "entitlement_action_expr" to table: "authz_entitlements"
-CREATE UNIQUE INDEX "entitlement_action_expr" ON "authz_entitlements" ("action_expr", "org_id");
+CREATE UNIQUE INDEX "entitlement_action_expr" ON "authz_entitlements" ("action_expr");
 -- Create "authz_entitlement_assignments" table
 CREATE TABLE "authz_entitlement_assignments" ("id" character varying NOT NULL, "subject_type" character varying NOT NULL, "subject_ref" character varying NOT NULL, "resolved_expr" character varying NOT NULL, "action_name" character varying NULL, "resource_name" character varying NULL, "entitlement_id" character varying NOT NULL, "scope_ref" character varying NULL, PRIMARY KEY ("id"), CONSTRAINT "authz_entitlement_assignments_authz_entitlements_entitlement" FOREIGN KEY ("entitlement_id") REFERENCES "authz_entitlements" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION);
 -- Create index "entitlementassignment_action_name" to table: "authz_entitlement_assignments"

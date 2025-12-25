@@ -215,15 +215,6 @@ func (this *EntitlementAssignmentServiceImpl) assertBusinessRuleCreateEntitlemen
 	err = this.assertScopeRefByScopeType(ctx, ent, assignment, vErrs)
 	fault.PanicOnErr(err)
 
-	if ent.OrgId != nil && ent.Resource != nil && ent.Resource.ScopeType != nil {
-		if *ent.Resource.ScopeType == domain.ResourceScopeTypeOrg && assignment.ScopeRef != nil {
-			if *ent.OrgId != *assignment.ScopeRef {
-				vErrs.AppendNotAllowed("scope_ref", "scopeRef must match entitlement orgId")
-				return nil
-			}
-		}
-	}
-
 	this.validateFields(ent, assignment, vErrs)
 	this.assertEntitlementAssignmentUnique(ctx, assignment, vErrs)
 

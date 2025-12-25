@@ -17,7 +17,6 @@ import (
 	itAssignment "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
 	itPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/permission_history"
 	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
-	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 )
 
 func NewEntitlementServiceImpl(
@@ -301,8 +300,7 @@ func (this *EntitlementServiceImpl) assertEntitlementNameUnique(ctx crud.Context
 	dbEntitlement, err := this.entitlementRepo.FindByName(
 		ctx,
 		it.FindByNameParam{
-			Name:  *entitlement.Name,
-			OrgId: entitlement.OrgId,
+			Name: *entitlement.Name,
 		},
 	)
 	fault.PanicOnErr(err)
@@ -338,7 +336,6 @@ func (this *EntitlementServiceImpl) assertActionExprUnique(ctx crud.Context, ent
 		ctx,
 		it.GetEntitlementByActionExprQuery{
 			ActionExpr: *entitlement.ActionExpr,
-			OrgId:      entitlement.OrgId,
 		},
 	)
 	fault.PanicOnErr(err)
@@ -351,9 +348,6 @@ func (this *EntitlementServiceImpl) assertActionExprUnique(ctx crud.Context, ent
 
 func (this *EntitlementServiceImpl) assertBusinessRuleCreateEntitlement(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
 	err := this.assertEntitlementNameUnique(ctx, entitlement, vErrs)
-	fault.PanicOnErr(err)
-
-	err = this.assertOrgExists(ctx, entitlement, vErrs)
 	fault.PanicOnErr(err)
 
 	err = this.assertActionExprUnique(ctx, entitlement, vErrs)
@@ -401,34 +395,10 @@ func (this *EntitlementServiceImpl) assertBusinessRuleCreateEntitlement(ctx crud
 	return nil
 }
 
-func (this *EntitlementServiceImpl) assertOrgExists(ctx crud.Context, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {
-	if entitlement.OrgId == nil {
-		return nil
-	}
-
-	existCmd := &itOrg.ExistsOrgByIdCommand{
-		Id: *entitlement.OrgId,
-	}
-	existRes := itOrg.ExistsOrgByIdResult{}
-	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
-	fault.PanicOnErr(err)
-
-	if existRes.ClientError != nil {
-		vErrs.MergeClientError(existRes.ClientError)
-		return nil
-	}
-
-	if !existRes.Data {
-		vErrs.Append("org_id", "not existing organization")
-	}
-	return nil
-}
-
 func (this *EntitlementServiceImpl) assertScopeLevelConsistency(entitlement *domain.Entitlement, resource *domain.Resource, vErrs *fault.ValidationErrors) {
+	// ✅ Entitlement giờ là global, không còn OrgId nữa
+	// Không cần validate scope level consistency với OrgId
 	if resource == nil {
-		if entitlement.OrgId != nil {
-			vErrs.AppendNotAllowed("org_id", "org id")
-		}
 		return
 	}
 
@@ -436,23 +406,8 @@ func (this *EntitlementServiceImpl) assertScopeLevelConsistency(entitlement *dom
 		return
 	}
 
-	scopeType := *resource.ScopeType
-
-	if entitlement.OrgId != nil && scopeType == domain.ResourceScopeTypeDomain {
-		vErrs.AppendNotAllowed("resource_id", "resource id")
-		return
-	}
-
-	if entitlement.OrgId == nil {
-		if scopeType == domain.ResourceScopeTypePrivate {
-			vErrs.AppendNotAllowed("resource_id", "resource id")
-			return
-		}
-		if scopeType == domain.ResourceScopeTypeHierarchy {
-			vErrs.AppendNotAllowed("resource_id", "resource id")
-			return
-		}
-	}
+	// Entitlement global có thể dùng với mọi scopeType của resource
+	// Validation về scopeRef sẽ được xử lý ở RoleService khi add entitlement vào role
 }
 
 func (this *EntitlementServiceImpl) assertBusinessRuleDeleteEntitlement(ctx crud.Context, command it.DeleteEntitlementHardByIdCommand, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {

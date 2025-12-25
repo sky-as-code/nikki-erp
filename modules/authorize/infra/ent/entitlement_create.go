@@ -104,20 +104,6 @@ func (ec *EntitlementCreate) SetNillableResourceID(s *string) *EntitlementCreate
 	return ec
 }
 
-// SetOrgID sets the "org_id" field.
-func (ec *EntitlementCreate) SetOrgID(s string) *EntitlementCreate {
-	ec.mutation.SetOrgID(s)
-	return ec
-}
-
-// SetNillableOrgID sets the "org_id" field if the given value is not nil.
-func (ec *EntitlementCreate) SetNillableOrgID(s *string) *EntitlementCreate {
-	if s != nil {
-		ec.SetOrgID(*s)
-	}
-	return ec
-}
-
 // SetID sets the "id" field.
 func (ec *EntitlementCreate) SetID(s string) *EntitlementCreate {
 	ec.mutation.SetID(s)
@@ -280,10 +266,6 @@ func (ec *EntitlementCreate) createSpec() (*Entitlement, *sqlgraph.CreateSpec) {
 	if value, ok := ec.mutation.Etag(); ok {
 		_spec.SetField(entitlement.FieldEtag, field.TypeString, value)
 		_node.Etag = value
-	}
-	if value, ok := ec.mutation.OrgID(); ok {
-		_spec.SetField(entitlement.FieldOrgID, field.TypeString, value)
-		_node.OrgID = &value
 	}
 	if nodes := ec.mutation.PermissionHistoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

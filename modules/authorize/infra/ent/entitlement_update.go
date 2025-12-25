@@ -185,9 +185,6 @@ func (eu *EntitlementUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := eu.mutation.Etag(); ok {
 		_spec.SetField(entitlement.FieldEtag, field.TypeString, value)
 	}
-	if eu.mutation.OrgIDCleared() {
-		_spec.ClearField(entitlement.FieldOrgID, field.TypeString)
-	}
 	if eu.mutation.PermissionHistoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -483,9 +480,6 @@ func (euo *EntitlementUpdateOne) sqlSave(ctx context.Context) (_node *Entitlemen
 	}
 	if value, ok := euo.mutation.Etag(); ok {
 		_spec.SetField(entitlement.FieldEtag, field.TypeString, value)
-	}
-	if euo.mutation.OrgIDCleared() {
-		_spec.ClearField(entitlement.FieldOrgID, field.TypeString)
 	}
 	if euo.mutation.PermissionHistoriesCleared() {
 		edge := &sqlgraph.EdgeSpec{

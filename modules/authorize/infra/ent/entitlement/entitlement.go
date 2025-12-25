@@ -30,8 +30,6 @@ const (
 	FieldEtag = "etag"
 	// FieldResourceID holds the string denoting the resource_id field in the database.
 	FieldResourceID = "resource_id"
-	// FieldOrgID holds the string denoting the org_id field in the database.
-	FieldOrgID = "org_id"
 	// EdgePermissionHistories holds the string denoting the permission_histories edge name in mutations.
 	EdgePermissionHistories = "permission_histories"
 	// EdgeEntitlementAssignments holds the string denoting the entitlement_assignments edge name in mutations.
@@ -83,7 +81,6 @@ var Columns = []string{
 	FieldDescription,
 	FieldEtag,
 	FieldResourceID,
-	FieldOrgID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -147,11 +144,6 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 // ByResourceID orders the results by the resource_id field.
 func ByResourceID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResourceID, opts...).ToFunc()
-}
-
-// ByOrgID orders the results by the org_id field.
-func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
 }
 
 // ByPermissionHistoriesCount orders the results by permission_histories count.

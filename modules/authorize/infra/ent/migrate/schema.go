@@ -54,7 +54,6 @@ var (
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "org_id", Type: field.TypeString, Nullable: true},
 		{Name: "action_id", Type: field.TypeString, Nullable: true},
 		{Name: "resource_id", Type: field.TypeString, Nullable: true},
 	}
@@ -66,27 +65,27 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_entitlements_authz_actions_action",
-				Columns:    []*schema.Column{AuthzEntitlementsColumns[8]},
+				Columns:    []*schema.Column{AuthzEntitlementsColumns[7]},
 				RefColumns: []*schema.Column{AuthzActionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "authz_entitlements_authz_resources_resource",
-				Columns:    []*schema.Column{AuthzEntitlementsColumns[9]},
+				Columns:    []*schema.Column{AuthzEntitlementsColumns[8]},
 				RefColumns: []*schema.Column{AuthzResourcesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "entitlement_action_expr_org_id",
+				Name:    "entitlement_action_expr",
 				Unique:  true,
-				Columns: []*schema.Column{AuthzEntitlementsColumns[1], AuthzEntitlementsColumns[7]},
+				Columns: []*schema.Column{AuthzEntitlementsColumns[1]},
 			},
 			{
-				Name:    "entitlement_name_org_id",
+				Name:    "entitlement_name",
 				Unique:  true,
-				Columns: []*schema.Column{AuthzEntitlementsColumns[4], AuthzEntitlementsColumns[7]},
+				Columns: []*schema.Column{AuthzEntitlementsColumns[4]},
 			},
 		},
 	}

@@ -46,7 +46,6 @@ func (this *EntitlementEntRepository) Create(ctx crud.Context, entitlement *doma
 		SetNillableResourceID(entitlement.ResourceId).
 		SetNillableActionID(entitlement.ActionId).
 		SetActionExpr(*entitlement.ActionExpr).
-		SetNillableOrgID(entitlement.OrgId).
 		SetCreatedBy(*entitlement.CreatedBy).
 		SetCreatedAt(time.Now())
 
@@ -91,12 +90,6 @@ func (this *EntitlementEntRepository) FindByName(ctx crud.Context, param it.Find
 	query := this.entitlementClient(ctx).Query().
 		Where(entEntitlement.NameEQ(param.Name))
 
-	if param.OrgId != nil {
-		query = query.Where(entEntitlement.OrgIDEQ(*param.OrgId))
-	} else {
-		query = query.Where(entEntitlement.OrgIDIsNil())
-	}
-
 	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
 }
 
@@ -112,12 +105,6 @@ func (this *EntitlementEntRepository) FindAllByIds(ctx crud.Context, param it.Fi
 func (this *EntitlementEntRepository) FindByActionExpr(ctx crud.Context, param it.FindByActionExprParam) (*domain.Entitlement, error) {
 	query := this.entitlementClient(ctx).Query().
 		Where(entEntitlement.ActionExprEQ(param.ActionExpr))
-
-	if param.OrgId != nil {
-		query = query.Where(entEntitlement.OrgIDEQ(*param.OrgId))
-	} else {
-		query = query.Where(entEntitlement.OrgIDIsNil())
-	}
 
 	return database.FindOne(ctx, query, ent.IsNotFound, entToEntitlement)
 }
@@ -158,11 +145,9 @@ func BuildEntitlementDescriptor() *orm.EntityDescriptor {
 		Field(entEntitlement.FieldDescription, entity.Description).
 		Field(entEntitlement.FieldActionID, entity.ActionID).
 		Field(entEntitlement.FieldActionExpr, entity.ActionExpr).
-		// Field(entEntitlement.FieldScopeRef, entity.ScopeRef).
 		Field(entEntitlement.FieldResourceID, entity.ResourceID).
 		Field(entEntitlement.FieldCreatedBy, entity.CreatedBy).
-		Field(entEntitlement.FieldCreatedAt, entity.CreatedAt).
-		Field(entEntitlement.FieldOrgID, entity.OrgID)
+		Field(entEntitlement.FieldCreatedAt, entity.CreatedAt)
 
 	return builder.Descriptor()
 }

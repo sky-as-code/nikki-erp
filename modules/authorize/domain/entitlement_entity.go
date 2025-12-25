@@ -17,7 +17,7 @@ type Entitlement struct {
 	ResourceId  *model.Id `json:"resourceId,omitempty"`
 	ScopeRef    *string   `json:"scopeRef,omitempty"`
 	CreatedBy   *string   `json:"createdBy,omitempty"`
-	OrgId       *model.Id `json:"orgId,omitempty"`
+	// OrgId       *model.Id `json:"orgId,omitempty"`
 
 	Action   *Action   `json:"action,omitempty" model:"-"` // TODO: Handle copy
 	Resource *Resource `json:"resource,omitempty" model:"-"`
