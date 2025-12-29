@@ -396,8 +396,6 @@ func (this *EntitlementServiceImpl) assertBusinessRuleCreateEntitlement(ctx crud
 }
 
 func (this *EntitlementServiceImpl) assertScopeLevelConsistency(entitlement *domain.Entitlement, resource *domain.Resource, vErrs *fault.ValidationErrors) {
-	// ✅ Entitlement giờ là global, không còn OrgId nữa
-	// Không cần validate scope level consistency với OrgId
 	if resource == nil {
 		return
 	}
@@ -405,9 +403,6 @@ func (this *EntitlementServiceImpl) assertScopeLevelConsistency(entitlement *dom
 	if resource.ScopeType == nil {
 		return
 	}
-
-	// Entitlement global có thể dùng với mọi scopeType của resource
-	// Validation về scopeRef sẽ được xử lý ở RoleService khi add entitlement vào role
 }
 
 func (this *EntitlementServiceImpl) assertBusinessRuleDeleteEntitlement(ctx crud.Context, command it.DeleteEntitlementHardByIdCommand, entitlement *domain.Entitlement, vErrs *fault.ValidationErrors) error {

@@ -460,6 +460,56 @@ func (this *RoleServiceImpl) getEntitlements(ctx crud.Context, entitlementIds []
 	return entitlementsRes.Data, nil
 }
 
+func (this *RoleServiceImpl) buildEntitlementsFromAssignments(ctx crud.Context, assignments []domain.EntitlementAssignment) ([]domain.Entitlement, error) {
+	if len(assignments) == 0 {
+		return nil, nil
+	}
+
+	entitlementIdSet := make(map[model.Id]bool)
+	entitlementIds := make([]model.Id, 0)
+	for _, assignment := range assignments {
+		if assignment.EntitlementId != nil {
+			entId := *assignment.EntitlementId
+			if !entitlementIdSet[entId] {
+				entitlementIdSet[entId] = true
+				entitlementIds = append(entitlementIds, entId)
+			}
+		}
+	}
+
+	entitlements, err := this.getEntitlements(ctx, entitlementIds)
+	if err != nil {
+		return nil, err
+	}
+
+	entitlementMap := make(map[model.Id]*domain.Entitlement)
+	for i := range entitlements {
+		ent := &entitlements[i]
+		entitlementMap[*ent.Id] = ent
+	}
+
+	result := make([]domain.Entitlement, 0, len(assignments))
+	for _, assignment := range assignments {
+		if assignment.EntitlementId == nil {
+			continue
+		}
+
+		ent := entitlementMap[*assignment.EntitlementId]
+		if ent == nil {
+			continue
+		}
+
+		entWithScope := *ent
+		if assignment.ScopeRef != nil {
+			entWithScope.ScopeRef = assignment.ScopeRef
+		}
+
+		result = append(result, entWithScope)
+	}
+
+	return result, nil
+}
+
 func (this *RoleServiceImpl) deleteAssignments(ctx crud.Context, assignmentIds []model.Id) error {
 	for _, assignmentId := range assignmentIds {
 		deletedCount, err := this.assignmentService.DeleteHardAssignment(ctx, itAssign.DeleteEntitlementAssignmentByIdCommand{Id: assignmentId})
@@ -581,11 +631,11 @@ func (this *RoleServiceImpl) getRoleByIdFull(ctx crud.Context, query itRole.GetR
 		return
 	}
 
-	entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, dbRole)
+	assignments, err := this.getAssignmentsByRoleId(ctx, dbRole)
 	fault.PanicOnErr(err)
 
-	if len(entitlementIds) > 0 {
-		entitlements, err := this.getEntitlements(ctx, entitlementIds)
+	if len(assignments) > 0 {
+		entitlements, err := this.buildEntitlementsFromAssignments(ctx, assignments)
 		fault.PanicOnErr(err)
 
 		dbRole.Entitlements = entitlements
@@ -596,11 +646,11 @@ func (this *RoleServiceImpl) getRoleByIdFull(ctx crud.Context, query itRole.GetR
 
 func (this *RoleServiceImpl) populateRoleDetails(ctx crud.Context, dbRoles []domain.Role) error {
 	for i := range dbRoles {
-		entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, &dbRoles[i])
+		assignments, err := this.getAssignmentsByRoleId(ctx, &dbRoles[i])
 		fault.PanicOnErr(err)
 
-		if len(entitlementIds) > 0 {
-			entitlements, err := this.getEntitlements(ctx, entitlementIds)
+		if len(assignments) > 0 {
+			entitlements, err := this.buildEntitlementsFromAssignments(ctx, assignments)
 			fault.PanicOnErr(err)
 
 			dbRoles[i].Entitlements = entitlements

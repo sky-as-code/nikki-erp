@@ -41,7 +41,14 @@ func (this *RoleDto) FromRole(role domain.Role) {
 
 	this.Entitlements = array.Map(role.Entitlements, func(entitlement domain.Entitlement) EntitlementSummaryDto {
 		entitlementItem := EntitlementSummaryDto{}
-		entitlementItem.FromEntitlement(&entitlement)
+
+		var scopeRefId *model.Id
+		if entitlement.ScopeRef != nil {
+			id := model.Id(*entitlement.ScopeRef)
+			scopeRefId = &id
+		}
+
+		entitlementItem.FromEntitlementWithScopeRef(&entitlement, scopeRefId)
 		return entitlementItem
 	})
 }

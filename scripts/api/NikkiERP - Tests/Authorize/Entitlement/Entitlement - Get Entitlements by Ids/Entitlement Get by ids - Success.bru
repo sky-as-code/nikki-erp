@@ -1,0 +1,82 @@
+meta {
+  name: Entitlement Get by ids - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/entitlements/ids
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ids": [
+      "01KDAE7B09X88NMTEANCY6K2T2"
+    ]
+  }
+}
+
+script:post-response {
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  const schema = {
+      type: "object",
+      required: ["id", "etag", "name", "actionExpr"],
+      properties: {
+          id: { type: "string" },
+          etag: { type: "string" },
+          name: { type: "string" },
+          description: { type: ["string", "null"] },
+          resourceId: { type: ["string", "null"] },
+          actionId: { type: ["string", "null"] },
+          actionExpr: { type: "string" },
+          createdBy: { type: "string" },
+          resource: {
+              type: ["object", "null"],
+              properties: {
+                  id: { type: "string" },
+                  name: { type: "string" }
+              },
+              required: ["id", "name"],
+              additionalProperties: true
+          },
+          action: {
+              type: ["object", "null"],
+              properties: {
+                  id: { type: "string" },
+                  name: { type: "string" }
+              },
+              required: ["id", "name"],
+              additionalProperties: true
+          }
+      },
+      additionalProperties: true
+  };
+  
+  let body;
+  try {
+      body = res.getBody();
+      console.log("✅ Get Entitlement by ID response:", body);
+  } catch (err) {
+      console.error("❌ Failed to parse response JSON:", err);
+  }
+  
+  test("Response matches expected schema", function () {
+    expect(tv4.validate(body, schema)).to.be.true;
+  });
+  
+  if (body && body.id && body.etag) {
+      bru.setVar("entitlement_id", body.id);
+      bru.setVar("etag", body.etag);
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

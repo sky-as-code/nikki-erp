@@ -66,6 +66,7 @@ func initV1(
 	route.POST("/entitlements", entitlementRest.CreateEntitlement)
 	route.PUT("/entitlements/:id", entitlementRest.UpdateEntitlement)
 	route.GET("/entitlements/:id", entitlementRest.GetEntitlementById)
+	route.POST("/entitlements/ids", entitlementRest.GetAllEntitlementByIds)
 	route.GET("/entitlements", entitlementRest.SearchEntitlements)
 	route.DELETE("/entitlements/:id", entitlementRest.DeleteEntitlementHard)
 
