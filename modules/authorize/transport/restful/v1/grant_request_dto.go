@@ -20,12 +20,13 @@ type GrantRequestDto struct {
 	ReceiverType  string    `json:"receiverType"`
 	ResponseId    *model.Id `json:"responseId,omitempty"`
 	Status        string    `json:"status,omitempty"`
-	OrgId         *model.Id `json:"orgId,omitempty"`
+	// OrgId         *model.Id `json:"orgId,omitempty"`
 
-	GrantResponses []GrantResponseDto `json:"grantResponses,omitempty"`
-	Receiver       *UserSummaryDto    `json:"receiver,omitempty"`
-	Requestor      *UserSummaryDto    `json:"requestor,omitempty"`
-	Target         *TargetSummaryDto  `json:"target,omitempty"`
+	GrantResponses []GrantResponseDto      `json:"grantResponses,omitempty"`
+	Receiver       *UserSummaryDto         `json:"receiver,omitempty"`
+	Requestor      *UserSummaryDto         `json:"requestor,omitempty"`
+	Target         *TargetSummaryDto       `json:"target,omitempty"`
+	Organization   *OrganizationSummaryDto `json:"org,omitempty"`
 }
 
 type GrantRequestSummaryDto struct {
@@ -57,6 +58,12 @@ func (this *GrantRequestDto) FromGrantRequest(grantRequest domain.GrantRequest) 
 			grantResponseDto.FromGrantResponse(grantResponse)
 			return grantResponseDto
 		})
+	}
+
+	// Combine OrgId and OrgName into Organization object
+	if grantRequest.OrgId != nil {
+		this.Organization = &OrganizationSummaryDto{}
+		this.Organization.FromOrganization(grantRequest.OrgId, grantRequest.OrgName)
 	}
 }
 

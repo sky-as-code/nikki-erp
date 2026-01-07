@@ -349,9 +349,35 @@ func (this *GrantRequestServiceImpl) SearchGrantRequests(ctx crud.Context, query
 				Size:      *query.Size,
 			})
 
+			// Collect unique orgIds for batch fetching
+			orgIdSet := make(map[model.Id]bool)
+			for i := range result.Items {
+				if result.Items[i].OrgId != nil {
+					orgIdSet[*result.Items[i].OrgId] = true
+				}
+			}
+
+			// Batch fetch organizations
+			orgMap := make(map[model.Id]*domain.Organization)
+			for orgId := range orgIdSet {
+				org, err := this.getOrganizationById(ctx, orgId)
+				fault.PanicOnErr(err)
+				if org != nil {
+					orgMap[orgId] = org
+				}
+			}
+
 			for i := range result.Items {
 				err := this.populateGrantRequestDetails(ctx, &result.Items[i])
 				fault.PanicOnErr(err)
+
+				// Set organization from batch fetch
+				if result.Items[i].OrgId != nil {
+					if org, exists := orgMap[*result.Items[i].OrgId]; exists {
+						result.Items[i].Organization = org
+						result.Items[i].OrgName = org.DisplayName
+					}
+				}
 			}
 
 			return result, err
@@ -1080,6 +1106,16 @@ func (this *GrantRequestServiceImpl) populateGrantRequestDetails(ctx crud.Contex
 		fault.PanicOnErr(err)
 	}
 
+	// Populate organization
+	if dbGrantRequest.OrgId != nil {
+		org, err := this.getOrganizationById(ctx, *dbGrantRequest.OrgId)
+		fault.PanicOnErr(err)
+		if org != nil {
+			dbGrantRequest.Organization = org
+			dbGrantRequest.OrgName = org.DisplayName
+		}
+	}
+
 	return
 }
 
@@ -1119,6 +1155,28 @@ func (this *GrantRequestServiceImpl) getUserDisplayName(ctx crud.Context, id mod
 	}
 
 	return nil, nil
+}
+
+func (this *GrantRequestServiceImpl) getOrganizationById(ctx crud.Context, orgId model.Id) (*domain.Organization, error) {
+	orgQuery := &itOrg.GetOrganizationByIdQuery{
+		Id: orgId,
+	}
+	orgRes := itOrg.GetOrganizationByIdResult{}
+	err := this.cqrsBus.Request(ctx, *orgQuery, &orgRes)
+	fault.PanicOnErr(err)
+
+	if orgRes.ClientError != nil {
+		return nil, nil
+	}
+
+	if orgRes.Data == nil {
+		return nil, nil
+	}
+
+	return &domain.Organization{
+		Id:          orgRes.Data.Id,
+		DisplayName: orgRes.Data.DisplayName,
+	}, nil
 }
 
 func (this *GrantRequestServiceImpl) findGrantRequestsByTarget(ctx crud.Context, targetType domain.GrantRequestTargetType, targetRef model.Id) ([]domain.GrantRequest, error) {

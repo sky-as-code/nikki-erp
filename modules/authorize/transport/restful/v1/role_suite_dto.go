@@ -21,9 +21,10 @@ type RoleSuiteDto struct {
 	IsRequiredAttachment *bool     `json:"isRequiredAttachment,omitempty"`
 	IsRequiredComment    *bool     `json:"isRequiredComment,omitempty"`
 	CreatedBy            model.Id  `json:"createdBy"`
-	OrgId                *model.Id `json:"orgId,omitempty"`
+	// OrgId                *model.Id `json:"orgId,omitempty"`
 
-	Roles []RoleSummaryDto `json:"roles,omitempty"`
+	Roles        []RoleSummaryDto        `json:"roles,omitempty"`
+	Organization *OrganizationSummaryDto `json:"org,omitempty"`
 }
 
 type RoleSuiteSummaryDto struct {
@@ -41,6 +42,12 @@ func (this *RoleSuiteDto) FromRoleSuite(roleSuite domain.RoleSuite) {
 		item.FromRole(&role)
 		return item
 	})
+
+	// Combine OrgId and OrgName into Organization object
+	if roleSuite.OrgId != nil {
+		this.Organization = &OrganizationSummaryDto{}
+		this.Organization.FromOrganization(roleSuite.OrgId, roleSuite.OrgName)
+	}
 }
 
 type CreateRoleSuiteRequest = it.CreateRoleSuiteCommand

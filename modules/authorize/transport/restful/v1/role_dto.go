@@ -24,9 +24,10 @@ type RoleDto struct {
 	IsRequiredAttachment bool      `json:"isRequiredAttachment"`
 	IsRequiredComment    bool      `json:"isRequiredComment"`
 	CreatedBy            model.Id  `json:"createdBy"`
-	OrgId                *model.Id `json:"orgId,omitempty"`
+	// OrgId                *model.Id `json:"orgId,omitempty"`
 
 	Entitlements []EntitlementSummaryDto `json:"entitlements,omitempty"`
+	Organization *OrganizationSummaryDto `json:"org,omitempty"`
 }
 
 type RoleSummaryDto struct {
@@ -51,6 +52,12 @@ func (this *RoleDto) FromRole(role domain.Role) {
 		entitlementItem.FromEntitlementWithScopeRef(&entitlement, scopeRefId)
 		return entitlementItem
 	})
+
+	// Combine OrgId and OrgName into Organization object
+	if role.OrgId != nil {
+		this.Organization = &OrganizationSummaryDto{}
+		this.Organization.FromOrganization(role.OrgId, role.OrgName)
+	}
 }
 
 func (this *RoleSummaryDto) FromRole(role *domain.Role) {

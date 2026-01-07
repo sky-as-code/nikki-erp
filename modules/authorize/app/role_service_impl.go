@@ -641,10 +641,39 @@ func (this *RoleServiceImpl) getRoleByIdFull(ctx crud.Context, query itRole.GetR
 		dbRole.Entitlements = entitlements
 	}
 
+	// Populate organization
+	if dbRole.OrgId != nil {
+		org, err := this.getOrganizationById(ctx, *dbRole.OrgId)
+		fault.PanicOnErr(err)
+		if org != nil {
+			dbRole.Organization = org
+			dbRole.OrgName = org.DisplayName
+		}
+	}
+
 	return
 }
 
 func (this *RoleServiceImpl) populateRoleDetails(ctx crud.Context, dbRoles []domain.Role) error {
+	// Collect unique orgIds for batch fetching
+	orgIdSet := make(map[model.Id]bool)
+	for i := range dbRoles {
+		if dbRoles[i].OrgId != nil {
+			orgIdSet[*dbRoles[i].OrgId] = true
+		}
+	}
+
+	// Batch fetch organizations
+	orgMap := make(map[model.Id]*domain.Organization)
+	for orgId := range orgIdSet {
+		org, err := this.getOrganizationById(ctx, orgId)
+		fault.PanicOnErr(err)
+		if org != nil {
+			orgMap[orgId] = org
+		}
+	}
+
+	// Populate entitlements and organizations
 	for i := range dbRoles {
 		assignments, err := this.getAssignmentsByRoleId(ctx, &dbRoles[i])
 		fault.PanicOnErr(err)
@@ -655,9 +684,38 @@ func (this *RoleServiceImpl) populateRoleDetails(ctx crud.Context, dbRoles []dom
 
 			dbRoles[i].Entitlements = entitlements
 		}
+
+		if dbRoles[i].OrgId != nil {
+			if org, exists := orgMap[*dbRoles[i].OrgId]; exists {
+				dbRoles[i].Organization = org
+				dbRoles[i].OrgName = org.DisplayName
+			}
+		}
 	}
 
 	return nil
+}
+
+func (this *RoleServiceImpl) getOrganizationById(ctx crud.Context, orgId model.Id) (*domain.Organization, error) {
+	orgQuery := &itOrg.GetOrganizationByIdQuery{
+		Id: orgId,
+	}
+	orgRes := itOrg.GetOrganizationByIdResult{}
+	err := this.cqrsBus.Request(ctx, *orgQuery, &orgRes)
+	fault.PanicOnErr(err)
+
+	if orgRes.ClientError != nil {
+		return nil, nil
+	}
+
+	if orgRes.Data == nil {
+		return nil, nil
+	}
+
+	return &domain.Organization{
+		Id:          orgRes.Data.Id,
+		DisplayName: orgRes.Data.DisplayName,
+	}, nil
 }
 
 // makeEntitlementKey create composite key

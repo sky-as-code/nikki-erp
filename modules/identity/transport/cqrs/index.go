@@ -71,6 +71,7 @@ func initOrganizationHandlers() error {
 			cqrs.NewHandler(handler.GetOrganizationBySlug),
 			cqrs.NewHandler(handler.SearchOrganizations),
 			cqrs.NewHandler(handler.ExistsOrgById),
+			cqrs.NewHandler(handler.GetOrganizationById),
 		)
 	})
 }
