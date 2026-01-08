@@ -149,7 +149,8 @@ func BuildGroupDescriptor() *orm.EntityDescriptor {
 		Field(entGroup.FieldID, entity.ID).
 		Field(entGroup.FieldName, entity.Name).
 		Field(entGroup.FieldUpdatedAt, entity.UpdatedAt).
-		Edge(entGroup.EdgeUsers, orm.ToEdgePredicate(entGroup.HasUsersWith))
+		Edge(entGroup.EdgeUsers, orm.ToEdgePredicate(entGroup.HasUsersWith)).
+		Edge(entGroup.EdgeOrg, orm.ToEdgePredicate(entGroup.HasOrgWith))
 
 	return builder.Descriptor()
 }

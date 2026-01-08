@@ -52,7 +52,7 @@ func entToUser(dbUser *ent.User) *domain.User {
 	}
 
 	if dbUser.Edges.Hierarchy != nil {
-		user.HierarchyId = &dbUser.Edges.Hierarchy.ID
+		user.Hierarchy = entToHierarchyLevel(dbUser.Edges.Hierarchy)
 	}
 
 	if dbUser.Edges.Orgs != nil {

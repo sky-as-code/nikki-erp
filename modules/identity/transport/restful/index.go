@@ -40,6 +40,7 @@ func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, o
 	route.GET("/organizations/:slug", orgRest.GetOrganizationBySlug)
 	route.GET("/organizations", orgRest.SearchOrganizations)
 	route.PUT("/organizations/:slug", orgRest.UpdateOrganization)
+	route.POST("/organizations/:orgId/manage-users", orgRest.ManageOrganizationUsers)
 
 	route.POST("/hierarchy", hierarchyRest.CreateHierarchyLevel)
 	route.DELETE("/hierarchy/:id", hierarchyRest.DeleteHierarchyLevel)

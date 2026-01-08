@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"time"
+
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -10,13 +12,13 @@ import (
 
 type HierarchyLevelDto struct {
 	Id        string                  `json:"id"`
-	CreatedAt int64                   `json:"createdAt"`
+	CreatedAt time.Time               `json:"createdAt"`
 	Children  []HierarchyLevelDto     `json:"children,omitempty"`
 	Etag      string                  `json:"etag"`
 	Name      string                  `json:"name"`
 	Org       *GetGroupRespOrg        `json:"org,omitempty"`
 	Parent    *GetParentRespHierarchy `json:"parent,omitempty"`
-	UpdatedAt *int64                  `json:"updatedAt,omitempty"`
+	UpdatedAt *time.Time              `json:"updatedAt,omitempty"`
 }
 
 func (this *HierarchyLevelDto) FromHierarchyLevel(hierarchyLevel domain.HierarchyLevel) {

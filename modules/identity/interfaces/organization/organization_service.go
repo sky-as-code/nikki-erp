@@ -5,6 +5,7 @@ import (
 )
 
 type OrganizationService interface {
+	AddRemoveUsers(ctx crud.Context, cmd AddRemoveUsersCommand) (*AddRemoveUsersResult, error)
 	CreateOrganization(ctx crud.Context, cmd CreateOrganizationCommand) (*CreateOrganizationResult, error)
 	DeleteOrganization(ctx crud.Context, cmd DeleteOrganizationCommand) (*DeleteOrganizationResult, error)
 	GetOrganizationBySlug(ctx crud.Context, query GetOrganizationBySlugQuery) (*GetOrganizationBySlugResult, error)

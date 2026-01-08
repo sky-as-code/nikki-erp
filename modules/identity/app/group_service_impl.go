@@ -317,7 +317,7 @@ func (this *GroupServiceImpl) assertUniqueGroupName(ctx crud.Context, group *dom
 		return err
 	}
 
-	if dbGroup != nil {
+	if dbGroup != nil && *dbGroup.Id != *group.Id {
 		vErrs.AppendAlreadyExists("name", "group name")
 	}
 	return nil

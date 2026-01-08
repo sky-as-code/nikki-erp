@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"time"
+
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -9,16 +11,16 @@ import (
 )
 
 type OrganizationDto struct {
-	Id          string  `json:"id"`
-	Address     *string `json:"address,omitempty"`
-	CreatedAt   int64   `json:"createdAt,omitempty"`
-	DisplayName string  `json:"displayName"`
-	Etag        string  `json:"etag"`
-	LegalName   *string `json:"legalName,omitempty"`
-	PhoneNumber *string `json:"phoneNumber,omitempty"`
-	Slug        string  `json:"slug"`
-	Status      string  `json:"status"`
-	UpdatedAt   *int64  `json:"updatedAt,omitempty"`
+	Id          string     `json:"id"`
+	Address     *string    `json:"address,omitempty"`
+	CreatedAt   time.Time  `json:"createdAt,omitempty"`
+	DisplayName string     `json:"displayName"`
+	Etag        string     `json:"etag"`
+	LegalName   *string    `json:"legalName,omitempty"`
+	PhoneNumber *string    `json:"phoneNumber,omitempty"`
+	Slug        string     `json:"slug"`
+	Status      string     `json:"status"`
+	UpdatedAt   *time.Time `json:"updatedAt,omitempty"`
 }
 
 func (this *OrganizationDto) FromOrg(org domain.Organization) {
@@ -60,3 +62,6 @@ func (this *SearchOrganizationsResponse) FromResult(result *itOrg.SearchOrganiza
 		return orgDto
 	})
 }
+
+type ManageOrganizationUsersRequest = itOrg.AddRemoveUsersCommand
+type ManageOrganizationUsersResponse = httpserver.RestUpdateResponse

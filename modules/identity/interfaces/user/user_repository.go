@@ -33,9 +33,11 @@ type FindByHierarchyIdParam struct {
 	Status      *domain.UserStatus
 }
 type SearchParam struct {
-	Predicate  *orm.Predicate
-	Order      []orm.OrderOption
-	Page       int
-	Size       int
-	WithGroups bool
+	Predicate     *orm.Predicate
+	Order         []orm.OrderOption
+	Page          int
+	Size          int
+	WithGroups    bool
+	WithHierarchy bool
+	WithOrgs      bool
 }

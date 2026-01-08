@@ -370,7 +370,7 @@ func (this *HierarchyServiceImpl) assertUniqueHierarchyLevelName(ctx crud.Contex
 		return err
 	}
 
-	if dbHierarchyLevel != nil {
+	if dbHierarchyLevel != nil && *dbHierarchyLevel.Id != *hierarchyLevel.Id {
 		vErrs.Append("name", "hierarchy level name already exists")
 	}
 	return nil

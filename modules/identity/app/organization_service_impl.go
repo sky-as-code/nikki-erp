@@ -30,6 +30,69 @@ type OrganizationServiceImpl struct {
 	orgRepo itOrg.OrganizationRepository
 }
 
+func (this *OrganizationServiceImpl) AddRemoveUsers(ctx crud.Context, cmd itOrg.AddRemoveUsersCommand) (result *itOrg.AddRemoveUsersResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "add or remove users"); e != nil {
+			err = e
+		}
+	}()
+
+	if len(cmd.Add) == 0 && len(cmd.Remove) == 0 {
+		return &itOrg.AddRemoveUsersResult{
+			ClientError: &ft.ClientError{
+				Code:    "invalid_request",
+				Details: "no users to add or remove",
+			},
+		}, nil
+	}
+
+	// var dbOrg *domain.Organization
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		// Step(func(vErrs *ft.ValidationErrors) error {
+		// 	dbOrg, err = this.ExistsOrgById(ctx, cmd.OrgId, vErrs)
+		// 	return err
+		// }).
+		// Step(func(vErrs *ft.ValidationErrors) error {
+		// 	this.assertCorrectEtag(cmd.Etag, *dbOrg.Etag, vErrs)
+		// 	return nil
+		// }).
+		// Step(func(vErrs *ft.ValidationErrors) error {
+		// 	return this.assertUserIdsExist(ctx, vErrs, "add", cmd.Add)
+		// }).
+		End()
+
+	if vErrs.Count() > 0 {
+		return &itOrg.AddRemoveUsersResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	cmd.Etag = *model.NewEtag()
+	clientErr, err := this.orgRepo.AddRemoveUsers(ctx, cmd)
+	ft.PanicOnErr(err)
+
+	// TODO: The group or users may have been deleted by another process
+	if clientErr != nil {
+		return &itOrg.AddRemoveUsersResult{
+			ClientError: clientErr,
+		}, nil
+	}
+
+	return &itOrg.AddRemoveUsersResult{
+		Data: &itOrg.AddRemoveUsersData{
+			Id:        cmd.OrgId,
+			Etag:      cmd.Etag,
+			UpdatedAt: time.Now(),
+		},
+		HasData: true,
+	}, nil
+}
+
 func (this *OrganizationServiceImpl) CreateOrganization(ctx crud.Context, cmd itOrg.CreateOrganizationCommand) (*itOrg.CreateOrganizationResult, error) {
 	result, err := crud.Create(ctx, crud.CreateParam[*domain.Organization, itOrg.CreateOrganizationCommand, itOrg.CreateOrganizationResult]{
 		Action:              "create organization",
@@ -52,42 +115,6 @@ func (this *OrganizationServiceImpl) CreateOrganization(ctx crud.Context, cmd it
 	})
 
 	return result, err
-
-	// defer func() {
-	// 	if e := ft.RecoverPanicFailedTo(recover(), "create organization"); e != nil {
-	// 		err = e
-	// 	}
-	// }()
-
-	// org := cmd.ToOrganization()
-	// this.setOrgDefaults(ctx, org)
-
-	// flow := val.StartValidationFlow()
-	// vErrs, err := flow.
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		*vErrs = org.Validate(false)
-	// 		return nil
-	// 	}).
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		this.sanitizeOrg(org)
-	// 		return this.assertOrgUnique(ctx, org.Slug, vErrs)
-	// 	}).
-	// 	End()
-	// ft.PanicOnErr(err)
-
-	// if vErrs.Count() > 0 {
-	// 	return &itOrg.CreateOrganizationResult{
-	// 		ClientError: vErrs.ToClientError(),
-	// 	}, nil
-	// }
-
-	// org, err = this.orgRepo.Create(ctx, *org)
-	// ft.PanicOnErr(err)
-
-	// return &itOrg.CreateOrganizationResult{
-	// 	Data:    org,
-	// 	HasData: org != nil,
-	// }, nil
 }
 
 func (this *OrganizationServiceImpl) UpdateOrganization(ctx crud.Context, cmd itOrg.UpdateOrganizationCommand) (result *itOrg.UpdateOrganizationResult, err error) {

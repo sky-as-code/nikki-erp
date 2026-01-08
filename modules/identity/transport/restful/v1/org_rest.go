@@ -130,3 +130,24 @@ func (this OrganizationRest) SearchOrganizations(echoCtx echo.Context) (err erro
 	)
 	return err
 }
+
+func (this OrganizationRest) ManageOrganizationUsers(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST manage users"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest(
+		echoCtx, this.OrgSvc.AddRemoveUsers,
+		func(request ManageOrganizationUsersRequest) itOrg.AddRemoveUsersCommand {
+			return itOrg.AddRemoveUsersCommand(request)
+		},
+		func(result itOrg.AddRemoveUsersResult) ManageOrganizationUsersResponse {
+			response := ManageOrganizationUsersResponse{}
+			response.FromNonEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+	return err
+}

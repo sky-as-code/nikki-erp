@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"time"
+
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -9,24 +11,28 @@ import (
 )
 
 type UserDto struct {
-	Id          string  `json:"id"`
-	AvatarUrl   *string `json:"avatarUrl,omitempty"`
-	CreatedAt   int64   `json:"createdAt"`
-	DisplayName string  `json:"displayName"`
-	Email       string  `json:"email"`
-	Etag        string  `json:"etag"`
-	Status      string  `json:"status"`
-	UpdatedAt   *int64  `json:"updatedAt,omitempty"`
+	Id          string     `json:"id"`
+	AvatarUrl   *string    `json:"avatarUrl,omitempty"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	DisplayName string     `json:"displayName"`
+	Email       string     `json:"email"`
+	Etag        string     `json:"etag"`
+	Status      string     `json:"status"`
+	UpdatedAt   *time.Time `json:"updatedAt,omitempty"`
 
-	Groups []GroupDto `json:"groups,omitempty"`
-	// Hierarchies []HierarchyDto    `json:"hierarchies,omitempty"`
-	Orgs []OrganizationDto `json:"orgs,omitempty"`
+	Groups    []GroupDto        `json:"groups,omitempty"`
+	Hierarchy HierarchyLevelDto `json:"hierarchy,omitempty"`
+	Orgs      []OrganizationDto `json:"orgs,omitempty"`
 }
 
 func (this *UserDto) FromUser(user domain.User) {
 	model.MustCopy(user.AuditableBase, this)
 	model.MustCopy(user.ModelBase, this)
 	model.MustCopy(user, this)
+
+	if user.Hierarchy != nil {
+		this.Hierarchy.FromHierarchyLevel(*user.Hierarchy)
+	}
 
 	this.Groups = array.Map(user.Groups, func(group domain.Group) GroupDto {
 		groupResp := GroupDto{}
