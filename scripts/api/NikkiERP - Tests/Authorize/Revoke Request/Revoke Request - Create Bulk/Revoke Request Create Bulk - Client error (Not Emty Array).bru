@@ -1,0 +1,20 @@
+meta {
+  name: Revoke Request Create Bulk - Client error (Not Emty Array)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/revoke-requests/bulk
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

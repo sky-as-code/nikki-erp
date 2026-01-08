@@ -54,7 +54,6 @@ var (
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "org_id", Type: field.TypeString, Nullable: true},
 		{Name: "action_id", Type: field.TypeString, Nullable: true},
 		{Name: "resource_id", Type: field.TypeString, Nullable: true},
 	}
@@ -66,27 +65,27 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_entitlements_authz_actions_action",
-				Columns:    []*schema.Column{AuthzEntitlementsColumns[8]},
+				Columns:    []*schema.Column{AuthzEntitlementsColumns[7]},
 				RefColumns: []*schema.Column{AuthzActionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "authz_entitlements_authz_resources_resource",
-				Columns:    []*schema.Column{AuthzEntitlementsColumns[9]},
+				Columns:    []*schema.Column{AuthzEntitlementsColumns[8]},
 				RefColumns: []*schema.Column{AuthzResourcesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "entitlement_action_expr_org_id",
+				Name:    "entitlement_action_expr",
 				Unique:  true,
-				Columns: []*schema.Column{AuthzEntitlementsColumns[1], AuthzEntitlementsColumns[7]},
+				Columns: []*schema.Column{AuthzEntitlementsColumns[1]},
 			},
 			{
-				Name:    "entitlement_name_org_id",
+				Name:    "entitlement_name",
 				Unique:  true,
-				Columns: []*schema.Column{AuthzEntitlementsColumns[4], AuthzEntitlementsColumns[7]},
+				Columns: []*schema.Column{AuthzEntitlementsColumns[4]},
 			},
 		},
 	}
@@ -151,6 +150,7 @@ var (
 		{Name: "target_role_name", Type: field.TypeString, Nullable: true},
 		{Name: "target_suite_name", Type: field.TypeString, Nullable: true},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "approved", "rejected", "cancelled"}},
+		{Name: "org_id", Type: field.TypeString, Nullable: true},
 		{Name: "target_role_id", Type: field.TypeString, Nullable: true},
 		{Name: "target_suite_id", Type: field.TypeString, Nullable: true},
 	}
@@ -162,13 +162,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "authz_grant_requests_authz_roles_role",
-				Columns:    []*schema.Column{AuthzGrantRequestsColumns[12]},
+				Columns:    []*schema.Column{AuthzGrantRequestsColumns[13]},
 				RefColumns: []*schema.Column{AuthzRolesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "authz_grant_requests_authz_role_suites_role_suite",
-				Columns:    []*schema.Column{AuthzGrantRequestsColumns[13]},
+				Columns:    []*schema.Column{AuthzGrantRequestsColumns[14]},
 				RefColumns: []*schema.Column{AuthzRoleSuitesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

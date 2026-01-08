@@ -11,6 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	itHierarchy "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/hierarchy"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
@@ -459,6 +460,56 @@ func (this *RoleServiceImpl) getEntitlements(ctx crud.Context, entitlementIds []
 	return entitlementsRes.Data, nil
 }
 
+func (this *RoleServiceImpl) buildEntitlementsFromAssignments(ctx crud.Context, assignments []domain.EntitlementAssignment) ([]domain.Entitlement, error) {
+	if len(assignments) == 0 {
+		return nil, nil
+	}
+
+	entitlementIdSet := make(map[model.Id]bool)
+	entitlementIds := make([]model.Id, 0)
+	for _, assignment := range assignments {
+		if assignment.EntitlementId != nil {
+			entId := *assignment.EntitlementId
+			if !entitlementIdSet[entId] {
+				entitlementIdSet[entId] = true
+				entitlementIds = append(entitlementIds, entId)
+			}
+		}
+	}
+
+	entitlements, err := this.getEntitlements(ctx, entitlementIds)
+	if err != nil {
+		return nil, err
+	}
+
+	entitlementMap := make(map[model.Id]*domain.Entitlement)
+	for i := range entitlements {
+		ent := &entitlements[i]
+		entitlementMap[*ent.Id] = ent
+	}
+
+	result := make([]domain.Entitlement, 0, len(assignments))
+	for _, assignment := range assignments {
+		if assignment.EntitlementId == nil {
+			continue
+		}
+
+		ent := entitlementMap[*assignment.EntitlementId]
+		if ent == nil {
+			continue
+		}
+
+		entWithScope := *ent
+		if assignment.ScopeRef != nil {
+			entWithScope.ScopeRef = assignment.ScopeRef
+		}
+
+		result = append(result, entWithScope)
+	}
+
+	return result, nil
+}
+
 func (this *RoleServiceImpl) deleteAssignments(ctx crud.Context, assignmentIds []model.Id) error {
 	for _, assignmentId := range assignmentIds {
 		deletedCount, err := this.assignmentService.DeleteHardAssignment(ctx, itAssign.DeleteEntitlementAssignmentByIdCommand{Id: assignmentId})
@@ -580,33 +631,91 @@ func (this *RoleServiceImpl) getRoleByIdFull(ctx crud.Context, query itRole.GetR
 		return
 	}
 
-	entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, dbRole)
+	assignments, err := this.getAssignmentsByRoleId(ctx, dbRole)
 	fault.PanicOnErr(err)
 
-	if len(entitlementIds) > 0 {
-		entitlements, err := this.getEntitlements(ctx, entitlementIds)
+	if len(assignments) > 0 {
+		entitlements, err := this.buildEntitlementsFromAssignments(ctx, assignments)
 		fault.PanicOnErr(err)
 
 		dbRole.Entitlements = entitlements
+	}
+
+	// Populate organization
+	if dbRole.OrgId != nil {
+		org, err := this.getOrganizationById(ctx, *dbRole.OrgId)
+		fault.PanicOnErr(err)
+		if org != nil {
+			dbRole.Organization = org
+			dbRole.OrgName = org.DisplayName
+		}
 	}
 
 	return
 }
 
 func (this *RoleServiceImpl) populateRoleDetails(ctx crud.Context, dbRoles []domain.Role) error {
+	// Collect unique orgIds for batch fetching
+	orgIdSet := make(map[model.Id]bool)
 	for i := range dbRoles {
-		entitlementIds, err := this.getEntitlementIdsByRoleId(ctx, &dbRoles[i])
+		if dbRoles[i].OrgId != nil {
+			orgIdSet[*dbRoles[i].OrgId] = true
+		}
+	}
+
+	// Batch fetch organizations
+	orgMap := make(map[model.Id]*domain.Organization)
+	for orgId := range orgIdSet {
+		org, err := this.getOrganizationById(ctx, orgId)
+		fault.PanicOnErr(err)
+		if org != nil {
+			orgMap[orgId] = org
+		}
+	}
+
+	// Populate entitlements and organizations
+	for i := range dbRoles {
+		assignments, err := this.getAssignmentsByRoleId(ctx, &dbRoles[i])
 		fault.PanicOnErr(err)
 
-		if len(entitlementIds) > 0 {
-			entitlements, err := this.getEntitlements(ctx, entitlementIds)
+		if len(assignments) > 0 {
+			entitlements, err := this.buildEntitlementsFromAssignments(ctx, assignments)
 			fault.PanicOnErr(err)
 
 			dbRoles[i].Entitlements = entitlements
 		}
+
+		if dbRoles[i].OrgId != nil {
+			if org, exists := orgMap[*dbRoles[i].OrgId]; exists {
+				dbRoles[i].Organization = org
+				dbRoles[i].OrgName = org.DisplayName
+			}
+		}
 	}
 
 	return nil
+}
+
+func (this *RoleServiceImpl) getOrganizationById(ctx crud.Context, orgId model.Id) (*domain.Organization, error) {
+	orgQuery := &itOrg.GetOrganizationByIdQuery{
+		Id: orgId,
+	}
+	orgRes := itOrg.GetOrganizationByIdResult{}
+	err := this.cqrsBus.Request(ctx, *orgQuery, &orgRes)
+	fault.PanicOnErr(err)
+
+	if orgRes.ClientError != nil {
+		return nil, nil
+	}
+
+	if orgRes.Data == nil {
+		return nil, nil
+	}
+
+	return &domain.Organization{
+		Id:          orgRes.Data.Id,
+		DisplayName: orgRes.Data.DisplayName,
+	}, nil
 }
 
 // makeEntitlementKey create composite key
@@ -652,38 +761,6 @@ func (this *RoleServiceImpl) fetchAndMapEntitlements(ctx crud.Context, inputs []
 	}
 
 	return entitlementMap, nil
-}
-
-func (this *RoleServiceImpl) validateEntitlementOrgConsistency(inputs []itRole.EntitlementInput, entitlementMap map[model.Id]*domain.Entitlement, dbRole *domain.Role, vErrs *fault.ValidationErrors) bool {
-	for _, input := range inputs {
-		ent := entitlementMap[input.EntitlementId]
-		if ent == nil {
-			vErrs.AppendNotFound("entitlementId", input.EntitlementId)
-			return false
-		}
-
-		if ent.OrgId != nil && dbRole.OrgId != nil && *ent.OrgId == *dbRole.OrgId {
-			continue
-		}
-
-		if ent.OrgId != nil && dbRole.OrgId == nil {
-			vErrs.Append("entitlementId", "cannot add org-specific entitlement to domain-level role")
-			return false
-		}
-
-		if ent.OrgId != nil && dbRole.OrgId != nil && *ent.OrgId != *dbRole.OrgId {
-			vErrs.Append("entitlementId", "entitlement belongs to different organization than role")
-			return false
-		}
-
-		if dbRole.OrgId == nil && ent.OrgId == nil && ent.Resource != nil && ent.Resource.ScopeType != nil &&
-			*ent.Resource.ScopeType == domain.ResourceScopeTypeOrg {
-			vErrs.Append("entitlementId", "domain-level role cannot include global entitlement with org-scoped resource")
-			return false
-		}
-	}
-
-	return true
 }
 
 func (this *RoleServiceImpl) getExistingAssignmentKeys(ctx crud.Context, roleId model.Id) (map[string]bool, error) {
@@ -743,43 +820,6 @@ func (this *RoleServiceImpl) createNewEntitlementAssignment(ctx crud.Context, in
 	return nil
 }
 
-// assertBusinessRuleAddEntitlements validates and creates entitlement assignments for a role
-//
-// This function orchestrates the entire process of adding entitlements to a role with the following steps:
-//  1. Validate unique inputs (no duplicates in the request)
-//  2. Fetch and map entitlements by ID
-//  3. Validate organization-level consistency (cross-org prevention)
-//  4. Get existing assignments to avoid duplicates
-//  5. Create new assignments for valid, non-existing entitlements
-//
-// Cross-Org Validation Strategy:
-// ┌─────────────────────────────────────────────────────────────────────────────┐
-// │ Layer 1: RoleService (this function)                                        │
-// │ - Validates org-level consistency between entitlements and roles            │
-// │ - Prevents Case 3: org-specific entitlement in domain-level role            │
-// │ - Prevents Case 4: cross-org assignments (OrgA ent → OrgB role)             │
-// │ - Allows Case 1, 2, 5, 6 to pass through                                    │
-// └─────────────────────────────────────────────────────────────────────────────┘
-//
-//	↓
-//
-// ┌─────────────────────────────────────────────────────────────────────────────┐
-// │ Layer 2: EntitlementAssignmentService                                       │
-// │ - Validates scopeRef against resource's ScopeType                           │
-// │ - Ensures scope stays within proper boundaries (org/hierarchy/domain)       │
-// │ - Handles Case 2/6: global ent + org role with proper scope isolation       │
-// └─────────────────────────────────────────────────────────────────────────────┘
-//
-// Valid Cases:
-//
-//	✅ Case 1: ent.OrgId=nil + role.OrgId=nil (both domain-level)
-//	✅ Case 2: ent.OrgId=nil + role.OrgId!=nil (global ent for org role, scope validated in Layer 2)
-//	✅ Case 5: ent.OrgId==role.OrgId (same org boundary)
-//
-// Invalid Cases (rejected in this layer):
-//
-//	❌ Case 3: ent.OrgId!=nil + role.OrgId=nil (org ent in domain role → isolation violation)
-//	❌ Case 4: ent.OrgId!=role.OrgId (cross-org → tenant isolation violation)
 func (this *RoleServiceImpl) assertBusinessRuleAddEntitlements(ctx crud.Context, cmd itRole.AddEntitlementsCommand, dbRole *domain.Role, vErrs *fault.ValidationErrors) error {
 	if len(cmd.EntitlementInputs) == 0 {
 		return nil
@@ -793,8 +833,12 @@ func (this *RoleServiceImpl) assertBusinessRuleAddEntitlements(ctx crud.Context,
 	entitlementMap, err := this.fetchAndMapEntitlements(ctx, uniqueInputs)
 	fault.PanicOnErr(err)
 
-	if !this.validateEntitlementOrgConsistency(uniqueInputs, entitlementMap, dbRole, vErrs) {
-		return nil
+	for _, input := range uniqueInputs {
+		entitlement := entitlementMap[input.EntitlementId]
+		if entitlement == nil {
+			vErrs.AppendNotFound("entitlementId", input.EntitlementId)
+			return nil
+		}
 	}
 
 	existingAssignments, err := this.getExistingAssignmentKeys(ctx, *dbRole.Id)
@@ -814,17 +858,115 @@ func (this *RoleServiceImpl) assertBusinessRuleAddEntitlements(ctx crud.Context,
 			return nil
 		}
 
-		err = this.createNewEntitlementAssignment(ctx, input, entitlement, *dbRole.Id, vErrs)
+		err = this.assertRoleOrgIsolationForEntitlement(ctx, dbRole, entitlement, input, vErrs)
 		fault.PanicOnErr(err)
 
 		if vErrs.Count() > 0 {
 			return nil
 		}
+
+		err = this.createNewEntitlementAssignment(ctx, input, entitlement, *dbRole.Id, vErrs)
+		fault.PanicOnErr(err)
+	}
+
+	return nil
+}
+
+func (this *RoleServiceImpl) assertRoleOrgIsolationForEntitlement(
+	ctx crud.Context,
+	dbRole *domain.Role,
+	entitlement *domain.Entitlement,
+	input itRole.EntitlementInput,
+	vErrs *fault.ValidationErrors,
+) error {
+	if dbRole.OrgId == nil {
+		return nil
+	}
+
+	if entitlement.Resource == nil || entitlement.Resource.ScopeType == nil {
+		return nil
+	}
+	scopeType := *entitlement.Resource.ScopeType
+
+	if scopeType == domain.ResourceScopeTypeOrg {
+		if input.ScopeRef == nil {
+			return nil
+		}
+
+		if *input.ScopeRef != *dbRole.OrgId {
+			vErrs.AppendNotAllowed("scopeRef", "scopeRef must match role's orgId for org-specific role")
+			return nil
+		}
+		return nil
+	}
+
+	if scopeType == domain.ResourceScopeTypeHierarchy {
+		if input.ScopeRef == nil {
+			return nil
+		}
+
+		hierarchyQuery := &itHierarchy.GetHierarchyLevelByIdQuery{
+			Id: *input.ScopeRef,
+		}
+		hierarchyRes := itHierarchy.GetHierarchyLevelByIdResult{}
+		err := this.cqrsBus.Request(ctx, *hierarchyQuery, &hierarchyRes)
+		fault.PanicOnErr(err)
+
+		if hierarchyRes.ClientError != nil {
+			vErrs.MergeClientError(hierarchyRes.ClientError)
+			return nil
+		}
+
+		if hierarchyRes.Data == nil {
+			vErrs.AppendNotFound("scopeRef", "hierarchy level not found")
+			return nil
+		}
+
+		if hierarchyRes.Data.OrgId == nil || *hierarchyRes.Data.OrgId != *dbRole.OrgId {
+			vErrs.AppendNotAllowed("scopeRef", "hierarchy level must belong to role's organization")
+			return nil
+		}
+
+		return nil
 	}
 
 	return nil
 }
 
 func (this *RoleServiceImpl) assertBusinessRuleRemoveEntitlements(ctx crud.Context, cmd itRole.RemoveEntitlementsCommand, dbRole *domain.Role, vErrs *fault.ValidationErrors) error {
+	if len(cmd.EntitlementInputs) == 0 {
+		return nil
+	}
+
+	uniqueInputs, isValid := this.validateUniqueEntitlementInputs(cmd.EntitlementInputs, vErrs)
+	if !isValid {
+		return nil
+	}
+
+	assignments, err := this.getAssignmentsByRoleId(ctx, dbRole)
+	fault.PanicOnErr(err)
+
+	assignmentMap := make(map[string]*domain.EntitlementAssignment)
+	for i := range assignments {
+		assignment := &assignments[i]
+		key := this.makeEntitlementKey(*assignment.EntitlementId, assignment.ScopeRef)
+		assignmentMap[key] = assignment
+	}
+
+	for _, input := range uniqueInputs {
+		key := this.makeEntitlementKey(input.EntitlementId, input.ScopeRef)
+
+		assignment, exists := assignmentMap[key]
+		if !exists {
+			vErrs.AppendNotFound("entitlementId", input.EntitlementId)
+			return nil
+		}
+
+		_, err = this.assignmentService.DeleteHardAssignment(ctx, itAssign.DeleteEntitlementAssignmentByIdCommand{
+			Id: *assignment.Id,
+		})
+		fault.PanicOnErr(err)
+	}
+
 	return nil
 }

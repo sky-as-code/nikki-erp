@@ -27,8 +27,9 @@ type EntitlementDto struct {
 }
 
 type EntitlementSummaryDto struct {
-	Id   model.Id `json:"id"`
-	Name string   `json:"name"`
+	Id       model.Id  `json:"id"`
+	Name     string    `json:"name"`
+	ScopeRef *model.Id `json:"scopeRef,omitempty"`
 }
 
 type Subject struct {
@@ -57,6 +58,12 @@ func (this *EntitlementSummaryDto) FromEntitlement(entitlement *domain.Entitleme
 	this.Name = *entitlement.Name
 }
 
+func (this *EntitlementSummaryDto) FromEntitlementWithScopeRef(entitlement *domain.Entitlement, scopeRef *model.Id) {
+	this.Id = *entitlement.Id
+	this.Name = *entitlement.Name
+	this.ScopeRef = scopeRef
+}
+
 type CreateEntitlementRequest = it.CreateEntitlementCommand
 type CreateEntitlementResponse = httpserver.RestCreateResponse
 
@@ -67,6 +74,8 @@ type DeleteEntitlementHardByIdRequest = it.DeleteEntitlementHardByIdCommand
 type DeleteEntitlementHardByIdResponse = httpserver.RestDeleteResponse
 
 type GetEntitlementByIdRequest = it.GetEntitlementByIdQuery
+
+type GetAllEntitlementByIdsRequest = it.GetAllEntitlementByIdsQuery
 
 type SearchEntitlementsRequest = it.SearchEntitlementsQuery
 type SearchEntitlementsResponse httpserver.RestSearchResponse[EntitlementDto]

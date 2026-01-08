@@ -7,6 +7,7 @@ import (
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
+	entRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
 )
 
 // START: Resource
@@ -314,6 +315,26 @@ func entToRevokeRequest(dbRevokeRequest *ent.RevokeRequest) *domain.RevokeReques
 	revokeRequest := &domain.RevokeRequest{}
 	model.MustCopy(dbRevokeRequest, revokeRequest)
 
+	if dbRevokeRequest.CreatedBy != "" {
+		revokeRequest.RequestorId = &dbRevokeRequest.CreatedBy
+	}
+
+	if dbRevokeRequest.TargetType == entRevokeRequest.TargetTypeRole {
+		revokeRequest.TargetType = domain.WrapRevokeRequestTargetTypeEnt(entRevokeRequest.TargetTypeRole)
+		revokeRequest.TargetRef = dbRevokeRequest.TargetRoleID
+	} else if dbRevokeRequest.TargetType == entRevokeRequest.TargetTypeSuite {
+		revokeRequest.TargetType = domain.WrapRevokeRequestTargetTypeEnt(entRevokeRequest.TargetTypeSuite)
+		revokeRequest.TargetRef = dbRevokeRequest.TargetSuiteID
+	}
+
+	if dbRevokeRequest.Edges.Role != nil {
+		revokeRequest.Role = entToRole(dbRevokeRequest.Edges.Role)
+	}
+
+	if dbRevokeRequest.Edges.RoleSuite != nil {
+		revokeRequest.RoleSuite = entToRoleSuite(dbRevokeRequest.Edges.RoleSuite)
+	}
+
 	return revokeRequest
 }
 
@@ -324,6 +345,15 @@ func entToRevokeRequests(dbRevokeRequests []*ent.RevokeRequest) []domain.RevokeR
 
 	return array.Map(dbRevokeRequests, func(dbRevokeRequest *ent.RevokeRequest) domain.RevokeRequest {
 		return *entToRevokeRequest(dbRevokeRequest)
+	})
+}
+
+func entToRevokeRequestPtrs(dbRevokeRequests []*ent.RevokeRequest) []*domain.RevokeRequest {
+	if dbRevokeRequests == nil {
+		return nil
+	}
+	return array.Map(dbRevokeRequests, func(dbRevokeRequest *ent.RevokeRequest) *domain.RevokeRequest {
+		return entToRevokeRequest(dbRevokeRequest)
 	})
 }
 

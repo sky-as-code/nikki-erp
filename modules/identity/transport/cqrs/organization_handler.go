@@ -43,3 +43,7 @@ func (this *OrganizationHandler) SearchOrganizations(ctx context.Context, packet
 func (this *OrganizationHandler) ExistsOrgById(ctx context.Context, packet *cqrs.RequestPacket[itOrg.ExistsOrgByIdCommand]) (*cqrs.Reply[itOrg.ExistsOrgByIdResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.OrgSvc.ExistsOrgById)
 }
+
+func (this *OrganizationHandler) GetOrganizationById(ctx context.Context, packet *cqrs.RequestPacket[itOrg.GetOrganizationByIdQuery]) (*cqrs.Reply[itOrg.GetOrganizationByIdResult], error) {
+	return cqrs.HandlePacket(ctx, packet, this.OrgSvc.GetOrganizationById)
+}

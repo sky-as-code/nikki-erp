@@ -40,8 +40,6 @@ type CreateEntitlementCommand struct {
 	ResourceId  *model.Id `json:"resourceId,omitempty"`
 	ActionExpr  string    `json:"actionExpr"`
 	CreatedBy   string    `json:"createdBy"`
-	OrgId       *model.Id `json:"orgId,omitempty"`
-	// ScopeRef    *model.Id `json:"scopeRef,omitempty"`
 }
 
 func (CreateEntitlementCommand) CqrsRequestType() cqrs.RequestType {
@@ -161,8 +159,7 @@ var getEntitlementByNameQueryType = cqrs.RequestType{
 }
 
 type GetEntitlementByNameQuery struct {
-	Name  string    `param:"name" json:"name"`
-	OrgId *model.Id `json:"orgId,omitempty"`
+	Name string `param:"name" json:"name"`
 }
 
 func (GetEntitlementByNameQuery) CqrsRequestType() cqrs.RequestType {
@@ -207,8 +204,7 @@ var getEntitlementByActionExprQueryType = cqrs.RequestType{
 }
 
 type GetEntitlementByActionExprQuery struct {
-	ActionExpr string    `param:"actionExpr" json:"actionExpr"`
-	OrgId      *model.Id `json:"orgId,omitempty"`
+	ActionExpr string `param:"actionExpr" json:"actionExpr"`
 }
 
 func (GetEntitlementByActionExprQuery) CqrsRequestType() cqrs.RequestType {

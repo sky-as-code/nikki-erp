@@ -203,7 +203,8 @@ func BuildRoleSuiteDescriptor() *orm.EntityDescriptor {
 		Field(entRoleSuite.FieldIsRequiredComment, entity.IsRequiredComment).
 		Field(entRoleSuite.FieldCreatedBy, entity.CreatedBy).
 		Field(entRoleSuite.FieldOrgID, entity.OrgID).
-		Field(entRoleSuite.FieldCreatedAt, entity.CreatedAt)
+		Field(entRoleSuite.FieldCreatedAt, entity.CreatedAt).
+		Edge(entRoleSuite.EdgeRolesuiteUsers, orm.ToEdgePredicate(entRoleSuite.HasRolesuiteUsersWith))
 
 	return builder.Descriptor()
 }

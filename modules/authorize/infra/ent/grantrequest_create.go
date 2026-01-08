@@ -158,6 +158,20 @@ func (grc *GrantRequestCreate) SetStatus(gr grantrequest.Status) *GrantRequestCr
 	return grc
 }
 
+// SetOrgID sets the "org_id" field.
+func (grc *GrantRequestCreate) SetOrgID(s string) *GrantRequestCreate {
+	grc.mutation.SetOrgID(s)
+	return grc
+}
+
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (grc *GrantRequestCreate) SetNillableOrgID(s *string) *GrantRequestCreate {
+	if s != nil {
+		grc.SetOrgID(*s)
+	}
+	return grc
+}
+
 // SetID sets the "id" field.
 func (grc *GrantRequestCreate) SetID(s string) *GrantRequestCreate {
 	grc.mutation.SetID(s)
@@ -389,6 +403,10 @@ func (grc *GrantRequestCreate) createSpec() (*GrantRequest, *sqlgraph.CreateSpec
 	if value, ok := grc.mutation.Status(); ok {
 		_spec.SetField(grantrequest.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
+	}
+	if value, ok := grc.mutation.OrgID(); ok {
+		_spec.SetField(grantrequest.FieldOrgID, field.TypeString, value)
+		_node.OrgID = &value
 	}
 	if nodes := grc.mutation.PermissionHistoriesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

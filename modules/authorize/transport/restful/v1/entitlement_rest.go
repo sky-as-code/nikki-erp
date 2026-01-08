@@ -4,9 +4,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
+	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
 )
 
@@ -115,6 +117,32 @@ func (this EntitlementRest) GetEntitlementById(echoCtx echo.Context) (err error)
 			response := EntitlementDto{}
 			response.FromEntitlement(*result.Data)
 			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
+func (this EntitlementRest) GetAllEntitlementByIds(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get all entitlement by ids"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx,
+		this.EntitlementSvc.GetAllEntitlementByIds,
+		func(request GetAllEntitlementByIdsRequest) it.GetAllEntitlementByIdsQuery {
+			return it.GetAllEntitlementByIdsQuery(request)
+		},
+		func(result it.GetAllEntitlementByIdsResult) []EntitlementDto {
+			return array.Map(result.Data, func(entitlement domain.Entitlement) EntitlementDto {
+				item := EntitlementDto{}
+				item.FromEntitlement(entitlement)
+				return item
+			})
 		},
 		httpserver.JsonOk,
 	)

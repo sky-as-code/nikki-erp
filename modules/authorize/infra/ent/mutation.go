@@ -828,7 +828,6 @@ type EntitlementMutation struct {
 	name                           *string
 	description                    *string
 	etag                           *string
-	org_id                         *string
 	clearedFields                  map[string]struct{}
 	permission_histories           map[string]struct{}
 	removedpermission_histories    map[string]struct{}
@@ -1276,55 +1275,6 @@ func (m *EntitlementMutation) ResetResourceID() {
 	delete(m.clearedFields, entitlement.FieldResourceID)
 }
 
-// SetOrgID sets the "org_id" field.
-func (m *EntitlementMutation) SetOrgID(s string) {
-	m.org_id = &s
-}
-
-// OrgID returns the value of the "org_id" field in the mutation.
-func (m *EntitlementMutation) OrgID() (r string, exists bool) {
-	v := m.org_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldOrgID returns the old "org_id" field's value of the Entitlement entity.
-// If the Entitlement object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *EntitlementMutation) OldOrgID(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldOrgID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldOrgID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldOrgID: %w", err)
-	}
-	return oldValue.OrgID, nil
-}
-
-// ClearOrgID clears the value of the "org_id" field.
-func (m *EntitlementMutation) ClearOrgID() {
-	m.org_id = nil
-	m.clearedFields[entitlement.FieldOrgID] = struct{}{}
-}
-
-// OrgIDCleared returns if the "org_id" field was cleared in this mutation.
-func (m *EntitlementMutation) OrgIDCleared() bool {
-	_, ok := m.clearedFields[entitlement.FieldOrgID]
-	return ok
-}
-
-// ResetOrgID resets all changes to the "org_id" field.
-func (m *EntitlementMutation) ResetOrgID() {
-	m.org_id = nil
-	delete(m.clearedFields, entitlement.FieldOrgID)
-}
-
 // AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by ids.
 func (m *EntitlementMutation) AddPermissionHistoryIDs(ids ...string) {
 	if m.permission_histories == nil {
@@ -1521,7 +1471,7 @@ func (m *EntitlementMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *EntitlementMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 8)
 	if m.action != nil {
 		fields = append(fields, entitlement.FieldActionID)
 	}
@@ -1545,9 +1495,6 @@ func (m *EntitlementMutation) Fields() []string {
 	}
 	if m.resource != nil {
 		fields = append(fields, entitlement.FieldResourceID)
-	}
-	if m.org_id != nil {
-		fields = append(fields, entitlement.FieldOrgID)
 	}
 	return fields
 }
@@ -1573,8 +1520,6 @@ func (m *EntitlementMutation) Field(name string) (ent.Value, bool) {
 		return m.Etag()
 	case entitlement.FieldResourceID:
 		return m.ResourceID()
-	case entitlement.FieldOrgID:
-		return m.OrgID()
 	}
 	return nil, false
 }
@@ -1600,8 +1545,6 @@ func (m *EntitlementMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldEtag(ctx)
 	case entitlement.FieldResourceID:
 		return m.OldResourceID(ctx)
-	case entitlement.FieldOrgID:
-		return m.OldOrgID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Entitlement field %s", name)
 }
@@ -1667,13 +1610,6 @@ func (m *EntitlementMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetResourceID(v)
 		return nil
-	case entitlement.FieldOrgID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetOrgID(v)
-		return nil
 	}
 	return fmt.Errorf("unknown Entitlement field %s", name)
 }
@@ -1713,9 +1649,6 @@ func (m *EntitlementMutation) ClearedFields() []string {
 	if m.FieldCleared(entitlement.FieldResourceID) {
 		fields = append(fields, entitlement.FieldResourceID)
 	}
-	if m.FieldCleared(entitlement.FieldOrgID) {
-		fields = append(fields, entitlement.FieldOrgID)
-	}
 	return fields
 }
 
@@ -1738,9 +1671,6 @@ func (m *EntitlementMutation) ClearField(name string) error {
 		return nil
 	case entitlement.FieldResourceID:
 		m.ClearResourceID()
-		return nil
-	case entitlement.FieldOrgID:
-		m.ClearOrgID()
 		return nil
 	}
 	return fmt.Errorf("unknown Entitlement nullable field %s", name)
@@ -1773,9 +1703,6 @@ func (m *EntitlementMutation) ResetField(name string) error {
 		return nil
 	case entitlement.FieldResourceID:
 		m.ResetResourceID()
-		return nil
-	case entitlement.FieldOrgID:
-		m.ResetOrgID()
 		return nil
 	}
 	return fmt.Errorf("unknown Entitlement field %s", name)
@@ -2799,6 +2726,7 @@ type GrantRequestMutation struct {
 	target_role_name            *string
 	target_suite_name           *string
 	status                      *grantrequest.Status
+	org_id                      *string
 	clearedFields               map[string]struct{}
 	permission_histories        map[string]struct{}
 	removedpermission_histories map[string]struct{}
@@ -3465,6 +3393,55 @@ func (m *GrantRequestMutation) ResetStatus() {
 	m.status = nil
 }
 
+// SetOrgID sets the "org_id" field.
+func (m *GrantRequestMutation) SetOrgID(s string) {
+	m.org_id = &s
+}
+
+// OrgID returns the value of the "org_id" field in the mutation.
+func (m *GrantRequestMutation) OrgID() (r string, exists bool) {
+	v := m.org_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrgID returns the old "org_id" field's value of the GrantRequest entity.
+// If the GrantRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GrantRequestMutation) OldOrgID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrgID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrgID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrgID: %w", err)
+	}
+	return oldValue.OrgID, nil
+}
+
+// ClearOrgID clears the value of the "org_id" field.
+func (m *GrantRequestMutation) ClearOrgID() {
+	m.org_id = nil
+	m.clearedFields[grantrequest.FieldOrgID] = struct{}{}
+}
+
+// OrgIDCleared returns if the "org_id" field was cleared in this mutation.
+func (m *GrantRequestMutation) OrgIDCleared() bool {
+	_, ok := m.clearedFields[grantrequest.FieldOrgID]
+	return ok
+}
+
+// ResetOrgID resets all changes to the "org_id" field.
+func (m *GrantRequestMutation) ResetOrgID() {
+	m.org_id = nil
+	delete(m.clearedFields, grantrequest.FieldOrgID)
+}
+
 // AddPermissionHistoryIDs adds the "permission_histories" edge to the PermissionHistory entity by ids.
 func (m *GrantRequestMutation) AddPermissionHistoryIDs(ids ...string) {
 	if m.permission_histories == nil {
@@ -3687,7 +3664,7 @@ func (m *GrantRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GrantRequestMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.attachment_url != nil {
 		fields = append(fields, grantrequest.FieldAttachmentURL)
 	}
@@ -3727,6 +3704,9 @@ func (m *GrantRequestMutation) Fields() []string {
 	if m.status != nil {
 		fields = append(fields, grantrequest.FieldStatus)
 	}
+	if m.org_id != nil {
+		fields = append(fields, grantrequest.FieldOrgID)
+	}
 	return fields
 }
 
@@ -3761,6 +3741,8 @@ func (m *GrantRequestMutation) Field(name string) (ent.Value, bool) {
 		return m.TargetSuiteName()
 	case grantrequest.FieldStatus:
 		return m.Status()
+	case grantrequest.FieldOrgID:
+		return m.OrgID()
 	}
 	return nil, false
 }
@@ -3796,6 +3778,8 @@ func (m *GrantRequestMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldTargetSuiteName(ctx)
 	case grantrequest.FieldStatus:
 		return m.OldStatus(ctx)
+	case grantrequest.FieldOrgID:
+		return m.OldOrgID(ctx)
 	}
 	return nil, fmt.Errorf("unknown GrantRequest field %s", name)
 }
@@ -3896,6 +3880,13 @@ func (m *GrantRequestMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetStatus(v)
 		return nil
+	case grantrequest.FieldOrgID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrgID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown GrantRequest field %s", name)
 }
@@ -3944,6 +3935,9 @@ func (m *GrantRequestMutation) ClearedFields() []string {
 	if m.FieldCleared(grantrequest.FieldTargetSuiteName) {
 		fields = append(fields, grantrequest.FieldTargetSuiteName)
 	}
+	if m.FieldCleared(grantrequest.FieldOrgID) {
+		fields = append(fields, grantrequest.FieldOrgID)
+	}
 	return fields
 }
 
@@ -3975,6 +3969,9 @@ func (m *GrantRequestMutation) ClearField(name string) error {
 		return nil
 	case grantrequest.FieldTargetSuiteName:
 		m.ClearTargetSuiteName()
+		return nil
+	case grantrequest.FieldOrgID:
+		m.ClearOrgID()
 		return nil
 	}
 	return fmt.Errorf("unknown GrantRequest nullable field %s", name)
@@ -4022,6 +4019,9 @@ func (m *GrantRequestMutation) ResetField(name string) error {
 		return nil
 	case grantrequest.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case grantrequest.FieldOrgID:
+		m.ResetOrgID()
 		return nil
 	}
 	return fmt.Errorf("unknown GrantRequest field %s", name)

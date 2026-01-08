@@ -16,16 +16,18 @@ type RoleDto struct {
 	Etag      model.Etag `json:"etag"`
 	CreatedAt time.Time  `json:"createdAt"`
 
-	Name                 string   `json:"name"`
-	Description          *string  `json:"description,omitempty"`
-	OwnerType            string   `json:"ownerType"`
-	OwnerRef             model.Id `json:"ownerRef"`
-	IsRequestable        bool     `json:"isRequestable"`
-	IsRequiredAttachment bool     `json:"isRequiredAttachment"`
-	IsRequiredComment    bool     `json:"isRequiredComment"`
-	CreatedBy            model.Id `json:"createdBy"`
+	Name                 string    `json:"name"`
+	Description          *string   `json:"description,omitempty"`
+	OwnerType            string    `json:"ownerType"`
+	OwnerRef             model.Id  `json:"ownerRef"`
+	IsRequestable        bool      `json:"isRequestable"`
+	IsRequiredAttachment bool      `json:"isRequiredAttachment"`
+	IsRequiredComment    bool      `json:"isRequiredComment"`
+	CreatedBy            model.Id  `json:"createdBy"`
+	// OrgId                *model.Id `json:"orgId,omitempty"`
 
 	Entitlements []EntitlementSummaryDto `json:"entitlements,omitempty"`
+	Organization *OrganizationSummaryDto `json:"org,omitempty"`
 }
 
 type RoleSummaryDto struct {
@@ -40,9 +42,22 @@ func (this *RoleDto) FromRole(role domain.Role) {
 
 	this.Entitlements = array.Map(role.Entitlements, func(entitlement domain.Entitlement) EntitlementSummaryDto {
 		entitlementItem := EntitlementSummaryDto{}
-		entitlementItem.FromEntitlement(&entitlement)
+
+		var scopeRefId *model.Id
+		if entitlement.ScopeRef != nil {
+			id := model.Id(*entitlement.ScopeRef)
+			scopeRefId = &id
+		}
+
+		entitlementItem.FromEntitlementWithScopeRef(&entitlement, scopeRefId)
 		return entitlementItem
 	})
+
+	// Combine OrgId and OrgName into Organization object
+	if role.OrgId != nil {
+		this.Organization = &OrganizationSummaryDto{}
+		this.Organization.FromOrganization(role.OrgId, role.OrgName)
+	}
 }
 
 func (this *RoleSummaryDto) FromRole(role *domain.Role) {

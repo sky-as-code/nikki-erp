@@ -20,10 +20,17 @@ type Role struct {
 	IsRequiredComment    *bool          `json:"isRequiredComment,omitempty"`
 	CreatedBy            *model.Id      `json:"createdBy,omitempty"`
 	OrgId                *model.Id      `json:"orgId,omitempty"`
+	OrgName              *string        `json:"orgName,omitempty" model:"-"` // Populated from Organization.DisplayName
 
 	Entitlements   []Entitlement   `json:"entitlements,omitempty" model:"-"` // TODO: Handle copy
 	GrantRequests  []GrantRequest  `json:"grantRequests,omitempty" model:"-"`
 	RevokeRequests []RevokeRequest `json:"revokeRequests,omitempty" model:"-"`
+	Organization   *Organization   `json:"organization,omitempty" model:"-"` // TODO: Handle copy
+}
+
+type Organization struct {
+	Id          *model.Id `json:"id,omitempty"`
+	DisplayName *string   `json:"displayName,omitempty"`
 }
 
 func (this *Role) Validate(forEdit bool) ft.ValidationErrors {

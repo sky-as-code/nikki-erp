@@ -13,16 +13,23 @@ type RoleSuiteDto struct {
 	Id   model.Id   `json:"id"`
 	Etag model.Etag `json:"etag"`
 
-	Name                 string   `json:"name"`
-	Description          *string  `json:"description,omitempty"`
-	OwnerType            string   `json:"ownerType"`
-	OwnerRef             string   `json:"ownerRef"`
-	IsRequestable        *bool    `json:"isRequestable,omitempty"`
-	IsRequiredAttachment *bool    `json:"isRequiredAttachment,omitempty"`
-	IsRequiredComment    *bool    `json:"isRequiredComment,omitempty"`
-	CreatedBy            model.Id `json:"createdBy"`
+	Name                 string    `json:"name"`
+	Description          *string   `json:"description,omitempty"`
+	OwnerType            string    `json:"ownerType"`
+	OwnerRef             string    `json:"ownerRef"`
+	IsRequestable        *bool     `json:"isRequestable,omitempty"`
+	IsRequiredAttachment *bool     `json:"isRequiredAttachment,omitempty"`
+	IsRequiredComment    *bool     `json:"isRequiredComment,omitempty"`
+	CreatedBy            model.Id  `json:"createdBy"`
+	// OrgId                *model.Id `json:"orgId,omitempty"`
 
-	Roles []RoleSummaryDto `json:"roles,omitempty"`
+	Roles        []RoleSummaryDto        `json:"roles,omitempty"`
+	Organization *OrganizationSummaryDto `json:"org,omitempty"`
+}
+
+type RoleSuiteSummaryDto struct {
+	Id   model.Id `json:"id"`
+	Name string   `json:"name"`
 }
 
 func (this *RoleSuiteDto) FromRoleSuite(roleSuite domain.RoleSuite) {
@@ -35,6 +42,12 @@ func (this *RoleSuiteDto) FromRoleSuite(roleSuite domain.RoleSuite) {
 		item.FromRole(&role)
 		return item
 	})
+
+	// Combine OrgId and OrgName into Organization object
+	if roleSuite.OrgId != nil {
+		this.Organization = &OrganizationSummaryDto{}
+		this.Organization.FromOrganization(roleSuite.OrgId, roleSuite.OrgName)
+	}
 }
 
 type CreateRoleSuiteRequest = it.CreateRoleSuiteCommand

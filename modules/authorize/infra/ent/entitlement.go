@@ -35,8 +35,6 @@ type Entitlement struct {
 	Etag string `json:"etag,omitempty"`
 	// ResourceID holds the value of the "resource_id" field.
 	ResourceID *string `json:"resource_id,omitempty"`
-	// OrgID holds the value of the "org_id" field.
-	OrgID *string `json:"org_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the EntitlementQuery when eager-loading is set.
 	Edges        EntitlementEdges `json:"edges"`
@@ -103,7 +101,7 @@ func (*Entitlement) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case entitlement.FieldID, entitlement.FieldActionID, entitlement.FieldActionExpr, entitlement.FieldCreatedBy, entitlement.FieldName, entitlement.FieldDescription, entitlement.FieldEtag, entitlement.FieldResourceID, entitlement.FieldOrgID:
+		case entitlement.FieldID, entitlement.FieldActionID, entitlement.FieldActionExpr, entitlement.FieldCreatedBy, entitlement.FieldName, entitlement.FieldDescription, entitlement.FieldEtag, entitlement.FieldResourceID:
 			values[i] = new(sql.NullString)
 		case entitlement.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -178,13 +176,6 @@ func (e *Entitlement) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				e.ResourceID = new(string)
 				*e.ResourceID = value.String
-			}
-		case entitlement.FieldOrgID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field org_id", values[i])
-			} else if value.Valid {
-				e.OrgID = new(string)
-				*e.OrgID = value.String
 			}
 		default:
 			e.selectValues.Set(columns[i], values[i])
@@ -269,11 +260,6 @@ func (e *Entitlement) String() string {
 	builder.WriteString(", ")
 	if v := e.ResourceID; v != nil {
 		builder.WriteString("resource_id=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	if v := e.OrgID; v != nil {
-		builder.WriteString("org_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteByte(')')

@@ -17,10 +17,8 @@ func init() {
 	// Assert interface implementation
 	var req cqrs.Request
 	req = (*CreateRoleCommand)(nil)
-	req = (*UpdateRoleCommand)(nil)
 	req = (*DeleteRoleHardCommand)(nil)
 	req = (*UpdateRoleCommand)(nil)
-	req = (*DeleteRoleHardCommand)(nil)
 	req = (*GetRoleByNameCommand)(nil)
 	req = (*GetRoleByIdQuery)(nil)
 	req = (*GetRolesBySubjectQuery)(nil)

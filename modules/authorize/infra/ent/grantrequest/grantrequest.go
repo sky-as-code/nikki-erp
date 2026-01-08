@@ -41,6 +41,8 @@ const (
 	FieldTargetSuiteName = "target_suite_name"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldOrgID holds the string denoting the org_id field in the database.
+	FieldOrgID = "org_id"
 	// EdgePermissionHistories holds the string denoting the permission_histories edge name in mutations.
 	EdgePermissionHistories = "permission_histories"
 	// EdgeRole holds the string denoting the role edge name in mutations.
@@ -97,6 +99,7 @@ var Columns = []string{
 	FieldTargetSuiteID,
 	FieldTargetSuiteName,
 	FieldStatus,
+	FieldOrgID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -256,6 +259,11 @@ func ByTargetSuiteName(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByOrgID orders the results by the org_id field.
+func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
 }
 
 // ByPermissionHistoriesCount orders the results by permission_histories count.

@@ -17,6 +17,7 @@ import (
 	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
 	itRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
 	itGroup "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
+	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -142,6 +143,9 @@ func (this *GrantRequestServiceImpl) CreateGrantRequest(ctx crud.Context, cmd it
 			return this.assertNoPendingGrantRequest(ctx, cmd, vErrs)
 		}).
 		Step(func(vErrs *fault.ValidationErrors) error {
+			return this.assertOrgExists(ctx, grantRequest, vErrs)
+		}).
+		Step(func(vErrs *fault.ValidationErrors) error {
 			return this.setupApprovalChain(ctx, grantRequest, vErrs)
 		}).
 		End()
@@ -181,7 +185,7 @@ func (this *GrantRequestServiceImpl) CancelGrantRequest(ctx crud.Context, cmd it
 		Step(func(vErrs *fault.ValidationErrors) error {
 			dbGrantRequest, err = this.assertGrantRequestExists(ctx, grantRequest, vErrs)
 
-			if *dbGrantRequest.Status != domain.PendingGrantRequestStatus {
+			if dbGrantRequest != nil && *dbGrantRequest.Status != domain.PendingGrantRequestStatus {
 				vErrs.Append("grant_request_id", "grant request is not pending")
 			}
 			return err
@@ -260,7 +264,7 @@ func (this *GrantRequestServiceImpl) RespondToGrantRequest(ctx crud.Context, cmd
 		Step(func(vErrs *fault.ValidationErrors) error {
 			dbGrantRequest, err = this.assertGrantRequestExists(ctx, grantRequest, vErrs)
 
-			if *dbGrantRequest.Status != domain.PendingGrantRequestStatus {
+			if dbGrantRequest != nil && *dbGrantRequest.Status != domain.PendingGrantRequestStatus {
 				vErrs.Append("grant_request_id", "grant request is not pending")
 			}
 			return err
@@ -345,9 +349,35 @@ func (this *GrantRequestServiceImpl) SearchGrantRequests(ctx crud.Context, query
 				Size:      *query.Size,
 			})
 
+			// Collect unique orgIds for batch fetching
+			orgIdSet := make(map[model.Id]bool)
+			for i := range result.Items {
+				if result.Items[i].OrgId != nil {
+					orgIdSet[*result.Items[i].OrgId] = true
+				}
+			}
+
+			// Batch fetch organizations
+			orgMap := make(map[model.Id]*domain.Organization)
+			for orgId := range orgIdSet {
+				org, err := this.getOrganizationById(ctx, orgId)
+				fault.PanicOnErr(err)
+				if org != nil {
+					orgMap[orgId] = org
+				}
+			}
+
 			for i := range result.Items {
 				err := this.populateGrantRequestDetails(ctx, &result.Items[i])
 				fault.PanicOnErr(err)
+
+				// Set organization from batch fetch
+				if result.Items[i].OrgId != nil {
+					if org, exists := orgMap[*result.Items[i].OrgId]; exists {
+						result.Items[i].Organization = org
+						result.Items[i].OrgName = org.DisplayName
+					}
+				}
 			}
 
 			return result, err
@@ -372,7 +402,32 @@ func (this *GrantRequestServiceImpl) setGrantRequestDefaults(grantRequest *domai
 	grantRequest.SetDefaults()
 }
 
+func (this *GrantRequestServiceImpl) assertOrgExists(ctx crud.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) error {
+	if grantRequest.OrgId == nil {
+		return nil
+	}
+
+	existCmd := &itOrg.ExistsOrgByIdCommand{
+		Id: *grantRequest.OrgId,
+	}
+	existRes := itOrg.ExistsOrgByIdResult{}
+	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
+	fault.PanicOnErr(err)
+
+	if existRes.ClientError != nil {
+		vErrs.MergeClientError(existRes.ClientError)
+		return nil
+	}
+
+	if !existRes.Data {
+		vErrs.Append("org_id", "not existing organization")
+	}
+	return nil
+}
+
 func (this *GrantRequestServiceImpl) assertTarget(ctx crud.Context, grantRequest *domain.GrantRequest, vErrs *fault.ValidationErrors) {
+	var targetOrgId *model.Id
+
 	switch *grantRequest.TargetType {
 	case domain.GrantRequestTargetTypeRole:
 		role, err := this.roleRepo.FindById(ctx, itRole.FindByIdParam{Id: *grantRequest.TargetRef})
@@ -382,6 +437,8 @@ func (this *GrantRequestServiceImpl) assertTarget(ctx crud.Context, grantRequest
 			vErrs.AppendNotFound("targetRef", "target")
 			return
 		}
+
+		targetOrgId = role.OrgId
 		this.validateTarget(role.IsRequestable, role.IsRequiredAttachment, role.IsRequiredComment, grantRequest, vErrs)
 	case domain.GrantRequestTargetTypeSuite:
 		suite, err := this.suiteRepo.FindById(ctx, itRoleSuite.FindByIdParam{Id: *grantRequest.TargetRef})
@@ -391,7 +448,13 @@ func (this *GrantRequestServiceImpl) assertTarget(ctx crud.Context, grantRequest
 			vErrs.AppendNotFound("targetRef", "target")
 			return
 		}
+
+		targetOrgId = suite.OrgId
 		this.validateTarget(suite.IsRequestable, suite.IsRequiredAttachment, suite.IsRequiredComment, grantRequest, vErrs)
+	}
+
+	if targetOrgId != nil {
+		grantRequest.OrgId = targetOrgId
 	}
 }
 
@@ -441,7 +504,7 @@ func (this *GrantRequestServiceImpl) validateTarget(isRequestable, isRequiredAtt
 	}
 
 	if isRequiredAttachment != nil && *isRequiredAttachment {
-		if grantRequest.AttachmentUrl == nil || *grantRequest.AttachmentUrl == "" {
+		if grantRequest.AttachmentURL == nil || *grantRequest.AttachmentURL == "" {
 			vErrs.Append("attachmentUrl", "attachment is required")
 		}
 	}
@@ -1043,6 +1106,16 @@ func (this *GrantRequestServiceImpl) populateGrantRequestDetails(ctx crud.Contex
 		fault.PanicOnErr(err)
 	}
 
+	// Populate organization
+	if dbGrantRequest.OrgId != nil {
+		org, err := this.getOrganizationById(ctx, *dbGrantRequest.OrgId)
+		fault.PanicOnErr(err)
+		if org != nil {
+			dbGrantRequest.Organization = org
+			dbGrantRequest.OrgName = org.DisplayName
+		}
+	}
+
 	return
 }
 
@@ -1082,6 +1155,28 @@ func (this *GrantRequestServiceImpl) getUserDisplayName(ctx crud.Context, id mod
 	}
 
 	return nil, nil
+}
+
+func (this *GrantRequestServiceImpl) getOrganizationById(ctx crud.Context, orgId model.Id) (*domain.Organization, error) {
+	orgQuery := &itOrg.GetOrganizationByIdQuery{
+		Id: orgId,
+	}
+	orgRes := itOrg.GetOrganizationByIdResult{}
+	err := this.cqrsBus.Request(ctx, *orgQuery, &orgRes)
+	fault.PanicOnErr(err)
+
+	if orgRes.ClientError != nil {
+		return nil, nil
+	}
+
+	if orgRes.Data == nil {
+		return nil, nil
+	}
+
+	return &domain.Organization{
+		Id:          orgRes.Data.Id,
+		DisplayName: orgRes.Data.DisplayName,
+	}, nil
 }
 
 func (this *GrantRequestServiceImpl) findGrantRequestsByTarget(ctx crud.Context, targetType domain.GrantRequestTargetType, targetRef model.Id) ([]domain.GrantRequest, error) {

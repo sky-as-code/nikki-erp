@@ -37,7 +37,7 @@ func (this *GrantRequestEntRepository) Create(ctx crud.Context, grantRequest *do
 	creation := this.grantRequestClient(ctx).Create().
 		SetID(*grantRequest.Id).
 		SetEtag(*grantRequest.Etag).
-		SetNillableAttachmentURL(grantRequest.AttachmentUrl).
+		SetNillableAttachmentURL(grantRequest.AttachmentURL).
 		SetNillableComment(grantRequest.Comment).
 		SetCreatedBy(*grantRequest.RequestorId).
 		SetReceiverType(entGrantRequest.ReceiverType(*grantRequest.ReceiverType)).
@@ -46,7 +46,8 @@ func (this *GrantRequestEntRepository) Create(ctx crud.Context, grantRequest *do
 		SetStatus(entGrantRequest.Status(*grantRequest.Status)).
 		SetNillableTargetRoleName(grantRequest.TargetRoleName).
 		SetNillableTargetSuiteName(grantRequest.TargetSuiteName).
-		SetCreatedAt(time.Now())
+		SetCreatedAt(time.Now()).
+		SetNillableOrgID(grantRequest.OrgId)
 
 	switch *grantRequest.TargetType {
 	case domain.GrantRequestTargetTypeRole:

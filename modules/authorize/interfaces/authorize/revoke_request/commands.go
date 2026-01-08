@@ -15,8 +15,11 @@ import (
 func init() {
 	// Assert interface implementation
 	var req cqrs.Request
+	req = (*CreateBulkRevokeRequestsCommand)(nil)
 	req = (*TargetIsDeletedCommand)(nil)
 	req = (*GetRevokeRequestByIdQuery)(nil)
+	req = (*DeleteRevokeRequestCommand)(nil)
+	req = (*SearchRevokeRequestsQuery)(nil)
 	util.Unused(req)
 }
 
@@ -28,7 +31,7 @@ var createRevokeRequestCommandType = cqrs.RequestType{
 }
 
 type CreateRevokeRequestCommand struct {
-	AttachmentUrl *string                       `json:"attachmentUrl"`
+	AttachmentURL *string                       `json:"attachmentUrl"`
 	Comment       *string                       `json:"comment"`
 	RequestorId   model.Id                      `json:"requestorId"`
 	ReceiverType  domain.ReceiverType           `json:"receiverType"`
@@ -44,6 +47,25 @@ func (CreateRevokeRequestCommand) CqrsRequestType() cqrs.RequestType {
 type CreateRevokeRequestResult = crud.OpResult[*domain.RevokeRequest]
 
 // END: CreateRevokeRequestCommand
+
+// START: CreateBulkRevokeRequestsCommand
+var createBulkRevokeRequestsCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "revoke_request",
+	Action:    "createBulk",
+}
+
+type CreateBulkRevokeRequestsCommand struct {
+	Items []CreateRevokeRequestCommand `json:"items"`
+}
+
+func (CreateBulkRevokeRequestsCommand) CqrsRequestType() cqrs.RequestType {
+	return createBulkRevokeRequestsCommandType
+}
+
+type CreateBulkRevokeRequestsResult = crud.OpResult[[]*domain.RevokeRequest]
+
+// END: CreateBulkRevokeRequestsCommand
 
 // START: TargetIsDeleted
 var targetIsDeletedCommandType = cqrs.RequestType{
@@ -102,3 +124,56 @@ func (this GetRevokeRequestByIdQuery) Validate() fault.ValidationErrors {
 type GetRevokeRequestByIdResult = crud.OpResult[*domain.RevokeRequest]
 
 // END: GetRevokeRequestByIdQuery
+
+// START: DeleteRevokeRequestCommand
+var deleteRevokeRequestCommandType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "revoke_request",
+	Action:    "delete",
+}
+
+type DeleteRevokeRequestCommand struct {
+	Id model.Id `json:"id" param:"id"`
+}
+
+func (this DeleteRevokeRequestCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.Id, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+func (DeleteRevokeRequestCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteRevokeRequestCommandType
+}
+
+type DeleteRevokeRequestResult = crud.DeletionResult
+
+// END: DeleteRevokeRequestCommand
+
+// START: SearchRevokeRequestsQuery
+var searchRevokeRequestsQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "revoke_request",
+	Action:    "search",
+}
+
+type SearchRevokeRequestsQuery struct {
+	crud.SearchQuery
+}
+
+func (SearchRevokeRequestsQuery) CqrsRequestType() cqrs.RequestType {
+	return searchRevokeRequestsQueryType
+}
+
+func (this SearchRevokeRequestsQuery) Validate() fault.ValidationErrors {
+	rules := this.SearchQuery.ValidationRules()
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type SearchRevokeRequestsResultData = crud.PagedResult[domain.RevokeRequest]
+type SearchRevokeRequestsResult = crud.OpResult[*SearchRevokeRequestsResultData]
+
+// END: SearchRevokeRequestsQuery

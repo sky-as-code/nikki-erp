@@ -193,12 +193,43 @@ func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx crud.Context, query it.Se
 		},
 		ParseSearchGraph: this.roleSuiteRepo.ParseSearchGraph,
 		RepoSearch: func(ctx crud.Context, query it.SearchRoleSuitesCommand, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.RoleSuite], error) {
-			return this.roleSuiteRepo.Search(ctx, it.SearchParam{
+			result, err := this.roleSuiteRepo.Search(ctx, it.SearchParam{
 				Predicate: predicate,
 				Order:     order,
 				Page:      *query.Page,
 				Size:      *query.Size,
 			})
+			fault.PanicOnErr(err)
+
+			// Collect unique orgIds for batch fetching
+			orgIdSet := make(map[model.Id]bool)
+			for i := range result.Items {
+				if result.Items[i].OrgId != nil {
+					orgIdSet[*result.Items[i].OrgId] = true
+				}
+			}
+
+			// Batch fetch organizations
+			orgMap := make(map[model.Id]*domain.Organization)
+			for orgId := range orgIdSet {
+				org, err := this.getOrganizationById(ctx, orgId)
+				fault.PanicOnErr(err)
+				if org != nil {
+					orgMap[orgId] = org
+				}
+			}
+
+			// Populate organizations
+			for i := range result.Items {
+				if result.Items[i].OrgId != nil {
+					if org, exists := orgMap[*result.Items[i].OrgId]; exists {
+						result.Items[i].Organization = org
+						result.Items[i].OrgName = org.DisplayName
+					}
+				}
+			}
+
+			return result, err
 		},
 		ToFailureResult: func(vErrs *fault.ValidationErrors) *it.SearchRoleSuitesResult {
 			return &it.SearchRoleSuitesResult{
@@ -266,6 +297,16 @@ func (this *RoleSuiteServiceImpl) getRoleSuiteByIdFull(ctx crud.Context, query i
 	if dbRoleSuite == nil {
 		vErrs.AppendNotFound("role_suite_id", "role suite")
 		return
+	}
+
+	// Populate organization
+	if dbRoleSuite.OrgId != nil {
+		org, err := this.getOrganizationById(ctx, *dbRoleSuite.OrgId)
+		fault.PanicOnErr(err)
+		if org != nil {
+			dbRoleSuite.Organization = org
+			dbRoleSuite.OrgName = org.DisplayName
+		}
 	}
 
 	return
@@ -416,6 +457,28 @@ func (this *RoleSuiteServiceImpl) assertOrgExists(ctx crud.Context, roleSuite *d
 		vErrs.Append("orgId", "not existing organization")
 	}
 	return nil
+}
+
+func (this *RoleSuiteServiceImpl) getOrganizationById(ctx crud.Context, orgId model.Id) (*domain.Organization, error) {
+	orgQuery := &itOrg.GetOrganizationByIdQuery{
+		Id: orgId,
+	}
+	orgRes := itOrg.GetOrganizationByIdResult{}
+	err := this.cqrsBus.Request(ctx, *orgQuery, &orgRes)
+	fault.PanicOnErr(err)
+
+	if orgRes.ClientError != nil {
+		return nil, nil
+	}
+
+	if orgRes.Data == nil {
+		return nil, nil
+	}
+
+	return &domain.Organization{
+		Id:          orgRes.Data.Id,
+		DisplayName: orgRes.Data.DisplayName,
+	}, nil
 }
 
 func (this *RoleSuiteServiceImpl) assertBusinessRuleDeleteRoleSuite(ctx crud.Context, cmd it.DeleteRoleSuiteCommand, roleSuiteDB *domain.RoleSuite, vErrs *fault.ValidationErrors) error {
