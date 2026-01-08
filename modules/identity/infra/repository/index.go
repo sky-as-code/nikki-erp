@@ -13,6 +13,8 @@ func InitRepositories() error {
 	err := stdErr.Join(
 		orm.RegisterEntity(BuildUserDescriptor()),
 		orm.RegisterEntity(BuildGroupDescriptor()),
+		orm.RegisterEntity(BuildOrganizationDescriptor()),
+		orm.RegisterEntity(BuildHierarchyLevelDescriptor()),
 	)
 	if err != nil {
 		return err

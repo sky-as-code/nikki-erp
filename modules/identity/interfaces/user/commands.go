@@ -32,11 +32,11 @@ var createUserCommandType = cqrs.RequestType{
 }
 
 type CreateUserCommand struct {
-	DisplayName        string     `json:"displayName"`
-	Email              string     `json:"email"`
-	MustChangePassword bool       `json:"mustChangePassword"`
-	Password           string     `json:"password"`
-	OrgIds             []model.Id `json:"orgIds"`
+	DisplayName        string    `json:"displayName"`
+	Email              string    `json:"email"`
+	MustChangePassword bool      `json:"mustChangePassword"`
+	Password           string    `json:"password"`
+	OrgId              *model.Id `json:"orgId"`
 }
 
 func (CreateUserCommand) CqrsRequestType() cqrs.RequestType {
@@ -57,7 +57,7 @@ type UpdateUserCommand struct {
 	DisplayName *string            `json:"displayName"`
 	Email       *string            `json:"email"`
 	Etag        model.Etag         `json:"etag"`
-	Status      *domain.UserStatus `json:"statusValue"`
+	Status      *domain.UserStatus `json:"status"`
 }
 
 func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
@@ -150,10 +150,11 @@ var getUserByIdQueryType = cqrs.RequestType{
 }
 
 type GetUserByIdQuery struct {
-	Id        model.Id           `param:"id" json:"id"`
-	Status    *domain.UserStatus `json:"status" query:"status"`
-	WithGroup bool               `json:"withGroup" query:"withGroup"`
-	WithOrg   bool               `json:"withOrg" query:"withOrg"`
+	Id            model.Id           `param:"id" json:"id"`
+	Status        *domain.UserStatus `json:"status" query:"status"`
+	WithGroup     bool               `json:"withGroup" query:"withGroup"`
+	WithHierarchy bool               `json:"withHierarchy" query:"withHierarchy"`
+	WithOrg       bool               `json:"withOrg" query:"withOrg"`
 }
 
 func (GetUserByIdQuery) CqrsRequestType() cqrs.RequestType {
@@ -241,9 +242,9 @@ var searchUsersQueryType = cqrs.RequestType{
 type SearchUsersQuery struct {
 	crud.SearchQuery
 
-	WithGroups      bool `json:"withGroups" query:"withGroups"`
-	WithOrgs        bool `json:"withOrgs" query:"withOrgs"`
-	WithHierarchies bool `json:"withHierarchies" query:"withHierarchies"`
+	WithGroups    bool `json:"withGroups" query:"withGroups"`
+	WithOrgs      bool `json:"withOrgs" query:"withOrgs"`
+	WithHierarchy bool `json:"withHierarchy" query:"withHierarchy"`
 }
 
 func (SearchUsersQuery) CqrsRequestType() cqrs.RequestType {

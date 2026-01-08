@@ -1,8 +1,10 @@
 package organization
 
 import (
+	"errors"
 	"time"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
@@ -24,6 +26,52 @@ func init() {
 	req = (*ExistsOrgByIdCommand)(nil)
 	util.Unused(req)
 }
+
+var AddRemoveUsersCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "organization",
+	Action:    "addRemoveUsers",
+}
+
+type AddRemoveUsersCommand struct {
+	OrgId  model.Id   `param:"orgId" json:"orgId"`
+	Add    []model.Id `json:"add,omitempty"`
+	Remove []model.Id `json:"remove,omitempty"`
+	Etag   model.Etag `json:"etag"`
+}
+
+func (AddRemoveUsersCommand) CqrsRequestType() cqrs.RequestType {
+	return AddRemoveUsersCommandType
+}
+
+func (this *AddRemoveUsersCommand) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.OrgId, true),
+		model.IdValidateRuleMulti(&this.Add, false, 0, model.MODEL_RULE_ID_ARR_MAX),
+		model.IdValidateRuleMulti(&this.Remove, false, 0, model.MODEL_RULE_ID_ARR_MAX),
+		val.Field(&this.Add, val.By(func(value any) error {
+			if this.Add == nil || this.Remove == nil || len(this.Remove) == 0 {
+				return nil
+			}
+			ids, _ := value.([]model.Id)
+			for _, addedId := range ids {
+				if array.Contains(this.Remove, addedId) {
+					return errors.New("add and remove must not contain the same id")
+				}
+			}
+			return nil
+		})),
+	}
+	return val.ApiBased.ValidateStruct(this, rules...)
+}
+
+type AddRemoveUsersData struct {
+	Id        model.Id   `json:"id"`
+	Etag      model.Etag `json:"etag"`
+	UpdatedAt time.Time  `json:"updatedAt"`
+}
+
+type AddRemoveUsersResult = crud.OpResult[*AddRemoveUsersData]
 
 var createOrganizationCommandType = cqrs.RequestType{
 	Module:    "identity",

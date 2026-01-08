@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"time"
+
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -10,12 +12,12 @@ import (
 
 type GroupDto struct {
 	Id          string           `json:"id"`
-	CreatedAt   int64            `json:"createdAt"`
+	CreatedAt   time.Time        `json:"createdAt"`
 	Name        string           `json:"name"`
 	Description *string          `json:"description,omitempty"`
 	Etag        string           `json:"etag"`
 	Org         *GetGroupRespOrg `json:"org,omitempty"`
-	UpdatedAt   *int64           `json:"updatedAt,omitempty"`
+	UpdatedAt   *time.Time       `json:"updatedAt,omitempty"`
 }
 
 func (this *GroupDto) FromGroup(group domain.Group) {

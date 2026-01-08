@@ -115,7 +115,7 @@ func (this *UserServiceImpl) assertUserUnique(ctx crud.Context, user *domain.Use
 		return err
 	}
 
-	if dbUser != nil {
+	if dbUser != nil && *dbUser.Id != *user.Id {
 		vErrs.AppendAlreadyExists("email", "email")
 	}
 	return nil
@@ -317,11 +317,13 @@ func (this *UserServiceImpl) SearchUsers(ctx crud.Context, query it.SearchUsersQ
 		ParseSearchGraph: this.userRepo.ParseSearchGraph,
 		RepoSearch: func(ctx crud.Context, query it.SearchUsersQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.User], error) {
 			return this.userRepo.Search(ctx, it.SearchParam{
-				Predicate:  predicate,
-				Order:      order,
-				Page:       *query.Page,
-				Size:       *query.Size,
-				WithGroups: query.WithGroups,
+				Predicate:     predicate,
+				Order:         order,
+				Page:          *query.Page,
+				Size:          *query.Size,
+				WithGroups:    query.WithGroups,
+				WithHierarchy: query.WithHierarchy,
+				WithOrgs:      query.WithOrgs,
 			})
 		},
 		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.SearchUsersResult {

@@ -9,6 +9,7 @@ import (
 )
 
 type OrganizationRepository interface {
+	AddRemoveUsers(ctx crud.Context, param AddRemoveUsersParam) (*ft.ClientError, error)
 	Create(ctx crud.Context, organization *domain.Organization) (*domain.Organization, error)
 	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
 	DeleteSoft(ctx crud.Context, param DeleteParam) (*domain.Organization, error)
@@ -20,6 +21,7 @@ type OrganizationRepository interface {
 	Exists(ctx crud.Context, id model.Id) (bool, error)
 }
 
+type AddRemoveUsersParam = AddRemoveUsersCommand
 type DeleteParam = DeleteOrganizationCommand
 type FindBySlugParam = GetOrganizationBySlugQuery
 type SearchParam struct {

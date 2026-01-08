@@ -95,7 +95,7 @@ func (this DeleteHierarchyLevelCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
-	return val.ApiBased.ValidateStruct(this, rules...)
+	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type DeleteHierarchyLevelResult = crud.DeletionResult

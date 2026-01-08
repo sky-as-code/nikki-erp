@@ -130,6 +130,29 @@ func (this *OrganizationEntRepository) Search(
 	)
 }
 
+func (this *OrganizationEntRepository) AddRemoveUsers(ctx crud.Context, param it.AddRemoveUsersParam) (*ft.ClientError, error) {
+	if len(param.Add) == 0 && len(param.Remove) == 0 {
+		return nil, nil
+	}
+	err := this.orgClient(ctx).UpdateOneID(param.OrgId).
+		AddUserIDs(param.Add...).
+		RemoveUserIDs(param.Remove...).
+		SetEtag(param.Etag).
+		Exec(ctx)
+
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return &ft.ClientError{
+				Code:    "not_found",
+				Details: "some resource doesn't exist",
+			}, nil
+		}
+		return nil, err
+	}
+
+	return nil, nil
+}
+
 func (this *OrganizationEntRepository) Exists(ctx crud.Context, id model.Id) (bool, error) {
 	return this.orgClient(ctx).Query().
 		Where(entOrg.ID(id)).
@@ -139,7 +162,7 @@ func (this *OrganizationEntRepository) Exists(ctx crud.Context, id model.Id) (bo
 func BuildOrganizationDescriptor() *orm.EntityDescriptor {
 	entity := ent.Organization{}
 	builder := orm.DescribeEntity(entOrg.Label).
-		Aliases("orgs").
+		Aliases("orgs", "org").
 		Field(entOrg.FieldCreatedAt, entity.CreatedAt).
 		Field(entOrg.FieldDisplayName, entity.DisplayName).
 		Field(entOrg.FieldEtag, entity.Etag).

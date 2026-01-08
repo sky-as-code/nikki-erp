@@ -43,6 +43,10 @@ func (this *UserEntRepository) Create(ctx crud.Context, user *domain.User) (*dom
 		SetEmail(*user.Email).
 		SetStatus(string(*user.Status))
 
+	if user.OrgId != nil {
+		creation.AddOrgIDs(*user.OrgId)
+	}
+
 	return db.Mutate(ctx, creation, ent.IsNotFound, entToUser)
 }
 
@@ -108,6 +112,10 @@ func (this *UserEntRepository) FindById(ctx crud.Context, param it.FindByIdParam
 		query = query.WithOrgs()
 	}
 
+	if param.WithHierarchy {
+		query = query.WithHierarchy()
+	}
+
 	if param.Status != nil {
 		query = query.Where(entUser.StatusEQ(string(*param.Status)))
 	}
@@ -155,6 +163,8 @@ func (this *UserEntRepository) FindByHierarchyId(ctx crud.Context, param it.Find
 	return db.List(ctx, query, entToUsers)
 }
 
+// func (this *UserEntRepository)
+
 func (this *UserEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
 	return db.ParseSearchGraphStr[ent.User, domain.User](criteria, entUser.Label)
 }
@@ -167,6 +177,14 @@ func (this *UserEntRepository) Search(
 
 	if param.WithGroups {
 		query = query.WithGroups()
+	}
+
+	if param.WithHierarchy {
+		query = query.WithHierarchy()
+	}
+
+	if param.WithOrgs {
+		query = query.WithOrgs()
 	}
 
 	return db.Search(
