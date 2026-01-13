@@ -2,9 +2,9 @@ package validator
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicentity/model"
 	dschema "github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -12,56 +12,45 @@ import (
 )
 
 type EntityValidator struct {
-	fields map[string]*dschema.EntityField
-	rules  map[string][]val.Rule
+	fields  []string
+	mapRule *val.MapRule
 }
 
-func NewEntityValidator(schemaFields map[string]*dschema.EntityField) *EntityValidator {
-	for _, field := range schemaFields {
+func NewEntityValidator(schemaFields map[string]*dschema.EntityField, forEdit bool) *EntityValidator {
+	keyRulesList := make([]*val.KeyRules, 0, len(schemaFields))
+	fields := make([]string, 0, len(schemaFields))
+
+	for fieldName, field := range schemaFields {
 		if err := validateEntityFieldName(field); err != nil {
 			panic(err)
 		}
-	}
-	return &EntityValidator{
-		fields: schemaFields,
-	}
-}
-
-func (this *EntityValidator) ValidateStruct(entity any, forEdit bool) ft.ValidationErrors {
-	fieldRulesList := make([]*val.FieldRules, 0, len(this.fields))
-
-	for fieldName, field := range this.fields {
-		fieldPtr, err := getFieldPointerByTag(entity, fieldName)
-		if err != nil {
-			continue
-		}
-
-		rules := this.buildStructFieldRules(fieldPtr, field, forEdit)
-		fieldRulesList = append(fieldRulesList, rules)
-	}
-
-	return val.ApiBased.ValidateStruct(entity, fieldRulesList...)
-}
-
-func (this *EntityValidator) ValidateMap(data map[string]any, forEdit bool) ft.ValidationErrors {
-	keyRulesList := make([]*val.KeyRules, 0, len(this.fields))
-	targetMap := make(map[string]any)
-
-	for fieldName, field := range this.fields {
-		// Copy from `data` to `targetMap` to set nil to missing key, so that the validator will return the isNil's error
-		// instead of the map's "Key missing" error.
-		targetMap[fieldName] = data[fieldName]
+		fields = append(fields, fieldName)
 		rules := buildFieldRules(field, forEdit)
 		keyRulesList = append(keyRulesList, val.Key(fieldName, rules...))
 	}
 
 	mapRule := val.Map(keyRulesList...).AllowExtraKeys()
-	return val.ApiBased.Validate(targetMap, mapRule)
+	return &EntityValidator{
+		fields:  fields,
+		mapRule: &mapRule,
+	}
 }
 
-func (this *EntityValidator) buildStructFieldRules(fieldPtr any, fieldDef *dschema.EntityField, forEdit bool) *val.FieldRules {
-	rules := buildFieldRules(fieldDef, forEdit)
-	return val.Field(fieldPtr, rules...)
+func (this *EntityValidator) ValidateStruct(entity any) ft.ValidationErrors {
+	data := dmodel.StructToEntityMap(entity)
+	return this.ValidateMap(data)
+}
+
+func (this *EntityValidator) ValidateMap(data map[string]any) ft.ValidationErrors {
+	targetMap := make(map[string]any)
+
+	for _, fieldName := range this.fields {
+		// Copy from `data` to `targetMap` to set nil to missing key, so that the validator will return the isNil's error
+		// instead of the map's "Key missing" error.
+		targetMap[fieldName] = data[fieldName]
+	}
+
+	return val.ApiBased.Validate(targetMap, this.mapRule)
 }
 
 func buildFieldRules(fieldDef *dschema.EntityField, forEdit bool) []val.Rule {
@@ -82,37 +71,6 @@ func validateEntityFieldName(fieldDef *dschema.EntityField) error {
 		return fmt.Errorf("field name is required")
 	}
 	return nil
-}
-
-func getFieldPointerByTag(entity any, fieldName string) (any, error) {
-	rv := reflect.ValueOf(entity)
-	if rv.Kind() == reflect.Ptr {
-		rv = rv.Elem()
-	}
-
-	if rv.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("entity must be a struct or pointer to struct")
-	}
-
-	rt := rv.Type()
-	for i := 0; i < rt.NumField(); i++ {
-		field := rt.Field(i)
-		tagVal := field.Tag.Get(dschema.SchemaStructTag)
-		if tagVal == "" {
-			continue
-		}
-
-		dbTagName := strings.Split(tagVal, ",")[0]
-		if dbTagName == fieldName {
-			fieldValue := rv.Field(i)
-			if !fieldValue.CanAddr() {
-				return nil, fmt.Errorf("field %s cannot be addressed", fieldName)
-			}
-			return fieldValue.Addr().Interface(), nil
-		}
-	}
-
-	return nil, fmt.Errorf("field %s not found with %s tag", fieldName, dschema.SchemaStructTag)
 }
 
 func extractLengthOpts(rulesDef []*dschema.FieldRule) (minLength int, maxLength int) {

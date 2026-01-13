@@ -21,8 +21,8 @@ type DynamicRepositoryBase[TEntity any] struct {
 func NewDynamicRepositoryBase[TEntity any](
 	dbConn *DbConnection, schemaName string, moduleName string, subModName ...string,
 ) (*DynamicRepositoryBase[TEntity], error) {
-	schema, ok := eschema.GetSchema(schemaName, moduleName, subModName...)
-	if !ok {
+	schema := eschema.GetSchema(schemaName, moduleName, subModName...)
+	if schema == nil {
 		return nil, fmt.Errorf("schema '%s' not found", schemaName)
 	}
 
