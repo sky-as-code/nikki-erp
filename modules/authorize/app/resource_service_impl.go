@@ -8,21 +8,52 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 
+	constants "github.com/sky-as-code/nikki-erp/modules/authorize/constants"
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize"
 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
 )
 
-func NewResourceServiceImpl(resourceRepo it.ResourceRepository) it.ResourceService {
+func NewResourceServiceImpl(resourceRepo it.ResourceRepository, authorizeService itAuthorize.AuthorizeService) it.ResourceService {
 	return &ResourceServiceImpl{
-		resourceRepo: resourceRepo,
+		resourceRepo:     resourceRepo,
+		authorizeService: authorizeService,
 	}
 }
 
 type ResourceServiceImpl struct {
-	resourceRepo it.ResourceRepository
+	resourceRepo     it.ResourceRepository
+	authorizeService itAuthorize.AuthorizeService
+}
+
+func (this *ResourceServiceImpl) assertAuthorized(ctx crud.Context, actionName string, resourceName string, scopeRef string, subjectType itAuthorize.SubjectTypeAuthorize, subjectRef string) error {
+	isAuthorized, err := this.authorizeService.IsAuthorized(ctx, itAuthorize.IsAuthorizedQuery{
+		ActionName:   actionName,
+		ResourceName: resourceName,
+		ScopeRef:     scopeRef,
+		SubjectType:  subjectType,
+		SubjectRef:   subjectRef,
+	})
+	fault.PanicOnErr(err)
+
+	if isAuthorized.ClientError != nil {
+		return isAuthorized.ClientError
+	}
+
+	if isAuthorized.Decision == nil || *isAuthorized.Decision != itAuthorize.DecisionAllow {
+		return &fault.ClientError{
+			Code:    "403",
+			Details: itAuthorize.DecisionDeny,
+		}
+	}
+
+	return nil
 }
 
 func (this *ResourceServiceImpl) CreateResource(ctx crud.Context, cmd it.CreateResourceCommand) (*it.CreateResourceResult, error) {
+	err := this.assertAuthorized(ctx, constants.ActionCreate, constants.ResourceResource, "", itAuthorize.SubjectTypeUser, "01JZQFY6EXRG0959Z95Y2EM3AM")
+	fault.PanicOnErr(err)
+
 	result, err := crud.Create(ctx, crud.CreateParam[*domain.Resource, it.CreateResourceCommand, it.CreateResourceResult]{
 		Action:              "create resource",
 		Command:             cmd,
@@ -70,6 +101,9 @@ func (this *ResourceServiceImpl) UpdateResource(ctx crud.Context, cmd it.UpdateR
 }
 
 func (this *ResourceServiceImpl) DeleteResourceHard(ctx crud.Context, cmd it.DeleteResourceHardByNameQuery) (*it.DeleteResourceHardByNameResult, error) {
+	err := this.assertAuthorized(ctx, constants.ActionDelete, constants.ResourceResource, "", itAuthorize.SubjectTypeUser, "01JZQFY6EXRG0959Z95Y2EM3AM")
+	fault.PanicOnErr(err)
+
 	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Resource, it.DeleteResourceHardByNameQuery, it.DeleteResourceHardByNameResult]{
 		Action:              "delete resource",
 		Command:             cmd,
@@ -92,6 +126,9 @@ func (this *ResourceServiceImpl) DeleteResourceHard(ctx crud.Context, cmd it.Del
 }
 
 func (this *ResourceServiceImpl) GetResourceById(ctx crud.Context, query it.GetResourceByIdQuery) (*it.GetResourceByIdResult, error) {
+	err := this.assertAuthorized(ctx, constants.ActionView, constants.ResourceResource, "", itAuthorize.SubjectTypeUser, "01JZQFY6EXRG0959Z95Y2EM3AM")
+	fault.PanicOnErr(err)
+
 	return crud.GetOne(ctx, crud.GetOneParam[*domain.Resource, it.GetResourceByIdQuery, it.GetResourceByIdResult]{
 		Action:      "get resource by id",
 		Query:       query,
@@ -111,6 +148,9 @@ func (this *ResourceServiceImpl) GetResourceById(ctx crud.Context, query it.GetR
 }
 
 func (this *ResourceServiceImpl) GetResourceByName(ctx crud.Context, query it.GetResourceByNameQuery) (*it.GetResourceByNameResult, error) {
+	err := this.assertAuthorized(ctx, constants.ActionView, constants.ResourceResource, "", itAuthorize.SubjectTypeUser, "01JZQFY6EXRG0959Z95Y2EM3AM")
+	fault.PanicOnErr(err)
+
 	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.Resource, it.GetResourceByNameQuery, it.GetResourceByNameResult]{
 		Action:      "get resource by name",
 		Query:       query,
@@ -132,6 +172,9 @@ func (this *ResourceServiceImpl) GetResourceByName(ctx crud.Context, query it.Ge
 }
 
 func (this *ResourceServiceImpl) SearchResources(ctx crud.Context, query it.SearchResourcesQuery) (*it.SearchResourcesResult, error) {
+	err := this.assertAuthorized(ctx, constants.ActionView, constants.ResourceResource, "", itAuthorize.SubjectTypeUser, "01JZQFY6EXRG0959Z95Y2EM3AM")
+	fault.PanicOnErr(err)
+
 	result, err := crud.Search(ctx, crud.SearchParam[domain.Resource, it.SearchResourcesQuery, it.SearchResourcesResult]{
 		Action: "search resources",
 		Query:  query,
