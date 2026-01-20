@@ -40,4 +40,8 @@ const (
 	HttpCorsOrigins ConfigName = "CORE.HTTP.CORS_ORIGINS"
 	HttpCorsHeaders ConfigName = "CORE.HTTP.CORS_HEADERS"
 	HttpCorsMethods ConfigName = "CORE.HTTP.CORS_METHODS"
+
+	// Token/Authentication
+	TokenSecretKey   ConfigName = "CORE.TOKEN.SECRET_KEY"
+	TokenExpiryHours ConfigName = "CORE.TOKEN.EXPIRY_HOURS"
 )
