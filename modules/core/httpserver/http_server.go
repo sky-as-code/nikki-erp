@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"go.uber.org/dig"
 
+	commonMiddleware "github.com/sky-as-code/nikki-erp/common/middleware"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
@@ -46,6 +47,8 @@ func initHttpServer(params httpServerParams) httpServerResult {
 	httpServer.Use(middleware.Logger())
 	httpServer.Use(middleware.Recover())
 	httpServer.Use(middleware.CORSWithConfig(configCors(params.Config)))
+	httpServer.Use(commonMiddleware.CaptureBearerToken(params.Config.GetStr(c.TokenSecretKey)))
+
 	httpServer.Use(m.RequestContextMiddleware)
 
 	return httpServerResult{

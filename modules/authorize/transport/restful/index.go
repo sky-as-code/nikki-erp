@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	commonMiddleware "github.com/sky-as-code/nikki-erp/common/middleware"
 	v1 "github.com/sky-as-code/nikki-erp/modules/authorize/transport/restful/v1"
 )
 
@@ -65,51 +66,53 @@ func initV1(
 	roleRest *v1.RoleRest,
 	roleSuiteRest *v1.RoleSuiteRest,
 ) {
-	route.POST("/is-authorized", authorizedRest.IsAuthorized)
+	protected := route.Group("", commonMiddleware.RequireAuthMiddleware())
 
-	route.POST("/actions", actionRest.CreateAction)
-	route.PUT("/actions/:id", actionRest.UpdateAction)
-	route.GET("/actions/:id", actionRest.GetActionById)
-	route.GET("/actions", actionRest.SearchActions)
-	route.DELETE("/actions/:id", actionRest.DeleteActionHard)
+	protected.POST("/isauthorized", authorizedRest.IsAuthorized)
 
-	route.POST("/entitlements", entitlementRest.CreateEntitlement)
-	route.PUT("/entitlements/:id", entitlementRest.UpdateEntitlement)
-	route.GET("/entitlements/:id", entitlementRest.GetEntitlementById)
-	route.POST("/entitlements/ids", entitlementRest.GetAllEntitlementByIds)
-	route.GET("/entitlements", entitlementRest.SearchEntitlements)
-	route.DELETE("/entitlements/:id", entitlementRest.DeleteEntitlementHard)
+	protected.POST("/actions", actionRest.CreateAction)
+	protected.PUT("/actions/:id", actionRest.UpdateAction)
+	protected.GET("/actions/:id", actionRest.GetActionById)
+	protected.GET("/actions", actionRest.SearchActions)
+	protected.DELETE("/actions/:id", actionRest.DeleteActionHard)
 
-	route.POST("/grant-requests", grantRequestRest.CreateGrantRequest)
-	route.POST("/grant-requests/:id/cancel", grantRequestRest.CancelGrantRequest)
-	route.DELETE("/grant-requests/:id", grantRequestRest.DeleteGrantRequest)
-	route.GET("/grant-requests/:id", grantRequestRest.GetGrantRequestById)
-	route.GET("/grant-requests", grantRequestRest.SearchGrantRequests)
-	route.POST("/grant-requests/:id/respond", grantRequestRest.RespondToGrantRequest)
+	protected.POST("/entitlements", entitlementRest.CreateEntitlement)
+	protected.PUT("/entitlements/:id", entitlementRest.UpdateEntitlement)
+	protected.GET("/entitlements/:id", entitlementRest.GetEntitlementById)
+	protected.POST("/entitlements/ids", entitlementRest.GetAllEntitlementByIds)
+	protected.GET("/entitlements", entitlementRest.SearchEntitlements)
+	protected.DELETE("/entitlements/:id", entitlementRest.DeleteEntitlementHard)
 
-	route.POST("/resources", resourceRest.CreateResource)
-	route.PUT("/resources/:id", resourceRest.UpdateResource)
-	route.GET("/resources/:name", resourceRest.GetResourceByName)
-	route.GET("/resources", resourceRest.SearchResources)
-	route.DELETE("/resources/:name", resourceRest.DeleteResourceHard)
+	protected.POST("/resources", resourceRest.CreateResource)
+	protected.PUT("/resources/:id", resourceRest.UpdateResource)
+	protected.GET("/resources/:name", resourceRest.GetResourceByName)
+	protected.GET("/resources", resourceRest.SearchResources)
+	protected.DELETE("/resources/:name", resourceRest.DeleteResourceHard)
 
-	route.POST("/revoke-requests", revokeRequestRest.Create)
-	route.POST("/revoke-requests/bulk", revokeRequestRest.CreateBulk)
-	route.GET("/revoke-requests/:id", revokeRequestRest.GetById)
-	route.GET("/revoke-requests", revokeRequestRest.Search)
-	route.DELETE("/revoke-requests/:id", revokeRequestRest.Delete)
+	protected.POST("/revoke-requests", revokeRequestRest.Create)
+	protected.POST("/revoke-requests/bulk", revokeRequestRest.CreateBulk)
+	protected.GET("/revoke-requests/:id", revokeRequestRest.GetById)
+	protected.GET("/revoke-requests", revokeRequestRest.Search)
+	protected.DELETE("/revoke-requests/:id", revokeRequestRest.Delete)
 
-	route.POST("/roles", roleRest.CreateRole)
-	route.PUT("/roles/:id", roleRest.UpdateRole)
-	route.DELETE("/roles/:id", roleRest.DeleteRoleHard)
-	route.GET("/roles/:id", roleRest.GetRoleById)
-	route.GET("/roles", roleRest.SearchRoles)
-	route.POST("/roles/:id/entitlement-assignment", roleRest.AddEntitlements)
-	route.DELETE("/roles/:id/entitlement-assignment", roleRest.RemoveEntitlements)
+	protected.POST("/roles", roleRest.CreateRole)
+	protected.PUT("/roles/:id", roleRest.UpdateRole)
+	protected.DELETE("/roles/:id", roleRest.DeleteRoleHard)
+	protected.GET("/roles/:id", roleRest.GetRoleById)
+	protected.GET("/roles", roleRest.SearchRoles)
+	protected.POST("/roles/:id/entitlement-assignment", roleRest.AddEntitlements)
+	protected.DELETE("/roles/:id/entitlement-assignment", roleRest.RemoveEntitlements)
 
-	route.POST("/role-suites", roleSuiteRest.CreateRoleSuite)
-	route.PUT("/role-suites/:id", roleSuiteRest.UpdateRoleSuite)
-	route.DELETE("/role-suites/:id", roleSuiteRest.DeleteRoleSuite)
-	route.GET("/role-suites/:id", roleSuiteRest.GetRoleSuiteById)
-	route.GET("/role-suites", roleSuiteRest.SearchRoleSuites)
+	protected.POST("/role-suites", roleSuiteRest.CreateRoleSuite)
+	protected.PUT("/role-suites/:id", roleSuiteRest.UpdateRoleSuite)
+	protected.DELETE("/role-suites/:id", roleSuiteRest.DeleteRoleSuite)
+	protected.GET("/role-suites/:id", roleSuiteRest.GetRoleSuiteById)
+	protected.GET("/role-suites", roleSuiteRest.SearchRoleSuites)
+
+	protected.POST("/grant-requests", grantRequestRest.CreateGrantRequest)
+	protected.POST("/grant-requests/:id/cancel", grantRequestRest.CancelGrantRequest)
+	protected.DELETE("/grant-requests/:id", grantRequestRest.DeleteGrantRequest)
+	protected.GET("/grant-requests/:id", grantRequestRest.GetGrantRequestById)
+	protected.GET("/grant-requests", grantRequestRest.SearchGrantRequests)
+	protected.POST("/grant-requests/:id/respond", grantRequestRest.RespondToGrantRequest)
 }

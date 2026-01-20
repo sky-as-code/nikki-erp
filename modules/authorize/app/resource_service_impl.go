@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/middleware"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
@@ -26,6 +27,11 @@ type ResourceServiceImpl struct {
 }
 
 func (this *ResourceServiceImpl) CreateResource(ctx crud.Context, cmd it.CreateResourceCommand) (*it.CreateResourceResult, error) {
+	// Check permission
+	if err := this.assertAuthorized(ctx, "Create", "AuthzResource", ""); err != nil {
+		return &it.CreateResourceResult{ClientError: err.(*fault.ClientError)}, nil
+	}
+
 	result, err := crud.Create(ctx, crud.CreateParam[*domain.Resource, it.CreateResourceCommand, it.CreateResourceResult]{
 		Action:              "create resource",
 		Command:             cmd,
@@ -50,6 +56,11 @@ func (this *ResourceServiceImpl) CreateResource(ctx crud.Context, cmd it.CreateR
 }
 
 func (this *ResourceServiceImpl) UpdateResource(ctx crud.Context, cmd it.UpdateResourceCommand) (*it.UpdateResourceResult, error) {
+	// Check permission
+	if err := this.assertAuthorized(ctx, "Update", "AuthzResource", ""); err != nil {
+		return &it.UpdateResourceResult{ClientError: err.(*fault.ClientError)}, nil
+	}
+
 	result, err := crud.Update(ctx, crud.UpdateParam[*domain.Resource, it.UpdateResourceCommand, it.UpdateResourceResult]{
 		Action:       "update resource",
 		Command:      cmd,
@@ -73,6 +84,11 @@ func (this *ResourceServiceImpl) UpdateResource(ctx crud.Context, cmd it.UpdateR
 }
 
 func (this *ResourceServiceImpl) DeleteResourceHard(ctx crud.Context, cmd it.DeleteResourceHardByNameQuery) (*it.DeleteResourceHardByNameResult, error) {
+	// Check permission
+	if err := this.assertAuthorized(ctx, "Delete", "AuthzResource", ""); err != nil {
+		return &it.DeleteResourceHardByNameResult{ClientError: err.(*fault.ClientError)}, nil
+	}
+
 	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Resource, it.DeleteResourceHardByNameQuery, it.DeleteResourceHardByNameResult]{
 		Action:              "delete resource",
 		Command:             cmd,
@@ -95,6 +111,11 @@ func (this *ResourceServiceImpl) DeleteResourceHard(ctx crud.Context, cmd it.Del
 }
 
 func (this *ResourceServiceImpl) GetResourceById(ctx crud.Context, query it.GetResourceByIdQuery) (*it.GetResourceByIdResult, error) {
+	// Check permission
+	if err := this.assertAuthorized(ctx, "View", "AuthzResource", ""); err != nil {
+		return &it.GetResourceByIdResult{ClientError: err.(*fault.ClientError)}, nil
+	}
+
 	return crud.GetOne(ctx, crud.GetOneParam[*domain.Resource, it.GetResourceByIdQuery, it.GetResourceByIdResult]{
 		Action:      "get resource by id",
 		Query:       query,
@@ -114,6 +135,11 @@ func (this *ResourceServiceImpl) GetResourceById(ctx crud.Context, query it.GetR
 }
 
 func (this *ResourceServiceImpl) GetResourceByName(ctx crud.Context, query it.GetResourceByNameQuery) (*it.GetResourceByNameResult, error) {
+	// Check permission
+	if err := this.assertAuthorized(ctx, "View", "AuthzResource", ""); err != nil {
+		return &it.GetResourceByNameResult{ClientError: err.(*fault.ClientError)}, nil
+	}
+
 	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.Resource, it.GetResourceByNameQuery, it.GetResourceByNameResult]{
 		Action:      "get resource by name",
 		Query:       query,
@@ -135,6 +161,11 @@ func (this *ResourceServiceImpl) GetResourceByName(ctx crud.Context, query it.Ge
 }
 
 func (this *ResourceServiceImpl) SearchResources(ctx crud.Context, query it.SearchResourcesQuery) (*it.SearchResourcesResult, error) {
+	// Check permission
+	if err := this.assertAuthorized(ctx, "View", "AuthzResource", ""); err != nil {
+		return &it.SearchResourcesResult{ClientError: err.(*fault.ClientError)}, nil
+	}
+
 	result, err := crud.Search(ctx, crud.SearchParam[domain.Resource, it.SearchResourcesQuery, it.SearchResourcesResult]{
 		Action: "search resources",
 		Query:  query,
@@ -168,6 +199,11 @@ func (this *ResourceServiceImpl) SearchResources(ctx crud.Context, query it.Sear
 }
 
 func (this *ResourceServiceImpl) Exists(ctx crud.Context, cmd it.ExistsResourceQuery) (result *it.ExistsResourceResult, err error) {
+	// Check permission
+	if err := this.assertAuthorized(ctx, "View", "AuthzResource", ""); err != nil {
+		return &it.ExistsResourceResult{ClientError: err.(*fault.ClientError)}, nil
+	}
+
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "check resource exists"); e != nil {
 			err = e
@@ -283,5 +319,36 @@ func (this *ResourceServiceImpl) assertConstraintViolated(resource *domain.Resou
 		}
 	}
 
+	return nil
+}
+
+func (this *ResourceServiceImpl) assertAuthorized(ctx crud.Context, actionName string, resourceName string, scopeRef string) error {
+	userId := middleware.GetUserIdFromContext(ctx.InnerContext())
+	if userId == "" {
+		return &fault.ClientError{
+			Code:    "403",
+			Details: "Unauthorized: Token required",
+		}
+	}
+
+	isAuthorized, err := this.authorizeService.IsAuthorized(ctx, itAuthorize.IsAuthorizedQuery{
+		ActionName:   actionName,
+		ResourceName: resourceName,
+		ScopeRef:     scopeRef,
+		SubjectType:  itAuthorize.SubjectTypeUser,
+		SubjectRef:   userId,
+	})
+	fault.PanicOnErr(err)
+
+	if isAuthorized.ClientError != nil {
+		return isAuthorized.ClientError
+	}
+
+	if isAuthorized.Decision == nil || *isAuthorized.Decision != itAuthorize.DecisionAllow {
+		return &fault.ClientError{
+			Code:    "403",
+			Details: itAuthorize.DecisionDeny,
+		}
+	}
 	return nil
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	coreConstants "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
@@ -176,20 +177,20 @@ func (s *LoginServiceImpl) updateAttemptStatus(ctx crud.Context, attempt *domain
 
 func (s *LoginServiceImpl) buildAuthenticateResult(done bool, attempt *domain.LoginAttempt) *it.AuthenticateResult {
 	accessToken, _ := util.GenerateGJWToken(
-		s.configSvc.GetStr("CORE_TOKEN_SECRET_KEY"),
+		s.configSvc.GetStr(coreConstants.TokenSecretKey),
 		*attempt.DeviceIp,
 		*attempt.SubjectRef,
 		"nikki-erp",
 		attempt.Methods,
-		int64(s.configSvc.GetInt("CORE_TOKEN_EXPIRY_HOURS")*1),
+		int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours)*1),
 	)
 	refreshToken, _ := util.GenerateGJWToken(
-		s.configSvc.GetStr("CORE_TOKEN_SECRET_KEY"),
+		s.configSvc.GetStr(coreConstants.TokenSecretKey),
 		*attempt.DeviceIp,
 		*attempt.SubjectRef,
 		"nikki-erp",
 		attempt.Methods,
-		int64(s.configSvc.GetInt("CORE_TOKEN_EXPIRY_HOURS")*12),
+		int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours)*12),
 	)
 	if done {
 		return &it.AuthenticateResult{
