@@ -5,14 +5,28 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
+func init() {
+	var req cqrs.Request
+	req = (*IsAuthorizedQuery)(nil)
+	util.Unused(req)
+}
+
 type AuthorizeService interface {
 	IsAuthorized(ctx crud.Context, query IsAuthorizedQuery) (*IsAuthorizedResult, error)
+}
+
+var isAuthorizedQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "nil",
+	Action:    "isAuthorized",
 }
 
 type IsAuthorizedQuery struct {
@@ -21,6 +35,10 @@ type IsAuthorizedQuery struct {
 	ScopeRef     string               `json:"scopeRef"`
 	SubjectType  SubjectTypeAuthorize `json:"subjectType"`
 	SubjectRef   string               `json:"subjectRef"`
+}
+
+func (IsAuthorizedQuery) CqrsRequestType() cqrs.RequestType {
+	return isAuthorizedQueryType
 }
 
 func (this IsAuthorizedQuery) Validate() ft.ValidationErrors {

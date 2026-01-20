@@ -10,6 +10,7 @@ import (
 
 func InitCqrsHandlers() error {
 	err := errors.Join(
+		initAuthorizeHandlers(),
 		initResourceHandlers(),
 		initActionHandlers(),
 		initEntitlementHandlers(),
@@ -18,6 +19,18 @@ func InitCqrsHandlers() error {
 		initRoleSuiteHandlers(),
 	)
 	return err
+}
+
+func initAuthorizeHandlers() error {
+	deps.Register(NewAuthorizeHandler)
+
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *AuthorizeHandler) error {
+		ctx := context.Background()
+		return cqrsBus.SubscribeRequests(
+			ctx,
+			cqrs.NewHandler(handler.IsAuthorized),
+		)
+	})
 }
 
 func initResourceHandlers() error {
