@@ -67,7 +67,7 @@ func (this *AttemptServiceImpl) CreateLoginAttempt(ctx crud.Context, cmd it.Crea
 			return err
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			methods := []string{"password", "captcha", "otpCode"} // TODO: load method settings from DB
+			methods := []string{"password"} // TODO: load method settings from DB
 			if len(methods) == 0 {
 				return ft.ClientError{
 					Code:    "unauthorized",
