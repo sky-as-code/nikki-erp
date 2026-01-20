@@ -32,6 +32,7 @@ func NewLoginServiceImpl(param NewLoginServiceParam) it.LoginService {
 	return &LoginServiceImpl{
 		cqrsBus:             param.CqrsBus,
 		attemptSvc:          param.AttemptSvc,
+		configSvc:           param.ConfigSvc,
 		attemptDurationSecs: param.ConfigSvc.GetInt(c.LoginAttemptDurationSecs),
 		subjectHelper: subjectHelper{
 			cqrsBus: param.CqrsBus,
@@ -43,6 +44,7 @@ type LoginServiceImpl struct {
 	cqrsBus       cqrs.CqrsBus
 	attemptSvc    it.AttemptService
 	subjectHelper subjectHelper
+	configSvc     config.ConfigService
 
 	attemptDurationSecs int
 }
@@ -173,14 +175,30 @@ func (s *LoginServiceImpl) updateAttemptStatus(ctx crud.Context, attempt *domain
 }
 
 func (s *LoginServiceImpl) buildAuthenticateResult(done bool, attempt *domain.LoginAttempt) *it.AuthenticateResult {
+	accessToken, _ := util.GenerateGJWToken(
+		s.configSvc.GetStr("CORE_TOKEN_SECRET_KEY"),
+		*attempt.DeviceIp,
+		*attempt.SubjectRef,
+		"nikki-erp",
+		attempt.Methods,
+		int64(s.configSvc.GetInt("CORE_TOKEN_EXPIRY_HOURS")*1),
+	)
+	refreshToken, _ := util.GenerateGJWToken(
+		s.configSvc.GetStr("CORE_TOKEN_SECRET_KEY"),
+		*attempt.DeviceIp,
+		*attempt.SubjectRef,
+		"nikki-erp",
+		attempt.Methods,
+		int64(s.configSvc.GetInt("CORE_TOKEN_EXPIRY_HOURS")*12),
+	)
 	if done {
 		return &it.AuthenticateResult{
 			Data: &it.AuthenticateResultData{
 				Done: true,
 				Data: &it.AuthenticateSuccessData{
-					AccessToken:           "TODO",
+					AccessToken:           accessToken,
 					AccessTokenExpiredAt:  time.Now(),
-					RefreshToken:          "TODO",
+					RefreshToken:          refreshToken,
 					RefreshTokenExpiredAt: time.Now(),
 				},
 			},

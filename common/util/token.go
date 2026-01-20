@@ -76,3 +76,24 @@ func GenerateGJWTokenWithTime(password string, deviceid string, userid string, i
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	return token.SignedString(signingKey)
 }
+
+func ParseGJWToken(tokenString string, password string) (*GJWTokenPayload, error) {
+	signingKey := []byte(password)
+
+	token, err := jwt.ParseWithClaims(tokenString, &GJWCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return signingKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*GJWCustomClaims); ok && token.Valid {
+		return &GJWTokenPayload{
+			UserId: claims.UserId,
+			DId:    claims.DId,
+			Roles:  claims.Roles,
+		}, nil
+	} else {
+		return nil, err
+	}
+}
