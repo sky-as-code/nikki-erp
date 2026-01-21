@@ -1,19 +1,20 @@
 package middleware
 
 import (
-	"net/http"
-
 	"github.com/labstack/echo/v4"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 )
 
 func RequireAuthMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			jwt := JwtFromContext(c.Request().Context())
-			if jwt == "" {
-				return c.JSON(http.StatusUnauthorized, map[string]string{
-					"error": "Unauthorized: Token required",
-				})
+			jwtToken := JwtFromContext(c.Request().Context())
+			userId := GetUserIdFromContext(c.Request().Context())
+			if jwtToken == "" || userId == "" {
+				return &fault.ClientError{
+					Code:    "403",
+					Details: "Token required or invalid",
+				}
 			}
 			return next(c)
 		}
