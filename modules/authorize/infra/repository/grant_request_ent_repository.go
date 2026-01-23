@@ -12,7 +12,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_request"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_request"
 )
 
 func NewGrantRequestEntRepository(client *ent.Client) it.GrantRequestRepository {

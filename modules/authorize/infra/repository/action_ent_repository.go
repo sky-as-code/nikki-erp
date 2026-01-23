@@ -12,7 +12,7 @@ import (
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entAction "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/action"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/action"
 )
 
 func NewActionEntRepository(client *ent.Client) it.ActionRepository {

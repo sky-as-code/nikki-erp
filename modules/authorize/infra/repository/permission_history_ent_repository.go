@@ -10,7 +10,7 @@ import (
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/permission_history"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/permission_history"
 )
 
 func NewPermissionHistoryEntRepository(client *ent.Client) it.PermissionHistoryRepository {

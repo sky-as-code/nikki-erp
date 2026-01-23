@@ -13,7 +13,7 @@ import (
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
 	entRoleSuiteUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuiteuser"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role_suite"
 )
 
 func NewRoleSuiteEntRepository(client *ent.Client) it.RoleSuiteRepository {

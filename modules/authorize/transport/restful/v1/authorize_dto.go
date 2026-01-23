@@ -6,8 +6,17 @@ import (
 
 type IsAuthorizedRequest = it.IsAuthorizedQuery
 type IsAuthorizedResponse it.IsAuthorizedResult
+type PermissionSnapshotRequest = it.PermissionSnapshotQuery
+type PermissionSnapshotResponse it.PermissionSnapshotResult
 
 func (this *IsAuthorizedResponse) FromResult(result it.IsAuthorizedResult) {
 	this.Decision = result.Decision
+	this.ClientError = result.ClientError
+}
+
+func (this *PermissionSnapshotResponse) FromResult(result it.PermissionSnapshotResult) {
+	this.AvatarUrl = result.AvatarUrl
+	this.DisplayName = result.DisplayName
+	this.Permissions = result.Permissions
 	this.ClientError = result.ClientError
 }
