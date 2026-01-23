@@ -6,7 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/revoke_request"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/revoke_request"
 )
 
 type RevokeRequestDto struct {

@@ -61,7 +61,7 @@ func initV1(
 	route.GET("/actions", actionRest.SearchActions)
 	route.DELETE("/actions/:id", actionRest.DeleteActionHard)
 
-	route.POST("/isauthorized", authorizedRest.IsAuthorized)
+	route.POST("/is-authorized", authorizedRest.IsAuthorized)
 
 	route.POST("/entitlements", entitlementRest.CreateEntitlement)
 	route.PUT("/entitlements/:id", entitlementRest.UpdateEntitlement)

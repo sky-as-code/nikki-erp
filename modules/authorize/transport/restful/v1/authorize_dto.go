@@ -1,7 +1,7 @@
 package v1
 
 import (
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
 )
 
 type IsAuthorizedRequest = it.IsAuthorizedQuery

@@ -8,10 +8,10 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	itEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
-	itPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/permission_history"
-	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	itEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement_assignment"
+	itPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/permission_history"
+	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
 	itHierarchy "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/hierarchy"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 )
