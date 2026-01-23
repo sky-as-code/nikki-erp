@@ -8,6 +8,9 @@ import (
 type AuthenticateRequest = it.AuthenticateCommand
 type AuthenticateResponse = it.AuthenticateResultData
 
+type RefreshTokenRequest = it.RefreshTokenCommand
+type RefreshTokenResponse = it.RefreshTokenResultData
+
 type StartLoginFlowRequest = it.StartLoginFlowCommand
 
 type StartLoginFlowResponse struct {

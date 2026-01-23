@@ -28,9 +28,9 @@ func (AuthenticateCommand) CqrsRequestType() cqrs.RequestType {
 
 type AuthenticateSuccessData struct {
 	AccessToken           string    `json:"accessToken"`
-	AccessTokenExpiredAt  time.Time `json:"accessTokenExpiredAt"`
+	AccessTokenExpiresAt  time.Time `json:"accessTokenExpiresAt"`
 	RefreshToken          string    `json:"refreshToken"`
-	RefreshTokenExpiredAt time.Time `json:"refreshTokenExpiredAt"`
+	RefreshTokenExpiresAt time.Time `json:"refreshTokenExpiresAt"`
 }
 
 type AuthenticateResultData struct {
@@ -124,3 +124,25 @@ func (this GetAttemptByIdQuery) Validate() ft.ValidationErrors {
 }
 
 type GetAttemptByIdResult = crud.OpResult[*domain.LoginAttempt]
+
+var refreshTokenCommandType = cqrs.RequestType{
+	Module:    "authenticate",
+	Submodule: "login",
+	Action:    "refreshToken",
+}
+
+type RefreshTokenCommand struct {
+	RefreshToken string `json:"refreshToken"`
+}
+
+func (RefreshTokenCommand) CqrsRequestType() cqrs.RequestType {
+	return refreshTokenCommandType
+}
+
+type RefreshTokenResultData struct {
+	AccessToken           string    `json:"accessToken"`
+	AccessTokenExpiresAt  time.Time `json:"accessTokenExpiresAt"`
+	RefreshToken          string    `json:"refreshToken"`
+	RefreshTokenExpiresAt time.Time `json:"refreshTokenExpiresAt"`
+}
+type RefreshTokenResult = crud.OpResult[*RefreshTokenResultData]

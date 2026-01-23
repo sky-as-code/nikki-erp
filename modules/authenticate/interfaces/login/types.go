@@ -14,6 +14,7 @@ type AttemptService interface {
 
 type LoginService interface {
 	Authenticate(ctx crud.Context, cmd AuthenticateCommand) (result *AuthenticateResult, err error)
+	RefreshToken(ctx crud.Context, cmd RefreshTokenCommand) (result *RefreshTokenResult, err error)
 }
 
 type AttemptRepository interface {
