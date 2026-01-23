@@ -5,11 +5,11 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/fault"
-	itAction "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
-	itEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
-	itAssignment "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
-	itPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/permission_history"
-	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	itAction "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/action"
+	itEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement"
+	itAssignment "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement_assignment"
+	itPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/permission_history"
+	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 )
 

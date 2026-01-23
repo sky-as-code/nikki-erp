@@ -5,7 +5,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role"
 )
 
 func NewRoleHandler(roleSvc it.RoleService) *RoleHandler {

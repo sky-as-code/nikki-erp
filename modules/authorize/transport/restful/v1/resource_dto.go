@@ -6,7 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
 )
 
 type ResourceDto struct {

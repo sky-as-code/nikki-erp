@@ -7,7 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
 )
 
 type resourceRestParams struct {

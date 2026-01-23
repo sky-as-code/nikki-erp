@@ -1,8 +1,8 @@
 package constants
 
 const (
-	ActionView   = "view"
-	ActionCreate = "create"
-	ActionUpdate = "update"
-	ActionDelete = "delete"
+	ActionView   = "View"
+	ActionCreate = "Create"
+	ActionUpdate = "Update"
+	ActionDelete = "Delete"
 )

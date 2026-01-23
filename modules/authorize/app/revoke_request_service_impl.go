@@ -12,9 +12,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	itRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/revoke_request"
-	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
-	itSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
+	itRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/revoke_request"
+	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role"
+	itSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role_suite"
 	itGroup "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
 	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )

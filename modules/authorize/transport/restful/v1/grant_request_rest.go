@@ -7,7 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_request"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_request"
 )
 
 type grantRequestRestParams struct {

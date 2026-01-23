@@ -10,8 +10,8 @@ import (
 
 	constants "github.com/sky-as-code/nikki-erp/modules/authorize/constants"
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
 )
 
 func NewResourceServiceImpl(resourceRepo it.ResourceRepository, authorizeService itAuthorize.AuthorizeService) it.ResourceService {

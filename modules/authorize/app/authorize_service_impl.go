@@ -9,11 +9,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize"
-	itAction "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
-	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
-	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
-	itSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
+	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
+	itAction "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/action"
+	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement_assignment"
+	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
+	itSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role_suite"
 )
 
 func NewAuthorizeServiceImpl(eventBus event.EventBus, entAssignmentRepo itAssign.EntitlementAssignmentRepository, entSuiteRepo itSuite.RoleSuiteRepository, entActionRepo itAction.ActionRepository, entResourceRepo itResource.ResourceRepository) itAuthorize.AuthorizeService {
