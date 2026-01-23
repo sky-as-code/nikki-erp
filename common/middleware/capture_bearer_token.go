@@ -28,23 +28,22 @@ func CaptureBearerToken(secretKey string) echo.MiddlewareFunc {
 				return next(c)
 			}
 
-			splitToken := strings.Split(authHeader, "Bearer ")
-			if len(splitToken) < 2 {
+			parts := strings.Fields(authHeader)
+
+			if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
 				return next(c)
 			}
 
-			tokenString := splitToken[1]
-			if tokenString == "" {
+			tokenString := strings.TrimSpace(parts[1])
+			if tokenString == "" || strings.EqualFold(tokenString, "null") {
 				return next(c)
 			}
 
-			// Parse JWT token
 			payload, err := util.ParseGJWToken(tokenString, secretKey)
 			if err != nil {
 				return next(c)
 			}
 
-			// Set token and parsed data to context
 			ctx := c.Request().Context()
 			ctx = context.WithValue(ctx, jwtCtxKey, tokenString)
 			ctx = context.WithValue(ctx, userIdCtxKey, payload.UserId)
