@@ -11,7 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entGrantResponse "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantresponse"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_response"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_response"
 )
 
 func NewGrantResponseEntRepository(client *ent.Client) it.GrantResponseRepository {

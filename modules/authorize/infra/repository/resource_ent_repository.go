@@ -12,7 +12,7 @@ import (
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entResource "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/resource"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
 )
 
 func NewResourceEntRepository(client *ent.Client) it.ResourceRepository {

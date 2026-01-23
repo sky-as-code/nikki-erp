@@ -33,21 +33,6 @@ func (this AuthorizeRest) IsAuthorized(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-
-	// query := IsAuthorizedRequest{}
-	// err = echoCtx.Bind(&query)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// result, err := this.AuthorizeSvc.IsAuthorized(echoCtx.Request().Context(), query)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// response := IsAuthorizedResponse{}
-	// response.FromResult(result)
-	// return echoCtx.JSON(http.StatusOK, response)
 	err = httpserver.ServeRequest(
 		echoCtx,
 		this.AuthorizeSvc.IsAuthorized,
@@ -56,6 +41,30 @@ func (this AuthorizeRest) IsAuthorized(echoCtx echo.Context) (err error) {
 		},
 		func(result it.IsAuthorizedResult) IsAuthorizedResponse {
 			response := IsAuthorizedResponse{}
+			response.FromResult(result)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
+func (this AuthorizeRest) PermissionSnapshot(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST permission snapshot"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx,
+		this.AuthorizeSvc.PermissionSnapshot,
+		func(request PermissionSnapshotRequest) it.PermissionSnapshotQuery {
+			return it.PermissionSnapshotQuery(request)
+		},
+		func(result it.PermissionSnapshotResult) PermissionSnapshotResponse {
+			response := PermissionSnapshotResponse{}
 			response.FromResult(result)
 			return response
 		},

@@ -11,7 +11,7 @@ import (
 	entEffectiveGroup "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/effectivegroupentitlement"
 	entEffectiveUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/effectiveuserentitlement"
 	entAssign "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlementassignment"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement_assignment"
 )
 
 func NewEntitlementAssignmentEntRepository(client *ent.Client) it.EntitlementAssignmentRepository {

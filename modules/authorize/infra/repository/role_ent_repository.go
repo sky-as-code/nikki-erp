@@ -13,7 +13,7 @@ import (
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entRole "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
 	entRoleUser "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/roleuser"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role"
 )
 
 func NewRoleEntRepository(client *ent.Client) it.RoleRepository {
