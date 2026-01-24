@@ -324,16 +324,12 @@ func (this *AuthorizeServiceImpl) buildPermissionsSnapshot(assignments []domain.
 	permissions := make(map[string][]itAuthorize.ResourceScopePermissions)
 
 	for _, assignment := range assignments {
-		var resourceName string
-		if assignment.ResourceName != nil && *assignment.ResourceName != "" {
-			resourceName = *assignment.ResourceName
-		} else if assignment.Entitlement != nil && assignment.Entitlement.Resource != nil && assignment.Entitlement.Resource.Name != nil {
-			resourceName = *assignment.Entitlement.Resource.Name
-		} else {
+		resourceName, actionName := resolveResourceAndAction(assignment)
+		if resourceName == "" {
 			continue
 		}
 
-		scopeType := "domain"
+		scopeType := domain.ResourceScopeTypeDomain.String()
 		if assignment.Entitlement != nil && assignment.Entitlement.Resource != nil && assignment.Entitlement.Resource.ScopeType != nil {
 			scopeType = string(*assignment.Entitlement.Resource.ScopeType)
 		}
@@ -343,11 +339,6 @@ func (this *AuthorizeServiceImpl) buildPermissionsSnapshot(assignments []domain.
 			scopeRef = *assignment.ScopeRef
 		} else if assignment.Entitlement != nil && assignment.Entitlement.ScopeRef != nil {
 			scopeRef = *assignment.Entitlement.ScopeRef
-		}
-
-		actionName := ""
-		if assignment.ActionName != nil {
-			actionName = *assignment.ActionName
 		}
 
 		resourcePerms := permissions[resourceName]
@@ -369,15 +360,26 @@ func (this *AuthorizeServiceImpl) buildPermissionsSnapshot(assignments []domain.
 		}
 
 		if actionName != "" {
-			found := false
-			for _, existing := range scopePerms.Actions {
-				if existing == actionName {
-					found = true
+			hasWildcard := false
+			for _, a := range scopePerms.Actions {
+				if a == "*" {
+					hasWildcard = true
 					break
 				}
 			}
-			if !found {
-				scopePerms.Actions = append(scopePerms.Actions, actionName)
+			if actionName == "*" {
+				scopePerms.Actions = []string{"*"}
+			} else if !hasWildcard {
+				found := false
+				for _, existing := range scopePerms.Actions {
+					if existing == actionName {
+						found = true
+						break
+					}
+				}
+				if !found {
+					scopePerms.Actions = append(scopePerms.Actions, actionName)
+				}
 			}
 		}
 
@@ -385,6 +387,36 @@ func (this *AuthorizeServiceImpl) buildPermissionsSnapshot(assignments []domain.
 	}
 
 	return permissions
+}
+
+// resolveResourceAndAction derives resource and action from assignment.
+// 1. *:*: resource nil, action nil → "*", "*"
+// 2. Resource:*: resource set, action nil → resource, "*"
+// 3. Resource:Action: both set → resource, action
+func resolveResourceAndAction(assignment domain.EntitlementAssignment) (resourceName, actionName string) {
+	hasResource := (assignment.ResourceName != nil && *assignment.ResourceName != "") ||
+		(assignment.Entitlement != nil && assignment.Entitlement.Resource != nil && assignment.Entitlement.Resource.Name != nil)
+	hasAction := assignment.ActionName != nil && *assignment.ActionName != ""
+
+	if !hasResource {
+		if !hasAction {
+			return "*", "*"
+		}
+		return "", ""
+	}
+
+	if assignment.ResourceName != nil && *assignment.ResourceName != "" {
+		resourceName = *assignment.ResourceName
+	} else {
+		resourceName = *assignment.Entitlement.Resource.Name
+	}
+
+	if hasAction {
+		actionName = *assignment.ActionName
+	} else {
+		actionName = "*"
+	}
+	return resourceName, actionName
 }
 
 func (this *AuthorizeServiceImpl) getUser(ctx crud.Context, userId model.Id, vErrs *fault.ValidationErrors) (*itUser.GetUserByIdResult, error) {
