@@ -14,9 +14,8 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "description", Type: field.TypeString, Nullable: true},
-		{Name: "email", Type: field.TypeString, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "org_id", Type: field.TypeString, Nullable: true},
 	}
@@ -28,7 +27,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "ident_groups_ident_organizations_org",
-				Columns:    []*schema.Column{IdentGroupsColumns[7]},
+				Columns:    []*schema.Column{IdentGroupsColumns[6]},
 				RefColumns: []*schema.Column{IdentOrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -104,21 +103,12 @@ var (
 		{Name: "is_owner", Type: field.TypeBool, Nullable: true},
 		{Name: "status", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
-		{Name: "hierarchy_id", Type: field.TypeString, Nullable: true},
 	}
 	// IdentUsersTable holds the schema information for the "ident_users" table.
 	IdentUsersTable = &schema.Table{
 		Name:       "ident_users",
 		Columns:    IdentUsersColumns,
 		PrimaryKey: []*schema.Column{IdentUsersColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "ident_users_ident_hierarchy_levels_hierarchy",
-				Columns:    []*schema.Column{IdentUsersColumns[9]},
-				RefColumns: []*schema.Column{IdentHierarchyLevelsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "user_is_owner",
@@ -148,6 +138,31 @@ var (
 				Symbol:     "ident_user_group_rel_ident_groups_group",
 				Columns:    []*schema.Column{IdentUserGroupRelColumns[1]},
 				RefColumns: []*schema.Column{IdentGroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// IdentUserHierarchyRelColumns holds the columns for the "ident_user_hierarchy_rel" table.
+	IdentUserHierarchyRelColumns = []*schema.Column{
+		{Name: "user_id", Type: field.TypeString},
+		{Name: "hierarchy_id", Type: field.TypeString},
+	}
+	// IdentUserHierarchyRelTable holds the schema information for the "ident_user_hierarchy_rel" table.
+	IdentUserHierarchyRelTable = &schema.Table{
+		Name:       "ident_user_hierarchy_rel",
+		Columns:    IdentUserHierarchyRelColumns,
+		PrimaryKey: []*schema.Column{IdentUserHierarchyRelColumns[0], IdentUserHierarchyRelColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "ident_user_hierarchy_rel_ident_users_user",
+				Columns:    []*schema.Column{IdentUserHierarchyRelColumns[0]},
+				RefColumns: []*schema.Column{IdentUsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "ident_user_hierarchy_rel_ident_hierarchy_levels_hierarchy",
+				Columns:    []*schema.Column{IdentUserHierarchyRelColumns[1]},
+				RefColumns: []*schema.Column{IdentHierarchyLevelsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
@@ -184,6 +199,7 @@ var (
 		IdentOrganizationsTable,
 		IdentUsersTable,
 		IdentUserGroupRelTable,
+		IdentUserHierarchyRelTable,
 		IdentUserOrgRelTable,
 	}
 )
@@ -201,7 +217,6 @@ func init() {
 	IdentOrganizationsTable.Annotation = &entsql.Annotation{
 		Table: "ident_organizations",
 	}
-	IdentUsersTable.ForeignKeys[0].RefTable = IdentHierarchyLevelsTable
 	IdentUsersTable.Annotation = &entsql.Annotation{
 		Table: "ident_users",
 	}
@@ -209,6 +224,11 @@ func init() {
 	IdentUserGroupRelTable.ForeignKeys[1].RefTable = IdentGroupsTable
 	IdentUserGroupRelTable.Annotation = &entsql.Annotation{
 		Table: "ident_user_group_rel",
+	}
+	IdentUserHierarchyRelTable.ForeignKeys[0].RefTable = IdentUsersTable
+	IdentUserHierarchyRelTable.ForeignKeys[1].RefTable = IdentHierarchyLevelsTable
+	IdentUserHierarchyRelTable.Annotation = &entsql.Annotation{
+		Table: "ident_user_hierarchy_rel",
 	}
 	IdentUserOrgRelTable.ForeignKeys[0].RefTable = IdentUsersTable
 	IdentUserOrgRelTable.ForeignKeys[1].RefTable = IdentOrganizationsTable

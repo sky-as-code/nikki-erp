@@ -20,6 +20,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/usergroup"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userhierarchy"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userorg"
 )
 
@@ -38,6 +39,8 @@ type Client struct {
 	User *UserClient
 	// UserGroup is the client for interacting with the UserGroup builders.
 	UserGroup *UserGroupClient
+	// UserHierarchy is the client for interacting with the UserHierarchy builders.
+	UserHierarchy *UserHierarchyClient
 	// UserOrg is the client for interacting with the UserOrg builders.
 	UserOrg *UserOrgClient
 }
@@ -56,6 +59,7 @@ func (c *Client) init() {
 	c.Organization = NewOrganizationClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.UserGroup = NewUserGroupClient(c.config)
+	c.UserHierarchy = NewUserHierarchyClient(c.config)
 	c.UserOrg = NewUserOrgClient(c.config)
 }
 
@@ -154,6 +158,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Organization:   NewOrganizationClient(cfg),
 		User:           NewUserClient(cfg),
 		UserGroup:      NewUserGroupClient(cfg),
+		UserHierarchy:  NewUserHierarchyClient(cfg),
 		UserOrg:        NewUserOrgClient(cfg),
 	}, nil
 }
@@ -179,6 +184,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Organization:   NewOrganizationClient(cfg),
 		User:           NewUserClient(cfg),
 		UserGroup:      NewUserGroupClient(cfg),
+		UserHierarchy:  NewUserHierarchyClient(cfg),
 		UserOrg:        NewUserOrgClient(cfg),
 	}, nil
 }
@@ -209,7 +215,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Group, c.HierarchyLevel, c.Organization, c.User, c.UserGroup, c.UserOrg,
+		c.Group, c.HierarchyLevel, c.Organization, c.User, c.UserGroup, c.UserHierarchy,
+		c.UserOrg,
 	} {
 		n.Use(hooks...)
 	}
@@ -219,7 +226,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Group, c.HierarchyLevel, c.Organization, c.User, c.UserGroup, c.UserOrg,
+		c.Group, c.HierarchyLevel, c.Organization, c.User, c.UserGroup, c.UserHierarchy,
+		c.UserOrg,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -238,6 +246,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.User.mutate(ctx, m)
 	case *UserGroupMutation:
 		return c.UserGroup.mutate(ctx, m)
+	case *UserHierarchyMutation:
+		return c.UserHierarchy.mutate(ctx, m)
 	case *UserOrgMutation:
 		return c.UserOrg.mutate(ctx, m)
 	default:
@@ -558,7 +568,7 @@ func (c *HierarchyLevelClient) QueryUsers(hl *HierarchyLevel) *UserQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, hierarchylevel.UsersTable, hierarchylevel.UsersColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, hierarchylevel.UsersTable, hierarchylevel.UsersPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(hl.driver.Dialect(), step)
 		return fromV, nil
@@ -591,6 +601,22 @@ func (c *HierarchyLevelClient) QueryOrg(hl *HierarchyLevel) *OrganizationQuery {
 			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, id),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, hierarchylevel.OrgTable, hierarchylevel.OrgColumn),
+		)
+		fromV = sqlgraph.Neighbors(hl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUserHierarchy queries the user_hierarchy edge of a HierarchyLevel.
+func (c *HierarchyLevelClient) QueryUserHierarchy(hl *HierarchyLevel) *UserHierarchyQuery {
+	query := (&UserHierarchyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := hl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, id),
+			sqlgraph.To(userhierarchy.Table, userhierarchy.HierarchyColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, hierarchylevel.UserHierarchyTable, hierarchylevel.UserHierarchyColumn),
 		)
 		fromV = sqlgraph.Neighbors(hl.driver.Dialect(), step)
 		return fromV, nil
@@ -952,7 +978,7 @@ func (c *UserClient) QueryHierarchy(u *User) *HierarchyLevelQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(hierarchylevel.Table, hierarchylevel.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, user.HierarchyTable, user.HierarchyColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, user.HierarchyTable, user.HierarchyPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil
@@ -985,6 +1011,22 @@ func (c *UserClient) QueryUserGroups(u *User) *UserGroupQuery {
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(usergroup.Table, usergroup.UserColumn),
 			sqlgraph.Edge(sqlgraph.O2M, true, user.UserGroupsTable, user.UserGroupsColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUserHierarchy queries the user_hierarchy edge of a User.
+func (c *UserClient) QueryUserHierarchy(u *User) *UserHierarchyQuery {
+	query := (&UserHierarchyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(userhierarchy.Table, userhierarchy.UserColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.UserHierarchyTable, user.UserHierarchyColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil
@@ -1149,6 +1191,122 @@ func (c *UserGroupClient) mutate(ctx context.Context, m *UserGroupMutation) (Val
 	}
 }
 
+// UserHierarchyClient is a client for the UserHierarchy schema.
+type UserHierarchyClient struct {
+	config
+}
+
+// NewUserHierarchyClient returns a client for the UserHierarchy from the given config.
+func NewUserHierarchyClient(c config) *UserHierarchyClient {
+	return &UserHierarchyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `userhierarchy.Hooks(f(g(h())))`.
+func (c *UserHierarchyClient) Use(hooks ...Hook) {
+	c.hooks.UserHierarchy = append(c.hooks.UserHierarchy, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `userhierarchy.Intercept(f(g(h())))`.
+func (c *UserHierarchyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.UserHierarchy = append(c.inters.UserHierarchy, interceptors...)
+}
+
+// Create returns a builder for creating a UserHierarchy entity.
+func (c *UserHierarchyClient) Create() *UserHierarchyCreate {
+	mutation := newUserHierarchyMutation(c.config, OpCreate)
+	return &UserHierarchyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of UserHierarchy entities.
+func (c *UserHierarchyClient) CreateBulk(builders ...*UserHierarchyCreate) *UserHierarchyCreateBulk {
+	return &UserHierarchyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *UserHierarchyClient) MapCreateBulk(slice any, setFunc func(*UserHierarchyCreate, int)) *UserHierarchyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &UserHierarchyCreateBulk{err: fmt.Errorf("calling to UserHierarchyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*UserHierarchyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &UserHierarchyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for UserHierarchy.
+func (c *UserHierarchyClient) Update() *UserHierarchyUpdate {
+	mutation := newUserHierarchyMutation(c.config, OpUpdate)
+	return &UserHierarchyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *UserHierarchyClient) UpdateOne(uh *UserHierarchy) *UserHierarchyUpdateOne {
+	mutation := newUserHierarchyMutation(c.config, OpUpdateOne)
+	mutation.user = &uh.UserID
+	mutation.hierarchy = &uh.HierarchyID
+	return &UserHierarchyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for UserHierarchy.
+func (c *UserHierarchyClient) Delete() *UserHierarchyDelete {
+	mutation := newUserHierarchyMutation(c.config, OpDelete)
+	return &UserHierarchyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Query returns a query builder for UserHierarchy.
+func (c *UserHierarchyClient) Query() *UserHierarchyQuery {
+	return &UserHierarchyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeUserHierarchy},
+		inters: c.Interceptors(),
+	}
+}
+
+// QueryUser queries the user edge of a UserHierarchy.
+func (c *UserHierarchyClient) QueryUser(uh *UserHierarchy) *UserQuery {
+	return c.Query().
+		Where(userhierarchy.UserID(uh.UserID), userhierarchy.HierarchyID(uh.HierarchyID)).
+		QueryUser()
+}
+
+// QueryHierarchy queries the hierarchy edge of a UserHierarchy.
+func (c *UserHierarchyClient) QueryHierarchy(uh *UserHierarchy) *HierarchyLevelQuery {
+	return c.Query().
+		Where(userhierarchy.UserID(uh.UserID), userhierarchy.HierarchyID(uh.HierarchyID)).
+		QueryHierarchy()
+}
+
+// Hooks returns the client hooks.
+func (c *UserHierarchyClient) Hooks() []Hook {
+	return c.hooks.UserHierarchy
+}
+
+// Interceptors returns the client interceptors.
+func (c *UserHierarchyClient) Interceptors() []Interceptor {
+	return c.inters.UserHierarchy
+}
+
+func (c *UserHierarchyClient) mutate(ctx context.Context, m *UserHierarchyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UserHierarchyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UserHierarchyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UserHierarchyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UserHierarchyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown UserHierarchy mutation op: %q", m.Op())
+	}
+}
+
 // UserOrgClient is a client for the UserOrg schema.
 type UserOrgClient struct {
 	config
@@ -1268,9 +1426,11 @@ func (c *UserOrgClient) mutate(ctx context.Context, m *UserOrgMutation) (Value, 
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Group, HierarchyLevel, Organization, User, UserGroup, UserOrg []ent.Hook
+		Group, HierarchyLevel, Organization, User, UserGroup, UserHierarchy,
+		UserOrg []ent.Hook
 	}
 	inters struct {
-		Group, HierarchyLevel, Organization, User, UserGroup, UserOrg []ent.Interceptor
+		Group, HierarchyLevel, Organization, User, UserGroup, UserHierarchy,
+		UserOrg []ent.Interceptor
 	}
 )

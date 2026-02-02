@@ -5,9 +5,14 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/users/{{user_id}}
+  url: {{api_host}}/v1/identity/users/{{user_id}}?withOrg=true&&withHierarchy=true
   body: none
   auth: inherit
+}
+
+params:query {
+  withOrg: true
+  withHierarchy: true
 }
 
 script:post-response {
@@ -18,4 +23,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

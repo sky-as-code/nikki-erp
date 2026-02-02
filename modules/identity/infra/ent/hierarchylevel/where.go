@@ -618,7 +618,7 @@ func HasUsers() predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, UsersTable, UsersColumn),
+			sqlgraph.Edge(sqlgraph.M2M, true, UsersTable, UsersPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -674,6 +674,29 @@ func HasOrg() predicate.HierarchyLevel {
 func HasOrgWith(preds ...predicate.Organization) predicate.HierarchyLevel {
 	return predicate.HierarchyLevel(func(s *sql.Selector) {
 		step := newOrgStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasUserHierarchy applies the HasEdge predicate on the "user_hierarchy" edge.
+func HasUserHierarchy() predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, UserHierarchyTable, UserHierarchyColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasUserHierarchyWith applies the HasEdge predicate on the "user_hierarchy" edge with a given conditions (other predicates).
+func HasUserHierarchyWith(preds ...predicate.UserHierarchy) predicate.HierarchyLevel {
+	return predicate.HierarchyLevel(func(s *sql.Selector) {
+		step := newUserHierarchyStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

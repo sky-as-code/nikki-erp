@@ -22,6 +22,8 @@ type Tx struct {
 	User *UserClient
 	// UserGroup is the client for interacting with the UserGroup builders.
 	UserGroup *UserGroupClient
+	// UserHierarchy is the client for interacting with the UserHierarchy builders.
+	UserHierarchy *UserHierarchyClient
 	// UserOrg is the client for interacting with the UserOrg builders.
 	UserOrg *UserOrgClient
 
@@ -160,6 +162,7 @@ func (tx *Tx) init() {
 	tx.Organization = NewOrganizationClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserGroup = NewUserGroupClient(tx.config)
+	tx.UserHierarchy = NewUserHierarchyClient(tx.config)
 	tx.UserOrg = NewUserOrgClient(tx.config)
 }
 

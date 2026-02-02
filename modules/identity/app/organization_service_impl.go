@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strings"
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
@@ -9,17 +10,21 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	itEnum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
+	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
 func NewOrganizationServiceImpl(
 	enumSvc itEnum.EnumService,
 	orgRepo itOrg.OrganizationRepository,
+	cqrsBus cqrs.CqrsBus,
 ) itOrg.OrganizationService {
 	return &OrganizationServiceImpl{
+		cqrsBus: cqrsBus,
 		enumSvc: enumSvc,
 		orgRepo: orgRepo,
 	}
@@ -28,6 +33,7 @@ func NewOrganizationServiceImpl(
 type OrganizationServiceImpl struct {
 	enumSvc itEnum.EnumService
 	orgRepo itOrg.OrganizationRepository
+	cqrsBus cqrs.CqrsBus
 }
 
 func (this *OrganizationServiceImpl) AddRemoveUsers(ctx crud.Context, cmd itOrg.AddRemoveUsersCommand) (result *itOrg.AddRemoveUsersResult, err error) {
@@ -46,24 +52,28 @@ func (this *OrganizationServiceImpl) AddRemoveUsers(ctx crud.Context, cmd itOrg.
 		}, nil
 	}
 
-	// var dbOrg *domain.Organization
+	var dbOrg *domain.Organization
 	flow := val.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *ft.ValidationErrors) error {
 			*vErrs = cmd.Validate()
 			return nil
 		}).
-		// Step(func(vErrs *ft.ValidationErrors) error {
-		// 	dbOrg, err = this.ExistsOrgById(ctx, cmd.OrgId, vErrs)
-		// 	return err
-		// }).
-		// Step(func(vErrs *ft.ValidationErrors) error {
-		// 	this.assertCorrectEtag(cmd.Etag, *dbOrg.Etag, vErrs)
-		// 	return nil
-		// }).
-		// Step(func(vErrs *ft.ValidationErrors) error {
-		// 	return this.assertUserIdsExist(ctx, vErrs, "add", cmd.Add)
-		// }).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			dbOrg, err = this.getOrgByIdFull(ctx, itOrg.GetOrganizationByIdQuery{
+				Id: cmd.OrgId,
+			}, vErrs)
+			return err
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			if dbOrg == nil || dbOrg.Etag == nil || *dbOrg.Etag != cmd.Etag {
+				vErrs.Append("etag", "invalid etag")
+			}
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			return this.assertUserIdsExist(ctx, vErrs, "add", cmd.Add, dbOrg.Id)
+		}).
 		End()
 
 	if vErrs.Count() > 0 {
@@ -304,23 +314,31 @@ func (this *OrganizationServiceImpl) setOrgDefaults(org *domain.Organization) {
 	org.Status = util.ToPtr(domain.OrgStatusActive)
 }
 
-// func (this *OrganizationServiceImpl) assertOrgUnique(ctx crud.Context, newSlug *model.Slug, vErrs *ft.ValidationErrors) error {
-// 	if newSlug == nil {
-// 		return nil
-// 	}
-// 	dbOrg, err := this.orgRepo.FindBySlug(ctx, itOrg.GetOrganizationBySlugQuery{
-// 		Slug:           *newSlug,
-// 		IncludeDeleted: true,
-// 	})
-// 	if err != nil {
-// 		return err
-// 	}
+func (this *OrganizationServiceImpl) assertUserIdsExist(ctx crud.Context, valErrs *ft.ValidationErrors, field string, userIds []string, orgId *model.Id) error {
+	if len(userIds) == 0 || orgId == nil {
+		return nil
+	}
 
-// 	if dbOrg != nil {
-// 		vErrs.AppendAlreadyExists("slug", "organization slug")
-// 	}
-// 	return nil
-// }
+	existCmd := &itUser.UserExistsMultiQuery{
+		Ids:   userIds,
+		OrgId: orgId,
+	}
+	existRes := itUser.UserExistsMultiResult{}
+	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
+	if err != nil {
+		return err
+	}
+
+	if existRes.ClientError != nil {
+		valErrs.MergeClientError(existRes.ClientError)
+		return nil
+	}
+
+	if len(existRes.Data.NotExisting) > 0 {
+		valErrs.Append(field, "not existing users: "+strings.Join(existRes.Data.NotExisting, ", "))
+	}
+	return nil
+}
 
 func (this *OrganizationServiceImpl) assertCorrectOrg(ctx crud.Context, org *domain.Organization, vErrs *ft.ValidationErrors) (*domain.Organization, error) {
 	dbOrg, err := this.assertOrgExists(ctx, org, vErrs)

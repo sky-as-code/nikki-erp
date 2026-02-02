@@ -121,7 +121,8 @@ var existsMultiCommandType = cqrs.RequestType{
 }
 
 type UserExistsMultiQuery struct {
-	Ids []model.Id `json:"ids"`
+	Ids   []model.Id `json:"ids"`
+	OrgId *model.Id  `json:"orgId"`
 }
 
 func (UserExistsMultiQuery) CqrsRequestType() cqrs.RequestType {

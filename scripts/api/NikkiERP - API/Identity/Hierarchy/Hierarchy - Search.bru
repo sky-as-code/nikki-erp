@@ -5,11 +5,16 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/hierarchy
+  url: {{api_host}}/v1/identity/hierarchy?withOrg=true
   body: none
   auth: inherit
 }
 
+params:query {
+  withOrg: true
+}
+
 settings {
   encodeUrl: true
+  timeout: 0
 }

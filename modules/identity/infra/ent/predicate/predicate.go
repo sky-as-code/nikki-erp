@@ -21,5 +21,8 @@ type User = func(*sql.Selector)
 // UserGroup is the predicate function for usergroup builders.
 type UserGroup = func(*sql.Selector)
 
+// UserHierarchy is the predicate function for userhierarchy builders.
+type UserHierarchy = func(*sql.Selector)
+
 // UserOrg is the predicate function for userorg builders.
 type UserOrg = func(*sql.Selector)

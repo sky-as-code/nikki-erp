@@ -177,7 +177,7 @@ func (this *UserServiceImpl) Exists(ctx crud.Context, query it.UserExistsQuery) 
 }
 
 func (this *UserServiceImpl) ExistsMulti(ctx crud.Context, query it.UserExistsMultiQuery) (result *it.UserExistsMultiResult, err error) {
-	exists, notExisting, err := this.userRepo.ExistsMulti(ctx, query.Ids)
+	exists, notExisting, err := this.userRepo.ExistsMulti(ctx, query.Ids, query.OrgId)
 	ft.PanicOnErr(err)
 
 	return &it.UserExistsMultiResult{
@@ -342,44 +342,44 @@ func (this *UserServiceImpl) SearchUsers(ctx crud.Context, query it.SearchUsersQ
 	return result, err
 }
 
-func (this *UserServiceImpl) FindDirectApprover(ctx crud.Context, query it.FindDirectApproverQuery) (result *it.FindDirectApproverResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "find direct approver"); e != nil {
-			err = e
-		}
-	}()
+// func (this *UserServiceImpl) FindDirectApprover(ctx crud.Context, query it.FindDirectApproverQuery) (result *it.FindDirectApproverResult, err error) {
+// 	defer func() {
+// 		if e := ft.RecoverPanicFailedTo(recover(), "find direct approver"); e != nil {
+// 			err = e
+// 		}
+// 	}()
 
-	var dbUser *domain.User
-	var approver []domain.User
+// 	var dbUser *domain.User
+// 	var approver []domain.User
 
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = query.Validate()
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			dbUser, err = this.assertUserExists(ctx, query.Id, vErrs)
-			return err
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			approver, err = this.findDirectApproverInHierarchy(ctx, dbUser, vErrs)
-			return err
-		}).
-		End()
-	ft.PanicOnErr(err)
+// 	flow := val.StartValidationFlow()
+// 	vErrs, err := flow.
+// 		Step(func(vErrs *ft.ValidationErrors) error {
+// 			*vErrs = query.Validate()
+// 			return nil
+// 		}).
+// 		Step(func(vErrs *ft.ValidationErrors) error {
+// 			dbUser, err = this.assertUserExists(ctx, query.Id, vErrs)
+// 			return err
+// 		}).
+// 		Step(func(vErrs *ft.ValidationErrors) error {
+// 			approver, err = this.findDirectApproverInHierarchy(ctx, dbUser, vErrs)
+// 			return err
+// 		}).
+// 		End()
+// 	ft.PanicOnErr(err)
 
-	if vErrs.Count() > 0 {
-		return &it.FindDirectApproverResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
+// 	if vErrs.Count() > 0 {
+// 		return &it.FindDirectApproverResult{
+// 			ClientError: vErrs.ToClientError(),
+// 		}, nil
+// 	}
 
-	return &it.FindDirectApproverResult{
-		Data:    approver,
-		HasData: approver != nil,
-	}, nil
-}
+// 	return &it.FindDirectApproverResult{
+// 		Data:    approver,
+// 		HasData: approver != nil,
+// 	}, nil
+// }
 
 func (this *UserServiceImpl) assertUserExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (user *domain.User, err error) {
 	user, err = this.userRepo.FindById(ctx, it.FindByIdParam{Id: id})
@@ -391,25 +391,25 @@ func (this *UserServiceImpl) assertUserExists(ctx crud.Context, id model.Id, vEr
 	return user, err
 }
 
-func (this *UserServiceImpl) findDirectApproverInHierarchy(ctx crud.Context, dbUser *domain.User, vErrs *ft.ValidationErrors) ([]domain.User, error) {
-	if dbUser.HierarchyId == nil {
-		return nil, nil
-	}
+// func (this *UserServiceImpl) findDirectApproverInHierarchy(ctx crud.Context, dbUser *domain.User, vErrs *ft.ValidationErrors) ([]domain.User, error) {
+// 	if dbUser.HierarchyId == nil {
+// 		return nil, nil
+// 	}
 
-	hierarchy, err := this.hierarchyRepo.FindById(ctx, itHierarchy.FindByIdParam{Id: *dbUser.HierarchyId})
-	ft.PanicOnErr(err)
+// 	hierarchy, err := this.hierarchyRepo.FindById(ctx, itHierarchy.FindByIdParam{Id: *dbUser.HierarchyId})
+// 	ft.PanicOnErr(err)
 
-	if hierarchy == nil {
-		vErrs.AppendNotFound("hierarchy_id", "hierarchy")
-		return nil, nil
-	}
+// 	if hierarchy == nil {
+// 		vErrs.AppendNotFound("hierarchy_id", "hierarchy")
+// 		return nil, nil
+// 	}
 
-	if hierarchy.ParentId == nil {
-		return nil, nil
-	}
+// 	if hierarchy.ParentId == nil {
+// 		return nil, nil
+// 	}
 
-	directManager, err := this.userRepo.FindByHierarchyId(ctx, it.FindByHierarchyIdParam{HierarchyId: *hierarchy.ParentId, Status: domain.WrapUserStatus(domain.UserStatusActive.String())})
-	ft.PanicOnErr(err)
+// 	directManager, err := this.userRepo.FindByHierarchyId(ctx, it.FindByHierarchyIdParam{HierarchyId: *hierarchy.ParentId, Status: domain.WrapUserStatus(domain.UserStatusActive.String())})
+// 	ft.PanicOnErr(err)
 
-	return directManager, nil
-}
+// 	return directManager, nil
+// }

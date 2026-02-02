@@ -255,6 +255,11 @@ func (hlu *HierarchyLevelUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (hlu *HierarchyLevelUpdate) check() error {
+	if v, ok := hlu.mutation.Name(); ok {
+		if err := hierarchylevel.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "HierarchyLevel.name": %w`, err)}
+		}
+	}
 	if hlu.mutation.OrgCleared() && len(hlu.mutation.OrgIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "HierarchyLevel.org"`)
 	}
@@ -350,10 +355,10 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if hlu.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: []string{hierarchylevel.UsersColumn},
+			Columns: hierarchylevel.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
@@ -363,10 +368,10 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if nodes := hlu.mutation.RemovedUsersIDs(); len(nodes) > 0 && !hlu.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: []string{hierarchylevel.UsersColumn},
+			Columns: hierarchylevel.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
@@ -379,10 +384,10 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if nodes := hlu.mutation.UsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: []string{hierarchylevel.UsersColumn},
+			Columns: hierarchylevel.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
@@ -682,6 +687,11 @@ func (hluo *HierarchyLevelUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (hluo *HierarchyLevelUpdateOne) check() error {
+	if v, ok := hluo.mutation.Name(); ok {
+		if err := hierarchylevel.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "HierarchyLevel.name": %w`, err)}
+		}
+	}
 	if hluo.mutation.OrgCleared() && len(hluo.mutation.OrgIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "HierarchyLevel.org"`)
 	}
@@ -794,10 +804,10 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 	}
 	if hluo.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: []string{hierarchylevel.UsersColumn},
+			Columns: hierarchylevel.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
@@ -807,10 +817,10 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 	}
 	if nodes := hluo.mutation.RemovedUsersIDs(); len(nodes) > 0 && !hluo.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: []string{hierarchylevel.UsersColumn},
+			Columns: hierarchylevel.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
@@ -823,10 +833,10 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 	}
 	if nodes := hluo.mutation.UsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: []string{hierarchylevel.UsersColumn},
+			Columns: hierarchylevel.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),

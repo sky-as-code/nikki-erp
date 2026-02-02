@@ -13,13 +13,12 @@ type User struct {
 	AvatarUrl   *string     `json:"avatarUrl"`
 	DisplayName *string     `json:"displayName"`
 	Email       *string     `json:"email"`
-	HierarchyId *model.Id   `json:"hierarchyId"`
 	OrgId       *model.Id   `json:"orgId"`
 	Status      *UserStatus `json:"status,omitempty"`
 
-	Groups    []Group         `json:"groups,omitempty" model:"-"` // TODO: Handle copy
-	Hierarchy *HierarchyLevel `json:"hierarchy,omitempty" model:"-"`
-	Orgs      []Organization  `json:"orgs,omitempty" model:"-"`
+	Groups      []Group          `json:"groups,omitempty" model:"-"` // TODO: Handle copy
+	Hierarchies []HierarchyLevel `json:"hierarchies,omitempty" model:"-"`
+	Orgs        []Organization   `json:"orgs,omitempty" model:"-"`
 }
 
 func (this *User) SetDefaults() {
@@ -50,7 +49,6 @@ func (this *User) Validate(forEdit bool) ft.ValidationErrors {
 			),
 		),
 		UserStatusValidateRule(&this.Status),
-		model.IdPtrValidateRule(&this.HierarchyId, false),
 	}
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)

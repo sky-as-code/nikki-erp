@@ -1,0 +1,24 @@
+meta {
+  name: Organization - Add/Remove User
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{api_host}}/v1/identity/organizations/{{org_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "add": ["01JZQFZFK6GM2D5X6MYHWH6FND", "01JZQFY6EXRG0959Z95Y2EM3AM"],
+      "remove": [],
+      "etag": "1770019937435096600"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

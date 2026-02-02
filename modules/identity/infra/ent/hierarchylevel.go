@@ -50,9 +50,11 @@ type HierarchyLevelEdges struct {
 	Parent *HierarchyLevel `json:"parent,omitempty"`
 	// Org holds the value of the org edge.
 	Org *Organization `json:"org,omitempty"`
+	// UserHierarchy holds the value of the user_hierarchy edge.
+	UserHierarchy []*UserHierarchy `json:"user_hierarchy,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // ChildrenOrErr returns the Children value or an error if the edge
@@ -93,6 +95,15 @@ func (e HierarchyLevelEdges) OrgOrErr() (*Organization, error) {
 		return nil, &NotFoundError{label: organization.Label}
 	}
 	return nil, &NotLoadedError{edge: "org"}
+}
+
+// UserHierarchyOrErr returns the UserHierarchy value or an error if the edge
+// was not loaded in eager-loading.
+func (e HierarchyLevelEdges) UserHierarchyOrErr() ([]*UserHierarchy, error) {
+	if e.loadedTypes[4] {
+		return e.UserHierarchy, nil
+	}
+	return nil, &NotLoadedError{edge: "user_hierarchy"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -208,6 +219,11 @@ func (hl *HierarchyLevel) QueryParent() *HierarchyLevelQuery {
 // QueryOrg queries the "org" edge of the HierarchyLevel entity.
 func (hl *HierarchyLevel) QueryOrg() *OrganizationQuery {
 	return NewHierarchyLevelClient(hl.config).QueryOrg(hl)
+}
+
+// QueryUserHierarchy queries the "user_hierarchy" edge of the HierarchyLevel entity.
+func (hl *HierarchyLevel) QueryUserHierarchy() *UserHierarchyQuery {
+	return NewHierarchyLevelClient(hl.config).QueryUserHierarchy(hl)
 }
 
 // Update returns a builder for updating this HierarchyLevel.

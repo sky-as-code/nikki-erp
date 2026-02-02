@@ -26,7 +26,7 @@ func init() {
 	// group.DefaultCreatedAt holds the default value on creation for the created_at field.
 	group.DefaultCreatedAt = groupDescCreatedAt.Default.(func() time.Time)
 	// groupDescName is the schema descriptor for name field.
-	groupDescName := groupMixinFields0[5].Descriptor()
+	groupDescName := groupMixinFields0[4].Descriptor()
 	// group.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	group.NameValidator = groupDescName.Validators[0].(func(string) error)
 	hierarchylevelMixin := schema.HierarchyLevel{}.Mixin()
@@ -38,6 +38,10 @@ func init() {
 	hierarchylevelDescCreatedAt := hierarchylevelMixinFields0[1].Descriptor()
 	// hierarchylevel.DefaultCreatedAt holds the default value on creation for the created_at field.
 	hierarchylevel.DefaultCreatedAt = hierarchylevelDescCreatedAt.Default.(func() time.Time)
+	// hierarchylevelDescName is the schema descriptor for name field.
+	hierarchylevelDescName := hierarchylevelMixinFields0[5].Descriptor()
+	// hierarchylevel.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	hierarchylevel.NameValidator = hierarchylevelDescName.Validators[0].(func(string) error)
 	organizationMixin := schema.Organization{}.Mixin()
 	organizationMixinFields0 := organizationMixin[0].Fields()
 	_ = organizationMixinFields0

@@ -22,8 +22,6 @@ type Group struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Group description
 	Description *string `json:"description,omitempty"`
-	// Email holds the value of the "email" field.
-	Email *string `json:"email,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// Name holds the value of the "name" field.
@@ -85,7 +83,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldID, group.FieldDescription, group.FieldEmail, group.FieldEtag, group.FieldName, group.FieldOrgID:
+		case group.FieldID, group.FieldDescription, group.FieldEtag, group.FieldName, group.FieldOrgID:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -122,13 +120,6 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				gr.Description = new(string)
 				*gr.Description = value.String
-			}
-		case group.FieldEmail:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field email", values[i])
-			} else if value.Valid {
-				gr.Email = new(string)
-				*gr.Email = value.String
 			}
 		case group.FieldEtag:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -212,11 +203,6 @@ func (gr *Group) String() string {
 	builder.WriteString(", ")
 	if v := gr.Description; v != nil {
 		builder.WriteString("description=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	if v := gr.Email; v != nil {
-		builder.WriteString("email=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

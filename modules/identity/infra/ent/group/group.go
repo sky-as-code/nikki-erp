@@ -18,8 +18,6 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
-	// FieldEmail holds the string denoting the email field in the database.
-	FieldEmail = "email"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
 	// FieldName holds the string denoting the name field in the database.
@@ -62,7 +60,6 @@ var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
 	FieldDescription,
-	FieldEmail,
 	FieldEtag,
 	FieldName,
 	FieldOrgID,
@@ -108,11 +105,6 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByDescription orders the results by the description field.
 func ByDescription(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDescription, opts...).ToFunc()
-}
-
-// ByEmail orders the results by the email field.
-func ByEmail(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldEmail, opts...).ToFunc()
 }
 
 // ByEtag orders the results by the etag field.

@@ -17,6 +17,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/usergroup"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userhierarchy"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userorg"
 )
 
@@ -83,6 +84,7 @@ func checkColumn(table, column string) error {
 			organization.Table:   organization.ValidColumn,
 			user.Table:           user.ValidColumn,
 			usergroup.Table:      usergroup.ValidColumn,
+			userhierarchy.Table:  userhierarchy.ValidColumn,
 			userorg.Table:        userorg.ValidColumn,
 		})
 	})

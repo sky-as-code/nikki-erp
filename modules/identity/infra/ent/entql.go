@@ -9,6 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/usergroup"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userhierarchy"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userorg"
 
 	"entgo.io/ent/dialect/sql"
@@ -19,7 +20,7 @@ import (
 
 // schemaGraph holds a representation of ent/schema at runtime.
 var schemaGraph = func() *sqlgraph.Schema {
-	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 6)}
+	graph := &sqlgraph.Schema{Nodes: make([]*sqlgraph.Node, 7)}
 	graph.Nodes[0] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   group.Table,
@@ -33,7 +34,6 @@ var schemaGraph = func() *sqlgraph.Schema {
 		Fields: map[string]*sqlgraph.FieldSpec{
 			group.FieldCreatedAt:   {Type: field.TypeTime, Column: group.FieldCreatedAt},
 			group.FieldDescription: {Type: field.TypeString, Column: group.FieldDescription},
-			group.FieldEmail:       {Type: field.TypeString, Column: group.FieldEmail},
 			group.FieldEtag:        {Type: field.TypeString, Column: group.FieldEtag},
 			group.FieldName:        {Type: field.TypeString, Column: group.FieldName},
 			group.FieldOrgID:       {Type: field.TypeString, Column: group.FieldOrgID},
@@ -100,7 +100,6 @@ var schemaGraph = func() *sqlgraph.Schema {
 			user.FieldDisplayName: {Type: field.TypeString, Column: user.FieldDisplayName},
 			user.FieldEmail:       {Type: field.TypeString, Column: user.FieldEmail},
 			user.FieldEtag:        {Type: field.TypeString, Column: user.FieldEtag},
-			user.FieldHierarchyID: {Type: field.TypeString, Column: user.FieldHierarchyID},
 			user.FieldIsOwner:     {Type: field.TypeBool, Column: user.FieldIsOwner},
 			user.FieldStatus:      {Type: field.TypeString, Column: user.FieldStatus},
 			user.FieldUpdatedAt:   {Type: field.TypeTime, Column: user.FieldUpdatedAt},
@@ -128,6 +127,27 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 	}
 	graph.Nodes[5] = &sqlgraph.Node{
+		NodeSpec: sqlgraph.NodeSpec{
+			Table:   userhierarchy.Table,
+			Columns: userhierarchy.Columns,
+			CompositeID: []*sqlgraph.FieldSpec{
+				{
+					Type:   field.TypeString,
+					Column: userhierarchy.FieldUserID,
+				},
+				{
+					Type:   field.TypeString,
+					Column: userhierarchy.FieldHierarchyID,
+				},
+			},
+		},
+		Type: "UserHierarchy",
+		Fields: map[string]*sqlgraph.FieldSpec{
+			userhierarchy.FieldUserID:      {Type: field.TypeString, Column: userhierarchy.FieldUserID},
+			userhierarchy.FieldHierarchyID: {Type: field.TypeString, Column: userhierarchy.FieldHierarchyID},
+		},
+	}
+	graph.Nodes[6] = &sqlgraph.Node{
 		NodeSpec: sqlgraph.NodeSpec{
 			Table:   userorg.Table,
 			Columns: userorg.Columns,
@@ -199,10 +219,10 @@ var schemaGraph = func() *sqlgraph.Schema {
 	graph.MustAddE(
 		"users",
 		&sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: []string{hierarchylevel.UsersColumn},
+			Columns: hierarchylevel.UsersPrimaryKey,
 			Bidi:    false,
 		},
 		"HierarchyLevel",
@@ -231,6 +251,18 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"HierarchyLevel",
 		"Organization",
+	)
+	graph.MustAddE(
+		"user_hierarchy",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   hierarchylevel.UserHierarchyTable,
+			Columns: []string{hierarchylevel.UserHierarchyColumn},
+			Bidi:    false,
+		},
+		"HierarchyLevel",
+		"UserHierarchy",
 	)
 	graph.MustAddE(
 		"users",
@@ -295,10 +327,10 @@ var schemaGraph = func() *sqlgraph.Schema {
 	graph.MustAddE(
 		"hierarchy",
 		&sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.M2M,
 			Inverse: false,
 			Table:   user.HierarchyTable,
-			Columns: []string{user.HierarchyColumn},
+			Columns: user.HierarchyPrimaryKey,
 			Bidi:    false,
 		},
 		"User",
@@ -327,6 +359,18 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"User",
 		"UserGroup",
+	)
+	graph.MustAddE(
+		"user_hierarchy",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.UserHierarchyTable,
+			Columns: []string{user.UserHierarchyColumn},
+			Bidi:    false,
+		},
+		"User",
+		"UserHierarchy",
 	)
 	graph.MustAddE(
 		"user_orgs",
@@ -363,6 +407,30 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"UserGroup",
 		"Group",
+	)
+	graph.MustAddE(
+		"user",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   userhierarchy.UserTable,
+			Columns: []string{userhierarchy.UserColumn},
+			Bidi:    false,
+		},
+		"UserHierarchy",
+		"User",
+	)
+	graph.MustAddE(
+		"hierarchy",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   userhierarchy.HierarchyTable,
+			Columns: []string{userhierarchy.HierarchyColumn},
+			Bidi:    false,
+		},
+		"UserHierarchy",
+		"HierarchyLevel",
 	)
 	graph.MustAddE(
 		"user",
@@ -445,11 +513,6 @@ func (f *GroupFilter) WhereCreatedAt(p entql.TimeP) {
 // WhereDescription applies the entql string predicate on the description field.
 func (f *GroupFilter) WhereDescription(p entql.StringP) {
 	f.Where(p.Field(group.FieldDescription))
-}
-
-// WhereEmail applies the entql string predicate on the email field.
-func (f *GroupFilter) WhereEmail(p entql.StringP) {
-	f.Where(p.Field(group.FieldEmail))
 }
 
 // WhereEtag applies the entql string predicate on the etag field.
@@ -644,6 +707,20 @@ func (f *HierarchyLevelFilter) WhereHasOrg() {
 // WhereHasOrgWith applies a predicate to check if query has an edge org with a given conditions (other predicates).
 func (f *HierarchyLevelFilter) WhereHasOrgWith(preds ...predicate.Organization) {
 	f.Where(entql.HasEdgeWith("org", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasUserHierarchy applies a predicate to check if query has an edge user_hierarchy.
+func (f *HierarchyLevelFilter) WhereHasUserHierarchy() {
+	f.Where(entql.HasEdge("user_hierarchy"))
+}
+
+// WhereHasUserHierarchyWith applies a predicate to check if query has an edge user_hierarchy with a given conditions (other predicates).
+func (f *HierarchyLevelFilter) WhereHasUserHierarchyWith(preds ...predicate.UserHierarchy) {
+	f.Where(entql.HasEdgeWith("user_hierarchy", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}
@@ -861,11 +938,6 @@ func (f *UserFilter) WhereEtag(p entql.StringP) {
 	f.Where(p.Field(user.FieldEtag))
 }
 
-// WhereHierarchyID applies the entql string predicate on the hierarchy_id field.
-func (f *UserFilter) WhereHierarchyID(p entql.StringP) {
-	f.Where(p.Field(user.FieldHierarchyID))
-}
-
 // WhereIsOwner applies the entql bool predicate on the is_owner field.
 func (f *UserFilter) WhereIsOwner(p entql.BoolP) {
 	f.Where(p.Field(user.FieldIsOwner))
@@ -931,6 +1003,20 @@ func (f *UserFilter) WhereHasUserGroups() {
 // WhereHasUserGroupsWith applies a predicate to check if query has an edge user_groups with a given conditions (other predicates).
 func (f *UserFilter) WhereHasUserGroupsWith(preds ...predicate.UserGroup) {
 	f.Where(entql.HasEdgeWith("user_groups", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasUserHierarchy applies a predicate to check if query has an edge user_hierarchy.
+func (f *UserFilter) WhereHasUserHierarchy() {
+	f.Where(entql.HasEdge("user_hierarchy"))
+}
+
+// WhereHasUserHierarchyWith applies a predicate to check if query has an edge user_hierarchy with a given conditions (other predicates).
+func (f *UserFilter) WhereHasUserHierarchyWith(preds ...predicate.UserHierarchy) {
+	f.Where(entql.HasEdgeWith("user_hierarchy", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}
@@ -1025,6 +1111,79 @@ func (f *UserGroupFilter) WhereHasGroupWith(preds ...predicate.Group) {
 }
 
 // addPredicate implements the predicateAdder interface.
+func (uhq *UserHierarchyQuery) addPredicate(pred func(s *sql.Selector)) {
+	uhq.predicates = append(uhq.predicates, pred)
+}
+
+// Filter returns a Filter implementation to apply filters on the UserHierarchyQuery builder.
+func (uhq *UserHierarchyQuery) Filter() *UserHierarchyFilter {
+	return &UserHierarchyFilter{config: uhq.config, predicateAdder: uhq}
+}
+
+// addPredicate implements the predicateAdder interface.
+func (m *UserHierarchyMutation) addPredicate(pred func(s *sql.Selector)) {
+	m.predicates = append(m.predicates, pred)
+}
+
+// Filter returns an entql.Where implementation to apply filters on the UserHierarchyMutation builder.
+func (m *UserHierarchyMutation) Filter() *UserHierarchyFilter {
+	return &UserHierarchyFilter{config: m.config, predicateAdder: m}
+}
+
+// UserHierarchyFilter provides a generic filtering capability at runtime for UserHierarchyQuery.
+type UserHierarchyFilter struct {
+	predicateAdder
+	config
+}
+
+// Where applies the entql predicate on the query filter.
+func (f *UserHierarchyFilter) Where(p entql.P) {
+	f.addPredicate(func(s *sql.Selector) {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[5].Type, p, s); err != nil {
+			s.AddError(err)
+		}
+	})
+}
+
+// WhereUserID applies the entql string predicate on the user_id field.
+func (f *UserHierarchyFilter) WhereUserID(p entql.StringP) {
+	f.Where(p.Field(userhierarchy.FieldUserID))
+}
+
+// WhereHierarchyID applies the entql string predicate on the hierarchy_id field.
+func (f *UserHierarchyFilter) WhereHierarchyID(p entql.StringP) {
+	f.Where(p.Field(userhierarchy.FieldHierarchyID))
+}
+
+// WhereHasUser applies a predicate to check if query has an edge user.
+func (f *UserHierarchyFilter) WhereHasUser() {
+	f.Where(entql.HasEdge("user"))
+}
+
+// WhereHasUserWith applies a predicate to check if query has an edge user with a given conditions (other predicates).
+func (f *UserHierarchyFilter) WhereHasUserWith(preds ...predicate.User) {
+	f.Where(entql.HasEdgeWith("user", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasHierarchy applies a predicate to check if query has an edge hierarchy.
+func (f *UserHierarchyFilter) WhereHasHierarchy() {
+	f.Where(entql.HasEdge("hierarchy"))
+}
+
+// WhereHasHierarchyWith applies a predicate to check if query has an edge hierarchy with a given conditions (other predicates).
+func (f *UserHierarchyFilter) WhereHasHierarchyWith(preds ...predicate.HierarchyLevel) {
+	f.Where(entql.HasEdgeWith("hierarchy", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// addPredicate implements the predicateAdder interface.
 func (uoq *UserOrgQuery) addPredicate(pred func(s *sql.Selector)) {
 	uoq.predicates = append(uoq.predicates, pred)
 }
@@ -1053,7 +1212,7 @@ type UserOrgFilter struct {
 // Where applies the entql predicate on the query filter.
 func (f *UserOrgFilter) Where(p entql.P) {
 	f.addPredicate(func(s *sql.Selector) {
-		if err := schemaGraph.EvalP(schemaGraph.Nodes[5].Type, p, s); err != nil {
+		if err := schemaGraph.EvalP(schemaGraph.Nodes[6].Type, p, s); err != nil {
 			s.AddError(err)
 		}
 	})
