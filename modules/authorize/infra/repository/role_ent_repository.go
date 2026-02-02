@@ -187,6 +187,7 @@ func BuildRoleDescriptor() *orm.EntityDescriptor {
 		Field(entRole.FieldDescription, entity.Description).
 		Field(entRole.FieldOwnerType, entity.OwnerType).
 		Field(entRole.FieldOwnerRef, entity.OwnerRef).
+		Field(entRole.FieldOrgID, entity.OrgID).
 		Field(entRole.FieldIsRequestable, entity.IsRequestable).
 		Field(entRole.FieldIsRequiredAttachment, entity.IsRequiredAttachment).
 		Field(entRole.FieldIsRequiredComment, entity.IsRequiredComment).
