@@ -14,7 +14,6 @@ import (
 	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement_assignment"
 	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
 	itSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role_suite"
-	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
 func NewAuthorizeServiceImpl(
@@ -91,17 +90,17 @@ func (this *AuthorizeServiceImpl) PermissionSnapshot(ctx crud.Context, query itA
 		}
 	}()
 
-	userRes := &itUser.GetUserByIdResult{}
+	// userRes := &itUser.GetUserByIdResult{}
 	flow := validator.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *fault.ValidationErrors) error {
 			*vErrs = query.Validate()
 			return nil
 		}).
-		Step(func(vErrs *fault.ValidationErrors) error {
-			userRes, err = this.getUser(ctx, query.UserId, vErrs)
-			return err
-		}).
+		// Step(func(vErrs *fault.ValidationErrors) error {
+		// 	userRes, err = this.getUser(ctx, query.UserId, vErrs)
+		// 	return err
+		// }).
 		End()
 	fault.PanicOnErr(err)
 
@@ -120,8 +119,6 @@ func (this *AuthorizeServiceImpl) PermissionSnapshot(ctx crud.Context, query itA
 	permissions := this.buildPermissionsSnapshot(assignments)
 
 	return &itAuthorize.PermissionSnapshotResult{
-		AvatarUrl:   userRes.Data.AvatarUrl,
-		DisplayName: userRes.Data.DisplayName,
 		Permissions: permissions,
 	}, nil
 }
@@ -419,17 +416,17 @@ func resolveResourceAndAction(assignment domain.EntitlementAssignment) (resource
 	return resourceName, actionName
 }
 
-func (this *AuthorizeServiceImpl) getUser(ctx crud.Context, userId model.Id, vErrs *fault.ValidationErrors) (*itUser.GetUserByIdResult, error) {
-	userRes := &itUser.GetUserByIdResult{}
-	err := this.cqrsBus.Request(ctx, itUser.GetUserByIdQuery{Id: userId}, &userRes)
-	fault.PanicOnErr(err)
+// func (this *AuthorizeServiceImpl) getUser(ctx crud.Context, userId model.Id, vErrs *fault.ValidationErrors) (*itUser.GetUserByIdResult, error) {
+// 	userRes := &itUser.GetUserByIdResult{}
+// 	err := this.cqrsBus.Request(ctx, itUser.GetUserByIdQuery{Id: userId}, &userRes)
+// 	fault.PanicOnErr(err)
 
-	if userRes.ClientError != nil {
-		if !vErrs.MergeClientError(userRes.ClientError) {
-			vErrs.AppendNotFound("userId", "user")
-		}
-		return nil, nil
-	}
+// 	if userRes.ClientError != nil {
+// 		if !vErrs.MergeClientError(userRes.ClientError) {
+// 			vErrs.AppendNotFound("userId", "user")
+// 		}
+// 		return nil, nil
+// 	}
 
-	return userRes, nil
-}
+// 	return userRes, nil
+// }

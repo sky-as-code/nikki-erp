@@ -66,7 +66,6 @@ func initV1(
 	roleSuiteRest *v1.RoleSuiteRest,
 ) {
 	route.POST("/is-authorized", authorizedRest.IsAuthorized)
-	route.GET("/user-contexts/:user_id", authorizedRest.PermissionSnapshot)
 
 	route.POST("/actions", actionRest.CreateAction)
 	route.PUT("/actions/:id", actionRest.UpdateAction)

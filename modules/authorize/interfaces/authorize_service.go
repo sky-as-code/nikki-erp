@@ -93,8 +93,6 @@ func (this PermissionSnapshotQuery) Validate() ft.ValidationErrors {
 }
 
 type PermissionSnapshotResult struct {
-	AvatarUrl   *string                               `json:"avatarUrl,omitempty"`
-	DisplayName *string                               `json:"displayName,omitempty"`
 	Permissions map[string][]ResourceScopePermissions `json:"permissions"`
 	ClientError *ft.ClientError                       `json:"error,omitempty"`
 }

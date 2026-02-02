@@ -15,8 +15,6 @@ func (this *IsAuthorizedResponse) FromResult(result it.IsAuthorizedResult) {
 }
 
 func (this *PermissionSnapshotResponse) FromResult(result it.PermissionSnapshotResult) {
-	this.AvatarUrl = result.AvatarUrl
-	this.DisplayName = result.DisplayName
 	this.Permissions = result.Permissions
 	this.ClientError = result.ClientError
 }

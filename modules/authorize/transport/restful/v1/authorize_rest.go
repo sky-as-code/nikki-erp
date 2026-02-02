@@ -49,27 +49,3 @@ func (this AuthorizeRest) IsAuthorized(echoCtx echo.Context) (err error) {
 
 	return err
 }
-
-func (this AuthorizeRest) PermissionSnapshot(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "handle REST permission snapshot"); e != nil {
-			err = e
-		}
-	}()
-
-	err = httpserver.ServeRequest(
-		echoCtx,
-		this.AuthorizeSvc.PermissionSnapshot,
-		func(request PermissionSnapshotRequest) it.PermissionSnapshotQuery {
-			return it.PermissionSnapshotQuery(request)
-		},
-		func(result it.PermissionSnapshotResult) PermissionSnapshotResponse {
-			response := PermissionSnapshotResponse{}
-			response.FromResult(result)
-			return response
-		},
-		httpserver.JsonOk,
-	)
-
-	return err
-}
