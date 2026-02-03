@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
+	"github.com/sky-as-code/nikki-erp/common/fault"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -442,25 +443,16 @@ func (this *UserServiceImpl) assertUserExists(ctx crud.Context, id model.Id, vEr
 	return user, err
 }
 
-func (this *UserServiceImpl) getPermissionsForUser(ctx crud.Context, valErrs *ft.ValidationErrors, userId model.Id) (permissions *itAuthorize.PermissionSnapshotResult, err error) {
-	param := &itAuthorize.PermissionSnapshotQuery{
-		UserId: userId,
-	}
-
+func (this *UserServiceImpl) getPermissionsForUser(ctx crud.Context, vErrs *ft.ValidationErrors, userId model.Id) (permissions *itAuthorize.PermissionSnapshotResult, err error) {
 	result := itAuthorize.PermissionSnapshotResult{}
-
-	err = this.cqrs.Request(ctx, *param, &result)
-	if err != nil {
-		return nil, err
-	}
+	err = this.cqrs.Request(ctx, &itAuthorize.PermissionSnapshotQuery{UserId: userId}, &result)
+	fault.PanicOnErr(err)
 
 	if result.ClientError != nil {
-		valErrs.MergeClientError(result.ClientError)
-		return
-	}
-
-	if len(result.Permissions) > 0 {
-		valErrs.Append("not existing permission: ", "permissions")
+		if !vErrs.MergeClientError(result.ClientError) {
+			vErrs.AppendNotFound("permissions", "permissions")
+		}
+		return nil, result.ClientError
 	}
 
 	permissions = &result
