@@ -32,6 +32,18 @@ var isAuthorizedQueryType = cqrs.RequestType{
 	Action:    "isAuthorized",
 }
 
+func init() {
+	var req cqrs.Request
+	req = (*IsAuthorizedQuery)(nil)
+	util.Unused(req)
+}
+
+var isAuthorizedQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "authorize",
+	Action:    "isAuthorized",
+}
+
 type IsAuthorizedQuery struct {
 	ActionName   string               `json:"actionName"`
 	ResourceName string               `json:"resourceName"`

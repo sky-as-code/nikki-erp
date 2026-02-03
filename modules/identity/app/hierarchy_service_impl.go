@@ -57,8 +57,7 @@ func (this *HierarchyServiceImpl) AddRemoveUsers(ctx crud.Context, cmd itHier.Ad
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			hierarchy, err = this.assertCorrectHierarchyLevel(ctx, cmd.HierarchyId, cmd.Etag, vErrs)
-			return err
+			return this.assertCorrectHierarchyLevel(ctx, cmd.HierarchyId, cmd.Etag, cmd.ScopeRef, vErrs)
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			return this.assertUserIdsExist(ctx, vErrs, "add", cmd.Add, hierarchy.OrgId)
@@ -145,6 +144,10 @@ func (this *HierarchyServiceImpl) DeleteHierarchyLevel(ctx crud.Context, cmd itH
 		Action:       "delete hierarchy level",
 		Command:      cmd,
 		AssertExists: this.assertHierarchyLevelByDomain,
+		AssertBusinessRules: func(ctx crud.Context, cmd itHier.DeleteHierarchyLevelCommand, dbHierarchy *domain.HierarchyLevel, vErrs *ft.ValidationErrors) error {
+			this.assertScopeRefMatchesOrg(cmd.ScopeRef, dbHierarchy.OrgId, vErrs)
+			return nil
+		},
 		RepoDelete: func(ctx crud.Context, model *domain.HierarchyLevel) (int, error) {
 			return this.hierarchyRepo.DeleteHard(ctx, itHier.DeleteParam{Id: *model.Id})
 		},
@@ -200,6 +203,7 @@ func (this *HierarchyServiceImpl) SearchHierarchyLevels(ctx crud.Context, query 
 				WithOrg:        query.WithOrg,
 				WithParent:     query.WithParent,
 				WithChildren:   query.WithChildren,
+				OrgId:          query.ScopeRef,
 			})
 		},
 		ToFailureResult: func(vErrs *ft.ValidationErrors) *itHier.SearchHierarchyLevelsResult {
@@ -237,6 +241,7 @@ func (this *HierarchyServiceImpl) ExistsHierarchyById(ctx crud.Context, cmd itHi
 //---------------------------------------------------------------------------------------------------------------------------------------------//
 
 func (this *HierarchyServiceImpl) assertCreateRules(ctx crud.Context, hierarchyLevel *domain.HierarchyLevel, vErrs *ft.ValidationErrors) error {
+	this.assertScopeRefMatchesOrg(hierarchyLevel.ScopeRef, hierarchyLevel.OrgId, vErrs)
 
 	org, err := this.orgSvc.GetOrganizationById(ctx, itOrg.GetOrganizationByIdQuery{
 		Id: *hierarchyLevel.OrgId,
@@ -253,7 +258,12 @@ func (this *HierarchyServiceImpl) assertCreateRules(ctx crud.Context, hierarchyL
 	return this.assertUniqueHierarchyLevelName(ctx, hierarchyLevel, vErrs)
 }
 
-func (this *HierarchyServiceImpl) assertUpdateRules(ctx crud.Context, hierarchyLevel *domain.HierarchyLevel, _ *domain.HierarchyLevel, vErrs *ft.ValidationErrors) error {
+func (this *HierarchyServiceImpl) assertUpdateRules(ctx crud.Context, hierarchyLevel *domain.HierarchyLevel, dbHierarchy *domain.HierarchyLevel, vErrs *ft.ValidationErrors) error {
+	orgId := hierarchyLevel.OrgId
+	if orgId == nil && dbHierarchy != nil {
+		orgId = dbHierarchy.OrgId
+	}
+	this.assertScopeRefMatchesOrg(hierarchyLevel.ScopeRef, orgId, vErrs)
 
 	if hierarchyLevel.OrgId != nil {
 		org, err := this.orgSvc.GetOrganizationById(ctx, itOrg.GetOrganizationByIdQuery{
@@ -275,7 +285,7 @@ func (this *HierarchyServiceImpl) assertUpdateRules(ctx crud.Context, hierarchyL
 	}
 
 	if hierarchyLevel.ParentId != nil {
-		dbHier, err := this.assertHierarchyLevelId(ctx, *hierarchyLevel.ParentId, vErrs)
+		dbHier, err := this.assertHierarchyLevelId(ctx, *hierarchyLevel.ParentId, hierarchyLevel.ScopeRef, vErrs)
 		if err != nil {
 			return err
 		}
@@ -325,18 +335,16 @@ func (this *HierarchyServiceImpl) sanitizeHierarchyLevel(hierarchyLevel *domain.
 	}
 }
 
-func (this *HierarchyServiceImpl) assertCorrectHierarchyLevel(ctx crud.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) (*domain.HierarchyLevel, error) {
-	dbHierarchyLevel, err := this.assertHierarchyLevelId(ctx, id, vErrs)
-	if err != nil {
-		return nil, err
-	}
+func (this *HierarchyServiceImpl) assertCorrectHierarchyLevel(ctx crud.Context, id model.Id, etag model.Etag, scopeRef *model.Id, vErrs *ft.ValidationErrors) error {
+	dbHierarchyLevel, err := this.assertHierarchyLevelId(ctx, id, scopeRef, vErrs)
+	fault.PanicOnErr(err)
 
 	if dbHierarchyLevel != nil && *dbHierarchyLevel.Etag != etag {
 		vErrs.Append("etag", "invalid etag")
-		return nil, nil
+		return nil
 	}
 
-	return dbHierarchyLevel, nil
+	return nil
 }
 
 func (this *HierarchyServiceImpl) setGroupDefaults(hierarchyLevel *domain.HierarchyLevel) {
@@ -348,12 +356,13 @@ func (this *HierarchyServiceImpl) assertHierarchyLevelByDomain(ctx crud.Context,
 		vErrs.Append("id", "id is required")
 		return nil, nil
 	}
-	return this.assertHierarchyLevelId(ctx, *model.Id, vErrs)
+	return this.assertHierarchyLevelId(ctx, *model.Id, model.ScopeRef, vErrs)
 }
 
-func (this *HierarchyServiceImpl) assertHierarchyLevelId(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (*domain.HierarchyLevel, error) {
+func (this *HierarchyServiceImpl) assertHierarchyLevelId(ctx crud.Context, id model.Id, scopeRef *model.Id, vErrs *ft.ValidationErrors) (*domain.HierarchyLevel, error) {
 	dbHierarchyLevel, err := this.hierarchyRepo.FindById(ctx, itHier.FindByIdParam{
-		Id: id,
+		Id:       id,
+		ScopeRef: scopeRef,
 	})
 	if err != nil {
 		return nil, err
@@ -385,6 +394,7 @@ func (this *HierarchyServiceImpl) getHierarchyLevelByIdFull(ctx crud.Context, qu
 		Id:             query.Id,
 		WithChildren:   query.WithChildren,
 		IncludeDeleted: query.IncludeDeleted,
+		ScopeRef:       query.ScopeRef,
 	})
 	if err != nil {
 		return nil, err
@@ -395,4 +405,13 @@ func (this *HierarchyServiceImpl) getHierarchyLevelByIdFull(ctx crud.Context, qu
 		return nil, nil
 	}
 	return dbHier, nil
+}
+
+func (this *HierarchyServiceImpl) assertScopeRefMatchesOrg(scopeRef *model.Id, orgId *model.Id, vErrs *ft.ValidationErrors) {
+	if scopeRef == nil {
+		return
+	}
+	if orgId == nil || *scopeRef != *orgId {
+		vErrs.AppendNotAllowed("scopeRef", "scopeRef must match hierarchy's orgId")
+	}
 }

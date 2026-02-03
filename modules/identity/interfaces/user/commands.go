@@ -68,6 +68,7 @@ type CreateUserCommand struct {
 	MustChangePassword bool      `json:"mustChangePassword"`
 	Password           string    `json:"password"`
 	OrgId              *model.Id `json:"orgId"`
+	ScopeRef           *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
 func (CreateUserCommand) CqrsRequestType() cqrs.RequestType {
@@ -89,6 +90,7 @@ type UpdateUserCommand struct {
 	Email       *string            `json:"email"`
 	Etag        model.Etag         `json:"etag"`
 	Status      *domain.UserStatus `json:"status"`
+	ScopeRef    *model.Id          `query:"scopeRef" json:"scopeRef"`
 }
 
 func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
@@ -105,6 +107,7 @@ var deleteUserCommandType = cqrs.RequestType{
 
 type DeleteUserCommand struct {
 	Id model.Id `json:"id" param:"id"`
+	ScopeRef *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
 func (DeleteUserCommand) CqrsRequestType() cqrs.RequestType {
@@ -114,6 +117,7 @@ func (DeleteUserCommand) CqrsRequestType() cqrs.RequestType {
 func (this DeleteUserCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.IdPtrValidateRule(&this.ScopeRef, false),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
@@ -187,6 +191,7 @@ type GetUserByIdQuery struct {
 	WithGroup     bool               `json:"withGroup" query:"withGroup"`
 	WithHierarchy bool               `json:"withHierarchy" query:"withHierarchy"`
 	WithOrg       bool               `json:"withOrg" query:"withOrg"`
+	ScopeRef      *model.Id          `json:"scopeRef" query:"scopeRef"`
 }
 
 func (GetUserByIdQuery) CqrsRequestType() cqrs.RequestType {
@@ -196,6 +201,7 @@ func (GetUserByIdQuery) CqrsRequestType() cqrs.RequestType {
 func (this GetUserByIdQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.IdPtrValidateRule(&this.ScopeRef, false),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
@@ -277,6 +283,7 @@ type SearchUsersQuery struct {
 	WithGroups    bool `json:"withGroups" query:"withGroups"`
 	WithOrgs      bool `json:"withOrgs" query:"withOrgs"`
 	WithHierarchy bool `json:"withHierarchy" query:"withHierarchy"`
+	ScopeRef      *model.Id `json:"scopeRef" query:"scopeRef"`
 }
 
 func (SearchUsersQuery) CqrsRequestType() cqrs.RequestType {
@@ -285,6 +292,7 @@ func (SearchUsersQuery) CqrsRequestType() cqrs.RequestType {
 
 func (this SearchUsersQuery) Validate() ft.ValidationErrors {
 	rules := this.SearchQuery.ValidationRules()
+	rules = append(rules, model.IdPtrValidateRule(&this.ScopeRef, false))
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }

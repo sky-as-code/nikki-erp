@@ -40,4 +40,5 @@ type SearchParam struct {
 	WithGroups    bool
 	WithHierarchy bool
 	WithOrgs      bool
+	OrgId         *model.Id
 }

@@ -68,6 +68,9 @@ func (this *HierarchyLevelEntRepository) DeleteHard(ctx crud.Context, param it.D
 func (this *HierarchyLevelEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.HierarchyLevel, error) {
 	dbQuery := this.hierarchyClient(ctx).Query().
 		Where(entHierarchy.ID(param.Id))
+	if param.ScopeRef != nil {
+		dbQuery = dbQuery.Where(entHierarchy.OrgIDEQ(string(*param.ScopeRef)))
+	}
 
 	if param.WithChildren {
 		dbQuery = dbQuery.WithChildren()
@@ -102,6 +105,9 @@ func (this *HierarchyLevelEntRepository) Search(
 
 	if param.WithOrg {
 		query = query.WithOrg()
+	}
+	if param.OrgId != nil {
+		query = query.Where(entHierarchy.OrgIDEQ(string(*param.OrgId)))
 	}
 
 	if param.WithParent {

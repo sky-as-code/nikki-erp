@@ -36,6 +36,7 @@ type CreateHierarchyLevelCommand struct {
 	Name     string    `json:"name"`
 	OrgId    model.Id  `json:"orgId"`
 	ParentId *model.Id `json:"parentId"`
+	ScopeRef *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
 func (CreateHierarchyLevelCommand) CqrsRequestType() cqrs.RequestType {
@@ -57,6 +58,7 @@ type UpdateHierarchyLevelCommand struct {
 	OrgId    *model.Id  `json:"orgId"`
 	ParentId *model.Id  `json:"parentId"`
 	Etag     model.Etag `json:"etag"`
+	ScopeRef *model.Id  `query:"scopeRef" json:"scopeRef"`
 }
 
 func (UpdateHierarchyLevelCommand) CqrsRequestType() cqrs.RequestType {
@@ -74,6 +76,7 @@ var deleteHierarchyLevelCommandType = cqrs.RequestType{
 
 type DeleteHierarchyLevelCommand struct {
 	Id model.Id `param:"id" json:"id"`
+	ScopeRef *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
 type DeleteHierarchyrResultData struct {
@@ -94,6 +97,7 @@ func (this DeleteHierarchyLevelCommand) ToDomainModel() *domain.HierarchyLevel {
 func (this DeleteHierarchyLevelCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.IdPtrValidateRule(&this.ScopeRef, false),
 	}
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -111,6 +115,7 @@ type GetHierarchyLevelByIdQuery struct {
 	Id             model.Id `param:"id" json:"id"`
 	IncludeDeleted bool     `query:"includeDeleted" json:"includeDeleted"`
 	WithChildren   bool     `query:"withChildren" json:"withChildren"`
+	ScopeRef       *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
 func (GetHierarchyLevelByIdQuery) CqrsRequestType() cqrs.RequestType {
@@ -120,6 +125,7 @@ func (GetHierarchyLevelByIdQuery) CqrsRequestType() cqrs.RequestType {
 func (this GetHierarchyLevelByIdQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.IdPtrValidateRule(&this.ScopeRef, false),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
@@ -140,6 +146,7 @@ type SearchHierarchyLevelsQuery struct {
 	WithChildren   bool `query:"withChildren" json:"withChildren"`
 	WithOrg        bool `query:"withOrg" json:"withOrg"`
 	WithParent     bool `query:"withParent" json:"withParent"`
+	ScopeRef       *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
 func (SearchHierarchyLevelsQuery) CqrsRequestType() cqrs.RequestType {
@@ -155,6 +162,7 @@ func (this SearchHierarchyLevelsQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		crud.PageIndexValidateRule(&this.Page),
 		crud.PageSizeValidateRule(&this.Size),
+		model.IdPtrValidateRule(&this.ScopeRef, false),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
@@ -169,6 +177,7 @@ type AddRemoveUsersCommand struct {
 	Add         []model.Id `json:"add"`
 	Remove      []model.Id `json:"remove"`
 	Etag        model.Etag `json:"etag"`
+	ScopeRef    *model.Id  `query:"scopeRef" json:"scopeRef"`
 }
 
 var addRemoveUsersCommandType = cqrs.RequestType{
@@ -186,6 +195,7 @@ func (this *AddRemoveUsersCommand) Validate() ft.ValidationErrors {
 		model.IdValidateRule(&this.HierarchyId, true),
 		model.IdValidateRuleMulti(&this.Add, false, 0, model.MODEL_RULE_ID_ARR_MAX),
 		model.IdValidateRuleMulti(&this.Remove, false, 0, model.MODEL_RULE_ID_ARR_MAX),
+		model.IdPtrValidateRule(&this.ScopeRef, false),
 	}
 
 	return val.ApiBased.ValidateStruct(this, rules...)

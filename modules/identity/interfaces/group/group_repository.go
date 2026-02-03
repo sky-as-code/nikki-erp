@@ -32,4 +32,5 @@ type SearchParam struct {
 	Page      int
 	Size      int
 	WithOrg   bool
+	OrgId     *model.Id
 }

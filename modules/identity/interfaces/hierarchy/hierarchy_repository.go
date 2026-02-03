@@ -36,4 +36,5 @@ type SearchParam struct {
 	WithOrg        bool
 	WithChildren   bool
 	WithParent     bool
+	OrgId          *model.Id
 }

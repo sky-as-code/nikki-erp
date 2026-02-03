@@ -13,6 +13,7 @@ type Group struct {
 	Name        *string   `json:"name"`
 	Description *string   `json:"description"`
 	OrgId       *model.Id `json:"orgId"`
+	ScopeRef    *model.Id `json:"scopeRef,omitempty" model:"-"`
 
 	Org *Organization `json:"organization,omitempty" model:"-"` // TODO: Handle copy
 }

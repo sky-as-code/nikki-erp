@@ -13,6 +13,7 @@ type HierarchyLevel struct {
 	Name     *string
 	ParentId *model.Id
 	OrgId    *model.Id
+	ScopeRef *model.Id `json:"scopeRef,omitempty" model:"-"`
 
 	Org      *Organization    `json:"org,omitempty" model:"-"`
 	Parent   *HierarchyLevel  `json:"parent,omitempty" model:"-"`

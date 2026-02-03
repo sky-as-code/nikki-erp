@@ -55,7 +55,7 @@ func (this *GroupServiceImpl) AddRemoveUsers(ctx crud.Context, cmd itGrp.AddRemo
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			dbGroup, err = this.assertGroupByID(ctx, cmd.GroupId, vErrs)
+			dbGroup, err = this.assertGroupByID(ctx, cmd.GroupId, cmd.ScopeRef, vErrs)
 			return err
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
@@ -169,6 +169,10 @@ func (this *GroupServiceImpl) DeleteGroup(ctx crud.Context, cmd itGrp.DeleteGrou
 		Action:       "delete group",
 		Command:      cmd,
 		AssertExists: this.assertGroupByDomain,
+		AssertBusinessRules: func(ctx crud.Context, cmd itGrp.DeleteGroupCommand, dbGroup *domain.Group, vErrs *ft.ValidationErrors) error {
+			this.assertScopeRefMatchesOrg(cmd.ScopeRef, dbGroup.OrgId, vErrs)
+			return nil
+		},
 		RepoDelete: func(ctx crud.Context, model *domain.Group) (int, error) {
 			return this.groupRepo.DeleteHard(ctx, itGrp.DeleteParam{Id: *model.Id})
 		},
@@ -200,6 +204,7 @@ func (this *GroupServiceImpl) SearchGroups(ctx crud.Context, query itGrp.SearchG
 				Page:      *query.Page,
 				Size:      *query.Size,
 				WithOrg:   query.WithOrg,
+				OrgId:     query.ScopeRef,
 			})
 		},
 		ToFailureResult: func(vErrs *ft.ValidationErrors) *itGrp.SearchGroupsResult {
@@ -238,6 +243,7 @@ func (this *GroupServiceImpl) Exist(ctx crud.Context, cmd itGrp.GroupExistsComma
 //---------------------------------------------------------------------------------------------------------------------------------------------//
 
 func (this *GroupServiceImpl) assertCreateRules(ctx crud.Context, group *domain.Group, vErrs *ft.ValidationErrors) error {
+	this.assertScopeRefMatchesOrg(group.ScopeRef, group.OrgId, vErrs)
 	if group.OrgId == nil {
 		return nil
 	}
@@ -263,8 +269,14 @@ func (this *GroupServiceImpl) assertCreateRules(ctx crud.Context, group *domain.
 	return this.assertUniqueGroupName(ctx, group, vErrs)
 }
 
-func (this *GroupServiceImpl) assertUpdateRules(ctx crud.Context, group *domain.Group, _ *domain.Group, vErrs *ft.ValidationErrors) error {
-	_, err := this.assertGroupByID(ctx, *group.Id, vErrs)
+func (this *GroupServiceImpl) assertUpdateRules(ctx crud.Context, group *domain.Group, dbGroup *domain.Group, vErrs *ft.ValidationErrors) error {
+	orgId := group.OrgId
+	if orgId == nil && dbGroup != nil {
+		orgId = dbGroup.OrgId
+	}
+	this.assertScopeRefMatchesOrg(group.ScopeRef, orgId, vErrs)
+
+	_, err := this.assertGroupByID(ctx, *group.Id, group.ScopeRef, vErrs)
 	if err != nil {
 		return err
 	}
@@ -289,7 +301,7 @@ func (this *GroupServiceImpl) assertCorrectEtag(updatedEtag model.Etag, dbEtag m
 }
 
 func (this *GroupServiceImpl) assertGroupByDomain(ctx crud.Context, group *domain.Group, vErrs *ft.ValidationErrors) (dbGroup *domain.Group, err error) {
-	dbGroup, err = this.assertGroupByID(ctx, *group.Id, vErrs)
+	dbGroup, err = this.assertGroupByID(ctx, *group.Id, nil, vErrs)
 	if err != nil {
 		return nil, err
 	}
@@ -297,8 +309,11 @@ func (this *GroupServiceImpl) assertGroupByDomain(ctx crud.Context, group *domai
 	return dbGroup, err
 }
 
-func (this *GroupServiceImpl) assertGroupByID(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (dbGroup *domain.Group, err error) {
-	dbGroup, err = this.groupRepo.FindById(ctx, itGrp.GetGroupByIdQuery{Id: id})
+func (this *GroupServiceImpl) assertGroupByID(ctx crud.Context, id model.Id, scopeRef *model.Id, vErrs *ft.ValidationErrors) (dbGroup *domain.Group, err error) {
+	dbGroup, err = this.groupRepo.FindById(ctx, itGrp.GetGroupByIdQuery{
+		Id:       id,
+		ScopeRef: scopeRef,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -359,4 +374,13 @@ func (this *GroupServiceImpl) getGroupByIdFull(ctx crud.Context, query itGrp.Get
 		vErrs.Append("id", "group not found")
 	}
 	return
+}
+
+func (this *GroupServiceImpl) assertScopeRefMatchesOrg(scopeRef *model.Id, orgId *model.Id, vErrs *ft.ValidationErrors) {
+	if scopeRef == nil {
+		return
+	}
+	if orgId == nil || *scopeRef != *orgId {
+		vErrs.AppendNotAllowed("scopeRef", "scopeRef must match group's orgId")
+	}
 }
