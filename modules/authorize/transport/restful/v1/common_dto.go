@@ -26,7 +26,7 @@ func (this *TargetSummaryDto) FromTargetSummary(id model.Id, name *string) {
 // Organization summary
 type OrganizationSummaryDto struct {
 	Id          *model.Id `json:"id"`
-	DisplayName *string   `json:"name"`
+	DisplayName *string   `json:"displayName"`
 }
 
 func (this *OrganizationSummaryDto) FromOrganization(orgId *model.Id, displayName *string) {
