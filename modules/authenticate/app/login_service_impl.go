@@ -97,8 +97,8 @@ func (s *LoginServiceImpl) RefreshToken(ctx crud.Context, cmd it.RefreshTokenCom
 		return &it.RefreshTokenResult{ClientError: vErrs.ToClientError()}, nil
 	}
 
-	accessExpireSeconds := int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours) * 1)
-	refreshExpireSeconds := int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours) * 12)
+	accessExpireSeconds := int64(time.Hour.Seconds())
+	refreshExpireSeconds := int64((24 * 7) * time.Hour.Seconds())
 
 	accessToken, genErr := util.GenerateGJWToken(
 		s.configSvc.GetStr(coreConstants.TokenSecretKey),
@@ -234,8 +234,10 @@ func (s *LoginServiceImpl) updateAttemptStatus(ctx crud.Context, attempt *domain
 }
 
 func (s *LoginServiceImpl) buildAuthenticateResult(done bool, attempt *domain.LoginAttempt) *it.AuthenticateResult {
-	accessExpireSeconds := int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours) * 1)
-	refreshExpireSeconds := int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours) * 12)
+	// accessExpireSeconds := int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours) * 1)
+    // refreshExpireSeconds := int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours) * 12)
+	accessExpireSeconds := int64(time.Hour.Seconds())
+	refreshExpireSeconds := int64((24 * 7) * time.Hour.Seconds())
 
 	accessToken, _ := util.GenerateGJWToken(
 		s.configSvc.GetStr(coreConstants.TokenSecretKey),

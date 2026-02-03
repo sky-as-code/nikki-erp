@@ -12,7 +12,7 @@ func RequireAuthMiddleware() echo.MiddlewareFunc {
 			jwtToken := JwtFromContext(c.Request().Context())
 			userId := GetUserIdFromContext(c.Request().Context())
 			if jwtToken == "" || userId == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Token required or invalid")
+				return echo.NewHTTPError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 			}
 			return next(c)
 		}
