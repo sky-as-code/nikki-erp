@@ -24,8 +24,6 @@ const (
 	FieldEmail = "email"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
-	// FieldHierarchyID holds the string denoting the hierarchy_id field in the database.
-	FieldHierarchyID = "hierarchy_id"
 	// FieldIsOwner holds the string denoting the is_owner field in the database.
 	FieldIsOwner = "is_owner"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -40,6 +38,8 @@ const (
 	EdgeOrgs = "orgs"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
 	EdgeUserGroups = "user_groups"
+	// EdgeUserHierarchy holds the string denoting the user_hierarchy edge name in mutations.
+	EdgeUserHierarchy = "user_hierarchy"
 	// EdgeUserOrgs holds the string denoting the user_orgs edge name in mutations.
 	EdgeUserOrgs = "user_orgs"
 	// Table holds the table name of the user in the database.
@@ -49,13 +49,11 @@ const (
 	// GroupsInverseTable is the table name for the Group entity.
 	// It exists in this package in order to avoid circular dependency with the "group" package.
 	GroupsInverseTable = "ident_groups"
-	// HierarchyTable is the table that holds the hierarchy relation/edge.
-	HierarchyTable = "ident_users"
+	// HierarchyTable is the table that holds the hierarchy relation/edge. The primary key declared below.
+	HierarchyTable = "ident_user_hierarchy_rel"
 	// HierarchyInverseTable is the table name for the HierarchyLevel entity.
 	// It exists in this package in order to avoid circular dependency with the "hierarchylevel" package.
 	HierarchyInverseTable = "ident_hierarchy_levels"
-	// HierarchyColumn is the table column denoting the hierarchy relation/edge.
-	HierarchyColumn = "hierarchy_id"
 	// OrgsTable is the table that holds the orgs relation/edge. The primary key declared below.
 	OrgsTable = "ident_user_org_rel"
 	// OrgsInverseTable is the table name for the Organization entity.
@@ -68,6 +66,13 @@ const (
 	UserGroupsInverseTable = "ident_user_group_rel"
 	// UserGroupsColumn is the table column denoting the user_groups relation/edge.
 	UserGroupsColumn = "user_id"
+	// UserHierarchyTable is the table that holds the user_hierarchy relation/edge.
+	UserHierarchyTable = "ident_user_hierarchy_rel"
+	// UserHierarchyInverseTable is the table name for the UserHierarchy entity.
+	// It exists in this package in order to avoid circular dependency with the "userhierarchy" package.
+	UserHierarchyInverseTable = "ident_user_hierarchy_rel"
+	// UserHierarchyColumn is the table column denoting the user_hierarchy relation/edge.
+	UserHierarchyColumn = "user_id"
 	// UserOrgsTable is the table that holds the user_orgs relation/edge.
 	UserOrgsTable = "ident_user_org_rel"
 	// UserOrgsInverseTable is the table name for the UserOrg entity.
@@ -85,7 +90,6 @@ var Columns = []string{
 	FieldDisplayName,
 	FieldEmail,
 	FieldEtag,
-	FieldHierarchyID,
 	FieldIsOwner,
 	FieldStatus,
 	FieldUpdatedAt,
@@ -95,6 +99,9 @@ var (
 	// GroupsPrimaryKey and GroupsColumn2 are the table columns denoting the
 	// primary key for the groups relation (M2M).
 	GroupsPrimaryKey = []string{"user_id", "group_id"}
+	// HierarchyPrimaryKey and HierarchyColumn2 are the table columns denoting the
+	// primary key for the hierarchy relation (M2M).
+	HierarchyPrimaryKey = []string{"user_id", "hierarchy_id"}
 	// OrgsPrimaryKey and OrgsColumn2 are the table columns denoting the
 	// primary key for the orgs relation (M2M).
 	OrgsPrimaryKey = []string{"user_id", "org_id"}
@@ -148,11 +155,6 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEtag, opts...).ToFunc()
 }
 
-// ByHierarchyID orders the results by the hierarchy_id field.
-func ByHierarchyID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldHierarchyID, opts...).ToFunc()
-}
-
 // ByIsOwner orders the results by the is_owner field.
 func ByIsOwner(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsOwner, opts...).ToFunc()
@@ -182,10 +184,17 @@ func ByGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByHierarchyField orders the results by hierarchy field.
-func ByHierarchyField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByHierarchyCount orders the results by hierarchy count.
+func ByHierarchyCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newHierarchyStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newHierarchyStep(), opts...)
+	}
+}
+
+// ByHierarchy orders the results by hierarchy terms.
+func ByHierarchy(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newHierarchyStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -214,6 +223,20 @@ func ByUserGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 func ByUserGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newUserGroupsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByUserHierarchyCount orders the results by user_hierarchy count.
+func ByUserHierarchyCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newUserHierarchyStep(), opts...)
+	}
+}
+
+// ByUserHierarchy orders the results by user_hierarchy terms.
+func ByUserHierarchy(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newUserHierarchyStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -253,7 +276,7 @@ func newHierarchyStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(HierarchyInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, HierarchyTable, HierarchyColumn),
+		sqlgraph.Edge(sqlgraph.M2M, false, HierarchyTable, HierarchyPrimaryKey...),
 	)
 }
 
@@ -280,6 +303,19 @@ func newUserGroupsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UserGroupsInverseTable, UserGroupsColumn),
 		sqlgraph.Edge(sqlgraph.O2M, true, UserGroupsTable, UserGroupsColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewUserHierarchyStepNikki() *sqlgraph.Step {
+	return newUserHierarchyStep()
+}
+
+func newUserHierarchyStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(UserHierarchyInverseTable, UserHierarchyColumn),
+		sqlgraph.Edge(sqlgraph.O2M, true, UserHierarchyTable, UserHierarchyColumn),
 	)
 }
 

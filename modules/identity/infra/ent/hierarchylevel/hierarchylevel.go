@@ -38,19 +38,19 @@ const (
 	EdgeParent = "parent"
 	// EdgeOrg holds the string denoting the org edge name in mutations.
 	EdgeOrg = "org"
+	// EdgeUserHierarchy holds the string denoting the user_hierarchy edge name in mutations.
+	EdgeUserHierarchy = "user_hierarchy"
 	// Table holds the table name of the hierarchylevel in the database.
 	Table = "ident_hierarchy_levels"
 	// ChildrenTable is the table that holds the children relation/edge.
 	ChildrenTable = "ident_hierarchy_levels"
 	// ChildrenColumn is the table column denoting the children relation/edge.
 	ChildrenColumn = "parent_id"
-	// UsersTable is the table that holds the users relation/edge.
-	UsersTable = "ident_users"
+	// UsersTable is the table that holds the users relation/edge. The primary key declared below.
+	UsersTable = "ident_user_hierarchy_rel"
 	// UsersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UsersInverseTable = "ident_users"
-	// UsersColumn is the table column denoting the users relation/edge.
-	UsersColumn = "hierarchy_id"
 	// ParentTable is the table that holds the parent relation/edge.
 	ParentTable = "ident_hierarchy_levels"
 	// ParentColumn is the table column denoting the parent relation/edge.
@@ -62,6 +62,13 @@ const (
 	OrgInverseTable = "ident_organizations"
 	// OrgColumn is the table column denoting the org relation/edge.
 	OrgColumn = "org_id"
+	// UserHierarchyTable is the table that holds the user_hierarchy relation/edge.
+	UserHierarchyTable = "ident_user_hierarchy_rel"
+	// UserHierarchyInverseTable is the table name for the UserHierarchy entity.
+	// It exists in this package in order to avoid circular dependency with the "userhierarchy" package.
+	UserHierarchyInverseTable = "ident_user_hierarchy_rel"
+	// UserHierarchyColumn is the table column denoting the user_hierarchy relation/edge.
+	UserHierarchyColumn = "hierarchy_id"
 )
 
 // Columns holds all SQL columns for hierarchylevel fields.
@@ -77,6 +84,12 @@ var Columns = []string{
 	FieldUpdatedAt,
 }
 
+var (
+	// UsersPrimaryKey and UsersColumn2 are the table columns denoting the
+	// primary key for the users relation (M2M).
+	UsersPrimaryKey = []string{"user_id", "hierarchy_id"}
+)
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
@@ -90,6 +103,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// NameValidator is a validator for the "name" field. It is called by the builders before save.
+	NameValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the HierarchyLevel queries.
@@ -182,6 +197,20 @@ func ByOrgField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByUserHierarchyCount orders the results by user_hierarchy count.
+func ByUserHierarchyCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newUserHierarchyStep(), opts...)
+	}
+}
+
+// ByUserHierarchy orders the results by user_hierarchy terms.
+func ByUserHierarchy(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newUserHierarchyStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
 func NewChildrenStepNikki() *sqlgraph.Step {
 	return newChildrenStep()
@@ -204,7 +233,7 @@ func newUsersStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsersInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, true, UsersTable, UsersColumn),
+		sqlgraph.Edge(sqlgraph.M2M, true, UsersTable, UsersPrimaryKey...),
 	)
 }
 
@@ -231,5 +260,18 @@ func newOrgStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OrgInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, OrgTable, OrgColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewUserHierarchyStepNikki() *sqlgraph.Step {
+	return newUserHierarchyStep()
+}
+
+func newUserHierarchyStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(UserHierarchyInverseTable, UserHierarchyColumn),
+		sqlgraph.Edge(sqlgraph.O2M, true, UserHierarchyTable, UserHierarchyColumn),
 	)
 }

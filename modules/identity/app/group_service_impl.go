@@ -63,7 +63,7 @@ func (this *GroupServiceImpl) AddRemoveUsers(ctx crud.Context, cmd itGrp.AddRemo
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			return this.assertUserIdsExist(ctx, vErrs, "add", cmd.Add)
+			return this.assertUserIdsExist(ctx, vErrs, "add", cmd.Add, dbGroup.OrgId)
 		}).
 		End()
 
@@ -327,13 +327,14 @@ func (this *GroupServiceImpl) setGroupDefaults(group *domain.Group) {
 	group.SetDefaults()
 }
 
-func (this *GroupServiceImpl) assertUserIdsExist(ctx crud.Context, valErrs *ft.ValidationErrors, field string, userIds []string) error {
-	if len(userIds) == 0 {
+func (this *GroupServiceImpl) assertUserIdsExist(ctx crud.Context, valErrs *ft.ValidationErrors, field string, userIds []string, orgId *model.Id) error {
+	if len(userIds) == 0 || orgId == nil {
 		return nil
 	}
 
 	existCmd := &itUser.UserExistsMultiQuery{
-		Ids: userIds,
+		Ids:   userIds,
+		OrgId: orgId,
 	}
 	existRes := itUser.UserExistsMultiResult{}
 	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)

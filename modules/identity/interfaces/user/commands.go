@@ -5,6 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
+	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
@@ -24,6 +25,36 @@ func init() {
 	req = (*FindDirectApproverQuery)(nil)
 	util.Unused(req)
 }
+
+var getUserContextQueryType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "getUserContext",
+}
+
+type GetUserContextQuery struct {
+	UserId model.Id `json:"id" param:"id"`
+}
+
+func (GetUserContextQuery) CqrsRequestType() cqrs.RequestType {
+	return getUserContextQueryType
+}
+
+func (this GetUserContextQuery) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.UserId, true),
+	}
+	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type GetUserContextResult struct {
+	User        *domain.User                                       `json:"user,omitempty"`
+	Hierachies  []domain.HierarchyLevel                            `json:"hierarchies,omitempty"`
+	Orgs        []domain.Organization                              `json:"orgs,omitempty"`
+	Permissions *map[string][]itAuthorize.ResourceScopePermissions `json:"permissions,omitempty"`
+}
+
+type GetUserContextResultData = crud.OpResult[*GetUserContextResult]
 
 var createUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -121,7 +152,8 @@ var existsMultiCommandType = cqrs.RequestType{
 }
 
 type UserExistsMultiQuery struct {
-	Ids []model.Id `json:"ids"`
+	Ids   []model.Id `json:"ids"`
+	OrgId *model.Id  `json:"orgId"`
 }
 
 func (UserExistsMultiQuery) CqrsRequestType() cqrs.RequestType {

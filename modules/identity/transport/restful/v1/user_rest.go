@@ -149,3 +149,22 @@ func (this UserRest) UserExistsMulti(echoCtx echo.Context) (err error) {
 	)
 	return err
 }
+
+func (this UserRest) GetUserContext(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user context"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest(
+		echoCtx, this.UserSvc.GetUserContext,
+		func(request GetUserContextRequest) it.GetUserContextQuery {
+			return it.GetUserContextQuery(request)
+		},
+		func(result it.GetUserContextResultData) GetUserContextResponse {
+			return *result.Data
+		},
+		httpserver.JsonOk,
+	)
+	return err
+}

@@ -27,6 +27,7 @@ func initV1(route *echo.Group, userRest *v1.UserRest, groupRest *v1.GroupRest, o
 	route.GET("/users", userRest.SearchUsers)
 	route.PUT("/users/:id", userRest.UpdateUser)
 	route.POST("/users/exists", userRest.UserExistsMulti)
+	route.GET("/users/:id/context", userRest.GetUserContext)
 
 	route.POST("/groups", groupRest.CreateGroup)
 	route.DELETE("/groups/:id", groupRest.DeleteGroup)

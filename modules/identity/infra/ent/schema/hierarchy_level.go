@@ -38,7 +38,8 @@ func (HierarchyLevelMixin) Fields() []ent.Field {
 
 		field.String("etag"),
 
-		field.String("name"),
+		field.String("name").
+			NotEmpty(),
 
 		field.String("org_id").
 			Immutable(),
@@ -78,7 +79,8 @@ func (HierarchyLevel) Edges() []ent.Edge {
 			Ref("parent"),
 
 		edge.From("users", User.Type).
-			Ref("hierarchy"),
+			Ref("hierarchy").
+			Through("user_hierarchy", UserHierarchy.Type),
 
 		edge.To("parent", HierarchyLevel.Type).
 			Field("parent_id").

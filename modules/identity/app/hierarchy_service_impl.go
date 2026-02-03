@@ -48,6 +48,8 @@ func (this *HierarchyServiceImpl) AddRemoveUsers(ctx crud.Context, cmd itHier.Ad
 		}, nil
 	}
 
+	var hierarchy *domain.HierarchyLevel
+
 	flow := val.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *ft.ValidationErrors) error {
@@ -55,10 +57,11 @@ func (this *HierarchyServiceImpl) AddRemoveUsers(ctx crud.Context, cmd itHier.Ad
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			return this.assertCorrectHierarchyLevel(ctx, cmd.HierarchyId, cmd.Etag, vErrs)
+			hierarchy, err = this.assertCorrectHierarchyLevel(ctx, cmd.HierarchyId, cmd.Etag, vErrs)
+			return err
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			return this.assertUserIdsExist(ctx, vErrs, "add", cmd.Add)
+			return this.assertUserIdsExist(ctx, vErrs, "add", cmd.Add, hierarchy.OrgId)
 		}).
 		End()
 
@@ -288,13 +291,14 @@ func (this *HierarchyServiceImpl) assertUpdateRules(ctx crud.Context, hierarchyL
 
 //---------------------------------------------------------------------------------------------------------------------------------------------//
 
-func (this *HierarchyServiceImpl) assertUserIdsExist(ctx crud.Context, valErrs *ft.ValidationErrors, field string, userIds []string) error {
-	if len(userIds) == 0 {
+func (this *HierarchyServiceImpl) assertUserIdsExist(ctx crud.Context, valErrs *ft.ValidationErrors, field string, userIds []string, orgId *model.Id) error {
+	if len(userIds) == 0 || orgId == nil {
 		return nil
 	}
 
 	existCmd := &itUser.UserExistsMultiQuery{
-		Ids: userIds,
+		Ids:   userIds,
+		OrgId: orgId,
 	}
 	existRes := itUser.UserExistsMultiResult{}
 	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
@@ -321,18 +325,18 @@ func (this *HierarchyServiceImpl) sanitizeHierarchyLevel(hierarchyLevel *domain.
 	}
 }
 
-func (this *HierarchyServiceImpl) assertCorrectHierarchyLevel(ctx crud.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) error {
+func (this *HierarchyServiceImpl) assertCorrectHierarchyLevel(ctx crud.Context, id model.Id, etag model.Etag, vErrs *ft.ValidationErrors) (*domain.HierarchyLevel, error) {
 	dbHierarchyLevel, err := this.assertHierarchyLevelId(ctx, id, vErrs)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if dbHierarchyLevel != nil && *dbHierarchyLevel.Etag != etag {
 		vErrs.Append("etag", "invalid etag")
-		return nil
+		return nil, nil
 	}
 
-	return nil
+	return dbHierarchyLevel, nil
 }
 
 func (this *HierarchyServiceImpl) setGroupDefaults(hierarchyLevel *domain.HierarchyLevel) {

@@ -11,14 +11,13 @@ import (
 )
 
 type HierarchyLevelDto struct {
-	Id        string                  `json:"id"`
-	CreatedAt time.Time               `json:"createdAt"`
-	Children  []HierarchyLevelDto     `json:"children,omitempty"`
-	Etag      string                  `json:"etag"`
-	Name      string                  `json:"name"`
-	Org       *GetGroupRespOrg        `json:"org,omitempty"`
-	Parent    *GetParentRespHierarchy `json:"parent,omitempty"`
-	UpdatedAt *time.Time              `json:"updatedAt,omitempty"`
+	Id        string              `json:"id"`
+	CreatedAt time.Time           `json:"createdAt"`
+	Children  []HierarchyLevelDto `json:"children,omitempty"`
+	Etag      string              `json:"etag"`
+	Name      string              `json:"name"`
+	Org       *GetGroupRespOrg    `json:"org,omitempty"`
+	UpdatedAt *time.Time          `json:"updatedAt,omitempty"`
 }
 
 func (this *HierarchyLevelDto) FromHierarchyLevel(hierarchyLevel domain.HierarchyLevel) {
@@ -30,11 +29,6 @@ func (this *HierarchyLevelDto) FromHierarchyLevel(hierarchyLevel domain.Hierarch
 		this.Org.FromOrg(hierarchyLevel.Org)
 	}
 
-	if hierarchyLevel.ParentId != nil {
-		this.Parent = &GetParentRespHierarchy{}
-		this.Parent.FromHierarchy(hierarchyLevel.Parent)
-	}
-
 	if hierarchyLevel.Children != nil {
 		this.Children = array.Map(hierarchyLevel.Children, func(child domain.HierarchyLevel) HierarchyLevelDto {
 			childDto := HierarchyLevelDto{}
@@ -42,19 +36,6 @@ func (this *HierarchyLevelDto) FromHierarchyLevel(hierarchyLevel domain.Hierarch
 			return childDto
 		})
 	}
-}
-
-type GetParentRespHierarchy struct {
-	Id   model.Id `json:"id"`
-	Name string   `json:"name"`
-}
-
-func (this *GetParentRespHierarchy) FromHierarchy(hierarchy *domain.HierarchyLevel) {
-	if hierarchy == nil {
-		return
-	}
-	this.Id = *hierarchy.Id
-	this.Name = *hierarchy.Name
 }
 
 // Request/Response DTOs

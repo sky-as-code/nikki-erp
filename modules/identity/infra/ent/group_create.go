@@ -50,20 +50,6 @@ func (gc *GroupCreate) SetNillableDescription(s *string) *GroupCreate {
 	return gc
 }
 
-// SetEmail sets the "email" field.
-func (gc *GroupCreate) SetEmail(s string) *GroupCreate {
-	gc.mutation.SetEmail(s)
-	return gc
-}
-
-// SetNillableEmail sets the "email" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableEmail(s *string) *GroupCreate {
-	if s != nil {
-		gc.SetEmail(*s)
-	}
-	return gc
-}
-
 // SetEtag sets the "etag" field.
 func (gc *GroupCreate) SetEtag(s string) *GroupCreate {
 	gc.mutation.SetEtag(s)
@@ -229,10 +215,6 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := gc.mutation.Description(); ok {
 		_spec.SetField(group.FieldDescription, field.TypeString, value)
 		_node.Description = &value
-	}
-	if value, ok := gc.mutation.Email(); ok {
-		_spec.SetField(group.FieldEmail, field.TypeString, value)
-		_node.Email = &value
 	}
 	if value, ok := gc.mutation.Etag(); ok {
 		_spec.SetField(group.FieldEtag, field.TypeString, value)

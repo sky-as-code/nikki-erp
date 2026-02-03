@@ -30,14 +30,9 @@ func (GroupMixin) Fields() []ent.Field {
 			Nillable().
 			Comment("Group description"),
 
-		field.String("email").
-			Optional().
-			Nillable(),
-
 		field.String("etag"),
 
 		field.String("name").
-			Unique().
 			NotEmpty(),
 
 		field.String("org_id").
