@@ -5,11 +5,12 @@ meta {
 }
 
 get {
-  url: 
+  url: {{api_host}}/v1/identity/users/{{user_id}}/context
   body: none
   auth: inherit
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }
