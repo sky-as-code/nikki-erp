@@ -9,6 +9,5 @@ const (
 	ActionAddEntitlement    = "AddEntitlement"
 	ActionRemoveEntitlement = "RemoveEntitlement"
 
-	ActionGrant  = "Grant"
-	ActionRevoke = "Revoke"
+	ActionRespondGrantRequest  = "RespondGrantRequest"
 )

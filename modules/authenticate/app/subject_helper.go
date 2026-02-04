@@ -52,10 +52,15 @@ func (this *subjectHelper) assertUserExists(ctx context.Context, userId *string,
 	if err != nil {
 		return nil, err
 	}
-	// If not validation error but another client error
-	if !vErrs.MergeClientError(result.ClientError) {
-		return nil, result.ClientError
+
+	if result.Data == nil {
+		vErrs.Append("user: ", "user id not found or not active")
+		return nil, nil
 	}
+	// If not validation error but another client error
+	// if !vErrs.MergeClientError(result.ClientError) {
+	// 	return nil, result.ClientError
+	// }
 	if vErrs.Count() > 0 {
 		// E.g: From {"email": "user is archived"} to {"username": "user is archived"}
 		vErrs.RenameKey(field, "username")

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/sky-as-code/nikki-erp/common/util"
 )
 
 type contextKey struct {
@@ -14,23 +15,63 @@ type contextKey struct {
 // A private key for context that only this package can access. This is important
 // to prevent collisions between different context uses
 var jwtCtxKey = &contextKey{"CaptureBearerToken"}
+var userIdCtxKey = &contextKey{"UserId"}
+var deviceIdCtxKey = &contextKey{"DeviceId"}
+var rolesCtxKey = &contextKey{"Roles"}
 
-func CaptureBearerToken(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		authHeader := c.Request().Header.Get("authorization")
-		splitToken := strings.Split(authHeader, "Bearer ")
-		if len(splitToken) < 2 {
+// CaptureBearerToken captures and parses JWT token, sets user info to context
+func CaptureBearerToken(secretKey string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			authHeader := c.Request().Header.Get("Authorization")
+			if authHeader == "" {
+				return next(c)
+			}
+
+			parts := strings.Fields(authHeader)
+
+			if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+				return next(c)
+			}
+
+			tokenString := strings.TrimSpace(parts[1])
+			if tokenString == "" || strings.EqualFold(tokenString, "null") {
+				return next(c)
+			}
+
+			payload, err := util.ParseGJWToken(tokenString, secretKey)
+			if err != nil {
+				return next(c)
+			}
+
+			ctx := c.Request().Context()
+			ctx = context.WithValue(ctx, jwtCtxKey, tokenString)
+			ctx = context.WithValue(ctx, userIdCtxKey, payload.UserId)
+			ctx = context.WithValue(ctx, deviceIdCtxKey, payload.DId)
+			ctx = context.WithValue(ctx, rolesCtxKey, payload.Roles)
+
+			c.SetRequest(c.Request().WithContext(ctx))
 			return next(c)
 		}
-
-		jwt := splitToken[1]
-		ctx := context.WithValue(c.Request().Context(), jwtCtxKey, jwt)
-		c.SetRequest(c.Request().WithContext(ctx))
-		return next(c)
 	}
 }
 
 func JwtFromContext(ctx context.Context) string {
 	raw, _ := ctx.Value(jwtCtxKey).(string)
+	return raw
+}
+
+func GetUserIdFromContext(ctx context.Context) string {
+	raw, _ := ctx.Value(userIdCtxKey).(string)
+	return raw
+}
+
+func GetDeviceIdFromContext(ctx context.Context) string {
+	raw, _ := ctx.Value(deviceIdCtxKey).(string)
+	return raw
+}
+
+func GetRolesFromContext(ctx context.Context) []string {
+	raw, _ := ctx.Value(rolesCtxKey).([]string)
 	return raw
 }

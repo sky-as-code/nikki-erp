@@ -38,6 +38,7 @@ type AddRemoveUsersCommand struct {
 	Add     []model.Id `json:"add"`
 	Remove  []model.Id `json:"remove"`
 	Etag    model.Etag `json:"etag"`
+	ScopeRef *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
 func (AddRemoveUsersCommand) CqrsRequestType() cqrs.RequestType {
@@ -49,6 +50,7 @@ func (this *AddRemoveUsersCommand) Validate() ft.ValidationErrors {
 		model.IdValidateRule(&this.GroupId, true),
 		model.IdValidateRuleMulti(&this.Add, false, 0, model.MODEL_RULE_ID_ARR_MAX),
 		model.IdValidateRuleMulti(&this.Remove, false, 0, model.MODEL_RULE_ID_ARR_MAX),
+		model.IdPtrValidateRule(&this.ScopeRef, false),
 		val.Field(&this.Add, val.By(func(value any) error {
 			if this.Add == nil || this.Remove == nil || len(this.Remove) == 0 {
 				return nil
@@ -84,6 +86,7 @@ type CreateGroupCommand struct {
 	Name        string    `json:"name"`
 	Description *string   `json:"description"`
 	OrgId       *model.Id `json:"orgId"`
+	ScopeRef    *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
 func (CreateGroupCommand) CqrsRequestType() cqrs.RequestType {
@@ -104,6 +107,7 @@ type UpdateGroupCommand struct {
 	Description *string    `json:"description"`
 	Etag        model.Etag `json:"etag"`
 	OrgId       *model.Id  `json:"orgId"`
+	ScopeRef    *model.Id  `query:"scopeRef" json:"scopeRef"`
 }
 
 func (UpdateGroupCommand) CqrsRequestType() cqrs.RequestType {
@@ -120,6 +124,7 @@ var deleteGroupCommandType = cqrs.RequestType{
 
 type DeleteGroupCommand struct {
 	Id model.Id `json:"id" param:"id"`
+	ScopeRef *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
 func (DeleteGroupCommand) CqrsRequestType() cqrs.RequestType {
@@ -135,6 +140,7 @@ func (this DeleteGroupCommand) ToDomainModel() *domain.Group {
 func (this DeleteGroupCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.IdPtrValidateRule(&this.ScopeRef, false),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
@@ -156,6 +162,7 @@ var getGroupByIdQueryType = cqrs.RequestType{
 type GetGroupByIdQuery struct {
 	Id      model.Id `param:"id" json:"id"`
 	WithOrg bool     `query:"withOrg" json:"withOrg"`
+	ScopeRef *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
 func (GetGroupByIdQuery) CqrsRequestType() cqrs.RequestType {
@@ -165,6 +172,7 @@ func (GetGroupByIdQuery) CqrsRequestType() cqrs.RequestType {
 func (this GetGroupByIdQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.IdPtrValidateRule(&this.ScopeRef, false),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
@@ -182,6 +190,7 @@ var searchGroupsQueryType = cqrs.RequestType{
 type SearchGroupsQuery struct {
 	crud.SearchQuery
 	WithOrg bool `json:"withOrg" query:"withOrg"`
+	ScopeRef *model.Id `json:"scopeRef" query:"scopeRef"`
 }
 
 func (SearchGroupsQuery) CqrsRequestType() cqrs.RequestType {
@@ -197,6 +206,7 @@ func (this SearchGroupsQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		crud.PageIndexValidateRule(&this.Page),
 		crud.PageSizeValidateRule(&this.Size),
+		model.IdPtrValidateRule(&this.ScopeRef, false),
 	}
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }

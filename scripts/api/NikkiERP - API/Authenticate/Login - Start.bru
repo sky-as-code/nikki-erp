@@ -13,8 +13,12 @@ post {
 body:json {
   {
       "subjectType": "user",
-      "username": "{{email}}"
+      "username": "owj@nikki.com"
   }
+}
+
+vars:pre-request {
+  email: jaycee_hermiston@yahoo.com
 }
 
 script:post-response {
@@ -26,4 +30,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

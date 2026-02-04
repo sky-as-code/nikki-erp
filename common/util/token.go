@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -75,4 +76,38 @@ func GenerateGJWTokenWithTime(password string, deviceid string, userid string, i
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
 	return token.SignedString(signingKey)
+}
+
+func ParseGJWToken(tokenString string, password string) (*GJWTokenPayload, error) {
+	signingKey := []byte(password)
+
+	token, err := jwt.ParseWithClaims(tokenString, &GJWCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return signingKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*GJWCustomClaims)
+	if !ok || !token.Valid {
+		return nil, jwt.ErrTokenInvalidClaims
+	}
+
+	if claims.ExpiresAt == nil {
+		return nil, jwt.ErrTokenExpired
+	}
+
+	if claims.ExpiresAt.Time.Before(time.Now()) {
+		return nil, jwt.ErrTokenExpired
+	}
+
+	if claims.UserId == "" && claims.DId == "" {
+		return nil, errors.New("invalid token: missing identity")
+	}
+
+	return &GJWTokenPayload{
+		UserId: claims.UserId,
+		DId:    claims.DId,
+		Roles:  claims.Roles,
+	}, nil
 }

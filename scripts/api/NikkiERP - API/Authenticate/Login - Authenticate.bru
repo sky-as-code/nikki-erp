@@ -13,9 +13,14 @@ post {
 body:json {
   {
       "attemptId": "{{attemptId}}",
-      "username": "{{email}}",
-      "password": "{{password}}"
+      "passwords": {
+        "password": "Passwo0rd123"
+      }
   }
+}
+
+vars:pre-request {
+  email: owj@nikki.com
 }
 
 script:post-response {
@@ -27,4 +32,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

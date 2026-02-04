@@ -70,6 +70,9 @@ func (this *GroupEntRepository) DeleteHard(ctx crud.Context, param it.DeletePara
 func (this *GroupEntRepository) FindById(ctx crud.Context, param it.GetGroupByIdQuery) (*domain.Group, error) {
 	dbQuery := this.groupClient(ctx).Query().
 		Where(entGroup.ID(param.Id))
+	if param.ScopeRef != nil {
+		dbQuery = dbQuery.Where(entGroup.OrgIDEQ(string(*param.ScopeRef)))
+	}
 	if param.WithOrg != false {
 		dbQuery = dbQuery.WithOrg()
 	}
@@ -96,6 +99,9 @@ func (this *GroupEntRepository) Search(
 	query := this.groupClient(ctx).Query()
 	if param.WithOrg {
 		query = query.WithOrg()
+	}
+	if param.OrgId != nil {
+		query = query.Where(entGroup.OrgIDEQ(string(*param.OrgId)))
 	}
 
 	return db.Search(

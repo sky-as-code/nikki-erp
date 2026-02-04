@@ -67,7 +67,7 @@ func (this *AttemptServiceImpl) CreateLoginAttempt(ctx crud.Context, cmd it.Crea
 			return err
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			methods := []string{"password", "captcha", "otpCode"} // TODO: load method settings from DB
+			methods := []string{"password"} // TODO: load method settings from DB
 			if len(methods) == 0 {
 				return ft.ClientError{
 					Code:    "unauthorized",
@@ -262,13 +262,18 @@ func (this *AttemptServiceImpl) assertUserExists(ctx crud.Context, username stri
 		return nil, err
 	}
 	// If not validation error but another client error
-	if !vErrs.MergeClientError(result.ClientError) {
-		return nil, result.ClientError
-	}
-	if vErrs.Count() > 0 {
-		vErrs.RenameKey("email", "username")
+	// if !vErrs.MergeClientError(result.ClientError) {
+	// 	return nil, result.ClientError
+	// }
+	if result.Data == nil {
+		vErrs.Append("user: ", "username not found")
 		return nil, nil
 	}
+
+	// if vErrs.Count() > 0 {
+	// 	vErrs.RenameKey("email", "username")
+	// 	return nil, nil
+	// }
 	return &attemptSubject{
 		Id:       *result.Data.Id,
 		Name:     *result.Data.DisplayName,

@@ -16,6 +16,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	coreConstants "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
@@ -32,6 +33,7 @@ func NewLoginServiceImpl(param NewLoginServiceParam) it.LoginService {
 	return &LoginServiceImpl{
 		cqrsBus:             param.CqrsBus,
 		attemptSvc:          param.AttemptSvc,
+		configSvc:           param.ConfigSvc,
 		attemptDurationSecs: param.ConfigSvc.GetInt(c.LoginAttemptDurationSecs),
 		subjectHelper: subjectHelper{
 			cqrsBus: param.CqrsBus,
@@ -43,6 +45,7 @@ type LoginServiceImpl struct {
 	cqrsBus       cqrs.CqrsBus
 	attemptSvc    it.AttemptService
 	subjectHelper subjectHelper
+	configSvc     config.ConfigService
 
 	attemptDurationSecs int
 }
@@ -73,6 +76,64 @@ func (s *LoginServiceImpl) Authenticate(ctx crud.Context, cmd it.AuthenticateCom
 	}
 
 	return s.buildAuthenticateResult(done, attempt), nil
+}
+
+func (s *LoginServiceImpl) RefreshToken(ctx crud.Context, cmd it.RefreshTokenCommand) (result *it.RefreshTokenResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "refresh token"); e != nil {
+			err = e
+		}
+	}()
+
+	vErrs := ft.NewValidationErrors()
+	if len(cmd.RefreshToken) == 0 {
+		vErrs.Append("refreshToken", "required")
+		return &it.RefreshTokenResult{ClientError: vErrs.ToClientError()}, nil
+	}
+
+	payload, err := util.ParseGJWToken(cmd.RefreshToken, s.configSvc.GetStr(coreConstants.TokenSecretKey))
+	if err != nil {
+		vErrs.Append("refreshToken invalid token", err.Error())
+		return &it.RefreshTokenResult{ClientError: vErrs.ToClientError()}, nil
+	}
+
+	accessExpireSeconds := int64(time.Hour.Seconds())
+	refreshExpireSeconds := int64((24 * 7) * time.Hour.Seconds())
+
+	accessToken, genErr := util.GenerateGJWToken(
+		s.configSvc.GetStr(coreConstants.TokenSecretKey),
+		payload.DId,
+		payload.UserId,
+		"nikki-erp",
+		payload.Roles,
+		accessExpireSeconds,
+	)
+	if genErr != nil {
+		return nil, genErr
+	}
+
+	refreshToken, genErr := util.GenerateGJWToken(
+		s.configSvc.GetStr(coreConstants.TokenSecretKey),
+		payload.DId,
+		payload.UserId,
+		"nikki-erp",
+		payload.Roles,
+		refreshExpireSeconds,
+	)
+	if genErr != nil {
+		return nil, genErr
+	}
+
+	now := time.Now()
+	return &it.RefreshTokenResult{
+		Data: &it.RefreshTokenResultData{
+			AccessToken:           accessToken,
+			AccessTokenExpiresAt:  now.Add(time.Duration(accessExpireSeconds) * time.Second),
+			RefreshToken:          refreshToken,
+			RefreshTokenExpiresAt: now.Add(time.Duration(refreshExpireSeconds) * time.Second),
+		},
+		HasData: true,
+	}, nil
 }
 
 func (s *LoginServiceImpl) validateAuthInput(ctx crud.Context, cmd it.AuthenticateCommand) (*domain.LoginAttempt, *ft.ValidationErrors, error) {
@@ -173,15 +234,37 @@ func (s *LoginServiceImpl) updateAttemptStatus(ctx crud.Context, attempt *domain
 }
 
 func (s *LoginServiceImpl) buildAuthenticateResult(done bool, attempt *domain.LoginAttempt) *it.AuthenticateResult {
+	// accessExpireSeconds := int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours) * 1)
+    // refreshExpireSeconds := int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours) * 12)
+	accessExpireSeconds := int64(time.Hour.Seconds())
+	refreshExpireSeconds := int64((24 * 7) * time.Hour.Seconds())
+
+	accessToken, _ := util.GenerateGJWToken(
+		s.configSvc.GetStr(coreConstants.TokenSecretKey),
+		*attempt.DeviceIp,
+		*attempt.SubjectRef,
+		"nikki-erp",
+		attempt.Methods,
+		accessExpireSeconds,
+	)
+	refreshToken, _ := util.GenerateGJWToken(
+		s.configSvc.GetStr(coreConstants.TokenSecretKey),
+		*attempt.DeviceIp,
+		*attempt.SubjectRef,
+		"nikki-erp",
+		attempt.Methods,
+		refreshExpireSeconds,
+	)
 	if done {
+		now := time.Now()
 		return &it.AuthenticateResult{
 			Data: &it.AuthenticateResultData{
 				Done: true,
 				Data: &it.AuthenticateSuccessData{
-					AccessToken:           "TODO",
-					AccessTokenExpiredAt:  time.Now(),
-					RefreshToken:          "TODO",
-					RefreshTokenExpiredAt: time.Now(),
+					AccessToken:           accessToken,
+					AccessTokenExpiresAt:  now.Add(time.Duration(accessExpireSeconds) * time.Second),
+					RefreshToken:          refreshToken,
+					RefreshTokenExpiresAt: now.Add(time.Duration(refreshExpireSeconds) * time.Second),
 				},
 			},
 			HasData: true,

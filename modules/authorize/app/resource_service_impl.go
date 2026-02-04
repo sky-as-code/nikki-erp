@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/middleware"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
@@ -283,5 +284,36 @@ func (this *ResourceServiceImpl) assertConstraintViolated(resource *domain.Resou
 		}
 	}
 
+	return nil
+}
+
+func (this *ResourceServiceImpl) assertAuthorized(ctx crud.Context, actionName string, resourceName string, scopeRef string) error {
+	userId := middleware.GetUserIdFromContext(ctx.InnerContext())
+	if userId == "" {
+		return &fault.ClientError{
+			Code:    "403",
+			Details: "Unauthorized: Token required",
+		}
+	}
+
+	isAuthorized, err := this.authorizeService.IsAuthorized(ctx, itAuthorize.IsAuthorizedQuery{
+		ActionName:   actionName,
+		ResourceName: resourceName,
+		ScopeRef:     scopeRef,
+		SubjectType:  itAuthorize.SubjectTypeUser,
+		SubjectRef:   userId,
+	})
+	fault.PanicOnErr(err)
+
+	if isAuthorized.ClientError != nil {
+		return isAuthorized.ClientError
+	}
+
+	if isAuthorized.Decision == nil || *isAuthorized.Decision != itAuthorize.DecisionAllow {
+		return &fault.ClientError{
+			Code:    "403",
+			Details: itAuthorize.DecisionDeny,
+		}
+	}
 	return nil
 }

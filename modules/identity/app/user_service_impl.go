@@ -93,7 +93,7 @@ func (this *UserServiceImpl) CreateUser(ctx crud.Context, cmd it.CreateUserComma
 	result, err := crud.Create(ctx, crud.CreateParam[*domain.User, it.CreateUserCommand, it.CreateUserResult]{
 		Action:              "create user",
 		Command:             cmd,
-		AssertBusinessRules: this.assertUserUnique,
+		AssertBusinessRules: this.assertCreateRules,
 		RepoCreate:          this.userRepo.Create,
 		SetDefault:          this.setUserDefaults,
 		Sanitize:            this.sanitizeUser,
@@ -157,6 +157,10 @@ func (this *UserServiceImpl) assertUpdateRules(ctx crud.Context, updatedUser *do
 	return this.assertUserUnique(ctx, updatedUser, vErrs)
 }
 
+func (this *UserServiceImpl) assertCreateRules(ctx crud.Context, user *domain.User, vErrs *ft.ValidationErrors) error {
+	return this.assertUserUnique(ctx, user, vErrs)
+}
+
 func (this *UserServiceImpl) assertUserUnique(ctx crud.Context, user *domain.User, vErrs *ft.ValidationErrors) error {
 	if user.Email == nil {
 		return nil
@@ -173,7 +177,10 @@ func (this *UserServiceImpl) assertUserUnique(ctx crud.Context, user *domain.Use
 }
 
 func (this *UserServiceImpl) assertUserIdExists(ctx crud.Context, user *domain.User, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {
-	dbUser, err = this.userRepo.FindById(ctx, it.FindByIdParam{Id: *user.Id})
+	dbUser, err = this.userRepo.FindById(ctx, it.FindByIdParam{
+		Id:       *user.Id,
+		ScopeRef: user.ScopeRef,
+	})
 	if dbUser == nil {
 		vErrs.AppendNotFound("id", "user id")
 	}
@@ -376,6 +383,7 @@ func (this *UserServiceImpl) SearchUsers(ctx crud.Context, query it.SearchUsersQ
 				WithGroups:    query.WithGroups,
 				WithHierarchy: query.WithHierarchy,
 				WithOrgs:      query.WithOrgs,
+				OrgId:         query.ScopeRef,
 			})
 		},
 		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.SearchUsersResult {

@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
+	entOrganization "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -126,6 +127,9 @@ func (this *UserEntRepository) FindById(ctx crud.Context, param it.FindByIdParam
 	if param.Status != nil {
 		query = query.Where(entUser.StatusEQ(string(*param.Status)))
 	}
+	if param.ScopeRef != nil {
+		query = query.Where(entUser.HasOrgsWith(entOrganization.IDEQ(*param.ScopeRef)))
+	}
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
@@ -192,6 +196,9 @@ func (this *UserEntRepository) Search(
 
 	if param.WithOrgs {
 		query = query.WithOrgs()
+	}
+	if param.OrgId != nil {
+		query = query.Where(entUser.HasOrgsWith(entOrganization.IDEQ(*param.OrgId)))
 	}
 
 	return db.Search(

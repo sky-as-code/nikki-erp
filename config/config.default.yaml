@@ -50,6 +50,13 @@ CORE:
     CORS_HEADERS: "Accept,Authorization,Content-Type,Origin"
     # Allowed methods for Cross-Origin Resource Sharing
     CORS_METHODS: "OPTIONS,HEAD,GET,POST,PUT,PATCH,DELETE"
+  TOKEN:
+    # Secret key for JWT token signing and verification
+    # IMPORTANT: Override this in local.env or production environment
+    # DO NOT commit real secret keys to version control
+    SECRET_KEY: "your-secret-key-here-change-in-production"
+    # Token expiry time in hours
+    EXPIRY_HOURS: 24
 
 AUTHENTICATE:
   # Number of seconds before a login attempt expires

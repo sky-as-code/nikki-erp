@@ -10,6 +10,7 @@ func entToAttempt(dbAttempt *ent.LoginAttempt) *domain.LoginAttempt {
 	attempt := &domain.LoginAttempt{}
 	model.MustCopy(dbAttempt, attempt)
 
+	attempt.DeviceIp = dbAttempt.DeviceIP
 	return attempt
 }
 

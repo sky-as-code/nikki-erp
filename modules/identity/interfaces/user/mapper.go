@@ -14,6 +14,7 @@ func (this CreateUserCommand) ToDomainModel() *domain.User {
 func (this DeleteUserCommand) ToDomainModel() *domain.User {
 	user := &domain.User{}
 	user.Id = &this.Id
+	user.ScopeRef = this.ScopeRef
 	return user
 }
 

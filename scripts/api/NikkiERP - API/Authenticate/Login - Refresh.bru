@@ -1,0 +1,26 @@
+meta {
+  name: Login - Refresh
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{api_host}}/v1/authn/refresh
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "refreshToken" : "{{refreshToken}}"
+  }
+}
+
+vars:pre-request {
+  refreshToken: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1c2VyaWQiOiIwMUtGQjE0VEg5RjBQS0VYTVBWTTlZTTMwQyIsImRpZCI6IjEyNy4wLjAuMSIsInJvbGVzIjpbInBhc3N3b3JkIl0sImlzcyI6Im5pa2tpLWVycCIsImV4cCI6MTc2OTA1NzA0OSwiaWF0IjoxNzY5MDU2NzYxfQ.E6RD1iqBC2Z729Hm_ayChj1Xf-cGPQKQOb6zE0BzebfjxL4YJxVd7r9ozDBhzDHHmgBubSoHRgcweC8UJB3YZA
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

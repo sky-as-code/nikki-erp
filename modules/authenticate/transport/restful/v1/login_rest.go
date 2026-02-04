@@ -88,3 +88,22 @@ func (this LoginRest) Authenticate(echoCtx echo.Context) (err error) {
 	)
 	return err
 }
+
+func (this LoginRest) RefreshToken(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST refresh token"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest(
+		echoCtx, this.loginSvc.RefreshToken,
+		func(request RefreshTokenRequest) it.RefreshTokenCommand {
+			return it.RefreshTokenCommand(request)
+		},
+		func(result it.RefreshTokenResult) RefreshTokenResponse {
+			return RefreshTokenResponse(*result.Data)
+		},
+		httpserver.JsonOk,
+	)
+	return err
+}
