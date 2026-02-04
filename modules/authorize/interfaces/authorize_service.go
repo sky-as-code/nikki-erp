@@ -25,19 +25,6 @@ type AuthorizeService interface {
 	PermissionSnapshot(ctx crud.Context, query PermissionSnapshotQuery) (*PermissionSnapshotResult, error)
 }
 
-// IsAuthorizedQuery
-var isAuthorizedQueryType = cqrs.RequestType{
-	Module:    "authorize",
-	Submodule: "nil",
-	Action:    "isAuthorized",
-}
-
-func init() {
-	var req cqrs.Request
-	req = (*IsAuthorizedQuery)(nil)
-	util.Unused(req)
-}
-
 var isAuthorizedQueryType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "authorize",

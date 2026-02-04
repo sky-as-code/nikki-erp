@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/sky-as-code/nikki-erp/common/fault"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 )
 

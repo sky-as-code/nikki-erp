@@ -8,7 +8,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	commonMiddleware "github.com/sky-as-code/nikki-erp/common/middleware"
 	constants "github.com/sky-as-code/nikki-erp/modules/authorize/constants"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
 	authzMiddleware "github.com/sky-as-code/nikki-erp/modules/authorize/middleware"
 	v1 "github.com/sky-as-code/nikki-erp/modules/authorize/transport/restful/v1"
 )
