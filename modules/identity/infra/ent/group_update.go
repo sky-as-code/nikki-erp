@@ -51,26 +51,6 @@ func (gu *GroupUpdate) ClearDescription() *GroupUpdate {
 	return gu
 }
 
-// SetEmail sets the "email" field.
-func (gu *GroupUpdate) SetEmail(s string) *GroupUpdate {
-	gu.mutation.SetEmail(s)
-	return gu
-}
-
-// SetNillableEmail sets the "email" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableEmail(s *string) *GroupUpdate {
-	if s != nil {
-		gu.SetEmail(*s)
-	}
-	return gu
-}
-
-// ClearEmail clears the value of the "email" field.
-func (gu *GroupUpdate) ClearEmail() *GroupUpdate {
-	gu.mutation.ClearEmail()
-	return gu
-}
-
 // SetEtag sets the "etag" field.
 func (gu *GroupUpdate) SetEtag(s string) *GroupUpdate {
 	gu.mutation.SetEtag(s)
@@ -252,12 +232,6 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if gu.mutation.DescriptionCleared() {
 		_spec.ClearField(group.FieldDescription, field.TypeString)
 	}
-	if value, ok := gu.mutation.Email(); ok {
-		_spec.SetField(group.FieldEmail, field.TypeString, value)
-	}
-	if gu.mutation.EmailCleared() {
-		_spec.ClearField(group.FieldEmail, field.TypeString)
-	}
 	if value, ok := gu.mutation.Etag(); ok {
 		_spec.SetField(group.FieldEtag, field.TypeString, value)
 	}
@@ -383,26 +357,6 @@ func (guo *GroupUpdateOne) SetNillableDescription(s *string) *GroupUpdateOne {
 // ClearDescription clears the value of the "description" field.
 func (guo *GroupUpdateOne) ClearDescription() *GroupUpdateOne {
 	guo.mutation.ClearDescription()
-	return guo
-}
-
-// SetEmail sets the "email" field.
-func (guo *GroupUpdateOne) SetEmail(s string) *GroupUpdateOne {
-	guo.mutation.SetEmail(s)
-	return guo
-}
-
-// SetNillableEmail sets the "email" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableEmail(s *string) *GroupUpdateOne {
-	if s != nil {
-		guo.SetEmail(*s)
-	}
-	return guo
-}
-
-// ClearEmail clears the value of the "email" field.
-func (guo *GroupUpdateOne) ClearEmail() *GroupUpdateOne {
-	guo.mutation.ClearEmail()
 	return guo
 }
 
@@ -616,12 +570,6 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 	}
 	if guo.mutation.DescriptionCleared() {
 		_spec.ClearField(group.FieldDescription, field.TypeString)
-	}
-	if value, ok := guo.mutation.Email(); ok {
-		_spec.SetField(group.FieldEmail, field.TypeString, value)
-	}
-	if guo.mutation.EmailCleared() {
-		_spec.ClearField(group.FieldEmail, field.TypeString)
 	}
 	if value, ok := guo.mutation.Etag(); ok {
 		_spec.SetField(group.FieldEtag, field.TypeString, value)

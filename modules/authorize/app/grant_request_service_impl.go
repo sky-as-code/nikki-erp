@@ -11,11 +11,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	itGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_request"
-	itGrantResponse "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_response"
-	itPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/permission_history"
-	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
-	itRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
+	itGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_request"
+	itGrantResponse "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_response"
+	itPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/permission_history"
+	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role"
+	itRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role_suite"
 	itGroup "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
@@ -577,7 +577,9 @@ func (this *GrantRequestServiceImpl) determineInitialNotifications(ctx crud.Cont
 		return ownerUserIds, "You have a grant request to approve (group receiver)", nil
 	}
 
-	managerIds, err := this.findDirectApprover(ctx, *grantRequest.ReceiverId, vErrs)
+	// Temporary comment for refactoring relationship on Hierarchy and User from 1-N to N-N
+	// managerIds, err := this.findDirectApprover(ctx, *grantRequest.ReceiverId, vErrs)
+	managerIds := []string{}
 	fault.PanicOnErr(err)
 
 	if len(managerIds) > 0 {
@@ -587,33 +589,34 @@ func (this *GrantRequestServiceImpl) determineInitialNotifications(ctx crud.Cont
 	}
 }
 
-func (this *GrantRequestServiceImpl) findDirectApprover(ctx crud.Context, userId model.Id, vErrs *fault.ValidationErrors) ([]string, error) {
-	existCmd := &itUser.FindDirectApproverQuery{
-		Id: userId,
-	}
-	existRes := itUser.FindDirectApproverResult{}
+// Temporary comment for refactoring relationship on Hierarchy and User from 1-N to N-N
+// func (this *GrantRequestServiceImpl) findDirectApprover(ctx crud.Context, userId model.Id, vErrs *fault.ValidationErrors) ([]string, error) {
+// 	existCmd := &itUser.FindDirectApproverQuery{
+// 		Id: userId,
+// 	}
+// 	existRes := itUser.FindDirectApproverResult{}
 
-	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
-	fault.PanicOnErr(err)
+// 	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
+// 	fault.PanicOnErr(err)
 
-	if existRes.ClientError != nil {
-		vErrs.MergeClientError(existRes.ClientError)
-		return nil, nil
-	}
+// 	if existRes.ClientError != nil {
+// 		vErrs.MergeClientError(existRes.ClientError)
+// 		return nil, nil
+// 	}
 
-	if len(existRes.Data) == 0 {
-		return nil, nil
-	}
+// 	if len(existRes.Data) == 0 {
+// 		return nil, nil
+// 	}
 
-	var managerIds []string
-	for _, manager := range existRes.Data {
-		if manager.Id != nil {
-			managerIds = append(managerIds, string(*manager.Id))
-		}
-	}
+// 	var managerIds []string
+// 	for _, manager := range existRes.Data {
+// 		if manager.Id != nil {
+// 			managerIds = append(managerIds, string(*manager.Id))
+// 		}
+// 	}
 
-	return managerIds, nil
-}
+// 	return managerIds, nil
+// }
 
 func (this *GrantRequestServiceImpl) findOwner(ctx crud.Context, targetId string, targetType domain.GrantRequestTargetType, vErrs *fault.ValidationErrors) (*string, error) {
 	switch targetType {
@@ -789,10 +792,11 @@ func (this *GrantRequestServiceImpl) buildApprovalContext(ctx crud.Context, requ
 	fault.PanicOnErr(err)
 
 	var managerIds []string
-	if *request.ReceiverType == domain.ReceiverTypeUser {
-		managerIds, err = this.findDirectApprover(ctx, *request.ReceiverId, nil)
-		fault.PanicOnErr(err)
-	}
+	// Temporary comment for refactoring relationship on Hierarchy and User from 1-N to N-N
+	// if *request.ReceiverType == domain.ReceiverTypeUser {
+	// 	managerIds, err = this.findDirectApprover(ctx, *request.ReceiverId, nil)
+	// 	fault.PanicOnErr(err)
+	// }
 
 	return &domain.ApprovalContext{
 		Request:      request,

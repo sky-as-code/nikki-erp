@@ -80,15 +80,22 @@ func (this *UserEntRepository) Exists(ctx crud.Context, id model.Id) (bool, erro
 		Exist(ctx)
 }
 
-func (this *UserEntRepository) ExistsMulti(ctx crud.Context, ids []model.Id) (existing []model.Id, notExisting []model.Id, err error) {
-	dbEntities, err := this.userClient(ctx).Query().
-		Where(entUser.IDIn(ids...)).
+func (this *UserEntRepository) ExistsMulti(ctx crud.Context, ids []model.Id, orgId *model.Id) (existing []model.Id, notExisting []model.Id, err error) {
+	query := this.userClient(ctx).
+		Query().
+		Where(entUser.IDIn(ids...))
+
+	if orgId != nil {
+		query = query.Where(
+			entUser.HasOrgsWith(
+				entUser.IDEQ(*orgId),
+			),
+		)
+	}
+
+	dbEntities, err := query.
 		Select(entUser.FieldID).
 		All(ctx)
-
-	if err != nil {
-		return nil, nil, err
-	}
 
 	existing = array.Map(dbEntities, func(entity *ent.User) model.Id {
 		return entity.ID
@@ -149,19 +156,19 @@ func (this *UserEntRepository) FindByEmail(ctx crud.Context, param it.FindByEmai
 	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) FindByHierarchyId(ctx crud.Context, param it.FindByHierarchyIdParam) ([]domain.User, error) {
-	query := this.client.User.Query().
-		Where(entUser.HierarchyIDEQ(param.HierarchyId)).
-		WithHierarchy().
-		WithGroups().
-		WithOrgs()
+// func (this *UserEntRepository) FindByHierarchyId(ctx crud.Context, param it.FindByHierarchyIdParam) ([]domain.User, error) {
+// 	query := this.client.User.Query().
+// 		Where(entUser.HierarchyIDEQ(param.HierarchyId)).
+// 		WithHierarchy().
+// 		WithGroups().
+// 		WithOrgs()
 
-	if param.Status != nil {
-		query = query.Where(entUser.StatusEQ(string(*param.Status)))
-	}
+// 	if param.Status != nil {
+// 		query = query.Where(entUser.StatusEQ(string(*param.Status)))
+// 	}
 
-	return db.List(ctx, query, entToUsers)
-}
+// 	return db.List(ctx, query, entToUsers)
+// }
 
 // func (this *UserEntRepository)
 

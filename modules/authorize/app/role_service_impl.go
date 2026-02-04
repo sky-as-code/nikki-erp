@@ -15,11 +15,11 @@ import (
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	itEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
-	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
-	itGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_request"
-	itRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/revoke_request"
-	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role"
+	itEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement"
+	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement_assignment"
+	itGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_request"
+	itRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/revoke_request"
+	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role"
 )
 
 func NewRoleServiceImpl(

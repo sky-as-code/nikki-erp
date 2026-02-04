@@ -40,7 +40,17 @@ func initAuthorizeRest() error {
 			roleSuiteRest *v1.RoleSuiteRest,
 		) {
 			v1 := route.Group("/v1/authorize")
-			initV1(v1, actionRest, authorizedRest, entitlementRest, grantRequestRest, resourceRest, revokeRequestRest, roleRest, roleSuiteRest)
+			initV1(
+				v1,
+				actionRest,
+				authorizedRest,
+				entitlementRest,
+				grantRequestRest,
+				resourceRest,
+				revokeRequestRest,
+				roleRest,
+				roleSuiteRest,
+			)
 		})
 }
 
@@ -55,13 +65,13 @@ func initV1(
 	roleRest *v1.RoleRest,
 	roleSuiteRest *v1.RoleSuiteRest,
 ) {
+	route.POST("/is-authorized", authorizedRest.IsAuthorized)
+
 	route.POST("/actions", actionRest.CreateAction)
 	route.PUT("/actions/:id", actionRest.UpdateAction)
 	route.GET("/actions/:id", actionRest.GetActionById)
 	route.GET("/actions", actionRest.SearchActions)
 	route.DELETE("/actions/:id", actionRest.DeleteActionHard)
-
-	route.POST("/isauthorized", authorizedRest.IsAuthorized)
 
 	route.POST("/entitlements", entitlementRest.CreateEntitlement)
 	route.PUT("/entitlements/:id", entitlementRest.UpdateEntitlement)
@@ -72,7 +82,9 @@ func initV1(
 
 	route.POST("/grant-requests", grantRequestRest.CreateGrantRequest)
 	route.POST("/grant-requests/:id/cancel", grantRequestRest.CancelGrantRequest)
-	// delete api
+	route.DELETE("/grant-requests/:id", grantRequestRest.DeleteGrantRequest)
+	route.GET("/grant-requests/:id", grantRequestRest.GetGrantRequestById)
+	route.GET("/grant-requests", grantRequestRest.SearchGrantRequests)
 	route.POST("/grant-requests/:id/respond", grantRequestRest.RespondToGrantRequest)
 
 	route.POST("/resources", resourceRest.CreateResource)
@@ -100,13 +112,4 @@ func initV1(
 	route.DELETE("/role-suites/:id", roleSuiteRest.DeleteRoleSuite)
 	route.GET("/role-suites/:id", roleSuiteRest.GetRoleSuiteById)
 	route.GET("/role-suites", roleSuiteRest.SearchRoleSuites)
-
-	route.POST("/isauthorized", authorizedRest.IsAuthorized)
-
-	route.POST("/grant-requests", grantRequestRest.CreateGrantRequest)
-	route.POST("/grant-requests/:id/cancel", grantRequestRest.CancelGrantRequest)
-	route.DELETE("/grant-requests/:id", grantRequestRest.DeleteGrantRequest)
-	route.GET("/grant-requests/:id", grantRequestRest.GetGrantRequestById)
-	route.GET("/grant-requests", grantRequestRest.SearchGrantRequests)
-	route.POST("/grant-requests/:id/respond", grantRequestRest.RespondToGrantRequest)
 }

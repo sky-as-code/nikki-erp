@@ -53,6 +53,6 @@ func (this *UserHandler) UserExistsMulti(ctx context.Context, packet *cqrs.Reque
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.ExistsMulti)
 }
 
-func (this *UserHandler) FindDirectApprover(ctx context.Context, packet *cqrs.RequestPacket[it.FindDirectApproverQuery]) (*cqrs.Reply[it.FindDirectApproverResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.FindDirectApprover)
-}
+// func (this *UserHandler) FindDirectApprover(ctx context.Context, packet *cqrs.RequestPacket[it.FindDirectApproverQuery]) (*cqrs.Reply[it.FindDirectApproverResult], error) {
+// 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.FindDirectApprover)
+// }

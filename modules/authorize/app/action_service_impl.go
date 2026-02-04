@@ -9,8 +9,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
-	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/action"
+	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
 )
 
 func NewActionServiceImpl(

@@ -6,7 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/grant_request"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_request"
 )
 
 type GrantRequestDto struct {

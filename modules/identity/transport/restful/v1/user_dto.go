@@ -20,9 +20,9 @@ type UserDto struct {
 	Status      string     `json:"status"`
 	UpdatedAt   *time.Time `json:"updatedAt,omitempty"`
 
-	Groups    []GroupDto        `json:"groups,omitempty"`
-	Hierarchy HierarchyLevelDto `json:"hierarchy,omitempty"`
-	Orgs      []OrganizationDto `json:"orgs,omitempty"`
+	Groups    []GroupDto          `json:"groups,omitempty"`
+	Hierarchy []HierarchyLevelDto `json:"hierarchy,omitempty"`
+	Orgs      []OrganizationDto   `json:"orgs,omitempty"`
 }
 
 func (this *UserDto) FromUser(user domain.User) {
@@ -30,21 +30,17 @@ func (this *UserDto) FromUser(user domain.User) {
 	model.MustCopy(user.ModelBase, this)
 	model.MustCopy(user, this)
 
-	if user.Hierarchy != nil {
-		this.Hierarchy.FromHierarchyLevel(*user.Hierarchy)
-	}
-
 	this.Groups = array.Map(user.Groups, func(group domain.Group) GroupDto {
 		groupResp := GroupDto{}
 		groupResp.FromGroup(group)
 		return groupResp
 	})
 
-	// this.Hierarchies = array.Map(user.Hierarchies, func(hierarhy domain.HierarchyLevel) SearchUsersRespHierarchies {
-	// 	hierarhyResp := SearchUsersRespHierarchies{}
-	// 	hierarhyResp.FromHierarhy(hierarhy)
-	// 	return hierarhyResp
-	// })
+	this.Hierarchy = array.Map(user.Hierarchy, func(hierarchy domain.HierarchyLevel) HierarchyLevelDto {
+		hierarchyResp := HierarchyLevelDto{}
+		hierarchyResp.FromHierarchyLevel(hierarchy)
+		return hierarchyResp
+	})
 
 	this.Orgs = array.Map(user.Orgs, func(org domain.Organization) OrganizationDto {
 		orgResp := OrganizationDto{}
@@ -64,6 +60,9 @@ type DeleteUserResponse = httpserver.RestDeleteResponse
 
 type GetUserByIdRequest = it.GetUserByIdQuery
 type GetUserByIdResponse = UserDto
+
+type GetUserContextRequest = it.GetUserContextQuery
+type GetUserContextResponse = it.GetUserContextResult
 
 type SearchUsersRequest = it.SearchUsersQuery
 

@@ -7,7 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
 )
 
 type authorizeRestParams struct {
@@ -33,21 +33,6 @@ func (this AuthorizeRest) IsAuthorized(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-
-	// query := IsAuthorizedRequest{}
-	// err = echoCtx.Bind(&query)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// result, err := this.AuthorizeSvc.IsAuthorized(echoCtx.Request().Context(), query)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// response := IsAuthorizedResponse{}
-	// response.FromResult(result)
-	// return echoCtx.JSON(http.StatusOK, response)
 	err = httpserver.ServeRequest(
 		echoCtx,
 		this.AuthorizeSvc.IsAuthorized,

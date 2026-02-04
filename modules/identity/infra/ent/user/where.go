@@ -90,11 +90,6 @@ func Etag(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldEtag, v))
 }
 
-// HierarchyID applies equality check predicate on the "hierarchy_id" field. It's identical to HierarchyIDEQ.
-func HierarchyID(v string) predicate.User {
-	return predicate.User(sql.FieldEQ(FieldHierarchyID, v))
-}
-
 // IsOwner applies equality check predicate on the "is_owner" field. It's identical to IsOwnerEQ.
 func IsOwner(v bool) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldIsOwner, v))
@@ -420,81 +415,6 @@ func EtagContainsFold(v string) predicate.User {
 	return predicate.User(sql.FieldContainsFold(FieldEtag, v))
 }
 
-// HierarchyIDEQ applies the EQ predicate on the "hierarchy_id" field.
-func HierarchyIDEQ(v string) predicate.User {
-	return predicate.User(sql.FieldEQ(FieldHierarchyID, v))
-}
-
-// HierarchyIDNEQ applies the NEQ predicate on the "hierarchy_id" field.
-func HierarchyIDNEQ(v string) predicate.User {
-	return predicate.User(sql.FieldNEQ(FieldHierarchyID, v))
-}
-
-// HierarchyIDIn applies the In predicate on the "hierarchy_id" field.
-func HierarchyIDIn(vs ...string) predicate.User {
-	return predicate.User(sql.FieldIn(FieldHierarchyID, vs...))
-}
-
-// HierarchyIDNotIn applies the NotIn predicate on the "hierarchy_id" field.
-func HierarchyIDNotIn(vs ...string) predicate.User {
-	return predicate.User(sql.FieldNotIn(FieldHierarchyID, vs...))
-}
-
-// HierarchyIDGT applies the GT predicate on the "hierarchy_id" field.
-func HierarchyIDGT(v string) predicate.User {
-	return predicate.User(sql.FieldGT(FieldHierarchyID, v))
-}
-
-// HierarchyIDGTE applies the GTE predicate on the "hierarchy_id" field.
-func HierarchyIDGTE(v string) predicate.User {
-	return predicate.User(sql.FieldGTE(FieldHierarchyID, v))
-}
-
-// HierarchyIDLT applies the LT predicate on the "hierarchy_id" field.
-func HierarchyIDLT(v string) predicate.User {
-	return predicate.User(sql.FieldLT(FieldHierarchyID, v))
-}
-
-// HierarchyIDLTE applies the LTE predicate on the "hierarchy_id" field.
-func HierarchyIDLTE(v string) predicate.User {
-	return predicate.User(sql.FieldLTE(FieldHierarchyID, v))
-}
-
-// HierarchyIDContains applies the Contains predicate on the "hierarchy_id" field.
-func HierarchyIDContains(v string) predicate.User {
-	return predicate.User(sql.FieldContains(FieldHierarchyID, v))
-}
-
-// HierarchyIDHasPrefix applies the HasPrefix predicate on the "hierarchy_id" field.
-func HierarchyIDHasPrefix(v string) predicate.User {
-	return predicate.User(sql.FieldHasPrefix(FieldHierarchyID, v))
-}
-
-// HierarchyIDHasSuffix applies the HasSuffix predicate on the "hierarchy_id" field.
-func HierarchyIDHasSuffix(v string) predicate.User {
-	return predicate.User(sql.FieldHasSuffix(FieldHierarchyID, v))
-}
-
-// HierarchyIDIsNil applies the IsNil predicate on the "hierarchy_id" field.
-func HierarchyIDIsNil() predicate.User {
-	return predicate.User(sql.FieldIsNull(FieldHierarchyID))
-}
-
-// HierarchyIDNotNil applies the NotNil predicate on the "hierarchy_id" field.
-func HierarchyIDNotNil() predicate.User {
-	return predicate.User(sql.FieldNotNull(FieldHierarchyID))
-}
-
-// HierarchyIDEqualFold applies the EqualFold predicate on the "hierarchy_id" field.
-func HierarchyIDEqualFold(v string) predicate.User {
-	return predicate.User(sql.FieldEqualFold(FieldHierarchyID, v))
-}
-
-// HierarchyIDContainsFold applies the ContainsFold predicate on the "hierarchy_id" field.
-func HierarchyIDContainsFold(v string) predicate.User {
-	return predicate.User(sql.FieldContainsFold(FieldHierarchyID, v))
-}
-
 // IsOwnerEQ applies the EQ predicate on the "is_owner" field.
 func IsOwnerEQ(v bool) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldIsOwner, v))
@@ -658,7 +578,7 @@ func HasHierarchy() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, HierarchyTable, HierarchyColumn),
+			sqlgraph.Edge(sqlgraph.M2M, false, HierarchyTable, HierarchyPrimaryKey...),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
@@ -714,6 +634,29 @@ func HasUserGroups() predicate.User {
 func HasUserGroupsWith(preds ...predicate.UserGroup) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newUserGroupsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasUserHierarchy applies the HasEdge predicate on the "user_hierarchy" edge.
+func HasUserHierarchy() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, UserHierarchyTable, UserHierarchyColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasUserHierarchyWith applies the HasEdge predicate on the "user_hierarchy" edge with a given conditions (other predicates).
+func HasUserHierarchyWith(preds ...predicate.UserHierarchy) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newUserHierarchyStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

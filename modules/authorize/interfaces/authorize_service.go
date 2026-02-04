@@ -5,14 +5,31 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
+func init() {
+	var req cqrs.Request
+	req = (*IsAuthorizedQuery)(nil)
+	req = (*PermissionSnapshotQuery)(nil)
+	util.Unused(req)
+}
+
 type AuthorizeService interface {
 	IsAuthorized(ctx crud.Context, query IsAuthorizedQuery) (*IsAuthorizedResult, error)
+	PermissionSnapshot(ctx crud.Context, query PermissionSnapshotQuery) (*PermissionSnapshotResult, error)
+}
+
+// IsAuthorizedQuery
+var isAuthorizedQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "nil",
+	Action:    "isAuthorized",
 }
 
 type IsAuthorizedQuery struct {
@@ -21,6 +38,10 @@ type IsAuthorizedQuery struct {
 	ScopeRef     string               `json:"scopeRef"`
 	SubjectType  SubjectTypeAuthorize `json:"subjectType"`
 	SubjectRef   string               `json:"subjectRef"`
+}
+
+func (IsAuthorizedQuery) CqrsRequestType() cqrs.RequestType {
+	return isAuthorizedQueryType
 }
 
 func (this IsAuthorizedQuery) Validate() ft.ValidationErrors {
@@ -48,6 +69,49 @@ func (this IsAuthorizedQuery) Validate() ft.ValidationErrors {
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
+// PermissionSnapshotQuery
+var permissionSnapshotQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "nil",
+	Action:    "permissionSnapshot",
+}
+
+type PermissionSnapshotQuery struct {
+	UserId model.Id `json:"userId" param:"user_id"`
+}
+
+func (PermissionSnapshotQuery) CqrsRequestType() cqrs.RequestType {
+	return permissionSnapshotQueryType
+}
+
+func (this PermissionSnapshotQuery) Validate() ft.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.UserId, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type PermissionSnapshotResult struct {
+	Permissions map[string][]ResourceScopePermissions `json:"permissions"`
+	ClientError *ft.ClientError                       `json:"error,omitempty"`
+}
+
+func (this PermissionSnapshotResult) GetClientError() *ft.ClientError {
+	return this.ClientError
+}
+
+func (this PermissionSnapshotResult) GetHasData() bool {
+	return this.Permissions != nil
+}
+
+type ResourceScopePermissions struct {
+	ScopeType string   `json:"scopeType"`
+	ScopeRef  string   `json:"scopeRef"`
+	Actions   []string `json:"actions"`
+}
+
+// Helpers
 func SubjectTypeValidateRule(field *SubjectTypeAuthorize) *validator.FieldRules {
 	return validator.Field(field,
 		validator.NotEmpty,

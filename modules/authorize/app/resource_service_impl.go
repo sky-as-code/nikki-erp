@@ -9,17 +9,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
+	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
 )
 
-func NewResourceServiceImpl(resourceRepo it.ResourceRepository) it.ResourceService {
+func NewResourceServiceImpl(resourceRepo it.ResourceRepository, authorizeService itAuthorize.AuthorizeService) it.ResourceService {
 	return &ResourceServiceImpl{
-		resourceRepo: resourceRepo,
+		resourceRepo:     resourceRepo,
+		authorizeService: authorizeService,
 	}
 }
 
 type ResourceServiceImpl struct {
-	resourceRepo it.ResourceRepository
+	resourceRepo     it.ResourceRepository
+	authorizeService itAuthorize.AuthorizeService
 }
 
 func (this *ResourceServiceImpl) CreateResource(ctx crud.Context, cmd it.CreateResourceCommand) (*it.CreateResourceResult, error) {

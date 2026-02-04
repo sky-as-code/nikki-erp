@@ -208,6 +208,11 @@ func (hlc *HierarchyLevelCreate) check() error {
 	if _, ok := hlc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "HierarchyLevel.name"`)}
 	}
+	if v, ok := hlc.mutation.Name(); ok {
+		if err := hierarchylevel.NameValidator(v); err != nil {
+			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "HierarchyLevel.name": %w`, err)}
+		}
+	}
 	if _, ok := hlc.mutation.OrgID(); !ok {
 		return &ValidationError{Name: "org_id", err: errors.New(`ent: missing required field "HierarchyLevel.org_id"`)}
 	}
@@ -291,10 +296,10 @@ func (hlc *HierarchyLevelCreate) createSpec() (*HierarchyLevel, *sqlgraph.Create
 	}
 	if nodes := hlc.mutation.UsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
+			Rel:     sqlgraph.M2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: []string{hierarchylevel.UsersColumn},
+			Columns: hierarchylevel.UsersPrimaryKey,
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),

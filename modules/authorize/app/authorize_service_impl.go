@@ -5,20 +5,26 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/event"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize"
-	itAction "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/action"
-	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement_assignment"
-	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/resource"
-	itSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/role_suite"
+	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
+	itAction "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/action"
+	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement_assignment"
+	itResource "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
+	itSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role_suite"
 )
 
-func NewAuthorizeServiceImpl(eventBus event.EventBus, entAssignmentRepo itAssign.EntitlementAssignmentRepository, entSuiteRepo itSuite.RoleSuiteRepository, entActionRepo itAction.ActionRepository, entResourceRepo itResource.ResourceRepository) itAuthorize.AuthorizeService {
+func NewAuthorizeServiceImpl(
+	cqrsBus cqrs.CqrsBus,
+	entAssignmentRepo itAssign.EntitlementAssignmentRepository,
+	entSuiteRepo itSuite.RoleSuiteRepository,
+	entActionRepo itAction.ActionRepository,
+	entResourceRepo itResource.ResourceRepository,
+) itAuthorize.AuthorizeService {
 	return &AuthorizeServiceImpl{
-		eventBus:          eventBus,
+		cqrsBus:           cqrsBus,
 		entAssignmentRepo: entAssignmentRepo,
 		entSuiteRepo:      entSuiteRepo,
 		entActionRepo:     entActionRepo,
@@ -27,7 +33,7 @@ func NewAuthorizeServiceImpl(eventBus event.EventBus, entAssignmentRepo itAssign
 }
 
 type AuthorizeServiceImpl struct {
-	eventBus          event.EventBus
+	cqrsBus           cqrs.CqrsBus
 	entAssignmentRepo itAssign.EntitlementAssignmentRepository
 	entSuiteRepo      itSuite.RoleSuiteRepository
 	entActionRepo     itAction.ActionRepository
@@ -75,6 +81,46 @@ func (this *AuthorizeServiceImpl) IsAuthorized(ctx crud.Context, query itAuthori
 	default:
 		return this.isAuthorizedLegacy(ctx, query)
 	}
+}
+
+func (this *AuthorizeServiceImpl) PermissionSnapshot(ctx crud.Context, query itAuthorize.PermissionSnapshotQuery) (result *itAuthorize.PermissionSnapshotResult, err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "get permission snapshot"); e != nil {
+			err = e
+		}
+	}()
+
+	// userRes := &itUser.GetUserByIdResult{}
+	flow := validator.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *fault.ValidationErrors) error {
+			*vErrs = query.Validate()
+			return nil
+		}).
+		// Step(func(vErrs *fault.ValidationErrors) error {
+		// 	userRes, err = this.getUser(ctx, query.UserId, vErrs)
+		// 	return err
+		// }).
+		End()
+	fault.PanicOnErr(err)
+
+	if vErrs.Count() > 0 {
+		return &itAuthorize.PermissionSnapshotResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	assignments, err := this.entAssignmentRepo.FindViewsById(ctx, itAssign.FindViewsByIdParam{
+		SubjectType: itAuthorize.SubjectTypeUser.String(),
+		SubjectRef:  query.UserId,
+	})
+	fault.PanicOnErr(err)
+
+	permissions := this.buildPermissionsSnapshot(assignments)
+
+	return &itAuthorize.PermissionSnapshotResult{
+		Permissions: permissions,
+	}, nil
 }
 
 func (this *AuthorizeServiceImpl) isUserAuthorized(ctx crud.Context, query itAuthorize.IsAuthorizedQuery) (result *itAuthorize.IsAuthorizedResult, err error) {
@@ -270,3 +316,117 @@ func uniqueSubjects(subjects []itAuthorize.Subject) []itAuthorize.Subject {
 	}
 	return result
 }
+
+func (this *AuthorizeServiceImpl) buildPermissionsSnapshot(assignments []domain.EntitlementAssignment) map[string][]itAuthorize.ResourceScopePermissions {
+	permissions := make(map[string][]itAuthorize.ResourceScopePermissions)
+
+	for _, assignment := range assignments {
+		resourceName, actionName := resolveResourceAndAction(assignment)
+		if resourceName == "" {
+			continue
+		}
+
+		scopeType := domain.ResourceScopeTypeDomain.String()
+		if assignment.Entitlement != nil && assignment.Entitlement.Resource != nil && assignment.Entitlement.Resource.ScopeType != nil {
+			scopeType = string(*assignment.Entitlement.Resource.ScopeType)
+		}
+
+		scopeRef := ""
+		if assignment.ScopeRef != nil {
+			scopeRef = *assignment.ScopeRef
+		} else if assignment.Entitlement != nil && assignment.Entitlement.ScopeRef != nil {
+			scopeRef = *assignment.Entitlement.ScopeRef
+		}
+
+		resourcePerms := permissions[resourceName]
+		var scopePerms *itAuthorize.ResourceScopePermissions
+		for i := range resourcePerms {
+			if resourcePerms[i].ScopeType == scopeType && resourcePerms[i].ScopeRef == scopeRef {
+				scopePerms = &resourcePerms[i]
+				break
+			}
+		}
+
+		if scopePerms == nil {
+			resourcePerms = append(resourcePerms, itAuthorize.ResourceScopePermissions{
+				ScopeType: scopeType,
+				ScopeRef:  scopeRef,
+				Actions:   []string{},
+			})
+			scopePerms = &resourcePerms[len(resourcePerms)-1]
+		}
+
+		if actionName != "" {
+			hasWildcard := false
+			for _, a := range scopePerms.Actions {
+				if a == "*" {
+					hasWildcard = true
+					break
+				}
+			}
+			if actionName == "*" {
+				scopePerms.Actions = []string{"*"}
+			} else if !hasWildcard {
+				found := false
+				for _, existing := range scopePerms.Actions {
+					if existing == actionName {
+						found = true
+						break
+					}
+				}
+				if !found {
+					scopePerms.Actions = append(scopePerms.Actions, actionName)
+				}
+			}
+		}
+
+		permissions[resourceName] = resourcePerms
+	}
+
+	return permissions
+}
+
+// resolveResourceAndAction derives resource and action from assignment.
+// 1. *:*: resource nil, action nil → "*", "*"
+// 2. Resource:*: resource set, action nil → resource, "*"
+// 3. Resource:Action: both set → resource, action
+func resolveResourceAndAction(assignment domain.EntitlementAssignment) (resourceName, actionName string) {
+	hasResource := (assignment.ResourceName != nil && *assignment.ResourceName != "") ||
+		(assignment.Entitlement != nil && assignment.Entitlement.Resource != nil && assignment.Entitlement.Resource.Name != nil)
+	hasAction := assignment.ActionName != nil && *assignment.ActionName != ""
+
+	if !hasResource {
+		if !hasAction {
+			return "*", "*"
+		}
+		return "", ""
+	}
+
+	if assignment.ResourceName != nil && *assignment.ResourceName != "" {
+		resourceName = *assignment.ResourceName
+	} else {
+		resourceName = *assignment.Entitlement.Resource.Name
+	}
+
+	if hasAction {
+		actionName = *assignment.ActionName
+	} else {
+		actionName = "*"
+	}
+	return resourceName, actionName
+}
+
+// func (this *AuthorizeServiceImpl) getUser(ctx crud.Context, userId model.Id, vErrs *fault.ValidationErrors) (*itUser.GetUserByIdResult, error) {
+// 	userRes := &itUser.GetUserByIdResult{}
+// 	err := this.cqrsBus.Request(ctx, itUser.GetUserByIdQuery{Id: userId}, &userRes)
+// 	fault.PanicOnErr(err)
+
+// 	if userRes.ClientError != nil {
+// 		if !vErrs.MergeClientError(userRes.ClientError) {
+// 			vErrs.AppendNotFound("userId", "user")
+// 		}
+// 		return nil, nil
+// 	}
+
+// 	return userRes, nil
+// }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement"
 )
 
 func NewEntitlementHandler(entitlementSvc it.EntitlementService) *EntitlementHandler {

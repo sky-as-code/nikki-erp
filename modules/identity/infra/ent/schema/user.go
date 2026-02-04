@@ -39,10 +39,6 @@ func (UserMixin) Fields() []ent.Field {
 
 		field.String("etag"),
 
-		field.String("hierarchy_id").
-			Optional().
-			Nillable(),
-
 		field.Bool("is_owner").
 			Optional().
 			Immutable().
@@ -78,11 +74,7 @@ func (User) Edges() []ent.Edge {
 			Through("user_groups", UserGroup.Type),
 
 		edge.To("hierarchy", HierarchyLevel.Type).
-			Field("hierarchy_id").
-			Unique().
-			Annotations(entsql.Annotation{
-				OnDelete: entsql.SetNull,
-			}),
+			Through("user_hierarchy", UserHierarchy.Type),
 
 		edge.To("orgs", Organization.Type).
 			Through("user_orgs", UserOrg.Type),

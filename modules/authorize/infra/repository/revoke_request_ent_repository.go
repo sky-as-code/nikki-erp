@@ -13,7 +13,7 @@ import (
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/revokerequest"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/revoke_request"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/revoke_request"
 )
 
 func NewRevokeRequestEntRepository(client *ent.Client) it.RevokeRequestRepository {

@@ -12,7 +12,7 @@ import (
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	ent "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent"
 	entEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/entitlement"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement"
 )
 
 func NewEntitlementEntRepository(client *ent.Client) it.EntitlementRepository {

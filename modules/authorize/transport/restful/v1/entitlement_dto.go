@@ -6,7 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/authorize/entitlement"
+	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement"
 )
 
 type EntitlementDto struct {
