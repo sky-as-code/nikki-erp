@@ -68,6 +68,7 @@ func initV1(
 	protected.GET("/users", userRest.SearchUsers, mwUserView)
 	protected.PUT("/users/:id", userRest.UpdateUser, mwUserUpdate)
 	protected.POST("/users/exists", userRest.UserExistsMulti, mwUserView)
+	route.GET("/users/context", userRest.GetUserContext)
 
 	protected.POST("/groups", groupRest.CreateGroup, mwGroupCreate)
 	protected.DELETE("/groups/:id", groupRest.DeleteGroup, mwGroupDelete)
