@@ -125,6 +125,14 @@ func (pc *ProductCreate) SetUnitID(s string) *ProductCreate {
 	return pc
 }
 
+// SetNillableUnitID sets the "unit_id" field if the given value is not nil.
+func (pc *ProductCreate) SetNillableUnitID(s *string) *ProductCreate {
+	if s != nil {
+		pc.SetUnitID(*s)
+	}
+	return pc
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (pc *ProductCreate) SetUpdatedAt(t time.Time) *ProductCreate {
 	pc.mutation.SetUpdatedAt(t)
@@ -256,12 +264,6 @@ func (pc *ProductCreate) check() error {
 	}
 	if _, ok := pc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Product.status"`)}
-	}
-	if _, ok := pc.mutation.UnitID(); !ok {
-		return &ValidationError{Name: "unit_id", err: errors.New(`ent: missing required field "Product.unit_id"`)}
-	}
-	if len(pc.mutation.UnitIDs()) == 0 {
-		return &ValidationError{Name: "unit", err: errors.New(`ent: missing required edge "Product.unit"`)}
 	}
 	return nil
 }
@@ -400,7 +402,7 @@ func (pc *ProductCreate) createSpec() (*Product, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.UnitID = nodes[0]
+		_node.UnitID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

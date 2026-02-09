@@ -56,6 +56,12 @@ func (avu *AttributeValueUpdate) SetValueText(mj model.LangJson) *AttributeValue
 	return avu
 }
 
+// ClearValueText clears the value of the "value_text" field.
+func (avu *AttributeValueUpdate) ClearValueText() *AttributeValueUpdate {
+	avu.mutation.ClearValueText()
+	return avu
+}
+
 // SetValueNumber sets the "value_number" field.
 func (avu *AttributeValueUpdate) SetValueNumber(f float64) *AttributeValueUpdate {
 	avu.mutation.ResetValueNumber()
@@ -77,6 +83,12 @@ func (avu *AttributeValueUpdate) AddValueNumber(f float64) *AttributeValueUpdate
 	return avu
 }
 
+// ClearValueNumber clears the value of the "value_number" field.
+func (avu *AttributeValueUpdate) ClearValueNumber() *AttributeValueUpdate {
+	avu.mutation.ClearValueNumber()
+	return avu
+}
+
 // SetValueBool sets the "value_bool" field.
 func (avu *AttributeValueUpdate) SetValueBool(b bool) *AttributeValueUpdate {
 	avu.mutation.SetValueBool(b)
@@ -91,6 +103,12 @@ func (avu *AttributeValueUpdate) SetNillableValueBool(b *bool) *AttributeValueUp
 	return avu
 }
 
+// ClearValueBool clears the value of the "value_bool" field.
+func (avu *AttributeValueUpdate) ClearValueBool() *AttributeValueUpdate {
+	avu.mutation.ClearValueBool()
+	return avu
+}
+
 // SetValueRef sets the "value_ref" field.
 func (avu *AttributeValueUpdate) SetValueRef(s string) *AttributeValueUpdate {
 	avu.mutation.SetValueRef(s)
@@ -102,6 +120,12 @@ func (avu *AttributeValueUpdate) SetNillableValueRef(s *string) *AttributeValueU
 	if s != nil {
 		avu.SetValueRef(*s)
 	}
+	return avu
+}
+
+// ClearValueRef clears the value of the "value_ref" field.
+func (avu *AttributeValueUpdate) ClearValueRef() *AttributeValueUpdate {
+	avu.mutation.ClearValueRef()
 	return avu
 }
 
@@ -237,17 +261,29 @@ func (avu *AttributeValueUpdate) sqlSave(ctx context.Context) (n int, err error)
 	if value, ok := avu.mutation.ValueText(); ok {
 		_spec.SetField(attributevalue.FieldValueText, field.TypeJSON, value)
 	}
+	if avu.mutation.ValueTextCleared() {
+		_spec.ClearField(attributevalue.FieldValueText, field.TypeJSON)
+	}
 	if value, ok := avu.mutation.ValueNumber(); ok {
 		_spec.SetField(attributevalue.FieldValueNumber, field.TypeFloat64, value)
 	}
 	if value, ok := avu.mutation.AddedValueNumber(); ok {
 		_spec.AddField(attributevalue.FieldValueNumber, field.TypeFloat64, value)
 	}
+	if avu.mutation.ValueNumberCleared() {
+		_spec.ClearField(attributevalue.FieldValueNumber, field.TypeFloat64)
+	}
 	if value, ok := avu.mutation.ValueBool(); ok {
 		_spec.SetField(attributevalue.FieldValueBool, field.TypeBool, value)
 	}
+	if avu.mutation.ValueBoolCleared() {
+		_spec.ClearField(attributevalue.FieldValueBool, field.TypeBool)
+	}
 	if value, ok := avu.mutation.ValueRef(); ok {
 		_spec.SetField(attributevalue.FieldValueRef, field.TypeString, value)
+	}
+	if avu.mutation.ValueRefCleared() {
+		_spec.ClearField(attributevalue.FieldValueRef, field.TypeString)
 	}
 	if value, ok := avu.mutation.VariantCount(); ok {
 		_spec.SetField(attributevalue.FieldVariantCount, field.TypeInt, value)
@@ -349,6 +385,12 @@ func (avuo *AttributeValueUpdateOne) SetValueText(mj model.LangJson) *AttributeV
 	return avuo
 }
 
+// ClearValueText clears the value of the "value_text" field.
+func (avuo *AttributeValueUpdateOne) ClearValueText() *AttributeValueUpdateOne {
+	avuo.mutation.ClearValueText()
+	return avuo
+}
+
 // SetValueNumber sets the "value_number" field.
 func (avuo *AttributeValueUpdateOne) SetValueNumber(f float64) *AttributeValueUpdateOne {
 	avuo.mutation.ResetValueNumber()
@@ -370,6 +412,12 @@ func (avuo *AttributeValueUpdateOne) AddValueNumber(f float64) *AttributeValueUp
 	return avuo
 }
 
+// ClearValueNumber clears the value of the "value_number" field.
+func (avuo *AttributeValueUpdateOne) ClearValueNumber() *AttributeValueUpdateOne {
+	avuo.mutation.ClearValueNumber()
+	return avuo
+}
+
 // SetValueBool sets the "value_bool" field.
 func (avuo *AttributeValueUpdateOne) SetValueBool(b bool) *AttributeValueUpdateOne {
 	avuo.mutation.SetValueBool(b)
@@ -384,6 +432,12 @@ func (avuo *AttributeValueUpdateOne) SetNillableValueBool(b *bool) *AttributeVal
 	return avuo
 }
 
+// ClearValueBool clears the value of the "value_bool" field.
+func (avuo *AttributeValueUpdateOne) ClearValueBool() *AttributeValueUpdateOne {
+	avuo.mutation.ClearValueBool()
+	return avuo
+}
+
 // SetValueRef sets the "value_ref" field.
 func (avuo *AttributeValueUpdateOne) SetValueRef(s string) *AttributeValueUpdateOne {
 	avuo.mutation.SetValueRef(s)
@@ -395,6 +449,12 @@ func (avuo *AttributeValueUpdateOne) SetNillableValueRef(s *string) *AttributeVa
 	if s != nil {
 		avuo.SetValueRef(*s)
 	}
+	return avuo
+}
+
+// ClearValueRef clears the value of the "value_ref" field.
+func (avuo *AttributeValueUpdateOne) ClearValueRef() *AttributeValueUpdateOne {
+	avuo.mutation.ClearValueRef()
 	return avuo
 }
 
@@ -560,17 +620,29 @@ func (avuo *AttributeValueUpdateOne) sqlSave(ctx context.Context) (_node *Attrib
 	if value, ok := avuo.mutation.ValueText(); ok {
 		_spec.SetField(attributevalue.FieldValueText, field.TypeJSON, value)
 	}
+	if avuo.mutation.ValueTextCleared() {
+		_spec.ClearField(attributevalue.FieldValueText, field.TypeJSON)
+	}
 	if value, ok := avuo.mutation.ValueNumber(); ok {
 		_spec.SetField(attributevalue.FieldValueNumber, field.TypeFloat64, value)
 	}
 	if value, ok := avuo.mutation.AddedValueNumber(); ok {
 		_spec.AddField(attributevalue.FieldValueNumber, field.TypeFloat64, value)
 	}
+	if avuo.mutation.ValueNumberCleared() {
+		_spec.ClearField(attributevalue.FieldValueNumber, field.TypeFloat64)
+	}
 	if value, ok := avuo.mutation.ValueBool(); ok {
 		_spec.SetField(attributevalue.FieldValueBool, field.TypeBool, value)
 	}
+	if avuo.mutation.ValueBoolCleared() {
+		_spec.ClearField(attributevalue.FieldValueBool, field.TypeBool)
+	}
 	if value, ok := avuo.mutation.ValueRef(); ok {
 		_spec.SetField(attributevalue.FieldValueRef, field.TypeString, value)
+	}
+	if avuo.mutation.ValueRefCleared() {
+		_spec.ClearField(attributevalue.FieldValueRef, field.TypeString)
 	}
 	if value, ok := avuo.mutation.VariantCount(); ok {
 		_spec.SetField(attributevalue.FieldVariantCount, field.TypeInt, value)

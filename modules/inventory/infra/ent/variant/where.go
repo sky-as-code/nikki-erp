@@ -81,7 +81,7 @@ func Etag(v string) predicate.Variant {
 }
 
 // ProposedPrice applies equality check predicate on the "proposed_price" field. It's identical to ProposedPriceEQ.
-func ProposedPrice(v int) predicate.Variant {
+func ProposedPrice(v float64) predicate.Variant {
 	return predicate.Variant(sql.FieldEQ(FieldProposedPrice, v))
 }
 
@@ -286,42 +286,42 @@ func EtagContainsFold(v string) predicate.Variant {
 }
 
 // ProposedPriceEQ applies the EQ predicate on the "proposed_price" field.
-func ProposedPriceEQ(v int) predicate.Variant {
+func ProposedPriceEQ(v float64) predicate.Variant {
 	return predicate.Variant(sql.FieldEQ(FieldProposedPrice, v))
 }
 
 // ProposedPriceNEQ applies the NEQ predicate on the "proposed_price" field.
-func ProposedPriceNEQ(v int) predicate.Variant {
+func ProposedPriceNEQ(v float64) predicate.Variant {
 	return predicate.Variant(sql.FieldNEQ(FieldProposedPrice, v))
 }
 
 // ProposedPriceIn applies the In predicate on the "proposed_price" field.
-func ProposedPriceIn(vs ...int) predicate.Variant {
+func ProposedPriceIn(vs ...float64) predicate.Variant {
 	return predicate.Variant(sql.FieldIn(FieldProposedPrice, vs...))
 }
 
 // ProposedPriceNotIn applies the NotIn predicate on the "proposed_price" field.
-func ProposedPriceNotIn(vs ...int) predicate.Variant {
+func ProposedPriceNotIn(vs ...float64) predicate.Variant {
 	return predicate.Variant(sql.FieldNotIn(FieldProposedPrice, vs...))
 }
 
 // ProposedPriceGT applies the GT predicate on the "proposed_price" field.
-func ProposedPriceGT(v int) predicate.Variant {
+func ProposedPriceGT(v float64) predicate.Variant {
 	return predicate.Variant(sql.FieldGT(FieldProposedPrice, v))
 }
 
 // ProposedPriceGTE applies the GTE predicate on the "proposed_price" field.
-func ProposedPriceGTE(v int) predicate.Variant {
+func ProposedPriceGTE(v float64) predicate.Variant {
 	return predicate.Variant(sql.FieldGTE(FieldProposedPrice, v))
 }
 
 // ProposedPriceLT applies the LT predicate on the "proposed_price" field.
-func ProposedPriceLT(v int) predicate.Variant {
+func ProposedPriceLT(v float64) predicate.Variant {
 	return predicate.Variant(sql.FieldLT(FieldProposedPrice, v))
 }
 
 // ProposedPriceLTE applies the LTE predicate on the "proposed_price" field.
-func ProposedPriceLTE(v int) predicate.Variant {
+func ProposedPriceLTE(v float64) predicate.Variant {
 	return predicate.Variant(sql.FieldLTE(FieldProposedPrice, v))
 }
 

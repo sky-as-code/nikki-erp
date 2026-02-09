@@ -24,8 +24,10 @@ const (
 	FieldDisplayName = "display_name"
 	// FieldEnumValueSort holds the string denoting the enum_value_sort field in the database.
 	FieldEnumValueSort = "enum_value_sort"
-	// FieldEnumValue holds the string denoting the enum_value field in the database.
-	FieldEnumValue = "enum_value"
+	// FieldEnumTextValue holds the string denoting the enum_text_value field in the database.
+	FieldEnumTextValue = "enum_text_value"
+	// FieldEnumNumberValue holds the string denoting the enum_number_value field in the database.
+	FieldEnumNumberValue = "enum_number_value"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
 	// FieldGroupID holds the string denoting the group_id field in the database.
@@ -79,7 +81,8 @@ var Columns = []string{
 	FieldDataType,
 	FieldDisplayName,
 	FieldEnumValueSort,
-	FieldEnumValue,
+	FieldEnumTextValue,
+	FieldEnumNumberValue,
 	FieldEtag,
 	FieldGroupID,
 	FieldIsEnum,

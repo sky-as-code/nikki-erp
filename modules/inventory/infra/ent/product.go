@@ -39,7 +39,7 @@ type Product struct {
 	// ThumbnailURL holds the value of the "thumbnail_url" field.
 	ThumbnailURL *string `json:"thumbnail_url,omitempty"`
 	// UnitID holds the value of the "unit_id" field.
-	UnitID string `json:"unit_id,omitempty"`
+	UnitID *string `json:"unit_id,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -198,7 +198,8 @@ func (pr *Product) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field unit_id", values[i])
 			} else if value.Valid {
-				pr.UnitID = value.String
+				pr.UnitID = new(string)
+				*pr.UnitID = value.String
 			}
 		case product.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -296,8 +297,10 @@ func (pr *Product) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("unit_id=")
-	builder.WriteString(pr.UnitID)
+	if v := pr.UnitID; v != nil {
+		builder.WriteString("unit_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	if v := pr.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")
