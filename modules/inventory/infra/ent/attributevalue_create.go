@@ -69,15 +69,39 @@ func (avc *AttributeValueCreate) SetValueNumber(f float64) *AttributeValueCreate
 	return avc
 }
 
+// SetNillableValueNumber sets the "value_number" field if the given value is not nil.
+func (avc *AttributeValueCreate) SetNillableValueNumber(f *float64) *AttributeValueCreate {
+	if f != nil {
+		avc.SetValueNumber(*f)
+	}
+	return avc
+}
+
 // SetValueBool sets the "value_bool" field.
 func (avc *AttributeValueCreate) SetValueBool(b bool) *AttributeValueCreate {
 	avc.mutation.SetValueBool(b)
 	return avc
 }
 
+// SetNillableValueBool sets the "value_bool" field if the given value is not nil.
+func (avc *AttributeValueCreate) SetNillableValueBool(b *bool) *AttributeValueCreate {
+	if b != nil {
+		avc.SetValueBool(*b)
+	}
+	return avc
+}
+
 // SetValueRef sets the "value_ref" field.
 func (avc *AttributeValueCreate) SetValueRef(s string) *AttributeValueCreate {
 	avc.mutation.SetValueRef(s)
+	return avc
+}
+
+// SetNillableValueRef sets the "value_ref" field if the given value is not nil.
+func (avc *AttributeValueCreate) SetNillableValueRef(s *string) *AttributeValueCreate {
+	if s != nil {
+		avc.SetValueRef(*s)
+	}
 	return avc
 }
 
@@ -168,18 +192,6 @@ func (avc *AttributeValueCreate) check() error {
 	if _, ok := avc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "AttributeValue.created_at"`)}
 	}
-	if _, ok := avc.mutation.ValueText(); !ok {
-		return &ValidationError{Name: "value_text", err: errors.New(`ent: missing required field "AttributeValue.value_text"`)}
-	}
-	if _, ok := avc.mutation.ValueNumber(); !ok {
-		return &ValidationError{Name: "value_number", err: errors.New(`ent: missing required field "AttributeValue.value_number"`)}
-	}
-	if _, ok := avc.mutation.ValueBool(); !ok {
-		return &ValidationError{Name: "value_bool", err: errors.New(`ent: missing required field "AttributeValue.value_bool"`)}
-	}
-	if _, ok := avc.mutation.ValueRef(); !ok {
-		return &ValidationError{Name: "value_ref", err: errors.New(`ent: missing required field "AttributeValue.value_ref"`)}
-	}
 	if _, ok := avc.mutation.VariantCount(); !ok {
 		return &ValidationError{Name: "variant_count", err: errors.New(`ent: missing required field "AttributeValue.variant_count"`)}
 	}
@@ -238,15 +250,15 @@ func (avc *AttributeValueCreate) createSpec() (*AttributeValue, *sqlgraph.Create
 	}
 	if value, ok := avc.mutation.ValueNumber(); ok {
 		_spec.SetField(attributevalue.FieldValueNumber, field.TypeFloat64, value)
-		_node.ValueNumber = value
+		_node.ValueNumber = &value
 	}
 	if value, ok := avc.mutation.ValueBool(); ok {
 		_spec.SetField(attributevalue.FieldValueBool, field.TypeBool, value)
-		_node.ValueBool = value
+		_node.ValueBool = &value
 	}
 	if value, ok := avc.mutation.ValueRef(); ok {
 		_spec.SetField(attributevalue.FieldValueRef, field.TypeString, value)
-		_node.ValueRef = value
+		_node.ValueRef = &value
 	}
 	if value, ok := avc.mutation.VariantCount(); ok {
 		_spec.SetField(attributevalue.FieldVariantCount, field.TypeInt, value)

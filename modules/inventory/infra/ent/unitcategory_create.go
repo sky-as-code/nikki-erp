@@ -122,6 +122,14 @@ func (ucc *UnitCategoryCreate) SetUnitID(s string) *UnitCategoryCreate {
 	return ucc
 }
 
+// SetNillableUnitID sets the "unit_id" field if the given value is not nil.
+func (ucc *UnitCategoryCreate) SetNillableUnitID(s *string) *UnitCategoryCreate {
+	if s != nil {
+		ucc.SetUnitID(*s)
+	}
+	return ucc
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (ucc *UnitCategoryCreate) SetUpdatedAt(t time.Time) *UnitCategoryCreate {
 	ucc.mutation.SetUpdatedAt(t)
@@ -219,9 +227,6 @@ func (ucc *UnitCategoryCreate) check() error {
 	if _, ok := ucc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "UnitCategory.status"`)}
 	}
-	if _, ok := ucc.mutation.UnitID(); !ok {
-		return &ValidationError{Name: "unit_id", err: errors.New(`ent: missing required field "UnitCategory.unit_id"`)}
-	}
 	return nil
 }
 
@@ -295,7 +300,7 @@ func (ucc *UnitCategoryCreate) createSpec() (*UnitCategory, *sqlgraph.CreateSpec
 	}
 	if value, ok := ucc.mutation.UnitID(); ok {
 		_spec.SetField(unitcategory.FieldUnitID, field.TypeString, value)
-		_node.UnitID = value
+		_node.UnitID = &value
 	}
 	if value, ok := ucc.mutation.UpdatedAt(); ok {
 		_spec.SetField(unitcategory.FieldUpdatedAt, field.TypeTime, value)

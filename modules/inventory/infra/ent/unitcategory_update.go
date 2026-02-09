@@ -150,6 +150,12 @@ func (ucu *UnitCategoryUpdate) SetNillableUnitID(s *string) *UnitCategoryUpdate 
 	return ucu
 }
 
+// ClearUnitID clears the value of the "unit_id" field.
+func (ucu *UnitCategoryUpdate) ClearUnitID() *UnitCategoryUpdate {
+	ucu.mutation.ClearUnitID()
+	return ucu
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (ucu *UnitCategoryUpdate) SetUpdatedAt(t time.Time) *UnitCategoryUpdate {
 	ucu.mutation.SetUpdatedAt(t)
@@ -282,6 +288,9 @@ func (ucu *UnitCategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := ucu.mutation.UnitID(); ok {
 		_spec.SetField(unitcategory.FieldUnitID, field.TypeString, value)
+	}
+	if ucu.mutation.UnitIDCleared() {
+		_spec.ClearField(unitcategory.FieldUnitID, field.TypeString)
 	}
 	if value, ok := ucu.mutation.UpdatedAt(); ok {
 		_spec.SetField(unitcategory.FieldUpdatedAt, field.TypeTime, value)
@@ -474,6 +483,12 @@ func (ucuo *UnitCategoryUpdateOne) SetNillableUnitID(s *string) *UnitCategoryUpd
 	return ucuo
 }
 
+// ClearUnitID clears the value of the "unit_id" field.
+func (ucuo *UnitCategoryUpdateOne) ClearUnitID() *UnitCategoryUpdateOne {
+	ucuo.mutation.ClearUnitID()
+	return ucuo
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (ucuo *UnitCategoryUpdateOne) SetUpdatedAt(t time.Time) *UnitCategoryUpdateOne {
 	ucuo.mutation.SetUpdatedAt(t)
@@ -636,6 +651,9 @@ func (ucuo *UnitCategoryUpdateOne) sqlSave(ctx context.Context) (_node *UnitCate
 	}
 	if value, ok := ucuo.mutation.UnitID(); ok {
 		_spec.SetField(unitcategory.FieldUnitID, field.TypeString, value)
+	}
+	if ucuo.mutation.UnitIDCleared() {
+		_spec.ClearField(unitcategory.FieldUnitID, field.TypeString)
 	}
 	if value, ok := ucuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(unitcategory.FieldUpdatedAt, field.TypeTime, value)

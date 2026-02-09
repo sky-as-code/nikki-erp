@@ -468,9 +468,12 @@ func (uq *UnitQuery) loadProduct(ctx context.Context, query *ProductQuery, nodes
 	}
 	for _, n := range neighbors {
 		fk := n.UnitID
-		node, ok := nodeids[fk]
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "unit_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "unit_id" returned %v for node %v`, fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "unit_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

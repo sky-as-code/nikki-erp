@@ -64,23 +64,23 @@ func (vu *VariantUpdate) SetNillableEtag(s *string) *VariantUpdate {
 }
 
 // SetProposedPrice sets the "proposed_price" field.
-func (vu *VariantUpdate) SetProposedPrice(i int) *VariantUpdate {
+func (vu *VariantUpdate) SetProposedPrice(f float64) *VariantUpdate {
 	vu.mutation.ResetProposedPrice()
-	vu.mutation.SetProposedPrice(i)
+	vu.mutation.SetProposedPrice(f)
 	return vu
 }
 
 // SetNillableProposedPrice sets the "proposed_price" field if the given value is not nil.
-func (vu *VariantUpdate) SetNillableProposedPrice(i *int) *VariantUpdate {
-	if i != nil {
-		vu.SetProposedPrice(*i)
+func (vu *VariantUpdate) SetNillableProposedPrice(f *float64) *VariantUpdate {
+	if f != nil {
+		vu.SetProposedPrice(*f)
 	}
 	return vu
 }
 
-// AddProposedPrice adds i to the "proposed_price" field.
-func (vu *VariantUpdate) AddProposedPrice(i int) *VariantUpdate {
-	vu.mutation.AddProposedPrice(i)
+// AddProposedPrice adds f to the "proposed_price" field.
+func (vu *VariantUpdate) AddProposedPrice(f float64) *VariantUpdate {
+	vu.mutation.AddProposedPrice(f)
 	return vu
 }
 
@@ -216,10 +216,10 @@ func (vu *VariantUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.SetField(variant.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := vu.mutation.ProposedPrice(); ok {
-		_spec.SetField(variant.FieldProposedPrice, field.TypeInt, value)
+		_spec.SetField(variant.FieldProposedPrice, field.TypeFloat64, value)
 	}
 	if value, ok := vu.mutation.AddedProposedPrice(); ok {
-		_spec.AddField(variant.FieldProposedPrice, field.TypeInt, value)
+		_spec.AddField(variant.FieldProposedPrice, field.TypeFloat64, value)
 	}
 	if value, ok := vu.mutation.Status(); ok {
 		_spec.SetField(variant.FieldStatus, field.TypeString, value)
@@ -330,23 +330,23 @@ func (vuo *VariantUpdateOne) SetNillableEtag(s *string) *VariantUpdateOne {
 }
 
 // SetProposedPrice sets the "proposed_price" field.
-func (vuo *VariantUpdateOne) SetProposedPrice(i int) *VariantUpdateOne {
+func (vuo *VariantUpdateOne) SetProposedPrice(f float64) *VariantUpdateOne {
 	vuo.mutation.ResetProposedPrice()
-	vuo.mutation.SetProposedPrice(i)
+	vuo.mutation.SetProposedPrice(f)
 	return vuo
 }
 
 // SetNillableProposedPrice sets the "proposed_price" field if the given value is not nil.
-func (vuo *VariantUpdateOne) SetNillableProposedPrice(i *int) *VariantUpdateOne {
-	if i != nil {
-		vuo.SetProposedPrice(*i)
+func (vuo *VariantUpdateOne) SetNillableProposedPrice(f *float64) *VariantUpdateOne {
+	if f != nil {
+		vuo.SetProposedPrice(*f)
 	}
 	return vuo
 }
 
-// AddProposedPrice adds i to the "proposed_price" field.
-func (vuo *VariantUpdateOne) AddProposedPrice(i int) *VariantUpdateOne {
-	vuo.mutation.AddProposedPrice(i)
+// AddProposedPrice adds f to the "proposed_price" field.
+func (vuo *VariantUpdateOne) AddProposedPrice(f float64) *VariantUpdateOne {
+	vuo.mutation.AddProposedPrice(f)
 	return vuo
 }
 
@@ -512,10 +512,10 @@ func (vuo *VariantUpdateOne) sqlSave(ctx context.Context) (_node *Variant, err e
 		_spec.SetField(variant.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := vuo.mutation.ProposedPrice(); ok {
-		_spec.SetField(variant.FieldProposedPrice, field.TypeInt, value)
+		_spec.SetField(variant.FieldProposedPrice, field.TypeFloat64, value)
 	}
 	if value, ok := vuo.mutation.AddedProposedPrice(); ok {
-		_spec.AddField(variant.FieldProposedPrice, field.TypeInt, value)
+		_spec.AddField(variant.FieldProposedPrice, field.TypeFloat64, value)
 	}
 	if value, ok := vuo.mutation.Status(); ok {
 		_spec.SetField(variant.FieldStatus, field.TypeString, value)

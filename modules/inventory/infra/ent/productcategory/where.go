@@ -309,14 +309,24 @@ func EnumValueSortNEQ(v bool) predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldNEQ(FieldEnumValueSort, v))
 }
 
-// EnumValueIsNil applies the IsNil predicate on the "enum_value" field.
-func EnumValueIsNil() predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldIsNull(FieldEnumValue))
+// EnumTextValueIsNil applies the IsNil predicate on the "enum_text_value" field.
+func EnumTextValueIsNil() predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldIsNull(FieldEnumTextValue))
 }
 
-// EnumValueNotNil applies the NotNil predicate on the "enum_value" field.
-func EnumValueNotNil() predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNotNull(FieldEnumValue))
+// EnumTextValueNotNil applies the NotNil predicate on the "enum_text_value" field.
+func EnumTextValueNotNil() predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldNotNull(FieldEnumTextValue))
+}
+
+// EnumNumberValueIsNil applies the IsNil predicate on the "enum_number_value" field.
+func EnumNumberValueIsNil() predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldIsNull(FieldEnumNumberValue))
+}
+
+// EnumNumberValueNotNil applies the NotNil predicate on the "enum_number_value" field.
+func EnumNumberValueNotNil() predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldNotNull(FieldEnumNumberValue))
 }
 
 // EtagEQ applies the EQ predicate on the "etag" field.
