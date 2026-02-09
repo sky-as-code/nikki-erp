@@ -27,10 +27,10 @@ script:post-response {
   const payload = res.getBody();
   const { attemptId } = payload;
   attemptId && bru.setVar('attemptId', attemptId);
-  
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
   timeout: 0
 }

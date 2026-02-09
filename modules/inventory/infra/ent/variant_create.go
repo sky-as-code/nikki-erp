@@ -57,8 +57,8 @@ func (vc *VariantCreate) SetEtag(s string) *VariantCreate {
 }
 
 // SetProposedPrice sets the "proposed_price" field.
-func (vc *VariantCreate) SetProposedPrice(i int) *VariantCreate {
-	vc.mutation.SetProposedPrice(i)
+func (vc *VariantCreate) SetProposedPrice(f float64) *VariantCreate {
+	vc.mutation.SetProposedPrice(f)
 	return vc
 }
 
@@ -244,7 +244,7 @@ func (vc *VariantCreate) createSpec() (*Variant, *sqlgraph.CreateSpec) {
 		_node.Etag = value
 	}
 	if value, ok := vc.mutation.ProposedPrice(); ok {
-		_spec.SetField(variant.FieldProposedPrice, field.TypeInt, value)
+		_spec.SetField(variant.FieldProposedPrice, field.TypeFloat64, value)
 		_node.ProposedPrice = value
 	}
 	if value, ok := vc.mutation.Sku(); ok {

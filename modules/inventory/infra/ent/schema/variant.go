@@ -31,7 +31,7 @@ func (VariantMixin) Fields() []ent.Field {
 
 		field.String("etag"),
 
-		field.Int("proposed_price"),
+		field.Float("proposed_price"),
 
 		field.String("product_id").
 			Immutable().

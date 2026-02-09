@@ -37,7 +37,10 @@ func (AttributeMixin) Fields() []ent.Field {
 		field.Bool("enum_value_sort").
 			Default(false),
 
-		field.JSON("enum_value", model.LangJson{}).
+		field.JSON("enum_text_value", []model.LangJson{}).
+			Optional(),
+
+		field.JSON("enum_number_value", []float64{}).
 			Optional(),
 
 		field.String("etag"),

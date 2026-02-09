@@ -12,13 +12,30 @@ post {
 
 body:json {
   {
-    "codeName": "size_option",
+    "codeName": "color",
     "displayName": {
-      "en_US": "Size",
-      "vi_VN": "Kích cỡ"
+      "vi": "Màu sắc",
+      "en": "Color"
     },
-    "dataType": "text",
-    "IsRequired" : true
+    "sortIndex": 1,
+    "dataType": "string",
+    "isRequired": true,
+    "isEnum": true,
+    "enumValue": [
+      {
+        "en_US": "Red",
+        "vi_VN": "Đỏ"
+      },
+      {
+        "en_US": "Yellow",
+        "vi_VN": "Vàng"
+      },
+      {
+        "en_US": "Blue",
+        "vi_VN": "Xanh"
+      }
+    ],
+    "enumValueSort": true
   }
 }
 

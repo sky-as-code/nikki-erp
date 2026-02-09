@@ -17,7 +17,8 @@ var (
 		{Name: "data_type", Type: field.TypeString},
 		{Name: "display_name", Type: field.TypeJSON, Nullable: true},
 		{Name: "enum_value_sort", Type: field.TypeBool, Default: false},
-		{Name: "enum_value", Type: field.TypeJSON, Nullable: true},
+		{Name: "enum_text_value", Type: field.TypeJSON, Nullable: true},
+		{Name: "enum_number_value", Type: field.TypeJSON, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "is_enum", Type: field.TypeBool, Default: false},
 		{Name: "is_required", Type: field.TypeBool, Default: false},
@@ -34,13 +35,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "inventory_attribute_inventory_attribute_group_attribute_group",
-				Columns:    []*schema.Column{InventoryAttributeColumns[12]},
+				Columns:    []*schema.Column{InventoryAttributeColumns[13]},
 				RefColumns: []*schema.Column{InventoryAttributeGroupColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "inventory_attribute_inventory_product_product",
-				Columns:    []*schema.Column{InventoryAttributeColumns[13]},
+				Columns:    []*schema.Column{InventoryAttributeColumns[14]},
 				RefColumns: []*schema.Column{InventoryProductColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -74,10 +75,10 @@ var (
 		{Name: "id", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
-		{Name: "value_text", Type: field.TypeJSON},
-		{Name: "value_number", Type: field.TypeFloat64},
-		{Name: "value_bool", Type: field.TypeBool},
-		{Name: "value_ref", Type: field.TypeString},
+		{Name: "value_text", Type: field.TypeJSON, Nullable: true},
+		{Name: "value_number", Type: field.TypeFloat64, Nullable: true},
+		{Name: "value_bool", Type: field.TypeBool, Nullable: true},
+		{Name: "value_ref", Type: field.TypeString, Nullable: true},
 		{Name: "variant_count", Type: field.TypeInt},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "attribute_id", Type: field.TypeString},
@@ -109,7 +110,7 @@ var (
 		{Name: "tag_ids", Type: field.TypeString, Nullable: true},
 		{Name: "thumbnail_url", Type: field.TypeString, Nullable: true},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
-		{Name: "unit_id", Type: field.TypeString},
+		{Name: "unit_id", Type: field.TypeString, Nullable: true},
 	}
 	// InventoryProductTable holds the schema information for the "inventory_product" table.
 	InventoryProductTable = &schema.Table{
@@ -133,7 +134,8 @@ var (
 		{Name: "data_type", Type: field.TypeString},
 		{Name: "display_name", Type: field.TypeJSON, Nullable: true},
 		{Name: "enum_value_sort", Type: field.TypeBool, Default: false},
-		{Name: "enum_value", Type: field.TypeJSON, Nullable: true},
+		{Name: "enum_text_value", Type: field.TypeJSON, Nullable: true},
+		{Name: "enum_number_value", Type: field.TypeJSON, Nullable: true},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "group_id", Type: field.TypeString, Nullable: true},
 		{Name: "is_enum", Type: field.TypeBool, Default: false},
@@ -188,7 +190,7 @@ var (
 		{Name: "status", Type: field.TypeString, Default: "archived"},
 		{Name: "tag_ids", Type: field.TypeString, Nullable: true},
 		{Name: "thumbnail_url", Type: field.TypeString, Nullable: true},
-		{Name: "unit_id", Type: field.TypeString},
+		{Name: "unit_id", Type: field.TypeString, Nullable: true},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 	}
 	// InventoryUnitCategoryTable holds the schema information for the "inventory_unit_category" table.
@@ -203,7 +205,7 @@ var (
 		{Name: "barcode", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "proposed_price", Type: field.TypeInt},
+		{Name: "proposed_price", Type: field.TypeFloat64},
 		{Name: "sku", Type: field.TypeString},
 		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},

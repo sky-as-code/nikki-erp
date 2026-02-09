@@ -1,20 +1,17 @@
 package product
 
 import (
-	stdErr "errors"
+	"errors"
 
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/product/impl"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/product/app"
+	repo "github.com/sky-as-code/nikki-erp/modules/inventory/product/repository"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/transport"
 )
 
-func InitSubModule() error {
-	err := stdErr.Join(
-		orm.RegisterEntity(impl.BuildProductDescriptor()),
-		deps.Register(impl.NewProductEntRepository),
-		deps.Register(impl.NewProductServiceImpl),
-
+func Init() error {
+	err := errors.Join(
+		repo.InitRepositories(),
+		app.InitServices(),
 		transport.InitTransport(),
 	)
 

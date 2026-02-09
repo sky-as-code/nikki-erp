@@ -635,6 +635,16 @@ func UnitIDHasSuffix(v string) predicate.UnitCategory {
 	return predicate.UnitCategory(sql.FieldHasSuffix(FieldUnitID, v))
 }
 
+// UnitIDIsNil applies the IsNil predicate on the "unit_id" field.
+func UnitIDIsNil() predicate.UnitCategory {
+	return predicate.UnitCategory(sql.FieldIsNull(FieldUnitID))
+}
+
+// UnitIDNotNil applies the NotNil predicate on the "unit_id" field.
+func UnitIDNotNil() predicate.UnitCategory {
+	return predicate.UnitCategory(sql.FieldNotNull(FieldUnitID))
+}
+
 // UnitIDEqualFold applies the EqualFold predicate on the "unit_id" field.
 func UnitIDEqualFold(v string) predicate.UnitCategory {
 	return predicate.UnitCategory(sql.FieldEqualFold(FieldUnitID, v))

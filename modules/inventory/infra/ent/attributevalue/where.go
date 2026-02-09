@@ -260,6 +260,16 @@ func UpdatedAtNotNil() predicate.AttributeValue {
 	return predicate.AttributeValue(sql.FieldNotNull(FieldUpdatedAt))
 }
 
+// ValueTextIsNil applies the IsNil predicate on the "value_text" field.
+func ValueTextIsNil() predicate.AttributeValue {
+	return predicate.AttributeValue(sql.FieldIsNull(FieldValueText))
+}
+
+// ValueTextNotNil applies the NotNil predicate on the "value_text" field.
+func ValueTextNotNil() predicate.AttributeValue {
+	return predicate.AttributeValue(sql.FieldNotNull(FieldValueText))
+}
+
 // ValueNumberEQ applies the EQ predicate on the "value_number" field.
 func ValueNumberEQ(v float64) predicate.AttributeValue {
 	return predicate.AttributeValue(sql.FieldEQ(FieldValueNumber, v))
@@ -300,6 +310,16 @@ func ValueNumberLTE(v float64) predicate.AttributeValue {
 	return predicate.AttributeValue(sql.FieldLTE(FieldValueNumber, v))
 }
 
+// ValueNumberIsNil applies the IsNil predicate on the "value_number" field.
+func ValueNumberIsNil() predicate.AttributeValue {
+	return predicate.AttributeValue(sql.FieldIsNull(FieldValueNumber))
+}
+
+// ValueNumberNotNil applies the NotNil predicate on the "value_number" field.
+func ValueNumberNotNil() predicate.AttributeValue {
+	return predicate.AttributeValue(sql.FieldNotNull(FieldValueNumber))
+}
+
 // ValueBoolEQ applies the EQ predicate on the "value_bool" field.
 func ValueBoolEQ(v bool) predicate.AttributeValue {
 	return predicate.AttributeValue(sql.FieldEQ(FieldValueBool, v))
@@ -308,6 +328,16 @@ func ValueBoolEQ(v bool) predicate.AttributeValue {
 // ValueBoolNEQ applies the NEQ predicate on the "value_bool" field.
 func ValueBoolNEQ(v bool) predicate.AttributeValue {
 	return predicate.AttributeValue(sql.FieldNEQ(FieldValueBool, v))
+}
+
+// ValueBoolIsNil applies the IsNil predicate on the "value_bool" field.
+func ValueBoolIsNil() predicate.AttributeValue {
+	return predicate.AttributeValue(sql.FieldIsNull(FieldValueBool))
+}
+
+// ValueBoolNotNil applies the NotNil predicate on the "value_bool" field.
+func ValueBoolNotNil() predicate.AttributeValue {
+	return predicate.AttributeValue(sql.FieldNotNull(FieldValueBool))
 }
 
 // ValueRefEQ applies the EQ predicate on the "value_ref" field.
@@ -363,6 +393,16 @@ func ValueRefHasPrefix(v string) predicate.AttributeValue {
 // ValueRefHasSuffix applies the HasSuffix predicate on the "value_ref" field.
 func ValueRefHasSuffix(v string) predicate.AttributeValue {
 	return predicate.AttributeValue(sql.FieldHasSuffix(FieldValueRef, v))
+}
+
+// ValueRefIsNil applies the IsNil predicate on the "value_ref" field.
+func ValueRefIsNil() predicate.AttributeValue {
+	return predicate.AttributeValue(sql.FieldIsNull(FieldValueRef))
+}
+
+// ValueRefNotNil applies the NotNil predicate on the "value_ref" field.
+func ValueRefNotNil() predicate.AttributeValue {
+	return predicate.AttributeValue(sql.FieldNotNull(FieldValueRef))
 }
 
 // ValueRefEqualFold applies the EqualFold predicate on the "value_ref" field.

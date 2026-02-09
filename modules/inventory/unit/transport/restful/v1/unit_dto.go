@@ -4,7 +4,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	it "github.com/sky-as-code/nikki-erp/modules/inventory/unit/interfaces"
+	domain "github.com/sky-as-code/nikki-erp/modules/inventory/unit/domain"
+	itUnit "github.com/sky-as-code/nikki-erp/modules/inventory/unit/interfaces/unit"
 )
 
 type UnitDto struct {
@@ -13,40 +14,41 @@ type UnitDto struct {
 	CategoryId *string        `json:"categoryId,omitempty"`
 	CreatedAt  int64          `json:"createdAt"`
 	Etag       string         `json:"etag"`
-	Multiplier *float64       `json:"multiplier,omitempty"`
+	Multiplier *int           `json:"multiplier,omitempty"`
 	Name       model.LangJson `json:"name"`
+	Symbol     *string        `json:"symbol,omitempty"`
 	OrgId      *string        `json:"orgId,omitempty"`
 	UpdatedAt  *int64         `json:"updatedAt,omitempty"`
 	Status     *string        `json:"status,omitempty"`
 }
 
-func (this *UnitDto) FromUnit(u it.Unit) {
+func (this *UnitDto) FromUnit(u domain.Unit) {
 	model.MustCopy(u.AuditableBase, this)
 	model.MustCopy(u.ModelBase, this)
 	model.MustCopy(u, this)
 }
 
-type CreateUnitRequest = it.CreateUnitCommand
+type CreateUnitRequest = itUnit.CreateUnitCommand
 type CreateUnitResponse = httpserver.RestCreateResponse
 
-type UpdateUnitRequest = it.UpdateUnitCommand
+type UpdateUnitRequest = itUnit.UpdateUnitCommand
 type UpdateUnitResponse = httpserver.RestUpdateResponse
 
-type DeleteUnitRequest = it.DeleteUnitCommand
+type DeleteUnitRequest = itUnit.DeleteUnitCommand
 type DeleteUnitResponse = httpserver.RestDeleteResponse
 
-type GetUnitByIdRequest = it.GetUnitByIdQuery
+type GetUnitByIdRequest = itUnit.GetUnitByIdQuery
 type GetUnitByIdResponse = UnitDto
 
-type SearchUnitsRequest = it.SearchUnitsQuery
+type SearchUnitsRequest = itUnit.SearchUnitsQuery
 
 type SearchUnitsResponse httpserver.RestSearchResponse[UnitDto]
 
-func (this *SearchUnitsResponse) FromResult(result *it.SearchUnitsResultData) {
+func (this *SearchUnitsResponse) FromResult(result *itUnit.SearchUnitsResultData) {
 	this.Total = result.Total
 	this.Page = result.Page
 	this.Size = result.Size
-	this.Items = array.Map(result.Items, func(u it.Unit) UnitDto {
+	this.Items = array.Map(result.Items, func(u domain.Unit) UnitDto {
 		item := UnitDto{}
 		item.FromUnit(u)
 		return item

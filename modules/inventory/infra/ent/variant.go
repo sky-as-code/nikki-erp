@@ -25,7 +25,7 @@ type Variant struct {
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// ProposedPrice holds the value of the "proposed_price" field.
-	ProposedPrice int `json:"proposed_price,omitempty"`
+	ProposedPrice float64 `json:"proposed_price,omitempty"`
 	// ProductID holds the value of the "product_id" field.
 	ProductID string `json:"product_id,omitempty"`
 	// Sku holds the value of the "sku" field.
@@ -88,7 +88,7 @@ func (*Variant) scanValues(columns []string) ([]any, error) {
 	for i := range columns {
 		switch columns[i] {
 		case variant.FieldProposedPrice:
-			values[i] = new(sql.NullInt64)
+			values[i] = new(sql.NullFloat64)
 		case variant.FieldID, variant.FieldBarcode, variant.FieldEtag, variant.FieldProductID, variant.FieldSku, variant.FieldStatus:
 			values[i] = new(sql.NullString)
 		case variant.FieldCreatedAt, variant.FieldUpdatedAt:
@@ -134,10 +134,10 @@ func (v *Variant) assignValues(columns []string, values []any) error {
 				v.Etag = value.String
 			}
 		case variant.FieldProposedPrice:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field proposed_price", values[i])
 			} else if value.Valid {
-				v.ProposedPrice = int(value.Int64)
+				v.ProposedPrice = value.Float64
 			}
 		case variant.FieldProductID:
 			if value, ok := values[i].(*sql.NullString); !ok {

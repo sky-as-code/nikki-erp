@@ -1,19 +1,17 @@
 package unit
 
 import (
-	stdErr "errors"
+	"errors"
 
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/unit/impl"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/unit/app"
+	repo "github.com/sky-as-code/nikki-erp/modules/inventory/unit/repository"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/unit/transport"
 )
 
-func InitSubModule() error {
-	err := stdErr.Join(
-		orm.RegisterEntity(impl.BuildUnitDescriptor()),
-		deps.Register(impl.NewUnitEntRepository),
-		deps.Register(impl.NewUnitServiceImpl),
+func Init() error {
+	err := errors.Join(
+		repo.InitRepositories(),
+		app.InitServices(),
 		transport.InitTransport(),
 	)
 

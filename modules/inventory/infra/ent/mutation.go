@@ -55,7 +55,10 @@ type AttributeMutation struct {
 	data_type               *string
 	display_name            *model.LangJson
 	enum_value_sort         *bool
-	enum_value              *model.LangJson
+	enum_text_value         *[]model.LangJson
+	appendenum_text_value   []model.LangJson
+	enum_number_value       *[]float64
+	appendenum_number_value []float64
 	etag                    *string
 	is_enum                 *bool
 	is_required             *bool
@@ -372,53 +375,134 @@ func (m *AttributeMutation) ResetEnumValueSort() {
 	m.enum_value_sort = nil
 }
 
-// SetEnumValue sets the "enum_value" field.
-func (m *AttributeMutation) SetEnumValue(mj model.LangJson) {
-	m.enum_value = &mj
+// SetEnumTextValue sets the "enum_text_value" field.
+func (m *AttributeMutation) SetEnumTextValue(mj []model.LangJson) {
+	m.enum_text_value = &mj
+	m.appendenum_text_value = nil
 }
 
-// EnumValue returns the value of the "enum_value" field in the mutation.
-func (m *AttributeMutation) EnumValue() (r model.LangJson, exists bool) {
-	v := m.enum_value
+// EnumTextValue returns the value of the "enum_text_value" field in the mutation.
+func (m *AttributeMutation) EnumTextValue() (r []model.LangJson, exists bool) {
+	v := m.enum_text_value
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldEnumValue returns the old "enum_value" field's value of the Attribute entity.
+// OldEnumTextValue returns the old "enum_text_value" field's value of the Attribute entity.
 // If the Attribute object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AttributeMutation) OldEnumValue(ctx context.Context) (v model.LangJson, err error) {
+func (m *AttributeMutation) OldEnumTextValue(ctx context.Context) (v []model.LangJson, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEnumValue is only allowed on UpdateOne operations")
+		return v, errors.New("OldEnumTextValue is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEnumValue requires an ID field in the mutation")
+		return v, errors.New("OldEnumTextValue requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEnumValue: %w", err)
+		return v, fmt.Errorf("querying old value for OldEnumTextValue: %w", err)
 	}
-	return oldValue.EnumValue, nil
+	return oldValue.EnumTextValue, nil
 }
 
-// ClearEnumValue clears the value of the "enum_value" field.
-func (m *AttributeMutation) ClearEnumValue() {
-	m.enum_value = nil
-	m.clearedFields[attribute.FieldEnumValue] = struct{}{}
+// AppendEnumTextValue adds mj to the "enum_text_value" field.
+func (m *AttributeMutation) AppendEnumTextValue(mj []model.LangJson) {
+	m.appendenum_text_value = append(m.appendenum_text_value, mj...)
 }
 
-// EnumValueCleared returns if the "enum_value" field was cleared in this mutation.
-func (m *AttributeMutation) EnumValueCleared() bool {
-	_, ok := m.clearedFields[attribute.FieldEnumValue]
+// AppendedEnumTextValue returns the list of values that were appended to the "enum_text_value" field in this mutation.
+func (m *AttributeMutation) AppendedEnumTextValue() ([]model.LangJson, bool) {
+	if len(m.appendenum_text_value) == 0 {
+		return nil, false
+	}
+	return m.appendenum_text_value, true
+}
+
+// ClearEnumTextValue clears the value of the "enum_text_value" field.
+func (m *AttributeMutation) ClearEnumTextValue() {
+	m.enum_text_value = nil
+	m.appendenum_text_value = nil
+	m.clearedFields[attribute.FieldEnumTextValue] = struct{}{}
+}
+
+// EnumTextValueCleared returns if the "enum_text_value" field was cleared in this mutation.
+func (m *AttributeMutation) EnumTextValueCleared() bool {
+	_, ok := m.clearedFields[attribute.FieldEnumTextValue]
 	return ok
 }
 
-// ResetEnumValue resets all changes to the "enum_value" field.
-func (m *AttributeMutation) ResetEnumValue() {
-	m.enum_value = nil
-	delete(m.clearedFields, attribute.FieldEnumValue)
+// ResetEnumTextValue resets all changes to the "enum_text_value" field.
+func (m *AttributeMutation) ResetEnumTextValue() {
+	m.enum_text_value = nil
+	m.appendenum_text_value = nil
+	delete(m.clearedFields, attribute.FieldEnumTextValue)
+}
+
+// SetEnumNumberValue sets the "enum_number_value" field.
+func (m *AttributeMutation) SetEnumNumberValue(f []float64) {
+	m.enum_number_value = &f
+	m.appendenum_number_value = nil
+}
+
+// EnumNumberValue returns the value of the "enum_number_value" field in the mutation.
+func (m *AttributeMutation) EnumNumberValue() (r []float64, exists bool) {
+	v := m.enum_number_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnumNumberValue returns the old "enum_number_value" field's value of the Attribute entity.
+// If the Attribute object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AttributeMutation) OldEnumNumberValue(ctx context.Context) (v []float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnumNumberValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnumNumberValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnumNumberValue: %w", err)
+	}
+	return oldValue.EnumNumberValue, nil
+}
+
+// AppendEnumNumberValue adds f to the "enum_number_value" field.
+func (m *AttributeMutation) AppendEnumNumberValue(f []float64) {
+	m.appendenum_number_value = append(m.appendenum_number_value, f...)
+}
+
+// AppendedEnumNumberValue returns the list of values that were appended to the "enum_number_value" field in this mutation.
+func (m *AttributeMutation) AppendedEnumNumberValue() ([]float64, bool) {
+	if len(m.appendenum_number_value) == 0 {
+		return nil, false
+	}
+	return m.appendenum_number_value, true
+}
+
+// ClearEnumNumberValue clears the value of the "enum_number_value" field.
+func (m *AttributeMutation) ClearEnumNumberValue() {
+	m.enum_number_value = nil
+	m.appendenum_number_value = nil
+	m.clearedFields[attribute.FieldEnumNumberValue] = struct{}{}
+}
+
+// EnumNumberValueCleared returns if the "enum_number_value" field was cleared in this mutation.
+func (m *AttributeMutation) EnumNumberValueCleared() bool {
+	_, ok := m.clearedFields[attribute.FieldEnumNumberValue]
+	return ok
+}
+
+// ResetEnumNumberValue resets all changes to the "enum_number_value" field.
+func (m *AttributeMutation) ResetEnumNumberValue() {
+	m.enum_number_value = nil
+	m.appendenum_number_value = nil
+	delete(m.clearedFields, attribute.FieldEnumNumberValue)
 }
 
 // SetEtag sets the "etag" field.
@@ -874,7 +958,7 @@ func (m *AttributeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AttributeMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.code_name != nil {
 		fields = append(fields, attribute.FieldCodeName)
 	}
@@ -890,8 +974,11 @@ func (m *AttributeMutation) Fields() []string {
 	if m.enum_value_sort != nil {
 		fields = append(fields, attribute.FieldEnumValueSort)
 	}
-	if m.enum_value != nil {
-		fields = append(fields, attribute.FieldEnumValue)
+	if m.enum_text_value != nil {
+		fields = append(fields, attribute.FieldEnumTextValue)
+	}
+	if m.enum_number_value != nil {
+		fields = append(fields, attribute.FieldEnumNumberValue)
 	}
 	if m.etag != nil {
 		fields = append(fields, attribute.FieldEtag)
@@ -932,8 +1019,10 @@ func (m *AttributeMutation) Field(name string) (ent.Value, bool) {
 		return m.DisplayName()
 	case attribute.FieldEnumValueSort:
 		return m.EnumValueSort()
-	case attribute.FieldEnumValue:
-		return m.EnumValue()
+	case attribute.FieldEnumTextValue:
+		return m.EnumTextValue()
+	case attribute.FieldEnumNumberValue:
+		return m.EnumNumberValue()
 	case attribute.FieldEtag:
 		return m.Etag()
 	case attribute.FieldGroupID:
@@ -967,8 +1056,10 @@ func (m *AttributeMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldDisplayName(ctx)
 	case attribute.FieldEnumValueSort:
 		return m.OldEnumValueSort(ctx)
-	case attribute.FieldEnumValue:
-		return m.OldEnumValue(ctx)
+	case attribute.FieldEnumTextValue:
+		return m.OldEnumTextValue(ctx)
+	case attribute.FieldEnumNumberValue:
+		return m.OldEnumNumberValue(ctx)
 	case attribute.FieldEtag:
 		return m.OldEtag(ctx)
 	case attribute.FieldGroupID:
@@ -1027,12 +1118,19 @@ func (m *AttributeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetEnumValueSort(v)
 		return nil
-	case attribute.FieldEnumValue:
-		v, ok := value.(model.LangJson)
+	case attribute.FieldEnumTextValue:
+		v, ok := value.([]model.LangJson)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetEnumValue(v)
+		m.SetEnumTextValue(v)
+		return nil
+	case attribute.FieldEnumNumberValue:
+		v, ok := value.([]float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnumNumberValue(v)
 		return nil
 	case attribute.FieldEtag:
 		v, ok := value.(string)
@@ -1131,8 +1229,11 @@ func (m *AttributeMutation) ClearedFields() []string {
 	if m.FieldCleared(attribute.FieldDisplayName) {
 		fields = append(fields, attribute.FieldDisplayName)
 	}
-	if m.FieldCleared(attribute.FieldEnumValue) {
-		fields = append(fields, attribute.FieldEnumValue)
+	if m.FieldCleared(attribute.FieldEnumTextValue) {
+		fields = append(fields, attribute.FieldEnumTextValue)
+	}
+	if m.FieldCleared(attribute.FieldEnumNumberValue) {
+		fields = append(fields, attribute.FieldEnumNumberValue)
 	}
 	if m.FieldCleared(attribute.FieldGroupID) {
 		fields = append(fields, attribute.FieldGroupID)
@@ -1157,8 +1258,11 @@ func (m *AttributeMutation) ClearField(name string) error {
 	case attribute.FieldDisplayName:
 		m.ClearDisplayName()
 		return nil
-	case attribute.FieldEnumValue:
-		m.ClearEnumValue()
+	case attribute.FieldEnumTextValue:
+		m.ClearEnumTextValue()
+		return nil
+	case attribute.FieldEnumNumberValue:
+		m.ClearEnumNumberValue()
 		return nil
 	case attribute.FieldGroupID:
 		m.ClearGroupID()
@@ -1189,8 +1293,11 @@ func (m *AttributeMutation) ResetField(name string) error {
 	case attribute.FieldEnumValueSort:
 		m.ResetEnumValueSort()
 		return nil
-	case attribute.FieldEnumValue:
-		m.ResetEnumValue()
+	case attribute.FieldEnumTextValue:
+		m.ResetEnumTextValue()
+		return nil
+	case attribute.FieldEnumNumberValue:
+		m.ResetEnumNumberValue()
 		return nil
 	case attribute.FieldEtag:
 		m.ResetEtag()
@@ -2384,9 +2491,22 @@ func (m *AttributeValueMutation) OldValueText(ctx context.Context) (v model.Lang
 	return oldValue.ValueText, nil
 }
 
+// ClearValueText clears the value of the "value_text" field.
+func (m *AttributeValueMutation) ClearValueText() {
+	m.value_text = nil
+	m.clearedFields[attributevalue.FieldValueText] = struct{}{}
+}
+
+// ValueTextCleared returns if the "value_text" field was cleared in this mutation.
+func (m *AttributeValueMutation) ValueTextCleared() bool {
+	_, ok := m.clearedFields[attributevalue.FieldValueText]
+	return ok
+}
+
 // ResetValueText resets all changes to the "value_text" field.
 func (m *AttributeValueMutation) ResetValueText() {
 	m.value_text = nil
+	delete(m.clearedFields, attributevalue.FieldValueText)
 }
 
 // SetValueNumber sets the "value_number" field.
@@ -2407,7 +2527,7 @@ func (m *AttributeValueMutation) ValueNumber() (r float64, exists bool) {
 // OldValueNumber returns the old "value_number" field's value of the AttributeValue entity.
 // If the AttributeValue object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AttributeValueMutation) OldValueNumber(ctx context.Context) (v float64, err error) {
+func (m *AttributeValueMutation) OldValueNumber(ctx context.Context) (v *float64, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldValueNumber is only allowed on UpdateOne operations")
 	}
@@ -2439,10 +2559,24 @@ func (m *AttributeValueMutation) AddedValueNumber() (r float64, exists bool) {
 	return *v, true
 }
 
+// ClearValueNumber clears the value of the "value_number" field.
+func (m *AttributeValueMutation) ClearValueNumber() {
+	m.value_number = nil
+	m.addvalue_number = nil
+	m.clearedFields[attributevalue.FieldValueNumber] = struct{}{}
+}
+
+// ValueNumberCleared returns if the "value_number" field was cleared in this mutation.
+func (m *AttributeValueMutation) ValueNumberCleared() bool {
+	_, ok := m.clearedFields[attributevalue.FieldValueNumber]
+	return ok
+}
+
 // ResetValueNumber resets all changes to the "value_number" field.
 func (m *AttributeValueMutation) ResetValueNumber() {
 	m.value_number = nil
 	m.addvalue_number = nil
+	delete(m.clearedFields, attributevalue.FieldValueNumber)
 }
 
 // SetValueBool sets the "value_bool" field.
@@ -2462,7 +2596,7 @@ func (m *AttributeValueMutation) ValueBool() (r bool, exists bool) {
 // OldValueBool returns the old "value_bool" field's value of the AttributeValue entity.
 // If the AttributeValue object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AttributeValueMutation) OldValueBool(ctx context.Context) (v bool, err error) {
+func (m *AttributeValueMutation) OldValueBool(ctx context.Context) (v *bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldValueBool is only allowed on UpdateOne operations")
 	}
@@ -2476,9 +2610,22 @@ func (m *AttributeValueMutation) OldValueBool(ctx context.Context) (v bool, err 
 	return oldValue.ValueBool, nil
 }
 
+// ClearValueBool clears the value of the "value_bool" field.
+func (m *AttributeValueMutation) ClearValueBool() {
+	m.value_bool = nil
+	m.clearedFields[attributevalue.FieldValueBool] = struct{}{}
+}
+
+// ValueBoolCleared returns if the "value_bool" field was cleared in this mutation.
+func (m *AttributeValueMutation) ValueBoolCleared() bool {
+	_, ok := m.clearedFields[attributevalue.FieldValueBool]
+	return ok
+}
+
 // ResetValueBool resets all changes to the "value_bool" field.
 func (m *AttributeValueMutation) ResetValueBool() {
 	m.value_bool = nil
+	delete(m.clearedFields, attributevalue.FieldValueBool)
 }
 
 // SetValueRef sets the "value_ref" field.
@@ -2498,7 +2645,7 @@ func (m *AttributeValueMutation) ValueRef() (r string, exists bool) {
 // OldValueRef returns the old "value_ref" field's value of the AttributeValue entity.
 // If the AttributeValue object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AttributeValueMutation) OldValueRef(ctx context.Context) (v string, err error) {
+func (m *AttributeValueMutation) OldValueRef(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldValueRef is only allowed on UpdateOne operations")
 	}
@@ -2512,9 +2659,22 @@ func (m *AttributeValueMutation) OldValueRef(ctx context.Context) (v string, err
 	return oldValue.ValueRef, nil
 }
 
+// ClearValueRef clears the value of the "value_ref" field.
+func (m *AttributeValueMutation) ClearValueRef() {
+	m.value_ref = nil
+	m.clearedFields[attributevalue.FieldValueRef] = struct{}{}
+}
+
+// ValueRefCleared returns if the "value_ref" field was cleared in this mutation.
+func (m *AttributeValueMutation) ValueRefCleared() bool {
+	_, ok := m.clearedFields[attributevalue.FieldValueRef]
+	return ok
+}
+
 // ResetValueRef resets all changes to the "value_ref" field.
 func (m *AttributeValueMutation) ResetValueRef() {
 	m.value_ref = nil
+	delete(m.clearedFields, attributevalue.FieldValueRef)
 }
 
 // SetVariantCount sets the "variant_count" field.
@@ -2937,6 +3097,18 @@ func (m *AttributeValueMutation) ClearedFields() []string {
 	if m.FieldCleared(attributevalue.FieldUpdatedAt) {
 		fields = append(fields, attributevalue.FieldUpdatedAt)
 	}
+	if m.FieldCleared(attributevalue.FieldValueText) {
+		fields = append(fields, attributevalue.FieldValueText)
+	}
+	if m.FieldCleared(attributevalue.FieldValueNumber) {
+		fields = append(fields, attributevalue.FieldValueNumber)
+	}
+	if m.FieldCleared(attributevalue.FieldValueBool) {
+		fields = append(fields, attributevalue.FieldValueBool)
+	}
+	if m.FieldCleared(attributevalue.FieldValueRef) {
+		fields = append(fields, attributevalue.FieldValueRef)
+	}
 	return fields
 }
 
@@ -2953,6 +3125,18 @@ func (m *AttributeValueMutation) ClearField(name string) error {
 	switch name {
 	case attributevalue.FieldUpdatedAt:
 		m.ClearUpdatedAt()
+		return nil
+	case attributevalue.FieldValueText:
+		m.ClearValueText()
+		return nil
+	case attributevalue.FieldValueNumber:
+		m.ClearValueNumber()
+		return nil
+	case attributevalue.FieldValueBool:
+		m.ClearValueBool()
+		return nil
+	case attributevalue.FieldValueRef:
+		m.ClearValueRef()
 		return nil
 	}
 	return fmt.Errorf("unknown AttributeValue nullable field %s", name)
@@ -3625,7 +3809,7 @@ func (m *ProductMutation) UnitID() (r string, exists bool) {
 // OldUnitID returns the old "unit_id" field's value of the Product entity.
 // If the Product object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProductMutation) OldUnitID(ctx context.Context) (v string, err error) {
+func (m *ProductMutation) OldUnitID(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldUnitID is only allowed on UpdateOne operations")
 	}
@@ -3639,9 +3823,22 @@ func (m *ProductMutation) OldUnitID(ctx context.Context) (v string, err error) {
 	return oldValue.UnitID, nil
 }
 
+// ClearUnitID clears the value of the "unit_id" field.
+func (m *ProductMutation) ClearUnitID() {
+	m.unit = nil
+	m.clearedFields[product.FieldUnitID] = struct{}{}
+}
+
+// UnitIDCleared returns if the "unit_id" field was cleared in this mutation.
+func (m *ProductMutation) UnitIDCleared() bool {
+	_, ok := m.clearedFields[product.FieldUnitID]
+	return ok
+}
+
 // ResetUnitID resets all changes to the "unit_id" field.
 func (m *ProductMutation) ResetUnitID() {
 	m.unit = nil
+	delete(m.clearedFields, product.FieldUnitID)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -3863,7 +4060,7 @@ func (m *ProductMutation) ClearUnit() {
 
 // UnitCleared reports if the "unit" edge to the Unit entity was cleared.
 func (m *ProductMutation) UnitCleared() bool {
-	return m.clearedunit
+	return m.UnitIDCleared() || m.clearedunit
 }
 
 // UnitIDs returns the "unit" edge IDs in the mutation.
@@ -4139,6 +4336,9 @@ func (m *ProductMutation) ClearedFields() []string {
 	if m.FieldCleared(product.FieldThumbnailURL) {
 		fields = append(fields, product.FieldThumbnailURL)
 	}
+	if m.FieldCleared(product.FieldUnitID) {
+		fields = append(fields, product.FieldUnitID)
+	}
 	if m.FieldCleared(product.FieldUpdatedAt) {
 		fields = append(fields, product.FieldUpdatedAt)
 	}
@@ -4167,6 +4367,9 @@ func (m *ProductMutation) ClearField(name string) error {
 		return nil
 	case product.FieldThumbnailURL:
 		m.ClearThumbnailURL()
+		return nil
+	case product.FieldUnitID:
+		m.ClearUnitID()
 		return nil
 	case product.FieldUpdatedAt:
 		m.ClearUpdatedAt()
@@ -4373,27 +4576,30 @@ func (m *ProductMutation) ResetEdge(name string) error {
 // ProductCategoryMutation represents an operation that mutates the ProductCategory nodes in the graph.
 type ProductCategoryMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *string
-	code_name       *string
-	created_at      *time.Time
-	data_type       *string
-	display_name    *model.LangJson
-	enum_value_sort *bool
-	enum_value      *model.LangJson
-	etag            *string
-	group_id        *string
-	is_enum         *bool
-	is_required     *bool
-	product_id      *string
-	sort_index      *int
-	addsort_index   *int
-	updated_at      *time.Time
-	clearedFields   map[string]struct{}
-	done            bool
-	oldValue        func(context.Context) (*ProductCategory, error)
-	predicates      []predicate.ProductCategory
+	op                      Op
+	typ                     string
+	id                      *string
+	code_name               *string
+	created_at              *time.Time
+	data_type               *string
+	display_name            *model.LangJson
+	enum_value_sort         *bool
+	enum_text_value         *[]model.LangJson
+	appendenum_text_value   []model.LangJson
+	enum_number_value       *[]float64
+	appendenum_number_value []float64
+	etag                    *string
+	group_id                *string
+	is_enum                 *bool
+	is_required             *bool
+	product_id              *string
+	sort_index              *int
+	addsort_index           *int
+	updated_at              *time.Time
+	clearedFields           map[string]struct{}
+	done                    bool
+	oldValue                func(context.Context) (*ProductCategory, error)
+	predicates              []predicate.ProductCategory
 }
 
 var _ ent.Mutation = (*ProductCategoryMutation)(nil)
@@ -4693,53 +4899,134 @@ func (m *ProductCategoryMutation) ResetEnumValueSort() {
 	m.enum_value_sort = nil
 }
 
-// SetEnumValue sets the "enum_value" field.
-func (m *ProductCategoryMutation) SetEnumValue(mj model.LangJson) {
-	m.enum_value = &mj
+// SetEnumTextValue sets the "enum_text_value" field.
+func (m *ProductCategoryMutation) SetEnumTextValue(mj []model.LangJson) {
+	m.enum_text_value = &mj
+	m.appendenum_text_value = nil
 }
 
-// EnumValue returns the value of the "enum_value" field in the mutation.
-func (m *ProductCategoryMutation) EnumValue() (r model.LangJson, exists bool) {
-	v := m.enum_value
+// EnumTextValue returns the value of the "enum_text_value" field in the mutation.
+func (m *ProductCategoryMutation) EnumTextValue() (r []model.LangJson, exists bool) {
+	v := m.enum_text_value
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldEnumValue returns the old "enum_value" field's value of the ProductCategory entity.
+// OldEnumTextValue returns the old "enum_text_value" field's value of the ProductCategory entity.
 // If the ProductCategory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProductCategoryMutation) OldEnumValue(ctx context.Context) (v model.LangJson, err error) {
+func (m *ProductCategoryMutation) OldEnumTextValue(ctx context.Context) (v []model.LangJson, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldEnumValue is only allowed on UpdateOne operations")
+		return v, errors.New("OldEnumTextValue is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldEnumValue requires an ID field in the mutation")
+		return v, errors.New("OldEnumTextValue requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldEnumValue: %w", err)
+		return v, fmt.Errorf("querying old value for OldEnumTextValue: %w", err)
 	}
-	return oldValue.EnumValue, nil
+	return oldValue.EnumTextValue, nil
 }
 
-// ClearEnumValue clears the value of the "enum_value" field.
-func (m *ProductCategoryMutation) ClearEnumValue() {
-	m.enum_value = nil
-	m.clearedFields[productcategory.FieldEnumValue] = struct{}{}
+// AppendEnumTextValue adds mj to the "enum_text_value" field.
+func (m *ProductCategoryMutation) AppendEnumTextValue(mj []model.LangJson) {
+	m.appendenum_text_value = append(m.appendenum_text_value, mj...)
 }
 
-// EnumValueCleared returns if the "enum_value" field was cleared in this mutation.
-func (m *ProductCategoryMutation) EnumValueCleared() bool {
-	_, ok := m.clearedFields[productcategory.FieldEnumValue]
+// AppendedEnumTextValue returns the list of values that were appended to the "enum_text_value" field in this mutation.
+func (m *ProductCategoryMutation) AppendedEnumTextValue() ([]model.LangJson, bool) {
+	if len(m.appendenum_text_value) == 0 {
+		return nil, false
+	}
+	return m.appendenum_text_value, true
+}
+
+// ClearEnumTextValue clears the value of the "enum_text_value" field.
+func (m *ProductCategoryMutation) ClearEnumTextValue() {
+	m.enum_text_value = nil
+	m.appendenum_text_value = nil
+	m.clearedFields[productcategory.FieldEnumTextValue] = struct{}{}
+}
+
+// EnumTextValueCleared returns if the "enum_text_value" field was cleared in this mutation.
+func (m *ProductCategoryMutation) EnumTextValueCleared() bool {
+	_, ok := m.clearedFields[productcategory.FieldEnumTextValue]
 	return ok
 }
 
-// ResetEnumValue resets all changes to the "enum_value" field.
-func (m *ProductCategoryMutation) ResetEnumValue() {
-	m.enum_value = nil
-	delete(m.clearedFields, productcategory.FieldEnumValue)
+// ResetEnumTextValue resets all changes to the "enum_text_value" field.
+func (m *ProductCategoryMutation) ResetEnumTextValue() {
+	m.enum_text_value = nil
+	m.appendenum_text_value = nil
+	delete(m.clearedFields, productcategory.FieldEnumTextValue)
+}
+
+// SetEnumNumberValue sets the "enum_number_value" field.
+func (m *ProductCategoryMutation) SetEnumNumberValue(f []float64) {
+	m.enum_number_value = &f
+	m.appendenum_number_value = nil
+}
+
+// EnumNumberValue returns the value of the "enum_number_value" field in the mutation.
+func (m *ProductCategoryMutation) EnumNumberValue() (r []float64, exists bool) {
+	v := m.enum_number_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnumNumberValue returns the old "enum_number_value" field's value of the ProductCategory entity.
+// If the ProductCategory object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProductCategoryMutation) OldEnumNumberValue(ctx context.Context) (v []float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnumNumberValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnumNumberValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnumNumberValue: %w", err)
+	}
+	return oldValue.EnumNumberValue, nil
+}
+
+// AppendEnumNumberValue adds f to the "enum_number_value" field.
+func (m *ProductCategoryMutation) AppendEnumNumberValue(f []float64) {
+	m.appendenum_number_value = append(m.appendenum_number_value, f...)
+}
+
+// AppendedEnumNumberValue returns the list of values that were appended to the "enum_number_value" field in this mutation.
+func (m *ProductCategoryMutation) AppendedEnumNumberValue() ([]float64, bool) {
+	if len(m.appendenum_number_value) == 0 {
+		return nil, false
+	}
+	return m.appendenum_number_value, true
+}
+
+// ClearEnumNumberValue clears the value of the "enum_number_value" field.
+func (m *ProductCategoryMutation) ClearEnumNumberValue() {
+	m.enum_number_value = nil
+	m.appendenum_number_value = nil
+	m.clearedFields[productcategory.FieldEnumNumberValue] = struct{}{}
+}
+
+// EnumNumberValueCleared returns if the "enum_number_value" field was cleared in this mutation.
+func (m *ProductCategoryMutation) EnumNumberValueCleared() bool {
+	_, ok := m.clearedFields[productcategory.FieldEnumNumberValue]
+	return ok
+}
+
+// ResetEnumNumberValue resets all changes to the "enum_number_value" field.
+func (m *ProductCategoryMutation) ResetEnumNumberValue() {
+	m.enum_number_value = nil
+	m.appendenum_number_value = nil
+	delete(m.clearedFields, productcategory.FieldEnumNumberValue)
 }
 
 // SetEtag sets the "etag" field.
@@ -5074,7 +5361,7 @@ func (m *ProductCategoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProductCategoryMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.code_name != nil {
 		fields = append(fields, productcategory.FieldCodeName)
 	}
@@ -5090,8 +5377,11 @@ func (m *ProductCategoryMutation) Fields() []string {
 	if m.enum_value_sort != nil {
 		fields = append(fields, productcategory.FieldEnumValueSort)
 	}
-	if m.enum_value != nil {
-		fields = append(fields, productcategory.FieldEnumValue)
+	if m.enum_text_value != nil {
+		fields = append(fields, productcategory.FieldEnumTextValue)
+	}
+	if m.enum_number_value != nil {
+		fields = append(fields, productcategory.FieldEnumNumberValue)
 	}
 	if m.etag != nil {
 		fields = append(fields, productcategory.FieldEtag)
@@ -5132,8 +5422,10 @@ func (m *ProductCategoryMutation) Field(name string) (ent.Value, bool) {
 		return m.DisplayName()
 	case productcategory.FieldEnumValueSort:
 		return m.EnumValueSort()
-	case productcategory.FieldEnumValue:
-		return m.EnumValue()
+	case productcategory.FieldEnumTextValue:
+		return m.EnumTextValue()
+	case productcategory.FieldEnumNumberValue:
+		return m.EnumNumberValue()
 	case productcategory.FieldEtag:
 		return m.Etag()
 	case productcategory.FieldGroupID:
@@ -5167,8 +5459,10 @@ func (m *ProductCategoryMutation) OldField(ctx context.Context, name string) (en
 		return m.OldDisplayName(ctx)
 	case productcategory.FieldEnumValueSort:
 		return m.OldEnumValueSort(ctx)
-	case productcategory.FieldEnumValue:
-		return m.OldEnumValue(ctx)
+	case productcategory.FieldEnumTextValue:
+		return m.OldEnumTextValue(ctx)
+	case productcategory.FieldEnumNumberValue:
+		return m.OldEnumNumberValue(ctx)
 	case productcategory.FieldEtag:
 		return m.OldEtag(ctx)
 	case productcategory.FieldGroupID:
@@ -5227,12 +5521,19 @@ func (m *ProductCategoryMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetEnumValueSort(v)
 		return nil
-	case productcategory.FieldEnumValue:
-		v, ok := value.(model.LangJson)
+	case productcategory.FieldEnumTextValue:
+		v, ok := value.([]model.LangJson)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetEnumValue(v)
+		m.SetEnumTextValue(v)
+		return nil
+	case productcategory.FieldEnumNumberValue:
+		v, ok := value.([]float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnumNumberValue(v)
 		return nil
 	case productcategory.FieldEtag:
 		v, ok := value.(string)
@@ -5331,8 +5632,11 @@ func (m *ProductCategoryMutation) ClearedFields() []string {
 	if m.FieldCleared(productcategory.FieldDisplayName) {
 		fields = append(fields, productcategory.FieldDisplayName)
 	}
-	if m.FieldCleared(productcategory.FieldEnumValue) {
-		fields = append(fields, productcategory.FieldEnumValue)
+	if m.FieldCleared(productcategory.FieldEnumTextValue) {
+		fields = append(fields, productcategory.FieldEnumTextValue)
+	}
+	if m.FieldCleared(productcategory.FieldEnumNumberValue) {
+		fields = append(fields, productcategory.FieldEnumNumberValue)
 	}
 	if m.FieldCleared(productcategory.FieldGroupID) {
 		fields = append(fields, productcategory.FieldGroupID)
@@ -5357,8 +5661,11 @@ func (m *ProductCategoryMutation) ClearField(name string) error {
 	case productcategory.FieldDisplayName:
 		m.ClearDisplayName()
 		return nil
-	case productcategory.FieldEnumValue:
-		m.ClearEnumValue()
+	case productcategory.FieldEnumTextValue:
+		m.ClearEnumTextValue()
+		return nil
+	case productcategory.FieldEnumNumberValue:
+		m.ClearEnumNumberValue()
 		return nil
 	case productcategory.FieldGroupID:
 		m.ClearGroupID()
@@ -5389,8 +5696,11 @@ func (m *ProductCategoryMutation) ResetField(name string) error {
 	case productcategory.FieldEnumValueSort:
 		m.ResetEnumValueSort()
 		return nil
-	case productcategory.FieldEnumValue:
-		m.ResetEnumValue()
+	case productcategory.FieldEnumTextValue:
+		m.ResetEnumTextValue()
+		return nil
+	case productcategory.FieldEnumNumberValue:
+		m.ResetEnumNumberValue()
 		return nil
 	case productcategory.FieldEtag:
 		m.ResetEtag()
@@ -7112,7 +7422,7 @@ func (m *UnitCategoryMutation) UnitID() (r string, exists bool) {
 // OldUnitID returns the old "unit_id" field's value of the UnitCategory entity.
 // If the UnitCategory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UnitCategoryMutation) OldUnitID(ctx context.Context) (v string, err error) {
+func (m *UnitCategoryMutation) OldUnitID(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldUnitID is only allowed on UpdateOne operations")
 	}
@@ -7126,9 +7436,22 @@ func (m *UnitCategoryMutation) OldUnitID(ctx context.Context) (v string, err err
 	return oldValue.UnitID, nil
 }
 
+// ClearUnitID clears the value of the "unit_id" field.
+func (m *UnitCategoryMutation) ClearUnitID() {
+	m.unit_id = nil
+	m.clearedFields[unitcategory.FieldUnitID] = struct{}{}
+}
+
+// UnitIDCleared returns if the "unit_id" field was cleared in this mutation.
+func (m *UnitCategoryMutation) UnitIDCleared() bool {
+	_, ok := m.clearedFields[unitcategory.FieldUnitID]
+	return ok
+}
+
 // ResetUnitID resets all changes to the "unit_id" field.
 func (m *UnitCategoryMutation) ResetUnitID() {
 	m.unit_id = nil
+	delete(m.clearedFields, unitcategory.FieldUnitID)
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -7491,6 +7814,9 @@ func (m *UnitCategoryMutation) ClearedFields() []string {
 	if m.FieldCleared(unitcategory.FieldThumbnailURL) {
 		fields = append(fields, unitcategory.FieldThumbnailURL)
 	}
+	if m.FieldCleared(unitcategory.FieldUnitID) {
+		fields = append(fields, unitcategory.FieldUnitID)
+	}
 	if m.FieldCleared(unitcategory.FieldUpdatedAt) {
 		fields = append(fields, unitcategory.FieldUpdatedAt)
 	}
@@ -7519,6 +7845,9 @@ func (m *UnitCategoryMutation) ClearField(name string) error {
 		return nil
 	case unitcategory.FieldThumbnailURL:
 		m.ClearThumbnailURL()
+		return nil
+	case unitcategory.FieldUnitID:
+		m.ClearUnitID()
 		return nil
 	case unitcategory.FieldUpdatedAt:
 		m.ClearUpdatedAt()
@@ -7661,8 +7990,8 @@ type VariantMutation struct {
 	barcode                *string
 	created_at             *time.Time
 	etag                   *string
-	proposed_price         *int
-	addproposed_price      *int
+	proposed_price         *float64
+	addproposed_price      *float64
 	sku                    *string
 	status                 *string
 	updated_at             *time.Time
@@ -7903,13 +8232,13 @@ func (m *VariantMutation) ResetEtag() {
 }
 
 // SetProposedPrice sets the "proposed_price" field.
-func (m *VariantMutation) SetProposedPrice(i int) {
-	m.proposed_price = &i
+func (m *VariantMutation) SetProposedPrice(f float64) {
+	m.proposed_price = &f
 	m.addproposed_price = nil
 }
 
 // ProposedPrice returns the value of the "proposed_price" field in the mutation.
-func (m *VariantMutation) ProposedPrice() (r int, exists bool) {
+func (m *VariantMutation) ProposedPrice() (r float64, exists bool) {
 	v := m.proposed_price
 	if v == nil {
 		return
@@ -7920,7 +8249,7 @@ func (m *VariantMutation) ProposedPrice() (r int, exists bool) {
 // OldProposedPrice returns the old "proposed_price" field's value of the Variant entity.
 // If the Variant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *VariantMutation) OldProposedPrice(ctx context.Context) (v int, err error) {
+func (m *VariantMutation) OldProposedPrice(ctx context.Context) (v float64, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldProposedPrice is only allowed on UpdateOne operations")
 	}
@@ -7934,17 +8263,17 @@ func (m *VariantMutation) OldProposedPrice(ctx context.Context) (v int, err erro
 	return oldValue.ProposedPrice, nil
 }
 
-// AddProposedPrice adds i to the "proposed_price" field.
-func (m *VariantMutation) AddProposedPrice(i int) {
+// AddProposedPrice adds f to the "proposed_price" field.
+func (m *VariantMutation) AddProposedPrice(f float64) {
 	if m.addproposed_price != nil {
-		*m.addproposed_price += i
+		*m.addproposed_price += f
 	} else {
-		m.addproposed_price = &i
+		m.addproposed_price = &f
 	}
 }
 
 // AddedProposedPrice returns the value that was added to the "proposed_price" field in this mutation.
-func (m *VariantMutation) AddedProposedPrice() (r int, exists bool) {
+func (m *VariantMutation) AddedProposedPrice() (r float64, exists bool) {
 	v := m.addproposed_price
 	if v == nil {
 		return
@@ -8335,7 +8664,7 @@ func (m *VariantMutation) SetField(name string, value ent.Value) error {
 		m.SetEtag(v)
 		return nil
 	case variant.FieldProposedPrice:
-		v, ok := value.(int)
+		v, ok := value.(float64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -8400,7 +8729,7 @@ func (m *VariantMutation) AddedField(name string) (ent.Value, bool) {
 func (m *VariantMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	case variant.FieldProposedPrice:
-		v, ok := value.(int)
+		v, ok := value.(float64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

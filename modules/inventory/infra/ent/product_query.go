@@ -631,7 +631,10 @@ func (pq *ProductQuery) loadUnit(ctx context.Context, query *UnitQuery, nodes []
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Product)
 	for i := range nodes {
-		fk := nodes[i].UnitID
+		if nodes[i].UnitID == nil {
+			continue
+		}
+		fk := *nodes[i].UnitID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}

@@ -67,9 +67,15 @@ func (pcc *ProductCategoryCreate) SetNillableEnumValueSort(b *bool) *ProductCate
 	return pcc
 }
 
-// SetEnumValue sets the "enum_value" field.
-func (pcc *ProductCategoryCreate) SetEnumValue(mj model.LangJson) *ProductCategoryCreate {
-	pcc.mutation.SetEnumValue(mj)
+// SetEnumTextValue sets the "enum_text_value" field.
+func (pcc *ProductCategoryCreate) SetEnumTextValue(mj []model.LangJson) *ProductCategoryCreate {
+	pcc.mutation.SetEnumTextValue(mj)
+	return pcc
+}
+
+// SetEnumNumberValue sets the "enum_number_value" field.
+func (pcc *ProductCategoryCreate) SetEnumNumberValue(f []float64) *ProductCategoryCreate {
+	pcc.mutation.SetEnumNumberValue(f)
 	return pcc
 }
 
@@ -302,9 +308,13 @@ func (pcc *ProductCategoryCreate) createSpec() (*ProductCategory, *sqlgraph.Crea
 		_spec.SetField(productcategory.FieldEnumValueSort, field.TypeBool, value)
 		_node.EnumValueSort = value
 	}
-	if value, ok := pcc.mutation.EnumValue(); ok {
-		_spec.SetField(productcategory.FieldEnumValue, field.TypeJSON, value)
-		_node.EnumValue = value
+	if value, ok := pcc.mutation.EnumTextValue(); ok {
+		_spec.SetField(productcategory.FieldEnumTextValue, field.TypeJSON, value)
+		_node.EnumTextValue = value
+	}
+	if value, ok := pcc.mutation.EnumNumberValue(); ok {
+		_spec.SetField(productcategory.FieldEnumNumberValue, field.TypeJSON, value)
+		_node.EnumNumberValue = value
 	}
 	if value, ok := pcc.mutation.Etag(); ok {
 		_spec.SetField(productcategory.FieldEtag, field.TypeString, value)

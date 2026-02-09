@@ -11,6 +11,7 @@ import (
 func InitCqrsHandlers() error {
 	err := errors.Join(
 		initUnitHandler(),
+		initUnitCategoryHandler(),
 	)
 	return err
 }
@@ -27,6 +28,22 @@ func initUnitHandler() error {
 			cqrs.NewHandler(handler.UpdateUnit),
 			cqrs.NewHandler(handler.GetUnitById),
 			cqrs.NewHandler(handler.SearchUnits),
+		)
+	})
+}
+
+func initUnitCategoryHandler() error {
+	deps.Register(NewUnitCategoryHandler)
+
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *UnitCategoryHandler) error {
+		ctx := context.Background()
+		return cqrsBus.SubscribeRequests(
+			ctx,
+			cqrs.NewHandler(handler.CreateUnitCategory),
+			cqrs.NewHandler(handler.DeleteUnitCategory),
+			cqrs.NewHandler(handler.UpdateUnitCategory),
+			cqrs.NewHandler(handler.GetUnitCategoryById),
+			cqrs.NewHandler(handler.SearchUnitCategories),
 		)
 	})
 }

@@ -6,13 +6,13 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	it "github.com/sky-as-code/nikki-erp/modules/inventory/unit/interfaces"
+	itUnit "github.com/sky-as-code/nikki-erp/modules/inventory/unit/interfaces/unit"
 )
 
 type unitRestParams struct {
 	dig.In
 
-	UnitSvc it.UnitService
+	UnitSvc itUnit.UnitService
 }
 
 func NewUnitRest(params unitRestParams) *UnitRest {
@@ -23,7 +23,7 @@ func NewUnitRest(params unitRestParams) *UnitRest {
 
 type UnitRest struct {
 	httpserver.RestBase
-	UnitSvc it.UnitService
+	UnitSvc itUnit.UnitService
 }
 
 func (this UnitRest) CreateUnit(echoCtx echo.Context) (err error) {
@@ -34,10 +34,10 @@ func (this UnitRest) CreateUnit(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.UnitSvc.CreateUnit,
-		func(request CreateUnitRequest) it.CreateUnitCommand {
-			return it.CreateUnitCommand(request)
+		func(request CreateUnitRequest) itUnit.CreateUnitCommand {
+			return itUnit.CreateUnitCommand(request)
 		},
-		func(result it.CreateUnitResult) CreateUnitResponse {
+		func(result itUnit.CreateUnitResult) CreateUnitResponse {
 			response := CreateUnitResponse{}
 			response.FromEntity(result.Data)
 			return response
@@ -55,10 +55,10 @@ func (this UnitRest) UpdateUnit(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.UnitSvc.UpdateUnit,
-		func(request UpdateUnitRequest) it.UpdateUnitCommand {
-			return it.UpdateUnitCommand(request)
+		func(request UpdateUnitRequest) itUnit.UpdateUnitCommand {
+			return itUnit.UpdateUnitCommand(request)
 		},
-		func(result it.UpdateUnitResult) UpdateUnitResponse {
+		func(result itUnit.UpdateUnitResult) UpdateUnitResponse {
 			response := UpdateUnitResponse{}
 			response.FromEntity(result.Data)
 			return response
@@ -76,10 +76,10 @@ func (this UnitRest) DeleteUnit(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.UnitSvc.DeleteUnit,
-		func(request DeleteUnitRequest) it.DeleteUnitCommand {
-			return it.DeleteUnitCommand(request)
+		func(request DeleteUnitRequest) itUnit.DeleteUnitCommand {
+			return itUnit.DeleteUnitCommand(request)
 		},
-		func(result it.DeleteUnitResult) DeleteUnitResponse {
+		func(result itUnit.DeleteUnitResult) DeleteUnitResponse {
 			response := DeleteUnitResponse{}
 			response.FromNonEntity(result.Data)
 			return response
@@ -97,10 +97,10 @@ func (this UnitRest) GetUnitById(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.UnitSvc.GetUnitById,
-		func(request GetUnitByIdRequest) it.GetUnitByIdQuery {
-			return it.GetUnitByIdQuery(request)
+		func(request GetUnitByIdRequest) itUnit.GetUnitByIdQuery {
+			return itUnit.GetUnitByIdQuery(request)
 		},
-		func(result it.GetUnitByIdResult) GetUnitByIdResponse {
+		func(result itUnit.GetUnitByIdResult) GetUnitByIdResponse {
 			response := GetUnitByIdResponse{}
 			response.FromUnit(*result.Data)
 			return response
@@ -118,10 +118,10 @@ func (this UnitRest) SearchUnits(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.UnitSvc.SearchUnits,
-		func(request SearchUnitsRequest) it.SearchUnitsQuery {
-			return it.SearchUnitsQuery(request)
+		func(request SearchUnitsRequest) itUnit.SearchUnitsQuery {
+			return itUnit.SearchUnitsQuery(request)
 		},
-		func(result it.SearchUnitsResult) SearchUnitsResponse {
+		func(result itUnit.SearchUnitsResult) SearchUnitsResponse {
 			response := SearchUnitsResponse{}
 			response.FromResult(result.Data)
 			return response

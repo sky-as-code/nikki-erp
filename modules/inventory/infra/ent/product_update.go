@@ -153,6 +153,12 @@ func (pu *ProductUpdate) SetNillableUnitID(s *string) *ProductUpdate {
 	return pu
 }
 
+// ClearUnitID clears the value of the "unit_id" field.
+func (pu *ProductUpdate) ClearUnitID() *ProductUpdate {
+	pu.mutation.ClearUnitID()
+	return pu
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (pu *ProductUpdate) SetUpdatedAt(t time.Time) *ProductUpdate {
 	pu.mutation.SetUpdatedAt(t)
@@ -324,18 +330,7 @@ func (pu *ProductUpdate) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (pu *ProductUpdate) check() error {
-	if pu.mutation.UnitCleared() && len(pu.mutation.UnitIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Product.unit"`)
-	}
-	return nil
-}
-
 func (pu *ProductUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	if err := pu.check(); err != nil {
-		return n, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(product.Table, product.Columns, sqlgraph.NewFieldSpec(product.FieldID, field.TypeString))
 	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -687,6 +682,12 @@ func (puo *ProductUpdateOne) SetNillableUnitID(s *string) *ProductUpdateOne {
 	return puo
 }
 
+// ClearUnitID clears the value of the "unit_id" field.
+func (puo *ProductUpdateOne) ClearUnitID() *ProductUpdateOne {
+	puo.mutation.ClearUnitID()
+	return puo
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (puo *ProductUpdateOne) SetUpdatedAt(t time.Time) *ProductUpdateOne {
 	puo.mutation.SetUpdatedAt(t)
@@ -871,18 +872,7 @@ func (puo *ProductUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (puo *ProductUpdateOne) check() error {
-	if puo.mutation.UnitCleared() && len(puo.mutation.UnitIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Product.unit"`)
-	}
-	return nil
-}
-
 func (puo *ProductUpdateOne) sqlSave(ctx context.Context) (_node *Product, err error) {
-	if err := puo.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(product.Table, product.Columns, sqlgraph.NewFieldSpec(product.FieldID, field.TypeString))
 	id, ok := puo.mutation.ID()
 	if !ok {

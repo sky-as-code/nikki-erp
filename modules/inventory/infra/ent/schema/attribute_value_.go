@@ -34,13 +34,20 @@ func (AttributeValueMixin) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 
-		field.JSON("value_text", model.LangJson{}),
+		field.JSON("value_text", model.LangJson{}).
+			Optional(),
 
-		field.Float("value_number"),
+		field.Float("value_number").
+			Optional().
+			Nillable(),
 
-		field.Bool("value_bool"),
+		field.Bool("value_bool").
+			Optional().
+			Nillable(),
 
-		field.String("value_ref"),
+		field.String("value_ref").
+			Optional().
+			Nillable(),
 
 		field.Int("variant_count"),
 

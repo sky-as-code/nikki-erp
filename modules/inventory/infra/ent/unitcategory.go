@@ -38,7 +38,7 @@ type UnitCategory struct {
 	// ThumbnailURL holds the value of the "thumbnail_url" field.
 	ThumbnailURL *string `json:"thumbnail_url,omitempty"`
 	// UnitID holds the value of the "unit_id" field.
-	UnitID string `json:"unit_id,omitempty"`
+	UnitID *string `json:"unit_id,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -162,7 +162,8 @@ func (uc *UnitCategory) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field unit_id", values[i])
 			} else if value.Valid {
-				uc.UnitID = value.String
+				uc.UnitID = new(string)
+				*uc.UnitID = value.String
 			}
 		case unitcategory.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -245,8 +246,10 @@ func (uc *UnitCategory) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("unit_id=")
-	builder.WriteString(uc.UnitID)
+	if v := uc.UnitID; v != nil {
+		builder.WriteString("unit_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	if v := uc.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")

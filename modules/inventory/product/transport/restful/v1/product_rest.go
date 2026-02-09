@@ -6,13 +6,13 @@ import (
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 )
 
 type productRestParams struct {
 	dig.In
 
-	ProductSvc it.ProductService
+	ProductSvc itProduct.ProductService
 }
 
 func NewProductRest(params productRestParams) *ProductRest {
@@ -23,7 +23,7 @@ func NewProductRest(params productRestParams) *ProductRest {
 
 type ProductRest struct {
 	httpserver.RestBase
-	ProductSvc it.ProductService
+	ProductSvc itProduct.ProductService
 }
 
 func (this ProductRest) CreateProduct(echoCtx echo.Context) (err error) {
@@ -34,10 +34,10 @@ func (this ProductRest) CreateProduct(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.ProductSvc.CreateProduct,
-		func(request CreateProductRequest) it.CreateProductCommand {
-			return it.CreateProductCommand(request)
+		func(request CreateProductRequest) itProduct.CreateProductCommand {
+			return itProduct.CreateProductCommand(request)
 		},
-		func(result it.CreateProductResult) CreateProductResponse {
+		func(result itProduct.CreateProductResult) CreateProductResponse {
 			response := CreateProductResponse{}
 			response.FromEntity(result.Data)
 			return response
@@ -55,10 +55,10 @@ func (this ProductRest) UpdateProduct(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.ProductSvc.UpdateProduct,
-		func(request UpdateProductRequest) it.UpdateProductCommand {
-			return it.UpdateProductCommand(request)
+		func(request UpdateProductRequest) itProduct.UpdateProductCommand {
+			return itProduct.UpdateProductCommand(request)
 		},
-		func(result it.UpdateProductResult) UpdateProductResponse {
+		func(result itProduct.UpdateProductResult) UpdateProductResponse {
 			response := UpdateProductResponse{}
 			response.FromEntity(result.Data)
 			return response
@@ -76,10 +76,10 @@ func (this ProductRest) DeleteProduct(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.ProductSvc.DeleteProduct,
-		func(request DeleteProductRequest) it.DeleteProductCommand {
-			return it.DeleteProductCommand(request)
+		func(request DeleteProductRequest) itProduct.DeleteProductCommand {
+			return itProduct.DeleteProductCommand(request)
 		},
-		func(result it.DeleteProductResult) DeleteProductResponse {
+		func(result itProduct.DeleteProductResult) DeleteProductResponse {
 			response := DeleteProductResponse{}
 			response.FromNonEntity(result.Data)
 			return response
@@ -97,10 +97,10 @@ func (this ProductRest) GetProductById(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.ProductSvc.GetProductById,
-		func(request GetProductByIdRequest) it.GetProductByIdQuery {
-			return it.GetProductByIdQuery(request)
+		func(request GetProductByIdRequest) itProduct.GetProductByIdQuery {
+			return itProduct.GetProductByIdQuery(request)
 		},
-		func(result it.GetProductByIdResult) GetProductByIdResponse {
+		func(result itProduct.GetProductByIdResult) GetProductByIdResponse {
 			response := GetProductByIdResponse{}
 			response.FromProduct(*result.Data)
 			return response
@@ -118,10 +118,10 @@ func (this ProductRest) SearchProducts(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.ProductSvc.SearchProducts,
-		func(request SearchProductsRequest) it.SearchProductsQuery {
-			return it.SearchProductsQuery(request)
+		func(request SearchProductsRequest) itProduct.SearchProductsQuery {
+			return itProduct.SearchProductsQuery(request)
 		},
-		func(result it.SearchProductsResult) SearchProductsResponse {
+		func(result itProduct.SearchProductsResult) SearchProductsResponse {
 			response := SearchProductsResponse{}
 			response.FromResult(result.Data)
 			return response

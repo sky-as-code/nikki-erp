@@ -29,11 +29,11 @@ type AttributeValue struct {
 	// ValueText holds the value of the "value_text" field.
 	ValueText model.LangJson `json:"value_text,omitempty"`
 	// ValueNumber holds the value of the "value_number" field.
-	ValueNumber float64 `json:"value_number,omitempty"`
+	ValueNumber *float64 `json:"value_number,omitempty"`
 	// ValueBool holds the value of the "value_bool" field.
-	ValueBool bool `json:"value_bool,omitempty"`
+	ValueBool *bool `json:"value_bool,omitempty"`
 	// ValueRef holds the value of the "value_ref" field.
-	ValueRef string `json:"value_ref,omitempty"`
+	ValueRef *string `json:"value_ref,omitempty"`
 	// VariantCount holds the value of the "variant_count" field.
 	VariantCount int `json:"variant_count,omitempty"`
 	// Etag holds the value of the "etag" field.
@@ -155,19 +155,22 @@ func (av *AttributeValue) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field value_number", values[i])
 			} else if value.Valid {
-				av.ValueNumber = value.Float64
+				av.ValueNumber = new(float64)
+				*av.ValueNumber = value.Float64
 			}
 		case attributevalue.FieldValueBool:
 			if value, ok := values[i].(*sql.NullBool); !ok {
 				return fmt.Errorf("unexpected type %T for field value_bool", values[i])
 			} else if value.Valid {
-				av.ValueBool = value.Bool
+				av.ValueBool = new(bool)
+				*av.ValueBool = value.Bool
 			}
 		case attributevalue.FieldValueRef:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field value_ref", values[i])
 			} else if value.Valid {
-				av.ValueRef = value.String
+				av.ValueRef = new(string)
+				*av.ValueRef = value.String
 			}
 		case attributevalue.FieldVariantCount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -246,14 +249,20 @@ func (av *AttributeValue) String() string {
 	builder.WriteString("value_text=")
 	builder.WriteString(fmt.Sprintf("%v", av.ValueText))
 	builder.WriteString(", ")
-	builder.WriteString("value_number=")
-	builder.WriteString(fmt.Sprintf("%v", av.ValueNumber))
+	if v := av.ValueNumber; v != nil {
+		builder.WriteString("value_number=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
-	builder.WriteString("value_bool=")
-	builder.WriteString(fmt.Sprintf("%v", av.ValueBool))
+	if v := av.ValueBool; v != nil {
+		builder.WriteString("value_bool=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
-	builder.WriteString("value_ref=")
-	builder.WriteString(av.ValueRef)
+	if v := av.ValueRef; v != nil {
+		builder.WriteString("value_ref=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("variant_count=")
 	builder.WriteString(fmt.Sprintf("%v", av.VariantCount))

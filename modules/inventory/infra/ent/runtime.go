@@ -34,15 +34,15 @@ func init() {
 	// attribute.DefaultEnumValueSort holds the default value on creation for the enum_value_sort field.
 	attribute.DefaultEnumValueSort = attributeDescEnumValueSort.Default.(bool)
 	// attributeDescIsEnum is the schema descriptor for is_enum field.
-	attributeDescIsEnum := attributeMixinFields0[9].Descriptor()
+	attributeDescIsEnum := attributeMixinFields0[10].Descriptor()
 	// attribute.DefaultIsEnum holds the default value on creation for the is_enum field.
 	attribute.DefaultIsEnum = attributeDescIsEnum.Default.(bool)
 	// attributeDescIsRequired is the schema descriptor for is_required field.
-	attributeDescIsRequired := attributeMixinFields0[10].Descriptor()
+	attributeDescIsRequired := attributeMixinFields0[11].Descriptor()
 	// attribute.DefaultIsRequired holds the default value on creation for the is_required field.
 	attribute.DefaultIsRequired = attributeDescIsRequired.Default.(bool)
 	// attributeDescSortIndex is the schema descriptor for sort_index field.
-	attributeDescSortIndex := attributeMixinFields0[12].Descriptor()
+	attributeDescSortIndex := attributeMixinFields0[13].Descriptor()
 	// attribute.DefaultSortIndex holds the default value on creation for the sort_index field.
 	attribute.DefaultSortIndex = attributeDescSortIndex.Default.(int)
 	attributegroupMixin := schema.AttributeGroup{}.Mixin()
@@ -90,15 +90,15 @@ func init() {
 	// productcategory.DefaultEnumValueSort holds the default value on creation for the enum_value_sort field.
 	productcategory.DefaultEnumValueSort = productcategoryDescEnumValueSort.Default.(bool)
 	// productcategoryDescIsEnum is the schema descriptor for is_enum field.
-	productcategoryDescIsEnum := productcategoryMixinFields0[9].Descriptor()
+	productcategoryDescIsEnum := productcategoryMixinFields0[10].Descriptor()
 	// productcategory.DefaultIsEnum holds the default value on creation for the is_enum field.
 	productcategory.DefaultIsEnum = productcategoryDescIsEnum.Default.(bool)
 	// productcategoryDescIsRequired is the schema descriptor for is_required field.
-	productcategoryDescIsRequired := productcategoryMixinFields0[10].Descriptor()
+	productcategoryDescIsRequired := productcategoryMixinFields0[11].Descriptor()
 	// productcategory.DefaultIsRequired holds the default value on creation for the is_required field.
 	productcategory.DefaultIsRequired = productcategoryDescIsRequired.Default.(bool)
 	// productcategoryDescSortIndex is the schema descriptor for sort_index field.
-	productcategoryDescSortIndex := productcategoryMixinFields0[12].Descriptor()
+	productcategoryDescSortIndex := productcategoryMixinFields0[13].Descriptor()
 	// productcategory.DefaultSortIndex holds the default value on creation for the sort_index field.
 	productcategory.DefaultSortIndex = productcategoryDescSortIndex.Default.(int)
 	unitMixin := schema.Unit{}.Mixin()
