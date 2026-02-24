@@ -5,11 +5,16 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/{{org_id}}/inventory/products
+  url: {{api_host}}/v1/{{org_id}}/inventory/products?withVariants=true
   body: none
   auth: inherit
 }
 
+params:query {
+  withVariants: true
+}
+
 settings {
   encodeUrl: true
+  timeout: 0
 }

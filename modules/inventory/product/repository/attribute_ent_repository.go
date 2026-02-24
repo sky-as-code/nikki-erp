@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"entgo.io/ent/dialect/sql"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -30,6 +31,21 @@ func (r *AttributeEntRepository) attributeClient(ctx crud.Context) *ent.Attribut
 	return r.client.Attribute
 }
 
+// ✅ Get next sort index for product
+func (r *AttributeEntRepository) GetNextSortIndex(ctx crud.Context, productId model.Id) (int, error) {
+	lastAttribute, err := r.attributeClient(ctx).Query().
+		Where(entAttribute.ProductID(productId)).
+		Order(entAttribute.BySortIndex(sql.OrderDesc())).
+		First(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return 0, err
+	}
+	if ent.IsNotFound(err) {
+		return 1, nil
+	}
+	return lastAttribute.SortIndex + 1, nil
+}
+
 // ✅ Create Attribute
 func (r *AttributeEntRepository) Create(ctx crud.Context, attribute *domain.Attribute) (*domain.Attribute, error) {
 	creation := r.attributeClient(ctx).Create().
@@ -48,12 +64,8 @@ func (r *AttributeEntRepository) Create(ctx crud.Context, attribute *domain.Attr
 		creation.SetDisplayName(*attribute.DisplayName)
 	}
 
-	if attribute.EnumTextValue != nil {
-		creation.SetEnumTextValue(*attribute.EnumTextValue)
-	}
-
-	if attribute.EnumNumberValue != nil {
-		creation.SetEnumNumberValue(*attribute.EnumNumberValue)
+	if attribute.EnumValue != nil {
+		creation.SetEnumValue(*attribute.EnumValue)
 	}
 
 	return db.Mutate(ctx, creation, ent.IsNotFound, itAttribute.EntToAttribute)
@@ -75,12 +87,8 @@ func (r *AttributeEntRepository) Update(ctx crud.Context, attribute *domain.Attr
 		update.SetDisplayName(*attribute.DisplayName)
 	}
 
-	if attribute.EnumTextValue != nil {
-		update.SetEnumTextValue(*attribute.EnumTextValue)
-	}
-
-	if attribute.EnumNumberValue != nil {
-		update.SetEnumNumberValue(*attribute.EnumNumberValue)
+	if attribute.EnumValue != nil {
+		update.SetEnumValue(*attribute.EnumValue)
 	}
 
 	if len(update.Mutation().Fields()) > 0 {

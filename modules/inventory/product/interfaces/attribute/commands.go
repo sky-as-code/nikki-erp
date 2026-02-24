@@ -1,6 +1,8 @@
 package attribute
 
 import (
+	"encoding/json"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
@@ -18,21 +20,26 @@ var createAttributeCommandType = cqrs.RequestType{
 }
 
 type CreateAttributeCommand struct {
-	ProductId       model.Id          `param:"productId" json:"productId"`
-	CodeName        string            `json:"codeName"`
-	DisplayName     model.LangJson    `json:"displayName"`
-	SortIndex       *int              `json:"sortIndex,omitempty"`
-	DataType        string            `json:"dataType"`
-	IsRequired      bool              `json:"isRequired"`
-	IsEnum          *bool             `json:"isEnum,omitempty"`
-	EnumTextValue   *[]model.LangJson `json:"enumTextValue,omitempty"`
-	EnumNumberValue *[]float64        `json:"enumNumberValue,omitempty"`
-	EnumValueSort   *bool             `json:"enumValueSort,omitempty"`
-	GroupId         *model.Id         `json:"groupId,omitempty"`
+	ProductId     model.Id           `param:"productId" json:"productId"`
+	CodeName      string             `json:"codeName"`
+	DisplayName   model.LangJson     `json:"displayName"`
+	DataType      string             `json:"dataType"`
+	IsRequired    bool               `json:"isRequired"`
+	IsEnum        *bool              `json:"isEnum,omitempty"`
+	EnumValue     *[]json.RawMessage `json:"enumValue,omitempty"`
+	EnumValueSort *bool              `json:"enumValueSort,omitempty"`
+	GroupId       *model.Id          `json:"groupId,omitempty"`
 }
 
 func (CreateAttributeCommand) CqrsRequestType() cqrs.RequestType {
 	return createAttributeCommandType
+}
+
+func (this CreateAttributeCommand) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.ProductId, true),
+	}
+	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type CreateAttributeResult = GetAttributeByIdResult
@@ -46,18 +53,17 @@ var updateAttributeCommandType = cqrs.RequestType{
 }
 
 type UpdateAttributeCommand struct {
-	Id              model.Id          `param:"id" json:"id"`
-	Etag            model.Etag        `json:"etag"`
-	CodeName        *string           `json:"codeName,omitempty"`
-	DisplayName     *model.LangJson   `json:"displayName,omitempty"`
-	SortIndex       *int              `json:"sortIndex,omitempty"`
-	DataType        *string           `json:"dataType,omitempty"`
-	IsRequired      *bool             `json:"isRequired,omitempty"`
-	IsEnum          *bool             `json:"isEnum,omitempty"`
-	EnumTextValue   *[]model.LangJson `json:"enumTextValue,omitempty"`
-	EnumNumberValue *[]float64        `json:"enumNumberValue,omitempty"`
-	EnumValueSort   *bool             `json:"enumValueSort,omitempty"`
-	GroupId         *model.Id         `json:"groupId,omitempty"`
+	Id            model.Id           `param:"id" json:"id"`
+	Etag          model.Etag         `json:"etag"`
+	CodeName      *string            `json:"codeName,omitempty"`
+	DisplayName   *model.LangJson    `json:"displayName,omitempty"`
+	SortIndex     *int               `json:"sortIndex,omitempty"`
+	DataType      *string            `json:"dataType,omitempty"`
+	IsRequired    *bool              `json:"isRequired,omitempty"`
+	IsEnum        *bool              `json:"isEnum,omitempty"`
+	EnumValue     *[]json.RawMessage `json:"enumValue,omitempty"`
+	EnumValueSort *bool              `json:"enumValueSort,omitempty"`
+	GroupId       *model.Id          `json:"groupId,omitempty"`
 }
 
 func (UpdateAttributeCommand) CqrsRequestType() cqrs.RequestType {

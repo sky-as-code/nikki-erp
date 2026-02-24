@@ -32,7 +32,7 @@ func (r *VariantEntRepository) variantClient(ctx crud.Context) *ent.VariantClien
 
 // ✅ Create Variant
 func (r *VariantEntRepository) Create(ctx crud.Context, variant *domain.Variant) (*domain.Variant, error) {
-	creation := r.client.Variant.Create().
+	creation := r.variantClient(ctx).Create().
 		SetID(*variant.Id).
 		SetProductID(*variant.ProductId).
 		SetSku(*variant.Sku).
@@ -54,7 +54,7 @@ func (r *VariantEntRepository) Create(ctx crud.Context, variant *domain.Variant)
 
 // ✅ Update Variant
 func (r *VariantEntRepository) Update(ctx crud.Context, variant *domain.Variant, prevEtag model.Etag) (*domain.Variant, error) {
-	update := r.client.Variant.UpdateOneID(*variant.Id).
+	update := r.variantClient(ctx).UpdateOneID(*variant.Id).
 		Where(entVariant.Etag(prevEtag))
 
 	// SKU is immutable, cannot be updated

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -70,15 +71,9 @@ func (ac *AttributeCreate) SetNillableEnumValueSort(b *bool) *AttributeCreate {
 	return ac
 }
 
-// SetEnumTextValue sets the "enum_text_value" field.
-func (ac *AttributeCreate) SetEnumTextValue(mj []model.LangJson) *AttributeCreate {
-	ac.mutation.SetEnumTextValue(mj)
-	return ac
-}
-
-// SetEnumNumberValue sets the "enum_number_value" field.
-func (ac *AttributeCreate) SetEnumNumberValue(f []float64) *AttributeCreate {
-	ac.mutation.SetEnumNumberValue(f)
+// SetEnumValue sets the "enum_value" field.
+func (ac *AttributeCreate) SetEnumValue(jm []json.RawMessage) *AttributeCreate {
+	ac.mutation.SetEnumValue(jm)
 	return ac
 }
 
@@ -353,13 +348,9 @@ func (ac *AttributeCreate) createSpec() (*Attribute, *sqlgraph.CreateSpec) {
 		_spec.SetField(attribute.FieldEnumValueSort, field.TypeBool, value)
 		_node.EnumValueSort = value
 	}
-	if value, ok := ac.mutation.EnumTextValue(); ok {
-		_spec.SetField(attribute.FieldEnumTextValue, field.TypeJSON, value)
-		_node.EnumTextValue = value
-	}
-	if value, ok := ac.mutation.EnumNumberValue(); ok {
-		_spec.SetField(attribute.FieldEnumNumberValue, field.TypeJSON, value)
-		_node.EnumNumberValue = value
+	if value, ok := ac.mutation.EnumValue(); ok {
+		_spec.SetField(attribute.FieldEnumValue, field.TypeJSON, value)
+		_node.EnumValue = value
 	}
 	if value, ok := ac.mutation.Etag(); ok {
 		_spec.SetField(attribute.FieldEtag, field.TypeString, value)

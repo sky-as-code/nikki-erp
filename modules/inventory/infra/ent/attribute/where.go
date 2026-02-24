@@ -310,24 +310,14 @@ func EnumValueSortNEQ(v bool) predicate.Attribute {
 	return predicate.Attribute(sql.FieldNEQ(FieldEnumValueSort, v))
 }
 
-// EnumTextValueIsNil applies the IsNil predicate on the "enum_text_value" field.
-func EnumTextValueIsNil() predicate.Attribute {
-	return predicate.Attribute(sql.FieldIsNull(FieldEnumTextValue))
+// EnumValueIsNil applies the IsNil predicate on the "enum_value" field.
+func EnumValueIsNil() predicate.Attribute {
+	return predicate.Attribute(sql.FieldIsNull(FieldEnumValue))
 }
 
-// EnumTextValueNotNil applies the NotNil predicate on the "enum_text_value" field.
-func EnumTextValueNotNil() predicate.Attribute {
-	return predicate.Attribute(sql.FieldNotNull(FieldEnumTextValue))
-}
-
-// EnumNumberValueIsNil applies the IsNil predicate on the "enum_number_value" field.
-func EnumNumberValueIsNil() predicate.Attribute {
-	return predicate.Attribute(sql.FieldIsNull(FieldEnumNumberValue))
-}
-
-// EnumNumberValueNotNil applies the NotNil predicate on the "enum_number_value" field.
-func EnumNumberValueNotNil() predicate.Attribute {
-	return predicate.Attribute(sql.FieldNotNull(FieldEnumNumberValue))
+// EnumValueNotNil applies the NotNil predicate on the "enum_value" field.
+func EnumValueNotNil() predicate.Attribute {
+	return predicate.Attribute(sql.FieldNotNull(FieldEnumValue))
 }
 
 // EtagEQ applies the EQ predicate on the "etag" field.

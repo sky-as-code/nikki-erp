@@ -11,11 +11,6 @@ func EntToVariant(entVariant *ent.Variant) *domain.Variant {
 	variant := &domain.Variant{}
 	model.MustCopy(entVariant, variant)
 
-	// Handle relations if loaded
-	// if entVariant.Edges.Product != nil {
-	// 	// Handle product relation if needed
-	// }
-
 	return variant
 }
 

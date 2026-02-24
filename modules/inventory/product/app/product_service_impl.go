@@ -14,12 +14,11 @@ import (
 func NewProductServiceImpl(
 	productRepo itProduct.ProductRepository,
 	unitService itUnit.UnitService,
-	variantService itVariant.VariantService,
 ) itProduct.ProductService {
 	return &ProductServiceImpl{
 		productRepo:    productRepo,
 		unitService:    unitService,
-		variantService: variantService,
+		variantService: nil, // Will be injected via SetVariantService
 	}
 }
 
@@ -29,16 +28,34 @@ type ProductServiceImpl struct {
 	variantService itVariant.VariantService
 }
 
+// SetVariantService injects VariantService to break circular dependency
+func (this *ProductServiceImpl) SetVariantService(variantService itVariant.VariantService) {
+	this.variantService = variantService
+}
+
 // Create
 
 func (this *ProductServiceImpl) CreateProduct(ctx crud.Context, cmd itProduct.CreateProductCommand) (result *itProduct.CreateProductResult, err error) {
+	entTx, err := this.productRepo.BeginTransaction(ctx)
+	ft.PanicOnErr(err)
+
+	ctx.SetDbTranx(entTx)
+
 	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to add or remove users"); e != nil {
-			err = e
+		if err != nil {
+			entTx.Rollback()
+			return
 		}
+		if result != nil && result.ClientError != nil {
+			entTx.Rollback()
+			return
+		}
+
+		entTx.Commit()
 	}()
 
 	var dbProduct *domain.Product
+	var idVariant string
 	product := cmd.ToDomainModel()
 	product.SetDefaults()
 
@@ -49,18 +66,16 @@ func (this *ProductServiceImpl) CreateProduct(ctx crud.Context, cmd itProduct.Cr
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			err = this.assertCreateProduct(ctx, cmd, vErrs)
-			ft.PanicOnErr(err)
+			this.assertCreateProduct(ctx, cmd, vErrs)
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			dbProduct, err = this.productRepo.Create(ctx, product)
-			ft.PanicOnErr(err)
-			return nil
+			return err
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			err = this.assertCreateVariant(ctx, cmd, *dbProduct.Id, vErrs)
-			ft.PanicOnErr(err)
+			idVariant, _ = this.assertCreateVariant(ctx, cmd, *dbProduct.Id, vErrs)
+			product.DefaultVariantId = &idVariant
 			return nil
 		}).
 		End()
@@ -163,7 +178,6 @@ func (this *ProductServiceImpl) SearchProducts(ctx crud.Context, query itProduct
 			q.SetDefaults()
 		},
 		ParseSearchGraph: func(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-			// Expect repository to provide ParseSearchGraph like Party repo
 			return this.productRepo.ParseSearchGraph(criteria)
 		},
 		RepoSearch: func(ctx crud.Context, query itProduct.SearchProductsQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.Product], error) {
@@ -197,9 +211,7 @@ func (this *ProductServiceImpl) assertCreateProduct(ctx crud.Context, cmd itProd
 		unit, err := this.unitService.GetUnitById(ctx, itUnit.GetUnitByIdQuery{
 			Id: *cmd.UnitId,
 		})
-		if err != nil {
-			return err
-		}
+		ft.PanicOnErr(err)
 
 		if unit.Data == nil {
 			vErrs.Append("unit", "unit does not exist")
@@ -210,7 +222,7 @@ func (this *ProductServiceImpl) assertCreateProduct(ctx crud.Context, cmd itProd
 	return nil
 }
 
-func (this *ProductServiceImpl) assertCreateVariant(ctx crud.Context, cmd itProduct.CreateProductCommand, productId string, vErrs *ft.ValidationErrors) error {
+func (this *ProductServiceImpl) assertCreateVariant(ctx crud.Context, cmd itProduct.CreateProductCommand, productId string, vErrs *ft.ValidationErrors) (idVariant string, err error) {
 	defaultVariant, err := this.variantService.CreateVariant(ctx, itVariant.CreateVariantCommand{
 		ProductId:     productId,
 		Sku:           cmd.Sku,
@@ -221,13 +233,36 @@ func (this *ProductServiceImpl) assertCreateVariant(ctx crud.Context, cmd itProd
 
 	if defaultVariant.Data == nil {
 		vErrs.Append("defaultVariant", "failed to create default variant")
-		return nil
+		return "", nil
 	}
 
-	return nil
+	return *defaultVariant.Data.Id, nil
 }
 
 func (this *ProductServiceImpl) assertUpdateProduct(ctx crud.Context, product *domain.Product, _ *domain.Product, vErrs *ft.ValidationErrors) error {
+	if product.UnitId != nil {
+		unit, err := this.unitService.GetUnitById(ctx, itUnit.GetUnitByIdQuery{
+			Id: *product.UnitId,
+		})
+		ft.PanicOnErr(err)
+
+		if unit.Data == nil {
+			vErrs.Append("unit", "unit does not exist")
+			return nil
+		}
+	}
+
+	if product.DefaultVariantId != nil {
+		variant, err := this.variantService.GetVariantById(ctx, itVariant.GetVariantByIdQuery{
+			Id: *product.DefaultVariantId,
+		})
+		ft.PanicOnErr(err)
+
+		if variant.Data == nil {
+			vErrs.Append("defaultVariant", "default variant does not exist")
+			return nil
+		}
+	}
 
 	return nil
 }
@@ -241,9 +276,7 @@ func (this *ProductServiceImpl) assertProductIdExists(ctx crud.Context, product 
 		Id:           *product.Id,
 		WithVariants: false,
 	})
-	if err != nil {
-		return nil, err
-	}
+	ft.PanicOnErr(err)
 
 	if dbProduct == nil {
 		vErrs.Append("id", "product not found")

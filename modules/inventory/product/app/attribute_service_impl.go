@@ -1,48 +1,67 @@
 package app
 
 import (
+	"encoding/json"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 )
 
 func NewAttributeServiceImpl(
 	attributeRepo itAttribute.AttributeRepository,
+	productSvc itProduct.ProductService,
 ) itAttribute.AttributeService {
 	return &AttributeServiceImpl{
 		attributeRepo: attributeRepo,
+		productSvc:    productSvc,
 	}
 }
 
 type AttributeServiceImpl struct {
 	attributeRepo itAttribute.AttributeRepository
+	productSvc    itProduct.ProductService
 }
 
 // Create
 
-func (this *AttributeServiceImpl) CreateAttribute(ctx crud.Context, cmd itAttribute.CreateAttributeCommand) (*itAttribute.CreateAttributeResult, error) {
-	result, err := crud.Create(ctx, crud.CreateParam[*domain.Attribute, itAttribute.CreateAttributeCommand, itAttribute.CreateAttributeResult]{
-		Action:              "create attribute",
-		Command:             cmd,
-		RepoCreate:          this.attributeRepo.Create,
-		AssertBusinessRules: this.assertCreateAttribute,
-		Sanitize:            this.sanitizeAttribute,
-		SetDefault:          this.setAttributeDefaults,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttribute.CreateAttributeResult {
-			return &itAttribute.CreateAttributeResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.Attribute) *itAttribute.CreateAttributeResult {
-			return &itAttribute.CreateAttributeResult{
-				HasData: true,
-				Data:    model,
-			}
-		},
-	})
-	return result, err
+func (this *AttributeServiceImpl) CreateAttribute(ctx crud.Context, cmd itAttribute.CreateAttributeCommand) (result *itAttribute.CreateAttributeResult, err error) {
+
+	attribute := cmd.ToDomainModel()
+	this.setAttributeDefaults(ctx, attribute)
+
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			this.assertCreateAttribute(ctx, attribute, vErrs)
+			return nil
+		}).
+		End()
+
+	if vErrs.Count() > 0 {
+		return &itAttribute.CreateAttributeResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	dbAttribute, err := this.attributeRepo.Create(ctx, attribute)
+	if err != nil {
+		return nil, err
+	}
+
+	return &itAttribute.CreateAttributeResult{
+		HasData: true,
+		Data:    dbAttribute,
+	}, nil
 }
 
 // Update
@@ -189,16 +208,53 @@ func (this *AttributeServiceImpl) SearchAttributes(ctx crud.Context, query itAtt
 // assert methods
 // ---------------------------------------------------------------------------------------------------------------------------------------------//
 func (this *AttributeServiceImpl) assertCreateAttribute(ctx crud.Context, attribute *domain.Attribute, vErrs *ft.ValidationErrors) error {
-	dbAttribute, err := this.attributeRepo.FindById(ctx, itAttribute.FindByIdParam{
-		Id: *attribute.Id,
+	product, err := this.productSvc.GetProductById(ctx, itProduct.GetProductByIdQuery{
+		Id: *attribute.ProductId,
 	})
-	if err != nil {
-		return err
+	ft.PanicOnErr(err)
+
+	if product.Data == nil {
+		vErrs.Append("id", "product does not exist")
+		return nil
 	}
 
-	if dbAttribute != nil {
-		vErrs.Append("id", "attribute already exists")
+	attributeWithSameCodeName, err := this.attributeRepo.FindByCodeName(ctx, itAttribute.GetAttributeByCodeName{
+		ProductId: *attribute.ProductId,
+		CodeName:  *attribute.CodeName,
+	})
+	ft.PanicOnErr(err)
+
+	if attributeWithSameCodeName != nil {
+		vErrs.Append("codeName", "attribute code name already exists for this product")
+	}
+
+	if attribute.IsEnum == nil || *attribute.IsEnum == false {
+		if attribute.EnumValue != nil && len(*attribute.EnumValue) > 0 {
+			vErrs.Append("enumValue", "enum value should be empty when isEnum is false")
+		}
 		return nil
+	}
+
+	if *attribute.DataType == "string" {
+		for _, v := range *attribute.EnumValue {
+			var enumValue model.LangJson
+			err := json.Unmarshal(v, &enumValue)
+			if err != nil {
+				vErrs.Append("enumValue", "invalid enum value, should be a valid lang json")
+				return nil
+			}
+		}
+	} else if *attribute.DataType == "number" {
+		for _, v := range *attribute.EnumValue {
+			var enumValue float64
+			err := json.Unmarshal(v, &enumValue)
+			if err != nil {
+				vErrs.Append("enumValue", "invalid enum value, should be a number")
+				return nil
+			}
+		}
+	} else {
+		vErrs.Append("dataType", "invalid data type, only string and number are allowed for enum attribute")
 	}
 
 	return nil
@@ -206,11 +262,16 @@ func (this *AttributeServiceImpl) assertCreateAttribute(ctx crud.Context, attrib
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------//
 func (s *AttributeServiceImpl) sanitizeAttribute(_ *domain.Attribute) {
-	// Keep for future: trim/sanitize plain-text fields if any.
 }
 
-func (s *AttributeServiceImpl) setAttributeDefaults(attribute *domain.Attribute) {
+func (s *AttributeServiceImpl) setAttributeDefaults(ctx crud.Context, attribute *domain.Attribute) {
 	attribute.SetDefaults()
+
+	nextSortIndex, err := s.attributeRepo.GetNextSortIndex(ctx, *attribute.ProductId)
+	if err != nil {
+		return
+	}
+	attribute.SortIndex = &nextSortIndex
 }
 
 func (s *AttributeServiceImpl) assertAttributeIdExists(ctx crud.Context, attribute *domain.Attribute, vErrs *ft.ValidationErrors) (*domain.Attribute, error) {

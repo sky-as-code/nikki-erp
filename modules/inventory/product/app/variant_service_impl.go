@@ -16,12 +16,11 @@ import (
 
 func NewVariantServiceImpl(
 	variantRepo itVariant.VariantRepository,
-	attribute itAttribute.AttributeService,
 	attributeValue itAttributeValue.AttributeValueService,
 ) itVariant.VariantService {
 	return &VariantServiceImpl{
 		variantRepo:    variantRepo,
-		attribute:      attribute,
+		attribute:      nil, // Will be injected via SetAttributeService
 		attributeValue: attributeValue,
 	}
 }
@@ -30,6 +29,11 @@ type VariantServiceImpl struct {
 	variantRepo    itVariant.VariantRepository
 	attribute      itAttribute.AttributeService
 	attributeValue itAttributeValue.AttributeValueService
+}
+
+// SetAttributeService injects AttributeService to break circular dependency
+func (this *VariantServiceImpl) SetAttributeService(attribute itAttribute.AttributeService) {
+	this.attribute = attribute
 }
 
 // Create

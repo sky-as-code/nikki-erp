@@ -9,6 +9,7 @@ import (
 )
 
 type AttributeRepository interface {
+	GetNextSortIndex(ctx crud.Context, productId model.Id) (int, error)
 	Create(ctx crud.Context, attribute *domain.Attribute) (*domain.Attribute, error)
 	Update(ctx crud.Context, attribute *domain.Attribute, prevEtag model.Etag) (*domain.Attribute, error)
 	DeleteById(ctx crud.Context, id model.Id) (int, error)

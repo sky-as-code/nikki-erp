@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -87,39 +88,21 @@ func (au *AttributeUpdate) SetNillableEnumValueSort(b *bool) *AttributeUpdate {
 	return au
 }
 
-// SetEnumTextValue sets the "enum_text_value" field.
-func (au *AttributeUpdate) SetEnumTextValue(mj []model.LangJson) *AttributeUpdate {
-	au.mutation.SetEnumTextValue(mj)
+// SetEnumValue sets the "enum_value" field.
+func (au *AttributeUpdate) SetEnumValue(jm []json.RawMessage) *AttributeUpdate {
+	au.mutation.SetEnumValue(jm)
 	return au
 }
 
-// AppendEnumTextValue appends mj to the "enum_text_value" field.
-func (au *AttributeUpdate) AppendEnumTextValue(mj []model.LangJson) *AttributeUpdate {
-	au.mutation.AppendEnumTextValue(mj)
+// AppendEnumValue appends jm to the "enum_value" field.
+func (au *AttributeUpdate) AppendEnumValue(jm []json.RawMessage) *AttributeUpdate {
+	au.mutation.AppendEnumValue(jm)
 	return au
 }
 
-// ClearEnumTextValue clears the value of the "enum_text_value" field.
-func (au *AttributeUpdate) ClearEnumTextValue() *AttributeUpdate {
-	au.mutation.ClearEnumTextValue()
-	return au
-}
-
-// SetEnumNumberValue sets the "enum_number_value" field.
-func (au *AttributeUpdate) SetEnumNumberValue(f []float64) *AttributeUpdate {
-	au.mutation.SetEnumNumberValue(f)
-	return au
-}
-
-// AppendEnumNumberValue appends f to the "enum_number_value" field.
-func (au *AttributeUpdate) AppendEnumNumberValue(f []float64) *AttributeUpdate {
-	au.mutation.AppendEnumNumberValue(f)
-	return au
-}
-
-// ClearEnumNumberValue clears the value of the "enum_number_value" field.
-func (au *AttributeUpdate) ClearEnumNumberValue() *AttributeUpdate {
-	au.mutation.ClearEnumNumberValue()
+// ClearEnumValue clears the value of the "enum_value" field.
+func (au *AttributeUpdate) ClearEnumValue() *AttributeUpdate {
+	au.mutation.ClearEnumValue()
 	return au
 }
 
@@ -379,27 +362,16 @@ func (au *AttributeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := au.mutation.EnumValueSort(); ok {
 		_spec.SetField(attribute.FieldEnumValueSort, field.TypeBool, value)
 	}
-	if value, ok := au.mutation.EnumTextValue(); ok {
-		_spec.SetField(attribute.FieldEnumTextValue, field.TypeJSON, value)
+	if value, ok := au.mutation.EnumValue(); ok {
+		_spec.SetField(attribute.FieldEnumValue, field.TypeJSON, value)
 	}
-	if value, ok := au.mutation.AppendedEnumTextValue(); ok {
+	if value, ok := au.mutation.AppendedEnumValue(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, attribute.FieldEnumTextValue, value)
+			sqljson.Append(u, attribute.FieldEnumValue, value)
 		})
 	}
-	if au.mutation.EnumTextValueCleared() {
-		_spec.ClearField(attribute.FieldEnumTextValue, field.TypeJSON)
-	}
-	if value, ok := au.mutation.EnumNumberValue(); ok {
-		_spec.SetField(attribute.FieldEnumNumberValue, field.TypeJSON, value)
-	}
-	if value, ok := au.mutation.AppendedEnumNumberValue(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, attribute.FieldEnumNumberValue, value)
-		})
-	}
-	if au.mutation.EnumNumberValueCleared() {
-		_spec.ClearField(attribute.FieldEnumNumberValue, field.TypeJSON)
+	if au.mutation.EnumValueCleared() {
+		_spec.ClearField(attribute.FieldEnumValue, field.TypeJSON)
 	}
 	if value, ok := au.mutation.Etag(); ok {
 		_spec.SetField(attribute.FieldEtag, field.TypeString, value)
@@ -599,39 +571,21 @@ func (auo *AttributeUpdateOne) SetNillableEnumValueSort(b *bool) *AttributeUpdat
 	return auo
 }
 
-// SetEnumTextValue sets the "enum_text_value" field.
-func (auo *AttributeUpdateOne) SetEnumTextValue(mj []model.LangJson) *AttributeUpdateOne {
-	auo.mutation.SetEnumTextValue(mj)
+// SetEnumValue sets the "enum_value" field.
+func (auo *AttributeUpdateOne) SetEnumValue(jm []json.RawMessage) *AttributeUpdateOne {
+	auo.mutation.SetEnumValue(jm)
 	return auo
 }
 
-// AppendEnumTextValue appends mj to the "enum_text_value" field.
-func (auo *AttributeUpdateOne) AppendEnumTextValue(mj []model.LangJson) *AttributeUpdateOne {
-	auo.mutation.AppendEnumTextValue(mj)
+// AppendEnumValue appends jm to the "enum_value" field.
+func (auo *AttributeUpdateOne) AppendEnumValue(jm []json.RawMessage) *AttributeUpdateOne {
+	auo.mutation.AppendEnumValue(jm)
 	return auo
 }
 
-// ClearEnumTextValue clears the value of the "enum_text_value" field.
-func (auo *AttributeUpdateOne) ClearEnumTextValue() *AttributeUpdateOne {
-	auo.mutation.ClearEnumTextValue()
-	return auo
-}
-
-// SetEnumNumberValue sets the "enum_number_value" field.
-func (auo *AttributeUpdateOne) SetEnumNumberValue(f []float64) *AttributeUpdateOne {
-	auo.mutation.SetEnumNumberValue(f)
-	return auo
-}
-
-// AppendEnumNumberValue appends f to the "enum_number_value" field.
-func (auo *AttributeUpdateOne) AppendEnumNumberValue(f []float64) *AttributeUpdateOne {
-	auo.mutation.AppendEnumNumberValue(f)
-	return auo
-}
-
-// ClearEnumNumberValue clears the value of the "enum_number_value" field.
-func (auo *AttributeUpdateOne) ClearEnumNumberValue() *AttributeUpdateOne {
-	auo.mutation.ClearEnumNumberValue()
+// ClearEnumValue clears the value of the "enum_value" field.
+func (auo *AttributeUpdateOne) ClearEnumValue() *AttributeUpdateOne {
+	auo.mutation.ClearEnumValue()
 	return auo
 }
 
@@ -921,27 +875,16 @@ func (auo *AttributeUpdateOne) sqlSave(ctx context.Context) (_node *Attribute, e
 	if value, ok := auo.mutation.EnumValueSort(); ok {
 		_spec.SetField(attribute.FieldEnumValueSort, field.TypeBool, value)
 	}
-	if value, ok := auo.mutation.EnumTextValue(); ok {
-		_spec.SetField(attribute.FieldEnumTextValue, field.TypeJSON, value)
+	if value, ok := auo.mutation.EnumValue(); ok {
+		_spec.SetField(attribute.FieldEnumValue, field.TypeJSON, value)
 	}
-	if value, ok := auo.mutation.AppendedEnumTextValue(); ok {
+	if value, ok := auo.mutation.AppendedEnumValue(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, attribute.FieldEnumTextValue, value)
+			sqljson.Append(u, attribute.FieldEnumValue, value)
 		})
 	}
-	if auo.mutation.EnumTextValueCleared() {
-		_spec.ClearField(attribute.FieldEnumTextValue, field.TypeJSON)
-	}
-	if value, ok := auo.mutation.EnumNumberValue(); ok {
-		_spec.SetField(attribute.FieldEnumNumberValue, field.TypeJSON, value)
-	}
-	if value, ok := auo.mutation.AppendedEnumNumberValue(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, attribute.FieldEnumNumberValue, value)
-		})
-	}
-	if auo.mutation.EnumNumberValueCleared() {
-		_spec.ClearField(attribute.FieldEnumNumberValue, field.TypeJSON)
+	if auo.mutation.EnumValueCleared() {
+		_spec.ClearField(attribute.FieldEnumValue, field.TypeJSON)
 	}
 	if value, ok := auo.mutation.Etag(); ok {
 		_spec.SetField(attribute.FieldEtag, field.TypeString, value)

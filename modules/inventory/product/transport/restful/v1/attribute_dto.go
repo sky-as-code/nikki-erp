@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"encoding/json"
+
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -14,23 +16,43 @@ type AttributeDto struct {
 	UpdatedAt *int64 `json:"updatedAt,omitempty"`
 	Etag      string `json:"etag"`
 
-	ProductId       string            `json:"productId"`
-	CodeName        string            `json:"codeName"`
-	DisplayName     *model.LangJson   `json:"displayName,omitempty"`
-	SortIndex       *int              `json:"sortIndex,omitempty"`
-	DataType        string            `json:"dataType"`
-	IsRequired      *bool             `json:"isRequired,omitempty"`
-	IsEnum          *bool             `json:"isEnum,omitempty"`
-	EnumTextValue   *[]model.LangJson `json:"enumTextValue,omitempty"`
-	EnumNumberValue *[]float64        `json:"enumNumberValue,omitempty"`
-	EnumValueSort   *bool             `json:"enumValueSort,omitempty"`
-	GroupId         *string           `json:"groupId,omitempty"`
+	ProductId     string          `json:"productId"`
+	CodeName      string          `json:"codeName"`
+	DisplayName   *model.LangJson `json:"displayName,omitempty"`
+	SortIndex     *int            `json:"sortIndex,omitempty"`
+	DataType      string          `json:"dataType"`
+	IsRequired    *bool           `json:"isRequired,omitempty"`
+	IsEnum        *bool           `json:"isEnum,omitempty"`
+	EnumValue     []interface{}   `json:"enumValue,omitempty"`
+	EnumValueSort *bool           `json:"enumValueSort,omitempty"`
+	GroupId       *string         `json:"groupId,omitempty"`
 }
 
 func (this *AttributeDto) FromAttribute(a domain.Attribute) {
 	model.MustCopy(a.AuditableBase, this)
 	model.MustCopy(a.ModelBase, this)
 	model.MustCopy(a, this)
+
+	if a.EnumValue != nil {
+		if *a.DataType == "string" {
+			for _, v := range *a.EnumValue {
+				var enumValue model.LangJson
+				err := json.Unmarshal(v, &enumValue)
+				if err == nil {
+					this.EnumValue = append(this.EnumValue, enumValue)
+				}
+			}
+		}
+		if *a.DataType == "number" {
+			for _, v := range *a.EnumValue {
+				var enumValue float64
+				err := json.Unmarshal(v, &enumValue)
+				if err == nil {
+					this.EnumValue = append(this.EnumValue, enumValue)
+				}
+			}
+		}
+	}
 }
 
 type CreateAttributeRequest = itAttribute.CreateAttributeCommand

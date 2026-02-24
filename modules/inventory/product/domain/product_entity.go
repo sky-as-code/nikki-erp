@@ -10,13 +10,13 @@ type Product struct {
 	model.ModelBase
 	model.AuditableBase
 
-	OrgId             *model.Id       `json:"orgId,omitempty" `
-	Name              *model.LangJson `json:"name,omitempty" `
-	Description       *model.LangJson `json:"description,omitempty" `
-	UnitId            *model.Id       `json:"unitId,omitempty" `
-	Status            *string         `json:"status,omitempty" `
-	DefaultsVariantId *model.Id       `json:"defaultsVariantId,omitempty" `
-	ThumbnailUrl      *string         `json:"thumbnailUrl,omitempty" `
+	OrgId            *model.Id       `json:"orgId,omitempty" `
+	Name             *model.LangJson `json:"name,omitempty" `
+	Description      *model.LangJson `json:"description,omitempty" `
+	UnitId           *model.Id       `json:"unitId,omitempty" `
+	Status           *string         `json:"status,omitempty" `
+	DefaultVariantId *model.Id       `json:"defaultVariantId,omitempty" `
+	ThumbnailUrl     *string         `json:"thumbnailUrl,omitempty" `
 
 	// Relations
 	Variants []Variant `json:"variants,omitempty" model:"-"`

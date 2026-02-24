@@ -31,10 +31,8 @@ type Attribute struct {
 	DisplayName model.LangJson `json:"display_name,omitempty"`
 	// EnumValueSort holds the value of the "enum_value_sort" field.
 	EnumValueSort bool `json:"enum_value_sort,omitempty"`
-	// EnumTextValue holds the value of the "enum_text_value" field.
-	EnumTextValue []model.LangJson `json:"enum_text_value,omitempty"`
-	// EnumNumberValue holds the value of the "enum_number_value" field.
-	EnumNumberValue []float64 `json:"enum_number_value,omitempty"`
+	// EnumValue holds the value of the "enum_value" field.
+	EnumValue []json.RawMessage `json:"enum_value,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// GroupID holds the value of the "group_id" field.
@@ -104,7 +102,7 @@ func (*Attribute) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case attribute.FieldDisplayName, attribute.FieldEnumTextValue, attribute.FieldEnumNumberValue:
+		case attribute.FieldDisplayName, attribute.FieldEnumValue:
 			values[i] = new([]byte)
 		case attribute.FieldEnumValueSort, attribute.FieldIsEnum, attribute.FieldIsRequired:
 			values[i] = new(sql.NullBool)
@@ -167,20 +165,12 @@ func (a *Attribute) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				a.EnumValueSort = value.Bool
 			}
-		case attribute.FieldEnumTextValue:
+		case attribute.FieldEnumValue:
 			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field enum_text_value", values[i])
+				return fmt.Errorf("unexpected type %T for field enum_value", values[i])
 			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &a.EnumTextValue); err != nil {
-					return fmt.Errorf("unmarshal field enum_text_value: %w", err)
-				}
-			}
-		case attribute.FieldEnumNumberValue:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field enum_number_value", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &a.EnumNumberValue); err != nil {
-					return fmt.Errorf("unmarshal field enum_number_value: %w", err)
+				if err := json.Unmarshal(*value, &a.EnumValue); err != nil {
+					return fmt.Errorf("unmarshal field enum_value: %w", err)
 				}
 			}
 		case attribute.FieldEtag:
@@ -293,11 +283,8 @@ func (a *Attribute) String() string {
 	builder.WriteString("enum_value_sort=")
 	builder.WriteString(fmt.Sprintf("%v", a.EnumValueSort))
 	builder.WriteString(", ")
-	builder.WriteString("enum_text_value=")
-	builder.WriteString(fmt.Sprintf("%v", a.EnumTextValue))
-	builder.WriteString(", ")
-	builder.WriteString("enum_number_value=")
-	builder.WriteString(fmt.Sprintf("%v", a.EnumNumberValue))
+	builder.WriteString("enum_value=")
+	builder.WriteString(fmt.Sprintf("%v", a.EnumValue))
 	builder.WriteString(", ")
 	builder.WriteString("etag=")
 	builder.WriteString(a.Etag)
