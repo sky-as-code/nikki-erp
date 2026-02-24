@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"encoding/json"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
@@ -10,17 +12,16 @@ type Attribute struct {
 	model.ModelBase
 	model.AuditableBase
 
-	ProductId       *model.Id         `json:"productId,omitempty"`
-	CodeName        *string           `json:"codeName,omitempty"`
-	DisplayName     *model.LangJson   `json:"displayName,omitempty"`
-	SortIndex       *int              `json:"sortIndex,omitempty"`
-	DataType        *string           `json:"dataType,omitempty"`
-	IsRequired      *bool             `json:"isRequired,omitempty"`
-	IsEnum          *bool             `json:"isEnum,omitempty"`
-	EnumTextValue   *[]model.LangJson `json:"enumTextValue,omitempty"`
-	EnumNumberValue *[]float64        `json:"enumNumberValue,omitempty"`
-	EnumValueSort   *bool             `json:"enumValueSort,omitempty"`
-	GroupId         *model.Id         `json:"groupId,omitempty"`
+	ProductId     *model.Id          `json:"productId,omitempty"`
+	CodeName      *string            `json:"codeName,omitempty"`
+	DisplayName   *model.LangJson    `json:"displayName,omitempty"`
+	SortIndex     *int               `json:"sortIndex,omitempty"`
+	DataType      *string            `json:"dataType,omitempty"`
+	IsRequired    *bool              `json:"isRequired,omitempty"`
+	IsEnum        *bool              `json:"isEnum,omitempty"`
+	EnumValue     *[]json.RawMessage `json:"enumValue,omitempty" model:"-"`
+	EnumValueSort *bool              `json:"enumValueSort,omitempty"`
+	GroupId       *model.Id          `json:"groupId,omitempty"`
 }
 
 func (this *Attribute) Validate(forEdit bool) ft.ValidationErrors {

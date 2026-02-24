@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"encoding/json"
 	"time"
 
 	"entgo.io/ent"
@@ -37,10 +38,13 @@ func (AttributeMixin) Fields() []ent.Field {
 		field.Bool("enum_value_sort").
 			Default(false),
 
-		field.JSON("enum_text_value", []model.LangJson{}).
-			Optional(),
+		// field.JSON("enum_text_value", []model.LangJson{}).
+		// 	Optional(),
 
-		field.JSON("enum_number_value", []float64{}).
+		// field.JSON("enum_number_value", []float64{}).
+		// 	Optional(),
+
+		field.JSON("enum_value", []json.RawMessage{}).
 			Optional(),
 
 		field.String("etag"),

@@ -5,22 +5,18 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
+	itVariant "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
 )
 
 func EntToProduct(entProduct *ent.Product) *domain.Product {
 	product := &domain.Product{}
 	model.MustCopy(entProduct, product)
 
-	// Handle CommChannels relation if loaded
-	// if entProduct.Edges.Variant != nil {
-	// 	product.Variants = array.Map(entProduct.Edges.Variant, func(entVariant *ent.Variant) domain.Variant {
-	// 		return *EntToVariant(entVariant)
-	// 	})
-	// }
-
-	// if entProduct.Edges.Attribute != nil {
-
-	// }
+	if entProduct.Edges.Variant != nil {
+		product.Variants = array.Map(entProduct.Edges.Variant, func(entVariant *ent.Variant) domain.Variant {
+			return *itVariant.EntToVariant(entVariant)
+		})
+	}
 
 	return product
 }

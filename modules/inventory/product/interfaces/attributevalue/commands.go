@@ -80,7 +80,7 @@ func (this DeleteAttributeValueCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
-	return val.ApiBased.ValidateStruct(this, rules...)
+	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 func (DeleteAttributeValueCommand) CqrsRequestType() cqrs.RequestType {

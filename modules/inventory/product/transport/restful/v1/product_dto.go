@@ -15,18 +15,40 @@ type ProductDto struct {
 	Etag      string `json:"etag"`
 
 	// Optional common product fields (copied if present in domain.Product)
-	Name              model.LangJson  `json:"name"`
-	Description       *model.LangJson `json:"description,omitempty"`
-	UnitId            string          `json:"unitId"`
-	Status            string          `json:"status"`
-	DefaultsVariantId *string         `json:"defaultsVariantId,omitempty"`
-	ThumbnailUrl      *string         `json:"thumbnailUrl,omitempty"`
+	Name             model.LangJson  `json:"name"`
+	Description      *model.LangJson `json:"description,omitempty"`
+	UnitId           *string         `json:"unitId"`
+	Status           string          `json:"status"`
+	DefaultVariantId *string         `json:"defaultVariantId,omitempty"`
+	ThumbnailUrl     *string         `json:"thumbnailUrl,omitempty"`
+
+	Variants []GetVariantByProductResponse `json:"variants,omitempty"`
 }
 
 func (this *ProductDto) FromProduct(p domain.Product) {
 	model.MustCopy(p.AuditableBase, this)
 	model.MustCopy(p.ModelBase, this)
 	model.MustCopy(p, this)
+
+	this.Variants = array.Map(p.Variants, func(v domain.Variant) GetVariantByProductResponse {
+		variantResp := GetVariantByProductResponse{}
+		variantResp.FromVariant(v)
+		return variantResp
+	})
+}
+
+type GetVariantByProductResponse struct {
+	Id            string `json:"id"`
+	Sku           string `json:"sku"`
+	Barcode       string `json:"barcode,omitempty"`
+	ProposedPrice int    `json:"proposedPrice,omitempty"`
+	Status        string `json:"status"`
+}
+
+func (this *GetVariantByProductResponse) FromVariant(v domain.Variant) {
+	model.MustCopy(v.AuditableBase, this)
+	model.MustCopy(v.ModelBase, this)
+	model.MustCopy(v, this)
 }
 
 type CreateProductRequest = itProduct.CreateProductCommand

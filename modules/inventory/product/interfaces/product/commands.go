@@ -102,7 +102,7 @@ var getProductByIdQueryType = cqrs.RequestType{
 
 type GetProductByIdQuery struct {
 	Id           model.Id `param:"id" json:"id"`
-	WithVariants bool     `json:"withVariants,omitempty"`
+	WithVariants bool     `query:"withVariants" json:"withVariants"`
 }
 
 func (this GetProductByIdQuery) Validate() ft.ValidationErrors {
@@ -130,7 +130,7 @@ type SearchProductsQuery struct {
 	// Filled by service from Graph
 	crud.SearchQuery
 
-	WithVariants bool `json:"withVariants,omitempty"`
+	WithVariants bool `query:"withVariants" json:"withVariants"`
 }
 
 func (this SearchProductsQuery) CqrsRequestType() cqrs.RequestType {

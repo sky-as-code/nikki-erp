@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -84,39 +85,21 @@ func (pcu *ProductCategoryUpdate) SetNillableEnumValueSort(b *bool) *ProductCate
 	return pcu
 }
 
-// SetEnumTextValue sets the "enum_text_value" field.
-func (pcu *ProductCategoryUpdate) SetEnumTextValue(mj []model.LangJson) *ProductCategoryUpdate {
-	pcu.mutation.SetEnumTextValue(mj)
+// SetEnumValue sets the "enum_value" field.
+func (pcu *ProductCategoryUpdate) SetEnumValue(jm []json.RawMessage) *ProductCategoryUpdate {
+	pcu.mutation.SetEnumValue(jm)
 	return pcu
 }
 
-// AppendEnumTextValue appends mj to the "enum_text_value" field.
-func (pcu *ProductCategoryUpdate) AppendEnumTextValue(mj []model.LangJson) *ProductCategoryUpdate {
-	pcu.mutation.AppendEnumTextValue(mj)
+// AppendEnumValue appends jm to the "enum_value" field.
+func (pcu *ProductCategoryUpdate) AppendEnumValue(jm []json.RawMessage) *ProductCategoryUpdate {
+	pcu.mutation.AppendEnumValue(jm)
 	return pcu
 }
 
-// ClearEnumTextValue clears the value of the "enum_text_value" field.
-func (pcu *ProductCategoryUpdate) ClearEnumTextValue() *ProductCategoryUpdate {
-	pcu.mutation.ClearEnumTextValue()
-	return pcu
-}
-
-// SetEnumNumberValue sets the "enum_number_value" field.
-func (pcu *ProductCategoryUpdate) SetEnumNumberValue(f []float64) *ProductCategoryUpdate {
-	pcu.mutation.SetEnumNumberValue(f)
-	return pcu
-}
-
-// AppendEnumNumberValue appends f to the "enum_number_value" field.
-func (pcu *ProductCategoryUpdate) AppendEnumNumberValue(f []float64) *ProductCategoryUpdate {
-	pcu.mutation.AppendEnumNumberValue(f)
-	return pcu
-}
-
-// ClearEnumNumberValue clears the value of the "enum_number_value" field.
-func (pcu *ProductCategoryUpdate) ClearEnumNumberValue() *ProductCategoryUpdate {
-	pcu.mutation.ClearEnumNumberValue()
+// ClearEnumValue clears the value of the "enum_value" field.
+func (pcu *ProductCategoryUpdate) ClearEnumValue() *ProductCategoryUpdate {
+	pcu.mutation.ClearEnumValue()
 	return pcu
 }
 
@@ -293,27 +276,16 @@ func (pcu *ProductCategoryUpdate) sqlSave(ctx context.Context) (n int, err error
 	if value, ok := pcu.mutation.EnumValueSort(); ok {
 		_spec.SetField(productcategory.FieldEnumValueSort, field.TypeBool, value)
 	}
-	if value, ok := pcu.mutation.EnumTextValue(); ok {
-		_spec.SetField(productcategory.FieldEnumTextValue, field.TypeJSON, value)
+	if value, ok := pcu.mutation.EnumValue(); ok {
+		_spec.SetField(productcategory.FieldEnumValue, field.TypeJSON, value)
 	}
-	if value, ok := pcu.mutation.AppendedEnumTextValue(); ok {
+	if value, ok := pcu.mutation.AppendedEnumValue(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, productcategory.FieldEnumTextValue, value)
+			sqljson.Append(u, productcategory.FieldEnumValue, value)
 		})
 	}
-	if pcu.mutation.EnumTextValueCleared() {
-		_spec.ClearField(productcategory.FieldEnumTextValue, field.TypeJSON)
-	}
-	if value, ok := pcu.mutation.EnumNumberValue(); ok {
-		_spec.SetField(productcategory.FieldEnumNumberValue, field.TypeJSON, value)
-	}
-	if value, ok := pcu.mutation.AppendedEnumNumberValue(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, productcategory.FieldEnumNumberValue, value)
-		})
-	}
-	if pcu.mutation.EnumNumberValueCleared() {
-		_spec.ClearField(productcategory.FieldEnumNumberValue, field.TypeJSON)
+	if pcu.mutation.EnumValueCleared() {
+		_spec.ClearField(productcategory.FieldEnumValue, field.TypeJSON)
 	}
 	if value, ok := pcu.mutation.Etag(); ok {
 		_spec.SetField(productcategory.FieldEtag, field.TypeString, value)
@@ -419,39 +391,21 @@ func (pcuo *ProductCategoryUpdateOne) SetNillableEnumValueSort(b *bool) *Product
 	return pcuo
 }
 
-// SetEnumTextValue sets the "enum_text_value" field.
-func (pcuo *ProductCategoryUpdateOne) SetEnumTextValue(mj []model.LangJson) *ProductCategoryUpdateOne {
-	pcuo.mutation.SetEnumTextValue(mj)
+// SetEnumValue sets the "enum_value" field.
+func (pcuo *ProductCategoryUpdateOne) SetEnumValue(jm []json.RawMessage) *ProductCategoryUpdateOne {
+	pcuo.mutation.SetEnumValue(jm)
 	return pcuo
 }
 
-// AppendEnumTextValue appends mj to the "enum_text_value" field.
-func (pcuo *ProductCategoryUpdateOne) AppendEnumTextValue(mj []model.LangJson) *ProductCategoryUpdateOne {
-	pcuo.mutation.AppendEnumTextValue(mj)
+// AppendEnumValue appends jm to the "enum_value" field.
+func (pcuo *ProductCategoryUpdateOne) AppendEnumValue(jm []json.RawMessage) *ProductCategoryUpdateOne {
+	pcuo.mutation.AppendEnumValue(jm)
 	return pcuo
 }
 
-// ClearEnumTextValue clears the value of the "enum_text_value" field.
-func (pcuo *ProductCategoryUpdateOne) ClearEnumTextValue() *ProductCategoryUpdateOne {
-	pcuo.mutation.ClearEnumTextValue()
-	return pcuo
-}
-
-// SetEnumNumberValue sets the "enum_number_value" field.
-func (pcuo *ProductCategoryUpdateOne) SetEnumNumberValue(f []float64) *ProductCategoryUpdateOne {
-	pcuo.mutation.SetEnumNumberValue(f)
-	return pcuo
-}
-
-// AppendEnumNumberValue appends f to the "enum_number_value" field.
-func (pcuo *ProductCategoryUpdateOne) AppendEnumNumberValue(f []float64) *ProductCategoryUpdateOne {
-	pcuo.mutation.AppendEnumNumberValue(f)
-	return pcuo
-}
-
-// ClearEnumNumberValue clears the value of the "enum_number_value" field.
-func (pcuo *ProductCategoryUpdateOne) ClearEnumNumberValue() *ProductCategoryUpdateOne {
-	pcuo.mutation.ClearEnumNumberValue()
+// ClearEnumValue clears the value of the "enum_value" field.
+func (pcuo *ProductCategoryUpdateOne) ClearEnumValue() *ProductCategoryUpdateOne {
+	pcuo.mutation.ClearEnumValue()
 	return pcuo
 }
 
@@ -658,27 +612,16 @@ func (pcuo *ProductCategoryUpdateOne) sqlSave(ctx context.Context) (_node *Produ
 	if value, ok := pcuo.mutation.EnumValueSort(); ok {
 		_spec.SetField(productcategory.FieldEnumValueSort, field.TypeBool, value)
 	}
-	if value, ok := pcuo.mutation.EnumTextValue(); ok {
-		_spec.SetField(productcategory.FieldEnumTextValue, field.TypeJSON, value)
+	if value, ok := pcuo.mutation.EnumValue(); ok {
+		_spec.SetField(productcategory.FieldEnumValue, field.TypeJSON, value)
 	}
-	if value, ok := pcuo.mutation.AppendedEnumTextValue(); ok {
+	if value, ok := pcuo.mutation.AppendedEnumValue(); ok {
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, productcategory.FieldEnumTextValue, value)
+			sqljson.Append(u, productcategory.FieldEnumValue, value)
 		})
 	}
-	if pcuo.mutation.EnumTextValueCleared() {
-		_spec.ClearField(productcategory.FieldEnumTextValue, field.TypeJSON)
-	}
-	if value, ok := pcuo.mutation.EnumNumberValue(); ok {
-		_spec.SetField(productcategory.FieldEnumNumberValue, field.TypeJSON, value)
-	}
-	if value, ok := pcuo.mutation.AppendedEnumNumberValue(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, productcategory.FieldEnumNumberValue, value)
-		})
-	}
-	if pcuo.mutation.EnumNumberValueCleared() {
-		_spec.ClearField(productcategory.FieldEnumNumberValue, field.TypeJSON)
+	if pcuo.mutation.EnumValueCleared() {
+		_spec.ClearField(productcategory.FieldEnumValue, field.TypeJSON)
 	}
 	if value, ok := pcuo.mutation.Etag(); ok {
 		_spec.SetField(productcategory.FieldEtag, field.TypeString, value)

@@ -22,6 +22,10 @@ type ProductEntRepository struct {
 	client *ent.Client
 }
 
+func (r *ProductEntRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error) {
+	return r.client.Tx(ctx)
+}
+
 func (r *ProductEntRepository) productClient(ctx crud.Context) *ent.ProductClient {
 	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
 	if isOk {
@@ -32,13 +36,13 @@ func (r *ProductEntRepository) productClient(ctx crud.Context) *ent.ProductClien
 
 // ✅ Create Product
 func (r *ProductEntRepository) Create(ctx crud.Context, product *domain.Product) (*domain.Product, error) {
-	creation := r.client.Product.Create().
+	creation := r.productClient(ctx).Create().
 		SetID(*product.Id).
 		SetOrgID(*product.OrgId).
 		SetName(*product.Name).
 		SetNillableUnitID(product.UnitId).
 		SetNillableStatus(product.Status).
-		SetNillableDefaultVariantID(product.DefaultsVariantId).
+		SetNillableDefaultVariantID(product.DefaultVariantId).
 		SetNillableThumbnailURL(product.ThumbnailUrl).
 		SetEtag(*product.Etag)
 		// SetNillableTagIDs(product.TagIds)
@@ -53,8 +57,8 @@ func (r *ProductEntRepository) Create(ctx crud.Context, product *domain.Product)
 
 // ✅ Update Product
 func (r *ProductEntRepository) Update(ctx crud.Context, product *domain.Product, prevEtag model.Etag) (*domain.Product, error) {
-	update := r.client.Product.UpdateOneID(*product.Id).
-		SetNillableDefaultVariantID(product.DefaultsVariantId).
+	update := r.productClient(ctx).UpdateOneID(*product.Id).
+		SetNillableDefaultVariantID(product.DefaultVariantId).
 		SetNillableThumbnailURL(product.ThumbnailUrl).
 		// SetNillableTagIDs(product.TagIds).
 		Where(entProduct.Etag(prevEtag))
@@ -104,6 +108,10 @@ func (r *ProductEntRepository) FindById(ctx crud.Context, query itProduct.FindBy
 // ✅ Search (advanced)
 func (r *ProductEntRepository) Search(ctx crud.Context, param itProduct.SearchParam) (*crud.PagedResult[domain.Product], error) {
 	query := r.client.Product.Query()
+
+	if param.WithVariants {
+		query.WithVariant()
+	}
 
 	return db.Search(
 		ctx,
