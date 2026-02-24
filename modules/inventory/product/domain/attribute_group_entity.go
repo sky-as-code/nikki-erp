@@ -10,7 +10,7 @@ type AttributeGroup struct {
 	model.ModelBase
 	model.AuditableBase
 
-	ProductId *string         `json:"productId,omitempty"`
+	ProductId *model.Id       `json:"productId,omitempty"`
 	Name      *model.LangJson `json:"name,omitempty"`
 	Index     *int            `json:"index,omitempty"`
 }

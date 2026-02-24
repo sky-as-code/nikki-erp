@@ -29,6 +29,10 @@ func (UnitCategoryMixin) Fields() []ent.Field {
 
 		field.JSON("name", model.LangJson{}),
 
+		field.String("etag"),
+
+		field.String("org_id"),
+
 		field.Time("updated_at").
 			Optional().
 			Nillable(),
@@ -54,6 +58,6 @@ func (UnitCategory) Edges() []ent.Edge {
 
 func (UnitCategory) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		ProductMixin{},
+		UnitCategoryMixin{},
 	}
 }

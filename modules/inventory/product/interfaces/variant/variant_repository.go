@@ -21,6 +21,7 @@ type DeleteParam = DeleteVariantCommand
 type FindByIdParam = GetVariantByIdQuery
 
 type SearchParam struct {
+	ProductId model.Id
 	Predicate *orm.Predicate
 	Order     []orm.OrderOption
 	Page      int

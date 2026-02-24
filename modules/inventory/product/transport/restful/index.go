@@ -14,6 +14,7 @@ func InitRestfulHandlers() error {
 		v1.NewAttributeValueRest,
 		v1.NewProductRest,
 		v1.NewVariantRest,
+		v1.NewProductCategoryRest,
 	)
 	return deps.Invoke(func(
 		route *echo.Group,
@@ -22,9 +23,10 @@ func InitRestfulHandlers() error {
 		attributeValueRest *v1.AttributeValueRest,
 		productRest *v1.ProductRest,
 		variantRest *v1.VariantRest,
+		productCategoryRest *v1.ProductCategoryRest,
 	) {
 		v1 := route.Group("/v1/:orgId/inventory")
-		initV1(v1, attributeRest, attributeGroupRest, attributeValueRest, productRest, variantRest)
+		initV1(v1, attributeRest, attributeGroupRest, attributeValueRest, productRest, variantRest, productCategoryRest)
 	})
 }
 
@@ -35,6 +37,7 @@ func initV1(
 	attributeValueRest *v1.AttributeValueRest,
 	productRest *v1.ProductRest,
 	variantRest *v1.VariantRest,
+	productCategoryRest *v1.ProductCategoryRest,
 ) {
 	route.POST("/products/:productId/attributes", attributeRest.CreateAttribute)
 	route.PUT("/products/:productId/attributes/:id", attributeRest.UpdateAttribute)
@@ -42,11 +45,11 @@ func initV1(
 	route.GET("/products/:productId/attributes/:id", attributeRest.GetAttributeById)
 	route.GET("/products/:productId/attributes", attributeRest.SearchAttributes)
 
-	route.POST("/products/:productId/attribute-groups", attributeGroupRest.CreateAttributeGroup)
-	route.PUT("/products/:productId/attribute-groups/:id", attributeGroupRest.UpdateAttributeGroup)
-	route.DELETE("/products/:productId/attribute-groups/:id", attributeGroupRest.DeleteAttributeGroup)
-	route.GET("/products/:productId/attribute-groups/:id", attributeGroupRest.GetAttributeGroupById)
-	route.GET("/products/:productId/attribute-groups", attributeGroupRest.SearchAttributeGroups)
+	route.POST("/products/:productId/attribute-group", attributeGroupRest.CreateAttributeGroup)
+	route.PUT("/products/:productId/attribute-group/:id", attributeGroupRest.UpdateAttributeGroup)
+	route.DELETE("/products/:productId/attribute-group/:id", attributeGroupRest.DeleteAttributeGroup)
+	route.GET("/products/:productId/attribute-group/:id", attributeGroupRest.GetAttributeGroupById)
+	route.GET("/products/:productId/attribute-group", attributeGroupRest.SearchAttributeGroups)
 
 	// AttributeValue routes
 	// route.POST("/attribute-values", attributeValueRest.CreateAttributeValue)
@@ -61,6 +64,12 @@ func initV1(
 	route.DELETE("/products/:id", productRest.DeleteProduct)
 	route.GET("/products/:id", productRest.GetProductById)
 	route.GET("/products", productRest.SearchProducts)
+
+	route.POST("/products-category", productCategoryRest.CreateProductCategory)
+	route.PUT("/products-category/:id", productCategoryRest.UpdateProductCategory)
+	route.DELETE("/products-category/:id", productCategoryRest.DeleteProductCategory)
+	route.GET("/products-category/:id", productCategoryRest.GetProductCategoryById)
+	route.GET("/products-category", productCategoryRest.SearchProductCategories)
 
 	// Variant routes
 	route.POST("/products/:productId/variants", variantRest.CreateVariant)

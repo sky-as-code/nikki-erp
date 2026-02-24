@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"encoding/json"
-
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
@@ -12,12 +10,14 @@ type Variant struct {
 	model.ModelBase
 	model.AuditableBase
 
-	ProductId     *model.Id                   `json:"productId,omitempty"`
-	Sku           *string                     `json:"sku,omitempty"`
-	Barcode       *string                     `json:"barcode,omitempty"`
-	ProposedPrice *float64                    `json:"proposedPrice,omitempty"`
-	Status        *string                     `json:"status,omitempty"`
-	Attributes    *map[string]json.RawMessage `json:"attributes,omitempty"`
+	ProductId     *model.Id               `json:"productId,omitempty"`
+	Sku           *string                 `json:"sku,omitempty"`
+	Barcode       *string                 `json:"barcode,omitempty"`
+	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
+	Status        *string                 `json:"status,omitempty"`
+	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
+
+	AttributeValue []AttributeValue `json:"attributeValue,omitempty"`
 }
 
 func (this *Variant) Validate(forEdit bool) ft.ValidationErrors {

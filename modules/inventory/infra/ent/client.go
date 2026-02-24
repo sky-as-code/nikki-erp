@@ -20,6 +20,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attributevalue"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/product"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategory"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategoryrel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/unit"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/unitcategory"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/variant"
@@ -41,6 +42,8 @@ type Client struct {
 	Product *ProductClient
 	// ProductCategory is the client for interacting with the ProductCategory builders.
 	ProductCategory *ProductCategoryClient
+	// ProductCategoryRel is the client for interacting with the ProductCategoryRel builders.
+	ProductCategoryRel *ProductCategoryRelClient
 	// Unit is the client for interacting with the Unit builders.
 	Unit *UnitClient
 	// UnitCategory is the client for interacting with the UnitCategory builders.
@@ -65,6 +68,7 @@ func (c *Client) init() {
 	c.AttributeValue = NewAttributeValueClient(c.config)
 	c.Product = NewProductClient(c.config)
 	c.ProductCategory = NewProductCategoryClient(c.config)
+	c.ProductCategoryRel = NewProductCategoryRelClient(c.config)
 	c.Unit = NewUnitClient(c.config)
 	c.UnitCategory = NewUnitCategoryClient(c.config)
 	c.Variant = NewVariantClient(c.config)
@@ -166,6 +170,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		AttributeValue:      NewAttributeValueClient(cfg),
 		Product:             NewProductClient(cfg),
 		ProductCategory:     NewProductCategoryClient(cfg),
+		ProductCategoryRel:  NewProductCategoryRelClient(cfg),
 		Unit:                NewUnitClient(cfg),
 		UnitCategory:        NewUnitCategoryClient(cfg),
 		Variant:             NewVariantClient(cfg),
@@ -194,6 +199,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		AttributeValue:      NewAttributeValueClient(cfg),
 		Product:             NewProductClient(cfg),
 		ProductCategory:     NewProductCategoryClient(cfg),
+		ProductCategoryRel:  NewProductCategoryRelClient(cfg),
 		Unit:                NewUnitClient(cfg),
 		UnitCategory:        NewUnitCategoryClient(cfg),
 		Variant:             NewVariantClient(cfg),
@@ -228,7 +234,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Attribute, c.AttributeGroup, c.AttributeValue, c.Product, c.ProductCategory,
-		c.Unit, c.UnitCategory, c.Variant, c.VariantAttributeRel,
+		c.ProductCategoryRel, c.Unit, c.UnitCategory, c.Variant, c.VariantAttributeRel,
 	} {
 		n.Use(hooks...)
 	}
@@ -239,7 +245,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Attribute, c.AttributeGroup, c.AttributeValue, c.Product, c.ProductCategory,
-		c.Unit, c.UnitCategory, c.Variant, c.VariantAttributeRel,
+		c.ProductCategoryRel, c.Unit, c.UnitCategory, c.Variant, c.VariantAttributeRel,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -258,6 +264,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Product.mutate(ctx, m)
 	case *ProductCategoryMutation:
 		return c.ProductCategory.mutate(ctx, m)
+	case *ProductCategoryRelMutation:
+		return c.ProductCategoryRel.mutate(ctx, m)
 	case *UnitMutation:
 		return c.Unit.mutate(ctx, m)
 	case *UnitCategoryMutation:
@@ -938,6 +946,22 @@ func (c *ProductClient) QueryAttribute(pr *Product) *AttributeQuery {
 	return query
 }
 
+// QueryProductCategory queries the product_category edge of a Product.
+func (c *ProductClient) QueryProductCategory(pr *Product) *ProductCategoryQuery {
+	query := (&ProductCategoryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(product.Table, product.FieldID, id),
+			sqlgraph.To(productcategory.Table, productcategory.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, product.ProductCategoryTable, product.ProductCategoryPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryAttributeGroup queries the attribute_group edge of a Product.
 func (c *ProductClient) QueryAttributeGroup(pr *Product) *AttributeGroupQuery {
 	query := (&AttributeGroupClient{config: c.config}).Query()
@@ -963,6 +987,22 @@ func (c *ProductClient) QueryUnit(pr *Product) *UnitQuery {
 			sqlgraph.From(product.Table, product.FieldID, id),
 			sqlgraph.To(unit.Table, unit.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, product.UnitTable, product.UnitColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProductCategoryRel queries the product_category_rel edge of a Product.
+func (c *ProductClient) QueryProductCategoryRel(pr *Product) *ProductCategoryRelQuery {
+	query := (&ProductCategoryRelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(product.Table, product.FieldID, id),
+			sqlgraph.To(productcategoryrel.Table, productcategoryrel.ProductColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, product.ProductCategoryRelTable, product.ProductCategoryRelColumn),
 		)
 		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
 		return fromV, nil
@@ -1103,6 +1143,70 @@ func (c *ProductCategoryClient) GetX(ctx context.Context, id string) *ProductCat
 	return obj
 }
 
+// QueryChildren queries the children edge of a ProductCategory.
+func (c *ProductCategoryClient) QueryChildren(pc *ProductCategory) *ProductCategoryQuery {
+	query := (&ProductCategoryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(productcategory.Table, productcategory.FieldID, id),
+			sqlgraph.To(productcategory.Table, productcategory.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, productcategory.ChildrenTable, productcategory.ChildrenColumn),
+		)
+		fromV = sqlgraph.Neighbors(pc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryParent queries the parent edge of a ProductCategory.
+func (c *ProductCategoryClient) QueryParent(pc *ProductCategory) *ProductCategoryQuery {
+	query := (&ProductCategoryClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(productcategory.Table, productcategory.FieldID, id),
+			sqlgraph.To(productcategory.Table, productcategory.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, productcategory.ParentTable, productcategory.ParentColumn),
+		)
+		fromV = sqlgraph.Neighbors(pc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProduct queries the product edge of a ProductCategory.
+func (c *ProductCategoryClient) QueryProduct(pc *ProductCategory) *ProductQuery {
+	query := (&ProductClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(productcategory.Table, productcategory.FieldID, id),
+			sqlgraph.To(product.Table, product.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, productcategory.ProductTable, productcategory.ProductPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(pc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryProductCategoryRel queries the product_category_rel edge of a ProductCategory.
+func (c *ProductCategoryClient) QueryProductCategoryRel(pc *ProductCategory) *ProductCategoryRelQuery {
+	query := (&ProductCategoryRelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(productcategory.Table, productcategory.FieldID, id),
+			sqlgraph.To(productcategoryrel.Table, productcategoryrel.ProductCategoryColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, productcategory.ProductCategoryRelTable, productcategory.ProductCategoryRelColumn),
+		)
+		fromV = sqlgraph.Neighbors(pc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ProductCategoryClient) Hooks() []Hook {
 	return c.hooks.ProductCategory
@@ -1125,6 +1229,122 @@ func (c *ProductCategoryClient) mutate(ctx context.Context, m *ProductCategoryMu
 		return (&ProductCategoryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ProductCategory mutation op: %q", m.Op())
+	}
+}
+
+// ProductCategoryRelClient is a client for the ProductCategoryRel schema.
+type ProductCategoryRelClient struct {
+	config
+}
+
+// NewProductCategoryRelClient returns a client for the ProductCategoryRel from the given config.
+func NewProductCategoryRelClient(c config) *ProductCategoryRelClient {
+	return &ProductCategoryRelClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `productcategoryrel.Hooks(f(g(h())))`.
+func (c *ProductCategoryRelClient) Use(hooks ...Hook) {
+	c.hooks.ProductCategoryRel = append(c.hooks.ProductCategoryRel, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `productcategoryrel.Intercept(f(g(h())))`.
+func (c *ProductCategoryRelClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ProductCategoryRel = append(c.inters.ProductCategoryRel, interceptors...)
+}
+
+// Create returns a builder for creating a ProductCategoryRel entity.
+func (c *ProductCategoryRelClient) Create() *ProductCategoryRelCreate {
+	mutation := newProductCategoryRelMutation(c.config, OpCreate)
+	return &ProductCategoryRelCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ProductCategoryRel entities.
+func (c *ProductCategoryRelClient) CreateBulk(builders ...*ProductCategoryRelCreate) *ProductCategoryRelCreateBulk {
+	return &ProductCategoryRelCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ProductCategoryRelClient) MapCreateBulk(slice any, setFunc func(*ProductCategoryRelCreate, int)) *ProductCategoryRelCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ProductCategoryRelCreateBulk{err: fmt.Errorf("calling to ProductCategoryRelClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ProductCategoryRelCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ProductCategoryRelCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ProductCategoryRel.
+func (c *ProductCategoryRelClient) Update() *ProductCategoryRelUpdate {
+	mutation := newProductCategoryRelMutation(c.config, OpUpdate)
+	return &ProductCategoryRelUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ProductCategoryRelClient) UpdateOne(pcr *ProductCategoryRel) *ProductCategoryRelUpdateOne {
+	mutation := newProductCategoryRelMutation(c.config, OpUpdateOne)
+	mutation.product_category = &pcr.ProductCategoryID
+	mutation.product = &pcr.ProductID
+	return &ProductCategoryRelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ProductCategoryRel.
+func (c *ProductCategoryRelClient) Delete() *ProductCategoryRelDelete {
+	mutation := newProductCategoryRelMutation(c.config, OpDelete)
+	return &ProductCategoryRelDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Query returns a query builder for ProductCategoryRel.
+func (c *ProductCategoryRelClient) Query() *ProductCategoryRelQuery {
+	return &ProductCategoryRelQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeProductCategoryRel},
+		inters: c.Interceptors(),
+	}
+}
+
+// QueryProduct queries the product edge of a ProductCategoryRel.
+func (c *ProductCategoryRelClient) QueryProduct(pcr *ProductCategoryRel) *ProductQuery {
+	return c.Query().
+		Where(productcategoryrel.ProductCategoryID(pcr.ProductCategoryID), productcategoryrel.ProductID(pcr.ProductID)).
+		QueryProduct()
+}
+
+// QueryProductCategory queries the product_category edge of a ProductCategoryRel.
+func (c *ProductCategoryRelClient) QueryProductCategory(pcr *ProductCategoryRel) *ProductCategoryQuery {
+	return c.Query().
+		Where(productcategoryrel.ProductCategoryID(pcr.ProductCategoryID), productcategoryrel.ProductID(pcr.ProductID)).
+		QueryProductCategory()
+}
+
+// Hooks returns the client hooks.
+func (c *ProductCategoryRelClient) Hooks() []Hook {
+	return c.hooks.ProductCategoryRel
+}
+
+// Interceptors returns the client interceptors.
+func (c *ProductCategoryRelClient) Interceptors() []Interceptor {
+	return c.inters.ProductCategoryRel
+}
+
+func (c *ProductCategoryRelClient) mutate(ctx context.Context, m *ProductCategoryRelMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ProductCategoryRelCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ProductCategoryRelUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ProductCategoryRelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ProductCategoryRelDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ProductCategoryRel mutation op: %q", m.Op())
 	}
 }
 
@@ -1742,11 +1962,12 @@ func (c *VariantAttributeRelClient) mutate(ctx context.Context, m *VariantAttrib
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Attribute, AttributeGroup, AttributeValue, Product, ProductCategory, Unit,
-		UnitCategory, Variant, VariantAttributeRel []ent.Hook
+		Attribute, AttributeGroup, AttributeValue, Product, ProductCategory,
+		ProductCategoryRel, Unit, UnitCategory, Variant, VariantAttributeRel []ent.Hook
 	}
 	inters struct {
-		Attribute, AttributeGroup, AttributeValue, Product, ProductCategory, Unit,
-		UnitCategory, Variant, VariantAttributeRel []ent.Interceptor
+		Attribute, AttributeGroup, AttributeValue, Product, ProductCategory,
+		ProductCategoryRel, Unit, UnitCategory, Variant,
+		VariantAttributeRel []ent.Interceptor
 	}
 )

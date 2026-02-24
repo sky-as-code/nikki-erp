@@ -5,6 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
+	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
 	itVariant "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
 )
 
@@ -15,6 +16,12 @@ func EntToProduct(entProduct *ent.Product) *domain.Product {
 	if entProduct.Edges.Variant != nil {
 		product.Variants = array.Map(entProduct.Edges.Variant, func(entVariant *ent.Variant) domain.Variant {
 			return *itVariant.EntToVariant(entVariant)
+		})
+	}
+
+	if entProduct.Edges.Attribute != nil {
+		product.Attributes = array.Map(entProduct.Edges.Attribute, func(entAttribute *ent.Attribute) domain.Attribute {
+			return *itAttribute.EntToAttribute(entAttribute)
 		})
 	}
 

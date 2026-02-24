@@ -23,7 +23,7 @@ var (
 		{Name: "is_required", Type: field.TypeBool, Default: false},
 		{Name: "sort_index", Type: field.TypeInt, Default: 0},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
-		{Name: "group_id", Type: field.TypeString, Nullable: true},
+		{Name: "attribute_group_id", Type: field.TypeString, Nullable: true},
 		{Name: "product_id", Type: field.TypeString},
 	}
 	// InventoryAttributeTable holds the schema information for the "inventory_attribute" table.
@@ -52,6 +52,7 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "index", Type: field.TypeInt},
 		{Name: "name", Type: field.TypeJSON},
+		{Name: "etag", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "product_id", Type: field.TypeString, Nullable: true},
 	}
@@ -63,7 +64,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "inventory_attribute_group_inventory_product_product",
-				Columns:    []*schema.Column{InventoryAttributeGroupColumns[5]},
+				Columns:    []*schema.Column{InventoryAttributeGroupColumns[6]},
 				RefColumns: []*schema.Column{InventoryProductColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -128,25 +129,51 @@ var (
 	// InventoryProductCategoryColumns holds the columns for the "inventory_product_category" table.
 	InventoryProductCategoryColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
-		{Name: "code_name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "data_type", Type: field.TypeString},
-		{Name: "display_name", Type: field.TypeJSON, Nullable: true},
-		{Name: "enum_value_sort", Type: field.TypeBool, Default: false},
-		{Name: "enum_value", Type: field.TypeJSON, Nullable: true},
+		{Name: "name", Type: field.TypeJSON},
+		{Name: "org_id", Type: field.TypeString},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "group_id", Type: field.TypeString, Nullable: true},
-		{Name: "is_enum", Type: field.TypeBool, Default: false},
-		{Name: "is_required", Type: field.TypeBool, Default: false},
-		{Name: "product_id", Type: field.TypeString},
-		{Name: "sort_index", Type: field.TypeInt, Default: 0},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
+		{Name: "parent_id", Type: field.TypeString, Nullable: true},
 	}
 	// InventoryProductCategoryTable holds the schema information for the "inventory_product_category" table.
 	InventoryProductCategoryTable = &schema.Table{
 		Name:       "inventory_product_category",
 		Columns:    InventoryProductCategoryColumns,
 		PrimaryKey: []*schema.Column{InventoryProductCategoryColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "inventory_product_category_inventory_product_category_children",
+				Columns:    []*schema.Column{InventoryProductCategoryColumns[6]},
+				RefColumns: []*schema.Column{InventoryProductCategoryColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// ProductCategoryRelColumns holds the columns for the "product_category_rel" table.
+	ProductCategoryRelColumns = []*schema.Column{
+		{Name: "product_id", Type: field.TypeString},
+		{Name: "product_category_id", Type: field.TypeString},
+	}
+	// ProductCategoryRelTable holds the schema information for the "product_category_rel" table.
+	ProductCategoryRelTable = &schema.Table{
+		Name:       "product_category_rel",
+		Columns:    ProductCategoryRelColumns,
+		PrimaryKey: []*schema.Column{ProductCategoryRelColumns[1], ProductCategoryRelColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "product_category_rel_inventory_product_product",
+				Columns:    []*schema.Column{ProductCategoryRelColumns[0]},
+				RefColumns: []*schema.Column{InventoryProductColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "product_category_rel_inventory_product_category_product_category",
+				Columns:    []*schema.Column{ProductCategoryRelColumns[1]},
+				RefColumns: []*schema.Column{InventoryProductCategoryColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
 	}
 	// InventoryUnitColumns holds the columns for the "inventory_unit" table.
 	InventoryUnitColumns = []*schema.Column{
@@ -180,15 +207,9 @@ var (
 	InventoryUnitCategoryColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "default_variant_id", Type: field.TypeString, Nullable: true},
-		{Name: "description", Type: field.TypeJSON, Nullable: true},
-		{Name: "etag", Type: field.TypeString},
 		{Name: "name", Type: field.TypeJSON},
+		{Name: "etag", Type: field.TypeString},
 		{Name: "org_id", Type: field.TypeString},
-		{Name: "status", Type: field.TypeString, Default: "archived"},
-		{Name: "tag_ids", Type: field.TypeString, Nullable: true},
-		{Name: "thumbnail_url", Type: field.TypeString, Nullable: true},
-		{Name: "unit_id", Type: field.TypeString, Nullable: true},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 	}
 	// InventoryUnitCategoryTable holds the schema information for the "inventory_unit_category" table.
@@ -255,6 +276,7 @@ var (
 		InventoryAttributeValueTable,
 		InventoryProductTable,
 		InventoryProductCategoryTable,
+		ProductCategoryRelTable,
 		InventoryUnitTable,
 		InventoryUnitCategoryTable,
 		InventoryVariantTable,
@@ -280,8 +302,14 @@ func init() {
 	InventoryProductTable.Annotation = &entsql.Annotation{
 		Table: "inventory_product",
 	}
+	InventoryProductCategoryTable.ForeignKeys[0].RefTable = InventoryProductCategoryTable
 	InventoryProductCategoryTable.Annotation = &entsql.Annotation{
 		Table: "inventory_product_category",
+	}
+	ProductCategoryRelTable.ForeignKeys[0].RefTable = InventoryProductTable
+	ProductCategoryRelTable.ForeignKeys[1].RefTable = InventoryProductCategoryTable
+	ProductCategoryRelTable.Annotation = &entsql.Annotation{
+		Table: "product_category_rel",
 	}
 	InventoryUnitTable.ForeignKeys[0].RefTable = InventoryUnitCategoryTable
 	InventoryUnitTable.Annotation = &entsql.Annotation{

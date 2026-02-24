@@ -23,8 +23,6 @@ func InitRestfulHandlers() error {
 }
 
 func initV1(route *echo.Group, unitRest *v1.UnitRest, unitCategoryRest *v1.UnitCategoryRest) {
-	// protected := route.Group("", commonMiddleware.RequireAuthMiddleware())
-
 	// Unit routes
 	route.POST("/units", unitRest.CreateUnit)
 	route.PUT("/units/:id", unitRest.UpdateUnit)
@@ -33,9 +31,9 @@ func initV1(route *echo.Group, unitRest *v1.UnitRest, unitCategoryRest *v1.UnitC
 	route.GET("/units", unitRest.SearchUnits)
 
 	// UnitCategory routes
-	route.POST("/unit-categories", unitCategoryRest.CreateUnitCategory)
-	route.PUT("/unit-categories/:id", unitCategoryRest.UpdateUnitCategory)
-	route.DELETE("/unit-categories/:id", unitCategoryRest.DeleteUnitCategory)
-	route.GET("/unit-categories/:id", unitCategoryRest.GetUnitCategoryById)
-	route.GET("/unit-categories", unitCategoryRest.SearchUnitCategories)
+	route.POST("/unit-category", unitCategoryRest.CreateUnitCategory)
+	route.PUT("/unit-category/:id", unitCategoryRest.UpdateUnitCategory)
+	route.DELETE("/unit-category/:id", unitCategoryRest.DeleteUnitCategory)
+	route.GET("/unit-category/:id", unitCategoryRest.GetUnitCategoryById)
+	route.GET("/unit-category", unitCategoryRest.SearchUnitCategories)
 }

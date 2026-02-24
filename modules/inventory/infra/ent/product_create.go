@@ -14,6 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attribute"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attributegroup"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/product"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategory"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/unit"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/variant"
 )
@@ -181,6 +182,21 @@ func (pc *ProductCreate) AddAttribute(a ...*Attribute) *ProductCreate {
 		ids[i] = a[i].ID
 	}
 	return pc.AddAttributeIDs(ids...)
+}
+
+// AddProductCategoryIDs adds the "product_category" edge to the ProductCategory entity by IDs.
+func (pc *ProductCreate) AddProductCategoryIDs(ids ...string) *ProductCreate {
+	pc.mutation.AddProductCategoryIDs(ids...)
+	return pc
+}
+
+// AddProductCategory adds the "product_category" edges to the ProductCategory entity.
+func (pc *ProductCreate) AddProductCategory(p ...*ProductCategory) *ProductCreate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pc.AddProductCategoryIDs(ids...)
 }
 
 // AddAttributeGroupIDs adds the "attribute_group" edge to the AttributeGroup entity by IDs.
@@ -365,6 +381,22 @@ func (pc *ProductCreate) createSpec() (*Product, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(attribute.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.ProductCategoryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   product.ProductCategoryTable,
+			Columns: product.ProductCategoryPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

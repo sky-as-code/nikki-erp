@@ -5,13 +5,9 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/{{org_id}}/inventory/products?withVariants=true
+  url: {{api_host}}/v1/{{org_id}}/inventory/products
   body: none
   auth: inherit
-}
-
-params:query {
-  withVariants: true
 }
 
 settings {

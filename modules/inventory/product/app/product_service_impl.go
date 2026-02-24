@@ -182,11 +182,12 @@ func (this *ProductServiceImpl) SearchProducts(ctx crud.Context, query itProduct
 		},
 		RepoSearch: func(ctx crud.Context, query itProduct.SearchProductsQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.Product], error) {
 			return this.productRepo.Search(ctx, itProduct.SearchParam{
-				Predicate:    predicate,
-				Order:        order,
-				Page:         *query.Page,
-				Size:         *query.Size,
-				WithVariants: query.WithVariants,
+				Predicate:      predicate,
+				Order:          order,
+				Page:           *query.Page,
+				Size:           *query.Size,
+				WithVariants:   query.WithVariants,
+				WithAttributes: query.WithAttributes,
 			})
 		},
 		ToFailureResult: func(vErrs *ft.ValidationErrors) *itProduct.SearchProductsResult {
@@ -254,7 +255,8 @@ func (this *ProductServiceImpl) assertUpdateProduct(ctx crud.Context, product *d
 
 	if product.DefaultVariantId != nil {
 		variant, err := this.variantService.GetVariantById(ctx, itVariant.GetVariantByIdQuery{
-			Id: *product.DefaultVariantId,
+			Id:        *product.DefaultVariantId,
+			ProductId: *product.Id,
 		})
 		ft.PanicOnErr(err)
 

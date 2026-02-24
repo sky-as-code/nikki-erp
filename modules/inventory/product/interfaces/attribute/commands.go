@@ -54,6 +54,7 @@ var updateAttributeCommandType = cqrs.RequestType{
 
 type UpdateAttributeCommand struct {
 	Id            model.Id           `param:"id" json:"id"`
+	ProductId     model.Id           `param:"productId" json:"productId"`
 	Etag          model.Etag         `json:"etag"`
 	CodeName      *string            `json:"codeName,omitempty"`
 	DisplayName   *model.LangJson    `json:"displayName,omitempty"`
@@ -81,12 +82,14 @@ var deleteAttributeCommandType = cqrs.RequestType{
 }
 
 type DeleteAttributeCommand struct {
-	Id model.Id `json:"id" param:"id"`
+	Id        model.Id `json:"id" param:"id"`
+	ProductId model.Id `json:"productId" param:"productId"`
 }
 
 func (this DeleteAttributeCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.IdValidateRule(&this.ProductId, true),
 	}
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -106,12 +109,14 @@ var getAttributeByIdQueryType = cqrs.RequestType{
 }
 
 type GetAttributeByIdQuery struct {
-	Id model.Id `param:"id" json:"id"`
+	Id        model.Id `param:"id" json:"id"`
+	ProductId model.Id `param:"productId" json:"productId"`
 }
 
 func (this GetAttributeByIdQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.IdValidateRule(&this.ProductId, true),
 	}
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -157,6 +162,8 @@ var searchAttributesQueryType = cqrs.RequestType{
 type SearchAttributesQuery struct {
 	// Filled by service from Graph
 	crud.SearchQuery
+
+	ProductId model.Id `param:"productId" json:"productId"`
 }
 
 func (this SearchAttributesQuery) CqrsRequestType() cqrs.RequestType {

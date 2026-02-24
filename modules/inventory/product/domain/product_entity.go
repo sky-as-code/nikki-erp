@@ -19,7 +19,8 @@ type Product struct {
 	ThumbnailUrl     *string         `json:"thumbnailUrl,omitempty" `
 
 	// Relations
-	Variants []Variant `json:"variants,omitempty" model:"-"`
+	Variants   []Variant   `json:"variants,omitempty" model:"-"`
+	Attributes []Attribute `json:"attributes,omitempty" model:"-"`
 }
 
 func (this *Product) Validate(forEdit bool) ft.ValidationErrors {

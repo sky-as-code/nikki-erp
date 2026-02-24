@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/product"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategory"
 )
 
@@ -20,12 +20,6 @@ type ProductCategoryCreate struct {
 	config
 	mutation *ProductCategoryMutation
 	hooks    []Hook
-}
-
-// SetCodeName sets the "code_name" field.
-func (pcc *ProductCategoryCreate) SetCodeName(s string) *ProductCategoryCreate {
-	pcc.mutation.SetCodeName(s)
-	return pcc
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -42,103 +36,35 @@ func (pcc *ProductCategoryCreate) SetNillableCreatedAt(t *time.Time) *ProductCat
 	return pcc
 }
 
-// SetDataType sets the "data_type" field.
-func (pcc *ProductCategoryCreate) SetDataType(s string) *ProductCategoryCreate {
-	pcc.mutation.SetDataType(s)
+// SetName sets the "name" field.
+func (pcc *ProductCategoryCreate) SetName(mj model.LangJson) *ProductCategoryCreate {
+	pcc.mutation.SetName(mj)
 	return pcc
 }
 
-// SetDisplayName sets the "display_name" field.
-func (pcc *ProductCategoryCreate) SetDisplayName(mj model.LangJson) *ProductCategoryCreate {
-	pcc.mutation.SetDisplayName(mj)
+// SetParentID sets the "parent_id" field.
+func (pcc *ProductCategoryCreate) SetParentID(s string) *ProductCategoryCreate {
+	pcc.mutation.SetParentID(s)
 	return pcc
 }
 
-// SetEnumValueSort sets the "enum_value_sort" field.
-func (pcc *ProductCategoryCreate) SetEnumValueSort(b bool) *ProductCategoryCreate {
-	pcc.mutation.SetEnumValueSort(b)
-	return pcc
-}
-
-// SetNillableEnumValueSort sets the "enum_value_sort" field if the given value is not nil.
-func (pcc *ProductCategoryCreate) SetNillableEnumValueSort(b *bool) *ProductCategoryCreate {
-	if b != nil {
-		pcc.SetEnumValueSort(*b)
+// SetNillableParentID sets the "parent_id" field if the given value is not nil.
+func (pcc *ProductCategoryCreate) SetNillableParentID(s *string) *ProductCategoryCreate {
+	if s != nil {
+		pcc.SetParentID(*s)
 	}
 	return pcc
 }
 
-// SetEnumValue sets the "enum_value" field.
-func (pcc *ProductCategoryCreate) SetEnumValue(jm []json.RawMessage) *ProductCategoryCreate {
-	pcc.mutation.SetEnumValue(jm)
+// SetOrgID sets the "org_id" field.
+func (pcc *ProductCategoryCreate) SetOrgID(s string) *ProductCategoryCreate {
+	pcc.mutation.SetOrgID(s)
 	return pcc
 }
 
 // SetEtag sets the "etag" field.
 func (pcc *ProductCategoryCreate) SetEtag(s string) *ProductCategoryCreate {
 	pcc.mutation.SetEtag(s)
-	return pcc
-}
-
-// SetGroupID sets the "group_id" field.
-func (pcc *ProductCategoryCreate) SetGroupID(s string) *ProductCategoryCreate {
-	pcc.mutation.SetGroupID(s)
-	return pcc
-}
-
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (pcc *ProductCategoryCreate) SetNillableGroupID(s *string) *ProductCategoryCreate {
-	if s != nil {
-		pcc.SetGroupID(*s)
-	}
-	return pcc
-}
-
-// SetIsEnum sets the "is_enum" field.
-func (pcc *ProductCategoryCreate) SetIsEnum(b bool) *ProductCategoryCreate {
-	pcc.mutation.SetIsEnum(b)
-	return pcc
-}
-
-// SetNillableIsEnum sets the "is_enum" field if the given value is not nil.
-func (pcc *ProductCategoryCreate) SetNillableIsEnum(b *bool) *ProductCategoryCreate {
-	if b != nil {
-		pcc.SetIsEnum(*b)
-	}
-	return pcc
-}
-
-// SetIsRequired sets the "is_required" field.
-func (pcc *ProductCategoryCreate) SetIsRequired(b bool) *ProductCategoryCreate {
-	pcc.mutation.SetIsRequired(b)
-	return pcc
-}
-
-// SetNillableIsRequired sets the "is_required" field if the given value is not nil.
-func (pcc *ProductCategoryCreate) SetNillableIsRequired(b *bool) *ProductCategoryCreate {
-	if b != nil {
-		pcc.SetIsRequired(*b)
-	}
-	return pcc
-}
-
-// SetProductID sets the "product_id" field.
-func (pcc *ProductCategoryCreate) SetProductID(s string) *ProductCategoryCreate {
-	pcc.mutation.SetProductID(s)
-	return pcc
-}
-
-// SetSortIndex sets the "sort_index" field.
-func (pcc *ProductCategoryCreate) SetSortIndex(i int) *ProductCategoryCreate {
-	pcc.mutation.SetSortIndex(i)
-	return pcc
-}
-
-// SetNillableSortIndex sets the "sort_index" field if the given value is not nil.
-func (pcc *ProductCategoryCreate) SetNillableSortIndex(i *int) *ProductCategoryCreate {
-	if i != nil {
-		pcc.SetSortIndex(*i)
-	}
 	return pcc
 }
 
@@ -160,6 +86,55 @@ func (pcc *ProductCategoryCreate) SetNillableUpdatedAt(t *time.Time) *ProductCat
 func (pcc *ProductCategoryCreate) SetID(s string) *ProductCategoryCreate {
 	pcc.mutation.SetID(s)
 	return pcc
+}
+
+// SetChildrenID sets the "children" edge to the ProductCategory entity by ID.
+func (pcc *ProductCategoryCreate) SetChildrenID(id string) *ProductCategoryCreate {
+	pcc.mutation.SetChildrenID(id)
+	return pcc
+}
+
+// SetNillableChildrenID sets the "children" edge to the ProductCategory entity by ID if the given value is not nil.
+func (pcc *ProductCategoryCreate) SetNillableChildrenID(id *string) *ProductCategoryCreate {
+	if id != nil {
+		pcc = pcc.SetChildrenID(*id)
+	}
+	return pcc
+}
+
+// SetChildren sets the "children" edge to the ProductCategory entity.
+func (pcc *ProductCategoryCreate) SetChildren(p *ProductCategory) *ProductCategoryCreate {
+	return pcc.SetChildrenID(p.ID)
+}
+
+// AddParentIDs adds the "parent" edge to the ProductCategory entity by IDs.
+func (pcc *ProductCategoryCreate) AddParentIDs(ids ...string) *ProductCategoryCreate {
+	pcc.mutation.AddParentIDs(ids...)
+	return pcc
+}
+
+// AddParent adds the "parent" edges to the ProductCategory entity.
+func (pcc *ProductCategoryCreate) AddParent(p ...*ProductCategory) *ProductCategoryCreate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pcc.AddParentIDs(ids...)
+}
+
+// AddProductIDs adds the "product" edge to the Product entity by IDs.
+func (pcc *ProductCategoryCreate) AddProductIDs(ids ...string) *ProductCategoryCreate {
+	pcc.mutation.AddProductIDs(ids...)
+	return pcc
+}
+
+// AddProduct adds the "product" edges to the Product entity.
+func (pcc *ProductCategoryCreate) AddProduct(p ...*Product) *ProductCategoryCreate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pcc.AddProductIDs(ids...)
 }
 
 // Mutation returns the ProductCategoryMutation object of the builder.
@@ -201,52 +176,21 @@ func (pcc *ProductCategoryCreate) defaults() {
 		v := productcategory.DefaultCreatedAt()
 		pcc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := pcc.mutation.EnumValueSort(); !ok {
-		v := productcategory.DefaultEnumValueSort
-		pcc.mutation.SetEnumValueSort(v)
-	}
-	if _, ok := pcc.mutation.IsEnum(); !ok {
-		v := productcategory.DefaultIsEnum
-		pcc.mutation.SetIsEnum(v)
-	}
-	if _, ok := pcc.mutation.IsRequired(); !ok {
-		v := productcategory.DefaultIsRequired
-		pcc.mutation.SetIsRequired(v)
-	}
-	if _, ok := pcc.mutation.SortIndex(); !ok {
-		v := productcategory.DefaultSortIndex
-		pcc.mutation.SetSortIndex(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (pcc *ProductCategoryCreate) check() error {
-	if _, ok := pcc.mutation.CodeName(); !ok {
-		return &ValidationError{Name: "code_name", err: errors.New(`ent: missing required field "ProductCategory.code_name"`)}
-	}
 	if _, ok := pcc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ProductCategory.created_at"`)}
 	}
-	if _, ok := pcc.mutation.DataType(); !ok {
-		return &ValidationError{Name: "data_type", err: errors.New(`ent: missing required field "ProductCategory.data_type"`)}
+	if _, ok := pcc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "ProductCategory.name"`)}
 	}
-	if _, ok := pcc.mutation.EnumValueSort(); !ok {
-		return &ValidationError{Name: "enum_value_sort", err: errors.New(`ent: missing required field "ProductCategory.enum_value_sort"`)}
+	if _, ok := pcc.mutation.OrgID(); !ok {
+		return &ValidationError{Name: "org_id", err: errors.New(`ent: missing required field "ProductCategory.org_id"`)}
 	}
 	if _, ok := pcc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "ProductCategory.etag"`)}
-	}
-	if _, ok := pcc.mutation.IsEnum(); !ok {
-		return &ValidationError{Name: "is_enum", err: errors.New(`ent: missing required field "ProductCategory.is_enum"`)}
-	}
-	if _, ok := pcc.mutation.IsRequired(); !ok {
-		return &ValidationError{Name: "is_required", err: errors.New(`ent: missing required field "ProductCategory.is_required"`)}
-	}
-	if _, ok := pcc.mutation.ProductID(); !ok {
-		return &ValidationError{Name: "product_id", err: errors.New(`ent: missing required field "ProductCategory.product_id"`)}
-	}
-	if _, ok := pcc.mutation.SortIndex(); !ok {
-		return &ValidationError{Name: "sort_index", err: errors.New(`ent: missing required field "ProductCategory.sort_index"`)}
 	}
 	return nil
 }
@@ -283,57 +227,74 @@ func (pcc *ProductCategoryCreate) createSpec() (*ProductCategory, *sqlgraph.Crea
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := pcc.mutation.CodeName(); ok {
-		_spec.SetField(productcategory.FieldCodeName, field.TypeString, value)
-		_node.CodeName = value
-	}
 	if value, ok := pcc.mutation.CreatedAt(); ok {
 		_spec.SetField(productcategory.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := pcc.mutation.DataType(); ok {
-		_spec.SetField(productcategory.FieldDataType, field.TypeString, value)
-		_node.DataType = value
+	if value, ok := pcc.mutation.Name(); ok {
+		_spec.SetField(productcategory.FieldName, field.TypeJSON, value)
+		_node.Name = value
 	}
-	if value, ok := pcc.mutation.DisplayName(); ok {
-		_spec.SetField(productcategory.FieldDisplayName, field.TypeJSON, value)
-		_node.DisplayName = value
-	}
-	if value, ok := pcc.mutation.EnumValueSort(); ok {
-		_spec.SetField(productcategory.FieldEnumValueSort, field.TypeBool, value)
-		_node.EnumValueSort = value
-	}
-	if value, ok := pcc.mutation.EnumValue(); ok {
-		_spec.SetField(productcategory.FieldEnumValue, field.TypeJSON, value)
-		_node.EnumValue = value
+	if value, ok := pcc.mutation.OrgID(); ok {
+		_spec.SetField(productcategory.FieldOrgID, field.TypeString, value)
+		_node.OrgID = value
 	}
 	if value, ok := pcc.mutation.Etag(); ok {
 		_spec.SetField(productcategory.FieldEtag, field.TypeString, value)
 		_node.Etag = value
 	}
-	if value, ok := pcc.mutation.GroupID(); ok {
-		_spec.SetField(productcategory.FieldGroupID, field.TypeString, value)
-		_node.GroupID = &value
-	}
-	if value, ok := pcc.mutation.IsEnum(); ok {
-		_spec.SetField(productcategory.FieldIsEnum, field.TypeBool, value)
-		_node.IsEnum = value
-	}
-	if value, ok := pcc.mutation.IsRequired(); ok {
-		_spec.SetField(productcategory.FieldIsRequired, field.TypeBool, value)
-		_node.IsRequired = value
-	}
-	if value, ok := pcc.mutation.ProductID(); ok {
-		_spec.SetField(productcategory.FieldProductID, field.TypeString, value)
-		_node.ProductID = value
-	}
-	if value, ok := pcc.mutation.SortIndex(); ok {
-		_spec.SetField(productcategory.FieldSortIndex, field.TypeInt, value)
-		_node.SortIndex = value
-	}
 	if value, ok := pcc.mutation.UpdatedAt(); ok {
 		_spec.SetField(productcategory.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = &value
+	}
+	if nodes := pcc.mutation.ChildrenIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   productcategory.ChildrenTable,
+			Columns: []string{productcategory.ChildrenColumn},
+			Bidi:    true,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.ParentID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pcc.mutation.ParentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   productcategory.ParentTable,
+			Columns: []string{productcategory.ParentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pcc.mutation.ProductIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   productcategory.ProductTable,
+			Columns: productcategory.ProductPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

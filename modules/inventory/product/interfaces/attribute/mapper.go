@@ -42,6 +42,6 @@ func (cmd UpdateAttributeCommand) ToDomainModel() *domain.Attribute {
 
 func (this DeleteAttributeCommand) ToDomainModel() *domain.Attribute {
 	attribute := &domain.Attribute{}
-	attribute.Id = &this.Id
+	model.MustCopy(this, attribute)
 	return attribute
 }

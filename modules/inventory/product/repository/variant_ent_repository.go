@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -36,7 +38,6 @@ func (r *VariantEntRepository) Create(ctx crud.Context, variant *domain.Variant)
 		SetID(*variant.Id).
 		SetProductID(*variant.ProductId).
 		SetSku(*variant.Sku).
-		SetStatus("active").
 		SetEtag(*variant.Etag)
 
 	if variant.Barcode != nil {
@@ -70,6 +71,7 @@ func (r *VariantEntRepository) Update(ctx crud.Context, variant *domain.Variant,
 
 	if len(update.Mutation().Fields()) > 0 {
 		update.SetEtag(*variant.Etag)
+		update.SetUpdatedAt(time.Now())
 	}
 
 	return db.Mutate(ctx, update, ent.IsNotFound, itVariant.EntToVariant)
@@ -85,14 +87,18 @@ func (r *VariantEntRepository) DeleteById(ctx crud.Context, id model.Id) (int, e
 // ✅ Find by ID
 func (r *VariantEntRepository) FindById(ctx crud.Context, query itVariant.FindByIdParam) (*domain.Variant, error) {
 	dbQuery := r.variantClient(ctx).Query().
-		Where(entVariant.ID(query.Id))
+		Where(entVariant.ProductID(query.ProductId)).
+		Where(entVariant.ID(query.Id)).
+		WithAttributeValue()
 
 	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itVariant.EntToVariant)
 }
 
 // ✅ Search (advanced)
 func (r *VariantEntRepository) Search(ctx crud.Context, param itVariant.SearchParam) (*crud.PagedResult[domain.Variant], error) {
-	query := r.client.Variant.Query()
+	query := r.client.Variant.Query().
+		Where(entVariant.ProductID(param.ProductId)).
+		WithAttributeValue()
 
 	return db.Search(
 		ctx,

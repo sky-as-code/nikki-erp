@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -41,7 +43,7 @@ func (r *AttributeEntRepository) GetNextSortIndex(ctx crud.Context, productId mo
 		return 0, err
 	}
 	if ent.IsNotFound(err) {
-		return 1, nil
+		return 0, nil
 	}
 	return lastAttribute.SortIndex + 1, nil
 }
@@ -57,7 +59,7 @@ func (r *AttributeEntRepository) Create(ctx crud.Context, attribute *domain.Attr
 		SetNillableIsEnum(attribute.IsEnum).
 		SetNillableEnumValueSort(attribute.EnumValueSort).
 		SetNillableSortIndex(attribute.SortIndex).
-		SetNillableGroupID(attribute.GroupId).
+		SetNillableAttributeGroupID(attribute.GroupId).
 		SetEtag(*attribute.Etag)
 
 	if attribute.DisplayName != nil {
@@ -79,6 +81,7 @@ func (r *AttributeEntRepository) Update(ctx crud.Context, attribute *domain.Attr
 		SetNillableIsRequired(attribute.IsRequired).
 		SetNillableDataType(attribute.DataType).
 		SetNillableEnumValueSort(attribute.EnumValueSort).
+		SetNillableAttributeGroupID(attribute.GroupId).
 		SetNillableProductID(attribute.ProductId).
 		Where(entAttribute.Etag(prevEtag))
 
@@ -93,6 +96,7 @@ func (r *AttributeEntRepository) Update(ctx crud.Context, attribute *domain.Attr
 
 	if len(update.Mutation().Fields()) > 0 {
 		update.SetEtag(*attribute.Etag)
+		update.SetUpdatedAt(time.Now())
 	}
 
 	return db.Mutate(ctx, update, ent.IsNotFound, itAttribute.EntToAttribute)
@@ -108,6 +112,7 @@ func (r *AttributeEntRepository) DeleteById(ctx crud.Context, id model.Id) (int,
 // ✅ Find by ID
 func (r *AttributeEntRepository) FindById(ctx crud.Context, query itAttribute.FindByIdParam) (*domain.Attribute, error) {
 	dbQuery := r.attributeClient(ctx).Query().
+		Where(entAttribute.ProductID(query.ProductId)).
 		Where(entAttribute.ID(query.Id))
 
 	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itAttribute.EntToAttribute)
@@ -123,7 +128,8 @@ func (r *AttributeEntRepository) FindByCodeName(ctx crud.Context, query itAttrib
 
 // ✅ Search (advanced)
 func (r *AttributeEntRepository) Search(ctx crud.Context, param itAttribute.SearchParam) (*crud.PagedResult[domain.Attribute], error) {
-	query := r.attributeClient(ctx).Query()
+	query := r.attributeClient(ctx).Query().
+		Where(entAttribute.ProductID(param.ProductId))
 
 	return db.Search(
 		ctx,

@@ -26,6 +26,8 @@ type AttributeGroup struct {
 	Index int `json:"index,omitempty"`
 	// Name holds the value of the "name" field.
 	Name model.LangJson `json:"name,omitempty"`
+	// Etag holds the value of the "etag" field.
+	Etag string `json:"etag,omitempty"`
 	// ProductID holds the value of the "product_id" field.
 	ProductID *string `json:"product_id,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -76,7 +78,7 @@ func (*AttributeGroup) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case attributegroup.FieldIndex:
 			values[i] = new(sql.NullInt64)
-		case attributegroup.FieldID, attributegroup.FieldProductID:
+		case attributegroup.FieldID, attributegroup.FieldEtag, attributegroup.FieldProductID:
 			values[i] = new(sql.NullString)
 		case attributegroup.FieldCreatedAt, attributegroup.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -120,6 +122,12 @@ func (ag *AttributeGroup) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &ag.Name); err != nil {
 					return fmt.Errorf("unmarshal field name: %w", err)
 				}
+			}
+		case attributegroup.FieldEtag:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field etag", values[i])
+			} else if value.Valid {
+				ag.Etag = value.String
 			}
 		case attributegroup.FieldProductID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -189,6 +197,9 @@ func (ag *AttributeGroup) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(fmt.Sprintf("%v", ag.Name))
+	builder.WriteString(", ")
+	builder.WriteString("etag=")
+	builder.WriteString(ag.Etag)
 	builder.WriteString(", ")
 	if v := ag.ProductID; v != nil {
 		builder.WriteString("product_id=")

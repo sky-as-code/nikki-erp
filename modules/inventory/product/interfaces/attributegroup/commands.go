@@ -17,13 +17,19 @@ var CreateAttributeGroupTypes = cqrs.RequestType{
 
 // Create Command
 type CreateAttributeGroupCommand struct {
-	ProductId *string         `json:"productId,omitempty" validate:"required"`
-	Name      *model.LangJson `json:"name,omitempty" validate:"required"`
-	Index     *int            `json:"index,omitempty"`
+	ProductId model.Id       `json:"productId" param:"productId"`
+	Name      model.LangJson `json:"name"`
 }
 
 func (CreateAttributeGroupCommand) CqrsRequestType() cqrs.RequestType {
 	return CreateAttributeGroupTypes
+}
+
+func (this CreateAttributeGroupCommand) Validate() ft.ValidationErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.ProductId, true),
+	}
+	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
 type CreateAttributeGroupResult = GetAttributeGroupByIdResult
@@ -37,11 +43,10 @@ var UpdateAttributeGroupCommandType = cqrs.RequestType{
 }
 
 type UpdateAttributeGroupCommand struct {
-	Id        model.Id        `json:"id" validate:"required" param:"id"`
-	Etag      model.Etag      `json:"etag" validate:"required" header:"If-Match"`
-	ProductId *string         `json:"productId,omitempty"`
-	Name      *model.LangJson `json:"name,omitempty"`
-	Index     *int            `json:"index,omitempty"`
+	Id        model.Id       `json:"id" param:"id"`
+	Etag      model.Etag     `json:"etag"`
+	ProductId model.Id       `json:"productId" param:"productId"`
+	Name      model.LangJson `json:"name"`
 }
 
 func (UpdateAttributeGroupCommand) CqrsRequestType() cqrs.RequestType {
@@ -58,7 +63,7 @@ var DeleteAttributeGroupCommandType = cqrs.RequestType{
 }
 
 type DeleteAttributeGroupCommand struct {
-	Id model.Id `json:"id" validate:"required" param:"id"`
+	Id model.Id `json:"id" param:"id"`
 }
 
 func (DeleteAttributeGroupCommand) CqrsRequestType() cqrs.RequestType {
@@ -82,7 +87,7 @@ var GetAttributeGroupByIdQueryType = cqrs.RequestType{
 }
 
 type GetAttributeGroupByIdQuery struct {
-	Id model.Id `json:"id" validate:"required" param:"id"`
+	Id model.Id `json:"id" param:"id"`
 }
 
 func (GetAttributeGroupByIdQuery) CqrsRequestType() cqrs.RequestType {
@@ -107,8 +112,7 @@ var SearchAttributeGroupsQueryType = cqrs.RequestType{
 
 type SearchAttributeGroupsQuery struct {
 	crud.SearchQuery
-	Criteria  *string `json:"criteria,omitempty" query:"criteria"`
-	ProductId *string `json:"productId,omitempty" query:"productId"`
+	ProductId *model.Id `json:"productId,omitempty" query:"productId"`
 }
 
 func (this SearchAttributeGroupsQuery) Validate() ft.ValidationErrors {

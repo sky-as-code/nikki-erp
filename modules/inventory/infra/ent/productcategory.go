@@ -19,33 +19,75 @@ type ProductCategory struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID string `json:"id,omitempty"`
-	// CodeName holds the value of the "code_name" field.
-	CodeName string `json:"code_name,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
-	// DataType holds the value of the "data_type" field.
-	DataType string `json:"data_type,omitempty"`
-	// DisplayName holds the value of the "display_name" field.
-	DisplayName model.LangJson `json:"display_name,omitempty"`
-	// EnumValueSort holds the value of the "enum_value_sort" field.
-	EnumValueSort bool `json:"enum_value_sort,omitempty"`
-	// EnumValue holds the value of the "enum_value" field.
-	EnumValue []json.RawMessage `json:"enum_value,omitempty"`
+	// Name holds the value of the "name" field.
+	Name model.LangJson `json:"name,omitempty"`
+	// ParentID holds the value of the "parent_id" field.
+	ParentID *string `json:"parent_id,omitempty"`
+	// OrgID holds the value of the "org_id" field.
+	OrgID string `json:"org_id,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
-	// GroupID holds the value of the "group_id" field.
-	GroupID *string `json:"group_id,omitempty"`
-	// IsEnum holds the value of the "is_enum" field.
-	IsEnum bool `json:"is_enum,omitempty"`
-	// IsRequired holds the value of the "is_required" field.
-	IsRequired bool `json:"is_required,omitempty"`
-	// ProductID holds the value of the "product_id" field.
-	ProductID string `json:"product_id,omitempty"`
-	// SortIndex holds the value of the "sort_index" field.
-	SortIndex int `json:"sort_index,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt    *time.Time `json:"updated_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the ProductCategoryQuery when eager-loading is set.
+	Edges        ProductCategoryEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// ProductCategoryEdges holds the relations/edges for other nodes in the graph.
+type ProductCategoryEdges struct {
+	// Children holds the value of the children edge.
+	Children *ProductCategory `json:"children,omitempty"`
+	// Parent holds the value of the parent edge.
+	Parent []*ProductCategory `json:"parent,omitempty"`
+	// Product holds the value of the product edge.
+	Product []*Product `json:"product,omitempty"`
+	// ProductCategoryRel holds the value of the product_category_rel edge.
+	ProductCategoryRel []*ProductCategoryRel `json:"product_category_rel,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [4]bool
+}
+
+// ChildrenOrErr returns the Children value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ProductCategoryEdges) ChildrenOrErr() (*ProductCategory, error) {
+	if e.Children != nil {
+		return e.Children, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: productcategory.Label}
+	}
+	return nil, &NotLoadedError{edge: "children"}
+}
+
+// ParentOrErr returns the Parent value or an error if the edge
+// was not loaded in eager-loading.
+func (e ProductCategoryEdges) ParentOrErr() ([]*ProductCategory, error) {
+	if e.loadedTypes[1] {
+		return e.Parent, nil
+	}
+	return nil, &NotLoadedError{edge: "parent"}
+}
+
+// ProductOrErr returns the Product value or an error if the edge
+// was not loaded in eager-loading.
+func (e ProductCategoryEdges) ProductOrErr() ([]*Product, error) {
+	if e.loadedTypes[2] {
+		return e.Product, nil
+	}
+	return nil, &NotLoadedError{edge: "product"}
+}
+
+// ProductCategoryRelOrErr returns the ProductCategoryRel value or an error if the edge
+// was not loaded in eager-loading.
+func (e ProductCategoryEdges) ProductCategoryRelOrErr() ([]*ProductCategoryRel, error) {
+	if e.loadedTypes[3] {
+		return e.ProductCategoryRel, nil
+	}
+	return nil, &NotLoadedError{edge: "product_category_rel"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -53,13 +95,9 @@ func (*ProductCategory) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case productcategory.FieldDisplayName, productcategory.FieldEnumValue:
+		case productcategory.FieldName:
 			values[i] = new([]byte)
-		case productcategory.FieldEnumValueSort, productcategory.FieldIsEnum, productcategory.FieldIsRequired:
-			values[i] = new(sql.NullBool)
-		case productcategory.FieldSortIndex:
-			values[i] = new(sql.NullInt64)
-		case productcategory.FieldID, productcategory.FieldCodeName, productcategory.FieldDataType, productcategory.FieldEtag, productcategory.FieldGroupID, productcategory.FieldProductID:
+		case productcategory.FieldID, productcategory.FieldParentID, productcategory.FieldOrgID, productcategory.FieldEtag:
 			values[i] = new(sql.NullString)
 		case productcategory.FieldCreatedAt, productcategory.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -84,82 +122,38 @@ func (pc *ProductCategory) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pc.ID = value.String
 			}
-		case productcategory.FieldCodeName:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field code_name", values[i])
-			} else if value.Valid {
-				pc.CodeName = value.String
-			}
 		case productcategory.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				pc.CreatedAt = value.Time
 			}
-		case productcategory.FieldDataType:
+		case productcategory.FieldName:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &pc.Name); err != nil {
+					return fmt.Errorf("unmarshal field name: %w", err)
+				}
+			}
+		case productcategory.FieldParentID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field data_type", values[i])
+				return fmt.Errorf("unexpected type %T for field parent_id", values[i])
 			} else if value.Valid {
-				pc.DataType = value.String
+				pc.ParentID = new(string)
+				*pc.ParentID = value.String
 			}
-		case productcategory.FieldDisplayName:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field display_name", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &pc.DisplayName); err != nil {
-					return fmt.Errorf("unmarshal field display_name: %w", err)
-				}
-			}
-		case productcategory.FieldEnumValueSort:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field enum_value_sort", values[i])
+		case productcategory.FieldOrgID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field org_id", values[i])
 			} else if value.Valid {
-				pc.EnumValueSort = value.Bool
-			}
-		case productcategory.FieldEnumValue:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field enum_value", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &pc.EnumValue); err != nil {
-					return fmt.Errorf("unmarshal field enum_value: %w", err)
-				}
+				pc.OrgID = value.String
 			}
 		case productcategory.FieldEtag:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field etag", values[i])
 			} else if value.Valid {
 				pc.Etag = value.String
-			}
-		case productcategory.FieldGroupID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field group_id", values[i])
-			} else if value.Valid {
-				pc.GroupID = new(string)
-				*pc.GroupID = value.String
-			}
-		case productcategory.FieldIsEnum:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field is_enum", values[i])
-			} else if value.Valid {
-				pc.IsEnum = value.Bool
-			}
-		case productcategory.FieldIsRequired:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field is_required", values[i])
-			} else if value.Valid {
-				pc.IsRequired = value.Bool
-			}
-		case productcategory.FieldProductID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field product_id", values[i])
-			} else if value.Valid {
-				pc.ProductID = value.String
-			}
-		case productcategory.FieldSortIndex:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field sort_index", values[i])
-			} else if value.Valid {
-				pc.SortIndex = int(value.Int64)
 			}
 		case productcategory.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -179,6 +173,26 @@ func (pc *ProductCategory) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (pc *ProductCategory) Value(name string) (ent.Value, error) {
 	return pc.selectValues.Get(name)
+}
+
+// QueryChildren queries the "children" edge of the ProductCategory entity.
+func (pc *ProductCategory) QueryChildren() *ProductCategoryQuery {
+	return NewProductCategoryClient(pc.config).QueryChildren(pc)
+}
+
+// QueryParent queries the "parent" edge of the ProductCategory entity.
+func (pc *ProductCategory) QueryParent() *ProductCategoryQuery {
+	return NewProductCategoryClient(pc.config).QueryParent(pc)
+}
+
+// QueryProduct queries the "product" edge of the ProductCategory entity.
+func (pc *ProductCategory) QueryProduct() *ProductQuery {
+	return NewProductCategoryClient(pc.config).QueryProduct(pc)
+}
+
+// QueryProductCategoryRel queries the "product_category_rel" edge of the ProductCategory entity.
+func (pc *ProductCategory) QueryProductCategoryRel() *ProductCategoryRelQuery {
+	return NewProductCategoryClient(pc.config).QueryProductCategoryRel(pc)
 }
 
 // Update returns a builder for updating this ProductCategory.
@@ -204,43 +218,22 @@ func (pc *ProductCategory) String() string {
 	var builder strings.Builder
 	builder.WriteString("ProductCategory(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", pc.ID))
-	builder.WriteString("code_name=")
-	builder.WriteString(pc.CodeName)
-	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(pc.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("data_type=")
-	builder.WriteString(pc.DataType)
+	builder.WriteString("name=")
+	builder.WriteString(fmt.Sprintf("%v", pc.Name))
 	builder.WriteString(", ")
-	builder.WriteString("display_name=")
-	builder.WriteString(fmt.Sprintf("%v", pc.DisplayName))
-	builder.WriteString(", ")
-	builder.WriteString("enum_value_sort=")
-	builder.WriteString(fmt.Sprintf("%v", pc.EnumValueSort))
-	builder.WriteString(", ")
-	builder.WriteString("enum_value=")
-	builder.WriteString(fmt.Sprintf("%v", pc.EnumValue))
-	builder.WriteString(", ")
-	builder.WriteString("etag=")
-	builder.WriteString(pc.Etag)
-	builder.WriteString(", ")
-	if v := pc.GroupID; v != nil {
-		builder.WriteString("group_id=")
+	if v := pc.ParentID; v != nil {
+		builder.WriteString("parent_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("is_enum=")
-	builder.WriteString(fmt.Sprintf("%v", pc.IsEnum))
+	builder.WriteString("org_id=")
+	builder.WriteString(pc.OrgID)
 	builder.WriteString(", ")
-	builder.WriteString("is_required=")
-	builder.WriteString(fmt.Sprintf("%v", pc.IsRequired))
-	builder.WriteString(", ")
-	builder.WriteString("product_id=")
-	builder.WriteString(pc.ProductID)
-	builder.WriteString(", ")
-	builder.WriteString("sort_index=")
-	builder.WriteString(fmt.Sprintf("%v", pc.SortIndex))
+	builder.WriteString("etag=")
+	builder.WriteString(pc.Etag)
 	builder.WriteString(", ")
 	if v := pc.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")

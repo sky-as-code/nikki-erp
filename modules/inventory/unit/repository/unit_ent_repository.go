@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -62,6 +64,7 @@ func (r *UnitEntRepository) Update(ctx crud.Context, unit *domain.Unit, prevEtag
 
 	if len(update.Mutation().Fields()) > 0 {
 		update.SetEtag(*unit.Etag)
+		update.SetUpdatedAt(time.Now())
 	}
 
 	return db.Mutate(ctx, update, ent.IsNotFound, itUnit.EntToUnit)

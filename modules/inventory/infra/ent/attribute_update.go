@@ -120,23 +120,23 @@ func (au *AttributeUpdate) SetNillableEtag(s *string) *AttributeUpdate {
 	return au
 }
 
-// SetGroupID sets the "group_id" field.
-func (au *AttributeUpdate) SetGroupID(s string) *AttributeUpdate {
-	au.mutation.SetGroupID(s)
+// SetAttributeGroupID sets the "attribute_group_id" field.
+func (au *AttributeUpdate) SetAttributeGroupID(s string) *AttributeUpdate {
+	au.mutation.SetAttributeGroupID(s)
 	return au
 }
 
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (au *AttributeUpdate) SetNillableGroupID(s *string) *AttributeUpdate {
+// SetNillableAttributeGroupID sets the "attribute_group_id" field if the given value is not nil.
+func (au *AttributeUpdate) SetNillableAttributeGroupID(s *string) *AttributeUpdate {
 	if s != nil {
-		au.SetGroupID(*s)
+		au.SetAttributeGroupID(*s)
 	}
 	return au
 }
 
-// ClearGroupID clears the value of the "group_id" field.
-func (au *AttributeUpdate) ClearGroupID() *AttributeUpdate {
-	au.mutation.ClearGroupID()
+// ClearAttributeGroupID clears the value of the "attribute_group_id" field.
+func (au *AttributeUpdate) ClearAttributeGroupID() *AttributeUpdate {
+	au.mutation.ClearAttributeGroupID()
 	return au
 }
 
@@ -220,20 +220,6 @@ func (au *AttributeUpdate) SetNillableUpdatedAt(t *time.Time) *AttributeUpdate {
 // ClearUpdatedAt clears the value of the "updated_at" field.
 func (au *AttributeUpdate) ClearUpdatedAt() *AttributeUpdate {
 	au.mutation.ClearUpdatedAt()
-	return au
-}
-
-// SetAttributeGroupID sets the "attribute_group" edge to the AttributeGroup entity by ID.
-func (au *AttributeUpdate) SetAttributeGroupID(id string) *AttributeUpdate {
-	au.mutation.SetAttributeGroupID(id)
-	return au
-}
-
-// SetNillableAttributeGroupID sets the "attribute_group" edge to the AttributeGroup entity by ID if the given value is not nil.
-func (au *AttributeUpdate) SetNillableAttributeGroupID(id *string) *AttributeUpdate {
-	if id != nil {
-		au = au.SetAttributeGroupID(*id)
-	}
 	return au
 }
 
@@ -603,23 +589,23 @@ func (auo *AttributeUpdateOne) SetNillableEtag(s *string) *AttributeUpdateOne {
 	return auo
 }
 
-// SetGroupID sets the "group_id" field.
-func (auo *AttributeUpdateOne) SetGroupID(s string) *AttributeUpdateOne {
-	auo.mutation.SetGroupID(s)
+// SetAttributeGroupID sets the "attribute_group_id" field.
+func (auo *AttributeUpdateOne) SetAttributeGroupID(s string) *AttributeUpdateOne {
+	auo.mutation.SetAttributeGroupID(s)
 	return auo
 }
 
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (auo *AttributeUpdateOne) SetNillableGroupID(s *string) *AttributeUpdateOne {
+// SetNillableAttributeGroupID sets the "attribute_group_id" field if the given value is not nil.
+func (auo *AttributeUpdateOne) SetNillableAttributeGroupID(s *string) *AttributeUpdateOne {
 	if s != nil {
-		auo.SetGroupID(*s)
+		auo.SetAttributeGroupID(*s)
 	}
 	return auo
 }
 
-// ClearGroupID clears the value of the "group_id" field.
-func (auo *AttributeUpdateOne) ClearGroupID() *AttributeUpdateOne {
-	auo.mutation.ClearGroupID()
+// ClearAttributeGroupID clears the value of the "attribute_group_id" field.
+func (auo *AttributeUpdateOne) ClearAttributeGroupID() *AttributeUpdateOne {
+	auo.mutation.ClearAttributeGroupID()
 	return auo
 }
 
@@ -703,20 +689,6 @@ func (auo *AttributeUpdateOne) SetNillableUpdatedAt(t *time.Time) *AttributeUpda
 // ClearUpdatedAt clears the value of the "updated_at" field.
 func (auo *AttributeUpdateOne) ClearUpdatedAt() *AttributeUpdateOne {
 	auo.mutation.ClearUpdatedAt()
-	return auo
-}
-
-// SetAttributeGroupID sets the "attribute_group" edge to the AttributeGroup entity by ID.
-func (auo *AttributeUpdateOne) SetAttributeGroupID(id string) *AttributeUpdateOne {
-	auo.mutation.SetAttributeGroupID(id)
-	return auo
-}
-
-// SetNillableAttributeGroupID sets the "attribute_group" edge to the AttributeGroup entity by ID if the given value is not nil.
-func (auo *AttributeUpdateOne) SetNillableAttributeGroupID(id *string) *AttributeUpdateOne {
-	if id != nil {
-		auo = auo.SetAttributeGroupID(*id)
-	}
 	return auo
 }
 

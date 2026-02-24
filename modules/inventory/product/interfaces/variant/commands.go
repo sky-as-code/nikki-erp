@@ -1,8 +1,6 @@
 package variant
 
 import (
-	"encoding/json"
-
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
@@ -20,12 +18,12 @@ var createVariantCommandType = cqrs.RequestType{
 }
 
 type CreateVariantCommand struct {
-	ProductId     model.Id                    `param:"productId" json:"productId"`
-	Sku           string                      `json:"sku"`
-	Barcode       string                      `json:"barcode,omitempty"`
-	ProposedPrice float64                     `json:"proposedPrice,omitempty"`
-	Status        *string                     `json:"status,omitempty"`
-	Attributes    *map[string]json.RawMessage `json:"attributes,omitempty"`
+	ProductId     model.Id                `param:"productId" json:"productId"`
+	Sku           string                  `json:"sku"`
+	Barcode       string                  `json:"barcode,omitempty"`
+	ProposedPrice float64                 `json:"proposedPrice,omitempty"`
+	Status        *string                 `json:"status,omitempty"`
+	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
 }
 
 func (CreateVariantCommand) CqrsRequestType() cqrs.RequestType {
@@ -50,12 +48,13 @@ var updateVariantCommandType = cqrs.RequestType{
 }
 
 type UpdateVariantCommand struct {
-	Id            model.Id          `param:"id" json:"id"`
-	Etag          model.Etag        `json:"etag"`
-	Barcode       *string           `json:"barcode,omitempty"`
-	ProposedPrice *int              `json:"proposedPrice,omitempty"`
-	Status        *string           `json:"status,omitempty"`
-	Attribute     *domain.Attribute `json:"attribute,omitempty"`
+	Id            model.Id                `param:"id" json:"id"`
+	ProductId     model.Id                `param:"productId" json:"productId"`
+	Etag          model.Etag              `json:"etag"`
+	Barcode       *string                 `json:"barcode,omitempty"`
+	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
+	Status        *string                 `json:"status,omitempty"`
+	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
 }
 
 func (UpdateVariantCommand) CqrsRequestType() cqrs.RequestType {
@@ -73,12 +72,14 @@ var deleteVariantCommandType = cqrs.RequestType{
 }
 
 type DeleteVariantCommand struct {
-	Id model.Id `json:"id" param:"id"`
+	Id        model.Id `json:"id" param:"id"`
+	ProductId model.Id `json:"productId" param:"productId"`
 }
 
 func (this DeleteVariantCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.IdValidateRule(&this.ProductId, true),
 	}
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -98,12 +99,14 @@ var getVariantByIdQueryType = cqrs.RequestType{
 }
 
 type GetVariantByIdQuery struct {
-	Id model.Id `param:"id" json:"id"`
+	Id        model.Id `param:"id" json:"id"`
+	ProductId model.Id `param:"productId" json:"productId"`
 }
 
 func (this GetVariantByIdQuery) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.IdValidateRule(&this.ProductId, true),
 	}
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -125,6 +128,8 @@ var searchVariantsQueryType = cqrs.RequestType{
 type SearchVariantsQuery struct {
 	// Filled by service from Graph
 	crud.SearchQuery
+
+	ProductId model.Id `param:"productId" json:"productId"`
 }
 
 func (this SearchVariantsQuery) CqrsRequestType() cqrs.RequestType {
@@ -133,6 +138,7 @@ func (this SearchVariantsQuery) CqrsRequestType() cqrs.RequestType {
 
 func (this SearchVariantsQuery) Validate() ft.ValidationErrors {
 	rules := this.SearchQuery.ValidationRules()
+	rules = append(rules, model.IdValidateRule(&this.ProductId, true))
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }

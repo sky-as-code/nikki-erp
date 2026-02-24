@@ -10,12 +10,9 @@ type ProductCategory struct {
 	model.ModelBase
 	model.AuditableBase
 
-	ParentId    *model.Id       `json:"parentId,omitempty"`
-	Name        *model.LangJson `json:"name,omitempty"`
-	Description *model.LangJson `json:"description,omitempty"`
-	Path        *string         `json:"path,omitempty"`
-	Level       *int            `json:"level,omitempty"`
-	SortIndex   *int            `json:"sortIndex,omitempty"`
+	OrgId    *model.Id       `json:"orgId"`
+	ParentId *model.Id       `json:"parentId,omitempty"`
+	Name     *model.LangJson `json:"name,omitempty"`
 }
 
 func (this *ProductCategory) Validate(forEdit bool) ft.ValidationErrors {
@@ -26,11 +23,6 @@ func (this *ProductCategory) Validate(forEdit bool) ft.ValidationErrors {
 			val.When(this.Name != nil,
 				val.NotEmpty,
 				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
-			),
-		),
-		val.Field(&this.Description,
-			val.When(this.Description != nil,
-				val.Length(0, model.MODEL_RULE_LONG_NAME_LENGTH),
 			),
 		),
 	}

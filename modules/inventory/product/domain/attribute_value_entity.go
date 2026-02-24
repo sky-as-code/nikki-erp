@@ -10,6 +10,7 @@ type AttributeValue struct {
 	model.ModelBase
 	model.AuditableBase
 
+	ProductId    *model.Id       `json:"productId,omitempty"`
 	AttributeId  *model.Id       `json:"attributeId,omitempty"`
 	ValueText    *model.LangJson `json:"valueText,omitempty"`
 	ValueNumber  *float64        `json:"valueNumber,omitempty"`
@@ -38,4 +39,18 @@ func (this *AttributeValue) Validate(forEdit bool) ft.ValidationErrors {
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
 
 	return val.ApiBased.ValidateStruct(this, rules...)
+}
+
+func (this *AttributeValue) GetValue() interface{} {
+	if this.ValueText != nil {
+		return this.ValueText
+	} else if this.ValueNumber != nil {
+		return this.ValueNumber
+	} else if this.ValueBool != nil {
+		return this.ValueBool
+	} else if this.ValueRef != nil {
+		return this.ValueRef
+	} else {
+		return nil
+	}
 }

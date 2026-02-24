@@ -457,7 +457,7 @@ func (agq *AttributeGroupQuery) loadAttribute(ctx context.Context, query *Attrib
 		}
 	}
 	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(attribute.FieldGroupID)
+		query.ctx.AppendFieldOnce(attribute.FieldAttributeGroupID)
 	}
 	query.Where(predicate.Attribute(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(attributegroup.AttributeColumn), fks...))
@@ -467,13 +467,13 @@ func (agq *AttributeGroupQuery) loadAttribute(ctx context.Context, query *Attrib
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.GroupID
+		fk := n.AttributeGroupID
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "group_id" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "attribute_group_id" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "group_id" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "attribute_group_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

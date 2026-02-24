@@ -90,9 +90,9 @@ func Etag(v string) predicate.Attribute {
 	return predicate.Attribute(sql.FieldEQ(FieldEtag, v))
 }
 
-// GroupID applies equality check predicate on the "group_id" field. It's identical to GroupIDEQ.
-func GroupID(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldEQ(FieldGroupID, v))
+// AttributeGroupID applies equality check predicate on the "attribute_group_id" field. It's identical to AttributeGroupIDEQ.
+func AttributeGroupID(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldEQ(FieldAttributeGroupID, v))
 }
 
 // IsEnum applies equality check predicate on the "is_enum" field. It's identical to IsEnumEQ.
@@ -385,79 +385,79 @@ func EtagContainsFold(v string) predicate.Attribute {
 	return predicate.Attribute(sql.FieldContainsFold(FieldEtag, v))
 }
 
-// GroupIDEQ applies the EQ predicate on the "group_id" field.
-func GroupIDEQ(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldEQ(FieldGroupID, v))
+// AttributeGroupIDEQ applies the EQ predicate on the "attribute_group_id" field.
+func AttributeGroupIDEQ(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldEQ(FieldAttributeGroupID, v))
 }
 
-// GroupIDNEQ applies the NEQ predicate on the "group_id" field.
-func GroupIDNEQ(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldNEQ(FieldGroupID, v))
+// AttributeGroupIDNEQ applies the NEQ predicate on the "attribute_group_id" field.
+func AttributeGroupIDNEQ(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldNEQ(FieldAttributeGroupID, v))
 }
 
-// GroupIDIn applies the In predicate on the "group_id" field.
-func GroupIDIn(vs ...string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldIn(FieldGroupID, vs...))
+// AttributeGroupIDIn applies the In predicate on the "attribute_group_id" field.
+func AttributeGroupIDIn(vs ...string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldIn(FieldAttributeGroupID, vs...))
 }
 
-// GroupIDNotIn applies the NotIn predicate on the "group_id" field.
-func GroupIDNotIn(vs ...string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldNotIn(FieldGroupID, vs...))
+// AttributeGroupIDNotIn applies the NotIn predicate on the "attribute_group_id" field.
+func AttributeGroupIDNotIn(vs ...string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldNotIn(FieldAttributeGroupID, vs...))
 }
 
-// GroupIDGT applies the GT predicate on the "group_id" field.
-func GroupIDGT(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldGT(FieldGroupID, v))
+// AttributeGroupIDGT applies the GT predicate on the "attribute_group_id" field.
+func AttributeGroupIDGT(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldGT(FieldAttributeGroupID, v))
 }
 
-// GroupIDGTE applies the GTE predicate on the "group_id" field.
-func GroupIDGTE(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldGTE(FieldGroupID, v))
+// AttributeGroupIDGTE applies the GTE predicate on the "attribute_group_id" field.
+func AttributeGroupIDGTE(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldGTE(FieldAttributeGroupID, v))
 }
 
-// GroupIDLT applies the LT predicate on the "group_id" field.
-func GroupIDLT(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldLT(FieldGroupID, v))
+// AttributeGroupIDLT applies the LT predicate on the "attribute_group_id" field.
+func AttributeGroupIDLT(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldLT(FieldAttributeGroupID, v))
 }
 
-// GroupIDLTE applies the LTE predicate on the "group_id" field.
-func GroupIDLTE(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldLTE(FieldGroupID, v))
+// AttributeGroupIDLTE applies the LTE predicate on the "attribute_group_id" field.
+func AttributeGroupIDLTE(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldLTE(FieldAttributeGroupID, v))
 }
 
-// GroupIDContains applies the Contains predicate on the "group_id" field.
-func GroupIDContains(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldContains(FieldGroupID, v))
+// AttributeGroupIDContains applies the Contains predicate on the "attribute_group_id" field.
+func AttributeGroupIDContains(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldContains(FieldAttributeGroupID, v))
 }
 
-// GroupIDHasPrefix applies the HasPrefix predicate on the "group_id" field.
-func GroupIDHasPrefix(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldHasPrefix(FieldGroupID, v))
+// AttributeGroupIDHasPrefix applies the HasPrefix predicate on the "attribute_group_id" field.
+func AttributeGroupIDHasPrefix(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldHasPrefix(FieldAttributeGroupID, v))
 }
 
-// GroupIDHasSuffix applies the HasSuffix predicate on the "group_id" field.
-func GroupIDHasSuffix(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldHasSuffix(FieldGroupID, v))
+// AttributeGroupIDHasSuffix applies the HasSuffix predicate on the "attribute_group_id" field.
+func AttributeGroupIDHasSuffix(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldHasSuffix(FieldAttributeGroupID, v))
 }
 
-// GroupIDIsNil applies the IsNil predicate on the "group_id" field.
-func GroupIDIsNil() predicate.Attribute {
-	return predicate.Attribute(sql.FieldIsNull(FieldGroupID))
+// AttributeGroupIDIsNil applies the IsNil predicate on the "attribute_group_id" field.
+func AttributeGroupIDIsNil() predicate.Attribute {
+	return predicate.Attribute(sql.FieldIsNull(FieldAttributeGroupID))
 }
 
-// GroupIDNotNil applies the NotNil predicate on the "group_id" field.
-func GroupIDNotNil() predicate.Attribute {
-	return predicate.Attribute(sql.FieldNotNull(FieldGroupID))
+// AttributeGroupIDNotNil applies the NotNil predicate on the "attribute_group_id" field.
+func AttributeGroupIDNotNil() predicate.Attribute {
+	return predicate.Attribute(sql.FieldNotNull(FieldAttributeGroupID))
 }
 
-// GroupIDEqualFold applies the EqualFold predicate on the "group_id" field.
-func GroupIDEqualFold(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldEqualFold(FieldGroupID, v))
+// AttributeGroupIDEqualFold applies the EqualFold predicate on the "attribute_group_id" field.
+func AttributeGroupIDEqualFold(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldEqualFold(FieldAttributeGroupID, v))
 }
 
-// GroupIDContainsFold applies the ContainsFold predicate on the "group_id" field.
-func GroupIDContainsFold(v string) predicate.Attribute {
-	return predicate.Attribute(sql.FieldContainsFold(FieldGroupID, v))
+// AttributeGroupIDContainsFold applies the ContainsFold predicate on the "attribute_group_id" field.
+func AttributeGroupIDContainsFold(v string) predicate.Attribute {
+	return predicate.Attribute(sql.FieldContainsFold(FieldAttributeGroupID, v))
 }
 
 // IsEnumEQ applies the EQ predicate on the "is_enum" field.
