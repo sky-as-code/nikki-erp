@@ -81,6 +81,10 @@ func (Product) Edges() []ent.Edge {
 		edge.From("attribute", Attribute.Type).
 			Ref("product"),
 
+		edge.From("product_category", ProductCategory.Type).
+			Ref("product").
+			Through("product_category_rel", ProductCategoryRel.Type),
+
 		edge.From("attribute_group", AttributeGroup.Type).
 			Ref("product"),
 

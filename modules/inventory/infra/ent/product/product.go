@@ -40,10 +40,14 @@ const (
 	EdgeVariant = "variant"
 	// EdgeAttribute holds the string denoting the attribute edge name in mutations.
 	EdgeAttribute = "attribute"
+	// EdgeProductCategory holds the string denoting the product_category edge name in mutations.
+	EdgeProductCategory = "product_category"
 	// EdgeAttributeGroup holds the string denoting the attribute_group edge name in mutations.
 	EdgeAttributeGroup = "attribute_group"
 	// EdgeUnit holds the string denoting the unit edge name in mutations.
 	EdgeUnit = "unit"
+	// EdgeProductCategoryRel holds the string denoting the product_category_rel edge name in mutations.
+	EdgeProductCategoryRel = "product_category_rel"
 	// Table holds the table name of the product in the database.
 	Table = "inventory_product"
 	// VariantTable is the table that holds the variant relation/edge.
@@ -60,6 +64,11 @@ const (
 	AttributeInverseTable = "inventory_attribute"
 	// AttributeColumn is the table column denoting the attribute relation/edge.
 	AttributeColumn = "product_id"
+	// ProductCategoryTable is the table that holds the product_category relation/edge. The primary key declared below.
+	ProductCategoryTable = "product_category_rel"
+	// ProductCategoryInverseTable is the table name for the ProductCategory entity.
+	// It exists in this package in order to avoid circular dependency with the "productcategory" package.
+	ProductCategoryInverseTable = "inventory_product_category"
 	// AttributeGroupTable is the table that holds the attribute_group relation/edge.
 	AttributeGroupTable = "inventory_attribute_group"
 	// AttributeGroupInverseTable is the table name for the AttributeGroup entity.
@@ -74,6 +83,13 @@ const (
 	UnitInverseTable = "inventory_unit"
 	// UnitColumn is the table column denoting the unit relation/edge.
 	UnitColumn = "unit_id"
+	// ProductCategoryRelTable is the table that holds the product_category_rel relation/edge.
+	ProductCategoryRelTable = "product_category_rel"
+	// ProductCategoryRelInverseTable is the table name for the ProductCategoryRel entity.
+	// It exists in this package in order to avoid circular dependency with the "productcategoryrel" package.
+	ProductCategoryRelInverseTable = "product_category_rel"
+	// ProductCategoryRelColumn is the table column denoting the product_category_rel relation/edge.
+	ProductCategoryRelColumn = "product_id"
 )
 
 // Columns holds all SQL columns for product fields.
@@ -91,6 +107,12 @@ var Columns = []string{
 	FieldUnitID,
 	FieldUpdatedAt,
 }
+
+var (
+	// ProductCategoryPrimaryKey and ProductCategoryColumn2 are the table columns denoting the
+	// primary key for the product_category relation (M2M).
+	ProductCategoryPrimaryKey = []string{"product_category_id", "product_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -190,6 +212,20 @@ func ByAttribute(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByProductCategoryCount orders the results by product_category count.
+func ByProductCategoryCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newProductCategoryStep(), opts...)
+	}
+}
+
+// ByProductCategory orders the results by product_category terms.
+func ByProductCategory(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProductCategoryStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByAttributeGroupCount orders the results by attribute_group count.
 func ByAttributeGroupCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -208,6 +244,20 @@ func ByAttributeGroup(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 func ByUnitField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newUnitStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByProductCategoryRelCount orders the results by product_category_rel count.
+func ByProductCategoryRelCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newProductCategoryRelStep(), opts...)
+	}
+}
+
+// ByProductCategoryRel orders the results by product_category_rel terms.
+func ByProductCategoryRel(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProductCategoryRelStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -238,6 +288,19 @@ func newAttributeStep() *sqlgraph.Step {
 }
 
 // Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewProductCategoryStepNikki() *sqlgraph.Step {
+	return newProductCategoryStep()
+}
+
+func newProductCategoryStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProductCategoryInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, true, ProductCategoryTable, ProductCategoryPrimaryKey...),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
 func NewAttributeGroupStepNikki() *sqlgraph.Step {
 	return newAttributeGroupStep()
 }
@@ -260,5 +323,18 @@ func newUnitStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UnitInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, UnitTable, UnitColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewProductCategoryRelStepNikki() *sqlgraph.Step {
+	return newProductCategoryRelStep()
+}
+
+func newProductCategoryRelStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProductCategoryRelInverseTable, ProductCategoryRelColumn),
+		sqlgraph.Edge(sqlgraph.O2M, true, ProductCategoryRelTable, ProductCategoryRelColumn),
 	)
 }

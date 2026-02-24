@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -12,16 +13,22 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/predicate"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/product"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategory"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategoryrel"
 )
 
 // ProductCategoryQuery is the builder for querying ProductCategory entities.
 type ProductCategoryQuery struct {
 	config
-	ctx        *QueryContext
-	order      []productcategory.OrderOption
-	inters     []Interceptor
-	predicates []predicate.ProductCategory
+	ctx                    *QueryContext
+	order                  []productcategory.OrderOption
+	inters                 []Interceptor
+	predicates             []predicate.ProductCategory
+	withChildren           *ProductCategoryQuery
+	withParent             *ProductCategoryQuery
+	withProduct            *ProductQuery
+	withProductCategoryRel *ProductCategoryRelQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -56,6 +63,94 @@ func (pcq *ProductCategoryQuery) Unique(unique bool) *ProductCategoryQuery {
 func (pcq *ProductCategoryQuery) Order(o ...productcategory.OrderOption) *ProductCategoryQuery {
 	pcq.order = append(pcq.order, o...)
 	return pcq
+}
+
+// QueryChildren chains the current query on the "children" edge.
+func (pcq *ProductCategoryQuery) QueryChildren() *ProductCategoryQuery {
+	query := (&ProductCategoryClient{config: pcq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pcq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pcq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(productcategory.Table, productcategory.FieldID, selector),
+			sqlgraph.To(productcategory.Table, productcategory.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, productcategory.ChildrenTable, productcategory.ChildrenColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pcq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryParent chains the current query on the "parent" edge.
+func (pcq *ProductCategoryQuery) QueryParent() *ProductCategoryQuery {
+	query := (&ProductCategoryClient{config: pcq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pcq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pcq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(productcategory.Table, productcategory.FieldID, selector),
+			sqlgraph.To(productcategory.Table, productcategory.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, productcategory.ParentTable, productcategory.ParentColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pcq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProduct chains the current query on the "product" edge.
+func (pcq *ProductCategoryQuery) QueryProduct() *ProductQuery {
+	query := (&ProductClient{config: pcq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pcq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pcq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(productcategory.Table, productcategory.FieldID, selector),
+			sqlgraph.To(product.Table, product.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, productcategory.ProductTable, productcategory.ProductPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(pcq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryProductCategoryRel chains the current query on the "product_category_rel" edge.
+func (pcq *ProductCategoryQuery) QueryProductCategoryRel() *ProductCategoryRelQuery {
+	query := (&ProductCategoryRelClient{config: pcq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pcq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pcq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(productcategory.Table, productcategory.FieldID, selector),
+			sqlgraph.To(productcategoryrel.Table, productcategoryrel.ProductCategoryColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, productcategory.ProductCategoryRelTable, productcategory.ProductCategoryRelColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pcq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first ProductCategory entity from the query.
@@ -245,15 +340,63 @@ func (pcq *ProductCategoryQuery) Clone() *ProductCategoryQuery {
 		return nil
 	}
 	return &ProductCategoryQuery{
-		config:     pcq.config,
-		ctx:        pcq.ctx.Clone(),
-		order:      append([]productcategory.OrderOption{}, pcq.order...),
-		inters:     append([]Interceptor{}, pcq.inters...),
-		predicates: append([]predicate.ProductCategory{}, pcq.predicates...),
+		config:                 pcq.config,
+		ctx:                    pcq.ctx.Clone(),
+		order:                  append([]productcategory.OrderOption{}, pcq.order...),
+		inters:                 append([]Interceptor{}, pcq.inters...),
+		predicates:             append([]predicate.ProductCategory{}, pcq.predicates...),
+		withChildren:           pcq.withChildren.Clone(),
+		withParent:             pcq.withParent.Clone(),
+		withProduct:            pcq.withProduct.Clone(),
+		withProductCategoryRel: pcq.withProductCategoryRel.Clone(),
 		// clone intermediate query.
 		sql:  pcq.sql.Clone(),
 		path: pcq.path,
 	}
+}
+
+// WithChildren tells the query-builder to eager-load the nodes that are connected to
+// the "children" edge. The optional arguments are used to configure the query builder of the edge.
+func (pcq *ProductCategoryQuery) WithChildren(opts ...func(*ProductCategoryQuery)) *ProductCategoryQuery {
+	query := (&ProductCategoryClient{config: pcq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pcq.withChildren = query
+	return pcq
+}
+
+// WithParent tells the query-builder to eager-load the nodes that are connected to
+// the "parent" edge. The optional arguments are used to configure the query builder of the edge.
+func (pcq *ProductCategoryQuery) WithParent(opts ...func(*ProductCategoryQuery)) *ProductCategoryQuery {
+	query := (&ProductCategoryClient{config: pcq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pcq.withParent = query
+	return pcq
+}
+
+// WithProduct tells the query-builder to eager-load the nodes that are connected to
+// the "product" edge. The optional arguments are used to configure the query builder of the edge.
+func (pcq *ProductCategoryQuery) WithProduct(opts ...func(*ProductQuery)) *ProductCategoryQuery {
+	query := (&ProductClient{config: pcq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pcq.withProduct = query
+	return pcq
+}
+
+// WithProductCategoryRel tells the query-builder to eager-load the nodes that are connected to
+// the "product_category_rel" edge. The optional arguments are used to configure the query builder of the edge.
+func (pcq *ProductCategoryQuery) WithProductCategoryRel(opts ...func(*ProductCategoryRelQuery)) *ProductCategoryQuery {
+	query := (&ProductCategoryRelClient{config: pcq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pcq.withProductCategoryRel = query
+	return pcq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -262,12 +405,12 @@ func (pcq *ProductCategoryQuery) Clone() *ProductCategoryQuery {
 // Example:
 //
 //	var v []struct {
-//		CodeName string `json:"code_name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.ProductCategory.Query().
-//		GroupBy(productcategory.FieldCodeName).
+//		GroupBy(productcategory.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pcq *ProductCategoryQuery) GroupBy(field string, fields ...string) *ProductCategoryGroupBy {
@@ -285,11 +428,11 @@ func (pcq *ProductCategoryQuery) GroupBy(field string, fields ...string) *Produc
 // Example:
 //
 //	var v []struct {
-//		CodeName string `json:"code_name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.ProductCategory.Query().
-//		Select(productcategory.FieldCodeName).
+//		Select(productcategory.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (pcq *ProductCategoryQuery) Select(fields ...string) *ProductCategorySelect {
 	pcq.ctx.Fields = append(pcq.ctx.Fields, fields...)
@@ -332,8 +475,14 @@ func (pcq *ProductCategoryQuery) prepareQuery(ctx context.Context) error {
 
 func (pcq *ProductCategoryQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ProductCategory, error) {
 	var (
-		nodes = []*ProductCategory{}
-		_spec = pcq.querySpec()
+		nodes       = []*ProductCategory{}
+		_spec       = pcq.querySpec()
+		loadedTypes = [4]bool{
+			pcq.withChildren != nil,
+			pcq.withParent != nil,
+			pcq.withProduct != nil,
+			pcq.withProductCategoryRel != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*ProductCategory).scanValues(nil, columns)
@@ -341,6 +490,7 @@ func (pcq *ProductCategoryQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &ProductCategory{config: pcq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -352,7 +502,193 @@ func (pcq *ProductCategoryQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := pcq.withChildren; query != nil {
+		if err := pcq.loadChildren(ctx, query, nodes, nil,
+			func(n *ProductCategory, e *ProductCategory) { n.Edges.Children = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pcq.withParent; query != nil {
+		if err := pcq.loadParent(ctx, query, nodes,
+			func(n *ProductCategory) { n.Edges.Parent = []*ProductCategory{} },
+			func(n *ProductCategory, e *ProductCategory) { n.Edges.Parent = append(n.Edges.Parent, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pcq.withProduct; query != nil {
+		if err := pcq.loadProduct(ctx, query, nodes,
+			func(n *ProductCategory) { n.Edges.Product = []*Product{} },
+			func(n *ProductCategory, e *Product) { n.Edges.Product = append(n.Edges.Product, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pcq.withProductCategoryRel; query != nil {
+		if err := pcq.loadProductCategoryRel(ctx, query, nodes,
+			func(n *ProductCategory) { n.Edges.ProductCategoryRel = []*ProductCategoryRel{} },
+			func(n *ProductCategory, e *ProductCategoryRel) {
+				n.Edges.ProductCategoryRel = append(n.Edges.ProductCategoryRel, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (pcq *ProductCategoryQuery) loadChildren(ctx context.Context, query *ProductCategoryQuery, nodes []*ProductCategory, init func(*ProductCategory), assign func(*ProductCategory, *ProductCategory)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*ProductCategory)
+	for i := range nodes {
+		if nodes[i].ParentID == nil {
+			continue
+		}
+		fk := *nodes[i].ParentID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(productcategory.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "parent_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (pcq *ProductCategoryQuery) loadParent(ctx context.Context, query *ProductCategoryQuery, nodes []*ProductCategory, init func(*ProductCategory), assign func(*ProductCategory, *ProductCategory)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*ProductCategory)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(productcategory.FieldParentID)
+	}
+	query.Where(predicate.ProductCategory(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(productcategory.ParentColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ParentID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "parent_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "parent_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (pcq *ProductCategoryQuery) loadProduct(ctx context.Context, query *ProductQuery, nodes []*ProductCategory, init func(*ProductCategory), assign func(*ProductCategory, *Product)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[string]*ProductCategory)
+	nids := make(map[string]map[*ProductCategory]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(productcategory.ProductTable)
+		s.Join(joinT).On(s.C(product.FieldID), joinT.C(productcategory.ProductPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(productcategory.ProductPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(productcategory.ProductPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(sql.NullString)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := values[0].(*sql.NullString).String
+				inValue := values[1].(*sql.NullString).String
+				if nids[inValue] == nil {
+					nids[inValue] = map[*ProductCategory]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Product](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "product" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (pcq *ProductCategoryQuery) loadProductCategoryRel(ctx context.Context, query *ProductCategoryRelQuery, nodes []*ProductCategory, init func(*ProductCategory), assign func(*ProductCategory, *ProductCategoryRel)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*ProductCategory)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(productcategoryrel.FieldProductCategoryID)
+	}
+	query.Where(predicate.ProductCategoryRel(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(productcategory.ProductCategoryRelColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ProductCategoryID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "product_category_id" returned %v for node %v`, fk, n)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (pcq *ProductCategoryQuery) sqlCount(ctx context.Context) (int, error) {
@@ -379,6 +715,9 @@ func (pcq *ProductCategoryQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != productcategory.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if pcq.withChildren != nil {
+			_spec.Node.AddColumnOnce(productcategory.FieldParentID)
 		}
 	}
 	if ps := pcq.predicates; len(ps) > 0 {

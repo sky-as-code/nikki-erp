@@ -17,7 +17,7 @@ type AttributeGroupDto struct {
 	// AttributeGroup specific fields
 	Name      model.LangJson `json:"name"`
 	Index     int            `json:"index"`
-	ProductId *string        `json:"productId,omitempty"`
+	ProductId string         `json:"productId,omitempty"`
 }
 
 func (this *AttributeGroupDto) FromAttributeGroup(ag domain.AttributeGroup) {

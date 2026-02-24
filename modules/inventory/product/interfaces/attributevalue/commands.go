@@ -18,6 +18,7 @@ var createAttributeValueCommandType = cqrs.RequestType{
 }
 
 type CreateAttributeValueCommand struct {
+	ProductId    model.Id        `json:"productId,omitempty"`
 	VariantId    model.Id        `json:"variantId,omitempty"`
 	AttributeId  model.Id        `param:"attribute_id" json:"attributeId"`
 	ValueText    *model.LangJson `json:"valueText,omitempty"`
@@ -73,12 +74,14 @@ var deleteAttributeValueCommandType = cqrs.RequestType{
 }
 
 type DeleteAttributeValueCommand struct {
-	Id model.Id `json:"id" param:"id"`
+	Id          model.Id `json:"id" param:"id"`
+	AttributeId model.Id `json:"attributeId" param:"attributeId"`
 }
 
 func (this DeleteAttributeValueCommand) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
+		model.IdValidateRule(&this.AttributeId, true),
 	}
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -125,6 +128,8 @@ var searchAttributeValuesQueryType = cqrs.RequestType{
 type SearchAttributeValuesQuery struct {
 	// Filled by service from Graph
 	crud.SearchQuery
+
+	AttributeId *model.Id `param:"attributeId" json:"attributeId"`
 }
 
 func (this SearchAttributeValuesQuery) CqrsRequestType() cqrs.RequestType {

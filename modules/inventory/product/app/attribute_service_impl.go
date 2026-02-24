@@ -184,6 +184,7 @@ func (this *AttributeServiceImpl) SearchAttributes(ctx crud.Context, query itAtt
 		},
 		RepoSearch: func(ctx crud.Context, query itAttribute.SearchAttributesQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.Attribute], error) {
 			return this.attributeRepo.Search(ctx, itAttribute.SearchParam{
+				ProductId: query.ProductId,
 				Predicate: predicate,
 				Order:     order,
 				Page:      *query.Page,
@@ -276,7 +277,8 @@ func (s *AttributeServiceImpl) setAttributeDefaults(ctx crud.Context, attribute 
 
 func (s *AttributeServiceImpl) assertAttributeIdExists(ctx crud.Context, attribute *domain.Attribute, vErrs *ft.ValidationErrors) (*domain.Attribute, error) {
 	dbAttribute, err := s.attributeRepo.FindById(ctx, itAttribute.FindByIdParam{
-		Id: *attribute.Id,
+		ProductId: *attribute.ProductId,
+		Id:        *attribute.Id,
 	})
 	if err != nil {
 		return nil, err

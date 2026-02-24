@@ -24,8 +24,9 @@ type DeleteParam = DeleteAttributeValueCommand
 type FindByIdParam = GetAttributeValueByIdQuery
 
 type SearchParam struct {
-	Predicate *orm.Predicate
-	Order     []orm.OrderOption
-	Page      int
-	Size      int
+	AttributeId *model.Id
+	Predicate   *orm.Predicate
+	Order       []orm.OrderOption
+	Page        int
+	Size        int
 }

@@ -17,12 +17,13 @@ type ProductDto struct {
 	// Optional common product fields (copied if present in domain.Product)
 	Name             model.LangJson  `json:"name"`
 	Description      *model.LangJson `json:"description,omitempty"`
-	UnitId           *string         `json:"unitId"`
+	UnitId           *model.Id       `json:"unitId,omitempty"`
 	Status           string          `json:"status"`
-	DefaultVariantId *string         `json:"defaultVariantId,omitempty"`
+	DefaultVariantId *model.Id       `json:"defaultVariantId,omitempty"`
 	ThumbnailUrl     *string         `json:"thumbnailUrl,omitempty"`
 
-	Variants []GetVariantByProductResponse `json:"variants,omitempty"`
+	Variants   []GetVariantByProductResponse `json:"variants,omitempty"`
+	Attributes []AttributeDto                `json:"attributes,omitempty"`
 }
 
 func (this *ProductDto) FromProduct(p domain.Product) {
@@ -34,6 +35,12 @@ func (this *ProductDto) FromProduct(p domain.Product) {
 		variantResp := GetVariantByProductResponse{}
 		variantResp.FromVariant(v)
 		return variantResp
+	})
+
+	this.Attributes = array.Map(p.Attributes, func(attr domain.Attribute) AttributeDto {
+		attrResp := AttributeDto{}
+		attrResp.FromAttribute(attr)
+		return attrResp
 	})
 }
 

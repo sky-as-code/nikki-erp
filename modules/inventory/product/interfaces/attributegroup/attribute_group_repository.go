@@ -15,6 +15,7 @@ type AttributeGroupRepository interface {
 	FindById(ctx crud.Context, query FindByIdParam) (*domain.AttributeGroup, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.AttributeGroup], error)
+	GetNextIndex(ctx crud.Context, productId model.Id) (int, error)
 }
 
 type DeleteParam = DeleteAttributeGroupCommand

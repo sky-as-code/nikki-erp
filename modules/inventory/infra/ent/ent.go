@@ -17,6 +17,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attributevalue"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/product"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategory"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategoryrel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/unit"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/unitcategory"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/variant"
@@ -86,6 +87,7 @@ func checkColumn(table, column string) error {
 			attributevalue.Table:      attributevalue.ValidColumn,
 			product.Table:             product.ValidColumn,
 			productcategory.Table:     productcategory.ValidColumn,
+			productcategoryrel.Table:  productcategoryrel.ValidColumn,
 			unit.Table:                unit.ValidColumn,
 			unitcategory.Table:        unitcategory.ValidColumn,
 			variant.Table:             variant.ValidColumn,

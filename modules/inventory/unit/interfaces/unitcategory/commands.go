@@ -17,11 +17,8 @@ var createUnitCategoryCommandType = cqrs.RequestType{
 }
 
 type CreateUnitCategoryCommand struct {
-	OrgId        *string         `json:"orgId,omitempty" validate:"required"`
-	Name         *model.LangJson `json:"name,omitempty" validate:"required"`
-	Description  *model.LangJson `json:"description,omitempty"`
-	Status       *string         `json:"status,omitempty"`
-	ThumbnailUrl *string         `json:"thumbnailURL,omitempty"`
+	OrgId model.Id       `json:"orgId" param:"orgId"`
+	Name  model.LangJson `json:"name"`
 }
 
 func (CreateUnitCategoryCommand) CqrsRequestType() cqrs.RequestType {
@@ -109,7 +106,6 @@ var searchUnitCategoriesQueryType = cqrs.RequestType{
 
 type SearchUnitCategoriesQuery struct {
 	crud.SearchQuery
-	Criteria *string `json:"criteria,omitempty" query:"criteria"`
 }
 
 func (this SearchUnitCategoriesQuery) Validate() ft.ValidationErrors {

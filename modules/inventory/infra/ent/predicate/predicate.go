@@ -21,6 +21,9 @@ type Product = func(*sql.Selector)
 // ProductCategory is the predicate function for productcategory builders.
 type ProductCategory = func(*sql.Selector)
 
+// ProductCategoryRel is the predicate function for productcategoryrel builders.
+type ProductCategoryRel = func(*sql.Selector)
+
 // Unit is the predicate function for unit builders.
 type Unit = func(*sql.Selector)
 

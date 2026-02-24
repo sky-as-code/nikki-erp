@@ -20,6 +20,8 @@ const (
 	FieldIndex = "index"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldEtag holds the string denoting the etag field in the database.
+	FieldEtag = "etag"
 	// FieldProductID holds the string denoting the product_id field in the database.
 	FieldProductID = "product_id"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -36,7 +38,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "attribute" package.
 	AttributeInverseTable = "inventory_attribute"
 	// AttributeColumn is the table column denoting the attribute relation/edge.
-	AttributeColumn = "group_id"
+	AttributeColumn = "attribute_group_id"
 	// ProductTable is the table that holds the product relation/edge.
 	ProductTable = "inventory_attribute_group"
 	// ProductInverseTable is the table name for the Product entity.
@@ -52,6 +54,7 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldIndex,
 	FieldName,
+	FieldEtag,
 	FieldProductID,
 	FieldUpdatedAt,
 }
@@ -87,6 +90,11 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByIndex orders the results by the index field.
 func ByIndex(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIndex, opts...).ToFunc()
+}
+
+// ByEtag orders the results by the etag field.
+func ByEtag(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldEtag, opts...).ToFunc()
 }
 
 // ByProductID orders the results by the product_id field.

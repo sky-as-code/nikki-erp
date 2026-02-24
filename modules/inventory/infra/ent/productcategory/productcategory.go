@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -13,53 +14,66 @@ const (
 	Label = "product_category"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldCodeName holds the string denoting the code_name field in the database.
-	FieldCodeName = "code_name"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// FieldDataType holds the string denoting the data_type field in the database.
-	FieldDataType = "data_type"
-	// FieldDisplayName holds the string denoting the display_name field in the database.
-	FieldDisplayName = "display_name"
-	// FieldEnumValueSort holds the string denoting the enum_value_sort field in the database.
-	FieldEnumValueSort = "enum_value_sort"
-	// FieldEnumValue holds the string denoting the enum_value field in the database.
-	FieldEnumValue = "enum_value"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
+	// FieldParentID holds the string denoting the parent_id field in the database.
+	FieldParentID = "parent_id"
+	// FieldOrgID holds the string denoting the org_id field in the database.
+	FieldOrgID = "org_id"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
-	// FieldGroupID holds the string denoting the group_id field in the database.
-	FieldGroupID = "group_id"
-	// FieldIsEnum holds the string denoting the is_enum field in the database.
-	FieldIsEnum = "is_enum"
-	// FieldIsRequired holds the string denoting the is_required field in the database.
-	FieldIsRequired = "is_required"
-	// FieldProductID holds the string denoting the product_id field in the database.
-	FieldProductID = "product_id"
-	// FieldSortIndex holds the string denoting the sort_index field in the database.
-	FieldSortIndex = "sort_index"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// EdgeChildren holds the string denoting the children edge name in mutations.
+	EdgeChildren = "children"
+	// EdgeParent holds the string denoting the parent edge name in mutations.
+	EdgeParent = "parent"
+	// EdgeProduct holds the string denoting the product edge name in mutations.
+	EdgeProduct = "product"
+	// EdgeProductCategoryRel holds the string denoting the product_category_rel edge name in mutations.
+	EdgeProductCategoryRel = "product_category_rel"
 	// Table holds the table name of the productcategory in the database.
 	Table = "inventory_product_category"
+	// ChildrenTable is the table that holds the children relation/edge.
+	ChildrenTable = "inventory_product_category"
+	// ChildrenColumn is the table column denoting the children relation/edge.
+	ChildrenColumn = "parent_id"
+	// ParentTable is the table that holds the parent relation/edge.
+	ParentTable = "inventory_product_category"
+	// ParentColumn is the table column denoting the parent relation/edge.
+	ParentColumn = "parent_id"
+	// ProductTable is the table that holds the product relation/edge. The primary key declared below.
+	ProductTable = "product_category_rel"
+	// ProductInverseTable is the table name for the Product entity.
+	// It exists in this package in order to avoid circular dependency with the "product" package.
+	ProductInverseTable = "inventory_product"
+	// ProductCategoryRelTable is the table that holds the product_category_rel relation/edge.
+	ProductCategoryRelTable = "product_category_rel"
+	// ProductCategoryRelInverseTable is the table name for the ProductCategoryRel entity.
+	// It exists in this package in order to avoid circular dependency with the "productcategoryrel" package.
+	ProductCategoryRelInverseTable = "product_category_rel"
+	// ProductCategoryRelColumn is the table column denoting the product_category_rel relation/edge.
+	ProductCategoryRelColumn = "product_category_id"
 )
 
 // Columns holds all SQL columns for productcategory fields.
 var Columns = []string{
 	FieldID,
-	FieldCodeName,
 	FieldCreatedAt,
-	FieldDataType,
-	FieldDisplayName,
-	FieldEnumValueSort,
-	FieldEnumValue,
+	FieldName,
+	FieldParentID,
+	FieldOrgID,
 	FieldEtag,
-	FieldGroupID,
-	FieldIsEnum,
-	FieldIsRequired,
-	FieldProductID,
-	FieldSortIndex,
 	FieldUpdatedAt,
 }
+
+var (
+	// ProductPrimaryKey and ProductColumn2 are the table columns denoting the
+	// primary key for the product relation (M2M).
+	ProductPrimaryKey = []string{"product_category_id", "product_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -74,14 +88,6 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
-	// DefaultEnumValueSort holds the default value on creation for the "enum_value_sort" field.
-	DefaultEnumValueSort bool
-	// DefaultIsEnum holds the default value on creation for the "is_enum" field.
-	DefaultIsEnum bool
-	// DefaultIsRequired holds the default value on creation for the "is_required" field.
-	DefaultIsRequired bool
-	// DefaultSortIndex holds the default value on creation for the "sort_index" field.
-	DefaultSortIndex int
 )
 
 // OrderOption defines the ordering options for the ProductCategory queries.
@@ -92,24 +98,19 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByCodeName orders the results by the code_name field.
-func ByCodeName(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCodeName, opts...).ToFunc()
-}
-
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByDataType orders the results by the data_type field.
-func ByDataType(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDataType, opts...).ToFunc()
+// ByParentID orders the results by the parent_id field.
+func ByParentID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldParentID, opts...).ToFunc()
 }
 
-// ByEnumValueSort orders the results by the enum_value_sort field.
-func ByEnumValueSort(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldEnumValueSort, opts...).ToFunc()
+// ByOrgID orders the results by the org_id field.
+func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
 }
 
 // ByEtag orders the results by the etag field.
@@ -117,32 +118,108 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEtag, opts...).ToFunc()
 }
 
-// ByGroupID orders the results by the group_id field.
-func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldGroupID, opts...).ToFunc()
-}
-
-// ByIsEnum orders the results by the is_enum field.
-func ByIsEnum(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldIsEnum, opts...).ToFunc()
-}
-
-// ByIsRequired orders the results by the is_required field.
-func ByIsRequired(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldIsRequired, opts...).ToFunc()
-}
-
-// ByProductID orders the results by the product_id field.
-func ByProductID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldProductID, opts...).ToFunc()
-}
-
-// BySortIndex orders the results by the sort_index field.
-func BySortIndex(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSortIndex, opts...).ToFunc()
-}
-
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByChildrenField orders the results by children field.
+func ByChildrenField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newChildrenStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByParentCount orders the results by parent count.
+func ByParentCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newParentStep(), opts...)
+	}
+}
+
+// ByParent orders the results by parent terms.
+func ByParent(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newParentStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByProductCount orders the results by product count.
+func ByProductCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newProductStep(), opts...)
+	}
+}
+
+// ByProduct orders the results by product terms.
+func ByProduct(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProductStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByProductCategoryRelCount orders the results by product_category_rel count.
+func ByProductCategoryRelCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newProductCategoryRelStep(), opts...)
+	}
+}
+
+// ByProductCategoryRel orders the results by product_category_rel terms.
+func ByProductCategoryRel(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newProductCategoryRelStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewChildrenStepNikki() *sqlgraph.Step {
+	return newChildrenStep()
+}
+
+func newChildrenStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(Table, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, ChildrenTable, ChildrenColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewParentStepNikki() *sqlgraph.Step {
+	return newParentStep()
+}
+
+func newParentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(Table, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, ParentTable, ParentColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewProductStepNikki() *sqlgraph.Step {
+	return newProductStep()
+}
+
+func newProductStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProductInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, ProductTable, ProductPrimaryKey...),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewProductCategoryRelStepNikki() *sqlgraph.Step {
+	return newProductCategoryRelStep()
+}
+
+func newProductCategoryRelStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ProductCategoryRelInverseTable, ProductCategoryRelColumn),
+		sqlgraph.Edge(sqlgraph.O2M, true, ProductCategoryRelTable, ProductCategoryRelColumn),
+	)
 }

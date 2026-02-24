@@ -15,6 +15,7 @@ func InitCqrsHandlers() error {
 		initAttributeValueHandler(),
 		initProductHandler(),
 		initVariantHandler(),
+		initProductCategoryHandler(),
 	)
 	return err
 }
@@ -95,6 +96,22 @@ func initVariantHandler() error {
 			cqrs.NewHandler(handler.DeleteVariant),
 			cqrs.NewHandler(handler.GetVariantById),
 			cqrs.NewHandler(handler.SearchVariants),
+		)
+	})
+}
+
+func initProductCategoryHandler() error {
+	deps.Register(NewProductCategoryHandler)
+
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *ProductCategoryHandler) error {
+		ctx := context.Background()
+		return cqrsBus.SubscribeRequests(
+			ctx,
+			cqrs.NewHandler(handler.CreateProductCategory),
+			cqrs.NewHandler(handler.UpdateProductCategory),
+			cqrs.NewHandler(handler.DeleteProductCategory),
+			cqrs.NewHandler(handler.GetProductCategoryById),
+			cqrs.NewHandler(handler.SearchProductCategories),
 		)
 	})
 }

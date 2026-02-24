@@ -27,6 +27,7 @@ func (s *UnitCategoryServiceImpl) CreateUnitCategory(ctx crud.Context, cmd itUni
 		Action:     "create unit category",
 		Command:    cmd,
 		RepoCreate: s.unitCategoryRepo.Create,
+		SetDefault: s.SetDefaults,
 		Sanitize:   s.sanitizeUnitCategory,
 		ToFailureResult: func(vErrs *ft.ValidationErrors) *itUnitCategory.CreateUnitCategoryResult {
 			return &itUnitCategory.CreateUnitCategoryResult{
@@ -160,6 +161,10 @@ func (s *UnitCategoryServiceImpl) SearchUnitCategories(ctx crud.Context, query i
 
 func (s *UnitCategoryServiceImpl) sanitizeUnitCategory(_ *domain.UnitCategory) {
 	// Keep for future: trim/sanitize plain-text fields if any.
+}
+
+func (s *UnitCategoryServiceImpl) SetDefaults(unitCategory *domain.UnitCategory) {
+	unitCategory.SetDefaults()
 }
 
 func (s *UnitCategoryServiceImpl) assertUnitCategoryIdExists(ctx crud.Context, unitCategory *domain.UnitCategory, vErrs *ft.ValidationErrors) (*domain.UnitCategory, error) {

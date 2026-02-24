@@ -16,6 +16,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attributegroup"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/product"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategory"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/unit"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/variant"
 )
@@ -209,6 +210,21 @@ func (pu *ProductUpdate) AddAttribute(a ...*Attribute) *ProductUpdate {
 	return pu.AddAttributeIDs(ids...)
 }
 
+// AddProductCategoryIDs adds the "product_category" edge to the ProductCategory entity by IDs.
+func (pu *ProductUpdate) AddProductCategoryIDs(ids ...string) *ProductUpdate {
+	pu.mutation.AddProductCategoryIDs(ids...)
+	return pu
+}
+
+// AddProductCategory adds the "product_category" edges to the ProductCategory entity.
+func (pu *ProductUpdate) AddProductCategory(p ...*ProductCategory) *ProductUpdate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pu.AddProductCategoryIDs(ids...)
+}
+
 // AddAttributeGroupIDs adds the "attribute_group" edge to the AttributeGroup entity by IDs.
 func (pu *ProductUpdate) AddAttributeGroupIDs(ids ...string) *ProductUpdate {
 	pu.mutation.AddAttributeGroupIDs(ids...)
@@ -274,6 +290,27 @@ func (pu *ProductUpdate) RemoveAttribute(a ...*Attribute) *ProductUpdate {
 		ids[i] = a[i].ID
 	}
 	return pu.RemoveAttributeIDs(ids...)
+}
+
+// ClearProductCategory clears all "product_category" edges to the ProductCategory entity.
+func (pu *ProductUpdate) ClearProductCategory() *ProductUpdate {
+	pu.mutation.ClearProductCategory()
+	return pu
+}
+
+// RemoveProductCategoryIDs removes the "product_category" edge to ProductCategory entities by IDs.
+func (pu *ProductUpdate) RemoveProductCategoryIDs(ids ...string) *ProductUpdate {
+	pu.mutation.RemoveProductCategoryIDs(ids...)
+	return pu
+}
+
+// RemoveProductCategory removes "product_category" edges to ProductCategory entities.
+func (pu *ProductUpdate) RemoveProductCategory(p ...*ProductCategory) *ProductUpdate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pu.RemoveProductCategoryIDs(ids...)
 }
 
 // ClearAttributeGroup clears all "attribute_group" edges to the AttributeGroup entity.
@@ -461,6 +498,51 @@ func (pu *ProductUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(attribute.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.ProductCategoryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   product.ProductCategoryTable,
+			Columns: product.ProductCategoryPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedProductCategoryIDs(); len(nodes) > 0 && !pu.mutation.ProductCategoryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   product.ProductCategoryTable,
+			Columns: product.ProductCategoryPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.ProductCategoryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   product.ProductCategoryTable,
+			Columns: product.ProductCategoryPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -738,6 +820,21 @@ func (puo *ProductUpdateOne) AddAttribute(a ...*Attribute) *ProductUpdateOne {
 	return puo.AddAttributeIDs(ids...)
 }
 
+// AddProductCategoryIDs adds the "product_category" edge to the ProductCategory entity by IDs.
+func (puo *ProductUpdateOne) AddProductCategoryIDs(ids ...string) *ProductUpdateOne {
+	puo.mutation.AddProductCategoryIDs(ids...)
+	return puo
+}
+
+// AddProductCategory adds the "product_category" edges to the ProductCategory entity.
+func (puo *ProductUpdateOne) AddProductCategory(p ...*ProductCategory) *ProductUpdateOne {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return puo.AddProductCategoryIDs(ids...)
+}
+
 // AddAttributeGroupIDs adds the "attribute_group" edge to the AttributeGroup entity by IDs.
 func (puo *ProductUpdateOne) AddAttributeGroupIDs(ids ...string) *ProductUpdateOne {
 	puo.mutation.AddAttributeGroupIDs(ids...)
@@ -803,6 +900,27 @@ func (puo *ProductUpdateOne) RemoveAttribute(a ...*Attribute) *ProductUpdateOne 
 		ids[i] = a[i].ID
 	}
 	return puo.RemoveAttributeIDs(ids...)
+}
+
+// ClearProductCategory clears all "product_category" edges to the ProductCategory entity.
+func (puo *ProductUpdateOne) ClearProductCategory() *ProductUpdateOne {
+	puo.mutation.ClearProductCategory()
+	return puo
+}
+
+// RemoveProductCategoryIDs removes the "product_category" edge to ProductCategory entities by IDs.
+func (puo *ProductUpdateOne) RemoveProductCategoryIDs(ids ...string) *ProductUpdateOne {
+	puo.mutation.RemoveProductCategoryIDs(ids...)
+	return puo
+}
+
+// RemoveProductCategory removes "product_category" edges to ProductCategory entities.
+func (puo *ProductUpdateOne) RemoveProductCategory(p ...*ProductCategory) *ProductUpdateOne {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return puo.RemoveProductCategoryIDs(ids...)
 }
 
 // ClearAttributeGroup clears all "attribute_group" edges to the AttributeGroup entity.
@@ -1020,6 +1138,51 @@ func (puo *ProductUpdateOne) sqlSave(ctx context.Context) (_node *Product, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(attribute.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.ProductCategoryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   product.ProductCategoryTable,
+			Columns: product.ProductCategoryPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedProductCategoryIDs(); len(nodes) > 0 && !puo.mutation.ProductCategoryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   product.ProductCategoryTable,
+			Columns: product.ProductCategoryPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.ProductCategoryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   product.ProductCategoryTable,
+			Columns: product.ProductCategoryPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

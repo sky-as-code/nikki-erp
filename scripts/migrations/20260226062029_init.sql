@@ -1,34 +1,10 @@
--- Create "inventory_product_category" table
-CREATE TABLE "inventory_product_category" (
-  "id" character varying NOT NULL,
-  "code_name" character varying NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "data_type" character varying NOT NULL,
-  "display_name" jsonb NULL,
-  "enum_value_sort" boolean NOT NULL DEFAULT false,
-  "enum_value" jsonb NULL,
-  "etag" character varying NOT NULL,
-  "group_id" character varying NULL,
-  "is_enum" boolean NOT NULL DEFAULT false,
-  "is_required" boolean NOT NULL DEFAULT false,
-  "product_id" character varying NOT NULL,
-  "sort_index" bigint NOT NULL DEFAULT 0,
-  "updated_at" timestamptz NULL,
-  PRIMARY KEY ("id")
-);
 -- Create "inventory_unit_category" table
 CREATE TABLE "inventory_unit_category" (
   "id" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
-  "default_variant_id" character varying NULL,
-  "description" jsonb NULL,
-  "etag" character varying NOT NULL,
   "name" jsonb NOT NULL,
+  "etag" character varying NOT NULL,
   "org_id" character varying NOT NULL,
-  "status" character varying NOT NULL DEFAULT 'archived',
-  "tag_ids" character varying NULL,
-  "thumbnail_url" character varying NULL,
-  "unit_id" character varying NULL,
   "updated_at" timestamptz NULL,
   PRIMARY KEY ("id")
 );
@@ -71,6 +47,7 @@ CREATE TABLE "inventory_attribute_group" (
   "created_at" timestamptz NOT NULL,
   "index" bigint NOT NULL,
   "name" jsonb NOT NULL,
+  "etag" character varying NOT NULL,
   "updated_at" timestamptz NULL,
   "product_id" character varying NULL,
   PRIMARY KEY ("id"),
@@ -90,10 +67,10 @@ CREATE TABLE "inventory_attribute" (
   "is_required" boolean NOT NULL DEFAULT false,
   "sort_index" bigint NOT NULL DEFAULT 0,
   "updated_at" timestamptz NULL,
-  "group_id" character varying NULL,
+  "attribute_group_id" character varying NULL,
   "product_id" character varying NOT NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_attribute_inventory_attribute_group_attribute_group" FOREIGN KEY ("group_id") REFERENCES "inventory_attribute_group" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "inventory_attribute_inventory_attribute_group_attribute_group" FOREIGN KEY ("attribute_group_id") REFERENCES "inventory_attribute_group" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "inventory_attribute_inventory_product_product" FOREIGN KEY ("product_id") REFERENCES "inventory_product" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "inventory_attribute_value" table
@@ -124,6 +101,26 @@ CREATE TABLE "inventory_variant" (
   "product_id" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "inventory_variant_inventory_product_product" FOREIGN KEY ("product_id") REFERENCES "inventory_product" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- Create "inventory_product_category" table
+CREATE TABLE "inventory_product_category" (
+  "id" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "name" jsonb NOT NULL,
+  "org_id" character varying NOT NULL,
+  "etag" character varying NOT NULL,
+  "updated_at" timestamptz NULL,
+  "parent_id" character varying NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "inventory_product_category_inventory_product_category_children" FOREIGN KEY ("parent_id") REFERENCES "inventory_product_category" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- Create "product_category_rel" table
+CREATE TABLE "product_category_rel" (
+  "product_id" character varying NOT NULL,
+  "product_category_id" character varying NOT NULL,
+  PRIMARY KEY ("product_category_id", "product_id"),
+  CONSTRAINT "product_category_rel_inventory_b0f942b29fd8db45226cec8095194188" FOREIGN KEY ("product_category_id") REFERENCES "inventory_product_category" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "product_category_rel_inventory_product_product" FOREIGN KEY ("product_id") REFERENCES "inventory_product" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "variant_attribute_value_rel" table
 CREATE TABLE "variant_attribute_value_rel" (

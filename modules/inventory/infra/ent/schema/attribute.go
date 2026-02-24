@@ -38,18 +38,12 @@ func (AttributeMixin) Fields() []ent.Field {
 		field.Bool("enum_value_sort").
 			Default(false),
 
-		// field.JSON("enum_text_value", []model.LangJson{}).
-		// 	Optional(),
-
-		// field.JSON("enum_number_value", []float64{}).
-		// 	Optional(),
-
 		field.JSON("enum_value", []json.RawMessage{}).
 			Optional(),
 
 		field.String("etag"),
 
-		field.String("group_id").
+		field.String("attribute_group_id").
 			Optional().
 			Nillable(),
 
@@ -83,7 +77,7 @@ func (Attribute) Annotations() []schema.Annotation {
 func (Attribute) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("attribute_group", AttributeGroup.Type).
-			Field("group_id").
+			Field("attribute_group_id").
 			Unique().
 			Annotations(entsql.Annotation{
 				OnDelete: entsql.Cascade,

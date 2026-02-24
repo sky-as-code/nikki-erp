@@ -21,24 +21,12 @@ type UnitCategory struct {
 	ID string `json:"id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
-	// DefaultVariantID holds the value of the "default_variant_id" field.
-	DefaultVariantID *string `json:"default_variant_id,omitempty"`
-	// Description holds the value of the "description" field.
-	Description model.LangJson `json:"description,omitempty"`
-	// Etag holds the value of the "etag" field.
-	Etag string `json:"etag,omitempty"`
 	// Name holds the value of the "name" field.
 	Name model.LangJson `json:"name,omitempty"`
+	// Etag holds the value of the "etag" field.
+	Etag string `json:"etag,omitempty"`
 	// OrgID holds the value of the "org_id" field.
 	OrgID string `json:"org_id,omitempty"`
-	// Status holds the value of the "status" field.
-	Status string `json:"status,omitempty"`
-	// TagIds holds the value of the "tag_ids" field.
-	TagIds *string `json:"tag_ids,omitempty"`
-	// ThumbnailURL holds the value of the "thumbnail_url" field.
-	ThumbnailURL *string `json:"thumbnail_url,omitempty"`
-	// UnitID holds the value of the "unit_id" field.
-	UnitID *string `json:"unit_id,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -70,9 +58,9 @@ func (*UnitCategory) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case unitcategory.FieldDescription, unitcategory.FieldName:
+		case unitcategory.FieldName:
 			values[i] = new([]byte)
-		case unitcategory.FieldID, unitcategory.FieldDefaultVariantID, unitcategory.FieldEtag, unitcategory.FieldOrgID, unitcategory.FieldStatus, unitcategory.FieldTagIds, unitcategory.FieldThumbnailURL, unitcategory.FieldUnitID:
+		case unitcategory.FieldID, unitcategory.FieldEtag, unitcategory.FieldOrgID:
 			values[i] = new(sql.NullString)
 		case unitcategory.FieldCreatedAt, unitcategory.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -103,27 +91,6 @@ func (uc *UnitCategory) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				uc.CreatedAt = value.Time
 			}
-		case unitcategory.FieldDefaultVariantID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field default_variant_id", values[i])
-			} else if value.Valid {
-				uc.DefaultVariantID = new(string)
-				*uc.DefaultVariantID = value.String
-			}
-		case unitcategory.FieldDescription:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field description", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &uc.Description); err != nil {
-					return fmt.Errorf("unmarshal field description: %w", err)
-				}
-			}
-		case unitcategory.FieldEtag:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field etag", values[i])
-			} else if value.Valid {
-				uc.Etag = value.String
-			}
 		case unitcategory.FieldName:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
@@ -132,38 +99,17 @@ func (uc *UnitCategory) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field name: %w", err)
 				}
 			}
+		case unitcategory.FieldEtag:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field etag", values[i])
+			} else if value.Valid {
+				uc.Etag = value.String
+			}
 		case unitcategory.FieldOrgID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field org_id", values[i])
 			} else if value.Valid {
 				uc.OrgID = value.String
-			}
-		case unitcategory.FieldStatus:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
-			} else if value.Valid {
-				uc.Status = value.String
-			}
-		case unitcategory.FieldTagIds:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field tag_ids", values[i])
-			} else if value.Valid {
-				uc.TagIds = new(string)
-				*uc.TagIds = value.String
-			}
-		case unitcategory.FieldThumbnailURL:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field thumbnail_url", values[i])
-			} else if value.Valid {
-				uc.ThumbnailURL = new(string)
-				*uc.ThumbnailURL = value.String
-			}
-		case unitcategory.FieldUnitID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field unit_id", values[i])
-			} else if value.Valid {
-				uc.UnitID = new(string)
-				*uc.UnitID = value.String
 			}
 		case unitcategory.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -216,40 +162,14 @@ func (uc *UnitCategory) String() string {
 	builder.WriteString("created_at=")
 	builder.WriteString(uc.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	if v := uc.DefaultVariantID; v != nil {
-		builder.WriteString("default_variant_id=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	builder.WriteString("description=")
-	builder.WriteString(fmt.Sprintf("%v", uc.Description))
+	builder.WriteString("name=")
+	builder.WriteString(fmt.Sprintf("%v", uc.Name))
 	builder.WriteString(", ")
 	builder.WriteString("etag=")
 	builder.WriteString(uc.Etag)
 	builder.WriteString(", ")
-	builder.WriteString("name=")
-	builder.WriteString(fmt.Sprintf("%v", uc.Name))
-	builder.WriteString(", ")
 	builder.WriteString("org_id=")
 	builder.WriteString(uc.OrgID)
-	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(uc.Status)
-	builder.WriteString(", ")
-	if v := uc.TagIds; v != nil {
-		builder.WriteString("tag_ids=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	if v := uc.ThumbnailURL; v != nil {
-		builder.WriteString("thumbnail_url=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	if v := uc.UnitID; v != nil {
-		builder.WriteString("unit_id=")
-		builder.WriteString(*v)
-	}
 	builder.WriteString(", ")
 	if v := uc.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")

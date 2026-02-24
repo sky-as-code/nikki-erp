@@ -51,14 +51,14 @@ var updateProductCommandType = cqrs.RequestType{
 }
 
 type UpdateProductCommand struct {
-	Id                model.Id        `param:"id" json:"id"`
-	Etag              model.Etag      `json:"etag"`
-	Name              *model.LangJson `json:"name,omitempty"`
-	Description       *model.LangJson `json:"description,omitempty"`
-	UnitId            *model.Id       `json:"unitId,omitempty"`
-	Status            *string         `json:"status,omitempty"`
-	DefaultsVariantId *model.Id       `json:"defaultsVariantId,omitempty"`
-	ThumbnailUrl      *string         `json:"thumbnailUrl,omitempty"`
+	Id               model.Id        `param:"id" json:"id"`
+	Etag             model.Etag      `json:"etag"`
+	Name             *model.LangJson `json:"name,omitempty"`
+	Description      *model.LangJson `json:"description,omitempty"`
+	UnitId           *model.Id       `json:"unitId,omitempty"`
+	Status           *string         `json:"status,omitempty"`
+	DefaultVariantId *model.Id       `json:"defaultVariantId,omitempty"`
+	ThumbnailUrl     *string         `json:"thumbnailUrl,omitempty"`
 }
 
 func (UpdateProductCommand) CqrsRequestType() cqrs.RequestType {
@@ -101,8 +101,9 @@ var getProductByIdQueryType = cqrs.RequestType{
 }
 
 type GetProductByIdQuery struct {
-	Id           model.Id `param:"id" json:"id"`
-	WithVariants bool     `query:"withVariants" json:"withVariants"`
+	Id             model.Id `param:"id" json:"id"`
+	WithVariants   bool     `query:"withVariants" json:"withVariants"`
+	WithAttributes bool     `query:"withAttributes" json:"withAttributes"`
 }
 
 func (this GetProductByIdQuery) Validate() ft.ValidationErrors {
@@ -130,7 +131,8 @@ type SearchProductsQuery struct {
 	// Filled by service from Graph
 	crud.SearchQuery
 
-	WithVariants bool `query:"withVariants" json:"withVariants"`
+	WithVariants   bool `query:"withVariants" json:"withVariants"`
+	WithAttributes bool `query:"withAttributes" json:"withAttributes"`
 }
 
 func (this SearchProductsQuery) CqrsRequestType() cqrs.RequestType {

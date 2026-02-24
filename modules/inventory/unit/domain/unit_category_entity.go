@@ -10,11 +10,8 @@ type UnitCategory struct {
 	model.ModelBase
 	model.AuditableBase
 
-	OrgId        *string         `json:"orgId,omitempty"`
-	Name         *model.LangJson `json:"name,omitempty"`
-	Description  *model.LangJson `json:"description,omitempty"`
-	Status       *string         `json:"status,omitempty"`
-	ThumbnailUrl *string         `json:"thumbnailURL,omitempty"`
+	OrgId *string         `json:"orgId,omitempty"`
+	Name  *model.LangJson `json:"name,omitempty"`
 }
 
 func (this *UnitCategory) Validate(forEdit bool) ft.ValidationErrors {
@@ -31,24 +28,10 @@ func (this *UnitCategory) Validate(forEdit bool) ft.ValidationErrors {
 				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
 			),
 		),
-		val.Field(&this.Description,
-			val.When(this.Description != nil,
-				val.Length(0, model.MODEL_RULE_LONG_NAME_LENGTH),
-			),
-		),
-		val.Field(&this.ThumbnailUrl,
-			val.When(this.ThumbnailUrl != nil,
-				val.Length(0, model.MODEL_RULE_LONG_NAME_LENGTH),
-			),
-		),
 	}
 
 	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
 
 	return val.ApiBased.ValidateStruct(this, rules...)
-}
-
-func (this *UnitCategory) SetDefaults() {
-	this.ModelBase.SetDefaults()
 }

@@ -1,6 +1,10 @@
 package repository
 
 import (
+	"time"
+
+	"entgo.io/ent/dialect/sql"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -30,13 +34,30 @@ func (r *AttributeGroupEntRepository) attributeGroupClient(ctx crud.Context) *en
 	return r.client.AttributeGroup
 }
 
+func (r *AttributeGroupEntRepository) GetNextIndex(ctx crud.Context, productId model.Id) (int, error) {
+	lastAttributeGroup, err := r.attributeGroupClient(ctx).Query().
+		Where(entAttributeGroup.ProductID(productId)).
+		Order(entAttributeGroup.ByIndex(sql.OrderDesc())).
+		First(ctx)
+
+	if err != nil && !ent.IsNotFound(err) {
+		return 0, err
+	}
+
+	if ent.IsNotFound(err) {
+		return 0, nil
+	}
+	return lastAttributeGroup.Index + 1, nil
+}
+
 // ✅ Create AttributeGroup
 func (r *AttributeGroupEntRepository) Create(ctx crud.Context, attributeGroup *domain.AttributeGroup) (*domain.AttributeGroup, error) {
 	creation := r.client.AttributeGroup.Create().
 		SetID(*attributeGroup.Id).
 		SetName(*attributeGroup.Name).
 		SetIndex(*attributeGroup.Index).
-		SetNillableProductID(attributeGroup.ProductId)
+		SetNillableProductID(attributeGroup.ProductId).
+		SetEtag(*attributeGroup.Etag)
 
 	return db.Mutate(ctx, creation, ent.IsNotFound, itAttributeGroup.EntToAttributeGroup)
 }
@@ -45,9 +66,12 @@ func (r *AttributeGroupEntRepository) Create(ctx crud.Context, attributeGroup *d
 func (r *AttributeGroupEntRepository) Update(ctx crud.Context, attributeGroup *domain.AttributeGroup, prevEtag model.Etag) (*domain.AttributeGroup, error) {
 	update := r.client.AttributeGroup.UpdateOneID(*attributeGroup.Id).
 		SetName(*attributeGroup.Name).
-		SetIndex(*attributeGroup.Index).
-		SetNillableProductID(attributeGroup.ProductId)
-		// Note: Etag field doesn't exist in the schema, but keeping pattern for consistency
+		Where(entAttributeGroup.Etag(prevEtag))
+
+	if len(update.Mutation().Fields()) > 0 {
+		update.SetEtag(*attributeGroup.Etag)
+		update.SetUpdatedAt(time.Now())
+	}
 
 	return db.Mutate(ctx, update, ent.IsNotFound, itAttributeGroup.EntToAttributeGroup)
 }

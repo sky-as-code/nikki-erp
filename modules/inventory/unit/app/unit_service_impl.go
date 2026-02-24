@@ -158,13 +158,23 @@ func (this *UnitServiceImpl) SearchUnits(ctx crud.Context, query itUnit.SearchUn
 // ---------------------------------------------------------------------------------------------------------------------------------------------//
 func (this *UnitServiceImpl) assertCreateUnitRules(ctx crud.Context, unit *domain.Unit, vErrs *ft.ValidationErrors) error {
 	if unit.BaseUnit != nil {
+		if unit.Multiplier == nil || *unit.Multiplier <= 0 {
+			vErrs.Append("multiplier", "multiplier must be provided and greater than 0 when base unit is provided")
+			return nil
+		}
+
 		baseUnit, err := this.assertDerivedUnit(ctx, unit, vErrs) // check base unit can be a derived unit
-		if err != nil {
+		if err != nil || baseUnit == nil {
 			return err
 		}
 
 		if baseUnit.CategoryId != unit.CategoryId { // unit and base unit category must be same
 			vErrs.Append("categoryId", "unit category must be same as base unit category")
+			return nil
+		}
+	} else {
+		if unit.Multiplier != nil {
+			vErrs.Append("multiplier", "multiplier must not be provided when base unit is not provided")
 			return nil
 		}
 	}
@@ -180,16 +190,9 @@ func (this *UnitServiceImpl) assertUpdateUnitRules(ctx crud.Context, unit *domai
 		}
 	}
 
-	if unit.BaseUnit != nil {
-		baseUnit, err := this.assertDerivedUnit(ctx, unit, vErrs) // check base unit can be a derived unit
-		if err != nil {
-			return err
-		}
-
-		if baseUnit.CategoryId != unit.CategoryId { // unit and base unit category must be same
-			vErrs.Append("categoryId", "unit category must be same as base unit category")
-			return nil
-		}
+	err := this.assertCreateUnitRules(ctx, unit, vErrs) // also check create rules
+	if err != nil {
+		return err
 	}
 
 	return nil

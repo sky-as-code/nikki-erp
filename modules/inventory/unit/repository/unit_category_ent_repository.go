@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -36,9 +38,7 @@ func (r *UnitCategoryEntRepository) Create(ctx crud.Context, unitCategory *domai
 		SetID(*unitCategory.Id).
 		SetOrgID(*unitCategory.OrgId).
 		SetName(*unitCategory.Name).
-		SetDescription(*unitCategory.Description).
-		SetNillableStatus(unitCategory.Status).
-		SetNillableThumbnailURL(unitCategory.ThumbnailUrl)
+		SetEtag(*unitCategory.Etag)
 
 	return db.Mutate(ctx, creation, ent.IsNotFound, itUnitCategory.EntToUnitCategory)
 }
@@ -47,13 +47,11 @@ func (r *UnitCategoryEntRepository) Create(ctx crud.Context, unitCategory *domai
 func (r *UnitCategoryEntRepository) Update(ctx crud.Context, unitCategory *domain.UnitCategory, prevEtag model.Etag) (*domain.UnitCategory, error) {
 	update := r.client.UnitCategory.UpdateOneID(*unitCategory.Id).
 		SetName(*unitCategory.Name).
-		SetDescription(*unitCategory.Description).
-		SetNillableStatus(unitCategory.Status).
-		SetNillableThumbnailURL(unitCategory.ThumbnailUrl).
 		Where(entUnitCategory.Etag(prevEtag))
 
 	if len(update.Mutation().Fields()) > 0 {
 		update.SetEtag(*unitCategory.Etag)
+		update.SetUpdatedAt(time.Now())
 	}
 
 	return db.Mutate(ctx, update, ent.IsNotFound, itUnitCategory.EntToUnitCategory)
@@ -102,8 +100,6 @@ func BuildUnitCategoryDescriptor() *orm.EntityDescriptor {
 		Field(entUnitCategory.FieldCreatedAt, entity.CreatedAt).
 		Field(entUnitCategory.FieldID, entity.ID).
 		Field(entUnitCategory.FieldName, entity.Name).
-		Field(entUnitCategory.FieldDescription, entity.Description).
-		Field(entUnitCategory.FieldStatus, entity.Status).
 		Field(entUnitCategory.FieldUpdatedAt, entity.UpdatedAt)
 
 	return builder.Descriptor()

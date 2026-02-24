@@ -5,18 +5,19 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
+	itAttributeGroup "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributegroup"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 	itVariant "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
 )
 
 func InitServices() error {
-	// Đăng ký các services theo thứ tự để tránh circular dependency
 	if err := errors.Join(
 		deps.Register(NewAttributeGroupServiceImpl),
 		deps.Register(NewAttributeValueServiceImpl),
-		deps.Register(NewAttributeServiceImpl), // Đăng ký AttributeService trước VariantService
-		deps.Register(NewProductServiceImpl),   // ProductService không depend VariantService
-		deps.Register(NewVariantServiceImpl),   // VariantService không depend AttributeService
+		deps.Register(NewAttributeServiceImpl),
+		deps.Register(NewProductServiceImpl),
+		deps.Register(NewVariantServiceImpl),
+		deps.Register(NewProductCategoryServiceImpl),
 	); err != nil {
 		return err
 	}
@@ -28,6 +29,18 @@ func InitServices() error {
 	) {
 		if impl, ok := productSvc.(*ProductServiceImpl); ok {
 			impl.SetVariantService(variantSvc)
+		}
+	})
+	if err != nil {
+		return err
+	}
+
+	err = deps.Invoke(func(
+		productSvc itProduct.ProductService,
+		attributeGroupSvc itAttributeGroup.AttributeGroupService,
+	) {
+		if impl, ok := attributeGroupSvc.(*AttributeGroupServiceImpl); ok {
+			impl.SetProductService(productSvc)
 		}
 	})
 	if err != nil {

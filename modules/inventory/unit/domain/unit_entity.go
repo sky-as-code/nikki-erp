@@ -37,7 +37,7 @@ func (this *Unit) Validate(forEdit bool) ft.ValidationErrors {
 			),
 		),
 		val.Field(&this.Multiplier,
-			val.When(this.BaseUnit != nil && *this.BaseUnit != "base",
+			val.When(this.BaseUnit != nil,
 				val.NotNil,
 			),
 		),

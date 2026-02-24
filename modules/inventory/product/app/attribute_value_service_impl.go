@@ -49,20 +49,6 @@ func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx crud.Context, cmd i
 			attributeResult, err = s.assertAttributeExists(ctx, value, vErrs)
 			return err
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			dbAttributeValue, err := s.assertCreateAttributeValue(ctx, value, *attributeResult.Data.DataType, vErrs)
-			if err != nil {
-				return err
-			}
-
-			if dbAttributeValue == nil {
-				dbAttributeValue, err = s.attributeValueRepo.CreateAndLinkVariant(ctx, value, cmd.VariantId)
-				return err
-			}
-
-			_, _, err = s.attributeValueRepo.LinkVariantToExisting(ctx, *dbAttributeValue.Id, cmd.VariantId, *dbAttributeValue.Etag)
-			return nil
-		}).
 		End()
 
 	if vErrs.Count() > 0 {
@@ -71,32 +57,25 @@ func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx crud.Context, cmd i
 		}, nil
 	}
 
-	dbValue, err := s.attributeValueRepo.Create(ctx, value)
+	dbAttributeValue, err := s.assertCreateAttributeValue(ctx, value, *attributeResult.Data.DataType)
+	ft.PanicOnErr(err)
+
+	if dbAttributeValue == nil {
+		dbAttributeValue, err = s.attributeValueRepo.CreateAndLinkVariant(ctx, value, cmd.VariantId)
+		ft.PanicOnErr(err)
+		return &itAttributeValue.CreateAttributeValueResult{
+			HasData: true,
+			Data:    dbAttributeValue,
+		}, nil
+	}
+
+	dbAttributeValue, _, err = s.attributeValueRepo.LinkVariantToExisting(ctx, *dbAttributeValue.Id, cmd.VariantId, *dbAttributeValue.Etag)
 	ft.PanicOnErr(err)
 
 	return &itAttributeValue.CreateAttributeValueResult{
 		HasData: true,
-		Data:    dbValue,
+		Data:    dbAttributeValue,
 	}, nil
-	// result, err := crud.Create(ctx, crud.CreateParam[*domain.AttributeValue, itAttributeValue.CreateAttributeValueCommand, itAttributeValue.CreateAttributeValueResult]{
-	// 	Action:              "create attribute value",
-	// 	Command:             cmd,
-	// 	RepoCreate:          s.attributeValueRepo.Create,
-	// 	AssertBusinessRules: s.assertCreateAttributeValue,
-	// 	Sanitize:            s.sanitizeAttributeValue,
-	// 	ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttributeValue.CreateAttributeValueResult {
-	// 		return &itAttributeValue.CreateAttributeValueResult{
-	// 			ClientError: vErrs.ToClientError(),
-	// 		}
-	// 	},
-	// 	ToSuccessResult: func(model *domain.AttributeValue) *itAttributeValue.CreateAttributeValueResult {
-	// 		return &itAttributeValue.CreateAttributeValueResult{
-	// 			HasData: true,
-	// 			Data:    model,
-	// 		}
-	// 	},
-	// })
-	// return result, err
 }
 
 // Update
@@ -190,10 +169,11 @@ func (this *AttributeValueServiceImpl) SearchAttributeValues(ctx crud.Context, q
 		},
 		RepoSearch: func(ctx crud.Context, query itAttributeValue.SearchAttributeValuesQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.AttributeValue], error) {
 			return this.attributeValueRepo.Search(ctx, itAttributeValue.SearchParam{
-				Predicate: predicate,
-				Order:     order,
-				Page:      *query.Page,
-				Size:      *query.Size,
+				AttributeId: query.AttributeId,
+				Predicate:   predicate,
+				Order:       order,
+				Page:        *query.Page,
+				Size:        *query.Size,
 			})
 		},
 		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttributeValue.SearchAttributeValuesResult {
@@ -234,12 +214,11 @@ func (s *AttributeValueServiceImpl) assertAttributeValueIdExists(ctx crud.Contex
 	return dbAttributeValue, nil
 }
 
-func (s *AttributeValueServiceImpl) assertCreateAttributeValue(ctx crud.Context, attributeValue *domain.AttributeValue, dataType string, vErrs *ft.ValidationErrors) (*domain.AttributeValue, error) {
+func (s *AttributeValueServiceImpl) assertCreateAttributeValue(ctx crud.Context, attributeValue *domain.AttributeValue, dataType string) (*domain.AttributeValue, error) {
 	value, err := s.attributeValueRepo.FindByValueRef(ctx, attributeValue, dataType)
 	ft.PanicOnErr(err)
 
 	if value != nil {
-		vErrs.Append("value", "attribute value already exists")
 		return nil, nil
 	}
 	return value, nil
@@ -247,7 +226,8 @@ func (s *AttributeValueServiceImpl) assertCreateAttributeValue(ctx crud.Context,
 
 func (s *AttributeValueServiceImpl) assertAttributeExists(ctx crud.Context, attributeValue *domain.AttributeValue, vErrs *ft.ValidationErrors) (result *itAttribute.GetAttributeByIdResult, err error) {
 	attribute, err := s.attributeService.GetAttributeById(ctx, itAttribute.FindByIdParam{
-		Id: *attributeValue.AttributeId,
+		Id:        *attributeValue.AttributeId,
+		ProductId: *attributeValue.ProductId,
 	})
 	ft.PanicOnErr(err)
 	if attribute.Data == nil {

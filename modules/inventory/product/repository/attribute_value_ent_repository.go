@@ -46,19 +46,13 @@ func (r *AttributeValueEntRepository) Create(ctx crud.Context, attributeValue *d
 	creation := r.client.AttributeValue.Create().
 		SetID(*attributeValue.Id).
 		SetAttributeID(*attributeValue.AttributeId).
+		SetNillableValueBool(attributeValue.ValueBool).
+		SetNillableValueNumber(attributeValue.ValueNumber).
+		SetNillableValueRef(attributeValue.ValueRef).
 		SetEtag(*attributeValue.Etag)
 
 	if attributeValue.ValueText != nil {
 		creation.SetValueText(*attributeValue.ValueText)
-	}
-	if attributeValue.ValueNumber != nil {
-		creation.SetValueNumber(*attributeValue.ValueNumber)
-	}
-	if attributeValue.ValueBool != nil {
-		creation.SetValueBool(*attributeValue.ValueBool)
-	}
-	if attributeValue.ValueRef != nil {
-		creation.SetValueRef(*attributeValue.ValueRef)
 	}
 	if attributeValue.VariantCount != nil {
 		creation.SetVariantCount(*attributeValue.VariantCount)
@@ -204,6 +198,10 @@ func (r *AttributeValueEntRepository) FindByValueRef(ctx crud.Context, attribute
 // ✅ Search (advanced)
 func (r *AttributeValueEntRepository) Search(ctx crud.Context, param itAttributeValue.SearchParam) (*crud.PagedResult[domain.AttributeValue], error) {
 	query := r.client.AttributeValue.Query()
+
+	if param.AttributeId != nil {
+		query = query.Where(entAttributeValue.AttributeID(*param.AttributeId))
+	}
 
 	return db.Search(
 		ctx,

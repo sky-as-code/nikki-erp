@@ -75,6 +75,11 @@ func Index(v int) predicate.AttributeGroup {
 	return predicate.AttributeGroup(sql.FieldEQ(FieldIndex, v))
 }
 
+// Etag applies equality check predicate on the "etag" field. It's identical to EtagEQ.
+func Etag(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldEQ(FieldEtag, v))
+}
+
 // ProductID applies equality check predicate on the "product_id" field. It's identical to ProductIDEQ.
 func ProductID(v string) predicate.AttributeGroup {
 	return predicate.AttributeGroup(sql.FieldEQ(FieldProductID, v))
@@ -163,6 +168,71 @@ func IndexLT(v int) predicate.AttributeGroup {
 // IndexLTE applies the LTE predicate on the "index" field.
 func IndexLTE(v int) predicate.AttributeGroup {
 	return predicate.AttributeGroup(sql.FieldLTE(FieldIndex, v))
+}
+
+// EtagEQ applies the EQ predicate on the "etag" field.
+func EtagEQ(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldEQ(FieldEtag, v))
+}
+
+// EtagNEQ applies the NEQ predicate on the "etag" field.
+func EtagNEQ(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldNEQ(FieldEtag, v))
+}
+
+// EtagIn applies the In predicate on the "etag" field.
+func EtagIn(vs ...string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldIn(FieldEtag, vs...))
+}
+
+// EtagNotIn applies the NotIn predicate on the "etag" field.
+func EtagNotIn(vs ...string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldNotIn(FieldEtag, vs...))
+}
+
+// EtagGT applies the GT predicate on the "etag" field.
+func EtagGT(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldGT(FieldEtag, v))
+}
+
+// EtagGTE applies the GTE predicate on the "etag" field.
+func EtagGTE(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldGTE(FieldEtag, v))
+}
+
+// EtagLT applies the LT predicate on the "etag" field.
+func EtagLT(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldLT(FieldEtag, v))
+}
+
+// EtagLTE applies the LTE predicate on the "etag" field.
+func EtagLTE(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldLTE(FieldEtag, v))
+}
+
+// EtagContains applies the Contains predicate on the "etag" field.
+func EtagContains(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldContains(FieldEtag, v))
+}
+
+// EtagHasPrefix applies the HasPrefix predicate on the "etag" field.
+func EtagHasPrefix(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldHasPrefix(FieldEtag, v))
+}
+
+// EtagHasSuffix applies the HasSuffix predicate on the "etag" field.
+func EtagHasSuffix(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldHasSuffix(FieldEtag, v))
+}
+
+// EtagEqualFold applies the EqualFold predicate on the "etag" field.
+func EtagEqualFold(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldEqualFold(FieldEtag, v))
+}
+
+// EtagContainsFold applies the ContainsFold predicate on the "etag" field.
+func EtagContainsFold(v string) predicate.AttributeGroup {
+	return predicate.AttributeGroup(sql.FieldContainsFold(FieldEtag, v))
 }
 
 // ProductIDEQ applies the EQ predicate on the "product_id" field.

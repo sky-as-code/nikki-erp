@@ -14,7 +14,7 @@ func InitRepositories() error {
 		orm.RegisterEntity(BuildAttributeValueDescriptor()),
 		orm.RegisterEntity(BuildProductDescriptor()),
 		orm.RegisterEntity(BuildVariantDescriptor()),
-		// orm.RegisterEntity(BuildProductCategoryDescriptor()), // TODO: Implement when ready
+		orm.RegisterEntity(BuildProductCategoryDescriptor()),
 	)
 	if err != nil {
 		return err
@@ -26,7 +26,7 @@ func InitRepositories() error {
 		deps.Register(NewAttributeValueEntRepository),
 		deps.Register(NewProductEntRepository),
 		deps.Register(NewVariantEntRepository),
-		// deps.Register(NewProductCategoryEntRepository), // TODO: Implement when ready
+		deps.Register(NewProductCategoryEntRepository),
 	)
 
 	return err

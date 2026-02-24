@@ -3,9 +3,11 @@ package app
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/orm"
+	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 	itAttributeGroup "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributegroup"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 )
 
 func NewAttributeGroupServiceImpl(
@@ -13,34 +15,53 @@ func NewAttributeGroupServiceImpl(
 ) itAttributeGroup.AttributeGroupService {
 	return &AttributeGroupServiceImpl{
 		attributeGroupRepo: attributeGroupRepo,
+		productSvc:         nil,
 	}
 }
 
 type AttributeGroupServiceImpl struct {
 	attributeGroupRepo itAttributeGroup.AttributeGroupRepository
+	productSvc         itProduct.ProductService
+}
+
+func (s *AttributeGroupServiceImpl) SetProductService(productSvc itProduct.ProductService) {
+	s.productSvc = productSvc
 }
 
 // Create
 
 func (s *AttributeGroupServiceImpl) CreateAttributeGroup(ctx crud.Context, cmd itAttributeGroup.CreateAttributeGroupCommand) (*itAttributeGroup.CreateAttributeGroupResult, error) {
-	result, err := crud.Create(ctx, crud.CreateParam[*domain.AttributeGroup, itAttributeGroup.CreateAttributeGroupCommand, itAttributeGroup.CreateAttributeGroupResult]{
-		Action:     "create attribute group",
-		Command:    cmd,
-		RepoCreate: s.attributeGroupRepo.Create,
-		Sanitize:   s.sanitizeAttributeGroup,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttributeGroup.CreateAttributeGroupResult {
-			return &itAttributeGroup.CreateAttributeGroupResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.AttributeGroup) *itAttributeGroup.CreateAttributeGroupResult {
-			return &itAttributeGroup.CreateAttributeGroupResult{
-				HasData: true,
-				Data:    model,
-			}
-		},
-	})
-	return result, err
+
+	attributeGroup := cmd.ToDomainModel()
+	s.SetDefaults(ctx, attributeGroup)
+
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = cmd.Validate()
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			s.assertCreateAttributeGroup(ctx, attributeGroup, vErrs)
+			return nil
+		}).
+		End()
+
+	if vErrs.Count() > 0 {
+		return &itAttributeGroup.CreateAttributeGroupResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	dbAttribute, err := s.attributeGroupRepo.Create(ctx, attributeGroup)
+	if err != nil {
+		return nil, err
+	}
+
+	return &itAttributeGroup.CreateAttributeGroupResult{
+		HasData: true,
+		Data:    dbAttribute,
+	}, nil
 }
 
 // Update
@@ -49,7 +70,7 @@ func (s *AttributeGroupServiceImpl) UpdateAttributeGroup(ctx crud.Context, cmd i
 	result, err := crud.Update(ctx, crud.UpdateParam[*domain.AttributeGroup, itAttributeGroup.UpdateAttributeGroupCommand, itAttributeGroup.UpdateAttributeGroupResult]{
 		Action:       "update attribute group",
 		Command:      cmd,
-		AssertExists: s.assertAttributeGroupIdExists,
+		AssertExists: s.assertAttributeGroupId,
 		RepoUpdate:   s.attributeGroupRepo.Update,
 		Sanitize:     s.sanitizeAttributeGroup,
 		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttributeGroup.UpdateAttributeGroupResult {
@@ -73,7 +94,7 @@ func (s *AttributeGroupServiceImpl) DeleteAttributeGroup(ctx crud.Context, cmd i
 	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.AttributeGroup, itAttributeGroup.DeleteAttributeGroupCommand, itAttributeGroup.DeleteAttributeGroupResult]{
 		Action:       "delete attribute group",
 		Command:      cmd,
-		AssertExists: s.assertAttributeGroupIdExists,
+		AssertExists: s.assertAttributeGroupId,
 		RepoDelete: func(ctx crud.Context, model *domain.AttributeGroup) (int, error) {
 			return s.attributeGroupRepo.DeleteById(ctx, *model.Id)
 		},
@@ -159,11 +180,33 @@ func (s *AttributeGroupServiceImpl) SearchAttributeGroups(ctx crud.Context, quer
 // Helpers
 //---------------------------------------------------------------------------------------------------------------------------------------------//
 
-func (s *AttributeGroupServiceImpl) sanitizeAttributeGroup(_ *domain.AttributeGroup) {
-	// Keep for future: trim/sanitize plain-text fields if any.
+func (s *AttributeGroupServiceImpl) SetDefaults(ctx crud.Context, attributeGroup *domain.AttributeGroup) {
+	attributeGroup.SetDefaults()
+
+	nextIndex, err := s.attributeGroupRepo.GetNextIndex(ctx, *attributeGroup.ProductId)
+	ft.PanicOnErr(err)
+
+	attributeGroup.Index = &nextIndex
 }
 
-func (s *AttributeGroupServiceImpl) assertAttributeGroupIdExists(ctx crud.Context, attributeGroup *domain.AttributeGroup, vErrs *ft.ValidationErrors) (*domain.AttributeGroup, error) {
+func (s *AttributeGroupServiceImpl) assertCreateAttributeGroup(ctx crud.Context, attributeGroup *domain.AttributeGroup, vErrs *ft.ValidationErrors) error {
+	product, err := s.productSvc.GetProductById(ctx, itProduct.GetProductByIdQuery{
+		Id: *attributeGroup.ProductId,
+	})
+	ft.PanicOnErr(err)
+
+	if product.Data == nil {
+		vErrs.Append("id", "product does not exist")
+		return nil
+	}
+
+	return nil
+}
+
+func (s *AttributeGroupServiceImpl) sanitizeAttributeGroup(_ *domain.AttributeGroup) {
+}
+
+func (s *AttributeGroupServiceImpl) assertAttributeGroupId(ctx crud.Context, attributeGroup *domain.AttributeGroup, vErrs *ft.ValidationErrors) (*domain.AttributeGroup, error) {
 	dbAttributeGroup, err := s.attributeGroupRepo.FindById(ctx, itAttributeGroup.FindByIdParam{
 		Id: *attributeGroup.Id,
 	})

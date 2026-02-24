@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -81,6 +83,7 @@ func (r *ProductEntRepository) Update(ctx crud.Context, product *domain.Product,
 
 	if len(update.Mutation().Fields()) > 0 {
 		update.SetEtag(*product.Etag)
+		update.SetUpdatedAt(time.Now())
 	}
 
 	return db.Mutate(ctx, update, ent.IsNotFound, itProduct.EntToProduct)
@@ -102,6 +105,10 @@ func (r *ProductEntRepository) FindById(ctx crud.Context, query itProduct.FindBy
 		dbQuery.WithVariant()
 	}
 
+	if query.WithAttributes {
+		dbQuery.WithAttribute()
+	}
+
 	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itProduct.EntToProduct)
 }
 
@@ -111,6 +118,10 @@ func (r *ProductEntRepository) Search(ctx crud.Context, param itProduct.SearchPa
 
 	if param.WithVariants {
 		query.WithVariant()
+	}
+
+	if param.WithAttributes {
+		query.WithAttribute()
 	}
 
 	return db.Search(
@@ -138,6 +149,11 @@ func BuildProductDescriptor() *orm.EntityDescriptor {
 		Field(entProduct.FieldDescription, entity.Description).
 		Field(entProduct.FieldID, entity.ID).
 		Field(entProduct.FieldName, entity.Name).
+		Field(entProduct.FieldOrgID, entity.OrgID).
+		Field(entProduct.FieldUnitID, entity.UnitID).
+		Field(entProduct.FieldStatus, entity.Status).
+		Field(entProduct.FieldDefaultVariantID, entity.DefaultVariantID).
+		Field(entProduct.FieldThumbnailURL, entity.ThumbnailURL).
 		Field(entProduct.FieldUpdatedAt, entity.UpdatedAt).
 		Edge(entProduct.EdgeVariant, orm.ToEdgePredicate(entProduct.HasVariantWith))
 

@@ -6,6 +6,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
 
@@ -32,6 +33,10 @@ func (ProductCategoryMixin) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 
+		field.String("org_id"),
+
+		field.String("etag"),
+
 		field.Time("updated_at").
 			Optional().
 			Nillable(),
@@ -48,22 +53,25 @@ func (ProductCategory) Annotations() []schema.Annotation {
 	}
 }
 
-// func (ProductCategory) Edges() []ent.Edge {
-// 	return []ent.Edge{
-// 		edge.To("children", ProductCategory.Type).
-// 			Field("parent_id").
-// 			Unique().
-// 			Annotations(entsql.Annotation{
-// 				OnDelete: entsql.Cascade,
-// 			}),
+func (ProductCategory) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("children", ProductCategory.Type).
+			Field("parent_id").
+			Unique().
+			Annotations(entsql.Annotation{
+				OnDelete: entsql.Cascade,
+			}),
 
-// 		edge.From("parent", ProductCategory.Type).
-// 			Ref("children"),
-// 	}
-// }
+		edge.From("parent", ProductCategory.Type).
+			Ref("children"),
+
+		edge.To("product", Product.Type).
+			Through("product_category_rel", ProductCategoryRel.Type),
+	}
+}
 
 func (ProductCategory) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		AttributeMixin{},
+		ProductCategoryMixin{},
 	}
 }
