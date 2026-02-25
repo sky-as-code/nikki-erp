@@ -5,6 +5,7 @@ import (
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	middleWare "github.com/sky-as-code/nikki-erp/common/middleware"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
@@ -159,6 +160,7 @@ func (this UserRest) GetUserContext(echoCtx echo.Context) (err error) {
 	err = httpserver.ServeRequest(
 		echoCtx, this.UserSvc.GetUserContext,
 		func(request GetUserContextRequest) it.GetUserContextQuery {
+			request.UserId = middleWare.GetUserIdFromContext(echoCtx.Request().Context())
 			return it.GetUserContextQuery(request)
 		},
 		func(result it.GetUserContextResultData) GetUserContextResponse {
