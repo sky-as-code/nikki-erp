@@ -1,0 +1,34 @@
+meta {
+  name: Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/drive/files/:driveFileId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  driveFileId: 01KKB6XC828HYQ15P9858FRK3H
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("Status is 200", function() {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Should has data", function() {
+      expect(res.getBody()).to.not.be.empty;
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

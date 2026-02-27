@@ -1,0 +1,20 @@
+meta {
+  name: Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/drive/files/root?graph={"or":[{"if":["status","=","parent-in-trash"]},{"if":["status","=","in-trash"]}]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"or":[{"if":["status","=","parent-in-trash"]},{"if":["status","=","in-trash"]}]}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

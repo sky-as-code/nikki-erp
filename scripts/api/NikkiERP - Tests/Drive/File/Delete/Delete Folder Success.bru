@@ -1,0 +1,20 @@
+meta {
+  name: Delete Folder Success
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{api_host}}/v1/drive/files/:driveFileId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  driveFileId: 01KJQ0A1BACNC8762P44HAZ276
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

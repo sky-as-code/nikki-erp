@@ -1,0 +1,45 @@
+meta {
+  name: Success
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{api_host}}/v1/drive/files/:driveFileId/content
+  body: multipartForm
+  auth: inherit
+}
+
+params:path {
+  driveFileId: 01KJRSPN1337QBNS6MBG89PZZS
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+  Content-Type: multipart/form-data
+}
+
+body:json {
+  {
+    "etag": "{{driveFileEtag}}",
+    "name": "abc",
+    "visibility": "",
+    "status": ""
+  }
+}
+
+body:multipart-form {
+  file: @file(/home/quocsi/DeCuongLuanVan.pdf)
+  etag: 1772512950479995481
+}
+
+tests {
+  test("Status is 200", function() {
+    expect(res.getStatus()).to.equal(200)
+  })
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

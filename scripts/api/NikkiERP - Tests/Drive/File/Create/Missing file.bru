@@ -1,0 +1,42 @@
+meta {
+  name: Missing file
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{api_host}}/v1/drive/files
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:multipart-form {
+  name: The name contains spaces
+  isFolder: false
+  visibility: owner
+  file: 
+}
+
+tests {
+  test("Status is 400", function() {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Error code is validation_error", function() {
+      expect(res.getBody().code).to.equal("file_required");
+  });
+  
+  test("Details exists", function() {
+      expect(res.getBody().details).to.exist;
+      expect(res.getBody().details).to.not.be.empty;
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -4,12 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"mime/multipart"
-	"net/http"
 	"reflect"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
+	stdErr "errors"
+	"net/http"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -17,6 +18,7 @@ import (
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/crud"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
 // BindToDynamicEntity parses the echo request body and returns a DynamicEntity
@@ -349,6 +351,60 @@ func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData 
 	return jsonSuccessFn(echoCtx, response)
 }
 
+func HandleBindError(echoCtx *echo.Context, err error) error {
+	return JsonBadRequest(echoCtx, &ft.ClientError{
+		Code:    "bad_request",
+		Details: ft.ValidationErrors{"request": err.Error()},
+	})
+}
+
+// HandleServiceError maps a service-layer error to a JSON response.
+// ClientError is returned with the appropriate HTTP status.
+// Any other error returns a generic 500 to avoid leaking internal details.
+func HandleServiceError(echoCtx *echo.Context, err error) error {
+	var clientErr *ft.ClientError
+	if stdErr.As(err, &clientErr) {
+		status := mapClientErrorStatus(clientErr.Code)
+		return echoCtx.JSON(status, clientErr)
+	}
+
+	logging.Logger().Error("unexpected service error", err)
+	return echoCtx.JSON(http.StatusInternalServerError, &ft.ClientError{
+		Code:    "internal_error",
+		Details: "an unexpected error occurred",
+	})
+}
+
+// HandleResultError inspects a CmdResult and returns the appropriate JSON error.
+// Returns nil when the result is successful so the caller can build the response.
+func HandleResultError(echoCtx *echo.Context, result CmdResult) error {
+	if (result).GetClientError() != nil {
+		ce := (result).GetClientError()
+		return echoCtx.JSON(mapClientErrorStatus(ce.Code), ce)
+	}
+
+	if !(result).GetHasData() {
+		cErr := ft.ClientError{
+			Code:    "not_found",
+			Details: "resource not found",
+		}
+		return JsonBadRequest(echoCtx, cErr)
+	}
+
+	return nil
+}
+
+func mapClientErrorStatus(code string) int {
+	switch code {
+	case "duplicate":
+		return http.StatusConflict
+	case "forbidden":
+		return http.StatusForbidden
+	default:
+		return http.StatusBadRequest
+	}
+}
+
 func ServeRequest[THttpReq any, THttpResp any, TSvcCommand any, TSvcResult CmdResult](
 	echoCtx *echo.Context,
 	serviceFn func(ctx corecrud.Context, cmd TSvcCommand) (*TSvcResult, error),
@@ -370,7 +426,8 @@ func ServeRequest[THttpReq any, THttpResp any, TSvcCommand any, TSvcResult CmdRe
 	}
 
 	if (*result).GetClientError() != nil {
-		return JsonBadRequest(echoCtx, (*result).GetClientError())
+		ce := (*result).GetClientError()
+		return echoCtx.JSON(mapClientErrorStatus(ce.Code), ce)
 	}
 
 	if !(*result).GetHasData() {

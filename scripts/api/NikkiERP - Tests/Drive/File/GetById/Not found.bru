@@ -1,0 +1,34 @@
+meta {
+  name: Not found
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/drive/files/:notExistsDriveFileId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  notExistsDriveFileId: 12345678912345678912345678
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("Status is 400", function() {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Should has error", function() {
+      expect(res.getBody()?.details?.driveFileId).to.equal("drive file not found");
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

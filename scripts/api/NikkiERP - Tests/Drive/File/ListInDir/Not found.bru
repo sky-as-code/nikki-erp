@@ -1,0 +1,30 @@
+meta {
+  name: Not found
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/drive/files/:folderId/children?page=0&size=10&graph={"if":["name","=","abc"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 10
+  graph: {"if":["name","=","abc"]}
+}
+
+params:path {
+  folderId: 12345678912345678912345678
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

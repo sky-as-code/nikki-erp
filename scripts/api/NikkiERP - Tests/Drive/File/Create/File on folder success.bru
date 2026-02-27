@@ -1,0 +1,38 @@
+meta {
+  name: File on folder success
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/drive/files
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:multipart-form {
+  name: DeCuongLuanVan2
+  isFolder: false
+  visibility: owner
+  file: @file(/home/quocsi/DeCuongLuanVan.pdf)
+  parentDriveFileRef: {{parentFileId}}
+}
+
+vars:pre-request {
+  parentFileId: 01KK79ER9XXFEM545W0ZBQ4JCF
+}
+
+tests {
+  test("Status is 201", function() {
+      expect(res.getStatus()).to.equal(201);
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

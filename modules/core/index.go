@@ -9,6 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/authtoken"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/cron_job"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/enum"
@@ -64,6 +65,8 @@ func (*CoreModule) Init() error {
 		deps.Invoke(enum.InitSubModule),
 		deps.Invoke(tag.InitSubModule),
 		deps.Invoke(infra.InitSubModule),
+		deps.Invoke(cron_job.InitSubModule),
+
 		// These submodules expose network APIs
 		deps.Invoke(i18n.InitSubModule),
 	)

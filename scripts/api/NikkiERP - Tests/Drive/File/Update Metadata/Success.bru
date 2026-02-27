@@ -1,0 +1,39 @@
+meta {
+  name: Success
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{api_host}}/v1/drive/files/:driveFileId
+  body: json
+  auth: inherit
+}
+
+params:path {
+  driveFileId: 01KJRSPN1337QBNS6MBG89PZZS
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "etag": "{{driveFileEtag}}",
+    "name": "abc",
+    "visibility": "",
+    "status": ""
+  }
+}
+
+tests {
+  test("Status is 200", function() {
+    expect(res.getStatus()).to.equal(200)
+  })
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

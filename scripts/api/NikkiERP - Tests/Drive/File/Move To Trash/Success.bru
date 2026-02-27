@@ -1,0 +1,30 @@
+meta {
+  name: Success
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{api_host}}/v1/drive/files/:driveFileId/move-to-trash
+  body: none
+  auth: inherit
+}
+
+params:path {
+  driveFileId: 01KKB5T7QX5K8Z0Q8X27NGST3D
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("Status is 200", function() {
+    expect(res.getStatus()).to.equal(200)
+  })
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

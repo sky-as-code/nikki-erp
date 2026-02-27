@@ -1,0 +1,26 @@
+meta {
+  name: success
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{api_host}}/v1/drive/files/:driveFileId/restore
+  body: json
+  auth: inherit
+}
+
+params:path {
+  driveFileId: 01KKB5S7GEJJP9ESCHSNTKRD71
+}
+
+body:json {
+  {
+    "parentFileRef": "01KK87WPQQAY96R778XG8SZFHG"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

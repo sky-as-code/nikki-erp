@@ -1,0 +1,34 @@
+meta {
+  name: File Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/drive/files
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:multipart-form {
+  name: this_is_file_test2
+  isFolder: false
+  visibility: owner
+  file: @file(/home/quocsi/Downloads/download (1).jpeg)
+  : 
+}
+
+tests {
+  test("Status is 201", function() {
+      expect(res.getStatus()).to.equal(201);
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

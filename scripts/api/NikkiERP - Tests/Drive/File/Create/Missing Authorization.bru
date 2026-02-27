@@ -1,0 +1,33 @@
+meta {
+  name: Missing Authorization
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{api_host}}/v1/drive/files
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  ~Authorization: Bearer eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJ1c2VyaWQiOiIwMUpXTk1aMzZRSEM3Q1FRNzQ4SDlOUTZKNiIsImRpZCI6IjEyNy4wLjAuMSIsInJvbGVzIjpbInBhc3N3b3JkIl0sImlzcyI6Im5pa2tpLWVycCIsImV4cCI6MTc3MjQ0MDUyOSwiaWF0IjoxNzcyNDM2OTI5fQ.TCSFaCV_IX-SxQeyRZvRsrgpHdsW376HpD2RyqhSW40NehESiJTSOOe4-_-GsbUqWV93KKiBVZGvcLBgPUSxEw
+}
+
+body:multipart-form {
+  name: this_is_file_test
+  isFolder: false
+  visibility: private
+  file: @file(/home/quocsi/Downloads/download (1).jpeg)
+}
+
+tests {
+  test("Status is 401", function() {
+      expect(res.getStatus()).to.equal(401);
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
