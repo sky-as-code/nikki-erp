@@ -11,6 +11,7 @@ import (
 	// "github.com/sky-as-code/nikki-erp/modules/contacts"
 	"github.com/sky-as-code/nikki-erp/modules/essential"
 	"github.com/sky-as-code/nikki-erp/modules/identity"
+	"github.com/sky-as-code/nikki-erp/modules/drive"
 )
 
 func LoadModules() ([]modules.InCodeModule, error) {
@@ -26,6 +27,7 @@ func getStaticModules() []modules.InCodeModule {
 		essential.ModuleSingleton,
 		identity.ModuleSingleton,
 		// inventory.ModuleSingleton,
+		drive.ModuleSingleton,
 	}
 
 	return modules

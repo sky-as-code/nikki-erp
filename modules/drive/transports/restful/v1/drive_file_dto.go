@@ -1,0 +1,82 @@
+package v1
+
+import (
+	"time"
+
+	"github.com/sky-as-code/nikki-erp/common/array"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/drive/domain"
+	"github.com/sky-as-code/nikki-erp/modules/drive/enum"
+	it "github.com/sky-as-code/nikki-erp/modules/drive/interfaces/drive_file"
+)
+
+type DriveFileDto struct {
+	model.ModelBase     `json:",inline"`
+	model.AuditableBase `json:",inline"`
+
+	ScopeType enum.ScopeType `json:"scope_type"`
+	ScopeRef  model.Id       `json:"scope_ref"`
+
+	OwnerRef           model.Id `json:"owner_ref"`
+	ParentDriveFileRef model.Id `json:"parent_drive_file_ref"`
+
+	Name       string                   `json:"name"`
+	MINE       string                   `json:"mine"`
+	IsFolder   bool                     `json:"is_folder"`
+	Size       uint64                   `json:"size"`
+	Path       string                   `json:"path"`
+	Storage    enum.DriveFileStorage    `json:"storage"`
+	Visibility enum.DriveFileVisibility `json:"visiblity"`
+
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+}
+
+func (this *DriveFileDto) FromDriveFile(f domain.DriveFile) {
+	model.MustCopy(f.ModelBase, this)
+	model.MustCopy(f.AuditableBase, this)
+	model.MustCopy(f, this)
+}
+
+type CreateDriveFileRequest = it.CreateDriveFileCommand
+type CreateDriveFileResponse = httpserver.RestCreateResponse
+
+type UpdateDriveFileRequest = it.UpdateDriveFileCommand
+type UpdateDriveFileResponse = httpserver.RestUpdateResponse
+
+type GetDriveFileByIdRequest = it.GetDriveFileByIdQuery
+type GetDriveFileByIdResponse = DriveFileDto
+
+type MoveDriveFileToTrashRequest = it.MoveDriveFileToTrashCommand
+type MoveDriveFileToTrashResponse = httpserver.RestUpdateResponse
+
+type DeleteDriveFileRequest = it.DeleteDriveFileCommand
+type DeleteDriveFileResponse = httpserver.RestDeleteResponse
+
+type GetDriveFileByParentRequest = it.GetDriveFileByParentQuery
+type GetDriveFileByParentResponse httpserver.RestSearchResponse[DriveFileDto]
+
+func (this *GetDriveFileByParentResponse) FromResult(result *it.GetDriveFileByParentResultData) {
+	this.Total = result.Total
+	this.Page = result.Page
+	this.Size = result.Size
+	this.Items = array.Map(result.Items, func(f *domain.DriveFile) DriveFileDto {
+		item := DriveFileDto{}
+		item.FromDriveFile(*f)
+		return item
+	})
+}
+
+type SearchDriveFileRequest = it.SearchDriveFileQuery
+type SearchDriveFileResponse httpserver.RestSearchResponse[DriveFileDto]
+
+func (this *SearchDriveFileResponse) FromResult(result *it.SearchDriveFileResultData) {
+	this.Total = result.Total
+	this.Page = result.Page
+	this.Size = result.Size
+	this.Items = array.Map(result.Items, func(f *domain.DriveFile) DriveFileDto {
+		item := DriveFileDto{}
+		item.FromDriveFile(*f)
+		return item
+	})
+}
