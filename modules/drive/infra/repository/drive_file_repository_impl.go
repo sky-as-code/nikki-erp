@@ -1,15 +1,31 @@
 package repository
 
 import (
+	"strings"
+	"time"
+
+	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/drive/domain"
+	"github.com/sky-as-code/nikki-erp/modules/drive/enum"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent"
 	entDrivefile "github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
+	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/drive/interfaces/drive_file"
 )
+
+var deletedAtNotDeleted = time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+
+func ptrOrEmpty(p *model.Id) model.Id {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
 
 type driveFileRepository struct {
 	client *ent.Client
@@ -17,6 +33,290 @@ type driveFileRepository struct {
 
 func NewDriveFileRepository(client *ent.Client) drive_file.DriveFileRepository {
 	return &driveFileRepository{client: client}
+}
+
+var notPendingDelete = entDrivefile.StatusNEQ(enum.DriveFileStatusName[enum.DriveFileStatusPendingDelete])
+
+func (d *driveFileRepository) driveFileClient(ctx crud.Context) *ent.DriveFileClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.DriveFile
+	}
+
+	return d.client.DriveFile
+}
+
+func (d *driveFileRepository) ExistsByOwnerParentNameFolder(ctx crud.Context, ownerRef model.Id, parentRef *model.Id, name string, isFolder bool) (bool, error) {
+	ownerPred := entDrivefile.OwnerRef(string(ownerRef))
+	namePred := entDrivefile.Name(name)
+	folderPred := entDrivefile.IsFolder(isFolder)
+	deletedPred := entDrivefile.DeletedAt(deletedAtNotDeleted)
+
+	var parentPred predicate.DriveFile
+	if parentRef != nil && *parentRef != "" {
+		parentPred = entDrivefile.ParentFileRef(string(*parentRef))
+	} else {
+		parentPred = entDrivefile.ParentFileRefIsNil()
+	}
+
+	query := d.driveFileClient(ctx).Query().
+		Where(ownerPred, parentPred, namePred, folderPred, deletedPred).
+		Limit(1)
+
+	exists, err := query.Exist(ctx.InnerContext())
+	return exists, err
+}
+
+func (d *driveFileRepository) Create(ctx crud.Context, driveFile *domain.DriveFile) (
+	*domain.DriveFile, error) {
+	creation := d.driveFileClient(ctx).Create().
+		SetID(*driveFile.Id).
+		SetEtag(*driveFile.Etag).
+		SetOwnerRef(string(ptrOrEmpty(driveFile.OwnerRef))).
+		SetName(driveFile.Name).
+		SetMime(driveFile.MINE).
+		SetIsFolder(driveFile.IsFolder).
+		SetSize(int64(driveFile.Size)).
+		SetPath(driveFile.Path).
+		SetStorage(enum.DriveFileStorageName[driveFile.Storage]).
+		SetVisibility(enum.DriveFileVisibilityName[driveFile.Visibility]).
+		SetStatus(enum.DriveFileStatusName[driveFile.Status]).
+		SetDeletedAt(deletedAtNotDeleted)
+
+	if driveFile.ParentDriveFileRef != nil && *driveFile.ParentDriveFileRef != "" {
+		creation.SetParentFileRef(string(*driveFile.ParentDriveFileRef))
+	}
+
+	result, err := db.Mutate(ctx.InnerContext(), creation, ent.IsNotFound, entToDriveFile)
+	if err != nil {
+		if ent.IsConstraintError(err) && isDriveFileUniqueNameConstraint(err) {
+			return nil, &fault.ClientError{
+				Code:    "duplicate_name",
+				Details: fault.ValidationErrors{"name": "a file or folder with this name already exists in this location"},
+			}
+		}
+		return nil, err
+	}
+	return result, nil
+}
+
+func isDriveFileUniqueNameConstraint(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "duplicate") ||
+		strings.Contains(msg, "unique") ||
+		strings.Contains(msg, "drivefile_owner_ref")
+}
+
+func (d *driveFileRepository) Update(ctx crud.Context, driveFile *domain.DriveFile, prevEtag model.Etag) (*domain.DriveFile, error) {
+	update := d.driveFileClient(ctx).UpdateOneID(*driveFile.Id).
+		Where(entDrivefile.Etag(prevEtag))
+
+	if driveFile.Name != "" {
+		update.SetName(driveFile.Name)
+	}
+
+	if driveFile.MINE != "" {
+		update.SetMime(driveFile.MINE)
+	}
+
+	if driveFile.Etag != nil {
+		update.SetEtag(*driveFile.Etag)
+	}
+
+	if driveFile.Visibility != 0 {
+		update.SetVisibility(enum.DriveFileVisibilityName[driveFile.Visibility])
+	}
+
+	if driveFile.Status != 0 {
+		update.SetStatus(enum.DriveFileStatusName[driveFile.Status])
+	}
+
+	if driveFile.Size > 0 {
+		update.SetSize(int64(driveFile.Size))
+	}
+
+	if driveFile.DeletedAt != nil {
+		update.SetDeletedAt(*driveFile.DeletedAt)
+	}
+
+	return db.Mutate(ctx.InnerContext(), update, ent.IsNotFound, entToDriveFile)
+}
+
+func (d *driveFileRepository) FindById(ctx crud.Context, id model.Id) (*domain.DriveFile, error) {
+	dbQuery := d.driveFileClient(ctx).Query().
+		Where(entDrivefile.ID(id), notPendingDelete)
+	return db.FindOne(ctx.InnerContext(), dbQuery, ent.IsNotFound, entToDriveFile)
+}
+
+func (d *driveFileRepository) DeleteById(ctx crud.Context, id model.Id) (int, error) {
+	return d.driveFileClient(ctx).Delete().
+		Where(entDrivefile.ID(id)).
+		Exec(ctx.InnerContext())
+}
+
+func (d *driveFileRepository) DeleteByIds(ctx crud.Context, ids []model.Id) (int, error) {
+	return d.driveFileClient(ctx).Delete().
+		Where(entDrivefile.IDIn(ids...)).
+		Exec(ctx.InnerContext())
+}
+
+func (d *driveFileRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
+	return db.ParseSearchGraphStr[ent.DriveFile, domain.DriveFile](criteria, entDrivefile.Label)
+}
+
+func (d *driveFileRepository) Search(ctx crud.Context, param drive_file.SearchParam) (*crud.PagedResult[*domain.DriveFile], error) {
+	query := d.driveFileClient(ctx).Query()
+	return db.Search(
+		ctx.InnerContext(),
+		param.Predicate,
+		param.Order,
+		db.PagingOptions{
+			Page: param.Page,
+			Size: param.Size,
+		},
+		query,
+		entToDriveFiles,
+	)
+}
+
+func (d *driveFileRepository) SearchByParent(ctx crud.Context, param drive_file.SearchByParentParam) (*crud.PagedResult[*domain.DriveFile], error) {
+	var parentPred predicate.DriveFile
+
+	if param.ParentFileId == "" {
+		parentPred = entDrivefile.ParentFileRefIsNil()
+	} else {
+		parentPred = entDrivefile.ParentFileRef(string(param.ParentFileId))
+	}
+
+	combined := orm.Predicate(sql.AndPredicates(parentPred, entDrivefile.DeletedAt(deletedAtNotDeleted), notPendingDelete))
+	if param.Predicate != nil {
+		combined = orm.Predicate(sql.AndPredicates(combined, *param.Predicate))
+	}
+
+	return d.Search(ctx, drive_file.SearchParam{
+		Predicate: &combined,
+		Order:     param.Order,
+		Page:      param.Page,
+		Size:      param.Size,
+	})
+}
+
+func (d *driveFileRepository) GetDriveFileChildren(ctx crud.Context, parentId model.Id) ([]*domain.DriveFile, error) {
+	dbClient := d.client.DB()
+
+	rows, err := dbClient.QueryContext(ctx,
+		`
+		WITH RECURSIVE subtree AS (
+			SELECT 
+				id, etag, created_at, updated_at, deleted_at, owner_ref,
+				name, mime, is_folder, size, path, storage, visibility, status, parent_file_ref
+			FROM dri_files WHERE id = $1
+			UNION ALL
+			SELECT 
+				f.id, f.etag, f.created_at, f.updated_at, f.deleted_at, f.owner_ref,
+				f.name, f.mime, f.is_folder, f.size, f.path, f.storage, f.visibility, f.status, f.parent_file_ref
+			FROM dri_files f 
+			JOIN subtree s ON f.parent_file_ref = s.id
+		)
+
+		SELECT 
+			id, etag, created_at, updated_at, deleted_at, owner_ref,
+			name, mime, is_folder, size, path, storage, visibility, status, parent_file_ref
+		FROM subtree
+		WHERE status != $2
+		`, parentId, enum.DriveFileStatusName[enum.DriveFileStatusPendingDelete])
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var driveFiles []*domain.DriveFile
+	for rows.Next() {
+		var (
+			id         model.Id
+			etag       model.Etag
+			createdAt  time.Time
+			updatedAt  time.Time
+			deletedAt  time.Time
+			ownerRef   model.Id
+			name       string
+			mime       string
+			isFolder   bool
+			size       int64
+			path       string
+			storage    string
+			visibility string
+			status     string
+			parentRef  *string
+		)
+
+		err := rows.Scan(
+			&id,
+			&etag,
+			&createdAt,
+			&updatedAt,
+			&deletedAt,
+			&ownerRef,
+			&name,
+			&mime,
+			&isFolder,
+			&size,
+			&path,
+			&storage,
+			&visibility,
+			&status,
+			&parentRef,
+		)
+		if err != nil {
+			return nil, err
+		}
+		driveFile := &domain.DriveFile{
+			ModelBase: model.ModelBase{
+				Id:   &id,
+				Etag: &etag,
+			},
+			AuditableBase: model.AuditableBase{
+				CreatedAt: &createdAt,
+				UpdatedAt: &updatedAt,
+			},
+			OwnerRef:   &ownerRef,
+			Name:       name,
+			MINE:       mime,
+			IsFolder:   isFolder,
+			Size:       uint64(size),
+			Path:       path,
+			Storage:    enum.DriveFileStorageValue[storage],
+			Visibility: enum.DriveFileVisibilityValue[visibility],
+			Status:     enum.DriveFileStatusValue[status],
+		}
+
+		if driveFile.Storage == 0 {
+			driveFile.Storage = enum.DriveFileStorageDefault
+		}
+		if driveFile.Visibility == 0 {
+			driveFile.Visibility = enum.DriveFileVisibilityDefault
+		}
+		if driveFile.Status == 0 {
+			driveFile.Status = enum.DriveFileStatusDefault
+		}
+
+		if !deletedAt.Equal(deletedAtNotDeleted) {
+			driveFile.DeletedAt = &deletedAt
+		}
+
+		if parentRef != nil {
+			parentId := model.Id(*parentRef)
+			driveFile.ParentDriveFileRef = &parentId
+		}
+
+		driveFiles = append(driveFiles, driveFile)
+	}
+
+	return driveFiles, nil
+}
+
+func (d *driveFileRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error) {
+	return d.client.Tx(ctx)
 }
 
 func BuildDriveFileDescriptor() *orm.EntityDescriptor {
@@ -28,8 +328,6 @@ func BuildDriveFileDescriptor() *orm.EntityDescriptor {
 		Field(entDrivefile.FieldCreatedAt, entity.CreatedAt).
 		Field(entDrivefile.FieldUpdatedAt, entity.UpdatedAt).
 		Field(entDrivefile.FieldDeletedAt, entity.DeletedAt).
-		Field(entDrivefile.FieldScopeType, entity.ScopeType).
-		Field(entDrivefile.FieldScopeRef, entity.ScopeRef).
 		Field(entDrivefile.FieldOwnerRef, entity.OwnerRef).
 		Field(entDrivefile.FieldParentFileRef, entity.ParentFileRef).
 		Field(entDrivefile.FieldName, entity.Name).
@@ -38,37 +336,7 @@ func BuildDriveFileDescriptor() *orm.EntityDescriptor {
 		Field(entDrivefile.FieldSize, entity.Size).
 		Field(entDrivefile.FieldPath, entity.Path).
 		Field(entDrivefile.FieldStorage, entity.Storage).
-		Field(entDrivefile.FieldVisiblity, entity.Visiblity)
+		Field(entDrivefile.FieldVisibility, entity.Visibility)
 
 	return builder.Descriptor()
-}
-
-// Create implements drive_file.DriveFileRepository.
-func (d *driveFileRepository) Create(ctx crud.Context, driveFile *domain.DriveFile) (*domain.DriveFile, error) {
-	panic("unimplemented")
-}
-
-// DeleteById implements drive_file.DriveFileRepository.
-func (d *driveFileRepository) DeleteById(ctx crud.Context, id model.Id) (int, error) {
-	panic("unimplemented")
-}
-
-// FindById implements drive_file.DriveFileRepository.
-func (d *driveFileRepository) FindById(ctx crud.Context, id model.Id) (*domain.DriveFile, error) {
-	panic("unimplemented")
-}
-
-// ParseSearchGraph implements drive_file.DriveFileRepository.
-func (d *driveFileRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors) {
-	panic("unimplemented")
-}
-
-// Search implements drive_file.DriveFileRepository.
-func (d *driveFileRepository) Search(ctx crud.Context, param drive_file.SearchParam) (*crud.PagedResult[*domain.DriveFile], error) {
-	panic("unimplemented")
-}
-
-// Update implements drive_file.DriveFileRepository.
-func (d *driveFileRepository) Update(ctx crud.Context, driveFile *domain.DriveFile) (*domain.DriveFile, error) {
-	panic("unimplemented")
 }

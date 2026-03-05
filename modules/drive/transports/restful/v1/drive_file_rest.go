@@ -1,12 +1,15 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/middleware"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	it "github.com/sky-as-code/nikki-erp/modules/drive/interfaces/drive_file"
@@ -38,33 +41,38 @@ func (this DriveFileRest) CreateDriveFile(echoCtx echo.Context) (err error) {
 
 	var cmd it.CreateDriveFileCommand
 	if err = echoCtx.Bind(&cmd); err != nil {
-		return err
+		return httpserver.HandleBindError(echoCtx, err)
 	}
+
+	cmd.OwnerRef = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 
 	fileHeader, formErr := echoCtx.FormFile("file")
 	if formErr == nil {
 		file, openErr := fileHeader.Open()
 		if openErr != nil {
-			return openErr
+			return httpserver.JsonBadRequest(echoCtx, &fault.ClientError{
+				Code:    "file_error",
+				Details: fault.ValidationErrors{"file": openErr.Error()},
+			})
 		}
 		defer file.Close()
 		cmd.File = file
-		cmd.FileHeader = *fileHeader
+		cmd.FileHeader = fileHeader
 	} else if !cmd.IsFolder {
-		return httpserver.JsonBadRequest(echoCtx, &fault.ClientError{Code: "file_required", Details: "file is required when creating a file (not folder)"})
+		return httpserver.JsonBadRequest(echoCtx, &fault.ClientError{
+			Code:    "file_required",
+			Details: fault.ValidationErrors{"file": "file is required when creating a file (not folder)"},
+		})
 	}
 
 	reqCtx := echoCtx.Request().Context().(crud.Context)
 	result, err := this.DriveFileSvc.CreateDriveFile(reqCtx, cmd)
 	if err != nil {
-		return err
+		return httpserver.HandleServiceError(echoCtx, err)
 	}
 
-	if result.GetClientError() != nil {
-		return httpserver.JsonBadRequest(echoCtx, result.GetClientError())
-	}
-	if !result.GetHasData() {
-		return httpserver.JsonBadRequest(echoCtx, &fault.ClientError{Code: "not_found", Details: "resource not found"})
+	if errResp := httpserver.HandleResultError(echoCtx, *result); errResp != nil {
+		return errResp
 	}
 
 	response := CreateDriveFileResponse{}
@@ -72,27 +80,71 @@ func (this DriveFileRest) CreateDriveFile(echoCtx echo.Context) (err error) {
 	return httpserver.JsonCreated(echoCtx, response)
 }
 
-func (this DriveFileRest) UpdateDriveFile(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) UpdateDriveFileMetadata(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update drive file"); e != nil {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update drive file metadata"); e != nil {
 			err = e
 		}
 	}()
 
 	err = httpserver.ServeRequest(
-		echoCtx, this.DriveFileSvc.UpdateDriveFile,
-		func(request UpdateDriveFileRequest) it.UpdateDriveFileCommand {
+		echoCtx, this.DriveFileSvc.UpdateDriveFileMetadata,
+		func(request UpdateDriveFileMetadataRequest) it.UpdateDriveFileMetadataCommand {
 			return request
 		},
-		func(result it.UpdateDriveFileResult) UpdateDriveFileResponse {
-			response := UpdateDriveFileResponse{}
+		func(result it.UpdateDriveFileMetadataResult) UpdateDriveFileMetadataResponse {
+			response := UpdateDriveFileMetadataResponse{}
 			response.FromEntity(result.Data)
 			return response
 		},
 		httpserver.JsonOk,
 	)
-
 	return err
+}
+
+func (this DriveFileRest) UpdateDriveFileContent(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update drive file content"); e != nil {
+			err = e
+		}
+	}()
+
+	var cmd it.UpdateDriveFileContentCommand
+	if err = echoCtx.Bind(&cmd); err != nil {
+		return httpserver.HandleBindError(echoCtx, err)
+	}
+
+	fileHeader, formErr := echoCtx.FormFile("file")
+	if formErr != nil {
+		return httpserver.JsonBadRequest(echoCtx, &fault.ClientError{
+			Code:    "file_required",
+			Details: fault.ValidationErrors{"file": "file is required when updating content"},
+		})
+	}
+	file, openErr := fileHeader.Open()
+	if openErr != nil {
+		return httpserver.JsonBadRequest(echoCtx, &fault.ClientError{
+			Code:    "file_error",
+			Details: fault.ValidationErrors{"file": openErr.Error()},
+		})
+	}
+	defer file.Close()
+	cmd.File = file
+	cmd.FileHeader = fileHeader
+
+	reqCtx := echoCtx.Request().Context().(crud.Context)
+	result, err := this.DriveFileSvc.UpdateDriveFileContent(reqCtx, cmd)
+	if err != nil {
+		return httpserver.HandleServiceError(echoCtx, err)
+	}
+
+	if errResp := httpserver.HandleResultError(echoCtx, *result); errResp != nil {
+		return errResp
+	}
+
+	response := UpdateDriveFileContentResponse{}
+	response.FromEntity(result.Data)
+	return httpserver.JsonOk(echoCtx, response)
 }
 
 func (this DriveFileRest) DeleteDriveFile(echoCtx echo.Context) (err error) {
@@ -176,16 +228,27 @@ func (this DriveFileRest) DownloadDriveFile(echoCtx echo.Context) (err error) {
 
 	var query it.GetDriveFileByIdQuery
 	if err = echoCtx.Bind(&query); err != nil {
-		return
+		return httpserver.HandleBindError(echoCtx, err)
 	}
 
 	reqCtx := echoCtx.Request().Context().(crud.Context)
-	stream, err := this.DriveFileSvc.DownloadDriveFile(reqCtx, query)
+	driveFile, stream, err := this.DriveFileSvc.DownloadDriveFile(reqCtx, query)
 	if err != nil {
-		return
+		return httpserver.HandleServiceError(echoCtx, err)
+	}
+
+	echoCtx.Response().Header().Set(
+		echo.HeaderContentDisposition,
+		fmt.Sprintf("attachment; filename=%q", &driveFile.Name),
+	)
+
+	if stream == nil {
+		return httpserver.JsonBadRequest(echoCtx, &fault.ClientError{
+			Code:    "not_found",
+			Details: fault.ValidationErrors{"driveFile": "drive file not found"},
+		})
 	}
 	defer stream.Close()
-
 	return echoCtx.Stream(http.StatusOK, "application/octet-stream", stream)
 }
 
@@ -203,7 +266,7 @@ func (this DriveFileRest) GetDriveFileByParent(echoCtx echo.Context) (err error)
 		},
 		func(result it.GetDriveFileByParentResult) GetDriveFileByParentResponse {
 			response := GetDriveFileByParentResponse{}
-			response.FromResult(&result.Data)
+			response.FromResult(result.Data)
 			return response
 		},
 		httpserver.JsonOk,
@@ -226,7 +289,7 @@ func (this DriveFileRest) SearchDriveFile(echoCtx echo.Context) (err error) {
 		},
 		func(result it.SearchDriveFileResult) SearchDriveFileResponse {
 			response := SearchDriveFileResponse{}
-			response.FromResult(&result.Data)
+			response.FromResult(result.Data)
 			return response
 		},
 		httpserver.JsonOk,

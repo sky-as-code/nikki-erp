@@ -1,15 +1,14 @@
 package enum
 
 import (
-	"database/sql/driver"
-
 	"github.com/sky-as-code/nikki-erp/common/enum_util"
 )
 
 type ScopeType uint8
 
 const (
-	ScopeTypeDomain ScopeType = iota + 1
+	ScopeTypeNone ScopeType = iota
+	ScopeTypeDomain
 	ScopeTypeOrg
 	ScopeTypeHierachy
 	ScopeTypePrivate
@@ -18,6 +17,7 @@ const (
 )
 
 var ScopeTypeName = map[ScopeType]string{
+	ScopeTypeNone:     "",
 	ScopeTypeDomain:   "domain",
 	ScopeTypeOrg:      "org",
 	ScopeTypeHierachy: "hierachy",
@@ -48,16 +48,8 @@ func (e *ScopeType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e *ScopeType) MarshalJSON() ([]byte, error) {
-	return enum_util.MarshalJSON(e, ScopeTypeName)
-}
-
-func (e ScopeType) Value() (driver.Value, error) {
-	return enum_util.ValueSQL(&e, ScopeTypeName)
-}
-
-func (e *ScopeType) Scan(src any) error {
-	v, err := enum_util.ScanSQL(src, ScopeTypeValue, ScopeTypeName)
+func (e *ScopeType) UnmarshalText(text []byte) error {
+	v, err := enum_util.UnmarshalText(text, ScopeTypeValue, ScopeTypeName)
 	if err != nil {
 		return err
 	}
@@ -65,10 +57,15 @@ func (e *ScopeType) Scan(src any) error {
 	return nil
 }
 
+func (e ScopeType) MarshalJSON() ([]byte, error) {
+	return enum_util.MarshalJSON(&e, ScopeTypeName)
+}
+
 type DriveFileStorage uint8
 
 const (
-	DriveFileStorageS3 DriveFileStorage = iota + 1
+	DriveFileStorageNone DriveFileStorage = iota
+	DriveFileStorageS3
 
 	DriveFileStorageDefault = DriveFileStorageS3
 )
@@ -100,16 +97,8 @@ func (e *DriveFileStorage) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e *DriveFileStorage) MarshalJSON() ([]byte, error) {
-	return enum_util.MarshalJSON(e, DriveFileStorageName)
-}
-
-func (e DriveFileStorage) Value() (driver.Value, error) {
-	return enum_util.ValueSQL(&e, DriveFileStorageName)
-}
-
-func (e *DriveFileStorage) Scan(src any) error {
-	v, err := enum_util.ScanSQL(src, DriveFileStorageValue, DriveFileStorageName)
+func (e *DriveFileStorage) UnmarshalText(text []byte) error {
+	v, err := enum_util.UnmarshalText(text, DriveFileStorageValue, DriveFileStorageName)
 	if err != nil {
 		return err
 	}
@@ -117,10 +106,15 @@ func (e *DriveFileStorage) Scan(src any) error {
 	return nil
 }
 
+func (e DriveFileStorage) MarshalJSON() ([]byte, error) {
+	return enum_util.MarshalJSON(&e, DriveFileStorageName)
+}
+
 type DriveFileVisibility uint8
 
 const (
-	DriveFileVisibilityPublic DriveFileVisibility = iota + 1
+	DriveFileVisibilityNone DriveFileVisibility = iota
+	DriveFileVisibilityPublic
 	DriveFileVisibilityOwner
 	DriveFileVisibilityShared
 
@@ -128,6 +122,7 @@ const (
 )
 
 var DriveFileVisibilityName = map[DriveFileVisibility]string{
+	DriveFileVisibilityNone:   "",
 	DriveFileVisibilityPublic: "public",
 	DriveFileVisibilityOwner:  "owner",
 	DriveFileVisibilityShared: "shared",
@@ -156,19 +151,15 @@ func (e *DriveFileVisibility) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e *DriveFileVisibility) MarshalJSON() ([]byte, error) {
-	return enum_util.MarshalJSON(e, DriveFileVisibilityName)
-}
-
-func (e DriveFileVisibility) Value() (driver.Value, error) {
-	return enum_util.ValueSQL(&e, DriveFileVisibilityName)
-}
-
-func (e *DriveFileVisibility) Scan(src any) error {
-	v, err := enum_util.ScanSQL(src, DriveFileVisibilityValue, DriveFileVisibilityName)
+func (e *DriveFileVisibility) UnmarshalText(text []byte) error {
+	v, err := enum_util.UnmarshalText(text, DriveFileVisibilityValue, DriveFileVisibilityName)
 	if err != nil {
 		return err
 	}
 	*e = v
 	return nil
+}
+
+func (e DriveFileVisibility) MarshalJSON() ([]byte, error) {
+	return enum_util.MarshalJSON(&e, DriveFileVisibilityName)
 }

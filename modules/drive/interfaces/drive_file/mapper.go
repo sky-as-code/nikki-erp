@@ -8,13 +8,41 @@ import (
 func (this *CreateDriveFileCommand) ToDomainModel() *domain.DriveFile {
 	driveFile := &domain.DriveFile{}
 	model.MustCopy(this, driveFile)
+	if driveFile.ParentDriveFileRef != nil && *driveFile.ParentDriveFileRef == "" {
+		driveFile.ParentDriveFileRef = nil
+	}
+
+	driveFile.Process()
 
 	return driveFile
 }
 
-func (this *UpdateDriveFileCommand) ToDomainModel() *domain.DriveFile {
-	driveFile := &domain.DriveFile{}
-	model.MustCopy(this, driveFile)
+func (this UpdateDriveFileMetadataCommand) ToDomainModel() *domain.DriveFile {
+	d := &domain.DriveFile{}
+	model.MustCopy(this, d)
+	return d
+}
 
-	return driveFile
+func (this UpdateBulkDriveFileMetadataCommand) ToDomainModels() []*domain.DriveFile {
+	result := make([]*domain.DriveFile, len(this.DriveFiles))
+	for i := range this.DriveFiles {
+		result[i] = this.DriveFiles[i].ToDomainModel()
+	}
+	return result
+}
+
+func (this UpdateDriveFileContentCommand) ToDomainModel() *domain.DriveFile {
+	d := &domain.DriveFile{}
+	model.MustCopy(this, d)
+	d.Process()
+
+	return d
+}
+
+func (this DeleteDriveFileCommand) ToDomainModel() *domain.DriveFile {
+	return &domain.DriveFile{ModelBase: model.ModelBase{Id: &this.DriveFileId}}
+}
+
+func (this MoveDriveFileToTrashCommand) ToDomainModel() *domain.DriveFile {
+	return &domain.DriveFile{ModelBase: model.ModelBase{Id: &this.DriveFileId}}
 }

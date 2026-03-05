@@ -15,9 +15,6 @@ type DriveFileDto struct {
 	model.ModelBase     `json:",inline"`
 	model.AuditableBase `json:",inline"`
 
-	ScopeType enum.ScopeType `json:"scope_type"`
-	ScopeRef  model.Id       `json:"scope_ref"`
-
 	OwnerRef           model.Id `json:"owner_ref"`
 	ParentDriveFileRef model.Id `json:"parent_drive_file_ref"`
 
@@ -27,7 +24,7 @@ type DriveFileDto struct {
 	Size       uint64                   `json:"size"`
 	Path       string                   `json:"path"`
 	Storage    enum.DriveFileStorage    `json:"storage"`
-	Visibility enum.DriveFileVisibility `json:"visiblity"`
+	Visibility enum.DriveFileVisibility `json:"visibility"`
 
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 }
@@ -41,8 +38,11 @@ func (this *DriveFileDto) FromDriveFile(f domain.DriveFile) {
 type CreateDriveFileRequest = it.CreateDriveFileCommand
 type CreateDriveFileResponse = httpserver.RestCreateResponse
 
-type UpdateDriveFileRequest = it.UpdateDriveFileCommand
-type UpdateDriveFileResponse = httpserver.RestUpdateResponse
+type UpdateDriveFileMetadataRequest = it.UpdateDriveFileMetadataCommand
+type UpdateDriveFileMetadataResponse = httpserver.RestUpdateResponse
+
+type UpdateDriveFileContentRequest = it.UpdateDriveFileContentCommand
+type UpdateDriveFileContentResponse = httpserver.RestUpdateResponse
 
 type GetDriveFileByIdRequest = it.GetDriveFileByIdQuery
 type GetDriveFileByIdResponse = DriveFileDto

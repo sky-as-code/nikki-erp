@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	commonMiddleware "github.com/sky-as-code/nikki-erp/common/middleware"
 	v1 "github.com/sky-as-code/nikki-erp/modules/drive/transports/restful/v1"
 )
 
@@ -39,20 +40,22 @@ func initV1(
 	driveFileRest *v1.DriveFileRest,
 	driveFileShareRest *v1.DriveFileShareRest,
 ) {
+	protected := route.Group("", commonMiddleware.RequireAuthMiddleware())
 
 	// Drive files
-	route.POST("/files", driveFileRest.CreateDriveFile)
-	route.PUT("/files/:driveFileId", driveFileRest.UpdateDriveFile)
-	route.DELETE("/files/:driveFileId", driveFileRest.DeleteDriveFile)
-	route.POST("/files/:driveFileId/move-to-trash", driveFileRest.MoveDriveFileToTrash)
+	protected.POST("/files", driveFileRest.CreateDriveFile)
+	protected.PATCH("/files/:driveFileId", driveFileRest.UpdateDriveFileMetadata)
+	protected.PUT("/files/:driveFileId/content", driveFileRest.UpdateDriveFileContent)
+	protected.DELETE("/files/:driveFileId", driveFileRest.DeleteDriveFile)
+	protected.POST("/files/:driveFileId/move-to-trash", driveFileRest.MoveDriveFileToTrash)
 
-	route.GET("/files/:driveFileId", driveFileRest.GetDriveFileById)
-	route.GET("/files/:driveFileId/download", driveFileRest.DownloadDriveFile)
-	route.GET("/files/:driveFileId/children", driveFileRest.GetDriveFileByParent)
-	route.GET("/files", driveFileRest.SearchDriveFile)
+	protected.GET("/files/:driveFileId", driveFileRest.GetDriveFileById)
+	protected.GET("/files/:driveFileId/download", driveFileRest.DownloadDriveFile)
+	protected.GET("/files/:driveFileId/children", driveFileRest.GetDriveFileByParent)
+	protected.GET("/files", driveFileRest.SearchDriveFile)
 
 	// Sharing management on file
-	fileGroup := route.Group("/files/:driveFileId")
+	fileGroup := protected.Group("/files/:driveFileId")
 
 	fileGroup.POST("/shares", driveFileShareRest.CreateDriveFileShare)
 	fileGroup.POST("/shares/bulk", driveFileShareRest.CreateBulkDriveFileShares)
@@ -61,6 +64,4 @@ func initV1(
 	fileGroup.GET("/shares", driveFileShareRest.GetDriveFileShareByFileId)
 	fileGroup.DELETE("/shares/:driveFileShareId", driveFileShareRest.DeleteDriveFileShare)
 
-	// List files shared to user
-	route.GET("/shares", driveFileShareRest.SearchDriveFileShare)
 }

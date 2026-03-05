@@ -4,16 +4,20 @@ import (
 	"io"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/drive/domain"
 )
 
 type DriveFileService interface {
 	CreateDriveFile(ctx crud.Context, cmd CreateDriveFileCommand) (*CreateDriveFileResult, error)
-	UpdateDriveFile(ctx crud.Context, cmd UpdateDriveFileCommand) (*UpdateDriveFileResult, error)
+	UpdateDriveFileMetadata(ctx crud.Context, cmd UpdateDriveFileMetadataCommand) (*UpdateDriveFileMetadataResult, error)
+	UpdateBulkDriveFileMetadata(ctx crud.Context, cmd UpdateBulkDriveFileMetadataCommand) (*UpdateBulkDriveFileMetadataResult, error)
+	UpdateDriveFileContent(ctx crud.Context, cmd UpdateDriveFileContentCommand) (*UpdateDriveFileContentResult, error)
 	DeleteDriveFile(ctx crud.Context, cmd DeleteDriveFileCommand) (*DeleteDriveFileResult, error)
 	MoveDriveFileToTrash(ctx crud.Context, cmd MoveDriveFileToTrashCommand) (*MoveDriveFileToTrashResult, error)
+	DeleteTrashedDriveFile(ctx crud.Context) error
 
 	GetDriveFileById(ctx crud.Context, query GetDriveFileByIdQuery) (*GetDriveFileByIdResult, error)
-	DownloadDriveFile(ctx crud.Context, query GetDriveFileByIdQuery) (io.ReadCloser, error)
+	DownloadDriveFile(ctx crud.Context, query GetDriveFileByIdQuery) (*domain.DriveFile, io.ReadCloser, error)
 	GetDriveFileByParent(ctx crud.Context, query GetDriveFileByParentQuery) (*GetDriveFileByParentResult, error)
 	SearchDriveFile(ctx crud.Context, query SearchDriveFileQuery) (*SearchDriveFileResult, error)
 }
