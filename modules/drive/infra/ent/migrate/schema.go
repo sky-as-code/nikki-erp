@@ -16,8 +16,6 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "deleted_at", Type: field.TypeTime},
-		{Name: "scope_type", Type: field.TypeString},
-		{Name: "scope_ref", Type: field.TypeString},
 		{Name: "owner_ref", Type: field.TypeString},
 		{Name: "name", Type: field.TypeString},
 		{Name: "mime", Type: field.TypeString},
@@ -25,7 +23,8 @@ var (
 		{Name: "size", Type: field.TypeInt64},
 		{Name: "path", Type: field.TypeString},
 		{Name: "storage", Type: field.TypeString},
-		{Name: "visiblity", Type: field.TypeString},
+		{Name: "visibility", Type: field.TypeString, Default: "owner"},
+		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "parent_file_ref", Type: field.TypeString, Nullable: true},
 	}
 	// DriFilesTable holds the schema information for the "dri_files" table.
@@ -36,26 +35,34 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "dri_files_dri_files_children_file",
-				Columns:    []*schema.Column{DriFilesColumns[15]},
+				Columns:    []*schema.Column{DriFilesColumns[14]},
 				RefColumns: []*schema.Column{DriFilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "drivefile_scope_ref_parent_file_ref_is_folder_name",
+				Name:    "drivefile_owner_ref_parent_file_ref_is_folder_name",
 				Unique:  true,
-				Columns: []*schema.Column{DriFilesColumns[6], DriFilesColumns[15], DriFilesColumns[10], DriFilesColumns[8]},
+				Columns: []*schema.Column{DriFilesColumns[5], DriFilesColumns[14], DriFilesColumns[8], DriFilesColumns[6]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "parent_file_ref is NOT NULL",
+				},
 			},
 			{
-				Name:    "drivefile_scope_ref_owner_ref_parent_file_ref",
+				Name:    "drivefile_owner_ref_is_folder_name",
 				Unique:  true,
-				Columns: []*schema.Column{DriFilesColumns[6], DriFilesColumns[7], DriFilesColumns[15]},
+				Columns: []*schema.Column{DriFilesColumns[5], DriFilesColumns[8], DriFilesColumns[6]},
 			},
 			{
-				Name:    "drivefile_deleted_at",
+				Name:    "drivefile_parent_file_ref",
 				Unique:  false,
-				Columns: []*schema.Column{DriFilesColumns[4]},
+				Columns: []*schema.Column{DriFilesColumns[14]},
+			},
+			{
+				Name:    "drivefile_status",
+				Unique:  false,
+				Columns: []*schema.Column{DriFilesColumns[13]},
 			},
 		},
 	}
@@ -65,8 +72,6 @@ var (
 		{Name: "etag", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "scope_type", Type: field.TypeString},
-		{Name: "scope_ref", Type: field.TypeString},
 		{Name: "user_ref", Type: field.TypeString},
 		{Name: "permission", Type: field.TypeString, Default: "view"},
 		{Name: "file_ref", Type: field.TypeString},
@@ -79,21 +84,16 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "dri_file_shares_dri_files_drive_file_shares",
-				Columns:    []*schema.Column{DriFileSharesColumns[8]},
+				Columns:    []*schema.Column{DriFileSharesColumns[6]},
 				RefColumns: []*schema.Column{DriFilesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "drivefileshare_scope_ref_user_ref",
+				Name:    "drivefileshare_file_ref_user_ref",
 				Unique:  true,
-				Columns: []*schema.Column{DriFileSharesColumns[5], DriFileSharesColumns[6]},
-			},
-			{
-				Name:    "drivefileshare_scope_ref_file_ref",
-				Unique:  true,
-				Columns: []*schema.Column{DriFileSharesColumns[5], DriFileSharesColumns[8]},
+				Columns: []*schema.Column{DriFileSharesColumns[6], DriFileSharesColumns[4]},
 			},
 		},
 	}

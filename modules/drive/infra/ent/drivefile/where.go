@@ -85,16 +85,6 @@ func DeletedAt(v time.Time) predicate.DriveFile {
 	return predicate.DriveFile(sql.FieldEQ(FieldDeletedAt, v))
 }
 
-// ScopeType applies equality check predicate on the "scope_type" field. It's identical to ScopeTypeEQ.
-func ScopeType(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEQ(FieldScopeType, v))
-}
-
-// ScopeRef applies equality check predicate on the "scope_ref" field. It's identical to ScopeRefEQ.
-func ScopeRef(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEQ(FieldScopeRef, v))
-}
-
 // OwnerRef applies equality check predicate on the "owner_ref" field. It's identical to OwnerRefEQ.
 func OwnerRef(v string) predicate.DriveFile {
 	return predicate.DriveFile(sql.FieldEQ(FieldOwnerRef, v))
@@ -135,9 +125,14 @@ func Storage(v string) predicate.DriveFile {
 	return predicate.DriveFile(sql.FieldEQ(FieldStorage, v))
 }
 
-// Visiblity applies equality check predicate on the "visiblity" field. It's identical to VisiblityEQ.
-func Visiblity(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEQ(FieldVisiblity, v))
+// Visibility applies equality check predicate on the "visibility" field. It's identical to VisibilityEQ.
+func Visibility(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEQ(FieldVisibility, v))
+}
+
+// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
+func Status(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEQ(FieldStatus, v))
 }
 
 // EtagEQ applies the EQ predicate on the "etag" field.
@@ -323,136 +318,6 @@ func DeletedAtLT(v time.Time) predicate.DriveFile {
 // DeletedAtLTE applies the LTE predicate on the "deleted_at" field.
 func DeletedAtLTE(v time.Time) predicate.DriveFile {
 	return predicate.DriveFile(sql.FieldLTE(FieldDeletedAt, v))
-}
-
-// ScopeTypeEQ applies the EQ predicate on the "scope_type" field.
-func ScopeTypeEQ(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEQ(FieldScopeType, v))
-}
-
-// ScopeTypeNEQ applies the NEQ predicate on the "scope_type" field.
-func ScopeTypeNEQ(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldNEQ(FieldScopeType, v))
-}
-
-// ScopeTypeIn applies the In predicate on the "scope_type" field.
-func ScopeTypeIn(vs ...string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldIn(FieldScopeType, vs...))
-}
-
-// ScopeTypeNotIn applies the NotIn predicate on the "scope_type" field.
-func ScopeTypeNotIn(vs ...string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldNotIn(FieldScopeType, vs...))
-}
-
-// ScopeTypeGT applies the GT predicate on the "scope_type" field.
-func ScopeTypeGT(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldGT(FieldScopeType, v))
-}
-
-// ScopeTypeGTE applies the GTE predicate on the "scope_type" field.
-func ScopeTypeGTE(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldGTE(FieldScopeType, v))
-}
-
-// ScopeTypeLT applies the LT predicate on the "scope_type" field.
-func ScopeTypeLT(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldLT(FieldScopeType, v))
-}
-
-// ScopeTypeLTE applies the LTE predicate on the "scope_type" field.
-func ScopeTypeLTE(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldLTE(FieldScopeType, v))
-}
-
-// ScopeTypeContains applies the Contains predicate on the "scope_type" field.
-func ScopeTypeContains(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldContains(FieldScopeType, v))
-}
-
-// ScopeTypeHasPrefix applies the HasPrefix predicate on the "scope_type" field.
-func ScopeTypeHasPrefix(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldHasPrefix(FieldScopeType, v))
-}
-
-// ScopeTypeHasSuffix applies the HasSuffix predicate on the "scope_type" field.
-func ScopeTypeHasSuffix(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldHasSuffix(FieldScopeType, v))
-}
-
-// ScopeTypeEqualFold applies the EqualFold predicate on the "scope_type" field.
-func ScopeTypeEqualFold(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEqualFold(FieldScopeType, v))
-}
-
-// ScopeTypeContainsFold applies the ContainsFold predicate on the "scope_type" field.
-func ScopeTypeContainsFold(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldContainsFold(FieldScopeType, v))
-}
-
-// ScopeRefEQ applies the EQ predicate on the "scope_ref" field.
-func ScopeRefEQ(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEQ(FieldScopeRef, v))
-}
-
-// ScopeRefNEQ applies the NEQ predicate on the "scope_ref" field.
-func ScopeRefNEQ(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldNEQ(FieldScopeRef, v))
-}
-
-// ScopeRefIn applies the In predicate on the "scope_ref" field.
-func ScopeRefIn(vs ...string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldIn(FieldScopeRef, vs...))
-}
-
-// ScopeRefNotIn applies the NotIn predicate on the "scope_ref" field.
-func ScopeRefNotIn(vs ...string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldNotIn(FieldScopeRef, vs...))
-}
-
-// ScopeRefGT applies the GT predicate on the "scope_ref" field.
-func ScopeRefGT(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldGT(FieldScopeRef, v))
-}
-
-// ScopeRefGTE applies the GTE predicate on the "scope_ref" field.
-func ScopeRefGTE(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldGTE(FieldScopeRef, v))
-}
-
-// ScopeRefLT applies the LT predicate on the "scope_ref" field.
-func ScopeRefLT(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldLT(FieldScopeRef, v))
-}
-
-// ScopeRefLTE applies the LTE predicate on the "scope_ref" field.
-func ScopeRefLTE(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldLTE(FieldScopeRef, v))
-}
-
-// ScopeRefContains applies the Contains predicate on the "scope_ref" field.
-func ScopeRefContains(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldContains(FieldScopeRef, v))
-}
-
-// ScopeRefHasPrefix applies the HasPrefix predicate on the "scope_ref" field.
-func ScopeRefHasPrefix(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldHasPrefix(FieldScopeRef, v))
-}
-
-// ScopeRefHasSuffix applies the HasSuffix predicate on the "scope_ref" field.
-func ScopeRefHasSuffix(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldHasSuffix(FieldScopeRef, v))
-}
-
-// ScopeRefEqualFold applies the EqualFold predicate on the "scope_ref" field.
-func ScopeRefEqualFold(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEqualFold(FieldScopeRef, v))
-}
-
-// ScopeRefContainsFold applies the ContainsFold predicate on the "scope_ref" field.
-func ScopeRefContainsFold(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldContainsFold(FieldScopeRef, v))
 }
 
 // OwnerRefEQ applies the EQ predicate on the "owner_ref" field.
@@ -905,69 +770,134 @@ func StorageContainsFold(v string) predicate.DriveFile {
 	return predicate.DriveFile(sql.FieldContainsFold(FieldStorage, v))
 }
 
-// VisiblityEQ applies the EQ predicate on the "visiblity" field.
-func VisiblityEQ(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEQ(FieldVisiblity, v))
+// VisibilityEQ applies the EQ predicate on the "visibility" field.
+func VisibilityEQ(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEQ(FieldVisibility, v))
 }
 
-// VisiblityNEQ applies the NEQ predicate on the "visiblity" field.
-func VisiblityNEQ(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldNEQ(FieldVisiblity, v))
+// VisibilityNEQ applies the NEQ predicate on the "visibility" field.
+func VisibilityNEQ(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldNEQ(FieldVisibility, v))
 }
 
-// VisiblityIn applies the In predicate on the "visiblity" field.
-func VisiblityIn(vs ...string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldIn(FieldVisiblity, vs...))
+// VisibilityIn applies the In predicate on the "visibility" field.
+func VisibilityIn(vs ...string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldIn(FieldVisibility, vs...))
 }
 
-// VisiblityNotIn applies the NotIn predicate on the "visiblity" field.
-func VisiblityNotIn(vs ...string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldNotIn(FieldVisiblity, vs...))
+// VisibilityNotIn applies the NotIn predicate on the "visibility" field.
+func VisibilityNotIn(vs ...string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldNotIn(FieldVisibility, vs...))
 }
 
-// VisiblityGT applies the GT predicate on the "visiblity" field.
-func VisiblityGT(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldGT(FieldVisiblity, v))
+// VisibilityGT applies the GT predicate on the "visibility" field.
+func VisibilityGT(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldGT(FieldVisibility, v))
 }
 
-// VisiblityGTE applies the GTE predicate on the "visiblity" field.
-func VisiblityGTE(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldGTE(FieldVisiblity, v))
+// VisibilityGTE applies the GTE predicate on the "visibility" field.
+func VisibilityGTE(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldGTE(FieldVisibility, v))
 }
 
-// VisiblityLT applies the LT predicate on the "visiblity" field.
-func VisiblityLT(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldLT(FieldVisiblity, v))
+// VisibilityLT applies the LT predicate on the "visibility" field.
+func VisibilityLT(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldLT(FieldVisibility, v))
 }
 
-// VisiblityLTE applies the LTE predicate on the "visiblity" field.
-func VisiblityLTE(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldLTE(FieldVisiblity, v))
+// VisibilityLTE applies the LTE predicate on the "visibility" field.
+func VisibilityLTE(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldLTE(FieldVisibility, v))
 }
 
-// VisiblityContains applies the Contains predicate on the "visiblity" field.
-func VisiblityContains(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldContains(FieldVisiblity, v))
+// VisibilityContains applies the Contains predicate on the "visibility" field.
+func VisibilityContains(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldContains(FieldVisibility, v))
 }
 
-// VisiblityHasPrefix applies the HasPrefix predicate on the "visiblity" field.
-func VisiblityHasPrefix(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldHasPrefix(FieldVisiblity, v))
+// VisibilityHasPrefix applies the HasPrefix predicate on the "visibility" field.
+func VisibilityHasPrefix(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldHasPrefix(FieldVisibility, v))
 }
 
-// VisiblityHasSuffix applies the HasSuffix predicate on the "visiblity" field.
-func VisiblityHasSuffix(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldHasSuffix(FieldVisiblity, v))
+// VisibilityHasSuffix applies the HasSuffix predicate on the "visibility" field.
+func VisibilityHasSuffix(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldHasSuffix(FieldVisibility, v))
 }
 
-// VisiblityEqualFold applies the EqualFold predicate on the "visiblity" field.
-func VisiblityEqualFold(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEqualFold(FieldVisiblity, v))
+// VisibilityEqualFold applies the EqualFold predicate on the "visibility" field.
+func VisibilityEqualFold(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEqualFold(FieldVisibility, v))
 }
 
-// VisiblityContainsFold applies the ContainsFold predicate on the "visiblity" field.
-func VisiblityContainsFold(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldContainsFold(FieldVisiblity, v))
+// VisibilityContainsFold applies the ContainsFold predicate on the "visibility" field.
+func VisibilityContainsFold(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldContainsFold(FieldVisibility, v))
+}
+
+// StatusEQ applies the EQ predicate on the "status" field.
+func StatusEQ(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEQ(FieldStatus, v))
+}
+
+// StatusNEQ applies the NEQ predicate on the "status" field.
+func StatusNEQ(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldNEQ(FieldStatus, v))
+}
+
+// StatusIn applies the In predicate on the "status" field.
+func StatusIn(vs ...string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldIn(FieldStatus, vs...))
+}
+
+// StatusNotIn applies the NotIn predicate on the "status" field.
+func StatusNotIn(vs ...string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// StatusGT applies the GT predicate on the "status" field.
+func StatusGT(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldGT(FieldStatus, v))
+}
+
+// StatusGTE applies the GTE predicate on the "status" field.
+func StatusGTE(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldGTE(FieldStatus, v))
+}
+
+// StatusLT applies the LT predicate on the "status" field.
+func StatusLT(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldLT(FieldStatus, v))
+}
+
+// StatusLTE applies the LTE predicate on the "status" field.
+func StatusLTE(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldLTE(FieldStatus, v))
+}
+
+// StatusContains applies the Contains predicate on the "status" field.
+func StatusContains(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldContains(FieldStatus, v))
+}
+
+// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
+func StatusHasPrefix(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldHasPrefix(FieldStatus, v))
+}
+
+// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
+func StatusHasSuffix(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldHasSuffix(FieldStatus, v))
+}
+
+// StatusEqualFold applies the EqualFold predicate on the "status" field.
+func StatusEqualFold(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEqualFold(FieldStatus, v))
+}
+
+// StatusContainsFold applies the ContainsFold predicate on the "status" field.
+func StatusContainsFold(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldContainsFold(FieldStatus, v))
 }
 
 // HasChildrenFile applies the HasEdge predicate on the "children_file" edge.

@@ -22,10 +22,6 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
 	FieldDeletedAt = "deleted_at"
-	// FieldScopeType holds the string denoting the scope_type field in the database.
-	FieldScopeType = "scope_type"
-	// FieldScopeRef holds the string denoting the scope_ref field in the database.
-	FieldScopeRef = "scope_ref"
 	// FieldOwnerRef holds the string denoting the owner_ref field in the database.
 	FieldOwnerRef = "owner_ref"
 	// FieldParentFileRef holds the string denoting the parent_file_ref field in the database.
@@ -42,8 +38,10 @@ const (
 	FieldPath = "path"
 	// FieldStorage holds the string denoting the storage field in the database.
 	FieldStorage = "storage"
-	// FieldVisiblity holds the string denoting the visiblity field in the database.
-	FieldVisiblity = "visiblity"
+	// FieldVisibility holds the string denoting the visibility field in the database.
+	FieldVisibility = "visibility"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
 	// EdgeChildrenFile holds the string denoting the children_file edge name in mutations.
 	EdgeChildrenFile = "children_file"
 	// EdgeParentFile holds the string denoting the parent_file edge name in mutations.
@@ -76,8 +74,6 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldDeletedAt,
-	FieldScopeType,
-	FieldScopeRef,
 	FieldOwnerRef,
 	FieldParentFileRef,
 	FieldName,
@@ -86,7 +82,8 @@ var Columns = []string{
 	FieldSize,
 	FieldPath,
 	FieldStorage,
-	FieldVisiblity,
+	FieldVisibility,
+	FieldStatus,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -114,6 +111,14 @@ var (
 	DefaultIsFolder bool
 	// SizeValidator is a validator for the "size" field. It is called by the builders before save.
 	SizeValidator func(int64) error
+	// DefaultVisibility holds the default value on creation for the "visibility" field.
+	DefaultVisibility string
+	// VisibilityValidator is a validator for the "visibility" field. It is called by the builders before save.
+	VisibilityValidator func(string) error
+	// DefaultStatus holds the default value on creation for the "status" field.
+	DefaultStatus string
+	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	StatusValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the DriveFile queries.
@@ -142,16 +147,6 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByDeletedAt orders the results by the deleted_at field.
 func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
-}
-
-// ByScopeType orders the results by the scope_type field.
-func ByScopeType(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldScopeType, opts...).ToFunc()
-}
-
-// ByScopeRef orders the results by the scope_ref field.
-func ByScopeRef(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldScopeRef, opts...).ToFunc()
 }
 
 // ByOwnerRef orders the results by the owner_ref field.
@@ -194,9 +189,14 @@ func ByStorage(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStorage, opts...).ToFunc()
 }
 
-// ByVisiblity orders the results by the visiblity field.
-func ByVisiblity(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldVisiblity, opts...).ToFunc()
+// ByVisibility orders the results by the visibility field.
+func ByVisibility(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldVisibility, opts...).ToFunc()
+}
+
+// ByStatus orders the results by the status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
 }
 
 // ByChildrenFileCount orders the results by children_file count.

@@ -32,14 +32,11 @@ func (DriveFileShareMixin) Fields() []ent.Field {
 		field.Time("updated_at").
 			Default(time.Now),
 
-		field.String("scope_type"),
-
-		field.String("scope_ref"),
-
 		field.String("file_ref").
 			NotEmpty(),
 
-		field.String("user_ref"),
+		field.String("user_ref").
+			NotEmpty(),
 
 		field.String("permission").
 			Default(enum.DriveFileSharePermName[enum.DriveFileSharePermDefault]),
@@ -68,8 +65,7 @@ func (DriveFileShare) Edges() []ent.Edge {
 
 func (DriveFileShare) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("scope_ref", "user_ref").Unique(),
-		index.Fields("scope_ref", "file_ref").Unique(),
+		index.Fields("file_ref", "user_ref").Unique(),
 	}
 }
 

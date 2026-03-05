@@ -57,34 +57,6 @@ func (dfsu *DriveFileShareUpdate) SetNillableUpdatedAt(t *time.Time) *DriveFileS
 	return dfsu
 }
 
-// SetScopeType sets the "scope_type" field.
-func (dfsu *DriveFileShareUpdate) SetScopeType(s string) *DriveFileShareUpdate {
-	dfsu.mutation.SetScopeType(s)
-	return dfsu
-}
-
-// SetNillableScopeType sets the "scope_type" field if the given value is not nil.
-func (dfsu *DriveFileShareUpdate) SetNillableScopeType(s *string) *DriveFileShareUpdate {
-	if s != nil {
-		dfsu.SetScopeType(*s)
-	}
-	return dfsu
-}
-
-// SetScopeRef sets the "scope_ref" field.
-func (dfsu *DriveFileShareUpdate) SetScopeRef(s string) *DriveFileShareUpdate {
-	dfsu.mutation.SetScopeRef(s)
-	return dfsu
-}
-
-// SetNillableScopeRef sets the "scope_ref" field if the given value is not nil.
-func (dfsu *DriveFileShareUpdate) SetNillableScopeRef(s *string) *DriveFileShareUpdate {
-	if s != nil {
-		dfsu.SetScopeRef(*s)
-	}
-	return dfsu
-}
-
 // SetFileRef sets the "file_ref" field.
 func (dfsu *DriveFileShareUpdate) SetFileRef(s string) *DriveFileShareUpdate {
 	dfsu.mutation.SetFileRef(s)
@@ -183,6 +155,11 @@ func (dfsu *DriveFileShareUpdate) check() error {
 			return &ValidationError{Name: "file_ref", err: fmt.Errorf(`ent: validator failed for field "DriveFileShare.file_ref": %w`, err)}
 		}
 	}
+	if v, ok := dfsu.mutation.UserRef(); ok {
+		if err := drivefileshare.UserRefValidator(v); err != nil {
+			return &ValidationError{Name: "user_ref", err: fmt.Errorf(`ent: validator failed for field "DriveFileShare.user_ref": %w`, err)}
+		}
+	}
 	if dfsu.mutation.DriveFilesCleared() && len(dfsu.mutation.DriveFilesIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "DriveFileShare.drive_files"`)
 	}
@@ -206,12 +183,6 @@ func (dfsu *DriveFileShareUpdate) sqlSave(ctx context.Context) (n int, err error
 	}
 	if value, ok := dfsu.mutation.UpdatedAt(); ok {
 		_spec.SetField(drivefileshare.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if value, ok := dfsu.mutation.ScopeType(); ok {
-		_spec.SetField(drivefileshare.FieldScopeType, field.TypeString, value)
-	}
-	if value, ok := dfsu.mutation.ScopeRef(); ok {
-		_spec.SetField(drivefileshare.FieldScopeRef, field.TypeString, value)
 	}
 	if value, ok := dfsu.mutation.UserRef(); ok {
 		_spec.SetField(drivefileshare.FieldUserRef, field.TypeString, value)
@@ -292,34 +263,6 @@ func (dfsuo *DriveFileShareUpdateOne) SetUpdatedAt(t time.Time) *DriveFileShareU
 func (dfsuo *DriveFileShareUpdateOne) SetNillableUpdatedAt(t *time.Time) *DriveFileShareUpdateOne {
 	if t != nil {
 		dfsuo.SetUpdatedAt(*t)
-	}
-	return dfsuo
-}
-
-// SetScopeType sets the "scope_type" field.
-func (dfsuo *DriveFileShareUpdateOne) SetScopeType(s string) *DriveFileShareUpdateOne {
-	dfsuo.mutation.SetScopeType(s)
-	return dfsuo
-}
-
-// SetNillableScopeType sets the "scope_type" field if the given value is not nil.
-func (dfsuo *DriveFileShareUpdateOne) SetNillableScopeType(s *string) *DriveFileShareUpdateOne {
-	if s != nil {
-		dfsuo.SetScopeType(*s)
-	}
-	return dfsuo
-}
-
-// SetScopeRef sets the "scope_ref" field.
-func (dfsuo *DriveFileShareUpdateOne) SetScopeRef(s string) *DriveFileShareUpdateOne {
-	dfsuo.mutation.SetScopeRef(s)
-	return dfsuo
-}
-
-// SetNillableScopeRef sets the "scope_ref" field if the given value is not nil.
-func (dfsuo *DriveFileShareUpdateOne) SetNillableScopeRef(s *string) *DriveFileShareUpdateOne {
-	if s != nil {
-		dfsuo.SetScopeRef(*s)
 	}
 	return dfsuo
 }
@@ -435,6 +378,11 @@ func (dfsuo *DriveFileShareUpdateOne) check() error {
 			return &ValidationError{Name: "file_ref", err: fmt.Errorf(`ent: validator failed for field "DriveFileShare.file_ref": %w`, err)}
 		}
 	}
+	if v, ok := dfsuo.mutation.UserRef(); ok {
+		if err := drivefileshare.UserRefValidator(v); err != nil {
+			return &ValidationError{Name: "user_ref", err: fmt.Errorf(`ent: validator failed for field "DriveFileShare.user_ref": %w`, err)}
+		}
+	}
 	if dfsuo.mutation.DriveFilesCleared() && len(dfsuo.mutation.DriveFilesIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "DriveFileShare.drive_files"`)
 	}
@@ -475,12 +423,6 @@ func (dfsuo *DriveFileShareUpdateOne) sqlSave(ctx context.Context) (_node *Drive
 	}
 	if value, ok := dfsuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(drivefileshare.FieldUpdatedAt, field.TypeTime, value)
-	}
-	if value, ok := dfsuo.mutation.ScopeType(); ok {
-		_spec.SetField(drivefileshare.FieldScopeType, field.TypeString, value)
-	}
-	if value, ok := dfsuo.mutation.ScopeRef(); ok {
-		_spec.SetField(drivefileshare.FieldScopeRef, field.TypeString, value)
 	}
 	if value, ok := dfsuo.mutation.UserRef(); ok {
 		_spec.SetField(drivefileshare.FieldUserRef, field.TypeString, value)

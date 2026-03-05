@@ -69,18 +69,6 @@ func (dfc *DriveFileCreate) SetNillableDeletedAt(t *time.Time) *DriveFileCreate 
 	return dfc
 }
 
-// SetScopeType sets the "scope_type" field.
-func (dfc *DriveFileCreate) SetScopeType(s string) *DriveFileCreate {
-	dfc.mutation.SetScopeType(s)
-	return dfc
-}
-
-// SetScopeRef sets the "scope_ref" field.
-func (dfc *DriveFileCreate) SetScopeRef(s string) *DriveFileCreate {
-	dfc.mutation.SetScopeRef(s)
-	return dfc
-}
-
 // SetOwnerRef sets the "owner_ref" field.
 func (dfc *DriveFileCreate) SetOwnerRef(s string) *DriveFileCreate {
 	dfc.mutation.SetOwnerRef(s)
@@ -145,9 +133,31 @@ func (dfc *DriveFileCreate) SetStorage(s string) *DriveFileCreate {
 	return dfc
 }
 
-// SetVisiblity sets the "visiblity" field.
-func (dfc *DriveFileCreate) SetVisiblity(s string) *DriveFileCreate {
-	dfc.mutation.SetVisiblity(s)
+// SetVisibility sets the "visibility" field.
+func (dfc *DriveFileCreate) SetVisibility(s string) *DriveFileCreate {
+	dfc.mutation.SetVisibility(s)
+	return dfc
+}
+
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (dfc *DriveFileCreate) SetNillableVisibility(s *string) *DriveFileCreate {
+	if s != nil {
+		dfc.SetVisibility(*s)
+	}
+	return dfc
+}
+
+// SetStatus sets the "status" field.
+func (dfc *DriveFileCreate) SetStatus(s string) *DriveFileCreate {
+	dfc.mutation.SetStatus(s)
+	return dfc
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (dfc *DriveFileCreate) SetNillableStatus(s *string) *DriveFileCreate {
+	if s != nil {
+		dfc.SetStatus(*s)
+	}
 	return dfc
 }
 
@@ -257,6 +267,14 @@ func (dfc *DriveFileCreate) defaults() {
 		v := drivefile.DefaultIsFolder
 		dfc.mutation.SetIsFolder(v)
 	}
+	if _, ok := dfc.mutation.Visibility(); !ok {
+		v := drivefile.DefaultVisibility
+		dfc.mutation.SetVisibility(v)
+	}
+	if _, ok := dfc.mutation.Status(); !ok {
+		v := drivefile.DefaultStatus
+		dfc.mutation.SetStatus(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -272,12 +290,6 @@ func (dfc *DriveFileCreate) check() error {
 	}
 	if _, ok := dfc.mutation.DeletedAt(); !ok {
 		return &ValidationError{Name: "deleted_at", err: errors.New(`ent: missing required field "DriveFile.deleted_at"`)}
-	}
-	if _, ok := dfc.mutation.ScopeType(); !ok {
-		return &ValidationError{Name: "scope_type", err: errors.New(`ent: missing required field "DriveFile.scope_type"`)}
-	}
-	if _, ok := dfc.mutation.ScopeRef(); !ok {
-		return &ValidationError{Name: "scope_ref", err: errors.New(`ent: missing required field "DriveFile.scope_ref"`)}
 	}
 	if _, ok := dfc.mutation.OwnerRef(); !ok {
 		return &ValidationError{Name: "owner_ref", err: errors.New(`ent: missing required field "DriveFile.owner_ref"`)}
@@ -315,8 +327,21 @@ func (dfc *DriveFileCreate) check() error {
 	if _, ok := dfc.mutation.Storage(); !ok {
 		return &ValidationError{Name: "storage", err: errors.New(`ent: missing required field "DriveFile.storage"`)}
 	}
-	if _, ok := dfc.mutation.Visiblity(); !ok {
-		return &ValidationError{Name: "visiblity", err: errors.New(`ent: missing required field "DriveFile.visiblity"`)}
+	if _, ok := dfc.mutation.Visibility(); !ok {
+		return &ValidationError{Name: "visibility", err: errors.New(`ent: missing required field "DriveFile.visibility"`)}
+	}
+	if v, ok := dfc.mutation.Visibility(); ok {
+		if err := drivefile.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "DriveFile.visibility": %w`, err)}
+		}
+	}
+	if _, ok := dfc.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "DriveFile.status"`)}
+	}
+	if v, ok := dfc.mutation.Status(); ok {
+		if err := drivefile.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "DriveFile.status": %w`, err)}
+		}
 	}
 	return nil
 }
@@ -369,14 +394,6 @@ func (dfc *DriveFileCreate) createSpec() (*DriveFile, *sqlgraph.CreateSpec) {
 		_spec.SetField(drivefile.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = value
 	}
-	if value, ok := dfc.mutation.ScopeType(); ok {
-		_spec.SetField(drivefile.FieldScopeType, field.TypeString, value)
-		_node.ScopeType = value
-	}
-	if value, ok := dfc.mutation.ScopeRef(); ok {
-		_spec.SetField(drivefile.FieldScopeRef, field.TypeString, value)
-		_node.ScopeRef = value
-	}
 	if value, ok := dfc.mutation.OwnerRef(); ok {
 		_spec.SetField(drivefile.FieldOwnerRef, field.TypeString, value)
 		_node.OwnerRef = value
@@ -405,9 +422,13 @@ func (dfc *DriveFileCreate) createSpec() (*DriveFile, *sqlgraph.CreateSpec) {
 		_spec.SetField(drivefile.FieldStorage, field.TypeString, value)
 		_node.Storage = value
 	}
-	if value, ok := dfc.mutation.Visiblity(); ok {
-		_spec.SetField(drivefile.FieldVisiblity, field.TypeString, value)
-		_node.Visiblity = value
+	if value, ok := dfc.mutation.Visibility(); ok {
+		_spec.SetField(drivefile.FieldVisibility, field.TypeString, value)
+		_node.Visibility = value
+	}
+	if value, ok := dfc.mutation.Status(); ok {
+		_spec.SetField(drivefile.FieldStatus, field.TypeString, value)
+		_node.Status = value
 	}
 	if nodes := dfc.mutation.ChildrenFileIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

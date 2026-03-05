@@ -32,21 +32,33 @@ func init() {
 	// drivefile.DefaultDeletedAt holds the default value on creation for the deleted_at field.
 	drivefile.DefaultDeletedAt = drivefileDescDeletedAt.Default.(time.Time)
 	// drivefileDescOwnerRef is the schema descriptor for owner_ref field.
-	drivefileDescOwnerRef := drivefileMixinFields0[7].Descriptor()
+	drivefileDescOwnerRef := drivefileMixinFields0[5].Descriptor()
 	// drivefile.OwnerRefValidator is a validator for the "owner_ref" field. It is called by the builders before save.
 	drivefile.OwnerRefValidator = drivefileDescOwnerRef.Validators[0].(func(string) error)
 	// drivefileDescName is the schema descriptor for name field.
-	drivefileDescName := drivefileMixinFields0[9].Descriptor()
+	drivefileDescName := drivefileMixinFields0[7].Descriptor()
 	// drivefile.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	drivefile.NameValidator = drivefileDescName.Validators[0].(func(string) error)
 	// drivefileDescIsFolder is the schema descriptor for is_folder field.
-	drivefileDescIsFolder := drivefileMixinFields0[11].Descriptor()
+	drivefileDescIsFolder := drivefileMixinFields0[9].Descriptor()
 	// drivefile.DefaultIsFolder holds the default value on creation for the is_folder field.
 	drivefile.DefaultIsFolder = drivefileDescIsFolder.Default.(bool)
 	// drivefileDescSize is the schema descriptor for size field.
-	drivefileDescSize := drivefileMixinFields0[12].Descriptor()
+	drivefileDescSize := drivefileMixinFields0[10].Descriptor()
 	// drivefile.SizeValidator is a validator for the "size" field. It is called by the builders before save.
 	drivefile.SizeValidator = drivefileDescSize.Validators[0].(func(int64) error)
+	// drivefileDescVisibility is the schema descriptor for visibility field.
+	drivefileDescVisibility := drivefileMixinFields0[13].Descriptor()
+	// drivefile.DefaultVisibility holds the default value on creation for the visibility field.
+	drivefile.DefaultVisibility = drivefileDescVisibility.Default.(string)
+	// drivefile.VisibilityValidator is a validator for the "visibility" field. It is called by the builders before save.
+	drivefile.VisibilityValidator = drivefileDescVisibility.Validators[0].(func(string) error)
+	// drivefileDescStatus is the schema descriptor for status field.
+	drivefileDescStatus := drivefileMixinFields0[14].Descriptor()
+	// drivefile.DefaultStatus holds the default value on creation for the status field.
+	drivefile.DefaultStatus = drivefileDescStatus.Default.(string)
+	// drivefile.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	drivefile.StatusValidator = drivefileDescStatus.Validators[0].(func(string) error)
 	drivefileshareMixin := schema.DriveFileShare{}.Mixin()
 	drivefileshareMixinFields0 := drivefileshareMixin[0].Fields()
 	_ = drivefileshareMixinFields0
@@ -61,11 +73,15 @@ func init() {
 	// drivefileshare.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	drivefileshare.DefaultUpdatedAt = drivefileshareDescUpdatedAt.Default.(func() time.Time)
 	// drivefileshareDescFileRef is the schema descriptor for file_ref field.
-	drivefileshareDescFileRef := drivefileshareMixinFields0[6].Descriptor()
+	drivefileshareDescFileRef := drivefileshareMixinFields0[4].Descriptor()
 	// drivefileshare.FileRefValidator is a validator for the "file_ref" field. It is called by the builders before save.
 	drivefileshare.FileRefValidator = drivefileshareDescFileRef.Validators[0].(func(string) error)
+	// drivefileshareDescUserRef is the schema descriptor for user_ref field.
+	drivefileshareDescUserRef := drivefileshareMixinFields0[5].Descriptor()
+	// drivefileshare.UserRefValidator is a validator for the "user_ref" field. It is called by the builders before save.
+	drivefileshare.UserRefValidator = drivefileshareDescUserRef.Validators[0].(func(string) error)
 	// drivefileshareDescPermission is the schema descriptor for permission field.
-	drivefileshareDescPermission := drivefileshareMixinFields0[8].Descriptor()
+	drivefileshareDescPermission := drivefileshareMixinFields0[6].Descriptor()
 	// drivefileshare.DefaultPermission holds the default value on creation for the permission field.
 	drivefileshare.DefaultPermission = drivefileshareDescPermission.Default.(string)
 }

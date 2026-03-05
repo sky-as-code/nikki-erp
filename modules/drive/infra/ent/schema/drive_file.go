@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"entgo.io/ent/schema/mixin"
+	"github.com/sky-as-code/nikki-erp/modules/drive/enum"
 )
 
 type DriveFileMixin struct {
@@ -34,10 +35,6 @@ func (DriveFileMixin) Fields() []ent.Field {
 		field.Time("deleted_at").
 			Default(time.Now()),
 
-		field.String("scope_type"),
-
-		field.String("scope_ref"),
-
 		field.String("owner_ref").
 			NotEmpty(),
 
@@ -60,7 +57,13 @@ func (DriveFileMixin) Fields() []ent.Field {
 
 		field.String("storage"),
 
-		field.String("visiblity"),
+		field.String("visibility").
+			Default(enum.DriveFileVisibilityName[enum.DriveFileVisibilityOwner]).
+			NotEmpty(),
+
+		field.String("status").
+			Default(enum.DriveFileStatusName[enum.DriveFileStatusDefault]).
+			NotEmpty(),
 	}
 }
 
@@ -89,9 +92,14 @@ func (DriveFile) Edges() []ent.Edge {
 
 func (DriveFile) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("scope_ref", "parent_file_ref", "is_folder", "name").Unique(),
-		index.Fields("scope_ref", "owner_ref", "parent_file_ref").Unique(),
-		index.Fields("deleted_at"),
+		index.Fields("owner_ref", "parent_file_ref", "is_folder", "name").Unique().
+			Annotations(entsql.IndexWhere("parent_file_ref is NOT NULL")),
+
+		index.Fields("owner_ref", "is_folder", "name").Unique(),
+
+		index.Fields("parent_file_ref"),
+
+		index.Fields("status"),
 	}
 }
 

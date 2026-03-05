@@ -39,8 +39,6 @@ type DriveFileMutation struct {
 	created_at               *time.Time
 	updated_at               *time.Time
 	deleted_at               *time.Time
-	scope_type               *string
-	scope_ref                *string
 	owner_ref                *string
 	name                     *string
 	mime                     *string
@@ -49,7 +47,8 @@ type DriveFileMutation struct {
 	addsize                  *int64
 	_path                    *string
 	storage                  *string
-	visiblity                *string
+	visibility               *string
+	status                   *string
 	clearedFields            map[string]struct{}
 	children_file            map[string]struct{}
 	removedchildren_file     map[string]struct{}
@@ -310,78 +309,6 @@ func (m *DriveFileMutation) OldDeletedAt(ctx context.Context) (v time.Time, err 
 // ResetDeletedAt resets all changes to the "deleted_at" field.
 func (m *DriveFileMutation) ResetDeletedAt() {
 	m.deleted_at = nil
-}
-
-// SetScopeType sets the "scope_type" field.
-func (m *DriveFileMutation) SetScopeType(s string) {
-	m.scope_type = &s
-}
-
-// ScopeType returns the value of the "scope_type" field in the mutation.
-func (m *DriveFileMutation) ScopeType() (r string, exists bool) {
-	v := m.scope_type
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldScopeType returns the old "scope_type" field's value of the DriveFile entity.
-// If the DriveFile object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DriveFileMutation) OldScopeType(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldScopeType is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldScopeType requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldScopeType: %w", err)
-	}
-	return oldValue.ScopeType, nil
-}
-
-// ResetScopeType resets all changes to the "scope_type" field.
-func (m *DriveFileMutation) ResetScopeType() {
-	m.scope_type = nil
-}
-
-// SetScopeRef sets the "scope_ref" field.
-func (m *DriveFileMutation) SetScopeRef(s string) {
-	m.scope_ref = &s
-}
-
-// ScopeRef returns the value of the "scope_ref" field in the mutation.
-func (m *DriveFileMutation) ScopeRef() (r string, exists bool) {
-	v := m.scope_ref
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldScopeRef returns the old "scope_ref" field's value of the DriveFile entity.
-// If the DriveFile object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DriveFileMutation) OldScopeRef(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldScopeRef is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldScopeRef requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldScopeRef: %w", err)
-	}
-	return oldValue.ScopeRef, nil
-}
-
-// ResetScopeRef resets all changes to the "scope_ref" field.
-func (m *DriveFileMutation) ResetScopeRef() {
-	m.scope_ref = nil
 }
 
 // SetOwnerRef sets the "owner_ref" field.
@@ -705,40 +632,76 @@ func (m *DriveFileMutation) ResetStorage() {
 	m.storage = nil
 }
 
-// SetVisiblity sets the "visiblity" field.
-func (m *DriveFileMutation) SetVisiblity(s string) {
-	m.visiblity = &s
+// SetVisibility sets the "visibility" field.
+func (m *DriveFileMutation) SetVisibility(s string) {
+	m.visibility = &s
 }
 
-// Visiblity returns the value of the "visiblity" field in the mutation.
-func (m *DriveFileMutation) Visiblity() (r string, exists bool) {
-	v := m.visiblity
+// Visibility returns the value of the "visibility" field in the mutation.
+func (m *DriveFileMutation) Visibility() (r string, exists bool) {
+	v := m.visibility
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldVisiblity returns the old "visiblity" field's value of the DriveFile entity.
+// OldVisibility returns the old "visibility" field's value of the DriveFile entity.
 // If the DriveFile object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DriveFileMutation) OldVisiblity(ctx context.Context) (v string, err error) {
+func (m *DriveFileMutation) OldVisibility(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldVisiblity is only allowed on UpdateOne operations")
+		return v, errors.New("OldVisibility is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldVisiblity requires an ID field in the mutation")
+		return v, errors.New("OldVisibility requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldVisiblity: %w", err)
+		return v, fmt.Errorf("querying old value for OldVisibility: %w", err)
 	}
-	return oldValue.Visiblity, nil
+	return oldValue.Visibility, nil
 }
 
-// ResetVisiblity resets all changes to the "visiblity" field.
-func (m *DriveFileMutation) ResetVisiblity() {
-	m.visiblity = nil
+// ResetVisibility resets all changes to the "visibility" field.
+func (m *DriveFileMutation) ResetVisibility() {
+	m.visibility = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *DriveFileMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *DriveFileMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the DriveFile entity.
+// If the DriveFile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DriveFileMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *DriveFileMutation) ResetStatus() {
+	m.status = nil
 }
 
 // AddChildrenFileIDs adds the "children_file" edge to the DriveFile entity by ids.
@@ -923,7 +886,7 @@ func (m *DriveFileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DriveFileMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 14)
 	if m.etag != nil {
 		fields = append(fields, drivefile.FieldEtag)
 	}
@@ -935,12 +898,6 @@ func (m *DriveFileMutation) Fields() []string {
 	}
 	if m.deleted_at != nil {
 		fields = append(fields, drivefile.FieldDeletedAt)
-	}
-	if m.scope_type != nil {
-		fields = append(fields, drivefile.FieldScopeType)
-	}
-	if m.scope_ref != nil {
-		fields = append(fields, drivefile.FieldScopeRef)
 	}
 	if m.owner_ref != nil {
 		fields = append(fields, drivefile.FieldOwnerRef)
@@ -966,8 +923,11 @@ func (m *DriveFileMutation) Fields() []string {
 	if m.storage != nil {
 		fields = append(fields, drivefile.FieldStorage)
 	}
-	if m.visiblity != nil {
-		fields = append(fields, drivefile.FieldVisiblity)
+	if m.visibility != nil {
+		fields = append(fields, drivefile.FieldVisibility)
+	}
+	if m.status != nil {
+		fields = append(fields, drivefile.FieldStatus)
 	}
 	return fields
 }
@@ -985,10 +945,6 @@ func (m *DriveFileMutation) Field(name string) (ent.Value, bool) {
 		return m.UpdatedAt()
 	case drivefile.FieldDeletedAt:
 		return m.DeletedAt()
-	case drivefile.FieldScopeType:
-		return m.ScopeType()
-	case drivefile.FieldScopeRef:
-		return m.ScopeRef()
 	case drivefile.FieldOwnerRef:
 		return m.OwnerRef()
 	case drivefile.FieldParentFileRef:
@@ -1005,8 +961,10 @@ func (m *DriveFileMutation) Field(name string) (ent.Value, bool) {
 		return m.Path()
 	case drivefile.FieldStorage:
 		return m.Storage()
-	case drivefile.FieldVisiblity:
-		return m.Visiblity()
+	case drivefile.FieldVisibility:
+		return m.Visibility()
+	case drivefile.FieldStatus:
+		return m.Status()
 	}
 	return nil, false
 }
@@ -1024,10 +982,6 @@ func (m *DriveFileMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldUpdatedAt(ctx)
 	case drivefile.FieldDeletedAt:
 		return m.OldDeletedAt(ctx)
-	case drivefile.FieldScopeType:
-		return m.OldScopeType(ctx)
-	case drivefile.FieldScopeRef:
-		return m.OldScopeRef(ctx)
 	case drivefile.FieldOwnerRef:
 		return m.OldOwnerRef(ctx)
 	case drivefile.FieldParentFileRef:
@@ -1044,8 +998,10 @@ func (m *DriveFileMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldPath(ctx)
 	case drivefile.FieldStorage:
 		return m.OldStorage(ctx)
-	case drivefile.FieldVisiblity:
-		return m.OldVisiblity(ctx)
+	case drivefile.FieldVisibility:
+		return m.OldVisibility(ctx)
+	case drivefile.FieldStatus:
+		return m.OldStatus(ctx)
 	}
 	return nil, fmt.Errorf("unknown DriveFile field %s", name)
 }
@@ -1082,20 +1038,6 @@ func (m *DriveFileMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDeletedAt(v)
-		return nil
-	case drivefile.FieldScopeType:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetScopeType(v)
-		return nil
-	case drivefile.FieldScopeRef:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetScopeRef(v)
 		return nil
 	case drivefile.FieldOwnerRef:
 		v, ok := value.(string)
@@ -1153,12 +1095,19 @@ func (m *DriveFileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetStorage(v)
 		return nil
-	case drivefile.FieldVisiblity:
+	case drivefile.FieldVisibility:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetVisiblity(v)
+		m.SetVisibility(v)
+		return nil
+	case drivefile.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
 		return nil
 	}
 	return fmt.Errorf("unknown DriveFile field %s", name)
@@ -1245,12 +1194,6 @@ func (m *DriveFileMutation) ResetField(name string) error {
 	case drivefile.FieldDeletedAt:
 		m.ResetDeletedAt()
 		return nil
-	case drivefile.FieldScopeType:
-		m.ResetScopeType()
-		return nil
-	case drivefile.FieldScopeRef:
-		m.ResetScopeRef()
-		return nil
 	case drivefile.FieldOwnerRef:
 		m.ResetOwnerRef()
 		return nil
@@ -1275,8 +1218,11 @@ func (m *DriveFileMutation) ResetField(name string) error {
 	case drivefile.FieldStorage:
 		m.ResetStorage()
 		return nil
-	case drivefile.FieldVisiblity:
-		m.ResetVisiblity()
+	case drivefile.FieldVisibility:
+		m.ResetVisibility()
+		return nil
+	case drivefile.FieldStatus:
+		m.ResetStatus()
 		return nil
 	}
 	return fmt.Errorf("unknown DriveFile field %s", name)
@@ -1419,8 +1365,6 @@ type DriveFileShareMutation struct {
 	etag               *string
 	created_at         *time.Time
 	updated_at         *time.Time
-	scope_type         *string
-	scope_ref          *string
 	user_ref           *string
 	permission         *string
 	clearedFields      map[string]struct{}
@@ -1643,78 +1587,6 @@ func (m *DriveFileShareMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
-// SetScopeType sets the "scope_type" field.
-func (m *DriveFileShareMutation) SetScopeType(s string) {
-	m.scope_type = &s
-}
-
-// ScopeType returns the value of the "scope_type" field in the mutation.
-func (m *DriveFileShareMutation) ScopeType() (r string, exists bool) {
-	v := m.scope_type
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldScopeType returns the old "scope_type" field's value of the DriveFileShare entity.
-// If the DriveFileShare object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DriveFileShareMutation) OldScopeType(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldScopeType is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldScopeType requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldScopeType: %w", err)
-	}
-	return oldValue.ScopeType, nil
-}
-
-// ResetScopeType resets all changes to the "scope_type" field.
-func (m *DriveFileShareMutation) ResetScopeType() {
-	m.scope_type = nil
-}
-
-// SetScopeRef sets the "scope_ref" field.
-func (m *DriveFileShareMutation) SetScopeRef(s string) {
-	m.scope_ref = &s
-}
-
-// ScopeRef returns the value of the "scope_ref" field in the mutation.
-func (m *DriveFileShareMutation) ScopeRef() (r string, exists bool) {
-	v := m.scope_ref
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldScopeRef returns the old "scope_ref" field's value of the DriveFileShare entity.
-// If the DriveFileShare object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DriveFileShareMutation) OldScopeRef(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldScopeRef is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldScopeRef requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldScopeRef: %w", err)
-	}
-	return oldValue.ScopeRef, nil
-}
-
-// ResetScopeRef resets all changes to the "scope_ref" field.
-func (m *DriveFileShareMutation) ResetScopeRef() {
-	m.scope_ref = nil
-}
-
 // SetFileRef sets the "file_ref" field.
 func (m *DriveFileShareMutation) SetFileRef(s string) {
 	m.drive_files = &s
@@ -1897,7 +1769,7 @@ func (m *DriveFileShareMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DriveFileShareMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 6)
 	if m.etag != nil {
 		fields = append(fields, drivefileshare.FieldEtag)
 	}
@@ -1906,12 +1778,6 @@ func (m *DriveFileShareMutation) Fields() []string {
 	}
 	if m.updated_at != nil {
 		fields = append(fields, drivefileshare.FieldUpdatedAt)
-	}
-	if m.scope_type != nil {
-		fields = append(fields, drivefileshare.FieldScopeType)
-	}
-	if m.scope_ref != nil {
-		fields = append(fields, drivefileshare.FieldScopeRef)
 	}
 	if m.drive_files != nil {
 		fields = append(fields, drivefileshare.FieldFileRef)
@@ -1936,10 +1802,6 @@ func (m *DriveFileShareMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case drivefileshare.FieldUpdatedAt:
 		return m.UpdatedAt()
-	case drivefileshare.FieldScopeType:
-		return m.ScopeType()
-	case drivefileshare.FieldScopeRef:
-		return m.ScopeRef()
 	case drivefileshare.FieldFileRef:
 		return m.FileRef()
 	case drivefileshare.FieldUserRef:
@@ -1961,10 +1823,6 @@ func (m *DriveFileShareMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldCreatedAt(ctx)
 	case drivefileshare.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
-	case drivefileshare.FieldScopeType:
-		return m.OldScopeType(ctx)
-	case drivefileshare.FieldScopeRef:
-		return m.OldScopeRef(ctx)
 	case drivefileshare.FieldFileRef:
 		return m.OldFileRef(ctx)
 	case drivefileshare.FieldUserRef:
@@ -2000,20 +1858,6 @@ func (m *DriveFileShareMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdatedAt(v)
-		return nil
-	case drivefileshare.FieldScopeType:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetScopeType(v)
-		return nil
-	case drivefileshare.FieldScopeRef:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetScopeRef(v)
 		return nil
 	case drivefileshare.FieldFileRef:
 		v, ok := value.(string)
@@ -2093,12 +1937,6 @@ func (m *DriveFileShareMutation) ResetField(name string) error {
 		return nil
 	case drivefileshare.FieldUpdatedAt:
 		m.ResetUpdatedAt()
-		return nil
-	case drivefileshare.FieldScopeType:
-		m.ResetScopeType()
-		return nil
-	case drivefileshare.FieldScopeRef:
-		m.ResetScopeRef()
 		return nil
 	case drivefileshare.FieldFileRef:
 		m.ResetFileRef()

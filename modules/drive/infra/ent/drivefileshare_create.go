@@ -55,18 +55,6 @@ func (dfsc *DriveFileShareCreate) SetNillableUpdatedAt(t *time.Time) *DriveFileS
 	return dfsc
 }
 
-// SetScopeType sets the "scope_type" field.
-func (dfsc *DriveFileShareCreate) SetScopeType(s string) *DriveFileShareCreate {
-	dfsc.mutation.SetScopeType(s)
-	return dfsc
-}
-
-// SetScopeRef sets the "scope_ref" field.
-func (dfsc *DriveFileShareCreate) SetScopeRef(s string) *DriveFileShareCreate {
-	dfsc.mutation.SetScopeRef(s)
-	return dfsc
-}
-
 // SetFileRef sets the "file_ref" field.
 func (dfsc *DriveFileShareCreate) SetFileRef(s string) *DriveFileShareCreate {
 	dfsc.mutation.SetFileRef(s)
@@ -170,12 +158,6 @@ func (dfsc *DriveFileShareCreate) check() error {
 	if _, ok := dfsc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "DriveFileShare.updated_at"`)}
 	}
-	if _, ok := dfsc.mutation.ScopeType(); !ok {
-		return &ValidationError{Name: "scope_type", err: errors.New(`ent: missing required field "DriveFileShare.scope_type"`)}
-	}
-	if _, ok := dfsc.mutation.ScopeRef(); !ok {
-		return &ValidationError{Name: "scope_ref", err: errors.New(`ent: missing required field "DriveFileShare.scope_ref"`)}
-	}
 	if _, ok := dfsc.mutation.FileRef(); !ok {
 		return &ValidationError{Name: "file_ref", err: errors.New(`ent: missing required field "DriveFileShare.file_ref"`)}
 	}
@@ -186,6 +168,11 @@ func (dfsc *DriveFileShareCreate) check() error {
 	}
 	if _, ok := dfsc.mutation.UserRef(); !ok {
 		return &ValidationError{Name: "user_ref", err: errors.New(`ent: missing required field "DriveFileShare.user_ref"`)}
+	}
+	if v, ok := dfsc.mutation.UserRef(); ok {
+		if err := drivefileshare.UserRefValidator(v); err != nil {
+			return &ValidationError{Name: "user_ref", err: fmt.Errorf(`ent: validator failed for field "DriveFileShare.user_ref": %w`, err)}
+		}
 	}
 	if _, ok := dfsc.mutation.Permission(); !ok {
 		return &ValidationError{Name: "permission", err: errors.New(`ent: missing required field "DriveFileShare.permission"`)}
@@ -239,14 +226,6 @@ func (dfsc *DriveFileShareCreate) createSpec() (*DriveFileShare, *sqlgraph.Creat
 	if value, ok := dfsc.mutation.UpdatedAt(); ok {
 		_spec.SetField(drivefileshare.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
-	}
-	if value, ok := dfsc.mutation.ScopeType(); ok {
-		_spec.SetField(drivefileshare.FieldScopeType, field.TypeString, value)
-		_node.ScopeType = value
-	}
-	if value, ok := dfsc.mutation.ScopeRef(); ok {
-		_spec.SetField(drivefileshare.FieldScopeRef, field.TypeString, value)
-		_node.ScopeRef = value
 	}
 	if value, ok := dfsc.mutation.UserRef(); ok {
 		_spec.SetField(drivefileshare.FieldUserRef, field.TypeString, value)

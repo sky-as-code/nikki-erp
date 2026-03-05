@@ -25,10 +25,6 @@ type DriveFile struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
 	DeletedAt time.Time `json:"deleted_at,omitempty"`
-	// ScopeType holds the value of the "scope_type" field.
-	ScopeType string `json:"scope_type,omitempty"`
-	// ScopeRef holds the value of the "scope_ref" field.
-	ScopeRef string `json:"scope_ref,omitempty"`
 	// OwnerRef holds the value of the "owner_ref" field.
 	OwnerRef string `json:"owner_ref,omitempty"`
 	// ParentFileRef holds the value of the "parent_file_ref" field.
@@ -45,8 +41,10 @@ type DriveFile struct {
 	Path string `json:"path,omitempty"`
 	// Storage holds the value of the "storage" field.
 	Storage string `json:"storage,omitempty"`
-	// Visiblity holds the value of the "visiblity" field.
-	Visiblity string `json:"visiblity,omitempty"`
+	// Visibility holds the value of the "visibility" field.
+	Visibility string `json:"visibility,omitempty"`
+	// Status holds the value of the "status" field.
+	Status string `json:"status,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DriveFileQuery when eager-loading is set.
 	Edges        DriveFileEdges `json:"edges"`
@@ -104,7 +102,7 @@ func (*DriveFile) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case drivefile.FieldSize:
 			values[i] = new(sql.NullInt64)
-		case drivefile.FieldID, drivefile.FieldEtag, drivefile.FieldScopeType, drivefile.FieldScopeRef, drivefile.FieldOwnerRef, drivefile.FieldParentFileRef, drivefile.FieldName, drivefile.FieldMime, drivefile.FieldPath, drivefile.FieldStorage, drivefile.FieldVisiblity:
+		case drivefile.FieldID, drivefile.FieldEtag, drivefile.FieldOwnerRef, drivefile.FieldParentFileRef, drivefile.FieldName, drivefile.FieldMime, drivefile.FieldPath, drivefile.FieldStorage, drivefile.FieldVisibility, drivefile.FieldStatus:
 			values[i] = new(sql.NullString)
 		case drivefile.FieldCreatedAt, drivefile.FieldUpdatedAt, drivefile.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -152,18 +150,6 @@ func (df *DriveFile) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
 				df.DeletedAt = value.Time
-			}
-		case drivefile.FieldScopeType:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field scope_type", values[i])
-			} else if value.Valid {
-				df.ScopeType = value.String
-			}
-		case drivefile.FieldScopeRef:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field scope_ref", values[i])
-			} else if value.Valid {
-				df.ScopeRef = value.String
 			}
 		case drivefile.FieldOwnerRef:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -214,11 +200,17 @@ func (df *DriveFile) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				df.Storage = value.String
 			}
-		case drivefile.FieldVisiblity:
+		case drivefile.FieldVisibility:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field visiblity", values[i])
+				return fmt.Errorf("unexpected type %T for field visibility", values[i])
 			} else if value.Valid {
-				df.Visiblity = value.String
+				df.Visibility = value.String
+			}
+		case drivefile.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status", values[i])
+			} else if value.Valid {
+				df.Status = value.String
 			}
 		default:
 			df.selectValues.Set(columns[i], values[i])
@@ -283,12 +275,6 @@ func (df *DriveFile) String() string {
 	builder.WriteString("deleted_at=")
 	builder.WriteString(df.DeletedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("scope_type=")
-	builder.WriteString(df.ScopeType)
-	builder.WriteString(", ")
-	builder.WriteString("scope_ref=")
-	builder.WriteString(df.ScopeRef)
-	builder.WriteString(", ")
 	builder.WriteString("owner_ref=")
 	builder.WriteString(df.OwnerRef)
 	builder.WriteString(", ")
@@ -315,8 +301,11 @@ func (df *DriveFile) String() string {
 	builder.WriteString("storage=")
 	builder.WriteString(df.Storage)
 	builder.WriteString(", ")
-	builder.WriteString("visiblity=")
-	builder.WriteString(df.Visiblity)
+	builder.WriteString("visibility=")
+	builder.WriteString(df.Visibility)
+	builder.WriteString(", ")
+	builder.WriteString("status=")
+	builder.WriteString(df.Status)
 	builder.WriteByte(')')
 	return builder.String()
 }

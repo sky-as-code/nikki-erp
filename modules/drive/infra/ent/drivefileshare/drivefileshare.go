@@ -20,10 +20,6 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// FieldScopeType holds the string denoting the scope_type field in the database.
-	FieldScopeType = "scope_type"
-	// FieldScopeRef holds the string denoting the scope_ref field in the database.
-	FieldScopeRef = "scope_ref"
 	// FieldFileRef holds the string denoting the file_ref field in the database.
 	FieldFileRef = "file_ref"
 	// FieldUserRef holds the string denoting the user_ref field in the database.
@@ -49,8 +45,6 @@ var Columns = []string{
 	FieldEtag,
 	FieldCreatedAt,
 	FieldUpdatedAt,
-	FieldScopeType,
-	FieldScopeRef,
 	FieldFileRef,
 	FieldUserRef,
 	FieldPermission,
@@ -73,6 +67,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// FileRefValidator is a validator for the "file_ref" field. It is called by the builders before save.
 	FileRefValidator func(string) error
+	// UserRefValidator is a validator for the "user_ref" field. It is called by the builders before save.
+	UserRefValidator func(string) error
 	// DefaultPermission holds the default value on creation for the "permission" field.
 	DefaultPermission string
 )
@@ -98,16 +94,6 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
-}
-
-// ByScopeType orders the results by the scope_type field.
-func ByScopeType(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldScopeType, opts...).ToFunc()
-}
-
-// ByScopeRef orders the results by the scope_ref field.
-func ByScopeRef(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldScopeRef, opts...).ToFunc()
 }
 
 // ByFileRef orders the results by the file_ref field.

@@ -71,34 +71,6 @@ func (dfu *DriveFileUpdate) SetNillableDeletedAt(t *time.Time) *DriveFileUpdate 
 	return dfu
 }
 
-// SetScopeType sets the "scope_type" field.
-func (dfu *DriveFileUpdate) SetScopeType(s string) *DriveFileUpdate {
-	dfu.mutation.SetScopeType(s)
-	return dfu
-}
-
-// SetNillableScopeType sets the "scope_type" field if the given value is not nil.
-func (dfu *DriveFileUpdate) SetNillableScopeType(s *string) *DriveFileUpdate {
-	if s != nil {
-		dfu.SetScopeType(*s)
-	}
-	return dfu
-}
-
-// SetScopeRef sets the "scope_ref" field.
-func (dfu *DriveFileUpdate) SetScopeRef(s string) *DriveFileUpdate {
-	dfu.mutation.SetScopeRef(s)
-	return dfu
-}
-
-// SetNillableScopeRef sets the "scope_ref" field if the given value is not nil.
-func (dfu *DriveFileUpdate) SetNillableScopeRef(s *string) *DriveFileUpdate {
-	if s != nil {
-		dfu.SetScopeRef(*s)
-	}
-	return dfu
-}
-
 // SetOwnerRef sets the "owner_ref" field.
 func (dfu *DriveFileUpdate) SetOwnerRef(s string) *DriveFileUpdate {
 	dfu.mutation.SetOwnerRef(s)
@@ -224,16 +196,30 @@ func (dfu *DriveFileUpdate) SetNillableStorage(s *string) *DriveFileUpdate {
 	return dfu
 }
 
-// SetVisiblity sets the "visiblity" field.
-func (dfu *DriveFileUpdate) SetVisiblity(s string) *DriveFileUpdate {
-	dfu.mutation.SetVisiblity(s)
+// SetVisibility sets the "visibility" field.
+func (dfu *DriveFileUpdate) SetVisibility(s string) *DriveFileUpdate {
+	dfu.mutation.SetVisibility(s)
 	return dfu
 }
 
-// SetNillableVisiblity sets the "visiblity" field if the given value is not nil.
-func (dfu *DriveFileUpdate) SetNillableVisiblity(s *string) *DriveFileUpdate {
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (dfu *DriveFileUpdate) SetNillableVisibility(s *string) *DriveFileUpdate {
 	if s != nil {
-		dfu.SetVisiblity(*s)
+		dfu.SetVisibility(*s)
+	}
+	return dfu
+}
+
+// SetStatus sets the "status" field.
+func (dfu *DriveFileUpdate) SetStatus(s string) *DriveFileUpdate {
+	dfu.mutation.SetStatus(s)
+	return dfu
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (dfu *DriveFileUpdate) SetNillableStatus(s *string) *DriveFileUpdate {
+	if s != nil {
+		dfu.SetStatus(*s)
 	}
 	return dfu
 }
@@ -384,6 +370,16 @@ func (dfu *DriveFileUpdate) check() error {
 			return &ValidationError{Name: "size", err: fmt.Errorf(`ent: validator failed for field "DriveFile.size": %w`, err)}
 		}
 	}
+	if v, ok := dfu.mutation.Visibility(); ok {
+		if err := drivefile.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "DriveFile.visibility": %w`, err)}
+		}
+	}
+	if v, ok := dfu.mutation.Status(); ok {
+		if err := drivefile.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "DriveFile.status": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -407,12 +403,6 @@ func (dfu *DriveFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := dfu.mutation.DeletedAt(); ok {
 		_spec.SetField(drivefile.FieldDeletedAt, field.TypeTime, value)
-	}
-	if value, ok := dfu.mutation.ScopeType(); ok {
-		_spec.SetField(drivefile.FieldScopeType, field.TypeString, value)
-	}
-	if value, ok := dfu.mutation.ScopeRef(); ok {
-		_spec.SetField(drivefile.FieldScopeRef, field.TypeString, value)
 	}
 	if value, ok := dfu.mutation.OwnerRef(); ok {
 		_spec.SetField(drivefile.FieldOwnerRef, field.TypeString, value)
@@ -438,8 +428,11 @@ func (dfu *DriveFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := dfu.mutation.Storage(); ok {
 		_spec.SetField(drivefile.FieldStorage, field.TypeString, value)
 	}
-	if value, ok := dfu.mutation.Visiblity(); ok {
-		_spec.SetField(drivefile.FieldVisiblity, field.TypeString, value)
+	if value, ok := dfu.mutation.Visibility(); ok {
+		_spec.SetField(drivefile.FieldVisibility, field.TypeString, value)
+	}
+	if value, ok := dfu.mutation.Status(); ok {
+		_spec.SetField(drivefile.FieldStatus, field.TypeString, value)
 	}
 	if dfu.mutation.ChildrenFileCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -622,34 +615,6 @@ func (dfuo *DriveFileUpdateOne) SetNillableDeletedAt(t *time.Time) *DriveFileUpd
 	return dfuo
 }
 
-// SetScopeType sets the "scope_type" field.
-func (dfuo *DriveFileUpdateOne) SetScopeType(s string) *DriveFileUpdateOne {
-	dfuo.mutation.SetScopeType(s)
-	return dfuo
-}
-
-// SetNillableScopeType sets the "scope_type" field if the given value is not nil.
-func (dfuo *DriveFileUpdateOne) SetNillableScopeType(s *string) *DriveFileUpdateOne {
-	if s != nil {
-		dfuo.SetScopeType(*s)
-	}
-	return dfuo
-}
-
-// SetScopeRef sets the "scope_ref" field.
-func (dfuo *DriveFileUpdateOne) SetScopeRef(s string) *DriveFileUpdateOne {
-	dfuo.mutation.SetScopeRef(s)
-	return dfuo
-}
-
-// SetNillableScopeRef sets the "scope_ref" field if the given value is not nil.
-func (dfuo *DriveFileUpdateOne) SetNillableScopeRef(s *string) *DriveFileUpdateOne {
-	if s != nil {
-		dfuo.SetScopeRef(*s)
-	}
-	return dfuo
-}
-
 // SetOwnerRef sets the "owner_ref" field.
 func (dfuo *DriveFileUpdateOne) SetOwnerRef(s string) *DriveFileUpdateOne {
 	dfuo.mutation.SetOwnerRef(s)
@@ -775,16 +740,30 @@ func (dfuo *DriveFileUpdateOne) SetNillableStorage(s *string) *DriveFileUpdateOn
 	return dfuo
 }
 
-// SetVisiblity sets the "visiblity" field.
-func (dfuo *DriveFileUpdateOne) SetVisiblity(s string) *DriveFileUpdateOne {
-	dfuo.mutation.SetVisiblity(s)
+// SetVisibility sets the "visibility" field.
+func (dfuo *DriveFileUpdateOne) SetVisibility(s string) *DriveFileUpdateOne {
+	dfuo.mutation.SetVisibility(s)
 	return dfuo
 }
 
-// SetNillableVisiblity sets the "visiblity" field if the given value is not nil.
-func (dfuo *DriveFileUpdateOne) SetNillableVisiblity(s *string) *DriveFileUpdateOne {
+// SetNillableVisibility sets the "visibility" field if the given value is not nil.
+func (dfuo *DriveFileUpdateOne) SetNillableVisibility(s *string) *DriveFileUpdateOne {
 	if s != nil {
-		dfuo.SetVisiblity(*s)
+		dfuo.SetVisibility(*s)
+	}
+	return dfuo
+}
+
+// SetStatus sets the "status" field.
+func (dfuo *DriveFileUpdateOne) SetStatus(s string) *DriveFileUpdateOne {
+	dfuo.mutation.SetStatus(s)
+	return dfuo
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (dfuo *DriveFileUpdateOne) SetNillableStatus(s *string) *DriveFileUpdateOne {
+	if s != nil {
+		dfuo.SetStatus(*s)
 	}
 	return dfuo
 }
@@ -948,6 +927,16 @@ func (dfuo *DriveFileUpdateOne) check() error {
 			return &ValidationError{Name: "size", err: fmt.Errorf(`ent: validator failed for field "DriveFile.size": %w`, err)}
 		}
 	}
+	if v, ok := dfuo.mutation.Visibility(); ok {
+		if err := drivefile.VisibilityValidator(v); err != nil {
+			return &ValidationError{Name: "visibility", err: fmt.Errorf(`ent: validator failed for field "DriveFile.visibility": %w`, err)}
+		}
+	}
+	if v, ok := dfuo.mutation.Status(); ok {
+		if err := drivefile.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "DriveFile.status": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -989,12 +978,6 @@ func (dfuo *DriveFileUpdateOne) sqlSave(ctx context.Context) (_node *DriveFile, 
 	if value, ok := dfuo.mutation.DeletedAt(); ok {
 		_spec.SetField(drivefile.FieldDeletedAt, field.TypeTime, value)
 	}
-	if value, ok := dfuo.mutation.ScopeType(); ok {
-		_spec.SetField(drivefile.FieldScopeType, field.TypeString, value)
-	}
-	if value, ok := dfuo.mutation.ScopeRef(); ok {
-		_spec.SetField(drivefile.FieldScopeRef, field.TypeString, value)
-	}
 	if value, ok := dfuo.mutation.OwnerRef(); ok {
 		_spec.SetField(drivefile.FieldOwnerRef, field.TypeString, value)
 	}
@@ -1019,8 +1002,11 @@ func (dfuo *DriveFileUpdateOne) sqlSave(ctx context.Context) (_node *DriveFile, 
 	if value, ok := dfuo.mutation.Storage(); ok {
 		_spec.SetField(drivefile.FieldStorage, field.TypeString, value)
 	}
-	if value, ok := dfuo.mutation.Visiblity(); ok {
-		_spec.SetField(drivefile.FieldVisiblity, field.TypeString, value)
+	if value, ok := dfuo.mutation.Visibility(); ok {
+		_spec.SetField(drivefile.FieldVisibility, field.TypeString, value)
+	}
+	if value, ok := dfuo.mutation.Status(); ok {
+		_spec.SetField(drivefile.FieldStatus, field.TypeString, value)
 	}
 	if dfuo.mutation.ChildrenFileCleared() {
 		edge := &sqlgraph.EdgeSpec{

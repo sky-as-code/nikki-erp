@@ -24,10 +24,6 @@ type DriveFileShare struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	// ScopeType holds the value of the "scope_type" field.
-	ScopeType string `json:"scope_type,omitempty"`
-	// ScopeRef holds the value of the "scope_ref" field.
-	ScopeRef string `json:"scope_ref,omitempty"`
 	// FileRef holds the value of the "file_ref" field.
 	FileRef string `json:"file_ref,omitempty"`
 	// UserRef holds the value of the "user_ref" field.
@@ -65,7 +61,7 @@ func (*DriveFileShare) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case drivefileshare.FieldID, drivefileshare.FieldEtag, drivefileshare.FieldScopeType, drivefileshare.FieldScopeRef, drivefileshare.FieldFileRef, drivefileshare.FieldUserRef, drivefileshare.FieldPermission:
+		case drivefileshare.FieldID, drivefileshare.FieldEtag, drivefileshare.FieldFileRef, drivefileshare.FieldUserRef, drivefileshare.FieldPermission:
 			values[i] = new(sql.NullString)
 		case drivefileshare.FieldCreatedAt, drivefileshare.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -107,18 +103,6 @@ func (dfs *DriveFileShare) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				dfs.UpdatedAt = value.Time
-			}
-		case drivefileshare.FieldScopeType:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field scope_type", values[i])
-			} else if value.Valid {
-				dfs.ScopeType = value.String
-			}
-		case drivefileshare.FieldScopeRef:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field scope_ref", values[i])
-			} else if value.Valid {
-				dfs.ScopeRef = value.String
 			}
 		case drivefileshare.FieldFileRef:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -187,12 +171,6 @@ func (dfs *DriveFileShare) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("updated_at=")
 	builder.WriteString(dfs.UpdatedAt.Format(time.ANSIC))
-	builder.WriteString(", ")
-	builder.WriteString("scope_type=")
-	builder.WriteString(dfs.ScopeType)
-	builder.WriteString(", ")
-	builder.WriteString("scope_ref=")
-	builder.WriteString(dfs.ScopeRef)
 	builder.WriteString(", ")
 	builder.WriteString("file_ref=")
 	builder.WriteString(dfs.FileRef)
