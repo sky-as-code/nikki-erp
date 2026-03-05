@@ -8,6 +8,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	util "github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/modules/core/cron_job"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
@@ -29,6 +30,16 @@ func main() {
 		})
 		if err != nil {
 			app.logger.Error("failed to start HTTP server", err)
+			os.Exit(1)
+		}
+	}()
+
+	go func() {
+		err := deps.Invoke(func(cronJob *cron_job.CronJob) error {
+			return cronJob.Start()
+		})
+		if err != nil {
+			app.logger.Error("failed to start CronJob server", err)
 			os.Exit(1)
 		}
 	}()

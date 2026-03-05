@@ -5,6 +5,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/drive/adapter"
 	app "github.com/sky-as-code/nikki-erp/modules/drive/app"
 	repo "github.com/sky-as-code/nikki-erp/modules/drive/infra/repository"
 	transport "github.com/sky-as-code/nikki-erp/modules/drive/transports"
@@ -28,8 +29,7 @@ func (*DriveModule) Name() string {
 
 // Deps implements NikkiModule.
 func (*DriveModule) Deps() []string {
-	return []string{
-	}
+	return []string{}
 }
 
 // Version implements NikkiModule.
@@ -40,6 +40,7 @@ func (*DriveModule) Version() semver.SemVer {
 // Init implements NikkiModule.
 func (*DriveModule) Init() error {
 	err := errors.Join(
+		adapter.InitAdapters(),
 		repo.InitRepositories(),
 		app.InitServices(),
 		transport.InitTransport(),

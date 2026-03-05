@@ -8,6 +8,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/cron_job"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/core/enum"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
@@ -54,6 +55,7 @@ func (*CoreModule) Init() error {
 		deps.Register(newCoreClient),
 		deps.Invoke(enum.InitSubModule),
 		deps.Invoke(tag.InitSubModule),
+		deps.Invoke(cron_job.InitSubModule),
 
 		// These submodules expose network APIs
 		deps.Invoke(i18n.InitSubModule),
