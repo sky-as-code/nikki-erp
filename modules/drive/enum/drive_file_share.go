@@ -45,8 +45,8 @@ func (e *DriveFileSharePerm) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (e *DriveFileSharePerm) MarshalJSON() ([]byte, error) {
-	return enum_util.MarshalJSON(e, DriveFileSharePermName)
+func (e DriveFileSharePerm) MarshalJSON() ([]byte, error) {
+	return enum_util.MarshalJSON(&e, DriveFileSharePermName)
 }
 
 func (e DriveFileSharePerm) Value() (driver.Value, error) {

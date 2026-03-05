@@ -11,9 +11,6 @@ type DriveFileShare struct {
 	model.ModelBase     `json:",inline"`
 	model.AuditableBase `json:",inline"`
 
-	ScopeType enum.ScopeType `json:"scope_type"`
-	ScopeRef  model.Id       `json:"scope_ref"`
-
 	FileRef    model.Id                `json:"file_ref"`
 	UserRef    model.Id                `json:"user_ref"`
 	Permission enum.DriveFileSharePerm `json:"permission"`

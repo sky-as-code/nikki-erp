@@ -9,13 +9,24 @@ import (
 )
 
 type DriveFileShareRepository interface {
-	Create(ctx crud.Context, driveFile *domain.DriveFileShare) (*domain.DriveFileShare, error)
-	Update(ctx crud.Context, driveFile *domain.DriveFileShare) (*domain.DriveFileShare, error)
+	Create(ctx crud.Context, share *domain.DriveFileShare) (*domain.DriveFileShare, error)
+	Update(ctx crud.Context, share *domain.DriveFileShare, prevEtag model.Etag) (*domain.DriveFileShare, error)
 	FindById(ctx crud.Context, id model.Id) (*domain.DriveFileShare, error)
+	ListByFileRef(ctx crud.Context, param ListByFileRefParam) (*crud.PagedResult[*domain.DriveFileShare], error)
+	ListByUserRef(ctx crud.Context, userRef model.Id) ([]*domain.DriveFileShare, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[*domain.DriveFileShare], error)
 	DeleteById(ctx crud.Context, id model.Id) (int, error)
 }
 
-type FindByIdParam = GetDriveFileShareByIdQuery
-type SearchParam = SearchDriveFileShareQuery
+type ListByFileRefParam struct {
+	SearchParam
+	FileRef model.Id
+}
+
+type SearchParam struct {
+	Predicate *orm.Predicate
+	Order     []orm.OrderOption
+	Page      int
+	Size      int
+}
