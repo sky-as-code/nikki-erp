@@ -4,7 +4,26 @@ import (
 	"bytes"
 	"fmt"
 	"strconv"
+	"strings"
 )
+
+func UnmarshalText[T ~uint8](data []byte, valueMap map[string]T, nameMap map[T]string) (T, error) {
+	s := strings.TrimSpace(string(data))
+	if s == "" {
+		return 0, nil
+	}
+	if i, err := strconv.ParseUint(s, 10, 8); err == nil {
+		v := T(i)
+		if _, ok := nameMap[v]; ok {
+			return v, nil
+		}
+	}
+	v, ok := valueMap[s]
+	if !ok {
+		return 0, fmt.Errorf("enum '%s' is not registered, must be one of: %v", s, DescriptionFromMap(nameMap))
+	}
+	return v, nil
+}
 
 func UnmarshalJSON[T ~uint8](data []byte, valueMap map[string]T, nameMap map[T]string) (T, error) {
 	data = bytes.TrimSpace(data)
@@ -31,7 +50,7 @@ func UnmarshalJSON[T ~uint8](data []byte, valueMap map[string]T, nameMap map[T]s
 	v, ok := valueMap[string(data)]
 	if !ok {
 		return 0, fmt.Errorf(
-			"enum '%d' is not registered, must be one of: %v",
+			"enum '%s' is not registered, must be one of: %v",
 			data,
 			DescriptionFromMap(nameMap),
 		)
