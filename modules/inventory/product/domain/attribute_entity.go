@@ -22,6 +22,9 @@ type Attribute struct {
 	EnumValue     *[]json.RawMessage `json:"enumValue,omitempty" model:"-"`
 	EnumValueSort *bool              `json:"enumValueSort,omitempty"`
 	GroupId       *model.Id          `json:"groupId,omitempty"`
+
+	AttributeValues []AttributeValue `json:"attributeValues,omitempty" model:"-"`
+	Variants        []Variant        `json:"variant,omitempty" model:"-"`
 }
 
 func (this *Attribute) Validate(forEdit bool) ft.ValidationErrors {

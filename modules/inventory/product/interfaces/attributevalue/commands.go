@@ -51,6 +51,7 @@ var updateAttributeValueCommandType = cqrs.RequestType{
 
 type UpdateAttributeValueCommand struct {
 	Id           model.Id        `param:"id" json:"id"`
+	VariantId    model.Id        `json:"variantId,omitempty"`
 	Etag         model.Etag      `json:"etag"`
 	ValueText    *model.LangJson `json:"valueText,omitempty"`
 	ValueNumber  *float64        `json:"valueNumber,omitempty"`

@@ -111,6 +111,9 @@ var getAttributeByIdQueryType = cqrs.RequestType{
 type GetAttributeByIdQuery struct {
 	Id        model.Id `param:"id" json:"id"`
 	ProductId model.Id `param:"productId" json:"productId"`
+
+	WithAttributeValues bool `query:"withAttributeValues" json:"withAttributeValues"`
+	WithVariants        bool `query:"withVariants" json:"withVariants"`
 }
 
 func (this GetAttributeByIdQuery) Validate() ft.ValidationErrors {
@@ -163,7 +166,9 @@ type SearchAttributesQuery struct {
 	// Filled by service from Graph
 	crud.SearchQuery
 
-	ProductId model.Id `param:"productId" json:"productId"`
+	ProductId     model.Id `param:"productId" json:"productId"`
+	CountValues   bool     `query:"countValues" json:"countValues"`
+	CountVariants bool     `query:"countVariants" json:"countVariants"`
 }
 
 func (this SearchAttributesQuery) CqrsRequestType() cqrs.RequestType {

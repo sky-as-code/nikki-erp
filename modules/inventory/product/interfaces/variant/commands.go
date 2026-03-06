@@ -19,9 +19,10 @@ var createVariantCommandType = cqrs.RequestType{
 
 type CreateVariantCommand struct {
 	ProductId     model.Id                `param:"productId" json:"productId"`
-	Sku           string                  `json:"sku"`
-	Barcode       string                  `json:"barcode,omitempty"`
-	ProposedPrice float64                 `json:"proposedPrice,omitempty"`
+	Name          model.LangJson          `json:"name"`
+	Sku           *string                 `json:"sku"`
+	Barcode       *string                 `json:"barcode,omitempty"`
+	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
 	Status        *string                 `json:"status,omitempty"`
 	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
 }
@@ -51,6 +52,7 @@ type UpdateVariantCommand struct {
 	Id            model.Id                `param:"id" json:"id"`
 	ProductId     model.Id                `param:"productId" json:"productId"`
 	Etag          model.Etag              `json:"etag"`
+	Sku           *string                 `json:"sku,omitempty"`
 	Barcode       *string                 `json:"barcode,omitempty"`
 	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
 	Status        *string                 `json:"status,omitempty"`

@@ -26,6 +26,11 @@ type AttributeDto struct {
 	EnumValue     []interface{}   `json:"enumValue,omitempty"`
 	EnumValueSort *bool           `json:"enumValueSort,omitempty"`
 	GroupId       *string         `json:"groupId,omitempty"`
+	ValuesCount   *int            `json:"valuesCount,omitempty"`
+	VariantsCount *int            `json:"variantsCount,omitempty"`
+
+	AttributeValues []AttributeValueDto `json:"attributeValues,omitempty"`
+	Variants        []VariantDto        `json:"variants,omitempty"`
 }
 
 func (this *AttributeDto) FromAttribute(a domain.Attribute) {
@@ -71,13 +76,44 @@ type SearchAttributesRequest = itAttribute.SearchAttributesQuery
 
 type SearchAttributesResponse httpserver.RestSearchResponse[AttributeDto]
 
-func (this *SearchAttributesResponse) FromResult(result *itAttribute.SearchAttributesResultData) {
+func (this *SearchAttributesResponse) FromResults(result *itAttribute.SearchAttributesResultData) {
 	this.Total = result.Total
 	this.Page = result.Page
 	this.Size = result.Size
 	this.Items = array.Map(result.Items, func(a domain.Attribute) AttributeDto {
 		item := AttributeDto{}
 		item.FromAttribute(a)
+
+		if len(a.AttributeValues) > 0 {
+			count := len(a.AttributeValues)
+			item.ValuesCount = &count
+		}
+
+		if len(a.Variants) > 0 {
+			count := len(a.Variants)
+			item.VariantsCount = &count
+		}
+
 		return item
 	})
+}
+
+func (this *AttributeDto) FromResult(a domain.Attribute) {
+	this.FromAttribute(a)
+
+	if len(a.AttributeValues) > 0 {
+		this.AttributeValues = array.Map(a.AttributeValues, func(av domain.AttributeValue) AttributeValueDto {
+			avDto := AttributeValueDto{}
+			avDto.FromAttributeValue(av)
+			return avDto
+		})
+	}
+
+	if len(a.Variants) > 0 {
+		this.Variants = array.Map(a.Variants, func(v domain.Variant) VariantDto {
+			vDto := VariantDto{}
+			vDto.FromVariant(v)
+			return vDto
+		})
+	}
 }

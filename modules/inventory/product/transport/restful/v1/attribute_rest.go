@@ -102,7 +102,7 @@ func (this AttributeRest) GetAttributeById(echoCtx echo.Context) (err error) {
 		},
 		func(result itAttribute.GetAttributeByIdResult) GetAttributeByIdResponse {
 			response := GetAttributeByIdResponse{}
-			response.FromAttribute(*result.Data)
+			response.FromResult(*result.Data)
 			return response
 		},
 		httpserver.JsonOk,
@@ -123,7 +123,7 @@ func (this AttributeRest) SearchAttributes(echoCtx echo.Context) (err error) {
 		},
 		func(result itAttribute.SearchAttributesResult) SearchAttributesResponse {
 			response := SearchAttributesResponse{}
-			response.FromResult(result.Data)
+			response.FromResults(result.Data)
 			return response
 		},
 		httpserver.JsonOk,

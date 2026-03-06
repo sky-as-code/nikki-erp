@@ -224,8 +224,9 @@ var (
 		{Name: "barcode", Type: field.TypeString, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "etag", Type: field.TypeString},
-		{Name: "proposed_price", Type: field.TypeFloat64},
-		{Name: "sku", Type: field.TypeString},
+		{Name: "name", Type: field.TypeJSON},
+		{Name: "proposed_price", Type: field.TypeFloat64, Nullable: true},
+		{Name: "sku", Type: field.TypeString, Nullable: true},
 		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "product_id", Type: field.TypeString},
@@ -238,7 +239,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "inventory_variant_inventory_product_product",
-				Columns:    []*schema.Column{InventoryVariantColumns[8]},
+				Columns:    []*schema.Column{InventoryVariantColumns[9]},
 				RefColumns: []*schema.Column{InventoryProductColumns[0]},
 				OnDelete:   schema.Cascade,
 			},

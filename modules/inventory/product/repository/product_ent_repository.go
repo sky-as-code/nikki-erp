@@ -116,14 +116,6 @@ func (r *ProductEntRepository) FindById(ctx crud.Context, query itProduct.FindBy
 func (r *ProductEntRepository) Search(ctx crud.Context, param itProduct.SearchParam) (*crud.PagedResult[domain.Product], error) {
 	query := r.client.Product.Query()
 
-	if param.WithVariants {
-		query.WithVariant()
-	}
-
-	if param.WithAttributes {
-		query.WithAttribute()
-	}
-
 	return db.Search(
 		ctx,
 		param.Predicate,

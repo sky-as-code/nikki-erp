@@ -23,10 +23,8 @@ type DeleteParam = DeleteProductCommand
 type FindByIdParam = GetProductByIdQuery
 
 type SearchParam struct {
-	Predicate      *orm.Predicate
-	Order          []orm.OrderOption
-	Page           int
-	Size           int
-	WithVariants   bool
-	WithAttributes bool
+	Predicate *orm.Predicate
+	Order     []orm.OrderOption
+	Page      int
+	Size      int
 }

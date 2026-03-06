@@ -22,8 +22,8 @@ type ProductDto struct {
 	DefaultVariantId *model.Id       `json:"defaultVariantId,omitempty"`
 	ThumbnailUrl     *string         `json:"thumbnailUrl,omitempty"`
 
-	Variants   []GetVariantByProductResponse `json:"variants,omitempty"`
-	Attributes []AttributeDto                `json:"attributes,omitempty"`
+	Variants   []model.Id     `json:"variants,omitempty"`
+	Attributes []AttributeDto `json:"attributes,omitempty"`
 }
 
 func (this *ProductDto) FromProduct(p domain.Product) {
@@ -31,31 +31,14 @@ func (this *ProductDto) FromProduct(p domain.Product) {
 	model.MustCopy(p.ModelBase, this)
 	model.MustCopy(p, this)
 
-	this.Variants = array.Map(p.Variants, func(v domain.Variant) GetVariantByProductResponse {
-		variantResp := GetVariantByProductResponse{}
-		variantResp.FromVariant(v)
-		return variantResp
+	this.Variants = array.Map(p.Variants, func(v domain.Variant) model.Id {
+		return *v.Id
 	})
-
 	this.Attributes = array.Map(p.Attributes, func(attr domain.Attribute) AttributeDto {
 		attrResp := AttributeDto{}
 		attrResp.FromAttribute(attr)
 		return attrResp
 	})
-}
-
-type GetVariantByProductResponse struct {
-	Id            string `json:"id"`
-	Sku           string `json:"sku"`
-	Barcode       string `json:"barcode,omitempty"`
-	ProposedPrice int    `json:"proposedPrice,omitempty"`
-	Status        string `json:"status"`
-}
-
-func (this *GetVariantByProductResponse) FromVariant(v domain.Variant) {
-	model.MustCopy(v.AuditableBase, this)
-	model.MustCopy(v.ModelBase, this)
-	model.MustCopy(v, this)
 }
 
 type CreateProductRequest = itProduct.CreateProductCommand

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attributevalue"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/variant"
@@ -63,6 +64,12 @@ func (vu *VariantUpdate) SetNillableEtag(s *string) *VariantUpdate {
 	return vu
 }
 
+// SetName sets the "name" field.
+func (vu *VariantUpdate) SetName(mj model.LangJson) *VariantUpdate {
+	vu.mutation.SetName(mj)
+	return vu
+}
+
 // SetProposedPrice sets the "proposed_price" field.
 func (vu *VariantUpdate) SetProposedPrice(f float64) *VariantUpdate {
 	vu.mutation.ResetProposedPrice()
@@ -81,6 +88,32 @@ func (vu *VariantUpdate) SetNillableProposedPrice(f *float64) *VariantUpdate {
 // AddProposedPrice adds f to the "proposed_price" field.
 func (vu *VariantUpdate) AddProposedPrice(f float64) *VariantUpdate {
 	vu.mutation.AddProposedPrice(f)
+	return vu
+}
+
+// ClearProposedPrice clears the value of the "proposed_price" field.
+func (vu *VariantUpdate) ClearProposedPrice() *VariantUpdate {
+	vu.mutation.ClearProposedPrice()
+	return vu
+}
+
+// SetSku sets the "sku" field.
+func (vu *VariantUpdate) SetSku(s string) *VariantUpdate {
+	vu.mutation.SetSku(s)
+	return vu
+}
+
+// SetNillableSku sets the "sku" field if the given value is not nil.
+func (vu *VariantUpdate) SetNillableSku(s *string) *VariantUpdate {
+	if s != nil {
+		vu.SetSku(*s)
+	}
+	return vu
+}
+
+// ClearSku clears the value of the "sku" field.
+func (vu *VariantUpdate) ClearSku() *VariantUpdate {
+	vu.mutation.ClearSku()
 	return vu
 }
 
@@ -215,11 +248,23 @@ func (vu *VariantUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := vu.mutation.Etag(); ok {
 		_spec.SetField(variant.FieldEtag, field.TypeString, value)
 	}
+	if value, ok := vu.mutation.Name(); ok {
+		_spec.SetField(variant.FieldName, field.TypeJSON, value)
+	}
 	if value, ok := vu.mutation.ProposedPrice(); ok {
 		_spec.SetField(variant.FieldProposedPrice, field.TypeFloat64, value)
 	}
 	if value, ok := vu.mutation.AddedProposedPrice(); ok {
 		_spec.AddField(variant.FieldProposedPrice, field.TypeFloat64, value)
+	}
+	if vu.mutation.ProposedPriceCleared() {
+		_spec.ClearField(variant.FieldProposedPrice, field.TypeFloat64)
+	}
+	if value, ok := vu.mutation.Sku(); ok {
+		_spec.SetField(variant.FieldSku, field.TypeString, value)
+	}
+	if vu.mutation.SkuCleared() {
+		_spec.ClearField(variant.FieldSku, field.TypeString)
 	}
 	if value, ok := vu.mutation.Status(); ok {
 		_spec.SetField(variant.FieldStatus, field.TypeString, value)
@@ -329,6 +374,12 @@ func (vuo *VariantUpdateOne) SetNillableEtag(s *string) *VariantUpdateOne {
 	return vuo
 }
 
+// SetName sets the "name" field.
+func (vuo *VariantUpdateOne) SetName(mj model.LangJson) *VariantUpdateOne {
+	vuo.mutation.SetName(mj)
+	return vuo
+}
+
 // SetProposedPrice sets the "proposed_price" field.
 func (vuo *VariantUpdateOne) SetProposedPrice(f float64) *VariantUpdateOne {
 	vuo.mutation.ResetProposedPrice()
@@ -347,6 +398,32 @@ func (vuo *VariantUpdateOne) SetNillableProposedPrice(f *float64) *VariantUpdate
 // AddProposedPrice adds f to the "proposed_price" field.
 func (vuo *VariantUpdateOne) AddProposedPrice(f float64) *VariantUpdateOne {
 	vuo.mutation.AddProposedPrice(f)
+	return vuo
+}
+
+// ClearProposedPrice clears the value of the "proposed_price" field.
+func (vuo *VariantUpdateOne) ClearProposedPrice() *VariantUpdateOne {
+	vuo.mutation.ClearProposedPrice()
+	return vuo
+}
+
+// SetSku sets the "sku" field.
+func (vuo *VariantUpdateOne) SetSku(s string) *VariantUpdateOne {
+	vuo.mutation.SetSku(s)
+	return vuo
+}
+
+// SetNillableSku sets the "sku" field if the given value is not nil.
+func (vuo *VariantUpdateOne) SetNillableSku(s *string) *VariantUpdateOne {
+	if s != nil {
+		vuo.SetSku(*s)
+	}
+	return vuo
+}
+
+// ClearSku clears the value of the "sku" field.
+func (vuo *VariantUpdateOne) ClearSku() *VariantUpdateOne {
+	vuo.mutation.ClearSku()
 	return vuo
 }
 
@@ -511,11 +588,23 @@ func (vuo *VariantUpdateOne) sqlSave(ctx context.Context) (_node *Variant, err e
 	if value, ok := vuo.mutation.Etag(); ok {
 		_spec.SetField(variant.FieldEtag, field.TypeString, value)
 	}
+	if value, ok := vuo.mutation.Name(); ok {
+		_spec.SetField(variant.FieldName, field.TypeJSON, value)
+	}
 	if value, ok := vuo.mutation.ProposedPrice(); ok {
 		_spec.SetField(variant.FieldProposedPrice, field.TypeFloat64, value)
 	}
 	if value, ok := vuo.mutation.AddedProposedPrice(); ok {
 		_spec.AddField(variant.FieldProposedPrice, field.TypeFloat64, value)
+	}
+	if vuo.mutation.ProposedPriceCleared() {
+		_spec.ClearField(variant.FieldProposedPrice, field.TypeFloat64)
+	}
+	if value, ok := vuo.mutation.Sku(); ok {
+		_spec.SetField(variant.FieldSku, field.TypeString, value)
+	}
+	if vuo.mutation.SkuCleared() {
+		_spec.ClearField(variant.FieldSku, field.TypeString)
 	}
 	if value, ok := vuo.mutation.Status(); ok {
 		_spec.SetField(variant.FieldStatus, field.TypeString, value)

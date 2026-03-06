@@ -14,11 +14,13 @@ type VariantDto struct {
 	UpdatedAt *int64 `json:"updatedAt,omitempty"`
 	Etag      string `json:"etag"`
 
-	ProductId     string  `json:"productId"`
-	Sku           string  `json:"sku"`
-	Barcode       *string `json:"barcode,omitempty"`
-	ProposedPrice *int    `json:"proposedPrice,omitempty"`
-	Status        string  `json:"status"`
+	Name          model.LangJson          `json:"name"`
+	ProductId     model.Id                `json:"productId"`
+	Sku           *string                 `json:"sku,omitempty"`
+	Barcode       *string                 `json:"barcode,omitempty"`
+	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
+	Status        string                  `json:"status"`
+	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
 }
 
 func (this *VariantDto) FromVariant(v domain.Variant) {

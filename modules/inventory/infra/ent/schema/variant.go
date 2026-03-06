@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/mixin"
+	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
 type VariantMixin struct {
@@ -31,15 +32,19 @@ func (VariantMixin) Fields() []ent.Field {
 
 		field.String("etag"),
 
-		field.Float("proposed_price"),
+		field.JSON("name", model.LangJson{}),
+
+		field.Float("proposed_price").
+			Optional().
+			Nillable(),
 
 		field.String("product_id").
 			Immutable().
 			StorageKey("product_id"),
 
 		field.String("sku").
-			Immutable().
-			StorageKey("sku"),
+			Optional().
+			Nillable(),
 
 		field.String("status").
 			Default("active"),

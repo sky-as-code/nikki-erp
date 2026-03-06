@@ -166,6 +166,7 @@ func (s *VariantServiceImpl) GetVariantById(ctx crud.Context, query itVariant.Ge
 		}, nil
 	}
 
+	dbVariant.Attributes = &map[string]any{}
 	for _, attrVal := range dbVariant.AttributeValue {
 		attribute, err := s.attribute.GetAttributeById(ctx, itAttribute.GetAttributeByIdQuery{
 			Id:        *attrVal.AttributeId,
@@ -193,38 +194,75 @@ func (s *VariantServiceImpl) GetVariantById(ctx crud.Context, query itVariant.Ge
 
 // Search
 
-func (this *VariantServiceImpl) SearchVariants(ctx crud.Context, query itVariant.SearchVariantsQuery) (*itVariant.SearchVariantsResult, error) {
-	result, err := crud.Search(ctx, crud.SearchParam[domain.Variant, itVariant.SearchVariantsQuery, itVariant.SearchVariantsResult]{
-		Action: "search variants",
-		Query:  query,
-		SetQueryDefaults: func(q *itVariant.SearchVariantsQuery) {
-			q.SetDefaults()
-		},
-		ParseSearchGraph: func(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-			return this.variantRepo.ParseSearchGraph(criteria)
-		},
-		RepoSearch: func(ctx crud.Context, query itVariant.SearchVariantsQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.Variant], error) {
-			return this.variantRepo.Search(ctx, itVariant.SearchParam{
-				ProductId: query.ProductId,
-				Predicate: predicate,
-				Order:     order,
-				Page:      *query.Page,
-				Size:      *query.Size,
-			})
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itVariant.SearchVariantsResult {
+func (this *VariantServiceImpl) SearchVariants(ctx crud.Context, query itVariant.SearchVariantsQuery) (result *itVariant.SearchVariantsResult, err error) {
+	defer func() {
+		if e := ft.RecoverPanic(recover(), "failed to get variant by id"); e != nil {
+			err = e
+		}
+	}()
+
+	query.SetDefaults()
+	flow := val.StartValidationFlow()
+	vErrs, err := flow.
+		Step(func(vErrs *ft.ValidationErrors) error {
+			*vErrs = query.Validate()
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			return this.assertProductIdExists(ctx, query.ProductId, vErrs)
+		}).
+		End()
+
+	if vErrs.Count() > 0 {
+		return &itVariant.SearchVariantsResult{
+			ClientError: vErrs.ToClientError(),
+		}, nil
+	}
+
+	var predicate *orm.Predicate
+	var order []orm.OrderOption
+
+	if graph := query.SearchQuery.GetGraph(); graph != nil {
+		predicate, order, vErrs = this.variantRepo.ParseSearchGraph(graph)
+		if vErrs.Count() > 0 {
 			return &itVariant.SearchVariantsResult{
 				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(paged *crud.PagedResult[domain.Variant]) *itVariant.SearchVariantsResult {
-			return &itVariant.SearchVariantsResult{
-				Data:    paged,
-				HasData: paged.Items != nil,
-			}
-		},
+			}, nil
+		}
+	}
+
+	dbVariant, err := this.variantRepo.Search(ctx, itVariant.SearchParam{
+		ProductId: query.ProductId,
+		Page:      *query.Page,
+		Size:      *query.Size,
+		Predicate: predicate,
+		Order:     order,
 	})
-	return result, err
+	ft.PanicOnErr(err)
+
+	for i, variant := range dbVariant.Items {
+		dbVariant.Items[i].Attributes = &map[string]any{}
+		for _, attrVal := range variant.AttributeValue {
+			attribute, err := this.attribute.GetAttributeById(ctx, itAttribute.GetAttributeByIdQuery{
+				Id:        *attrVal.AttributeId,
+				ProductId: query.ProductId,
+			})
+			ft.PanicOnErr(err)
+			if attribute == nil || attribute.Data == nil {
+				continue
+			}
+			value := attrVal.GetValue()
+			if value == nil {
+				continue
+			}
+			(*dbVariant.Items[i].Attributes)[*attribute.Data.CodeName] = value
+		}
+	}
+
+	return &itVariant.SearchVariantsResult{
+		HasData: dbVariant.Items != nil,
+		Data:    dbVariant,
+	}, nil
 }
 
 // Helpers

@@ -69,7 +69,7 @@ func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx crud.Context, cmd i
 		}, nil
 	}
 
-	dbAttributeValue, _, err = s.attributeValueRepo.LinkVariantToExisting(ctx, *dbAttributeValue.Id, cmd.VariantId, *dbAttributeValue.Etag)
+	dbAttributeValue, _, err = s.attributeValueRepo.LinkVariant(ctx, *dbAttributeValue.Id, cmd.VariantId, *dbAttributeValue.Etag)
 	ft.PanicOnErr(err)
 
 	return &itAttributeValue.CreateAttributeValueResult{

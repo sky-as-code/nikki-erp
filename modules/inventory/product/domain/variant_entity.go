@@ -11,6 +11,7 @@ type Variant struct {
 	model.AuditableBase
 
 	ProductId     *model.Id               `json:"productId,omitempty"`
+	Name          *model.LangJson         `json:"name,omitempty"`
 	Sku           *string                 `json:"sku,omitempty"`
 	Barcode       *string                 `json:"barcode,omitempty"`
 	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
@@ -23,22 +24,9 @@ type Variant struct {
 func (this *Variant) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdPtrValidateRule(&this.ProductId, !forEdit),
-		val.Field(&this.Sku,
+		val.Field(&this.Name,
 			val.NotNilWhen(!forEdit),
-			val.When(this.Sku != nil,
-				val.NotEmpty,
-				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
-			),
-		),
-		val.Field(&this.Barcode,
-			val.NotNilWhen(!forEdit),
-			val.When(this.Barcode != nil,
-				val.Length(0, model.MODEL_RULE_LONG_NAME_LENGTH),
-			),
-		),
-		val.Field(&this.ProposedPrice,
-			val.NotNilWhen(!forEdit),
-			val.When(this.ProposedPrice != nil,
+			val.When(this.Name != nil,
 				val.NotEmpty,
 			),
 		),

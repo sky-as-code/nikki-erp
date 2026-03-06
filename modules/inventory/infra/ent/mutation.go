@@ -7663,6 +7663,7 @@ type VariantMutation struct {
 	barcode                *string
 	created_at             *time.Time
 	etag                   *string
+	name                   *model.LangJson
 	proposed_price         *float64
 	addproposed_price      *float64
 	sku                    *string
@@ -7904,6 +7905,42 @@ func (m *VariantMutation) ResetEtag() {
 	m.etag = nil
 }
 
+// SetName sets the "name" field.
+func (m *VariantMutation) SetName(mj model.LangJson) {
+	m.name = &mj
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *VariantMutation) Name() (r model.LangJson, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Variant entity.
+// If the Variant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VariantMutation) OldName(ctx context.Context) (v model.LangJson, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *VariantMutation) ResetName() {
+	m.name = nil
+}
+
 // SetProposedPrice sets the "proposed_price" field.
 func (m *VariantMutation) SetProposedPrice(f float64) {
 	m.proposed_price = &f
@@ -7922,7 +7959,7 @@ func (m *VariantMutation) ProposedPrice() (r float64, exists bool) {
 // OldProposedPrice returns the old "proposed_price" field's value of the Variant entity.
 // If the Variant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *VariantMutation) OldProposedPrice(ctx context.Context) (v float64, err error) {
+func (m *VariantMutation) OldProposedPrice(ctx context.Context) (v *float64, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldProposedPrice is only allowed on UpdateOne operations")
 	}
@@ -7954,10 +7991,24 @@ func (m *VariantMutation) AddedProposedPrice() (r float64, exists bool) {
 	return *v, true
 }
 
+// ClearProposedPrice clears the value of the "proposed_price" field.
+func (m *VariantMutation) ClearProposedPrice() {
+	m.proposed_price = nil
+	m.addproposed_price = nil
+	m.clearedFields[variant.FieldProposedPrice] = struct{}{}
+}
+
+// ProposedPriceCleared returns if the "proposed_price" field was cleared in this mutation.
+func (m *VariantMutation) ProposedPriceCleared() bool {
+	_, ok := m.clearedFields[variant.FieldProposedPrice]
+	return ok
+}
+
 // ResetProposedPrice resets all changes to the "proposed_price" field.
 func (m *VariantMutation) ResetProposedPrice() {
 	m.proposed_price = nil
 	m.addproposed_price = nil
+	delete(m.clearedFields, variant.FieldProposedPrice)
 }
 
 // SetProductID sets the "product_id" field.
@@ -8013,7 +8064,7 @@ func (m *VariantMutation) Sku() (r string, exists bool) {
 // OldSku returns the old "sku" field's value of the Variant entity.
 // If the Variant object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *VariantMutation) OldSku(ctx context.Context) (v string, err error) {
+func (m *VariantMutation) OldSku(ctx context.Context) (v *string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldSku is only allowed on UpdateOne operations")
 	}
@@ -8027,9 +8078,22 @@ func (m *VariantMutation) OldSku(ctx context.Context) (v string, err error) {
 	return oldValue.Sku, nil
 }
 
+// ClearSku clears the value of the "sku" field.
+func (m *VariantMutation) ClearSku() {
+	m.sku = nil
+	m.clearedFields[variant.FieldSku] = struct{}{}
+}
+
+// SkuCleared returns if the "sku" field was cleared in this mutation.
+func (m *VariantMutation) SkuCleared() bool {
+	_, ok := m.clearedFields[variant.FieldSku]
+	return ok
+}
+
 // ResetSku resets all changes to the "sku" field.
 func (m *VariantMutation) ResetSku() {
 	m.sku = nil
+	delete(m.clearedFields, variant.FieldSku)
 }
 
 // SetStatus sets the "status" field.
@@ -8232,7 +8296,7 @@ func (m *VariantMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *VariantMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.barcode != nil {
 		fields = append(fields, variant.FieldBarcode)
 	}
@@ -8241,6 +8305,9 @@ func (m *VariantMutation) Fields() []string {
 	}
 	if m.etag != nil {
 		fields = append(fields, variant.FieldEtag)
+	}
+	if m.name != nil {
+		fields = append(fields, variant.FieldName)
 	}
 	if m.proposed_price != nil {
 		fields = append(fields, variant.FieldProposedPrice)
@@ -8271,6 +8338,8 @@ func (m *VariantMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case variant.FieldEtag:
 		return m.Etag()
+	case variant.FieldName:
+		return m.Name()
 	case variant.FieldProposedPrice:
 		return m.ProposedPrice()
 	case variant.FieldProductID:
@@ -8296,6 +8365,8 @@ func (m *VariantMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldCreatedAt(ctx)
 	case variant.FieldEtag:
 		return m.OldEtag(ctx)
+	case variant.FieldName:
+		return m.OldName(ctx)
 	case variant.FieldProposedPrice:
 		return m.OldProposedPrice(ctx)
 	case variant.FieldProductID:
@@ -8335,6 +8406,13 @@ func (m *VariantMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetEtag(v)
+		return nil
+	case variant.FieldName:
+		v, ok := value.(model.LangJson)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
 		return nil
 	case variant.FieldProposedPrice:
 		v, ok := value.(float64)
@@ -8419,6 +8497,12 @@ func (m *VariantMutation) ClearedFields() []string {
 	if m.FieldCleared(variant.FieldBarcode) {
 		fields = append(fields, variant.FieldBarcode)
 	}
+	if m.FieldCleared(variant.FieldProposedPrice) {
+		fields = append(fields, variant.FieldProposedPrice)
+	}
+	if m.FieldCleared(variant.FieldSku) {
+		fields = append(fields, variant.FieldSku)
+	}
 	if m.FieldCleared(variant.FieldUpdatedAt) {
 		fields = append(fields, variant.FieldUpdatedAt)
 	}
@@ -8439,6 +8523,12 @@ func (m *VariantMutation) ClearField(name string) error {
 	case variant.FieldBarcode:
 		m.ClearBarcode()
 		return nil
+	case variant.FieldProposedPrice:
+		m.ClearProposedPrice()
+		return nil
+	case variant.FieldSku:
+		m.ClearSku()
+		return nil
 	case variant.FieldUpdatedAt:
 		m.ClearUpdatedAt()
 		return nil
@@ -8458,6 +8548,9 @@ func (m *VariantMutation) ResetField(name string) error {
 		return nil
 	case variant.FieldEtag:
 		m.ResetEtag()
+		return nil
+	case variant.FieldName:
+		m.ResetName()
 		return nil
 	case variant.FieldProposedPrice:
 		m.ResetProposedPrice()

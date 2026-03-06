@@ -36,16 +36,13 @@ func (r *VariantEntRepository) variantClient(ctx crud.Context) *ent.VariantClien
 func (r *VariantEntRepository) Create(ctx crud.Context, variant *domain.Variant) (*domain.Variant, error) {
 	creation := r.variantClient(ctx).Create().
 		SetID(*variant.Id).
+		SetName(*variant.Name).
 		SetProductID(*variant.ProductId).
-		SetSku(*variant.Sku).
+		SetNillableSku(variant.Sku).
+		SetNillableBarcode(variant.Barcode).
+		SetNillableProposedPrice(variant.ProposedPrice).
 		SetEtag(*variant.Etag)
 
-	if variant.Barcode != nil {
-		creation.SetBarcode(*variant.Barcode)
-	}
-	if variant.ProposedPrice != nil {
-		creation.SetProposedPrice(*variant.ProposedPrice)
-	}
 	if variant.Status != nil {
 		creation.SetStatus(*variant.Status)
 	}
@@ -56,18 +53,11 @@ func (r *VariantEntRepository) Create(ctx crud.Context, variant *domain.Variant)
 // ✅ Update Variant
 func (r *VariantEntRepository) Update(ctx crud.Context, variant *domain.Variant, prevEtag model.Etag) (*domain.Variant, error) {
 	update := r.variantClient(ctx).UpdateOneID(*variant.Id).
+		SetNillableBarcode(variant.Barcode).
+		SetNillableSku(variant.Sku).
+		SetNillableProposedPrice(variant.ProposedPrice).
+		SetNillableStatus(variant.Status).
 		Where(entVariant.Etag(prevEtag))
-
-	// SKU is immutable, cannot be updated
-	if variant.Barcode != nil {
-		update.SetBarcode(*variant.Barcode)
-	}
-	if variant.ProposedPrice != nil {
-		update.SetProposedPrice(*variant.ProposedPrice)
-	}
-	if variant.Status != nil {
-		update.SetStatus(*variant.Status)
-	}
 
 	if len(update.Mutation().Fields()) > 0 {
 		update.SetEtag(*variant.Etag)
