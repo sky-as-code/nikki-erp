@@ -24,9 +24,11 @@ type FindByIdParam = GetAttributeByIdQuery
 type FindByCodeNameParam = GetAttributeByCodeName
 
 type SearchParam struct {
-	ProductId model.Id
-	Predicate *orm.Predicate
-	Order     []orm.OrderOption
-	Page      int
-	Size      int
+	ProductId     model.Id
+	Predicate     *orm.Predicate
+	Order         []orm.OrderOption
+	Page          int
+	Size          int
+	CountValues   bool
+	CountVariants bool
 }

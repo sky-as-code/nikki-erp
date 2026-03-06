@@ -184,11 +184,13 @@ func (this *AttributeServiceImpl) SearchAttributes(ctx crud.Context, query itAtt
 		},
 		RepoSearch: func(ctx crud.Context, query itAttribute.SearchAttributesQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.Attribute], error) {
 			return this.attributeRepo.Search(ctx, itAttribute.SearchParam{
-				ProductId: query.ProductId,
-				Predicate: predicate,
-				Order:     order,
-				Page:      *query.Page,
-				Size:      *query.Size,
+				ProductId:     query.ProductId,
+				Predicate:     predicate,
+				Order:         order,
+				Page:          *query.Page,
+				Size:          *query.Size,
+				CountValues:   query.CountValues,
+				CountVariants: query.CountVariants,
 			})
 		},
 		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttribute.SearchAttributesResult {

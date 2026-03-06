@@ -19,14 +19,14 @@ var createProductCommandType = cqrs.RequestType{
 
 type CreateProductCommand struct {
 	OrgId         model.Id        `param:"orgId" json:"orgId"`
-	BarCode       string          `json:"barCode,omitempty"`
+	BarCode       *string         `json:"barCode,omitempty"`
 	Name          model.LangJson  `json:"name"`
 	Description   *model.LangJson `json:"description,omitempty"`
 	UnitId        *model.Id       `json:"unitId,omitempty"`
-	Sku           string          `json:"sku,omitempty"`
+	Sku           *string         `json:"sku,omitempty"`
 	Status        *string         `json:"status,omitempty"`
 	ThumbnailUrl  *string         `json:"thumbnailUrl,omitempty"`
-	ProposedPrice float64         `json:"proposedPrice,omitempty"`
+	ProposedPrice *float64        `json:"proposedPrice,omitempty"`
 }
 
 func (CreateProductCommand) CqrsRequestType() cqrs.RequestType {
@@ -130,9 +130,6 @@ var searchProductsQueryType = cqrs.RequestType{
 type SearchProductsQuery struct {
 	// Filled by service from Graph
 	crud.SearchQuery
-
-	WithVariants   bool `query:"withVariants" json:"withVariants"`
-	WithAttributes bool `query:"withAttributes" json:"withAttributes"`
 }
 
 func (this SearchProductsQuery) CqrsRequestType() cqrs.RequestType {

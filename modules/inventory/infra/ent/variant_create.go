@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attributevalue"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/product"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/variant"
@@ -56,9 +57,23 @@ func (vc *VariantCreate) SetEtag(s string) *VariantCreate {
 	return vc
 }
 
+// SetName sets the "name" field.
+func (vc *VariantCreate) SetName(mj model.LangJson) *VariantCreate {
+	vc.mutation.SetName(mj)
+	return vc
+}
+
 // SetProposedPrice sets the "proposed_price" field.
 func (vc *VariantCreate) SetProposedPrice(f float64) *VariantCreate {
 	vc.mutation.SetProposedPrice(f)
+	return vc
+}
+
+// SetNillableProposedPrice sets the "proposed_price" field if the given value is not nil.
+func (vc *VariantCreate) SetNillableProposedPrice(f *float64) *VariantCreate {
+	if f != nil {
+		vc.SetProposedPrice(*f)
+	}
 	return vc
 }
 
@@ -71,6 +86,14 @@ func (vc *VariantCreate) SetProductID(s string) *VariantCreate {
 // SetSku sets the "sku" field.
 func (vc *VariantCreate) SetSku(s string) *VariantCreate {
 	vc.mutation.SetSku(s)
+	return vc
+}
+
+// SetNillableSku sets the "sku" field if the given value is not nil.
+func (vc *VariantCreate) SetNillableSku(s *string) *VariantCreate {
+	if s != nil {
+		vc.SetSku(*s)
+	}
 	return vc
 }
 
@@ -181,14 +204,11 @@ func (vc *VariantCreate) check() error {
 	if _, ok := vc.mutation.Etag(); !ok {
 		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "Variant.etag"`)}
 	}
-	if _, ok := vc.mutation.ProposedPrice(); !ok {
-		return &ValidationError{Name: "proposed_price", err: errors.New(`ent: missing required field "Variant.proposed_price"`)}
+	if _, ok := vc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Variant.name"`)}
 	}
 	if _, ok := vc.mutation.ProductID(); !ok {
 		return &ValidationError{Name: "product_id", err: errors.New(`ent: missing required field "Variant.product_id"`)}
-	}
-	if _, ok := vc.mutation.Sku(); !ok {
-		return &ValidationError{Name: "sku", err: errors.New(`ent: missing required field "Variant.sku"`)}
 	}
 	if _, ok := vc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Variant.status"`)}
@@ -243,13 +263,17 @@ func (vc *VariantCreate) createSpec() (*Variant, *sqlgraph.CreateSpec) {
 		_spec.SetField(variant.FieldEtag, field.TypeString, value)
 		_node.Etag = value
 	}
+	if value, ok := vc.mutation.Name(); ok {
+		_spec.SetField(variant.FieldName, field.TypeJSON, value)
+		_node.Name = value
+	}
 	if value, ok := vc.mutation.ProposedPrice(); ok {
 		_spec.SetField(variant.FieldProposedPrice, field.TypeFloat64, value)
-		_node.ProposedPrice = value
+		_node.ProposedPrice = &value
 	}
 	if value, ok := vc.mutation.Sku(); ok {
 		_spec.SetField(variant.FieldSku, field.TypeString, value)
-		_node.Sku = value
+		_node.Sku = &value
 	}
 	if value, ok := vc.mutation.Status(); ok {
 		_spec.SetField(variant.FieldStatus, field.TypeString, value)

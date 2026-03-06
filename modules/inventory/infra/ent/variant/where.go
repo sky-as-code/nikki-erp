@@ -325,6 +325,16 @@ func ProposedPriceLTE(v float64) predicate.Variant {
 	return predicate.Variant(sql.FieldLTE(FieldProposedPrice, v))
 }
 
+// ProposedPriceIsNil applies the IsNil predicate on the "proposed_price" field.
+func ProposedPriceIsNil() predicate.Variant {
+	return predicate.Variant(sql.FieldIsNull(FieldProposedPrice))
+}
+
+// ProposedPriceNotNil applies the NotNil predicate on the "proposed_price" field.
+func ProposedPriceNotNil() predicate.Variant {
+	return predicate.Variant(sql.FieldNotNull(FieldProposedPrice))
+}
+
 // ProductIDEQ applies the EQ predicate on the "product_id" field.
 func ProductIDEQ(v string) predicate.Variant {
 	return predicate.Variant(sql.FieldEQ(FieldProductID, v))
@@ -443,6 +453,16 @@ func SkuHasPrefix(v string) predicate.Variant {
 // SkuHasSuffix applies the HasSuffix predicate on the "sku" field.
 func SkuHasSuffix(v string) predicate.Variant {
 	return predicate.Variant(sql.FieldHasSuffix(FieldSku, v))
+}
+
+// SkuIsNil applies the IsNil predicate on the "sku" field.
+func SkuIsNil() predicate.Variant {
+	return predicate.Variant(sql.FieldIsNull(FieldSku))
+}
+
+// SkuNotNil applies the NotNil predicate on the "sku" field.
+func SkuNotNil() predicate.Variant {
+	return predicate.Variant(sql.FieldNotNull(FieldSku))
 }
 
 // SkuEqualFold applies the EqualFold predicate on the "sku" field.

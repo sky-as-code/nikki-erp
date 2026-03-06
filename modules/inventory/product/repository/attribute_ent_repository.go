@@ -113,7 +113,11 @@ func (r *AttributeEntRepository) DeleteById(ctx crud.Context, id model.Id) (int,
 func (r *AttributeEntRepository) FindById(ctx crud.Context, query itAttribute.FindByIdParam) (*domain.Attribute, error) {
 	dbQuery := r.attributeClient(ctx).Query().
 		Where(entAttribute.ProductID(query.ProductId)).
-		Where(entAttribute.ID(query.Id))
+		Where(entAttribute.ID(query.Id)).
+		WithAttributeValues().
+		WithAttributeValues(func(q *ent.AttributeValueQuery) {
+			q.WithVariant()
+		})
 
 	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itAttribute.EntToAttribute)
 }
@@ -121,7 +125,8 @@ func (r *AttributeEntRepository) FindById(ctx crud.Context, query itAttribute.Fi
 func (r *AttributeEntRepository) FindByCodeName(ctx crud.Context, query itAttribute.FindByCodeNameParam) (*domain.Attribute, error) {
 	dbQuery := r.attributeClient(ctx).Query().
 		Where(entAttribute.ProductID(query.ProductId)).
-		Where(entAttribute.CodeName(query.CodeName))
+		Where(entAttribute.CodeName(query.CodeName)).
+		WithAttributeValues()
 
 	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itAttribute.EntToAttribute)
 }
@@ -130,6 +135,16 @@ func (r *AttributeEntRepository) FindByCodeName(ctx crud.Context, query itAttrib
 func (r *AttributeEntRepository) Search(ctx crud.Context, param itAttribute.SearchParam) (*crud.PagedResult[domain.Attribute], error) {
 	query := r.attributeClient(ctx).Query().
 		Where(entAttribute.ProductID(param.ProductId))
+
+	if param.CountValues {
+		query.WithAttributeValues()
+	}
+
+	if param.CountVariants {
+		query.WithAttributeValues(func(q *ent.AttributeValueQuery) {
+			q.WithVariant()
+		})
+	}
 
 	return db.Search(
 		ctx,
@@ -157,7 +172,15 @@ func BuildAttributeDescriptor() *orm.EntityDescriptor {
 		// Field(entAttribute.FieldDisplayName, entity.DisplayName).
 		Field(entAttribute.FieldID, entity.ID).
 		Field(entAttribute.FieldDataType, entity.DataType).
-		Field(entAttribute.FieldUpdatedAt, entity.UpdatedAt)
+		Field(entAttribute.FieldUpdatedAt, entity.UpdatedAt).
+		Field(entAttribute.FieldEnumValueSort, entity.EnumValueSort).
+		Field(entAttribute.FieldEnumValue, entity.EnumValue).
+		Field(entAttribute.FieldIsEnum, entity.IsEnum).
+		Field(entAttribute.FieldIsRequired, entity.IsRequired).
+		Field(entAttribute.FieldProductID, entity.ProductID).
+		Field(entAttribute.FieldAttributeGroupID, entity.AttributeGroupID).
+		Field(entAttribute.EdgeAttributeGroup, ent.AttributeGroup{}).
+		Field(entAttribute.EdgeAttributeValues, ent.AttributeValue{})
 
 	return builder.Descriptor()
 }

@@ -90,7 +90,7 @@ func (r *AttributeValueEntRepository) CreateAndLinkVariant(ctx crud.Context, att
 	return db.Mutate(ctx, creation, ent.IsNotFound, itAttributeValue.EntToAttributeValue)
 }
 
-func (r *AttributeValueEntRepository) LinkVariantToExisting(ctx crud.Context, attributeValueId model.Id, variantId model.Id, prevEtag model.Etag) (*domain.AttributeValue, bool, error) {
+func (r *AttributeValueEntRepository) LinkVariant(ctx crud.Context, attributeValueId model.Id, variantId model.Id, prevEtag model.Etag) (*domain.AttributeValue, bool, error) {
 	exists, err := r.variantAttributeRelClient(ctx).Query().
 		Where(
 			entVariantAttributeRel.VariantID(variantId),
@@ -116,6 +116,31 @@ func (r *AttributeValueEntRepository) LinkVariantToExisting(ctx crud.Context, at
 		return nil, false, err
 	}
 	return updated, true, nil
+}
+
+func (r *AttributeValueEntRepository) UnlinkVariant(ctx crud.Context, variantId model.Id, prevEtag model.Etag) (*domain.AttributeValue, bool, error) {
+	values, err := r.attributeValueClient(ctx).
+		Query().
+		Where(entAttributeValue.HasVariantWith(entVariantAttributeRel.VariantID(variantId))).
+		All(ctx)
+
+	if err != nil {
+		return nil, false, err
+	}
+
+	for _, v := range values {
+		err := r.attributeValueClient(ctx).
+			UpdateOneID(v.ID).
+			RemoveVariantIDs(variantId).
+			SetVariantCount(v.VariantCount - 1).
+			Exec(ctx)
+
+		if err != nil {
+			return nil, false, err
+		}
+	}
+
+	return nil, true, nil
 }
 
 // ✅ Update AttributeValue

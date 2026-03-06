@@ -20,6 +20,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
 	// FieldProposedPrice holds the string denoting the proposed_price field in the database.
 	FieldProposedPrice = "proposed_price"
 	// FieldProductID holds the string denoting the product_id field in the database.
@@ -65,6 +67,7 @@ var Columns = []string{
 	FieldBarcode,
 	FieldCreatedAt,
 	FieldEtag,
+	FieldName,
 	FieldProposedPrice,
 	FieldProductID,
 	FieldSku,
