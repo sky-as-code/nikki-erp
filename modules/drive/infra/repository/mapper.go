@@ -62,7 +62,8 @@ func entToDriveFile(e *ent.DriveFile) *domain.DriveFile {
 	d.MINE = e.Mime
 	d.IsFolder = e.IsFolder
 	d.Size = uint64(e.Size)
-	d.Path = e.Path
+	d.StoragePath = e.StoragePath
+	d.StorageKey = e.StorageKey
 	d.Storage = enum.DriveFileStorageValue[e.Storage]
 	if d.Storage == 0 {
 		d.Storage = enum.DriveFileStorageDefault
@@ -70,6 +71,10 @@ func entToDriveFile(e *ent.DriveFile) *domain.DriveFile {
 	d.Visibility = enum.DriveFileVisibilityValue[e.Visibility]
 	if d.Visibility == 0 {
 		d.Visibility = enum.DriveFileVisibilityDefault
+	}
+	d.Status = enum.DriveFileStatusValue[e.Status]
+	if d.Status == 0 {
+		d.Status = enum.DriveFileStatusDefault
 	}
 	return d
 }

@@ -1,10 +1,11 @@
 package repository
 
 import (
+	"database/sql"
 	"strings"
 	"time"
 
-	"entgo.io/ent/dialect/sql"
+	entSql "entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -77,7 +78,8 @@ func (d *driveFileRepository) Create(ctx crud.Context, driveFile *domain.DriveFi
 		SetMime(driveFile.MINE).
 		SetIsFolder(driveFile.IsFolder).
 		SetSize(int64(driveFile.Size)).
-		SetPath(driveFile.Path).
+		SetStoragePath(driveFile.StoragePath).
+		SetStorageKey(driveFile.StorageKey).
 		SetStorage(enum.DriveFileStorageName[driveFile.Storage]).
 		SetVisibility(enum.DriveFileVisibilityName[driveFile.Visibility]).
 		SetStatus(enum.DriveFileStatusName[driveFile.Status]).
@@ -142,6 +144,26 @@ func (d *driveFileRepository) Update(ctx crud.Context, driveFile *domain.DriveFi
 	return db.Mutate(ctx.InnerContext(), update, ent.IsNotFound, entToDriveFile)
 }
 
+func (d *driveFileRepository) Overwrite(
+	ctx crud.Context,
+	driveFile *domain.DriveFile,
+	prevEtag model.Etag) (
+	*domain.DriveFile, error) {
+	update := d.driveFileClient(ctx).UpdateOneID(*driveFile.Id).
+		Where(entDrivefile.Etag(prevEtag))
+
+	update.SetName(driveFile.Name)
+	update.SetMime(driveFile.MINE)
+	update.SetEtag(*driveFile.Etag)
+	update.SetVisibility(enum.DriveFileVisibilityName[driveFile.Visibility])
+	update.SetStatus(enum.DriveFileStatusName[driveFile.Status])
+	update.SetSize(int64(driveFile.Size))
+	update.SetDeletedAt(*driveFile.DeletedAt)
+	update.SetNillableParentFileRef(driveFile.ParentDriveFileRef)
+
+	return db.Mutate(ctx.InnerContext(), update, ent.IsNotFound, entToDriveFile)
+}
+
 func (d *driveFileRepository) FindById(ctx crud.Context, id model.Id) (*domain.DriveFile, error) {
 	dbQuery := d.driveFileClient(ctx).Query().
 		Where(entDrivefile.ID(id), notPendingDelete)
@@ -188,9 +210,9 @@ func (d *driveFileRepository) SearchByParent(ctx crud.Context, param drive_file.
 		parentPred = entDrivefile.ParentFileRef(string(param.ParentFileId))
 	}
 
-	combined := orm.Predicate(sql.AndPredicates(parentPred, entDrivefile.DeletedAt(deletedAtNotDeleted), notPendingDelete))
+	combined := orm.Predicate(entSql.AndPredicates(parentPred, notPendingDelete))
 	if param.Predicate != nil {
-		combined = orm.Predicate(sql.AndPredicates(combined, *param.Predicate))
+		combined = orm.Predicate(entSql.AndPredicates(combined, *param.Predicate))
 	}
 
 	return d.Search(ctx, drive_file.SearchParam{
@@ -209,21 +231,21 @@ func (d *driveFileRepository) GetDriveFileChildren(ctx crud.Context, parentId mo
 		WITH RECURSIVE subtree AS (
 			SELECT 
 				id, etag, created_at, updated_at, deleted_at, owner_ref,
-				name, mime, is_folder, size, path, storage, visibility, status, parent_file_ref
+				name, mime, is_folder, size, storage_path, storage_key, storage, visibility, status, parent_file_ref
 			FROM dri_files WHERE id = $1
 			UNION ALL
 			SELECT 
 				f.id, f.etag, f.created_at, f.updated_at, f.deleted_at, f.owner_ref,
-				f.name, f.mime, f.is_folder, f.size, f.path, f.storage, f.visibility, f.status, f.parent_file_ref
+				f.name, f.mime, f.is_folder, f.size, f.storage_path, f.storage_key, f.storage, f.visibility, f.status, f.parent_file_ref
 			FROM dri_files f 
 			JOIN subtree s ON f.parent_file_ref = s.id
 		)
 
 		SELECT 
 			id, etag, created_at, updated_at, deleted_at, owner_ref,
-			name, mime, is_folder, size, path, storage, visibility, status, parent_file_ref
+			name, mime, is_folder, size, storage_path, storage_key, storage, visibility, status, parent_file_ref
 		FROM subtree
-		WHERE status != $2
+		WHERE status != $2 and id != $1
 		`, parentId, enum.DriveFileStatusName[enum.DriveFileStatusPendingDelete])
 	if err != nil {
 		return nil, err
@@ -232,82 +254,8 @@ func (d *driveFileRepository) GetDriveFileChildren(ctx crud.Context, parentId mo
 
 	var driveFiles []*domain.DriveFile
 	for rows.Next() {
-		var (
-			id         model.Id
-			etag       model.Etag
-			createdAt  time.Time
-			updatedAt  time.Time
-			deletedAt  time.Time
-			ownerRef   model.Id
-			name       string
-			mime       string
-			isFolder   bool
-			size       int64
-			path       string
-			storage    string
-			visibility string
-			status     string
-			parentRef  *string
-		)
-
-		err := rows.Scan(
-			&id,
-			&etag,
-			&createdAt,
-			&updatedAt,
-			&deletedAt,
-			&ownerRef,
-			&name,
-			&mime,
-			&isFolder,
-			&size,
-			&path,
-			&storage,
-			&visibility,
-			&status,
-			&parentRef,
-		)
-		if err != nil {
-			return nil, err
-		}
-		driveFile := &domain.DriveFile{
-			ModelBase: model.ModelBase{
-				Id:   &id,
-				Etag: &etag,
-			},
-			AuditableBase: model.AuditableBase{
-				CreatedAt: &createdAt,
-				UpdatedAt: &updatedAt,
-			},
-			OwnerRef:   &ownerRef,
-			Name:       name,
-			MINE:       mime,
-			IsFolder:   isFolder,
-			Size:       uint64(size),
-			Path:       path,
-			Storage:    enum.DriveFileStorageValue[storage],
-			Visibility: enum.DriveFileVisibilityValue[visibility],
-			Status:     enum.DriveFileStatusValue[status],
-		}
-
-		if driveFile.Storage == 0 {
-			driveFile.Storage = enum.DriveFileStorageDefault
-		}
-		if driveFile.Visibility == 0 {
-			driveFile.Visibility = enum.DriveFileVisibilityDefault
-		}
-		if driveFile.Status == 0 {
-			driveFile.Status = enum.DriveFileStatusDefault
-		}
-
-		if !deletedAt.Equal(deletedAtNotDeleted) {
-			driveFile.DeletedAt = &deletedAt
-		}
-
-		if parentRef != nil {
-			parentId := model.Id(*parentRef)
-			driveFile.ParentDriveFileRef = &parentId
-		}
+		driveFile := &domain.DriveFile{}
+		d.scanDriveFileFromRow(rows, driveFile)
 
 		driveFiles = append(driveFiles, driveFile)
 	}
@@ -315,8 +263,125 @@ func (d *driveFileRepository) GetDriveFileChildren(ctx crud.Context, parentId mo
 	return driveFiles, nil
 }
 
+func (d *driveFileRepository) GetDriveFileParents(ctx crud.Context, parentId model.Id) ([]*domain.DriveFile, error) {
+	dbClient := d.client.DB()
+	rows, err := dbClient.QueryContext(ctx,
+		`
+		WITH RECURSIVE ancestors AS (
+			SELECT 
+				id, etag, created_at, updated_at, deleted_at, owner_ref,
+				name, mime, is_folder, size, storage_path, storage_key, storage, visibility, status, parent_file_ref
+			FROM dri_files WHERE id = $1
+			UNION ALL
+			SELECT 
+				f.id, f.etag, f.created_at, f.updated_at, f.deleted_at, f.owner_ref,
+				f.name, f.mime, f.is_folder, f.size, f.storage_path, f.storage_key, f.storage, f.visibility, f.status, f.parent_file_ref
+			FROM dri_files f
+			JOIN ancestors a ON f.id = a.parent_file_ref
+		)
+		SELECT 
+			id, etag, created_at, updated_at, deleted_at, owner_ref,
+			name, mime, is_folder, size, storage_path, storage_key, storage, visibility, status, parent_file_ref
+		FROM ancestors
+		WHERE status != $2
+		`, parentId, enum.DriveFileStatusName[enum.DriveFileStatusPendingDelete])
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var driveFiles []*domain.DriveFile
+	for rows.Next() {
+		driveFile := &domain.DriveFile{}
+		d.scanDriveFileFromRow(rows, driveFile)
+
+		driveFiles = append(driveFiles, driveFile)
+	}
+
+	return driveFiles, nil
+}
 func (d *driveFileRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error) {
 	return d.client.Tx(ctx)
+}
+
+func (d *driveFileRepository) scanDriveFileFromRow(rows *sql.Rows, driveFile *domain.DriveFile) error {
+	var (
+		id          model.Id
+		etag        model.Etag
+		createdAt   time.Time
+		updatedAt   time.Time
+		deletedAt   time.Time
+		ownerRef    model.Id
+		name        string
+		mime        string
+		isFolder    bool
+		size        int64
+		storagePath string
+		storageKey  string
+		storage     string
+		visibility  string
+		status      string
+		parentRef   *string
+	)
+
+	err := rows.Scan(
+		&id,
+		&etag,
+		&createdAt,
+		&updatedAt,
+		&deletedAt,
+		&ownerRef,
+		&name,
+		&mime,
+		&isFolder,
+		&size,
+		&storagePath,
+		&storageKey,
+		&storage,
+		&visibility,
+		&status,
+		&parentRef,
+	)
+	if err != nil {
+		return err
+	}
+
+	driveFile.Id = &id
+	driveFile.Etag = &etag
+	driveFile.CreatedAt = &createdAt
+	driveFile.UpdatedAt = &updatedAt
+	driveFile.OwnerRef = &ownerRef
+	driveFile.Name = name
+	driveFile.MINE = mime
+	driveFile.IsFolder = isFolder
+	driveFile.Size = uint64(size)
+	driveFile.StoragePath = storagePath
+	driveFile.StorageKey = storageKey
+	driveFile.Storage = enum.DriveFileStorageValue[storage]
+	driveFile.Visibility = enum.DriveFileVisibilityValue[visibility]
+	driveFile.Status = enum.DriveFileStatusValue[status]
+
+	if driveFile.Storage == 0 {
+		driveFile.Storage = enum.DriveFileStorageDefault
+	}
+	if driveFile.Visibility == 0 {
+		driveFile.Visibility = enum.DriveFileVisibilityDefault
+	}
+	if driveFile.Status == 0 {
+		driveFile.Status = enum.DriveFileStatusDefault
+	}
+
+	if !deletedAt.Equal(deletedAtNotDeleted) {
+		driveFile.DeletedAt = &deletedAt
+	}
+
+	if parentRef != nil {
+		parentId := model.Id(*parentRef)
+		driveFile.ParentDriveFileRef = &parentId
+	}
+
+	return nil
 }
 
 func BuildDriveFileDescriptor() *orm.EntityDescriptor {
@@ -334,9 +399,11 @@ func BuildDriveFileDescriptor() *orm.EntityDescriptor {
 		Field(entDrivefile.FieldMime, entity.Mime).
 		Field(entDrivefile.FieldIsFolder, entity.IsFolder).
 		Field(entDrivefile.FieldSize, entity.Size).
-		Field(entDrivefile.FieldPath, entity.Path).
+		Field(entDrivefile.FieldStoragePath, entity.StoragePath).
+		Field(entDrivefile.FieldStorageKey, entity.StorageKey).
 		Field(entDrivefile.FieldStorage, entity.Storage).
-		Field(entDrivefile.FieldVisibility, entity.Visibility)
+		Field(entDrivefile.FieldVisibility, entity.Visibility).
+		Field(entDrivefile.FieldStatus, entity.Status)
 
 	return builder.Descriptor()
 }
