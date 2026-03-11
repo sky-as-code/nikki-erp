@@ -38,6 +38,7 @@ type UpdateDriveFileMetadataCommand struct {
 	Name       string                   `json:"name,omitempty"`
 	Visibility enum.DriveFileVisibility `json:"visibility,omitempty"`
 	Status     enum.DriveFileStatus     `json:"status,omitempty"`
+	Size       uint64                   `json:"-"`
 }
 
 func (this UpdateDriveFileMetadataCommand) Validate() fault.ValidationErrors {
@@ -80,6 +81,7 @@ var getDriveFileByIdRequestType = cqrs.RequestType{
 }
 
 type GetDriveFileByIdQuery struct {
+	IsDownload  bool     `query:"download"`
 	DriveFileId model.Id `json:"driveFileId" param:"driveFileId"`
 }
 
@@ -102,9 +104,14 @@ type GetDriveFileByParentQuery struct {
 }
 
 func (this GetDriveFileByParentQuery) Validate() fault.ValidationErrors {
-	rules := append(this.SearchQuery.ValidationRules(),
-		model.IdValidateRule(&this.FileParentId, true),
-	)
+	rules := []*validator.FieldRules{}
+	rules = append(rules, this.SearchQuery.ValidationRules()...)
+
+	if this.FileParentId != "" {
+		rules = append(rules,
+			model.IdValidateRule(&this.FileParentId, true),
+		)
+	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
@@ -131,6 +138,21 @@ func (this *SearchDriveFileQuery) SetDefaults() {
 type SearchDriveFileResultData = crud.PagedResult[*domain.DriveFile]
 type SearchDriveFileResult = crud.OpResult[*SearchDriveFileResultData]
 
+type GetDriveFileAncestorsQuery struct {
+	DriveFileId model.Id `json:"driveFileId" param:"driveFileId"`
+
+}
+
+func (this GetDriveFileAncestorsQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.DriveFileId, true),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type GetDriveFileAncestorsResultData = []*domain.DriveFile
+type GetDriveFileAncestorsResult = crud.OpResult[GetDriveFileAncestorsResultData]
+
 type MoveDriveFileToTrashCommand struct {
 	DriveFileId model.Id `json:"driveFileId" param:"driveFileId"`
 }
@@ -143,6 +165,40 @@ func (this MoveDriveFileToTrashCommand) Validate() fault.ValidationErrors {
 }
 
 type MoveDriveFileToTrashResult = crud.OpResult[*domain.DriveFile]
+
+type RestoreDriveFileTo struct {
+}
+
+type RestoreDriveFileCommand struct {
+	DriveFileId   model.Id  `json:"driveFileId" param:"driveFileId"`
+	ParentFileRef *model.Id `json:"parentFileRef,omitempty"`
+}
+
+func (this RestoreDriveFileCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.DriveFileId, true),
+		model.IdValidateRule(this.ParentFileRef, true),
+	}
+
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type RestoreDriveFileResult = crud.OpResult[*domain.DriveFile]
+
+type MoveDriveFileCommand struct {
+	DriveFileId model.Id `json:"driveFileId" param:"driveFileId"`
+	ParentFileRef *model.Id `json:"parentFileRef,omitempty"`
+}
+
+func (this MoveDriveFileCommand) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.DriveFileId, true),
+		model.IdValidateRule(this.ParentFileRef, true),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type MoveDriveFileResult = crud.OpResult[*domain.DriveFile]
 
 type DeleteDriveFileCommand struct {
 	DriveFileId model.Id `json:"driveFileId" param:"driveFileId"`

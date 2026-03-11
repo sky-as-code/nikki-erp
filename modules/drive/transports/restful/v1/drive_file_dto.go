@@ -15,18 +15,20 @@ type DriveFileDto struct {
 	model.ModelBase     `json:",inline"`
 	model.AuditableBase `json:",inline"`
 
-	OwnerRef           model.Id `json:"owner_ref"`
-	ParentDriveFileRef model.Id `json:"parent_drive_file_ref"`
+	OwnerRef           model.Id `json:"ownerRef"`
+	ParentDriveFileRef model.Id `json:"parentDriveFileRef"`
 
 	Name       string                   `json:"name"`
 	MINE       string                   `json:"mine"`
-	IsFolder   bool                     `json:"is_folder"`
+	IsFolder   bool                     `json:"isFolder"`
 	Size       uint64                   `json:"size"`
-	Path       string                   `json:"path"`
+	Path       string                   `json:"-"`
 	Storage    enum.DriveFileStorage    `json:"storage"`
 	Visibility enum.DriveFileVisibility `json:"visibility"`
+	Status     enum.DriveFileStatus     `json:"status"`
+	// Children   []*DriveFileDto          `json:"children,omitempty" model:"-"`
 
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 }
 
 func (this *DriveFileDto) FromDriveFile(f domain.DriveFile) {
@@ -50,8 +52,17 @@ type GetDriveFileByIdResponse = DriveFileDto
 type MoveDriveFileToTrashRequest = it.MoveDriveFileToTrashCommand
 type MoveDriveFileToTrashResponse = httpserver.RestUpdateResponse
 
+type RestoreDriveFileRequest = it.RestoreDriveFileCommand
+type RestoreDriveFileResponse = httpserver.RestUpdateResponse
+
+type MoveDriveFileRequest = it.MoveDriveFileCommand
+type MoveDriveFileResponse = httpserver.RestUpdateResponse
+
 type DeleteDriveFileRequest = it.DeleteDriveFileCommand
 type DeleteDriveFileResponse = httpserver.RestDeleteResponse
+
+type GetDriveFileAncestorsRequest = it.GetDriveFileAncestorsQuery
+type GetDriveFileAncestorsResponse = []DriveFileDto
 
 type GetDriveFileByParentRequest = it.GetDriveFileByParentQuery
 type GetDriveFileByParentResponse httpserver.RestSearchResponse[DriveFileDto]

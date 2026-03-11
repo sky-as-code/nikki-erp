@@ -7,11 +7,13 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/middleware"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/drive/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/drive/interfaces/drive_file"
 )
 
@@ -196,6 +198,80 @@ func (this DriveFileRest) MoveDriveFileToTrash(echoCtx echo.Context) (err error)
 	return err
 }
 
+func (this DriveFileRest) RestoreDriveFile(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST restore drive file"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.DriveFileSvc.RestoreDriveFile,
+		func(request RestoreDriveFileRequest) it.RestoreDriveFileCommand {
+			return request
+		},
+		func(result it.RestoreDriveFileResult) RestoreDriveFileResponse {
+			response := RestoreDriveFileResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
+func (this DriveFileRest) MoveDriveFile(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST move drive file"); e != nil {
+			err = e
+		}
+	}()
+	
+	err = httpserver.ServeRequest(
+		echoCtx, this.DriveFileSvc.MoveDriveFile,
+		func(request MoveDriveFileRequest) it.MoveDriveFileCommand {
+			return request
+		},
+		func(result it.MoveDriveFileResult) MoveDriveFileResponse {
+			response := MoveDriveFileResponse{}
+			response.FromEntity(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
+func (this DriveFileRest) GetDriveFileAncestors(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get drive file ancestors"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.DriveFileSvc.GetDriveFileAncestors,
+		func(request GetDriveFileAncestorsRequest) it.GetDriveFileAncestorsQuery {
+			return request
+		},
+		func(result it.GetDriveFileAncestorsResult) GetDriveFileAncestorsResponse {
+			if len(result.Data) == 0 {
+				return []DriveFileDto{}
+			}
+			return array.Map(result.Data, func(f *domain.DriveFile) DriveFileDto {
+				dto := DriveFileDto{}
+				dto.FromDriveFile(*f)
+				return dto
+			})
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
 func (this DriveFileRest) GetDriveFileById(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get drive file by id"); e != nil {
@@ -219,7 +295,7 @@ func (this DriveFileRest) GetDriveFileById(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this DriveFileRest) DownloadDriveFile(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) StreamDriveFile(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST download drive file"); e != nil {
 			err = e
@@ -237,11 +313,6 @@ func (this DriveFileRest) DownloadDriveFile(echoCtx echo.Context) (err error) {
 		return httpserver.HandleServiceError(echoCtx, err)
 	}
 
-	echoCtx.Response().Header().Set(
-		echo.HeaderContentDisposition,
-		fmt.Sprintf("attachment; filename=%q", &driveFile.Name),
-	)
-
 	if stream == nil {
 		return httpserver.JsonBadRequest(echoCtx, &fault.ClientError{
 			Code:    "not_found",
@@ -249,7 +320,22 @@ func (this DriveFileRest) DownloadDriveFile(echoCtx echo.Context) (err error) {
 		})
 	}
 	defer stream.Close()
-	return echoCtx.Stream(http.StatusOK, "application/octet-stream", stream)
+
+	disposition := "inline"
+	if query.IsDownload {
+		disposition = "attachment"
+	}
+	echoCtx.Response().Header().Set(
+		echo.HeaderContentDisposition,
+		fmt.Sprintf("%s; filename=%q", disposition, driveFile.Name),
+	)
+
+	mimeType := driveFile.MINE
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
+	}
+
+	return echoCtx.Stream(http.StatusOK, mimeType, stream)
 }
 
 func (this DriveFileRest) GetDriveFileByParent(echoCtx echo.Context) (err error) {
