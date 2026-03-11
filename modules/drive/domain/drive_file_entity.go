@@ -23,21 +23,22 @@ type DriveFile struct {
 	OwnerRef           *model.Id `json:"owner_ref"`
 	ParentDriveFileRef *model.Id `json:"parent_drive_file_ref"`
 
-	Name       string                   `json:"name"`
-	MINE       string                   `json:"mine"`
-	IsFolder   bool                     `json:"is_folder"`
-	Size       uint64                   `json:"size"`
-	Path       string                   `json:"path"`
-	Storage    enum.DriveFileStorage    `json:"storage"`
-	Visibility enum.DriveFileVisibility `json:"visiblity"`
-	Status     enum.DriveFileStatus     `json:"status"`
+	Name        string                   `json:"name"`
+	MINE        string                   `json:"mine"`
+	IsFolder    bool                     `json:"isFolder"`
+	Size        uint64                   `json:"size"`
+	StoragePath string                   `json:"storagePath"`
+	Storage     enum.DriveFileStorage    `json:"storage"`
+	Visibility  enum.DriveFileVisibility `json:"visiblity"`
+	Status      enum.DriveFileStatus     `json:"status"`
+	StorageKey  string                   `json:"-"`
 
 	File       multipart.File
 	FileHeader *multipart.FileHeader
 
 	Children []*DriveFile `json:"-"`
 
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 }
 
 var (
@@ -104,11 +105,17 @@ func (d *DriveFile) Process() {
 	}
 }
 
-func (d *DriveFile) BuildObjectKeyStorage() string {
+func (d *DriveFile) BuildStorageInfo(endpoint string) {
 	if d.OwnerRef == nil || d.Id == nil {
-		return ""
+		return
 	}
-	return fmt.Sprintf("%s/%s", *d.OwnerRef, *d.Id)
+
+	d.StorageKey = fmt.Sprintf("%s/%s", *d.OwnerRef, *d.Id)
+
+	switch d.Storage {
+	case enum.DriveFileStorageS3:
+		d.StoragePath = fmt.Sprintf("%s/%s", endpoint, d.StorageKey)
+	}
 }
 
 func (d *DriveFile) BuildTree(children []*DriveFile) {

@@ -47,10 +47,15 @@ func initV1(
 	protected.PATCH("/files/:driveFileId", driveFileRest.UpdateDriveFileMetadata)
 	protected.PUT("/files/:driveFileId/content", driveFileRest.UpdateDriveFileContent)
 	protected.DELETE("/files/:driveFileId", driveFileRest.DeleteDriveFile)
-	protected.POST("/files/:driveFileId/move-to-trash", driveFileRest.MoveDriveFileToTrash)
-
+	protected.PUT("/files/:driveFileId/move-to-trash", driveFileRest.MoveDriveFileToTrash)
+	protected.PUT("/files/:driveFileId/restore", driveFileRest.RestoreDriveFile)
+	protected.PUT("/files/:driveFileId/move", driveFileRest.MoveDriveFile)
+	protected.GET("/files/:driveFileId/ancestors", driveFileRest.GetDriveFileAncestors)
+	protected.GET("/files/root", driveFileRest.GetDriveFileByParent)
 	protected.GET("/files/:driveFileId", driveFileRest.GetDriveFileById)
-	protected.GET("/files/:driveFileId/download", driveFileRest.DownloadDriveFile)
+
+	// TODO: add an API to create token for stream
+	route.GET("/files/:driveFileId/stream", driveFileRest.StreamDriveFile)
 	protected.GET("/files/:driveFileId/children", driveFileRest.GetDriveFileByParent)
 	protected.GET("/files", driveFileRest.SearchDriveFile)
 

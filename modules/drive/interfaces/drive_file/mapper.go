@@ -46,3 +46,25 @@ func (this DeleteDriveFileCommand) ToDomainModel() *domain.DriveFile {
 func (this MoveDriveFileToTrashCommand) ToDomainModel() *domain.DriveFile {
 	return &domain.DriveFile{ModelBase: model.ModelBase{Id: &this.DriveFileId}}
 }
+
+func (this RestoreDriveFileCommand) ToDomainModel() *domain.DriveFile {
+	d := &domain.DriveFile{
+		ModelBase: model.ModelBase{Id: &this.DriveFileId},
+	}
+
+	d.ParentDriveFileRef = this.ParentFileRef
+
+	return d
+}
+
+func (this MoveDriveFileCommand) ToDomainModel() *domain.DriveFile {
+	d := &domain.DriveFile{
+		ModelBase:     model.ModelBase{Id: &this.DriveFileId},
+		ParentDriveFileRef: this.ParentFileRef,
+	}
+	return d
+}
+
+func (this GetDriveFileAncestorsQuery) ToDomainModel() *domain.DriveFile {
+	return &domain.DriveFile{ModelBase: model.ModelBase{Id: &this.DriveFileId}}
+}
