@@ -1,0 +1,44 @@
+meta {
+  name: Invalid Name(Too long)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{api_host}}/v1/drive/files
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:multipart-form {
+  name: 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  isFolder: false
+  visibility: owner
+  file: @file(/home/quocsi/Downloads/download (1).jpeg)
+}
+
+tests {
+  test("Status is 400", function() {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Error code is validation_error", function() {
+      expect(res.getBody().code).to.equal("validation_error");
+  });
+  
+  test("Details exists", function() {
+      expect(res.getBody().details).to.exist;
+      expect(res.getBody().details).to.not.be.empty;
+      expect(res.getBody().details.name).to.exist;
+      expect(res.getBody().details.name).to.not.be.empty;
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

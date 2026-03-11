@@ -1,0 +1,41 @@
+meta {
+  name: Not found Drive File
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/drive/files/:driveFileId/shares
+  body: json
+  auth: inherit
+}
+
+params:path {
+  driveFileId: {{NotFoundId}}
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "userRef": "01JWNNJGS70Y07MBEV3AQ0M526",
+    "permission": "view"
+  }
+}
+
+tests {
+  test("Status is 400", function() {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Should has error", function() {
+      expect(res.getBody()?.details?.driveFileId).to.equal("drive file not found");
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
