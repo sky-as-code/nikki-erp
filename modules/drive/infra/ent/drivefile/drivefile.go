@@ -34,8 +34,10 @@ const (
 	FieldIsFolder = "is_folder"
 	// FieldSize holds the string denoting the size field in the database.
 	FieldSize = "size"
-	// FieldPath holds the string denoting the path field in the database.
-	FieldPath = "path"
+	// FieldStoragePath holds the string denoting the storage_path field in the database.
+	FieldStoragePath = "storage_path"
+	// FieldStorageKey holds the string denoting the storage_key field in the database.
+	FieldStorageKey = "storage_key"
 	// FieldStorage holds the string denoting the storage field in the database.
 	FieldStorage = "storage"
 	// FieldVisibility holds the string denoting the visibility field in the database.
@@ -80,7 +82,8 @@ var Columns = []string{
 	FieldMime,
 	FieldIsFolder,
 	FieldSize,
-	FieldPath,
+	FieldStoragePath,
+	FieldStorageKey,
 	FieldStorage,
 	FieldVisibility,
 	FieldStatus,
@@ -179,9 +182,14 @@ func BySize(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSize, opts...).ToFunc()
 }
 
-// ByPath orders the results by the path field.
-func ByPath(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldPath, opts...).ToFunc()
+// ByStoragePath orders the results by the storage_path field.
+func ByStoragePath(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStoragePath, opts...).ToFunc()
+}
+
+// ByStorageKey orders the results by the storage_key field.
+func ByStorageKey(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStorageKey, opts...).ToFunc()
 }
 
 // ByStorage orders the results by the storage field.

@@ -115,9 +115,14 @@ func Size(v int64) predicate.DriveFile {
 	return predicate.DriveFile(sql.FieldEQ(FieldSize, v))
 }
 
-// Path applies equality check predicate on the "path" field. It's identical to PathEQ.
-func Path(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEQ(FieldPath, v))
+// StoragePath applies equality check predicate on the "storage_path" field. It's identical to StoragePathEQ.
+func StoragePath(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEQ(FieldStoragePath, v))
+}
+
+// StorageKey applies equality check predicate on the "storage_key" field. It's identical to StorageKeyEQ.
+func StorageKey(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEQ(FieldStorageKey, v))
 }
 
 // Storage applies equality check predicate on the "storage" field. It's identical to StorageEQ.
@@ -640,69 +645,134 @@ func SizeLTE(v int64) predicate.DriveFile {
 	return predicate.DriveFile(sql.FieldLTE(FieldSize, v))
 }
 
-// PathEQ applies the EQ predicate on the "path" field.
-func PathEQ(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEQ(FieldPath, v))
+// StoragePathEQ applies the EQ predicate on the "storage_path" field.
+func StoragePathEQ(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEQ(FieldStoragePath, v))
 }
 
-// PathNEQ applies the NEQ predicate on the "path" field.
-func PathNEQ(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldNEQ(FieldPath, v))
+// StoragePathNEQ applies the NEQ predicate on the "storage_path" field.
+func StoragePathNEQ(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldNEQ(FieldStoragePath, v))
 }
 
-// PathIn applies the In predicate on the "path" field.
-func PathIn(vs ...string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldIn(FieldPath, vs...))
+// StoragePathIn applies the In predicate on the "storage_path" field.
+func StoragePathIn(vs ...string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldIn(FieldStoragePath, vs...))
 }
 
-// PathNotIn applies the NotIn predicate on the "path" field.
-func PathNotIn(vs ...string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldNotIn(FieldPath, vs...))
+// StoragePathNotIn applies the NotIn predicate on the "storage_path" field.
+func StoragePathNotIn(vs ...string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldNotIn(FieldStoragePath, vs...))
 }
 
-// PathGT applies the GT predicate on the "path" field.
-func PathGT(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldGT(FieldPath, v))
+// StoragePathGT applies the GT predicate on the "storage_path" field.
+func StoragePathGT(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldGT(FieldStoragePath, v))
 }
 
-// PathGTE applies the GTE predicate on the "path" field.
-func PathGTE(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldGTE(FieldPath, v))
+// StoragePathGTE applies the GTE predicate on the "storage_path" field.
+func StoragePathGTE(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldGTE(FieldStoragePath, v))
 }
 
-// PathLT applies the LT predicate on the "path" field.
-func PathLT(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldLT(FieldPath, v))
+// StoragePathLT applies the LT predicate on the "storage_path" field.
+func StoragePathLT(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldLT(FieldStoragePath, v))
 }
 
-// PathLTE applies the LTE predicate on the "path" field.
-func PathLTE(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldLTE(FieldPath, v))
+// StoragePathLTE applies the LTE predicate on the "storage_path" field.
+func StoragePathLTE(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldLTE(FieldStoragePath, v))
 }
 
-// PathContains applies the Contains predicate on the "path" field.
-func PathContains(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldContains(FieldPath, v))
+// StoragePathContains applies the Contains predicate on the "storage_path" field.
+func StoragePathContains(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldContains(FieldStoragePath, v))
 }
 
-// PathHasPrefix applies the HasPrefix predicate on the "path" field.
-func PathHasPrefix(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldHasPrefix(FieldPath, v))
+// StoragePathHasPrefix applies the HasPrefix predicate on the "storage_path" field.
+func StoragePathHasPrefix(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldHasPrefix(FieldStoragePath, v))
 }
 
-// PathHasSuffix applies the HasSuffix predicate on the "path" field.
-func PathHasSuffix(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldHasSuffix(FieldPath, v))
+// StoragePathHasSuffix applies the HasSuffix predicate on the "storage_path" field.
+func StoragePathHasSuffix(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldHasSuffix(FieldStoragePath, v))
 }
 
-// PathEqualFold applies the EqualFold predicate on the "path" field.
-func PathEqualFold(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEqualFold(FieldPath, v))
+// StoragePathEqualFold applies the EqualFold predicate on the "storage_path" field.
+func StoragePathEqualFold(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEqualFold(FieldStoragePath, v))
 }
 
-// PathContainsFold applies the ContainsFold predicate on the "path" field.
-func PathContainsFold(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldContainsFold(FieldPath, v))
+// StoragePathContainsFold applies the ContainsFold predicate on the "storage_path" field.
+func StoragePathContainsFold(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldContainsFold(FieldStoragePath, v))
+}
+
+// StorageKeyEQ applies the EQ predicate on the "storage_key" field.
+func StorageKeyEQ(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEQ(FieldStorageKey, v))
+}
+
+// StorageKeyNEQ applies the NEQ predicate on the "storage_key" field.
+func StorageKeyNEQ(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldNEQ(FieldStorageKey, v))
+}
+
+// StorageKeyIn applies the In predicate on the "storage_key" field.
+func StorageKeyIn(vs ...string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldIn(FieldStorageKey, vs...))
+}
+
+// StorageKeyNotIn applies the NotIn predicate on the "storage_key" field.
+func StorageKeyNotIn(vs ...string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldNotIn(FieldStorageKey, vs...))
+}
+
+// StorageKeyGT applies the GT predicate on the "storage_key" field.
+func StorageKeyGT(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldGT(FieldStorageKey, v))
+}
+
+// StorageKeyGTE applies the GTE predicate on the "storage_key" field.
+func StorageKeyGTE(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldGTE(FieldStorageKey, v))
+}
+
+// StorageKeyLT applies the LT predicate on the "storage_key" field.
+func StorageKeyLT(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldLT(FieldStorageKey, v))
+}
+
+// StorageKeyLTE applies the LTE predicate on the "storage_key" field.
+func StorageKeyLTE(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldLTE(FieldStorageKey, v))
+}
+
+// StorageKeyContains applies the Contains predicate on the "storage_key" field.
+func StorageKeyContains(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldContains(FieldStorageKey, v))
+}
+
+// StorageKeyHasPrefix applies the HasPrefix predicate on the "storage_key" field.
+func StorageKeyHasPrefix(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldHasPrefix(FieldStorageKey, v))
+}
+
+// StorageKeyHasSuffix applies the HasSuffix predicate on the "storage_key" field.
+func StorageKeyHasSuffix(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldHasSuffix(FieldStorageKey, v))
+}
+
+// StorageKeyEqualFold applies the EqualFold predicate on the "storage_key" field.
+func StorageKeyEqualFold(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldEqualFold(FieldStorageKey, v))
+}
+
+// StorageKeyContainsFold applies the ContainsFold predicate on the "storage_key" field.
+func StorageKeyContainsFold(v string) predicate.DriveFile {
+	return predicate.DriveFile(sql.FieldContainsFold(FieldStorageKey, v))
 }
 
 // StorageEQ applies the EQ predicate on the "storage" field.

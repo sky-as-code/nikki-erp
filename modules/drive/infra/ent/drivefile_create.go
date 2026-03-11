@@ -121,9 +121,15 @@ func (dfc *DriveFileCreate) SetSize(i int64) *DriveFileCreate {
 	return dfc
 }
 
-// SetPath sets the "path" field.
-func (dfc *DriveFileCreate) SetPath(s string) *DriveFileCreate {
-	dfc.mutation.SetPath(s)
+// SetStoragePath sets the "storage_path" field.
+func (dfc *DriveFileCreate) SetStoragePath(s string) *DriveFileCreate {
+	dfc.mutation.SetStoragePath(s)
+	return dfc
+}
+
+// SetStorageKey sets the "storage_key" field.
+func (dfc *DriveFileCreate) SetStorageKey(s string) *DriveFileCreate {
+	dfc.mutation.SetStorageKey(s)
 	return dfc
 }
 
@@ -321,8 +327,11 @@ func (dfc *DriveFileCreate) check() error {
 			return &ValidationError{Name: "size", err: fmt.Errorf(`ent: validator failed for field "DriveFile.size": %w`, err)}
 		}
 	}
-	if _, ok := dfc.mutation.Path(); !ok {
-		return &ValidationError{Name: "path", err: errors.New(`ent: missing required field "DriveFile.path"`)}
+	if _, ok := dfc.mutation.StoragePath(); !ok {
+		return &ValidationError{Name: "storage_path", err: errors.New(`ent: missing required field "DriveFile.storage_path"`)}
+	}
+	if _, ok := dfc.mutation.StorageKey(); !ok {
+		return &ValidationError{Name: "storage_key", err: errors.New(`ent: missing required field "DriveFile.storage_key"`)}
 	}
 	if _, ok := dfc.mutation.Storage(); !ok {
 		return &ValidationError{Name: "storage", err: errors.New(`ent: missing required field "DriveFile.storage"`)}
@@ -414,9 +423,13 @@ func (dfc *DriveFileCreate) createSpec() (*DriveFile, *sqlgraph.CreateSpec) {
 		_spec.SetField(drivefile.FieldSize, field.TypeInt64, value)
 		_node.Size = value
 	}
-	if value, ok := dfc.mutation.Path(); ok {
-		_spec.SetField(drivefile.FieldPath, field.TypeString, value)
-		_node.Path = value
+	if value, ok := dfc.mutation.StoragePath(); ok {
+		_spec.SetField(drivefile.FieldStoragePath, field.TypeString, value)
+		_node.StoragePath = value
+	}
+	if value, ok := dfc.mutation.StorageKey(); ok {
+		_spec.SetField(drivefile.FieldStorageKey, field.TypeString, value)
+		_node.StorageKey = value
 	}
 	if value, ok := dfc.mutation.Storage(); ok {
 		_spec.SetField(drivefile.FieldStorage, field.TypeString, value)

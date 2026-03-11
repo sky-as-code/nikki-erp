@@ -21,7 +21,8 @@ var (
 		{Name: "mime", Type: field.TypeString},
 		{Name: "is_folder", Type: field.TypeBool, Default: false},
 		{Name: "size", Type: field.TypeInt64},
-		{Name: "path", Type: field.TypeString},
+		{Name: "storage_path", Type: field.TypeString},
+		{Name: "storage_key", Type: field.TypeString},
 		{Name: "storage", Type: field.TypeString},
 		{Name: "visibility", Type: field.TypeString, Default: "owner"},
 		{Name: "status", Type: field.TypeString, Default: "active"},
@@ -35,7 +36,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "dri_files_dri_files_children_file",
-				Columns:    []*schema.Column{DriFilesColumns[14]},
+				Columns:    []*schema.Column{DriFilesColumns[15]},
 				RefColumns: []*schema.Column{DriFilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -44,7 +45,7 @@ var (
 			{
 				Name:    "drivefile_owner_ref_parent_file_ref_is_folder_name",
 				Unique:  true,
-				Columns: []*schema.Column{DriFilesColumns[5], DriFilesColumns[14], DriFilesColumns[8], DriFilesColumns[6]},
+				Columns: []*schema.Column{DriFilesColumns[5], DriFilesColumns[15], DriFilesColumns[8], DriFilesColumns[6]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "parent_file_ref is NOT NULL",
 				},
@@ -57,12 +58,12 @@ var (
 			{
 				Name:    "drivefile_parent_file_ref",
 				Unique:  false,
-				Columns: []*schema.Column{DriFilesColumns[14]},
+				Columns: []*schema.Column{DriFilesColumns[15]},
 			},
 			{
 				Name:    "drivefile_status",
 				Unique:  false,
-				Columns: []*schema.Column{DriFilesColumns[13]},
+				Columns: []*schema.Column{DriFilesColumns[14]},
 			},
 		},
 	}

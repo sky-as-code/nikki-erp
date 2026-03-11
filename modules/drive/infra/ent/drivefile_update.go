@@ -168,16 +168,30 @@ func (dfu *DriveFileUpdate) AddSize(i int64) *DriveFileUpdate {
 	return dfu
 }
 
-// SetPath sets the "path" field.
-func (dfu *DriveFileUpdate) SetPath(s string) *DriveFileUpdate {
-	dfu.mutation.SetPath(s)
+// SetStoragePath sets the "storage_path" field.
+func (dfu *DriveFileUpdate) SetStoragePath(s string) *DriveFileUpdate {
+	dfu.mutation.SetStoragePath(s)
 	return dfu
 }
 
-// SetNillablePath sets the "path" field if the given value is not nil.
-func (dfu *DriveFileUpdate) SetNillablePath(s *string) *DriveFileUpdate {
+// SetNillableStoragePath sets the "storage_path" field if the given value is not nil.
+func (dfu *DriveFileUpdate) SetNillableStoragePath(s *string) *DriveFileUpdate {
 	if s != nil {
-		dfu.SetPath(*s)
+		dfu.SetStoragePath(*s)
+	}
+	return dfu
+}
+
+// SetStorageKey sets the "storage_key" field.
+func (dfu *DriveFileUpdate) SetStorageKey(s string) *DriveFileUpdate {
+	dfu.mutation.SetStorageKey(s)
+	return dfu
+}
+
+// SetNillableStorageKey sets the "storage_key" field if the given value is not nil.
+func (dfu *DriveFileUpdate) SetNillableStorageKey(s *string) *DriveFileUpdate {
+	if s != nil {
+		dfu.SetStorageKey(*s)
 	}
 	return dfu
 }
@@ -422,8 +436,11 @@ func (dfu *DriveFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := dfu.mutation.AddedSize(); ok {
 		_spec.AddField(drivefile.FieldSize, field.TypeInt64, value)
 	}
-	if value, ok := dfu.mutation.Path(); ok {
-		_spec.SetField(drivefile.FieldPath, field.TypeString, value)
+	if value, ok := dfu.mutation.StoragePath(); ok {
+		_spec.SetField(drivefile.FieldStoragePath, field.TypeString, value)
+	}
+	if value, ok := dfu.mutation.StorageKey(); ok {
+		_spec.SetField(drivefile.FieldStorageKey, field.TypeString, value)
 	}
 	if value, ok := dfu.mutation.Storage(); ok {
 		_spec.SetField(drivefile.FieldStorage, field.TypeString, value)
@@ -712,16 +729,30 @@ func (dfuo *DriveFileUpdateOne) AddSize(i int64) *DriveFileUpdateOne {
 	return dfuo
 }
 
-// SetPath sets the "path" field.
-func (dfuo *DriveFileUpdateOne) SetPath(s string) *DriveFileUpdateOne {
-	dfuo.mutation.SetPath(s)
+// SetStoragePath sets the "storage_path" field.
+func (dfuo *DriveFileUpdateOne) SetStoragePath(s string) *DriveFileUpdateOne {
+	dfuo.mutation.SetStoragePath(s)
 	return dfuo
 }
 
-// SetNillablePath sets the "path" field if the given value is not nil.
-func (dfuo *DriveFileUpdateOne) SetNillablePath(s *string) *DriveFileUpdateOne {
+// SetNillableStoragePath sets the "storage_path" field if the given value is not nil.
+func (dfuo *DriveFileUpdateOne) SetNillableStoragePath(s *string) *DriveFileUpdateOne {
 	if s != nil {
-		dfuo.SetPath(*s)
+		dfuo.SetStoragePath(*s)
+	}
+	return dfuo
+}
+
+// SetStorageKey sets the "storage_key" field.
+func (dfuo *DriveFileUpdateOne) SetStorageKey(s string) *DriveFileUpdateOne {
+	dfuo.mutation.SetStorageKey(s)
+	return dfuo
+}
+
+// SetNillableStorageKey sets the "storage_key" field if the given value is not nil.
+func (dfuo *DriveFileUpdateOne) SetNillableStorageKey(s *string) *DriveFileUpdateOne {
+	if s != nil {
+		dfuo.SetStorageKey(*s)
 	}
 	return dfuo
 }
@@ -996,8 +1027,11 @@ func (dfuo *DriveFileUpdateOne) sqlSave(ctx context.Context) (_node *DriveFile, 
 	if value, ok := dfuo.mutation.AddedSize(); ok {
 		_spec.AddField(drivefile.FieldSize, field.TypeInt64, value)
 	}
-	if value, ok := dfuo.mutation.Path(); ok {
-		_spec.SetField(drivefile.FieldPath, field.TypeString, value)
+	if value, ok := dfuo.mutation.StoragePath(); ok {
+		_spec.SetField(drivefile.FieldStoragePath, field.TypeString, value)
+	}
+	if value, ok := dfuo.mutation.StorageKey(); ok {
+		_spec.SetField(drivefile.FieldStorageKey, field.TypeString, value)
 	}
 	if value, ok := dfuo.mutation.Storage(); ok {
 		_spec.SetField(drivefile.FieldStorage, field.TypeString, value)

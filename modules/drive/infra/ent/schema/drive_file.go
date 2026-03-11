@@ -53,7 +53,9 @@ func (DriveFileMixin) Fields() []ent.Field {
 		field.Int64("size").
 			NonNegative(),
 
-		field.String("path"),
+		field.String("storage_path"),
+
+		field.String("storage_key"),
 
 		field.String("storage"),
 

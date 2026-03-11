@@ -37,8 +37,10 @@ type DriveFile struct {
 	IsFolder bool `json:"is_folder,omitempty"`
 	// Size holds the value of the "size" field.
 	Size int64 `json:"size,omitempty"`
-	// Path holds the value of the "path" field.
-	Path string `json:"path,omitempty"`
+	// StoragePath holds the value of the "storage_path" field.
+	StoragePath string `json:"storage_path,omitempty"`
+	// StorageKey holds the value of the "storage_key" field.
+	StorageKey string `json:"storage_key,omitempty"`
 	// Storage holds the value of the "storage" field.
 	Storage string `json:"storage,omitempty"`
 	// Visibility holds the value of the "visibility" field.
@@ -102,7 +104,7 @@ func (*DriveFile) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case drivefile.FieldSize:
 			values[i] = new(sql.NullInt64)
-		case drivefile.FieldID, drivefile.FieldEtag, drivefile.FieldOwnerRef, drivefile.FieldParentFileRef, drivefile.FieldName, drivefile.FieldMime, drivefile.FieldPath, drivefile.FieldStorage, drivefile.FieldVisibility, drivefile.FieldStatus:
+		case drivefile.FieldID, drivefile.FieldEtag, drivefile.FieldOwnerRef, drivefile.FieldParentFileRef, drivefile.FieldName, drivefile.FieldMime, drivefile.FieldStoragePath, drivefile.FieldStorageKey, drivefile.FieldStorage, drivefile.FieldVisibility, drivefile.FieldStatus:
 			values[i] = new(sql.NullString)
 		case drivefile.FieldCreatedAt, drivefile.FieldUpdatedAt, drivefile.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -188,11 +190,17 @@ func (df *DriveFile) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				df.Size = value.Int64
 			}
-		case drivefile.FieldPath:
+		case drivefile.FieldStoragePath:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field path", values[i])
+				return fmt.Errorf("unexpected type %T for field storage_path", values[i])
 			} else if value.Valid {
-				df.Path = value.String
+				df.StoragePath = value.String
+			}
+		case drivefile.FieldStorageKey:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field storage_key", values[i])
+			} else if value.Valid {
+				df.StorageKey = value.String
 			}
 		case drivefile.FieldStorage:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -295,8 +303,11 @@ func (df *DriveFile) String() string {
 	builder.WriteString("size=")
 	builder.WriteString(fmt.Sprintf("%v", df.Size))
 	builder.WriteString(", ")
-	builder.WriteString("path=")
-	builder.WriteString(df.Path)
+	builder.WriteString("storage_path=")
+	builder.WriteString(df.StoragePath)
+	builder.WriteString(", ")
+	builder.WriteString("storage_key=")
+	builder.WriteString(df.StorageKey)
 	builder.WriteString(", ")
 	builder.WriteString("storage=")
 	builder.WriteString(df.Storage)

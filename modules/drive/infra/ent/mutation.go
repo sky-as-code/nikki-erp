@@ -45,7 +45,8 @@ type DriveFileMutation struct {
 	is_folder                *bool
 	size                     *int64
 	addsize                  *int64
-	_path                    *string
+	storage_path             *string
+	storage_key              *string
 	storage                  *string
 	visibility               *string
 	status                   *string
@@ -560,40 +561,76 @@ func (m *DriveFileMutation) ResetSize() {
 	m.addsize = nil
 }
 
-// SetPath sets the "path" field.
-func (m *DriveFileMutation) SetPath(s string) {
-	m._path = &s
+// SetStoragePath sets the "storage_path" field.
+func (m *DriveFileMutation) SetStoragePath(s string) {
+	m.storage_path = &s
 }
 
-// Path returns the value of the "path" field in the mutation.
-func (m *DriveFileMutation) Path() (r string, exists bool) {
-	v := m._path
+// StoragePath returns the value of the "storage_path" field in the mutation.
+func (m *DriveFileMutation) StoragePath() (r string, exists bool) {
+	v := m.storage_path
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldPath returns the old "path" field's value of the DriveFile entity.
+// OldStoragePath returns the old "storage_path" field's value of the DriveFile entity.
 // If the DriveFile object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DriveFileMutation) OldPath(ctx context.Context) (v string, err error) {
+func (m *DriveFileMutation) OldStoragePath(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldPath is only allowed on UpdateOne operations")
+		return v, errors.New("OldStoragePath is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldPath requires an ID field in the mutation")
+		return v, errors.New("OldStoragePath requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPath: %w", err)
+		return v, fmt.Errorf("querying old value for OldStoragePath: %w", err)
 	}
-	return oldValue.Path, nil
+	return oldValue.StoragePath, nil
 }
 
-// ResetPath resets all changes to the "path" field.
-func (m *DriveFileMutation) ResetPath() {
-	m._path = nil
+// ResetStoragePath resets all changes to the "storage_path" field.
+func (m *DriveFileMutation) ResetStoragePath() {
+	m.storage_path = nil
+}
+
+// SetStorageKey sets the "storage_key" field.
+func (m *DriveFileMutation) SetStorageKey(s string) {
+	m.storage_key = &s
+}
+
+// StorageKey returns the value of the "storage_key" field in the mutation.
+func (m *DriveFileMutation) StorageKey() (r string, exists bool) {
+	v := m.storage_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStorageKey returns the old "storage_key" field's value of the DriveFile entity.
+// If the DriveFile object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DriveFileMutation) OldStorageKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStorageKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStorageKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStorageKey: %w", err)
+	}
+	return oldValue.StorageKey, nil
+}
+
+// ResetStorageKey resets all changes to the "storage_key" field.
+func (m *DriveFileMutation) ResetStorageKey() {
+	m.storage_key = nil
 }
 
 // SetStorage sets the "storage" field.
@@ -886,7 +923,7 @@ func (m *DriveFileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DriveFileMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 15)
 	if m.etag != nil {
 		fields = append(fields, drivefile.FieldEtag)
 	}
@@ -917,8 +954,11 @@ func (m *DriveFileMutation) Fields() []string {
 	if m.size != nil {
 		fields = append(fields, drivefile.FieldSize)
 	}
-	if m._path != nil {
-		fields = append(fields, drivefile.FieldPath)
+	if m.storage_path != nil {
+		fields = append(fields, drivefile.FieldStoragePath)
+	}
+	if m.storage_key != nil {
+		fields = append(fields, drivefile.FieldStorageKey)
 	}
 	if m.storage != nil {
 		fields = append(fields, drivefile.FieldStorage)
@@ -957,8 +997,10 @@ func (m *DriveFileMutation) Field(name string) (ent.Value, bool) {
 		return m.IsFolder()
 	case drivefile.FieldSize:
 		return m.Size()
-	case drivefile.FieldPath:
-		return m.Path()
+	case drivefile.FieldStoragePath:
+		return m.StoragePath()
+	case drivefile.FieldStorageKey:
+		return m.StorageKey()
 	case drivefile.FieldStorage:
 		return m.Storage()
 	case drivefile.FieldVisibility:
@@ -994,8 +1036,10 @@ func (m *DriveFileMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldIsFolder(ctx)
 	case drivefile.FieldSize:
 		return m.OldSize(ctx)
-	case drivefile.FieldPath:
-		return m.OldPath(ctx)
+	case drivefile.FieldStoragePath:
+		return m.OldStoragePath(ctx)
+	case drivefile.FieldStorageKey:
+		return m.OldStorageKey(ctx)
 	case drivefile.FieldStorage:
 		return m.OldStorage(ctx)
 	case drivefile.FieldVisibility:
@@ -1081,12 +1125,19 @@ func (m *DriveFileMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSize(v)
 		return nil
-	case drivefile.FieldPath:
+	case drivefile.FieldStoragePath:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetPath(v)
+		m.SetStoragePath(v)
+		return nil
+	case drivefile.FieldStorageKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStorageKey(v)
 		return nil
 	case drivefile.FieldStorage:
 		v, ok := value.(string)
@@ -1212,8 +1263,11 @@ func (m *DriveFileMutation) ResetField(name string) error {
 	case drivefile.FieldSize:
 		m.ResetSize()
 		return nil
-	case drivefile.FieldPath:
-		m.ResetPath()
+	case drivefile.FieldStoragePath:
+		m.ResetStoragePath()
+		return nil
+	case drivefile.FieldStorageKey:
+		m.ResetStorageKey()
 		return nil
 	case drivefile.FieldStorage:
 		m.ResetStorage()

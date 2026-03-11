@@ -48,13 +48,13 @@ func init() {
 	// drivefile.SizeValidator is a validator for the "size" field. It is called by the builders before save.
 	drivefile.SizeValidator = drivefileDescSize.Validators[0].(func(int64) error)
 	// drivefileDescVisibility is the schema descriptor for visibility field.
-	drivefileDescVisibility := drivefileMixinFields0[13].Descriptor()
+	drivefileDescVisibility := drivefileMixinFields0[14].Descriptor()
 	// drivefile.DefaultVisibility holds the default value on creation for the visibility field.
 	drivefile.DefaultVisibility = drivefileDescVisibility.Default.(string)
 	// drivefile.VisibilityValidator is a validator for the "visibility" field. It is called by the builders before save.
 	drivefile.VisibilityValidator = drivefileDescVisibility.Validators[0].(func(string) error)
 	// drivefileDescStatus is the schema descriptor for status field.
-	drivefileDescStatus := drivefileMixinFields0[14].Descriptor()
+	drivefileDescStatus := drivefileMixinFields0[15].Descriptor()
 	// drivefile.DefaultStatus holds the default value on creation for the status field.
 	drivefile.DefaultStatus = drivefileDescStatus.Default.(string)
 	// drivefile.StatusValidator is a validator for the "status" field. It is called by the builders before save.
