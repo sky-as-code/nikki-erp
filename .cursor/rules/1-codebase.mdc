@@ -1,0 +1,34 @@
+---
+alwaysApply: true
+---
+### Reuse
+
+Before generating code, you MUST:
+
+1. Rephrase the request as: "I am looking for code that does [requested functionality], is there existing code that can do this?"
+2. Search the codebase for similar solutions
+3. Only generate new code if no suitable existing solution is found
+4. If creating new code, explain why existing solutions weren't suitable
+
+Goal: Maintain a cohesive codebase by finding and reusing existing code patterns.
+
+### Clean code
+
+1. A function body must not have more than 30 lines of code.
+2. A line of code must not be longer than 125 characters, including white spaces.
+3. Function names, regardless public or private, must be human-comprehendable and meaningful.
+4. Variable names must be meaningful, except for iterators such as i, j
+
+### Code base structure
+
+From now on, symbol "/" means project root, never refer "/" as OS root except when I explicitly describe a path as "file path", "system path".
+
+When creating new files, you must put them in correct folders so that the capabilities of the code in file match following folder purpose:
+
+* /common: referred as "Common Module", for stateless ultility functions. Code .go file should be under a subfolder to organize utilities into packages.
+* /modules: the container for subfolders called "Feature Module", the module metadata can be found in "index.go" file
+
+### Style guide
+
+* Use "this" to name receiver variables.
+* Use strict technical camel case or Pascal case format with no exception for acronyms. For example: Use MySql instead of MySQL, DbClient (as public variable) or dbClient (as private variable) instead of DBClient or dBClient (which looks super wierd).

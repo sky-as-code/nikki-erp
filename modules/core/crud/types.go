@@ -68,6 +68,17 @@ func (this OpResult[TData]) GetHasData() bool {
 	return this.HasData
 }
 
+type EntityOpResult[TData any] struct {
+	Data TData `json:"data"`
+
+	// Indicates whether "Data" has zero value (ie: empty struct, empty array)
+	//
+	// If ClientError is nil but HasData is false,
+	// it means the query is successfull but doesn't return any data.
+	IsEmpty     bool            `json:"isEmpty"`
+	ClientError *ft.ClientError `json:"error,omitempty"`
+}
+
 type DeletionResultData struct {
 	Id           model.Id  `json:"id"`
 	DeletedAt    time.Time `json:"deletedAt"`

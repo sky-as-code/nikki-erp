@@ -1,10 +1,39 @@
 package fault
 
 import (
+	"bytes"
 	"fmt"
+	"text/template"
 
 	invopop "github.com/invopop/validation"
 )
+
+type ValidationErrorItem struct {
+	Field   string
+	Error   string
+	Key     string
+	Message string
+	Vars    map[string]any
+}
+
+// String returns the message with variables substituted.
+func (this *ValidationErrorItem) String() string {
+	if this == nil || this.Message == "" {
+		return ""
+	}
+	if len(this.Vars) == 0 {
+		return this.Message
+	}
+	tmpl, err := template.New("validation").Parse(this.Message)
+	if err != nil {
+		return this.Message
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, this.Vars); err != nil {
+		return this.Message
+	}
+	return buf.String()
+}
 
 type ClientError struct {
 	Code    string `json:"code"`
@@ -15,10 +44,127 @@ func (this ClientError) Error() string {
 	return fmt.Sprintf("%s: %v", this.Code, this.Details)
 }
 
-type ValidationErrorItem struct {
-	Field string
-	Error string
+func NewClientErrors() *ClientErrors {
+	return &ClientErrors{}
 }
+
+type ClientErrors []ClientErrorItem
+
+func (this *ClientErrors) Append(item ClientErrorItem) {
+	*this = append(*this, item)
+}
+
+func (this *ClientErrors) Count() int {
+	return len(*this)
+}
+
+func (this *ClientErrors) Has(field string) bool {
+	for _, item := range *this {
+		if item.Field == field {
+			return true
+		}
+	}
+	return false
+}
+
+type ClientErrorType string
+
+const (
+	// Error caused by invalid input data, e.g: validation error, missing required fields, etc.
+	ClientErrorTypeValidation ClientErrorType = "validation"
+
+	// Error caused by business logic, aka business invariant, violations, e.g: insufficient balance, resource not found, etc.
+	ClientErrorTypeBusiness ClientErrorType = "business"
+)
+
+func NewBusinessViolation(field string, key string, message string, vars ...map[string]any) *ClientErrorItem {
+	var msgVars map[string]any = nil
+	if len(vars) == 0 {
+		msgVars = vars[0]
+	}
+
+	return &ClientErrorItem{
+		Field:   field,
+		Key:     key,
+		Message: message,
+		Vars:    msgVars,
+		Type:    ClientErrorTypeBusiness,
+	}
+}
+
+func NewValidationError(field string, key string, message string, vars ...map[string]any) *ClientErrorItem {
+	var msgVars map[string]any = nil
+	if len(vars) == 0 {
+		msgVars = vars[0]
+	}
+
+	return &ClientErrorItem{
+		Field:   field,
+		Key:     key,
+		Message: message,
+		Vars:    msgVars,
+		Type:    ClientErrorTypeValidation,
+	}
+}
+
+func NewAnonymousValidationError(key string, message string, vars ...map[string]any) *ClientErrorItem {
+	var msgVars map[string]any = nil
+	if len(vars) == 0 {
+		msgVars = vars[0]
+	}
+
+	return &ClientErrorItem{
+		Field:   "",
+		Key:     key,
+		Message: message,
+		Vars:    msgVars,
+		Type:    ClientErrorTypeValidation,
+	}
+}
+
+type ClientErrorItem struct {
+	// Field name in request payload that caused the error
+	Field string
+
+	// Translation key
+	Key string
+
+	// Error message template, support variable substitution.
+	// This is for human-friendly error logging.
+	// To display to end user, use `Key` and optional `Vars` to localize the error message.
+	Message string
+
+	// Error type. Can be used to determine the position of the error message on the UI,
+	// or used for analytics.
+	Type ClientErrorType
+
+	// Variables for substitution into Message.
+	Vars map[string]any
+}
+
+// String returns the message with variables substituted.
+func (this ClientErrorItem) String() string {
+	if this.Message == "" {
+		return ""
+	}
+	if len(this.Vars) == 0 {
+		return this.Message
+	}
+	tmpl, err := template.New("ClientErrorItem").Parse(this.Message)
+	if err != nil {
+		return this.Message
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, this.Vars); err != nil {
+		return this.Message
+	}
+	if this.Key != "" {
+		return fmt.Sprintf("%s: %s", this.Field, buf.String())
+	}
+	return buf.String()
+}
+
+type ValidationErrorCollection map[string]string
 
 type ValidationErrors map[string]string
 

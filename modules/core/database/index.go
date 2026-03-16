@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"time"
 
 	entsql "entgo.io/ent/dialect/sql"
@@ -8,6 +9,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/database/dialects"
@@ -37,7 +39,7 @@ func InitSubModule(params InitParams) error {
 	maxOpenConns := configSvc.GetUint(c.DbMaxOpenConns)
 	connMaxLifetimeSecs := configSvc.GetUint(c.DbConnMaxLifetimeSecs)
 
-	driver, err := dialects.NewEntDriver(dialects.EntDriverOptions{
+	entDriverOpts := dialects.ClientOptions{
 		DialectName:     dbDialect,
 		MaxIdleConns:    maxIdleConns,
 		MaxOpenConns:    maxOpenConns,
@@ -50,19 +52,25 @@ func InitSubModule(params InitParams) error {
 			Database:     dbname,
 			IsTlsEnabled: tlsEnabled,
 		},
-	})
+	}
+
+	driver, err := dialects.NewEntDriver(entDriverOpts)
 
 	if err != nil {
 		logger.Error("failed to open database connection", err)
 		return err
 	}
 
-	err = deps.Register(func() *EntClientOptions {
-		return &EntClientOptions{
-			Driver:       driver,
-			DebugEnabled: debugEnabled,
-		}
-	})
+	err = errors.Join(
+		deps.Register(orm.NewPgQueryBuilder),
+		deps.Register(orm.NewPgClient),
+		deps.Register(func() *EntClientOptions {
+			return &EntClientOptions{
+				Driver:       driver,
+				DebugEnabled: debugEnabled,
+			}
+		}),
+	)
 
 	return err
 }

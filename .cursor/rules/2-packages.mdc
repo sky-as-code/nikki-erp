@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+### Packages and libraries to use
+
+* When an utility function has potential of reuse, put it in appropriate existing .go file or subfolder in /common. Only create new file or subfolder in /common when neccesary.
+
+* You must look into /common folder and its subfolders to find reusable utility functions. For example use ToPtr() in /common/util/type.go to convert a scalar to pointer.
+
+* Always use functions from "go.bryk.io/pkg/errors" to create new or wrap errors instead of using fmt.Errors() or standard "errors" package. Only use standard "errors" package for the Join() function. The correct way to use standard "errors" is:
+
+    ```go
+    import (
+        "errors" stdErr
+    )
+    ```
+

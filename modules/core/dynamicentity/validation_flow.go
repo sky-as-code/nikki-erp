@@ -1,0 +1,66 @@
+package dynamicentity
+
+import (
+	"go.bryk.io/pkg/errors"
+
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+)
+
+func StartValidationFlow(startWith ...Validatable) *ValidationFlow {
+	flow := ValidationFlow{}
+	if len(startWith) > 0 {
+		return flow.Start().Step(func(vErrs *ft.ClientErrors) error {
+			result := startWith[0].Validate()
+			if result != nil {
+				*vErrs = result
+			}
+			return nil
+		})
+	}
+	return flow.Start()
+
+}
+
+type ValidationFlow struct {
+	vErrs *ft.ClientErrors
+	err   error
+	skip  bool
+}
+
+func (this *ValidationFlow) Start() *ValidationFlow {
+	this.vErrs = ft.NewClientErrors()
+	return this
+}
+
+func (this *ValidationFlow) Step(fn func(vErrs *ft.ClientErrors) error, ignoreValidationError ...bool) (out *ValidationFlow) {
+	defer func() {
+		out = this
+		if e := recover(); e != nil {
+			err, ok := e.(error)
+			if ok {
+				this.err = err
+				return
+			}
+			this.err = errors.New(e)
+		}
+	}()
+
+	if this.err != nil || this.skip {
+		return
+	}
+
+	this.err = fn(this.vErrs)
+
+	if this.vErrs.Count() > 0 && (len(ignoreValidationError) == 0 || !ignoreValidationError[0]) {
+		this.skip = true
+	}
+	return
+}
+
+func (this *ValidationFlow) End() (ft.ClientErrors, error) {
+	return *this.vErrs, this.err
+}
+
+type Validatable interface {
+	Validate() ft.ClientErrors
+}
