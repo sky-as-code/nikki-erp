@@ -3,11 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/orm"
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/loader"
 	"github.com/sky-as-code/nikki-erp/modules"
@@ -51,6 +54,39 @@ func (this *Application) Start() {
 	this.config = config.ConfigSvcSingleton()
 }
 
+func (this *Application) GenSql(moduleName string, dialect string) string {
+	module, err := loader.LoadModule(moduleName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to load modules: %v\n", err)
+	}
+
+	dynamicModule, ok := module.(modules.DynamicModule)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "module '%s' is not a dynamic module\n", moduleName)
+		os.Exit(1)
+	}
+
+	err = dynamicModule.RegisterEntities()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to register entities: %v\n", err)
+		os.Exit(1)
+	}
+
+	registry := schema.GetSchemaRegistry()
+	err = orm.ValidateRelations(registry)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to validate relations: %v\n", err)
+		os.Exit(1)
+	}
+
+	queries, err := orm.GenCreateSql(registry, dialect)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to generate create SQL: %v\n", err)
+		os.Exit(1)
+	}
+	return strings.Join(queries, ";\n")
+}
+
 func (this *Application) initModules() error {
 	moduleMap := this.buildModuleMap()
 
@@ -64,6 +100,21 @@ func (this *Application) initModules() error {
 	}
 
 	return this.initializeInOrder(moduleMap, depGraph)
+}
+
+func (this *Application) registerEntities() error {
+	moduleMap := this.buildModuleMap()
+
+	depGraph, err := this.buildDependencyGraph(moduleMap)
+	if err != nil {
+		return err
+	}
+
+	if err := this.validateDependencies(depGraph); err != nil {
+		return err
+	}
+
+	return this.registerEntInOrder(moduleMap, depGraph)
 }
 
 func (this *Application) buildModuleMap() map[string]modules.InCodeModule {
@@ -114,7 +165,7 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 			return err
 		}
 		orderedMods = append(orderedMods, mod)
-		this.logger.Debugf("Initialized module %s", mod.Name())
+		this.logger.Infof("Initialized module %s", mod.Name())
 	}
 
 	deps.Register(func() []modules.InCodeModule {
@@ -128,7 +179,31 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 				return err
 			}
 		}
-		this.logger.Infof("Invoked OnAppStarted() on module %s", mod.Name())
+		this.logger.Debugf("Invoked OnAppStarted() on module %s", mod.Name())
+	}
+
+	return nil
+}
+
+func (this *Application) registerEntInOrder(moduleMap map[string]modules.InCodeModule, depGraph map[string][]string) error {
+	this.logger.Info("Start registering entities for modules", nil)
+
+	initOrder, err := topologicalSort(depGraph)
+	if err != nil {
+		return errors.Wrap(err, "failed to determine entity registering order")
+	}
+
+	initOrder = array.Prepend(initOrder, "core")
+	for _, modName := range initOrder {
+		mod := moduleMap[modName]
+		modWithDynamic, ok := mod.(modules.DynamicModule)
+		if !ok {
+			continue
+		}
+		if err := modWithDynamic.RegisterEntities(); err != nil {
+			return err
+		}
+		this.logger.Infof("Registered entities for module %s", mod.Name())
 	}
 
 	return nil

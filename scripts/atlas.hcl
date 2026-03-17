@@ -11,3 +11,25 @@ env "local" {
     exclude = [""]
   }
 }
+
+variable "module" {
+  type = string
+}
+
+data "external_schema" "nikki" {
+  program = [
+    "go",
+    "run",
+    "-tags=staticmods",
+    "main.go",
+    "application.go",
+    "-createsql",
+    "-dialect=postgres",
+    "-module=${var.module}"
+  ]
+}
+
+env "nikki" {
+  src = data.external_schema.nikki.url
+  dev = "docker://postgres/17/test?search_path=public"
+}

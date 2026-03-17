@@ -4,15 +4,10 @@ import (
 	"database/sql"
 	"time"
 
-	"entgo.io/ent/dialect"
+	"go.bryk.io/pkg/errors"
+
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/common/dynamicentity/orm"
-	"go.bryk.io/pkg/errors"
-)
-
-const (
-	DialectMySql    = "mysql"
-	DialectPostgres = "postgres"
 )
 
 type DialectOptions struct {
@@ -25,17 +20,15 @@ type DialectOptions struct {
 
 func InitDbClient(opts ClientOptions) (orm.DbClient, error) {
 	switch opts.DialectName {
-	case dialect.Postgres:
+	case orm.DialectPostgres:
 		dsn := buildPgDsn(opts.DialectOptions)
-		conn, err := sql.Open(DialectPostgres, dsn)
+		conn, err := sql.Open(orm.DialectPostgres, dsn)
 		if err != nil {
 			return nil, err
 		}
 		setConnOptions(conn, opts)
 		return orm.NewPgClient(conn), nil
 
-	// case dialect.MySQL:
-	// case dialect.SQLite:
 	default:
 		return nil, errors.Errorf("unsupported dialect: %s", opts.DialectName)
 	}
@@ -66,13 +59,12 @@ func OpenConnection(opts ClientOptions) (*sql.DB, error) {
 	var dsn string
 
 	switch opts.DialectName {
-	case dialect.MySQL:
+	case orm.DialectMySql:
 		dsn = buildMysqlDsn(opts.DialectOptions)
-		conn, err = sql.Open(DialectMySql, dsn)
-	case dialect.Postgres:
+		conn, err = sql.Open(orm.DialectMySql, dsn)
+	case orm.DialectPostgres:
 		dsn = buildPgDsn(opts.DialectOptions)
-		conn, err = sql.Open(DialectPostgres, dsn)
-	// case dialect.SQLite:
+		conn, err = sql.Open(orm.DialectPostgres, dsn)
 	default:
 		return nil, errors.Errorf("unsupported dialect: %s", opts.DialectName)
 	}

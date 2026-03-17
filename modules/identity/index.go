@@ -3,9 +3,11 @@ package identity
 import (
 	"errors"
 
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/identity/app"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	repo "github.com/sky-as-code/nikki-erp/modules/identity/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/identity/transport"
 )
@@ -16,27 +18,27 @@ var ModuleSingleton modules.InCodeModule = &IdentityModule{}
 type IdentityModule struct {
 }
 
-// LabelKey implements NikkiModule.
+// LabelKey implements InCodeModule.
 func (*IdentityModule) LabelKey() string {
 	return "identity.moduleLabel"
 }
 
-// Name implements NikkiModule.
+// Name implements InCodeModule.
 func (*IdentityModule) Name() string {
 	return "identity"
 }
 
-// Deps implements NikkiModule.
+// Deps implements InCodeModule.
 func (*IdentityModule) Deps() []string {
 	return []string{}
 }
 
-// Version implements NikkiModule.
+// Version implements InCodeModule.
 func (*IdentityModule) Version() semver.SemVer {
 	return *semver.MustParseSemVer("v1.0.0")
 }
 
-// Init implements NikkiModule.
+// Init implements InCodeModule.
 func (*IdentityModule) Init() error {
 	err := errors.Join(
 		repo.InitRepositories(),
@@ -45,4 +47,12 @@ func (*IdentityModule) Init() error {
 	)
 
 	return err
+}
+
+// Init implements InCodeModule.
+func (this *IdentityModule) RegisterEntities() error {
+	return errors.Join(
+		schema.RegisterSchema(domain.UserSchemaBuilder()),
+		schema.RegisterSchema(domain.GroupSchemaBuilder()),
+	)
 }

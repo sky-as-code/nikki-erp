@@ -4,6 +4,8 @@
 package loader
 
 import (
+	"go.bryk.io/pkg/errors"
+
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate"
 	"github.com/sky-as-code/nikki-erp/modules/authorize"
@@ -15,6 +17,16 @@ import (
 
 func LoadModules() ([]modules.InCodeModule, error) {
 	return getStaticModules(), nil
+}
+
+func LoadModule(name string) (modules.InCodeModule, error) {
+	allMods := getStaticModules()
+	for _, mod := range allMods {
+		if mod.Name() == name {
+			return mod, nil
+		}
+	}
+	return nil, errors.Errorf("module '%s' not found", name)
 }
 
 func getStaticModules() []modules.InCodeModule {

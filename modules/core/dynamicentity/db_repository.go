@@ -35,10 +35,10 @@ var _ DbRepository = (*DbRepositoryImpl)(nil)
 type DbRepositoryImpl struct {
 	client       orm.DbClient
 	queryBuilder orm.QueryBuilder
-	schema       schema.EntitySchema
+	schema       *schema.EntitySchema
 }
 
-func NewDbRepositoryImpl(client orm.DbClient, queryBuilder orm.QueryBuilder, schema schema.EntitySchema) DbRepository {
+func NewDbRepositoryImpl(client orm.DbClient, queryBuilder orm.QueryBuilder, schema *schema.EntitySchema) DbRepository {
 	return &DbRepositoryImpl{
 		client:       client,
 		queryBuilder: queryBuilder,
@@ -46,7 +46,7 @@ func NewDbRepositoryImpl(client orm.DbClient, queryBuilder orm.QueryBuilder, sch
 	}
 }
 
-func (this *DbRepositoryImpl) GetSchema() schema.DynamicEntity {
+func (this *DbRepositoryImpl) GetSchema() *schema.EntitySchema {
 	return this.schema
 }
 
@@ -111,7 +111,7 @@ func (this *DbRepositoryImpl) FindByPk(ctx context.Context, keys schema.DynamicE
 // When the entity is tenant-scoped, filter must be provided and contain the tenant key.
 // Returns nil when no records found.
 func (this *DbRepositoryImpl) Search(
-	ctx context.Context, graph dschema.SearchGraph, columns []string, filter ...schema.DynamicEntity,
+	ctx context.Context, graph schema.SearchGraph, columns []string, filter ...schema.DynamicEntity,
 ) ([]schema.DynamicEntity, error) {
 	merged, err := this.mergeFilterIntoGraph(graph, filter)
 	if err != nil {
@@ -274,26 +274,26 @@ func (this *DbRepositoryImpl) ensureTenantKeyIn(values schema.DynamicEntity) err
 }
 
 func (this *DbRepositoryImpl) mergeFilterIntoGraph(
-	graph dschema.SearchGraph, filter []schema.DynamicEntity,
-) (dschema.SearchGraph, error) {
+	graph schema.SearchGraph, filter []schema.DynamicEntity,
+) (schema.SearchGraph, error) {
 	if len(filter) == 0 {
 		if key := this.schema.TenantKey(); key != "" {
-			return dschema.SearchGraph{}, errors.Errorf("filter required for tenant-scoped entity, must contain '%s'", key)
+			return schema.SearchGraph{}, errors.Errorf("filter required for tenant-scoped entity, must contain '%s'", key)
 		}
 		return graph, nil
 	}
 	f := filter[0]
 	if err := this.ensureTenantKeyIn(f); err != nil {
-		return dschema.SearchGraph{}, err
+		return schema.SearchGraph{}, err
 	}
 	keys := make([]string, 0, len(f))
 	for k := range f {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	filterNodes := make([]dschema.SearchNode, 0, len(keys))
+	filterNodes := make([]schema.SearchNode, 0, len(keys))
 	for _, k := range keys {
-		n := (&dschema.SearchNode{}).Condition(util.ToPtr(dschema.NewCondition(k, dschema.Equals, f[k])))
+		n := (&schema.SearchNode{}).Condition(util.ToPtr(schema.NewCondition(k, schema.Equals, f[k])))
 		filterNodes = append(filterNodes, *n)
 	}
 	merged := graph
@@ -301,15 +301,15 @@ func (this *DbRepositoryImpl) mergeFilterIntoGraph(
 	return merged, nil
 }
 
-func (this *DbRepositoryImpl) buildPkSearchGraph(keys schema.DynamicEntity) dschema.SearchGraph {
-	nodes := make([]dschema.SearchNode, 0, len(this.schema.KeyColumns()))
+func (this *DbRepositoryImpl) buildPkSearchGraph(keys schema.DynamicEntity) schema.SearchGraph {
+	nodes := make([]schema.SearchNode, 0, len(this.schema.KeyColumns()))
 	for _, key := range this.schema.KeyColumns() {
 		if v, ok := keys[key]; ok {
-			n := (&dschema.SearchNode{}).Condition(util.ToPtr(dschema.NewCondition(key, dschema.Equals, v)))
+			n := (&schema.SearchNode{}).Condition(util.ToPtr(schema.NewCondition(key, schema.Equals, v)))
 			nodes = append(nodes, *n)
 		}
 	}
-	g := &dschema.SearchGraph{}
+	g := &schema.SearchGraph{}
 	g.And(nodes...)
 	return *g
 }

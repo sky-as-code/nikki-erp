@@ -11,12 +11,14 @@ type EntitySchemaBuilder struct {
 	schema EntitySchema
 }
 
-func DefineEntity() *EntitySchemaBuilder {
-	return &EntitySchemaBuilder{
+func DefineEntity(name string) *EntitySchemaBuilder {
+	builder := &EntitySchemaBuilder{
 		schema: EntitySchema{
 			fields: make(map[string]*EntityField),
 		},
 	}
+	builder.Name(name)
+	return builder
 }
 
 func (this *EntitySchemaBuilder) Label(label model.LangJson) *EntitySchemaBuilder {
@@ -45,16 +47,16 @@ func (this *EntitySchemaBuilder) Field(fieldBuilder *FieldBuilder) *EntitySchema
 
 	field := fieldBuilder.Build()
 	if err := validateFieldName(field); err != nil {
-		panic(err)
+		panic(errors.Wrapf(err, "entity '%s'", this.schema.name))
 	}
 	if err := validateFieldKeyFlags(field); err != nil {
-		panic(err)
+		panic(errors.Wrapf(err, "entity '%s'", this.schema.name))
 	}
 	if err := validateSingleTenantKey(this.schema.fields, field); err != nil {
-		panic(err)
+		panic(errors.Wrapf(err, "entity '%s'", this.schema.name))
 	}
 	if err := validateNoDuplicateColumn(this.schema.fields, field); err != nil {
-		panic(err)
+		panic(errors.Wrapf(err, "entity '%s'", this.schema.name))
 	}
 	if this.schema.fields == nil {
 		this.schema.fields = make(map[string]*EntityField)
@@ -77,14 +79,14 @@ func (this *EntitySchemaBuilder) TableName(tableName string) *EntitySchemaBuilde
 	return this
 }
 
-func (this *EntitySchemaBuilder) AddUnique(composite ...string) *EntitySchemaBuilder {
+func (this *EntitySchemaBuilder) CompositeUnique(composite ...string) *EntitySchemaBuilder {
 	if len(composite) > 0 {
 		this.schema.compositeUniques = append(this.schema.compositeUniques, composite)
 	}
 	return this
 }
 
-func (this *EntitySchemaBuilder) SetUniques(allUniques [][]string) *EntitySchemaBuilder {
+func (this *EntitySchemaBuilder) SetCompositeUniques(allUniques [][]string) *EntitySchemaBuilder {
 	this.schema.compositeUniques = allUniques
 	return this
 }
@@ -165,6 +167,7 @@ func (this *FieldBuilder) Required() *FieldBuilder {
 
 func (this *FieldBuilder) PrimaryKey() *FieldBuilder {
 	this.field.isPrimaryKey = true
+	this.Required()
 	return this
 }
 
@@ -235,6 +238,13 @@ func Edge(edgeName string) *RelationBuilder {
 
 func (this *RelationBuilder) OneToOne(entityName string, destField string) *RelationBuilder {
 	this.relation.RelationType = RelationTypeOneToOne
+	this.relation.DestEntityName = entityName
+	this.relation.DestField = destField
+	return this
+}
+
+func (this *RelationBuilder) OneToMany(entityName string, destField string) *RelationBuilder {
+	this.relation.RelationType = RelationTypeOneToMany
 	this.relation.DestEntityName = entityName
 	this.relation.DestField = destField
 	return this

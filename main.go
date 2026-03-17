@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,7 +15,16 @@ import (
 
 func main() {
 	isDbMigrate := flag.Bool("migrate", false, "Whether to start in database auto migration mode")
+	isCreateSql := flag.Bool("createsql", false, "Generate CREATE SQL for entities and write to stdout")
+	module := flag.String("module", "", "Module name (required when -createsql is set)")
+	dialect := flag.String("dialect", "", "SQL dialect (required when -createsql is set)")
 	flag.Parse()
+
+	if *isCreateSql {
+		runCreateSql(*module, *dialect)
+		return
+	}
+
 	logging.InitSubModule()
 	util.Unused(isDbMigrate)
 
@@ -35,6 +45,16 @@ func main() {
 
 	<-awaitOsTerminateSignal()
 	server.Shutdown()
+}
+
+func runCreateSql(module string, dialect string) {
+	if module == "" || dialect == "" {
+		fmt.Fprintln(os.Stderr, "error: -createsql requires both -module and -dialect to have values")
+		os.Exit(1)
+	}
+	app := newApplication(nil)
+	sql := app.GenSql(module, dialect)
+	fmt.Print(sql)
 }
 
 func awaitOsTerminateSignal() chan os.Signal {

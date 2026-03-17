@@ -322,7 +322,7 @@ func populateDbMetadata(schema *EntitySchema) error {
 	if err != nil {
 		return err
 	}
-	schemaUnique, err := validateAndCollectEntityUnique(schema.CompositeUniques(), columnSet)
+	schemaUnique, err := validateAndCollectEntityUnique(schema, columnSet)
 	if err != nil {
 		return err
 	}
@@ -373,7 +373,8 @@ func buildDbMetadata(
 		if field.IsTenantKey() {
 			if tenant != "" && tenant != columnName {
 				return nil, nil, "", nil, errors.Errorf(
-					"%s must not be a tenant key because %s is already one", columnName, tenant)
+					"entity '%s': field '%s' must not be a tenant key because '%s' is already one",
+					entityName, columnName, tenant)
 			}
 			tenant = columnName
 		}
@@ -382,9 +383,10 @@ func buildDbMetadata(
 }
 
 func validateAndCollectEntityUnique(
-	uniqueFields [][]string,
+	schema *EntitySchema,
 	columnSet map[string]struct{},
 ) ([][]string, error) {
+	uniqueFields := schema.CompositeUniques()
 	uniqueKeys := make([][]string, 0, len(uniqueFields))
 	for _, compositeKey := range uniqueFields {
 		if len(compositeKey) == 0 {
@@ -397,7 +399,8 @@ func validateAndCollectEntityUnique(
 				continue
 			}
 			if _, ok := columnSet[trimmed]; !ok {
-				return nil, errors.Errorf("unknown column reference '%s' in unique constraint", trimmed)
+				return nil, errors.Errorf(
+					"entity '%s': unknown column reference '%s' in unique constraint", schema.Name(), trimmed)
 			}
 			validated = append(validated, trimmed)
 		}

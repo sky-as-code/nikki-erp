@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
@@ -36,4 +37,32 @@ func (this *Group) Validate(forEdit bool) ft.ValidationErrors {
 	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
 
 	return val.ApiBased.ValidateStruct(this, rules...)
+}
+
+func GroupSchemaBuilder() *schema.EntitySchemaBuilder {
+	return schema.DefineEntity("identity.group").
+		Label(model.LangJson{"en-US": "User Group"}).
+		TableName("ident_groups").
+		Field(
+			schema.DefineField().
+				Name("id").
+				Label(model.LangJson{"en-US": "ID"}).
+				DataType(schema.FieldDataTypeModelId()).
+				PrimaryKey(),
+		).
+		Field(
+			schema.DefineField().
+				Name("name").
+				Label(model.LangJson{"en-US": "Name"}).
+				DataType(schema.FieldDataTypeString()).
+				Required().
+				Rule(schema.FieldRuleLength(1, model.MODEL_RULE_LONG_NAME_LENGTH)),
+		).
+		Field(
+			schema.DefineField().
+				Name("description").
+				Label(model.LangJson{"en-US": "Description"}).
+				DataType(schema.FieldDataTypeString()).
+				Rule(schema.FieldRuleLength(0, model.MODEL_RULE_DESC_LENGTH)),
+		)
 }

@@ -9,19 +9,16 @@ import (
 )
 
 type DynamicEntityService struct {
-	// modulePrefix limits this service to operate on entities of a specific module.
-	modulePrefix string
-	dbRepo       DbRepository
+	dbRepo DbRepository
 }
 
 func (this *DynamicEntityService) Create(ctx context.Context, schemaName string, entity schema.DynamicEntity) (schema.DynamicEntity, error) {
-	canonicalName := schema.CanonicalSchemaName(schemaName, this.modulePrefix)
-	entitySchema := schema.GetSchema(canonicalName)
+	entitySchema := schema.GetSchema(schemaName)
 	if entitySchema == nil {
-		return nil, errors.Errorf("schema '%s' not found", canonicalName)
+		return nil, errors.Errorf("schema '%s' not found", schemaName)
 	}
 
-	validated, clientErrs := entitySchema.ValidateMap(map[string]any(entity), false)
+	validated, clientErrs := entitySchema.Validate(entity)
 	if clientErrs != nil && clientErrs.Count() > 0 {
 		return nil, &fault.ClientError{
 			Code:    "validation_error",

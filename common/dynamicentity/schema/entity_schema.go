@@ -176,6 +176,7 @@ type RelationType string
 
 const (
 	RelationTypeOneToOne   = RelationType("one:one")
+	RelationTypeOneToMany  = RelationType("one:many")
 	RelationTypeManyToOne  = RelationType("many:one")
 	RelationTypeManyToMany = RelationType("many:many")
 )

@@ -8,9 +8,6 @@ import (
 
 type CrudServiceHelper struct {
 	dyEntService *DynamicEntityService
-
-	// modulePrefix limits this service to operate on entities of a specific module.
-	modulePrefix string
 	dbRepo       DbRepository
 }
 
