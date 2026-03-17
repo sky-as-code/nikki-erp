@@ -223,6 +223,7 @@ func UpdateBulk[
 	}()
 
 	var vErrs ft.ValidationErrors
+	vErrs = ft.NewValidationErrors()
 	modelsToUpdate := param.Command.ToDomainModels()
 
 	for _, model := range modelsToUpdate {

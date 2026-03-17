@@ -177,6 +177,7 @@ func (this *DriveFileServiceImpl) UpdateDriveFileMetadata(ctx crud.Context, cmd 
 			err = e
 		}
 	}()
+
 	result, err = crud.Update(ctx, crud.UpdateParam[*domain.DriveFile, it.UpdateDriveFileMetadataCommand, it.UpdateDriveFileMetadataResult]{
 		Action:       "update drive file metadata",
 		Command:      cmd,
@@ -291,8 +292,9 @@ func (this *DriveFileServiceImpl) deleteExistsFile(ctx crud.Context, driveFile *
 
 	result, err := crud.DeleteHard(ctx,
 		crud.DeleteHardParam[*domain.DriveFile, it.DeleteDriveFileCommand, it.DeleteDriveFileResult]{
-			Action:  "delete drive file",
-			Command: cmd,
+			Action:       "delete drive file",
+			Command:      cmd,
+			AssertExists: this.assertDriveFileExists,
 			RepoDelete: func(ctx crud.Context, d *domain.DriveFile) (int, error) {
 				return this.driveFileRepo.DeleteById(ctx, *d.Id)
 			},
@@ -495,8 +497,8 @@ func (this *DriveFileServiceImpl) MoveDriveFileToTrash(ctx crud.Context, cmd it.
 
 	ctx.SetDbTranx(tx)
 
-	vErrs := ft.NewValidationErrors()
-	driveFile, err := this.assertDriveFileExists(ctx, cmd.ToDomainModel(), &vErrs)
+	vErrs := util.ToPtr(fault.NewValidationErrors())
+	driveFile, err := this.assertDriveFileExists(ctx, cmd.ToDomainModel(), vErrs)
 	ft.PanicOnErr(err)
 
 	if driveFile == nil {
@@ -553,8 +555,8 @@ func (this *DriveFileServiceImpl) RestoreDriveFile(ctx crud.Context, cmd it.Rest
 	ft.PanicOnErr(err)
 	ctx.SetDbTranx(tx)
 
-	vErrs := ft.NewValidationErrors()
-	driveFile, err := this.assertDriveFileExists(ctx, cmd.ToDomainModel(), &vErrs)
+	vErrs := util.ToPtr(fault.NewValidationErrors())
+	driveFile, err := this.assertDriveFileExists(ctx, cmd.ToDomainModel(), vErrs)
 	ft.PanicOnErr(err)
 
 	if driveFile == nil {
@@ -562,7 +564,7 @@ func (this *DriveFileServiceImpl) RestoreDriveFile(ctx crud.Context, cmd it.Rest
 	}
 
 	// recalculate parent size
-	if cmd.ParentFileRef != driveFile.ParentDriveFileRef {
+	if cmd.ParentFileRef != nil || driveFile.ParentDriveFileRef != nil || *cmd.ParentFileRef != *driveFile.ParentDriveFileRef {
 		if cmd.ParentFileRef != nil {
 			err := this.recalculateSizeOfParent(ctx, *cmd.ParentFileRef, driveFile.Size, true)
 			if err != nil {
@@ -572,7 +574,7 @@ func (this *DriveFileServiceImpl) RestoreDriveFile(ctx crud.Context, cmd it.Rest
 		}
 
 		if driveFile.ParentDriveFileRef != nil {
-			err := this.recalculateSizeOfParent(ctx, *driveFile.Id, driveFile.Size, false)
+			err := this.recalculateSizeOfParent(ctx, *driveFile.ParentDriveFileRef, driveFile.Size, false)
 			if err != nil {
 				tx.Rollback()
 				ft.PanicOnErr(err)
@@ -588,18 +590,21 @@ func (this *DriveFileServiceImpl) RestoreDriveFile(ctx crud.Context, cmd it.Rest
 		}
 	}
 
-	err = this.assertRestoreDriveFileRules(ctx, cmd.ToDomainModel(), driveFile, &vErrs)
+	err = this.assertRestoreDriveFileRules(ctx, cmd.ToDomainModel(), driveFile, vErrs)
 	if err != nil {
 		tx.Rollback()
 		ft.PanicOnErr(err)
 	}
 
-	if len(vErrs) != 0 {
+	if len(*vErrs) != 0 {
+		tx.Rollback()
 		return &it.RestoreDriveFileResult{ClientError: vErrs.ToClientError()}, nil
 	}
 
 	driveFile.Status = enum.DriveFileStatusActive
 	driveFile.ParentDriveFileRef = cmd.ParentFileRef
+	notDeleted := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+	driveFile.DeletedAt = &notDeleted
 	this.sanitizeDriveFile(driveFile)
 
 	driveFile, err = this.driveFileRepo.Overwrite(ctx, driveFile, *driveFile.Etag)
@@ -608,6 +613,7 @@ func (this *DriveFileServiceImpl) RestoreDriveFile(ctx crud.Context, cmd it.Rest
 		ft.PanicOnErr(err)
 	}
 
+	ft.PanicOnErr(tx.Commit())
 	return &it.RestoreDriveFileResult{HasData: true, Data: driveFile}, nil
 }
 
@@ -656,6 +662,7 @@ func (this *DriveFileServiceImpl) MoveDriveFile(ctx crud.Context, cmd it.MoveDri
 		ft.PanicOnErr(err)
 	}
 
+	ft.PanicOnErr(tx.Commit())
 	return &it.MoveDriveFileResult{HasData: true, Data: driveFile}, nil
 }
 
@@ -747,7 +754,6 @@ func (this *DriveFileServiceImpl) GetDriveFileAncestors(ctx crud.Context, query 
 	ancestors, err := this.driveFileRepo.GetDriveFileParents(ctx, *driveFile.Id)
 	ft.PanicOnErr(err)
 
-	// ancestors từ repo: [file, parent, ..., root]. Đảo thành [root, ..., parent, file] (bao gồm cả file).
 	path := make([]*domain.DriveFile, len(ancestors))
 	copy(path, ancestors)
 	lo.Reverse(path)
@@ -760,7 +766,21 @@ func (this *DriveFileServiceImpl) DeleteTrashedDriveFile(ctx crud.Context) (err 
 			err = e
 		}
 	}()
-	// TODO: Impl this func
+	threshold := time.Now().Add(-constants.TrashedFileRetentionPeriod)
+
+	driveFiles, err := this.driveFileRepo.GetExpiredTrashedDriveFiles(ctx, threshold)
+	ft.PanicOnErr(err)
+
+	for _, f := range driveFiles {
+		if f == nil || f.Id == nil {
+			continue
+		}
+		_, err := this.DeleteDriveFile(ctx, it.DeleteDriveFileCommand{
+			DriveFileId: *f.Id,
+		})
+		ft.PanicOnErr(err)
+	}
+
 	return nil
 }
 

@@ -301,6 +301,21 @@ func (d *driveFileRepository) GetDriveFileParents(ctx crud.Context, parentId mod
 
 	return driveFiles, nil
 }
+
+func (d *driveFileRepository) GetExpiredTrashedDriveFiles(ctx crud.Context, before time.Time) ([]*domain.DriveFile, error) {
+	entities, err := d.driveFileClient(ctx).
+		Query().
+		Where(
+			entDrivefile.DeletedAtNEQ(deletedAtNotDeleted),
+			entDrivefile.DeletedAtLTE(before),
+		).
+		All(ctx.InnerContext())
+	if err != nil {
+		return nil, err
+	}
+	return entToDriveFiles(entities), nil
+}
+
 func (d *driveFileRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error) {
 	return d.client.Tx(ctx)
 }

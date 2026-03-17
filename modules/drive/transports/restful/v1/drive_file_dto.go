@@ -19,7 +19,7 @@ type DriveFileDto struct {
 	ParentDriveFileRef model.Id `json:"parentDriveFileRef"`
 
 	Name       string                   `json:"name"`
-	MINE       string                   `json:"mine"`
+	MINE       string                   `json:"mime"`
 	IsFolder   bool                     `json:"isFolder"`
 	Size       uint64                   `json:"size"`
 	Path       string                   `json:"-"`

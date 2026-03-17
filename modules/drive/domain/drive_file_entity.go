@@ -47,12 +47,17 @@ var (
 )
 
 func (d *DriveFile) Validate(forEdit bool) fault.ValidationErrors {
-	rules := []*validator.FieldRules{
-		validator.Field(&d.Name,
-			validation.Length(3, 200),
-			validation.By(driveFileNameValidator),
-		),
+	var nameValidator *validator.FieldRules
+	if d.IsFolder {
+		nameValidator = validator.Field(&d.Name,
+			validator.Length(3, 200))
+	} else {
+		nameValidator = validator.Field(&d.Name,
+			validator.Length(3, 200),
+			validation.By(driveFileNameValidator))
 	}
+
+	rules := []*validator.FieldRules{nameValidator}
 
 	return validator.ApiBased.ValidateStruct(d, rules...)
 }

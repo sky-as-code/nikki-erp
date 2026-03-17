@@ -1,6 +1,8 @@
 package drive_file
 
 import (
+	"time"
+
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -17,6 +19,7 @@ type DriveFileRepository interface {
 	SearchByParent(ctx crud.Context, param SearchByParentParam) (*crud.PagedResult[*domain.DriveFile], error)
 	GetDriveFileChildren(ctx crud.Context, parentId model.Id) ([]*domain.DriveFile, error)
 	GetDriveFileParents(ctx crud.Context, driveFileId model.Id) ([]*domain.DriveFile, error)
+	GetExpiredTrashedDriveFiles(ctx crud.Context, before time.Time) ([]*domain.DriveFile, error)
 
 	Create(ctx crud.Context, driveFile *domain.DriveFile) (*domain.DriveFile, error)
 	Update(ctx crud.Context, driveFile *domain.DriveFile, prevEtag model.Etag) (*domain.DriveFile, error)
