@@ -113,6 +113,27 @@ func FieldDataTypeSlug() FieldDataType {
 	return fieldDataTypeSlug{fieldDataTypeBase{name: "nikkiSlug", options: nil}}
 }
 
+// FieldDataTypeEntity represents a virtual/implicit field that holds a related entity or slice of entities.
+// It is not persisted as a DB column; it is used for graph traversal and API response expansion.
+func FieldDataTypeEntity() FieldDataType {
+	return fieldDataTypeEntity{fieldDataTypeBase{name: "entity", options: nil}}
+}
+
+type fieldDataTypeEntity struct{ fieldDataTypeBase }
+
+func (this fieldDataTypeEntity) ArrayType() FieldDataType {
+	this.isArray = true
+	return this
+}
+
+func (this fieldDataTypeEntity) Validate(value any) (any, *ft.ClientErrorItem) {
+	return value, nil
+}
+
+func (this fieldDataTypeEntity) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
+	return value, nil
+}
+
 // FieldDataType defines the interface for dynamic entity field data types.
 // Validate returns (validatedValue, nil) on success or (nil, ValidationError) on failure.
 // Options are embedded in the data type; Validate uses them internally.

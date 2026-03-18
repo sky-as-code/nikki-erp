@@ -69,9 +69,21 @@ func (this *EntitySchemaBuilder) Field(fieldBuilder *FieldBuilder) *EntitySchema
 		rel.SrcField = field.name
 		this.schema.relations = append(this.schema.relations, *rel)
 		field.relation = nil
+		if rel.Edge != "" {
+			this.addImplicitEdgeField(rel)
+		}
 	}
 
 	return this
+}
+
+func (this *EntitySchemaBuilder) addImplicitEdgeField(rel *EntityRelation) {
+	isArray := rel.RelationType == RelationTypeOneToMany || rel.RelationType == RelationTypeManyToMany
+	dataType := FieldDataType(FieldDataTypeEntity())
+	if isArray {
+		dataType = dataType.ArrayType()
+	}
+	this.Field(DefineField().Name(rel.Edge).DataType(dataType))
 }
 
 func (this *EntitySchemaBuilder) TableName(tableName string) *EntitySchemaBuilder {
@@ -210,9 +222,6 @@ func (this *FieldBuilder) Default(value any) *FieldBuilder {
 }
 
 func (this *FieldBuilder) Foreign(relationBuilder *RelationBuilder) *FieldBuilder {
-	if relationBuilder == nil {
-		return this
-	}
 	this.field.relation = relationBuilder.Build()
 	return this
 }
@@ -234,6 +243,11 @@ func Edge(edgeName string) *RelationBuilder {
 			Edge: edgeName,
 		},
 	}
+}
+
+func (this *RelationBuilder) Label(label model.LangJson) *RelationBuilder {
+	this.relation.label = label
+	return this
 }
 
 func (this *RelationBuilder) OneToOne(entityName string, destField string) *RelationBuilder {
@@ -262,6 +276,16 @@ func (this *RelationBuilder) ManyToMany(throughTableName string, throughSrcCol s
 	this.relation.ThroughTableName = throughTableName
 	this.relation.ThroughSrcCol = throughSrcCol
 	this.relation.ThroughDestCol = throughDestCol
+	return this
+}
+
+func (this *RelationBuilder) OnDelete(onDelete RelationCascade) *RelationBuilder {
+	this.relation.OnDelete = onDelete
+	return this
+}
+
+func (this *RelationBuilder) OnUpdate(onUpdate RelationCascade) *RelationBuilder {
+	this.relation.OnUpdate = onUpdate
 	return this
 }
 

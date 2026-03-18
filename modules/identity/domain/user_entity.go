@@ -142,10 +142,15 @@ func UserSchemaBuilder() *schema.EntitySchemaBuilder {
 		Field(
 			schema.DefineField().
 				Name("group_id").
-				Label(model.LangJson{"en-US": "ID"}).
 				DataType(schema.FieldDataTypeModelId()).
-				Foreign(schema.Edge("group").ManyToOne("identity.group", "id")),
+				Foreign(
+					schema.Edge("group").
+						Label(model.LangJson{"en-US": "Group"}).
+						ManyToOne("identity.group", "id").
+						OnDelete(schema.RelationCascadeSetNull),
+				),
 		)
+
 }
 
 type UserEntity struct {

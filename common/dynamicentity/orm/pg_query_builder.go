@@ -97,12 +97,14 @@ func (this *PgQueryBuilder) defineForeignKeys(
 			return errors.Errorf("destination schema not found for foreign key on field '%s'", rel.SrcField)
 		}
 		fkName := pgQuote(fmt.Sprintf("%s_%s_fkey", entSchema.TableName(), rel.SrcField))
-		fkBody := fmt.Sprintf("(%s) REFERENCES %s (%s) ON UPDATE NO ACTION ON DELETE NO ACTION",
-			pgQuote(rel.SrcField), pgQuote(destSchema.TableName()), pgQuote(rel.DestField))
+		fkBody := fmt.Sprintf("(%s) REFERENCES %s (%s) ON UPDATE %s ON DELETE %s",
+			pgQuote(rel.SrcField), pgQuote(destSchema.TableName()), pgQuote(rel.DestField),
+			rel.OnUpdate.Sql(), rel.OnDelete.Sql())
 		builder.Define(fmt.Sprintf("CONSTRAINT %s FOREIGN KEY", fkName), fkBody)
 	}
 	return nil
 }
+
 
 func (this *PgQueryBuilder) SqlSelectGraph(
 	entSchema *schema.EntitySchema, graph schema.SearchGraph, columns []string,

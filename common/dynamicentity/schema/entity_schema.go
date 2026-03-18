@@ -102,14 +102,19 @@ func (this EntitySchema) IsTenantKey(name string) bool {
 }
 
 // Columns returns fields in definition order for SQL operations.
+// Entity-typed fields (virtual edge fields) are excluded as they have no DB column.
 func (this EntitySchema) Columns() []*EntityField {
 	result := make([]*EntityField, 0, len(this.fieldsOrder))
 	for _, name := range this.fieldsOrder {
-		if f, ok := this.fields[name]; ok && f != nil {
+		if f, ok := this.fields[name]; ok && f != nil && !isEntityField(f) {
 			result = append(result, f)
 		}
 	}
 	return result
+}
+
+func isEntityField(f *EntityField) bool {
+	return f.dataType != nil && f.dataType.String() == "entity"
 }
 
 // PrimaryKeys returns the list of primary key column names.
@@ -158,13 +163,32 @@ func (this *EntitySchema) ValidateStruct(structPtr any, forEdit ...bool) *ft.Cli
 	return clientErrs
 }
 
+type RelationCascade string
+
+const (
+	RelationCascadeNoAction   = RelationCascade("NO ACTION")
+	RelationCascadeSetNull    = RelationCascade("SET NULL")
+	RelationCascadeSetDefault = RelationCascade("SET DEFAULT")
+	RelationCascadeCascade    = RelationCascade("CASCADE")
+)
+
+// Sql returns the SQL keyword for this cascade action, defaulting to NO ACTION for the zero value.
+func (this RelationCascade) Sql() string {
+	if this == "" {
+		return string(RelationCascadeNoAction)
+	}
+	return string(this)
+}
+
 type EntityRelation struct {
-	Edge           string        `json:"edge"`
-	SrcField       string        `json:"src_field"`
-	RelationType   RelationType  `json:"relation_type"`
-	DestEntityName string        `json:"dest_entity_name"`
-	DestEntity     *EntitySchema `json:"dest_entity"`
-	DestField      string        `json:"dest_field"`
+	Edge           string          `json:"edge"`
+	SrcField       string          `json:"src_field"`
+	RelationType   RelationType    `json:"relation_type"`
+	label          model.LangJson  `json:"label"`
+	DestEntityName string          `json:"dest_entity_name"`
+	DestField      string          `json:"dest_field"`
+	OnDelete       RelationCascade `json:"on_delete"`
+	OnUpdate       RelationCascade `json:"on_update"`
 
 	ThroughEntity    *EntitySchema `json:"through_entity,omitempty"`
 	ThroughTableName string        `json:"through_table_name,omitempty"`
