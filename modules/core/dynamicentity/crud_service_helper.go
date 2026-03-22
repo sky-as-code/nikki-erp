@@ -11,52 +11,49 @@ type CrudServiceHelper struct {
 	dbRepo       DbRepository
 }
 
-type DynamicDomainModel interface {
-	GetFieldData() schema.DynamicEntity
-	SetFieldData(data schema.DynamicEntity)
-}
-
-type ToDomainModelFunc[TDomain DynamicDomainModel] func(data schema.DynamicEntity) TDomain
-type BeforeValidationFunc[TDomain DynamicDomainModel] func(ctx Context, model TDomain) (TDomain, error)
-type AfterValidationFunc[TDomain DynamicDomainModel] func(ctx Context, model TDomain) (TDomain, error)
-type ValidateExtraFunc[TDomain DynamicDomainModel] func(ctx Context, model TDomain, vErrs *ft.ClientErrors) error
+type ToDomainModelFunc[TDomain any] func(data schema.DynamicFields) TDomain
+type BeforeValidationFunc[TDomain any] func(ctx Context, model TDomain) (TDomain, error)
+type AfterValidationFunc[TDomain any] func(ctx Context, model TDomain) (TDomain, error)
+type ValidateExtraFunc[TDomain any] func(ctx Context, model TDomain, vErrs *ft.ClientErrors) error
 
 type CreateParam[
-	TDomain DynamicDomainModel,
+	TDomain any,
+	TDomainPtr DynamicModelPtr[TDomain],
 ] struct {
 	// Action name for logging and error messages
-	Action string
-	DbRepo DbRepository
+	Action       string
+	DbRepoGetter DbRepoGetter
 
 	// Data to create
-	Data schema.DynamicEntity
+	Data schema.DynamicModelGetter
 
 	// Function to convert a dynamic entity to a domain model
-	ToDomainModel ToDomainModelFunc[TDomain]
+	// ToDomainModel ToDomainModelFunc[TDomain]
 
 	// Optional function to do some processing on the domain model before validation.
-	BeforeValidation BeforeValidationFunc[TDomain]
+	BeforeValidation BeforeValidationFunc[TDomainPtr]
 
 	// Optional function to do some processing on the domain model after validation.
-	AfterValidation AfterValidationFunc[TDomain]
+	AfterValidation AfterValidationFunc[TDomainPtr]
 
 	// Optional function for advanced validation (business rules) in addition to dynamic entity schema validation.
-	ValidateExtra ValidateExtraFunc[TDomain]
+	ValidateExtra ValidateExtraFunc[TDomainPtr]
 }
 
 func Create[
-	TDomain DynamicDomainModel,
+	TDomain any,
+	TDomainPtr DynamicModelPtr[TDomain],
 ](
 	ctx Context,
-	param CreateParam[TDomain],
+	param CreateParam[TDomain, TDomainPtr],
 ) (*OpResult[TDomain], error) {
-	entitySchema := param.DbRepo.GetSchema()
+	dbRepo := param.DbRepoGetter.GetDbRepo()
+	entitySchema := dbRepo.GetSchema()
 
-	fieldData := param.Data
-	model := param.ToDomainModel(param.Data)
-	// if param.BeforeValidation != nil {
-	// 	model = param.BeforeValidation(ctx, model)
-	// }
+	fieldData := param.Data.GetFieldData()
+	newModel := TDomainPtr(new(TDomain))
+	newModel.SetFieldData(fieldData)
+	// model := param.ToDomainModel(fieldData)
 
 	flow := StartValidationFlow()
 	clientErrs, err := flow.
@@ -64,7 +61,7 @@ func Create[
 			if param.BeforeValidation == nil {
 				return nil
 			}
-			result, err := param.BeforeValidation(ctx, model)
+			result, err := param.BeforeValidation(ctx, newModel)
 			if err == nil {
 				fieldData = result.GetFieldData()
 			}
@@ -72,24 +69,27 @@ func Create[
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
 			result, clientErrs := entitySchema.Validate(fieldData)
-			fieldData = result
-			*vErrs = *clientErrs
+			if clientErrs != nil {
+				*vErrs = *clientErrs
+			} else {
+				fieldData = result
+			}
 			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
-			validateUniques(ctx, fieldData, param.DbRepo, vErrs)
+			validateUniques(ctx, fieldData, dbRepo, vErrs)
 			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
 			if param.ValidateExtra == nil {
 				return nil
 			}
-			model = param.ToDomainModel(fieldData)
-			return param.ValidateExtra(ctx, model, vErrs)
+			newModel.SetFieldData(fieldData)
+			return param.ValidateExtra(ctx, newModel, vErrs)
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
 			if param.AfterValidation != nil {
-				result, err := param.AfterValidation(ctx, model)
+				result, err := param.AfterValidation(ctx, newModel)
 				if err == nil {
 					fieldData = result.GetFieldData()
 				}
@@ -107,16 +107,18 @@ func Create[
 		}, nil
 	}
 
-	inserted, err := param.DbRepo.Insert(ctx, fieldData)
+	inserted, err := dbRepo.Insert(ctx, fieldData)
 	ft.PanicOnErr(err)
 
+	insertedModel := TDomainPtr(new(TDomain))
+	insertedModel.SetFieldData(inserted)
 	return &OpResult[TDomain]{
-		Data:    param.ToDomainModel(inserted),
+		Data:    *insertedModel,
 		IsEmpty: false,
 	}, nil
 }
 
-func validateUniques(ctx Context, data schema.DynamicEntity, dbRepo DbRepository, vErrs *ft.ClientErrors) error {
+func validateUniques(ctx Context, data schema.DynamicFields, dbRepo DbRepository, vErrs *ft.ClientErrors) error {
 	collidingKeys, err := dbRepo.CheckUniqueCollisions(ctx, data)
 	if err != nil {
 		return err

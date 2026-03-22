@@ -1,6 +1,7 @@
 package dynamicentity
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 )
 
@@ -18,4 +19,13 @@ type OpResult[TData any] struct {
 	// If ClientErrors is nil but IsEmpty is true,
 	// it means the query is successfull but no data is found.
 	IsEmpty bool `json:"isEmpty"`
+}
+
+type DbRepoGetter interface {
+	GetDbRepo() DbRepository
+}
+
+type DynamicModelPtr[TDomain any] interface {
+	*TDomain
+	schema.DynamicModel
 }

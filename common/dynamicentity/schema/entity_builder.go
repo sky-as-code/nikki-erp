@@ -44,8 +44,23 @@ func (this *EntitySchemaBuilder) Field(fieldBuilder *FieldBuilder) *EntitySchema
 	if fieldBuilder == nil {
 		return this
 	}
-
 	field := fieldBuilder.Build()
+	this.addField(field)
+
+	if field.relation != nil {
+		rel := field.relation
+		rel.SrcField = field.name
+		this.schema.relations = append(this.schema.relations, *rel)
+		field.relation = nil
+		if rel.Edge != "" {
+			this.addImplicitEdgeField(rel)
+		}
+	}
+
+	return this
+}
+
+func (this *EntitySchemaBuilder) addField(field *EntityField) {
 	if err := validateFieldName(field); err != nil {
 		panic(errors.Wrapf(err, "entity '%s'", this.schema.name))
 	}
@@ -63,17 +78,14 @@ func (this *EntitySchemaBuilder) Field(fieldBuilder *FieldBuilder) *EntitySchema
 	}
 	this.schema.fields[field.name] = field
 	this.schema.fieldsOrder = append(this.schema.fieldsOrder, field.name)
+}
 
-	if field.relation != nil {
-		rel := field.relation
-		rel.SrcField = field.name
-		this.schema.relations = append(this.schema.relations, *rel)
-		field.relation = nil
-		if rel.Edge != "" {
-			this.addImplicitEdgeField(rel)
-		}
+func (this *EntitySchemaBuilder) Extend(builder *EntitySchemaBuilder) *EntitySchemaBuilder {
+	for _, fieldName := range builder.schema.fieldsOrder {
+		this.addField(builder.schema.fields[fieldName])
 	}
-
+	this.schema.relations = append(this.schema.relations, builder.schema.relations...)
+	this.schema.compositeUniques = append(this.schema.compositeUniques, builder.schema.compositeUniques...)
 	return this
 }
 
@@ -221,6 +233,11 @@ func (this *FieldBuilder) Default(value any) *FieldBuilder {
 	return this
 }
 
+func (this *FieldBuilder) DefaultFn(fn func() any) *FieldBuilder {
+	this.field.defaultFn = fn
+	return this
+}
+
 func (this *FieldBuilder) Foreign(relationBuilder *RelationBuilder) *FieldBuilder {
 	this.field.relation = relationBuilder.Build()
 	return this
@@ -230,7 +247,23 @@ func (this *FieldBuilder) Build() *EntityField {
 	if this.field.name == "" {
 		panic("field name is required")
 	}
+	this.setDefaultModelId()
 	return this.field
+}
+
+func (this *FieldBuilder) setDefaultModelId() {
+	isModelId := this.field.dataType.String() == FieldDataTypeModelId().String()
+	isPrimaryKey := this.field.isPrimaryKey
+	hasDefaultFn := this.field.defaultFn != nil
+	if isModelId && isPrimaryKey && !hasDefaultFn {
+		this.field.defaultFn = func() any {
+			id, err := model.NewId()
+			if err != nil {
+				panic(err)
+			}
+			return *id
+		}
+	}
 }
 
 type RelationBuilder struct {

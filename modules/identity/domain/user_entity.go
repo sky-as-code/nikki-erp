@@ -5,6 +5,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
+	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
 )
 
 type User struct {
@@ -87,34 +88,38 @@ func UserStatusValidateRule(field **UserStatus) *val.FieldRules {
 }
 
 const (
-	userFieldAvatarUrl   = "avatar_url"
-	userFieldDisplayName = "display_name"
-	userFieldEmail       = "email"
-	userFieldStatus      = "status"
+	UserSchemaName       = "identity.user"
+	UserFieldAvatarUrl   = "avatar_url"
+	UserFieldDisplayName = "display_name"
+	UserFieldEmail       = "email"
+	UserFieldStatus      = "status"
 )
 
 func UserSchemaBuilder() *schema.EntitySchemaBuilder {
-	return schema.DefineEntity("identity.user").
+	return schema.DefineEntity(UserSchemaName).
 		Label(model.LangJson{"en-US": "User"}).
 		TableName("ident_users").
 		CompositeUnique("email", "display_name").
+		Extend(dEnt.BaseModelSchemaBuilder()).
+		Extend(dEnt.AuditableModelSchemaBuilder()).
+		Extend(dEnt.VersionedModelSchemaBuilder()).
+		// Field(
+		// 	schema.DefineField().
+		// 		Name("id").
+		// 		Label(model.LangJson{"en-US": "ID"}).
+		// 		DataType(schema.FieldDataTypeModelId()).
+		// 		PrimaryKey(),
+		// ).
 		Field(
 			schema.DefineField().
-				Name("id").
-				Label(model.LangJson{"en-US": "ID"}).
-				DataType(schema.FieldDataTypeModelId()).
-				PrimaryKey(),
-		).
-		Field(
-			schema.DefineField().
-				Name(userFieldAvatarUrl).
+				Name(UserFieldAvatarUrl).
 				Label(model.LangJson{"en-US": "Avatar URL"}).
 				DataType(schema.FieldDataTypeUrl()).
 				Rule(schema.FieldRuleLength(1, model.MODEL_RULE_URL_LENGTH)),
 		).
 		Field(
 			schema.DefineField().
-				Name(userFieldDisplayName).
+				Name(UserFieldDisplayName).
 				Label(model.LangJson{"en-US": "Display Name"}).
 				DataType(schema.FieldDataTypeString()).
 				Required().
@@ -122,7 +127,7 @@ func UserSchemaBuilder() *schema.EntitySchemaBuilder {
 		).
 		Field(
 			schema.DefineField().
-				Name(userFieldEmail).
+				Name(UserFieldEmail).
 				Label(model.LangJson{"en-US": "Email"}).
 				DataType(schema.FieldDataTypeEmail()).
 				Required().
@@ -131,12 +136,13 @@ func UserSchemaBuilder() *schema.EntitySchemaBuilder {
 		).
 		Field(
 			schema.DefineField().
-				Name(userFieldStatus).
+				Name(UserFieldStatus).
 				Label(model.LangJson{"en-US": "Status"}).
 				DataType(schema.FieldDataTypeEnumString([]string{
 					string(UserStatusActive), string(UserStatusArchived), string(UserStatusLocked),
 				})).
 				Required().
+				Default(string(UserStatusActive)).
 				Rule(schema.FieldRuleOneOf(UserStatusActive, UserStatusArchived, UserStatusLocked)),
 		).
 		Field(
@@ -154,51 +160,55 @@ func UserSchemaBuilder() *schema.EntitySchemaBuilder {
 }
 
 type UserEntity struct {
-	fields schema.DynamicEntity
+	fields schema.DynamicFields
 }
 
 func NewUserEntity() *UserEntity {
-	return &UserEntity{fields: make(schema.DynamicEntity)}
+	return &UserEntity{fields: make(schema.DynamicFields)}
 }
 
-func NewUserEntityFrom(src schema.DynamicEntity) *UserEntity {
+func NewUserEntityFrom(src schema.DynamicFields) *UserEntity {
 	return &UserEntity{fields: src}
 }
 
-func (this *UserEntity) GetFieldData() schema.DynamicEntity {
+func (this UserEntity) GetFieldData() schema.DynamicFields {
 	return this.fields
 }
 
-func (this *UserEntity) SetFieldData(data schema.DynamicEntity) {
+func (this *UserEntity) SetFieldData(data schema.DynamicFields) {
 	this.fields = data
 }
 
-func (this *UserEntity) GetDisplayName() *string {
-	return this.fields.GetString(userFieldDisplayName)
+func (this UserEntity) GetSchema() *schema.EntitySchema {
+	return schema.GetSchema("identity.user")
+}
+
+func (this UserEntity) GetDisplayName() *string {
+	return this.fields.GetString(UserFieldDisplayName)
 }
 
 func (this *UserEntity) SetDisplayName(v *string) {
-	this.fields.SetString(userFieldDisplayName, v)
+	this.fields.SetString(UserFieldDisplayName, v)
 }
 
-func (this *UserEntity) GetAvatarUrl() *string {
-	return this.fields.GetString(userFieldAvatarUrl)
+func (this UserEntity) GetAvatarUrl() *string {
+	return this.fields.GetString(UserFieldAvatarUrl)
 }
 
 func (this *UserEntity) SetAvatarUrl(v *string) {
-	this.fields.SetString(userFieldAvatarUrl, v)
+	this.fields.SetString(UserFieldAvatarUrl, v)
 }
 
-func (this *UserEntity) GetEmail() *string {
-	return this.fields.GetString(userFieldEmail)
+func (this UserEntity) GetEmail() *string {
+	return this.fields.GetString(UserFieldEmail)
 }
 
 func (this *UserEntity) SetEmail(v *string) {
-	this.fields.SetString(userFieldEmail, v)
+	this.fields.SetString(UserFieldEmail, v)
 }
 
-func (this *UserEntity) GetStatus() *UserStatus {
-	s := this.fields.GetString(userFieldStatus)
+func (this UserEntity) GetStatus() *UserStatus {
+	s := this.fields.GetString(UserFieldStatus)
 	if s == nil {
 		return nil
 	}
@@ -208,9 +218,9 @@ func (this *UserEntity) GetStatus() *UserStatus {
 
 func (this *UserEntity) SetStatus(v *UserStatus) {
 	if v == nil {
-		this.fields.SetString(userFieldStatus, nil)
+		this.fields.SetString(UserFieldStatus, nil)
 		return
 	}
 	s := string(*v)
-	this.fields.SetString(userFieldStatus, &s)
+	this.fields.SetString(UserFieldStatus, &s)
 }

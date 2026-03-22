@@ -11,9 +11,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
-const SchemaFieldTag = "entity"
-
-type DynamicEntity map[string]any
+type DynamicFields map[string]any
 
 type EntitySchema struct {
 	// Persistent fields
@@ -129,7 +127,7 @@ func (this EntitySchema) AllUniques() [][]string {
 
 // ValidateMap validates each map key against the corresponding schema field by invoking EntityField.Validate.
 // Returns a new map with validated and sanitized values, or (nil, ClientErrors) when invalid.
-func (this *EntitySchema) Validate(input DynamicEntity, forEdit ...bool) (DynamicEntity, *ft.ClientErrors) {
+func (this *EntitySchema) Validate(input DynamicFields, forEdit ...bool) (DynamicFields, *ft.ClientErrors) {
 	isForEdit := len(forEdit) > 0 && forEdit[0]
 	var errs ft.ClientErrors
 	result := make(map[string]any, len(input))
@@ -141,7 +139,7 @@ func (this *EntitySchema) Validate(input DynamicEntity, forEdit ...bool) (Dynami
 			errs.Append(*vErr)
 			continue
 		}
-		if exists {
+		if exists || validated != val {
 			result[key] = validated
 		}
 	}
@@ -217,6 +215,7 @@ type EntityField struct {
 	isUnique     bool
 	rules        []*FieldRule
 	defaultValue *any
+	defaultFn    func() any
 	relation     *EntityRelation
 }
 
@@ -286,6 +285,10 @@ func (this *EntityField) Default() any {
 	return *this.defaultValue
 }
 
+func (this *EntityField) DefaultFn() func() any {
+	return this.defaultFn
+}
+
 // Validate invokes the field's data type Validate (which validates and may sanitize),
 // then applies field rules. Returns the validated value and technical error if any.
 // When value is empty: uses default if available; otherwise errors only when required with no fallback.
@@ -296,10 +299,11 @@ func (this *EntityField) Validate(value any, forceOptional ...bool) (any, *ft.Cl
 		if this.defaultValue != nil {
 			return *this.defaultValue, nil
 		}
+		if this.defaultFn != nil {
+			return this.defaultFn(), nil
+		}
 		if this.isRequired && !isForcedOptional {
-			return nil, &ft.ClientErrorItem{
-				Field: this.name, Key: "common.err_missing_required_field", Message: "field is required", Vars: nil,
-			}
+			return nil, ft.NewValidationError(this.name, "common.err_missing_required_field", "field is required")
 		}
 		return value, nil
 	}
@@ -458,6 +462,7 @@ func (this *EntityField) Clone() *EntityField {
 		isUnique:     this.isUnique,
 		rules:        make([]*FieldRule, len(this.rules)),
 		defaultValue: this.defaultValue,
+		defaultFn:    this.defaultFn,
 		relation:     this.relation,
 	}
 	copy(cloned.rules, this.rules)

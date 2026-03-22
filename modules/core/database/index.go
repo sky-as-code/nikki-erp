@@ -62,8 +62,10 @@ func InitSubModule(params InitParams) error {
 	}
 
 	err = errors.Join(
+		deps.Register(func() (orm.DbClient, error) {
+			return dialects.InitDbClient(entDriverOpts)
+		}),
 		deps.Register(orm.NewPgQueryBuilder),
-		deps.Register(orm.NewPgClient),
 		deps.Register(func() *EntClientOptions {
 			return &EntClientOptions{
 				Driver:       driver,

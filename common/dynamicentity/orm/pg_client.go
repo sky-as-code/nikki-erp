@@ -15,7 +15,7 @@ type PgClient struct {
 // Ensure interface implementation at compile time.
 var _ DbClient = (*PgClient)(nil)
 
-func NewPgClient(db *sql.DB) *PgClient {
+func NewPgClient(db *sql.DB) DbClient {
 	return &PgClient{db: db}
 }
 

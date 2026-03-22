@@ -3,6 +3,7 @@ package dynamicentity
 import (
 	"context"
 
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
@@ -15,11 +16,19 @@ type Context interface {
 	SetLogger(logger logging.LoggerService)
 	GetDbTranx() db.DbTransaction
 	SetDbTranx(trx db.DbTransaction)
+	GetDomainConstraints() schema.DynamicFields
 }
 
 func NewRequestContext(ctx context.Context) Context {
 	return &RequestContext{
 		Context: ctx,
+	}
+}
+
+func NewRequestContextF(ctx context.Context, domainConstraints schema.DynamicFields) Context {
+	return &RequestContext{
+		Context:           ctx,
+		domainConstraints: domainConstraints,
 	}
 }
 
@@ -41,7 +50,8 @@ type RequestContext struct {
 	logger logging.LoggerService
 
 	// The transaction object that Repository Layer can use to perform atomic database operations.
-	repoTrx db.DbTransaction
+	repoTrx           db.DbTransaction
+	domainConstraints schema.DynamicFields
 }
 
 func (this *RequestContext) InnerContext() context.Context {
@@ -62,4 +72,8 @@ func (this *RequestContext) GetDbTranx() db.DbTransaction {
 
 func (this *RequestContext) SetDbTranx(trx db.DbTransaction) {
 	this.repoTrx = trx
+}
+
+func (this *RequestContext) GetDomainConstraints() schema.DynamicFields {
+	return this.domainConstraints
 }

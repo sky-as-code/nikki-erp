@@ -2,10 +2,12 @@ package user
 
 import (
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
 )
 
 type UserService interface {
 	CreateUser(ctx crud.Context, cmd CreateUserCommand) (*CreateUserResult, error)
+	CreateUser2(ctx dEnt.Context, cmd CreateUserCommand2) (*CreateUserResult2, error)
 	DeleteUser(ctx crud.Context, cmd DeleteUserCommand) (*DeleteUserResult, error)
 	Exists(ctx crud.Context, cmd UserExistsQuery) (*UserExistsResult, error)
 	ExistsMulti(ctx crud.Context, cmd UserExistsMultiQuery) (*UserExistsMultiResult, error)

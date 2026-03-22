@@ -6,6 +6,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	commonMiddleware "github.com/sky-as-code/nikki-erp/common/middleware"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 	"github.com/sky-as-code/nikki-erp/modules/identity/constants"
 	v1 "github.com/sky-as-code/nikki-erp/modules/identity/transport/restful/v1"
 )
@@ -42,7 +43,7 @@ func initV1(
 	checker := commonMiddleware.NewCqrsPermissionChecker(cqrsBus)
 
 	mwUserView := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionView, nil)
-	mwUserCreate := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionCreate, nil)
+	// mwUserCreate := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionCreate, nil)
 	mwUserUpdate := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionUpdate, nil)
 	mwUserDelete := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionDelete, nil)
 
@@ -62,7 +63,8 @@ func initV1(
 	mwHierarchyDelete := commonMiddleware.RequirePermission(checker, constants.ResourceHierarchyLevel, constants.ActionDelete, nil)
 	mwHierarchyManageUsers := commonMiddleware.RequirePermission(checker, constants.ResourceHierarchyLevel, constants.ActionManageUsers, nil)
 
-	protected.POST("/users", userRest.CreateUser, mwUserCreate)
+	route.POST("/users", userRest.CreateUser, middlewares.RequestContextMiddleware2)
+	// protected.POST("/users", userRest.CreateUser, middlewares.RequestContextMiddleware2, mwUserCreate)
 	protected.DELETE("/users/:id", userRest.DeleteUser, mwUserDelete)
 	protected.GET("/users/:id", userRest.GetUserById, mwUserView)
 	protected.GET("/users", userRest.SearchUsers, mwUserView)

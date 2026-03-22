@@ -13,6 +13,7 @@ import (
 	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
 	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
@@ -23,6 +24,7 @@ import (
 func NewUserServiceImpl(
 	enumSvc enum.EnumService,
 	userRepo it.UserRepository,
+	userRepo2 it.UserRepository2,
 	hierarchyRepo itHierarchy.HierarchyRepository,
 	cqrsBus cqrs.CqrsBus,
 	eventBus event.EventBus,
@@ -30,6 +32,7 @@ func NewUserServiceImpl(
 	return &UserServiceImpl{
 		enumSvc:       enumSvc,
 		userRepo:      userRepo,
+		userRepo2:     userRepo2,
 		hierarchyRepo: hierarchyRepo,
 		cqrs:          cqrsBus,
 		eventBus:      eventBus,
@@ -39,6 +42,7 @@ func NewUserServiceImpl(
 type UserServiceImpl struct {
 	enumSvc       enum.EnumService
 	userRepo      it.UserRepository
+	userRepo2     it.UserRepository2
 	hierarchyRepo itHierarchy.HierarchyRepository
 	eventBus      event.EventBus
 	cqrs          cqrs.CqrsBus
@@ -111,6 +115,35 @@ func (this *UserServiceImpl) CreateUser(ctx crud.Context, cmd it.CreateUserComma
 	})
 
 	return result, err
+}
+
+func (this *UserServiceImpl) CreateUser2(ctx dEnt.Context, cmd it.CreateUserCommand2) (*it.CreateUserResult2, error) {
+	return dEnt.Create(ctx, dEnt.CreateParam[domain.UserEntity, *domain.UserEntity]{
+		Action:       "create user 2",
+		DbRepoGetter: this.userRepo2,
+		Data:         cmd,
+	})
+	// result, err := crud.Create(ctx, crud.CreateParam[*domain.User, it.CreateUserCommand, it.CreateUserResult]{
+	// 	Action:              "create user",
+	// 	Command:             cmd,
+	// 	AssertBusinessRules: this.assertCreateRules,
+	// 	RepoCreate:          this.userRepo.Create,
+	// 	SetDefault:          this.setUserDefaults,
+	// 	Sanitize:            this.sanitizeUser,
+	// 	ToFailureResult: func(vErrs *ft.ValidationErrors) *it.CreateUserResult {
+	// 		return &it.CreateUserResult{
+	// 			ClientError: vErrs.ToClientError(),
+	// 		}
+	// 	},
+	// 	ToSuccessResult: func(model *domain.User) *it.CreateUserResult {
+	// 		return &it.CreateUserResult{
+	// 			Data:    model,
+	// 			HasData: model != nil,
+	// 		}
+	// 	},
+	// })
+
+	// return result, err
 }
 
 func (this *UserServiceImpl) UpdateUser(ctx crud.Context, cmd it.UpdateUserCommand) (*it.UpdateUserResult, error) {

@@ -49,7 +49,7 @@ func (this *UserDto) FromUser(user domain.User) {
 	})
 }
 
-type CreateUserRequest = it.CreateUserCommand
+type CreateUserRequest = it.CreateUserCommand2
 type CreateUserResponse = httpserver.RestCreateResponse
 
 type UpdateUserRequest = it.UpdateUserCommand

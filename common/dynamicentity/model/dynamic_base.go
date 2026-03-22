@@ -11,15 +11,35 @@ import (
 
 const AttrsFieldName = "Attrs_"
 
+// DynamicBase is an embeddable struct that exposes schema-defined attrs as a
+// flattened JSON map. Intended for entity and DTO types that need JSON round-trip
+// of dynamic attributes.
 type DynamicBase struct {
-	Attrs_ schema.DynamicEntity `json:"attrs_,omitempty"`
+	Attrs_ schema.DynamicFields `json:"attrs_,omitempty"`
+}
+
+// DynamicModel is an embeddable struct that provides in-memory dynamic field
+// storage for request and command types. It is not serialised to JSON and is
+// intended to ferry raw DynamicFields from the HTTP layer to the service layer.
+type DynamicModel struct {
+	fields schema.DynamicFields
+}
+
+// SetFields stores the given fields inside the model.
+func (m *DynamicModel) SetFields(fields schema.DynamicFields) {
+	m.fields = fields
+}
+
+// Fields returns the stored dynamic fields.
+func (m DynamicModel) Fields() schema.DynamicFields {
+	return m.fields
 }
 
 // ToEntityMap converts a struct into an EntityMap by mapping
 // the struct fields tag "json" to the EntityMap keys. Especially, all keys in struct field Attrs_
 // is flattened to the EntityMap keys.
-func StructToEntityMap(src any) schema.DynamicEntity {
-	result := make(schema.DynamicEntity)
+func StructToEntityMap(src any) schema.DynamicFields {
+	result := make(schema.DynamicFields)
 
 	if src == nil {
 		return result
@@ -70,7 +90,7 @@ func parseJSONTag(jsonTag string) (tagName string, hasOmitempty bool) {
 	return tagName, hasOmitempty
 }
 
-func processField(field reflect.StructField, fieldValue reflect.Value, result schema.DynamicEntity, tagName string, hasOmitempty bool) (isAttrsField bool) {
+func processField(field reflect.StructField, fieldValue reflect.Value, result schema.DynamicFields, tagName string, hasOmitempty bool) (isAttrsField bool) {
 	if field.Name == AttrsFieldName {
 		isAttrsField = true
 		return
@@ -93,7 +113,7 @@ func processField(field reflect.StructField, fieldValue reflect.Value, result sc
 	return
 }
 
-func processStructFields(value reflect.Value, result schema.DynamicEntity, attrsField **reflect.Value) {
+func processStructFields(value reflect.Value, result schema.DynamicFields, attrsField **reflect.Value) {
 	typ := value.Type()
 
 	for i := 0; i < value.NumField(); i++ {
@@ -116,7 +136,7 @@ func processStructFields(value reflect.Value, result schema.DynamicEntity, attrs
 	}
 }
 
-func flattenAttrsField(attrsField *reflect.Value, result schema.DynamicEntity) {
+func flattenAttrsField(attrsField *reflect.Value, result schema.DynamicFields) {
 	if attrsField == nil {
 		return
 	}
@@ -138,7 +158,7 @@ func flattenAttrsField(attrsField *reflect.Value, result schema.DynamicEntity) {
 // EntityMapToStruct converts an EntityMap into a struct by mapping
 // the EntityMap keys to the struct fields tag "json".
 // Any keys without corresponding struct field tag is mapped to the struct field Attrs_.
-func EntityMapToStruct[T any](src schema.DynamicEntity) *T {
+func EntityMapToStruct[T any](src schema.DynamicFields) *T {
 	if src == nil {
 		return nil
 	}
@@ -161,8 +181,8 @@ type attrsFieldRef struct {
 
 // copyMapToStruct loops through type T's fields and populates them from the EntityMap.
 // Returns unmapped attributes that don't match any field and a reference to the Attrs_ field.
-func copyMapToStruct(src schema.DynamicEntity, result reflect.Value, resultType reflect.Type) (schema.DynamicEntity, *attrsFieldRef) {
-	unmappedAttrs := make(schema.DynamicEntity)
+func copyMapToStruct(src schema.DynamicFields, result reflect.Value, resultType reflect.Type) (schema.DynamicFields, *attrsFieldRef) {
+	unmappedAttrs := make(schema.DynamicFields)
 
 	// Copy all keys from src to unmappedAttrs initially
 	for key, value := range src {
@@ -240,7 +260,7 @@ func isEmbeddedDynamicBase(field reflect.StructField, dynamicBaseStructName stri
 // populateFieldFromMap populates a field if the corresponding key exists in src EntityMap.
 // Returns the tagName if the field was populated, empty string otherwise.
 func populateFieldFromMap(
-	src schema.DynamicEntity, result reflect.Value, field reflect.StructField, fieldIndex int,
+	src schema.DynamicFields, result reflect.Value, field reflect.StructField, fieldIndex int,
 ) string {
 	tagName, _ := parseJSONTag(field.Tag.Get("json"))
 	if tagName == "" {
@@ -262,7 +282,7 @@ func populateFieldFromMap(
 }
 
 // populateAttrsField populates the Attrs_ field
-func populateAttrsField(result reflect.Value, attrsFieldRef *attrsFieldRef, attrs schema.DynamicEntity) {
+func populateAttrsField(result reflect.Value, attrsFieldRef *attrsFieldRef, attrs schema.DynamicFields) {
 	if attrsFieldRef == nil {
 		return
 	}

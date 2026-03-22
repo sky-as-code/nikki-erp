@@ -1,6 +1,7 @@
 package user
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -8,6 +9,7 @@ import (
 	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
@@ -63,12 +65,9 @@ var createUserCommandType = cqrs.RequestType{
 }
 
 type CreateUserCommand struct {
-	DisplayName        string    `json:"displayName"`
-	Email              string    `json:"email"`
-	MustChangePassword bool      `json:"mustChangePassword"`
-	Password           string    `json:"password"`
-	OrgId              *model.Id `json:"orgId"`
-	ScopeRef           *model.Id `query:"scopeRef" json:"scopeRef"`
+	DisplayName string    `json:"displayName" entity:"display_name"`
+	Email       string    `json:"email"`
+	OrgId       *model.Id `json:"orgId" entity:"org_id"`
 }
 
 func (CreateUserCommand) CqrsRequestType() cqrs.RequestType {
@@ -76,6 +75,20 @@ func (CreateUserCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 type CreateUserResult = crud.OpResult[*domain.User]
+
+type CreateUserCommand2 struct {
+	domain.UserEntity
+}
+
+func (CreateUserCommand2) CqrsRequestType() cqrs.RequestType {
+	return createUserCommandType
+}
+
+func (this CreateUserCommand2) GetSchema() *schema.EntitySchema {
+	return schema.GetSchema(domain.UserSchemaName)
+}
+
+type CreateUserResult2 = dEnt.OpResult[domain.UserEntity]
 
 var updateUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -106,7 +119,7 @@ var deleteUserCommandType = cqrs.RequestType{
 }
 
 type DeleteUserCommand struct {
-	Id model.Id `json:"id" param:"id"`
+	Id       model.Id  `json:"id" param:"id"`
 	ScopeRef *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
@@ -280,9 +293,9 @@ var searchUsersQueryType = cqrs.RequestType{
 type SearchUsersQuery struct {
 	crud.SearchQuery
 
-	WithGroups    bool `json:"withGroups" query:"withGroups"`
-	WithOrgs      bool `json:"withOrgs" query:"withOrgs"`
-	WithHierarchy bool `json:"withHierarchy" query:"withHierarchy"`
+	WithGroups    bool      `json:"withGroups" query:"withGroups"`
+	WithOrgs      bool      `json:"withOrgs" query:"withOrgs"`
+	WithHierarchy bool      `json:"withHierarchy" query:"withHierarchy"`
 	ScopeRef      *model.Id `json:"scopeRef" query:"scopeRef"`
 }
 

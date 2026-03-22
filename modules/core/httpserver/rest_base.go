@@ -32,14 +32,16 @@ func JsonBadRequest(echoCtx echo.Context, err any) error {
 }
 
 type RestCreateResponse struct {
-	Id        model.Id   `json:"id"`
-	CreatedAt int64      `json:"createdAt"`
-	Etag      model.Etag `json:"etag"`
+	Id model.Id `json:"id"`
+	// For backward compatibility. Will be removed.
+	CreatedAtMs int64      `json:"createdAt,omitempty"`
+	CreatedAt   string     `json:"created_at,omitempty"`
+	Etag        model.Etag `json:"etag"`
 }
 
 func (this *RestCreateResponse) FromEntity(src createdEntity) {
 	this.Id = *src.GetId()
-	this.CreatedAt = *safe.Indirect(src.GetCreatedAt(), func(srcTime time.Time) *int64 {
+	this.CreatedAtMs = *safe.Indirect(src.GetCreatedAt(), func(srcTime time.Time) *int64 {
 		milli := srcTime.UnixMilli()
 		return &milli
 	})
@@ -52,7 +54,7 @@ func (this *RestCreateResponse) FromNonEntity(src any) {
 
 type RestUpdateResponse struct {
 	Id        model.Id   `json:"id"`
-	UpdatedAt int64      `json:"updatedAt"`
+	UpdatedAt int64      `json:"updated_at"`
 	Etag      model.Etag `json:"etag"`
 }
 
@@ -71,7 +73,7 @@ func (this *RestUpdateResponse) FromNonEntity(src any) {
 
 type RestDeleteResponse struct {
 	Id        model.Id `json:"id"`
-	DeletedAt int64    `json:"deletedAt"`
+	DeletedAt int64    `json:"deleted_at"`
 }
 
 func (this *RestDeleteResponse) FromEntity(src deletedEntity) {

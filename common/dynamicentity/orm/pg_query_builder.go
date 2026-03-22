@@ -18,15 +18,15 @@ import (
 type QueryBuilder interface {
 	SqlCreateTable(schema *schema.EntitySchema, registry *schema.EntityRegistry) (string, error)
 	SqlSelectGraph(schema *schema.EntitySchema, graph schema.SearchGraph, columns []string) (string, error)
-	SqlInsert(schema *schema.EntitySchema, data schema.DynamicEntity) (string, error)
-	SqlInsertBulk(schema *schema.EntitySchema, rows []schema.DynamicEntity) (string, error)
-	SqlUpdateByPk(schema *schema.EntitySchema, data schema.DynamicEntity) (string, error)
-	SqlDeleteEqual(schema *schema.EntitySchema, filters schema.DynamicEntity) (string, error)
+	SqlInsert(schema *schema.EntitySchema, data schema.DynamicFields) (string, error)
+	SqlInsertBulk(schema *schema.EntitySchema, rows []schema.DynamicFields) (string, error)
+	SqlUpdateByPk(schema *schema.EntitySchema, data schema.DynamicFields) (string, error)
+	SqlDeleteEqual(schema *schema.EntitySchema, filters schema.DynamicFields) (string, error)
 	// SqlCheckUniqueCollisions builds SQL that returns 1 per row where the unique key has a collision, else 0.
 	// Input: uniqueKeysToCheck - subset of schema.AllUniques() where data has all values (no nil).
 	// Returns (sql, args, nil) for execution. Result rows are single int: 1 = collision, 0 = no collision.
 	SqlCheckUniqueCollisions(
-		schema *schema.EntitySchema, uniqueKeysToCheck [][]string, data schema.DynamicEntity,
+		schema *schema.EntitySchema, uniqueKeysToCheck [][]string, data schema.DynamicFields,
 	) (string, []any, error)
 }
 
@@ -105,7 +105,6 @@ func (this *PgQueryBuilder) defineForeignKeys(
 	return nil
 }
 
-
 func (this *PgQueryBuilder) SqlSelectGraph(
 	entSchema *schema.EntitySchema, graph schema.SearchGraph, columns []string,
 ) (string, error) {
@@ -154,11 +153,11 @@ func (this *PgQueryBuilder) tableExpression(entSchema *schema.EntitySchema) stri
 	return pgQuoteTable(strings.Split(tableName, ".")...)
 }
 
-func (this *PgQueryBuilder) SqlInsert(entSchema *schema.EntitySchema, data schema.DynamicEntity) (string, error) {
-	return this.SqlInsertBulk(entSchema, []schema.DynamicEntity{data})
+func (this *PgQueryBuilder) SqlInsert(entSchema *schema.EntitySchema, data schema.DynamicFields) (string, error) {
+	return this.SqlInsertBulk(entSchema, []schema.DynamicFields{data})
 }
 
-func (this *PgQueryBuilder) SqlInsertBulk(entSchema *schema.EntitySchema, rows []schema.DynamicEntity) (string, error) {
+func (this *PgQueryBuilder) SqlInsertBulk(entSchema *schema.EntitySchema, rows []schema.DynamicFields) (string, error) {
 	prepared, err := this.rowsFrom(entSchema, rows, nil)
 	if err != nil {
 		return "", err
@@ -180,7 +179,7 @@ func (this *PgQueryBuilder) buildInsertSql(entSchema *schema.EntitySchema, rows 
 	return interpolate(sql, args)
 }
 
-func (this *PgQueryBuilder) SqlUpdateByPk(entSchema *schema.EntitySchema, data schema.DynamicEntity) (string, error) {
+func (this *PgQueryBuilder) SqlUpdateByPk(entSchema *schema.EntitySchema, data schema.DynamicFields) (string, error) {
 	if len(entSchema.PrimaryKeys()) == 0 {
 		return "", errors.New("entity has no primary keys")
 	}
@@ -219,7 +218,7 @@ func (this *PgQueryBuilder) buildUpdateSql(
 	return interpolate(sql, args)
 }
 
-func (this *PgQueryBuilder) SqlDeleteEqual(entSchema *schema.EntitySchema, filters schema.DynamicEntity) (string, error) {
+func (this *PgQueryBuilder) SqlDeleteEqual(entSchema *schema.EntitySchema, filters schema.DynamicFields) (string, error) {
 	if len(filters) == 0 {
 		return "", errors.New("no filters provided")
 	}
@@ -252,7 +251,7 @@ func (this *PgQueryBuilder) SqlDeleteEqual(entSchema *schema.EntitySchema, filte
 //	UNION ALL
 //	SELECT CASE WHEN EXISTS (SELECT 1 FROM "public"."users" WHERE "code" = $4) THEN 1 ELSE 0 END
 func (this *PgQueryBuilder) SqlCheckUniqueCollisions(
-	entSchema *schema.EntitySchema, uniqueKeysToCheck [][]string, data schema.DynamicEntity,
+	entSchema *schema.EntitySchema, uniqueKeysToCheck [][]string, data schema.DynamicFields,
 ) (string, []any, error) {
 	if len(uniqueKeysToCheck) == 0 {
 		return "", nil, nil
@@ -279,7 +278,7 @@ func (this *PgQueryBuilder) SqlCheckUniqueCollisions(
 
 func (this *PgQueryBuilder) buildUniqueCheckPart(
 	entSchema *schema.EntitySchema, tableRef string, tenantKey string,
-	uniqueFields []string, data schema.DynamicEntity, argIdx int,
+	uniqueFields []string, data schema.DynamicFields, argIdx int,
 ) (string, []any, error) {
 	if len(uniqueFields) == 0 {
 		return "SELECT 0", nil, nil
@@ -296,7 +295,7 @@ func (this *PgQueryBuilder) buildUniqueCheckPart(
 }
 
 func (this *PgQueryBuilder) resolveColumnValues(
-	entSchema *schema.EntitySchema, columns []string, data schema.DynamicEntity,
+	entSchema *schema.EntitySchema, columns []string, data schema.DynamicFields,
 ) ([]any, bool, error) {
 	values := make([]any, 0, len(columns))
 	for _, col := range columns {
@@ -317,14 +316,13 @@ func (this *PgQueryBuilder) resolveColumnValues(
 	return values, true, nil
 }
 
-
 type rowData struct {
 	columns []string
 	values  []any
 }
 
 func (this *PgQueryBuilder) rowsFrom(
-	entSchema *schema.EntitySchema, rows []schema.DynamicEntity, filter func(string) bool,
+	entSchema *schema.EntitySchema, rows []schema.DynamicFields, filter func(string) bool,
 ) ([]rowData, error) {
 	if len(rows) == 0 {
 		return nil, errors.New("no rows provided")
@@ -353,7 +351,7 @@ func (this *PgQueryBuilder) rowsFrom(
 }
 
 func (this *PgQueryBuilder) rowFromMap(
-	entSchema *schema.EntitySchema, values schema.DynamicEntity, include func(string) bool,
+	entSchema *schema.EntitySchema, values schema.DynamicFields, include func(string) bool,
 ) (rowData, error) {
 	includeFn := include
 	if includeFn == nil {
@@ -387,7 +385,7 @@ func (this *PgQueryBuilder) rowFromMap(
 	return result, nil
 }
 
-func (this *PgQueryBuilder) rowForKeys(entSchema *schema.EntitySchema, values schema.DynamicEntity, keys []string) (rowData, error) {
+func (this *PgQueryBuilder) rowForKeys(entSchema *schema.EntitySchema, values schema.DynamicFields, keys []string) (rowData, error) {
 	result := rowData{
 		columns: make([]string, len(keys)),
 		values:  make([]any, len(keys)),

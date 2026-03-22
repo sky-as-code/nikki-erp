@@ -12,7 +12,7 @@ type DynamicEntityService struct {
 	dbRepo DbRepository
 }
 
-func (this *DynamicEntityService) Create(ctx context.Context, schemaName string, entity schema.DynamicEntity) (schema.DynamicEntity, error) {
+func (this *DynamicEntityService) Create(ctx context.Context, schemaName string, entity schema.DynamicFields) (schema.DynamicFields, error) {
 	entitySchema := schema.GetSchema(schemaName)
 	if entitySchema == nil {
 		return nil, errors.Errorf("schema '%s' not found", schemaName)
@@ -48,5 +48,5 @@ func (this *DynamicEntityService) Create(ctx context.Context, schemaName string,
 	if err != nil {
 		return nil, err
 	}
-	return schema.DynamicEntity(inserted), nil
+	return schema.DynamicFields(inserted), nil
 }

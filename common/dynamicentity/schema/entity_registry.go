@@ -23,7 +23,11 @@ type RelationValidator func(registry *EntityRegistry, schemaName string, relatio
 func (this *EntityRegistry) Get(name string) *EntitySchema {
 	this.mu.RLock()
 	defer this.mu.RUnlock()
-	return this.schemas[name]
+	schema, exists := this.schemas[name]
+	if !exists {
+		return nil
+	}
+	return schema
 }
 
 func (this *EntityRegistry) FieldSafe(schemaName string, fieldName string) (*EntityField, error) {
@@ -100,6 +104,15 @@ func (this *EntityRegistry) ForEachOrder(fn func(schemaName string, schema *Enti
 // GetSchema retrieves a registered schema by its name.
 func GetSchema(name string) *EntitySchema {
 	return schemaRegistry.Get(name)
+}
+
+// MustGetSchema retrieves a registered schema by its name.
+func MustGetSchema(name string) *EntitySchema {
+	schema := schemaRegistry.Get(name)
+	if schema == nil {
+		panic(errors.Errorf("schema '%s' not found", name))
+	}
+	return schema
 }
 
 func GetSchemaRegistry() *EntityRegistry {

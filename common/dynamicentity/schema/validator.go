@@ -190,12 +190,8 @@ func errIncompatibleDataType() *ft.ClientErrorItem {
 	return ft.NewAnonymousValidationError("common.err_incompatible_data_type", "incompatible data type", nil)
 }
 
-func ValidateEmail(value any) *ft.ClientErrorItem {
-	s, err := toString(value)
-	if err != nil {
-		return errIncompatibleDataType()
-	}
-	if !emailRegex.MatchString(s) {
+func ValidateEmail(value string) *ft.ClientErrorItem {
+	if !emailRegex.MatchString(value) {
 		return ft.NewAnonymousValidationError("common.err_invalid_email", "must be a valid email address", nil)
 	}
 	return nil
@@ -203,12 +199,8 @@ func ValidateEmail(value any) *ft.ClientErrorItem {
 
 var urlRegex = regexp.MustCompile(`^https?://[^\s]+$`)
 
-func ValidateUrl(value any) *ft.ClientErrorItem {
-	s, err := toString(value)
-	if err != nil {
-		return errIncompatibleDataType()
-	}
-	if !urlRegex.MatchString(s) {
+func ValidateUrl(value string) *ft.ClientErrorItem {
+	if !urlRegex.MatchString(value) {
 		return ft.NewAnonymousValidationError("common.err_invalid_url", "must be a valid URL", nil)
 	}
 	return nil
@@ -217,26 +209,18 @@ func ValidateUrl(value any) *ft.ClientErrorItem {
 var uuidRegex = regexp.MustCompile(
 	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
 
-func ValidateUuid(value any) *ft.ClientErrorItem {
-	s, err := toString(value)
-	if err != nil {
-		return errIncompatibleDataType()
-	}
-	if !uuidRegex.MatchString(s) {
+func ValidateUuid(value string) *ft.ClientErrorItem {
+	if !uuidRegex.MatchString(value) {
 		return ft.NewAnonymousValidationError("common.err_invalid_uuid", "must be a valid UUID", nil)
 	}
 	return nil
 }
 
-func validatePattern(value any, re *regexp.Regexp) *ft.ClientErrorItem {
+func ValidatePattern(value string, re *regexp.Regexp) *ft.ClientErrorItem {
 	if re == nil {
 		return nil
 	}
-	s, err := toString(value)
-	if err != nil {
-		return errIncompatibleDataType()
-	}
-	if !re.MatchString(s) {
+	if !re.MatchString(value) {
 		return ft.NewAnonymousValidationError("common.err_format_mismatch", "must match the required format", nil)
 	}
 	return nil

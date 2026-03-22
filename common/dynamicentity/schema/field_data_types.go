@@ -175,13 +175,12 @@ func (this fieldDataTypeEmail) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeEmail) Validate(value any) (any, *ft.ClientErrorItem) {
-	if err := ValidateNotEmpty(value); err != nil {
-		return nil, err
+	sanitized, clientErr := validateStringBase(value, this.options)
+	if clientErr != nil {
+		return nil, clientErr
 	}
-	if err := ValidateEmail(value); err != nil {
-		return nil, err
-	}
-	return value, nil
+	s, _ := toString(sanitized)
+	return sanitized, ValidateEmail(s)
 }
 
 func (this fieldDataTypeEmail) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -196,14 +195,7 @@ func (this fieldDataTypePhone) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypePhone) Validate(value any) (any, *ft.ClientErrorItem) {
-	s, err := toString(value)
-	if err != nil {
-		return nil, errIncompatibleDataType()
-	}
-	if strings.TrimSpace(s) == "" {
-		return nil, &ft.ClientErrorItem{Key: "phone_empty", Message: "phone cannot be empty", Vars: nil}
-	}
-	return value, nil
+	return validateStringBase(value, this.options)
 }
 
 func (this fieldDataTypePhone) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -218,18 +210,28 @@ func (this fieldDataTypeString) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeString) Validate(value any) (any, *ft.ClientErrorItem) {
-	_, err := toString(value)
-	if err != nil {
+	return validateStringBase(value, this.options)
+}
+
+func validateStringBase(value any, options FieldDataTypeOptions) (any, *ft.ClientErrorItem) {
+	if _, err := toString(value); err != nil {
 		return nil, errIncompatibleDataType()
 	}
-	return sanitizeStringValue(value, this.options)
+	return sanitizeStringValue(value, options)
 }
 
 func sanitizeStringValue(value any, options FieldDataTypeOptions) (any, *ft.ClientErrorItem) {
 	if options == nil {
 		return value, nil
 	}
-	st := options[FieldDataTypeOptSanitizeType].(SanitizeType)
+	raw, ok := options[FieldDataTypeOptSanitizeType]
+	if !ok || raw == nil {
+		return value, nil
+	}
+	st, ok := raw.(SanitizeType)
+	if !ok {
+		return value, nil
+	}
 	if rv := reflect.ValueOf(value); rv.Kind() == reflect.Slice {
 		return sanitizeStringSlice(value, st)
 	}
@@ -287,11 +289,7 @@ func (this fieldDataTypeSecret) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeSecret) Validate(value any) (any, *ft.ClientErrorItem) {
-	_, err := toString(value)
-	if err != nil {
-		return nil, errIncompatibleDataType()
-	}
-	return value, nil
+	return validateStringBase(value, this.options)
 }
 
 func (this fieldDataTypeSecret) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -306,13 +304,12 @@ func (this fieldDataTypeUrl) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeUrl) Validate(value any) (any, *ft.ClientErrorItem) {
-	if err := ValidateNotEmpty(value); err != nil {
-		return nil, err
+	sanitized, clientErr := validateStringBase(value, this.options)
+	if clientErr != nil {
+		return nil, clientErr
 	}
-	if err := ValidateUrl(value); err != nil {
-		return nil, err
-	}
-	return value, nil
+	s, _ := toString(sanitized)
+	return sanitized, ValidateUrl(s)
 }
 
 func (this fieldDataTypeUrl) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -327,10 +324,11 @@ func (this fieldDataTypeUlid) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeUlid) Validate(value any) (any, *ft.ClientErrorItem) {
-	s, err := toString(value)
-	if err != nil {
-		return nil, errIncompatibleDataType()
+	sanitized, clientErr := validateStringBase(value, this.options)
+	if clientErr != nil {
+		return nil, clientErr
 	}
+	s, _ := toString(sanitized)
 	if len(s) != model.MODEL_RULE_ULID_LENGTH {
 		return nil, &ft.ClientErrorItem{
 			Key:     "invalid_ulid_length",
@@ -338,10 +336,10 @@ func (this fieldDataTypeUlid) Validate(value any) (any, *ft.ClientErrorItem) {
 			Vars:    map[string]any{"length": model.MODEL_RULE_ULID_LENGTH},
 		}
 	}
-	if _, err = ulid.Parse(s); err != nil {
+	if _, err := ulid.Parse(s); err != nil {
 		return nil, &ft.ClientErrorItem{Key: "invalid_ulid", Message: "invalid ulid format", Vars: nil}
 	}
-	return value, nil
+	return sanitized, nil
 }
 
 func (this fieldDataTypeUlid) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -356,13 +354,12 @@ func (this fieldDataTypeUuid) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeUuid) Validate(value any) (any, *ft.ClientErrorItem) {
-	if err := ValidateNotEmpty(value); err != nil {
-		return nil, err
+	sanitized, clientErr := validateStringBase(value, this.options)
+	if clientErr != nil {
+		return nil, clientErr
 	}
-	if err := ValidateUuid(value); err != nil {
-		return nil, err
-	}
-	return value, nil
+	s, _ := toString(sanitized)
+	return sanitized, ValidateUuid(s)
 }
 
 func (this fieldDataTypeUuid) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -497,22 +494,22 @@ func (this fieldDataTypeEnumString) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeEnumString) Validate(value any) (any, *ft.ClientErrorItem) {
+	sanitized, clientErr := validateStringBase(value, this.options)
+	if clientErr != nil {
+		return nil, clientErr
+	}
 	allowed := getEnumStringValues(this.options)
 	if len(allowed) == 0 {
-		_, err := toString(value)
-		if err != nil {
-			return nil, errIncompatibleDataType()
-		}
-		return value, nil
+		return sanitized, nil
 	}
 	allowedAny := make([]any, len(allowed))
 	for i, s := range allowed {
 		allowedAny[i] = s
 	}
-	if err := ValidateOneOf(value, allowedAny); err != nil {
+	if err := ValidateOneOf(sanitized, allowedAny); err != nil {
 		return nil, err
 	}
-	return value, nil
+	return sanitized, nil
 }
 
 func (this fieldDataTypeEnumString) TryConvert(value any, options FieldDataTypeOptions) (any, error) {
@@ -559,13 +556,12 @@ func (this fieldDataTypeEtag) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeEtag) Validate(value any) (any, *ft.ClientErrorItem) {
-	if err := ValidateNotEmpty(value); err != nil {
-		return nil, err
+	sanitized, clientErr := validateStringBase(value, this.options)
+	if clientErr != nil {
+		return nil, clientErr
 	}
-	if err := ValidateLength(value, []int{model.MODEL_RULE_ETAG_MIN_LENGTH, model.MODEL_RULE_ETAG_MAX_LENGTH}); err != nil {
-		return nil, err
-	}
-	return value, nil
+	s, _ := toString(sanitized)
+	return sanitized, ValidateLength(s, []int{model.MODEL_RULE_ETAG_MIN_LENGTH, model.MODEL_RULE_ETAG_MAX_LENGTH})
 }
 
 func (this fieldDataTypeEtag) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -609,7 +605,7 @@ func (this fieldDataTypeLangJson) Validate(value any) (any, *ft.ClientErrorItem)
 	}
 	sanitized, _, err := lj.SanitizeClone(
 		getLangJsonWhitelist(this.options),
-		this.options[FieldDataTypeOptSanitizeType] == SanitizeTypeHtml,
+		this.options[FieldDataTypeOptSanitizeType] == SanitizeTypePlainText,
 	)
 	if err != nil {
 		return nil, &ft.ClientErrorItem{Key: "lang_json_sanitize_failed", Message: err.Error(), Vars: nil}
@@ -641,10 +637,11 @@ func (this fieldDataTypeLangCode) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeLangCode) Validate(value any) (any, *ft.ClientErrorItem) {
-	s, err := toString(value)
-	if err != nil {
-		return nil, errIncompatibleDataType()
+	sanitized, clientErr := validateStringBase(value, this.options)
+	if clientErr != nil {
+		return nil, clientErr
 	}
+	s, _ := toString(sanitized)
 	if s != model.LabelRefLanguageCode && !model.IsBCP47LanguageCode(s) {
 		return nil, &ft.ClientErrorItem{
 			Key:     "invalid_language_code",
@@ -652,7 +649,7 @@ func (this fieldDataTypeLangCode) Validate(value any) (any, *ft.ClientErrorItem)
 			Vars:    nil,
 		}
 	}
-	return value, nil
+	return sanitized, nil
 }
 
 func (this fieldDataTypeLangCode) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -675,10 +672,12 @@ func (this fieldDataTypeModelId) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeModelId) Validate(value any) (any, *ft.ClientErrorItem) {
-	if err := ValidateLength(value, []int{model.MODEL_RULE_ULID_LENGTH, model.MODEL_RULE_ULID_LENGTH}); err != nil {
-		return nil, err
+	sanitized, clientErr := validateStringBase(value, this.options)
+	if clientErr != nil {
+		return nil, clientErr
 	}
-	return value, nil
+	s, _ := toString(sanitized)
+	return sanitized, ValidateLength(s, []int{model.MODEL_RULE_ULID_LENGTH, model.MODEL_RULE_ULID_LENGTH})
 }
 
 func (this fieldDataTypeModelId) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -695,16 +694,15 @@ func (this fieldDataTypeSlug) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeSlug) Validate(value any) (any, *ft.ClientErrorItem) {
-	if err := ValidateNotEmpty(value); err != nil {
+	sanitized, clientErr := validateStringBase(value, this.options)
+	if clientErr != nil {
+		return nil, clientErr
+	}
+	s, _ := toString(sanitized)
+	if err := ValidateLength(s, []int{1, model.MODEL_RULE_SHORT_NAME_LENGTH}); err != nil {
 		return nil, err
 	}
-	if err := ValidateLength(value, []int{1, model.MODEL_RULE_SHORT_NAME_LENGTH}); err != nil {
-		return nil, err
-	}
-	if err := validatePattern(value, slugRegex); err != nil {
-		return nil, err
-	}
-	return value, nil
+	return sanitized, ValidatePattern(s, slugRegex)
 }
 
 func (this fieldDataTypeSlug) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -715,13 +713,6 @@ func (this fieldDataTypeSlug) TryConvert(value any, _ FieldDataTypeOptions) (any
 	s = strings.ToLower(strings.TrimSpace(s))
 	s = strings.ReplaceAll(s, " ", "-")
 	return s, nil
-}
-
-func firstFieldDataTypeOptions(opts []FieldDataTypeOptions) FieldDataTypeOptions {
-	if len(opts) == 0 {
-		return nil
-	}
-	return opts[0]
 }
 
 // --- Helpers ---

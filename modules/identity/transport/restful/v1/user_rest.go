@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	middleWare "github.com/sky-as-code/nikki-erp/common/middleware"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -33,16 +34,13 @@ func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UserSvc.CreateUser,
-		func(request CreateUserRequest) it.CreateUserCommand {
-			return it.CreateUserCommand(request)
+	err = httpserver.ServeRequestDynamic[CreateUserResponse](
+		echoCtx,
+		"create user",
+		func() schema.DynamicModelSetter {
+			return &CreateUserRequest{}
 		},
-		func(result it.CreateUserResult) CreateUserResponse {
-			response := CreateUserResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
+		this.UserSvc.CreateUser2,
 		httpserver.JsonCreated,
 	)
 	return err

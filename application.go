@@ -99,6 +99,10 @@ func (this *Application) initModules() error {
 		return err
 	}
 
+	if err := this.registerEntInOrder(moduleMap, depGraph); err != nil {
+		return err
+	}
+
 	return this.initializeInOrder(moduleMap, depGraph)
 }
 

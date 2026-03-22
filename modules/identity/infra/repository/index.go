@@ -23,6 +23,7 @@ func InitRepositories() error {
 	err = stdErr.Join(
 		deps.Register(newIdentityClient),
 		deps.Register(NewUserEntRepository),
+		deps.Register(NewUserDynamicRepository),
 		deps.Register(NewGroupEntRepository),
 		deps.Register(NewOrganizationEntRepository),
 		deps.Register(NewHierarchyLevelEntRepository),

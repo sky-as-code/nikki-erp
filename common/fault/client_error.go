@@ -94,7 +94,7 @@ func NewBusinessViolation(field string, key string, message string, vars ...map[
 
 func NewValidationError(field string, key string, message string, vars ...map[string]any) *ClientErrorItem {
 	var msgVars map[string]any = nil
-	if len(vars) == 0 {
+	if len(vars) > 0 {
 		msgVars = vars[0]
 	}
 
@@ -109,7 +109,7 @@ func NewValidationError(field string, key string, message string, vars ...map[st
 
 func NewAnonymousValidationError(key string, message string, vars ...map[string]any) *ClientErrorItem {
 	var msgVars map[string]any = nil
-	if len(vars) == 0 {
+	if len(vars) > 0 {
 		msgVars = vars[0]
 	}
 
@@ -124,22 +124,22 @@ func NewAnonymousValidationError(key string, message string, vars ...map[string]
 
 type ClientErrorItem struct {
 	// Field name in request payload that caused the error
-	Field string
+	Field string `json:"field,omitempty"`
 
 	// Translation key
-	Key string
+	Key string `json:"key,omitempty"`
 
 	// Error message template, support variable substitution.
 	// This is for human-friendly error logging.
 	// To display to end user, use `Key` and optional `Vars` to localize the error message.
-	Message string
+	Message string `json:"message,omitempty"`
 
 	// Error type. Can be used to determine the position of the error message on the UI,
 	// or used for analytics.
-	Type ClientErrorType
+	Type ClientErrorType `json:"type,omitempty"`
 
 	// Variables for substitution into Message.
-	Vars map[string]any
+	Vars map[string]any `json:"vars,omitempty"`
 }
 
 // String returns the message with variables substituted.

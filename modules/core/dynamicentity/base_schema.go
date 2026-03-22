@@ -1,0 +1,49 @@
+package dynamicentity
+
+import (
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	"github.com/sky-as-code/nikki-erp/common/model"
+)
+
+var baseBuilder *schema.EntitySchemaBuilder
+
+func BaseModelSchemaBuilder() *schema.EntitySchemaBuilder {
+	if baseBuilder == nil {
+		baseBuilder = schema.DefineEntity("core.base_model").
+			Field(
+				schema.DefineField().
+					Name("id").
+					Label(model.LangJson{"en-US": "ID"}).
+					DataType(schema.FieldDataTypeModelId()).
+					PrimaryKey(),
+			)
+	}
+	return baseBuilder
+}
+
+func AuditableModelSchemaBuilder() *schema.EntitySchemaBuilder {
+	return schema.DefineEntity("core.auditable_model").
+		Field(
+			schema.DefineField().
+				Name("created_at").
+				DataType(schema.FieldDataTypeDateTime()),
+		).
+		Field(
+			schema.DefineField().
+				Name("updated_at").
+				DataType(schema.FieldDataTypeDateTime()),
+		)
+}
+
+func VersionedModelSchemaBuilder() *schema.EntitySchemaBuilder {
+	return schema.DefineEntity("core.versioned_model").
+		Field(
+			schema.DefineField().
+				Name("etag").
+				DataType(schema.FieldDataTypeEtag()),
+		)
+}
+
+func SetBaseModelSchemaBuilder(builder *schema.EntitySchemaBuilder) {
+	baseBuilder = builder
+}
