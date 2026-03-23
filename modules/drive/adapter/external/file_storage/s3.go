@@ -129,6 +129,10 @@ func (s *S3StorageAdapterImpl) DeleteBucket(ctx context.Context, bucket BucketKe
 
 func (r *S3StorageAdapterImpl) DeleteBulk(ctx context.Context, keys []string) (
 	deletedKeys []string, failedKeys []string, err error) {
+	if len(keys) == 0 {
+		return []string{}, []string{}, nil
+	}
+
 	objects := lo.Map(keys, func(key string, _ int) types.ObjectIdentifier {
 		return types.ObjectIdentifier{Key: aws.String(key)}
 	})
