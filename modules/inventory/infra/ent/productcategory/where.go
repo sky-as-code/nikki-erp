@@ -70,11 +70,6 @@ func CreatedAt(v time.Time) predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldEQ(FieldCreatedAt, v))
 }
 
-// ParentID applies equality check predicate on the "parent_id" field. It's identical to ParentIDEQ.
-func ParentID(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldParentID, v))
-}
-
 // OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
 func OrgID(v string) predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldEQ(FieldOrgID, v))
@@ -128,81 +123,6 @@ func CreatedAtLT(v time.Time) predicate.ProductCategory {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldLTE(FieldCreatedAt, v))
-}
-
-// ParentIDEQ applies the EQ predicate on the "parent_id" field.
-func ParentIDEQ(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldParentID, v))
-}
-
-// ParentIDNEQ applies the NEQ predicate on the "parent_id" field.
-func ParentIDNEQ(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNEQ(FieldParentID, v))
-}
-
-// ParentIDIn applies the In predicate on the "parent_id" field.
-func ParentIDIn(vs ...string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldIn(FieldParentID, vs...))
-}
-
-// ParentIDNotIn applies the NotIn predicate on the "parent_id" field.
-func ParentIDNotIn(vs ...string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNotIn(FieldParentID, vs...))
-}
-
-// ParentIDGT applies the GT predicate on the "parent_id" field.
-func ParentIDGT(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGT(FieldParentID, v))
-}
-
-// ParentIDGTE applies the GTE predicate on the "parent_id" field.
-func ParentIDGTE(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGTE(FieldParentID, v))
-}
-
-// ParentIDLT applies the LT predicate on the "parent_id" field.
-func ParentIDLT(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLT(FieldParentID, v))
-}
-
-// ParentIDLTE applies the LTE predicate on the "parent_id" field.
-func ParentIDLTE(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLTE(FieldParentID, v))
-}
-
-// ParentIDContains applies the Contains predicate on the "parent_id" field.
-func ParentIDContains(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldContains(FieldParentID, v))
-}
-
-// ParentIDHasPrefix applies the HasPrefix predicate on the "parent_id" field.
-func ParentIDHasPrefix(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldHasPrefix(FieldParentID, v))
-}
-
-// ParentIDHasSuffix applies the HasSuffix predicate on the "parent_id" field.
-func ParentIDHasSuffix(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldHasSuffix(FieldParentID, v))
-}
-
-// ParentIDIsNil applies the IsNil predicate on the "parent_id" field.
-func ParentIDIsNil() predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldIsNull(FieldParentID))
-}
-
-// ParentIDNotNil applies the NotNil predicate on the "parent_id" field.
-func ParentIDNotNil() predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNotNull(FieldParentID))
-}
-
-// ParentIDEqualFold applies the EqualFold predicate on the "parent_id" field.
-func ParentIDEqualFold(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEqualFold(FieldParentID, v))
-}
-
-// ParentIDContainsFold applies the ContainsFold predicate on the "parent_id" field.
-func ParentIDContainsFold(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldContainsFold(FieldParentID, v))
 }
 
 // OrgIDEQ applies the EQ predicate on the "org_id" field.
@@ -383,52 +303,6 @@ func UpdatedAtIsNil() predicate.ProductCategory {
 // UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
 func UpdatedAtNotNil() predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldNotNull(FieldUpdatedAt))
-}
-
-// HasChildren applies the HasEdge predicate on the "children" edge.
-func HasChildren() predicate.ProductCategory {
-	return predicate.ProductCategory(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, ChildrenTable, ChildrenColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasChildrenWith applies the HasEdge predicate on the "children" edge with a given conditions (other predicates).
-func HasChildrenWith(preds ...predicate.ProductCategory) predicate.ProductCategory {
-	return predicate.ProductCategory(func(s *sql.Selector) {
-		step := newChildrenStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasParent applies the HasEdge predicate on the "parent" edge.
-func HasParent() predicate.ProductCategory {
-	return predicate.ProductCategory(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, ParentTable, ParentColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasParentWith applies the HasEdge predicate on the "parent" edge with a given conditions (other predicates).
-func HasParentWith(preds ...predicate.ProductCategory) predicate.ProductCategory {
-	return predicate.ProductCategory(func(s *sql.Selector) {
-		step := newParentStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
 }
 
 // HasProduct applies the HasEdge predicate on the "product" edge.

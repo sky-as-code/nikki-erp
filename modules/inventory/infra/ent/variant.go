@@ -30,6 +30,8 @@ type Variant struct {
 	Name model.LangJson `json:"name,omitempty"`
 	// ProposedPrice holds the value of the "proposed_price" field.
 	ProposedPrice *float64 `json:"proposed_price,omitempty"`
+	// ImageURL holds the value of the "Image_url" field.
+	ImageURL *string `json:"Image_url,omitempty"`
 	// ProductID holds the value of the "product_id" field.
 	ProductID string `json:"product_id,omitempty"`
 	// Sku holds the value of the "sku" field.
@@ -95,7 +97,7 @@ func (*Variant) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case variant.FieldProposedPrice:
 			values[i] = new(sql.NullFloat64)
-		case variant.FieldID, variant.FieldBarcode, variant.FieldEtag, variant.FieldProductID, variant.FieldSku, variant.FieldStatus:
+		case variant.FieldID, variant.FieldBarcode, variant.FieldEtag, variant.FieldImageURL, variant.FieldProductID, variant.FieldSku, variant.FieldStatus:
 			values[i] = new(sql.NullString)
 		case variant.FieldCreatedAt, variant.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -153,6 +155,13 @@ func (v *Variant) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				v.ProposedPrice = new(float64)
 				*v.ProposedPrice = value.Float64
+			}
+		case variant.FieldImageURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field Image_url", values[i])
+			} else if value.Valid {
+				v.ImageURL = new(string)
+				*v.ImageURL = value.String
 			}
 		case variant.FieldProductID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -248,6 +257,11 @@ func (v *Variant) String() string {
 	if v := v.ProposedPrice; v != nil {
 		builder.WriteString("proposed_price=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := v.ImageURL; v != nil {
+		builder.WriteString("Image_url=")
+		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
 	builder.WriteString("product_id=")

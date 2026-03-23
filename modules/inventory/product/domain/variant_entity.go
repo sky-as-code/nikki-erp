@@ -16,6 +16,7 @@ type Variant struct {
 	Barcode       *string                 `json:"barcode,omitempty"`
 	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
 	Status        *string                 `json:"status,omitempty"`
+	ImageURL      *string                 `json:"imageURL,omitempty"`
 	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
 
 	AttributeValue []AttributeValue `json:"attributeValue,omitempty"`

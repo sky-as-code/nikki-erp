@@ -29,10 +29,6 @@ func (ProductCategoryMixin) Fields() []ent.Field {
 
 		field.JSON("name", model.LangJson{}),
 
-		field.String("parent_id").
-			Optional().
-			Nillable(),
-
 		field.String("org_id"),
 
 		field.String("etag"),
@@ -55,16 +51,6 @@ func (ProductCategory) Annotations() []schema.Annotation {
 
 func (ProductCategory) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("children", ProductCategory.Type).
-			Field("parent_id").
-			Unique().
-			Annotations(entsql.Annotation{
-				OnDelete: entsql.Cascade,
-			}),
-
-		edge.From("parent", ProductCategory.Type).
-			Ref("children"),
-
 		edge.To("product", Product.Type).
 			Through("product_category_rel", ProductCategoryRel.Type),
 	}

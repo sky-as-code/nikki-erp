@@ -77,4 +77,5 @@ func initV1(
 	route.DELETE("/products/:productId/variants/:id", variantRest.DeleteVariant)
 	route.GET("/products/:productId/variants/:id", variantRest.GetVariantById)
 	route.GET("/products/:productId/variants", variantRest.SearchVariants)
+	route.GET("/variants", variantRest.SearchVariants)
 }

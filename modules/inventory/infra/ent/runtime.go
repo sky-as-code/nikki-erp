@@ -113,7 +113,7 @@ func init() {
 	// variant.DefaultCreatedAt holds the default value on creation for the created_at field.
 	variant.DefaultCreatedAt = variantDescCreatedAt.Default.(func() time.Time)
 	// variantDescStatus is the schema descriptor for status field.
-	variantDescStatus := variantMixinFields0[8].Descriptor()
+	variantDescStatus := variantMixinFields0[9].Descriptor()
 	// variant.DefaultStatus holds the default value on creation for the status field.
 	variant.DefaultStatus = variantDescStatus.Default.(string)
 }

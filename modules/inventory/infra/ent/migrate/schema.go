@@ -134,21 +134,12 @@ var (
 		{Name: "org_id", Type: field.TypeString},
 		{Name: "etag", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
-		{Name: "parent_id", Type: field.TypeString, Nullable: true},
 	}
 	// InventoryProductCategoryTable holds the schema information for the "inventory_product_category" table.
 	InventoryProductCategoryTable = &schema.Table{
 		Name:       "inventory_product_category",
 		Columns:    InventoryProductCategoryColumns,
 		PrimaryKey: []*schema.Column{InventoryProductCategoryColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "inventory_product_category_inventory_product_category_children",
-				Columns:    []*schema.Column{InventoryProductCategoryColumns[6]},
-				RefColumns: []*schema.Column{InventoryProductCategoryColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
 	}
 	// ProductCategoryRelColumns holds the columns for the "product_category_rel" table.
 	ProductCategoryRelColumns = []*schema.Column{
@@ -226,6 +217,7 @@ var (
 		{Name: "etag", Type: field.TypeString},
 		{Name: "name", Type: field.TypeJSON},
 		{Name: "proposed_price", Type: field.TypeFloat64, Nullable: true},
+		{Name: "image_url", Type: field.TypeString, Nullable: true},
 		{Name: "sku", Type: field.TypeString, Nullable: true},
 		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
@@ -239,7 +231,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "inventory_variant_inventory_product_product",
-				Columns:    []*schema.Column{InventoryVariantColumns[9]},
+				Columns:    []*schema.Column{InventoryVariantColumns[10]},
 				RefColumns: []*schema.Column{InventoryProductColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -303,7 +295,6 @@ func init() {
 	InventoryProductTable.Annotation = &entsql.Annotation{
 		Table: "inventory_product",
 	}
-	InventoryProductCategoryTable.ForeignKeys[0].RefTable = InventoryProductCategoryTable
 	InventoryProductCategoryTable.Annotation = &entsql.Annotation{
 		Table: "inventory_product_category",
 	}

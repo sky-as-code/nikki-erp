@@ -19,6 +19,7 @@ type VariantDto struct {
 	Sku           *string                 `json:"sku,omitempty"`
 	Barcode       *string                 `json:"barcode,omitempty"`
 	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
+	ImageURL      *string                 `json:"imageURL,omitempty"`
 	Status        string                  `json:"status"`
 	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
 }

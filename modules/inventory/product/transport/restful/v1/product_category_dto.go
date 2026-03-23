@@ -14,8 +14,7 @@ type ProductCategoryDto struct {
 	UpdatedAt *int64 `json:"updatedAt,omitempty"`
 	Etag      string `json:"etag"`
 
-	Name     model.LangJson `json:"name"`
-	ParentId *string        `json:"parentId,omitempty"`
+	Name model.LangJson `json:"name"`
 }
 
 func (this *ProductCategoryDto) FromProductCategory(pc domain.ProductCategory) {

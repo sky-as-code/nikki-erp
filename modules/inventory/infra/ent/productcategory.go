@@ -23,8 +23,6 @@ type ProductCategory struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Name holds the value of the "name" field.
 	Name model.LangJson `json:"name,omitempty"`
-	// ParentID holds the value of the "parent_id" field.
-	ParentID *string `json:"parent_id,omitempty"`
 	// OrgID holds the value of the "org_id" field.
 	OrgID string `json:"org_id,omitempty"`
 	// Etag holds the value of the "etag" field.
@@ -39,43 +37,19 @@ type ProductCategory struct {
 
 // ProductCategoryEdges holds the relations/edges for other nodes in the graph.
 type ProductCategoryEdges struct {
-	// Children holds the value of the children edge.
-	Children *ProductCategory `json:"children,omitempty"`
-	// Parent holds the value of the parent edge.
-	Parent []*ProductCategory `json:"parent,omitempty"`
 	// Product holds the value of the product edge.
 	Product []*Product `json:"product,omitempty"`
 	// ProductCategoryRel holds the value of the product_category_rel edge.
 	ProductCategoryRel []*ProductCategoryRel `json:"product_category_rel,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
-}
-
-// ChildrenOrErr returns the Children value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ProductCategoryEdges) ChildrenOrErr() (*ProductCategory, error) {
-	if e.Children != nil {
-		return e.Children, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: productcategory.Label}
-	}
-	return nil, &NotLoadedError{edge: "children"}
-}
-
-// ParentOrErr returns the Parent value or an error if the edge
-// was not loaded in eager-loading.
-func (e ProductCategoryEdges) ParentOrErr() ([]*ProductCategory, error) {
-	if e.loadedTypes[1] {
-		return e.Parent, nil
-	}
-	return nil, &NotLoadedError{edge: "parent"}
+	loadedTypes [2]bool
 }
 
 // ProductOrErr returns the Product value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProductCategoryEdges) ProductOrErr() ([]*Product, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[0] {
 		return e.Product, nil
 	}
 	return nil, &NotLoadedError{edge: "product"}
@@ -84,7 +58,7 @@ func (e ProductCategoryEdges) ProductOrErr() ([]*Product, error) {
 // ProductCategoryRelOrErr returns the ProductCategoryRel value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProductCategoryEdges) ProductCategoryRelOrErr() ([]*ProductCategoryRel, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[1] {
 		return e.ProductCategoryRel, nil
 	}
 	return nil, &NotLoadedError{edge: "product_category_rel"}
@@ -97,7 +71,7 @@ func (*ProductCategory) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case productcategory.FieldName:
 			values[i] = new([]byte)
-		case productcategory.FieldID, productcategory.FieldParentID, productcategory.FieldOrgID, productcategory.FieldEtag:
+		case productcategory.FieldID, productcategory.FieldOrgID, productcategory.FieldEtag:
 			values[i] = new(sql.NullString)
 		case productcategory.FieldCreatedAt, productcategory.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -136,13 +110,6 @@ func (pc *ProductCategory) assignValues(columns []string, values []any) error {
 					return fmt.Errorf("unmarshal field name: %w", err)
 				}
 			}
-		case productcategory.FieldParentID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field parent_id", values[i])
-			} else if value.Valid {
-				pc.ParentID = new(string)
-				*pc.ParentID = value.String
-			}
 		case productcategory.FieldOrgID:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field org_id", values[i])
@@ -173,16 +140,6 @@ func (pc *ProductCategory) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (pc *ProductCategory) Value(name string) (ent.Value, error) {
 	return pc.selectValues.Get(name)
-}
-
-// QueryChildren queries the "children" edge of the ProductCategory entity.
-func (pc *ProductCategory) QueryChildren() *ProductCategoryQuery {
-	return NewProductCategoryClient(pc.config).QueryChildren(pc)
-}
-
-// QueryParent queries the "parent" edge of the ProductCategory entity.
-func (pc *ProductCategory) QueryParent() *ProductCategoryQuery {
-	return NewProductCategoryClient(pc.config).QueryParent(pc)
 }
 
 // QueryProduct queries the "product" edge of the ProductCategory entity.
@@ -223,11 +180,6 @@ func (pc *ProductCategory) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(fmt.Sprintf("%v", pc.Name))
-	builder.WriteString(", ")
-	if v := pc.ParentID; v != nil {
-		builder.WriteString("parent_id=")
-		builder.WriteString(*v)
-	}
 	builder.WriteString(", ")
 	builder.WriteString("org_id=")
 	builder.WriteString(pc.OrgID)

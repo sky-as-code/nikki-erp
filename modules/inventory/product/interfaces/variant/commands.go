@@ -24,6 +24,7 @@ type CreateVariantCommand struct {
 	Barcode       *string                 `json:"barcode,omitempty"`
 	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
 	Status        *string                 `json:"status,omitempty"`
+	ImageUrl      *string                 `json:"imageUrl,omitempty"`
 	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
 }
 
@@ -131,7 +132,7 @@ type SearchVariantsQuery struct {
 	// Filled by service from Graph
 	crud.SearchQuery
 
-	ProductId model.Id `param:"productId" json:"productId"`
+	ProductId *model.Id `param:"productId" json:"productId"`
 }
 
 func (this SearchVariantsQuery) CqrsRequestType() cqrs.RequestType {
@@ -140,7 +141,6 @@ func (this SearchVariantsQuery) CqrsRequestType() cqrs.RequestType {
 
 func (this SearchVariantsQuery) Validate() ft.ValidationErrors {
 	rules := this.SearchQuery.ValidationRules()
-	rules = append(rules, model.IdValidateRule(&this.ProductId, true))
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }

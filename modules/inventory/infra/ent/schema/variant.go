@@ -38,6 +38,10 @@ func (VariantMixin) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 
+		field.String("Image_url").
+			Optional().
+			Nillable(),
+
 		field.String("product_id").
 			Immutable().
 			StorageKey("product_id"),
@@ -48,6 +52,10 @@ func (VariantMixin) Fields() []ent.Field {
 
 		field.String("status").
 			Default("active"),
+
+		field.String("org_id").
+			Immutable().
+			StorageKey("org_id"),
 
 		field.Time("updated_at").
 			Optional().

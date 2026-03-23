@@ -97,6 +97,26 @@ func (vu *VariantUpdate) ClearProposedPrice() *VariantUpdate {
 	return vu
 }
 
+// SetImageURL sets the "Image_url" field.
+func (vu *VariantUpdate) SetImageURL(s string) *VariantUpdate {
+	vu.mutation.SetImageURL(s)
+	return vu
+}
+
+// SetNillableImageURL sets the "Image_url" field if the given value is not nil.
+func (vu *VariantUpdate) SetNillableImageURL(s *string) *VariantUpdate {
+	if s != nil {
+		vu.SetImageURL(*s)
+	}
+	return vu
+}
+
+// ClearImageURL clears the value of the "Image_url" field.
+func (vu *VariantUpdate) ClearImageURL() *VariantUpdate {
+	vu.mutation.ClearImageURL()
+	return vu
+}
+
 // SetSku sets the "sku" field.
 func (vu *VariantUpdate) SetSku(s string) *VariantUpdate {
 	vu.mutation.SetSku(s)
@@ -260,6 +280,12 @@ func (vu *VariantUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if vu.mutation.ProposedPriceCleared() {
 		_spec.ClearField(variant.FieldProposedPrice, field.TypeFloat64)
 	}
+	if value, ok := vu.mutation.ImageURL(); ok {
+		_spec.SetField(variant.FieldImageURL, field.TypeString, value)
+	}
+	if vu.mutation.ImageURLCleared() {
+		_spec.ClearField(variant.FieldImageURL, field.TypeString)
+	}
 	if value, ok := vu.mutation.Sku(); ok {
 		_spec.SetField(variant.FieldSku, field.TypeString, value)
 	}
@@ -404,6 +430,26 @@ func (vuo *VariantUpdateOne) AddProposedPrice(f float64) *VariantUpdateOne {
 // ClearProposedPrice clears the value of the "proposed_price" field.
 func (vuo *VariantUpdateOne) ClearProposedPrice() *VariantUpdateOne {
 	vuo.mutation.ClearProposedPrice()
+	return vuo
+}
+
+// SetImageURL sets the "Image_url" field.
+func (vuo *VariantUpdateOne) SetImageURL(s string) *VariantUpdateOne {
+	vuo.mutation.SetImageURL(s)
+	return vuo
+}
+
+// SetNillableImageURL sets the "Image_url" field if the given value is not nil.
+func (vuo *VariantUpdateOne) SetNillableImageURL(s *string) *VariantUpdateOne {
+	if s != nil {
+		vuo.SetImageURL(*s)
+	}
+	return vuo
+}
+
+// ClearImageURL clears the value of the "Image_url" field.
+func (vuo *VariantUpdateOne) ClearImageURL() *VariantUpdateOne {
+	vuo.mutation.ClearImageURL()
 	return vuo
 }
 
@@ -599,6 +645,12 @@ func (vuo *VariantUpdateOne) sqlSave(ctx context.Context) (_node *Variant, err e
 	}
 	if vuo.mutation.ProposedPriceCleared() {
 		_spec.ClearField(variant.FieldProposedPrice, field.TypeFloat64)
+	}
+	if value, ok := vuo.mutation.ImageURL(); ok {
+		_spec.SetField(variant.FieldImageURL, field.TypeString, value)
+	}
+	if vuo.mutation.ImageURLCleared() {
+		_spec.ClearField(variant.FieldImageURL, field.TypeString)
 	}
 	if value, ok := vuo.mutation.Sku(); ok {
 		_spec.SetField(variant.FieldSku, field.TypeString, value)

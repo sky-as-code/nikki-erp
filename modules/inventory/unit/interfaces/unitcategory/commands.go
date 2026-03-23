@@ -35,12 +35,9 @@ var updateUnitCategoryCommandType = cqrs.RequestType{
 }
 
 type UpdateUnitCategoryCommand struct {
-	Id           model.Id        `json:"id" validate:"required" param:"id"`
-	Etag         model.Etag      `json:"etag" validate:"required" header:"If-Match"`
-	Name         *model.LangJson `json:"name,omitempty"`
-	Description  *model.LangJson `json:"description,omitempty"`
-	Status       *string         `json:"status,omitempty"`
-	ThumbnailUrl *string         `json:"thumbnailURL,omitempty"`
+	Id   model.Id        `json:"id" validate:"required" param:"id"`
+	Etag model.Etag      `json:"etag" validate:"required" header:"If-Match"`
+	Name *model.LangJson `json:"name,omitempty"`
 }
 
 func (UpdateUnitCategoryCommand) CqrsRequestType() cqrs.RequestType {

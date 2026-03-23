@@ -45,7 +45,7 @@ func (r *ProductEntRepository) Create(ctx crud.Context, product *domain.Product)
 		SetNillableUnitID(product.UnitId).
 		SetNillableStatus(product.Status).
 		SetNillableDefaultVariantID(product.DefaultVariantId).
-		SetNillableThumbnailURL(product.ThumbnailUrl).
+		SetNillableThumbnailURL(product.ThumbnailURL).
 		SetEtag(*product.Etag)
 		// SetNillableTagIDs(product.TagIds)
 
@@ -61,7 +61,7 @@ func (r *ProductEntRepository) Create(ctx crud.Context, product *domain.Product)
 func (r *ProductEntRepository) Update(ctx crud.Context, product *domain.Product, prevEtag model.Etag) (*domain.Product, error) {
 	update := r.productClient(ctx).UpdateOneID(*product.Id).
 		SetNillableDefaultVariantID(product.DefaultVariantId).
-		SetNillableThumbnailURL(product.ThumbnailUrl).
+		SetNillableThumbnailURL(product.ThumbnailURL).
 		// SetNillableTagIDs(product.TagIds).
 		Where(entProduct.Etag(prevEtag))
 
