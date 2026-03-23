@@ -42,20 +42,6 @@ func (pcc *ProductCategoryCreate) SetName(mj model.LangJson) *ProductCategoryCre
 	return pcc
 }
 
-// SetParentID sets the "parent_id" field.
-func (pcc *ProductCategoryCreate) SetParentID(s string) *ProductCategoryCreate {
-	pcc.mutation.SetParentID(s)
-	return pcc
-}
-
-// SetNillableParentID sets the "parent_id" field if the given value is not nil.
-func (pcc *ProductCategoryCreate) SetNillableParentID(s *string) *ProductCategoryCreate {
-	if s != nil {
-		pcc.SetParentID(*s)
-	}
-	return pcc
-}
-
 // SetOrgID sets the "org_id" field.
 func (pcc *ProductCategoryCreate) SetOrgID(s string) *ProductCategoryCreate {
 	pcc.mutation.SetOrgID(s)
@@ -86,40 +72,6 @@ func (pcc *ProductCategoryCreate) SetNillableUpdatedAt(t *time.Time) *ProductCat
 func (pcc *ProductCategoryCreate) SetID(s string) *ProductCategoryCreate {
 	pcc.mutation.SetID(s)
 	return pcc
-}
-
-// SetChildrenID sets the "children" edge to the ProductCategory entity by ID.
-func (pcc *ProductCategoryCreate) SetChildrenID(id string) *ProductCategoryCreate {
-	pcc.mutation.SetChildrenID(id)
-	return pcc
-}
-
-// SetNillableChildrenID sets the "children" edge to the ProductCategory entity by ID if the given value is not nil.
-func (pcc *ProductCategoryCreate) SetNillableChildrenID(id *string) *ProductCategoryCreate {
-	if id != nil {
-		pcc = pcc.SetChildrenID(*id)
-	}
-	return pcc
-}
-
-// SetChildren sets the "children" edge to the ProductCategory entity.
-func (pcc *ProductCategoryCreate) SetChildren(p *ProductCategory) *ProductCategoryCreate {
-	return pcc.SetChildrenID(p.ID)
-}
-
-// AddParentIDs adds the "parent" edge to the ProductCategory entity by IDs.
-func (pcc *ProductCategoryCreate) AddParentIDs(ids ...string) *ProductCategoryCreate {
-	pcc.mutation.AddParentIDs(ids...)
-	return pcc
-}
-
-// AddParent adds the "parent" edges to the ProductCategory entity.
-func (pcc *ProductCategoryCreate) AddParent(p ...*ProductCategory) *ProductCategoryCreate {
-	ids := make([]string, len(p))
-	for i := range p {
-		ids[i] = p[i].ID
-	}
-	return pcc.AddParentIDs(ids...)
 }
 
 // AddProductIDs adds the "product" edge to the Product entity by IDs.
@@ -246,39 +198,6 @@ func (pcc *ProductCategoryCreate) createSpec() (*ProductCategory, *sqlgraph.Crea
 	if value, ok := pcc.mutation.UpdatedAt(); ok {
 		_spec.SetField(productcategory.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = &value
-	}
-	if nodes := pcc.mutation.ChildrenIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   productcategory.ChildrenTable,
-			Columns: []string{productcategory.ChildrenColumn},
-			Bidi:    true,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.ParentID = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := pcc.mutation.ParentIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   productcategory.ParentTable,
-			Columns: []string{productcategory.ParentColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pcc.mutation.ProductIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

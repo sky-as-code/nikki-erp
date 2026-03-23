@@ -1143,38 +1143,6 @@ func (c *ProductCategoryClient) GetX(ctx context.Context, id string) *ProductCat
 	return obj
 }
 
-// QueryChildren queries the children edge of a ProductCategory.
-func (c *ProductCategoryClient) QueryChildren(pc *ProductCategory) *ProductCategoryQuery {
-	query := (&ProductCategoryClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pc.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(productcategory.Table, productcategory.FieldID, id),
-			sqlgraph.To(productcategory.Table, productcategory.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, productcategory.ChildrenTable, productcategory.ChildrenColumn),
-		)
-		fromV = sqlgraph.Neighbors(pc.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryParent queries the parent edge of a ProductCategory.
-func (c *ProductCategoryClient) QueryParent(pc *ProductCategory) *ProductCategoryQuery {
-	query := (&ProductCategoryClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := pc.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(productcategory.Table, productcategory.FieldID, id),
-			sqlgraph.To(productcategory.Table, productcategory.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, productcategory.ParentTable, productcategory.ParentColumn),
-		)
-		fromV = sqlgraph.Neighbors(pc.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryProduct queries the product edge of a ProductCategory.
 func (c *ProductCategoryClient) QueryProduct(pc *ProductCategory) *ProductQuery {
 	query := (&ProductClient{config: c.config}).Query()

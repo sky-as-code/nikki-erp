@@ -77,6 +77,20 @@ func (vc *VariantCreate) SetNillableProposedPrice(f *float64) *VariantCreate {
 	return vc
 }
 
+// SetImageURL sets the "Image_url" field.
+func (vc *VariantCreate) SetImageURL(s string) *VariantCreate {
+	vc.mutation.SetImageURL(s)
+	return vc
+}
+
+// SetNillableImageURL sets the "Image_url" field if the given value is not nil.
+func (vc *VariantCreate) SetNillableImageURL(s *string) *VariantCreate {
+	if s != nil {
+		vc.SetImageURL(*s)
+	}
+	return vc
+}
+
 // SetProductID sets the "product_id" field.
 func (vc *VariantCreate) SetProductID(s string) *VariantCreate {
 	vc.mutation.SetProductID(s)
@@ -270,6 +284,10 @@ func (vc *VariantCreate) createSpec() (*Variant, *sqlgraph.CreateSpec) {
 	if value, ok := vc.mutation.ProposedPrice(); ok {
 		_spec.SetField(variant.FieldProposedPrice, field.TypeFloat64, value)
 		_node.ProposedPrice = &value
+	}
+	if value, ok := vc.mutation.ImageURL(); ok {
+		_spec.SetField(variant.FieldImageURL, field.TypeString, value)
+		_node.ImageURL = &value
 	}
 	if value, ok := vc.mutation.Sku(); ok {
 		_spec.SetField(variant.FieldSku, field.TypeString, value)

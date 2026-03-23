@@ -18,9 +18,8 @@ var createProductCategoryCommandType = cqrs.RequestType{
 }
 
 type CreateProductCategoryCommand struct {
-	ParentId *model.Id      `json:"parentId,omitempty"`
-	Name     model.LangJson `json:"name"`
-	OrgId    model.Id       `json:"orgId" param:"orgId"`
+	Name  model.LangJson `json:"name"`
+	OrgId model.Id       `json:"orgId" param:"orgId"`
 }
 
 func (CreateProductCategoryCommand) CqrsRequestType() cqrs.RequestType {
@@ -38,10 +37,9 @@ var updateProductCategoryCommandType = cqrs.RequestType{
 }
 
 type UpdateProductCategoryCommand struct {
-	Id       model.Id        `param:"id" json:"id"`
-	Etag     model.Etag      `json:"etag"`
-	ParentId *model.Id       `json:"parentId,omitempty"`
-	Name     *model.LangJson `json:"name,omitempty"`
+	Id   model.Id        `param:"id" json:"id"`
+	Etag model.Etag      `json:"etag"`
+	Name *model.LangJson `json:"name,omitempty"`
 }
 
 func (UpdateProductCategoryCommand) CqrsRequestType() cqrs.RequestType {

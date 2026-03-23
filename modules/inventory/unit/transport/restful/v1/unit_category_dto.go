@@ -9,15 +9,12 @@ import (
 )
 
 type UnitCategoryDto struct {
-	Id           string          `json:"id"`
-	CreatedAt    int64           `json:"createdAt"`
-	UpdatedAt    *int64          `json:"updatedAt,omitempty"`
-	Etag         string          `json:"etag"`
-	OrgId        *string         `json:"orgId,omitempty"`
-	Name         model.LangJson  `json:"name"`
-	Description  *model.LangJson `json:"description,omitempty"`
-	Status       *string         `json:"status,omitempty"`
-	ThumbnailUrl *string         `json:"thumbnailURL,omitempty"`
+	Id        string         `json:"id"`
+	CreatedAt int64          `json:"createdAt"`
+	UpdatedAt *int64         `json:"updatedAt,omitempty"`
+	Etag      string         `json:"etag"`
+	OrgId     *string        `json:"orgId,omitempty"`
+	Name      model.LangJson `json:"name"`
 }
 
 func (this *UnitCategoryDto) FromUnitCategory(uc domain.UnitCategory) {

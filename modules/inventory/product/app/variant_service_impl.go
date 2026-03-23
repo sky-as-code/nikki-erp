@@ -141,7 +141,7 @@ func (s *VariantServiceImpl) GetVariantById(ctx crud.Context, query itVariant.Ge
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			return s.assertProductIdExists(ctx, query.ProductId, vErrs)
+			return s.assertProductIdExists(ctx, &query.ProductId, vErrs)
 		}).
 		End()
 
@@ -245,7 +245,7 @@ func (this *VariantServiceImpl) SearchVariants(ctx crud.Context, query itVariant
 		for _, attrVal := range variant.AttributeValue {
 			attribute, err := this.attribute.GetAttributeById(ctx, itAttribute.GetAttributeByIdQuery{
 				Id:        *attrVal.AttributeId,
-				ProductId: query.ProductId,
+				ProductId: *variant.ProductId,
 			})
 			ft.PanicOnErr(err)
 			if attribute == nil || attribute.Data == nil {
@@ -341,15 +341,17 @@ func (s *VariantServiceImpl) assertVariantIdExists(ctx crud.Context, variant *do
 	return dbVariant, nil
 }
 
-func (s *VariantServiceImpl) assertProductIdExists(ctx crud.Context, productId model.Id, vErrs *ft.ValidationErrors) error {
-	product, err := s.productSvc.GetProductById(ctx, itProduct.GetProductByIdQuery{
-		Id: productId,
-	})
-	ft.PanicOnErr(err)
+func (s *VariantServiceImpl) assertProductIdExists(ctx crud.Context, productId *model.Id, vErrs *ft.ValidationErrors) error {
+	if productId != nil {
+		product, err := s.productSvc.GetProductById(ctx, itProduct.GetProductByIdQuery{
+			Id: *productId,
+		})
+		ft.PanicOnErr(err)
 
-	if product.Data == nil {
-		vErrs.Append("productId", "product not found")
-		return nil
+		if product.Data == nil {
+			vErrs.Append("productId", "product not found")
+			return nil
+		}
 	}
 
 	return nil

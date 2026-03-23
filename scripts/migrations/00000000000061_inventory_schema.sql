@@ -96,6 +96,7 @@ CREATE TABLE "inventory_variant" (
   "etag" character varying NOT NULL,
   "name" jsonb NOT NULL,
   "proposed_price" double precision NULL,
+  "image_url" character varying NULL,
   "sku" character varying NULL,
   "status" character varying NOT NULL DEFAULT 'active',
   "updated_at" timestamptz NULL,
@@ -111,9 +112,7 @@ CREATE TABLE "inventory_product_category" (
   "org_id" character varying NOT NULL,
   "etag" character varying NOT NULL,
   "updated_at" timestamptz NULL,
-  "parent_id" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_product_category_inventory_product_category_children" FOREIGN KEY ("parent_id") REFERENCES "inventory_product_category" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  PRIMARY KEY ("id")
 );
 -- Create "product_category_rel" table
 CREATE TABLE "product_category_rel" (

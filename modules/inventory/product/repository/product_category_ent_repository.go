@@ -42,7 +42,6 @@ func (r *ProductCategoryEntRepository) Create(ctx crud.Context, productCategory 
 		SetID(*productCategory.Id).
 		SetOrgID(*productCategory.OrgId).
 		SetName(*productCategory.Name).
-		SetNillableParentID(productCategory.ParentId).
 		SetEtag(*productCategory.Etag)
 
 	return db.Mutate(ctx, creation, ent.IsNotFound, itProductCategory.EntToProductCategory)
@@ -51,7 +50,6 @@ func (r *ProductCategoryEntRepository) Create(ctx crud.Context, productCategory 
 // ✅ Update ProductCategory
 func (r *ProductCategoryEntRepository) Update(ctx crud.Context, productCategory *domain.ProductCategory, prevEtag model.Etag) (*domain.ProductCategory, error) {
 	update := r.productCategoryClient(ctx).UpdateOneID(*productCategory.Id).
-		SetNillableParentID(productCategory.ParentId).
 		Where(entProductCategory.Etag(prevEtag))
 
 	if productCategory.Name != nil {
@@ -109,10 +107,7 @@ func BuildProductCategoryDescriptor() *orm.EntityDescriptor {
 		Field(entProductCategory.FieldCreatedAt, entity.CreatedAt).
 		Field(entProductCategory.FieldID, entity.ID).
 		Field(entProductCategory.FieldName, entity.Name).
-		Field(entProductCategory.FieldParentID, entity.ParentID).
 		Field(entProductCategory.FieldUpdatedAt, entity.UpdatedAt).
-		Edge(entProductCategory.EdgeChildren, orm.ToEdgePredicate(entProductCategory.HasChildrenWith)).
-		Edge(entProductCategory.EdgeParent, orm.ToEdgePredicate(entProductCategory.HasParentWith)).
 		Edge(entProductCategory.EdgeProduct, orm.ToEdgePredicate(entProductCategory.HasProductWith))
 
 	return builder.Descriptor()

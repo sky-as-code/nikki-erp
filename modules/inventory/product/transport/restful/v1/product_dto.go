@@ -20,7 +20,7 @@ type ProductDto struct {
 	UnitId           *model.Id       `json:"unitId,omitempty"`
 	Status           string          `json:"status"`
 	DefaultVariantId *model.Id       `json:"defaultVariantId,omitempty"`
-	ThumbnailUrl     *string         `json:"thumbnailUrl,omitempty"`
+	ThumbnailURL     *string         `json:"thumbnailURL,omitempty"`
 
 	Variants   []model.Id     `json:"variants,omitempty"`
 	Attributes []AttributeDto `json:"attributes,omitempty"`

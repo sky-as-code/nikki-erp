@@ -41,6 +41,7 @@ func (r *VariantEntRepository) Create(ctx crud.Context, variant *domain.Variant)
 		SetNillableSku(variant.Sku).
 		SetNillableBarcode(variant.Barcode).
 		SetNillableProposedPrice(variant.ProposedPrice).
+		SetNillableImageURL(variant.ImageURL).
 		SetEtag(*variant.Etag)
 
 	if variant.Status != nil {
@@ -57,6 +58,7 @@ func (r *VariantEntRepository) Update(ctx crud.Context, variant *domain.Variant,
 		SetNillableSku(variant.Sku).
 		SetNillableProposedPrice(variant.ProposedPrice).
 		SetNillableStatus(variant.Status).
+		SetNillableImageURL(variant.ImageURL).
 		Where(entVariant.Etag(prevEtag))
 
 	if len(update.Mutation().Fields()) > 0 {
@@ -87,8 +89,11 @@ func (r *VariantEntRepository) FindById(ctx crud.Context, query itVariant.FindBy
 // ✅ Search (advanced)
 func (r *VariantEntRepository) Search(ctx crud.Context, param itVariant.SearchParam) (*crud.PagedResult[domain.Variant], error) {
 	query := r.client.Variant.Query().
-		Where(entVariant.ProductID(param.ProductId)).
 		WithAttributeValue()
+
+	if param.ProductId != nil {
+		query.Where(entVariant.ProductID(*param.ProductId))
+	}
 
 	return db.Search(
 		ctx,

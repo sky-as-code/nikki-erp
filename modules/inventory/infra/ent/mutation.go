@@ -4613,26 +4613,21 @@ func (m *ProductMutation) ResetEdge(name string) error {
 // ProductCategoryMutation represents an operation that mutates the ProductCategory nodes in the graph.
 type ProductCategoryMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *string
-	created_at      *time.Time
-	name            *model.LangJson
-	org_id          *string
-	etag            *string
-	updated_at      *time.Time
-	clearedFields   map[string]struct{}
-	children        *string
-	clearedchildren bool
-	parent          map[string]struct{}
-	removedparent   map[string]struct{}
-	clearedparent   bool
-	product         map[string]struct{}
-	removedproduct  map[string]struct{}
-	clearedproduct  bool
-	done            bool
-	oldValue        func(context.Context) (*ProductCategory, error)
-	predicates      []predicate.ProductCategory
+	op             Op
+	typ            string
+	id             *string
+	created_at     *time.Time
+	name           *model.LangJson
+	org_id         *string
+	etag           *string
+	updated_at     *time.Time
+	clearedFields  map[string]struct{}
+	product        map[string]struct{}
+	removedproduct map[string]struct{}
+	clearedproduct bool
+	done           bool
+	oldValue       func(context.Context) (*ProductCategory, error)
+	predicates     []predicate.ProductCategory
 }
 
 var _ ent.Mutation = (*ProductCategoryMutation)(nil)
@@ -4811,55 +4806,6 @@ func (m *ProductCategoryMutation) ResetName() {
 	m.name = nil
 }
 
-// SetParentID sets the "parent_id" field.
-func (m *ProductCategoryMutation) SetParentID(s string) {
-	m.children = &s
-}
-
-// ParentID returns the value of the "parent_id" field in the mutation.
-func (m *ProductCategoryMutation) ParentID() (r string, exists bool) {
-	v := m.children
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldParentID returns the old "parent_id" field's value of the ProductCategory entity.
-// If the ProductCategory object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ProductCategoryMutation) OldParentID(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldParentID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldParentID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldParentID: %w", err)
-	}
-	return oldValue.ParentID, nil
-}
-
-// ClearParentID clears the value of the "parent_id" field.
-func (m *ProductCategoryMutation) ClearParentID() {
-	m.children = nil
-	m.clearedFields[productcategory.FieldParentID] = struct{}{}
-}
-
-// ParentIDCleared returns if the "parent_id" field was cleared in this mutation.
-func (m *ProductCategoryMutation) ParentIDCleared() bool {
-	_, ok := m.clearedFields[productcategory.FieldParentID]
-	return ok
-}
-
-// ResetParentID resets all changes to the "parent_id" field.
-func (m *ProductCategoryMutation) ResetParentID() {
-	m.children = nil
-	delete(m.clearedFields, productcategory.FieldParentID)
-}
-
 // SetOrgID sets the "org_id" field.
 func (m *ProductCategoryMutation) SetOrgID(s string) {
 	m.org_id = &s
@@ -4981,100 +4927,6 @@ func (m *ProductCategoryMutation) ResetUpdatedAt() {
 	delete(m.clearedFields, productcategory.FieldUpdatedAt)
 }
 
-// SetChildrenID sets the "children" edge to the ProductCategory entity by id.
-func (m *ProductCategoryMutation) SetChildrenID(id string) {
-	m.children = &id
-}
-
-// ClearChildren clears the "children" edge to the ProductCategory entity.
-func (m *ProductCategoryMutation) ClearChildren() {
-	m.clearedchildren = true
-	m.clearedFields[productcategory.FieldParentID] = struct{}{}
-}
-
-// ChildrenCleared reports if the "children" edge to the ProductCategory entity was cleared.
-func (m *ProductCategoryMutation) ChildrenCleared() bool {
-	return m.ParentIDCleared() || m.clearedchildren
-}
-
-// ChildrenID returns the "children" edge ID in the mutation.
-func (m *ProductCategoryMutation) ChildrenID() (id string, exists bool) {
-	if m.children != nil {
-		return *m.children, true
-	}
-	return
-}
-
-// ChildrenIDs returns the "children" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// ChildrenID instead. It exists only for internal usage by the builders.
-func (m *ProductCategoryMutation) ChildrenIDs() (ids []string) {
-	if id := m.children; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetChildren resets all changes to the "children" edge.
-func (m *ProductCategoryMutation) ResetChildren() {
-	m.children = nil
-	m.clearedchildren = false
-}
-
-// AddParentIDs adds the "parent" edge to the ProductCategory entity by ids.
-func (m *ProductCategoryMutation) AddParentIDs(ids ...string) {
-	if m.parent == nil {
-		m.parent = make(map[string]struct{})
-	}
-	for i := range ids {
-		m.parent[ids[i]] = struct{}{}
-	}
-}
-
-// ClearParent clears the "parent" edge to the ProductCategory entity.
-func (m *ProductCategoryMutation) ClearParent() {
-	m.clearedparent = true
-}
-
-// ParentCleared reports if the "parent" edge to the ProductCategory entity was cleared.
-func (m *ProductCategoryMutation) ParentCleared() bool {
-	return m.clearedparent
-}
-
-// RemoveParentIDs removes the "parent" edge to the ProductCategory entity by IDs.
-func (m *ProductCategoryMutation) RemoveParentIDs(ids ...string) {
-	if m.removedparent == nil {
-		m.removedparent = make(map[string]struct{})
-	}
-	for i := range ids {
-		delete(m.parent, ids[i])
-		m.removedparent[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedParent returns the removed IDs of the "parent" edge to the ProductCategory entity.
-func (m *ProductCategoryMutation) RemovedParentIDs() (ids []string) {
-	for id := range m.removedparent {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ParentIDs returns the "parent" edge IDs in the mutation.
-func (m *ProductCategoryMutation) ParentIDs() (ids []string) {
-	for id := range m.parent {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetParent resets all changes to the "parent" edge.
-func (m *ProductCategoryMutation) ResetParent() {
-	m.parent = nil
-	m.clearedparent = false
-	m.removedparent = nil
-}
-
 // AddProductIDs adds the "product" edge to the Product entity by ids.
 func (m *ProductCategoryMutation) AddProductIDs(ids ...string) {
 	if m.product == nil {
@@ -5163,15 +5015,12 @@ func (m *ProductCategoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ProductCategoryMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 5)
 	if m.created_at != nil {
 		fields = append(fields, productcategory.FieldCreatedAt)
 	}
 	if m.name != nil {
 		fields = append(fields, productcategory.FieldName)
-	}
-	if m.children != nil {
-		fields = append(fields, productcategory.FieldParentID)
 	}
 	if m.org_id != nil {
 		fields = append(fields, productcategory.FieldOrgID)
@@ -5194,8 +5043,6 @@ func (m *ProductCategoryMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case productcategory.FieldName:
 		return m.Name()
-	case productcategory.FieldParentID:
-		return m.ParentID()
 	case productcategory.FieldOrgID:
 		return m.OrgID()
 	case productcategory.FieldEtag:
@@ -5215,8 +5062,6 @@ func (m *ProductCategoryMutation) OldField(ctx context.Context, name string) (en
 		return m.OldCreatedAt(ctx)
 	case productcategory.FieldName:
 		return m.OldName(ctx)
-	case productcategory.FieldParentID:
-		return m.OldParentID(ctx)
 	case productcategory.FieldOrgID:
 		return m.OldOrgID(ctx)
 	case productcategory.FieldEtag:
@@ -5245,13 +5090,6 @@ func (m *ProductCategoryMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
-		return nil
-	case productcategory.FieldParentID:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetParentID(v)
 		return nil
 	case productcategory.FieldOrgID:
 		v, ok := value.(string)
@@ -5304,9 +5142,6 @@ func (m *ProductCategoryMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *ProductCategoryMutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(productcategory.FieldParentID) {
-		fields = append(fields, productcategory.FieldParentID)
-	}
 	if m.FieldCleared(productcategory.FieldUpdatedAt) {
 		fields = append(fields, productcategory.FieldUpdatedAt)
 	}
@@ -5324,9 +5159,6 @@ func (m *ProductCategoryMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *ProductCategoryMutation) ClearField(name string) error {
 	switch name {
-	case productcategory.FieldParentID:
-		m.ClearParentID()
-		return nil
 	case productcategory.FieldUpdatedAt:
 		m.ClearUpdatedAt()
 		return nil
@@ -5344,9 +5176,6 @@ func (m *ProductCategoryMutation) ResetField(name string) error {
 	case productcategory.FieldName:
 		m.ResetName()
 		return nil
-	case productcategory.FieldParentID:
-		m.ResetParentID()
-		return nil
 	case productcategory.FieldOrgID:
 		m.ResetOrgID()
 		return nil
@@ -5362,13 +5191,7 @@ func (m *ProductCategoryMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProductCategoryMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.children != nil {
-		edges = append(edges, productcategory.EdgeChildren)
-	}
-	if m.parent != nil {
-		edges = append(edges, productcategory.EdgeParent)
-	}
+	edges := make([]string, 0, 1)
 	if m.product != nil {
 		edges = append(edges, productcategory.EdgeProduct)
 	}
@@ -5379,16 +5202,6 @@ func (m *ProductCategoryMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ProductCategoryMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case productcategory.EdgeChildren:
-		if id := m.children; id != nil {
-			return []ent.Value{*id}
-		}
-	case productcategory.EdgeParent:
-		ids := make([]ent.Value, 0, len(m.parent))
-		for id := range m.parent {
-			ids = append(ids, id)
-		}
-		return ids
 	case productcategory.EdgeProduct:
 		ids := make([]ent.Value, 0, len(m.product))
 		for id := range m.product {
@@ -5401,10 +5214,7 @@ func (m *ProductCategoryMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProductCategoryMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.removedparent != nil {
-		edges = append(edges, productcategory.EdgeParent)
-	}
+	edges := make([]string, 0, 1)
 	if m.removedproduct != nil {
 		edges = append(edges, productcategory.EdgeProduct)
 	}
@@ -5415,12 +5225,6 @@ func (m *ProductCategoryMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *ProductCategoryMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case productcategory.EdgeParent:
-		ids := make([]ent.Value, 0, len(m.removedparent))
-		for id := range m.removedparent {
-			ids = append(ids, id)
-		}
-		return ids
 	case productcategory.EdgeProduct:
 		ids := make([]ent.Value, 0, len(m.removedproduct))
 		for id := range m.removedproduct {
@@ -5433,13 +5237,7 @@ func (m *ProductCategoryMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProductCategoryMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.clearedchildren {
-		edges = append(edges, productcategory.EdgeChildren)
-	}
-	if m.clearedparent {
-		edges = append(edges, productcategory.EdgeParent)
-	}
+	edges := make([]string, 0, 1)
 	if m.clearedproduct {
 		edges = append(edges, productcategory.EdgeProduct)
 	}
@@ -5450,10 +5248,6 @@ func (m *ProductCategoryMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ProductCategoryMutation) EdgeCleared(name string) bool {
 	switch name {
-	case productcategory.EdgeChildren:
-		return m.clearedchildren
-	case productcategory.EdgeParent:
-		return m.clearedparent
 	case productcategory.EdgeProduct:
 		return m.clearedproduct
 	}
@@ -5464,9 +5258,6 @@ func (m *ProductCategoryMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ProductCategoryMutation) ClearEdge(name string) error {
 	switch name {
-	case productcategory.EdgeChildren:
-		m.ClearChildren()
-		return nil
 	}
 	return fmt.Errorf("unknown ProductCategory unique edge %s", name)
 }
@@ -5475,12 +5266,6 @@ func (m *ProductCategoryMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ProductCategoryMutation) ResetEdge(name string) error {
 	switch name {
-	case productcategory.EdgeChildren:
-		m.ResetChildren()
-		return nil
-	case productcategory.EdgeParent:
-		m.ResetParent()
-		return nil
 	case productcategory.EdgeProduct:
 		m.ResetProduct()
 		return nil
@@ -7666,6 +7451,7 @@ type VariantMutation struct {
 	name                   *model.LangJson
 	proposed_price         *float64
 	addproposed_price      *float64
+	_Image_url             *string
 	sku                    *string
 	status                 *string
 	updated_at             *time.Time
@@ -8011,6 +7797,55 @@ func (m *VariantMutation) ResetProposedPrice() {
 	delete(m.clearedFields, variant.FieldProposedPrice)
 }
 
+// SetImageURL sets the "Image_url" field.
+func (m *VariantMutation) SetImageURL(s string) {
+	m._Image_url = &s
+}
+
+// ImageURL returns the value of the "Image_url" field in the mutation.
+func (m *VariantMutation) ImageURL() (r string, exists bool) {
+	v := m._Image_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImageURL returns the old "Image_url" field's value of the Variant entity.
+// If the Variant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VariantMutation) OldImageURL(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImageURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImageURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImageURL: %w", err)
+	}
+	return oldValue.ImageURL, nil
+}
+
+// ClearImageURL clears the value of the "Image_url" field.
+func (m *VariantMutation) ClearImageURL() {
+	m._Image_url = nil
+	m.clearedFields[variant.FieldImageURL] = struct{}{}
+}
+
+// ImageURLCleared returns if the "Image_url" field was cleared in this mutation.
+func (m *VariantMutation) ImageURLCleared() bool {
+	_, ok := m.clearedFields[variant.FieldImageURL]
+	return ok
+}
+
+// ResetImageURL resets all changes to the "Image_url" field.
+func (m *VariantMutation) ResetImageURL() {
+	m._Image_url = nil
+	delete(m.clearedFields, variant.FieldImageURL)
+}
+
 // SetProductID sets the "product_id" field.
 func (m *VariantMutation) SetProductID(s string) {
 	m.product = &s
@@ -8296,7 +8131,7 @@ func (m *VariantMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *VariantMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.barcode != nil {
 		fields = append(fields, variant.FieldBarcode)
 	}
@@ -8311,6 +8146,9 @@ func (m *VariantMutation) Fields() []string {
 	}
 	if m.proposed_price != nil {
 		fields = append(fields, variant.FieldProposedPrice)
+	}
+	if m._Image_url != nil {
+		fields = append(fields, variant.FieldImageURL)
 	}
 	if m.product != nil {
 		fields = append(fields, variant.FieldProductID)
@@ -8342,6 +8180,8 @@ func (m *VariantMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case variant.FieldProposedPrice:
 		return m.ProposedPrice()
+	case variant.FieldImageURL:
+		return m.ImageURL()
 	case variant.FieldProductID:
 		return m.ProductID()
 	case variant.FieldSku:
@@ -8369,6 +8209,8 @@ func (m *VariantMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldName(ctx)
 	case variant.FieldProposedPrice:
 		return m.OldProposedPrice(ctx)
+	case variant.FieldImageURL:
+		return m.OldImageURL(ctx)
 	case variant.FieldProductID:
 		return m.OldProductID(ctx)
 	case variant.FieldSku:
@@ -8420,6 +8262,13 @@ func (m *VariantMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProposedPrice(v)
+		return nil
+	case variant.FieldImageURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImageURL(v)
 		return nil
 	case variant.FieldProductID:
 		v, ok := value.(string)
@@ -8500,6 +8349,9 @@ func (m *VariantMutation) ClearedFields() []string {
 	if m.FieldCleared(variant.FieldProposedPrice) {
 		fields = append(fields, variant.FieldProposedPrice)
 	}
+	if m.FieldCleared(variant.FieldImageURL) {
+		fields = append(fields, variant.FieldImageURL)
+	}
 	if m.FieldCleared(variant.FieldSku) {
 		fields = append(fields, variant.FieldSku)
 	}
@@ -8525,6 +8377,9 @@ func (m *VariantMutation) ClearField(name string) error {
 		return nil
 	case variant.FieldProposedPrice:
 		m.ClearProposedPrice()
+		return nil
+	case variant.FieldImageURL:
+		m.ClearImageURL()
 		return nil
 	case variant.FieldSku:
 		m.ClearSku()
@@ -8554,6 +8409,9 @@ func (m *VariantMutation) ResetField(name string) error {
 		return nil
 	case variant.FieldProposedPrice:
 		m.ResetProposedPrice()
+		return nil
+	case variant.FieldImageURL:
+		m.ResetImageURL()
 		return nil
 	case variant.FieldProductID:
 		m.ResetProductID()

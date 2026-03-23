@@ -16,7 +16,7 @@ type Product struct {
 	UnitId           *model.Id       `json:"unitId,omitempty" `
 	Status           *string         `json:"status,omitempty" `
 	DefaultVariantId *model.Id       `json:"defaultVariantId,omitempty" `
-	ThumbnailUrl     *string         `json:"thumbnailUrl,omitempty" `
+	ThumbnailURL     *string         `json:"thumbnailURL,omitempty" `
 
 	// Relations
 	Variants   []Variant   `json:"variants,omitempty" model:"-"`

@@ -10,14 +10,12 @@ type ProductCategory struct {
 	model.ModelBase
 	model.AuditableBase
 
-	OrgId    *model.Id       `json:"orgId"`
-	ParentId *model.Id       `json:"parentId,omitempty"`
-	Name     *model.LangJson `json:"name,omitempty"`
+	OrgId *model.Id       `json:"orgId"`
+	Name  *model.LangJson `json:"name,omitempty"`
 }
 
 func (this *ProductCategory) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
-		model.IdPtrValidateRule(&this.ParentId, false),
 		val.Field(&this.Name,
 			val.NotNilWhen(!forEdit),
 			val.When(this.Name != nil,
