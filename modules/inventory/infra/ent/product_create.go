@@ -14,6 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attribute"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attributegroup"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/product"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategory"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/unit"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/variant"
 )
@@ -125,6 +126,14 @@ func (pc *ProductCreate) SetUnitID(s string) *ProductCreate {
 	return pc
 }
 
+// SetNillableUnitID sets the "unit_id" field if the given value is not nil.
+func (pc *ProductCreate) SetNillableUnitID(s *string) *ProductCreate {
+	if s != nil {
+		pc.SetUnitID(*s)
+	}
+	return pc
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (pc *ProductCreate) SetUpdatedAt(t time.Time) *ProductCreate {
 	pc.mutation.SetUpdatedAt(t)
@@ -173,6 +182,21 @@ func (pc *ProductCreate) AddAttribute(a ...*Attribute) *ProductCreate {
 		ids[i] = a[i].ID
 	}
 	return pc.AddAttributeIDs(ids...)
+}
+
+// AddProductCategoryIDs adds the "product_category" edge to the ProductCategory entity by IDs.
+func (pc *ProductCreate) AddProductCategoryIDs(ids ...string) *ProductCreate {
+	pc.mutation.AddProductCategoryIDs(ids...)
+	return pc
+}
+
+// AddProductCategory adds the "product_category" edges to the ProductCategory entity.
+func (pc *ProductCreate) AddProductCategory(p ...*ProductCategory) *ProductCreate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pc.AddProductCategoryIDs(ids...)
 }
 
 // AddAttributeGroupIDs adds the "attribute_group" edge to the AttributeGroup entity by IDs.
@@ -256,12 +280,6 @@ func (pc *ProductCreate) check() error {
 	}
 	if _, ok := pc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Product.status"`)}
-	}
-	if _, ok := pc.mutation.UnitID(); !ok {
-		return &ValidationError{Name: "unit_id", err: errors.New(`ent: missing required field "Product.unit_id"`)}
-	}
-	if len(pc.mutation.UnitIDs()) == 0 {
-		return &ValidationError{Name: "unit", err: errors.New(`ent: missing required edge "Product.unit"`)}
 	}
 	return nil
 }
@@ -370,6 +388,22 @@ func (pc *ProductCreate) createSpec() (*Product, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := pc.mutation.ProductCategoryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   product.ProductCategoryTable,
+			Columns: product.ProductCategoryPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(productcategory.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := pc.mutation.AttributeGroupIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -400,7 +434,7 @@ func (pc *ProductCreate) createSpec() (*Product, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.UnitID = nodes[0]
+		_node.UnitID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

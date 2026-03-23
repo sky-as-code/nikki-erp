@@ -20,8 +20,12 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
+	// FieldName holds the string denoting the name field in the database.
+	FieldName = "name"
 	// FieldProposedPrice holds the string denoting the proposed_price field in the database.
 	FieldProposedPrice = "proposed_price"
+	// FieldImageURL holds the string denoting the image_url field in the database.
+	FieldImageURL = "image_url"
 	// FieldProductID holds the string denoting the product_id field in the database.
 	FieldProductID = "product_id"
 	// FieldSku holds the string denoting the sku field in the database.
@@ -65,7 +69,9 @@ var Columns = []string{
 	FieldBarcode,
 	FieldCreatedAt,
 	FieldEtag,
+	FieldName,
 	FieldProposedPrice,
+	FieldImageURL,
 	FieldProductID,
 	FieldSku,
 	FieldStatus,
@@ -121,6 +127,11 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 // ByProposedPrice orders the results by the proposed_price field.
 func ByProposedPrice(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProposedPrice, opts...).ToFunc()
+}
+
+// ByImageURL orders the results by the Image_url field.
+func ByImageURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldImageURL, opts...).ToFunc()
 }
 
 // ByProductID orders the results by the product_id field.

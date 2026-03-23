@@ -53,7 +53,9 @@ func (ProductMixin) Fields() []ent.Field {
 			Optional().
 			Nillable(),
 
-		field.String("unit_id"),
+		field.String("unit_id").
+			Optional().
+			Nillable(),
 
 		field.Time("updated_at").
 			Optional().
@@ -79,13 +81,16 @@ func (Product) Edges() []ent.Edge {
 		edge.From("attribute", Attribute.Type).
 			Ref("product"),
 
+		edge.From("product_category", ProductCategory.Type).
+			Ref("product").
+			Through("product_category_rel", ProductCategoryRel.Type),
+
 		edge.From("attribute_group", AttributeGroup.Type).
 			Ref("product"),
 
 		edge.To("unit", Unit.Type).
 			Field("unit_id").
 			Unique().
-			Required().
 			Annotations(entsql.Annotation{
 				OnDelete: entsql.Cascade,
 			}),

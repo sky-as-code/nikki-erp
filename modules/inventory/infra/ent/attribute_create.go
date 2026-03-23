@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -71,8 +72,8 @@ func (ac *AttributeCreate) SetNillableEnumValueSort(b *bool) *AttributeCreate {
 }
 
 // SetEnumValue sets the "enum_value" field.
-func (ac *AttributeCreate) SetEnumValue(mj model.LangJson) *AttributeCreate {
-	ac.mutation.SetEnumValue(mj)
+func (ac *AttributeCreate) SetEnumValue(jm []json.RawMessage) *AttributeCreate {
+	ac.mutation.SetEnumValue(jm)
 	return ac
 }
 
@@ -82,16 +83,16 @@ func (ac *AttributeCreate) SetEtag(s string) *AttributeCreate {
 	return ac
 }
 
-// SetGroupID sets the "group_id" field.
-func (ac *AttributeCreate) SetGroupID(s string) *AttributeCreate {
-	ac.mutation.SetGroupID(s)
+// SetAttributeGroupID sets the "attribute_group_id" field.
+func (ac *AttributeCreate) SetAttributeGroupID(s string) *AttributeCreate {
+	ac.mutation.SetAttributeGroupID(s)
 	return ac
 }
 
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (ac *AttributeCreate) SetNillableGroupID(s *string) *AttributeCreate {
+// SetNillableAttributeGroupID sets the "attribute_group_id" field if the given value is not nil.
+func (ac *AttributeCreate) SetNillableAttributeGroupID(s *string) *AttributeCreate {
 	if s != nil {
-		ac.SetGroupID(*s)
+		ac.SetAttributeGroupID(*s)
 	}
 	return ac
 }
@@ -161,20 +162,6 @@ func (ac *AttributeCreate) SetNillableUpdatedAt(t *time.Time) *AttributeCreate {
 // SetID sets the "id" field.
 func (ac *AttributeCreate) SetID(s string) *AttributeCreate {
 	ac.mutation.SetID(s)
-	return ac
-}
-
-// SetAttributeGroupID sets the "attribute_group" edge to the AttributeGroup entity by ID.
-func (ac *AttributeCreate) SetAttributeGroupID(id string) *AttributeCreate {
-	ac.mutation.SetAttributeGroupID(id)
-	return ac
-}
-
-// SetNillableAttributeGroupID sets the "attribute_group" edge to the AttributeGroup entity by ID if the given value is not nil.
-func (ac *AttributeCreate) SetNillableAttributeGroupID(id *string) *AttributeCreate {
-	if id != nil {
-		ac = ac.SetAttributeGroupID(*id)
-	}
 	return ac
 }
 
@@ -385,7 +372,7 @@ func (ac *AttributeCreate) createSpec() (*Attribute, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.GroupID = &nodes[0]
+		_node.AttributeGroupID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := ac.mutation.ProductIDs(); len(nodes) > 0 {

@@ -69,6 +69,18 @@ func (f ProductCategoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProductCategoryMutation", m)
 }
 
+// The ProductCategoryRelFunc type is an adapter to allow the use of ordinary
+// function as ProductCategoryRel mutator.
+type ProductCategoryRelFunc func(context.Context, *ent.ProductCategoryRelMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ProductCategoryRelFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ProductCategoryRelMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProductCategoryRelMutation", m)
+}
+
 // The UnitFunc type is an adapter to allow the use of ordinary
 // function as Unit mutator.
 type UnitFunc func(context.Context, *ent.UnitMutation) (ent.Value, error)

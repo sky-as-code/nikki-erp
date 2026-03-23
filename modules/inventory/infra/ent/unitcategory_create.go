@@ -36,23 +36,9 @@ func (ucc *UnitCategoryCreate) SetNillableCreatedAt(t *time.Time) *UnitCategoryC
 	return ucc
 }
 
-// SetDefaultVariantID sets the "default_variant_id" field.
-func (ucc *UnitCategoryCreate) SetDefaultVariantID(s string) *UnitCategoryCreate {
-	ucc.mutation.SetDefaultVariantID(s)
-	return ucc
-}
-
-// SetNillableDefaultVariantID sets the "default_variant_id" field if the given value is not nil.
-func (ucc *UnitCategoryCreate) SetNillableDefaultVariantID(s *string) *UnitCategoryCreate {
-	if s != nil {
-		ucc.SetDefaultVariantID(*s)
-	}
-	return ucc
-}
-
-// SetDescription sets the "description" field.
-func (ucc *UnitCategoryCreate) SetDescription(mj model.LangJson) *UnitCategoryCreate {
-	ucc.mutation.SetDescription(mj)
+// SetName sets the "name" field.
+func (ucc *UnitCategoryCreate) SetName(mj model.LangJson) *UnitCategoryCreate {
+	ucc.mutation.SetName(mj)
 	return ucc
 }
 
@@ -62,63 +48,9 @@ func (ucc *UnitCategoryCreate) SetEtag(s string) *UnitCategoryCreate {
 	return ucc
 }
 
-// SetName sets the "name" field.
-func (ucc *UnitCategoryCreate) SetName(mj model.LangJson) *UnitCategoryCreate {
-	ucc.mutation.SetName(mj)
-	return ucc
-}
-
 // SetOrgID sets the "org_id" field.
 func (ucc *UnitCategoryCreate) SetOrgID(s string) *UnitCategoryCreate {
 	ucc.mutation.SetOrgID(s)
-	return ucc
-}
-
-// SetStatus sets the "status" field.
-func (ucc *UnitCategoryCreate) SetStatus(s string) *UnitCategoryCreate {
-	ucc.mutation.SetStatus(s)
-	return ucc
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (ucc *UnitCategoryCreate) SetNillableStatus(s *string) *UnitCategoryCreate {
-	if s != nil {
-		ucc.SetStatus(*s)
-	}
-	return ucc
-}
-
-// SetTagIds sets the "tag_ids" field.
-func (ucc *UnitCategoryCreate) SetTagIds(s string) *UnitCategoryCreate {
-	ucc.mutation.SetTagIds(s)
-	return ucc
-}
-
-// SetNillableTagIds sets the "tag_ids" field if the given value is not nil.
-func (ucc *UnitCategoryCreate) SetNillableTagIds(s *string) *UnitCategoryCreate {
-	if s != nil {
-		ucc.SetTagIds(*s)
-	}
-	return ucc
-}
-
-// SetThumbnailURL sets the "thumbnail_url" field.
-func (ucc *UnitCategoryCreate) SetThumbnailURL(s string) *UnitCategoryCreate {
-	ucc.mutation.SetThumbnailURL(s)
-	return ucc
-}
-
-// SetNillableThumbnailURL sets the "thumbnail_url" field if the given value is not nil.
-func (ucc *UnitCategoryCreate) SetNillableThumbnailURL(s *string) *UnitCategoryCreate {
-	if s != nil {
-		ucc.SetThumbnailURL(*s)
-	}
-	return ucc
-}
-
-// SetUnitID sets the "unit_id" field.
-func (ucc *UnitCategoryCreate) SetUnitID(s string) *UnitCategoryCreate {
-	ucc.mutation.SetUnitID(s)
 	return ucc
 }
 
@@ -196,10 +128,6 @@ func (ucc *UnitCategoryCreate) defaults() {
 		v := unitcategory.DefaultCreatedAt()
 		ucc.mutation.SetCreatedAt(v)
 	}
-	if _, ok := ucc.mutation.Status(); !ok {
-		v := unitcategory.DefaultStatus
-		ucc.mutation.SetStatus(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -207,20 +135,14 @@ func (ucc *UnitCategoryCreate) check() error {
 	if _, ok := ucc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "UnitCategory.created_at"`)}
 	}
-	if _, ok := ucc.mutation.Etag(); !ok {
-		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "UnitCategory.etag"`)}
-	}
 	if _, ok := ucc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "UnitCategory.name"`)}
 	}
+	if _, ok := ucc.mutation.Etag(); !ok {
+		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "UnitCategory.etag"`)}
+	}
 	if _, ok := ucc.mutation.OrgID(); !ok {
 		return &ValidationError{Name: "org_id", err: errors.New(`ent: missing required field "UnitCategory.org_id"`)}
-	}
-	if _, ok := ucc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "UnitCategory.status"`)}
-	}
-	if _, ok := ucc.mutation.UnitID(); !ok {
-		return &ValidationError{Name: "unit_id", err: errors.New(`ent: missing required field "UnitCategory.unit_id"`)}
 	}
 	return nil
 }
@@ -261,41 +183,17 @@ func (ucc *UnitCategoryCreate) createSpec() (*UnitCategory, *sqlgraph.CreateSpec
 		_spec.SetField(unitcategory.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if value, ok := ucc.mutation.DefaultVariantID(); ok {
-		_spec.SetField(unitcategory.FieldDefaultVariantID, field.TypeString, value)
-		_node.DefaultVariantID = &value
-	}
-	if value, ok := ucc.mutation.Description(); ok {
-		_spec.SetField(unitcategory.FieldDescription, field.TypeJSON, value)
-		_node.Description = value
+	if value, ok := ucc.mutation.Name(); ok {
+		_spec.SetField(unitcategory.FieldName, field.TypeJSON, value)
+		_node.Name = value
 	}
 	if value, ok := ucc.mutation.Etag(); ok {
 		_spec.SetField(unitcategory.FieldEtag, field.TypeString, value)
 		_node.Etag = value
 	}
-	if value, ok := ucc.mutation.Name(); ok {
-		_spec.SetField(unitcategory.FieldName, field.TypeJSON, value)
-		_node.Name = value
-	}
 	if value, ok := ucc.mutation.OrgID(); ok {
 		_spec.SetField(unitcategory.FieldOrgID, field.TypeString, value)
 		_node.OrgID = value
-	}
-	if value, ok := ucc.mutation.Status(); ok {
-		_spec.SetField(unitcategory.FieldStatus, field.TypeString, value)
-		_node.Status = value
-	}
-	if value, ok := ucc.mutation.TagIds(); ok {
-		_spec.SetField(unitcategory.FieldTagIds, field.TypeString, value)
-		_node.TagIds = &value
-	}
-	if value, ok := ucc.mutation.ThumbnailURL(); ok {
-		_spec.SetField(unitcategory.FieldThumbnailURL, field.TypeString, value)
-		_node.ThumbnailURL = &value
-	}
-	if value, ok := ucc.mutation.UnitID(); ok {
-		_spec.SetField(unitcategory.FieldUnitID, field.TypeString, value)
-		_node.UnitID = value
 	}
 	if value, ok := ucc.mutation.UpdatedAt(); ok {
 		_spec.SetField(unitcategory.FieldUpdatedAt, field.TypeTime, value)

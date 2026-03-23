@@ -6,8 +6,29 @@ meta {
 
 put {
   url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/variants/{{variant_id}}
-  body: none
+  body: json
   auth: inherit
+}
+
+body:json {
+  {
+    "sku": "TSHIRT-RED-M",
+    "barcode": "8938501234567",
+    "proposedPrice": 21000,
+    "status": "active",
+    "attributes": {
+      "color": {
+        "vi_VN": "Đỏ",
+        "en_US": "Red"
+      },
+      "size": 19
+    },
+    "etag": "1771950724812775600"
+  }
+}
+
+vars:pre-request {
+  variant_id: 01KJ87WNPCBRAP77BFR08WBN13
 }
 
 settings {

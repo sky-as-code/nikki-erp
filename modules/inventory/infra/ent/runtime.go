@@ -82,25 +82,9 @@ func init() {
 	productcategoryFields := schema.ProductCategory{}.Fields()
 	_ = productcategoryFields
 	// productcategoryDescCreatedAt is the schema descriptor for created_at field.
-	productcategoryDescCreatedAt := productcategoryMixinFields0[2].Descriptor()
+	productcategoryDescCreatedAt := productcategoryMixinFields0[1].Descriptor()
 	// productcategory.DefaultCreatedAt holds the default value on creation for the created_at field.
 	productcategory.DefaultCreatedAt = productcategoryDescCreatedAt.Default.(func() time.Time)
-	// productcategoryDescEnumValueSort is the schema descriptor for enum_value_sort field.
-	productcategoryDescEnumValueSort := productcategoryMixinFields0[5].Descriptor()
-	// productcategory.DefaultEnumValueSort holds the default value on creation for the enum_value_sort field.
-	productcategory.DefaultEnumValueSort = productcategoryDescEnumValueSort.Default.(bool)
-	// productcategoryDescIsEnum is the schema descriptor for is_enum field.
-	productcategoryDescIsEnum := productcategoryMixinFields0[9].Descriptor()
-	// productcategory.DefaultIsEnum holds the default value on creation for the is_enum field.
-	productcategory.DefaultIsEnum = productcategoryDescIsEnum.Default.(bool)
-	// productcategoryDescIsRequired is the schema descriptor for is_required field.
-	productcategoryDescIsRequired := productcategoryMixinFields0[10].Descriptor()
-	// productcategory.DefaultIsRequired holds the default value on creation for the is_required field.
-	productcategory.DefaultIsRequired = productcategoryDescIsRequired.Default.(bool)
-	// productcategoryDescSortIndex is the schema descriptor for sort_index field.
-	productcategoryDescSortIndex := productcategoryMixinFields0[12].Descriptor()
-	// productcategory.DefaultSortIndex holds the default value on creation for the sort_index field.
-	productcategory.DefaultSortIndex = productcategoryDescSortIndex.Default.(int)
 	unitMixin := schema.Unit{}.Mixin()
 	unitMixinFields0 := unitMixin[0].Fields()
 	_ = unitMixinFields0
@@ -119,10 +103,6 @@ func init() {
 	unitcategoryDescCreatedAt := unitcategoryMixinFields0[1].Descriptor()
 	// unitcategory.DefaultCreatedAt holds the default value on creation for the created_at field.
 	unitcategory.DefaultCreatedAt = unitcategoryDescCreatedAt.Default.(func() time.Time)
-	// unitcategoryDescStatus is the schema descriptor for status field.
-	unitcategoryDescStatus := unitcategoryMixinFields0[7].Descriptor()
-	// unitcategory.DefaultStatus holds the default value on creation for the status field.
-	unitcategory.DefaultStatus = unitcategoryDescStatus.Default.(string)
 	variantMixin := schema.Variant{}.Mixin()
 	variantMixinFields0 := variantMixin[0].Fields()
 	_ = variantMixinFields0
@@ -133,7 +113,7 @@ func init() {
 	// variant.DefaultCreatedAt holds the default value on creation for the created_at field.
 	variant.DefaultCreatedAt = variantDescCreatedAt.Default.(func() time.Time)
 	// variantDescStatus is the schema descriptor for status field.
-	variantDescStatus := variantMixinFields0[7].Descriptor()
+	variantDescStatus := variantMixinFields0[9].Descriptor()
 	// variant.DefaultStatus holds the default value on creation for the status field.
 	variant.DefaultStatus = variantDescStatus.Default.(string)
 }

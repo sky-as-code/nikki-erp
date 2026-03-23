@@ -30,35 +30,9 @@ func (ucu *UnitCategoryUpdate) Where(ps ...predicate.UnitCategory) *UnitCategory
 	return ucu
 }
 
-// SetDefaultVariantID sets the "default_variant_id" field.
-func (ucu *UnitCategoryUpdate) SetDefaultVariantID(s string) *UnitCategoryUpdate {
-	ucu.mutation.SetDefaultVariantID(s)
-	return ucu
-}
-
-// SetNillableDefaultVariantID sets the "default_variant_id" field if the given value is not nil.
-func (ucu *UnitCategoryUpdate) SetNillableDefaultVariantID(s *string) *UnitCategoryUpdate {
-	if s != nil {
-		ucu.SetDefaultVariantID(*s)
-	}
-	return ucu
-}
-
-// ClearDefaultVariantID clears the value of the "default_variant_id" field.
-func (ucu *UnitCategoryUpdate) ClearDefaultVariantID() *UnitCategoryUpdate {
-	ucu.mutation.ClearDefaultVariantID()
-	return ucu
-}
-
-// SetDescription sets the "description" field.
-func (ucu *UnitCategoryUpdate) SetDescription(mj model.LangJson) *UnitCategoryUpdate {
-	ucu.mutation.SetDescription(mj)
-	return ucu
-}
-
-// ClearDescription clears the value of the "description" field.
-func (ucu *UnitCategoryUpdate) ClearDescription() *UnitCategoryUpdate {
-	ucu.mutation.ClearDescription()
+// SetName sets the "name" field.
+func (ucu *UnitCategoryUpdate) SetName(mj model.LangJson) *UnitCategoryUpdate {
+	ucu.mutation.SetName(mj)
 	return ucu
 }
 
@@ -76,76 +50,16 @@ func (ucu *UnitCategoryUpdate) SetNillableEtag(s *string) *UnitCategoryUpdate {
 	return ucu
 }
 
-// SetName sets the "name" field.
-func (ucu *UnitCategoryUpdate) SetName(mj model.LangJson) *UnitCategoryUpdate {
-	ucu.mutation.SetName(mj)
+// SetOrgID sets the "org_id" field.
+func (ucu *UnitCategoryUpdate) SetOrgID(s string) *UnitCategoryUpdate {
+	ucu.mutation.SetOrgID(s)
 	return ucu
 }
 
-// SetStatus sets the "status" field.
-func (ucu *UnitCategoryUpdate) SetStatus(s string) *UnitCategoryUpdate {
-	ucu.mutation.SetStatus(s)
-	return ucu
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (ucu *UnitCategoryUpdate) SetNillableStatus(s *string) *UnitCategoryUpdate {
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (ucu *UnitCategoryUpdate) SetNillableOrgID(s *string) *UnitCategoryUpdate {
 	if s != nil {
-		ucu.SetStatus(*s)
-	}
-	return ucu
-}
-
-// SetTagIds sets the "tag_ids" field.
-func (ucu *UnitCategoryUpdate) SetTagIds(s string) *UnitCategoryUpdate {
-	ucu.mutation.SetTagIds(s)
-	return ucu
-}
-
-// SetNillableTagIds sets the "tag_ids" field if the given value is not nil.
-func (ucu *UnitCategoryUpdate) SetNillableTagIds(s *string) *UnitCategoryUpdate {
-	if s != nil {
-		ucu.SetTagIds(*s)
-	}
-	return ucu
-}
-
-// ClearTagIds clears the value of the "tag_ids" field.
-func (ucu *UnitCategoryUpdate) ClearTagIds() *UnitCategoryUpdate {
-	ucu.mutation.ClearTagIds()
-	return ucu
-}
-
-// SetThumbnailURL sets the "thumbnail_url" field.
-func (ucu *UnitCategoryUpdate) SetThumbnailURL(s string) *UnitCategoryUpdate {
-	ucu.mutation.SetThumbnailURL(s)
-	return ucu
-}
-
-// SetNillableThumbnailURL sets the "thumbnail_url" field if the given value is not nil.
-func (ucu *UnitCategoryUpdate) SetNillableThumbnailURL(s *string) *UnitCategoryUpdate {
-	if s != nil {
-		ucu.SetThumbnailURL(*s)
-	}
-	return ucu
-}
-
-// ClearThumbnailURL clears the value of the "thumbnail_url" field.
-func (ucu *UnitCategoryUpdate) ClearThumbnailURL() *UnitCategoryUpdate {
-	ucu.mutation.ClearThumbnailURL()
-	return ucu
-}
-
-// SetUnitID sets the "unit_id" field.
-func (ucu *UnitCategoryUpdate) SetUnitID(s string) *UnitCategoryUpdate {
-	ucu.mutation.SetUnitID(s)
-	return ucu
-}
-
-// SetNillableUnitID sets the "unit_id" field if the given value is not nil.
-func (ucu *UnitCategoryUpdate) SetNillableUnitID(s *string) *UnitCategoryUpdate {
-	if s != nil {
-		ucu.SetUnitID(*s)
+		ucu.SetOrgID(*s)
 	}
 	return ucu
 }
@@ -247,41 +161,14 @@ func (ucu *UnitCategoryUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := ucu.mutation.DefaultVariantID(); ok {
-		_spec.SetField(unitcategory.FieldDefaultVariantID, field.TypeString, value)
-	}
-	if ucu.mutation.DefaultVariantIDCleared() {
-		_spec.ClearField(unitcategory.FieldDefaultVariantID, field.TypeString)
-	}
-	if value, ok := ucu.mutation.Description(); ok {
-		_spec.SetField(unitcategory.FieldDescription, field.TypeJSON, value)
-	}
-	if ucu.mutation.DescriptionCleared() {
-		_spec.ClearField(unitcategory.FieldDescription, field.TypeJSON)
+	if value, ok := ucu.mutation.Name(); ok {
+		_spec.SetField(unitcategory.FieldName, field.TypeJSON, value)
 	}
 	if value, ok := ucu.mutation.Etag(); ok {
 		_spec.SetField(unitcategory.FieldEtag, field.TypeString, value)
 	}
-	if value, ok := ucu.mutation.Name(); ok {
-		_spec.SetField(unitcategory.FieldName, field.TypeJSON, value)
-	}
-	if value, ok := ucu.mutation.Status(); ok {
-		_spec.SetField(unitcategory.FieldStatus, field.TypeString, value)
-	}
-	if value, ok := ucu.mutation.TagIds(); ok {
-		_spec.SetField(unitcategory.FieldTagIds, field.TypeString, value)
-	}
-	if ucu.mutation.TagIdsCleared() {
-		_spec.ClearField(unitcategory.FieldTagIds, field.TypeString)
-	}
-	if value, ok := ucu.mutation.ThumbnailURL(); ok {
-		_spec.SetField(unitcategory.FieldThumbnailURL, field.TypeString, value)
-	}
-	if ucu.mutation.ThumbnailURLCleared() {
-		_spec.ClearField(unitcategory.FieldThumbnailURL, field.TypeString)
-	}
-	if value, ok := ucu.mutation.UnitID(); ok {
-		_spec.SetField(unitcategory.FieldUnitID, field.TypeString, value)
+	if value, ok := ucu.mutation.OrgID(); ok {
+		_spec.SetField(unitcategory.FieldOrgID, field.TypeString, value)
 	}
 	if value, ok := ucu.mutation.UpdatedAt(); ok {
 		_spec.SetField(unitcategory.FieldUpdatedAt, field.TypeTime, value)
@@ -354,35 +241,9 @@ type UnitCategoryUpdateOne struct {
 	mutation *UnitCategoryMutation
 }
 
-// SetDefaultVariantID sets the "default_variant_id" field.
-func (ucuo *UnitCategoryUpdateOne) SetDefaultVariantID(s string) *UnitCategoryUpdateOne {
-	ucuo.mutation.SetDefaultVariantID(s)
-	return ucuo
-}
-
-// SetNillableDefaultVariantID sets the "default_variant_id" field if the given value is not nil.
-func (ucuo *UnitCategoryUpdateOne) SetNillableDefaultVariantID(s *string) *UnitCategoryUpdateOne {
-	if s != nil {
-		ucuo.SetDefaultVariantID(*s)
-	}
-	return ucuo
-}
-
-// ClearDefaultVariantID clears the value of the "default_variant_id" field.
-func (ucuo *UnitCategoryUpdateOne) ClearDefaultVariantID() *UnitCategoryUpdateOne {
-	ucuo.mutation.ClearDefaultVariantID()
-	return ucuo
-}
-
-// SetDescription sets the "description" field.
-func (ucuo *UnitCategoryUpdateOne) SetDescription(mj model.LangJson) *UnitCategoryUpdateOne {
-	ucuo.mutation.SetDescription(mj)
-	return ucuo
-}
-
-// ClearDescription clears the value of the "description" field.
-func (ucuo *UnitCategoryUpdateOne) ClearDescription() *UnitCategoryUpdateOne {
-	ucuo.mutation.ClearDescription()
+// SetName sets the "name" field.
+func (ucuo *UnitCategoryUpdateOne) SetName(mj model.LangJson) *UnitCategoryUpdateOne {
+	ucuo.mutation.SetName(mj)
 	return ucuo
 }
 
@@ -400,76 +261,16 @@ func (ucuo *UnitCategoryUpdateOne) SetNillableEtag(s *string) *UnitCategoryUpdat
 	return ucuo
 }
 
-// SetName sets the "name" field.
-func (ucuo *UnitCategoryUpdateOne) SetName(mj model.LangJson) *UnitCategoryUpdateOne {
-	ucuo.mutation.SetName(mj)
+// SetOrgID sets the "org_id" field.
+func (ucuo *UnitCategoryUpdateOne) SetOrgID(s string) *UnitCategoryUpdateOne {
+	ucuo.mutation.SetOrgID(s)
 	return ucuo
 }
 
-// SetStatus sets the "status" field.
-func (ucuo *UnitCategoryUpdateOne) SetStatus(s string) *UnitCategoryUpdateOne {
-	ucuo.mutation.SetStatus(s)
-	return ucuo
-}
-
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (ucuo *UnitCategoryUpdateOne) SetNillableStatus(s *string) *UnitCategoryUpdateOne {
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (ucuo *UnitCategoryUpdateOne) SetNillableOrgID(s *string) *UnitCategoryUpdateOne {
 	if s != nil {
-		ucuo.SetStatus(*s)
-	}
-	return ucuo
-}
-
-// SetTagIds sets the "tag_ids" field.
-func (ucuo *UnitCategoryUpdateOne) SetTagIds(s string) *UnitCategoryUpdateOne {
-	ucuo.mutation.SetTagIds(s)
-	return ucuo
-}
-
-// SetNillableTagIds sets the "tag_ids" field if the given value is not nil.
-func (ucuo *UnitCategoryUpdateOne) SetNillableTagIds(s *string) *UnitCategoryUpdateOne {
-	if s != nil {
-		ucuo.SetTagIds(*s)
-	}
-	return ucuo
-}
-
-// ClearTagIds clears the value of the "tag_ids" field.
-func (ucuo *UnitCategoryUpdateOne) ClearTagIds() *UnitCategoryUpdateOne {
-	ucuo.mutation.ClearTagIds()
-	return ucuo
-}
-
-// SetThumbnailURL sets the "thumbnail_url" field.
-func (ucuo *UnitCategoryUpdateOne) SetThumbnailURL(s string) *UnitCategoryUpdateOne {
-	ucuo.mutation.SetThumbnailURL(s)
-	return ucuo
-}
-
-// SetNillableThumbnailURL sets the "thumbnail_url" field if the given value is not nil.
-func (ucuo *UnitCategoryUpdateOne) SetNillableThumbnailURL(s *string) *UnitCategoryUpdateOne {
-	if s != nil {
-		ucuo.SetThumbnailURL(*s)
-	}
-	return ucuo
-}
-
-// ClearThumbnailURL clears the value of the "thumbnail_url" field.
-func (ucuo *UnitCategoryUpdateOne) ClearThumbnailURL() *UnitCategoryUpdateOne {
-	ucuo.mutation.ClearThumbnailURL()
-	return ucuo
-}
-
-// SetUnitID sets the "unit_id" field.
-func (ucuo *UnitCategoryUpdateOne) SetUnitID(s string) *UnitCategoryUpdateOne {
-	ucuo.mutation.SetUnitID(s)
-	return ucuo
-}
-
-// SetNillableUnitID sets the "unit_id" field if the given value is not nil.
-func (ucuo *UnitCategoryUpdateOne) SetNillableUnitID(s *string) *UnitCategoryUpdateOne {
-	if s != nil {
-		ucuo.SetUnitID(*s)
+		ucuo.SetOrgID(*s)
 	}
 	return ucuo
 }
@@ -601,41 +402,14 @@ func (ucuo *UnitCategoryUpdateOne) sqlSave(ctx context.Context) (_node *UnitCate
 			}
 		}
 	}
-	if value, ok := ucuo.mutation.DefaultVariantID(); ok {
-		_spec.SetField(unitcategory.FieldDefaultVariantID, field.TypeString, value)
-	}
-	if ucuo.mutation.DefaultVariantIDCleared() {
-		_spec.ClearField(unitcategory.FieldDefaultVariantID, field.TypeString)
-	}
-	if value, ok := ucuo.mutation.Description(); ok {
-		_spec.SetField(unitcategory.FieldDescription, field.TypeJSON, value)
-	}
-	if ucuo.mutation.DescriptionCleared() {
-		_spec.ClearField(unitcategory.FieldDescription, field.TypeJSON)
+	if value, ok := ucuo.mutation.Name(); ok {
+		_spec.SetField(unitcategory.FieldName, field.TypeJSON, value)
 	}
 	if value, ok := ucuo.mutation.Etag(); ok {
 		_spec.SetField(unitcategory.FieldEtag, field.TypeString, value)
 	}
-	if value, ok := ucuo.mutation.Name(); ok {
-		_spec.SetField(unitcategory.FieldName, field.TypeJSON, value)
-	}
-	if value, ok := ucuo.mutation.Status(); ok {
-		_spec.SetField(unitcategory.FieldStatus, field.TypeString, value)
-	}
-	if value, ok := ucuo.mutation.TagIds(); ok {
-		_spec.SetField(unitcategory.FieldTagIds, field.TypeString, value)
-	}
-	if ucuo.mutation.TagIdsCleared() {
-		_spec.ClearField(unitcategory.FieldTagIds, field.TypeString)
-	}
-	if value, ok := ucuo.mutation.ThumbnailURL(); ok {
-		_spec.SetField(unitcategory.FieldThumbnailURL, field.TypeString, value)
-	}
-	if ucuo.mutation.ThumbnailURLCleared() {
-		_spec.ClearField(unitcategory.FieldThumbnailURL, field.TypeString)
-	}
-	if value, ok := ucuo.mutation.UnitID(); ok {
-		_spec.SetField(unitcategory.FieldUnitID, field.TypeString, value)
+	if value, ok := ucuo.mutation.OrgID(); ok {
+		_spec.SetField(unitcategory.FieldOrgID, field.TypeString, value)
 	}
 	if value, ok := ucuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(unitcategory.FieldUpdatedAt, field.TypeTime, value)

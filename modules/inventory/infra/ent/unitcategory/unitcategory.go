@@ -16,24 +16,12 @@ const (
 	FieldID = "id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// FieldDefaultVariantID holds the string denoting the default_variant_id field in the database.
-	FieldDefaultVariantID = "default_variant_id"
-	// FieldDescription holds the string denoting the description field in the database.
-	FieldDescription = "description"
-	// FieldEtag holds the string denoting the etag field in the database.
-	FieldEtag = "etag"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldEtag holds the string denoting the etag field in the database.
+	FieldEtag = "etag"
 	// FieldOrgID holds the string denoting the org_id field in the database.
 	FieldOrgID = "org_id"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
-	// FieldTagIds holds the string denoting the tag_ids field in the database.
-	FieldTagIds = "tag_ids"
-	// FieldThumbnailURL holds the string denoting the thumbnail_url field in the database.
-	FieldThumbnailURL = "thumbnail_url"
-	// FieldUnitID holds the string denoting the unit_id field in the database.
-	FieldUnitID = "unit_id"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
 	// EdgeUnit holds the string denoting the unit edge name in mutations.
@@ -53,15 +41,9 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
-	FieldDefaultVariantID,
-	FieldDescription,
-	FieldEtag,
 	FieldName,
+	FieldEtag,
 	FieldOrgID,
-	FieldStatus,
-	FieldTagIds,
-	FieldThumbnailURL,
-	FieldUnitID,
 	FieldUpdatedAt,
 }
 
@@ -78,8 +60,6 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus string
 )
 
 // OrderOption defines the ordering options for the UnitCategory queries.
@@ -95,11 +75,6 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByDefaultVariantID orders the results by the default_variant_id field.
-func ByDefaultVariantID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDefaultVariantID, opts...).ToFunc()
-}
-
 // ByEtag orders the results by the etag field.
 func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEtag, opts...).ToFunc()
@@ -108,26 +83,6 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 // ByOrgID orders the results by the org_id field.
 func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
-}
-
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
-}
-
-// ByTagIds orders the results by the tag_ids field.
-func ByTagIds(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldTagIds, opts...).ToFunc()
-}
-
-// ByThumbnailURL orders the results by the thumbnail_url field.
-func ByThumbnailURL(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldThumbnailURL, opts...).ToFunc()
-}
-
-// ByUnitID orders the results by the unit_id field.
-func ByUnitID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldUnitID, opts...).ToFunc()
 }
 
 // ByUpdatedAt orders the results by the updated_at field.

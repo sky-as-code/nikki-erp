@@ -30,6 +30,8 @@ func (AttributeGroupMixin) Fields() []ent.Field {
 
 		field.JSON("name", model.LangJson{}),
 
+		field.String("etag"),
+
 		field.String("product_id").
 			Optional().
 			Nillable(),

@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/predicate"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/product"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategory"
 )
 
@@ -29,69 +30,23 @@ func (pcu *ProductCategoryUpdate) Where(ps ...predicate.ProductCategory) *Produc
 	return pcu
 }
 
-// SetCodeName sets the "code_name" field.
-func (pcu *ProductCategoryUpdate) SetCodeName(s string) *ProductCategoryUpdate {
-	pcu.mutation.SetCodeName(s)
+// SetName sets the "name" field.
+func (pcu *ProductCategoryUpdate) SetName(mj model.LangJson) *ProductCategoryUpdate {
+	pcu.mutation.SetName(mj)
 	return pcu
 }
 
-// SetNillableCodeName sets the "code_name" field if the given value is not nil.
-func (pcu *ProductCategoryUpdate) SetNillableCodeName(s *string) *ProductCategoryUpdate {
+// SetOrgID sets the "org_id" field.
+func (pcu *ProductCategoryUpdate) SetOrgID(s string) *ProductCategoryUpdate {
+	pcu.mutation.SetOrgID(s)
+	return pcu
+}
+
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (pcu *ProductCategoryUpdate) SetNillableOrgID(s *string) *ProductCategoryUpdate {
 	if s != nil {
-		pcu.SetCodeName(*s)
+		pcu.SetOrgID(*s)
 	}
-	return pcu
-}
-
-// SetDataType sets the "data_type" field.
-func (pcu *ProductCategoryUpdate) SetDataType(s string) *ProductCategoryUpdate {
-	pcu.mutation.SetDataType(s)
-	return pcu
-}
-
-// SetNillableDataType sets the "data_type" field if the given value is not nil.
-func (pcu *ProductCategoryUpdate) SetNillableDataType(s *string) *ProductCategoryUpdate {
-	if s != nil {
-		pcu.SetDataType(*s)
-	}
-	return pcu
-}
-
-// SetDisplayName sets the "display_name" field.
-func (pcu *ProductCategoryUpdate) SetDisplayName(mj model.LangJson) *ProductCategoryUpdate {
-	pcu.mutation.SetDisplayName(mj)
-	return pcu
-}
-
-// ClearDisplayName clears the value of the "display_name" field.
-func (pcu *ProductCategoryUpdate) ClearDisplayName() *ProductCategoryUpdate {
-	pcu.mutation.ClearDisplayName()
-	return pcu
-}
-
-// SetEnumValueSort sets the "enum_value_sort" field.
-func (pcu *ProductCategoryUpdate) SetEnumValueSort(b bool) *ProductCategoryUpdate {
-	pcu.mutation.SetEnumValueSort(b)
-	return pcu
-}
-
-// SetNillableEnumValueSort sets the "enum_value_sort" field if the given value is not nil.
-func (pcu *ProductCategoryUpdate) SetNillableEnumValueSort(b *bool) *ProductCategoryUpdate {
-	if b != nil {
-		pcu.SetEnumValueSort(*b)
-	}
-	return pcu
-}
-
-// SetEnumValue sets the "enum_value" field.
-func (pcu *ProductCategoryUpdate) SetEnumValue(mj model.LangJson) *ProductCategoryUpdate {
-	pcu.mutation.SetEnumValue(mj)
-	return pcu
-}
-
-// ClearEnumValue clears the value of the "enum_value" field.
-func (pcu *ProductCategoryUpdate) ClearEnumValue() *ProductCategoryUpdate {
-	pcu.mutation.ClearEnumValue()
 	return pcu
 }
 
@@ -106,89 +61,6 @@ func (pcu *ProductCategoryUpdate) SetNillableEtag(s *string) *ProductCategoryUpd
 	if s != nil {
 		pcu.SetEtag(*s)
 	}
-	return pcu
-}
-
-// SetGroupID sets the "group_id" field.
-func (pcu *ProductCategoryUpdate) SetGroupID(s string) *ProductCategoryUpdate {
-	pcu.mutation.SetGroupID(s)
-	return pcu
-}
-
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (pcu *ProductCategoryUpdate) SetNillableGroupID(s *string) *ProductCategoryUpdate {
-	if s != nil {
-		pcu.SetGroupID(*s)
-	}
-	return pcu
-}
-
-// ClearGroupID clears the value of the "group_id" field.
-func (pcu *ProductCategoryUpdate) ClearGroupID() *ProductCategoryUpdate {
-	pcu.mutation.ClearGroupID()
-	return pcu
-}
-
-// SetIsEnum sets the "is_enum" field.
-func (pcu *ProductCategoryUpdate) SetIsEnum(b bool) *ProductCategoryUpdate {
-	pcu.mutation.SetIsEnum(b)
-	return pcu
-}
-
-// SetNillableIsEnum sets the "is_enum" field if the given value is not nil.
-func (pcu *ProductCategoryUpdate) SetNillableIsEnum(b *bool) *ProductCategoryUpdate {
-	if b != nil {
-		pcu.SetIsEnum(*b)
-	}
-	return pcu
-}
-
-// SetIsRequired sets the "is_required" field.
-func (pcu *ProductCategoryUpdate) SetIsRequired(b bool) *ProductCategoryUpdate {
-	pcu.mutation.SetIsRequired(b)
-	return pcu
-}
-
-// SetNillableIsRequired sets the "is_required" field if the given value is not nil.
-func (pcu *ProductCategoryUpdate) SetNillableIsRequired(b *bool) *ProductCategoryUpdate {
-	if b != nil {
-		pcu.SetIsRequired(*b)
-	}
-	return pcu
-}
-
-// SetProductID sets the "product_id" field.
-func (pcu *ProductCategoryUpdate) SetProductID(s string) *ProductCategoryUpdate {
-	pcu.mutation.SetProductID(s)
-	return pcu
-}
-
-// SetNillableProductID sets the "product_id" field if the given value is not nil.
-func (pcu *ProductCategoryUpdate) SetNillableProductID(s *string) *ProductCategoryUpdate {
-	if s != nil {
-		pcu.SetProductID(*s)
-	}
-	return pcu
-}
-
-// SetSortIndex sets the "sort_index" field.
-func (pcu *ProductCategoryUpdate) SetSortIndex(i int) *ProductCategoryUpdate {
-	pcu.mutation.ResetSortIndex()
-	pcu.mutation.SetSortIndex(i)
-	return pcu
-}
-
-// SetNillableSortIndex sets the "sort_index" field if the given value is not nil.
-func (pcu *ProductCategoryUpdate) SetNillableSortIndex(i *int) *ProductCategoryUpdate {
-	if i != nil {
-		pcu.SetSortIndex(*i)
-	}
-	return pcu
-}
-
-// AddSortIndex adds i to the "sort_index" field.
-func (pcu *ProductCategoryUpdate) AddSortIndex(i int) *ProductCategoryUpdate {
-	pcu.mutation.AddSortIndex(i)
 	return pcu
 }
 
@@ -212,9 +84,45 @@ func (pcu *ProductCategoryUpdate) ClearUpdatedAt() *ProductCategoryUpdate {
 	return pcu
 }
 
+// AddProductIDs adds the "product" edge to the Product entity by IDs.
+func (pcu *ProductCategoryUpdate) AddProductIDs(ids ...string) *ProductCategoryUpdate {
+	pcu.mutation.AddProductIDs(ids...)
+	return pcu
+}
+
+// AddProduct adds the "product" edges to the Product entity.
+func (pcu *ProductCategoryUpdate) AddProduct(p ...*Product) *ProductCategoryUpdate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pcu.AddProductIDs(ids...)
+}
+
 // Mutation returns the ProductCategoryMutation object of the builder.
 func (pcu *ProductCategoryUpdate) Mutation() *ProductCategoryMutation {
 	return pcu.mutation
+}
+
+// ClearProduct clears all "product" edges to the Product entity.
+func (pcu *ProductCategoryUpdate) ClearProduct() *ProductCategoryUpdate {
+	pcu.mutation.ClearProduct()
+	return pcu
+}
+
+// RemoveProductIDs removes the "product" edge to Product entities by IDs.
+func (pcu *ProductCategoryUpdate) RemoveProductIDs(ids ...string) *ProductCategoryUpdate {
+	pcu.mutation.RemoveProductIDs(ids...)
+	return pcu
+}
+
+// RemoveProduct removes "product" edges to Product entities.
+func (pcu *ProductCategoryUpdate) RemoveProduct(p ...*Product) *ProductCategoryUpdate {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pcu.RemoveProductIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -253,56 +161,65 @@ func (pcu *ProductCategoryUpdate) sqlSave(ctx context.Context) (n int, err error
 			}
 		}
 	}
-	if value, ok := pcu.mutation.CodeName(); ok {
-		_spec.SetField(productcategory.FieldCodeName, field.TypeString, value)
+	if value, ok := pcu.mutation.Name(); ok {
+		_spec.SetField(productcategory.FieldName, field.TypeJSON, value)
 	}
-	if value, ok := pcu.mutation.DataType(); ok {
-		_spec.SetField(productcategory.FieldDataType, field.TypeString, value)
-	}
-	if value, ok := pcu.mutation.DisplayName(); ok {
-		_spec.SetField(productcategory.FieldDisplayName, field.TypeJSON, value)
-	}
-	if pcu.mutation.DisplayNameCleared() {
-		_spec.ClearField(productcategory.FieldDisplayName, field.TypeJSON)
-	}
-	if value, ok := pcu.mutation.EnumValueSort(); ok {
-		_spec.SetField(productcategory.FieldEnumValueSort, field.TypeBool, value)
-	}
-	if value, ok := pcu.mutation.EnumValue(); ok {
-		_spec.SetField(productcategory.FieldEnumValue, field.TypeJSON, value)
-	}
-	if pcu.mutation.EnumValueCleared() {
-		_spec.ClearField(productcategory.FieldEnumValue, field.TypeJSON)
+	if value, ok := pcu.mutation.OrgID(); ok {
+		_spec.SetField(productcategory.FieldOrgID, field.TypeString, value)
 	}
 	if value, ok := pcu.mutation.Etag(); ok {
 		_spec.SetField(productcategory.FieldEtag, field.TypeString, value)
-	}
-	if value, ok := pcu.mutation.GroupID(); ok {
-		_spec.SetField(productcategory.FieldGroupID, field.TypeString, value)
-	}
-	if pcu.mutation.GroupIDCleared() {
-		_spec.ClearField(productcategory.FieldGroupID, field.TypeString)
-	}
-	if value, ok := pcu.mutation.IsEnum(); ok {
-		_spec.SetField(productcategory.FieldIsEnum, field.TypeBool, value)
-	}
-	if value, ok := pcu.mutation.IsRequired(); ok {
-		_spec.SetField(productcategory.FieldIsRequired, field.TypeBool, value)
-	}
-	if value, ok := pcu.mutation.ProductID(); ok {
-		_spec.SetField(productcategory.FieldProductID, field.TypeString, value)
-	}
-	if value, ok := pcu.mutation.SortIndex(); ok {
-		_spec.SetField(productcategory.FieldSortIndex, field.TypeInt, value)
-	}
-	if value, ok := pcu.mutation.AddedSortIndex(); ok {
-		_spec.AddField(productcategory.FieldSortIndex, field.TypeInt, value)
 	}
 	if value, ok := pcu.mutation.UpdatedAt(); ok {
 		_spec.SetField(productcategory.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if pcu.mutation.UpdatedAtCleared() {
 		_spec.ClearField(productcategory.FieldUpdatedAt, field.TypeTime)
+	}
+	if pcu.mutation.ProductCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   productcategory.ProductTable,
+			Columns: productcategory.ProductPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pcu.mutation.RemovedProductIDs(); len(nodes) > 0 && !pcu.mutation.ProductCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   productcategory.ProductTable,
+			Columns: productcategory.ProductPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pcu.mutation.ProductIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   productcategory.ProductTable,
+			Columns: productcategory.ProductPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pcu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -324,69 +241,23 @@ type ProductCategoryUpdateOne struct {
 	mutation *ProductCategoryMutation
 }
 
-// SetCodeName sets the "code_name" field.
-func (pcuo *ProductCategoryUpdateOne) SetCodeName(s string) *ProductCategoryUpdateOne {
-	pcuo.mutation.SetCodeName(s)
+// SetName sets the "name" field.
+func (pcuo *ProductCategoryUpdateOne) SetName(mj model.LangJson) *ProductCategoryUpdateOne {
+	pcuo.mutation.SetName(mj)
 	return pcuo
 }
 
-// SetNillableCodeName sets the "code_name" field if the given value is not nil.
-func (pcuo *ProductCategoryUpdateOne) SetNillableCodeName(s *string) *ProductCategoryUpdateOne {
+// SetOrgID sets the "org_id" field.
+func (pcuo *ProductCategoryUpdateOne) SetOrgID(s string) *ProductCategoryUpdateOne {
+	pcuo.mutation.SetOrgID(s)
+	return pcuo
+}
+
+// SetNillableOrgID sets the "org_id" field if the given value is not nil.
+func (pcuo *ProductCategoryUpdateOne) SetNillableOrgID(s *string) *ProductCategoryUpdateOne {
 	if s != nil {
-		pcuo.SetCodeName(*s)
+		pcuo.SetOrgID(*s)
 	}
-	return pcuo
-}
-
-// SetDataType sets the "data_type" field.
-func (pcuo *ProductCategoryUpdateOne) SetDataType(s string) *ProductCategoryUpdateOne {
-	pcuo.mutation.SetDataType(s)
-	return pcuo
-}
-
-// SetNillableDataType sets the "data_type" field if the given value is not nil.
-func (pcuo *ProductCategoryUpdateOne) SetNillableDataType(s *string) *ProductCategoryUpdateOne {
-	if s != nil {
-		pcuo.SetDataType(*s)
-	}
-	return pcuo
-}
-
-// SetDisplayName sets the "display_name" field.
-func (pcuo *ProductCategoryUpdateOne) SetDisplayName(mj model.LangJson) *ProductCategoryUpdateOne {
-	pcuo.mutation.SetDisplayName(mj)
-	return pcuo
-}
-
-// ClearDisplayName clears the value of the "display_name" field.
-func (pcuo *ProductCategoryUpdateOne) ClearDisplayName() *ProductCategoryUpdateOne {
-	pcuo.mutation.ClearDisplayName()
-	return pcuo
-}
-
-// SetEnumValueSort sets the "enum_value_sort" field.
-func (pcuo *ProductCategoryUpdateOne) SetEnumValueSort(b bool) *ProductCategoryUpdateOne {
-	pcuo.mutation.SetEnumValueSort(b)
-	return pcuo
-}
-
-// SetNillableEnumValueSort sets the "enum_value_sort" field if the given value is not nil.
-func (pcuo *ProductCategoryUpdateOne) SetNillableEnumValueSort(b *bool) *ProductCategoryUpdateOne {
-	if b != nil {
-		pcuo.SetEnumValueSort(*b)
-	}
-	return pcuo
-}
-
-// SetEnumValue sets the "enum_value" field.
-func (pcuo *ProductCategoryUpdateOne) SetEnumValue(mj model.LangJson) *ProductCategoryUpdateOne {
-	pcuo.mutation.SetEnumValue(mj)
-	return pcuo
-}
-
-// ClearEnumValue clears the value of the "enum_value" field.
-func (pcuo *ProductCategoryUpdateOne) ClearEnumValue() *ProductCategoryUpdateOne {
-	pcuo.mutation.ClearEnumValue()
 	return pcuo
 }
 
@@ -401,89 +272,6 @@ func (pcuo *ProductCategoryUpdateOne) SetNillableEtag(s *string) *ProductCategor
 	if s != nil {
 		pcuo.SetEtag(*s)
 	}
-	return pcuo
-}
-
-// SetGroupID sets the "group_id" field.
-func (pcuo *ProductCategoryUpdateOne) SetGroupID(s string) *ProductCategoryUpdateOne {
-	pcuo.mutation.SetGroupID(s)
-	return pcuo
-}
-
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (pcuo *ProductCategoryUpdateOne) SetNillableGroupID(s *string) *ProductCategoryUpdateOne {
-	if s != nil {
-		pcuo.SetGroupID(*s)
-	}
-	return pcuo
-}
-
-// ClearGroupID clears the value of the "group_id" field.
-func (pcuo *ProductCategoryUpdateOne) ClearGroupID() *ProductCategoryUpdateOne {
-	pcuo.mutation.ClearGroupID()
-	return pcuo
-}
-
-// SetIsEnum sets the "is_enum" field.
-func (pcuo *ProductCategoryUpdateOne) SetIsEnum(b bool) *ProductCategoryUpdateOne {
-	pcuo.mutation.SetIsEnum(b)
-	return pcuo
-}
-
-// SetNillableIsEnum sets the "is_enum" field if the given value is not nil.
-func (pcuo *ProductCategoryUpdateOne) SetNillableIsEnum(b *bool) *ProductCategoryUpdateOne {
-	if b != nil {
-		pcuo.SetIsEnum(*b)
-	}
-	return pcuo
-}
-
-// SetIsRequired sets the "is_required" field.
-func (pcuo *ProductCategoryUpdateOne) SetIsRequired(b bool) *ProductCategoryUpdateOne {
-	pcuo.mutation.SetIsRequired(b)
-	return pcuo
-}
-
-// SetNillableIsRequired sets the "is_required" field if the given value is not nil.
-func (pcuo *ProductCategoryUpdateOne) SetNillableIsRequired(b *bool) *ProductCategoryUpdateOne {
-	if b != nil {
-		pcuo.SetIsRequired(*b)
-	}
-	return pcuo
-}
-
-// SetProductID sets the "product_id" field.
-func (pcuo *ProductCategoryUpdateOne) SetProductID(s string) *ProductCategoryUpdateOne {
-	pcuo.mutation.SetProductID(s)
-	return pcuo
-}
-
-// SetNillableProductID sets the "product_id" field if the given value is not nil.
-func (pcuo *ProductCategoryUpdateOne) SetNillableProductID(s *string) *ProductCategoryUpdateOne {
-	if s != nil {
-		pcuo.SetProductID(*s)
-	}
-	return pcuo
-}
-
-// SetSortIndex sets the "sort_index" field.
-func (pcuo *ProductCategoryUpdateOne) SetSortIndex(i int) *ProductCategoryUpdateOne {
-	pcuo.mutation.ResetSortIndex()
-	pcuo.mutation.SetSortIndex(i)
-	return pcuo
-}
-
-// SetNillableSortIndex sets the "sort_index" field if the given value is not nil.
-func (pcuo *ProductCategoryUpdateOne) SetNillableSortIndex(i *int) *ProductCategoryUpdateOne {
-	if i != nil {
-		pcuo.SetSortIndex(*i)
-	}
-	return pcuo
-}
-
-// AddSortIndex adds i to the "sort_index" field.
-func (pcuo *ProductCategoryUpdateOne) AddSortIndex(i int) *ProductCategoryUpdateOne {
-	pcuo.mutation.AddSortIndex(i)
 	return pcuo
 }
 
@@ -507,9 +295,45 @@ func (pcuo *ProductCategoryUpdateOne) ClearUpdatedAt() *ProductCategoryUpdateOne
 	return pcuo
 }
 
+// AddProductIDs adds the "product" edge to the Product entity by IDs.
+func (pcuo *ProductCategoryUpdateOne) AddProductIDs(ids ...string) *ProductCategoryUpdateOne {
+	pcuo.mutation.AddProductIDs(ids...)
+	return pcuo
+}
+
+// AddProduct adds the "product" edges to the Product entity.
+func (pcuo *ProductCategoryUpdateOne) AddProduct(p ...*Product) *ProductCategoryUpdateOne {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pcuo.AddProductIDs(ids...)
+}
+
 // Mutation returns the ProductCategoryMutation object of the builder.
 func (pcuo *ProductCategoryUpdateOne) Mutation() *ProductCategoryMutation {
 	return pcuo.mutation
+}
+
+// ClearProduct clears all "product" edges to the Product entity.
+func (pcuo *ProductCategoryUpdateOne) ClearProduct() *ProductCategoryUpdateOne {
+	pcuo.mutation.ClearProduct()
+	return pcuo
+}
+
+// RemoveProductIDs removes the "product" edge to Product entities by IDs.
+func (pcuo *ProductCategoryUpdateOne) RemoveProductIDs(ids ...string) *ProductCategoryUpdateOne {
+	pcuo.mutation.RemoveProductIDs(ids...)
+	return pcuo
+}
+
+// RemoveProduct removes "product" edges to Product entities.
+func (pcuo *ProductCategoryUpdateOne) RemoveProduct(p ...*Product) *ProductCategoryUpdateOne {
+	ids := make([]string, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return pcuo.RemoveProductIDs(ids...)
 }
 
 // Where appends a list predicates to the ProductCategoryUpdate builder.
@@ -578,56 +402,65 @@ func (pcuo *ProductCategoryUpdateOne) sqlSave(ctx context.Context) (_node *Produ
 			}
 		}
 	}
-	if value, ok := pcuo.mutation.CodeName(); ok {
-		_spec.SetField(productcategory.FieldCodeName, field.TypeString, value)
+	if value, ok := pcuo.mutation.Name(); ok {
+		_spec.SetField(productcategory.FieldName, field.TypeJSON, value)
 	}
-	if value, ok := pcuo.mutation.DataType(); ok {
-		_spec.SetField(productcategory.FieldDataType, field.TypeString, value)
-	}
-	if value, ok := pcuo.mutation.DisplayName(); ok {
-		_spec.SetField(productcategory.FieldDisplayName, field.TypeJSON, value)
-	}
-	if pcuo.mutation.DisplayNameCleared() {
-		_spec.ClearField(productcategory.FieldDisplayName, field.TypeJSON)
-	}
-	if value, ok := pcuo.mutation.EnumValueSort(); ok {
-		_spec.SetField(productcategory.FieldEnumValueSort, field.TypeBool, value)
-	}
-	if value, ok := pcuo.mutation.EnumValue(); ok {
-		_spec.SetField(productcategory.FieldEnumValue, field.TypeJSON, value)
-	}
-	if pcuo.mutation.EnumValueCleared() {
-		_spec.ClearField(productcategory.FieldEnumValue, field.TypeJSON)
+	if value, ok := pcuo.mutation.OrgID(); ok {
+		_spec.SetField(productcategory.FieldOrgID, field.TypeString, value)
 	}
 	if value, ok := pcuo.mutation.Etag(); ok {
 		_spec.SetField(productcategory.FieldEtag, field.TypeString, value)
-	}
-	if value, ok := pcuo.mutation.GroupID(); ok {
-		_spec.SetField(productcategory.FieldGroupID, field.TypeString, value)
-	}
-	if pcuo.mutation.GroupIDCleared() {
-		_spec.ClearField(productcategory.FieldGroupID, field.TypeString)
-	}
-	if value, ok := pcuo.mutation.IsEnum(); ok {
-		_spec.SetField(productcategory.FieldIsEnum, field.TypeBool, value)
-	}
-	if value, ok := pcuo.mutation.IsRequired(); ok {
-		_spec.SetField(productcategory.FieldIsRequired, field.TypeBool, value)
-	}
-	if value, ok := pcuo.mutation.ProductID(); ok {
-		_spec.SetField(productcategory.FieldProductID, field.TypeString, value)
-	}
-	if value, ok := pcuo.mutation.SortIndex(); ok {
-		_spec.SetField(productcategory.FieldSortIndex, field.TypeInt, value)
-	}
-	if value, ok := pcuo.mutation.AddedSortIndex(); ok {
-		_spec.AddField(productcategory.FieldSortIndex, field.TypeInt, value)
 	}
 	if value, ok := pcuo.mutation.UpdatedAt(); ok {
 		_spec.SetField(productcategory.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if pcuo.mutation.UpdatedAtCleared() {
 		_spec.ClearField(productcategory.FieldUpdatedAt, field.TypeTime)
+	}
+	if pcuo.mutation.ProductCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   productcategory.ProductTable,
+			Columns: productcategory.ProductPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pcuo.mutation.RemovedProductIDs(); len(nodes) > 0 && !pcuo.mutation.ProductCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   productcategory.ProductTable,
+			Columns: productcategory.ProductPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pcuo.mutation.ProductIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   productcategory.ProductTable,
+			Columns: productcategory.ProductPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(product.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &ProductCategory{config: pcuo.config}
 	_spec.Assign = _node.assignValues

@@ -32,11 +32,11 @@ type Attribute struct {
 	// EnumValueSort holds the value of the "enum_value_sort" field.
 	EnumValueSort bool `json:"enum_value_sort,omitempty"`
 	// EnumValue holds the value of the "enum_value" field.
-	EnumValue model.LangJson `json:"enum_value,omitempty"`
+	EnumValue []json.RawMessage `json:"enum_value,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
-	// GroupID holds the value of the "group_id" field.
-	GroupID *string `json:"group_id,omitempty"`
+	// AttributeGroupID holds the value of the "attribute_group_id" field.
+	AttributeGroupID *string `json:"attribute_group_id,omitempty"`
 	// IsEnum holds the value of the "is_enum" field.
 	IsEnum bool `json:"is_enum,omitempty"`
 	// IsRequired holds the value of the "is_required" field.
@@ -108,7 +108,7 @@ func (*Attribute) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case attribute.FieldSortIndex:
 			values[i] = new(sql.NullInt64)
-		case attribute.FieldID, attribute.FieldCodeName, attribute.FieldDataType, attribute.FieldEtag, attribute.FieldGroupID, attribute.FieldProductID:
+		case attribute.FieldID, attribute.FieldCodeName, attribute.FieldDataType, attribute.FieldEtag, attribute.FieldAttributeGroupID, attribute.FieldProductID:
 			values[i] = new(sql.NullString)
 		case attribute.FieldCreatedAt, attribute.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -179,12 +179,12 @@ func (a *Attribute) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				a.Etag = value.String
 			}
-		case attribute.FieldGroupID:
+		case attribute.FieldAttributeGroupID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field group_id", values[i])
+				return fmt.Errorf("unexpected type %T for field attribute_group_id", values[i])
 			} else if value.Valid {
-				a.GroupID = new(string)
-				*a.GroupID = value.String
+				a.AttributeGroupID = new(string)
+				*a.AttributeGroupID = value.String
 			}
 		case attribute.FieldIsEnum:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -289,8 +289,8 @@ func (a *Attribute) String() string {
 	builder.WriteString("etag=")
 	builder.WriteString(a.Etag)
 	builder.WriteString(", ")
-	if v := a.GroupID; v != nil {
-		builder.WriteString("group_id=")
+	if v := a.AttributeGroupID; v != nil {
+		builder.WriteString("attribute_group_id=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

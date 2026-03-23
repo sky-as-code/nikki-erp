@@ -58,6 +58,20 @@ func (agu *AttributeGroupUpdate) SetName(mj model.LangJson) *AttributeGroupUpdat
 	return agu
 }
 
+// SetEtag sets the "etag" field.
+func (agu *AttributeGroupUpdate) SetEtag(s string) *AttributeGroupUpdate {
+	agu.mutation.SetEtag(s)
+	return agu
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (agu *AttributeGroupUpdate) SetNillableEtag(s *string) *AttributeGroupUpdate {
+	if s != nil {
+		agu.SetEtag(*s)
+	}
+	return agu
+}
+
 // SetProductID sets the "product_id" field.
 func (agu *AttributeGroupUpdate) SetProductID(s string) *AttributeGroupUpdate {
 	agu.mutation.SetProductID(s)
@@ -195,6 +209,9 @@ func (agu *AttributeGroupUpdate) sqlSave(ctx context.Context) (n int, err error)
 	if value, ok := agu.mutation.Name(); ok {
 		_spec.SetField(attributegroup.FieldName, field.TypeJSON, value)
 	}
+	if value, ok := agu.mutation.Etag(); ok {
+		_spec.SetField(attributegroup.FieldEtag, field.TypeString, value)
+	}
 	if value, ok := agu.mutation.UpdatedAt(); ok {
 		_spec.SetField(attributegroup.FieldUpdatedAt, field.TypeTime, value)
 	}
@@ -319,6 +336,20 @@ func (aguo *AttributeGroupUpdateOne) AddIndex(i int) *AttributeGroupUpdateOne {
 // SetName sets the "name" field.
 func (aguo *AttributeGroupUpdateOne) SetName(mj model.LangJson) *AttributeGroupUpdateOne {
 	aguo.mutation.SetName(mj)
+	return aguo
+}
+
+// SetEtag sets the "etag" field.
+func (aguo *AttributeGroupUpdateOne) SetEtag(s string) *AttributeGroupUpdateOne {
+	aguo.mutation.SetEtag(s)
+	return aguo
+}
+
+// SetNillableEtag sets the "etag" field if the given value is not nil.
+func (aguo *AttributeGroupUpdateOne) SetNillableEtag(s *string) *AttributeGroupUpdateOne {
+	if s != nil {
+		aguo.SetEtag(*s)
+	}
 	return aguo
 }
 
@@ -488,6 +519,9 @@ func (aguo *AttributeGroupUpdateOne) sqlSave(ctx context.Context) (_node *Attrib
 	}
 	if value, ok := aguo.mutation.Name(); ok {
 		_spec.SetField(attributegroup.FieldName, field.TypeJSON, value)
+	}
+	if value, ok := aguo.mutation.Etag(); ok {
+		_spec.SetField(attributegroup.FieldEtag, field.TypeString, value)
 	}
 	if value, ok := aguo.mutation.UpdatedAt(); ok {
 		_spec.SetField(attributegroup.FieldUpdatedAt, field.TypeTime, value)

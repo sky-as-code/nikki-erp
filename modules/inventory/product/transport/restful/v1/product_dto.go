@@ -4,7 +4,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces"
+	domain "github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 )
 
 type ProductDto struct {
@@ -14,41 +15,53 @@ type ProductDto struct {
 	Etag      string `json:"etag"`
 
 	// Optional common product fields (copied if present in domain.Product)
-	Name              model.LangJson  `json:"name"`
-	Description       *model.LangJson `json:"description,omitempty"`
-	Unit              string          `json:"unit_id"`
-	Status            string          `json:"status"`
-	DefaultsVariantId *string         `json:"defaultsVariantId,omitempty"`
-	ThumbnailUrl      *string         `json:"thumbnailUrl,omitempty"`
+	Name             model.LangJson  `json:"name"`
+	Description      *model.LangJson `json:"description,omitempty"`
+	UnitId           *model.Id       `json:"unitId,omitempty"`
+	Status           string          `json:"status"`
+	DefaultVariantId *model.Id       `json:"defaultVariantId,omitempty"`
+	ThumbnailURL     *string         `json:"thumbnailURL,omitempty"`
+
+	Variants   []model.Id     `json:"variants,omitempty"`
+	Attributes []AttributeDto `json:"attributes,omitempty"`
 }
 
-func (this *ProductDto) FromProduct(p it.Product) {
+func (this *ProductDto) FromProduct(p domain.Product) {
 	model.MustCopy(p.AuditableBase, this)
 	model.MustCopy(p.ModelBase, this)
 	model.MustCopy(p, this)
+
+	this.Variants = array.Map(p.Variants, func(v domain.Variant) model.Id {
+		return *v.Id
+	})
+	this.Attributes = array.Map(p.Attributes, func(attr domain.Attribute) AttributeDto {
+		attrResp := AttributeDto{}
+		attrResp.FromAttribute(attr)
+		return attrResp
+	})
 }
 
-type CreateProductRequest = it.CreateProductCommand
+type CreateProductRequest = itProduct.CreateProductCommand
 type CreateProductResponse = httpserver.RestCreateResponse
 
-type UpdateProductRequest = it.UpdateProductCommand
+type UpdateProductRequest = itProduct.UpdateProductCommand
 type UpdateProductResponse = httpserver.RestUpdateResponse
 
-type DeleteProductRequest = it.DeleteProductCommand
+type DeleteProductRequest = itProduct.DeleteProductCommand
 type DeleteProductResponse = httpserver.RestDeleteResponse
 
-type GetProductByIdRequest = it.GetProductByIdQuery
+type GetProductByIdRequest = itProduct.GetProductByIdQuery
 type GetProductByIdResponse = ProductDto
 
-type SearchProductsRequest = it.SearchProductsQuery
+type SearchProductsRequest = itProduct.SearchProductsQuery
 
 type SearchProductsResponse httpserver.RestSearchResponse[ProductDto]
 
-func (this *SearchProductsResponse) FromResult(result *it.SearchProductsResultData) {
+func (this *SearchProductsResponse) FromResult(result *itProduct.SearchProductsResultData) {
 	this.Total = result.Total
 	this.Page = result.Page
 	this.Size = result.Size
-	this.Items = array.Map(result.Items, func(p it.Product) ProductDto {
+	this.Items = array.Map(result.Items, func(p domain.Product) ProductDto {
 		item := ProductDto{}
 		item.FromProduct(p)
 		return item

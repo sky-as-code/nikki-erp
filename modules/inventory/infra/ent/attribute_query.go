@@ -493,10 +493,10 @@ func (aq *AttributeQuery) loadAttributeGroup(ctx context.Context, query *Attribu
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*Attribute)
 	for i := range nodes {
-		if nodes[i].GroupID == nil {
+		if nodes[i].AttributeGroupID == nil {
 			continue
 		}
-		fk := *nodes[i].GroupID
+		fk := *nodes[i].AttributeGroupID
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -513,7 +513,7 @@ func (aq *AttributeQuery) loadAttributeGroup(ctx context.Context, query *Attribu
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "group_id" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "attribute_group_id" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -607,7 +607,7 @@ func (aq *AttributeQuery) querySpec() *sqlgraph.QuerySpec {
 			}
 		}
 		if aq.withAttributeGroup != nil {
-			_spec.Node.AddColumnOnce(attribute.FieldGroupID)
+			_spec.Node.AddColumnOnce(attribute.FieldAttributeGroupID)
 		}
 		if aq.withProduct != nil {
 			_spec.Node.AddColumnOnce(attribute.FieldProductID)

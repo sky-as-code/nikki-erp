@@ -5,9 +5,19 @@ meta {
 }
 
 put {
-  url: {{api_host}}/v1/{{org_id}}/inventory/attribute-groups/{{attribute_group_id}}
-  body: none
+  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/attribute-group/{{attribute_group_id}}
+  body: json
   auth: inherit
+}
+
+body:json {
+  {
+    "name": {
+       "en": "Pharmaceuticals",
+       "vi": "Dược phẩm"
+    },
+    "etag": "1772097910571845000"
+  }
 }
 
 settings {

@@ -39,7 +39,7 @@ type Product struct {
 	// ThumbnailURL holds the value of the "thumbnail_url" field.
 	ThumbnailURL *string `json:"thumbnail_url,omitempty"`
 	// UnitID holds the value of the "unit_id" field.
-	UnitID string `json:"unit_id,omitempty"`
+	UnitID *string `json:"unit_id,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -54,13 +54,17 @@ type ProductEdges struct {
 	Variant []*Variant `json:"variant,omitempty"`
 	// Attribute holds the value of the attribute edge.
 	Attribute []*Attribute `json:"attribute,omitempty"`
+	// ProductCategory holds the value of the product_category edge.
+	ProductCategory []*ProductCategory `json:"product_category,omitempty"`
 	// AttributeGroup holds the value of the attribute_group edge.
 	AttributeGroup []*AttributeGroup `json:"attribute_group,omitempty"`
 	// Unit holds the value of the unit edge.
 	Unit *Unit `json:"unit,omitempty"`
+	// ProductCategoryRel holds the value of the product_category_rel edge.
+	ProductCategoryRel []*ProductCategoryRel `json:"product_category_rel,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [6]bool
 }
 
 // VariantOrErr returns the Variant value or an error if the edge
@@ -81,10 +85,19 @@ func (e ProductEdges) AttributeOrErr() ([]*Attribute, error) {
 	return nil, &NotLoadedError{edge: "attribute"}
 }
 
+// ProductCategoryOrErr returns the ProductCategory value or an error if the edge
+// was not loaded in eager-loading.
+func (e ProductEdges) ProductCategoryOrErr() ([]*ProductCategory, error) {
+	if e.loadedTypes[2] {
+		return e.ProductCategory, nil
+	}
+	return nil, &NotLoadedError{edge: "product_category"}
+}
+
 // AttributeGroupOrErr returns the AttributeGroup value or an error if the edge
 // was not loaded in eager-loading.
 func (e ProductEdges) AttributeGroupOrErr() ([]*AttributeGroup, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[3] {
 		return e.AttributeGroup, nil
 	}
 	return nil, &NotLoadedError{edge: "attribute_group"}
@@ -95,10 +108,19 @@ func (e ProductEdges) AttributeGroupOrErr() ([]*AttributeGroup, error) {
 func (e ProductEdges) UnitOrErr() (*Unit, error) {
 	if e.Unit != nil {
 		return e.Unit, nil
-	} else if e.loadedTypes[3] {
+	} else if e.loadedTypes[4] {
 		return nil, &NotFoundError{label: unit.Label}
 	}
 	return nil, &NotLoadedError{edge: "unit"}
+}
+
+// ProductCategoryRelOrErr returns the ProductCategoryRel value or an error if the edge
+// was not loaded in eager-loading.
+func (e ProductEdges) ProductCategoryRelOrErr() ([]*ProductCategoryRel, error) {
+	if e.loadedTypes[5] {
+		return e.ProductCategoryRel, nil
+	}
+	return nil, &NotLoadedError{edge: "product_category_rel"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -198,7 +220,8 @@ func (pr *Product) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field unit_id", values[i])
 			} else if value.Valid {
-				pr.UnitID = value.String
+				pr.UnitID = new(string)
+				*pr.UnitID = value.String
 			}
 		case product.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -230,6 +253,11 @@ func (pr *Product) QueryAttribute() *AttributeQuery {
 	return NewProductClient(pr.config).QueryAttribute(pr)
 }
 
+// QueryProductCategory queries the "product_category" edge of the Product entity.
+func (pr *Product) QueryProductCategory() *ProductCategoryQuery {
+	return NewProductClient(pr.config).QueryProductCategory(pr)
+}
+
 // QueryAttributeGroup queries the "attribute_group" edge of the Product entity.
 func (pr *Product) QueryAttributeGroup() *AttributeGroupQuery {
 	return NewProductClient(pr.config).QueryAttributeGroup(pr)
@@ -238,6 +266,11 @@ func (pr *Product) QueryAttributeGroup() *AttributeGroupQuery {
 // QueryUnit queries the "unit" edge of the Product entity.
 func (pr *Product) QueryUnit() *UnitQuery {
 	return NewProductClient(pr.config).QueryUnit(pr)
+}
+
+// QueryProductCategoryRel queries the "product_category_rel" edge of the Product entity.
+func (pr *Product) QueryProductCategoryRel() *ProductCategoryRelQuery {
+	return NewProductClient(pr.config).QueryProductCategoryRel(pr)
 }
 
 // Update returns a builder for updating this Product.
@@ -296,8 +329,10 @@ func (pr *Product) String() string {
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
-	builder.WriteString("unit_id=")
-	builder.WriteString(pr.UnitID)
+	if v := pr.UnitID; v != nil {
+		builder.WriteString("unit_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	if v := pr.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")

@@ -28,8 +28,8 @@ const (
 	FieldEnumValue = "enum_value"
 	// FieldEtag holds the string denoting the etag field in the database.
 	FieldEtag = "etag"
-	// FieldGroupID holds the string denoting the group_id field in the database.
-	FieldGroupID = "group_id"
+	// FieldAttributeGroupID holds the string denoting the attribute_group_id field in the database.
+	FieldAttributeGroupID = "attribute_group_id"
 	// FieldIsEnum holds the string denoting the is_enum field in the database.
 	FieldIsEnum = "is_enum"
 	// FieldIsRequired holds the string denoting the is_required field in the database.
@@ -54,7 +54,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "attributegroup" package.
 	AttributeGroupInverseTable = "inventory_attribute_group"
 	// AttributeGroupColumn is the table column denoting the attribute_group relation/edge.
-	AttributeGroupColumn = "group_id"
+	AttributeGroupColumn = "attribute_group_id"
 	// ProductTable is the table that holds the product relation/edge.
 	ProductTable = "inventory_attribute"
 	// ProductInverseTable is the table name for the Product entity.
@@ -81,7 +81,7 @@ var Columns = []string{
 	FieldEnumValueSort,
 	FieldEnumValue,
 	FieldEtag,
-	FieldGroupID,
+	FieldAttributeGroupID,
 	FieldIsEnum,
 	FieldIsRequired,
 	FieldProductID,
@@ -145,9 +145,9 @@ func ByEtag(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEtag, opts...).ToFunc()
 }
 
-// ByGroupID orders the results by the group_id field.
-func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldGroupID, opts...).ToFunc()
+// ByAttributeGroupID orders the results by the attribute_group_id field.
+func ByAttributeGroupID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAttributeGroupID, opts...).ToFunc()
 }
 
 // ByIsEnum orders the results by the is_enum field.

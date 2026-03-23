@@ -635,6 +635,16 @@ func UnitIDHasSuffix(v string) predicate.Product {
 	return predicate.Product(sql.FieldHasSuffix(FieldUnitID, v))
 }
 
+// UnitIDIsNil applies the IsNil predicate on the "unit_id" field.
+func UnitIDIsNil() predicate.Product {
+	return predicate.Product(sql.FieldIsNull(FieldUnitID))
+}
+
+// UnitIDNotNil applies the NotNil predicate on the "unit_id" field.
+func UnitIDNotNil() predicate.Product {
+	return predicate.Product(sql.FieldNotNull(FieldUnitID))
+}
+
 // UnitIDEqualFold applies the EqualFold predicate on the "unit_id" field.
 func UnitIDEqualFold(v string) predicate.Product {
 	return predicate.Product(sql.FieldEqualFold(FieldUnitID, v))
@@ -741,6 +751,29 @@ func HasAttributeWith(preds ...predicate.Attribute) predicate.Product {
 	})
 }
 
+// HasProductCategory applies the HasEdge predicate on the "product_category" edge.
+func HasProductCategory() predicate.Product {
+	return predicate.Product(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, ProductCategoryTable, ProductCategoryPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProductCategoryWith applies the HasEdge predicate on the "product_category" edge with a given conditions (other predicates).
+func HasProductCategoryWith(preds ...predicate.ProductCategory) predicate.Product {
+	return predicate.Product(func(s *sql.Selector) {
+		step := newProductCategoryStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasAttributeGroup applies the HasEdge predicate on the "attribute_group" edge.
 func HasAttributeGroup() predicate.Product {
 	return predicate.Product(func(s *sql.Selector) {
@@ -779,6 +812,29 @@ func HasUnit() predicate.Product {
 func HasUnitWith(preds ...predicate.Unit) predicate.Product {
 	return predicate.Product(func(s *sql.Selector) {
 		step := newUnitStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasProductCategoryRel applies the HasEdge predicate on the "product_category_rel" edge.
+func HasProductCategoryRel() predicate.Product {
+	return predicate.Product(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ProductCategoryRelTable, ProductCategoryRelColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProductCategoryRelWith applies the HasEdge predicate on the "product_category_rel" edge with a given conditions (other predicates).
+func HasProductCategoryRelWith(preds ...predicate.ProductCategoryRel) predicate.Product {
+	return predicate.Product(func(s *sql.Selector) {
+		step := newProductCategoryRelStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

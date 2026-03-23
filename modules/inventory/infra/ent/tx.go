@@ -22,6 +22,8 @@ type Tx struct {
 	Product *ProductClient
 	// ProductCategory is the client for interacting with the ProductCategory builders.
 	ProductCategory *ProductCategoryClient
+	// ProductCategoryRel is the client for interacting with the ProductCategoryRel builders.
+	ProductCategoryRel *ProductCategoryRelClient
 	// Unit is the client for interacting with the Unit builders.
 	Unit *UnitClient
 	// UnitCategory is the client for interacting with the UnitCategory builders.
@@ -166,6 +168,7 @@ func (tx *Tx) init() {
 	tx.AttributeValue = NewAttributeValueClient(tx.config)
 	tx.Product = NewProductClient(tx.config)
 	tx.ProductCategory = NewProductCategoryClient(tx.config)
+	tx.ProductCategoryRel = NewProductCategoryRelClient(tx.config)
 	tx.Unit = NewUnitClient(tx.config)
 	tx.UnitCategory = NewUnitCategoryClient(tx.config)
 	tx.Variant = NewVariantClient(tx.config)

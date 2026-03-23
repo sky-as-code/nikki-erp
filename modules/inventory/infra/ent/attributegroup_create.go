@@ -49,6 +49,12 @@ func (agc *AttributeGroupCreate) SetName(mj model.LangJson) *AttributeGroupCreat
 	return agc
 }
 
+// SetEtag sets the "etag" field.
+func (agc *AttributeGroupCreate) SetEtag(s string) *AttributeGroupCreate {
+	agc.mutation.SetEtag(s)
+	return agc
+}
+
 // SetProductID sets the "product_id" field.
 func (agc *AttributeGroupCreate) SetProductID(s string) *AttributeGroupCreate {
 	agc.mutation.SetProductID(s)
@@ -155,6 +161,9 @@ func (agc *AttributeGroupCreate) check() error {
 	if _, ok := agc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "AttributeGroup.name"`)}
 	}
+	if _, ok := agc.mutation.Etag(); !ok {
+		return &ValidationError{Name: "etag", err: errors.New(`ent: missing required field "AttributeGroup.etag"`)}
+	}
 	return nil
 }
 
@@ -201,6 +210,10 @@ func (agc *AttributeGroupCreate) createSpec() (*AttributeGroup, *sqlgraph.Create
 	if value, ok := agc.mutation.Name(); ok {
 		_spec.SetField(attributegroup.FieldName, field.TypeJSON, value)
 		_node.Name = value
+	}
+	if value, ok := agc.mutation.Etag(); ok {
+		_spec.SetField(attributegroup.FieldEtag, field.TypeString, value)
+		_node.Etag = value
 	}
 	if value, ok := agc.mutation.UpdatedAt(); ok {
 		_spec.SetField(attributegroup.FieldUpdatedAt, field.TypeTime, value)

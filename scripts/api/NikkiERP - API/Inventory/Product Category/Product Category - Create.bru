@@ -1,0 +1,25 @@
+meta {
+  name: Product Category - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/{{org_id}}/inventory/products-category
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": {
+       "en": "Pen",
+       "vi": "Bút viết"
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

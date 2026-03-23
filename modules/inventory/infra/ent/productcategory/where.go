@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/predicate"
 )
 
@@ -64,24 +65,14 @@ func IDContainsFold(id string) predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldContainsFold(FieldID, id))
 }
 
-// CodeName applies equality check predicate on the "code_name" field. It's identical to CodeNameEQ.
-func CodeName(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldCodeName, v))
-}
-
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldEQ(FieldCreatedAt, v))
 }
 
-// DataType applies equality check predicate on the "data_type" field. It's identical to DataTypeEQ.
-func DataType(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldDataType, v))
-}
-
-// EnumValueSort applies equality check predicate on the "enum_value_sort" field. It's identical to EnumValueSortEQ.
-func EnumValueSort(v bool) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldEnumValueSort, v))
+// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
+func OrgID(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldEQ(FieldOrgID, v))
 }
 
 // Etag applies equality check predicate on the "etag" field. It's identical to EtagEQ.
@@ -89,99 +80,9 @@ func Etag(v string) predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldEQ(FieldEtag, v))
 }
 
-// GroupID applies equality check predicate on the "group_id" field. It's identical to GroupIDEQ.
-func GroupID(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldGroupID, v))
-}
-
-// IsEnum applies equality check predicate on the "is_enum" field. It's identical to IsEnumEQ.
-func IsEnum(v bool) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldIsEnum, v))
-}
-
-// IsRequired applies equality check predicate on the "is_required" field. It's identical to IsRequiredEQ.
-func IsRequired(v bool) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldIsRequired, v))
-}
-
-// ProductID applies equality check predicate on the "product_id" field. It's identical to ProductIDEQ.
-func ProductID(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldProductID, v))
-}
-
-// SortIndex applies equality check predicate on the "sort_index" field. It's identical to SortIndexEQ.
-func SortIndex(v int) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldSortIndex, v))
-}
-
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldEQ(FieldUpdatedAt, v))
-}
-
-// CodeNameEQ applies the EQ predicate on the "code_name" field.
-func CodeNameEQ(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldCodeName, v))
-}
-
-// CodeNameNEQ applies the NEQ predicate on the "code_name" field.
-func CodeNameNEQ(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNEQ(FieldCodeName, v))
-}
-
-// CodeNameIn applies the In predicate on the "code_name" field.
-func CodeNameIn(vs ...string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldIn(FieldCodeName, vs...))
-}
-
-// CodeNameNotIn applies the NotIn predicate on the "code_name" field.
-func CodeNameNotIn(vs ...string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNotIn(FieldCodeName, vs...))
-}
-
-// CodeNameGT applies the GT predicate on the "code_name" field.
-func CodeNameGT(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGT(FieldCodeName, v))
-}
-
-// CodeNameGTE applies the GTE predicate on the "code_name" field.
-func CodeNameGTE(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGTE(FieldCodeName, v))
-}
-
-// CodeNameLT applies the LT predicate on the "code_name" field.
-func CodeNameLT(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLT(FieldCodeName, v))
-}
-
-// CodeNameLTE applies the LTE predicate on the "code_name" field.
-func CodeNameLTE(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLTE(FieldCodeName, v))
-}
-
-// CodeNameContains applies the Contains predicate on the "code_name" field.
-func CodeNameContains(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldContains(FieldCodeName, v))
-}
-
-// CodeNameHasPrefix applies the HasPrefix predicate on the "code_name" field.
-func CodeNameHasPrefix(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldHasPrefix(FieldCodeName, v))
-}
-
-// CodeNameHasSuffix applies the HasSuffix predicate on the "code_name" field.
-func CodeNameHasSuffix(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldHasSuffix(FieldCodeName, v))
-}
-
-// CodeNameEqualFold applies the EqualFold predicate on the "code_name" field.
-func CodeNameEqualFold(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEqualFold(FieldCodeName, v))
-}
-
-// CodeNameContainsFold applies the ContainsFold predicate on the "code_name" field.
-func CodeNameContainsFold(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldContainsFold(FieldCodeName, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -224,99 +125,69 @@ func CreatedAtLTE(v time.Time) predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldLTE(FieldCreatedAt, v))
 }
 
-// DataTypeEQ applies the EQ predicate on the "data_type" field.
-func DataTypeEQ(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldDataType, v))
+// OrgIDEQ applies the EQ predicate on the "org_id" field.
+func OrgIDEQ(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldEQ(FieldOrgID, v))
 }
 
-// DataTypeNEQ applies the NEQ predicate on the "data_type" field.
-func DataTypeNEQ(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNEQ(FieldDataType, v))
+// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
+func OrgIDNEQ(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldNEQ(FieldOrgID, v))
 }
 
-// DataTypeIn applies the In predicate on the "data_type" field.
-func DataTypeIn(vs ...string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldIn(FieldDataType, vs...))
+// OrgIDIn applies the In predicate on the "org_id" field.
+func OrgIDIn(vs ...string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldIn(FieldOrgID, vs...))
 }
 
-// DataTypeNotIn applies the NotIn predicate on the "data_type" field.
-func DataTypeNotIn(vs ...string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNotIn(FieldDataType, vs...))
+// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
+func OrgIDNotIn(vs ...string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldNotIn(FieldOrgID, vs...))
 }
 
-// DataTypeGT applies the GT predicate on the "data_type" field.
-func DataTypeGT(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGT(FieldDataType, v))
+// OrgIDGT applies the GT predicate on the "org_id" field.
+func OrgIDGT(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldGT(FieldOrgID, v))
 }
 
-// DataTypeGTE applies the GTE predicate on the "data_type" field.
-func DataTypeGTE(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGTE(FieldDataType, v))
+// OrgIDGTE applies the GTE predicate on the "org_id" field.
+func OrgIDGTE(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldGTE(FieldOrgID, v))
 }
 
-// DataTypeLT applies the LT predicate on the "data_type" field.
-func DataTypeLT(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLT(FieldDataType, v))
+// OrgIDLT applies the LT predicate on the "org_id" field.
+func OrgIDLT(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldLT(FieldOrgID, v))
 }
 
-// DataTypeLTE applies the LTE predicate on the "data_type" field.
-func DataTypeLTE(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLTE(FieldDataType, v))
+// OrgIDLTE applies the LTE predicate on the "org_id" field.
+func OrgIDLTE(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldLTE(FieldOrgID, v))
 }
 
-// DataTypeContains applies the Contains predicate on the "data_type" field.
-func DataTypeContains(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldContains(FieldDataType, v))
+// OrgIDContains applies the Contains predicate on the "org_id" field.
+func OrgIDContains(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldContains(FieldOrgID, v))
 }
 
-// DataTypeHasPrefix applies the HasPrefix predicate on the "data_type" field.
-func DataTypeHasPrefix(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldHasPrefix(FieldDataType, v))
+// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
+func OrgIDHasPrefix(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldHasPrefix(FieldOrgID, v))
 }
 
-// DataTypeHasSuffix applies the HasSuffix predicate on the "data_type" field.
-func DataTypeHasSuffix(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldHasSuffix(FieldDataType, v))
+// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
+func OrgIDHasSuffix(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldHasSuffix(FieldOrgID, v))
 }
 
-// DataTypeEqualFold applies the EqualFold predicate on the "data_type" field.
-func DataTypeEqualFold(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEqualFold(FieldDataType, v))
+// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
+func OrgIDEqualFold(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldEqualFold(FieldOrgID, v))
 }
 
-// DataTypeContainsFold applies the ContainsFold predicate on the "data_type" field.
-func DataTypeContainsFold(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldContainsFold(FieldDataType, v))
-}
-
-// DisplayNameIsNil applies the IsNil predicate on the "display_name" field.
-func DisplayNameIsNil() predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldIsNull(FieldDisplayName))
-}
-
-// DisplayNameNotNil applies the NotNil predicate on the "display_name" field.
-func DisplayNameNotNil() predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNotNull(FieldDisplayName))
-}
-
-// EnumValueSortEQ applies the EQ predicate on the "enum_value_sort" field.
-func EnumValueSortEQ(v bool) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldEnumValueSort, v))
-}
-
-// EnumValueSortNEQ applies the NEQ predicate on the "enum_value_sort" field.
-func EnumValueSortNEQ(v bool) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNEQ(FieldEnumValueSort, v))
-}
-
-// EnumValueIsNil applies the IsNil predicate on the "enum_value" field.
-func EnumValueIsNil() predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldIsNull(FieldEnumValue))
-}
-
-// EnumValueNotNil applies the NotNil predicate on the "enum_value" field.
-func EnumValueNotNil() predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNotNull(FieldEnumValue))
+// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
+func OrgIDContainsFold(v string) predicate.ProductCategory {
+	return predicate.ProductCategory(sql.FieldContainsFold(FieldOrgID, v))
 }
 
 // EtagEQ applies the EQ predicate on the "etag" field.
@@ -384,206 +255,6 @@ func EtagContainsFold(v string) predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldContainsFold(FieldEtag, v))
 }
 
-// GroupIDEQ applies the EQ predicate on the "group_id" field.
-func GroupIDEQ(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldGroupID, v))
-}
-
-// GroupIDNEQ applies the NEQ predicate on the "group_id" field.
-func GroupIDNEQ(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNEQ(FieldGroupID, v))
-}
-
-// GroupIDIn applies the In predicate on the "group_id" field.
-func GroupIDIn(vs ...string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldIn(FieldGroupID, vs...))
-}
-
-// GroupIDNotIn applies the NotIn predicate on the "group_id" field.
-func GroupIDNotIn(vs ...string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNotIn(FieldGroupID, vs...))
-}
-
-// GroupIDGT applies the GT predicate on the "group_id" field.
-func GroupIDGT(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGT(FieldGroupID, v))
-}
-
-// GroupIDGTE applies the GTE predicate on the "group_id" field.
-func GroupIDGTE(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGTE(FieldGroupID, v))
-}
-
-// GroupIDLT applies the LT predicate on the "group_id" field.
-func GroupIDLT(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLT(FieldGroupID, v))
-}
-
-// GroupIDLTE applies the LTE predicate on the "group_id" field.
-func GroupIDLTE(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLTE(FieldGroupID, v))
-}
-
-// GroupIDContains applies the Contains predicate on the "group_id" field.
-func GroupIDContains(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldContains(FieldGroupID, v))
-}
-
-// GroupIDHasPrefix applies the HasPrefix predicate on the "group_id" field.
-func GroupIDHasPrefix(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldHasPrefix(FieldGroupID, v))
-}
-
-// GroupIDHasSuffix applies the HasSuffix predicate on the "group_id" field.
-func GroupIDHasSuffix(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldHasSuffix(FieldGroupID, v))
-}
-
-// GroupIDIsNil applies the IsNil predicate on the "group_id" field.
-func GroupIDIsNil() predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldIsNull(FieldGroupID))
-}
-
-// GroupIDNotNil applies the NotNil predicate on the "group_id" field.
-func GroupIDNotNil() predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNotNull(FieldGroupID))
-}
-
-// GroupIDEqualFold applies the EqualFold predicate on the "group_id" field.
-func GroupIDEqualFold(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEqualFold(FieldGroupID, v))
-}
-
-// GroupIDContainsFold applies the ContainsFold predicate on the "group_id" field.
-func GroupIDContainsFold(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldContainsFold(FieldGroupID, v))
-}
-
-// IsEnumEQ applies the EQ predicate on the "is_enum" field.
-func IsEnumEQ(v bool) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldIsEnum, v))
-}
-
-// IsEnumNEQ applies the NEQ predicate on the "is_enum" field.
-func IsEnumNEQ(v bool) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNEQ(FieldIsEnum, v))
-}
-
-// IsRequiredEQ applies the EQ predicate on the "is_required" field.
-func IsRequiredEQ(v bool) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldIsRequired, v))
-}
-
-// IsRequiredNEQ applies the NEQ predicate on the "is_required" field.
-func IsRequiredNEQ(v bool) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNEQ(FieldIsRequired, v))
-}
-
-// ProductIDEQ applies the EQ predicate on the "product_id" field.
-func ProductIDEQ(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldProductID, v))
-}
-
-// ProductIDNEQ applies the NEQ predicate on the "product_id" field.
-func ProductIDNEQ(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNEQ(FieldProductID, v))
-}
-
-// ProductIDIn applies the In predicate on the "product_id" field.
-func ProductIDIn(vs ...string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldIn(FieldProductID, vs...))
-}
-
-// ProductIDNotIn applies the NotIn predicate on the "product_id" field.
-func ProductIDNotIn(vs ...string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNotIn(FieldProductID, vs...))
-}
-
-// ProductIDGT applies the GT predicate on the "product_id" field.
-func ProductIDGT(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGT(FieldProductID, v))
-}
-
-// ProductIDGTE applies the GTE predicate on the "product_id" field.
-func ProductIDGTE(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGTE(FieldProductID, v))
-}
-
-// ProductIDLT applies the LT predicate on the "product_id" field.
-func ProductIDLT(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLT(FieldProductID, v))
-}
-
-// ProductIDLTE applies the LTE predicate on the "product_id" field.
-func ProductIDLTE(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLTE(FieldProductID, v))
-}
-
-// ProductIDContains applies the Contains predicate on the "product_id" field.
-func ProductIDContains(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldContains(FieldProductID, v))
-}
-
-// ProductIDHasPrefix applies the HasPrefix predicate on the "product_id" field.
-func ProductIDHasPrefix(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldHasPrefix(FieldProductID, v))
-}
-
-// ProductIDHasSuffix applies the HasSuffix predicate on the "product_id" field.
-func ProductIDHasSuffix(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldHasSuffix(FieldProductID, v))
-}
-
-// ProductIDEqualFold applies the EqualFold predicate on the "product_id" field.
-func ProductIDEqualFold(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEqualFold(FieldProductID, v))
-}
-
-// ProductIDContainsFold applies the ContainsFold predicate on the "product_id" field.
-func ProductIDContainsFold(v string) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldContainsFold(FieldProductID, v))
-}
-
-// SortIndexEQ applies the EQ predicate on the "sort_index" field.
-func SortIndexEQ(v int) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldEQ(FieldSortIndex, v))
-}
-
-// SortIndexNEQ applies the NEQ predicate on the "sort_index" field.
-func SortIndexNEQ(v int) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNEQ(FieldSortIndex, v))
-}
-
-// SortIndexIn applies the In predicate on the "sort_index" field.
-func SortIndexIn(vs ...int) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldIn(FieldSortIndex, vs...))
-}
-
-// SortIndexNotIn applies the NotIn predicate on the "sort_index" field.
-func SortIndexNotIn(vs ...int) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldNotIn(FieldSortIndex, vs...))
-}
-
-// SortIndexGT applies the GT predicate on the "sort_index" field.
-func SortIndexGT(v int) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGT(FieldSortIndex, v))
-}
-
-// SortIndexGTE applies the GTE predicate on the "sort_index" field.
-func SortIndexGTE(v int) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldGTE(FieldSortIndex, v))
-}
-
-// SortIndexLT applies the LT predicate on the "sort_index" field.
-func SortIndexLT(v int) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLT(FieldSortIndex, v))
-}
-
-// SortIndexLTE applies the LTE predicate on the "sort_index" field.
-func SortIndexLTE(v int) predicate.ProductCategory {
-	return predicate.ProductCategory(sql.FieldLTE(FieldSortIndex, v))
-}
-
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldEQ(FieldUpdatedAt, v))
@@ -632,6 +303,52 @@ func UpdatedAtIsNil() predicate.ProductCategory {
 // UpdatedAtNotNil applies the NotNil predicate on the "updated_at" field.
 func UpdatedAtNotNil() predicate.ProductCategory {
 	return predicate.ProductCategory(sql.FieldNotNull(FieldUpdatedAt))
+}
+
+// HasProduct applies the HasEdge predicate on the "product" edge.
+func HasProduct() predicate.ProductCategory {
+	return predicate.ProductCategory(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, ProductTable, ProductPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProductWith applies the HasEdge predicate on the "product" edge with a given conditions (other predicates).
+func HasProductWith(preds ...predicate.Product) predicate.ProductCategory {
+	return predicate.ProductCategory(func(s *sql.Selector) {
+		step := newProductStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasProductCategoryRel applies the HasEdge predicate on the "product_category_rel" edge.
+func HasProductCategoryRel() predicate.ProductCategory {
+	return predicate.ProductCategory(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ProductCategoryRelTable, ProductCategoryRelColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasProductCategoryRelWith applies the HasEdge predicate on the "product_category_rel" edge with a given conditions (other predicates).
+func HasProductCategoryRelWith(preds ...predicate.ProductCategoryRel) predicate.ProductCategory {
+	return predicate.ProductCategory(func(s *sql.Selector) {
+		step := newProductCategoryRelStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

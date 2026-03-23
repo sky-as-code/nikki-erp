@@ -3,12 +3,14 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/product"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/variant"
 )
@@ -24,12 +26,16 @@ type Variant struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
+	// Name holds the value of the "name" field.
+	Name model.LangJson `json:"name,omitempty"`
 	// ProposedPrice holds the value of the "proposed_price" field.
-	ProposedPrice int `json:"proposed_price,omitempty"`
+	ProposedPrice *float64 `json:"proposed_price,omitempty"`
+	// ImageURL holds the value of the "Image_url" field.
+	ImageURL *string `json:"Image_url,omitempty"`
 	// ProductID holds the value of the "product_id" field.
 	ProductID string `json:"product_id,omitempty"`
 	// Sku holds the value of the "sku" field.
-	Sku string `json:"sku,omitempty"`
+	Sku *string `json:"sku,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
@@ -87,9 +93,11 @@ func (*Variant) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case variant.FieldName:
+			values[i] = new([]byte)
 		case variant.FieldProposedPrice:
-			values[i] = new(sql.NullInt64)
-		case variant.FieldID, variant.FieldBarcode, variant.FieldEtag, variant.FieldProductID, variant.FieldSku, variant.FieldStatus:
+			values[i] = new(sql.NullFloat64)
+		case variant.FieldID, variant.FieldBarcode, variant.FieldEtag, variant.FieldImageURL, variant.FieldProductID, variant.FieldSku, variant.FieldStatus:
 			values[i] = new(sql.NullString)
 		case variant.FieldCreatedAt, variant.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -133,11 +141,27 @@ func (v *Variant) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				v.Etag = value.String
 			}
+		case variant.FieldName:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field name", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &v.Name); err != nil {
+					return fmt.Errorf("unmarshal field name: %w", err)
+				}
+			}
 		case variant.FieldProposedPrice:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field proposed_price", values[i])
 			} else if value.Valid {
-				v.ProposedPrice = int(value.Int64)
+				v.ProposedPrice = new(float64)
+				*v.ProposedPrice = value.Float64
+			}
+		case variant.FieldImageURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field Image_url", values[i])
+			} else if value.Valid {
+				v.ImageURL = new(string)
+				*v.ImageURL = value.String
 			}
 		case variant.FieldProductID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -149,7 +173,8 @@ func (v *Variant) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field sku", values[i])
 			} else if value.Valid {
-				v.Sku = value.String
+				v.Sku = new(string)
+				*v.Sku = value.String
 			}
 		case variant.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -226,14 +251,26 @@ func (v *Variant) String() string {
 	builder.WriteString("etag=")
 	builder.WriteString(v.Etag)
 	builder.WriteString(", ")
-	builder.WriteString("proposed_price=")
-	builder.WriteString(fmt.Sprintf("%v", v.ProposedPrice))
+	builder.WriteString("name=")
+	builder.WriteString(fmt.Sprintf("%v", v.Name))
+	builder.WriteString(", ")
+	if v := v.ProposedPrice; v != nil {
+		builder.WriteString("proposed_price=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := v.ImageURL; v != nil {
+		builder.WriteString("Image_url=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("product_id=")
 	builder.WriteString(v.ProductID)
 	builder.WriteString(", ")
-	builder.WriteString("sku=")
-	builder.WriteString(v.Sku)
+	if v := v.Sku; v != nil {
+		builder.WriteString("sku=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(v.Status)

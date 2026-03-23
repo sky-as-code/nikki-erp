@@ -1,0 +1,20 @@
+meta {
+  name: Product Category - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/{{org_id}}/inventory/products-category/{{product_category_id}}
+  body: json
+  auth: inherit
+}
+
+vars:pre-request {
+  product_category_id: 01KJCQCFQYFV1NC8DTW34DQA1V
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
