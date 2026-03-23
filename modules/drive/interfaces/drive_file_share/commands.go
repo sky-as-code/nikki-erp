@@ -99,6 +99,22 @@ func (this GetDriveFileShareByUserQuery) Validate() fault.ValidationErrors {
 type GetDriveFileShareByUserResultData = crud.PagedResult[*domain.DriveFileShare]
 type GetDriveFileShareByUserResult = crud.OpResult[*GetDriveFileShareByUserResultData]
 
+// ListDriveFileSharesByFileRefsAndUserQuery loads shares for one user on any of the given drive files (e.g. ancestors + target for effective permission).
+type ListDriveFileSharesByFileRefsAndUserQuery struct {
+	DriveFileIds []model.Id `json:"driveFileIds"`
+	UserId       model.Id   `json:"userId"`
+}
+
+func (this ListDriveFileSharesByFileRefsAndUserQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.UserId, true),
+		model.IdValidateRuleMulti(&this.DriveFileIds, false, 0, model.MODEL_RULE_ID_ARR_MAX),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type ListDriveFileSharesByFileRefsAndUserResult = crud.OpResult[[]*domain.DriveFileShare]
+
 type SearchDriveFileShareQuery struct {
 	crud.SearchQuery
 }

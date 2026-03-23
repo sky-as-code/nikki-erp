@@ -254,6 +254,7 @@ func (this DriveFileRest) GetDriveFileAncestors(echoCtx echo.Context) (err error
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileSvc.GetDriveFileAncestors,
 		func(request GetDriveFileAncestorsRequest) it.GetDriveFileAncestorsQuery {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result it.GetDriveFileAncestorsResult) GetDriveFileAncestorsResponse {
@@ -282,6 +283,7 @@ func (this DriveFileRest) GetDriveFileById(echoCtx echo.Context) (err error) {
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileSvc.GetDriveFileById,
 		func(request GetDriveFileByIdRequest) it.GetDriveFileByIdQuery {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result it.GetDriveFileByIdResult) GetDriveFileByIdResponse {
@@ -306,6 +308,7 @@ func (this DriveFileRest) StreamDriveFile(echoCtx echo.Context) (err error) {
 	if err = echoCtx.Bind(&query); err != nil {
 		return httpserver.HandleBindError(echoCtx, err)
 	}
+	query.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 
 	reqCtx := echoCtx.Request().Context().(crud.Context)
 	driveFile, stream, err := this.DriveFileSvc.DownloadDriveFile(reqCtx, query)
@@ -348,6 +351,7 @@ func (this DriveFileRest) GetDriveFileByParent(echoCtx echo.Context) (err error)
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileSvc.GetDriveFileByParent,
 		func(request GetDriveFileByParentRequest) it.GetDriveFileByParentQuery {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result it.GetDriveFileByParentResult) GetDriveFileByParentResponse {
@@ -371,6 +375,7 @@ func (this DriveFileRest) SearchDriveFile(echoCtx echo.Context) (err error) {
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileSvc.SearchDriveFile,
 		func(request SearchDriveFileRequest) it.SearchDriveFileQuery {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result it.SearchDriveFileResult) SearchDriveFileResponse {

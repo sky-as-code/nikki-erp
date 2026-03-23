@@ -23,6 +23,9 @@ type DriveFileShareService interface {
 	GetDriveFileShareByUser(ctx crud.Context, query GetDriveFileShareByUserQuery) (
 		*GetDriveFileShareByUserResult, error)
 
+	ListDriveFileSharesByFileRefsAndUser(ctx crud.Context, query ListDriveFileSharesByFileRefsAndUserQuery) (
+		*ListDriveFileSharesByFileRefsAndUserResult, error)
+
 	SearchDriveFileShare(ctx crud.Context, query SearchDriveFileShareQuery) (
 		*SearchDriveFileShareResult, error)
 

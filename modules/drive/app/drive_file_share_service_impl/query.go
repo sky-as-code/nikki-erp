@@ -102,6 +102,24 @@ func (this *DriveFileShareServiceImpl) GetDriveFileShareByUser(ctx crud.Context,
 	}, nil
 }
 
+func (this *DriveFileShareServiceImpl) ListDriveFileSharesByFileRefsAndUser(ctx crud.Context, query it.ListDriveFileSharesByFileRefsAndUserQuery) (
+	*it.ListDriveFileSharesByFileRefsAndUserResult, error) {
+	vErrs := query.Validate()
+	if vErrs.Count() > 0 {
+		return &it.ListDriveFileSharesByFileRefsAndUserResult{ClientError: vErrs.ToClientError()}, nil
+	}
+
+	items, err := this.driveFileShareRepo.ListByFileRefsAndUserRef(ctx, query.DriveFileIds, query.UserId)
+	if err != nil {
+		return nil, err
+	}
+	if err := this.enrichDriveFileSharesWithUsers(ctx, items); err != nil {
+		return nil, err
+	}
+
+	return &it.ListDriveFileSharesByFileRefsAndUserResult{HasData: true, Data: items}, nil
+}
+
 // Search
 
 func (this *DriveFileShareServiceImpl) SearchDriveFileShare(ctx crud.Context, query it.SearchDriveFileShareQuery) (

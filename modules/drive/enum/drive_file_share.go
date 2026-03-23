@@ -9,7 +9,8 @@ import (
 type DriveFileSharePerm uint8
 
 const (
-	DriveFileSharePermView DriveFileSharePerm = iota + 1
+	DriveFileSharePermNone DriveFileSharePerm = iota
+	DriveFileSharePermView
 	DriveFileSharePermEdit
 	DriveFileSharePermEditTrash
 
@@ -17,6 +18,7 @@ const (
 )
 
 var DriveFileSharePermName = map[DriveFileSharePerm]string{
+	DriveFileSharePermNone:      "",
 	DriveFileSharePermView:      "view",
 	DriveFileSharePermEdit:      "edit",
 	DriveFileSharePermEditTrash: "edit-trash",

@@ -214,9 +214,9 @@ func (d *driveFileRepository) SearchAccessible(
 	userId model.Id,
 	param drive_file.SearchParam,
 ) (*crud.PagedResult[*domain.DriveFile], error) {
-	accessiblePred := orm.Predicate(entSql.OrPredicates(
-		entDrivefile.OwnerRef(string(userId)),
-		entDrivefile.HasDriveFileSharesWith(entDrivefileshare.UserRef(string(userId))),
+	accessiblePred := orm.Predicate(entSql.AndPredicates(
+		notPendingDelete,
+		permissionPredicate(string(userId)),
 	))
 
 	combinedPred := accessiblePred
@@ -230,6 +230,71 @@ func (d *driveFileRepository) SearchAccessible(
 		Page:      param.Page,
 		Size:      param.Size,
 	})
+}
+
+func (d *driveFileRepository) GetRootFileByUser(
+	ctx crud.Context,
+	userId model.Id,
+	param drive_file.SearchParam,
+) (*crud.PagedResult[*domain.DriveFile], error) {
+	rootPred := entDrivefile.ParentFileRefIsNil()
+	// Root listing is only for the user's own roots (owner_ref = userId).
+	// Shares do not apply here.
+	accessiblePred := orm.Predicate(entSql.AndPredicates(
+		notPendingDelete,
+		rootPred,
+		entDrivefile.OwnerRef(string(userId)),
+	))
+
+	combinedPred := accessiblePred
+	if param.Predicate != nil {
+		combinedPred = orm.Predicate(entSql.AndPredicates(accessiblePred, *param.Predicate))
+	}
+
+	return d.Search(ctx, drive_file.SearchParam{
+		Predicate: &combinedPred,
+		Order:     param.Order,
+		Page:      param.Page,
+		Size:      param.Size,
+	})
+}
+
+
+func permissionPredicate(userId string) predicate.DriveFile {
+	return func(s *entSql.Selector) {
+		fileIDCol := s.C(entDrivefile.FieldID)
+		filePathCol := s.C(entDrivefile.FieldMaterializedPath)
+		shareTable := entSql.Table(entDrivefileshare.Table).As("dfs")
+		shareUserRefCol := shareTable.C(entDrivefileshare.FieldUserRef)
+
+		directShareSub := entSql.
+			Select("id").
+			From(shareTable).
+			Where(
+				entSql.And(
+					entSql.EQ(shareUserRefCol, userId),
+					entSql.ExprP("dfs."+entDrivefileshare.FieldFileRef+" = "+fileIDCol),
+				),
+			)
+
+		ancestorShareSub := entSql.
+			Select("id").
+			From(shareTable).
+			Where(
+				entSql.And(
+					entSql.EQ(shareUserRefCol, userId),
+					entSql.ExprP(filePathCol + " LIKE ('%/' || dfs." + entDrivefileshare.FieldFileRef + " || '/%')"),
+				),
+			)
+
+		s.Where(
+			entSql.Or(
+				entSql.EQ(s.C(entDrivefile.FieldOwnerRef), userId),
+				entSql.Exists(directShareSub),
+				entSql.Exists(ancestorShareSub),
+			),
+		)
+	}
 }
 
 func (d *driveFileRepository) SearchByParent(ctx crud.Context, param drive_file.SearchByParentParam) (*crud.PagedResult[*domain.DriveFile], error) {

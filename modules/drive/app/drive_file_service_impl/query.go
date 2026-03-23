@@ -3,7 +3,6 @@ package drive_file_service_impl
 import (
 	"io"
 
-	"github.com/samber/lo"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -11,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/drive/adapter/external/file_storage"
 	"github.com/sky-as-code/nikki-erp/modules/drive/domain"
+	"github.com/sky-as-code/nikki-erp/modules/drive/enum"
 	it "github.com/sky-as-code/nikki-erp/modules/drive/interfaces/drive_file"
 )
 
@@ -28,6 +28,14 @@ func (this *DriveFileServiceImpl) GetDriveFileById(ctx crud.Context, query it.Ge
 			ft.PanicOnErr(err)
 			if driveFile == nil {
 				vErrs.AppendNotFound("driveFileId", "drive file")
+				return nil, nil
+			}
+
+			perm, err := this.resolvePermission(ctx, driveFile, q.UserId)
+			ft.PanicOnErr(err)
+			if perm < enum.DriveFileSharePermView {
+				vErrs.AppendNotAllowed("driveFileId", "drive file")
+				return nil, nil
 			}
 			return driveFile, nil
 		},
@@ -52,6 +60,15 @@ func (this *DriveFileServiceImpl) DownloadDriveFile(ctx crud.Context, query it.G
 
 	if driveFile == nil {
 		return nil, nil, nil
+	}
+
+	perm, err := this.resolvePermission(ctx, driveFile, query.UserId)
+	ft.PanicOnErr(err)
+	if perm < enum.DriveFileSharePermView {
+		return nil, nil, &fault.ClientError{
+			Code:    "forbidden",
+			Details: "drive file is not allowed",
+		}
 	}
 
 	ioReader, err := this.storageAdapter.DownloadBucket(ctx.InnerContext(), file_storage.BucketDrive, driveFile.StorageKey)
@@ -85,6 +102,42 @@ func (this *DriveFileServiceImpl) GetDriveFileByParent(ctx crud.Context, query i
 		if parent == nil {
 			return &it.GetDriveFileByParentResult{ClientError: vErrsAssert.ToClientError()}, nil
 		}
+
+		perm, err := this.resolvePermission(ctx, parent, query.UserId)
+		ft.PanicOnErr(err)
+		if perm < enum.DriveFileSharePermView {
+			return &it.GetDriveFileByParentResult{
+				ClientError: &fault.ClientError{
+					Code:    "forbidden",
+					Details: "drive file parent is not allowed",
+				},
+			}, nil
+		}
+	}
+
+	if query.FileParentId == "" {
+		return crud.Search(ctx, crud.SearchParam[*domain.DriveFile, it.GetDriveFileByParentQuery, it.GetDriveFileByParentResult]{
+			Action: "get root drive files",
+			Query:  query,
+			SetQueryDefaults: func(q *it.GetDriveFileByParentQuery) {
+				q.SetDefaults()
+			},
+			ParseSearchGraph: this.driveFileRepo.ParseSearchGraph,
+			RepoSearch: func(ctx crud.Context, q it.GetDriveFileByParentQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[*domain.DriveFile], error) {
+				return this.driveFileRepo.GetRootFileByUser(ctx, q.UserId, it.SearchParam{
+					Predicate: predicate,
+					Order:     order,
+					Page:      *q.Page,
+					Size:      *q.Size,
+				})
+			},
+			ToFailureResult: func(vErrs *ft.ValidationErrors) *it.GetDriveFileByParentResult {
+				return &it.GetDriveFileByParentResult{ClientError: vErrs.ToClientError()}
+			},
+			ToSuccessResult: func(paged *crud.PagedResult[*domain.DriveFile]) *it.GetDriveFileByParentResult {
+				return &it.GetDriveFileByParentResult{Data: paged, HasData: true}
+			},
+		})
 	}
 
 	return crud.Search(ctx, crud.SearchParam[*domain.DriveFile, it.GetDriveFileByParentQuery, it.GetDriveFileByParentResult]{
@@ -126,7 +179,7 @@ func (this *DriveFileServiceImpl) SearchDriveFile(ctx crud.Context, query it.Sea
 		},
 		ParseSearchGraph: this.driveFileRepo.ParseSearchGraph,
 		RepoSearch: func(ctx crud.Context, q it.SearchDriveFileQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[*domain.DriveFile], error) {
-			return this.driveFileRepo.Search(ctx, it.SearchParam{
+			return this.driveFileRepo.SearchAccessible(ctx, q.UserId, it.SearchParam{
 				Predicate: predicate,
 				Order:     order,
 				Page:      *q.Page,
@@ -188,15 +241,66 @@ func (this *DriveFileServiceImpl) GetDriveFileAncestors(ctx crud.Context, query 
 		return &it.GetDriveFileAncestorsResult{ClientError: vErrs.ToClientError()}, nil
 	}
 
+	// Root has no parent: only owner roots are allowed.
 	if driveFile.ParentDriveFileRef == nil {
-		return &it.GetDriveFileAncestorsResult{HasData: true, Data: []*domain.DriveFile{driveFile}}, nil
+		if driveFile.OwnerRef != nil && *driveFile.OwnerRef == query.UserId {
+			return &it.GetDriveFileAncestorsResult{HasData: true, Data: []*domain.DriveFile{driveFile}}, nil
+		}
+		return &it.GetDriveFileAncestorsResult{
+			ClientError: &fault.ClientError{
+				Code:    "forbidden",
+				Details: "drive file root is not allowed",
+			},
+		}, nil
 	}
 
 	ancestors, err := this.driveFileRepo.GetDriveFileParents(ctx, *driveFile.Id)
 	ft.PanicOnErr(err)
 
-	path := make([]*domain.DriveFile, len(ancestors))
-	copy(path, ancestors)
-	lo.Reverse(path)
-	return &it.GetDriveFileAncestorsResult{HasData: true, Data: path}, nil
+	// Build map for O(1) lookup when walking up via parentRef.
+	idToFile := make(map[model.Id]*domain.DriveFile, len(ancestors))
+	for _, f := range ancestors {
+		if f == nil || f.Id == nil {
+			continue
+		}
+		idToFile[*f.Id] = f
+	}
+
+	// Walk upward from the original file until we find the first parent (ancestor)
+	// that has at least `view` permission. We only return results up to that node.
+	waiting := make([]*domain.DriveFile, 0)
+	res := make([]*domain.DriveFile, 0)
+	cur := driveFile
+	for cur != nil && cur.ParentDriveFileRef != nil && *cur.ParentDriveFileRef != "" {
+		parentId := *cur.ParentDriveFileRef
+		parent := idToFile[parentId]
+		if parent == nil {
+			break
+		}
+
+		perm, err := this.resolvePermission(ctx, parent, query.UserId)
+		ft.PanicOnErr(err)
+		if perm < enum.DriveFileSharePermView {
+			waiting = append(waiting, parent)
+			cur = parent
+			continue
+		}
+
+		// Found the first allowed ancestor. Append it and the waiting chain (from farthest to closest),
+		// then append the original file.
+		res = append(res, parent)
+		for i := len(waiting) - 1; i >= 0; i-- {
+			res = append(res, waiting[i])
+		}
+		res = append(res, driveFile)
+
+		return &it.GetDriveFileAncestorsResult{HasData: true, Data: res}, nil
+	}
+
+	return &it.GetDriveFileAncestorsResult{
+		ClientError: &fault.ClientError{
+			Code:    "forbidden",
+			Details: "drive file ancestors are not allowed",
+		},
+	}, nil
 }

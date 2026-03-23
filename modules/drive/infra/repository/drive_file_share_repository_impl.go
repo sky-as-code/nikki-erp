@@ -62,6 +62,22 @@ func (d *driveFileShareRepository) FindById(ctx crud.Context, id model.Id) (*dom
 	return db.FindOne(ctx.InnerContext(), dbQuery, ent.IsNotFound, entToDriveFileShare)
 }
 
+func (d *driveFileShareRepository) ListByFileRefsAndUserRef(ctx crud.Context, driveFileIds []model.Id, userId model.Id) ([]*domain.DriveFileShare, error) {
+	if len(driveFileIds) == 0 {
+		return []*domain.DriveFileShare{}, nil
+	}
+	refs := make([]string, 0, len(driveFileIds))
+	for _, id := range driveFileIds {
+		refs = append(refs, string(id))
+	}
+	query := d.driveFileShareClient(ctx).Query().
+		Where(
+			entDrivefileshare.FileRefIn(refs...),
+			entDrivefileshare.UserRef(string(userId)),
+		)
+	return db.List(ctx.InnerContext(), query, entToDriveFileShares)
+}
+
 func (d *driveFileShareRepository) ListByFileRef(ctx crud.Context, param drive_file_share.ListByFileRefParam) (*crud.PagedResult[*domain.DriveFileShare], error) {
 	var parentPred predicate.DriveFileShare
 	parentPred = entDrivefileshare.FileRef(string(param.FileRef))

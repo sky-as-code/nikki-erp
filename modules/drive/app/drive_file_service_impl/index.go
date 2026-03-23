@@ -5,25 +5,29 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/drive/adapter/external/file_storage"
 	it "github.com/sky-as-code/nikki-erp/modules/drive/interfaces/drive_file"
+	drive_file_share "github.com/sky-as-code/nikki-erp/modules/drive/interfaces/drive_file_share"
 )
 
 type DriveFileServiceImpl struct {
-	logger         logging.LoggerService
-	config         config.ConfigService
-	driveFileRepo  it.DriveFileRepository
-	storageAdapter file_storage.FileStorageAdapter
+	logger               logging.LoggerService
+	config               config.ConfigService
+	driveFileRepo        it.DriveFileRepository
+	driveFileShareService drive_file_share.DriveFileShareService
+	storageAdapter       file_storage.FileStorageAdapter
 }
 
 func NewDriveFileService(
 	logger logging.LoggerService,
 	config config.ConfigService,
 	driveFileRepo it.DriveFileRepository,
+	driveFileShareService drive_file_share.DriveFileShareService,
 	storageAdapter file_storage.FileStorageAdapter,
 ) it.DriveFileService {
 	return &DriveFileServiceImpl{
-		logger:         logger,
-		config:         config,
-		driveFileRepo:  driveFileRepo,
-		storageAdapter: storageAdapter,
+		logger:               logger,
+		config:               config,
+		driveFileRepo:        driveFileRepo,
+		driveFileShareService: driveFileShareService,
+		storageAdapter:       storageAdapter,
 	}
 }

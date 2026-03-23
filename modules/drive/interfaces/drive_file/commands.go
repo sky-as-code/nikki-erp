@@ -83,6 +83,7 @@ var getDriveFileByIdRequestType = cqrs.RequestType{
 type GetDriveFileByIdQuery struct {
 	IsDownload  bool     `query:"download"`
 	DriveFileId model.Id `json:"driveFileId" param:"driveFileId"`
+	UserId      model.Id `json:"-"`
 }
 
 func (GetDriveFileByIdQuery) CqrsRequestType() cqrs.RequestType {
@@ -92,6 +93,7 @@ func (GetDriveFileByIdQuery) CqrsRequestType() cqrs.RequestType {
 func (this GetDriveFileByIdQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.DriveFileId, true),
+		model.IdValidateRule(&this.UserId, true),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -101,12 +103,14 @@ type GetDriveFileByIdResult = crud.OpResult[*domain.DriveFile]
 type GetDriveFileByParentQuery struct {
 	crud.SearchQuery `json:",inline"`
 	FileParentId     model.Id `json:"fileParentId" param:"driveFileId"`
+	UserId            model.Id `json:"-"`
 }
 
 func (this GetDriveFileByParentQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{}
 	rules = append(rules, this.SearchQuery.ValidationRules()...)
 
+	rules = append(rules, model.IdValidateRule(&this.UserId, true))
 	if this.FileParentId != "" {
 		rules = append(rules,
 			model.IdValidateRule(&this.FileParentId, true),
@@ -124,10 +128,12 @@ type GetDriveFileByParentResult = crud.OpResult[*GetDriveFileByParentResultData]
 
 type SearchDriveFileQuery struct {
 	crud.SearchQuery
+	UserId model.Id `json:"-"`
 }
 
 func (this SearchDriveFileQuery) Validate() fault.ValidationErrors {
 	rules := this.SearchQuery.ValidationRules()
+	rules = append(rules, model.IdValidateRule(&this.UserId, true))
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
 
@@ -155,12 +161,13 @@ type SearchDriveFileResult = crud.OpResult[*SearchDriveFileResultData]
 
 type GetDriveFileAncestorsQuery struct {
 	DriveFileId model.Id `json:"driveFileId" param:"driveFileId"`
-
+	UserId      model.Id `json:"-"              `
 }
 
 func (this GetDriveFileAncestorsQuery) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.DriveFileId, true),
+		model.IdValidateRule(&this.UserId, true),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }

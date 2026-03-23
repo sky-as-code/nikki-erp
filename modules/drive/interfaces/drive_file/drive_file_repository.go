@@ -19,6 +19,7 @@ type DriveFileRepository interface {
 	// SearchAccessible searches drive files accessible to the given user (owned OR shared),
 	// then applies graph predicate/order/pagination on the resulting dri_files records.
 	SearchAccessible(ctx crud.Context, userId model.Id, param SearchParam) (*crud.PagedResult[*domain.DriveFile], error)
+	GetRootFileByUser(ctx crud.Context, userId model.Id, param SearchParam) (*crud.PagedResult[*domain.DriveFile], error)
 	SearchByParent(ctx crud.Context, param SearchByParentParam) (*crud.PagedResult[*domain.DriveFile], error)
 	GetDriveFilesSharedByUser(ctx crud.Context, userId model.Id, param SearchParam) (*crud.PagedResult[*domain.DriveFile], error)
 	GetDriveFileChildren(ctx crud.Context, parentId model.Id) ([]*domain.DriveFile, error)
