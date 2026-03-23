@@ -17,6 +17,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "deleted_at", Type: field.TypeTime},
 		{Name: "owner_ref", Type: field.TypeString},
+		{Name: "materialized_path", Type: field.TypeString, Nullable: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "mime", Type: field.TypeString},
 		{Name: "is_folder", Type: field.TypeBool, Default: false},
@@ -36,7 +37,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "dri_files_dri_files_children_file",
-				Columns:    []*schema.Column{DriFilesColumns[15]},
+				Columns:    []*schema.Column{DriFilesColumns[16]},
 				RefColumns: []*schema.Column{DriFilesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -45,7 +46,7 @@ var (
 			{
 				Name:    "drivefile_owner_ref_parent_file_ref_is_folder_name",
 				Unique:  true,
-				Columns: []*schema.Column{DriFilesColumns[5], DriFilesColumns[15], DriFilesColumns[8], DriFilesColumns[6]},
+				Columns: []*schema.Column{DriFilesColumns[5], DriFilesColumns[16], DriFilesColumns[9], DriFilesColumns[7]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "parent_file_ref is NOT NULL",
 				},
@@ -53,17 +54,17 @@ var (
 			{
 				Name:    "drivefile_owner_ref_is_folder_name",
 				Unique:  true,
-				Columns: []*schema.Column{DriFilesColumns[5], DriFilesColumns[8], DriFilesColumns[6]},
+				Columns: []*schema.Column{DriFilesColumns[5], DriFilesColumns[9], DriFilesColumns[7]},
 			},
 			{
 				Name:    "drivefile_parent_file_ref",
 				Unique:  false,
-				Columns: []*schema.Column{DriFilesColumns[15]},
+				Columns: []*schema.Column{DriFilesColumns[16]},
 			},
 			{
 				Name:    "drivefile_status",
 				Unique:  false,
-				Columns: []*schema.Column{DriFilesColumns[14]},
+				Columns: []*schema.Column{DriFilesColumns[15]},
 			},
 		},
 	}
@@ -98,10 +99,41 @@ var (
 			},
 		},
 	}
+	// DriFileStarsColumns holds the columns for the "dri_file_stars" table.
+	DriFileStarsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString},
+		{Name: "etag", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "user_ref", Type: field.TypeString},
+		{Name: "file_ref", Type: field.TypeString},
+	}
+	// DriFileStarsTable holds the schema information for the "dri_file_stars" table.
+	DriFileStarsTable = &schema.Table{
+		Name:       "dri_file_stars",
+		Columns:    DriFileStarsColumns,
+		PrimaryKey: []*schema.Column{DriFileStarsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "dri_file_stars_dri_files_drive_file_stars",
+				Columns:    []*schema.Column{DriFileStarsColumns[5]},
+				RefColumns: []*schema.Column{DriFilesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "drivefilestar_file_ref_user_ref",
+				Unique:  true,
+				Columns: []*schema.Column{DriFileStarsColumns[5], DriFileStarsColumns[4]},
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		DriFilesTable,
 		DriFileSharesTable,
+		DriFileStarsTable,
 	}
 )
 
@@ -113,5 +145,9 @@ func init() {
 	DriFileSharesTable.ForeignKeys[0].RefTable = DriFilesTable
 	DriFileSharesTable.Annotation = &entsql.Annotation{
 		Table: "dri_file_shares",
+	}
+	DriFileStarsTable.ForeignKeys[0].RefTable = DriFilesTable
+	DriFileStarsTable.Annotation = &entsql.Annotation{
+		Table: "dri_file_stars",
 	}
 }

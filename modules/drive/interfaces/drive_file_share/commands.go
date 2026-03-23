@@ -34,6 +34,7 @@ type CreateBulkDriveFileShareCommand struct {
 func (this CreateBulkDriveFileShareCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.FileRef, true),
+		model.IdValidateRuleMulti(&this.UserRefs, true, 1, model.MODEL_RULE_ID_ARR_MAX),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }

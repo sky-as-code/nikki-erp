@@ -383,3 +383,27 @@ func (this DriveFileRest) SearchDriveFile(echoCtx echo.Context) (err error) {
 
 	return err
 }
+
+func (this DriveFileRest) SearchDriveFilesShared(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search drive files shared"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.DriveFileSvc.SearchDriveFilesShared,
+		func(request SearchDriveFilesSharedRequest) it.SearchDriveFilesSharedQuery {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
+			return request
+		},
+		func(result it.SearchDriveFileResult) SearchDriveFilesSharedResponse {
+			response := SearchDriveFilesSharedResponse{}
+			response.FromResult(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileshare"
+	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefilestar"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/schema"
 )
 
@@ -36,25 +37,25 @@ func init() {
 	// drivefile.OwnerRefValidator is a validator for the "owner_ref" field. It is called by the builders before save.
 	drivefile.OwnerRefValidator = drivefileDescOwnerRef.Validators[0].(func(string) error)
 	// drivefileDescName is the schema descriptor for name field.
-	drivefileDescName := drivefileMixinFields0[7].Descriptor()
+	drivefileDescName := drivefileMixinFields0[8].Descriptor()
 	// drivefile.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	drivefile.NameValidator = drivefileDescName.Validators[0].(func(string) error)
 	// drivefileDescIsFolder is the schema descriptor for is_folder field.
-	drivefileDescIsFolder := drivefileMixinFields0[9].Descriptor()
+	drivefileDescIsFolder := drivefileMixinFields0[10].Descriptor()
 	// drivefile.DefaultIsFolder holds the default value on creation for the is_folder field.
 	drivefile.DefaultIsFolder = drivefileDescIsFolder.Default.(bool)
 	// drivefileDescSize is the schema descriptor for size field.
-	drivefileDescSize := drivefileMixinFields0[10].Descriptor()
+	drivefileDescSize := drivefileMixinFields0[11].Descriptor()
 	// drivefile.SizeValidator is a validator for the "size" field. It is called by the builders before save.
 	drivefile.SizeValidator = drivefileDescSize.Validators[0].(func(int64) error)
 	// drivefileDescVisibility is the schema descriptor for visibility field.
-	drivefileDescVisibility := drivefileMixinFields0[14].Descriptor()
+	drivefileDescVisibility := drivefileMixinFields0[15].Descriptor()
 	// drivefile.DefaultVisibility holds the default value on creation for the visibility field.
 	drivefile.DefaultVisibility = drivefileDescVisibility.Default.(string)
 	// drivefile.VisibilityValidator is a validator for the "visibility" field. It is called by the builders before save.
 	drivefile.VisibilityValidator = drivefileDescVisibility.Validators[0].(func(string) error)
 	// drivefileDescStatus is the schema descriptor for status field.
-	drivefileDescStatus := drivefileMixinFields0[15].Descriptor()
+	drivefileDescStatus := drivefileMixinFields0[16].Descriptor()
 	// drivefile.DefaultStatus holds the default value on creation for the status field.
 	drivefile.DefaultStatus = drivefileDescStatus.Default.(string)
 	// drivefile.StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -84,4 +85,25 @@ func init() {
 	drivefileshareDescPermission := drivefileshareMixinFields0[6].Descriptor()
 	// drivefileshare.DefaultPermission holds the default value on creation for the permission field.
 	drivefileshare.DefaultPermission = drivefileshareDescPermission.Default.(string)
+	drivefilestarMixin := schema.DriveFileStar{}.Mixin()
+	drivefilestarMixinFields0 := drivefilestarMixin[0].Fields()
+	_ = drivefilestarMixinFields0
+	drivefilestarFields := schema.DriveFileStar{}.Fields()
+	_ = drivefilestarFields
+	// drivefilestarDescCreatedAt is the schema descriptor for created_at field.
+	drivefilestarDescCreatedAt := drivefilestarMixinFields0[2].Descriptor()
+	// drivefilestar.DefaultCreatedAt holds the default value on creation for the created_at field.
+	drivefilestar.DefaultCreatedAt = drivefilestarDescCreatedAt.Default.(func() time.Time)
+	// drivefilestarDescUpdatedAt is the schema descriptor for updated_at field.
+	drivefilestarDescUpdatedAt := drivefilestarMixinFields0[3].Descriptor()
+	// drivefilestar.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	drivefilestar.DefaultUpdatedAt = drivefilestarDescUpdatedAt.Default.(func() time.Time)
+	// drivefilestarDescFileRef is the schema descriptor for file_ref field.
+	drivefilestarDescFileRef := drivefilestarMixinFields0[4].Descriptor()
+	// drivefilestar.FileRefValidator is a validator for the "file_ref" field. It is called by the builders before save.
+	drivefilestar.FileRefValidator = drivefilestarDescFileRef.Validators[0].(func(string) error)
+	// drivefilestarDescUserRef is the schema descriptor for user_ref field.
+	drivefilestarDescUserRef := drivefilestarMixinFields0[5].Descriptor()
+	// drivefilestar.UserRefValidator is a validator for the "user_ref" field. It is called by the builders before save.
+	drivefilestar.UserRefValidator = drivefilestarDescUserRef.Validators[0].(func(string) error)
 }

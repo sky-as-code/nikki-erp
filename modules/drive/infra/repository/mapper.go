@@ -58,6 +58,10 @@ func entToDriveFile(e *ent.DriveFile) *domain.DriveFile {
 		parentRef := model.Id(*e.ParentFileRef)
 		d.ParentDriveFileRef = &parentRef
 	}
+	if e.MaterializedPath != nil {
+		p := *e.MaterializedPath
+		d.MaterializedPath = &p
+	}
 	d.Name = e.Name
 	d.MINE = e.Mime
 	d.IsFolder = e.IsFolder

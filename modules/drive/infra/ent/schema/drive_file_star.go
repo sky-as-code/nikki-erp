@@ -10,14 +10,13 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"entgo.io/ent/schema/mixin"
-	"github.com/sky-as-code/nikki-erp/modules/drive/enum"
 )
 
-type DriveFileShareMixin struct {
+type DriveFileStarMixin struct {
 	mixin.Schema
 }
 
-func (DriveFileShareMixin) Fields() []ent.Field {
+func (DriveFileStarMixin) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").
 			Immutable().
@@ -35,28 +34,26 @@ func (DriveFileShareMixin) Fields() []ent.Field {
 		field.String("file_ref").
 			NotEmpty(),
 
+		// Soft reference to identity user; no FK edge.
 		field.String("user_ref").
 			NotEmpty(),
-
-		field.String("permission").
-			Default(enum.DriveFileSharePermName[enum.DriveFileSharePermDefault]),
 	}
 }
 
-type DriveFileShare struct {
+type DriveFileStar struct {
 	ent.Schema
 }
 
-func (DriveFileShare) Annotations() []schema.Annotation {
+func (DriveFileStar) Annotations() []schema.Annotation {
 	return []schema.Annotation{
-		entsql.Annotation{Table: "dri_file_shares"},
+		entsql.Annotation{Table: "dri_file_stars"},
 	}
 }
 
-func (DriveFileShare) Edges() []ent.Edge {
+func (DriveFileStar) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("drive_files", DriveFile.Type).
-			Ref("drive_file_shares").
+			Ref("drive_file_stars").
 			Field("file_ref").
 			Unique().
 			Required().
@@ -64,14 +61,14 @@ func (DriveFileShare) Edges() []ent.Edge {
 	}
 }
 
-func (DriveFileShare) Indexes() []ent.Index {
+func (DriveFileStar) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("file_ref", "user_ref").Unique(),
 	}
 }
 
-func (DriveFileShare) Mixin() []ent.Mixin {
+func (DriveFileStar) Mixin() []ent.Mixin {
 	return []ent.Mixin{
-		DriveFileShareMixin{},
+		DriveFileStarMixin{},
 	}
 }

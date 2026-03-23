@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileshare"
+	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefilestar"
 )
 
 // DriveFileCreate is the builder for creating a DriveFile entity.
@@ -85,6 +86,20 @@ func (dfc *DriveFileCreate) SetParentFileRef(s string) *DriveFileCreate {
 func (dfc *DriveFileCreate) SetNillableParentFileRef(s *string) *DriveFileCreate {
 	if s != nil {
 		dfc.SetParentFileRef(*s)
+	}
+	return dfc
+}
+
+// SetMaterializedPath sets the "materialized_path" field.
+func (dfc *DriveFileCreate) SetMaterializedPath(s string) *DriveFileCreate {
+	dfc.mutation.SetMaterializedPath(s)
+	return dfc
+}
+
+// SetNillableMaterializedPath sets the "materialized_path" field if the given value is not nil.
+func (dfc *DriveFileCreate) SetNillableMaterializedPath(s *string) *DriveFileCreate {
+	if s != nil {
+		dfc.SetMaterializedPath(*s)
 	}
 	return dfc
 }
@@ -220,6 +235,21 @@ func (dfc *DriveFileCreate) AddDriveFileShares(d ...*DriveFileShare) *DriveFileC
 		ids[i] = d[i].ID
 	}
 	return dfc.AddDriveFileShareIDs(ids...)
+}
+
+// AddDriveFileStarIDs adds the "drive_file_stars" edge to the DriveFileStar entity by IDs.
+func (dfc *DriveFileCreate) AddDriveFileStarIDs(ids ...string) *DriveFileCreate {
+	dfc.mutation.AddDriveFileStarIDs(ids...)
+	return dfc
+}
+
+// AddDriveFileStars adds the "drive_file_stars" edges to the DriveFileStar entity.
+func (dfc *DriveFileCreate) AddDriveFileStars(d ...*DriveFileStar) *DriveFileCreate {
+	ids := make([]string, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return dfc.AddDriveFileStarIDs(ids...)
 }
 
 // Mutation returns the DriveFileMutation object of the builder.
@@ -407,6 +437,10 @@ func (dfc *DriveFileCreate) createSpec() (*DriveFile, *sqlgraph.CreateSpec) {
 		_spec.SetField(drivefile.FieldOwnerRef, field.TypeString, value)
 		_node.OwnerRef = value
 	}
+	if value, ok := dfc.mutation.MaterializedPath(); ok {
+		_spec.SetField(drivefile.FieldMaterializedPath, field.TypeString, value)
+		_node.MaterializedPath = &value
+	}
 	if value, ok := dfc.mutation.Name(); ok {
 		_spec.SetField(drivefile.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -485,6 +519,22 @@ func (dfc *DriveFileCreate) createSpec() (*DriveFile, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(drivefileshare.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := dfc.mutation.DriveFileStarsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   drivefile.DriveFileStarsTable,
+			Columns: []string{drivefile.DriveFileStarsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(drivefilestar.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

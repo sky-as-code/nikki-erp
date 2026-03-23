@@ -17,6 +17,7 @@ type DriveFileDto struct {
 
 	OwnerRef           model.Id `json:"ownerRef"`
 	ParentDriveFileRef model.Id `json:"parentDriveFileRef"`
+	MaterializedPath   *string  `json:"materializedPath,omitempty"`
 
 	Name       string                   `json:"name"`
 	MINE       string                   `json:"mime"`
@@ -91,3 +92,6 @@ func (this *SearchDriveFileResponse) FromResult(result *it.SearchDriveFileResult
 		return item
 	})
 }
+
+type SearchDriveFilesSharedRequest = it.SearchDriveFilesSharedQuery
+type SearchDriveFilesSharedResponse = SearchDriveFileResponse

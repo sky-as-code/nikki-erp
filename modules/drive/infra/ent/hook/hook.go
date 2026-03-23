@@ -33,6 +33,18 @@ func (f DriveFileShareFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Val
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DriveFileShareMutation", m)
 }
 
+// The DriveFileStarFunc type is an adapter to allow the use of ordinary
+// function as DriveFileStar mutator.
+type DriveFileStarFunc func(context.Context, *ent.DriveFileStarMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DriveFileStarFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.DriveFileStarMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DriveFileStarMutation", m)
+}
+
 // Condition is a hook condition function.
 type Condition func(context.Context, ent.Mutation) bool
 

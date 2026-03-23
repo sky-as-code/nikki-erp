@@ -16,12 +16,30 @@ type DriveFileShareDto struct {
 	FileRef    model.Id                `json:"file_ref"`
 	UserRef    model.Id                `json:"user_ref"`
 	Permission enum.DriveFileSharePerm `json:"permission"`
+
+	User *DriveFileShareUserDto `json:"user,omitempty"`
+}
+
+type DriveFileShareUserDto struct {
+	Id          model.Id `json:"id"`
+	DisplayName *string  `json:"displayName,omitempty"`
+	Email       *string  `json:"email,omitempty"`
+	AvatarUrl   *string  `json:"avatarUrl,omitempty"`
 }
 
 func (this *DriveFileShareDto) FromDriveFileShare(s domain.DriveFileShare) {
 	model.MustCopy(s.ModelBase, this)
 	model.MustCopy(s.AuditableBase, this)
-	model.MustCopy(s, this)
+	this.FileRef = s.FileRef
+	this.UserRef = s.UserRef
+	this.Permission = s.Permission
+
+	if s.User != nil {
+		// MustCopy cần một dest đã được khởi tạo (không nil).
+		tmp := DriveFileShareUserDto{}
+		model.MustCopy(*s.User, &tmp)
+		this.User = &tmp
+	}
 }
 
 type CreateDriveFileShareRequest = shareIt.CreateDriveFileShareCommand

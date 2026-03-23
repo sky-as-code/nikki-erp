@@ -22,5 +22,6 @@ type DriveFileService interface {
 	DownloadDriveFile(ctx crud.Context, query GetDriveFileByIdQuery) (*domain.DriveFile, io.ReadCloser, error)
 	GetDriveFileByParent(ctx crud.Context, query GetDriveFileByParentQuery) (*GetDriveFileByParentResult, error)
 	SearchDriveFile(ctx crud.Context, query SearchDriveFileQuery) (*SearchDriveFileResult, error)
+	SearchDriveFilesShared(ctx crud.Context, query SearchDriveFilesSharedQuery) (*SearchDriveFileResult, error)
 	GetDriveFileAncestors(ctx crud.Context, query GetDriveFileAncestorsQuery) (*GetDriveFileAncestorsResult, error)
 }

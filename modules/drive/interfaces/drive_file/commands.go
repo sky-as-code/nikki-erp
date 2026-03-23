@@ -135,6 +135,21 @@ func (this *SearchDriveFileQuery) SetDefaults() {
 	this.SearchQuery.SetDefaults()
 }
 
+type SearchDriveFilesSharedQuery struct {
+	crud.SearchQuery
+	UserId model.Id `json:"-"`
+}
+
+func (this SearchDriveFilesSharedQuery) Validate() fault.ValidationErrors {
+	rules := this.SearchQuery.ValidationRules()
+	rules = append(rules, model.IdValidateRule(&this.UserId, true))
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+func (this *SearchDriveFilesSharedQuery) SetDefaults() {
+	this.SearchQuery.SetDefaults()
+}
+
 type SearchDriveFileResultData = crud.PagedResult[*domain.DriveFile]
 type SearchDriveFileResult = crud.OpResult[*SearchDriveFileResultData]
 

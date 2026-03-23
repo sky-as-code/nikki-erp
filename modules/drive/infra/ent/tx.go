@@ -16,6 +16,8 @@ type Tx struct {
 	DriveFile *DriveFileClient
 	// DriveFileShare is the client for interacting with the DriveFileShare builders.
 	DriveFileShare *DriveFileShareClient
+	// DriveFileStar is the client for interacting with the DriveFileStar builders.
+	DriveFileStar *DriveFileStarClient
 
 	// lazily loaded.
 	client     *Client
@@ -149,6 +151,7 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.DriveFile = NewDriveFileClient(tx.config)
 	tx.DriveFileShare = NewDriveFileShareClient(tx.config)
+	tx.DriveFileStar = NewDriveFileStarClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

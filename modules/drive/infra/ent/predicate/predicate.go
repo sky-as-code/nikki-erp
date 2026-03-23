@@ -11,3 +11,6 @@ type DriveFile = func(*sql.Selector)
 
 // DriveFileShare is the predicate function for drivefileshare builders.
 type DriveFileShare = func(*sql.Selector)
+
+// DriveFileStar is the predicate function for drivefilestar builders.
+type DriveFileStar = func(*sql.Selector)

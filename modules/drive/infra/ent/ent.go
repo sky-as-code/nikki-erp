@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileshare"
+	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefilestar"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -76,6 +77,7 @@ func checkColumn(table, column string) error {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			drivefile.Table:      drivefile.ValidColumn,
 			drivefileshare.Table: drivefileshare.ValidColumn,
+			drivefilestar.Table:  drivefilestar.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

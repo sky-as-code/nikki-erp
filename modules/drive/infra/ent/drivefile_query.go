@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileshare"
+	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefilestar"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/predicate"
 )
 
@@ -27,6 +28,7 @@ type DriveFileQuery struct {
 	withChildrenFile    *DriveFileQuery
 	withParentFile      *DriveFileQuery
 	withDriveFileShares *DriveFileShareQuery
+	withDriveFileStars  *DriveFileStarQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -122,6 +124,28 @@ func (dfq *DriveFileQuery) QueryDriveFileShares() *DriveFileShareQuery {
 			sqlgraph.From(drivefile.Table, drivefile.FieldID, selector),
 			sqlgraph.To(drivefileshare.Table, drivefileshare.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, drivefile.DriveFileSharesTable, drivefile.DriveFileSharesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(dfq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDriveFileStars chains the current query on the "drive_file_stars" edge.
+func (dfq *DriveFileQuery) QueryDriveFileStars() *DriveFileStarQuery {
+	query := (&DriveFileStarClient{config: dfq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dfq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dfq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(drivefile.Table, drivefile.FieldID, selector),
+			sqlgraph.To(drivefilestar.Table, drivefilestar.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, drivefile.DriveFileStarsTable, drivefile.DriveFileStarsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dfq.driver.Dialect(), step)
 		return fromU, nil
@@ -324,6 +348,7 @@ func (dfq *DriveFileQuery) Clone() *DriveFileQuery {
 		withChildrenFile:    dfq.withChildrenFile.Clone(),
 		withParentFile:      dfq.withParentFile.Clone(),
 		withDriveFileShares: dfq.withDriveFileShares.Clone(),
+		withDriveFileStars:  dfq.withDriveFileStars.Clone(),
 		// clone intermediate query.
 		sql:  dfq.sql.Clone(),
 		path: dfq.path,
@@ -360,6 +385,17 @@ func (dfq *DriveFileQuery) WithDriveFileShares(opts ...func(*DriveFileShareQuery
 		opt(query)
 	}
 	dfq.withDriveFileShares = query
+	return dfq
+}
+
+// WithDriveFileStars tells the query-builder to eager-load the nodes that are connected to
+// the "drive_file_stars" edge. The optional arguments are used to configure the query builder of the edge.
+func (dfq *DriveFileQuery) WithDriveFileStars(opts ...func(*DriveFileStarQuery)) *DriveFileQuery {
+	query := (&DriveFileStarClient{config: dfq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dfq.withDriveFileStars = query
 	return dfq
 }
 
@@ -441,10 +477,11 @@ func (dfq *DriveFileQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*D
 	var (
 		nodes       = []*DriveFile{}
 		_spec       = dfq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			dfq.withChildrenFile != nil,
 			dfq.withParentFile != nil,
 			dfq.withDriveFileShares != nil,
+			dfq.withDriveFileStars != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -482,6 +519,13 @@ func (dfq *DriveFileQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*D
 		if err := dfq.loadDriveFileShares(ctx, query, nodes,
 			func(n *DriveFile) { n.Edges.DriveFileShares = []*DriveFileShare{} },
 			func(n *DriveFile, e *DriveFileShare) { n.Edges.DriveFileShares = append(n.Edges.DriveFileShares, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dfq.withDriveFileStars; query != nil {
+		if err := dfq.loadDriveFileStars(ctx, query, nodes,
+			func(n *DriveFile) { n.Edges.DriveFileStars = []*DriveFileStar{} },
+			func(n *DriveFile, e *DriveFileStar) { n.Edges.DriveFileStars = append(n.Edges.DriveFileStars, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -568,6 +612,36 @@ func (dfq *DriveFileQuery) loadDriveFileShares(ctx context.Context, query *Drive
 	}
 	query.Where(predicate.DriveFileShare(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(drivefile.DriveFileSharesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.FileRef
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "file_ref" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (dfq *DriveFileQuery) loadDriveFileStars(ctx context.Context, query *DriveFileStarQuery, nodes []*DriveFile, init func(*DriveFile), assign func(*DriveFile, *DriveFileStar)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*DriveFile)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(drivefilestar.FieldFileRef)
+	}
+	query.Where(predicate.DriveFileStar(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(drivefile.DriveFileStarsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

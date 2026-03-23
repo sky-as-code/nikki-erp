@@ -16,7 +16,11 @@ type DriveFileRepository interface {
 	ExistsByOwnerParentNameFolder(ctx crud.Context, ownerRef model.Id, parentRef *model.Id, name string, isFolder bool) (bool, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[*domain.DriveFile], error)
+	// SearchAccessible searches drive files accessible to the given user (owned OR shared),
+	// then applies graph predicate/order/pagination on the resulting dri_files records.
+	SearchAccessible(ctx crud.Context, userId model.Id, param SearchParam) (*crud.PagedResult[*domain.DriveFile], error)
 	SearchByParent(ctx crud.Context, param SearchByParentParam) (*crud.PagedResult[*domain.DriveFile], error)
+	GetDriveFilesSharedByUser(ctx crud.Context, userId model.Id, param SearchParam) (*crud.PagedResult[*domain.DriveFile], error)
 	GetDriveFileChildren(ctx crud.Context, parentId model.Id) ([]*domain.DriveFile, error)
 	GetDriveFileParents(ctx crud.Context, driveFileId model.Id) ([]*domain.DriveFile, error)
 	GetExpiredTrashedDriveFiles(ctx crud.Context, before time.Time) ([]*domain.DriveFile, error)

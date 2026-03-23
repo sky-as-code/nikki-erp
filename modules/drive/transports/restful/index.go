@@ -52,6 +52,7 @@ func initV1(
 	protected.PUT("/files/:driveFileId/move", driveFileRest.MoveDriveFile)
 	protected.GET("/files/:driveFileId/ancestors", driveFileRest.GetDriveFileAncestors)
 	protected.GET("/files/root", driveFileRest.GetDriveFileByParent)
+	protected.GET("/files/shared", driveFileRest.SearchDriveFilesShared)
 	protected.GET("/files/:driveFileId", driveFileRest.GetDriveFileById)
 
 	// TODO: add an API to create token for stream
@@ -68,5 +69,4 @@ func initV1(
 	fileGroup.GET("/shares/:driveFileShareId", driveFileShareRest.GetDriveFileShareById)
 	fileGroup.GET("/shares", driveFileShareRest.GetDriveFileShareByFileId)
 	fileGroup.DELETE("/shares/:driveFileShareId", driveFileShareRest.DeleteDriveFileShare)
-
 }
