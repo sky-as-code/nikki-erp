@@ -16,24 +16,54 @@ body:json {
 }
 
 script:post-response {
-  const expected = {
-      code: "validation_error",
-      details: {
-          displayName: "cannot be blank",
-          email: "cannot be blank",
+  const tv4 = require('tv4');
+  
+  const schema = {
+      type: "array",
+      minItems: 2,
+      maxItems: 2,
+      items: {
+          type: "object",
+          required: ["field", "key", "message", "type"],
+          properties: {
+              field: {
+                  type: "string",
+                  enum: ["display_name", "email"],
+              },
+              key: {
+                  type: "string",
+                  enum: ["common.err_missing_required_field"],
+              },
+              message: {
+                  type: "string",
+                  enum: ["field is required"],
+              },
+              type: {
+                  type: "string",
+                  enum: ["validation"],
+              },
+          },
+          additionalProperties: false,
       },
+      additionalItems: false
   };
   
   test("Status code is 400", function () {
       expect(res.getStatus()).to.equal(400);
   });
   
-  test("Response body matches expected JSON exactly", function () {
-      expect(res.getBody()).to.eql(expected);
+  test("Response matches expected JSON schema", function () {
+    console.log({body: res.getBody()});
+    const valid = tv4.validate(res.getBody(), schema);
+    tv4.error && console.error(tv4.error);
+    expect(tv4.error).not.to.exist;
+    expect(valid).to.be.true;  
   });
+  
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

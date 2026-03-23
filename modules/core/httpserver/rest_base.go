@@ -53,9 +53,10 @@ func (this *RestCreateResponse) FromNonEntity(src any) {
 }
 
 type RestUpdateResponse struct {
-	Id        model.Id   `json:"id"`
-	UpdatedAt int64      `json:"updated_at"`
-	Etag      model.Etag `json:"etag"`
+	Id          model.Id   `json:"id"`
+	UpdatedAtMs int64      `json:"updatedAt,omitempty"`
+	UpdatedAt   string     `json:"updated_at,omitempty"`
+	Etag        model.Etag `json:"etag"`
 }
 
 func (this *RestUpdateResponse) FromEntity(src updatedEntity) {
@@ -63,7 +64,7 @@ func (this *RestUpdateResponse) FromEntity(src updatedEntity) {
 	this.Etag = *src.GetEtag()
 
 	if updatedAt := src.GetUpdatedAt(); updatedAt != nil {
-		this.UpdatedAt = updatedAt.UnixMilli()
+		this.UpdatedAtMs = updatedAt.UnixMilli()
 	}
 }
 

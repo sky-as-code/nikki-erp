@@ -1,6 +1,7 @@
 package user
 
 import (
+	schemaEnt "github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -25,18 +26,12 @@ type UserRepository interface {
 }
 
 type UserRepository2 interface {
-	dEnt.DbRepoGetter
+	dEnt.BaseRepoGetter
 	Create(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error)
-	// DeleteHard(ctx dEnt.Context, param DeleteParam) (int, error)
-	// Exists(ctx dEnt.Context, id model.Id) (bool, error)
-	// ExistsMulti(ctx dEnt.Context, ids []model.Id, orgId model.Id) (existing []model.Id, notExisting []model.Id, err error)
-	// FindById(ctx dEnt.Context, param FindByIdParam) (*domain.User, error)
-	// FindByIdForUpdate(ctx dEnt.Context, param FindByIdParam) (*domain.User, *db.DbLock, error)
-	// FindByEmail(ctx dEnt.Context, param FindByEmailParam) (*domain.User, error)
-	// // FindByHierarchyId(ctx dEnt.Context, param FindByHierarchyIdParam) ([]domain.User, error)
-	// ParseSearchGraph(criteria string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	// Search(ctx dEnt.Context, param SearchParam) (*crud.PagedResult[domain.User], error)
-	// Update(ctx dEnt.Context, user domain.User, prevEtag model.Etag) (*domain.User, error)
+	Update(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error)
+	FindByPk(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error)
+	Search(ctx dEnt.Context, graph schemaEnt.SearchGraph) ([]*domain.UserEntity, error)
+	Archive(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error)
 }
 
 type DeleteParam = DeleteUserCommand

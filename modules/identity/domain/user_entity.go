@@ -33,7 +33,7 @@ func (this *User) Validate(forEdit bool) ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.AvatarUrl,
 			val.When(this.AvatarUrl != nil,
-				val.Length(1, model.MODEL_RULE_URL_LENGTH),
+				val.Length(1, model.MODEL_RULE_URL_LENGTH_MAX),
 				val.IsUrl,
 			),
 		),
@@ -103,36 +103,26 @@ func UserSchemaBuilder() *schema.EntitySchemaBuilder {
 		Extend(dEnt.BaseModelSchemaBuilder()).
 		Extend(dEnt.AuditableModelSchemaBuilder()).
 		Extend(dEnt.VersionedModelSchemaBuilder()).
-		// Field(
-		// 	schema.DefineField().
-		// 		Name("id").
-		// 		Label(model.LangJson{"en-US": "ID"}).
-		// 		DataType(schema.FieldDataTypeModelId()).
-		// 		PrimaryKey(),
-		// ).
 		Field(
 			schema.DefineField().
 				Name(UserFieldAvatarUrl).
 				Label(model.LangJson{"en-US": "Avatar URL"}).
-				DataType(schema.FieldDataTypeUrl()).
-				Rule(schema.FieldRuleLength(1, model.MODEL_RULE_URL_LENGTH)),
+				DataType(schema.FieldDataTypeUrl()),
 		).
 		Field(
 			schema.DefineField().
 				Name(UserFieldDisplayName).
 				Label(model.LangJson{"en-US": "Display Name"}).
-				DataType(schema.FieldDataTypeString()).
-				Required().
-				Rule(schema.FieldRuleLength(1, model.MODEL_RULE_LONG_NAME_LENGTH)),
+				DataType(schema.FieldDataTypeString(3, model.MODEL_RULE_LONG_NAME_LENGTH)).
+				RequiredForCreate(),
 		).
 		Field(
 			schema.DefineField().
 				Name(UserFieldEmail).
 				Label(model.LangJson{"en-US": "Email"}).
 				DataType(schema.FieldDataTypeEmail()).
-				Required().
-				Unique().
-				Rule(schema.FieldRuleLength(5, model.MODEL_RULE_USERNAME_LENGTH)),
+				RequiredForCreate().
+				Unique(),
 		).
 		Field(
 			schema.DefineField().
@@ -141,9 +131,8 @@ func UserSchemaBuilder() *schema.EntitySchemaBuilder {
 				DataType(schema.FieldDataTypeEnumString([]string{
 					string(UserStatusActive), string(UserStatusArchived), string(UserStatusLocked),
 				})).
-				Required().
-				Default(string(UserStatusActive)).
-				Rule(schema.FieldRuleOneOf(UserStatusActive, UserStatusArchived, UserStatusLocked)),
+				RequiredForCreate().
+				Default(string(UserStatusActive)),
 		).
 		Field(
 			schema.DefineField().
@@ -180,7 +169,7 @@ func (this *UserEntity) SetFieldData(data schema.DynamicFields) {
 }
 
 func (this UserEntity) GetSchema() *schema.EntitySchema {
-	return schema.GetSchema("identity.user")
+	return schema.GetSchema(UserSchemaName)
 }
 
 func (this UserEntity) GetDisplayName() *string {

@@ -28,12 +28,15 @@ func FieldDataTypePhone() FieldDataType {
 	return fieldDataTypePhone{fieldDataTypeBase{name: "phone", options: nil}}
 }
 
-func FieldDataTypeString(sanitizeType ...SanitizeType) FieldDataType {
+func FieldDataTypeString(minLength int, maxLength int, sanitizeType ...SanitizeType) FieldDataType {
 	st := SanitizeTypePlainText
 	if len(sanitizeType) > 0 && sanitizeType[0] != "" {
 		st = sanitizeType[0]
 	}
-	opts := FieldDataTypeOptions{FieldDataTypeOptSanitizeType: st}
+	opts := FieldDataTypeOptions{
+		FieldDataTypeOptSanitizeType: st,
+		FieldDataTypeOptLength:       []int{minLength, maxLength},
+	}
 	return fieldDataTypeString{fieldDataTypeBase{name: "string", options: opts}}
 }
 
@@ -42,7 +45,12 @@ func FieldDataTypeSecret() FieldDataType {
 }
 
 func FieldDataTypeUrl() FieldDataType {
-	return fieldDataTypeUrl{fieldDataTypeBase{name: "url", options: nil}}
+	return fieldDataTypeUrl{fieldDataTypeBase{
+		name: "url",
+		options: FieldDataTypeOptions{
+			FieldDataTypeOptLength: []int{model.MODEL_RULE_URL_LENGTH_MIN, model.MODEL_RULE_URL_LENGTH_MAX},
+		},
+	}}
 }
 
 func FieldDataTypeUlid() FieldDataType {
@@ -89,7 +97,12 @@ func FieldDataTypeEnumNumber(enumValues []int64) FieldDataType {
 }
 
 func FieldDataTypeEtag() FieldDataType {
-	return fieldDataTypeEtag{fieldDataTypeBase{name: "nikkiEtag", options: nil}}
+	return fieldDataTypeEtag{fieldDataTypeBase{
+		name: "nikkiEtag",
+		options: FieldDataTypeOptions{
+			FieldDataTypeOptLength: []int{model.MODEL_RULE_ETAG_MIN_LENGTH, model.MODEL_RULE_ETAG_MAX_LENGTH},
+		},
+	}}
 }
 
 func FieldDataTypeLangJson(sanitizeType ...SanitizeType) FieldDataType {
@@ -106,11 +119,21 @@ func FieldDataTypeLangCode() FieldDataType {
 }
 
 func FieldDataTypeModelId() FieldDataType {
-	return fieldDataTypeModelId{fieldDataTypeBase{name: "nikkiModelId", options: nil}}
+	return fieldDataTypeModelId{fieldDataTypeBase{
+		name: "nikkiModelId",
+		options: FieldDataTypeOptions{
+			FieldDataTypeOptLength: []int{model.MODEL_RULE_ULID_LENGTH, model.MODEL_RULE_ULID_LENGTH},
+		},
+	}}
 }
 
 func FieldDataTypeSlug() FieldDataType {
-	return fieldDataTypeSlug{fieldDataTypeBase{name: "nikkiSlug", options: nil}}
+	return fieldDataTypeSlug{fieldDataTypeBase{
+		name: "nikkiSlug",
+		options: FieldDataTypeOptions{
+			FieldDataTypeOptLength: []int{model.MODEL_RULE_SLUG_LENGTH_MIN, model.MODEL_RULE_SLUG_LENGTH_MAX},
+		},
+	}}
 }
 
 // FieldDataTypeEntity represents a virtual/implicit field that holds a related entity or slice of entities.
@@ -214,10 +237,32 @@ func (this fieldDataTypeString) Validate(value any) (any, *ft.ClientErrorItem) {
 }
 
 func validateStringBase(value any, options FieldDataTypeOptions) (any, *ft.ClientErrorItem) {
-	if _, err := toString(value); err != nil {
+	s, err := toString(value)
+	if err != nil {
 		return nil, errIncompatibleDataType()
 	}
-	return sanitizeStringValue(value, options)
+	sanitized, clientErr := sanitizeStringValue(value, options)
+	if clientErr != nil {
+		return nil, clientErr
+	}
+	if clientErr := validateStringLength(s, options); clientErr != nil {
+		return nil, clientErr
+	}
+	return sanitized, nil
+}
+
+func validateStringLength(s string, options FieldDataTypeOptions) *ft.ClientErrorItem {
+	if options == nil {
+		return nil
+	}
+	opts, hasLimits := options[FieldDataTypeOptLength]
+	if !hasLimits {
+		return nil
+	}
+	limits := opts.([]int)
+	min := limits[0]
+	max := limits[1]
+	return ValidateLength(s, min, max)
 }
 
 func sanitizeStringValue(value any, options FieldDataTypeOptions) (any, *ft.ClientErrorItem) {
@@ -560,8 +605,7 @@ func (this fieldDataTypeEtag) Validate(value any) (any, *ft.ClientErrorItem) {
 	if clientErr != nil {
 		return nil, clientErr
 	}
-	s, _ := toString(sanitized)
-	return sanitized, ValidateLength(s, []int{model.MODEL_RULE_ETAG_MIN_LENGTH, model.MODEL_RULE_ETAG_MAX_LENGTH})
+	return sanitized, nil
 }
 
 func (this fieldDataTypeEtag) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -676,8 +720,7 @@ func (this fieldDataTypeModelId) Validate(value any) (any, *ft.ClientErrorItem) 
 	if clientErr != nil {
 		return nil, clientErr
 	}
-	s, _ := toString(sanitized)
-	return sanitized, ValidateLength(s, []int{model.MODEL_RULE_ULID_LENGTH, model.MODEL_RULE_ULID_LENGTH})
+	return sanitized, nil
 }
 
 func (this fieldDataTypeModelId) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
@@ -699,9 +742,6 @@ func (this fieldDataTypeSlug) Validate(value any) (any, *ft.ClientErrorItem) {
 		return nil, clientErr
 	}
 	s, _ := toString(sanitized)
-	if err := ValidateLength(s, []int{1, model.MODEL_RULE_SHORT_NAME_LENGTH}); err != nil {
-		return nil, err
-	}
 	return sanitized, ValidatePattern(s, slugRegex)
 }
 

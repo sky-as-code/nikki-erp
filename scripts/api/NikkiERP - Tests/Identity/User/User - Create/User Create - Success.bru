@@ -12,9 +12,8 @@ post {
 
 body:json {
   {
-      "displayName": "{{$randomFullName}}",
-      "email": "{{$randomEmail}}",
-      "password": "p@sswo0rd"
+      "display_name": "{{$randomFullName}}",
+      "email": "{{$randomEmail}}"
   }
 }
 
@@ -23,15 +22,15 @@ script:post-response {
   
   const schema = {
       type: "object",
-      required: ["id", "createdAt", "etag"],
+      required: ["id", "created_at", "etag"],
       properties: {
           id: {
               type: "string",
               minLength: 1,
           },
-          createdAt: {
-              type: "integer",
-              minimum: 1,
+          created_at: {
+              type: "string",
+              minLength: 20, //"2026-03-23T06:53:01Z"
           },
           etag: {
               type: "string",
@@ -61,4 +60,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

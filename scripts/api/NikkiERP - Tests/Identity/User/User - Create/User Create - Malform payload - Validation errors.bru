@@ -1,7 +1,7 @@
 meta {
-  name: User Create - Existing email
+  name: User Create - Malform payload - Validation errors
   type: http
-  seq: 6
+  seq: 4
 }
 
 post {
@@ -12,9 +12,9 @@ post {
 
 body:json {
   {
-      "display_name": "John Doe",
-      "email": "{{email}}"
-  }
+      "display_name": "",
+      "email": "",
+  
 }
 
 script:post-response {
@@ -26,31 +26,19 @@ script:post-response {
       maxItems: 1,
       items: {
           type: "object",
-          required: ["field", "key", "message", "type"],
+          required: ["key", "message", "type"],
           properties: {
-              field: {
-                  type: "string",
-                  enum: ["email"],
-              },
               key: {
                   type: "string",
-                  enum: ["common.err_unique_constraint_violated"],
+                  enum: ["common.err_malformed_request"],
               },
               message: {
                   type: "string",
-                  enum: ["unique constraint violated {{.uniques}}"],
+                  enum: ["malformed request"],
               },
               type: {
                   type: "string",
-                  enum: ["business"],
-              },
-              vars: {
-                  type: "object",
-                  properties: {
-                    uniques: {
-                      type: "array",
-                    },
-                  },
+                  enum: ["validation"],
               },
           },
           additionalProperties: false,

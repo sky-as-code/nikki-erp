@@ -149,6 +149,76 @@ func (this UserRest) UserExistsMulti(echoCtx echo.Context) (err error) {
 	return err
 }
 
+func (this UserRest) UpdateUser2(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update user 2"); e != nil {
+			err = e
+		}
+	}()
+
+	return httpserver.ServeRequestDynamic[UpdateUser2Response](
+		echoCtx,
+		"update user 2",
+		func() schema.DynamicModelSetter { return &UpdateUser2Request{} },
+		this.UserSvc.UpdateUser2,
+		httpserver.JsonOk,
+	)
+}
+
+func (this UserRest) GetUserByPk2(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user by pk"); e != nil {
+			err = e
+		}
+	}()
+
+	return httpserver.ServeRequestDynamic[GetUserByPk2Response](
+		echoCtx,
+		"get user by pk",
+		func() schema.DynamicModelSetter { return &GetUserByPk2Request{} },
+		this.UserSvc.GetUserByPk2,
+		httpserver.JsonOk,
+	)
+}
+
+func (this UserRest) ArchiveUser2(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST archive user 2"); e != nil {
+			err = e
+		}
+	}()
+
+	return httpserver.ServeRequestDynamic[ArchiveUser2Response](
+		echoCtx,
+		"archive user 2",
+		func() schema.DynamicModelSetter { return &ArchiveUser2Request{} },
+		this.UserSvc.ArchiveUser2,
+		httpserver.JsonOk,
+	)
+}
+
+func (this UserRest) SearchUsers2(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search users 2"); e != nil {
+			err = e
+		}
+	}()
+	// var query SearchUsers2Request
+	// if err = echoCtx.Bind(&query); err != nil {
+	// 	return err
+	// }
+	// reqCtx := echoCtx.Request().Context().(dynamicentity.Context)
+	// result, err := this.UserSvc.SearchUsers2(reqCtx, query)
+	// if err != nil {
+	// 	return err
+	// }
+	// if result.ClientErrors != nil && result.ClientErrors.Count() > 0 {
+	// 	return httpserver.JsonBadRequest(echoCtx, result.ClientErrors)
+	// }
+	// return httpserver.JsonOk(echoCtx, toSearchUsers2Response(result.Data))
+	return httpserver.JsonOk(echoCtx, nil)
+}
+
 func (this UserRest) GetUserContext(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user context"); e != nil {

@@ -15,21 +15,21 @@ script:post-response {
   
   const schema = {
       type: "object",
-      required: ["id", "createdAt", "displayName", "email", "etag", "status"],
+      required: ["id", "created_at", "display_name", "email", "etag", "status"],
       properties: {
           id: {
               type: "string",
               minLength: 1,
           },
-          avatarUrl: {
+          avatar_url: {
               type: "string",
               format: "uri",
           },
-          createdAt: {
-              type: "integer",
-              minimum: 1,
+          created_at: {
+              type: "string",
+              minLength: 20, //"2026-03-23T06:53:01Z"
           },
-          displayName: {
+          display_name: {
               type: "string",
               minLength: 1,
           },
@@ -46,9 +46,9 @@ script:post-response {
               type: "string",
               minLength: 1,
           },
-          updatedAt: {
-              type: "integer",
-              minimum: 1,
+          updated_at: {
+              type: "string",
+              minLength: 20, //"2026-03-23T06:53:01Z"
           }
       },
       additionalProperties: false
@@ -68,4 +68,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

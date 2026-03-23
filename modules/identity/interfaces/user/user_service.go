@@ -18,4 +18,9 @@ type UserService interface {
 	UpdateUser(ctx crud.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)
 	// FindDirectApprover(ctx crud.Context, query FindDirectApproverQuery) (*FindDirectApproverResult, error)
 	GetUserContext(ctx crud.Context, query GetUserContextQuery) (*GetUserContextResultData, error)
+
+	UpdateUser2(ctx dEnt.Context, cmd UpdateUserCommand2) (*UpdateUserResult2, error)
+	GetUserByPk2(ctx dEnt.Context, query GetUserByPkQuery2) (*GetUserByPkResult2, error)
+	SearchUsers2(ctx dEnt.Context, query SearchUsersQuery2) (*SearchUsersResult2, error)
+	ArchiveUser2(ctx dEnt.Context, cmd ArchiveUserCommand2) (*ArchiveUserResult2, error)
 }

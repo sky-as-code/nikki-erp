@@ -90,6 +90,76 @@ func (this CreateUserCommand2) GetSchema() *schema.EntitySchema {
 
 type CreateUserResult2 = dEnt.OpResult[domain.UserEntity]
 
+type UpdateUserCommand2 struct {
+	domain.UserEntity
+}
+
+func (UpdateUserCommand2) CqrsRequestType() cqrs.RequestType {
+	return updateUserCommandType
+}
+
+func (this UpdateUserCommand2) GetSchema() *schema.EntitySchema {
+	return schema.GetSchema(domain.UserSchemaName)
+}
+
+type UpdateUserResult2 = dEnt.OpResult[domain.UserEntity]
+
+var getUserByPkQueryType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "getUserByPk",
+}
+
+type GetUserByPkQuery2 struct {
+	domain.UserEntity
+}
+
+func (GetUserByPkQuery2) CqrsRequestType() cqrs.RequestType {
+	return getUserByPkQueryType
+}
+
+func (this GetUserByPkQuery2) GetSchema() *schema.EntitySchema {
+	return schema.GetSchema(domain.UserSchemaName)
+}
+
+type GetUserByPkResult2 = dEnt.OpResult[domain.UserEntity]
+
+var searchUsersQuery2Type = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "searchUsers2",
+}
+
+type SearchUsersQuery2 struct {
+	Graph schema.SearchGraph `json:"graph"`
+}
+
+func (SearchUsersQuery2) CqrsRequestType() cqrs.RequestType {
+	return searchUsersQuery2Type
+}
+
+type SearchUsersResult2 = dEnt.OpResult[[]domain.UserEntity]
+
+var archiveUserCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "archive",
+}
+
+type ArchiveUserCommand2 struct {
+	domain.UserEntity
+}
+
+func (ArchiveUserCommand2) CqrsRequestType() cqrs.RequestType {
+	return archiveUserCommandType
+}
+
+func (this ArchiveUserCommand2) GetSchema() *schema.EntitySchema {
+	return schema.GetSchema(domain.UserSchemaName)
+}
+
+type ArchiveUserResult2 = dEnt.OpResult[domain.UserEntity]
+
 var updateUserCommandType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "user",

@@ -106,20 +106,18 @@ func ValidateMin(value any, opts any) *ft.ClientErrorItem {
 	return nil
 }
 
-// ValidateLength validates that string or slice length is between min and max (inclusive).
-// opts must be []int{min, max}.
-func ValidateLength(value any, opts any) *ft.ClientErrorItem {
-	arr, ok := opts.([]int)
-	if !ok || len(arr) < 2 {
-		panic(errors.New("invalid length option: must be []int{min, max} with at least 2 elements"))
-	}
-	minLen, maxLen := arr[0], arr[1]
+// ValidateLength validates that string or slice length is between minLen and maxLen (inclusive).
+func ValidateLength(value any, minLen int, maxLen int) *ft.ClientErrorItem {
 	length, err := getLength(value)
 	if err != nil {
 		return ft.NewAnonymousValidationError("common.err_invalid_value_type", "invalid value type", nil)
 	}
 	if length < minLen || length > maxLen {
-		return ft.NewAnonymousValidationError("common.err_length_out_of_range", "must have length between {{.min}} and {{.max}}", map[string]any{"min": minLen, "max": maxLen})
+		return ft.NewAnonymousValidationError(
+			"common.err_invalid_length",
+			"must have length between {{.min}} and {{.max}}",
+			map[string]any{"min": minLen, "max": maxLen},
+		)
 	}
 	return nil
 }
@@ -138,7 +136,7 @@ func ValidateArrayLength(value any, opts any) *ft.ClientErrorItem {
 	}
 	n := rv.Len()
 	if n < minLen || n > maxLen {
-		return ft.NewAnonymousValidationError("common.err_array_length_out_of_range", "array length must be between {{.min}} and {{.max}}", map[string]any{"min": minLen, "max": maxLen})
+		return ft.NewAnonymousValidationError("common.err_invalid_length", "array length must be between {{.min}} and {{.max}}", map[string]any{"min": minLen, "max": maxLen})
 	}
 	return nil
 }
@@ -167,7 +165,7 @@ func ValidateOneOf(value any, opts any) *ft.ClientErrorItem {
 // --- Data type validation helpers ---
 
 func ValidateNotEmpty(value any) *ft.ClientErrorItem {
-	if isEmptyValue(value) {
+	if isNil(value) {
 		return ft.NewAnonymousValidationError("common.err_not_empty_required", "must not be empty", nil)
 	}
 	return nil

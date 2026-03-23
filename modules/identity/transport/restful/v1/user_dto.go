@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/array"
+	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
@@ -81,3 +82,43 @@ func (this *SearchUsersResponse) FromResult(result *it.SearchUsersResultData) {
 
 type UserExistsMultiRequest = it.UserExistsMultiQuery
 type UserExistsMultiResponse = it.ExistsMultiResultData
+
+// UserEntityDto is the response DTO for dynamic-entity user operations.
+// JSON field names use snake_case to match the dynamic entity schema column names.
+type UserEntityDto struct {
+	Id          string  `json:"id"`
+	DisplayName *string `json:"display_name,omitempty"`
+	Email       *string `json:"email,omitempty"`
+	AvatarUrl   *string `json:"avatar_url,omitempty"`
+	Status      *string `json:"status,omitempty"`
+	CreatedAt   *string `json:"created_at,omitempty"`
+	UpdatedAt   *string `json:"updated_at,omitempty"`
+	Etag        *string `json:"etag,omitempty"`
+}
+
+type SearchUsers2Response struct {
+	Items []schema.DynamicFields `json:"items"`
+	Total int                    `json:"total"`
+}
+
+// func toSearchUsers2Response(items []domain.UserEntity) SearchUsers2Response {
+// 	dtos := make([]UserEntityDto, len(items))
+// 	for i, item := range items {
+// 		dto, _ := modelmapper.MapToStruct[*UserEntityDto](item.GetFieldData())
+// 		if dto != nil {
+// 			dtos[i] = *dto
+// 		}
+// 	}
+// 	return SearchUsers2Response{Items: dtos, Total: len(dtos)}
+// }
+
+type UpdateUser2Request = it.UpdateUserCommand2
+type UpdateUser2Response = httpserver.RestUpdateResponse
+
+type GetUserByPk2Request = it.GetUserByPkQuery2
+type GetUserByPk2Response = schema.DynamicFields
+
+type SearchUsers2Request = it.SearchUsersQuery2
+
+type ArchiveUser2Request = it.ArchiveUserCommand2
+type ArchiveUser2Response = UserEntityDto

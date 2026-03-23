@@ -12,11 +12,11 @@ put {
 
 body:json {
   {
-      "avatarUrl": "{{$randomUrl}}/{{$randomWord}}.jpg",
-      "displayName": "{{$randomFullName}}",
+      "avatar_url": "{{$randomUrl}}/{{$randomWord}}.jpg",
+      "display_name": "{{$randomFullName}}",
       "email": "{{$randomEmail}}",
       "etag": "{{etag}}",
-      "statusValue": "archived"
+      "status": "archived"
   }
   
 }
@@ -26,20 +26,20 @@ script:post-response {
   
   const schema = {
       type: "object",
-      required: ["id", "etag", "updatedAt"],
+      required: ["id", "updated_at", "etag"],
       properties: {
           id: {
               type: "string",
               minLength: 1,
           },
+          updated_at: {
+              type: "string",
+              minLength: 20, //"2026-03-23T06:53:01Z"
+          },
           etag: {
               type: "string",
               minLength: 1,
           },
-          updatedAt: {
-              type: "integer",
-              minimum: 1,
-          }
       },
       additionalProperties: false
   };
@@ -51,7 +51,7 @@ script:post-response {
   test("Response matches expected JSON schema", function () {
     const valid = tv4.validate(res.getBody(), schema);
     expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;
+    expect(valid).to.be.true;  
   });
   
   const requestBody = req.getBody();
@@ -72,4 +72,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

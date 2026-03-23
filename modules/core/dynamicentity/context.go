@@ -17,18 +17,21 @@ type Context interface {
 	GetDbTranx() db.DbTransaction
 	SetDbTranx(trx db.DbTransaction)
 	GetDomainConstraints() schema.DynamicFields
+	GetModuleName() string
 }
 
-func NewRequestContext(ctx context.Context) Context {
+func NewRequestContext(ctx context.Context, moduleName string) Context {
 	return &RequestContext{
-		Context: ctx,
+		Context:    ctx,
+		moduleName: moduleName,
 	}
 }
 
-func NewRequestContextF(ctx context.Context, domainConstraints schema.DynamicFields) Context {
+func NewRequestContextF(ctx context.Context, moduleName string, domainConstraints schema.DynamicFields) Context {
 	return &RequestContext{
 		Context:           ctx,
 		domainConstraints: domainConstraints,
+		moduleName:        moduleName,
 	}
 }
 
@@ -52,13 +55,14 @@ type RequestContext struct {
 	// The transaction object that Repository Layer can use to perform atomic database operations.
 	repoTrx           db.DbTransaction
 	domainConstraints schema.DynamicFields
+	moduleName        string
 }
 
-func (this *RequestContext) InnerContext() context.Context {
+func (this RequestContext) InnerContext() context.Context {
 	return this.Context
 }
 
-func (this *RequestContext) GetLogger() logging.LoggerService {
+func (this RequestContext) GetLogger() logging.LoggerService {
 	return this.logger
 }
 
@@ -66,7 +70,7 @@ func (this *RequestContext) SetLogger(logger logging.LoggerService) {
 	this.logger = logger
 }
 
-func (this *RequestContext) GetDbTranx() db.DbTransaction {
+func (this RequestContext) GetDbTranx() db.DbTransaction {
 	return this.repoTrx
 }
 
@@ -74,6 +78,10 @@ func (this *RequestContext) SetDbTranx(trx db.DbTransaction) {
 	this.repoTrx = trx
 }
 
-func (this *RequestContext) GetDomainConstraints() schema.DynamicFields {
+func (this RequestContext) GetDomainConstraints() schema.DynamicFields {
 	return this.domainConstraints
+}
+
+func (this RequestContext) GetModuleName() string {
+	return this.moduleName
 }

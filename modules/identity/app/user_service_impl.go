@@ -14,6 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
+	dCrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity/crud"
 	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
@@ -118,32 +119,37 @@ func (this *UserServiceImpl) CreateUser(ctx crud.Context, cmd it.CreateUserComma
 }
 
 func (this *UserServiceImpl) CreateUser2(ctx dEnt.Context, cmd it.CreateUserCommand2) (*it.CreateUserResult2, error) {
-	return dEnt.Create(ctx, dEnt.CreateParam[domain.UserEntity, *domain.UserEntity]{
+	return dCrud.Create(ctx, dCrud.CreateParam[domain.UserEntity, *domain.UserEntity]{
 		Action:       "create user 2",
 		DbRepoGetter: this.userRepo2,
 		Data:         cmd,
 	})
-	// result, err := crud.Create(ctx, crud.CreateParam[*domain.User, it.CreateUserCommand, it.CreateUserResult]{
-	// 	Action:              "create user",
-	// 	Command:             cmd,
-	// 	AssertBusinessRules: this.assertCreateRules,
-	// 	RepoCreate:          this.userRepo.Create,
-	// 	SetDefault:          this.setUserDefaults,
-	// 	Sanitize:            this.sanitizeUser,
-	// 	ToFailureResult: func(vErrs *ft.ValidationErrors) *it.CreateUserResult {
-	// 		return &it.CreateUserResult{
-	// 			ClientError: vErrs.ToClientError(),
-	// 		}
-	// 	},
-	// 	ToSuccessResult: func(model *domain.User) *it.CreateUserResult {
-	// 		return &it.CreateUserResult{
-	// 			Data:    model,
-	// 			HasData: model != nil,
-	// 		}
-	// 	},
-	// })
+}
 
-	// return result, err
+func (this *UserServiceImpl) UpdateUser2(ctx dEnt.Context, cmd it.UpdateUserCommand2) (*it.UpdateUserResult2, error) {
+	return dCrud.Update(ctx, dCrud.UpdateParam[domain.UserEntity, *domain.UserEntity]{
+		Action:       "update user 2",
+		DbRepoGetter: this.userRepo2,
+		Data:         cmd,
+	})
+}
+
+func (this *UserServiceImpl) GetUserByPk2(
+	ctx dEnt.Context, query it.GetUserByPkQuery2,
+) (*it.GetUserByPkResult2, error) {
+	return dCrud.GetByPk[domain.UserEntity](ctx, this.userRepo2, query.GetFieldData())
+}
+
+func (this *UserServiceImpl) SearchUsers2(
+	ctx dEnt.Context, query it.SearchUsersQuery2,
+) (*it.SearchUsersResult2, error) {
+	return dCrud.Search[domain.UserEntity](ctx, this.userRepo2, query.Graph, nil)
+}
+
+func (this *UserServiceImpl) ArchiveUser2(
+	ctx dEnt.Context, cmd it.ArchiveUserCommand2,
+) (*it.ArchiveUserResult2, error) {
+	return dCrud.Archive[domain.UserEntity](ctx, this.userRepo2, cmd.GetFieldData())
 }
 
 func (this *UserServiceImpl) UpdateUser(ctx crud.Context, cmd it.UpdateUserCommand) (*it.UpdateUserResult, error) {

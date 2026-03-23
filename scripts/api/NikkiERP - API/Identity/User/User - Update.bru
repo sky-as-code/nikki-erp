@@ -12,8 +12,8 @@ put {
 
 body:json {
   {
-      "avatarUrl": "{{$randomUrl}}/{{$randomWord}}.jpg",
-      "displayName": "{{$randomFullName}}",
+      "avatar_url": "{{$randomUrl}}/{{$randomWord}}.jpg",
+      "display_name": "{{$randomFullName}}",
       "etag": "{{etag}}"
   }
   
@@ -27,4 +27,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

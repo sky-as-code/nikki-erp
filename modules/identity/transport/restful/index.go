@@ -27,6 +27,7 @@ func InitRestfulHandlers() error {
 		hierarchyRest *v1.HierarchyRest,
 	) {
 		v1 := route.Group("/v1/identity")
+		v1.Use(middlewares.RequestContextMiddleware2(constants.IdentityModuleName))
 		initV1(v1, cqrsBus, userRest, groupRest, orgRest, hierarchyRest)
 	})
 }
@@ -44,7 +45,7 @@ func initV1(
 
 	mwUserView := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionView, nil)
 	// mwUserCreate := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionCreate, nil)
-	mwUserUpdate := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionUpdate, nil)
+	// mwUserUpdate := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionUpdate, nil)
 	mwUserDelete := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionDelete, nil)
 
 	mwGroupView := commonMiddleware.RequirePermission(checker, constants.ResourceGroup, constants.ActionView, nil)
@@ -63,14 +64,21 @@ func initV1(
 	mwHierarchyDelete := commonMiddleware.RequirePermission(checker, constants.ResourceHierarchyLevel, constants.ActionDelete, nil)
 	mwHierarchyManageUsers := commonMiddleware.RequirePermission(checker, constants.ResourceHierarchyLevel, constants.ActionManageUsers, nil)
 
-	route.POST("/users", userRest.CreateUser, middlewares.RequestContextMiddleware2)
+	route.POST("/users", userRest.CreateUser)
+	route.GET("/users/:id", userRest.GetUserByPk2)
+	route.PUT("/users/:id", userRest.UpdateUser2)
 	// protected.POST("/users", userRest.CreateUser, middlewares.RequestContextMiddleware2, mwUserCreate)
 	protected.DELETE("/users/:id", userRest.DeleteUser, mwUserDelete)
-	protected.GET("/users/:id", userRest.GetUserById, mwUserView)
+	// protected.GET("/users/:id", userRest.GetUserById, mwUserView)
 	protected.GET("/users", userRest.SearchUsers, mwUserView)
-	protected.PUT("/users/:id", userRest.UpdateUser, mwUserUpdate)
+	// protected.PUT("/users/:id", userRest.UpdateUser, mwUserUpdate)
 	protected.POST("/users/exists", userRest.UserExistsMulti, mwUserView)
 	route.GET("/users/context", userRest.GetUserContext)
+
+	// protected.PUT("/users2/:id", userRest.UpdateUser2, mwUserUpdate, middlewares.RequestContextMiddleware2)
+	// protected.GET("/users2/:id", userRest.GetUserByPk2, mwUserView, middlewares.RequestContextMiddleware2)
+	// protected.POST("/users2/search", userRest.SearchUsers2, mwUserView, middlewares.RequestContextMiddleware2)
+	// protected.POST("/users2/:id/archive", userRest.ArchiveUser2, mwUserUpdate, middlewares.RequestContextMiddleware2)
 
 	protected.POST("/groups", groupRest.CreateGroup, mwGroupCreate)
 	protected.DELETE("/groups/:id", groupRest.DeleteGroup, mwGroupDelete)

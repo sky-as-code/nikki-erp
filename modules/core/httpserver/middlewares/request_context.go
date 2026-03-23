@@ -14,10 +14,12 @@ func RequestContextMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func RequestContextMiddleware2(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ctx := dynamicentity.NewRequestContext(c.Request().Context())
-		c.SetRequest(c.Request().WithContext(ctx))
-		return next(c)
+func RequestContextMiddleware2(moduleName string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			ctx := dynamicentity.NewRequestContextF(c.Request().Context(), moduleName, nil)
+			c.SetRequest(c.Request().WithContext(ctx))
+			return next(c)
+		}
 	}
 }

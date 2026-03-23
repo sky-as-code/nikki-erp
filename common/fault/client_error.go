@@ -3,6 +3,7 @@ package fault
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"text/template"
 
 	invopop "github.com/invopop/validation"
@@ -79,7 +80,7 @@ const (
 
 func NewBusinessViolation(field string, key string, message string, vars ...map[string]any) *ClientErrorItem {
 	var msgVars map[string]any = nil
-	if len(vars) == 0 {
+	if len(vars) > 0 {
 		msgVars = vars[0]
 	}
 
@@ -90,6 +91,37 @@ func NewBusinessViolation(field string, key string, message string, vars ...map[
 		Vars:    msgVars,
 		Type:    ClientErrorTypeBusiness,
 	}
+}
+
+func NewAnonymousBusinessViolation(key string, message string, vars ...map[string]any) *ClientErrorItem {
+	var msgVars map[string]any = nil
+	if len(vars) > 0 {
+		msgVars = vars[0]
+	}
+
+	return &ClientErrorItem{
+		Key:     key,
+		Message: message,
+		Vars:    msgVars,
+		Type:    ClientErrorTypeBusiness,
+	}
+}
+
+func NewNotFoundError(entityName string) *ClientErrorItem {
+	codeName := strings.ReplaceAll(entityName, ".", "_")
+	return NewAnonymousBusinessViolation(
+		fmt.Sprintf("common.err_not_found_%s", codeName),
+		fmt.Sprintf("%s not found", entityName),
+	)
+}
+
+func NewEtagMismatchedError(entityName string) *ClientErrorItem {
+	codeName := strings.ReplaceAll(entityName, ".", "_")
+	return NewBusinessViolation(
+		"etag",
+		fmt.Sprintf("common.err_etag_mismatched_%s", codeName),
+		fmt.Sprintf("%s was modified by another process", entityName),
+	)
 }
 
 func NewValidationError(field string, key string, message string, vars ...map[string]any) *ClientErrorItem {
@@ -114,12 +146,18 @@ func NewAnonymousValidationError(key string, message string, vars ...map[string]
 	}
 
 	return &ClientErrorItem{
-		Field:   "",
 		Key:     key,
 		Message: message,
 		Vars:    msgVars,
 		Type:    ClientErrorTypeValidation,
 	}
+}
+
+func ErrorKey(key string, moduleName ...string) string {
+	if len(moduleName) > 0 && moduleName[0] != "" {
+		return fmt.Sprintf("%s.%s", moduleName[0], key)
+	}
+	return fmt.Sprintf("common.%s", key)
 }
 
 type ClientErrorItem struct {

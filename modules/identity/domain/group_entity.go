@@ -54,15 +54,13 @@ func GroupSchemaBuilder() *schema.EntitySchemaBuilder {
 			schema.DefineField().
 				Name("name").
 				Label(model.LangJson{"en-US": "Name"}).
-				DataType(schema.FieldDataTypeString()).
-				Required().
-				Rule(schema.FieldRuleLength(1, model.MODEL_RULE_LONG_NAME_LENGTH)),
+				DataType(schema.FieldDataTypeString(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
+				RequiredForCreate(),
 		).
 		Field(
 			schema.DefineField().
 				Name("description").
 				Label(model.LangJson{"en-US": "Description"}).
-				DataType(schema.FieldDataTypeString()).
-				Rule(schema.FieldRuleLength(0, model.MODEL_RULE_DESC_LENGTH)),
+				DataType(schema.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
 		)
 }
