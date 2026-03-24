@@ -5,7 +5,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
-	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicentity/basemodel"
 )
 
 type User struct {
@@ -92,6 +92,7 @@ const (
 	UserFieldAvatarUrl   = "avatar_url"
 	UserFieldDisplayName = "display_name"
 	UserFieldEmail       = "email"
+	UserFieldIsOwner     = "is_owner"
 	UserFieldStatus      = "status"
 )
 
@@ -100,9 +101,10 @@ func UserSchemaBuilder() *schema.EntitySchemaBuilder {
 		Label(model.LangJson{"en-US": "User"}).
 		TableName("ident_users").
 		CompositeUnique("email", "display_name").
-		Extend(dEnt.BaseModelSchemaBuilder()).
-		Extend(dEnt.AuditableModelSchemaBuilder()).
-		Extend(dEnt.VersionedModelSchemaBuilder()).
+		Extend(basemodel.BaseModelSchemaBuilder()).
+		Extend(basemodel.ArchivableModelSchemaBuilder()).
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Field(
 			schema.DefineField().
 				Name(UserFieldAvatarUrl).
@@ -129,10 +131,17 @@ func UserSchemaBuilder() *schema.EntitySchemaBuilder {
 				Name(UserFieldStatus).
 				Label(model.LangJson{"en-US": "Status"}).
 				DataType(schema.FieldDataTypeEnumString([]string{
-					string(UserStatusActive), string(UserStatusArchived), string(UserStatusLocked),
+					string(UserStatusActive), string(UserStatusLocked),
 				})).
 				RequiredForCreate().
 				Default(string(UserStatusActive)),
+		).
+		Field(
+			schema.DefineField().
+				Name(UserFieldIsOwner).
+				Label(model.LangJson{"en-US": "Is Owner"}).
+				DataType(schema.FieldDataTypeBoolean()).
+				Default(nil),
 		).
 		Field(
 			schema.DefineField().
@@ -168,10 +177,6 @@ func (this *UserEntity) SetFieldData(data schema.DynamicFields) {
 	this.fields = data
 }
 
-func (this UserEntity) GetSchema() *schema.EntitySchema {
-	return schema.GetSchema(UserSchemaName)
-}
-
 func (this UserEntity) GetDisplayName() *string {
 	return this.fields.GetString(UserFieldDisplayName)
 }
@@ -194,6 +199,18 @@ func (this UserEntity) GetEmail() *string {
 
 func (this *UserEntity) SetEmail(v *string) {
 	this.fields.SetString(UserFieldEmail, v)
+}
+
+func (this UserEntity) IsOwner() bool {
+	val := this.fields.GetBool(UserFieldIsOwner)
+	if val == nil {
+		return false
+	}
+	return *val
+}
+
+func (this *UserEntity) SetIsOwner(v *bool) {
+	this.fields.SetBool(UserFieldIsOwner, v)
 }
 
 func (this UserEntity) GetStatus() *UserStatus {

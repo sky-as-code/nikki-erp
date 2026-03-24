@@ -2,9 +2,9 @@ package crud
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
-	"github.com/sky-as-code/nikki-erp/common/fault"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicentity/basemodel"
 )
 
 type ToDomainModelFunc[TDomain any] func(data schema.DynamicFields) TDomain
@@ -17,8 +17,8 @@ type CreateParam[
 	TDomainPtr dEnt.DynamicModelPtr[TDomain],
 ] struct {
 	// Action name for logging and error messages
-	Action       string
-	DbRepoGetter dEnt.BaseRepoGetter
+	Action         string
+	BaseRepoGetter dEnt.BaseRepoGetter
 
 	// Data to create
 	Data schema.DynamicModelGetter
@@ -44,7 +44,7 @@ func Create[
 	param CreateParam[TDomain, TDomainPtr],
 ) (*dEnt.OpResult[TDomain], error) {
 
-	baseRepo := param.DbRepoGetter.GetBaseRepo()
+	baseRepo := param.BaseRepoGetter.GetBaseRepo()
 	entitySchema := baseRepo.GetSchema()
 	fieldData := param.Data.GetFieldData()
 	newModel := TDomainPtr(new(TDomain))
@@ -65,7 +65,7 @@ func Create[
 		Step(func(vErrs *ft.ClientErrors) error {
 			result, clientErrs := entitySchema.Validate(fieldData)
 			if clientErrs != nil {
-				*vErrs = *clientErrs
+				*vErrs = clientErrs
 			} else {
 				fieldData = result
 			}
@@ -104,13 +104,16 @@ func Create[
 		}, nil
 	}
 
-	inserted, err := baseRepo.Insert(ctx, fieldData)
+	insertRes, err := baseRepo.Insert(ctx, fieldData)
 	if err != nil {
 		return nil, err
 	}
+	if len(insertRes.ClientErrors) > 0 {
+		return &dEnt.OpResult[TDomain]{ClientErrors: insertRes.ClientErrors}, nil
+	}
 
 	insertedModel := TDomainPtr(new(TDomain))
-	insertedModel.SetFieldData(inserted)
+	insertedModel.SetFieldData(insertRes.Data)
 	return &dEnt.OpResult[TDomain]{
 		Data:    *insertedModel,
 		IsEmpty: false,
@@ -149,12 +152,16 @@ func Update[
 	}
 
 	baseRepo := param.DbRepoGetter.GetBaseRepo()
-	updated, err := baseRepo.Update(ctx, model.GetFieldData())
+	prevEtag, _ := model.GetFieldData()[basemodel.FieldEtag].(string)
+	updatedRes, err := baseRepo.Update(ctx, model.GetFieldData(), prevEtag)
 	if err != nil {
 		return nil, err
 	}
+	if len(updatedRes.ClientErrors) > 0 {
+		return &dEnt.OpResult[TDomain]{ClientErrors: updatedRes.ClientErrors}, nil
+	}
 
-	model.SetFieldData(updated)
+	model.SetFieldData(updatedRes.Data)
 	return &dEnt.OpResult[TDomain]{Data: *model, IsEmpty: false}, nil
 }
 
@@ -178,9 +185,9 @@ func runUpdateValidationFlow[TDomain any, TDomainPtr dEnt.DynamicModelPtr[TDomai
 			return err
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
-			result, clientErrs := entitySchema.Validate(model.GetFieldData(), true)
+			result, clientErrs := entitySchema.Validate(model.GetFieldData(), schema.EntitySchemaValidateOpts{ForEdit: true})
 			if clientErrs != nil {
-				*vErrs = *clientErrs
+				*vErrs = clientErrs
 			} else {
 				model.SetFieldData(result)
 			}
@@ -219,49 +226,70 @@ func checkExistenceAndEtag(
 	fieldData schema.DynamicFields,
 	vErrs *ft.ClientErrors,
 ) error {
-	pkData := make(schema.DynamicFields)
+	primaryKeys := make(schema.DynamicFields)
 	for _, key := range entitySchema.KeyColumns() {
-		pkData[key] = fieldData[key]
+		primaryKeys[key] = fieldData[key]
 	}
 
-	dbRecord, err := baseRepo.FindByPk(ctx, pkData)
+	dbRes, err := baseRepo.GetOne(ctx, dEnt.GetOneParam{Filter: primaryKeys})
 	if err != nil {
 		return err
 	}
-
-	if dbRecord == nil {
-		vErrs.Append(*fault.NewNotFoundError(entitySchema.Name()))
+	if len(dbRes.ClientErrors) > 0 {
+		for _, item := range dbRes.ClientErrors {
+			vErrs.Append(item)
+		}
 		return nil
 	}
+	if dbRes.IsEmpty {
+		vErrs.Append(*ft.NewNotFoundError(entitySchema.Name()))
+		return nil
+	}
+	dbRecord := dbRes.Data
 
 	if _, hasEtag := entitySchema.Field("etag"); hasEtag && fieldData["etag"] != dbRecord["etag"] {
-		vErrs.Append(*fault.NewEtagMismatchedError(entitySchema.Name()))
+		vErrs.Append(*ft.NewEtagMismatchedError(entitySchema.Name()))
 	}
 	return nil
 }
 
-func GetByPk[
+func GetOne[
 	TDomain any,
 	TDomainPtr dEnt.DynamicModelPtr[TDomain],
 ](
 	ctx dEnt.Context,
 	dbRepoGetter dEnt.BaseRepoGetter,
-	keys schema.DynamicFields,
+	query GetOneQuery,
 ) (*dEnt.OpResult[TDomain], error) {
+	querySchema := query.GetSchema()
+	queryFields := query.GetFieldData()
+	sanitizedFields, cErrs := querySchema.Validate(queryFields, schema.EntitySchemaValidateOpts{StripReadOnly: false})
+	if cErrs.Count() > 0 {
+		return &dEnt.OpResult[TDomain]{ClientErrors: cErrs}, nil
+	}
+
+	delete(sanitizedFields, basemodel.FieldIncludeArchived)
+	delete(sanitizedFields, basemodel.FieldColumns)
+
 	baseRepo := dbRepoGetter.GetBaseRepo()
-	dbRecord, err := baseRepo.FindByPk(ctx, keys)
+	dbRes, err := baseRepo.GetOne(ctx, dEnt.GetOneParam{
+		Filter:          sanitizedFields,
+		Columns:         query.GetColumns(),
+		IncludeArchived: query.GetIncludeArchived(),
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	if dbRecord == nil {
-		clientErrs := fault.NewClientErrors()
-		clientErrs.Append(*fault.NewNotFoundError(baseRepo.GetSchema().Name()))
-		return &dEnt.OpResult[TDomain]{ClientErrors: *clientErrs}, nil
+	if len(dbRes.ClientErrors) > 0 {
+		return &dEnt.OpResult[TDomain]{ClientErrors: dbRes.ClientErrors}, nil
+	}
+	if dbRes.IsEmpty {
+		cErrs.Append(*ft.NewNotFoundError(baseRepo.GetSchema().Name()))
+		return &dEnt.OpResult[TDomain]{ClientErrors: cErrs}, nil
 	}
 
 	model := TDomainPtr(new(TDomain))
-	model.SetFieldData(dbRecord)
+	model.SetFieldData(dbRes.Data)
 	return &dEnt.OpResult[TDomain]{Data: *model, IsEmpty: false}, nil
 }
 
@@ -274,16 +302,18 @@ func Archive[
 	keys schema.DynamicFields,
 ) (*dEnt.OpResult[TDomain], error) {
 	baseRepo := dbRepoGetter.GetBaseRepo()
-	record, err := baseRepo.Archive(ctx, keys)
+	archRes, err := baseRepo.Archive(ctx, keys)
 	if err != nil {
 		return nil, err
 	}
-
-	if record == nil {
+	if len(archRes.ClientErrors) > 0 {
+		return &dEnt.OpResult[TDomain]{ClientErrors: archRes.ClientErrors}, nil
+	}
+	if archRes.IsEmpty {
 		return &dEnt.OpResult[TDomain]{IsEmpty: true}, nil
 	}
 	model := TDomainPtr(new(TDomain))
-	model.SetFieldData(record)
+	model.SetFieldData(archRes.Data)
 	return &dEnt.OpResult[TDomain]{Data: *model, IsEmpty: false}, nil
 }
 
@@ -293,33 +323,48 @@ func Search[
 ](
 	ctx dEnt.Context,
 	dbRepoGetter dEnt.BaseRepoGetter,
-	graph schema.SearchGraph,
-	columns []string,
-) (*dEnt.OpResult[[]TDomain], error) {
+	param dEnt.SearchParam,
+) (*dEnt.OpResult[dEnt.PagedResult[TDomain]], error) {
 	baseRepo := dbRepoGetter.GetBaseRepo()
-	records, err := baseRepo.Search(ctx, graph, columns)
+	searchRes, err := baseRepo.Search(ctx, param)
 	if err != nil {
 		return nil, err
 	}
-
-	items := make([]TDomain, len(records))
-	for i, record := range records {
+	if len(searchRes.ClientErrors) > 0 {
+		return &dEnt.OpResult[dEnt.PagedResult[TDomain]]{ClientErrors: searchRes.ClientErrors}, nil
+	}
+	paged := searchRes.Data
+	items := make([]TDomain, len(paged.Items))
+	for i, record := range paged.Items {
 		model := TDomainPtr(new(TDomain))
 		model.SetFieldData(record)
 		items[i] = *model
 	}
-	return &dEnt.OpResult[[]TDomain]{Data: items, IsEmpty: len(items) == 0}, nil
+	out := dEnt.PagedResult[TDomain]{
+		Items: items,
+		Total: paged.Total,
+		Page:  paged.Page,
+		Size:  paged.Size,
+	}
+	return &dEnt.OpResult[dEnt.PagedResult[TDomain]]{Data: out, IsEmpty: len(items) == 0}, nil
 }
 
 func validateUniques(ctx dEnt.Context, data schema.DynamicFields, dbRepo dEnt.BaseRepository, vErrs *ft.ClientErrors) error {
-	collidingKeys, err := dbRepo.CheckUniqueCollisions(ctx, data)
+	collRes, err := dbRepo.CheckUniqueCollisions(ctx, data)
 	if err != nil {
 		return err
 	}
+	if len(collRes.ClientErrors) > 0 {
+		for _, item := range collRes.ClientErrors {
+			vErrs.Append(item)
+		}
+		return nil
+	}
+	collidingKeys := collRes.Data
 
 	if len(collidingKeys) > 0 {
 		field := collidingKeys[0][0]
-		vErrs.Append(*fault.NewBusinessViolation(
+		vErrs.Append(*ft.NewBusinessViolation(
 			field,
 			"common.err_unique_constraint_violated",
 			"unique constraint violated {{.uniques}}",

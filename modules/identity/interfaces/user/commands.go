@@ -10,6 +10,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicentity/basemodel"
+	dCrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity/crud"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
@@ -19,7 +21,7 @@ func init() {
 	req = (*CreateUserCommand)(nil)
 	req = (*UpdateUserCommand)(nil)
 	req = (*DeleteUserCommand)(nil)
-	req = (*GetUserByIdQuery)(nil)
+	req = (*GetUser)(nil)
 	req = (*GetUserByEmailQuery)(nil)
 	req = (*SearchUsersQuery)(nil)
 	req = (*UserExistsQuery)(nil)
@@ -104,25 +106,7 @@ func (this UpdateUserCommand2) GetSchema() *schema.EntitySchema {
 
 type UpdateUserResult2 = dEnt.OpResult[domain.UserEntity]
 
-var getUserByPkQueryType = cqrs.RequestType{
-	Module:    "identity",
-	Submodule: "user",
-	Action:    "getUserByPk",
-}
-
-type GetUserByPkQuery2 struct {
-	domain.UserEntity
-}
-
-func (GetUserByPkQuery2) CqrsRequestType() cqrs.RequestType {
-	return getUserByPkQueryType
-}
-
-func (this GetUserByPkQuery2) GetSchema() *schema.EntitySchema {
-	return schema.GetSchema(domain.UserSchemaName)
-}
-
-type GetUserByPkResult2 = dEnt.OpResult[domain.UserEntity]
+type GetUserResult = dEnt.OpResult[domain.UserEntity]
 
 var searchUsersQuery2Type = cqrs.RequestType{
 	Module:    "identity",
@@ -138,7 +122,7 @@ func (SearchUsersQuery2) CqrsRequestType() cqrs.RequestType {
 	return searchUsersQuery2Type
 }
 
-type SearchUsersResult2 = dEnt.OpResult[[]domain.UserEntity]
+type SearchUsersResult2 = dEnt.OpResult[dEnt.PagedResult[domain.UserEntity]]
 
 var archiveUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -268,26 +252,47 @@ var getUserByIdQueryType = cqrs.RequestType{
 	Action:    "getUserById",
 }
 
-type GetUserByIdQuery struct {
-	Id            model.Id           `param:"id" json:"id"`
+type GetUser struct {
+	dCrud.GetOneQueryBase
+
+	Id            model.Id           `json:"id" param:"id"`
 	Status        *domain.UserStatus `json:"status" query:"status"`
-	WithGroup     bool               `json:"withGroup" query:"withGroup"`
-	WithHierarchy bool               `json:"withHierarchy" query:"withHierarchy"`
-	WithOrg       bool               `json:"withOrg" query:"withOrg"`
-	ScopeRef      *model.Id          `json:"scopeRef" query:"scopeRef"`
+	WithGroup     bool               `json:"with_group" query:"with_group"`
+	WithHierarchy bool               `json:"with_hierarchy" query:"with_hierarchy"`
+	WithOrg       bool               `json:"with_org" query:"with_org"`
+	ScopeRef      *model.Id          `json:"scope_ref" query:"scope_ref"`
 }
 
-func (GetUserByIdQuery) CqrsRequestType() cqrs.RequestType {
+func (GetUser) CqrsRequestType() cqrs.RequestType {
 	return getUserByIdQueryType
 }
 
-func (this GetUserByIdQuery) Validate() ft.ValidationErrors {
+func (this GetUser) Validate() ft.ValidationErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 		model.IdPtrValidateRule(&this.ScopeRef, false),
 	}
 
 	return val.ApiBased.ValidateStruct(&this, rules...)
+}
+
+func (this GetUser) GetSchema() *schema.EntitySchema {
+	fullSchema := schema.GetSchema(domain.UserSchemaName)
+	return schema.GetOrRegisterSchema(
+		schema.DefineEntity("identity.user.getUserById").
+			Field(schema.CloneField(fullSchema, basemodel.FieldId)).
+			Field(schema.CloneField(fullSchema, domain.UserFieldStatus).IsRequired(false).Default(nil)).
+			Extend(basemodel.GetOneQuerySchemaBuilder()).
+			Build(),
+	)
+}
+
+func (this GetUser) GetFieldData() schema.DynamicFields {
+	fields := schema.DynamicFields{
+		basemodel.FieldId:      this.Id,
+		domain.UserFieldStatus: this.Status,
+	}
+	return fields
 }
 
 type GetUserByIdResult = crud.OpResult[*domain.User]

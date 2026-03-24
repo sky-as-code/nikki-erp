@@ -180,6 +180,14 @@ type ClientErrorItem struct {
 	Vars map[string]any `json:"vars,omitempty"`
 }
 
+// Error implements the error interface for use as a return value from APIs that report client-facing validation issues.
+func (this *ClientErrorItem) Error() string {
+	if this == nil {
+		return ""
+	}
+	return this.String()
+}
+
 // String returns the message with variables substituted.
 func (this ClientErrorItem) String() string {
 	if this.Message == "" {

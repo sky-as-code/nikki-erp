@@ -1,0 +1,53 @@
+meta {
+  name: User Get - Columns - Success
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/identity/users/{{user_id}}?columns=email&columns=display_name
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: email
+  columns: display_name
+}
+
+script:post-response {
+  const tv4 = require('tv4');
+  
+  const schema = {
+      type: "object",
+      required: ["display_name", "email"],
+      properties: {
+          display_name: {
+              type: "string",
+              minLength: 1,
+          },
+          email: {
+              type: "string",
+              format: "email",
+              minLength: 1,
+          },
+      },
+      additionalProperties: false
+  };
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+    const valid = tv4.validate(res.getBody(), schema);
+    expect(tv4.error).not.to.exist;
+    expect(valid).to.be.true;
+  });
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

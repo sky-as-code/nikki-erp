@@ -31,6 +31,12 @@ func JsonBadRequest(echoCtx echo.Context, err any) error {
 	return echoCtx.JSON(http.StatusBadRequest, err)
 }
 
+type RestArchivedResponse struct {
+	Id         model.Id   `json:"id"`
+	ArchivedAt string     `json:"archived_at"`
+	Etag       model.Etag `json:"etag"`
+}
+
 type RestCreateResponse struct {
 	Id model.Id `json:"id"`
 	// For backward compatibility. Will be removed.

@@ -1,0 +1,22 @@
+meta {
+  name: User - Archive
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{api_host}}/v1/identity/users/{{user_id}}/archive
+  body: json
+  auth: inherit
+}
+
+script:post-response {
+  const body = res.getBody();
+  const { etag } = body;
+  etag && bru.setVar('etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

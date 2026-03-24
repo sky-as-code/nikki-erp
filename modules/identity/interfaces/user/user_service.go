@@ -11,7 +11,7 @@ type UserService interface {
 	DeleteUser(ctx crud.Context, cmd DeleteUserCommand) (*DeleteUserResult, error)
 	Exists(ctx crud.Context, cmd UserExistsQuery) (*UserExistsResult, error)
 	ExistsMulti(ctx crud.Context, cmd UserExistsMultiQuery) (*UserExistsMultiResult, error)
-	GetUserById(ctx crud.Context, query GetUserByIdQuery) (*GetUserByIdResult, error)
+	GetUserById(ctx crud.Context, query GetUser) (*GetUserByIdResult, error)
 	GetUserByEmail(ctx crud.Context, query GetUserByEmailQuery) (*GetUserByEmailResult, error)
 	MustGetActiveUser(ctx crud.Context, query MustGetActiveUserQuery) (*MustGetActiveUserResult, error)
 	SearchUsers(ctx crud.Context, query SearchUsersQuery) (*SearchUsersResult, error)
@@ -20,7 +20,7 @@ type UserService interface {
 	GetUserContext(ctx crud.Context, query GetUserContextQuery) (*GetUserContextResultData, error)
 
 	UpdateUser2(ctx dEnt.Context, cmd UpdateUserCommand2) (*UpdateUserResult2, error)
-	GetUserByPk2(ctx dEnt.Context, query GetUserByPkQuery2) (*GetUserByPkResult2, error)
+	GetOne(ctx dEnt.Context, query GetUser) (*GetUserResult, error)
 	SearchUsers2(ctx dEnt.Context, query SearchUsersQuery2) (*SearchUsersResult2, error)
 	ArchiveUser2(ctx dEnt.Context, cmd ArchiveUserCommand2) (*ArchiveUserResult2, error)
 }

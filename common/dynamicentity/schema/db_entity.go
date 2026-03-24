@@ -340,7 +340,7 @@ func populateDbMetadata(schema *EntitySchema) error {
 func requireName(raw string) (string, error) {
 	name := strings.TrimSpace(raw)
 	if name == "" {
-		return "", errors.New("entity name is required")
+		return "", errors.New("entity schema name is required")
 	}
 	return name, nil
 }

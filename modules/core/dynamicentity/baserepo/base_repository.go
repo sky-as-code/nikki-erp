@@ -1,26 +1,23 @@
 package baserepo
 
 import (
+	"reflect"
 	"sort"
+	"strings"
 	"time"
 
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/dynamicentity/orm"
 	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicentity/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-)
-
-const (
-	columnCreatedAt = "created_at"
-	columnUpdatedAt = "updated_at"
-	columnArchiveAt = "archive_at"
-	columnEtag      = "etag"
 )
 
 type NewBaseRepositoryParam struct {
@@ -59,8 +56,10 @@ func (this *BaseRepositoryImpl) GetSchema() *schema.EntitySchema {
 }
 
 // Insert inserts a record. If the entity defines "created_at", sets current UTC timestamp.
-// Returns a map of primary keys and tenant key of the created record, or nil on error.
-func (this *BaseRepositoryImpl) Insert(ctx dEnt.Context, data schema.DynamicFields) (schema.DynamicFields, error) {
+// On success, Data holds the inserted field map; IsEmpty is false when Data is non-nil.
+func (this *BaseRepositoryImpl) Insert(ctx dEnt.Context, data schema.DynamicFields) (
+	*dEnt.OpResult[schema.DynamicFields], error,
+) {
 	// TODO: Extract later
 	// if err := this.ensureTenantKeyIn(data); err != nil {
 	// 	return nil, err
@@ -77,18 +76,24 @@ func (this *BaseRepositoryImpl) Insert(ctx dEnt.Context, data schema.DynamicFiel
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+	return &dEnt.OpResult[schema.DynamicFields]{Data: data, IsEmpty: false}, nil
 }
 
 // Update updates a record. The data map must contain primary keys and tenant key.
 // If the entity defines "updated_at", sets current UTC timestamp.
-func (this *BaseRepositoryImpl) Update(ctx dEnt.Context, data schema.DynamicFields) (schema.DynamicFields, error) {
-	if err := this.ensureTenantKeyIn(data); err != nil {
-		return nil, err
-	}
+func (this *BaseRepositoryImpl) Update(ctx dEnt.Context, data schema.DynamicFields, prevEtag string) (
+	*dEnt.OpResult[schema.DynamicFields], error,
+) {
+	// TODO: Extract later
+	// if err := this.ensureTenantKeyIn(data); err != nil {
+	// 	return nil, err
+	// }
+	filters := this.extractKeyMap(data)
 	this.trySetUpdatedAt(data)
-	this.trySetEtag(data)
-	query, err := this.queryBuilder.SqlUpdateByPk(this.schema, data)
+	if this.trySetEtag(data) && prevEtag == "" {
+		filters[basemodel.FieldEtag] = prevEtag
+	}
+	query, err := this.queryBuilder.SqlUpdateEqual(this.schema, data, filters)
 	if err != nil {
 		return nil, err
 	}
@@ -98,20 +103,26 @@ func (this *BaseRepositoryImpl) Update(ctx dEnt.Context, data schema.DynamicFiel
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+	return &dEnt.OpResult[schema.DynamicFields]{Data: data, IsEmpty: false}, nil
 }
 
-// FindByPk fetches a single record by primary keys and tenant key.
-// Returns (nil, nil) when record is not found and no error occurred.
-func (this *BaseRepositoryImpl) FindByPk(ctx dEnt.Context, keys schema.DynamicFields) (schema.DynamicFields, error) {
-	if err := this.validateKeyMap(keys); err != nil {
+// Implements BaseRepository interface
+func (this *BaseRepositoryImpl) GetOne(ctx dEnt.Context, param dEnt.GetOneParam) (
+	*dEnt.OpResult[schema.DynamicFields], error,
+) {
+	if vErr := this.validateGetOneColumnsAndFilter(param.Columns, param.Filter); vErr != nil {
+		return &dEnt.OpResult[schema.DynamicFields]{ClientErrors: ft.ClientErrors{*vErr}}, nil
+	}
+	if err := this.ensureTenantKeyIn(param.Filter); err != nil {
 		return nil, err
 	}
-	if err := this.ensureTenantKeyIn(keys); err != nil {
+	graph, err := this.buildFindOneGraph(param.Filter, param.IncludeArchived)
+	if err != nil {
 		return nil, err
 	}
-	graph := this.buildPkSearchGraph(keys)
-	query, err := this.queryBuilder.SqlSelectGraph(this.schema, graph, nil)
+	query, err := this.queryBuilder.SqlSelectGraph(this.schema, graph, orm.SqlSelectGraphOpts{
+		Columns: param.Columns,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -122,78 +133,155 @@ func (this *BaseRepositoryImpl) FindByPk(ctx dEnt.Context, keys schema.DynamicFi
 		return nil, err
 	}
 	if len(rows) == 0 {
-		return nil, nil
+		return &dEnt.OpResult[schema.DynamicFields]{IsEmpty: true}, nil
 	}
-	return rows[0], nil
+	return &dEnt.OpResult[schema.DynamicFields]{Data: rows[0], IsEmpty: false}, nil
 }
 
 // Search fetches records matching the SearchGraph criteria.
 // When the entity is tenant-scoped, filter must be provided and contain the tenant key.
-// Returns nil when no records found.
-func (this *BaseRepositoryImpl) Search(
-	ctx dEnt.Context, graph schema.SearchGraph, columns []string, filter ...schema.DynamicFields,
-) ([]schema.DynamicFields, error) {
-	merged, err := this.mergeFilterIntoGraph(graph, filter)
+// Data uses PagedResult: Total is from COUNT when Size > 0, otherwise len(Items).
+func (this *BaseRepositoryImpl) Search(ctx dEnt.Context, param dEnt.SearchParam) (
+	*dEnt.OpResult[dEnt.PagedResult[schema.DynamicFields]], error,
+) {
+	merged, err := this.mergeFilterIntoGraph(param.Graph, param.Filter)
 	if err != nil {
 		return nil, err
 	}
-	query, err := this.queryBuilder.SqlSelectGraph(this.schema, merged, columns)
+	page := param.Page
+	size := param.Size
+	var total int
+	if size > 0 {
+		total, err = this.countRowsMatchingGraph(ctx, merged)
+		if err != nil {
+			return nil, err
+		}
+	}
+	rows, err := this.runSelectGraphScan(ctx, merged, param)
 	if err != nil {
 		return nil, err
 	}
+	if size <= 0 {
+		total = len(rows)
+	}
+	paged := dEnt.PagedResult[schema.DynamicFields]{
+		Items: rows,
+		Total: total,
+		Page:  page,
+		Size:  size,
+	}
+	return &dEnt.OpResult[dEnt.PagedResult[schema.DynamicFields]]{
+		Data:    paged,
+		IsEmpty: len(rows) == 0,
+	}, nil
+}
 
+func (this *BaseRepositoryImpl) countRowsMatchingGraph(
+	ctx dEnt.Context, merged schema.SearchGraph,
+) (int, error) {
+	countSql, err := this.queryBuilder.SqlCountGraph(this.schema, merged)
+	if err != nil {
+		return 0, err
+	}
+	this.logQuery(countSql)
+	return this.queryScalarInt(ctx, countSql)
+}
+
+func (this *BaseRepositoryImpl) runSelectGraphScan(
+	ctx dEnt.Context, merged schema.SearchGraph, param dEnt.SearchParam,
+) ([]schema.DynamicFields, error) {
+	query, err := this.queryBuilder.SqlSelectGraph(this.schema, merged, orm.SqlSelectGraphOpts{
+		Columns: param.Columns,
+		Page:    param.Page,
+		Size:    param.Size,
+	})
+	if err != nil {
+		return nil, err
+	}
 	this.logQuery(query)
-	return this.queryAndScan(ctx, query)
+	rows, err := this.queryAndScan(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	if rows == nil {
+		return []schema.DynamicFields{}, nil
+	}
+	return rows, nil
+}
+
+func (this *BaseRepositoryImpl) queryScalarInt(ctx dEnt.Context, query string) (int, error) {
+	row := this.client.QueryRow(ctx, query)
+	var n int
+	if err := row.Scan(&n); err != nil {
+		return 0, err
+	}
+	return n, nil
 }
 
 // Archive sets archive_at to current UTC timestamp for the record identified by keys.
 // Returns error if the entity does not define "archive_at" column.
-func (this *BaseRepositoryImpl) Archive(ctx dEnt.Context, keys schema.DynamicFields) (schema.DynamicFields, error) {
-	if _, ok := this.schema.Column(columnArchiveAt); !ok {
-		return nil, errors.Errorf("entity '%s' does not define column '%s'", this.schema.Name(), columnArchiveAt)
+func (this *BaseRepositoryImpl) Archive(ctx dEnt.Context, keys schema.DynamicFields) (
+	*dEnt.OpResult[schema.DynamicFields], error,
+) {
+	if _, ok := this.schema.Column(basemodel.FieldArchivedAt); !ok {
+		return nil, errors.Errorf("entity '%s' does not define column '%s'", this.schema.Name(), basemodel.FieldArchivedAt)
 	}
-	record, err := this.FindByPk(ctx, keys)
+	oneRes, err := this.GetOne(ctx, dEnt.GetOneParam{Filter: keys})
 	if err != nil {
 		return nil, err
 	}
-	if record == nil {
-		return nil, nil
+	if len(oneRes.ClientErrors) > 0 {
+		return &dEnt.OpResult[schema.DynamicFields]{ClientErrors: oneRes.ClientErrors}, nil
 	}
-	record[columnArchiveAt] = time.Now().UTC()
-	updated, err := this.Update(ctx, record)
+	if oneRes.IsEmpty {
+		return &dEnt.OpResult[schema.DynamicFields]{IsEmpty: true}, nil
+	}
+	record := oneRes.Data
+	record[basemodel.FieldArchivedAt] = time.Now().UTC()
+	prevEtag, _ := record[basemodel.FieldEtag].(string)
+	updRes, err := this.Update(ctx, record, prevEtag)
 	if err != nil {
 		return nil, err
 	}
-	return updated, nil
+	if len(updRes.ClientErrors) > 0 {
+		return &dEnt.OpResult[schema.DynamicFields]{ClientErrors: updRes.ClientErrors}, nil
+	}
+	return &dEnt.OpResult[schema.DynamicFields]{Data: updRes.Data, IsEmpty: false}, nil
 }
 
 // Delete removes the record identified by primary keys and tenant key.
-// Returns the number of deleted records.
-func (this *BaseRepositoryImpl) Delete(ctx dEnt.Context, keys schema.DynamicFields) (int64, error) {
+// Data holds RowsAffected; IsEmpty is true when no row was deleted.
+func (this *BaseRepositoryImpl) Delete(ctx dEnt.Context, keys schema.DynamicFields) (*dEnt.OpResult[int64], error) {
 	if err := this.validateKeyMap(keys); err != nil {
-		return 0, err
+		return nil, err
 	}
 	if err := this.ensureTenantKeyIn(keys); err != nil {
-		return 0, err
+		return nil, err
 	}
 	query, err := this.queryBuilder.SqlDeleteEqual(this.schema, keys)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	this.logQuery(query)
 	result, err := this.client.Exec(ctx, query)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return result.RowsAffected()
+	n, err := result.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	return &dEnt.OpResult[int64]{Data: n, IsEmpty: n == 0}, nil
 }
 
 // CheckUniqueCollisions returns unique key groups that have collisions. Empty slice means no collisions.
-func (this *BaseRepositoryImpl) CheckUniqueCollisions(ctx dEnt.Context, data schema.DynamicFields) ([][]string, error) {
+func (this *BaseRepositoryImpl) CheckUniqueCollisions(ctx dEnt.Context, data schema.DynamicFields) (
+	*dEnt.OpResult[[][]string], error,
+) {
 	uniqueKeysToCheck := this.filterUniqueKeysWithValues(data)
 	if len(uniqueKeysToCheck) == 0 {
-		return nil, nil
+		return &dEnt.OpResult[[][]string]{Data: nil, IsEmpty: true}, nil
 	}
 
 	query, args, err := this.queryBuilder.SqlCheckUniqueCollisions(this.schema, uniqueKeysToCheck, data)
@@ -220,7 +308,10 @@ func (this *BaseRepositoryImpl) CheckUniqueCollisions(ctx dEnt.Context, data sch
 		}
 		idx++
 	}
-	return collidingKeys, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return &dEnt.OpResult[[][]string]{Data: collidingKeys, IsEmpty: len(collidingKeys) == 0}, nil
 }
 
 func (this *BaseRepositoryImpl) logQuery(query string) {
@@ -255,30 +346,29 @@ func (this *BaseRepositoryImpl) filterUniqueKeysWithValues(data schema.DynamicFi
 }
 
 func (this *BaseRepositoryImpl) trySetCreatedAt(data schema.DynamicFields) {
-	if _, ok := this.schema.Column(columnCreatedAt); !ok {
+	if _, ok := this.schema.Column(basemodel.FieldCreatedAt); !ok {
 		return
 	}
 	if data != nil {
-		data[columnCreatedAt] = time.Now().UTC()
+		data[basemodel.FieldCreatedAt] = time.Now().UTC()
 	}
 }
 
 func (this *BaseRepositoryImpl) trySetUpdatedAt(data schema.DynamicFields) {
-	if _, ok := this.schema.Column(columnUpdatedAt); !ok {
+	if _, ok := this.schema.Column(basemodel.FieldUpdatedAt); !ok {
 		return
 	}
 	if data != nil {
-		data[columnUpdatedAt] = time.Now().UTC()
+		data[basemodel.FieldUpdatedAt] = time.Now().UTC()
 	}
 }
 
-func (this *BaseRepositoryImpl) trySetEtag(data schema.DynamicFields) {
-	if _, ok := this.schema.Column(columnEtag); !ok {
-		return
+func (this *BaseRepositoryImpl) trySetEtag(data schema.DynamicFields) bool {
+	if _, ok := this.schema.Column(basemodel.FieldEtag); !ok {
+		return false
 	}
-	if data != nil {
-		data[columnEtag] = *model.NewEtag()
-	}
+	data[basemodel.FieldEtag] = *model.NewEtag()
+	return true
 }
 
 func (this *BaseRepositoryImpl) extractKeyMap(data schema.DynamicFields) schema.DynamicFields {
@@ -301,6 +391,38 @@ func (this *BaseRepositoryImpl) validateKeyMap(keys schema.DynamicFields) error 
 	for _, key := range this.schema.KeyColumns() {
 		if _, ok := keys[key]; !ok {
 			return errors.Errorf("missing required key '%s'", key)
+		}
+	}
+	return nil
+}
+
+func (this *BaseRepositoryImpl) validateGetOneColumnsAndFilter(
+	columns []string, filter schema.DynamicFields,
+) *ft.ClientErrorItem {
+	for _, col := range columns {
+		if _, ok := this.schema.Column(col); !ok {
+			return ft.NewValidationError(
+				col,
+				ft.ErrorKey("err_unknown_schema_field"),
+				"field is not defined on this entity",
+			)
+		}
+	}
+	if filter == nil {
+		return nil
+	}
+	keys := make([]string, 0, len(filter))
+	for k := range filter {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		if _, ok := this.schema.Column(k); !ok {
+			return ft.NewValidationError(
+				k,
+				ft.ErrorKey("err_unknown_schema_field"),
+				"field is not defined on this entity",
+			)
 		}
 	}
 	return nil
@@ -345,17 +467,79 @@ func (this *BaseRepositoryImpl) mergeFilterIntoGraph(
 	return merged, nil
 }
 
-func (this *BaseRepositoryImpl) buildPkSearchGraph(keys schema.DynamicFields) schema.SearchGraph {
-	nodes := make([]schema.SearchNode, 0, len(this.schema.KeyColumns()))
-	for _, key := range this.schema.KeyColumns() {
-		if v, ok := keys[key]; ok {
-			n := (&schema.SearchNode{}).Condition(util.ToPtr(schema.NewCondition(key, schema.Equals, v)))
-			nodes = append(nodes, *n)
+func isNilAnyValue(val any) bool {
+	if val == nil {
+		return true
+	}
+	v := reflect.ValueOf(val)
+	switch v.Kind() {
+	case reflect.Ptr, reflect.Interface, reflect.Slice, reflect.Map, reflect.Chan, reflect.Func:
+		return v.IsNil()
+	default:
+		return false
+	}
+}
+
+func (this *BaseRepositoryImpl) shouldIncludeEqualFilterField(field string, val any) bool {
+	if isNilAnyValue(val) {
+		return false
+	}
+	_, ok := this.schema.Column(field)
+	return ok
+}
+
+func missingKeyColumnNames(found map[string]bool, keyColumns []string) []string {
+	missing := make([]string, 0, len(keyColumns))
+	for _, k := range keyColumns {
+		if !found[k] {
+			missing = append(missing, k)
 		}
 	}
+	return missing
+}
+
+// buildEqualNodes builds an Equals SearchNode for each defined, non-nil filter field.
+// Unknown keys and nil values are ignored. Key columns must still be present (non-nil).
+func (this *BaseRepositoryImpl) buildEqualNodes(filter schema.DynamicFields) ([]schema.SearchNode, error) {
+	keyColumns := this.schema.KeyColumns()
+	found := make(map[string]bool, len(keyColumns))
+	for _, k := range keyColumns {
+		found[k] = false
+	}
+
+	nodes := make([]schema.SearchNode, 0, len(filter))
+	for field, val := range filter {
+		if !this.shouldIncludeEqualFilterField(field, val) {
+			continue
+		}
+		n := (&schema.SearchNode{}).Condition(util.ToPtr(schema.NewCondition(field, schema.Equals, val)))
+		nodes = append(nodes, *n)
+		if _, isKey := found[field]; isKey {
+			found[field] = true
+		}
+	}
+
+	missing := missingKeyColumnNames(found, keyColumns)
+	if len(missing) > 0 {
+		return nil, errors.Errorf("missing required key columns: %s", strings.Join(missing, ", "))
+	}
+	return nodes, nil
+}
+
+func (this *BaseRepositoryImpl) buildFindOneGraph(
+	filter schema.DynamicFields, includeArchived bool,
+) (schema.SearchGraph, error) {
+	allNodes, err := this.buildEqualNodes(filter)
+	if err != nil {
+		return schema.SearchGraph{}, err
+	}
+	if !includeArchived {
+		archiveCond := schema.NewCondition(basemodel.FieldArchivedAt, schema.IsNotSet)
+		allNodes = append(allNodes, *(&schema.SearchNode{}).Condition(util.ToPtr(archiveCond)))
+	}
 	g := &schema.SearchGraph{}
-	g.And(nodes...)
-	return *g
+	g.And(allNodes...)
+	return *g, nil
 }
 
 func (this *BaseRepositoryImpl) queryAndScan(ctx dEnt.Context, query string) ([]schema.DynamicFields, error) {

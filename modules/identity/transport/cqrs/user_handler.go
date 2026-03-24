@@ -29,7 +29,7 @@ func (this *UserHandler) Delete(ctx context.Context, packet *cqrs.RequestPacket[
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.DeleteUser)
 }
 
-func (this *UserHandler) GetUserById(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserByIdQuery]) (*cqrs.Reply[it.GetUserByIdResult], error) {
+func (this *UserHandler) GetUserById(ctx context.Context, packet *cqrs.RequestPacket[it.GetUser]) (*cqrs.Reply[it.GetUserByIdResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.GetUserById)
 }
 

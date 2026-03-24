@@ -4,10 +4,14 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	middleWare "github.com/sky-as-code/nikki-erp/common/middleware"
+	"github.com/sky-as-code/nikki-erp/common/modelmapper"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -34,13 +38,19 @@ func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequestDynamic[CreateUserResponse](
+	err = httpserver.ServeRequestDynamic(
 		echoCtx,
-		"create user",
-		func() schema.DynamicModelSetter {
-			return &CreateUserRequest{}
-		},
 		this.UserSvc.CreateUser2,
+		func(requestFields schema.DynamicFields) it.CreateUserCommand2 {
+			cmd := it.CreateUserCommand2{}
+			cmd.SetFieldData(requestFields)
+			return cmd
+		},
+		func(data domain.UserEntity) CreateUserResponse {
+			response, err := modelmapper.MapToStruct[*CreateUserResponse](data.GetFieldData())
+			ft.PanicOnErr(err)
+			return *response
+		},
 		httpserver.JsonCreated,
 	)
 	return err
@@ -96,8 +106,8 @@ func (this UserRest) GetUserById(echoCtx echo.Context) (err error) {
 	}()
 	err = httpserver.ServeRequest(
 		echoCtx, this.UserSvc.GetUserById,
-		func(request GetUserByIdRequest) it.GetUserByIdQuery {
-			return it.GetUserByIdQuery(request)
+		func(request GetUserByIdRequest) it.GetUser {
+			return it.GetUser(request)
 		},
 		func(result it.GetUserByIdResult) GetUserByIdResponse {
 			response := GetUserByIdResponse{}
@@ -156,27 +166,39 @@ func (this UserRest) UpdateUser2(echoCtx echo.Context) (err error) {
 		}
 	}()
 
-	return httpserver.ServeRequestDynamic[UpdateUser2Response](
+	return httpserver.ServeRequestDynamic(
 		echoCtx,
-		"update user 2",
-		func() schema.DynamicModelSetter { return &UpdateUser2Request{} },
 		this.UserSvc.UpdateUser2,
+		func(requestFields schema.DynamicFields) it.UpdateUserCommand2 {
+			cmd := it.UpdateUserCommand2{}
+			cmd.SetFieldData(requestFields)
+			return cmd
+		},
+		func(data domain.UserEntity) UpdateUser2Response {
+			response, err := modelmapper.MapToStruct[*UpdateUser2Response](data.GetFieldData())
+			ft.PanicOnErr(err)
+			return *response
+		},
 		httpserver.JsonOk,
 	)
 }
 
-func (this UserRest) GetUserByPk2(echoCtx echo.Context) (err error) {
+func (this UserRest) GetOne(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user by pk"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user by ID"); e != nil {
 			err = e
 		}
 	}()
 
-	return httpserver.ServeRequestDynamic[GetUserByPk2Response](
+	return httpserver.ServeRequest2(
 		echoCtx,
-		"get user by pk",
-		func() schema.DynamicModelSetter { return &GetUserByPk2Request{} },
-		this.UserSvc.GetUserByPk2,
+		this.UserSvc.GetOne,
+		func(request it.GetUser) it.GetUser {
+			return request
+		},
+		func(data domain.UserEntity) schema.DynamicFields {
+			return data.GetFieldData()
+		},
 		httpserver.JsonOk,
 	)
 }
@@ -188,11 +210,19 @@ func (this UserRest) ArchiveUser2(echoCtx echo.Context) (err error) {
 		}
 	}()
 
-	return httpserver.ServeRequestDynamic[ArchiveUser2Response](
+	return httpserver.ServeRequestDynamic(
 		echoCtx,
-		"archive user 2",
-		func() schema.DynamicModelSetter { return &ArchiveUser2Request{} },
 		this.UserSvc.ArchiveUser2,
+		func(requestFields schema.DynamicFields) it.ArchiveUserCommand2 {
+			cmd := it.ArchiveUserCommand2{}
+			cmd.SetFieldData(requestFields)
+			return cmd
+		},
+		func(data domain.UserEntity) ArchiveUser2Response {
+			response, err := modelmapper.MapToStruct[*ArchiveUser2Response](data.GetFieldData())
+			ft.PanicOnErr(err)
+			return *response
+		},
 		httpserver.JsonOk,
 	)
 }
@@ -203,20 +233,21 @@ func (this UserRest) SearchUsers2(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	// var query SearchUsers2Request
-	// if err = echoCtx.Bind(&query); err != nil {
-	// 	return err
-	// }
-	// reqCtx := echoCtx.Request().Context().(dynamicentity.Context)
-	// result, err := this.UserSvc.SearchUsers2(reqCtx, query)
-	// if err != nil {
-	// 	return err
-	// }
-	// if result.ClientErrors != nil && result.ClientErrors.Count() > 0 {
-	// 	return httpserver.JsonBadRequest(echoCtx, result.ClientErrors)
-	// }
-	// return httpserver.JsonOk(echoCtx, toSearchUsers2Response(result.Data))
-	return httpserver.JsonOk(echoCtx, nil)
+	err = httpserver.ServeRequest2(
+		echoCtx,
+		this.UserSvc.SearchUsers2,
+		func(request SearchUsers2Request) it.SearchUsersQuery2 {
+			return it.SearchUsersQuery2(request)
+		},
+		func(result dEnt.PagedResult[domain.UserEntity]) SearchUsers2Response {
+			items := array.Map(result.Items, func(item domain.UserEntity) schema.DynamicFields {
+				return item.GetFieldData()
+			})
+			return SearchUsers2Response{Items: items, Total: result.Total, Page: result.Page, Size: result.Size}
+		},
+		httpserver.JsonOk,
+	)
+	return err
 }
 
 func (this UserRest) GetUserContext(echoCtx echo.Context) (err error) {

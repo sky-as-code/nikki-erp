@@ -4,6 +4,23 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
+func (this DynamicFields) GetBool(key string) *bool {
+	val, ok := this[key]
+	if !ok || val == nil {
+		return nil
+	}
+	b := val.(bool)
+	return &b
+}
+
+func (this DynamicFields) SetBool(key string, v *bool) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	this[key] = *v
+}
+
 // GetString returns the string value at key. Returns nil if key is missing or value is nil.
 // Caller must ensure the map is initialized (non-nil).
 func (this DynamicFields) GetString(key string) *string {

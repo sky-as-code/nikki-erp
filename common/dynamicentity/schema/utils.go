@@ -16,11 +16,15 @@ type DynamicModel interface {
 
 type DynamicModelGetter interface {
 	GetFieldData() DynamicFields
-	GetSchema() *EntitySchema
 }
 
 type DynamicModelSetter interface {
 	SetFieldData(data DynamicFields)
+}
+
+type SchemaGetter interface {
+	GetFieldData() DynamicFields
+	GetSchema() *EntitySchema
 }
 
 func StructToDynamicEntity(src any) (DynamicFields, error) {

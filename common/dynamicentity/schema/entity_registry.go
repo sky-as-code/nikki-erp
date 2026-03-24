@@ -52,15 +52,20 @@ func (this *EntityRegistry) Field(schemaName string, fieldName string) *EntityFi
 	return field
 }
 
-// RegisterSchema registers a schema using its name (set via EntitySchemaBuilder.Name) as the registry key.
+// RegisterSchemaB executes the schemaBuilder then registers a schema using its name (set via EntitySchemaBuilder.Name) as the registry key.
 // Returns an error if a schema with the same name is already registered.
-func RegisterSchema(schemaBuilder *EntitySchemaBuilder) error {
+func RegisterSchemaB(schemaBuilder *EntitySchemaBuilder) error {
 	if schemaBuilder == nil {
 		return errors.New("schemaBuilder cannot be nil")
 	}
 
-	s := schemaBuilder.Build()
-	name := s.Name()
+	return RegisterSchema(schemaBuilder.Build())
+}
+
+// RegisterSchema registers a schema using its name as the registry key.
+// Returns an error if a schema with the same name is already registered.
+func RegisterSchema(schema *EntitySchema) error {
+	name := schema.Name()
 	if name == "" {
 		return errors.New("schema name must not be empty")
 	}
@@ -72,7 +77,7 @@ func RegisterSchema(schemaBuilder *EntitySchemaBuilder) error {
 		return errors.Errorf("schema '%s' already registered", name)
 	}
 
-	schemaRegistry.schemas[name] = s
+	schemaRegistry.schemas[name] = schema
 	schemaRegistry.orderedNames = computeTopoOrder(schemaRegistry.schemas)
 	return nil
 }
@@ -115,11 +120,31 @@ func MustGetSchema(name string) *EntitySchema {
 	return schema
 }
 
+// GetOrRegisterSchema first attempts to retrieve a registered schema by its name.
+// If not found, it builds a new schema using the builder and registers it.
+func GetOrRegisterSchema(newSchema *EntitySchema) *EntitySchema {
+	name := newSchema.Name()
+	schema := schemaRegistry.Get(name)
+	if schema == nil {
+		RegisterSchema(newSchema)
+		schema = schemaRegistry.Get(name)
+	}
+	return schema
+}
+
 func GetSchemaRegistry() *EntityRegistry {
 	return schemaRegistry
 }
 
-func CloneField(schemaName string, fieldName string) *FieldBuilder {
+func CloneField(schema *EntitySchema, fieldName string) *FieldBuilder {
+	field := schema.MustField(fieldName)
+	clonedField := field.Clone()
+	return &FieldBuilder{
+		field: clonedField,
+	}
+}
+
+func CloneFieldN(schemaName string, fieldName string) *FieldBuilder {
 	field := schemaRegistry.Field(schemaName, fieldName)
 	clonedField := field.Clone()
 	return &FieldBuilder{

@@ -43,24 +43,32 @@ func (this *UserDynamicRepository) GetBaseRepo() dynamicentity.BaseRepository {
 	return this.dynamicRepo
 }
 
-func (this *UserDynamicRepository) Create(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error) {
+func (this *UserDynamicRepository) Create(ctx dEnt.Context, user domain.UserEntity) (
+	*dEnt.OpResult[domain.UserEntity], error,
+) {
 	return baserepo.Insert[domain.UserEntity](ctx, this.dynamicRepo, user)
 }
 
-func (this *UserDynamicRepository) Update(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error) {
-	return baserepo.Update[domain.UserEntity](ctx, this.dynamicRepo, user)
+func (this *UserDynamicRepository) Update(ctx dEnt.Context, user domain.UserEntity, prevEtag string) (
+	*dEnt.OpResult[domain.UserEntity], error,
+) {
+	return baserepo.Update[domain.UserEntity](ctx, this.dynamicRepo, user, prevEtag)
 }
 
-func (this *UserDynamicRepository) FindByPk(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error) {
-	return baserepo.FindByPk[domain.UserEntity](ctx, this.dynamicRepo, user)
+func (this *UserDynamicRepository) FindOne(ctx dEnt.Context, param dEnt.GetOneParam) (
+	*dEnt.OpResult[domain.UserEntity], error,
+) {
+	return baserepo.FindOne[domain.UserEntity](ctx, this.dynamicRepo, param)
 }
 
-func (this *UserDynamicRepository) Archive(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error) {
+func (this *UserDynamicRepository) Archive(ctx dEnt.Context, user domain.UserEntity) (
+	*dEnt.OpResult[domain.UserEntity], error,
+) {
 	return baserepo.Archive[domain.UserEntity](ctx, this.dynamicRepo, user)
 }
 
 func (this *UserDynamicRepository) Search(
-	ctx dEnt.Context, graph schemaEnt.SearchGraph,
-) ([]*domain.UserEntity, error) {
-	return baserepo.Search[domain.UserEntity](ctx, this.dynamicRepo, graph, nil)
+	ctx dEnt.Context, param dEnt.SearchParam,
+) (*dEnt.OpResult[dEnt.PagedResult[domain.UserEntity]], error) {
+	return baserepo.Search[domain.UserEntity](ctx, this.dynamicRepo, param)
 }

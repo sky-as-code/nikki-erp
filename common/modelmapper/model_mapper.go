@@ -139,6 +139,52 @@ func castCopyViaReflect[TDest any](srcElem reflect.Value, srcType, destElemType 
 	return Copy[TDest](orig)
 }
 
+// StructToMap converts a struct (or pointer to a struct) into a map[string]any using
+// "json" field tags as key names, following standard json conventions: "-" skips the
+// field, "name,omitempty" uses "name" and skips zero values, and no tag falls back to
+// the struct field name. Embedded structs without a json tag are expanded inline.
+// A nil pointer src returns a nil map.
+func StructToMap(src any) (map[string]any, error) {
+	srcVal, valid, err := resolveSrcToStruct(src)
+	if err != nil {
+		return nil, err
+	}
+	if !valid {
+		return nil, nil
+	}
+	result := make(map[string]any)
+	collectStructToMap(srcVal, result)
+	return result, nil
+}
+
+// collectStructToMap iterates exported fields of srcVal and writes them into out,
+// expanding anonymous embedded structs that have no explicit json tag inline.
+func collectStructToMap(srcVal reflect.Value, out map[string]any) {
+	srcVal = resolvePtr(srcVal)
+	if !srcVal.IsValid() || srcVal.Kind() != reflect.Struct {
+		return
+	}
+	t := srcVal.Type()
+	for i := 0; i < t.NumField(); i++ {
+		field, fieldVal := t.Field(i), srcVal.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+		if field.Anonymous && field.Tag.Get("json") == "" {
+			resolved := resolvePtr(fieldVal)
+			if resolved.IsValid() && resolved.Kind() == reflect.Struct {
+				collectStructToMap(resolved, out)
+				continue
+			}
+		}
+		key, skip, omitempty := jsonKey(field)
+		if skip || (omitempty && fieldVal.IsZero()) {
+			continue
+		}
+		out[key] = fieldVal.Interface()
+	}
+}
+
 // MapToStruct converts a string-keyed map into a new TDest value using "json" field
 // tags as key names, following standard json conventions: "-" skips the field,
 // "name,omitempty" uses "name", and no tag falls back to the struct field name.
@@ -268,7 +314,7 @@ func assignMapToStruct(src map[string]any, destVal reflect.Value) []error {
 				continue
 			}
 		}
-		key, skip := jsonKey(field)
+		key, skip, _ := jsonKey(field)
 		if skip {
 			continue
 		}
@@ -283,18 +329,19 @@ func assignMapToStruct(src map[string]any, destVal reflect.Value) []error {
 	return errs
 }
 
-func jsonKey(field reflect.StructField) (key string, skip bool) {
+func jsonKey(field reflect.StructField) (key string, skip bool, omitempty bool) {
 	tag := field.Tag.Get("json")
 	if tag == "-" {
-		return "", true
+		return "", true, false
 	}
 	if idx := strings.Index(tag, ","); idx != -1 {
+		omitempty = strings.Contains(tag[idx+1:], "omitempty")
 		tag = tag[:idx]
 	}
 	if tag == "" {
-		return field.Name, false
+		return field.Name, false, omitempty
 	}
-	return tag, false
+	return tag, false, omitempty
 }
 
 func assignFromAny(val any, destField reflect.Value) error {
@@ -394,6 +441,10 @@ func mapFields(srcVal, destVal reflect.Value) []error {
 // collectFields returns a flat list of all exported fields, expanding
 // anonymous (embedded) struct fields recursively.
 func collectFields(val reflect.Value) []fieldPair {
+	val = resolvePtr(val)
+	if !val.IsValid() || val.Kind() != reflect.Struct {
+		return nil
+	}
 	var pairs []fieldPair
 	t := val.Type()
 	for i := 0; i < t.NumField(); i++ {
@@ -583,7 +634,7 @@ func derefConverterSrc(in reflect.Value, isPtr bool) reflect.Value {
 
 // resolvePtr dereferences pointer chains, returning an invalid Value for nil pointers.
 func resolvePtr(v reflect.Value) reflect.Value {
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 		if v.IsNil() {
 			return reflect.Value{}
 		}

@@ -65,7 +65,7 @@ func (this *UserServiceImpl) GetUserContext(ctx crud.Context, query it.GetUserCo
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			dbUser, err = this.getUserByIdFull(ctx, it.GetUserByIdQuery{
+			dbUser, err = this.getUserByIdFull(ctx, it.GetUser{
 				Id:            query.UserId,
 				WithOrg:       true,
 				WithHierarchy: true,
@@ -120,9 +120,14 @@ func (this *UserServiceImpl) CreateUser(ctx crud.Context, cmd it.CreateUserComma
 
 func (this *UserServiceImpl) CreateUser2(ctx dEnt.Context, cmd it.CreateUserCommand2) (*it.CreateUserResult2, error) {
 	return dCrud.Create(ctx, dCrud.CreateParam[domain.UserEntity, *domain.UserEntity]{
-		Action:       "create user 2",
-		DbRepoGetter: this.userRepo2,
-		Data:         cmd,
+		Action:         "create user 2",
+		BaseRepoGetter: this.userRepo2,
+		Data:           cmd,
+		BeforeValidation: func(ctx dEnt.Context, model *domain.UserEntity) (*domain.UserEntity, error) {
+			// Normal users must not have this field set.
+			model.SetIsOwner(nil)
+			return model, nil
+		},
 	})
 }
 
@@ -134,16 +139,16 @@ func (this *UserServiceImpl) UpdateUser2(ctx dEnt.Context, cmd it.UpdateUserComm
 	})
 }
 
-func (this *UserServiceImpl) GetUserByPk2(
-	ctx dEnt.Context, query it.GetUserByPkQuery2,
-) (*it.GetUserByPkResult2, error) {
-	return dCrud.GetByPk[domain.UserEntity](ctx, this.userRepo2, query.GetFieldData())
+func (this *UserServiceImpl) GetOne(
+	ctx dEnt.Context, query it.GetUser,
+) (*it.GetUserResult, error) {
+	return dCrud.GetOne[domain.UserEntity](ctx, this.userRepo2, query)
 }
 
 func (this *UserServiceImpl) SearchUsers2(
 	ctx dEnt.Context, query it.SearchUsersQuery2,
 ) (*it.SearchUsersResult2, error) {
-	return dCrud.Search[domain.UserEntity](ctx, this.userRepo2, query.Graph, nil)
+	return dCrud.Search[domain.UserEntity](ctx, this.userRepo2, dEnt.SearchParam{Graph: query.Graph})
 }
 
 func (this *UserServiceImpl) ArchiveUser2(
@@ -286,8 +291,8 @@ func (this *UserServiceImpl) ExistsMulti(ctx crud.Context, query it.UserExistsMu
 	}, nil
 }
 
-func (this *UserServiceImpl) GetUserById(ctx crud.Context, query it.GetUserByIdQuery) (*it.GetUserByIdResult, error) {
-	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.User, it.GetUserByIdQuery, it.GetUserByIdResult]{
+func (this *UserServiceImpl) GetUserById(ctx crud.Context, query it.GetUser) (*it.GetUserByIdResult, error) {
+	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.User, it.GetUser, it.GetUserByIdResult]{
 		Action:      "get user by Id",
 		Query:       query,
 		RepoFindOne: this.getUserByIdFull,
@@ -307,7 +312,7 @@ func (this *UserServiceImpl) GetUserById(ctx crud.Context, query it.GetUserByIdQ
 	return result, err
 }
 
-func (this *UserServiceImpl) getUserByIdFull(ctx crud.Context, query it.GetUserByIdQuery, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {
+func (this *UserServiceImpl) getUserByIdFull(ctx crud.Context, query it.GetUser, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {
 	dbUser, err = this.userRepo.FindById(ctx, query)
 	if dbUser == nil {
 		vErrs.AppendNotFound("id", "user id")

@@ -1,7 +1,6 @@
 package user
 
 import (
-	schemaEnt "github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -27,17 +26,17 @@ type UserRepository interface {
 
 type UserRepository2 interface {
 	dEnt.BaseRepoGetter
-	Create(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error)
-	Update(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error)
-	FindByPk(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error)
-	Search(ctx dEnt.Context, graph schemaEnt.SearchGraph) ([]*domain.UserEntity, error)
-	Archive(ctx dEnt.Context, user domain.UserEntity) (*domain.UserEntity, error)
+	Create(ctx dEnt.Context, user domain.UserEntity) (*dEnt.OpResult[domain.UserEntity], error)
+	Update(ctx dEnt.Context, user domain.UserEntity, prevEtag string) (*dEnt.OpResult[domain.UserEntity], error)
+	FindOne(ctx dEnt.Context, param dEnt.GetOneParam) (*dEnt.OpResult[domain.UserEntity], error)
+	Search(ctx dEnt.Context, param dEnt.SearchParam) (*dEnt.OpResult[dEnt.PagedResult[domain.UserEntity]], error)
+	Archive(ctx dEnt.Context, user domain.UserEntity) (*dEnt.OpResult[domain.UserEntity], error)
 }
 
 type DeleteParam = DeleteUserCommand
 type ExistsParam = UserExistsQuery
 type ExistsMultiParam = UserExistsMultiQuery
-type FindByIdParam = GetUserByIdQuery
+type FindByIdParam = GetUser
 type FindByEmailParam = GetUserByEmailQuery
 type FindByHierarchyIdParam struct {
 	HierarchyId model.Id

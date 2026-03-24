@@ -59,7 +59,7 @@ type UpdateUserResponse = httpserver.RestUpdateResponse
 type DeleteUserRequest = it.DeleteUserCommand
 type DeleteUserResponse = httpserver.RestDeleteResponse
 
-type GetUserByIdRequest = it.GetUserByIdQuery
+type GetUserByIdRequest = it.GetUser
 type GetUserByIdResponse = UserDto
 
 type GetUserContextRequest = it.GetUserContextQuery
@@ -99,6 +99,8 @@ type UserEntityDto struct {
 type SearchUsers2Response struct {
 	Items []schema.DynamicFields `json:"items"`
 	Total int                    `json:"total"`
+	Page  int                    `json:"page"`
+	Size  int                    `json:"size"`
 }
 
 // func toSearchUsers2Response(items []domain.UserEntity) SearchUsers2Response {
@@ -115,10 +117,7 @@ type SearchUsers2Response struct {
 type UpdateUser2Request = it.UpdateUserCommand2
 type UpdateUser2Response = httpserver.RestUpdateResponse
 
-type GetUserByPk2Request = it.GetUserByPkQuery2
-type GetUserByPk2Response = schema.DynamicFields
-
 type SearchUsers2Request = it.SearchUsersQuery2
 
 type ArchiveUser2Request = it.ArchiveUserCommand2
-type ArchiveUser2Response = UserEntityDto
+type ArchiveUser2Response = httpserver.RestArchivedResponse

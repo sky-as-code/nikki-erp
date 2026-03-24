@@ -15,12 +15,25 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
 )
 
+// SqlSelectGraphOpts holds optional parameters for SqlSelectGraph.
+type SqlSelectGraphOpts struct {
+	// Columns limits which columns to fetch; empty means all columns (*).
+	Columns []string
+	// Page is the 0-based page index used to compute the OFFSET (OFFSET = Page * Size).
+	// Ignored when Size is 0.
+	Page int
+	// Size sets the LIMIT clause. 0 means no limit/offset is applied.
+	Size int
+}
+
 type QueryBuilder interface {
 	SqlCreateTable(schema *schema.EntitySchema, registry *schema.EntityRegistry) (string, error)
-	SqlSelectGraph(schema *schema.EntitySchema, graph schema.SearchGraph, columns []string) (string, error)
+	SqlSelectGraph(entSchema *schema.EntitySchema, graph schema.SearchGraph, opts SqlSelectGraphOpts) (string, error)
+	// SqlCountGraph builds SELECT COUNT(*) with the same WHERE as SqlSelectGraph (no ORDER BY, LIMIT, OFFSET).
+	SqlCountGraph(entSchema *schema.EntitySchema, graph schema.SearchGraph) (string, error)
 	SqlInsert(schema *schema.EntitySchema, data schema.DynamicFields) (string, error)
 	SqlInsertBulk(schema *schema.EntitySchema, rows []schema.DynamicFields) (string, error)
-	SqlUpdateByPk(schema *schema.EntitySchema, data schema.DynamicFields) (string, error)
+	SqlUpdateEqual(schema *schema.EntitySchema, data schema.DynamicFields, filters schema.DynamicFields) (string, error)
 	SqlDeleteEqual(schema *schema.EntitySchema, filters schema.DynamicFields) (string, error)
 	// SqlCheckUniqueCollisions builds SQL that returns 1 per row where the unique key has a collision, else 0.
 	// Input: uniqueKeysToCheck - subset of schema.AllUniques() where data has all values (no nil).
@@ -106,20 +119,11 @@ func (this *PgQueryBuilder) defineForeignKeys(
 }
 
 func (this *PgQueryBuilder) SqlSelectGraph(
-	entSchema *schema.EntitySchema, graph schema.SearchGraph, columns []string,
+	entSchema *schema.EntitySchema, graph schema.SearchGraph, opts SqlSelectGraphOpts,
 ) (string, error) {
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	if len(columns) == 0 {
-		sb.Select("*")
-	} else {
-		selectCols := make([]string, len(columns))
-		for i, col := range columns {
-			if _, ok := entSchema.Column(col); !ok {
-				return "", errors.Errorf("unknown column '%s'", col)
-			}
-			selectCols[i] = pgQuote(col)
-		}
-		sb.Select(selectCols...)
+	if err := this.applySelectColumns(sb, entSchema, opts.Columns); err != nil {
+		return "", err
 	}
 
 	sb.From(this.tableExpression(entSchema))
@@ -141,8 +145,58 @@ func (this *PgQueryBuilder) SqlSelectGraph(
 		sb.OrderBy(orderExprs...)
 	}
 
+	this.applyPagination(sb, opts.Page, opts.Size)
+
 	sql, args := sb.Build()
 	return interpolate(sql, args)
+}
+
+func (this *PgQueryBuilder) SqlCountGraph(
+	entSchema *schema.EntitySchema, graph schema.SearchGraph,
+) (string, error) {
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	sb.Select("COUNT(*)")
+	sb.From(this.tableExpression(entSchema))
+
+	predicate, ok, err := this.graphExpression(
+		entSchema, sb, graph.GetCondition(), graph.GetAnd(), graph.GetOr())
+	if err != nil {
+		return "", err
+	}
+	if ok {
+		sb.Where(predicate)
+	}
+
+	sql, args := sb.Build()
+	return interpolate(sql, args)
+}
+
+func (this *PgQueryBuilder) applySelectColumns(
+	sb *sqlbuilder.SelectBuilder, entSchema *schema.EntitySchema, columns []string,
+) error {
+	if len(columns) == 0 {
+		sb.Select("*")
+		return nil
+	}
+	selectCols := make([]string, len(columns))
+	for i, col := range columns {
+		if _, ok := entSchema.Column(col); !ok {
+			return errors.Errorf("unknown column '%s'", col)
+		}
+		selectCols[i] = pgQuote(col)
+	}
+	sb.Select(selectCols...)
+	return nil
+}
+
+func (this *PgQueryBuilder) applyPagination(sb *sqlbuilder.SelectBuilder, page, size int) {
+	if size <= 0 {
+		return
+	}
+	sb.Limit(size)
+	if page > 0 {
+		sb.Offset(page * size)
+	}
 }
 
 func (this *PgQueryBuilder) tableExpression(entSchema *schema.EntitySchema) string {
@@ -179,9 +233,13 @@ func (this *PgQueryBuilder) buildInsertSql(entSchema *schema.EntitySchema, rows 
 	return interpolate(sql, args)
 }
 
-func (this *PgQueryBuilder) SqlUpdateByPk(entSchema *schema.EntitySchema, data schema.DynamicFields) (string, error) {
-	if len(entSchema.PrimaryKeys()) == 0 {
-		return "", errors.New("entity has no primary keys")
+func (this *PgQueryBuilder) SqlUpdateEqual(
+	entSchema *schema.EntitySchema,
+	data schema.DynamicFields,
+	filters schema.DynamicFields,
+) (string, error) {
+	if len(filters) == 0 {
+		return "", errors.New("no filters provided")
 	}
 
 	target, err := this.rowFromMap(entSchema, data, func(name string) bool {
@@ -194,7 +252,7 @@ func (this *PgQueryBuilder) SqlUpdateByPk(entSchema *schema.EntitySchema, data s
 		return "", errors.New("no updatable columns provided")
 	}
 
-	lookup, err := this.rowForKeys(entSchema, data, entSchema.KeyColumns())
+	lookup, err := this.rowFromMap(entSchema, filters, nil)
 	if err != nil {
 		return "", err
 	}
@@ -212,7 +270,11 @@ func (this *PgQueryBuilder) buildUpdateSql(
 	}
 	ub.Set(assignments...)
 	for i, col := range lookup.columns {
-		ub.Where(ub.Equal(pgQuote(col), lookup.values[i]))
+		if lookup.values[i] == nil {
+			ub.Where(ub.IsNull(pgQuote(col)))
+		} else {
+			ub.Where(ub.Equal(pgQuote(col), lookup.values[i]))
+		}
 	}
 	sql, args := ub.Build()
 	return interpolate(sql, args)
