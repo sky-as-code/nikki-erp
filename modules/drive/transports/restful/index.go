@@ -55,8 +55,9 @@ func initV1(
 	protected.GET("/files/shared", driveFileRest.SearchDriveFilesShared)
 	protected.GET("/files/:driveFileId", driveFileRest.GetDriveFileById)
 
-	// TODO: add an API to create token for stream
+	// Public stream (no auth); TODO: signed URL / token — permission check disabled in DownloadDriveFile for now.
 	route.GET("/files/:driveFileId/stream", driveFileRest.StreamDriveFile)
+
 	protected.GET("/files/:driveFileId/children", driveFileRest.GetDriveFileByParent)
 	protected.GET("/files", driveFileRest.SearchDriveFile)
 
