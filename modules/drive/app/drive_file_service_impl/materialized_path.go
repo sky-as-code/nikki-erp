@@ -103,10 +103,10 @@ func materializedPathFromIds(ids []model.Id) string {
 		b.WriteByte('/')
 		b.WriteString(string(id))
 	}
-	b.WriteByte('/')
 	return b.String()
 }
 
 func joinMaterializedPathChild(parentPath string, childId model.Id) string {
-	return parentPath + string(childId) + "/"
+	parentPath = strings.TrimSuffix(parentPath, "/")
+	return parentPath + "/" + string(childId)
 }

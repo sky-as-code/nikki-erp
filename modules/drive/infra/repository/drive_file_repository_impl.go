@@ -277,13 +277,17 @@ func permissionPredicate(userId string) predicate.DriveFile {
 				),
 			)
 
+		// Path format: /id1/id2/... (no trailing slash). Match ancestor id as /id/ mid-path or path suffix .../id.
 		ancestorShareSub := entSql.
 			Select("id").
 			From(shareTable).
 			Where(
 				entSql.And(
 					entSql.EQ(shareUserRefCol, userId),
-					entSql.ExprP(filePathCol + " LIKE ('%/' || dfs." + entDrivefileshare.FieldFileRef + " || '/%')"),
+					entSql.Or(
+						entSql.ExprP(filePathCol+" LIKE ('%/' || dfs."+entDrivefileshare.FieldFileRef+" || '/%')"),
+						entSql.ExprP(filePathCol+" LIKE ('%/' || dfs."+entDrivefileshare.FieldFileRef+")"),
+					),
 				),
 			)
 
