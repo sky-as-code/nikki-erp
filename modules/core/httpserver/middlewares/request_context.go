@@ -2,8 +2,8 @@ package middlewares
 
 import (
 	"github.com/labstack/echo/v4"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
 )
 
 func RequestContextMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -17,7 +17,7 @@ func RequestContextMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 func RequestContextMiddleware2(moduleName string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			ctx := dynamicentity.NewRequestContextF(c.Request().Context(), moduleName, nil)
+			ctx := corectx.NewRequestContextF(c.Request().Context(), moduleName, nil)
 			c.SetRequest(c.Request().WithContext(ctx))
 			return next(c)
 		}

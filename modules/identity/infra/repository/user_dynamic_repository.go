@@ -1,12 +1,13 @@
 package repository
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/orm"
-	schemaEnt "github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	crud "github.com/sky-as-code/nikki-erp/common/crud"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
-	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicentity/baserepo"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
@@ -29,46 +30,46 @@ func NewUserDynamicRepository(param UserDynamicRepositoryParam) it.UserRepositor
 			ConfigSvc:    param.ConfigSvc,
 			QueryBuilder: param.QueryBuilder,
 			Logger:       param.Logger,
-			Schema:       schemaEnt.MustGetSchema(domain.UserSchemaName),
+			Schema:       dmodel.MustGetSchema(domain.UserSchemaName),
 		},
 	)
 	return &UserDynamicRepository{dynamicRepo: dynamicRepo}
 }
 
 type UserDynamicRepository struct {
-	dynamicRepo dEnt.BaseRepository
+	dynamicRepo coredyn.BaseRepository
 }
 
-func (this *UserDynamicRepository) GetBaseRepo() dynamicentity.BaseRepository {
+func (this *UserDynamicRepository) GetBaseRepo() coredyn.BaseRepository {
 	return this.dynamicRepo
 }
 
-func (this *UserDynamicRepository) Create(ctx dEnt.Context, user domain.UserEntity) (
-	*dEnt.OpResult[domain.UserEntity], error,
+func (this *UserDynamicRepository) Create(ctx corectx.Context, user domain.UserEntity) (
+	*crud.OpResult[domain.UserEntity], error,
 ) {
 	return baserepo.Insert[domain.UserEntity](ctx, this.dynamicRepo, user)
 }
 
-func (this *UserDynamicRepository) Update(ctx dEnt.Context, user domain.UserEntity, prevEtag string) (
-	*dEnt.OpResult[domain.UserEntity], error,
+func (this *UserDynamicRepository) Update(ctx corectx.Context, user domain.UserEntity, prevEtag string) (
+	*crud.OpResult[domain.UserEntity], error,
 ) {
 	return baserepo.Update[domain.UserEntity](ctx, this.dynamicRepo, user, prevEtag)
 }
 
-func (this *UserDynamicRepository) FindOne(ctx dEnt.Context, param dEnt.GetOneParam) (
-	*dEnt.OpResult[domain.UserEntity], error,
+func (this *UserDynamicRepository) FindOne(ctx corectx.Context, param coredyn.GetOneParam) (
+	*crud.OpResult[domain.UserEntity], error,
 ) {
 	return baserepo.FindOne[domain.UserEntity](ctx, this.dynamicRepo, param)
 }
 
-func (this *UserDynamicRepository) Archive(ctx dEnt.Context, user domain.UserEntity) (
-	*dEnt.OpResult[domain.UserEntity], error,
+func (this *UserDynamicRepository) Archive(ctx corectx.Context, user domain.UserEntity) (
+	*crud.OpResult[domain.UserEntity], error,
 ) {
 	return baserepo.Archive[domain.UserEntity](ctx, this.dynamicRepo, user)
 }
 
 func (this *UserDynamicRepository) Search(
-	ctx dEnt.Context, param dEnt.SearchParam,
-) (*dEnt.OpResult[dEnt.PagedResult[domain.UserEntity]], error) {
+	ctx corectx.Context, param coredyn.SearchParam,
+) (*crud.OpResult[crud.PagedResult[domain.UserEntity]], error) {
 	return baserepo.Search[domain.UserEntity](ctx, this.dynamicRepo, param)
 }

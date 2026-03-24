@@ -3,7 +3,7 @@ package orm
 import (
 	"go.bryk.io/pkg/errors"
 
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
 const (
@@ -11,7 +11,7 @@ const (
 	DialectPostgres = "postgres"
 )
 
-func GenCreateSql(registry *schema.EntityRegistry, dialect string) ([]string, error) {
+func GenCreateSql(registry *model.SchemaRegistry, dialect string) ([]string, error) {
 	if registry == nil {
 		return nil, errors.New("schema registry is required")
 	}
@@ -20,7 +20,7 @@ func GenCreateSql(registry *schema.EntityRegistry, dialect string) ([]string, er
 	}
 	builder := &PgQueryBuilder{}
 	var results []string
-	err := registry.ForEachOrder(func(schemaName string, s *schema.EntitySchema) error {
+	err := registry.ForEachOrder(func(schemaName string, s *model.ModelSchema) error {
 		sql, genErr := builder.SqlCreateTable(s, registry)
 		if genErr != nil {
 			return errors.Wrapf(genErr, "schema '%s'", schemaName)
@@ -34,16 +34,15 @@ func GenCreateSql(registry *schema.EntityRegistry, dialect string) ([]string, er
 	return results, nil
 }
 
-
-func isFkOwnerRelationType(relType schema.RelationType) bool {
-	return relType == schema.RelationTypeManyToOne || relType == schema.RelationTypeOneToOne
+func isFkOwnerRelationType(relType model.RelationType) bool {
+	return relType == model.RelationTypeManyToOne || relType == model.RelationTypeOneToOne
 }
 
-func ValidateRelations(registry *schema.EntityRegistry) error {
+func ValidateRelations(registry *model.SchemaRegistry) error {
 	if registry == nil {
 		return errors.New("schema registry is required")
 	}
-	err := registry.ForEach(func(schemaName string, s *schema.EntitySchema) error {
+	err := registry.ForEach(func(schemaName string, s *model.ModelSchema) error {
 		for _, relation := range s.Relations() {
 			if err := validateRelation(registry, schemaName, relation); err != nil {
 				return errors.Wrapf(err, "schema '%s' relation '%s'", schemaName, relation.Edge)
@@ -55,9 +54,9 @@ func ValidateRelations(registry *schema.EntityRegistry) error {
 }
 
 func validateRelation(
-	registry *schema.EntityRegistry,
+	registry *model.SchemaRegistry,
 	schemaName string,
-	relation schema.EntityRelation,
+	relation model.ModelRelation,
 ) error {
 	if err := validateRelationInput(registry, schemaName, relation); err != nil {
 		return err
@@ -77,9 +76,9 @@ func validateRelation(
 }
 
 func validateRelationInput(
-	registry *schema.EntityRegistry,
+	registry *model.SchemaRegistry,
 	schemaName string,
-	relation schema.EntityRelation,
+	relation model.ModelRelation,
 ) error {
 	if registry == nil {
 		return errors.New("schema registry is required")
@@ -100,10 +99,10 @@ func validateRelationInput(
 }
 
 func resolveRelationFields(
-	registry *schema.EntityRegistry,
-	sourceSchema *schema.EntitySchema,
-	relation schema.EntityRelation,
-) (*schema.EntityField, *schema.EntityField, error) {
+	registry *model.SchemaRegistry,
+	sourceSchema *model.ModelSchema,
+	relation model.ModelRelation,
+) (*model.ModelField, *model.ModelField, error) {
 	sourceField, ok := sourceSchema.Field(relation.SrcField)
 	if !ok {
 		return nil, nil, errors.Errorf(
@@ -123,7 +122,7 @@ func resolveRelationFields(
 }
 
 func validateFieldDataTypeMatch(
-	relation schema.EntityRelation, sourceField *schema.EntityField, foreignField *schema.EntityField,
+	relation model.ModelRelation, sourceField *model.ModelField, foreignField *model.ModelField,
 ) error {
 	sourceType := sourceField.DataType().String()
 	foreignType := foreignField.DataType().String()
@@ -135,14 +134,14 @@ func validateFieldDataTypeMatch(
 	return nil
 }
 
-func validateFieldArrayMatchRelationType(relation schema.EntityRelation, sourceField *schema.EntityField) error {
+func validateFieldArrayMatchRelationType(relation model.ModelRelation, sourceField *model.ModelField) error {
 	switch relation.RelationType {
-	case schema.RelationTypeOneToMany:
+	case model.RelationTypeOneToMany:
 		if !sourceField.IsArray() {
 			return errors.Errorf(
 				"relation '%s' expects array source field for type '%s'", relation.Edge, relation.RelationType)
 		}
-	case schema.RelationTypeOneToOne, schema.RelationTypeManyToOne:
+	case model.RelationTypeOneToOne, model.RelationTypeManyToOne:
 		if sourceField.IsArray() {
 			return errors.Errorf(
 				"relation '%s' expects non-array source field for type '%s'", relation.Edge, relation.RelationType)

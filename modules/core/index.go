@@ -9,7 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
+	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/enum"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -51,7 +51,7 @@ func (*CoreModule) Init() error {
 		deps.Invoke(cqrs.InitSubModule),
 		deps.Invoke(event.InitSubModule),
 		deps.Invoke(db.InitSubModule),
-		deps.Invoke(dynamicentity.InitSubModule),
+		deps.Invoke(coredyn.InitSubModule),
 		deps.Invoke(http.InitSubModule),
 		deps.Register(newCoreClient),
 		deps.Invoke(enum.InitSubModule),

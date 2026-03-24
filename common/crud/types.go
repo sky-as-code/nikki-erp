@@ -1,78 +1,33 @@
 package crud
 
-// import (
-// 	"time"
+import (
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+)
 
-// 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-// 	"github.com/sky-as-code/nikki-erp/common/model"
-// 	val "github.com/sky-as-code/nikki-erp/common/validator"
-// )
+type OpResult[TData any] struct {
+	// The result data when success. It is only meaningful if IsEmpty is false and ClientErrors is nil.
+	// Otherwise, it could be nil or an empty struct.
+	Data TData `json:"data"`
 
-// type PagingOptions struct {
-// 	Page int `json:"page" query:"page"`
-// 	Size int `json:"size" query:"size"`
-// }
+	// Contains validation errors, business errors...,
+	// or nil if there is no violation.
+	ClientErrors ft.ClientErrors `json:"errors,omitempty"`
 
-// type PagedResult[T any] struct {
-// 	Items []T `json:"items"`
-// 	Total int `json:"total"`
-// 	Page  int `json:"page"`
-// 	Size  int `json:"size"`
-// }
+	// Indicates whether "Data" has zero value (ie: empty struct, empty array)
+	//
+	// If ClientErrors is nil but IsEmpty is true,
+	// it means the query is successfull but no data is found.
+	IsEmpty bool `json:"isEmpty"`
+}
 
-// type OpResult[TData any] struct {
-// 	Data TData `json:"data"`
+type PagingOptions struct {
+	Page int `json:"page" query:"page"`
+	Size int `json:"size" query:"size"`
+}
 
-// 	// Indicates whether "Data" has zero value (only supports empty struct, nil pointer and empty array)
-// 	//
-// 	// If ClientError is nil but HasData is false,
-// 	// it means the query is successfull but doesn't return any data.
-// 	HasData     bool            `json:"hasData"`
-// 	ClientError *ft.ClientError `json:"error,omitempty"`
-// }
-
-// func (this OpResult[TData]) GetClientError() *ft.ClientError {
-// 	return this.ClientError
-// }
-
-// func (this OpResult[TData]) GetHasData() bool {
-// 	return this.HasData
-// }
-
-// func PageIndexValidateRule(field **int) *val.FieldRules {
-// 	return val.Field(field,
-// 		val.Min(model.MODEL_RULE_PAGE_INDEX_START),
-// 		val.Max(model.MODEL_RULE_PAGE_INDEX_END),
-// 	)
-// }
-
-// func PageSizeValidateRule(field **int) *val.FieldRules {
-// 	return val.Field(field, val.When(*field != nil,
-// 		val.NotEmpty,
-// 		val.Min(model.MODEL_RULE_PAGE_MIN_SIZE),
-// 		val.Max(model.MODEL_RULE_PAGE_MAX_SIZE),
-// 	))
-// }
-
-// type DeletionResultData struct {
-// 	Id           model.Id  `json:"id"`
-// 	DeletedAt    time.Time `json:"deletedAt"`
-// 	DeletedCount *int      `json:"deletedCount,omitempty"`
-// }
-
-// type DeletionResult = OpResult[*DeletionResultData]
-
-// func NewSuccessDeletionResult(id model.Id, deletedCount ...*int) *DeletionResult {
-// 	var del *int
-// 	if len(deletedCount) > 0 {
-// 		del = deletedCount[0]
-// 	}
-// 	return &DeletionResult{
-// 		Data: &DeletionResultData{
-// 			Id:           id,
-// 			DeletedAt:    time.Now(),
-// 			DeletedCount: del,
-// 		},
-// 		HasData: true,
-// 	}
-// }
+type PagedResult[T any] struct {
+	Items []T `json:"items"`
+	Total int `json:"total"`
+	Page  int `json:"page"`
+	Size  int `json:"size"`
+}

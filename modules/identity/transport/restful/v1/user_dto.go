@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/common/array"
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
@@ -97,7 +97,7 @@ type UserEntityDto struct {
 }
 
 type SearchUsers2Response struct {
-	Items []schema.DynamicFields `json:"items"`
+	Items []dmodel.DynamicFields `json:"items"`
 	Total int                    `json:"total"`
 	Page  int                    `json:"page"`
 	Size  int                    `json:"size"`

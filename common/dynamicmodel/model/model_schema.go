@@ -1,4 +1,4 @@
-package schema
+package model
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 
 type DynamicFields map[string]any
 
-type EntitySchema struct {
+type ModelSchema struct {
 	// Persistent fields
 	name             string
 	tableName        string
@@ -28,53 +28,53 @@ type EntitySchema struct {
 	// Computed fields
 	allUniqueKeys [][]string
 
-	relations []EntityRelation
-	fields    map[string]*EntityField
+	relations []ModelRelation
+	fields    map[string]*ModelField
 }
 
-func (this EntitySchema) Name() string {
+func (this ModelSchema) Name() string {
 	return this.name
 }
 
-func (this EntitySchema) Label() model.LangJson {
+func (this ModelSchema) Label() model.LangJson {
 	return this.label
 }
 
-func (this EntitySchema) Description() model.LangJson {
+func (this ModelSchema) Description() model.LangJson {
 	return this.description
 }
 
-func (this EntitySchema) Fields() map[string]*EntityField {
+func (this ModelSchema) Fields() map[string]*ModelField {
 	return this.fields
 }
 
-func (this EntitySchema) Relations() []EntityRelation {
+func (this ModelSchema) Relations() []ModelRelation {
 	return this.relations
 }
 
-func (this EntitySchema) Field(name string) (*EntityField, bool) {
+func (this ModelSchema) Field(name string) (*ModelField, bool) {
 	field, ok := this.fields[name]
 	return field, ok
 }
 
-func (this EntitySchema) MustField(name string) *EntityField {
+func (this ModelSchema) MustField(name string) *ModelField {
 	field := this.fields[name]
 	return field
 }
 
 // TableName returns the table name associated with this schema.
-func (this EntitySchema) TableName() string {
+func (this ModelSchema) TableName() string {
 	return this.tableName
 }
 
 // UniqueFields returns the list of composite unique constraints.
 // Each inner slice is a group of field names.
-func (this EntitySchema) CompositeUniques() [][]string {
+func (this ModelSchema) CompositeUniques() [][]string {
 	return this.compositeUniques
 }
 
 // TenantKey returns the tenant key column name, or empty if not tenant-scoped.
-func (this EntitySchema) TenantKey() string {
+func (this ModelSchema) TenantKey() string {
 	if this.tenantKey == nil {
 		return ""
 	}
@@ -82,12 +82,12 @@ func (this EntitySchema) TenantKey() string {
 }
 
 // Column returns the field by name (alias for Field for ORM compatibility).
-func (this EntitySchema) Column(name string) (*EntityField, bool) {
+func (this ModelSchema) Column(name string) (*ModelField, bool) {
 	return this.Field(name)
 }
 
 // KeyColumns returns primary keys plus tenant key if present.
-func (this EntitySchema) KeyColumns() []string {
+func (this ModelSchema) KeyColumns() []string {
 	keys := append([]string{}, this.primaryKeys...)
 	if tk := this.TenantKey(); tk != "" && !array.Contains(keys, tk) {
 		keys = append(keys, tk)
@@ -96,21 +96,21 @@ func (this EntitySchema) KeyColumns() []string {
 }
 
 // IsPrimaryKey returns true if the given field is a primary key.
-func (this EntitySchema) IsPrimaryKey(name string) bool {
+func (this ModelSchema) IsPrimaryKey(name string) bool {
 	return array.Contains(this.primaryKeys, name)
 }
 
 // IsTenantKey returns true if the given field is the tenant key.
-func (this EntitySchema) IsTenantKey(name string) bool {
+func (this ModelSchema) IsTenantKey(name string) bool {
 	return this.TenantKey() == name
 }
 
 // Columns returns fields in definition order for SQL operations.
 // Entity-typed fields (virtual edge fields) are excluded as they have no DB column.
-func (this EntitySchema) Columns() []*EntityField {
-	result := make([]*EntityField, 0, len(this.fieldsOrder))
+func (this ModelSchema) Columns() []*ModelField {
+	result := make([]*ModelField, 0, len(this.fieldsOrder))
 	for _, name := range this.fieldsOrder {
-		if f, ok := this.fields[name]; ok && f != nil && !isEntityField(f) {
+		if f, ok := this.fields[name]; ok && f != nil && !isModelField(f) {
 			result = append(result, f)
 		}
 	}
@@ -119,10 +119,10 @@ func (this EntitySchema) Columns() []*EntityField {
 
 // Picks creates a new instance of entitySchema with only the specified fields.
 // Other information such as table name, labels, descriptions, etc. are not copied.
-func (this EntitySchema) Pick(fieldNames []string) *EntitySchema {
-	newSchema := &EntitySchema{
+func (this ModelSchema) Pick(fieldNames []string) *ModelSchema {
+	newSchema := &ModelSchema{
 		name:   this.name,
-		fields: make(map[string]*EntityField),
+		fields: make(map[string]*ModelField),
 	}
 	for _, name := range fieldNames {
 		field, ok := this.fields[name]
@@ -133,37 +133,40 @@ func (this EntitySchema) Pick(fieldNames []string) *EntitySchema {
 	return newSchema
 }
 
-func isEntityField(f *EntityField) bool {
+func isModelField(f *ModelField) bool {
 	return f.dataType != nil && f.dataType.String() == "entity"
 }
 
 // PrimaryKeys returns the list of primary key column names.
-func (this EntitySchema) PrimaryKeys() []string {
+func (this ModelSchema) PrimaryKeys() []string {
 	return this.primaryKeys
 }
 
 // UniqueKeys returns all unique constraints (field-level and schema-level).
-func (this EntitySchema) AllUniques() [][]string {
+func (this ModelSchema) AllUniques() [][]string {
 	return this.allUniqueKeys
 }
 
-type EntitySchemaValidateOpts struct {
+type ModelSchemaValidateOpts struct {
 	// Whether to validate for edit or create (default).
 	ForEdit bool
-	// Whether to strip read-only fields from the sanitized result.
+	// Whether to strip read-only fields from the sanitized result. Default: true.
 	StripReadOnly bool
+	// Whether to set default values for auto-generated fields. Default: false.
+	AutoGenerateValues bool
 }
 
-// ValidateMap validates each map key against the corresponding schema field by invoking EntityField.Validate.
+// ValidateMap validates each map key against the corresponding schema field by invoking ModelField.Validate.
 // Returns a new map with validated and sanitized values, or (nil, ClientErrors) when invalid.
-func (this *EntitySchema) Validate(input DynamicFields, options ...EntitySchemaValidateOpts) (DynamicFields, ft.ClientErrors) {
-	var opts EntitySchemaValidateOpts
+func (this *ModelSchema) Validate(input DynamicFields, options ...ModelSchemaValidateOpts) (DynamicFields, ft.ClientErrors) {
+	var opts ModelSchemaValidateOpts
 	if len(options) > 0 {
 		opts = options[0]
 	} else {
-		opts = EntitySchemaValidateOpts{
-			ForEdit:       false,
-			StripReadOnly: true,
+		opts = ModelSchemaValidateOpts{
+			ForEdit:            false,
+			StripReadOnly:      true,
+			AutoGenerateValues: false,
 		}
 	}
 	var errs ft.ClientErrors
@@ -173,6 +176,9 @@ func (this *EntitySchema) Validate(input DynamicFields, options ...EntitySchemaV
 		field := this.fields[name]
 		if opts.StripReadOnly && field.isReadOnly {
 			continue
+		}
+		if opts.AutoGenerateValues && field.isAutoGenerated {
+			input[name] = nil
 		}
 		val, exists := input[name]
 		validated, vErr := field.Validate(val, opts.ForEdit)
@@ -193,7 +199,7 @@ func (this *EntitySchema) Validate(input DynamicFields, options ...EntitySchemaV
 
 // ValidateStruct validates a struct pointer by converting to map and validating.
 // Uses "json" struct tag: missing tag uses field name, tag "-" skips the field.
-func (this *EntitySchema) ValidateStruct(target any, options ...EntitySchemaValidateOpts) ft.ClientErrors {
+func (this *ModelSchema) ValidateStruct(target any, options ...ModelSchemaValidateOpts) ft.ClientErrors {
 	inputMap, err := modelmapper.StructToMap(target)
 	if err != nil {
 		panic(errors.Wrap(err, "struct to map conversion failed"))
@@ -219,7 +225,7 @@ func (this RelationCascade) Sql() string {
 	return string(this)
 }
 
-type EntityRelation struct {
+type ModelRelation struct {
 	Edge           string          `json:"edge"`
 	SrcField       string          `json:"src_field"`
 	RelationType   RelationType    `json:"relation_type"`
@@ -229,10 +235,10 @@ type EntityRelation struct {
 	OnDelete       RelationCascade `json:"on_delete"`
 	OnUpdate       RelationCascade `json:"on_update"`
 
-	ThroughEntity    *EntitySchema `json:"through_entity,omitempty"`
-	ThroughTableName string        `json:"through_table_name,omitempty"`
-	ThroughSrcCol    string        `json:"through_foreign_col,omitempty"`
-	ThroughDestCol   string        `json:"through_dest_col,omitempty"`
+	ThroughEntity    *ModelSchema `json:"through_entity,omitempty"`
+	ThroughTableName string       `json:"through_table_name,omitempty"`
+	ThroughSrcCol    string       `json:"through_foreign_col,omitempty"`
+	ThroughDestCol   string       `json:"through_dest_col,omitempty"`
 }
 
 type RelationType string
@@ -244,12 +250,13 @@ const (
 	RelationTypeManyToMany = RelationType("many:many")
 )
 
-type EntityField struct {
+type ModelField struct {
 	name             string
 	label            model.LangJson
 	dataType         FieldDataType
 	description      model.LangJson
 	isArray          bool
+	isAutoGenerated  bool
 	isReadOnly       bool
 	isRequiredCreate bool
 	isRequiredUpdate bool
@@ -259,61 +266,65 @@ type EntityField struct {
 	rules            []*FieldRule
 	defaultValue     *any
 	defaultFn        func() any
-	relation         *EntityRelation
+	relation         *ModelRelation
 }
 
 // Getter methods
-func (this *EntityField) Name() string {
+func (this *ModelField) Name() string {
 	return this.name
 }
 
-func (this *EntityField) Label() model.LangJson {
+func (this *ModelField) Label() model.LangJson {
 	return this.label
 }
 
-func (this *EntityField) DataType() FieldDataType {
+func (this *ModelField) DataType() FieldDataType {
 	return this.dataType
 }
 
-func (this *EntityField) Description() model.LangJson {
+func (this *ModelField) Description() model.LangJson {
 	return this.description
 }
 
-func (this *EntityField) IsArray() bool {
+func (this *ModelField) IsArray() bool {
 	return this.isArray
 }
 
-func (this *EntityField) IsAutoGenerated() bool {
+func (this *ModelField) IsAutoGenerated() bool {
+	return this.isAutoGenerated
+}
+
+func (this *ModelField) IsReadOnly() bool {
 	return this.isReadOnly
 }
 
-func (this *EntityField) IsRequiredForCreate() bool {
+func (this *ModelField) IsRequiredForCreate() bool {
 	return this.isRequiredCreate
 }
 
-func (this *EntityField) IsRequiredForUpdate() bool {
+func (this *ModelField) IsRequiredForUpdate() bool {
 	return this.isRequiredUpdate
 }
 
-func (this *EntityField) IsPrimaryKey() bool {
+func (this *ModelField) IsPrimaryKey() bool {
 	return this.isPrimaryKey
 }
 
-func (this *EntityField) IsTenantKey() bool {
+func (this *ModelField) IsTenantKey() bool {
 	return this.isTenantKey
 }
 
-func (this *EntityField) IsUnique() bool {
+func (this *ModelField) IsUnique() bool {
 	return this.isUnique
 }
 
 // ColumnType returns the SQL column type string (from DataType).
-func (this *EntityField) ColumnType() string {
+func (this *ModelField) ColumnType() string {
 	return this.dataType.String()
 }
 
 // ColumnNullable returns "NOT NULL" if required, else "NULL".
-func (this *EntityField) ColumnNullable() string {
+func (this *ModelField) ColumnNullable() string {
 	if this.isRequiredCreate {
 		return "NOT NULL"
 	}
@@ -321,29 +332,29 @@ func (this *EntityField) ColumnNullable() string {
 }
 
 // IsNullable returns true if the column allows NULL.
-func (this *EntityField) IsNullable() bool {
+func (this *ModelField) IsNullable() bool {
 	return !this.isRequiredCreate
 }
 
-func (this *EntityField) Rules() []*FieldRule {
+func (this *ModelField) Rules() []*FieldRule {
 	return this.rules
 }
 
-func (this *EntityField) Default() any {
+func (this *ModelField) Default() any {
 	if this.defaultValue == nil {
 		return nil
 	}
 	return *this.defaultValue
 }
 
-func (this *EntityField) DefaultFn() func() any {
+func (this *ModelField) DefaultFn() func() any {
 	return this.defaultFn
 }
 
 // Validate invokes the field's data type Validate (which validates and may sanitize),
 // then applies field rules. Returns the validated value and technical error if any.
 // When value is empty: uses default if available; otherwise errors only when required with no fallback.
-func (this *EntityField) Validate(value any, forEdit ...bool) (any, *ft.ClientErrorItem) {
+func (this *ModelField) Validate(value any, forEdit ...bool) (any, *ft.ClientErrorItem) {
 	isForEdit := len(forEdit) > 0 && forEdit[0]
 
 	if isNil(value) {
@@ -377,7 +388,7 @@ func (this *EntityField) Validate(value any, forEdit ...bool) (any, *ft.ClientEr
 	return validated, nil
 }
 
-func (this *EntityField) applyFieldRulesForValue(value any) *ft.ClientErrorItem {
+func (this *ModelField) applyFieldRulesForValue(value any) *ft.ClientErrorItem {
 	for _, rule := range this.rules {
 		if rule == nil || len(*rule) == 0 {
 			continue
@@ -473,8 +484,8 @@ func FieldRuleArrayLength(min, max int) FieldRule {
 	return FieldRule{FieldRuleArrayLengthType, []int{min, max}}
 }
 
-func (this *EntityField) Clone() *EntityField {
-	cloned := &EntityField{
+func (this *ModelField) Clone() *ModelField {
+	cloned := &ModelField{
 		name:             this.name,
 		label:            this.label,
 		dataType:         this.dataType,

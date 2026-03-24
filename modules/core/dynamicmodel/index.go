@@ -1,4 +1,4 @@
-package dynamicentity
+package dynamicmodel
 
 import (
 	_ "github.com/lib/pq"

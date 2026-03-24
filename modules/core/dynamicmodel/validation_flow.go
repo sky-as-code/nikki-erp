@@ -1,4 +1,4 @@
-package dynamicentity
+package dynamicmodel
 
 import (
 	"go.bryk.io/pkg/errors"

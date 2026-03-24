@@ -1,4 +1,4 @@
-package schema
+package model
 
 import (
 	"sort"
@@ -7,20 +7,20 @@ import (
 	"go.bryk.io/pkg/errors"
 )
 
-var schemaRegistry = &EntityRegistry{
-	schemas: make(map[string]*EntitySchema),
+var schemaRegistry = &SchemaRegistry{
+	schemas: make(map[string]*ModelSchema),
 	mu:      &sync.RWMutex{},
 }
 
-type EntityRegistry struct {
-	schemas      map[string]*EntitySchema
+type SchemaRegistry struct {
+	schemas      map[string]*ModelSchema
 	orderedNames []string
 	mu           *sync.RWMutex
 }
 
-type RelationValidator func(registry *EntityRegistry, schemaName string, relation EntityRelation) error
+type RelationValidator func(registry *SchemaRegistry, schemaName string, relation ModelRelation) error
 
-func (this *EntityRegistry) Get(name string) *EntitySchema {
+func (this *SchemaRegistry) Get(name string) *ModelSchema {
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 	schema, exists := this.schemas[name]
@@ -30,7 +30,7 @@ func (this *EntityRegistry) Get(name string) *EntitySchema {
 	return schema
 }
 
-func (this *EntityRegistry) FieldSafe(schemaName string, fieldName string) (*EntityField, error) {
+func (this *SchemaRegistry) FieldSafe(schemaName string, fieldName string) (*ModelField, error) {
 	schema := this.Get(schemaName)
 	if schema == nil {
 		return nil, errors.Errorf("schema '%s' not found", schemaName)
@@ -44,7 +44,7 @@ func (this *EntityRegistry) FieldSafe(schemaName string, fieldName string) (*Ent
 	return field, nil
 }
 
-func (this *EntityRegistry) Field(schemaName string, fieldName string) *EntityField {
+func (this *SchemaRegistry) Field(schemaName string, fieldName string) *ModelField {
 	field, err := this.FieldSafe(schemaName, fieldName)
 	if err != nil {
 		panic(err)
@@ -64,7 +64,7 @@ func RegisterSchemaB(schemaBuilder *EntitySchemaBuilder) error {
 
 // RegisterSchema registers a schema using its name as the registry key.
 // Returns an error if a schema with the same name is already registered.
-func RegisterSchema(schema *EntitySchema) error {
+func RegisterSchema(schema *ModelSchema) error {
 	name := schema.Name()
 	if name == "" {
 		return errors.New("schema name must not be empty")
@@ -82,7 +82,7 @@ func RegisterSchema(schema *EntitySchema) error {
 	return nil
 }
 
-func (this *EntityRegistry) ForEach(fn func(schemaName string, schema *EntitySchema) error) error {
+func (this *SchemaRegistry) ForEach(fn func(schemaName string, schema *ModelSchema) error) error {
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 	for schemaName, schemaItem := range this.schemas {
@@ -95,7 +95,7 @@ func (this *EntityRegistry) ForEach(fn func(schemaName string, schema *EntitySch
 
 // ForEachOrder iterates schemas in FK-dependency order (parents before children),
 // suitable for generating CREATE TABLE statements in the correct sequence.
-func (this *EntityRegistry) ForEachOrder(fn func(schemaName string, schema *EntitySchema) error) error {
+func (this *SchemaRegistry) ForEachOrder(fn func(schemaName string, schema *ModelSchema) error) error {
 	this.mu.RLock()
 	defer this.mu.RUnlock()
 	for _, name := range this.orderedNames {
@@ -107,12 +107,12 @@ func (this *EntityRegistry) ForEachOrder(fn func(schemaName string, schema *Enti
 }
 
 // GetSchema retrieves a registered schema by its name.
-func GetSchema(name string) *EntitySchema {
+func GetSchema(name string) *ModelSchema {
 	return schemaRegistry.Get(name)
 }
 
 // MustGetSchema retrieves a registered schema by its name.
-func MustGetSchema(name string) *EntitySchema {
+func MustGetSchema(name string) *ModelSchema {
 	schema := schemaRegistry.Get(name)
 	if schema == nil {
 		panic(errors.Errorf("schema '%s' not found", name))
@@ -122,7 +122,7 @@ func MustGetSchema(name string) *EntitySchema {
 
 // GetOrRegisterSchema first attempts to retrieve a registered schema by its name.
 // If not found, it builds a new schema using the builder and registers it.
-func GetOrRegisterSchema(newSchema *EntitySchema) *EntitySchema {
+func GetOrRegisterSchema(newSchema *ModelSchema) *ModelSchema {
 	name := newSchema.Name()
 	schema := schemaRegistry.Get(name)
 	if schema == nil {
@@ -132,11 +132,11 @@ func GetOrRegisterSchema(newSchema *EntitySchema) *EntitySchema {
 	return schema
 }
 
-func GetSchemaRegistry() *EntityRegistry {
+func GetSchemaRegistry() *SchemaRegistry {
 	return schemaRegistry
 }
 
-func CloneField(schema *EntitySchema, fieldName string) *FieldBuilder {
+func CloneField(schema *ModelSchema, fieldName string) *FieldBuilder {
 	field := schema.MustField(fieldName)
 	clonedField := field.Clone()
 	return &FieldBuilder{
@@ -156,7 +156,7 @@ func CloneFieldN(schemaName string, fieldName string) *FieldBuilder {
 // (referenced/parent schemas appear before schemas that depend on them).
 // Schemas with no FK relationships are sorted alphabetically for determinism.
 // Cyclic dependencies are handled gracefully by appending remaining nodes last.
-func computeTopoOrder(schemas map[string]*EntitySchema) []string {
+func computeTopoOrder(schemas map[string]*ModelSchema) []string {
 	known := buildKnownSet(schemas)
 	inDegree, dependents := buildDepGraph(schemas, known)
 	return kahnSort(known, inDegree, dependents)
@@ -164,7 +164,7 @@ func computeTopoOrder(schemas map[string]*EntitySchema) []string {
 
 // buildKnownSet returns a set of all canonical names currently in the registry,
 // used for O(1) membership checks during dependency graph construction.
-func buildKnownSet(schemas map[string]*EntitySchema) map[string]bool {
+func buildKnownSet(schemas map[string]*ModelSchema) map[string]bool {
 	known := make(map[string]bool, len(schemas))
 	for name := range schemas {
 		known[name] = true
@@ -176,7 +176,7 @@ func buildKnownSet(schemas map[string]*EntitySchema) map[string]bool {
 // inDegree counts how many registry schemas each schema depends on, and
 // dependents maps each schema to the list of schemas that directly depend on it.
 func buildDepGraph(
-	schemas map[string]*EntitySchema,
+	schemas map[string]*ModelSchema,
 	known map[string]bool,
 ) (inDegree map[string]int, dependents map[string][]string) {
 	inDegree = make(map[string]int, len(schemas))
@@ -198,7 +198,7 @@ func buildDepGraph(
 
 // fkDependencies returns canonical names of schemas that must be created before s,
 // based on FK-owning relations (many:one, one:one) whose destination is in the registry.
-func fkDependencies(s *EntitySchema, known map[string]bool) []string {
+func fkDependencies(s *ModelSchema, known map[string]bool) []string {
 	var deps []string
 	for _, rel := range s.relations {
 		if isFkOwnerRelation(rel.RelationType) && known[rel.DestEntityName] {

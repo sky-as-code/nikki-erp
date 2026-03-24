@@ -1,27 +1,29 @@
 package crud
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	crud "github.com/sky-as-code/nikki-erp/common/crud"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicentity/basemodel"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-type ToDomainModelFunc[TDomain any] func(data schema.DynamicFields) TDomain
-type BeforeValidationFunc[TDomain any] func(ctx dEnt.Context, model TDomain) (TDomain, error)
-type AfterValidationFunc[TDomain any] func(ctx dEnt.Context, model TDomain) (TDomain, error)
-type ValidateExtraFunc[TDomain any] func(ctx dEnt.Context, model TDomain, vErrs *ft.ClientErrors) error
+type ToDomainModelFunc[TDomain any] func(data dmodel.DynamicFields) TDomain
+type BeforeValidationFunc[TDomain any] func(ctx corectx.Context, model TDomain) (TDomain, error)
+type AfterValidationFunc[TDomain any] func(ctx corectx.Context, model TDomain) (TDomain, error)
+type ValidateExtraFunc[TDomain any] func(ctx corectx.Context, model TDomain, vErrs *ft.ClientErrors) error
 
 type CreateParam[
 	TDomain any,
-	TDomainPtr dEnt.DynamicModelPtr[TDomain],
+	TDomainPtr coredyn.DynamicModelPtr[TDomain],
 ] struct {
 	// Action name for logging and error messages
 	Action         string
-	BaseRepoGetter dEnt.BaseRepoGetter
+	BaseRepoGetter coredyn.BaseRepoGetter
 
 	// Data to create
-	Data schema.DynamicModelGetter
+	Data dmodel.DynamicModelGetter
 
 	// Function to convert a dynamic entity to a domain model
 	// ToDomainModel ToDomainModelFunc[TDomain]
@@ -38,19 +40,19 @@ type CreateParam[
 
 func Create[
 	TDomain any,
-	TDomainPtr dEnt.DynamicModelPtr[TDomain],
+	TDomainPtr coredyn.DynamicModelPtr[TDomain],
 ](
-	ctx dEnt.Context,
+	ctx corectx.Context,
 	param CreateParam[TDomain, TDomainPtr],
-) (*dEnt.OpResult[TDomain], error) {
+) (*crud.OpResult[TDomain], error) {
 
 	baseRepo := param.BaseRepoGetter.GetBaseRepo()
-	entitySchema := baseRepo.GetSchema()
+	schema := baseRepo.GetSchema()
 	fieldData := param.Data.GetFieldData()
 	newModel := TDomainPtr(new(TDomain))
 	newModel.SetFieldData(fieldData)
 
-	flow := dEnt.StartValidationFlow()
+	flow := coredyn.StartValidationFlow()
 	clientErrs, err := flow.
 		Step(func(vErrs *ft.ClientErrors) error {
 			if param.BeforeValidation == nil {
@@ -63,7 +65,7 @@ func Create[
 			return err
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
-			result, clientErrs := entitySchema.Validate(fieldData)
+			result, clientErrs := schema.Validate(fieldData, dmodel.ModelSchemaValidateOpts{AutoGenerateValues: true, StripReadOnly: true})
 			if clientErrs != nil {
 				*vErrs = clientErrs
 			} else {
@@ -99,7 +101,7 @@ func Create[
 	}
 
 	if clientErrs != nil && clientErrs.Count() > 0 {
-		return &dEnt.OpResult[TDomain]{
+		return &crud.OpResult[TDomain]{
 			ClientErrors: clientErrs,
 		}, nil
 	}
@@ -109,12 +111,12 @@ func Create[
 		return nil, err
 	}
 	if len(insertRes.ClientErrors) > 0 {
-		return &dEnt.OpResult[TDomain]{ClientErrors: insertRes.ClientErrors}, nil
+		return &crud.OpResult[TDomain]{ClientErrors: insertRes.ClientErrors}, nil
 	}
 
 	insertedModel := TDomainPtr(new(TDomain))
 	insertedModel.SetFieldData(insertRes.Data)
-	return &dEnt.OpResult[TDomain]{
+	return &crud.OpResult[TDomain]{
 		Data:    *insertedModel,
 		IsEmpty: false,
 	}, nil
@@ -122,11 +124,11 @@ func Create[
 
 type UpdateParam[
 	TDomain any,
-	TDomainPtr dEnt.DynamicModelPtr[TDomain],
+	TDomainPtr coredyn.DynamicModelPtr[TDomain],
 ] struct {
 	Action           string
-	DbRepoGetter     dEnt.BaseRepoGetter
-	Data             schema.DynamicModelGetter
+	DbRepoGetter     coredyn.BaseRepoGetter
+	Data             dmodel.DynamicModelGetter
 	BeforeValidation BeforeValidationFunc[TDomainPtr]
 	AfterValidation  AfterValidationFunc[TDomainPtr]
 	ValidateExtra    ValidateExtraFunc[TDomainPtr]
@@ -134,11 +136,11 @@ type UpdateParam[
 
 func Update[
 	TDomain any,
-	TDomainPtr dEnt.DynamicModelPtr[TDomain],
+	TDomainPtr coredyn.DynamicModelPtr[TDomain],
 ](
-	ctx dEnt.Context,
+	ctx corectx.Context,
 	param UpdateParam[TDomain, TDomainPtr],
-) (*dEnt.OpResult[TDomain], error) {
+) (*crud.OpResult[TDomain], error) {
 	model := TDomainPtr(new(TDomain))
 	model.SetFieldData(param.Data.GetFieldData())
 
@@ -148,7 +150,7 @@ func Update[
 	}
 
 	if clientErrs != nil && clientErrs.Count() > 0 {
-		return &dEnt.OpResult[TDomain]{ClientErrors: clientErrs}, nil
+		return &crud.OpResult[TDomain]{ClientErrors: clientErrs}, nil
 	}
 
 	baseRepo := param.DbRepoGetter.GetBaseRepo()
@@ -158,22 +160,22 @@ func Update[
 		return nil, err
 	}
 	if len(updatedRes.ClientErrors) > 0 {
-		return &dEnt.OpResult[TDomain]{ClientErrors: updatedRes.ClientErrors}, nil
+		return &crud.OpResult[TDomain]{ClientErrors: updatedRes.ClientErrors}, nil
 	}
 
 	model.SetFieldData(updatedRes.Data)
-	return &dEnt.OpResult[TDomain]{Data: *model, IsEmpty: false}, nil
+	return &crud.OpResult[TDomain]{Data: *model, IsEmpty: false}, nil
 }
 
-func runUpdateValidationFlow[TDomain any, TDomainPtr dEnt.DynamicModelPtr[TDomain]](
-	ctx dEnt.Context,
+func runUpdateValidationFlow[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
+	ctx corectx.Context,
 	param UpdateParam[TDomain, TDomainPtr],
 	model TDomainPtr,
 ) (ft.ClientErrors, error) {
 	baseRepo := param.DbRepoGetter.GetBaseRepo()
 	entitySchema := baseRepo.GetSchema()
 
-	return dEnt.StartValidationFlow().
+	return coredyn.StartValidationFlow().
 		Step(func(vErrs *ft.ClientErrors) error {
 			if param.BeforeValidation == nil {
 				return nil
@@ -185,7 +187,7 @@ func runUpdateValidationFlow[TDomain any, TDomainPtr dEnt.DynamicModelPtr[TDomai
 			return err
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
-			result, clientErrs := entitySchema.Validate(model.GetFieldData(), schema.EntitySchemaValidateOpts{ForEdit: true})
+			result, clientErrs := entitySchema.Validate(model.GetFieldData(), dmodel.ModelSchemaValidateOpts{ForEdit: true, StripReadOnly: true})
 			if clientErrs != nil {
 				*vErrs = clientErrs
 			} else {
@@ -220,18 +222,18 @@ func runUpdateValidationFlow[TDomain any, TDomainPtr dEnt.DynamicModelPtr[TDomai
 }
 
 func checkExistenceAndEtag(
-	ctx dEnt.Context,
-	entitySchema *schema.EntitySchema,
-	baseRepo dEnt.BaseRepository,
-	fieldData schema.DynamicFields,
+	ctx corectx.Context,
+	entitySchema *dmodel.ModelSchema,
+	baseRepo coredyn.BaseRepository,
+	fieldData dmodel.DynamicFields,
 	vErrs *ft.ClientErrors,
 ) error {
-	primaryKeys := make(schema.DynamicFields)
+	primaryKeys := make(dmodel.DynamicFields)
 	for _, key := range entitySchema.KeyColumns() {
 		primaryKeys[key] = fieldData[key]
 	}
 
-	dbRes, err := baseRepo.GetOne(ctx, dEnt.GetOneParam{Filter: primaryKeys})
+	dbRes, err := baseRepo.GetOne(ctx, coredyn.GetOneParam{Filter: primaryKeys})
 	if err != nil {
 		return err
 	}
@@ -255,24 +257,24 @@ func checkExistenceAndEtag(
 
 func GetOne[
 	TDomain any,
-	TDomainPtr dEnt.DynamicModelPtr[TDomain],
+	TDomainPtr coredyn.DynamicModelPtr[TDomain],
 ](
-	ctx dEnt.Context,
-	dbRepoGetter dEnt.BaseRepoGetter,
+	ctx corectx.Context,
+	dbRepoGetter coredyn.BaseRepoGetter,
 	query GetOneQuery,
-) (*dEnt.OpResult[TDomain], error) {
+) (*crud.OpResult[TDomain], error) {
 	querySchema := query.GetSchema()
 	queryFields := query.GetFieldData()
-	sanitizedFields, cErrs := querySchema.Validate(queryFields, schema.EntitySchemaValidateOpts{StripReadOnly: false})
+	sanitizedFields, cErrs := querySchema.Validate(queryFields, dmodel.ModelSchemaValidateOpts{StripReadOnly: false})
 	if cErrs.Count() > 0 {
-		return &dEnt.OpResult[TDomain]{ClientErrors: cErrs}, nil
+		return &crud.OpResult[TDomain]{ClientErrors: cErrs}, nil
 	}
 
 	delete(sanitizedFields, basemodel.FieldIncludeArchived)
 	delete(sanitizedFields, basemodel.FieldColumns)
 
 	baseRepo := dbRepoGetter.GetBaseRepo()
-	dbRes, err := baseRepo.GetOne(ctx, dEnt.GetOneParam{
+	dbRes, err := baseRepo.GetOne(ctx, coredyn.GetOneParam{
 		Filter:          sanitizedFields,
 		Columns:         query.GetColumns(),
 		IncludeArchived: query.GetIncludeArchived(),
@@ -281,57 +283,57 @@ func GetOne[
 		return nil, err
 	}
 	if len(dbRes.ClientErrors) > 0 {
-		return &dEnt.OpResult[TDomain]{ClientErrors: dbRes.ClientErrors}, nil
+		return &crud.OpResult[TDomain]{ClientErrors: dbRes.ClientErrors}, nil
 	}
 	if dbRes.IsEmpty {
 		cErrs.Append(*ft.NewNotFoundError(baseRepo.GetSchema().Name()))
-		return &dEnt.OpResult[TDomain]{ClientErrors: cErrs}, nil
+		return &crud.OpResult[TDomain]{ClientErrors: cErrs}, nil
 	}
 
 	model := TDomainPtr(new(TDomain))
 	model.SetFieldData(dbRes.Data)
-	return &dEnt.OpResult[TDomain]{Data: *model, IsEmpty: false}, nil
+	return &crud.OpResult[TDomain]{Data: *model, IsEmpty: false}, nil
 }
 
 func Archive[
 	TDomain any,
-	TDomainPtr dEnt.DynamicModelPtr[TDomain],
+	TDomainPtr coredyn.DynamicModelPtr[TDomain],
 ](
-	ctx dEnt.Context,
-	dbRepoGetter dEnt.BaseRepoGetter,
-	keys schema.DynamicFields,
-) (*dEnt.OpResult[TDomain], error) {
+	ctx corectx.Context,
+	dbRepoGetter coredyn.BaseRepoGetter,
+	keys dmodel.DynamicFields,
+) (*crud.OpResult[TDomain], error) {
 	baseRepo := dbRepoGetter.GetBaseRepo()
 	archRes, err := baseRepo.Archive(ctx, keys)
 	if err != nil {
 		return nil, err
 	}
 	if len(archRes.ClientErrors) > 0 {
-		return &dEnt.OpResult[TDomain]{ClientErrors: archRes.ClientErrors}, nil
+		return &crud.OpResult[TDomain]{ClientErrors: archRes.ClientErrors}, nil
 	}
 	if archRes.IsEmpty {
-		return &dEnt.OpResult[TDomain]{IsEmpty: true}, nil
+		return &crud.OpResult[TDomain]{IsEmpty: true}, nil
 	}
 	model := TDomainPtr(new(TDomain))
 	model.SetFieldData(archRes.Data)
-	return &dEnt.OpResult[TDomain]{Data: *model, IsEmpty: false}, nil
+	return &crud.OpResult[TDomain]{Data: *model, IsEmpty: false}, nil
 }
 
 func Search[
 	TDomain any,
-	TDomainPtr dEnt.DynamicModelPtr[TDomain],
+	TDomainPtr coredyn.DynamicModelPtr[TDomain],
 ](
-	ctx dEnt.Context,
-	dbRepoGetter dEnt.BaseRepoGetter,
-	param dEnt.SearchParam,
-) (*dEnt.OpResult[dEnt.PagedResult[TDomain]], error) {
+	ctx corectx.Context,
+	dbRepoGetter coredyn.BaseRepoGetter,
+	param coredyn.SearchParam,
+) (*crud.OpResult[crud.PagedResult[TDomain]], error) {
 	baseRepo := dbRepoGetter.GetBaseRepo()
 	searchRes, err := baseRepo.Search(ctx, param)
 	if err != nil {
 		return nil, err
 	}
 	if len(searchRes.ClientErrors) > 0 {
-		return &dEnt.OpResult[dEnt.PagedResult[TDomain]]{ClientErrors: searchRes.ClientErrors}, nil
+		return &crud.OpResult[crud.PagedResult[TDomain]]{ClientErrors: searchRes.ClientErrors}, nil
 	}
 	paged := searchRes.Data
 	items := make([]TDomain, len(paged.Items))
@@ -340,16 +342,16 @@ func Search[
 		model.SetFieldData(record)
 		items[i] = *model
 	}
-	out := dEnt.PagedResult[TDomain]{
+	out := crud.PagedResult[TDomain]{
 		Items: items,
 		Total: paged.Total,
 		Page:  paged.Page,
 		Size:  paged.Size,
 	}
-	return &dEnt.OpResult[dEnt.PagedResult[TDomain]]{Data: out, IsEmpty: len(items) == 0}, nil
+	return &crud.OpResult[crud.PagedResult[TDomain]]{Data: out, IsEmpty: len(items) == 0}, nil
 }
 
-func validateUniques(ctx dEnt.Context, data schema.DynamicFields, dbRepo dEnt.BaseRepository, vErrs *ft.ClientErrors) error {
+func validateUniques(ctx corectx.Context, data dmodel.DynamicFields, dbRepo coredyn.BaseRepository, vErrs *ft.ClientErrors) error {
 	collRes, err := dbRepo.CheckUniqueCollisions(ctx, data)
 	if err != nil {
 		return err

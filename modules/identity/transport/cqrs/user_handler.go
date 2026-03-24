@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	c "github.com/sky-as-code/nikki-erp/modules/identity/constants"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -17,12 +18,12 @@ type UserHandler struct {
 	UserSvc it.UserService
 }
 
-func (this *UserHandler) Create(ctx context.Context, packet *cqrs.RequestPacket[it.CreateUserCommand]) (*cqrs.Reply[it.CreateUserResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.CreateUser)
+func (this *UserHandler) Create(ctx context.Context, packet *cqrs.RequestPacket[it.CreateUserCommand2]) (*cqrs.Reply[it.CreateUserResult2], error) {
+	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.CreateUser)
 }
 
-func (this *UserHandler) Update(ctx context.Context, packet *cqrs.RequestPacket[it.UpdateUserCommand]) (*cqrs.Reply[it.UpdateUserResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.UpdateUser)
+func (this *UserHandler) Update(ctx context.Context, packet *cqrs.RequestPacket[it.UpdateUserCommand2]) (*cqrs.Reply[it.UpdateUserResult2], error) {
+	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.UpdateUser)
 }
 
 func (this *UserHandler) Delete(ctx context.Context, packet *cqrs.RequestPacket[it.DeleteUserCommand]) (*cqrs.Reply[it.DeleteUserResult], error) {

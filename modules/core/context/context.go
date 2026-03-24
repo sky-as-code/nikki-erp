@@ -1,9 +1,9 @@
-package dynamicentity
+package context
 
 import (
 	"context"
 
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
@@ -16,7 +16,7 @@ type Context interface {
 	SetLogger(logger logging.LoggerService)
 	GetDbTranx() db.DbTransaction
 	SetDbTranx(trx db.DbTransaction)
-	GetDomainConstraints() schema.DynamicFields
+	GetDomainConstraints() dmodel.DynamicFields
 	GetModuleName() string
 }
 
@@ -27,7 +27,7 @@ func NewRequestContext(ctx context.Context, moduleName string) Context {
 	}
 }
 
-func NewRequestContextF(ctx context.Context, moduleName string, domainConstraints schema.DynamicFields) Context {
+func NewRequestContextF(ctx context.Context, moduleName string, domainConstraints dmodel.DynamicFields) Context {
 	return &RequestContext{
 		Context:           ctx,
 		domainConstraints: domainConstraints,
@@ -54,7 +54,7 @@ type RequestContext struct {
 
 	// The transaction object that Repository Layer can use to perform atomic database operations.
 	repoTrx           db.DbTransaction
-	domainConstraints schema.DynamicFields
+	domainConstraints dmodel.DynamicFields
 	moduleName        string
 }
 
@@ -78,7 +78,7 @@ func (this *RequestContext) SetDbTranx(trx db.DbTransaction) {
 	this.repoTrx = trx
 }
 
-func (this RequestContext) GetDomainConstraints() schema.DynamicFields {
+func (this RequestContext) GetDomainConstraints() dmodel.DynamicFields {
 	return this.domainConstraints
 }
 

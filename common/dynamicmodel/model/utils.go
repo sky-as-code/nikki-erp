@@ -1,4 +1,4 @@
-package schema
+package model
 
 import (
 	"reflect"
@@ -24,7 +24,7 @@ type DynamicModelSetter interface {
 
 type SchemaGetter interface {
 	GetFieldData() DynamicFields
-	GetSchema() *EntitySchema
+	GetSchema() *ModelSchema
 }
 
 func StructToDynamicEntity(src any) (DynamicFields, error) {

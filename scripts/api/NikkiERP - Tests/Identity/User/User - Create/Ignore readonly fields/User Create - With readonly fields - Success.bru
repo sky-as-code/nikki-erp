@@ -1,0 +1,67 @@
+meta {
+  name: User Create - With readonly fields - Success
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "id": "00000000000000000000000000",
+    "display_name": "{{$randomFullName}}",
+    "email": "{{$randomEmail}}",
+    "is_owner": true,
+    "archived_at": "2026-03-24T10:54:50.610762Z"
+  }
+}
+
+script:post-response {
+  const tv4 = require('tv4');
+  
+  const schema = {
+      type: "object",
+      required: ["id", "created_at", "etag"],
+      properties: {
+          id: {
+              type: "string",
+              minLength: 1,
+          },
+          created_at: {
+              type: "string",
+              minLength: 20, //"2026-03-23T06:53:01Z"
+          },
+          etag: {
+              type: "string",
+              minLength: 1,
+          },
+      },
+      additionalProperties: false
+  };
+  
+  test("Status code is 201", function () {
+      expect(res.getStatus()).to.equal(201);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+    const valid = tv4.validate(res.getBody(), schema);
+    expect(tv4.error).not.to.exist;
+    expect(valid).to.be.true;  
+  });
+  
+  const { email } = req.getBody();
+  email && bru.setVar('email', email);
+  
+  const { id, etag } = res.getBody();
+  id && bru.setVar('user_id', id);
+  etag && bru.setVar('etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

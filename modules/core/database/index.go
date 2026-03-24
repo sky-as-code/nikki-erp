@@ -9,7 +9,7 @@ import (
 	"go.uber.org/dig"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/orm"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/database/dialects"

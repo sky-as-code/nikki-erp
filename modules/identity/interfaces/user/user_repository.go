@@ -1,36 +1,38 @@
 package user
 
 import (
+	crud "github.com/sky-as-code/nikki-erp/common/crud"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
-	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
+	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
 type UserRepository interface {
-	Create(ctx crud.Context, user *domain.User) (*domain.User, error)
-	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
-	Exists(ctx crud.Context, id model.Id) (bool, error)
-	ExistsMulti(ctx crud.Context, ids []model.Id, orgId *model.Id) (existing []model.Id, notExisting []model.Id, err error)
-	FindById(ctx crud.Context, param FindByIdParam) (*domain.User, error)
-	FindByIdForUpdate(ctx crud.Context, param FindByIdParam) (*domain.User, *db.DbLock, error)
-	FindByEmail(ctx crud.Context, param FindByEmailParam) (*domain.User, error)
+	Create(ctx corecrud.Context, user *domain.User) (*domain.User, error)
+	DeleteHard(ctx corecrud.Context, param DeleteParam) (int, error)
+	Exists(ctx corecrud.Context, id model.Id) (bool, error)
+	ExistsMulti(ctx corecrud.Context, ids []model.Id, orgId *model.Id) (existing []model.Id, notExisting []model.Id, err error)
+	FindById(ctx corecrud.Context, param FindByIdParam) (*domain.User, error)
+	FindByIdForUpdate(ctx corecrud.Context, param FindByIdParam) (*domain.User, *db.DbLock, error)
+	FindByEmail(ctx corecrud.Context, param FindByEmailParam) (*domain.User, error)
 	// FindByHierarchyId(ctx crud.Context, param FindByHierarchyIdParam) ([]domain.User, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.User], error)
-	Update(ctx crud.Context, user *domain.User, prevEtag model.Etag) (*domain.User, error)
+	Search(ctx corecrud.Context, param SearchParam) (*corecrud.PagedResult[domain.User], error)
+	Update(ctx corecrud.Context, user *domain.User, prevEtag model.Etag) (*domain.User, error)
 }
 
 type UserRepository2 interface {
 	dEnt.BaseRepoGetter
-	Create(ctx dEnt.Context, user domain.UserEntity) (*dEnt.OpResult[domain.UserEntity], error)
-	Update(ctx dEnt.Context, user domain.UserEntity, prevEtag string) (*dEnt.OpResult[domain.UserEntity], error)
-	FindOne(ctx dEnt.Context, param dEnt.GetOneParam) (*dEnt.OpResult[domain.UserEntity], error)
-	Search(ctx dEnt.Context, param dEnt.SearchParam) (*dEnt.OpResult[dEnt.PagedResult[domain.UserEntity]], error)
-	Archive(ctx dEnt.Context, user domain.UserEntity) (*dEnt.OpResult[domain.UserEntity], error)
+	Create(ctx corectx.Context, user domain.UserEntity) (*crud.OpResult[domain.UserEntity], error)
+	Update(ctx corectx.Context, user domain.UserEntity, prevEtag string) (*crud.OpResult[domain.UserEntity], error)
+	FindOne(ctx corectx.Context, param dEnt.GetOneParam) (*crud.OpResult[domain.UserEntity], error)
+	Search(ctx corectx.Context, param dEnt.SearchParam) (*crud.OpResult[crud.PagedResult[domain.UserEntity]], error)
+	Archive(ctx corectx.Context, user domain.UserEntity) (*crud.OpResult[domain.UserEntity], error)
 }
 
 type DeleteParam = DeleteUserCommand

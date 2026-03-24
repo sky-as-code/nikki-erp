@@ -3,7 +3,7 @@ package identity
 import (
 	"errors"
 
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/identity/app"
@@ -53,7 +53,7 @@ func (*IdentityModule) Init() error {
 // Init implements InCodeModule.
 func (this *IdentityModule) RegisterEntities() error {
 	return errors.Join(
-		schema.RegisterSchemaB(domain.UserSchemaBuilder()),
-		schema.RegisterSchemaB(domain.GroupSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.UserSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.GroupSchemaBuilder()),
 	)
 }

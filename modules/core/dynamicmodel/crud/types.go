@@ -1,11 +1,11 @@
 package crud
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
 
 type GetOneQuery interface {
-	schema.SchemaGetter
+	dmodel.SchemaGetter
 	GetIncludeArchived() bool
 	GetColumns() []string
 }

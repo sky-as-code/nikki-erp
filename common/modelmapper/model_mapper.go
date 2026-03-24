@@ -53,33 +53,51 @@ func storeConverter(srcType, destType reflect.Type, conv Converter) {
 // a plain struct, or any map-based type. A nil pointer src returns a zero TDest.
 // Fields tagged `mapper:"-"` are skipped.
 func Copy[TDest any](src any) (TDest, error) {
-	var zero TDest
+	var dest TDest
+	err := CopyPtr(src, &dest)
+	return dest, err
+}
+
+func CopyPtr[TDest any](src any, dest *TDest) error {
+	if dest == nil {
+		return errors.New("CopyPtr: dest must not be nil")
+	}
 	destType := reflect.TypeOf((*TDest)(nil)).Elem()
 	srcVal := reflect.ValueOf(src)
 	if srcVal.IsValid() && isMapBased(srcVal.Type()) {
-		if isMapBased(destType) {
-			return shallowCopyMapAs[TDest](srcVal, destType)
-		}
-		if destType.Kind() == reflect.Ptr && isMapBased(destType.Elem()) {
-			return shallowCopyMapAsPtr[TDest](srcVal, destType.Elem())
-		}
-		return MapToStruct[TDest](asMap(srcVal))
+		return copyMapInto(srcVal, destType, dest)
 	}
 	ptrDestType, err := requirePtrDest[TDest]()
 	if err != nil {
-		return zero, err
+		return err
 	}
 	srcResolved, valid, err := resolveSrcToStruct(src)
 	if err != nil {
-		return zero, err
+		return err
 	}
 	if !valid {
-		return zero, nil
+		return nil
 	}
-	dest := reflect.New(ptrDestType.Elem())
-	errs := mapFields(srcResolved, dest.Elem())
-	destResult, _ := dest.Interface().(TDest)
-	return destResult, stdErr.Join(errs...)
+	destVal := reflect.New(ptrDestType.Elem())
+	errs := mapFields(srcResolved, destVal.Elem())
+	if result, ok := destVal.Interface().(TDest); ok {
+		*dest = result
+	}
+	return stdErr.Join(errs...)
+}
+
+func copyMapInto[TDest any](
+	srcVal reflect.Value, destType reflect.Type, dest *TDest,
+) error {
+	if isMapBased(destType) {
+		v, e := shallowCopyMapAs[TDest](srcVal, destType)
+		return assignResult(dest, v, e)
+	}
+	if destType.Kind() == reflect.Ptr && isMapBased(destType.Elem()) {
+		v, e := shallowCopyMapAsPtr[TDest](srcVal, destType.Elem())
+		return assignResult(dest, v, e)
+	}
+	return MapToStructPtr(asMap(srcVal), dest)
 }
 
 // CastCopy performs a fast cast when TSrc and TDest share the same element type,
@@ -89,29 +107,60 @@ func Copy[TDest any](src any) (TDest, error) {
 // back to a shallow entry copy when types are not directly convertible.
 // A nil pointer src returns a zero TDest.
 func CastCopy[TDest any](src any) (TDest, error) {
-	var zero TDest
+	var dest TDest
+	err := CastCopyPtr(src, &dest)
+	return dest, err
+}
+
+func CastCopyPtr[TDest any](src any, dest *TDest) error {
+	if dest == nil {
+		return errors.New("CastCopyPtr: dest must not be nil")
+	}
 	destType := reflect.TypeOf((*TDest)(nil)).Elem()
 	srcVal := reflect.ValueOf(src)
 	if srcVal.IsValid() && isMapBased(srcVal.Type()) {
-		if isMapBased(destType) {
-			return castMapAs[TDest](srcVal, destType)
-		}
-		if destType.Kind() == reflect.Ptr && isMapBased(destType.Elem()) {
-			return castMapAsPtr[TDest](srcVal, destType.Elem())
-		}
-		return MapToStruct[TDest](asMap(srcVal))
+		return castCopyMapInto(srcVal, destType, dest)
 	}
 	ptrDestType, err := requirePtrDest[TDest]()
 	if err != nil {
-		return zero, err
+		return err
 	}
 	if srcVal.Kind() == reflect.Ptr {
-		return castCopyFromPtr[TDest](srcVal, ptrDestType)
+		v, e := castCopyFromPtr[TDest](srcVal, ptrDestType)
+		return assignResult(dest, v, e)
 	}
 	if srcVal.Kind() == reflect.Struct {
-		return castCopyViaReflect[TDest](srcVal, srcVal.Type(), ptrDestType.Elem(), src)
+		v, e := castCopyViaReflect[TDest](
+			srcVal, srcVal.Type(), ptrDestType.Elem(), src,
+		)
+		return assignResult(dest, v, e)
 	}
-	return zero, errors.Errorf("src must be a pointer, struct, or map-based type, got %T", src)
+	return errors.Errorf(
+		"src must be a pointer, struct, or map-based type, got %T",
+		src,
+	)
+}
+
+func castCopyMapInto[TDest any](
+	srcVal reflect.Value, destType reflect.Type, dest *TDest,
+) error {
+	if isMapBased(destType) {
+		v, e := castMapAs[TDest](srcVal, destType)
+		return assignResult(dest, v, e)
+	}
+	if destType.Kind() == reflect.Ptr && isMapBased(destType.Elem()) {
+		v, e := castMapAsPtr[TDest](srcVal, destType.Elem())
+		return assignResult(dest, v, e)
+	}
+	return MapToStructPtr(asMap(srcVal), dest)
+}
+
+func assignResult[T any](dest *T, val T, err error) error {
+	if err != nil {
+		return err
+	}
+	*dest = val
+	return nil
 }
 
 // castCopyFromPtr handles the pointer-specific fast paths: nil guard and same-type
@@ -204,6 +253,15 @@ func MapToStruct[TDest any](src map[string]any) (TDest, error) {
 	errs := assignMapToStruct(src, dest.Elem())
 	destResult, _ := dest.Interface().(TDest)
 	return destResult, stdErr.Join(errs...)
+}
+
+func MapToStructPtr[TDest any](src map[string]any, dest *TDest) error {
+	if src == nil || dest == nil {
+		return nil
+	}
+	destVal := reflect.ValueOf(dest).Elem()
+	errs := assignMapToStruct(src, destVal)
+	return stdErr.Join(errs...)
 }
 
 // isMapBased reports whether t is a map kind that is convertible to map[string]any.

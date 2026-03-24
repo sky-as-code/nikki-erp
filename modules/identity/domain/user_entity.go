@@ -1,11 +1,11 @@
 package domain
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicentity/basemodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
 type User struct {
@@ -96,8 +96,8 @@ const (
 	UserFieldStatus      = "status"
 )
 
-func UserSchemaBuilder() *schema.EntitySchemaBuilder {
-	return schema.DefineEntity(UserSchemaName).
+func UserSchemaBuilder() *dmodel.EntitySchemaBuilder {
+	return dmodel.DefineEntity(UserSchemaName).
 		Label(model.LangJson{"en-US": "User"}).
 		TableName("ident_users").
 		CompositeUnique("email", "display_name").
@@ -106,74 +106,74 @@ func UserSchemaBuilder() *schema.EntitySchemaBuilder {
 		Extend(basemodel.AuditableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Field(
-			schema.DefineField().
+			dmodel.DefineField().
 				Name(UserFieldAvatarUrl).
 				Label(model.LangJson{"en-US": "Avatar URL"}).
-				DataType(schema.FieldDataTypeUrl()),
+				DataType(dmodel.FieldDataTypeUrl()),
 		).
 		Field(
-			schema.DefineField().
+			dmodel.DefineField().
 				Name(UserFieldDisplayName).
 				Label(model.LangJson{"en-US": "Display Name"}).
-				DataType(schema.FieldDataTypeString(3, model.MODEL_RULE_LONG_NAME_LENGTH)).
+				DataType(dmodel.FieldDataTypeString(3, model.MODEL_RULE_LONG_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
-			schema.DefineField().
+			dmodel.DefineField().
 				Name(UserFieldEmail).
 				Label(model.LangJson{"en-US": "Email"}).
-				DataType(schema.FieldDataTypeEmail()).
+				DataType(dmodel.FieldDataTypeEmail()).
 				RequiredForCreate().
 				Unique(),
 		).
 		Field(
-			schema.DefineField().
+			dmodel.DefineField().
 				Name(UserFieldStatus).
 				Label(model.LangJson{"en-US": "Status"}).
-				DataType(schema.FieldDataTypeEnumString([]string{
+				DataType(dmodel.FieldDataTypeEnumString([]string{
 					string(UserStatusActive), string(UserStatusLocked),
 				})).
 				RequiredForCreate().
 				Default(string(UserStatusActive)),
 		).
 		Field(
-			schema.DefineField().
+			dmodel.DefineField().
 				Name(UserFieldIsOwner).
 				Label(model.LangJson{"en-US": "Is Owner"}).
-				DataType(schema.FieldDataTypeBoolean()).
+				DataType(dmodel.FieldDataTypeBoolean()).
 				Default(nil),
 		).
 		Field(
-			schema.DefineField().
+			dmodel.DefineField().
 				Name("group_id").
-				DataType(schema.FieldDataTypeModelId()).
+				DataType(dmodel.FieldDataTypeModelId()).
 				Foreign(
-					schema.Edge("group").
+					dmodel.Edge("group").
 						Label(model.LangJson{"en-US": "Group"}).
 						ManyToOne("identity.group", "id").
-						OnDelete(schema.RelationCascadeSetNull),
+						OnDelete(dmodel.RelationCascadeSetNull),
 				),
 		)
 
 }
 
 type UserEntity struct {
-	fields schema.DynamicFields
+	fields dmodel.DynamicFields
 }
 
 func NewUserEntity() *UserEntity {
-	return &UserEntity{fields: make(schema.DynamicFields)}
+	return &UserEntity{fields: make(dmodel.DynamicFields)}
 }
 
-func NewUserEntityFrom(src schema.DynamicFields) *UserEntity {
+func NewUserEntityFrom(src dmodel.DynamicFields) *UserEntity {
 	return &UserEntity{fields: src}
 }
 
-func (this UserEntity) GetFieldData() schema.DynamicFields {
+func (this UserEntity) GetFieldData() dmodel.DynamicFields {
 	return this.fields
 }
 
-func (this *UserEntity) SetFieldData(data schema.DynamicFields) {
+func (this *UserEntity) SetFieldData(data dmodel.DynamicFields) {
 	this.fields = data
 }
 

@@ -9,8 +9,8 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/orm"
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/loader"
 	"github.com/sky-as-code/nikki-erp/modules"
@@ -72,7 +72,7 @@ func (this *Application) GenSql(moduleName string, dialect string) string {
 		os.Exit(1)
 	}
 
-	registry := schema.GetSchemaRegistry()
+	registry := dmodel.GetSchemaRegistry()
 	err = orm.ValidateRelations(registry)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to validate relations: %v\n", err)

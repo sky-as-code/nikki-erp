@@ -1,4 +1,4 @@
-package schema
+package model
 
 import (
 	"encoding/json"
@@ -313,7 +313,7 @@ func (this *SearchNode) GetOr() []SearchNode {
 	return this.or
 }
 
-func populateDbMetadata(schema *EntitySchema) error {
+func populateDbMetadata(schema *ModelSchema) error {
 	name, err := requireName(schema.Name())
 	if err != nil {
 		return err
@@ -346,7 +346,7 @@ func requireName(raw string) (string, error) {
 }
 
 func buildDbMetadata(
-	fields map[string]*EntityField,
+	fields map[string]*ModelField,
 	fieldsOrder []string,
 	entityName string,
 ) (columnSet map[string]struct{}, primary []string, tenant string, uniques [][]string, err error) {
@@ -383,7 +383,7 @@ func buildDbMetadata(
 }
 
 func validateAndCollectEntityUnique(
-	schema *EntitySchema,
+	schema *ModelSchema,
 	columnSet map[string]struct{},
 ) ([][]string, error) {
 	uniqueFields := schema.CompositeUniques()

@@ -6,7 +6,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/modelmapper"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
@@ -35,6 +37,13 @@ type RestArchivedResponse struct {
 	Id         model.Id   `json:"id"`
 	ArchivedAt string     `json:"archived_at"`
 	Etag       model.Etag `json:"etag"`
+}
+
+func NewRestCreateResponseFrom(src any) *RestCreateResponse {
+	response := &RestCreateResponse{}
+	err := modelmapper.CopyPtr(src, response)
+	ft.PanicOnErr(err)
+	return response
 }
 
 type RestCreateResponse struct {

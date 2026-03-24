@@ -3,17 +3,18 @@ package httpserver
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	crud "github.com/sky-as-code/nikki-erp/common/crud"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 // BindToDynamicEntity parses the echo request body and returns a DynamicEntity
-// containing only the fields defined in the given EntitySchema.
+// containing only the fields defined in the given ModelSchema.
 // Minimal type correction is applied via each field's TryConvert; on conversion
 // failure the raw parsed value is kept as-is. No validation is performed.
-func BindToDynamicEntity(echoCtx echo.Context, entitySchema *schema.EntitySchema) (schema.DynamicFields, error) {
+func BindToDynamicEntity(echoCtx echo.Context, entitySchema *dmodel.ModelSchema) (dmodel.DynamicFields, error) {
 	var rawBody map[string]any
 	if err := echoCtx.Bind(&rawBody); err != nil {
 		return nil, err
@@ -21,8 +22,8 @@ func BindToDynamicEntity(echoCtx echo.Context, entitySchema *schema.EntitySchema
 	return applySchemaFilter(rawBody, entitySchema), nil
 }
 
-func applySchemaFilter(rawBody map[string]any, entitySchema *schema.EntitySchema) schema.DynamicFields {
-	result := make(schema.DynamicFields)
+func applySchemaFilter(rawBody map[string]any, entitySchema *dmodel.ModelSchema) dmodel.DynamicFields {
+	result := make(dmodel.DynamicFields)
 	for fieldName, field := range entitySchema.Fields() {
 		rawVal, exists := rawBody[fieldName]
 		if !exists {
@@ -48,18 +49,18 @@ type CmdResult interface {
 // func ServeRequestDynamic[
 // 	THttpResp any,
 // 	TSvcCommand any,
-// 	TSvcResultData schema.DynamicModelGetter,
+// 	TSvcResultData dmodel.DynamicModelGetter,
 // ](
 // 	echoCtx echo.Context,
 // 	action string,
-// 	createRequestFn func() schema.DynamicModelSetter,
+// 	createRequestFn func() dmodel.DynamicModelSetter,
 // 	serviceFn func(ctx dEnt.Context, cmd TSvcCommand) (*dEnt.OpResult[TSvcResultData], error),
 // 	jsonSuccessFn func(echo.Context, any) error,
 // ) error {
 // 	// TODO: Use `action` for entry and exit logging.
 // 	reqCtx := echoCtx.Request().Context().(dEnt.Context)
 
-// 	reqFields := make(schema.DynamicFields)
+// 	reqFields := make(dmodel.DynamicFields)
 // 	if err := echoCtx.Bind(&reqFields); err != nil {
 // 		_, isHttpErr := err.(*echo.HTTPError)
 // 		if isHttpErr {
@@ -103,14 +104,14 @@ type CmdResult interface {
 
 func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
 	echoCtx echo.Context,
-	serviceFn func(ctx dEnt.Context, cmd TSvcCommand) (*dEnt.OpResult[TSvcResultData], error),
-	requestToCommandFn func(requestFields schema.DynamicFields) TSvcCommand,
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*crud.OpResult[TSvcResultData], error),
+	requestToCommandFn func(requestFields dmodel.DynamicFields) TSvcCommand,
 	resultToResponseFn func(data TSvcResultData) THttpResp,
 	jsonSuccessFn func(echo.Context, any) error,
 ) error {
-	reqCtx := echoCtx.Request().Context().(dEnt.Context)
+	reqCtx := echoCtx.Request().Context().(corectx.Context)
 
-	reqFields := make(schema.DynamicFields)
+	reqFields := make(dmodel.DynamicFields)
 	if err := echoCtx.Bind(&reqFields); err != nil {
 		_, isHttpErr := err.(*echo.HTTPError)
 		if isHttpErr {
@@ -139,7 +140,7 @@ func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
 
 func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData any](
 	echoCtx echo.Context,
-	serviceFn func(ctx dEnt.Context, cmd TSvcCommand) (*dEnt.OpResult[TSvcResultData], error),
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*crud.OpResult[TSvcResultData], error),
 	requestToCommandFn func(request THttpReq) TSvcCommand,
 	resultToResponseFn func(resultData TSvcResultData) THttpResp,
 	jsonSuccessFn func(echo.Context, any) error,
@@ -150,7 +151,7 @@ func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData 
 	}
 
 	cmd := requestToCommandFn(request)
-	reqCtx := echoCtx.Request().Context().(dEnt.Context)
+	reqCtx := echoCtx.Request().Context().(corectx.Context)
 	result, err := serviceFn(reqCtx, cmd)
 
 	if err != nil {
@@ -167,7 +168,7 @@ func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData 
 
 func ServeRequest[THttpReq any, THttpResp any, TSvcCommand any, TSvcResult CmdResult](
 	echoCtx echo.Context,
-	serviceFn func(ctx crud.Context, cmd TSvcCommand) (*TSvcResult, error),
+	serviceFn func(ctx corecrud.Context, cmd TSvcCommand) (*TSvcResult, error),
 	requestToCommandFn func(request THttpReq) TSvcCommand,
 	resultToResponseFn func(result TSvcResult) THttpResp,
 	jsonSuccessFn func(echo.Context, any) error,
@@ -178,7 +179,7 @@ func ServeRequest[THttpReq any, THttpResp any, TSvcCommand any, TSvcResult CmdRe
 	}
 
 	cmd := requestToCommandFn(request)
-	reqCtx := echoCtx.Request().Context().(crud.Context)
+	reqCtx := echoCtx.Request().Context().(corecrud.Context)
 	result, err := serviceFn(reqCtx, cmd)
 
 	if err != nil {

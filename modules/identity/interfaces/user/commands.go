@@ -1,17 +1,17 @@
 package user
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/schema"
+	crud "github.com/sky-as-code/nikki-erp/common/crud"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	dEnt "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicentity/basemodel"
-	dCrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicentity/crud"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	dCrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
@@ -58,7 +58,7 @@ type GetUserContextResult struct {
 	Permissions *map[string][]itAuthorize.ResourceScopePermissions `json:"permissions,omitempty"`
 }
 
-type GetUserContextResultData = crud.OpResult[*GetUserContextResult]
+type GetUserContextResultData = corecrud.OpResult[*GetUserContextResult]
 
 var createUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -76,7 +76,7 @@ func (CreateUserCommand) CqrsRequestType() cqrs.RequestType {
 	return createUserCommandType
 }
 
-type CreateUserResult = crud.OpResult[*domain.User]
+type CreateUserResult = corecrud.OpResult[*domain.User]
 
 type CreateUserCommand2 struct {
 	domain.UserEntity
@@ -86,11 +86,11 @@ func (CreateUserCommand2) CqrsRequestType() cqrs.RequestType {
 	return createUserCommandType
 }
 
-func (this CreateUserCommand2) GetSchema() *schema.EntitySchema {
-	return schema.GetSchema(domain.UserSchemaName)
+func (this CreateUserCommand2) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.UserSchemaName)
 }
 
-type CreateUserResult2 = dEnt.OpResult[domain.UserEntity]
+type CreateUserResult2 = crud.OpResult[domain.UserEntity]
 
 type UpdateUserCommand2 struct {
 	domain.UserEntity
@@ -100,13 +100,13 @@ func (UpdateUserCommand2) CqrsRequestType() cqrs.RequestType {
 	return updateUserCommandType
 }
 
-func (this UpdateUserCommand2) GetSchema() *schema.EntitySchema {
-	return schema.GetSchema(domain.UserSchemaName)
+func (this UpdateUserCommand2) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.UserSchemaName)
 }
 
-type UpdateUserResult2 = dEnt.OpResult[domain.UserEntity]
+type UpdateUserResult2 = crud.OpResult[domain.UserEntity]
 
-type GetUserResult = dEnt.OpResult[domain.UserEntity]
+type GetUserResult = crud.OpResult[domain.UserEntity]
 
 var searchUsersQuery2Type = cqrs.RequestType{
 	Module:    "identity",
@@ -115,14 +115,14 @@ var searchUsersQuery2Type = cqrs.RequestType{
 }
 
 type SearchUsersQuery2 struct {
-	Graph schema.SearchGraph `json:"graph"`
+	Graph dmodel.SearchGraph `json:"graph"`
 }
 
 func (SearchUsersQuery2) CqrsRequestType() cqrs.RequestType {
 	return searchUsersQuery2Type
 }
 
-type SearchUsersResult2 = dEnt.OpResult[dEnt.PagedResult[domain.UserEntity]]
+type SearchUsersResult2 = crud.OpResult[crud.PagedResult[domain.UserEntity]]
 
 var archiveUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -138,11 +138,11 @@ func (ArchiveUserCommand2) CqrsRequestType() cqrs.RequestType {
 	return archiveUserCommandType
 }
 
-func (this ArchiveUserCommand2) GetSchema() *schema.EntitySchema {
-	return schema.GetSchema(domain.UserSchemaName)
+func (this ArchiveUserCommand2) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.UserSchemaName)
 }
 
-type ArchiveUserResult2 = dEnt.OpResult[domain.UserEntity]
+type ArchiveUserResult2 = crud.OpResult[domain.UserEntity]
 
 var updateUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -164,7 +164,7 @@ func (UpdateUserCommand) CqrsRequestType() cqrs.RequestType {
 	return updateUserCommandType
 }
 
-type UpdateUserResult = crud.OpResult[*domain.User]
+type UpdateUserResult = corecrud.OpResult[*domain.User]
 
 var deleteUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -190,7 +190,7 @@ func (this DeleteUserCommand) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type DeleteUserResult = crud.DeletionResult
+type DeleteUserResult = corecrud.DeletionResult
 
 var existsCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -214,7 +214,7 @@ func (this UserExistsQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type UserExistsResult = crud.OpResult[bool]
+type UserExistsResult = corecrud.OpResult[bool]
 
 var existsMultiCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -244,7 +244,7 @@ type ExistsMultiResultData struct {
 	NotExisting []model.Id `json:"notExisting"`
 }
 
-type UserExistsMultiResult = crud.OpResult[*ExistsMultiResultData]
+type UserExistsMultiResult = corecrud.OpResult[*ExistsMultiResultData]
 
 var getUserByIdQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -276,26 +276,26 @@ func (this GetUser) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-func (this GetUser) GetSchema() *schema.EntitySchema {
-	fullSchema := schema.GetSchema(domain.UserSchemaName)
-	return schema.GetOrRegisterSchema(
-		schema.DefineEntity("identity.user.getUserById").
-			Field(schema.CloneField(fullSchema, basemodel.FieldId)).
-			Field(schema.CloneField(fullSchema, domain.UserFieldStatus).IsRequired(false).Default(nil)).
+func (this GetUser) GetSchema() *dmodel.ModelSchema {
+	fullSchema := dmodel.GetSchema(domain.UserSchemaName)
+	return dmodel.GetOrRegisterSchema(
+		dmodel.DefineEntity("identity.user.getUserById").
+			Field(dmodel.CloneField(fullSchema, basemodel.FieldId)).
+			Field(dmodel.CloneField(fullSchema, domain.UserFieldStatus).IsRequired(false).Default(nil)).
 			Extend(basemodel.GetOneQuerySchemaBuilder()).
 			Build(),
 	)
 }
 
-func (this GetUser) GetFieldData() schema.DynamicFields {
-	fields := schema.DynamicFields{
+func (this GetUser) GetFieldData() dmodel.DynamicFields {
+	fields := dmodel.DynamicFields{
 		basemodel.FieldId:      this.Id,
 		domain.UserFieldStatus: this.Status,
 	}
 	return fields
 }
 
-type GetUserByIdResult = crud.OpResult[*domain.User]
+type GetUserByIdResult = corecrud.OpResult[*domain.User]
 
 var getUserByEmailQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -324,7 +324,7 @@ func (this GetUserByEmailQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetUserByEmailResult = crud.OpResult[*domain.User]
+type GetUserByEmailResult = corecrud.OpResult[*domain.User]
 
 var mustGetActiveUserQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -357,7 +357,7 @@ func (this MustGetActiveUserQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type MustGetActiveUserResult = crud.OpResult[*domain.User]
+type MustGetActiveUserResult = corecrud.OpResult[*domain.User]
 
 var searchUsersQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -366,7 +366,7 @@ var searchUsersQueryType = cqrs.RequestType{
 }
 
 type SearchUsersQuery struct {
-	crud.SearchQuery
+	corecrud.SearchQuery
 
 	WithGroups    bool      `json:"withGroups" query:"withGroups"`
 	WithOrgs      bool      `json:"withOrgs" query:"withOrgs"`
@@ -385,8 +385,8 @@ func (this SearchUsersQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type SearchUsersResultData = crud.PagedResult[domain.User]
-type SearchUsersResult = crud.OpResult[*SearchUsersResultData]
+type SearchUsersResultData = corecrud.PagedResult[domain.User]
+type SearchUsersResult = corecrud.OpResult[*SearchUsersResultData]
 
 var findDirectApproverQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -410,4 +410,4 @@ func (this FindDirectApproverQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type FindDirectApproverResult = crud.OpResult[[]domain.User]
+type FindDirectApproverResult = corecrud.OpResult[[]domain.User]

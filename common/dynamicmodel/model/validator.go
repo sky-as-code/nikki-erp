@@ -1,4 +1,4 @@
-package schema
+package model
 
 import (
 	"bytes"
@@ -34,7 +34,7 @@ func (this ValidationErrors) AddItem(item ValidationErrorItem) {
 
 // ValidationErrorItem implements the error interface with code, message template, and vars for substitution.
 type ValidationErrorItem struct {
-	Field   string // field name that has the violation, set by EntityField.Validate()
+	Field   string // field name that has the violation, set by ModelField.Validate()
 	Key     string
 	Message string
 	Vars    map[string]any

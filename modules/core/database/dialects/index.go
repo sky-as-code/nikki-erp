@@ -7,7 +7,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/sky-as-code/nikki-erp/common/dynamicentity/orm"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 )
 
 type DialectOptions struct {
