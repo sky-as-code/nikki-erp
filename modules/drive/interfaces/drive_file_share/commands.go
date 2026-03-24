@@ -12,7 +12,7 @@ import (
 type CreateDriveFileShareCommand struct {
 	FileRef    model.Id                `param:"driveFileId"`
 	UserRef    model.Id                `json:"userRef"`
-	Permission enum.DriveFileSharePerm `json:"permission"`
+	Permission enum.DriveFilePerm `json:"permission"`
 }
 
 func (this CreateDriveFileShareCommand) Validate() fault.ValidationErrors {
@@ -28,7 +28,7 @@ type CreateDriveFileShareResult = crud.OpResult[*domain.DriveFileShare]
 type CreateBulkDriveFileShareCommand struct {
 	FileRef    model.Id                `param:"driveFileId"`
 	UserRefs   []model.Id              `json:"userRefs"`
-	Permission enum.DriveFileSharePerm `json:"permission"`
+	Permission enum.DriveFilePerm `json:"permission"`
 }
 
 func (this CreateBulkDriveFileShareCommand) Validate() fault.ValidationErrors {
@@ -44,7 +44,7 @@ type CreateBulkDriveFileShareResult = crud.OpResult[[]*domain.DriveFileShare]
 type UpdateDriveFileShareCommand struct {
 	Id         model.Id                `param:"driveFileShareId" json:"driveFileShareId"`
 	Etag       model.Etag              `json:"etag"`
-	Permission enum.DriveFileSharePerm `json:"permission"`
+	Permission enum.DriveFilePerm `json:"permission"`
 }
 
 func (this UpdateDriveFileShareCommand) Validate() fault.ValidationErrors {

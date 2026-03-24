@@ -60,7 +60,7 @@ func (this *DriveFileShareServiceImpl) repoCreateBulk(ctx crud.Context, models [
 func (this *DriveFileShareServiceImpl) setCreateDefaults(d *domain.DriveFileShare) {
 	d.SetDefaults()
 	if d.Permission == 0 {
-		d.Permission = enum.DriveFileSharePermDefault
+		d.Permission = enum.DriveFilePermDefault
 	}
 }
 

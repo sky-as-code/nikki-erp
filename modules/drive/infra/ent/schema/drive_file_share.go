@@ -39,7 +39,7 @@ func (DriveFileShareMixin) Fields() []ent.Field {
 			NotEmpty(),
 
 		field.String("permission").
-			Default(enum.DriveFileSharePermName[enum.DriveFileSharePermDefault]),
+			Default(enum.DriveFileSharePermName[enum.DriveFilePermDefault]),
 	}
 }
 

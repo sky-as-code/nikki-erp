@@ -15,7 +15,7 @@ type DriveFileShareDto struct {
 
 	FileRef    model.Id                `json:"file_ref"`
 	UserRef    model.Id                `json:"user_ref"`
-	Permission enum.DriveFileSharePerm `json:"permission"`
+	Permission enum.DriveFilePerm `json:"permission"`
 
 	User *DriveFileShareUserDto `json:"user,omitempty"`
 }

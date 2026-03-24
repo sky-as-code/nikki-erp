@@ -22,7 +22,7 @@ func entToDriveFileShare(e *ent.DriveFileShare) *domain.DriveFileShare {
 	d.UserRef = model.Id(e.UserRef)
 	d.Permission = enum.DriveFileSharePermValue[e.Permission]
 	if d.Permission == 0 {
-		d.Permission = enum.DriveFileSharePermDefault
+		d.Permission = enum.DriveFilePermDefault
 	}
 	return d
 }

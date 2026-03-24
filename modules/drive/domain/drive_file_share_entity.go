@@ -13,7 +13,7 @@ type DriveFileShare struct {
 
 	FileRef    model.Id                `json:"file_ref"`
 	UserRef    model.Id                `json:"user_ref"`
-	Permission enum.DriveFileSharePerm `json:"permission"`
+	Permission enum.DriveFilePerm `json:"permission"`
 
 	// User is an optional view populated by application layer when returning API responses.
 	// It is not persisted in DriveFileShare storage.
