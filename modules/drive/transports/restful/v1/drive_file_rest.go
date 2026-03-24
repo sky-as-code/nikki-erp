@@ -47,6 +47,7 @@ func (this DriveFileRest) CreateDriveFile(echoCtx echo.Context) (err error) {
 	}
 
 	cmd.OwnerRef = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
+	cmd.UserId = cmd.OwnerRef
 
 	fileHeader, formErr := echoCtx.FormFile("file")
 	if formErr == nil {
@@ -92,6 +93,7 @@ func (this DriveFileRest) UpdateDriveFileMetadata(echoCtx echo.Context) (err err
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileSvc.UpdateDriveFileMetadata,
 		func(request UpdateDriveFileMetadataRequest) it.UpdateDriveFileMetadataCommand {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result it.UpdateDriveFileMetadataResult) UpdateDriveFileMetadataResponse {
@@ -133,6 +135,7 @@ func (this DriveFileRest) UpdateDriveFileContent(echoCtx echo.Context) (err erro
 	defer file.Close()
 	cmd.File = file
 	cmd.FileHeader = fileHeader
+	cmd.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 
 	reqCtx := echoCtx.Request().Context().(crud.Context)
 	result, err := this.DriveFileSvc.UpdateDriveFileContent(reqCtx, cmd)
@@ -159,6 +162,7 @@ func (this DriveFileRest) DeleteDriveFile(echoCtx echo.Context) (err error) {
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileSvc.DeleteDriveFile,
 		func(request DeleteDriveFileRequest) it.DeleteDriveFileCommand {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result it.DeleteDriveFileResult) DeleteDriveFileResponse {
@@ -185,6 +189,7 @@ func (this DriveFileRest) MoveDriveFileToTrash(echoCtx echo.Context) (err error)
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileSvc.MoveDriveFileToTrash,
 		func(request MoveDriveFileToTrashRequest) it.MoveDriveFileToTrashCommand {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result it.MoveDriveFileToTrashResult) MoveDriveFileToTrashResponse {
@@ -208,6 +213,7 @@ func (this DriveFileRest) RestoreDriveFile(echoCtx echo.Context) (err error) {
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileSvc.RestoreDriveFile,
 		func(request RestoreDriveFileRequest) it.RestoreDriveFileCommand {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result it.RestoreDriveFileResult) RestoreDriveFileResponse {
@@ -231,6 +237,7 @@ func (this DriveFileRest) MoveDriveFile(echoCtx echo.Context) (err error) {
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileSvc.MoveDriveFile,
 		func(request MoveDriveFileRequest) it.MoveDriveFileCommand {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result it.MoveDriveFileResult) MoveDriveFileResponse {
@@ -307,6 +314,9 @@ func (this DriveFileRest) StreamDriveFile(echoCtx echo.Context) (err error) {
 	var query it.GetDriveFileByIdQuery
 	if err = echoCtx.Bind(&query); err != nil {
 		return httpserver.HandleBindError(echoCtx, err)
+	}
+	if query.DriveFileId == "" {
+		query.DriveFileId = model.Id(echoCtx.Param("driveFileId"))
 	}
 	query.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 

@@ -27,7 +27,7 @@ func (this *DriveFileServiceImpl) RestoreDriveFile(ctx crud.Context, cmd it.Rest
 	ft.PanicOnErr(err)
 
 	if driveFile == nil {
-		return &it.MoveDriveFileToTrashResult{ClientError: vErrs.ToClientError()}, nil
+		return &it.RestoreDriveFileResult{ClientError: vErrs.ToClientError()}, nil
 	}
 
 	// recalculate parent size
@@ -108,6 +108,17 @@ func (this *DriveFileServiceImpl) assertRestoreDriveFileRules(
 		return nil
 	}
 
+	if d.UserId != "" {
+		if err := this.assertDriveFileActionAllowed(ctx, fromDb, d.UserId, func(p FilePermissionResult) bool {
+			return p.CanRestore()
+		}, vErrs); err != nil {
+			return err
+		}
+		if vErrs.Count() > 0 {
+			return nil
+		}
+	}
+
 	if fromDb.Status != enum.DriveFileStatusInTrash &&
 		fromDb.Status != enum.DriveFileStatusParentInTrash {
 		vErrs.Append("status", "only files in trash can be restored")
@@ -131,6 +142,17 @@ func (this *DriveFileServiceImpl) assertRestoreDriveFileRules(
 		if parent.Status != enum.DriveFileStatusActive {
 			vErrs.Append("parentFileRef", "parent drive must be active")
 			return nil
+		}
+
+		if d.UserId != "" {
+			if err := this.assertDriveFileActionAllowed(ctx, parent, d.UserId, func(p FilePermissionResult) bool {
+				return p.CanCreateTo()
+			}, vErrs); err != nil {
+				return err
+			}
+			if vErrs.Count() > 0 {
+				return nil
+			}
 		}
 	}
 

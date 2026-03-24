@@ -82,6 +82,17 @@ func (this *DriveFileServiceImpl) assertMoveDriveFileRules(
 		return nil
 	}
 
+	if d.UserId != "" {
+		if err := this.assertDriveFileActionAllowed(ctx, fromDb, d.UserId, func(p FilePermissionResult) bool {
+			return p.CanUpdate()
+		}, vErrs); err != nil {
+			return err
+		}
+		if vErrs.Count() > 0 {
+			return nil
+		}
+	}
+
 	if d.ParentDriveFileRef != nil {
 		parent, err := this.driveFileRepo.FindById(ctx, *d.ParentDriveFileRef)
 		ft.PanicOnErr(err)
@@ -100,6 +111,14 @@ func (this *DriveFileServiceImpl) assertMoveDriveFileRules(
 
 		if parent.OwnerRef != d.OwnerRef {
 			vErrs.Append("parentFileRef", "parent drive must be owned by the same user")
+		}
+
+		if d.UserId != "" {
+			if err := this.assertDriveFileActionAllowed(ctx, parent, d.UserId, func(p FilePermissionResult) bool {
+				return p.CanCreateTo()
+			}, vErrs); err != nil {
+				return err
+			}
 		}
 	}
 

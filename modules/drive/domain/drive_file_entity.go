@@ -40,6 +40,9 @@ type DriveFile struct {
 	Children []*DriveFile `json:"-"`
 
 	DeletedAt *time.Time `json:"deletedAt,omitempty"`
+
+	// UserId is the acting user for permission checks on mutations; not persisted.
+	UserId model.Id `json:"-"`
 }
 
 var (

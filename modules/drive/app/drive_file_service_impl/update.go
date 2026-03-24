@@ -18,11 +18,12 @@ func (this *DriveFileServiceImpl) UpdateDriveFileMetadata(ctx crud.Context, cmd 
 	}()
 
 	result, err = crud.Update(ctx, crud.UpdateParam[*domain.DriveFile, it.UpdateDriveFileMetadataCommand, it.UpdateDriveFileMetadataResult]{
-		Action:       "update drive file metadata",
-		Command:      cmd,
-		AssertExists: this.assertDriveFileExists,
-		RepoUpdate:   this.driveFileRepo.Update,
-		Sanitize:     this.sanitizeDriveFile,
+		Action:              "update drive file metadata",
+		Command:             cmd,
+		AssertExists:        this.assertDriveFileExists,
+		AssertBusinessRules: this.assertUpdateDriveFileMetadataRules,
+		RepoUpdate:          this.driveFileRepo.Update,
+		Sanitize:            this.sanitizeDriveFile,
 		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.UpdateDriveFileMetadataResult {
 			return &it.UpdateDriveFileMetadataResult{ClientError: vErrs.ToClientError()}
 		},
@@ -31,6 +32,20 @@ func (this *DriveFileServiceImpl) UpdateDriveFileMetadata(ctx crud.Context, cmd 
 		},
 	})
 	return result, err
+}
+
+func (this *DriveFileServiceImpl) assertUpdateDriveFileMetadataRules(
+	ctx crud.Context,
+	d *domain.DriveFile,
+	fromDb *domain.DriveFile,
+	vErrs *ft.ValidationErrors,
+) error {
+	if d.UserId == "" || fromDb == nil {
+		return nil
+	}
+	return this.assertDriveFileActionAllowed(ctx, fromDb, d.UserId, func(p FilePermissionResult) bool {
+		return p.CanUpdate()
+	}, vErrs)
 }
 
 // Update bulk metadata
@@ -42,11 +57,12 @@ func (this *DriveFileServiceImpl) UpdateBulkDriveFileMetadata(ctx crud.Context, 
 		}
 	}()
 	result, err = crud.UpdateBulk(ctx, crud.UpdateBulkParam[*domain.DriveFile, it.UpdateBulkDriveFileMetadataCommand, it.UpdateBulkDriveFileMetadataResult]{
-		Action:       "update bulk drive file metadata",
-		Command:      cmd,
-		AssertExists: this.assertDriveFileExists,
-		RepoUpdate:   this.driveFileRepo.Update,
-		Sanitize:     this.sanitizeDriveFile,
+		Action:              "update bulk drive file metadata",
+		Command:             cmd,
+		AssertExists:        this.assertDriveFileExists,
+		AssertBusinessRules: this.assertUpdateDriveFileMetadataRules,
+		RepoUpdate:          this.driveFileRepo.Update,
+		Sanitize:            this.sanitizeDriveFile,
 		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.UpdateBulkDriveFileMetadataResult {
 			return &it.UpdateBulkDriveFileMetadataResult{ClientError: vErrs.ToClientError()}
 		},
@@ -83,6 +99,16 @@ func (this *DriveFileServiceImpl) UpdateDriveFileContent(ctx crud.Context, cmd i
 }
 
 func (this *DriveFileServiceImpl) assertUpdateDriveFileContentRules(ctx crud.Context, d *domain.DriveFile, fromDb *domain.DriveFile, vErrs *ft.ValidationErrors) error {
+	if d.UserId != "" && fromDb != nil {
+		if err := this.assertDriveFileActionAllowed(ctx, fromDb, d.UserId, func(p FilePermissionResult) bool {
+			return p.CanUpdate()
+		}, vErrs); err != nil {
+			return err
+		}
+		if vErrs.Count() > 0 {
+			return nil
+		}
+	}
 	if d.File == nil {
 		vErrs.Append("file", "file is required when updating content")
 		return nil

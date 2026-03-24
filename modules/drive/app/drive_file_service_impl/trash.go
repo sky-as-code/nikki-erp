@@ -30,6 +30,17 @@ func (this *DriveFileServiceImpl) MoveDriveFileToTrash(ctx crud.Context, cmd it.
 		return &it.MoveDriveFileToTrashResult{ClientError: vErrs.ToClientError()}, nil
 	}
 
+	if cmd.UserId != "" {
+		if err := this.assertDriveFileActionAllowed(ctx, driveFile, cmd.UserId, func(p FilePermissionResult) bool {
+			return p.CanMoveToTrash()
+		}, vErrs); err != nil {
+			ft.PanicOnErr(err)
+		}
+	}
+	if vErrs.Count() > 0 {
+		return &it.MoveDriveFileToTrashResult{ClientError: vErrs.ToClientError()}, nil
+	}
+
 	now := time.Now()
 	driveFile.DeletedAt = &now
 	driveFile.Status = enum.DriveFileStatusInTrash

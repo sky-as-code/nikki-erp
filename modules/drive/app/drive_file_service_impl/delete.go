@@ -46,6 +46,17 @@ func (this *DriveFileServiceImpl) DeleteDriveFile(ctx crud.Context, cmd it.Delet
 		return toFailureResultFunc(vErrs), nil
 	}
 
+	if cmd.UserId != "" {
+		if err := this.assertDriveFileActionAllowed(ctx, driveFile, cmd.UserId, func(p FilePermissionResult) bool {
+			return p.CanDelete()
+		}, vErrs); err != nil {
+			ft.PanicOnErr(err)
+		}
+	}
+	if vErrs.Count() > 0 {
+		return toFailureResultFunc(vErrs), nil
+	}
+
 	if driveFile.ParentDriveFileRef != nil {
 		err = this.recalculateSizeOfParent(ctx, *driveFile.ParentDriveFileRef, driveFile.Size, false)
 		ft.PanicOnErr(err)
@@ -193,8 +204,13 @@ func (this *DriveFileServiceImpl) DeleteTrashedDriveFile(ctx crud.Context) (err 
 		if f == nil || f.Id == nil {
 			continue
 		}
+		userId := model.Id("")
+		if f.OwnerRef != nil {
+			userId = *f.OwnerRef
+		}
 		_, err := this.DeleteDriveFile(ctx, it.DeleteDriveFileCommand{
 			DriveFileId: *f.Id,
+			UserId:      userId,
 		})
 		ft.PanicOnErr(err)
 	}

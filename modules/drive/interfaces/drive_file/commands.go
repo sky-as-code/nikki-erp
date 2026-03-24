@@ -28,6 +28,7 @@ type CreateDriveFileCommand struct {
 	FileHeader         *multipart.FileHeader    `json:"-" form:"-"`
 	Visibility         enum.DriveFileVisibility `json:"visibility,omitempty" form:"visibility"`
 	OwnerRef           model.Id                 `json:"-" form:"-"`
+	UserId             model.Id                 `json:"-" form:"-"`
 }
 
 type CreateDriveFileResult = crud.OpResult[*domain.DriveFile]
@@ -39,12 +40,15 @@ type UpdateDriveFileMetadataCommand struct {
 	Visibility enum.DriveFileVisibility `json:"visibility,omitempty"`
 	Status     enum.DriveFileStatus     `json:"status,omitempty"`
 	Size       uint64                   `json:"-"`
+	UserId     model.Id                 `json:"-"`
 }
 
 func (this UpdateDriveFileMetadataCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 		model.EtagValidateRule(&this.Etag, true),
+		// UserId optional: set for API calls; internal bulk size/status updates omit it and skip permission assert.
+		model.IdValidateRule(&this.UserId, false),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -53,6 +57,7 @@ type UpdateDriveFileMetadataResult = crud.OpResult[*domain.DriveFile]
 
 type UpdateBulkDriveFileMetadataCommand struct {
 	DriveFiles []UpdateDriveFileMetadataCommand `json:"driveFiles"`
+	UserId     model.Id                         `json:"-"`
 }
 
 type UpdateBulkDriveFileMetadataResult = crud.OpResult[[]*domain.DriveFile]
@@ -62,12 +67,14 @@ type UpdateDriveFileContentCommand struct {
 	Etag       model.Etag            `json:"etag" form:"etag"`
 	File       multipart.File        `json:"-" form:"-"`
 	FileHeader *multipart.FileHeader `json:"-" form:"-"`
+	UserId     model.Id              `json:"-" form:"-"`
 }
 
 func (this UpdateDriveFileContentCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 		model.EtagValidateRule(&this.Etag, true),
+		model.IdValidateRule(&this.UserId, true),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -177,11 +184,13 @@ type GetDriveFileAncestorsResult = crud.OpResult[GetDriveFileAncestorsResultData
 
 type MoveDriveFileToTrashCommand struct {
 	DriveFileId model.Id `json:"driveFileId" param:"driveFileId"`
+	UserId      model.Id `json:"-"`
 }
 
 func (this MoveDriveFileToTrashCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.DriveFileId, true),
+		model.IdValidateRule(&this.UserId, true),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -194,12 +203,14 @@ type RestoreDriveFileTo struct {
 type RestoreDriveFileCommand struct {
 	DriveFileId   model.Id  `json:"driveFileId" param:"driveFileId"`
 	ParentFileRef *model.Id `json:"parentFileRef,omitempty"`
+	UserId        model.Id  `json:"-"`
 }
 
 func (this RestoreDriveFileCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.DriveFileId, true),
 		model.IdValidateRule(this.ParentFileRef, true),
+		model.IdValidateRule(&this.UserId, true),
 	}
 
 	return validator.ApiBased.ValidateStruct(&this, rules...)
@@ -208,14 +219,16 @@ func (this RestoreDriveFileCommand) Validate() fault.ValidationErrors {
 type RestoreDriveFileResult = crud.OpResult[*domain.DriveFile]
 
 type MoveDriveFileCommand struct {
-	DriveFileId model.Id `json:"driveFileId" param:"driveFileId"`
+	DriveFileId   model.Id  `json:"driveFileId" param:"driveFileId"`
 	ParentFileRef *model.Id `json:"parentFileRef,omitempty"`
+	UserId        model.Id  `json:"-"`
 }
 
 func (this MoveDriveFileCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.DriveFileId, true),
 		model.IdValidateRule(this.ParentFileRef, true),
+		model.IdValidateRule(&this.UserId, true),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -224,11 +237,13 @@ type MoveDriveFileResult = crud.OpResult[*domain.DriveFile]
 
 type DeleteDriveFileCommand struct {
 	DriveFileId model.Id `json:"driveFileId" param:"driveFileId"`
+	UserId      model.Id `json:"-"`
 }
 
 func (this DeleteDriveFileCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.DriveFileId, true),
+		model.IdValidateRule(&this.UserId, true),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }

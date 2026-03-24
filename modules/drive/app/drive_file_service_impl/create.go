@@ -90,6 +90,29 @@ func (this *DriveFileServiceImpl) assertCreateDriveFileRules(ctx crud.Context, d
 		return nil
 	}
 
+	if d.ParentDriveFileRef != nil {
+		parent, err := this.driveFileRepo.FindById(ctx, *d.ParentDriveFileRef)
+		ft.PanicOnErr(err)
+		if parent == nil {
+			vErrs.Append("parentDriveFileRef", "parent drive file not found")
+			return nil
+		}
+		actorID := d.UserId
+		if actorID == "" && d.OwnerRef != nil {
+			actorID = *d.OwnerRef
+		}
+		if actorID != "" {
+			if err := this.assertDriveFileActionAllowed(ctx, parent, actorID, func(p FilePermissionResult) bool {
+				return p.CanCreateTo()
+			}, vErrs); err != nil {
+				return err
+			}
+			if vErrs.Count() > 0 {
+				return nil
+			}
+		}
+	}
+
 	if err := this.applyMaterializedPathForNewDriveFile(ctx, d, vErrs); err != nil {
 		return err
 	}
@@ -115,7 +138,7 @@ func (this *DriveFileServiceImpl) assertCreateDriveFileRules(ctx crud.Context, d
 	return nil
 }
 
-// applyMaterializedPathForNewDriveFile sets d.MaterializedPath = parent chain (root→parent) + new id; root-only is "/newId/".
+// applyMaterializedPathForNewDriveFile sets d.MaterializedPath = parent chain (root→parent) + new id; root-only is "/newId" (no trailing slash).
 func (this *DriveFileServiceImpl) applyMaterializedPathForNewDriveFile(ctx crud.Context, d *domain.DriveFile, vErrs *ft.ValidationErrors) error {
 	if d == nil || d.Id == nil {
 		return nil

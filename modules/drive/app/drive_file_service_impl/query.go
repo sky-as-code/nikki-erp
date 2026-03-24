@@ -10,7 +10,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/drive/adapter/external/file_storage"
 	"github.com/sky-as-code/nikki-erp/modules/drive/domain"
-	"github.com/sky-as-code/nikki-erp/modules/drive/enum"
 	it "github.com/sky-as-code/nikki-erp/modules/drive/interfaces/drive_file"
 )
 
@@ -31,9 +30,9 @@ func (this *DriveFileServiceImpl) GetDriveFileById(ctx crud.Context, query it.Ge
 				return nil, nil
 			}
 
-			perm, err := this.resolvePermission(ctx, driveFile, q.UserId)
+			permission, err := this.resolvePermission(ctx, driveFile, q.UserId)
 			ft.PanicOnErr(err)
-			if perm < enum.DriveFileSharePermView {
+			if !permission.CanView() {
 				vErrs.AppendNotAllowed("driveFileId", "drive file")
 				return nil, nil
 			}
@@ -62,14 +61,14 @@ func (this *DriveFileServiceImpl) DownloadDriveFile(ctx crud.Context, query it.G
 		return nil, nil, nil
 	}
 
-	perm, err := this.resolvePermission(ctx, driveFile, query.UserId)
-	ft.PanicOnErr(err)
-	if perm < enum.DriveFileSharePermView {
+	if driveFile.IsFolder {
 		return nil, nil, &fault.ClientError{
-			Code:    "forbidden",
-			Details: "drive file is not allowed",
+			Code:    "bad_request",
+			Details: fault.ValidationErrors{"driveFileId": "cannot download a folder"},
 		}
 	}
+
+	// Permission check skipped here temporarily (public stream route); restore resolvePermission + CanView when auth/token is in place.
 
 	ioReader, err := this.storageAdapter.DownloadBucket(ctx.InnerContext(), file_storage.BucketDrive, driveFile.StorageKey)
 	ft.PanicOnErr(err)
@@ -103,9 +102,9 @@ func (this *DriveFileServiceImpl) GetDriveFileByParent(ctx crud.Context, query i
 			return &it.GetDriveFileByParentResult{ClientError: vErrsAssert.ToClientError()}, nil
 		}
 
-		perm, err := this.resolvePermission(ctx, parent, query.UserId)
+		permission, err := this.resolvePermission(ctx, parent, query.UserId)
 		ft.PanicOnErr(err)
-		if perm < enum.DriveFileSharePermView {
+		if !permission.CanView() {
 			return &it.GetDriveFileByParentResult{
 				ClientError: &fault.ClientError{
 					Code:    "forbidden",
@@ -278,9 +277,9 @@ func (this *DriveFileServiceImpl) GetDriveFileAncestors(ctx crud.Context, query 
 			break
 		}
 
-		perm, err := this.resolvePermission(ctx, parent, query.UserId)
+		permission, err := this.resolvePermission(ctx, parent, query.UserId)
 		ft.PanicOnErr(err)
-		if perm < enum.DriveFileSharePermView {
+		if !permission.CanView() {
 			waiting = append(waiting, parent)
 			cur = parent
 			continue

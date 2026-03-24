@@ -27,6 +27,9 @@ func (this UpdateBulkDriveFileMetadataCommand) ToDomainModels() []*domain.DriveF
 	result := make([]*domain.DriveFile, len(this.DriveFiles))
 	for i := range this.DriveFiles {
 		result[i] = this.DriveFiles[i].ToDomainModel()
+		if this.UserId != "" {
+			result[i].UserId = this.UserId
+		}
 	}
 	return result
 }
@@ -44,12 +47,16 @@ func (this DeleteDriveFileCommand) ToDomainModel() *domain.DriveFile {
 }
 
 func (this MoveDriveFileToTrashCommand) ToDomainModel() *domain.DriveFile {
-	return &domain.DriveFile{ModelBase: model.ModelBase{Id: &this.DriveFileId}}
+	return &domain.DriveFile{
+		ModelBase: model.ModelBase{Id: &this.DriveFileId},
+		UserId:    this.UserId,
+	}
 }
 
 func (this RestoreDriveFileCommand) ToDomainModel() *domain.DriveFile {
 	d := &domain.DriveFile{
 		ModelBase: model.ModelBase{Id: &this.DriveFileId},
+		UserId:    this.UserId,
 	}
 
 	d.ParentDriveFileRef = this.ParentFileRef
@@ -59,8 +66,9 @@ func (this RestoreDriveFileCommand) ToDomainModel() *domain.DriveFile {
 
 func (this MoveDriveFileCommand) ToDomainModel() *domain.DriveFile {
 	d := &domain.DriveFile{
-		ModelBase:     model.ModelBase{Id: &this.DriveFileId},
+		ModelBase:          model.ModelBase{Id: &this.DriveFileId},
 		ParentDriveFileRef: this.ParentFileRef,
+		UserId:             this.UserId,
 	}
 	return d
 }
