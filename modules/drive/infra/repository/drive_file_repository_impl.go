@@ -252,6 +252,20 @@ func (d *driveFileRepository) FindById(ctx crud.Context, id model.Id) (*domain.D
 	return db.FindOne(ctx.InnerContext(), dbQuery, ent.IsNotFound, entToDriveFile)
 }
 
+func (d *driveFileRepository) FindByIds(ctx crud.Context, ids []model.Id) ([]*domain.DriveFile, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	entities, err := d.driveFileClient(ctx).
+		Query().
+		Where(entDrivefile.IDIn(ids...), notPendingDelete).
+		All(ctx.InnerContext())
+	if err != nil {
+		return nil, err
+	}
+	return entToDriveFiles(entities), nil
+}
+
 func (d *driveFileRepository) DeleteById(ctx crud.Context, id model.Id) (int, error) {
 	return d.driveFileClient(ctx).Delete().
 		Where(entDrivefile.ID(id)).

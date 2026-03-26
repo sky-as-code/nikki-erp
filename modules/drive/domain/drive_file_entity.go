@@ -43,8 +43,15 @@ type DriveFile struct {
 	// Owner is optional view populated by the application layer for API responses; not persisted.
 	Owner *DriveFileShareUser `json:"owner,omitempty"`
 
+	// ResolvedPermission is the effective permission for the acting user; set by batch enrichment, not persisted.
+	ResolvedPermission *DriveFileResolvedPermission `json:"-"`
+
 	// UserId is the acting user for permission checks on mutations; not persisted.
 	UserId model.Id `json:"-"`
+}
+
+type DriveFileResolvedPermission struct {
+	Permission enum.DriveFilePerm
 }
 
 var (

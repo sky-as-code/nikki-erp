@@ -26,9 +26,9 @@ type DriveFileDto struct {
 	Storage    enum.DriveFileStorage    `json:"storage"`
 	Visibility enum.DriveFileVisibility `json:"visibility"`
 	Status     enum.DriveFileStatus     `json:"status"`
-	// Children   []*DriveFileDto          `json:"children,omitempty" model:"-"`
 
-	Owner *DriveFileShareUserDto `json:"owner,omitempty"`
+	Owner              *DriveFileShareUserDto `json:"owner,omitempty"`
+	ResolvedPermission *enum.DriveFilePerm    `json:"resolvedPermission,omitempty"`
 
 	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 }
@@ -64,6 +64,10 @@ func (this *DriveFileDto) FromDriveFile(f domain.DriveFile) {
 		this.Owner = &u
 	} else {
 		this.Owner = nil
+	}
+
+	if f.ResolvedPermission != nil {
+		this.ResolvedPermission = &f.ResolvedPermission.Permission
 	}
 }
 

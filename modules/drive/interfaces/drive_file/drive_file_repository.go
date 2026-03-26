@@ -13,6 +13,7 @@ import (
 
 type DriveFileRepository interface {
 	FindById(ctx crud.Context, id model.Id) (*domain.DriveFile, error)
+	FindByIds(ctx crud.Context, ids []model.Id) ([]*domain.DriveFile, error)
 	ExistsByOwnerParentNameFolder(ctx crud.Context, ownerRef model.Id, parentRef *model.Id, name string, isFolder bool) (bool, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, fault.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[*domain.DriveFile], error)
