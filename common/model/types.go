@@ -13,6 +13,7 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/defense"
+	"github.com/sky-as-code/nikki-erp/common/modelmapper"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
@@ -278,7 +279,139 @@ func LangJsonPtrValidateRule(field **LangJson, isRequired bool, minLength int, m
 	)
 }
 
+func NewModelDateTime() ModelDateTime {
+	return ModelDateTime(time.Now().UTC())
+}
+
+func ParseModelDateTime(timestamp string) (ModelDateTime, error) {
+	if !strings.HasSuffix(timestamp, "Z") {
+		return ModelDateTime{}, errors.New("timestamp must be in RFC3339 format and in UTC (end with 'Z' only)")
+	}
+
+	parsed, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
+		return ModelDateTime{}, err
+	}
+	return ModelDateTime(parsed), nil
+}
+
+// A time.Time wrapper to represent a date-time. Use this to consistently handle date-time thoughout this application.
+type ModelDateTime time.Time
+
+func (this ModelDateTime) GoTime() time.Time {
+	return time.Time(this)
+}
+
+func (this ModelDateTime) String() string {
+	return time.Time(this).Format(time.RFC3339)
+}
+
+func (this ModelDateTime) MarshalText() ([]byte, error) {
+	return []byte(this.String()), nil
+}
+
+func (this *ModelDateTime) UnmarshalText(data []byte) error {
+	parsed, err := ParseModelDateTime(string(data))
+	if err != nil {
+		return err
+	}
+	*this = parsed
+	return nil
+}
+
+func NewModelDate() ModelDate {
+	now := time.Now().UTC()
+	y, m, d := now.Date()
+	dateOnly := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	return ModelDate(dateOnly)
+}
+
+func ParseModelDate(timestamp string) (ModelDate, error) {
+	parsed, err := time.Parse(time.DateOnly, timestamp)
+	if err != nil {
+		return ModelDate{}, err
+	}
+	return ModelDate(parsed), nil
+}
+
+// A time.Time wrapper to represent a date without time. Use this to consistently handle date thoughout this application.
+type ModelDate time.Time
+
+func (this ModelDate) GoTime() time.Time {
+	return time.Time(this)
+}
+
+func (this ModelDate) String() string {
+	return time.Time(this).Format(time.DateOnly)
+}
+
+func (this ModelDate) MarshalText() ([]byte, error) {
+	return []byte(this.String()), nil
+}
+
+func (this *ModelDate) UnmarshalText(data []byte) error {
+	parsed, err := ParseModelDate(string(data))
+	if err != nil {
+		return err
+	}
+	*this = parsed
+	return nil
+}
+
+func NewModelTime() ModelTime {
+	now := time.Now().UTC()
+	onlyTime := time.Date(0, 1, 1, now.Hour(), now.Minute(), now.Second(), now.Nanosecond(), time.UTC)
+	return ModelTime(onlyTime)
+}
+
+func ParseModelTime(timestamp string) (ModelTime, error) {
+	parsed, err := time.Parse(time.TimeOnly, timestamp)
+	if err != nil {
+		return ModelTime{}, err
+	}
+	return ModelTime(parsed), nil
+}
+
+// A time.Time wrapper to represent a time without date. Use this to consistently handle time this application.
+type ModelTime time.Time
+
+func (this ModelTime) GoTime() time.Time {
+	return time.Time(this)
+}
+
+func (this ModelTime) String() string {
+	return time.Time(this).Format(time.TimeOnly)
+}
+
+func (this ModelTime) MarshalText() ([]byte, error) {
+	return []byte(this.String()), nil
+}
+
+func (this *ModelTime) UnmarshalText(data []byte) error {
+	parsed, err := ParseModelTime(string(data))
+	if err != nil {
+		return err
+	}
+	*this = parsed
+	return nil
+}
+
 func init() {
+	modelmapper.AddConversion[ModelDateTime, string](func(in reflect.Value) (reflect.Value, error) {
+		result := in.Interface().(ModelDateTime)
+		return reflect.ValueOf(result.String()), nil
+	})
+
+	modelmapper.AddConversion[ModelDate, string](func(in reflect.Value) (reflect.Value, error) {
+		result := in.Interface().(ModelDate)
+		return reflect.ValueOf(result.String()), nil
+	})
+
+	modelmapper.AddConversion[ModelTime, string](func(in reflect.Value) (reflect.Value, error) {
+		result := in.Interface().(ModelTime)
+		return reflect.ValueOf(result.String()), nil
+	})
+
 	AddConversion[LangJson, *LangJson](func(in reflect.Value) (reflect.Value, error) {
 		if in.IsNil() {
 			return reflect.ValueOf((*LangJson)(nil)), nil

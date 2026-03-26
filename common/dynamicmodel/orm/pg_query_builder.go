@@ -16,6 +16,7 @@ import (
 	crud "github.com/sky-as-code/nikki-erp/common/crud"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	cmodel "github.com/sky-as-code/nikki-erp/common/model"
 )
 
 // SqlSelectGraphOpts holds optional parameters for SqlSelectGraph.
@@ -922,7 +923,7 @@ func columnCategoryFor(t string) columnCategory {
 	case strings.Contains(typ, "numeric"), strings.Contains(typ, "decimal"), strings.Contains(typ, "float"):
 		return columnNumeric
 	case strings.Contains(typ, "timestamp"), strings.Contains(typ, "timestamptz"),
-		strings.Contains(typ, "date"), strings.Contains(typ, "time"):
+		strings.Contains(typ, "date"), strings.Contains(typ, "time"), typ == "nikkiDate", typ == "nikkiTime", typ == "nikkiDateTime":
 		return columnTime
 	case strings.Contains(typ, "char"), strings.Contains(typ, "text"), strings.Contains(typ, "uuid"),
 		typ == "string" || typ == "email" || typ == "phone" || typ == "secret" || typ == "url" ||
@@ -944,6 +945,9 @@ func unwrapValue(v reflect.Value) (reflect.Value, bool) {
 }
 
 var timeType = reflect.TypeOf(time.Time{})
+var modelDateType = reflect.TypeOf(cmodel.ModelDate(time.Time{}))
+var modelDateTimeType = reflect.TypeOf(cmodel.ModelDateTime(time.Time{}))
+var modelTimeType = reflect.TypeOf(cmodel.ModelTime(time.Time{}))
 
 func valueAllowed(cat columnCategory, v reflect.Value) bool {
 	switch cat {
@@ -957,7 +961,10 @@ func valueAllowed(cat columnCategory, v reflect.Value) bool {
 		return isIntKind(v.Kind()) || isUintKind(v.Kind()) ||
 			isFloatKind(v.Kind()) || isBigNumber(v.Interface())
 	case columnTime:
-		return v.Type() == timeType
+		return v.Type() == timeType ||
+			v.Type() == modelDateType ||
+			v.Type() == modelDateTimeType ||
+			v.Type() == modelTimeType
 	case columnJSON:
 		return v.Kind() == reflect.Map
 	default:

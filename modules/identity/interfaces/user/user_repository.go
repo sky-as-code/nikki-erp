@@ -14,7 +14,7 @@ import (
 
 type UserRepository interface {
 	Create(ctx corecrud.Context, user *domain.User) (*domain.User, error)
-	DeleteHard(ctx corecrud.Context, param DeleteParam) (int, error)
+	// DeleteHard(ctx corecrud.Context, param DeleteParam) (int, error)
 	Exists(ctx corecrud.Context, id model.Id) (bool, error)
 	ExistsMulti(ctx corecrud.Context, ids []model.Id, orgId *model.Id) (existing []model.Id, notExisting []model.Id, err error)
 	FindById(ctx corecrud.Context, param FindByIdParam) (*domain.User, error)
@@ -29,9 +29,9 @@ type UserRepository interface {
 type UserRepository2 interface {
 	dEnt.BaseRepoGetter
 	Create(ctx corectx.Context, user domain.UserEntity) (*crud.OpResult[domain.UserEntity], error)
-	Update(ctx corectx.Context, user domain.UserEntity, prevEtag string) (*crud.OpResult[domain.UserEntity], error)
+	Update(ctx corectx.Context, user domain.UserEntity) (*crud.OpResult[domain.UserEntity], error)
 	FindOne(ctx corectx.Context, param dEnt.GetOneParam) (*crud.OpResult[domain.UserEntity], error)
-	Search(ctx corectx.Context, param dEnt.SearchParam) (*crud.OpResult[crud.PagedResult[domain.UserEntity]], error)
+	Search(ctx corectx.Context, param dEnt.SearchParam) (*crud.OpResult[crud.PagedResultData[domain.UserEntity]], error)
 	Archive(ctx corectx.Context, user domain.UserEntity) (*crud.OpResult[domain.UserEntity], error)
 }
 

@@ -79,7 +79,10 @@ func (this ModelSchema) Field(name string) (*ModelField, bool) {
 }
 
 func (this ModelSchema) MustField(name string) *ModelField {
-	field := this.fields[name]
+	field, ok := this.Field(name)
+	if !ok {
+		panic(errors.Errorf("MustField: field '%s' not found in schema '%s'", name, this.name))
+	}
 	return field
 }
 
@@ -198,7 +201,11 @@ func (this *ModelSchema) Validate(input DynamicFields, forEdit ...bool) (Dynamic
 			continue
 		}
 
-		val, _ := input[name]
+		val, exists := input[name]
+		if !exists && isForEdit {
+			continue
+		}
+
 		result[name] = val
 		validated, vErr := field.Validate(val, isForEdit)
 		if vErr != nil {
@@ -387,7 +394,7 @@ func (this *ModelField) Validate(val any, forEdit ...bool) (value, *ft.ClientErr
 	if isNil(val) {
 		if isForEdit {
 			if this.isRequiredUpdate {
-				return Value(nil), ft.NewValidationError(this.name, "common.err_missing_required_field", "field is required")
+				return Value(nil), NewMissingFieldErr(this.name)
 			}
 			return Value(val), nil
 		}
@@ -399,7 +406,7 @@ func (this *ModelField) Validate(val any, forEdit ...bool) (value, *ft.ClientErr
 			return Value(this.defaultFn()), nil
 		}
 		if this.isRequiredCreate && !this.isReadOnly {
-			return Value(nil), ft.NewValidationError(this.name, "common.err_missing_required_field", "field is required")
+			return Value(nil), NewMissingFieldErr(this.name)
 		}
 		return Value(val), nil
 	}

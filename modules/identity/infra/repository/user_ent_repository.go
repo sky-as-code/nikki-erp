@@ -69,11 +69,11 @@ func (this *UserEntRepository) Update(ctx crud.Context, user *domain.User, prevE
 	return db.Mutate(ctx, update, ent.IsNotFound, entToUser)
 }
 
-func (this *UserEntRepository) DeleteHard(ctx crud.Context, param it.DeleteParam) (int, error) {
-	return this.userClient(ctx).Delete().
-		Where(entUser.ID(param.Id)).
-		Exec(ctx)
-}
+// func (this *UserEntRepository) DeleteHard(ctx crud.Context, param it.DeleteParam) (int, error) {
+// 	return this.userClient(ctx).Delete().
+// 		Where(entUser.ID(param.Id)).
+// 		Exec(ctx)
+// }
 
 func (this *UserEntRepository) Exists(ctx crud.Context, id model.Id) (bool, error) {
 	return this.userClient(ctx).Query().

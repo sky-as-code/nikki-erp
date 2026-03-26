@@ -50,10 +50,10 @@ func (this *UserDynamicRepository) Create(ctx corectx.Context, user domain.UserE
 	return baserepo.Insert[domain.UserEntity](ctx, this.dynamicRepo, user)
 }
 
-func (this *UserDynamicRepository) Update(ctx corectx.Context, user domain.UserEntity, prevEtag string) (
+func (this *UserDynamicRepository) Update(ctx corectx.Context, user domain.UserEntity) (
 	*crud.OpResult[domain.UserEntity], error,
 ) {
-	return baserepo.Update[domain.UserEntity](ctx, this.dynamicRepo, user, prevEtag)
+	return baserepo.Update[domain.UserEntity](ctx, this.dynamicRepo, user)
 }
 
 func (this *UserDynamicRepository) FindOne(ctx corectx.Context, param coredyn.GetOneParam) (
@@ -70,6 +70,6 @@ func (this *UserDynamicRepository) Archive(ctx corectx.Context, user domain.User
 
 func (this *UserDynamicRepository) Search(
 	ctx corectx.Context, param coredyn.SearchParam,
-) (*crud.OpResult[crud.PagedResult[domain.UserEntity]], error) {
+) (*crud.OpResult[crud.PagedResultData[domain.UserEntity]], error) {
 	return baserepo.Search[domain.UserEntity](ctx, this.dynamicRepo, param)
 }

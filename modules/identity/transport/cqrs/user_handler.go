@@ -27,12 +27,12 @@ func (this *UserHandler) Update(ctx context.Context, packet *cqrs.RequestPacket[
 }
 
 func (this *UserHandler) Delete(ctx context.Context, packet *cqrs.RequestPacket[it.DeleteUserCommand]) (*cqrs.Reply[it.DeleteUserResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.DeleteUser)
+	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.DeleteUser)
 }
 
-// func (this *UserHandler) GetUserById(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserQuery]) (*cqrs.Reply[it.GetUserByIdResult], error) {
-// 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.GetUserById)
-// }
+func (this *UserHandler) GetUser(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserQuery]) (*cqrs.Reply[it.GetUserResult], error) {
+	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.GetUser)
+}
 
 func (this *UserHandler) GetUserByEmail(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserByEmailQuery]) (*cqrs.Reply[it.GetUserByEmailResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.GetUserByEmail)
@@ -53,7 +53,3 @@ func (this *UserHandler) UserExists(ctx context.Context, packet *cqrs.RequestPac
 func (this *UserHandler) UserExistsMulti(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsMultiQuery]) (*cqrs.Reply[it.UserExistsMultiResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.ExistsMulti)
 }
-
-// func (this *UserHandler) FindDirectApprover(ctx context.Context, packet *cqrs.RequestPacket[it.FindDirectApproverQuery]) (*cqrs.Reply[it.FindDirectApproverResult], error) {
-// 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.FindDirectApprover)
-// }

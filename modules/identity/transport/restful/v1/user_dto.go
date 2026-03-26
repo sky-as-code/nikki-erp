@@ -54,10 +54,10 @@ type CreateUserRequest = it.CreateUserCommand
 type CreateUserResponse = httpserver.RestCreateResponse
 
 type UpdateUserRequest = it.UpdateUserCommand
-type UpdateUserResponse = httpserver.RestUpdateResponse
+type UpdateUserResponse = httpserver.RestUpdateResponse2
 
 type DeleteUserRequest = it.DeleteUserCommand
-type DeleteUserResponse = httpserver.RestDeleteResponse
+type DeleteUserResponse = httpserver.RestDeleteResponse2
 
 type GetUserRequest = it.GetUserQuery
 type GetUserResponse = dmodel.DynamicFields
@@ -83,36 +83,7 @@ func (this *SearchUsersResponse) FromResult(result *it.SearchUsersResultData) {
 type UserExistsMultiRequest = it.UserExistsMultiQuery
 type UserExistsMultiResponse = it.ExistsMultiResultData
 
-// UserEntityDto is the response DTO for dynamic-entity user operations.
-// JSON field names use snake_case to match the dynamic entity schema column names.
-type UserEntityDto struct {
-	Id          string  `json:"id"`
-	DisplayName *string `json:"display_name,omitempty"`
-	Email       *string `json:"email,omitempty"`
-	AvatarUrl   *string `json:"avatar_url,omitempty"`
-	Status      *string `json:"status,omitempty"`
-	CreatedAt   *string `json:"created_at,omitempty"`
-	UpdatedAt   *string `json:"updated_at,omitempty"`
-	Etag        *string `json:"etag,omitempty"`
-}
-
-type SearchUsers2Response struct {
-	Items []dmodel.DynamicFields `json:"items"`
-	Total int                    `json:"total"`
-	Page  int                    `json:"page"`
-	Size  int                    `json:"size"`
-}
-
-// func toSearchUsers2Response(items []domain.UserEntity) SearchUsers2Response {
-// 	dtos := make([]UserEntityDto, len(items))
-// 	for i, item := range items {
-// 		dto, _ := modelmapper.MapToStruct[*UserEntityDto](item.GetFieldData())
-// 		if dto != nil {
-// 			dtos[i] = *dto
-// 		}
-// 	}
-// 	return SearchUsers2Response{Items: dtos, Total: len(dtos)}
-// }
+type SearchUsersResponse2 = httpserver.RestSearchResponse[dmodel.DynamicFields]
 
 type SearchUsers2Request = it.SearchUsersQuery2
 

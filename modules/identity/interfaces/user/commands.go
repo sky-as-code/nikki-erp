@@ -118,7 +118,7 @@ func (this UpdateUserCommand) GetSchema() *dmodel.ModelSchema {
 	return dmodel.GetSchema(domain.UserSchemaName)
 }
 
-type UpdateUserResult = crud.OpResult[domain.UserEntity]
+type UpdateUserResult = crud.OpResult[crud.MutateResultData]
 
 var deleteUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -127,24 +127,39 @@ var deleteUserCommandType = cqrs.RequestType{
 }
 
 type DeleteUserCommand struct {
-	Id       model.Id  `json:"id" param:"id"`
-	ScopeRef *model.Id `query:"scopeRef" json:"scopeRef"`
+	domain.UserEntity
+	// Id       model.Id  `json:"id" param:"id"`
+	// ScopeRef *model.Id `query:"scopeRef" json:"scopeRef"`
 }
 
 func (DeleteUserCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteUserCommandType
 }
 
-func (this DeleteUserCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-		model.IdPtrValidateRule(&this.ScopeRef, false),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (this DeleteUserCommand) GetSchema() *dmodel.ModelSchema {
+	fullSchema := dmodel.GetSchema(domain.UserSchemaName)
+	return dmodel.GetOrRegisterSchema(
+		dmodel.DefineModel("identity.user.delete_user").
+			CopyField(fullSchema, basemodel.FieldId).
+			Build(),
+	)
+	// return dmodel.GetOrRegisterSchema(
+	// 	dmodel.DefineModel("identity.user.delete_user").
+	// 		Extend(basemodel.BaseModelSchemaBuilder()).
+	// 		Build(),
+	// )
 }
 
-type DeleteUserResult = corecrud.DeletionResult
+// func (this DeleteUserCommand) Validate() ft.ValidationErrors {
+// 	rules := []*val.FieldRules{
+// 		model.IdValidateRule(&this.Id, true),
+// 		model.IdPtrValidateRule(&this.ScopeRef, false),
+// 	}
+
+// 	return val.ApiBased.ValidateStruct(&this, rules...)
+// }
+
+type DeleteUserResult = crud.OpResult[crud.MutateResultData]
 
 var existsCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -220,9 +235,9 @@ func (GetUserQuery) CqrsRequestType() cqrs.RequestType {
 func (this GetUserQuery) GetSchema() *dmodel.ModelSchema {
 	fullSchema := dmodel.GetSchema(domain.UserSchemaName)
 	return dmodel.GetOrRegisterSchema(
-		dmodel.DefineModel("identity.user.getUser").
-			Field(dmodel.CopyField(fullSchema, basemodel.FieldId)).
-			Field(dmodel.CopyField(fullSchema, domain.UserFieldStatus)).
+		dmodel.DefineModel("identity.user.get_user").
+			CopyField(fullSchema, basemodel.FieldId).
+			CopyField(fullSchema, domain.UserFieldStatus).
 			Extend(dCrud.GetOneQuerySchemaBuilder()).
 			Build(),
 	)
@@ -308,6 +323,7 @@ var searchUsersQueryType = cqrs.RequestType{
 	Action:    "search",
 }
 
+// Deprecated: Use SearchUsersQuery2 instead
 type SearchUsersQuery struct {
 	corecrud.SearchQuery
 
@@ -362,7 +378,7 @@ var searchUsersQuery2Type = cqrs.RequestType{
 // }
 
 type SearchUsersQuery2 = dCrud.SearchQuery
-type SearchUsersResultData2 = crud.PagedResult[domain.UserEntity]
+type SearchUsersResultData2 = crud.PagedResultData[domain.UserEntity]
 type SearchUsersResult2 = crud.OpResult[SearchUsersResultData2]
 
 var findDirectApproverQueryType = cqrs.RequestType{

@@ -94,15 +94,15 @@ func FieldDataTypeBoolean() FieldDataType {
 }
 
 func FieldDataTypeDate() FieldDataType {
-	return fieldDataTypeDate{fieldDataTypeBase{name: "date", options: nil}}
+	return fieldDataTypeDate{fieldDataTypeBase{name: "nikkiDate", options: nil}}
 }
 
 func FieldDataTypeTime() FieldDataType {
-	return fieldDataTypeTime{fieldDataTypeBase{name: "time", options: nil}}
+	return fieldDataTypeTime{fieldDataTypeBase{name: "nikkiTime", options: nil}}
 }
 
 func FieldDataTypeDateTime() FieldDataType {
-	return fieldDataTypeDateTime{fieldDataTypeBase{name: "dateTime", options: nil}}
+	return fieldDataTypeDateTime{fieldDataTypeBase{name: "nikkiDateTime", options: nil}}
 }
 
 func FieldDataTypeEnumString(enumValues []string) FieldDataType {
@@ -361,12 +361,12 @@ func (this fieldDataTypeString) validateScalar(val value) (value, *ft.ClientErro
 
 func validateStringBase(val value, options FieldDataTypeOptions) (value, *ft.ClientErrorItem) {
 	if val.Get() == nil {
-		return Value(nil), errIncompatibleDataType()
+		return Value(nil), NewInvalidDataTypeErr("")
 	}
 	raw := *val.Get()
 	s, err := toString(raw)
 	if err != nil {
-		return Value(nil), errIncompatibleDataType()
+		return Value(nil), NewInvalidDataTypeErr("")
 	}
 	sanitized, clientErr := sanitizeStringValue(raw, options)
 	if clientErr != nil {
@@ -381,11 +381,11 @@ func validateStringBase(val value, options FieldDataTypeOptions) (value, *ft.Cli
 		out = v
 	case *string:
 		if v == nil {
-			return Value(nil), errIncompatibleDataType()
+			return Value(nil), NewInvalidDataTypeErr("")
 		}
 		out = *v
 	default:
-		return Value(nil), errIncompatibleDataType()
+		return Value(nil), NewInvalidDataTypeErr("")
 	}
 	return Value(out), nil
 }
@@ -556,10 +556,10 @@ func (this fieldDataTypeUlid) validateScalar(val value) (value, *ft.ClientErrorI
 	}
 	s := (*sanitized.Get()).(string)
 	if len(s) != model.MODEL_RULE_ULID_LENGTH {
-		return Value(nil), ft.NewInvalidDataTypeError("")
+		return Value(nil), NewInvalidDataTypeErr("")
 	}
 	if _, err := ulid.Parse(s); err != nil {
-		return Value(nil), ft.NewInvalidDataTypeError("")
+		return Value(nil), NewInvalidDataTypeErr("")
 	}
 	return sanitized, nil
 }
@@ -591,7 +591,10 @@ func (this fieldDataTypeUuid) validateScalar(val value) (value, *ft.ClientErrorI
 	if clientErr != nil {
 		return Value(nil), clientErr
 	}
-	return sanitized, ValidateUuid((*sanitized.Get()).(string))
+	if !ValidateUuid((*sanitized.Get()).(string)) {
+		return Value(nil), NewInvalidDataTypeErr("")
+	}
+	return sanitized, nil
 }
 
 func (this fieldDataTypeUuid) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
@@ -704,7 +707,7 @@ func (this fieldDataTypeDate) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeDate) DefaultValue() value {
-	return Value(time.Time{})
+	return Value(model.NewModelDate())
 }
 
 func (this fieldDataTypeDate) Validate(val value) (value, *ft.ClientErrorItem) {
@@ -715,7 +718,11 @@ func (this fieldDataTypeDate) Validate(val value) (value, *ft.ClientErrorItem) {
 }
 
 func (this fieldDataTypeDate) validateScalar(val value) (value, *ft.ClientErrorItem) {
-	return val, nil
+	sanitized, err := this.TryConvert(val.Get(), this.options)
+	if err != nil {
+		return Value(nil), ft.NewAnonymousValidationError("invalid_date", "invalid date, must have format 'YYYY-MM-DD'", nil)
+	}
+	return sanitized, nil
 }
 
 func (this fieldDataTypeDate) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
@@ -734,7 +741,7 @@ func (this fieldDataTypeTime) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeTime) DefaultValue() value {
-	return Value(time.Time{})
+	return Value(model.NewModelTime())
 }
 
 func (this fieldDataTypeTime) Validate(val value) (value, *ft.ClientErrorItem) {
@@ -745,7 +752,11 @@ func (this fieldDataTypeTime) Validate(val value) (value, *ft.ClientErrorItem) {
 }
 
 func (this fieldDataTypeTime) validateScalar(val value) (value, *ft.ClientErrorItem) {
-	return val, nil
+	sanitized, err := this.TryConvert(val.Get(), this.options)
+	if err != nil {
+		return Value(nil), ft.NewAnonymousValidationError("invalid_time", "invalid time, must have format 'HH:MM:SS'", nil)
+	}
+	return sanitized, nil
 }
 
 func (this fieldDataTypeTime) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
@@ -764,7 +775,7 @@ func (this fieldDataTypeDateTime) ArrayType() FieldDataType {
 }
 
 func (this fieldDataTypeDateTime) DefaultValue() value {
-	return Value(time.Now().UTC())
+	return Value(model.NewModelDateTime())
 }
 
 func (this fieldDataTypeDateTime) Validate(val value) (value, *ft.ClientErrorItem) {
@@ -775,7 +786,11 @@ func (this fieldDataTypeDateTime) Validate(val value) (value, *ft.ClientErrorIte
 }
 
 func (this fieldDataTypeDateTime) validateScalar(val value) (value, *ft.ClientErrorItem) {
-	return val, nil
+	sanitized, err := this.TryConvert(val.Get(), this.options)
+	if err != nil {
+		return Value(nil), ft.NewAnonymousValidationError("invalid_datetime", "invalid datetime, must be a RFC3339 timestamp", nil)
+	}
+	return sanitized, nil
 }
 
 func (this fieldDataTypeDateTime) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
@@ -857,7 +872,7 @@ func (this fieldDataTypeEnumInteger) validateScalar(value value) (value, *ft.Cli
 		allowedAny[i] = n
 	}
 	if value.Get() == nil {
-		return Value(nil), errIncompatibleDataType()
+		return Value(nil), NewInvalidDataTypeErr("")
 	}
 	if err := ValidateOneOf(*value.Get(), allowedAny); err != nil {
 		return Value(nil), err
@@ -929,7 +944,7 @@ func (this fieldDataTypeLangJson) Validate(val value) (value, *ft.ClientErrorIte
 
 func (this fieldDataTypeLangJson) validateScalar(value value) (value, *ft.ClientErrorItem) {
 	if value.Get() == nil {
-		return Value(nil), errIncompatibleDataType()
+		return Value(nil), NewInvalidDataTypeErr("")
 	}
 	lj, clientErr := toLangJson(*value.Get())
 	if clientErr != nil {
@@ -1093,7 +1108,10 @@ func (this fieldDataTypeSlug) validateScalar(val value) (value, *ft.ClientErrorI
 	if clientErr != nil {
 		return Value(nil), clientErr
 	}
-	return sanitized, ValidatePattern((*sanitized.Get()).(string), slugRegex)
+	if !ValidatePattern((*sanitized.Get()).(string), slugRegex) {
+		return Value(nil), NewInvalidDataTypeErr("")
+	}
+	return sanitized, nil
 }
 
 func (this fieldDataTypeSlug) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
@@ -1117,7 +1135,7 @@ var (
 func tryConvertOrIncompatible(dt FieldDataType, raw any) (value, *ft.ClientErrorItem) {
 	converted, err := dt.TryConvert(raw, dt.Options())
 	if err != nil {
-		return Value(nil), errIncompatibleDataType()
+		return Value(nil), NewInvalidDataTypeErr("")
 	}
 	return converted, nil
 }
@@ -1128,7 +1146,7 @@ func validateScalarAfterTryConvert(
 	validateConverted func(value) (value, *ft.ClientErrorItem),
 ) (value, *ft.ClientErrorItem) {
 	if val.Get() == nil {
-		return Value(nil), errIncompatibleDataType()
+		return Value(nil), NewInvalidDataTypeErr("")
 	}
 	converted, clientErr := tryConvertOrIncompatible(dt, *val.Get())
 	if clientErr != nil {
@@ -1143,11 +1161,11 @@ func validateArrayAfterTryConvert(
 	validateConverted func(value) (value, *ft.ClientErrorItem),
 ) (value, *ft.ClientErrorItem) {
 	if val.Get() == nil {
-		return Value(nil), errIncompatibleDataType()
+		return Value(nil), NewInvalidDataTypeErr("")
 	}
 	rv := reflect.ValueOf(*val.Get())
 	if rv.Kind() != reflect.Slice {
-		return Value(nil), errIncompatibleDataType()
+		return Value(nil), NewInvalidDataTypeErr("")
 	}
 	n := rv.Len()
 	result := make([]any, n)
@@ -1235,71 +1253,60 @@ func toBool(value any) (bool, error) {
 	return rv.Convert(reflectTypeBool).Bool(), nil
 }
 
-func toDate(value any) (time.Time, error) {
+func toDate(value any) (model.ModelDate, error) {
 	if value == nil {
-		return time.Time{}, errors.New("toDate: value cannot be nil")
+		return model.ModelDate{}, errors.New("toDate: value cannot be nil")
 	}
 	switch v := value.(type) {
 	case time.Time:
-		return v, nil
+		return model.ModelDate(v), nil
 	case *time.Time:
 		if v == nil {
-			return time.Time{}, errors.New("toDate: value cannot be nil")
+			return model.ModelDate{}, errors.New("toDate: value cannot be nil")
 		}
-		return *v, nil
+		return model.ModelDate(*v), nil
 	case string:
-		return time.Parse("2006-01-02", v)
+		return model.ParseModelDate(v)
 	default:
-		return time.Time{}, errors.Errorf("toDate: cannot convert %T to date", value)
+		return model.ModelDate{}, errors.Errorf("toDate: cannot convert %T to ModelDate", value)
 	}
 }
 
-func toTime(value any) (time.Time, error) {
+func toTime(value any) (model.ModelTime, error) {
 	if value == nil {
-		return time.Time{}, errors.New("toTime: value cannot be nil")
+		return model.ModelTime{}, errors.New("toTime: value cannot be nil")
 	}
 	switch v := value.(type) {
 	case time.Time:
-		return v, nil
+		return model.ModelTime(v), nil
 	case *time.Time:
 		if v == nil {
-			return time.Time{}, errors.New("toTime: value cannot be nil")
+			return model.ModelTime{}, errors.New("toTime: value cannot be nil")
 		}
-		return *v, nil
+		return model.ModelTime(*v), nil
 	case string:
-		return time.Parse("15:04:05", v)
+		return model.ParseModelTime(v)
 	default:
-		return time.Time{}, errors.Errorf("toTime: cannot convert %T to time", value)
+		return model.ModelTime{}, errors.Errorf("toTime: cannot convert %T to ModelTime", value)
 	}
 }
 
-func toDateTime(value any) (time.Time, error) {
+func toDateTime(value any) (model.ModelDateTime, error) {
 	if value == nil {
-		return time.Time{}, errors.New("toDateTime: value cannot be nil")
+		return model.ModelDateTime{}, errors.New("toDateTime: value cannot be nil")
 	}
 	switch v := value.(type) {
 	case time.Time:
-		return v, nil
+		return model.ModelDateTime(v), nil
 	case *time.Time:
 		if v == nil {
-			return time.Time{}, errors.New("toDateTime: value cannot be nil")
+			return model.ModelDateTime{}, errors.New("toDateTime: value cannot be nil")
 		}
-		return *v, nil
+		return model.ModelDateTime(*v), nil
 	case string:
-		formats := []string{
-			time.RFC3339,
-			"2006-01-02T15:04:05Z07:00",
-			"2006-01-02 15:04:05",
-			"2006-01-02",
-		}
-		for _, layout := range formats {
-			if t, err := time.Parse(layout, v); err == nil {
-				return t, nil
-			}
-		}
-		return time.Time{}, errors.Errorf("toDateTime: cannot parse '%s' as datetime", v)
+		return model.ParseModelDateTime(v)
 	default:
-		return time.Time{}, errors.Errorf("toDateTime: cannot convert %T to datetime", value)
+		return model.ModelDateTime{}, errors.Errorf("toDateTime: cannot convert %T to ModelDateTime", value)
 	}
 }
 

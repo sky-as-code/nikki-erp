@@ -70,6 +70,18 @@ func (this *ModelSchemaBuilder) Field(fieldBuilder *FieldBuilder) *ModelSchemaBu
 	return this
 }
 
+func (this *ModelSchemaBuilder) CopyField(schema *ModelSchema, fieldName string) *ModelSchemaBuilder {
+	newField := copyField(schema, fieldName).Build()
+	this.addField(newField)
+	return this
+}
+
+func (this *ModelSchemaBuilder) CopyFieldN(schemaName string, fieldName string) *ModelSchemaBuilder {
+	newField := copyFieldN(schemaName, fieldName).Build()
+	this.addField(newField)
+	return this
+}
+
 func (this *ModelSchemaBuilder) addField(field *ModelField) {
 	if err := validateFieldName(field); err != nil {
 		panic(errors.Wrapf(err, "addField: model '%s'", this.schema.name))
@@ -131,6 +143,22 @@ func (this *ModelSchemaBuilder) Build() *ModelSchema {
 		ft.PanicOnErr(populateDbMetadata(schema))
 	}
 	return schema
+}
+
+func copyField(schema *ModelSchema, fieldName string) *FieldBuilder {
+	field := schema.MustField(fieldName)
+	copiedField := field.Copy()
+	return &FieldBuilder{
+		field: copiedField,
+	}
+}
+
+func copyFieldN(schemaName string, fieldName string) *FieldBuilder {
+	field := schemaRegistry.Field(schemaName, fieldName)
+	copiedField := field.Copy()
+	return &FieldBuilder{
+		field: copiedField,
+	}
 }
 
 func validateFieldName(field *ModelField) error {

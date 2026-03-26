@@ -66,7 +66,7 @@ func initV1(
 
 	route.POST("/users", userRest.CreateUser)
 	route.GET("/users", userRest.SearchUsers2)
-	route.GET("/users/:id", userRest.GetOne)
+	route.GET("/users/:id", userRest.GetUser)
 	route.PUT("/users/:id", userRest.UpdateUser)
 	route.POST("/users/:id/archive", userRest.ArchiveUser)
 	route.DELETE("/users/:id", userRest.DeleteUser)

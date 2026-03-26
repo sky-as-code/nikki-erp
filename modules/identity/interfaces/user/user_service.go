@@ -6,7 +6,7 @@ import (
 )
 
 type UserService interface {
-	DeleteUser(ctx crud.Context, cmd DeleteUserCommand) (*DeleteUserResult, error)
+	// DeleteUser(ctx crud.Context, cmd DeleteUserCommand) (*DeleteUserResult, error)
 	Exists(ctx crud.Context, cmd UserExistsQuery) (*UserExistsResult, error)
 	ExistsMulti(ctx crud.Context, cmd UserExistsMultiQuery) (*UserExistsMultiResult, error)
 	GetUserByEmail(ctx crud.Context, query GetUserByEmailQuery) (*GetUserByEmailResult, error)
@@ -16,7 +16,8 @@ type UserService interface {
 
 	ArchiveUser(ctx corectx.Context, cmd ArchiveUserCommand2) (*ArchiveUserResult2, error)
 	CreateUser(ctx corectx.Context, cmd CreateUserCommand) (*CreateUserResult, error)
+	DeleteUser(ctx corectx.Context, cmd DeleteUserCommand) (*DeleteUserResult, error)
 	UpdateUser(ctx corectx.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)
-	GetOne(ctx corectx.Context, query GetUserQuery) (*GetUserResult, error)
+	GetUser(ctx corectx.Context, query GetUserQuery) (*GetUserResult, error)
 	SearchUsers2(ctx corectx.Context, query SearchUsersQuery2) (*SearchUsersResult2, error)
 }

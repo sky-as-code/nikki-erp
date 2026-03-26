@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"time"
 
 	"go.bryk.io/pkg/errors"
 
@@ -12,7 +11,6 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
@@ -87,7 +85,7 @@ func (this *BaseRepositoryImpl) Insert(ctx corectx.Context, data dmodel.DynamicF
 
 // Update updates a record. The data map must contain primary keys and tenant key.
 // If the schema defines "updated_at", sets current UTC timestamp.
-func (this *BaseRepositoryImpl) Update(ctx corectx.Context, data dmodel.DynamicFields, prevEtag string) (
+func (this *BaseRepositoryImpl) Update(ctx corectx.Context, data dmodel.DynamicFields) (
 	*crud.OpResult[dmodel.DynamicFields], error,
 ) {
 	// TODO: Extract later
@@ -96,7 +94,8 @@ func (this *BaseRepositoryImpl) Update(ctx corectx.Context, data dmodel.DynamicF
 	// }
 	filters := this.extractKeyMap(data)
 	this.trySetUpdatedAt(data)
-	if this.trySetEtag(data) && prevEtag == "" {
+	prevEtag := this.trySetEtag(data)
+	if len(prevEtag) > 0 {
 		filters[basemodel.FieldEtag] = prevEtag
 	}
 	qbRes, err := this.queryBuilder.SqlUpdateEqual(this.schema, data, filters)
@@ -156,7 +155,7 @@ func (this *BaseRepositoryImpl) GetOne(ctx corectx.Context, param coredyn.GetOne
 // When the schema is tenant-scoped, filter must be provided and contain the tenant key.
 // Data uses PagedResult: Total is from COUNT when Size > 0, otherwise len(Items).
 func (this *BaseRepositoryImpl) Search(ctx corectx.Context, param coredyn.SearchParam) (
-	*crud.OpResult[crud.PagedResult[dmodel.DynamicFields]], error,
+	*crud.OpResult[crud.PagedResultData[dmodel.DynamicFields]], error,
 ) {
 	// merged, err := this.mergeFilterIntoGraph(param.Graph, param.Filter)
 	// if err != nil {
@@ -171,7 +170,7 @@ func (this *BaseRepositoryImpl) Search(ctx corectx.Context, param coredyn.Search
 		return nil, err
 	}
 	if len(countClientErrs) > 0 {
-		return &crud.OpResult[crud.PagedResult[dmodel.DynamicFields]]{
+		return &crud.OpResult[crud.PagedResultData[dmodel.DynamicFields]]{
 			ClientErrors: countClientErrs,
 		}, nil
 	}
@@ -180,20 +179,20 @@ func (this *BaseRepositoryImpl) Search(ctx corectx.Context, param coredyn.Search
 		return nil, err
 	}
 	if len(scanClientErrs) > 0 {
-		return &crud.OpResult[crud.PagedResult[dmodel.DynamicFields]]{
+		return &crud.OpResult[crud.PagedResultData[dmodel.DynamicFields]]{
 			ClientErrors: scanClientErrs,
 		}, nil
 	}
 	if size <= 0 {
 		total = len(rows)
 	}
-	paged := crud.PagedResult[dmodel.DynamicFields]{
+	paged := crud.PagedResultData[dmodel.DynamicFields]{
 		Items: rows,
 		Total: total,
 		Page:  page,
 		Size:  size,
 	}
-	return &crud.OpResult[crud.PagedResult[dmodel.DynamicFields]]{
+	return &crud.OpResult[crud.PagedResultData[dmodel.DynamicFields]]{
 		Data:    paged,
 		IsEmpty: len(rows) == 0,
 	}, nil
@@ -270,9 +269,12 @@ func (this *BaseRepositoryImpl) Archive(ctx corectx.Context, keys dmodel.Dynamic
 		return &crud.OpResult[dmodel.DynamicFields]{IsEmpty: true}, nil
 	}
 	record := oneRes.Data
-	record[basemodel.FieldArchivedAt] = time.Now().UTC()
-	prevEtag, _ := record[basemodel.FieldEtag].(string)
-	updRes, err := this.Update(ctx, record, prevEtag)
+	ok := this.trySetArchivedAt(record)
+	if !ok {
+		return nil, errors.Errorf(
+			"Archive: schema '%s' does not define column '%s'", this.schema.Name(), basemodel.FieldArchivedAt)
+	}
+	updRes, err := this.Update(ctx, record)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +286,7 @@ func (this *BaseRepositoryImpl) Archive(ctx corectx.Context, keys dmodel.Dynamic
 
 // Delete removes the record identified by primary keys and tenant key.
 // Data holds RowsAffected; IsEmpty is true when no row was deleted.
-func (this *BaseRepositoryImpl) Delete(ctx corectx.Context, keys dmodel.DynamicFields) (*crud.OpResult[int64], error) {
+func (this *BaseRepositoryImpl) Delete(ctx corectx.Context, keys dmodel.DynamicFields) (*crud.OpResult[int], error) {
 	if err := this.validateKeyMap(keys); err != nil {
 		return nil, err
 	}
@@ -296,7 +298,7 @@ func (this *BaseRepositoryImpl) Delete(ctx corectx.Context, keys dmodel.DynamicF
 		return nil, err
 	}
 	if len(qbRes.ClientErrors) > 0 {
-		return &crud.OpResult[int64]{ClientErrors: qbRes.ClientErrors}, nil
+		return &crud.OpResult[int]{ClientErrors: qbRes.ClientErrors}, nil
 	}
 	query := qbRes.Data
 
@@ -309,7 +311,7 @@ func (this *BaseRepositoryImpl) Delete(ctx corectx.Context, keys dmodel.DynamicF
 	if err != nil {
 		return nil, err
 	}
-	return &crud.OpResult[int64]{Data: n, IsEmpty: n == 0}, nil
+	return &crud.OpResult[int]{Data: int(n), IsEmpty: n == 0}, nil
 }
 
 // CheckUniqueCollisions returns unique key groups that have collisions. Empty slice means no collisions.
@@ -387,30 +389,45 @@ func (this *BaseRepositoryImpl) filterUniqueKeysWithValues(data dmodel.DynamicFi
 	return result
 }
 
+func (this *BaseRepositoryImpl) trySetArchivedAt(data dmodel.DynamicFields) bool {
+	if _, ok := this.schema.Column(basemodel.FieldArchivedAt); !ok {
+		return false
+	}
+	field := this.schema.MustField(basemodel.FieldArchivedAt)
+	data[basemodel.FieldArchivedAt] = *field.DataType().DefaultValue().Get()
+	return true
+}
+
 func (this *BaseRepositoryImpl) trySetCreatedAt(data dmodel.DynamicFields) {
 	if _, ok := this.schema.Column(basemodel.FieldCreatedAt); !ok {
 		return
 	}
-	if data != nil {
-		data[basemodel.FieldCreatedAt] = time.Now().UTC()
-	}
+	field := this.schema.MustField(basemodel.FieldCreatedAt)
+	data[basemodel.FieldCreatedAt] = *field.DataType().DefaultValue().Get()
 }
 
 func (this *BaseRepositoryImpl) trySetUpdatedAt(data dmodel.DynamicFields) {
 	if _, ok := this.schema.Column(basemodel.FieldUpdatedAt); !ok {
 		return
 	}
-	if data != nil {
-		data[basemodel.FieldUpdatedAt] = time.Now().UTC()
-	}
+	field := this.schema.MustField(basemodel.FieldUpdatedAt)
+	data[basemodel.FieldUpdatedAt] = *field.DataType().DefaultValue().Get()
 }
 
-func (this *BaseRepositoryImpl) trySetEtag(data dmodel.DynamicFields) bool {
+func (this *BaseRepositoryImpl) trySetEtag(data dmodel.DynamicFields) (prevEtag string) {
 	if _, ok := this.schema.Column(basemodel.FieldEtag); !ok {
-		return false
+		return ""
 	}
-	data[basemodel.FieldEtag] = *model.NewEtag()
-	return true
+	field, ok := this.schema.Field(basemodel.FieldEtag)
+	if !ok {
+		return ""
+	}
+	et := data[basemodel.FieldEtag]
+	if et != nil {
+		prevEtag = et.(string)
+	}
+	data[basemodel.FieldEtag] = *field.DataType().DefaultValue().Get()
+	return
 }
 
 func (this *BaseRepositoryImpl) extractKeyMap(data dmodel.DynamicFields) dmodel.DynamicFields {

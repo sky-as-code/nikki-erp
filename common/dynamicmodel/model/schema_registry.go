@@ -136,22 +136,6 @@ func GetSchemaRegistry() *SchemaRegistry {
 	return schemaRegistry
 }
 
-func CopyField(schema *ModelSchema, fieldName string) *FieldBuilder {
-	field := schema.MustField(fieldName)
-	copiedField := field.Copy()
-	return &FieldBuilder{
-		field: copiedField,
-	}
-}
-
-func CopyFieldN(schemaName string, fieldName string) *FieldBuilder {
-	field := schemaRegistry.Field(schemaName, fieldName)
-	copiedField := field.Copy()
-	return &FieldBuilder{
-		field: copiedField,
-	}
-}
-
 // computeTopoOrder returns canonical schema names sorted by FK dependency order
 // (referenced/parent schemas appear before schemas that depend on them).
 // Schemas with no FK relationships are sorted alphabetically for determinism.

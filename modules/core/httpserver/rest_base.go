@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	crud "github.com/sky-as-code/nikki-erp/common/crud"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -40,7 +41,7 @@ type RestArchivedResponse struct {
 	Etag       model.Etag `json:"etag"`
 }
 
-func NewRestCreateResponseM(fields dmodel.DynamicFields) *RestCreateResponse {
+func NewRestCreateResponseDyn(fields dmodel.DynamicFields) *RestCreateResponse {
 	response := &RestCreateResponse{}
 	err := modelmapper.MapToStruct(fields, response)
 	ft.PanicOnErr(err)
@@ -112,6 +113,19 @@ type RestSearchResponse[TItem any] struct {
 	Size  int     `json:"size"`
 }
 
+func NewSearchUsersResponseDyn[TItem dmodel.DynamicModelGetter](
+	data crud.PagedResultData[TItem],
+) RestSearchResponse[dmodel.DynamicFields] {
+
+	items := dmodel.ExtractFieldsArr(data.Items)
+	return RestSearchResponse[dmodel.DynamicFields]{
+		Items: items,
+		Total: data.Total,
+		Page:  data.Page,
+		Size:  data.Size,
+	}
+}
+
 type createdEntity interface {
 	GetId() *model.Id
 	GetCreatedAt() *time.Time
@@ -127,4 +141,30 @@ type updatedEntity interface {
 type deletedEntity interface {
 	GetId() *model.Id
 	GetDeletedAt() *time.Time
+}
+
+type RestDeleteResponse2 struct {
+	AffectedCount int    `json:"affected_count"`
+	AffectedAt    string `json:"affected_at"`
+}
+
+func NewRestDeleteResponse2(src crud.MutateResultData) RestDeleteResponse2 {
+	response := RestDeleteResponse2{}
+	response.AffectedCount = src.AffectedCount
+	response.AffectedAt = src.AffectedAt.String()
+	return response
+}
+
+type RestUpdateResponse2 struct {
+	AffectedCount int        `json:"affected_count"`
+	AffectedAt    string     `json:"affected_at"`
+	Etag          model.Etag `json:"etag"`
+}
+
+func NewRestUpdateResponse2(src crud.MutateResultData) RestUpdateResponse2 {
+	response := RestUpdateResponse2{}
+	response.AffectedCount = src.AffectedCount
+	response.AffectedAt = src.AffectedAt.String()
+	response.Etag = src.Etag
+	return response
 }

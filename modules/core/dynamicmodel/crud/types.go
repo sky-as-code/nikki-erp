@@ -40,65 +40,13 @@ func (this GetOneQueryBase) DeleteFieldData(fields *dmodel.DynamicFields) {
 	delete(*fields, basemodel.FieldColumns)
 }
 
-// type SearchQuery interface {
-// 	GetOneQuery
-// 	GetGraph() dmodel.SearchGraph
-// 	GetPage() int
-// 	GetSize() int
-// }
-
 type SearchQuery struct {
-	// fields dmodel.DynamicFields
 	Columns         []string            `json:"columns" query:"columns"`
 	Graph           *dmodel.SearchGraph `json:"graph" query:"graph"`
 	IncludeArchived *bool               `json:"include_archived" query:"include_archived"`
 	Page            *int                `json:"page" query:"page"`
 	Size            *int                `json:"size" query:"size"`
 	Relations       []string            `json:"relations" query:"relations"`
-}
-
-// func (this SearchQuery) Columns() []string {
-// 	return this.fields.GetStrings(basemodel.FieldColumns)
-// }
-
-// func (this SearchQuery) IncludeArchived() *bool {
-// 	return this.fields.GetBool(basemodel.FieldIncludeArchived)
-// }
-
-// func (this SearchQuery) Graph() *dmodel.SearchGraph {
-// 	val := this.fields.GetAny(basemodel.FieldGraph)
-// 	graph, ok := val.(dmodel.SearchGraph)
-// 	if ok {
-// 		return &graph
-// 	}
-// 	return nil
-// }
-
-// func (this SearchQuery) Page() *int {
-// 	return this.fields.GetInt(basemodel.FieldPage)
-// }
-
-// func (this SearchQuery) Size() *int {
-// 	return this.fields.GetInt(basemodel.FieldSize)
-// }
-
-func (this SearchQuery) GetFieldData() dmodel.DynamicFields {
-	fields := dmodel.DynamicFields{
-		basemodel.FieldColumns:         this.Columns,
-		basemodel.FieldGraph:           this.Graph,
-		basemodel.FieldIncludeArchived: this.IncludeArchived,
-		basemodel.FieldPage:            this.Page,
-		basemodel.FieldSize:            this.Size,
-	}
-	return fields
-}
-
-func (this SearchQuery) SetFieldData(fields dmodel.DynamicFields) {
-	this.Columns = fields.GetStrings(basemodel.FieldColumns)
-	this.IncludeArchived = fields.GetBool(basemodel.FieldIncludeArchived)
-	this.Page = fields.GetInt(basemodel.FieldPage)
-	this.Size = fields.GetInt(basemodel.FieldSize)
-	// this.Graph = fields.GetAny(basemodel.FieldGraph).(dmodel.SearchGraph)
 }
 
 func (this SearchQuery) GetSchema() *dmodel.ModelSchema {
@@ -108,14 +56,6 @@ func (this SearchQuery) GetSchema() *dmodel.ModelSchema {
 			Build(),
 	)
 }
-
-// func (this SearchQueryBase) DeleteFieldData(fields *dmodel.DynamicFields) {
-// 	delete(*fields, basemodel.FieldColumns)
-// 	delete(*fields, basemodel.FieldIncludeArchived)
-// 	delete(*fields, basemodel.FieldGraph)
-// 	delete(*fields, basemodel.FieldPage)
-// 	delete(*fields, basemodel.FieldSize)
-// }
 
 func GetOneQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel("core.crud.get_one_query").

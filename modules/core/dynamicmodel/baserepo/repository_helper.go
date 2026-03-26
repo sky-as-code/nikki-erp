@@ -25,10 +25,10 @@ func Insert[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
 }
 
 func Update[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, repo coredyn.BaseRepository, domainModel dmodel.DynamicModelGetter, prevEtag string,
+	ctx corectx.Context, repo coredyn.BaseRepository, domainModel dmodel.DynamicModelGetter,
 ) (*crud.OpResult[TDomain], error) {
 	data := domainModel.GetFieldData()
-	updated, err := repo.Update(ctx, data, prevEtag)
+	updated, err := repo.Update(ctx, data)
 	if err != nil {
 		return nil, err
 	}
@@ -79,13 +79,13 @@ func Archive[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
 
 func Search[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
 	ctx corectx.Context, repo coredyn.BaseRepository, searchParam coredyn.SearchParam,
-) (*crud.OpResult[crud.PagedResult[TDomain]], error) {
+) (*crud.OpResult[crud.PagedResultData[TDomain]], error) {
 	found, err := repo.Search(ctx, searchParam)
 	if err != nil {
 		return nil, err
 	}
 	if len(found.ClientErrors) > 0 {
-		return &crud.OpResult[crud.PagedResult[TDomain]]{ClientErrors: found.ClientErrors}, nil
+		return &crud.OpResult[crud.PagedResultData[TDomain]]{ClientErrors: found.ClientErrors}, nil
 	}
 	paged := found.Data
 	items := make([]TDomain, len(paged.Items))
@@ -94,11 +94,11 @@ func Search[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
 		TDomainPtr(&m).SetFieldData(record)
 		items[i] = m
 	}
-	out := crud.PagedResult[TDomain]{
+	out := crud.PagedResultData[TDomain]{
 		Items: items,
 		Total: paged.Total,
 		Page:  paged.Page,
 		Size:  paged.Size,
 	}
-	return &crud.OpResult[crud.PagedResult[TDomain]]{Data: out, IsEmpty: len(items) == 0}, nil
+	return &crud.OpResult[crud.PagedResultData[TDomain]]{Data: out, IsEmpty: len(items) == 0}, nil
 }

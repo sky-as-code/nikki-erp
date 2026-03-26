@@ -11,12 +11,12 @@ func (this CreateUserCommand) ToDomainModel() *domain.User {
 	return user
 }
 
-func (this DeleteUserCommand) ToDomainModel() *domain.User {
-	user := &domain.User{}
-	user.Id = &this.Id
-	user.ScopeRef = this.ScopeRef
-	return user
-}
+// func (this DeleteUserCommand) ToDomainModel() *domain.User {
+// 	user := &domain.User{}
+// 	user.Id = &this.Id
+// 	user.ScopeRef = this.ScopeRef
+// 	return user
+// }
 
 func (this UpdateUserCommand) ToDomainModel() *domain.User {
 	user := &domain.User{}

@@ -1,77 +1,26 @@
 package model
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
-	"text/template"
 
 	"go.bryk.io/pkg/errors"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 )
 
-func ToClientErrorItem(err *ValidationErrorItem) ft.ClientErrorItem {
-	if err == nil {
-		return ft.ClientErrorItem{}
-	}
-	return ft.ClientErrorItem{
-		Field:   err.Field,
-		Key:     err.Key,
-		Message: err.Message,
-		Type:    ft.ClientErrorTypeValidation,
-		Vars:    err.Vars,
-	}
+func NewInvalidDataTypeErr(field string) *ft.ClientErrorItem {
+	return ft.NewValidationError(field, "common.err_invalid_data_type", "invalid data type")
 }
 
-type ValidationErrors map[string]ValidationErrorItem
-
-func (this ValidationErrors) AddItem(item ValidationErrorItem) {
-	this[item.Field] = item
+func NewMissingFieldErr(field string) *ft.ClientErrorItem {
+	return ft.NewValidationError(field, "common.err_missing_required_field", "field is required")
 }
 
-// ValidationErrorItem implements the error interface with code, message template, and vars for substitution.
-type ValidationErrorItem struct {
-	Field   string // field name that has the violation, set by ModelField.Validate()
-	Key     string
-	Message string
-	Vars    map[string]any
-}
-
-// Error returns the message with variables substituted. Implements the error interface.
-func (this *ValidationErrorItem) Error() string {
-	return this.String()
-}
-
-// String returns the message with variables substituted.
-func (this *ValidationErrorItem) String() string {
-	if this == nil || this.Message == "" {
-		return ""
-	}
-	if len(this.Vars) == 0 {
-		return this.Message
-	}
-	tmpl, err := template.New("validation").Parse(this.Message)
-	if err != nil {
-		return this.Message
-	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, this.Vars); err != nil {
-		return this.Message
-	}
-	return buf.String()
-}
-
-func (this *ValidationErrorItem) ToClientErrorItem() *ft.ClientErrorItem {
-	return &ft.ClientErrorItem{
-		Field:   this.Field,
-		Key:     this.Key,
-		Message: this.Message,
-		Type:    ft.ClientErrorTypeValidation,
-		Vars:    this.Vars,
-	}
+func NewFormatMismatchErr(field string) *ft.ClientErrorItem {
+	return ft.NewValidationError(field, "common.err_format_mismatch", "must match the required format")
 }
 
 // ValidateMax validates that value is not greater than max. Supports numbers, strings (length), slices (length).
@@ -185,10 +134,6 @@ func ValidateNotNil(value any) *ft.ClientErrorItem {
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
-func errIncompatibleDataType() *ft.ClientErrorItem {
-	return ft.NewAnonymousValidationError("common.err_incompatible_data_type", "incompatible data type", nil)
-}
-
 func ValidateEmail(value string) *ft.ClientErrorItem {
 	if !emailRegex.MatchString(value) {
 		return ft.NewAnonymousValidationError("common.err_invalid_email", "must be a valid email address", nil)
@@ -208,21 +153,12 @@ func ValidateUrl(value string) *ft.ClientErrorItem {
 var uuidRegex = regexp.MustCompile(
 	`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
 
-func ValidateUuid(value string) *ft.ClientErrorItem {
-	if !uuidRegex.MatchString(value) {
-		return ft.NewInvalidDataTypeError("")
-	}
-	return nil
+func ValidateUuid(value string) bool {
+	return uuidRegex.MatchString(value)
 }
 
-func ValidatePattern(value string, re *regexp.Regexp) *ft.ClientErrorItem {
-	if re == nil {
-		return nil
-	}
-	if !re.MatchString(value) {
-		return ft.NewAnonymousValidationError("common.err_format_mismatch", "must match the required format", nil)
-	}
-	return nil
+func ValidatePattern(value string, re *regexp.Regexp) bool {
+	return re != nil || re.MatchString(value)
 }
 
 // --- Comparable value helpers ---

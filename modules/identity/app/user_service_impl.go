@@ -111,18 +111,28 @@ func (this *UserServiceImpl) CreateUser(ctx corectx.Context, cmd it.CreateUserCo
 	})
 }
 
+func (this *UserServiceImpl) DeleteUser(ctx corectx.Context, cmd it.DeleteUserCommand) (*it.DeleteUserResult, error) {
+	return corecrud.DeleteEqual(ctx, corecrud.DeleteEqualParam{
+		Action:       "delete user",
+		DbRepoGetter: this.userRepo2,
+		Cmd:          cmd,
+	})
+}
+
+func (this *UserServiceImpl) GetUser(ctx corectx.Context, query it.GetUserQuery) (*it.GetUserResult, error) {
+	return corecrud.GetOne[domain.UserEntity](ctx, corecrud.GetOneParam{
+		Action:       "get user",
+		DbRepoGetter: this.userRepo2,
+		Query:        query,
+	})
+}
+
 func (this *UserServiceImpl) UpdateUser(ctx corectx.Context, cmd it.UpdateUserCommand) (*it.UpdateUserResult, error) {
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.UserEntity, *domain.UserEntity]{
 		Action:       "update user",
 		DbRepoGetter: this.userRepo2,
 		Data:         cmd,
 	})
-}
-
-func (this *UserServiceImpl) GetOne(
-	ctx corectx.Context, query it.GetUserQuery,
-) (*it.GetUserResult, error) {
-	return corecrud.GetOne[domain.UserEntity](ctx, this.userRepo2, query)
 }
 
 func (this *UserServiceImpl) SearchUsers2(
@@ -189,26 +199,26 @@ func (this *UserServiceImpl) assertUserEmailExists(ctx crud.Context, email strin
 	return
 }
 
-func (this *UserServiceImpl) DeleteUser(ctx crud.Context, cmd it.DeleteUserCommand) (*it.DeleteUserResult, error) {
-	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.User, it.DeleteUserCommand, it.DeleteUserResult]{
-		Action:       "delete user",
-		Command:      cmd,
-		AssertExists: this.assertUserIdExists,
-		RepoDelete: func(ctx crud.Context, model *domain.User) (int, error) {
-			return this.userRepo.DeleteHard(ctx, it.DeleteParam{Id: *model.Id})
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.DeleteUserResult {
-			return &it.DeleteUserResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.User, deletedCount int) *it.DeleteUserResult {
-			return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount)
-		},
-	})
+// func (this *UserServiceImpl) DeleteUser(ctx crud.Context, cmd it.DeleteUserCommand) (*it.DeleteUserResult, error) {
+// 	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.User, it.DeleteUserCommand, it.DeleteUserResult]{
+// 		Action:       "delete user",
+// 		Command:      cmd,
+// 		AssertExists: this.assertUserIdExists,
+// 		RepoDelete: func(ctx crud.Context, model *domain.User) (int, error) {
+// 			return this.userRepo.DeleteHard(ctx, it.DeleteParam{Id: *model.Id})
+// 		},
+// 		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.DeleteUserResult {
+// 			return &it.DeleteUserResult{
+// 				ClientError: vErrs.ToClientError(),
+// 			}
+// 		},
+// 		ToSuccessResult: func(model *domain.User, deletedCount int) *it.DeleteUserResult {
+// 			return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount)
+// 		},
+// 	})
 
-	return result, err
-}
+// 	return result, err
+// }
 
 func (this *UserServiceImpl) Exists(ctx crud.Context, query it.UserExistsQuery) (*it.UserExistsResult, error) {
 	result, err := crud.ExistsOne(ctx, crud.ExistsOneParam[*domain.User, it.UserExistsQuery, it.UserExistsResult]{

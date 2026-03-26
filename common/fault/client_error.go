@@ -139,14 +139,6 @@ func NewValidationError(field string, key string, message string, vars ...map[st
 	}
 }
 
-func NewInvalidDataTypeError(field string) *ClientErrorItem {
-	return NewValidationError(
-		field,
-		ErrorKey("err_invalid_data_type"),
-		"invalid data type",
-	)
-}
-
 func NewAnonymousValidationError(key string, message string, vars ...map[string]any) *ClientErrorItem {
 	var msgVars map[string]any = nil
 	if len(vars) > 0 {
