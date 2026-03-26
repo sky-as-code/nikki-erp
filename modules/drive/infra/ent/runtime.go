@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
+	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileancestor"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileshare"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefilestar"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/schema"
@@ -37,29 +38,48 @@ func init() {
 	// drivefile.OwnerRefValidator is a validator for the "owner_ref" field. It is called by the builders before save.
 	drivefile.OwnerRefValidator = drivefileDescOwnerRef.Validators[0].(func(string) error)
 	// drivefileDescName is the schema descriptor for name field.
-	drivefileDescName := drivefileMixinFields0[8].Descriptor()
+	drivefileDescName := drivefileMixinFields0[7].Descriptor()
 	// drivefile.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	drivefile.NameValidator = drivefileDescName.Validators[0].(func(string) error)
 	// drivefileDescIsFolder is the schema descriptor for is_folder field.
-	drivefileDescIsFolder := drivefileMixinFields0[10].Descriptor()
+	drivefileDescIsFolder := drivefileMixinFields0[9].Descriptor()
 	// drivefile.DefaultIsFolder holds the default value on creation for the is_folder field.
 	drivefile.DefaultIsFolder = drivefileDescIsFolder.Default.(bool)
 	// drivefileDescSize is the schema descriptor for size field.
-	drivefileDescSize := drivefileMixinFields0[11].Descriptor()
+	drivefileDescSize := drivefileMixinFields0[10].Descriptor()
 	// drivefile.SizeValidator is a validator for the "size" field. It is called by the builders before save.
 	drivefile.SizeValidator = drivefileDescSize.Validators[0].(func(int64) error)
 	// drivefileDescVisibility is the schema descriptor for visibility field.
-	drivefileDescVisibility := drivefileMixinFields0[15].Descriptor()
+	drivefileDescVisibility := drivefileMixinFields0[14].Descriptor()
 	// drivefile.DefaultVisibility holds the default value on creation for the visibility field.
 	drivefile.DefaultVisibility = drivefileDescVisibility.Default.(string)
 	// drivefile.VisibilityValidator is a validator for the "visibility" field. It is called by the builders before save.
 	drivefile.VisibilityValidator = drivefileDescVisibility.Validators[0].(func(string) error)
 	// drivefileDescStatus is the schema descriptor for status field.
-	drivefileDescStatus := drivefileMixinFields0[16].Descriptor()
+	drivefileDescStatus := drivefileMixinFields0[15].Descriptor()
 	// drivefile.DefaultStatus holds the default value on creation for the status field.
 	drivefile.DefaultStatus = drivefileDescStatus.Default.(string)
 	// drivefile.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	drivefile.StatusValidator = drivefileDescStatus.Validators[0].(func(string) error)
+	drivefileancestorMixin := schema.DriveFileAncestor{}.Mixin()
+	drivefileancestorMixinFields0 := drivefileancestorMixin[0].Fields()
+	_ = drivefileancestorMixinFields0
+	drivefileancestorFields := schema.DriveFileAncestor{}.Fields()
+	_ = drivefileancestorFields
+	// drivefileancestorDescFileRef is the schema descriptor for file_ref field.
+	drivefileancestorDescFileRef := drivefileancestorMixinFields0[1].Descriptor()
+	// drivefileancestor.FileRefValidator is a validator for the "file_ref" field. It is called by the builders before save.
+	drivefileancestor.FileRefValidator = drivefileancestorDescFileRef.Validators[0].(func(string) error)
+	// drivefileancestorDescAncestorRef is the schema descriptor for ancestor_ref field.
+	drivefileancestorDescAncestorRef := drivefileancestorMixinFields0[2].Descriptor()
+	// drivefileancestor.AncestorRefValidator is a validator for the "ancestor_ref" field. It is called by the builders before save.
+	drivefileancestor.AncestorRefValidator = drivefileancestorDescAncestorRef.Validators[0].(func(string) error)
+	// drivefileancestorDescDepth is the schema descriptor for depth field.
+	drivefileancestorDescDepth := drivefileancestorMixinFields0[3].Descriptor()
+	// drivefileancestor.DefaultDepth holds the default value on creation for the depth field.
+	drivefileancestor.DefaultDepth = drivefileancestorDescDepth.Default.(int)
+	// drivefileancestor.DepthValidator is a validator for the "depth" field. It is called by the builders before save.
+	drivefileancestor.DepthValidator = drivefileancestorDescDepth.Validators[0].(func(int) error)
 	drivefileshareMixin := schema.DriveFileShare{}.Mixin()
 	drivefileshareMixinFields0 := drivefileshareMixin[0].Fields()
 	_ = drivefileshareMixinFields0

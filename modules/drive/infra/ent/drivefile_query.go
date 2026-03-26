@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
+	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileancestor"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileshare"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefilestar"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/predicate"
@@ -21,14 +22,15 @@ import (
 // DriveFileQuery is the builder for querying DriveFile entities.
 type DriveFileQuery struct {
 	config
-	ctx                 *QueryContext
-	order               []drivefile.OrderOption
-	inters              []Interceptor
-	predicates          []predicate.DriveFile
-	withChildrenFile    *DriveFileQuery
-	withParentFile      *DriveFileQuery
-	withDriveFileShares *DriveFileShareQuery
-	withDriveFileStars  *DriveFileStarQuery
+	ctx                    *QueryContext
+	order                  []drivefile.OrderOption
+	inters                 []Interceptor
+	predicates             []predicate.DriveFile
+	withChildrenFile       *DriveFileQuery
+	withParentFile         *DriveFileQuery
+	withDriveFileShares    *DriveFileShareQuery
+	withDriveFileStars     *DriveFileStarQuery
+	withDriveFileAncestors *DriveFileAncestorQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -146,6 +148,28 @@ func (dfq *DriveFileQuery) QueryDriveFileStars() *DriveFileStarQuery {
 			sqlgraph.From(drivefile.Table, drivefile.FieldID, selector),
 			sqlgraph.To(drivefilestar.Table, drivefilestar.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, drivefile.DriveFileStarsTable, drivefile.DriveFileStarsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(dfq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryDriveFileAncestors chains the current query on the "drive_file_ancestors" edge.
+func (dfq *DriveFileQuery) QueryDriveFileAncestors() *DriveFileAncestorQuery {
+	query := (&DriveFileAncestorClient{config: dfq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := dfq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := dfq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(drivefile.Table, drivefile.FieldID, selector),
+			sqlgraph.To(drivefileancestor.Table, drivefileancestor.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, drivefile.DriveFileAncestorsTable, drivefile.DriveFileAncestorsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(dfq.driver.Dialect(), step)
 		return fromU, nil
@@ -340,15 +364,16 @@ func (dfq *DriveFileQuery) Clone() *DriveFileQuery {
 		return nil
 	}
 	return &DriveFileQuery{
-		config:              dfq.config,
-		ctx:                 dfq.ctx.Clone(),
-		order:               append([]drivefile.OrderOption{}, dfq.order...),
-		inters:              append([]Interceptor{}, dfq.inters...),
-		predicates:          append([]predicate.DriveFile{}, dfq.predicates...),
-		withChildrenFile:    dfq.withChildrenFile.Clone(),
-		withParentFile:      dfq.withParentFile.Clone(),
-		withDriveFileShares: dfq.withDriveFileShares.Clone(),
-		withDriveFileStars:  dfq.withDriveFileStars.Clone(),
+		config:                 dfq.config,
+		ctx:                    dfq.ctx.Clone(),
+		order:                  append([]drivefile.OrderOption{}, dfq.order...),
+		inters:                 append([]Interceptor{}, dfq.inters...),
+		predicates:             append([]predicate.DriveFile{}, dfq.predicates...),
+		withChildrenFile:       dfq.withChildrenFile.Clone(),
+		withParentFile:         dfq.withParentFile.Clone(),
+		withDriveFileShares:    dfq.withDriveFileShares.Clone(),
+		withDriveFileStars:     dfq.withDriveFileStars.Clone(),
+		withDriveFileAncestors: dfq.withDriveFileAncestors.Clone(),
 		// clone intermediate query.
 		sql:  dfq.sql.Clone(),
 		path: dfq.path,
@@ -396,6 +421,17 @@ func (dfq *DriveFileQuery) WithDriveFileStars(opts ...func(*DriveFileStarQuery))
 		opt(query)
 	}
 	dfq.withDriveFileStars = query
+	return dfq
+}
+
+// WithDriveFileAncestors tells the query-builder to eager-load the nodes that are connected to
+// the "drive_file_ancestors" edge. The optional arguments are used to configure the query builder of the edge.
+func (dfq *DriveFileQuery) WithDriveFileAncestors(opts ...func(*DriveFileAncestorQuery)) *DriveFileQuery {
+	query := (&DriveFileAncestorClient{config: dfq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	dfq.withDriveFileAncestors = query
 	return dfq
 }
 
@@ -477,11 +513,12 @@ func (dfq *DriveFileQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*D
 	var (
 		nodes       = []*DriveFile{}
 		_spec       = dfq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			dfq.withChildrenFile != nil,
 			dfq.withParentFile != nil,
 			dfq.withDriveFileShares != nil,
 			dfq.withDriveFileStars != nil,
+			dfq.withDriveFileAncestors != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -526,6 +563,15 @@ func (dfq *DriveFileQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*D
 		if err := dfq.loadDriveFileStars(ctx, query, nodes,
 			func(n *DriveFile) { n.Edges.DriveFileStars = []*DriveFileStar{} },
 			func(n *DriveFile, e *DriveFileStar) { n.Edges.DriveFileStars = append(n.Edges.DriveFileStars, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := dfq.withDriveFileAncestors; query != nil {
+		if err := dfq.loadDriveFileAncestors(ctx, query, nodes,
+			func(n *DriveFile) { n.Edges.DriveFileAncestors = []*DriveFileAncestor{} },
+			func(n *DriveFile, e *DriveFileAncestor) {
+				n.Edges.DriveFileAncestors = append(n.Edges.DriveFileAncestors, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -642,6 +688,36 @@ func (dfq *DriveFileQuery) loadDriveFileStars(ctx context.Context, query *DriveF
 	}
 	query.Where(predicate.DriveFileStar(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(drivefile.DriveFileStarsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.FileRef
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "file_ref" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (dfq *DriveFileQuery) loadDriveFileAncestors(ctx context.Context, query *DriveFileAncestorQuery, nodes []*DriveFile, init func(*DriveFile), assign func(*DriveFile, *DriveFileAncestor)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*DriveFile)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(drivefileancestor.FieldFileRef)
+	}
+	query.Where(predicate.DriveFileAncestor(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(drivefile.DriveFileAncestorsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

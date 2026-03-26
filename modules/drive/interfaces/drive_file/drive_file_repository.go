@@ -26,6 +26,12 @@ type DriveFileRepository interface {
 	GetDriveFileParents(ctx crud.Context, driveFileId model.Id) ([]*domain.DriveFile, error)
 	GetExpiredTrashedDriveFiles(ctx crud.Context, before time.Time) ([]*domain.DriveFile, error)
 
+	// Ancestor table operations
+	InsertAncestors(ctx crud.Context, fileId model.Id, ancestorIds []model.Id) error
+	DeleteAncestorsByFileIds(ctx crud.Context, fileIds []model.Id) error
+	GetAncestorIds(ctx crud.Context, fileId model.Id) ([]model.Id, error)
+	GetAncestorIdsForFiles(ctx crud.Context, fileIds []model.Id) (map[model.Id][]model.Id, error)
+
 	Create(ctx crud.Context, driveFile *domain.DriveFile) (*domain.DriveFile, error)
 	Update(ctx crud.Context, driveFile *domain.DriveFile, prevEtag model.Etag) (*domain.DriveFile, error)
 	Overwrite(ctx crud.Context, driveFile *domain.DriveFile, prevEtag model.Etag) (*domain.DriveFile, error)

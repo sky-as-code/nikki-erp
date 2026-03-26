@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
+	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileancestor"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileshare"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefilestar"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/predicate"
@@ -103,26 +104,6 @@ func (dfu *DriveFileUpdate) SetNillableParentFileRef(s *string) *DriveFileUpdate
 // ClearParentFileRef clears the value of the "parent_file_ref" field.
 func (dfu *DriveFileUpdate) ClearParentFileRef() *DriveFileUpdate {
 	dfu.mutation.ClearParentFileRef()
-	return dfu
-}
-
-// SetMaterializedPath sets the "materialized_path" field.
-func (dfu *DriveFileUpdate) SetMaterializedPath(s string) *DriveFileUpdate {
-	dfu.mutation.SetMaterializedPath(s)
-	return dfu
-}
-
-// SetNillableMaterializedPath sets the "materialized_path" field if the given value is not nil.
-func (dfu *DriveFileUpdate) SetNillableMaterializedPath(s *string) *DriveFileUpdate {
-	if s != nil {
-		dfu.SetMaterializedPath(*s)
-	}
-	return dfu
-}
-
-// ClearMaterializedPath clears the value of the "materialized_path" field.
-func (dfu *DriveFileUpdate) ClearMaterializedPath() *DriveFileUpdate {
-	dfu.mutation.ClearMaterializedPath()
 	return dfu
 }
 
@@ -323,6 +304,21 @@ func (dfu *DriveFileUpdate) AddDriveFileStars(d ...*DriveFileStar) *DriveFileUpd
 	return dfu.AddDriveFileStarIDs(ids...)
 }
 
+// AddDriveFileAncestorIDs adds the "drive_file_ancestors" edge to the DriveFileAncestor entity by IDs.
+func (dfu *DriveFileUpdate) AddDriveFileAncestorIDs(ids ...string) *DriveFileUpdate {
+	dfu.mutation.AddDriveFileAncestorIDs(ids...)
+	return dfu
+}
+
+// AddDriveFileAncestors adds the "drive_file_ancestors" edges to the DriveFileAncestor entity.
+func (dfu *DriveFileUpdate) AddDriveFileAncestors(d ...*DriveFileAncestor) *DriveFileUpdate {
+	ids := make([]string, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return dfu.AddDriveFileAncestorIDs(ids...)
+}
+
 // Mutation returns the DriveFileMutation object of the builder.
 func (dfu *DriveFileUpdate) Mutation() *DriveFileMutation {
 	return dfu.mutation
@@ -395,6 +391,27 @@ func (dfu *DriveFileUpdate) RemoveDriveFileStars(d ...*DriveFileStar) *DriveFile
 		ids[i] = d[i].ID
 	}
 	return dfu.RemoveDriveFileStarIDs(ids...)
+}
+
+// ClearDriveFileAncestors clears all "drive_file_ancestors" edges to the DriveFileAncestor entity.
+func (dfu *DriveFileUpdate) ClearDriveFileAncestors() *DriveFileUpdate {
+	dfu.mutation.ClearDriveFileAncestors()
+	return dfu
+}
+
+// RemoveDriveFileAncestorIDs removes the "drive_file_ancestors" edge to DriveFileAncestor entities by IDs.
+func (dfu *DriveFileUpdate) RemoveDriveFileAncestorIDs(ids ...string) *DriveFileUpdate {
+	dfu.mutation.RemoveDriveFileAncestorIDs(ids...)
+	return dfu
+}
+
+// RemoveDriveFileAncestors removes "drive_file_ancestors" edges to DriveFileAncestor entities.
+func (dfu *DriveFileUpdate) RemoveDriveFileAncestors(d ...*DriveFileAncestor) *DriveFileUpdate {
+	ids := make([]string, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return dfu.RemoveDriveFileAncestorIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -477,12 +494,6 @@ func (dfu *DriveFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := dfu.mutation.OwnerRef(); ok {
 		_spec.SetField(drivefile.FieldOwnerRef, field.TypeString, value)
-	}
-	if value, ok := dfu.mutation.MaterializedPath(); ok {
-		_spec.SetField(drivefile.FieldMaterializedPath, field.TypeString, value)
-	}
-	if dfu.mutation.MaterializedPathCleared() {
-		_spec.ClearField(drivefile.FieldMaterializedPath, field.TypeString)
 	}
 	if value, ok := dfu.mutation.Name(); ok {
 		_spec.SetField(drivefile.FieldName, field.TypeString, value)
@@ -678,6 +689,51 @@ func (dfu *DriveFileUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if dfu.mutation.DriveFileAncestorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   drivefile.DriveFileAncestorsTable,
+			Columns: []string{drivefile.DriveFileAncestorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(drivefileancestor.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := dfu.mutation.RemovedDriveFileAncestorsIDs(); len(nodes) > 0 && !dfu.mutation.DriveFileAncestorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   drivefile.DriveFileAncestorsTable,
+			Columns: []string{drivefile.DriveFileAncestorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(drivefileancestor.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := dfu.mutation.DriveFileAncestorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   drivefile.DriveFileAncestorsTable,
+			Columns: []string{drivefile.DriveFileAncestorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(drivefileancestor.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, dfu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{drivefile.Label}
@@ -771,26 +827,6 @@ func (dfuo *DriveFileUpdateOne) SetNillableParentFileRef(s *string) *DriveFileUp
 // ClearParentFileRef clears the value of the "parent_file_ref" field.
 func (dfuo *DriveFileUpdateOne) ClearParentFileRef() *DriveFileUpdateOne {
 	dfuo.mutation.ClearParentFileRef()
-	return dfuo
-}
-
-// SetMaterializedPath sets the "materialized_path" field.
-func (dfuo *DriveFileUpdateOne) SetMaterializedPath(s string) *DriveFileUpdateOne {
-	dfuo.mutation.SetMaterializedPath(s)
-	return dfuo
-}
-
-// SetNillableMaterializedPath sets the "materialized_path" field if the given value is not nil.
-func (dfuo *DriveFileUpdateOne) SetNillableMaterializedPath(s *string) *DriveFileUpdateOne {
-	if s != nil {
-		dfuo.SetMaterializedPath(*s)
-	}
-	return dfuo
-}
-
-// ClearMaterializedPath clears the value of the "materialized_path" field.
-func (dfuo *DriveFileUpdateOne) ClearMaterializedPath() *DriveFileUpdateOne {
-	dfuo.mutation.ClearMaterializedPath()
 	return dfuo
 }
 
@@ -991,6 +1027,21 @@ func (dfuo *DriveFileUpdateOne) AddDriveFileStars(d ...*DriveFileStar) *DriveFil
 	return dfuo.AddDriveFileStarIDs(ids...)
 }
 
+// AddDriveFileAncestorIDs adds the "drive_file_ancestors" edge to the DriveFileAncestor entity by IDs.
+func (dfuo *DriveFileUpdateOne) AddDriveFileAncestorIDs(ids ...string) *DriveFileUpdateOne {
+	dfuo.mutation.AddDriveFileAncestorIDs(ids...)
+	return dfuo
+}
+
+// AddDriveFileAncestors adds the "drive_file_ancestors" edges to the DriveFileAncestor entity.
+func (dfuo *DriveFileUpdateOne) AddDriveFileAncestors(d ...*DriveFileAncestor) *DriveFileUpdateOne {
+	ids := make([]string, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return dfuo.AddDriveFileAncestorIDs(ids...)
+}
+
 // Mutation returns the DriveFileMutation object of the builder.
 func (dfuo *DriveFileUpdateOne) Mutation() *DriveFileMutation {
 	return dfuo.mutation
@@ -1063,6 +1114,27 @@ func (dfuo *DriveFileUpdateOne) RemoveDriveFileStars(d ...*DriveFileStar) *Drive
 		ids[i] = d[i].ID
 	}
 	return dfuo.RemoveDriveFileStarIDs(ids...)
+}
+
+// ClearDriveFileAncestors clears all "drive_file_ancestors" edges to the DriveFileAncestor entity.
+func (dfuo *DriveFileUpdateOne) ClearDriveFileAncestors() *DriveFileUpdateOne {
+	dfuo.mutation.ClearDriveFileAncestors()
+	return dfuo
+}
+
+// RemoveDriveFileAncestorIDs removes the "drive_file_ancestors" edge to DriveFileAncestor entities by IDs.
+func (dfuo *DriveFileUpdateOne) RemoveDriveFileAncestorIDs(ids ...string) *DriveFileUpdateOne {
+	dfuo.mutation.RemoveDriveFileAncestorIDs(ids...)
+	return dfuo
+}
+
+// RemoveDriveFileAncestors removes "drive_file_ancestors" edges to DriveFileAncestor entities.
+func (dfuo *DriveFileUpdateOne) RemoveDriveFileAncestors(d ...*DriveFileAncestor) *DriveFileUpdateOne {
+	ids := make([]string, len(d))
+	for i := range d {
+		ids[i] = d[i].ID
+	}
+	return dfuo.RemoveDriveFileAncestorIDs(ids...)
 }
 
 // Where appends a list predicates to the DriveFileUpdate builder.
@@ -1175,12 +1247,6 @@ func (dfuo *DriveFileUpdateOne) sqlSave(ctx context.Context) (_node *DriveFile, 
 	}
 	if value, ok := dfuo.mutation.OwnerRef(); ok {
 		_spec.SetField(drivefile.FieldOwnerRef, field.TypeString, value)
-	}
-	if value, ok := dfuo.mutation.MaterializedPath(); ok {
-		_spec.SetField(drivefile.FieldMaterializedPath, field.TypeString, value)
-	}
-	if dfuo.mutation.MaterializedPathCleared() {
-		_spec.ClearField(drivefile.FieldMaterializedPath, field.TypeString)
 	}
 	if value, ok := dfuo.mutation.Name(); ok {
 		_spec.SetField(drivefile.FieldName, field.TypeString, value)
@@ -1369,6 +1435,51 @@ func (dfuo *DriveFileUpdateOne) sqlSave(ctx context.Context) (_node *DriveFile, 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(drivefilestar.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if dfuo.mutation.DriveFileAncestorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   drivefile.DriveFileAncestorsTable,
+			Columns: []string{drivefile.DriveFileAncestorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(drivefileancestor.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := dfuo.mutation.RemovedDriveFileAncestorsIDs(); len(nodes) > 0 && !dfuo.mutation.DriveFileAncestorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   drivefile.DriveFileAncestorsTable,
+			Columns: []string{drivefile.DriveFileAncestorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(drivefileancestor.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := dfuo.mutation.DriveFileAncestorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   drivefile.DriveFileAncestorsTable,
+			Columns: []string{drivefile.DriveFileAncestorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(drivefileancestor.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

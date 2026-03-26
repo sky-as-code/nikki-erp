@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// DriveFile is the client for interacting with the DriveFile builders.
 	DriveFile *DriveFileClient
+	// DriveFileAncestor is the client for interacting with the DriveFileAncestor builders.
+	DriveFileAncestor *DriveFileAncestorClient
 	// DriveFileShare is the client for interacting with the DriveFileShare builders.
 	DriveFileShare *DriveFileShareClient
 	// DriveFileStar is the client for interacting with the DriveFileStar builders.
@@ -150,6 +152,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.DriveFile = NewDriveFileClient(tx.config)
+	tx.DriveFileAncestor = NewDriveFileAncestorClient(tx.config)
 	tx.DriveFileShare = NewDriveFileShareClient(tx.config)
 	tx.DriveFileStar = NewDriveFileStarClient(tx.config)
 }

@@ -42,11 +42,6 @@ func (DriveFileMixin) Fields() []ent.Field {
 			Nillable().
 			Optional(),
 
-		// Hierarchical path of ancestor file ids, e.g. "/rootId/parentId/" for permission & ancestry without recursive queries.
-		field.String("materialized_path").
-			Optional().
-			Nillable(),
-
 		field.String("name").
 			NotEmpty(),
 
@@ -96,6 +91,8 @@ func (DriveFile) Edges() []ent.Edge {
 		edge.To("drive_file_shares", DriveFileShare.Type),
 
 		edge.To("drive_file_stars", DriveFileStar.Type),
+
+		edge.To("drive_file_ancestors", DriveFileAncestor.Type),
 	}
 }
 

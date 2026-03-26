@@ -17,7 +17,6 @@ type DriveFileDto struct {
 
 	OwnerRef           model.Id `json:"ownerRef"`
 	ParentDriveFileRef model.Id `json:"parentDriveFileRef"`
-	MaterializedPath   *string  `json:"materializedPath,omitempty"`
 
 	Name       string                   `json:"name"`
 	MINE       string                   `json:"mime"`
@@ -46,7 +45,6 @@ func (this *DriveFileDto) FromDriveFile(f domain.DriveFile) {
 	if f.ParentDriveFileRef != nil {
 		this.ParentDriveFileRef = *f.ParentDriveFileRef
 	}
-	this.MaterializedPath = f.MaterializedPath
 	this.Name = f.Name
 	this.MINE = f.MINE
 	this.IsFolder = f.IsFolder

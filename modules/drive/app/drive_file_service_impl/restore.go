@@ -74,24 +74,15 @@ func (this *DriveFileServiceImpl) RestoreDriveFile(ctx crud.Context, cmd it.Rest
 	driveFile.DeletedAt = &notDeleted
 	this.sanitizeDriveFile(driveFile)
 
-	pathStr, err := this.buildMaterializedPathUnderParent(ctx, cmd.ParentFileRef, *driveFile.Id)
-	if err != nil {
-		tx.Rollback()
-		ft.PanicOnErr(err)
-	}
-	driveFile.MaterializedPath = &pathStr
-
 	driveFile, err = this.driveFileRepo.Overwrite(ctx, driveFile, *driveFile.Etag)
 	if err != nil {
 		tx.Rollback()
 		ft.PanicOnErr(err)
 	}
 
-	if driveFile.IsFolder {
-		if err := this.propagateMaterializedPathsAfterMove(ctx, driveFile, pathStr); err != nil {
-			tx.Rollback()
-			ft.PanicOnErr(err)
-		}
+	if err := this.rebuildAncestorsForSubtree(ctx, driveFile, cmd.ParentFileRef); err != nil {
+		tx.Rollback()
+		ft.PanicOnErr(err)
 	}
 
 	ft.PanicOnErr(tx.Commit())

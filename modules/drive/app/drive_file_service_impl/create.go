@@ -1,7 +1,6 @@
 package drive_file_service_impl
 
 import (
-	"errors"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -50,6 +49,12 @@ func (this *DriveFileServiceImpl) CreateDriveFile(ctx crud.Context, cmd it.Creat
 	if !result.HasData {
 		tx.Rollback()
 		return result, err
+	}
+
+	// Insert ancestor records for the new file
+	if err := this.insertAncestorsForFile(ctx, *result.Data.Id, result.Data.ParentDriveFileRef); err != nil {
+		tx.Rollback()
+		ft.PanicOnErr(err)
 	}
 
 	// Recalculate size of parents
@@ -113,13 +118,6 @@ func (this *DriveFileServiceImpl) assertCreateDriveFileRules(ctx crud.Context, d
 		}
 	}
 
-	if err := this.applyMaterializedPathForNewDriveFile(ctx, d, vErrs); err != nil {
-		return err
-	}
-	if vErrs.Count() > 0 {
-		return nil
-	}
-
 	if d.IsFolder {
 		return nil
 	}
@@ -138,19 +136,3 @@ func (this *DriveFileServiceImpl) assertCreateDriveFileRules(ctx crud.Context, d
 	return nil
 }
 
-// applyMaterializedPathForNewDriveFile sets d.MaterializedPath = parent chain (root→parent) + new id; root-only is "/newId" (no trailing slash).
-func (this *DriveFileServiceImpl) applyMaterializedPathForNewDriveFile(ctx crud.Context, d *domain.DriveFile, vErrs *ft.ValidationErrors) error {
-	if d == nil || d.Id == nil {
-		return nil
-	}
-	s, err := this.buildMaterializedPathUnderParent(ctx, d.ParentDriveFileRef, *d.Id)
-	if err != nil {
-		if errors.Is(err, errParentDriveFileNotFound) {
-			vErrs.Append("parentDriveFileRef", "parent drive file not found")
-			return nil
-		}
-		return err
-	}
-	d.MaterializedPath = &s
-	return nil
-}

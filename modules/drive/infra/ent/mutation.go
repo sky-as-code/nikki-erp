@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
+	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileancestor"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileshare"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefilestar"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/predicate"
@@ -26,48 +27,51 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeDriveFile      = "DriveFile"
-	TypeDriveFileShare = "DriveFileShare"
-	TypeDriveFileStar  = "DriveFileStar"
+	TypeDriveFile         = "DriveFile"
+	TypeDriveFileAncestor = "DriveFileAncestor"
+	TypeDriveFileShare    = "DriveFileShare"
+	TypeDriveFileStar     = "DriveFileStar"
 )
 
 // DriveFileMutation represents an operation that mutates the DriveFile nodes in the graph.
 type DriveFileMutation struct {
 	config
-	op                       Op
-	typ                      string
-	id                       *string
-	etag                     *string
-	created_at               *time.Time
-	updated_at               *time.Time
-	deleted_at               *time.Time
-	owner_ref                *string
-	materialized_path        *string
-	name                     *string
-	mime                     *string
-	is_folder                *bool
-	size                     *int64
-	addsize                  *int64
-	storage_path             *string
-	storage_key              *string
-	storage                  *string
-	visibility               *string
-	status                   *string
-	clearedFields            map[string]struct{}
-	children_file            map[string]struct{}
-	removedchildren_file     map[string]struct{}
-	clearedchildren_file     bool
-	parent_file              *string
-	clearedparent_file       bool
-	drive_file_shares        map[string]struct{}
-	removeddrive_file_shares map[string]struct{}
-	cleareddrive_file_shares bool
-	drive_file_stars         map[string]struct{}
-	removeddrive_file_stars  map[string]struct{}
-	cleareddrive_file_stars  bool
-	done                     bool
-	oldValue                 func(context.Context) (*DriveFile, error)
-	predicates               []predicate.DriveFile
+	op                          Op
+	typ                         string
+	id                          *string
+	etag                        *string
+	created_at                  *time.Time
+	updated_at                  *time.Time
+	deleted_at                  *time.Time
+	owner_ref                   *string
+	name                        *string
+	mime                        *string
+	is_folder                   *bool
+	size                        *int64
+	addsize                     *int64
+	storage_path                *string
+	storage_key                 *string
+	storage                     *string
+	visibility                  *string
+	status                      *string
+	clearedFields               map[string]struct{}
+	children_file               map[string]struct{}
+	removedchildren_file        map[string]struct{}
+	clearedchildren_file        bool
+	parent_file                 *string
+	clearedparent_file          bool
+	drive_file_shares           map[string]struct{}
+	removeddrive_file_shares    map[string]struct{}
+	cleareddrive_file_shares    bool
+	drive_file_stars            map[string]struct{}
+	removeddrive_file_stars     map[string]struct{}
+	cleareddrive_file_stars     bool
+	drive_file_ancestors        map[string]struct{}
+	removeddrive_file_ancestors map[string]struct{}
+	cleareddrive_file_ancestors bool
+	done                        bool
+	oldValue                    func(context.Context) (*DriveFile, error)
+	predicates                  []predicate.DriveFile
 }
 
 var _ ent.Mutation = (*DriveFileMutation)(nil)
@@ -401,55 +405,6 @@ func (m *DriveFileMutation) ParentFileRefCleared() bool {
 func (m *DriveFileMutation) ResetParentFileRef() {
 	m.parent_file = nil
 	delete(m.clearedFields, drivefile.FieldParentFileRef)
-}
-
-// SetMaterializedPath sets the "materialized_path" field.
-func (m *DriveFileMutation) SetMaterializedPath(s string) {
-	m.materialized_path = &s
-}
-
-// MaterializedPath returns the value of the "materialized_path" field in the mutation.
-func (m *DriveFileMutation) MaterializedPath() (r string, exists bool) {
-	v := m.materialized_path
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldMaterializedPath returns the old "materialized_path" field's value of the DriveFile entity.
-// If the DriveFile object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DriveFileMutation) OldMaterializedPath(ctx context.Context) (v *string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldMaterializedPath is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldMaterializedPath requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldMaterializedPath: %w", err)
-	}
-	return oldValue.MaterializedPath, nil
-}
-
-// ClearMaterializedPath clears the value of the "materialized_path" field.
-func (m *DriveFileMutation) ClearMaterializedPath() {
-	m.materialized_path = nil
-	m.clearedFields[drivefile.FieldMaterializedPath] = struct{}{}
-}
-
-// MaterializedPathCleared returns if the "materialized_path" field was cleared in this mutation.
-func (m *DriveFileMutation) MaterializedPathCleared() bool {
-	_, ok := m.clearedFields[drivefile.FieldMaterializedPath]
-	return ok
-}
-
-// ResetMaterializedPath resets all changes to the "materialized_path" field.
-func (m *DriveFileMutation) ResetMaterializedPath() {
-	m.materialized_path = nil
-	delete(m.clearedFields, drivefile.FieldMaterializedPath)
 }
 
 // SetName sets the "name" field.
@@ -998,6 +953,60 @@ func (m *DriveFileMutation) ResetDriveFileStars() {
 	m.removeddrive_file_stars = nil
 }
 
+// AddDriveFileAncestorIDs adds the "drive_file_ancestors" edge to the DriveFileAncestor entity by ids.
+func (m *DriveFileMutation) AddDriveFileAncestorIDs(ids ...string) {
+	if m.drive_file_ancestors == nil {
+		m.drive_file_ancestors = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.drive_file_ancestors[ids[i]] = struct{}{}
+	}
+}
+
+// ClearDriveFileAncestors clears the "drive_file_ancestors" edge to the DriveFileAncestor entity.
+func (m *DriveFileMutation) ClearDriveFileAncestors() {
+	m.cleareddrive_file_ancestors = true
+}
+
+// DriveFileAncestorsCleared reports if the "drive_file_ancestors" edge to the DriveFileAncestor entity was cleared.
+func (m *DriveFileMutation) DriveFileAncestorsCleared() bool {
+	return m.cleareddrive_file_ancestors
+}
+
+// RemoveDriveFileAncestorIDs removes the "drive_file_ancestors" edge to the DriveFileAncestor entity by IDs.
+func (m *DriveFileMutation) RemoveDriveFileAncestorIDs(ids ...string) {
+	if m.removeddrive_file_ancestors == nil {
+		m.removeddrive_file_ancestors = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.drive_file_ancestors, ids[i])
+		m.removeddrive_file_ancestors[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedDriveFileAncestors returns the removed IDs of the "drive_file_ancestors" edge to the DriveFileAncestor entity.
+func (m *DriveFileMutation) RemovedDriveFileAncestorsIDs() (ids []string) {
+	for id := range m.removeddrive_file_ancestors {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// DriveFileAncestorsIDs returns the "drive_file_ancestors" edge IDs in the mutation.
+func (m *DriveFileMutation) DriveFileAncestorsIDs() (ids []string) {
+	for id := range m.drive_file_ancestors {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetDriveFileAncestors resets all changes to the "drive_file_ancestors" edge.
+func (m *DriveFileMutation) ResetDriveFileAncestors() {
+	m.drive_file_ancestors = nil
+	m.cleareddrive_file_ancestors = false
+	m.removeddrive_file_ancestors = nil
+}
+
 // Where appends a list predicates to the DriveFileMutation builder.
 func (m *DriveFileMutation) Where(ps ...predicate.DriveFile) {
 	m.predicates = append(m.predicates, ps...)
@@ -1032,7 +1041,7 @@ func (m *DriveFileMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DriveFileMutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 15)
 	if m.etag != nil {
 		fields = append(fields, drivefile.FieldEtag)
 	}
@@ -1050,9 +1059,6 @@ func (m *DriveFileMutation) Fields() []string {
 	}
 	if m.parent_file != nil {
 		fields = append(fields, drivefile.FieldParentFileRef)
-	}
-	if m.materialized_path != nil {
-		fields = append(fields, drivefile.FieldMaterializedPath)
 	}
 	if m.name != nil {
 		fields = append(fields, drivefile.FieldName)
@@ -1101,8 +1107,6 @@ func (m *DriveFileMutation) Field(name string) (ent.Value, bool) {
 		return m.OwnerRef()
 	case drivefile.FieldParentFileRef:
 		return m.ParentFileRef()
-	case drivefile.FieldMaterializedPath:
-		return m.MaterializedPath()
 	case drivefile.FieldName:
 		return m.Name()
 	case drivefile.FieldMime:
@@ -1142,8 +1146,6 @@ func (m *DriveFileMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldOwnerRef(ctx)
 	case drivefile.FieldParentFileRef:
 		return m.OldParentFileRef(ctx)
-	case drivefile.FieldMaterializedPath:
-		return m.OldMaterializedPath(ctx)
 	case drivefile.FieldName:
 		return m.OldName(ctx)
 	case drivefile.FieldMime:
@@ -1212,13 +1214,6 @@ func (m *DriveFileMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetParentFileRef(v)
-		return nil
-	case drivefile.FieldMaterializedPath:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetMaterializedPath(v)
 		return nil
 	case drivefile.FieldName:
 		v, ok := value.(string)
@@ -1331,9 +1326,6 @@ func (m *DriveFileMutation) ClearedFields() []string {
 	if m.FieldCleared(drivefile.FieldParentFileRef) {
 		fields = append(fields, drivefile.FieldParentFileRef)
 	}
-	if m.FieldCleared(drivefile.FieldMaterializedPath) {
-		fields = append(fields, drivefile.FieldMaterializedPath)
-	}
 	return fields
 }
 
@@ -1350,9 +1342,6 @@ func (m *DriveFileMutation) ClearField(name string) error {
 	switch name {
 	case drivefile.FieldParentFileRef:
 		m.ClearParentFileRef()
-		return nil
-	case drivefile.FieldMaterializedPath:
-		m.ClearMaterializedPath()
 		return nil
 	}
 	return fmt.Errorf("unknown DriveFile nullable field %s", name)
@@ -1379,9 +1368,6 @@ func (m *DriveFileMutation) ResetField(name string) error {
 		return nil
 	case drivefile.FieldParentFileRef:
 		m.ResetParentFileRef()
-		return nil
-	case drivefile.FieldMaterializedPath:
-		m.ResetMaterializedPath()
 		return nil
 	case drivefile.FieldName:
 		m.ResetName()
@@ -1416,7 +1402,7 @@ func (m *DriveFileMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DriveFileMutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.children_file != nil {
 		edges = append(edges, drivefile.EdgeChildrenFile)
 	}
@@ -1428,6 +1414,9 @@ func (m *DriveFileMutation) AddedEdges() []string {
 	}
 	if m.drive_file_stars != nil {
 		edges = append(edges, drivefile.EdgeDriveFileStars)
+	}
+	if m.drive_file_ancestors != nil {
+		edges = append(edges, drivefile.EdgeDriveFileAncestors)
 	}
 	return edges
 }
@@ -1458,13 +1447,19 @@ func (m *DriveFileMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case drivefile.EdgeDriveFileAncestors:
+		ids := make([]ent.Value, 0, len(m.drive_file_ancestors))
+		for id := range m.drive_file_ancestors {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DriveFileMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.removedchildren_file != nil {
 		edges = append(edges, drivefile.EdgeChildrenFile)
 	}
@@ -1473,6 +1468,9 @@ func (m *DriveFileMutation) RemovedEdges() []string {
 	}
 	if m.removeddrive_file_stars != nil {
 		edges = append(edges, drivefile.EdgeDriveFileStars)
+	}
+	if m.removeddrive_file_ancestors != nil {
+		edges = append(edges, drivefile.EdgeDriveFileAncestors)
 	}
 	return edges
 }
@@ -1499,13 +1497,19 @@ func (m *DriveFileMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case drivefile.EdgeDriveFileAncestors:
+		ids := make([]ent.Value, 0, len(m.removeddrive_file_ancestors))
+		for id := range m.removeddrive_file_ancestors {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DriveFileMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.clearedchildren_file {
 		edges = append(edges, drivefile.EdgeChildrenFile)
 	}
@@ -1517,6 +1521,9 @@ func (m *DriveFileMutation) ClearedEdges() []string {
 	}
 	if m.cleareddrive_file_stars {
 		edges = append(edges, drivefile.EdgeDriveFileStars)
+	}
+	if m.cleareddrive_file_ancestors {
+		edges = append(edges, drivefile.EdgeDriveFileAncestors)
 	}
 	return edges
 }
@@ -1533,6 +1540,8 @@ func (m *DriveFileMutation) EdgeCleared(name string) bool {
 		return m.cleareddrive_file_shares
 	case drivefile.EdgeDriveFileStars:
 		return m.cleareddrive_file_stars
+	case drivefile.EdgeDriveFileAncestors:
+		return m.cleareddrive_file_ancestors
 	}
 	return false
 }
@@ -1564,8 +1573,554 @@ func (m *DriveFileMutation) ResetEdge(name string) error {
 	case drivefile.EdgeDriveFileStars:
 		m.ResetDriveFileStars()
 		return nil
+	case drivefile.EdgeDriveFileAncestors:
+		m.ResetDriveFileAncestors()
+		return nil
 	}
 	return fmt.Errorf("unknown DriveFile edge %s", name)
+}
+
+// DriveFileAncestorMutation represents an operation that mutates the DriveFileAncestor nodes in the graph.
+type DriveFileAncestorMutation struct {
+	config
+	op                Op
+	typ               string
+	id                *string
+	ancestor_ref      *string
+	depth             *int
+	adddepth          *int
+	clearedFields     map[string]struct{}
+	drive_file        *string
+	cleareddrive_file bool
+	done              bool
+	oldValue          func(context.Context) (*DriveFileAncestor, error)
+	predicates        []predicate.DriveFileAncestor
+}
+
+var _ ent.Mutation = (*DriveFileAncestorMutation)(nil)
+
+// drivefileancestorOption allows management of the mutation configuration using functional options.
+type drivefileancestorOption func(*DriveFileAncestorMutation)
+
+// newDriveFileAncestorMutation creates new mutation for the DriveFileAncestor entity.
+func newDriveFileAncestorMutation(c config, op Op, opts ...drivefileancestorOption) *DriveFileAncestorMutation {
+	m := &DriveFileAncestorMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDriveFileAncestor,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDriveFileAncestorID sets the ID field of the mutation.
+func withDriveFileAncestorID(id string) drivefileancestorOption {
+	return func(m *DriveFileAncestorMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DriveFileAncestor
+		)
+		m.oldValue = func(ctx context.Context) (*DriveFileAncestor, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DriveFileAncestor.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDriveFileAncestor sets the old DriveFileAncestor of the mutation.
+func withDriveFileAncestor(node *DriveFileAncestor) drivefileancestorOption {
+	return func(m *DriveFileAncestorMutation) {
+		m.oldValue = func(context.Context) (*DriveFileAncestor, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DriveFileAncestorMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DriveFileAncestorMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of DriveFileAncestor entities.
+func (m *DriveFileAncestorMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DriveFileAncestorMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DriveFileAncestorMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DriveFileAncestor.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetFileRef sets the "file_ref" field.
+func (m *DriveFileAncestorMutation) SetFileRef(s string) {
+	m.drive_file = &s
+}
+
+// FileRef returns the value of the "file_ref" field in the mutation.
+func (m *DriveFileAncestorMutation) FileRef() (r string, exists bool) {
+	v := m.drive_file
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFileRef returns the old "file_ref" field's value of the DriveFileAncestor entity.
+// If the DriveFileAncestor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DriveFileAncestorMutation) OldFileRef(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFileRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFileRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFileRef: %w", err)
+	}
+	return oldValue.FileRef, nil
+}
+
+// ResetFileRef resets all changes to the "file_ref" field.
+func (m *DriveFileAncestorMutation) ResetFileRef() {
+	m.drive_file = nil
+}
+
+// SetAncestorRef sets the "ancestor_ref" field.
+func (m *DriveFileAncestorMutation) SetAncestorRef(s string) {
+	m.ancestor_ref = &s
+}
+
+// AncestorRef returns the value of the "ancestor_ref" field in the mutation.
+func (m *DriveFileAncestorMutation) AncestorRef() (r string, exists bool) {
+	v := m.ancestor_ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAncestorRef returns the old "ancestor_ref" field's value of the DriveFileAncestor entity.
+// If the DriveFileAncestor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DriveFileAncestorMutation) OldAncestorRef(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAncestorRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAncestorRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAncestorRef: %w", err)
+	}
+	return oldValue.AncestorRef, nil
+}
+
+// ResetAncestorRef resets all changes to the "ancestor_ref" field.
+func (m *DriveFileAncestorMutation) ResetAncestorRef() {
+	m.ancestor_ref = nil
+}
+
+// SetDepth sets the "depth" field.
+func (m *DriveFileAncestorMutation) SetDepth(i int) {
+	m.depth = &i
+	m.adddepth = nil
+}
+
+// Depth returns the value of the "depth" field in the mutation.
+func (m *DriveFileAncestorMutation) Depth() (r int, exists bool) {
+	v := m.depth
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDepth returns the old "depth" field's value of the DriveFileAncestor entity.
+// If the DriveFileAncestor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DriveFileAncestorMutation) OldDepth(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDepth is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDepth requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDepth: %w", err)
+	}
+	return oldValue.Depth, nil
+}
+
+// AddDepth adds i to the "depth" field.
+func (m *DriveFileAncestorMutation) AddDepth(i int) {
+	if m.adddepth != nil {
+		*m.adddepth += i
+	} else {
+		m.adddepth = &i
+	}
+}
+
+// AddedDepth returns the value that was added to the "depth" field in this mutation.
+func (m *DriveFileAncestorMutation) AddedDepth() (r int, exists bool) {
+	v := m.adddepth
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDepth resets all changes to the "depth" field.
+func (m *DriveFileAncestorMutation) ResetDepth() {
+	m.depth = nil
+	m.adddepth = nil
+}
+
+// SetDriveFileID sets the "drive_file" edge to the DriveFile entity by id.
+func (m *DriveFileAncestorMutation) SetDriveFileID(id string) {
+	m.drive_file = &id
+}
+
+// ClearDriveFile clears the "drive_file" edge to the DriveFile entity.
+func (m *DriveFileAncestorMutation) ClearDriveFile() {
+	m.cleareddrive_file = true
+	m.clearedFields[drivefileancestor.FieldFileRef] = struct{}{}
+}
+
+// DriveFileCleared reports if the "drive_file" edge to the DriveFile entity was cleared.
+func (m *DriveFileAncestorMutation) DriveFileCleared() bool {
+	return m.cleareddrive_file
+}
+
+// DriveFileID returns the "drive_file" edge ID in the mutation.
+func (m *DriveFileAncestorMutation) DriveFileID() (id string, exists bool) {
+	if m.drive_file != nil {
+		return *m.drive_file, true
+	}
+	return
+}
+
+// DriveFileIDs returns the "drive_file" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DriveFileID instead. It exists only for internal usage by the builders.
+func (m *DriveFileAncestorMutation) DriveFileIDs() (ids []string) {
+	if id := m.drive_file; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetDriveFile resets all changes to the "drive_file" edge.
+func (m *DriveFileAncestorMutation) ResetDriveFile() {
+	m.drive_file = nil
+	m.cleareddrive_file = false
+}
+
+// Where appends a list predicates to the DriveFileAncestorMutation builder.
+func (m *DriveFileAncestorMutation) Where(ps ...predicate.DriveFileAncestor) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DriveFileAncestorMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DriveFileAncestorMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DriveFileAncestor, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DriveFileAncestorMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DriveFileAncestorMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DriveFileAncestor).
+func (m *DriveFileAncestorMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DriveFileAncestorMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.drive_file != nil {
+		fields = append(fields, drivefileancestor.FieldFileRef)
+	}
+	if m.ancestor_ref != nil {
+		fields = append(fields, drivefileancestor.FieldAncestorRef)
+	}
+	if m.depth != nil {
+		fields = append(fields, drivefileancestor.FieldDepth)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DriveFileAncestorMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case drivefileancestor.FieldFileRef:
+		return m.FileRef()
+	case drivefileancestor.FieldAncestorRef:
+		return m.AncestorRef()
+	case drivefileancestor.FieldDepth:
+		return m.Depth()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DriveFileAncestorMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case drivefileancestor.FieldFileRef:
+		return m.OldFileRef(ctx)
+	case drivefileancestor.FieldAncestorRef:
+		return m.OldAncestorRef(ctx)
+	case drivefileancestor.FieldDepth:
+		return m.OldDepth(ctx)
+	}
+	return nil, fmt.Errorf("unknown DriveFileAncestor field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DriveFileAncestorMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case drivefileancestor.FieldFileRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFileRef(v)
+		return nil
+	case drivefileancestor.FieldAncestorRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAncestorRef(v)
+		return nil
+	case drivefileancestor.FieldDepth:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDepth(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DriveFileAncestor field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DriveFileAncestorMutation) AddedFields() []string {
+	var fields []string
+	if m.adddepth != nil {
+		fields = append(fields, drivefileancestor.FieldDepth)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DriveFileAncestorMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case drivefileancestor.FieldDepth:
+		return m.AddedDepth()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DriveFileAncestorMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case drivefileancestor.FieldDepth:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDepth(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DriveFileAncestor numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DriveFileAncestorMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DriveFileAncestorMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DriveFileAncestorMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown DriveFileAncestor nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DriveFileAncestorMutation) ResetField(name string) error {
+	switch name {
+	case drivefileancestor.FieldFileRef:
+		m.ResetFileRef()
+		return nil
+	case drivefileancestor.FieldAncestorRef:
+		m.ResetAncestorRef()
+		return nil
+	case drivefileancestor.FieldDepth:
+		m.ResetDepth()
+		return nil
+	}
+	return fmt.Errorf("unknown DriveFileAncestor field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DriveFileAncestorMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.drive_file != nil {
+		edges = append(edges, drivefileancestor.EdgeDriveFile)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DriveFileAncestorMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case drivefileancestor.EdgeDriveFile:
+		if id := m.drive_file; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DriveFileAncestorMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DriveFileAncestorMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DriveFileAncestorMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareddrive_file {
+		edges = append(edges, drivefileancestor.EdgeDriveFile)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DriveFileAncestorMutation) EdgeCleared(name string) bool {
+	switch name {
+	case drivefileancestor.EdgeDriveFile:
+		return m.cleareddrive_file
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DriveFileAncestorMutation) ClearEdge(name string) error {
+	switch name {
+	case drivefileancestor.EdgeDriveFile:
+		m.ClearDriveFile()
+		return nil
+	}
+	return fmt.Errorf("unknown DriveFileAncestor unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DriveFileAncestorMutation) ResetEdge(name string) error {
+	switch name {
+	case drivefileancestor.EdgeDriveFile:
+		m.ResetDriveFile()
+		return nil
+	}
+	return fmt.Errorf("unknown DriveFileAncestor edge %s", name)
 }
 
 // DriveFileShareMutation represents an operation that mutates the DriveFileShare nodes in the graph.

@@ -2,10 +2,12 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 
 	entSql "entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -15,6 +17,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/drive/enum"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent"
 	entDrivefile "github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
+	entDrivefileancestor "github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileancestor"
 	entDrivefileshare "github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileshare"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/drive/interfaces/drive_file"
@@ -46,6 +49,84 @@ func (d *driveFileRepository) driveFileClient(ctx crud.Context) *ent.DriveFileCl
 	}
 
 	return d.client.DriveFile
+}
+
+func (d *driveFileRepository) driveFileAncestorClient(ctx crud.Context) *ent.DriveFileAncestorClient {
+	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
+	if isOk {
+		return tx.DriveFileAncestor
+	}
+	return d.client.DriveFileAncestor
+}
+
+func (d *driveFileRepository) InsertAncestors(ctx crud.Context, fileId model.Id, ancestorIds []model.Id) error {
+	if len(ancestorIds) == 0 {
+		return nil
+	}
+	client := d.driveFileAncestorClient(ctx)
+	builders := make([]*ent.DriveFileAncestorCreate, 0, len(ancestorIds))
+	for depth, ancestorId := range ancestorIds {
+		builders = append(builders,
+			client.Create().
+				SetID(uuid.NewString()).
+				SetFileRef(string(fileId)).
+				SetAncestorRef(string(ancestorId)).
+				SetDepth(len(ancestorIds) - depth),
+		)
+	}
+	return client.CreateBulk(builders...).Exec(ctx.InnerContext())
+}
+
+func (d *driveFileRepository) DeleteAncestorsByFileIds(ctx crud.Context, fileIds []model.Id) error {
+	if len(fileIds) == 0 {
+		return nil
+	}
+	strIds := make([]string, len(fileIds))
+	for i, id := range fileIds {
+		strIds[i] = string(id)
+	}
+	_, err := d.driveFileAncestorClient(ctx).Delete().
+		Where(entDrivefileancestor.FileRefIn(strIds...)).
+		Exec(ctx.InnerContext())
+	return err
+}
+
+func (d *driveFileRepository) GetAncestorIds(ctx crud.Context, fileId model.Id) ([]model.Id, error) {
+	ancestors, err := d.driveFileAncestorClient(ctx).Query().
+		Where(entDrivefileancestor.FileRef(string(fileId))).
+		Order(entDrivefileancestor.ByDepth(entSql.OrderDesc())).
+		All(ctx.InnerContext())
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]model.Id, 0, len(ancestors))
+	for _, a := range ancestors {
+		ids = append(ids, model.Id(a.AncestorRef))
+	}
+	return ids, nil
+}
+
+func (d *driveFileRepository) GetAncestorIdsForFiles(ctx crud.Context, fileIds []model.Id) (map[model.Id][]model.Id, error) {
+	if len(fileIds) == 0 {
+		return nil, nil
+	}
+	strIds := make([]string, len(fileIds))
+	for i, id := range fileIds {
+		strIds[i] = string(id)
+	}
+	ancestors, err := d.driveFileAncestorClient(ctx).Query().
+		Where(entDrivefileancestor.FileRefIn(strIds...)).
+		Order(entDrivefileancestor.ByDepth(entSql.OrderDesc())).
+		All(ctx.InnerContext())
+	if err != nil {
+		return nil, err
+	}
+	result := make(map[model.Id][]model.Id, len(fileIds))
+	for _, a := range ancestors {
+		fid := model.Id(a.FileRef)
+		result[fid] = append(result[fid], model.Id(a.AncestorRef))
+	}
+	return result, nil
 }
 
 func (d *driveFileRepository) ExistsByOwnerParentNameFolder(ctx crud.Context, ownerRef model.Id, parentRef *model.Id, name string, isFolder bool) (bool, error) {
@@ -89,8 +170,6 @@ func (d *driveFileRepository) Create(ctx crud.Context, driveFile *domain.DriveFi
 	if driveFile.ParentDriveFileRef != nil && *driveFile.ParentDriveFileRef != "" {
 		creation.SetParentFileRef(string(*driveFile.ParentDriveFileRef))
 	}
-
-	creation.SetNillableMaterializedPath(driveFile.MaterializedPath)
 
 	result, err := db.Mutate(ctx.InnerContext(), creation, ent.IsNotFound, entToDriveFile)
 	if err != nil {
@@ -144,10 +223,6 @@ func (d *driveFileRepository) Update(ctx crud.Context, driveFile *domain.DriveFi
 		update.SetDeletedAt(*driveFile.DeletedAt)
 	}
 
-	if driveFile.MaterializedPath != nil {
-		update.SetNillableMaterializedPath(driveFile.MaterializedPath)
-	}
-
 	return db.Mutate(ctx.InnerContext(), update, ent.IsNotFound, entToDriveFile)
 }
 
@@ -167,7 +242,6 @@ func (d *driveFileRepository) Overwrite(
 	update.SetSize(int64(driveFile.Size))
 	update.SetDeletedAt(*driveFile.DeletedAt)
 	update.SetNillableParentFileRef(driveFile.ParentDriveFileRef)
-	update.SetNillableMaterializedPath(driveFile.MaterializedPath)
 
 	return db.Mutate(ctx.InnerContext(), update, ent.IsNotFound, entToDriveFile)
 }
@@ -263,31 +337,51 @@ func (d *driveFileRepository) GetRootFileByUser(
 func permissionPredicate(userId string) predicate.DriveFile {
 	return func(s *entSql.Selector) {
 		fileIDCol := s.C(entDrivefile.FieldID)
-		filePathCol := s.C(entDrivefile.FieldMaterializedPath)
-		shareTable := entSql.Table(entDrivefileshare.Table).As("dfs")
-		shareUserRefCol := shareTable.C(entDrivefileshare.FieldUserRef)
 
+		shareTable := entSql.Table(entDrivefileshare.Table).As("dfs")
+		ancestorTable := entSql.Table(entDrivefileancestor.Table).As("anc")
+
+		// 1. Direct share: user has a share row pointing at this file
 		directShareSub := entSql.
-			Select("id").
+			Select("1").
 			From(shareTable).
 			Where(
 				entSql.And(
-					entSql.EQ(shareUserRefCol, userId),
-					entSql.ExprP("dfs."+entDrivefileshare.FieldFileRef+" = "+fileIDCol),
+					entSql.EQ(shareTable.C(entDrivefileshare.FieldUserRef), userId),
+					entSql.ExprP(fmt.Sprintf("dfs.%s = %s", entDrivefileshare.FieldFileRef, fileIDCol)),
 				),
 			)
 
-		// Path format: /id1/id2/... (no trailing slash). Match ancestor id as /id/ mid-path or path suffix .../id.
+		// 2. Ancestor share: user has a share on one of the file's ancestors
 		ancestorShareSub := entSql.
-			Select("id").
-			From(shareTable).
+			Select("1").
+			From(ancestorTable).
+			Join(shareTable).
+			On(
+				ancestorTable.C(entDrivefileancestor.FieldAncestorRef),
+				shareTable.C(entDrivefileshare.FieldFileRef),
+			).
 			Where(
 				entSql.And(
-					entSql.EQ(shareUserRefCol, userId),
-					entSql.Or(
-						entSql.ExprP(filePathCol+" LIKE ('%/' || dfs."+entDrivefileshare.FieldFileRef+" || '/%')"),
-						entSql.ExprP(filePathCol+" LIKE ('%/' || dfs."+entDrivefileshare.FieldFileRef+")"),
-					),
+					entSql.ExprP(fmt.Sprintf("anc.%s = %s", entDrivefileancestor.FieldFileRef, fileIDCol)),
+					entSql.EQ(shareTable.C(entDrivefileshare.FieldUserRef), userId),
+				),
+			)
+
+		// 3. Ancestor owner: user owns one of the file's ancestors
+		ancestorFileTable := entSql.Table(entDrivefile.Table).As("af")
+		ancestorOwnerSub := entSql.
+			Select("1").
+			From(ancestorTable).
+			Join(ancestorFileTable).
+			On(
+				ancestorTable.C(entDrivefileancestor.FieldAncestorRef),
+				ancestorFileTable.C(entDrivefile.FieldID),
+			).
+			Where(
+				entSql.And(
+					entSql.ExprP(fmt.Sprintf("anc.%s = %s", entDrivefileancestor.FieldFileRef, fileIDCol)),
+					entSql.EQ(ancestorFileTable.C(entDrivefile.FieldOwnerRef), userId),
 				),
 			)
 
@@ -296,6 +390,7 @@ func permissionPredicate(userId string) predicate.DriveFile {
 				entSql.EQ(s.C(entDrivefile.FieldOwnerRef), userId),
 				entSql.Exists(directShareSub),
 				entSql.Exists(ancestorShareSub),
+				entSql.Exists(ancestorOwnerSub),
 			),
 		)
 	}
@@ -351,13 +446,11 @@ func (d *driveFileRepository) GetDriveFileChildren(ctx crud.Context, parentId mo
 		WITH RECURSIVE subtree AS (
 			SELECT 
 				id, etag, created_at, updated_at, deleted_at, owner_ref,
-				materialized_path,
 				name, mime, is_folder, size, storage_path, storage_key, storage, visibility, status, parent_file_ref
 			FROM dri_files WHERE id = $1
 			UNION ALL
 			SELECT 
 				f.id, f.etag, f.created_at, f.updated_at, f.deleted_at, f.owner_ref,
-				f.materialized_path,
 				f.name, f.mime, f.is_folder, f.size, f.storage_path, f.storage_key, f.storage, f.visibility, f.status, f.parent_file_ref
 			FROM dri_files f 
 			JOIN subtree s ON f.parent_file_ref = s.id
@@ -365,7 +458,6 @@ func (d *driveFileRepository) GetDriveFileChildren(ctx crud.Context, parentId mo
 
 		SELECT 
 			id, etag, created_at, updated_at, deleted_at, owner_ref,
-			materialized_path,
 			name, mime, is_folder, size, storage_path, storage_key, storage, visibility, status, parent_file_ref
 		FROM subtree
 		WHERE status != $2 and id != $1
@@ -386,42 +478,35 @@ func (d *driveFileRepository) GetDriveFileChildren(ctx crud.Context, parentId mo
 	return driveFiles, nil
 }
 
-func (d *driveFileRepository) GetDriveFileParents(ctx crud.Context, parentId model.Id) ([]*domain.DriveFile, error) {
+func (d *driveFileRepository) GetDriveFileParents(ctx crud.Context, fileId model.Id) ([]*domain.DriveFile, error) {
 	dbClient := d.client.DB()
 	rows, err := dbClient.QueryContext(ctx,
 		`
-		WITH RECURSIVE ancestors AS (
-			SELECT 
-				id, etag, created_at, updated_at, deleted_at, owner_ref,
-				materialized_path,
-				name, mime, is_folder, size, storage_path, storage_key, storage, visibility, status, parent_file_ref
-			FROM dri_files WHERE id = $1
-			UNION ALL
-			SELECT 
-				f.id, f.etag, f.created_at, f.updated_at, f.deleted_at, f.owner_ref,
-				f.materialized_path,
-				f.name, f.mime, f.is_folder, f.size, f.storage_path, f.storage_key, f.storage, f.visibility, f.status, f.parent_file_ref
-			FROM dri_files f
-			JOIN ancestors a ON f.id = a.parent_file_ref
-		)
-		SELECT 
-			id, etag, created_at, updated_at, deleted_at, owner_ref,
-			materialized_path,
-			name, mime, is_folder, size, storage_path, storage_key, storage, visibility, status, parent_file_ref
-		FROM ancestors
-		WHERE status != $2
-		`, parentId, enum.DriveFileStatusName[enum.DriveFileStatusPendingDelete])
+		SELECT
+			f.id, f.etag, f.created_at, f.updated_at, f.deleted_at, f.owner_ref,
+			f.name, f.mime, f.is_folder, f.size, f.storage_path, f.storage_key, f.storage, f.visibility, f.status, f.parent_file_ref
+		FROM dri_files f
+		WHERE f.id = $1 AND f.status != $2
+
+		UNION ALL
+
+		SELECT
+			f.id, f.etag, f.created_at, f.updated_at, f.deleted_at, f.owner_ref,
+			f.name, f.mime, f.is_folder, f.size, f.storage_path, f.storage_key, f.storage, f.visibility, f.status, f.parent_file_ref
+		FROM dri_file_ancestors a
+		JOIN dri_files f ON f.id = a.ancestor_ref
+		WHERE a.file_ref = $1 AND f.status != $2
+		ORDER BY parent_file_ref NULLS LAST
+		`, fileId, enum.DriveFileStatusName[enum.DriveFileStatusPendingDelete])
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	var driveFiles []*domain.DriveFile
 	for rows.Next() {
 		driveFile := &domain.DriveFile{}
 		d.scanDriveFileFromRow(rows, driveFile)
-
 		driveFiles = append(driveFiles, driveFile)
 	}
 
@@ -448,23 +533,22 @@ func (d *driveFileRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error
 
 func (d *driveFileRepository) scanDriveFileFromRow(rows *sql.Rows, driveFile *domain.DriveFile) error {
 	var (
-		id                 model.Id
-		etag               model.Etag
-		createdAt          time.Time
-		updatedAt          time.Time
-		deletedAt          time.Time
-		ownerRef           model.Id
-		materializedPathNs sql.NullString
-		name               string
-		mime               string
-		isFolder           bool
-		size               int64
-		storagePath        string
-		storageKey         string
-		storage            string
-		visibility         string
-		status             string
-		parentRef          *string
+		id          model.Id
+		etag        model.Etag
+		createdAt   time.Time
+		updatedAt   time.Time
+		deletedAt   time.Time
+		ownerRef    model.Id
+		name        string
+		mime        string
+		isFolder    bool
+		size        int64
+		storagePath string
+		storageKey  string
+		storage     string
+		visibility  string
+		status      string
+		parentRef   *string
 	)
 
 	err := rows.Scan(
@@ -474,7 +558,6 @@ func (d *driveFileRepository) scanDriveFileFromRow(rows *sql.Rows, driveFile *do
 		&updatedAt,
 		&deletedAt,
 		&ownerRef,
-		&materializedPathNs,
 		&name,
 		&mime,
 		&isFolder,
@@ -495,10 +578,6 @@ func (d *driveFileRepository) scanDriveFileFromRow(rows *sql.Rows, driveFile *do
 	driveFile.CreatedAt = &createdAt
 	driveFile.UpdatedAt = &updatedAt
 	driveFile.OwnerRef = &ownerRef
-	if materializedPathNs.Valid {
-		s := materializedPathNs.String
-		driveFile.MaterializedPath = &s
-	}
 	driveFile.Name = name
 	driveFile.MINE = mime
 	driveFile.IsFolder = isFolder
@@ -542,7 +621,6 @@ func BuildDriveFileDescriptor() *orm.EntityDescriptor {
 		Field(entDrivefile.FieldDeletedAt, entity.DeletedAt).
 		Field(entDrivefile.FieldOwnerRef, entity.OwnerRef).
 		Field(entDrivefile.FieldParentFileRef, entity.ParentFileRef).
-		Field(entDrivefile.FieldMaterializedPath, entity.MaterializedPath).
 		Field(entDrivefile.FieldName, entity.Name).
 		Field(entDrivefile.FieldMime, entity.Mime).
 		Field(entDrivefile.FieldIsFolder, entity.IsFolder).

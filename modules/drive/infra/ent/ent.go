@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
+	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileancestor"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileshare"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefilestar"
 )
@@ -75,9 +76,10 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			drivefile.Table:      drivefile.ValidColumn,
-			drivefileshare.Table: drivefileshare.ValidColumn,
-			drivefilestar.Table:  drivefilestar.ValidColumn,
+			drivefile.Table:         drivefile.ValidColumn,
+			drivefileancestor.Table: drivefileancestor.ValidColumn,
+			drivefileshare.Table:    drivefileshare.ValidColumn,
+			drivefilestar.Table:     drivefilestar.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

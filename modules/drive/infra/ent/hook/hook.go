@@ -21,6 +21,18 @@ func (f DriveFileFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DriveFileMutation", m)
 }
 
+// The DriveFileAncestorFunc type is an adapter to allow the use of ordinary
+// function as DriveFileAncestor mutator.
+type DriveFileAncestorFunc func(context.Context, *ent.DriveFileAncestorMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DriveFileAncestorFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.DriveFileAncestorMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DriveFileAncestorMutation", m)
+}
+
 // The DriveFileShareFunc type is an adapter to allow the use of ordinary
 // function as DriveFileShare mutator.
 type DriveFileShareFunc func(context.Context, *ent.DriveFileShareMutation) (ent.Value, error)

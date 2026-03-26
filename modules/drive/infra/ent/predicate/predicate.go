@@ -9,6 +9,9 @@ import (
 // DriveFile is the predicate function for drivefile builders.
 type DriveFile = func(*sql.Selector)
 
+// DriveFileAncestor is the predicate function for drivefileancestor builders.
+type DriveFileAncestor = func(*sql.Selector)
+
 // DriveFileShare is the predicate function for drivefileshare builders.
 type DriveFileShare = func(*sql.Selector)
 

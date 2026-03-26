@@ -22,7 +22,6 @@ type DriveFile struct {
 
 	OwnerRef           *model.Id `json:"owner_ref"`
 	ParentDriveFileRef *model.Id `json:"parent_drive_file_ref"`
-	MaterializedPath   *string    `json:"materialized_path,omitempty"`
 
 	Name        string                   `json:"name"`
 	MINE        string                   `json:"mine"`

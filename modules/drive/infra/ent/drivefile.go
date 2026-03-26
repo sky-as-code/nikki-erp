@@ -29,8 +29,6 @@ type DriveFile struct {
 	OwnerRef string `json:"owner_ref,omitempty"`
 	// ParentFileRef holds the value of the "parent_file_ref" field.
 	ParentFileRef *string `json:"parent_file_ref,omitempty"`
-	// MaterializedPath holds the value of the "materialized_path" field.
-	MaterializedPath *string `json:"materialized_path,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Mime holds the value of the "mime" field.
@@ -65,9 +63,11 @@ type DriveFileEdges struct {
 	DriveFileShares []*DriveFileShare `json:"drive_file_shares,omitempty"`
 	// DriveFileStars holds the value of the drive_file_stars edge.
 	DriveFileStars []*DriveFileStar `json:"drive_file_stars,omitempty"`
+	// DriveFileAncestors holds the value of the drive_file_ancestors edge.
+	DriveFileAncestors []*DriveFileAncestor `json:"drive_file_ancestors,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // ChildrenFileOrErr returns the ChildrenFile value or an error if the edge
@@ -108,6 +108,15 @@ func (e DriveFileEdges) DriveFileStarsOrErr() ([]*DriveFileStar, error) {
 	return nil, &NotLoadedError{edge: "drive_file_stars"}
 }
 
+// DriveFileAncestorsOrErr returns the DriveFileAncestors value or an error if the edge
+// was not loaded in eager-loading.
+func (e DriveFileEdges) DriveFileAncestorsOrErr() ([]*DriveFileAncestor, error) {
+	if e.loadedTypes[4] {
+		return e.DriveFileAncestors, nil
+	}
+	return nil, &NotLoadedError{edge: "drive_file_ancestors"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*DriveFile) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -117,7 +126,7 @@ func (*DriveFile) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case drivefile.FieldSize:
 			values[i] = new(sql.NullInt64)
-		case drivefile.FieldID, drivefile.FieldEtag, drivefile.FieldOwnerRef, drivefile.FieldParentFileRef, drivefile.FieldMaterializedPath, drivefile.FieldName, drivefile.FieldMime, drivefile.FieldStoragePath, drivefile.FieldStorageKey, drivefile.FieldStorage, drivefile.FieldVisibility, drivefile.FieldStatus:
+		case drivefile.FieldID, drivefile.FieldEtag, drivefile.FieldOwnerRef, drivefile.FieldParentFileRef, drivefile.FieldName, drivefile.FieldMime, drivefile.FieldStoragePath, drivefile.FieldStorageKey, drivefile.FieldStorage, drivefile.FieldVisibility, drivefile.FieldStatus:
 			values[i] = new(sql.NullString)
 		case drivefile.FieldCreatedAt, drivefile.FieldUpdatedAt, drivefile.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
@@ -178,13 +187,6 @@ func (df *DriveFile) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				df.ParentFileRef = new(string)
 				*df.ParentFileRef = value.String
-			}
-		case drivefile.FieldMaterializedPath:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field materialized_path", values[i])
-			} else if value.Valid {
-				df.MaterializedPath = new(string)
-				*df.MaterializedPath = value.String
 			}
 		case drivefile.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -273,6 +275,11 @@ func (df *DriveFile) QueryDriveFileStars() *DriveFileStarQuery {
 	return NewDriveFileClient(df.config).QueryDriveFileStars(df)
 }
 
+// QueryDriveFileAncestors queries the "drive_file_ancestors" edge of the DriveFile entity.
+func (df *DriveFile) QueryDriveFileAncestors() *DriveFileAncestorQuery {
+	return NewDriveFileClient(df.config).QueryDriveFileAncestors(df)
+}
+
 // Update returns a builder for updating this DriveFile.
 // Note that you need to call DriveFile.Unwrap() before calling this method if this DriveFile
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -313,11 +320,6 @@ func (df *DriveFile) String() string {
 	builder.WriteString(", ")
 	if v := df.ParentFileRef; v != nil {
 		builder.WriteString("parent_file_ref=")
-		builder.WriteString(*v)
-	}
-	builder.WriteString(", ")
-	if v := df.MaterializedPath; v != nil {
-		builder.WriteString("materialized_path=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

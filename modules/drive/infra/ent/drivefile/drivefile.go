@@ -26,8 +26,6 @@ const (
 	FieldOwnerRef = "owner_ref"
 	// FieldParentFileRef holds the string denoting the parent_file_ref field in the database.
 	FieldParentFileRef = "parent_file_ref"
-	// FieldMaterializedPath holds the string denoting the materialized_path field in the database.
-	FieldMaterializedPath = "materialized_path"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldMime holds the string denoting the mime field in the database.
@@ -54,6 +52,8 @@ const (
 	EdgeDriveFileShares = "drive_file_shares"
 	// EdgeDriveFileStars holds the string denoting the drive_file_stars edge name in mutations.
 	EdgeDriveFileStars = "drive_file_stars"
+	// EdgeDriveFileAncestors holds the string denoting the drive_file_ancestors edge name in mutations.
+	EdgeDriveFileAncestors = "drive_file_ancestors"
 	// Table holds the table name of the drivefile in the database.
 	Table = "dri_files"
 	// ChildrenFileTable is the table that holds the children_file relation/edge.
@@ -78,6 +78,13 @@ const (
 	DriveFileStarsInverseTable = "dri_file_stars"
 	// DriveFileStarsColumn is the table column denoting the drive_file_stars relation/edge.
 	DriveFileStarsColumn = "file_ref"
+	// DriveFileAncestorsTable is the table that holds the drive_file_ancestors relation/edge.
+	DriveFileAncestorsTable = "dri_file_ancestors"
+	// DriveFileAncestorsInverseTable is the table name for the DriveFileAncestor entity.
+	// It exists in this package in order to avoid circular dependency with the "drivefileancestor" package.
+	DriveFileAncestorsInverseTable = "dri_file_ancestors"
+	// DriveFileAncestorsColumn is the table column denoting the drive_file_ancestors relation/edge.
+	DriveFileAncestorsColumn = "file_ref"
 )
 
 // Columns holds all SQL columns for drivefile fields.
@@ -89,7 +96,6 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldOwnerRef,
 	FieldParentFileRef,
-	FieldMaterializedPath,
 	FieldName,
 	FieldMime,
 	FieldIsFolder,
@@ -172,11 +178,6 @@ func ByOwnerRef(opts ...sql.OrderTermOption) OrderOption {
 // ByParentFileRef orders the results by the parent_file_ref field.
 func ByParentFileRef(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldParentFileRef, opts...).ToFunc()
-}
-
-// ByMaterializedPath orders the results by the materialized_path field.
-func ByMaterializedPath(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldMaterializedPath, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.
@@ -273,6 +274,20 @@ func ByDriveFileStars(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByDriveFileAncestorsCount orders the results by drive_file_ancestors count.
+func ByDriveFileAncestorsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newDriveFileAncestorsStep(), opts...)
+	}
+}
+
+// ByDriveFileAncestors orders the results by drive_file_ancestors terms.
+func ByDriveFileAncestors(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDriveFileAncestorsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
 func NewChildrenFileStepNikki() *sqlgraph.Step {
 	return newChildrenFileStep()
@@ -322,5 +337,18 @@ func newDriveFileStarsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(DriveFileStarsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, DriveFileStarsTable, DriveFileStarsColumn),
+	)
+}
+
+// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
+func NewDriveFileAncestorsStepNikki() *sqlgraph.Step {
+	return newDriveFileAncestorsStep()
+}
+
+func newDriveFileAncestorsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DriveFileAncestorsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, DriveFileAncestorsTable, DriveFileAncestorsColumn),
 	)
 }

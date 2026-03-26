@@ -60,6 +60,89 @@ func (this *DriveFileServiceImpl) updateChildrenStatus(ctx crud.Context, driveFi
 	return nil
 }
 
+// insertAncestorsForFile builds the ancestor list from the parent's existing ancestors
+// plus the parent itself, then inserts rows for the new file.
+func (this *DriveFileServiceImpl) insertAncestorsForFile(ctx crud.Context, fileId model.Id, parentRef *model.Id) error {
+	if parentRef == nil || *parentRef == "" {
+		return nil
+	}
+	parentAncestors, err := this.driveFileRepo.GetAncestorIds(ctx, *parentRef)
+	if err != nil {
+		return err
+	}
+	// ancestors = parent's ancestors (root first) + parent itself
+	ancestorIds := append(parentAncestors, *parentRef)
+	return this.driveFileRepo.InsertAncestors(ctx, fileId, ancestorIds)
+}
+
+// rebuildAncestorsForSubtree deletes old ancestor rows for the entire subtree
+// and re-inserts them based on the new parent hierarchy.
+func (this *DriveFileServiceImpl) rebuildAncestorsForSubtree(ctx crud.Context, root *domain.DriveFile, newParentRef *model.Id) error {
+	if root == nil || root.Id == nil {
+		return nil
+	}
+	children, err := this.driveFileRepo.GetDriveFileChildren(ctx, *root.Id)
+	if err != nil {
+		return err
+	}
+
+	allFileIds := make([]model.Id, 0, len(children)+1)
+	allFileIds = append(allFileIds, *root.Id)
+	for _, c := range children {
+		if c != nil && c.Id != nil {
+			allFileIds = append(allFileIds, *c.Id)
+		}
+	}
+
+	if err := this.driveFileRepo.DeleteAncestorsByFileIds(ctx, allFileIds); err != nil {
+		return err
+	}
+
+	var newRootAncestors []model.Id
+	if newParentRef != nil && *newParentRef != "" {
+		parentAncestors, err := this.driveFileRepo.GetAncestorIds(ctx, *newParentRef)
+		if err != nil {
+			return err
+		}
+		newRootAncestors = append(parentAncestors, *newParentRef)
+	}
+
+	if err := this.driveFileRepo.InsertAncestors(ctx, *root.Id, newRootAncestors); err != nil {
+		return err
+	}
+
+	if !root.IsFolder || len(children) == 0 {
+		return nil
+	}
+
+	root.BuildTree(children)
+	// rootAncestors = newRootAncestors + root itself
+	rootAncestors := make([]model.Id, len(newRootAncestors)+1)
+	copy(rootAncestors, newRootAncestors)
+	rootAncestors[len(newRootAncestors)] = *root.Id
+	return this.insertAncestorsPreOrder(ctx, root, rootAncestors)
+}
+
+func (this *DriveFileServiceImpl) insertAncestorsPreOrder(ctx crud.Context, node *domain.DriveFile, ancestorsOfChildren []model.Id) error {
+	for _, child := range node.Children {
+		if child == nil || child.Id == nil {
+			continue
+		}
+		if err := this.driveFileRepo.InsertAncestors(ctx, *child.Id, ancestorsOfChildren); err != nil {
+			return err
+		}
+		if child.IsFolder && len(child.Children) > 0 {
+			childAncestors := make([]model.Id, len(ancestorsOfChildren)+1)
+			copy(childAncestors, ancestorsOfChildren)
+			childAncestors[len(ancestorsOfChildren)] = *child.Id
+			if err := this.insertAncestorsPreOrder(ctx, child, childAncestors); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (this *DriveFileServiceImpl) sanitizeDriveFile(d *domain.DriveFile) {
 	if d != nil && d.Name != "" {
 		d.Name = defense.SanitizePlainText(d.Name, true)

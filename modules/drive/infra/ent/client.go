@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefile"
+	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileancestor"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefileshare"
 	"github.com/sky-as-code/nikki-erp/modules/drive/infra/ent/drivefilestar"
 )
@@ -27,6 +28,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// DriveFile is the client for interacting with the DriveFile builders.
 	DriveFile *DriveFileClient
+	// DriveFileAncestor is the client for interacting with the DriveFileAncestor builders.
+	DriveFileAncestor *DriveFileAncestorClient
 	// DriveFileShare is the client for interacting with the DriveFileShare builders.
 	DriveFileShare *DriveFileShareClient
 	// DriveFileStar is the client for interacting with the DriveFileStar builders.
@@ -43,6 +46,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.DriveFile = NewDriveFileClient(c.config)
+	c.DriveFileAncestor = NewDriveFileAncestorClient(c.config)
 	c.DriveFileShare = NewDriveFileShareClient(c.config)
 	c.DriveFileStar = NewDriveFileStarClient(c.config)
 }
@@ -135,11 +139,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:            ctx,
-		config:         cfg,
-		DriveFile:      NewDriveFileClient(cfg),
-		DriveFileShare: NewDriveFileShareClient(cfg),
-		DriveFileStar:  NewDriveFileStarClient(cfg),
+		ctx:               ctx,
+		config:            cfg,
+		DriveFile:         NewDriveFileClient(cfg),
+		DriveFileAncestor: NewDriveFileAncestorClient(cfg),
+		DriveFileShare:    NewDriveFileShareClient(cfg),
+		DriveFileStar:     NewDriveFileStarClient(cfg),
 	}, nil
 }
 
@@ -157,11 +162,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:            ctx,
-		config:         cfg,
-		DriveFile:      NewDriveFileClient(cfg),
-		DriveFileShare: NewDriveFileShareClient(cfg),
-		DriveFileStar:  NewDriveFileStarClient(cfg),
+		ctx:               ctx,
+		config:            cfg,
+		DriveFile:         NewDriveFileClient(cfg),
+		DriveFileAncestor: NewDriveFileAncestorClient(cfg),
+		DriveFileShare:    NewDriveFileShareClient(cfg),
+		DriveFileStar:     NewDriveFileStarClient(cfg),
 	}, nil
 }
 
@@ -191,6 +197,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.DriveFile.Use(hooks...)
+	c.DriveFileAncestor.Use(hooks...)
 	c.DriveFileShare.Use(hooks...)
 	c.DriveFileStar.Use(hooks...)
 }
@@ -199,6 +206,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.DriveFile.Intercept(interceptors...)
+	c.DriveFileAncestor.Intercept(interceptors...)
 	c.DriveFileShare.Intercept(interceptors...)
 	c.DriveFileStar.Intercept(interceptors...)
 }
@@ -208,6 +216,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *DriveFileMutation:
 		return c.DriveFile.mutate(ctx, m)
+	case *DriveFileAncestorMutation:
+		return c.DriveFileAncestor.mutate(ctx, m)
 	case *DriveFileShareMutation:
 		return c.DriveFileShare.mutate(ctx, m)
 	case *DriveFileStarMutation:
@@ -389,6 +399,22 @@ func (c *DriveFileClient) QueryDriveFileStars(df *DriveFile) *DriveFileStarQuery
 	return query
 }
 
+// QueryDriveFileAncestors queries the drive_file_ancestors edge of a DriveFile.
+func (c *DriveFileClient) QueryDriveFileAncestors(df *DriveFile) *DriveFileAncestorQuery {
+	query := (&DriveFileAncestorClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := df.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(drivefile.Table, drivefile.FieldID, id),
+			sqlgraph.To(drivefileancestor.Table, drivefileancestor.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, drivefile.DriveFileAncestorsTable, drivefile.DriveFileAncestorsColumn),
+		)
+		fromV = sqlgraph.Neighbors(df.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *DriveFileClient) Hooks() []Hook {
 	return c.hooks.DriveFile
@@ -411,6 +437,155 @@ func (c *DriveFileClient) mutate(ctx context.Context, m *DriveFileMutation) (Val
 		return (&DriveFileDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown DriveFile mutation op: %q", m.Op())
+	}
+}
+
+// DriveFileAncestorClient is a client for the DriveFileAncestor schema.
+type DriveFileAncestorClient struct {
+	config
+}
+
+// NewDriveFileAncestorClient returns a client for the DriveFileAncestor from the given config.
+func NewDriveFileAncestorClient(c config) *DriveFileAncestorClient {
+	return &DriveFileAncestorClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `drivefileancestor.Hooks(f(g(h())))`.
+func (c *DriveFileAncestorClient) Use(hooks ...Hook) {
+	c.hooks.DriveFileAncestor = append(c.hooks.DriveFileAncestor, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `drivefileancestor.Intercept(f(g(h())))`.
+func (c *DriveFileAncestorClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DriveFileAncestor = append(c.inters.DriveFileAncestor, interceptors...)
+}
+
+// Create returns a builder for creating a DriveFileAncestor entity.
+func (c *DriveFileAncestorClient) Create() *DriveFileAncestorCreate {
+	mutation := newDriveFileAncestorMutation(c.config, OpCreate)
+	return &DriveFileAncestorCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DriveFileAncestor entities.
+func (c *DriveFileAncestorClient) CreateBulk(builders ...*DriveFileAncestorCreate) *DriveFileAncestorCreateBulk {
+	return &DriveFileAncestorCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DriveFileAncestorClient) MapCreateBulk(slice any, setFunc func(*DriveFileAncestorCreate, int)) *DriveFileAncestorCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DriveFileAncestorCreateBulk{err: fmt.Errorf("calling to DriveFileAncestorClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DriveFileAncestorCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DriveFileAncestorCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DriveFileAncestor.
+func (c *DriveFileAncestorClient) Update() *DriveFileAncestorUpdate {
+	mutation := newDriveFileAncestorMutation(c.config, OpUpdate)
+	return &DriveFileAncestorUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DriveFileAncestorClient) UpdateOne(dfa *DriveFileAncestor) *DriveFileAncestorUpdateOne {
+	mutation := newDriveFileAncestorMutation(c.config, OpUpdateOne, withDriveFileAncestor(dfa))
+	return &DriveFileAncestorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DriveFileAncestorClient) UpdateOneID(id string) *DriveFileAncestorUpdateOne {
+	mutation := newDriveFileAncestorMutation(c.config, OpUpdateOne, withDriveFileAncestorID(id))
+	return &DriveFileAncestorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DriveFileAncestor.
+func (c *DriveFileAncestorClient) Delete() *DriveFileAncestorDelete {
+	mutation := newDriveFileAncestorMutation(c.config, OpDelete)
+	return &DriveFileAncestorDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DriveFileAncestorClient) DeleteOne(dfa *DriveFileAncestor) *DriveFileAncestorDeleteOne {
+	return c.DeleteOneID(dfa.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DriveFileAncestorClient) DeleteOneID(id string) *DriveFileAncestorDeleteOne {
+	builder := c.Delete().Where(drivefileancestor.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DriveFileAncestorDeleteOne{builder}
+}
+
+// Query returns a query builder for DriveFileAncestor.
+func (c *DriveFileAncestorClient) Query() *DriveFileAncestorQuery {
+	return &DriveFileAncestorQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDriveFileAncestor},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DriveFileAncestor entity by its id.
+func (c *DriveFileAncestorClient) Get(ctx context.Context, id string) (*DriveFileAncestor, error) {
+	return c.Query().Where(drivefileancestor.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DriveFileAncestorClient) GetX(ctx context.Context, id string) *DriveFileAncestor {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDriveFile queries the drive_file edge of a DriveFileAncestor.
+func (c *DriveFileAncestorClient) QueryDriveFile(dfa *DriveFileAncestor) *DriveFileQuery {
+	query := (&DriveFileClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := dfa.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(drivefileancestor.Table, drivefileancestor.FieldID, id),
+			sqlgraph.To(drivefile.Table, drivefile.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, drivefileancestor.DriveFileTable, drivefileancestor.DriveFileColumn),
+		)
+		fromV = sqlgraph.Neighbors(dfa.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DriveFileAncestorClient) Hooks() []Hook {
+	return c.hooks.DriveFileAncestor
+}
+
+// Interceptors returns the client interceptors.
+func (c *DriveFileAncestorClient) Interceptors() []Interceptor {
+	return c.inters.DriveFileAncestor
+}
+
+func (c *DriveFileAncestorClient) mutate(ctx context.Context, m *DriveFileAncestorMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DriveFileAncestorCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DriveFileAncestorUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DriveFileAncestorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DriveFileAncestorDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DriveFileAncestor mutation op: %q", m.Op())
 	}
 }
 
@@ -715,9 +890,9 @@ func (c *DriveFileStarClient) mutate(ctx context.Context, m *DriveFileStarMutati
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		DriveFile, DriveFileShare, DriveFileStar []ent.Hook
+		DriveFile, DriveFileAncestor, DriveFileShare, DriveFileStar []ent.Hook
 	}
 	inters struct {
-		DriveFile, DriveFileShare, DriveFileStar []ent.Interceptor
+		DriveFile, DriveFileAncestor, DriveFileShare, DriveFileStar []ent.Interceptor
 	}
 )

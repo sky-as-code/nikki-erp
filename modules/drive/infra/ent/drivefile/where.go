@@ -95,11 +95,6 @@ func ParentFileRef(v string) predicate.DriveFile {
 	return predicate.DriveFile(sql.FieldEQ(FieldParentFileRef, v))
 }
 
-// MaterializedPath applies equality check predicate on the "materialized_path" field. It's identical to MaterializedPathEQ.
-func MaterializedPath(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEQ(FieldMaterializedPath, v))
-}
-
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.DriveFile {
 	return predicate.DriveFile(sql.FieldEQ(FieldName, v))
@@ -468,81 +463,6 @@ func ParentFileRefEqualFold(v string) predicate.DriveFile {
 // ParentFileRefContainsFold applies the ContainsFold predicate on the "parent_file_ref" field.
 func ParentFileRefContainsFold(v string) predicate.DriveFile {
 	return predicate.DriveFile(sql.FieldContainsFold(FieldParentFileRef, v))
-}
-
-// MaterializedPathEQ applies the EQ predicate on the "materialized_path" field.
-func MaterializedPathEQ(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEQ(FieldMaterializedPath, v))
-}
-
-// MaterializedPathNEQ applies the NEQ predicate on the "materialized_path" field.
-func MaterializedPathNEQ(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldNEQ(FieldMaterializedPath, v))
-}
-
-// MaterializedPathIn applies the In predicate on the "materialized_path" field.
-func MaterializedPathIn(vs ...string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldIn(FieldMaterializedPath, vs...))
-}
-
-// MaterializedPathNotIn applies the NotIn predicate on the "materialized_path" field.
-func MaterializedPathNotIn(vs ...string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldNotIn(FieldMaterializedPath, vs...))
-}
-
-// MaterializedPathGT applies the GT predicate on the "materialized_path" field.
-func MaterializedPathGT(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldGT(FieldMaterializedPath, v))
-}
-
-// MaterializedPathGTE applies the GTE predicate on the "materialized_path" field.
-func MaterializedPathGTE(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldGTE(FieldMaterializedPath, v))
-}
-
-// MaterializedPathLT applies the LT predicate on the "materialized_path" field.
-func MaterializedPathLT(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldLT(FieldMaterializedPath, v))
-}
-
-// MaterializedPathLTE applies the LTE predicate on the "materialized_path" field.
-func MaterializedPathLTE(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldLTE(FieldMaterializedPath, v))
-}
-
-// MaterializedPathContains applies the Contains predicate on the "materialized_path" field.
-func MaterializedPathContains(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldContains(FieldMaterializedPath, v))
-}
-
-// MaterializedPathHasPrefix applies the HasPrefix predicate on the "materialized_path" field.
-func MaterializedPathHasPrefix(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldHasPrefix(FieldMaterializedPath, v))
-}
-
-// MaterializedPathHasSuffix applies the HasSuffix predicate on the "materialized_path" field.
-func MaterializedPathHasSuffix(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldHasSuffix(FieldMaterializedPath, v))
-}
-
-// MaterializedPathIsNil applies the IsNil predicate on the "materialized_path" field.
-func MaterializedPathIsNil() predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldIsNull(FieldMaterializedPath))
-}
-
-// MaterializedPathNotNil applies the NotNil predicate on the "materialized_path" field.
-func MaterializedPathNotNil() predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldNotNull(FieldMaterializedPath))
-}
-
-// MaterializedPathEqualFold applies the EqualFold predicate on the "materialized_path" field.
-func MaterializedPathEqualFold(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldEqualFold(FieldMaterializedPath, v))
-}
-
-// MaterializedPathContainsFold applies the ContainsFold predicate on the "materialized_path" field.
-func MaterializedPathContainsFold(v string) predicate.DriveFile {
-	return predicate.DriveFile(sql.FieldContainsFold(FieldMaterializedPath, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -1134,6 +1054,29 @@ func HasDriveFileStars() predicate.DriveFile {
 func HasDriveFileStarsWith(preds ...predicate.DriveFileStar) predicate.DriveFile {
 	return predicate.DriveFile(func(s *sql.Selector) {
 		step := newDriveFileStarsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasDriveFileAncestors applies the HasEdge predicate on the "drive_file_ancestors" edge.
+func HasDriveFileAncestors() predicate.DriveFile {
+	return predicate.DriveFile(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, DriveFileAncestorsTable, DriveFileAncestorsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDriveFileAncestorsWith applies the HasEdge predicate on the "drive_file_ancestors" edge with a given conditions (other predicates).
+func HasDriveFileAncestorsWith(preds ...predicate.DriveFileAncestor) predicate.DriveFile {
+	return predicate.DriveFile(func(s *sql.Selector) {
+		step := newDriveFileAncestorsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)
