@@ -3,44 +3,54 @@ package model
 import (
 	"strings"
 
-	"github.com/sky-as-code/nikki-erp/common/model"
 	"go.bryk.io/pkg/errors"
+
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 )
 
-type EntitySchemaBuilder struct {
-	schema ModelSchema
+type ModelSchemaBuilder struct {
+	schema        ModelSchema
+	shouldBuildDb bool
 }
 
-func DefineEntity(name string) *EntitySchemaBuilder {
-	builder := &EntitySchemaBuilder{
+func DefineModel(name string) *ModelSchemaBuilder {
+	builder := &ModelSchemaBuilder{
 		schema: ModelSchema{
 			fields: make(map[string]*ModelField),
 		},
+		shouldBuildDb: false,
 	}
 	builder.Name(name)
 	return builder
 }
 
-func (this *EntitySchemaBuilder) Label(label model.LangJson) *EntitySchemaBuilder {
+func (this *ModelSchemaBuilder) Label(label model.LangJson) *ModelSchemaBuilder {
 	this.schema.label = label
 	return this
 }
 
-func (this *EntitySchemaBuilder) LabelRef(key string) *EntitySchemaBuilder {
+func (this *ModelSchemaBuilder) LabelRef(key string) *ModelSchemaBuilder {
 	return this.Label(model.LangJson{"$s": key})
 }
 
-func (this *EntitySchemaBuilder) Description(description model.LangJson) *EntitySchemaBuilder {
+func (this *ModelSchemaBuilder) Description(description model.LangJson) *ModelSchemaBuilder {
 	this.schema.description = description
 	return this
 }
 
-func (this *EntitySchemaBuilder) Name(name string) *EntitySchemaBuilder {
+func (this *ModelSchemaBuilder) Name(name string) *ModelSchemaBuilder {
 	this.schema.name = name
 	return this
 }
 
-func (this *EntitySchemaBuilder) Field(fieldBuilder *FieldBuilder) *EntitySchemaBuilder {
+func (this *ModelSchemaBuilder) ShouldBuildDb() *ModelSchemaBuilder {
+	this.shouldBuildDb = true
+	return this
+}
+
+func (this *ModelSchemaBuilder) Field(fieldBuilder *FieldBuilder) *ModelSchemaBuilder {
 	if fieldBuilder == nil {
 		return this
 	}
@@ -60,18 +70,18 @@ func (this *EntitySchemaBuilder) Field(fieldBuilder *FieldBuilder) *EntitySchema
 	return this
 }
 
-func (this *EntitySchemaBuilder) addField(field *ModelField) {
+func (this *ModelSchemaBuilder) addField(field *ModelField) {
 	if err := validateFieldName(field); err != nil {
-		panic(errors.Wrapf(err, "entity '%s'", this.schema.name))
+		panic(errors.Wrapf(err, "addField: model '%s'", this.schema.name))
 	}
 	if err := validateFieldKeyFlags(field); err != nil {
-		panic(errors.Wrapf(err, "entity '%s'", this.schema.name))
+		panic(errors.Wrapf(err, "addField: model '%s'", this.schema.name))
 	}
 	if err := validateSingleTenantKey(this.schema.fields, field); err != nil {
-		panic(errors.Wrapf(err, "entity '%s'", this.schema.name))
+		panic(errors.Wrapf(err, "addField: model '%s'", this.schema.name))
 	}
 	if err := validateNoDuplicateColumn(this.schema.fields, field); err != nil {
-		panic(errors.Wrapf(err, "entity '%s'", this.schema.name))
+		panic(errors.Wrapf(err, "addField: model '%s'", this.schema.name))
 	}
 	if this.schema.fields == nil {
 		this.schema.fields = make(map[string]*ModelField)
@@ -80,7 +90,7 @@ func (this *EntitySchemaBuilder) addField(field *ModelField) {
 	this.schema.fieldsOrder = append(this.schema.fieldsOrder, field.name)
 }
 
-func (this *EntitySchemaBuilder) Extend(builder *EntitySchemaBuilder) *EntitySchemaBuilder {
+func (this *ModelSchemaBuilder) Extend(builder *ModelSchemaBuilder) *ModelSchemaBuilder {
 	for _, fieldName := range builder.schema.fieldsOrder {
 		this.addField(builder.schema.fields[fieldName])
 	}
@@ -89,50 +99,51 @@ func (this *EntitySchemaBuilder) Extend(builder *EntitySchemaBuilder) *EntitySch
 	return this
 }
 
-func (this *EntitySchemaBuilder) addImplicitEdgeField(rel *ModelRelation) {
+func (this *ModelSchemaBuilder) addImplicitEdgeField(rel *ModelRelation) {
 	isArray := rel.RelationType == RelationTypeOneToMany || rel.RelationType == RelationTypeManyToMany
-	dataType := FieldDataType(FieldDataTypeEntity())
+	dataType := FieldDataType(FieldDataTypeModel())
 	if isArray {
 		dataType = dataType.ArrayType()
 	}
 	this.Field(DefineField().Name(rel.Edge).DataType(dataType))
 }
 
-func (this *EntitySchemaBuilder) TableName(tableName string) *EntitySchemaBuilder {
+func (this *ModelSchemaBuilder) TableName(tableName string) *ModelSchemaBuilder {
 	this.schema.tableName = tableName
 	return this
 }
 
-func (this *EntitySchemaBuilder) CompositeUnique(composite ...string) *EntitySchemaBuilder {
+func (this *ModelSchemaBuilder) CompositeUnique(composite ...string) *ModelSchemaBuilder {
 	if len(composite) > 0 {
 		this.schema.compositeUniques = append(this.schema.compositeUniques, composite)
 	}
 	return this
 }
 
-func (this *EntitySchemaBuilder) SetCompositeUniques(allUniques [][]string) *EntitySchemaBuilder {
+func (this *ModelSchemaBuilder) SetCompositeUniques(allUniques [][]string) *ModelSchemaBuilder {
 	this.schema.compositeUniques = allUniques
 	return this
 }
 
-func (this *EntitySchemaBuilder) Build() *ModelSchema {
+func (this *ModelSchemaBuilder) Build() *ModelSchema {
 	schema := &this.schema
-	if err := populateDbMetadata(schema); err != nil {
-		panic(err)
+	if this.shouldBuildDb {
+		ft.PanicOnErr(populateDbMetadata(schema))
 	}
 	return schema
 }
 
 func validateFieldName(field *ModelField) error {
 	if field.name == "" {
-		return errors.Errorf("field name is required")
+		return errors.Errorf("validateFieldName: field name is required")
 	}
 	return nil
 }
 
 func validateFieldKeyFlags(field *ModelField) error {
 	if field.isPrimaryKey && field.isTenantKey {
-		return errors.Errorf("field '%s': isPrimaryKey and isTenantKey are mutually exclusive", field.name)
+		return errors.Errorf(
+			"validateFieldKeyFlags: field '%s': isPrimaryKey and isTenantKey are mutually exclusive", field.name)
 	}
 	return nil
 }
@@ -143,7 +154,9 @@ func validateSingleTenantKey(existingFields map[string]*ModelField, newField *Mo
 	}
 	for _, f := range existingFields {
 		if f != nil && f.isTenantKey {
-			return errors.Errorf("field '%s' cannot be tenant key: '%s' is already the tenant key", newField.name, f.name)
+			return errors.Errorf(
+				"validateSingleTenantKey: field '%s' cannot be tenant key: '%s' is already the tenant key",
+				newField.name, f.name)
 		}
 	}
 	return nil
@@ -153,7 +166,7 @@ func validateNoDuplicateColumn(existingFields map[string]*ModelField, newField *
 	columnName := newField.name
 	for _, f := range existingFields {
 		if f != nil && f.name == columnName {
-			return errors.Errorf("duplicate column '%s'", columnName)
+			return errors.Errorf("validateNoDuplicateColumn: duplicate column '%s'", columnName)
 		}
 	}
 	return nil
@@ -179,6 +192,11 @@ func (this *FieldBuilder) Label(label model.LangJson) *FieldBuilder {
 	return this
 }
 
+func (this *FieldBuilder) VersioningKey() *FieldBuilder {
+	this.field.isVersioningKey = true
+	return this
+}
+
 func (this *FieldBuilder) IsRequired(isRequired bool) *FieldBuilder {
 	this.field.isRequiredCreate = isRequired
 	this.field.isRequiredUpdate = isRequired
@@ -195,18 +213,8 @@ func (this *FieldBuilder) IsRequiredForUpdate(isRequired bool) *FieldBuilder {
 	return this
 }
 
-func (this *FieldBuilder) IsAutoGenerated(isAutoGenerated bool) *FieldBuilder {
-	this.field.isAutoGenerated = isAutoGenerated
-	return this
-}
-
 func (this *FieldBuilder) IsReadOnly(isReadOnly bool) *FieldBuilder {
 	this.field.isReadOnly = isReadOnly
-	return this
-}
-
-func (this *FieldBuilder) AutoGenerated() *FieldBuilder {
-	this.field.isAutoGenerated = true
 	return this
 }
 
@@ -229,7 +237,7 @@ func (this *FieldBuilder) PrimaryKey() *FieldBuilder {
 	this.field.isPrimaryKey = true
 	this.RequiredForCreate()
 	this.RequiredForUpdate()
-	this.AutoGenerated()
+	this.ReadOnly()
 	return this
 }
 
@@ -254,7 +262,6 @@ func (this *FieldBuilder) Description(description model.LangJson) *FieldBuilder 
 
 func (this *FieldBuilder) DataType(dataType FieldDataType) *FieldBuilder {
 	this.field.dataType = dataType
-	this.field.isArray = dataType.IsArray()
 	return this
 }
 
@@ -265,9 +272,8 @@ func (this *FieldBuilder) Rule(rule FieldRule) *FieldBuilder {
 	return this
 }
 
-func (this *FieldBuilder) Default(value any) *FieldBuilder {
-	v := value
-	this.field.defaultValue = &v
+func (this *FieldBuilder) Default(val any) *FieldBuilder {
+	this.field.defaultValue = util.ToPtr(Value(val))
 	return this
 }
 
@@ -305,23 +311,23 @@ func (this *RelationBuilder) Label(label model.LangJson) *RelationBuilder {
 	return this
 }
 
-func (this *RelationBuilder) OneToOne(entityName string, destField string) *RelationBuilder {
+func (this *RelationBuilder) OneToOne(schemaName string, destField string) *RelationBuilder {
 	this.relation.RelationType = RelationTypeOneToOne
-	this.relation.DestEntityName = entityName
+	this.relation.DestSchemaName = schemaName
 	this.relation.DestField = destField
 	return this
 }
 
-func (this *RelationBuilder) OneToMany(entityName string, destField string) *RelationBuilder {
+func (this *RelationBuilder) OneToMany(schemaName string, destField string) *RelationBuilder {
 	this.relation.RelationType = RelationTypeOneToMany
-	this.relation.DestEntityName = entityName
+	this.relation.DestSchemaName = schemaName
 	this.relation.DestField = destField
 	return this
 }
 
-func (this *RelationBuilder) ManyToOne(entityName string, targetField string) *RelationBuilder {
+func (this *RelationBuilder) ManyToOne(schemaName string, targetField string) *RelationBuilder {
 	this.relation.RelationType = RelationTypeManyToOne
-	this.relation.DestEntityName = entityName
+	this.relation.DestSchemaName = schemaName
 	this.relation.DestField = targetField
 	return this
 }

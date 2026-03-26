@@ -1,8 +1,6 @@
 package user
 
 import (
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
@@ -10,13 +8,6 @@ import (
 func (this CreateUserCommand) ToDomainModel() *domain.User {
 	user := &domain.User{}
 	model.MustCopy(this, user)
-	return user
-}
-
-func (this CreateUserCommand) ToDynamicModel() *domain.UserEntity {
-	dEnt, err := dmodel.StructToDynamicEntity(this)
-	ft.PanicOnErr(err)
-	user := domain.NewUserEntityFrom(dEnt)
 	return user
 }
 

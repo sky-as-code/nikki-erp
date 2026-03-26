@@ -11,8 +11,7 @@ put {
 }
 
 body:json {
-  {
-      "displayName": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+  {    "display_name": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
       "email": "invalid@",
       "etag": "fake",
       "orgIds": [""]
@@ -42,4 +41,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

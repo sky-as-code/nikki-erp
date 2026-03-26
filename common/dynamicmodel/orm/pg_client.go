@@ -58,7 +58,7 @@ type pgTxClient struct {
 }
 
 // ErrTxNested is returned when BeginTx is called on a client already in a transaction.
-var ErrTxNested = errors.New("cannot start a transaction while in a transaction")
+var ErrTxNested = errors.New("pgClient: cannot start a transaction while in a transaction")
 
 func (this *pgTxClient) Exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	return this.tx.ExecContext(ctx, query, args...)

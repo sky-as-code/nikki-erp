@@ -147,7 +147,7 @@ func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData 
 ) error {
 	var request THttpReq
 	if err := echoCtx.Bind(&request); err != nil {
-		return err
+		return JsonBadRequest(echoCtx, []any{ft.NewAnonymousValidationError(ft.ErrorKey("err_malformed_request"), "malformed request")})
 	}
 
 	cmd := requestToCommandFn(request)

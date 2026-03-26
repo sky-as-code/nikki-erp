@@ -10,9 +10,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
-	entOrganization "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
+	entOrganization "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	entUser "github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
@@ -112,24 +112,24 @@ func (this *UserEntRepository) ExistsMulti(ctx crud.Context, ids []model.Id, org
 func (this *UserEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.User, error) {
 	query := this.userClient(ctx).Query().Where(entUser.ID(param.Id))
 
-	if param.WithGroup {
-		query = query.WithGroups()
-	}
+	// if param.WithGroup {
+	// 	query = query.WithGroups()
+	// }
 
-	if param.WithOrg {
-		query = query.WithOrgs()
-	}
+	// if param.WithOrg {
+	// 	query = query.WithOrgs()
+	// }
 
-	if param.WithHierarchy {
-		query = query.WithHierarchy()
-	}
+	// if param.WithHierarchy {
+	// 	query = query.WithHierarchy()
+	// }
 
-	if param.Status != nil {
-		query = query.Where(entUser.StatusEQ(string(*param.Status)))
-	}
-	if param.ScopeRef != nil {
-		query = query.Where(entUser.HasOrgsWith(entOrganization.IDEQ(*param.ScopeRef)))
-	}
+	// if param.Status != nil {
+	// 	query = query.Where(entUser.StatusEQ(string(*param.Status)))
+	// }
+	// if param.ScopeRef != nil {
+	// 	query = query.Where(entUser.HasOrgsWith(entOrganization.IDEQ(*param.ScopeRef)))
+	// }
 
 	return db.FindOne(ctx, query, ent.IsNotFound, entToUser)
 }

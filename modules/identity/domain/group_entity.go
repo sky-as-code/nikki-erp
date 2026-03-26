@@ -5,6 +5,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
 type Group struct {
@@ -39,17 +40,15 @@ func (this *Group) Validate(forEdit bool) ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(this, rules...)
 }
 
-func GroupSchemaBuilder() *dmodel.EntitySchemaBuilder {
-	return dmodel.DefineEntity("identity.group").
+func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel("identity.group").
 		Label(model.LangJson{"en-US": "User Group"}).
 		TableName("ident_groups").
-		Field(
-			dmodel.DefineField().
-				Name("id").
-				Label(model.LangJson{"en-US": "ID"}).
-				DataType(dmodel.FieldDataTypeModelId()).
-				PrimaryKey(),
-		).
+		ShouldBuildDb().
+		Extend(basemodel.BaseModelSchemaBuilder()).
+		Extend(basemodel.ArchivableModelSchemaBuilder()).
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().
 				Name("name").

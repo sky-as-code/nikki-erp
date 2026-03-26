@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/users/not-existing-1234567890123
+  url: {{api_host}}/v1/identity/users/01KMMNZ9M0EEF6JG6RMWWPSBKM
   body: none
   auth: inherit
 }
@@ -21,6 +21,10 @@ script:post-response {
           type: "object",
           required: ["key", "message", "type"],
           properties: {
+              field: {
+                  type: "string",
+                  enum: ["id"],
+              },
               key: {
                   type: "string",
                   enum: ["common.err_not_found_identity_user"],

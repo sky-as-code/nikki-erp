@@ -18,11 +18,11 @@ type UserHandler struct {
 	UserSvc it.UserService
 }
 
-func (this *UserHandler) Create(ctx context.Context, packet *cqrs.RequestPacket[it.CreateUserCommand2]) (*cqrs.Reply[it.CreateUserResult2], error) {
+func (this *UserHandler) Create(ctx context.Context, packet *cqrs.RequestPacket[it.CreateUserCommand]) (*cqrs.Reply[it.CreateUserResult], error) {
 	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.CreateUser)
 }
 
-func (this *UserHandler) Update(ctx context.Context, packet *cqrs.RequestPacket[it.UpdateUserCommand2]) (*cqrs.Reply[it.UpdateUserResult2], error) {
+func (this *UserHandler) Update(ctx context.Context, packet *cqrs.RequestPacket[it.UpdateUserCommand]) (*cqrs.Reply[it.UpdateUserResult], error) {
 	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.UpdateUser)
 }
 
@@ -30,9 +30,9 @@ func (this *UserHandler) Delete(ctx context.Context, packet *cqrs.RequestPacket[
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.DeleteUser)
 }
 
-func (this *UserHandler) GetUserById(ctx context.Context, packet *cqrs.RequestPacket[it.GetUser]) (*cqrs.Reply[it.GetUserByIdResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.GetUserById)
-}
+// func (this *UserHandler) GetUserById(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserQuery]) (*cqrs.Reply[it.GetUserByIdResult], error) {
+// 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.GetUserById)
+// }
 
 func (this *UserHandler) GetUserByEmail(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserByEmailQuery]) (*cqrs.Reply[it.GetUserByEmailResult], error) {
 	return cqrs.HandlePacket(ctx, packet, this.UserSvc.GetUserByEmail)

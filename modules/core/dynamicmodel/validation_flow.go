@@ -41,7 +41,7 @@ func (this *ValidationFlow) Step(fn func(vErrs *ft.ClientErrors) error, ignoreVa
 				this.err = err
 				return
 			}
-			this.err = errors.New(e)
+			this.err = errors.Errorf("ValidationFlow.Step: %v", e)
 		}
 	}()
 

@@ -51,7 +51,7 @@ func (*IdentityModule) Init() error {
 }
 
 // Init implements InCodeModule.
-func (this *IdentityModule) RegisterEntities() error {
+func (this *IdentityModule) RegisterModels() error {
 	return errors.Join(
 		dmodel.RegisterSchemaB(domain.UserSchemaBuilder()),
 		dmodel.RegisterSchemaB(domain.GroupSchemaBuilder()),

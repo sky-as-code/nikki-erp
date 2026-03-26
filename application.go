@@ -66,7 +66,7 @@ func (this *Application) GenSql(moduleName string, dialect string) string {
 		os.Exit(1)
 	}
 
-	err = dynamicModule.RegisterEntities()
+	err = dynamicModule.RegisterModels()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to register entities: %v\n", err)
 		os.Exit(1)
@@ -99,7 +99,7 @@ func (this *Application) initModules() error {
 		return err
 	}
 
-	if err := this.registerEntInOrder(moduleMap, depGraph); err != nil {
+	if err := this.registerModelInOrder(moduleMap, depGraph); err != nil {
 		return err
 	}
 
@@ -118,7 +118,7 @@ func (this *Application) registerEntities() error {
 		return err
 	}
 
-	return this.registerEntInOrder(moduleMap, depGraph)
+	return this.registerModelInOrder(moduleMap, depGraph)
 }
 
 func (this *Application) buildModuleMap() map[string]modules.InCodeModule {
@@ -189,12 +189,12 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 	return nil
 }
 
-func (this *Application) registerEntInOrder(moduleMap map[string]modules.InCodeModule, depGraph map[string][]string) error {
-	this.logger.Info("Start registering entities for modules", nil)
+func (this *Application) registerModelInOrder(moduleMap map[string]modules.InCodeModule, depGraph map[string][]string) error {
+	this.logger.Info("Start registering models for modules", nil)
 
 	initOrder, err := topologicalSort(depGraph)
 	if err != nil {
-		return errors.Wrap(err, "failed to determine entity registering order")
+		return errors.Wrap(err, "failed to determine model registering order")
 	}
 
 	initOrder = array.Prepend(initOrder, "core")
@@ -204,10 +204,10 @@ func (this *Application) registerEntInOrder(moduleMap map[string]modules.InCodeM
 		if !ok {
 			continue
 		}
-		if err := modWithDynamic.RegisterEntities(); err != nil {
+		if err := modWithDynamic.RegisterModels(); err != nil {
 			return err
 		}
-		this.logger.Infof("Registered entities for module %s", mod.Name())
+		this.logger.Infof("Registered models for module %s", mod.Name())
 	}
 
 	return nil

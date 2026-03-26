@@ -127,7 +127,8 @@ func ValidateLength(value any, minLen int, maxLen int) *ft.ClientErrorItem {
 func ValidateArrayLength(value any, opts any) *ft.ClientErrorItem {
 	arr, ok := opts.([]int)
 	if !ok || len(arr) < 2 {
-		panic(errors.New("invalid arrlength option: must be []int{min, max} with at least 2 elements"))
+		panic(errors.New(
+			"ValidateArrayLength: invalid arrlength option: must be []int{min, max} with at least 2 elements"))
 	}
 	minLen, maxLen := arr[0], arr[1]
 	rv := reflect.ValueOf(value)
@@ -146,7 +147,7 @@ func ValidateArrayLength(value any, opts any) *ft.ClientErrorItem {
 func ValidateOneOf(value any, opts any) *ft.ClientErrorItem {
 	values, ok := opts.([]any)
 	if !ok || len(values) == 0 {
-		panic(errors.New("invalid oneOf option: must be non-empty []any"))
+		panic(errors.New("ValidateOneOf: invalid oneOf option: must be non-empty []any"))
 	}
 	valRef := reflect.ValueOf(value)
 	for _, allowed := range values {
@@ -209,7 +210,7 @@ var uuidRegex = regexp.MustCompile(
 
 func ValidateUuid(value string) *ft.ClientErrorItem {
 	if !uuidRegex.MatchString(value) {
-		return ft.NewAnonymousValidationError("common.err_invalid_uuid", "must be a valid UUID", nil)
+		return ft.NewInvalidDataTypeError("")
 	}
 	return nil
 }
@@ -235,7 +236,7 @@ const (
 
 func toComparableThreshold(opts any) (float64, error) {
 	if opts == nil {
-		return 0, errors.New("threshold cannot be nil")
+		return 0, errors.New("toComparableThreshold: threshold cannot be nil")
 	}
 	switch v := opts.(type) {
 	case int:
@@ -247,13 +248,13 @@ func toComparableThreshold(opts any) (float64, error) {
 	case float32:
 		return float64(v), nil
 	default:
-		return 0, errors.Errorf("unsupported threshold type %T", opts)
+		return 0, errors.Errorf("toComparableThreshold: unsupported threshold type %T", opts)
 	}
 }
 
 func toComparableValue(value any) (float64, error) {
 	if value == nil {
-		return 0, errors.New("value cannot be nil")
+		return 0, errors.New("toComparableValue: value cannot be nil")
 	}
 	rv := reflect.ValueOf(value)
 	switch rv.Kind() {
@@ -264,7 +265,7 @@ func toComparableValue(value any) (float64, error) {
 	case reflect.Float32, reflect.Float64:
 		return rv.Float(), nil
 	default:
-		return 0, errors.Errorf("cannot compare type %T for max/min", value)
+		return 0, errors.Errorf("toComparableValue: cannot compare type %T for max/min", value)
 	}
 }
 
@@ -278,7 +279,7 @@ func isGreaterOrEqual(val float64, threshold float64) bool {
 
 func getLength(value any) (int, error) {
 	if value == nil {
-		return 0, errors.New("value cannot be nil")
+		return 0, errors.New("getLength: value cannot be nil")
 	}
 	rv := reflect.ValueOf(value)
 	switch rv.Kind() {
@@ -287,6 +288,6 @@ func getLength(value any) (int, error) {
 	case reflect.Slice, reflect.Map, reflect.Array:
 		return rv.Len(), nil
 	default:
-		return 0, errors.Errorf("length rule applies to strings and slices, got %T", value)
+		return 0, errors.Errorf("getLength: length rule applies to strings and slices, got %T", value)
 	}
 }

@@ -107,20 +107,20 @@ func NewAnonymousBusinessViolation(key string, message string, vars ...map[strin
 	}
 }
 
-func NewNotFoundError(entityName string) *ClientErrorItem {
-	codeName := strings.ReplaceAll(entityName, ".", "_")
+func NewNotFoundError(schemaName string) *ClientErrorItem {
+	codeName := strings.ReplaceAll(schemaName, ".", "_")
 	return NewAnonymousBusinessViolation(
 		fmt.Sprintf("common.err_not_found_%s", codeName),
-		fmt.Sprintf("%s not found", entityName),
+		fmt.Sprintf("%s not found", schemaName),
 	)
 }
 
-func NewEtagMismatchedError(entityName string) *ClientErrorItem {
-	codeName := strings.ReplaceAll(entityName, ".", "_")
+func NewEtagMismatchedError(schemaName string) *ClientErrorItem {
+	codeName := strings.ReplaceAll(schemaName, ".", "_")
 	return NewBusinessViolation(
 		"etag",
 		fmt.Sprintf("common.err_etag_mismatched_%s", codeName),
-		fmt.Sprintf("%s was modified by another process", entityName),
+		fmt.Sprintf("%s was modified by another process", schemaName),
 	)
 }
 
@@ -137,6 +137,14 @@ func NewValidationError(field string, key string, message string, vars ...map[st
 		Vars:    msgVars,
 		Type:    ClientErrorTypeValidation,
 	}
+}
+
+func NewInvalidDataTypeError(field string) *ClientErrorItem {
+	return NewValidationError(
+		field,
+		ErrorKey("err_invalid_data_type"),
+		"invalid data type",
+	)
 }
 
 func NewAnonymousValidationError(key string, message string, vars ...map[string]any) *ClientErrorItem {

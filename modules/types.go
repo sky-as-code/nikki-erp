@@ -47,7 +47,7 @@ type DynamicModule interface {
 	LabelKey() string
 	Name() string
 	Init() error
-	RegisterEntities() error
+	RegisterModels() error
 	Version() semver.SemVer
 }
 

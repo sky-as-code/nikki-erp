@@ -13,19 +13,22 @@ const (
 
 func GenCreateSql(registry *model.SchemaRegistry, dialect string) ([]string, error) {
 	if registry == nil {
-		return nil, errors.New("schema registry is required")
+		return nil, errors.New("GenCreateSql: schema registry is required")
 	}
 	if dialect != DialectPostgres {
-		return nil, errors.Errorf("dialect '%s' is not supported", dialect)
+		return nil, errors.Errorf("GenCreateSql: dialect '%s' is not supported", dialect)
 	}
 	builder := &PgQueryBuilder{}
 	var results []string
 	err := registry.ForEachOrder(func(schemaName string, s *model.ModelSchema) error {
-		sql, genErr := builder.SqlCreateTable(s, registry)
+		sqlRes, genErr := builder.SqlCreateTable(s, registry)
 		if genErr != nil {
-			return errors.Wrapf(genErr, "schema '%s'", schemaName)
+			return errors.Wrapf(genErr, "GenCreateSql: schema '%s'", schemaName)
 		}
-		results = append(results, sql)
+		if len(sqlRes.ClientErrors) > 0 {
+			return errors.Errorf("GenCreateSql: schema '%s': %v", schemaName, sqlRes.ClientErrors)
+		}
+		results = append(results, sqlRes.Data)
 		return nil
 	})
 	if err != nil {
@@ -40,12 +43,12 @@ func isFkOwnerRelationType(relType model.RelationType) bool {
 
 func ValidateRelations(registry *model.SchemaRegistry) error {
 	if registry == nil {
-		return errors.New("schema registry is required")
+		return errors.New("ValidateRelations: schema registry is required")
 	}
 	err := registry.ForEach(func(schemaName string, s *model.ModelSchema) error {
 		for _, relation := range s.Relations() {
 			if err := validateRelation(registry, schemaName, relation); err != nil {
-				return errors.Wrapf(err, "schema '%s' relation '%s'", schemaName, relation.Edge)
+				return errors.Wrapf(err, "ValidateRelations: schema '%s' relation '%s'", schemaName, relation.Edge)
 			}
 		}
 		return nil
@@ -81,19 +84,19 @@ func validateRelationInput(
 	relation model.ModelRelation,
 ) error {
 	if registry == nil {
-		return errors.New("schema registry is required")
+		return errors.New("validateRelationInput: schema registry is required")
 	}
 	if schemaName == "" {
-		return errors.New("schema name is required")
+		return errors.New("validateRelationInput: schema name is required")
 	}
 	if registry.Get(schemaName) == nil {
-		return errors.Errorf("schema '%s' not found in registry", schemaName)
+		return errors.Errorf("validateRelationInput: schema '%s' not found in registry", schemaName)
 	}
-	if relation.DestEntityName == "" {
-		return errors.New("relation destination schema name is required")
+	if relation.DestSchemaName == "" {
+		return errors.New("validateRelationInput: relation destination schema name is required")
 	}
 	if relation.SrcField == "" || relation.DestField == "" {
-		return errors.New("relation source field and destination field are required")
+		return errors.New("validateRelationInput: relation source field and destination field are required")
 	}
 	return nil
 }
@@ -106,17 +109,19 @@ func resolveRelationFields(
 	sourceField, ok := sourceSchema.Field(relation.SrcField)
 	if !ok {
 		return nil, nil, errors.Errorf(
-			"source field '%s' does not exist in schema '%s'", relation.SrcField, sourceSchema.Name())
+			"resolveRelationFields: source field '%s' does not exist in schema '%s'",
+			relation.SrcField, sourceSchema.Name())
 	}
-	foreignSchema := registry.Get(relation.DestEntityName)
+	foreignSchema := registry.Get(relation.DestSchemaName)
 	if foreignSchema == nil {
 		return nil, nil, errors.Errorf(
-			"referenced schema '%s' not found in registry", relation.DestEntityName)
+			"resolveRelationFields: referenced schema '%s' not found in registry", relation.DestSchemaName)
 	}
 	foreignField, ok := foreignSchema.Field(relation.DestField)
 	if !ok {
 		return nil, nil, errors.Errorf(
-			"referenced field '%s' does not exist in schema '%s'", relation.DestField, relation.DestEntityName)
+			"resolveRelationFields: referenced field '%s' does not exist in schema '%s'",
+			relation.DestField, relation.DestSchemaName)
 	}
 	return sourceField, foreignField, nil
 }
@@ -128,7 +133,8 @@ func validateFieldDataTypeMatch(
 	foreignType := foreignField.DataType().String()
 	if sourceType != foreignType {
 		return errors.Errorf(
-			"relation '%s': source field '%s' has type '%s' but destination field '%s' has type '%s'",
+			"validateFieldDataTypeMatch: relation '%s': source field '%s' has type '%s' but "+
+				"destination field '%s' has type '%s'",
 			relation.Edge, relation.SrcField, sourceType, relation.DestField, foreignType)
 	}
 	return nil
@@ -139,12 +145,14 @@ func validateFieldArrayMatchRelationType(relation model.ModelRelation, sourceFie
 	case model.RelationTypeOneToMany:
 		if !sourceField.IsArray() {
 			return errors.Errorf(
-				"relation '%s' expects array source field for type '%s'", relation.Edge, relation.RelationType)
+				"validateFieldArrayMatchRelationType: relation '%s' expects array source field for type '%s'",
+				relation.Edge, relation.RelationType)
 		}
 	case model.RelationTypeOneToOne, model.RelationTypeManyToOne:
 		if sourceField.IsArray() {
 			return errors.Errorf(
-				"relation '%s' expects non-array source field for type '%s'", relation.Edge, relation.RelationType)
+				"validateFieldArrayMatchRelationType: relation '%s' expects non-array source field for type '%s'",
+				relation.Edge, relation.RelationType)
 		}
 	}
 	return nil

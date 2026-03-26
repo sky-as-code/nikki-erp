@@ -401,7 +401,7 @@ func (this *RevokeRequestServiceImpl) populateRevokeRequestDetails(ctx crud.Cont
 func (this *RevokeRequestServiceImpl) getUserDisplayName(ctx crud.Context, id model.Id, entityType string, vErrs *fault.ValidationErrors) (*string, error) {
 	switch entityType {
 	case "user":
-		cmd := &itUser.GetUser{Id: id}
+		cmd := &itUser.GetUserQuery{Id: id}
 		res := itUser.GetUserByIdResult{}
 		err := this.cqrsBus.Request(ctx, *cmd, &res)
 		fault.PanicOnErr(err)

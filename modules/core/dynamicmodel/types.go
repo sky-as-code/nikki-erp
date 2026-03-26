@@ -25,7 +25,7 @@ type GetOneParam struct {
 }
 
 type SearchParam struct {
-	Graph           dmodel.SearchGraph
+	Graph           *dmodel.SearchGraph
 	Columns         []string
 	Filter          []dmodel.DynamicFields
 	IncludeArchived bool

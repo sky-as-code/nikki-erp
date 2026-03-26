@@ -38,7 +38,7 @@ type UserRepository2 interface {
 type DeleteParam = DeleteUserCommand
 type ExistsParam = UserExistsQuery
 type ExistsMultiParam = UserExistsMultiQuery
-type FindByIdParam = GetUser
+type FindByIdParam = GetUserQuery
 type FindByEmailParam = GetUserByEmailQuery
 type FindByHierarchyIdParam struct {
 	HierarchyId model.Id

@@ -33,12 +33,12 @@ func (this *SchemaRegistry) Get(name string) *ModelSchema {
 func (this *SchemaRegistry) FieldSafe(schemaName string, fieldName string) (*ModelField, error) {
 	schema := this.Get(schemaName)
 	if schema == nil {
-		return nil, errors.Errorf("schema '%s' not found", schemaName)
+		return nil, errors.Errorf("FieldSafe: schema '%s' not found", schemaName)
 	}
 
 	field, ok := schema.Field(fieldName)
 	if !ok {
-		return nil, errors.Errorf("field '%s' not found in schema '%s'", fieldName, schemaName)
+		return nil, errors.Errorf("FieldSafe: field '%s' not found in schema '%s'", fieldName, schemaName)
 	}
 
 	return field, nil
@@ -52,11 +52,11 @@ func (this *SchemaRegistry) Field(schemaName string, fieldName string) *ModelFie
 	return field
 }
 
-// RegisterSchemaB executes the schemaBuilder then registers a schema using its name (set via EntitySchemaBuilder.Name) as the registry key.
+// RegisterSchemaB executes the schemaBuilder then registers a schema using its name (set via ModelSchemaBuilder.Name) as the registry key.
 // Returns an error if a schema with the same name is already registered.
-func RegisterSchemaB(schemaBuilder *EntitySchemaBuilder) error {
+func RegisterSchemaB(schemaBuilder *ModelSchemaBuilder) error {
 	if schemaBuilder == nil {
-		return errors.New("schemaBuilder cannot be nil")
+		return errors.New("RegisterSchemaB: schemaBuilder cannot be nil")
 	}
 
 	return RegisterSchema(schemaBuilder.Build())
@@ -67,14 +67,14 @@ func RegisterSchemaB(schemaBuilder *EntitySchemaBuilder) error {
 func RegisterSchema(schema *ModelSchema) error {
 	name := schema.Name()
 	if name == "" {
-		return errors.New("schema name must not be empty")
+		return errors.New("RegisterSchema: schema name must not be empty")
 	}
 
 	schemaRegistry.mu.Lock()
 	defer schemaRegistry.mu.Unlock()
 
 	if _, exists := schemaRegistry.schemas[name]; exists {
-		return errors.Errorf("schema '%s' already registered", name)
+		return errors.Errorf("RegisterSchema: schema '%s' already registered", name)
 	}
 
 	schemaRegistry.schemas[name] = schema
@@ -115,7 +115,7 @@ func GetSchema(name string) *ModelSchema {
 func MustGetSchema(name string) *ModelSchema {
 	schema := schemaRegistry.Get(name)
 	if schema == nil {
-		panic(errors.Errorf("schema '%s' not found", name))
+		panic(errors.Errorf("MustGetSchema: schema '%s' not found", name))
 	}
 	return schema
 }
@@ -136,19 +136,19 @@ func GetSchemaRegistry() *SchemaRegistry {
 	return schemaRegistry
 }
 
-func CloneField(schema *ModelSchema, fieldName string) *FieldBuilder {
+func CopyField(schema *ModelSchema, fieldName string) *FieldBuilder {
 	field := schema.MustField(fieldName)
-	clonedField := field.Clone()
+	copiedField := field.Copy()
 	return &FieldBuilder{
-		field: clonedField,
+		field: copiedField,
 	}
 }
 
-func CloneFieldN(schemaName string, fieldName string) *FieldBuilder {
+func CopyFieldN(schemaName string, fieldName string) *FieldBuilder {
 	field := schemaRegistry.Field(schemaName, fieldName)
-	clonedField := field.Clone()
+	copiedField := field.Copy()
 	return &FieldBuilder{
-		field: clonedField,
+		field: copiedField,
 	}
 }
 
@@ -201,15 +201,15 @@ func buildDepGraph(
 func fkDependencies(s *ModelSchema, known map[string]bool) []string {
 	var deps []string
 	for _, rel := range s.relations {
-		if isFkOwnerRelation(rel.RelationType) && known[rel.DestEntityName] {
-			deps = append(deps, rel.DestEntityName)
+		if isFkOwnerRelation(rel.RelationType) && known[rel.DestSchemaName] {
+			deps = append(deps, rel.DestSchemaName)
 		}
 	}
 	return deps
 }
 
 // isFkOwnerRelation reports whether the given relation type places the FK column
-// on the current entity's table (many:one and one:one), as opposed to one:many
+// on the current schema's table (many:one and one:one), as opposed to one:many
 // (FK lives on the other table) or many:many (FK lives in a junction table).
 func isFkOwnerRelation(relType RelationType) bool {
 	return relType == RelationTypeManyToOne || relType == RelationTypeOneToOne

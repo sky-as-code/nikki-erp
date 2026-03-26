@@ -169,7 +169,8 @@ func (this *SearchGraph) validate() error {
 		setCount++
 	}
 	if setCount > 1 {
-		return errors.New("SearchGraph: condition, and, or are mutually exclusive; at most one may be set")
+		return errors.New(
+			"SearchGraph.validate: condition, and, or are mutually exclusive; at most one may be set")
 	}
 	return nil
 }
@@ -206,6 +207,10 @@ func (this *SearchGraph) UnmarshalJSON(data []byte) error {
 	this.or = raw.Or
 	this.order = raw.Order
 	return this.validate()
+}
+
+func (this *SearchGraph) UnmarshalText(text []byte) error {
+	return this.UnmarshalJSON(text)
 }
 
 func (this *SearchGraph) GetCondition() *Condition {
@@ -266,7 +271,8 @@ func (this *SearchNode) validate() error {
 		setCount++
 	}
 	if setCount > 1 {
-		return errors.New("SearchNode: condition, and, or are mutually exclusive; at most one may be set")
+		return errors.New(
+			"SearchNode.validate: condition, and, or are mutually exclusive; at most one may be set")
 	}
 	return nil
 }
@@ -322,17 +328,19 @@ func populateDbMetadata(schema *ModelSchema) error {
 	if err != nil {
 		return err
 	}
-	schemaUnique, err := validateAndCollectEntityUnique(schema, columnSet)
+	schemaUnique, err := validateAndCollectUniques(schema, columnSet)
 	if err != nil {
 		return err
 	}
 	if len(primaryKeys) == 0 {
-		return errors.Errorf("entity '%s' must define at least one primary key column", name)
+		return errors.Errorf("populateDbMetadata: model '%s' must define at least one primary key column", name)
 	}
-	schema.primaryKeys = primaryKeys
+	schema.primaryKeys = append([]string{}, primaryKeys...)
 	schema.allUniqueKeys = append(fieldUnique, schemaUnique...)
 	if tenantKey != "" {
 		schema.tenantKey = &tenantKey
+	} else {
+		schema.tenantKey = nil
 	}
 	return nil
 }
@@ -340,7 +348,7 @@ func populateDbMetadata(schema *ModelSchema) error {
 func requireName(raw string) (string, error) {
 	name := strings.TrimSpace(raw)
 	if name == "" {
-		return "", errors.New("entity schema name is required")
+		return "", errors.New("requireName: model schema name is required")
 	}
 	return name, nil
 }
@@ -348,7 +356,7 @@ func requireName(raw string) (string, error) {
 func buildDbMetadata(
 	fields map[string]*ModelField,
 	fieldsOrder []string,
-	entityName string,
+	schemaName string,
 ) (columnSet map[string]struct{}, primary []string, tenant string, uniques [][]string, err error) {
 	columnSet = make(map[string]struct{}, len(fields))
 	uniques = make([][]string, 0)
@@ -359,7 +367,10 @@ func buildDbMetadata(
 			continue
 		}
 		if err := validateFieldName(field); err != nil {
-			return nil, nil, "", nil, errors.Wrapf(err, "entity '%s'", entityName)
+			return nil, nil, "", nil, errors.Wrapf(err, "buildDbMetadata: model '%s'", schemaName)
+		}
+		if field.IsVirtualModelField() {
+			continue
 		}
 		columnName := field.Name()
 		columnSet[columnName] = struct{}{}
@@ -373,8 +384,8 @@ func buildDbMetadata(
 		if field.IsTenantKey() {
 			if tenant != "" && tenant != columnName {
 				return nil, nil, "", nil, errors.Errorf(
-					"entity '%s': field '%s' must not be a tenant key because '%s' is already one",
-					entityName, columnName, tenant)
+					"buildDbMetadata: model '%s': field '%s' must not be a tenant key because '%s' is already one",
+					schemaName, columnName, tenant)
 			}
 			tenant = columnName
 		}
@@ -382,7 +393,7 @@ func buildDbMetadata(
 	return columnSet, primary, tenant, uniques, nil
 }
 
-func validateAndCollectEntityUnique(
+func validateAndCollectUniques(
 	schema *ModelSchema,
 	columnSet map[string]struct{},
 ) ([][]string, error) {
@@ -400,7 +411,8 @@ func validateAndCollectEntityUnique(
 			}
 			if _, ok := columnSet[trimmed]; !ok {
 				return nil, errors.Errorf(
-					"entity '%s': unknown column reference '%s' in unique constraint", schema.Name(), trimmed)
+					"validateAndCollectUniques: model '%s': unknown column reference '%s' in unique constraint",
+					schema.Name(), trimmed)
 			}
 			validated = append(validated, trimmed)
 		}

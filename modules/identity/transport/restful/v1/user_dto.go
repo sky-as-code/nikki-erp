@@ -50,7 +50,7 @@ func (this *UserDto) FromUser(user domain.User) {
 	})
 }
 
-type CreateUserRequest = it.CreateUserCommand2
+type CreateUserRequest = it.CreateUserCommand
 type CreateUserResponse = httpserver.RestCreateResponse
 
 type UpdateUserRequest = it.UpdateUserCommand
@@ -59,8 +59,8 @@ type UpdateUserResponse = httpserver.RestUpdateResponse
 type DeleteUserRequest = it.DeleteUserCommand
 type DeleteUserResponse = httpserver.RestDeleteResponse
 
-type GetUserByIdRequest = it.GetUser
-type GetUserByIdResponse = UserDto
+type GetUserRequest = it.GetUserQuery
+type GetUserResponse = dmodel.DynamicFields
 
 type GetUserContextRequest = it.GetUserContextQuery
 type GetUserContextResponse = it.GetUserContextResult
@@ -113,9 +113,6 @@ type SearchUsers2Response struct {
 // 	}
 // 	return SearchUsers2Response{Items: dtos, Total: len(dtos)}
 // }
-
-type UpdateUser2Request = it.UpdateUserCommand2
-type UpdateUser2Response = httpserver.RestUpdateResponse
 
 type SearchUsers2Request = it.SearchUsersQuery2
 

@@ -11,22 +11,23 @@ const (
 	FieldCreatedAt       = "created_at"
 	FieldColumns         = "columns"
 	FieldIncludeArchived = "include_archived"
+	FieldGraph           = "graph"
 	FieldPage            = "page"
 	FieldSize            = "size"
 	FieldUpdatedAt       = "updated_at"
 	FieldEtag            = "etag"
 )
 
-var baseBuilder *dmodel.EntitySchemaBuilder
+var baseBuilder *dmodel.ModelSchemaBuilder
 
-func BaseModelSchemaBuilder() *dmodel.EntitySchemaBuilder {
+func BaseModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	if baseBuilder == nil {
-		baseBuilder = dmodel.DefineEntity("core.base_model").
+		baseBuilder = dmodel.DefineModel("core.basemodel.base_model").
 			Field(
 				dmodel.DefineField().
 					Name(FieldId).
 					Label(model.LangJson{"en-US": "ID"}).
-					DataType(dmodel.FieldDataTypeModelId()).
+					DataType(dmodel.FieldDataTypeUlid()).
 					PrimaryKey().
 					DefaultFn(func() any {
 						id, err := model.NewId()
@@ -40,8 +41,8 @@ func BaseModelSchemaBuilder() *dmodel.EntitySchemaBuilder {
 	return baseBuilder
 }
 
-func ArchivableModelSchemaBuilder() *dmodel.EntitySchemaBuilder {
-	return dmodel.DefineEntity("core.basemodel.archivable_model").
+func ArchivableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel("core.basemodel.archivable_model").
 		Field(
 			dmodel.DefineField().
 				Name(FieldArchivedAt).
@@ -50,38 +51,8 @@ func ArchivableModelSchemaBuilder() *dmodel.EntitySchemaBuilder {
 		)
 }
 
-func GetOneQuerySchemaBuilder() *dmodel.EntitySchemaBuilder {
-	return dmodel.DefineEntity("core.basemodel.get_one_query").
-		Field(dmodel.DefineField().
-			Name(FieldIncludeArchived).
-			DataType(dmodel.FieldDataTypeBoolean()).
-			Default(false)).
-		Field(dmodel.DefineField().
-			Name(FieldColumns).
-			DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_COL_LENGTH_MIN, model.MODEL_RULE_COL_LENGTH_MAX).ArrayType()))
-}
-
-func SearchQuerySchemaBuilder() *dmodel.EntitySchemaBuilder {
-	return dmodel.DefineEntity("core.basemodel.get_one_query").
-		Field(dmodel.DefineField().
-			Name(FieldIncludeArchived).
-			DataType(dmodel.FieldDataTypeBoolean()).
-			Default(false)).
-		Field(dmodel.DefineField().
-			Name(FieldColumns).
-			DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_COL_LENGTH_MIN, model.MODEL_RULE_COL_LENGTH_MAX).ArrayType())).
-		Field(dmodel.DefineField().
-			Name(FieldPage).
-			DataType(dmodel.FieldDataTypeInteger()).
-			Default(model.MODEL_RULE_PAGE_INDEX_START)).
-		Field(dmodel.DefineField().
-			Name(FieldSize).
-			DataType(dmodel.FieldDataTypeInteger()).
-			Default(model.MODEL_RULE_PAGE_DEFAULT_SIZE))
-}
-
-func AuditableModelSchemaBuilder() *dmodel.EntitySchemaBuilder {
-	return dmodel.DefineEntity("core.basemodel.auditable_model").
+func AuditableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel("core.basemodel.auditable_model").
 		Field(
 			dmodel.DefineField().
 				Name(FieldCreatedAt).
@@ -97,18 +68,19 @@ func AuditableModelSchemaBuilder() *dmodel.EntitySchemaBuilder {
 		)
 }
 
-func VersionedModelSchemaBuilder() *dmodel.EntitySchemaBuilder {
-	return dmodel.DefineEntity("core.basemodel.versioned_model").
+func VersionedModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel("core.basemodel.versioned_model").
 		Field(
 			dmodel.DefineField().
 				Name(FieldEtag).
 				DataType(dmodel.FieldDataTypeEtag()).
+				VersioningKey().
 				RequiredForCreate().
 				RequiredForUpdate().
 				ReadOnly(),
 		)
 }
 
-func SetBaseModelSchemaBuilder(builder *dmodel.EntitySchemaBuilder) {
+func SetBaseModelSchemaBuilder(builder *dmodel.ModelSchemaBuilder) {
 	baseBuilder = builder
 }

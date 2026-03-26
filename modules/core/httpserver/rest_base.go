@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/modelmapper"
@@ -39,9 +40,9 @@ type RestArchivedResponse struct {
 	Etag       model.Etag `json:"etag"`
 }
 
-func NewRestCreateResponseFrom(src any) *RestCreateResponse {
+func NewRestCreateResponseM(fields dmodel.DynamicFields) *RestCreateResponse {
 	response := &RestCreateResponse{}
-	err := modelmapper.CopyPtr(src, response)
+	err := modelmapper.MapToStruct(fields, response)
 	ft.PanicOnErr(err)
 	return response
 }

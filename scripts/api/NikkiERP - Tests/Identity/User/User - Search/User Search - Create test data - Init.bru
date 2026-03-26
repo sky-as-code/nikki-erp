@@ -12,7 +12,7 @@ post {
 
 body:json {
   {
-      "displayName": "Tester Lead {{$randomFirstName}}",
+      "display_name": "Tester Lead {{$randomFirstName}}",
       "email": "{{$randomEmail}}"
   }
 }
@@ -105,4 +105,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

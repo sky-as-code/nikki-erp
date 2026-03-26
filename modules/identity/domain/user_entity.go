@@ -96,11 +96,12 @@ const (
 	UserFieldStatus      = "status"
 )
 
-func UserSchemaBuilder() *dmodel.EntitySchemaBuilder {
-	return dmodel.DefineEntity(UserSchemaName).
+func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(UserSchemaName).
 		Label(model.LangJson{"en-US": "User"}).
 		TableName("ident_users").
 		CompositeUnique("email", "display_name").
+		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
@@ -142,18 +143,18 @@ func UserSchemaBuilder() *dmodel.EntitySchemaBuilder {
 				Label(model.LangJson{"en-US": "Is Owner"}).
 				DataType(dmodel.FieldDataTypeBoolean()).
 				Default(nil),
-		).
-		Field(
-			dmodel.DefineField().
-				Name("group_id").
-				DataType(dmodel.FieldDataTypeModelId()).
-				Foreign(
-					dmodel.Edge("group").
-						Label(model.LangJson{"en-US": "Group"}).
-						ManyToOne("identity.group", "id").
-						OnDelete(dmodel.RelationCascadeSetNull),
-				),
 		)
+	// Field(
+	// 	dmodel.DefineField().
+	// 		Name("group_id").
+	// 		DataType(dmodel.FieldDataTypeUlid()).
+	// 		Foreign(
+	// 			dmodel.Edge("group").
+	// 				Label(model.LangJson{"en-US": "Group"}).
+	// 				ManyToOne("identity.group", "id").
+	// 				OnDelete(dmodel.RelationCascadeSetNull),
+	// 		),
+	// )
 
 }
 

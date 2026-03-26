@@ -14,7 +14,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
@@ -70,10 +69,10 @@ func (this *UserServiceImpl) GetUserContext(ctx crud.Context, query it.GetUserCo
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
-			dbUser, err = this.getUserByIdFull(ctx, it.GetUser{
-				Id:            query.UserId,
-				WithOrg:       true,
-				WithHierarchy: true,
+			dbUser, err = this.getUserByIdFull(ctx, it.GetUserQuery{
+				Id: query.UserId,
+				// WithOrg:       true,
+				// WithHierarchy: true,
 			}, vErrs)
 			ft.PanicOnErr(err)
 			return nil
@@ -99,7 +98,7 @@ func (this *UserServiceImpl) GetUserContext(ctx crud.Context, query it.GetUserCo
 	}, nil
 }
 
-func (this *UserServiceImpl) CreateUser(ctx corectx.Context, cmd it.CreateUserCommand2) (*it.CreateUserResult2, error) {
+func (this *UserServiceImpl) CreateUser(ctx corectx.Context, cmd it.CreateUserCommand) (*it.CreateUserResult, error) {
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.UserEntity, *domain.UserEntity]{
 		Action:         "create user",
 		BaseRepoGetter: this.userRepo2,
@@ -112,7 +111,7 @@ func (this *UserServiceImpl) CreateUser(ctx corectx.Context, cmd it.CreateUserCo
 	})
 }
 
-func (this *UserServiceImpl) UpdateUser(ctx corectx.Context, cmd it.UpdateUserCommand2) (*it.UpdateUserResult2, error) {
+func (this *UserServiceImpl) UpdateUser(ctx corectx.Context, cmd it.UpdateUserCommand) (*it.UpdateUserResult, error) {
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.UserEntity, *domain.UserEntity]{
 		Action:       "update user",
 		DbRepoGetter: this.userRepo2,
@@ -121,7 +120,7 @@ func (this *UserServiceImpl) UpdateUser(ctx corectx.Context, cmd it.UpdateUserCo
 }
 
 func (this *UserServiceImpl) GetOne(
-	ctx corectx.Context, query it.GetUser,
+	ctx corectx.Context, query it.GetUserQuery,
 ) (*it.GetUserResult, error) {
 	return corecrud.GetOne[domain.UserEntity](ctx, this.userRepo2, query)
 }
@@ -129,7 +128,7 @@ func (this *UserServiceImpl) GetOne(
 func (this *UserServiceImpl) SearchUsers2(
 	ctx corectx.Context, query it.SearchUsersQuery2,
 ) (*it.SearchUsersResult2, error) {
-	return corecrud.Search[domain.UserEntity](ctx, this.userRepo2, coredyn.SearchParam{Graph: query.Graph})
+	return corecrud.Search[domain.UserEntity](ctx, this.userRepo2, query)
 }
 
 func (this *UserServiceImpl) sanitizeUser(user *domain.User) {
@@ -173,8 +172,8 @@ func (this *UserServiceImpl) assertUserUnique(ctx crud.Context, user *domain.Use
 
 func (this *UserServiceImpl) assertUserIdExists(ctx crud.Context, user *domain.User, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {
 	dbUser, err = this.userRepo.FindById(ctx, it.FindByIdParam{
-		Id:       *user.Id,
-		ScopeRef: user.ScopeRef,
+		Id: *user.Id,
+		// ScopeRef: user.ScopeRef,
 	})
 	if dbUser == nil {
 		vErrs.AppendNotFound("id", "user id")
@@ -242,28 +241,28 @@ func (this *UserServiceImpl) ExistsMulti(ctx crud.Context, query it.UserExistsMu
 	}, nil
 }
 
-func (this *UserServiceImpl) GetUserById(ctx crud.Context, query it.GetUser) (*it.GetUserByIdResult, error) {
-	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.User, it.GetUser, it.GetUserByIdResult]{
-		Action:      "get user by Id",
-		Query:       query,
-		RepoFindOne: this.getUserByIdFull,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.GetUserByIdResult {
-			return &it.GetUserByIdResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.User) *it.GetUserByIdResult {
-			return &it.GetUserByIdResult{
-				Data:    model,
-				HasData: model != nil,
-			}
-		},
-	})
+// func (this *UserServiceImpl) GetUserById(ctx crud.Context, query it.GetUserQuery) (*it.GetUserByIdResult, error) {
+// 	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.User, it.GetUserQuery, it.GetUserByIdResult]{
+// 		Action:      "get user by Id",
+// 		Query:       query,
+// 		RepoFindOne: this.getUserByIdFull,
+// 		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.GetUserByIdResult {
+// 			return &it.GetUserByIdResult{
+// 				ClientError: vErrs.ToClientError(),
+// 			}
+// 		},
+// 		ToSuccessResult: func(model *domain.User) *it.GetUserByIdResult {
+// 			return &it.GetUserByIdResult{
+// 				Data:    model,
+// 				HasData: model != nil,
+// 			}
+// 		},
+// 	})
 
-	return result, err
-}
+// 	return result, err
+// }
 
-func (this *UserServiceImpl) getUserByIdFull(ctx crud.Context, query it.GetUser, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {
+func (this *UserServiceImpl) getUserByIdFull(ctx crud.Context, query it.GetUserQuery, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {
 	dbUser, err = this.userRepo.FindById(ctx, query)
 	if dbUser == nil {
 		vErrs.AppendNotFound("id", "user id")

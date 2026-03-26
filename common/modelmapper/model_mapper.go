@@ -11,10 +11,7 @@ import (
 const mapperTag = "mapper"
 const tagOmit = "-"
 
-// converterRegistry stores custom field converters indexed by (srcType → destType).
 var converterRegistry = make(map[reflect.Type]map[reflect.Type]Converter)
-
-// mapType is the canonical reflect.Type for map[string]any.
 var mapType = reflect.TypeOf((*map[string]any)(nil)).Elem()
 
 type fieldPair struct {
@@ -24,370 +21,502 @@ type fieldPair struct {
 
 type Converter func(in reflect.Value) (reflect.Value, error)
 
-// AddConversion registers a custom converter used by Copy when no automatic rule applies.
-// When both TSrcField and TDestField are non-pointer base types, all three pointer
-// variants (*Src→Dest, Src→*Dest, *Src→*Dest) are automatically registered as well.
-func AddConversion[TSrcField any, TDestField any](converter Converter) {
+// AddConversion registers a custom converter used by MapToStruct,
+// StructToMap and StructToStruct when no automatic rule applies. When
+// both TSrcField and TDestField are non-pointer base types, all three
+// pointer variants (*Src->Dest, Src->*Dest, *Src->*Dest) are
+// automatically registered as well.
+func AddConversion[TSrcField any, TDestField any](
+	converter Converter,
+) {
 	srcType := reflect.TypeOf((*TSrcField)(nil)).Elem()
 	destType := reflect.TypeOf((*TDestField)(nil)).Elem()
 	storeConverter(srcType, destType, converter)
-	if srcType.Kind() == reflect.Ptr || destType.Kind() == reflect.Ptr {
+	if srcType.Kind() == reflect.Ptr ||
+		destType.Kind() == reflect.Ptr {
 		return
 	}
-	srcPtr, destPtr := reflect.PointerTo(srcType), reflect.PointerTo(destType)
-	storeConverter(srcPtr, destType, synthesizePointerConverter(srcPtr, destType, destType, converter))
-	storeConverter(srcType, destPtr, synthesizePointerConverter(srcType, destPtr, destType, converter))
-	storeConverter(srcPtr, destPtr, synthesizePointerConverter(srcPtr, destPtr, destType, converter))
+	srcPtr := reflect.PointerTo(srcType)
+	destPtr := reflect.PointerTo(destType)
+	storeConverter(srcPtr, destType,
+		synthesizePtrConv(srcPtr, destType, destType, converter))
+	storeConverter(srcType, destPtr,
+		synthesizePtrConv(srcType, destPtr, destType, converter))
+	storeConverter(srcPtr, destPtr,
+		synthesizePtrConv(srcPtr, destPtr, destType, converter))
 }
 
-func storeConverter(srcType, destType reflect.Type, conv Converter) {
-	if _, ok := converterRegistry[srcType]; !ok {
-		converterRegistry[srcType] = make(map[reflect.Type]Converter)
-	}
-	converterRegistry[srcType][destType] = conv
-}
-
-// Copy copies all exported fields from src into a new TDest value, returning
-// joined errors for every field that could not be mapped. TDest must be a pointer
-// type or a map-based type (convertible to map[string]any). src may be a pointer,
-// a plain struct, or any map-based type. A nil pointer src returns a zero TDest.
-// Fields tagged `mapper:"-"` are skipped.
-func Copy[TDest any](src any) (TDest, error) {
-	var dest TDest
-	err := CopyPtr(src, &dest)
-	return dest, err
-}
-
-func CopyPtr[TDest any](src any, dest *TDest) error {
-	if dest == nil {
-		return errors.New("CopyPtr: dest must not be nil")
-	}
-	destType := reflect.TypeOf((*TDest)(nil)).Elem()
-	srcVal := reflect.ValueOf(src)
-	if srcVal.IsValid() && isMapBased(srcVal.Type()) {
-		return copyMapInto(srcVal, destType, dest)
-	}
-	ptrDestType, err := requirePtrDest[TDest]()
-	if err != nil {
-		return err
-	}
-	srcResolved, valid, err := resolveSrcToStruct(src)
-	if err != nil {
-		return err
-	}
-	if !valid {
+// MapToStruct copies values from src map into dest struct fields
+// matched by "json" tags. dest must be a non-nil pointer to a struct.
+func MapToStruct(src map[string]any, dest any) error {
+	if src == nil {
 		return nil
 	}
-	destVal := reflect.New(ptrDestType.Elem())
-	errs := mapFields(srcResolved, destVal.Elem())
-	if result, ok := destVal.Interface().(TDest); ok {
-		*dest = result
-	}
-	return stdErr.Join(errs...)
-}
-
-func copyMapInto[TDest any](
-	srcVal reflect.Value, destType reflect.Type, dest *TDest,
-) error {
-	if isMapBased(destType) {
-		v, e := shallowCopyMapAs[TDest](srcVal, destType)
-		return assignResult(dest, v, e)
-	}
-	if destType.Kind() == reflect.Ptr && isMapBased(destType.Elem()) {
-		v, e := shallowCopyMapAsPtr[TDest](srcVal, destType.Elem())
-		return assignResult(dest, v, e)
-	}
-	return MapToStructPtr(asMap(srcVal), dest)
-}
-
-// CastCopy performs a fast cast when TSrc and TDest share the same element type,
-// or falls back to field-by-field copy otherwise. TDest may be a pointer type or
-// a map-based type (convertible to map[string]any). For map-based src and dest,
-// a reflect.Convert cast is attempted first (zero-copy reinterpretation), falling
-// back to a shallow entry copy when types are not directly convertible.
-// A nil pointer src returns a zero TDest.
-func CastCopy[TDest any](src any) (TDest, error) {
-	var dest TDest
-	err := CastCopyPtr(src, &dest)
-	return dest, err
-}
-
-func CastCopyPtr[TDest any](src any, dest *TDest) error {
-	if dest == nil {
-		return errors.New("CastCopyPtr: dest must not be nil")
-	}
-	destType := reflect.TypeOf((*TDest)(nil)).Elem()
-	srcVal := reflect.ValueOf(src)
-	if srcVal.IsValid() && isMapBased(srcVal.Type()) {
-		return castCopyMapInto(srcVal, destType, dest)
-	}
-	ptrDestType, err := requirePtrDest[TDest]()
+	structVal, err := requireStructPtr(dest, "dest", "MapToStruct")
 	if err != nil {
 		return err
 	}
-	if srcVal.Kind() == reflect.Ptr {
-		v, e := castCopyFromPtr[TDest](srcVal, ptrDestType)
-		return assignResult(dest, v, e)
-	}
-	if srcVal.Kind() == reflect.Struct {
-		v, e := castCopyViaReflect[TDest](
-			srcVal, srcVal.Type(), ptrDestType.Elem(), src,
-		)
-		return assignResult(dest, v, e)
-	}
-	return errors.Errorf(
-		"src must be a pointer, struct, or map-based type, got %T",
-		src,
-	)
+	return stdErr.Join(assignMapFields(src, structVal, true)...)
 }
 
-func castCopyMapInto[TDest any](
-	srcVal reflect.Value, destType reflect.Type, dest *TDest,
-) error {
-	if isMapBased(destType) {
-		v, e := castMapAs[TDest](srcVal, destType)
-		return assignResult(dest, v, e)
-	}
-	if destType.Kind() == reflect.Ptr && isMapBased(destType.Elem()) {
-		v, e := castMapAsPtr[TDest](srcVal, destType.Elem())
-		return assignResult(dest, v, e)
-	}
-	return MapToStructPtr(asMap(srcVal), dest)
-}
-
-func assignResult[T any](dest *T, val T, err error) error {
-	if err != nil {
-		return err
-	}
-	*dest = val
-	return nil
-}
-
-// castCopyFromPtr handles the pointer-specific fast paths: nil guard and same-type
-// unsafe cast. Falls through to castCopyViaReflect for all other cases.
-func castCopyFromPtr[TDest any](srcVal reflect.Value, destType reflect.Type) (TDest, error) {
-	var zero TDest
-	if srcVal.IsNil() {
-		return zero, nil
-	}
-	destElemType := destType.Elem()
-	if srcVal.Type().Elem() == destElemType {
-		result := reflect.NewAt(destElemType, srcVal.UnsafePointer())
-		return result.Interface().(TDest), nil
-	}
-	return castCopyViaReflect[TDest](srcVal.Elem(), srcVal.Type().Elem(), destElemType, srcVal.Interface())
-}
-
-// castCopyViaReflect tries a reflect-level cast; falls back to Copy on failure.
-func castCopyViaReflect[TDest any](srcElem reflect.Value, srcType, destElemType reflect.Type, orig any) (TDest, error) {
-	if result, ok := tryCastReflect(srcType, destElemType, srcElem); ok {
-		ptr := reflect.New(destElemType)
-		ptr.Elem().Set(result)
-		return ptr.Interface().(TDest), nil
-	}
-	return Copy[TDest](orig)
-}
-
-// StructToMap converts a struct (or pointer to a struct) into a map[string]any using
-// "json" field tags as key names, following standard json conventions: "-" skips the
-// field, "name,omitempty" uses "name" and skips zero values, and no tag falls back to
-// the struct field name. Embedded structs without a json tag are expanded inline.
-// A nil pointer src returns a nil map.
+// StructToMap converts a struct into a map[string]any using "json"
+// tags as keys. src must be a non-nil pointer to a struct.
 func StructToMap(src any) (map[string]any, error) {
-	srcVal, valid, err := resolveSrcToStruct(src)
+	srcVal, err := requireStructPtr(src, "src", "StructToMap")
 	if err != nil {
 		return nil, err
 	}
-	if !valid {
-		return nil, nil
-	}
 	result := make(map[string]any)
-	collectStructToMap(srcVal, result)
+	writeStructToMap(srcVal, result, true)
 	return result, nil
 }
 
-// collectStructToMap iterates exported fields of srcVal and writes them into out,
-// expanding anonymous embedded structs that have no explicit json tag inline.
-func collectStructToMap(srcVal reflect.Value, out map[string]any) {
-	srcVal = resolvePtr(srcVal)
-	if !srcVal.IsValid() || srcVal.Kind() != reflect.Struct {
-		return
+// StructToStruct copies fields from src to dest matched by "json" tag
+// keys. Both src and dest must be non-nil pointers to structs.
+func StructToStruct(src any, dest any) error {
+	srcVal, err := requireStructPtr(src, "src", "StructToStruct")
+	if err != nil {
+		return err
 	}
-	t := srcVal.Type()
-	for i := 0; i < t.NumField(); i++ {
-		field, fieldVal := t.Field(i), srcVal.Field(i)
-		if !field.IsExported() {
-			continue
-		}
-		if field.Anonymous && field.Tag.Get("json") == "" {
-			resolved := resolvePtr(fieldVal)
-			if resolved.IsValid() && resolved.Kind() == reflect.Struct {
-				collectStructToMap(resolved, out)
-				continue
-			}
-		}
-		key, skip, omitempty := jsonKey(field)
-		if skip || (omitempty && fieldVal.IsZero()) {
-			continue
-		}
-		out[key] = fieldVal.Interface()
+	destVal, err := requireStructPtr(dest, "dest", "StructToStruct")
+	if err != nil {
+		return err
 	}
+	srcFields := gatherJsonFields(srcVal, true)
+	return stdErr.Join(
+		applyJsonFields(srcFields, destVal, true)...,
+	)
 }
 
-// MapToStruct converts a string-keyed map into a new TDest value using "json" field
-// tags as key names, following standard json conventions: "-" skips the field,
-// "name,omitempty" uses "name", and no tag falls back to the struct field name.
-// Embedded structs without a json tag are expanded. TDest must be a pointer type.
-// A nil map returns a nil TDest. Values are assigned by direct cast first, then
-// reflect conversion, then a registered converter.
-func MapToStruct[TDest any](src map[string]any) (TDest, error) {
-	var zero TDest
-	if src == nil {
-		return zero, nil
+// ---------- validation ----------
+
+func requireStructPtr(
+	v any, role, fn string,
+) (reflect.Value, error) {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return reflect.Value{}, errors.Errorf(
+			"%s: %s must be a non-nil pointer to struct", fn, role,
+		)
 	}
-	destType := reflect.TypeOf((*TDest)(nil)).Elem()
-	if destType.Kind() != reflect.Ptr {
-		return zero, errors.Errorf("MapToStruct: TDest must be a pointer type, got %v", destType)
+	elem := rv.Elem()
+	if elem.Kind() == reflect.Interface && !elem.IsNil() {
+		elem = promoteIfaceToAddr(elem)
 	}
-	dest := reflect.New(destType.Elem())
-	errs := assignMapToStruct(src, dest.Elem())
-	destResult, _ := dest.Interface().(TDest)
-	return destResult, stdErr.Join(errs...)
+	if elem.Kind() == reflect.Ptr && !elem.IsNil() {
+		elem = elem.Elem()
+	}
+	if elem.Kind() != reflect.Struct {
+		return reflect.Value{}, errors.Errorf(
+			"%s: %s must point to a struct, got %v",
+			fn, role, elem.Kind(),
+		)
+	}
+	return elem, nil
 }
 
-func MapToStructPtr[TDest any](src map[string]any, dest *TDest) error {
-	if src == nil || dest == nil {
-		return nil
+// promoteIfaceToAddr unwraps an interface reflect.Value. When the
+// concrete value is a struct (stored by value), it is copied into a
+// freshly allocated pointer so the returned value is always
+// addressable and its fields are settable via reflection.
+func promoteIfaceToAddr(iface reflect.Value) reflect.Value {
+	concrete := iface.Elem()
+	if concrete.Kind() == reflect.Struct {
+		ptr := reflect.New(concrete.Type())
+		ptr.Elem().Set(concrete)
+		iface.Set(ptr)
+		return ptr
 	}
-	destVal := reflect.ValueOf(dest).Elem()
-	errs := assignMapToStruct(src, destVal)
-	return stdErr.Join(errs...)
+	return concrete
 }
 
-// isMapBased reports whether t is a map kind that is convertible to map[string]any.
-func isMapBased(t reflect.Type) bool {
-	return t.Kind() == reflect.Map && t.ConvertibleTo(mapType)
-}
+// ---------- MapToStruct internals ----------
 
-// asMap reinterprets a map-based reflect.Value as a plain map[string]any.
-func asMap(v reflect.Value) map[string]any {
-	return v.Convert(mapType).Interface().(map[string]any)
-}
-
-// castMapAs performs a fast reflect.Convert cast from a map-based src to TDest.
-// Falls back to shallowCopyMapAs when the types are not directly convertible.
-func castMapAs[TDest any](srcVal reflect.Value, destType reflect.Type) (TDest, error) {
-	var zero TDest
-	if srcVal.Type().ConvertibleTo(destType) {
-		result, ok := srcVal.Convert(destType).Interface().(TDest)
-		if !ok {
-			return zero, errors.Errorf("cannot cast %v to %v", srcVal.Type(), destType)
-		}
-		return result, nil
-	}
-	return shallowCopyMapAs[TDest](srcVal, destType)
-}
-
-// shallowCopyMapAs allocates a new map of destType and copies all entries from
-// srcVal into it, then returns the result as TDest.
-func shallowCopyMapAs[TDest any](srcVal reflect.Value, destType reflect.Type) (TDest, error) {
-	var zero TDest
-	src := resolvePtr(srcVal)
-	if !src.IsValid() || src.IsNil() {
-		return zero, nil
-	}
-	newMap := reflect.MakeMap(destType)
-	if err := fillMapEntries(src, newMap, destType); err != nil {
-		return zero, err
-	}
-	result, ok := newMap.Interface().(TDest)
-	if !ok {
-		return zero, errors.Errorf("cannot convert map %v to %v", src.Type(), destType)
-	}
-	return result, nil
-}
-
-// shallowCopyMapAsPtr allocates a new map of destElemType, copies all entries from
-// srcVal into it, wraps the result in a pointer, and returns it as TDest.
-func shallowCopyMapAsPtr[TDest any](srcVal reflect.Value, destElemType reflect.Type) (TDest, error) {
-	var zero TDest
-	src := resolvePtr(srcVal)
-	if !src.IsValid() || src.IsNil() {
-		return zero, nil
-	}
-	newMap := reflect.MakeMap(destElemType)
-	if err := fillMapEntries(src, newMap, destElemType); err != nil {
-		return zero, err
-	}
-	ptr := reflect.New(destElemType)
-	ptr.Elem().Set(newMap)
-	result, ok := ptr.Interface().(TDest)
-	if !ok {
-		return zero, errors.Errorf("cannot convert *map %v to %v", destElemType, reflect.TypeOf((*TDest)(nil)).Elem())
-	}
-	return result, nil
-}
-
-// castMapAsPtr performs a fast reflect.Convert cast from a map-based src to *destElemType
-// (TDest). Falls back to a shallow entry copy when types are not directly convertible.
-func castMapAsPtr[TDest any](srcVal reflect.Value, destElemType reflect.Type) (TDest, error) {
-	var zero TDest
-	var mapVal reflect.Value
-	if srcVal.Type().ConvertibleTo(destElemType) {
-		mapVal = srcVal.Convert(destElemType)
-	} else {
-		src := resolvePtr(srcVal)
-		if !src.IsValid() || src.IsNil() {
-			return zero, nil
-		}
-		newMap := reflect.MakeMap(destElemType)
-		if err := fillMapEntries(src, newMap, destElemType); err != nil {
-			return zero, err
-		}
-		mapVal = newMap
-	}
-	ptr := reflect.New(destElemType)
-	ptr.Elem().Set(mapVal)
-	result, ok := ptr.Interface().(TDest)
-	if !ok {
-		return zero, errors.Errorf("cannot cast *map %v to %v", destElemType, reflect.TypeOf((*TDest)(nil)).Elem())
-	}
-	return result, nil
-}
-
-func assignMapToStruct(src map[string]any, destVal reflect.Value) []error {
-	if destVal.Kind() != reflect.Struct {
-		return []error{errors.Errorf("dest must be a struct, got %v", destVal.Kind())}
-	}
+func assignMapFields(
+	src map[string]any, destVal reflect.Value, expandEmbed bool,
+) []error {
+	destVal = ensureAddr(destVal)
 	var errs []error
 	t := destVal.Type()
 	for i := 0; i < t.NumField(); i++ {
-		field, fieldVal := t.Field(i), destVal.Field(i)
-		if !field.IsExported() || !fieldVal.CanSet() {
+		field, fv := t.Field(i), destVal.Field(i)
+		if !field.IsExported() {
 			continue
 		}
-		if field.Anonymous && field.Tag.Get("json") == "" {
-			if embedded := resolvePtr(fieldVal); embedded.IsValid() && embedded.Kind() == reflect.Struct {
-				errs = append(errs, assignMapToStruct(src, embedded)...)
-				continue
-			}
-		}
-		key, skip, _ := jsonKey(field)
-		if skip {
+		if expandEmbed && isInlineEmbed(field) {
+			errs = append(
+				errs, assignEmbedMapFields(src, fv)...,
+			)
 			continue
 		}
-		val, exists := src[key]
-		if !exists || val == nil {
-			continue
-		}
-		if err := assignFromAny(val, fieldVal); err != nil {
-			errs = append(errs, errors.Errorf("field %s: %w", field.Name, err))
+		if err := assignOneMapField(src, field, fv); err != nil {
+			errs = append(errs, err)
 		}
 	}
 	return errs
 }
 
-func jsonKey(field reflect.StructField) (key string, skip bool, omitempty bool) {
+func assignEmbedMapFields(
+	src map[string]any, fv reflect.Value,
+) []error {
+	embedded := initEmbedded(fv)
+	if embedded.IsValid() && embedded.Kind() == reflect.Struct {
+		return assignMapFields(src, embedded, false)
+	}
+	return nil
+}
+
+func assignOneMapField(
+	src map[string]any, field reflect.StructField,
+	fv reflect.Value,
+) error {
+	key, skip, _ := parseJsonTag(field)
+	if skip {
+		return nil
+	}
+	val, ok := src[key]
+	if !ok || val == nil {
+		return nil
+	}
+	if err := assignValue(reflect.ValueOf(val), fv); err != nil {
+		return errors.Errorf("assignOneMapField: field %s: %w", field.Name, err)
+	}
+	return nil
+}
+
+// ---------- StructToMap internals ----------
+
+func writeStructToMap(
+	srcVal reflect.Value, out map[string]any, expandEmbed bool,
+) {
+	t := srcVal.Type()
+	for i := 0; i < t.NumField(); i++ {
+		field, fv := t.Field(i), srcVal.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+		if expandEmbed && isInlineEmbed(field) {
+			resolved := derefValue(fv)
+			if resolved.IsValid() &&
+				resolved.Kind() == reflect.Struct {
+				writeStructToMap(resolved, out, false)
+			}
+			continue
+		}
+		writeOneFieldToMap(field, fv, out)
+	}
+}
+
+func writeOneFieldToMap(
+	field reflect.StructField, fv reflect.Value,
+	out map[string]any,
+) {
+	key, skip, omitempty := parseJsonTag(field)
+	if skip || (omitempty && fv.IsZero()) {
+		return
+	}
+	out[key] = fv.Interface()
+}
+
+// ---------- StructToStruct internals ----------
+
+func gatherJsonFields(
+	val reflect.Value, expandEmbed bool,
+) map[string]fieldPair {
+	result := make(map[string]fieldPair)
+	t := val.Type()
+	for i := 0; i < t.NumField(); i++ {
+		field, fv := t.Field(i), val.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+		if expandEmbed && isInlineEmbed(field) {
+			gatherEmbeddedFields(fv, result)
+			continue
+		}
+		key, skip, _ := parseJsonTag(field)
+		if skip {
+			continue
+		}
+		result[key] = fieldPair{meta: field, value: fv}
+	}
+	return result
+}
+
+func gatherEmbeddedFields(
+	fv reflect.Value, result map[string]fieldPair,
+) {
+	resolved := derefValue(fv)
+	if !resolved.IsValid() || resolved.Kind() != reflect.Struct {
+		return
+	}
+	for k, v := range gatherJsonFields(resolved, false) {
+		if _, exists := result[k]; !exists {
+			result[k] = v
+		}
+	}
+}
+
+func applyJsonFields(
+	srcFields map[string]fieldPair, destVal reflect.Value,
+	expandEmbed bool,
+) []error {
+	destVal = ensureAddr(destVal)
+	var errs []error
+	t := destVal.Type()
+	for i := 0; i < t.NumField(); i++ {
+		field, fv := t.Field(i), destVal.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+		if expandEmbed && isInlineEmbed(field) {
+			errs = append(
+				errs, applyEmbedFields(srcFields, fv)...,
+			)
+			continue
+		}
+		if err := applyOneField(srcFields, field, fv); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func applyEmbedFields(
+	srcFields map[string]fieldPair, fv reflect.Value,
+) []error {
+	embedded := initEmbedded(fv)
+	if embedded.IsValid() && embedded.Kind() == reflect.Struct {
+		return applyJsonFields(srcFields, embedded, false)
+	}
+	return nil
+}
+
+func applyOneField(
+	srcFields map[string]fieldPair,
+	field reflect.StructField, fv reflect.Value,
+) error {
+	key, skip, _ := parseJsonTag(field)
+	if skip {
+		return nil
+	}
+	pair, ok := srcFields[key]
+	if !ok {
+		return nil
+	}
+	if err := assignValue(pair.value, fv); err != nil {
+		return errors.Errorf("applyOneField: field %s: %w", field.Name, err)
+	}
+	return nil
+}
+
+// ---------- value assignment ----------
+
+func assignValue(srcVal, destField reflect.Value) error {
+	srcVal = unwrapIface(srcVal)
+	if !srcVal.IsValid() {
+		return nil
+	}
+	srcType, destType := srcVal.Type(), destField.Type()
+	if srcType == destType {
+		destField.Set(srcVal)
+		return nil
+	}
+	if srcType.Kind() == reflect.Ptr && srcVal.IsNil() {
+		return nil
+	}
+	if err, ok := tryPtrShortcut(srcVal, destField); ok {
+		return err
+	}
+	realSrc := derefValue(srcVal)
+	if !realSrc.IsValid() {
+		return nil
+	}
+	realDestType, destIsPtr := stripPtrType(destType)
+	return convertAndSet(
+		srcVal, realSrc, destField, realDestType, destIsPtr,
+	)
+}
+
+func tryPtrShortcut(
+	srcVal, destField reflect.Value,
+) (error, bool) {
+	srcType, destType := srcVal.Type(), destField.Type()
+	if srcType.Kind() == reflect.Ptr &&
+		srcType.Elem() == destType {
+		destField.Set(srcVal.Elem())
+		return nil, true
+	}
+	if destType.Kind() == reflect.Ptr &&
+		destType.Elem() == srcType {
+		ptr := reflect.New(srcType)
+		ptr.Elem().Set(srcVal)
+		destField.Set(ptr)
+		return nil, true
+	}
+	return nil, false
+}
+
+func convertAndSet(
+	srcVal, realSrc, destField reflect.Value,
+	realDestType reflect.Type, destIsPtr bool,
+) error {
+	realSrcType := realSrc.Type()
+	if realSrcType.AssignableTo(realDestType) {
+		return setOrWrap(
+			realSrc, destField, destIsPtr, realDestType,
+		)
+	}
+	if realSrcType.ConvertibleTo(realDestType) {
+		return setOrWrap(
+			realSrc.Convert(realDestType),
+			destField, destIsPtr, realDestType,
+		)
+	}
+	if conv, ok := lookupConverter(
+		srcVal.Type(), destField.Type(),
+	); ok {
+		return applyConverter(conv, srcVal, destField)
+	}
+	return assignNested(realSrc, destField, realDestType, destIsPtr)
+}
+
+func assignNested(
+	realSrc, destField reflect.Value,
+	realDestType reflect.Type, destIsPtr bool,
+) error {
+	srcKind := realSrc.Type().Kind()
+	if srcKind == reflect.Map &&
+		realDestType.Kind() == reflect.Struct &&
+		isMapBased(realSrc.Type()) {
+		m := realSrc.Convert(mapType).Interface().(map[string]any)
+		return nestedMapToStruct(
+			m, destField, realDestType, destIsPtr,
+		)
+	}
+	if srcKind == reflect.Struct &&
+		realDestType.Kind() == reflect.Struct {
+		return nestedStructToStruct(
+			realSrc, destField, realDestType, destIsPtr,
+		)
+	}
+	if srcKind == reflect.Slice &&
+		realDestType.Kind() == reflect.Slice {
+		return assignSlice(
+			realSrc, destField, realDestType, destIsPtr,
+		)
+	}
+	return errors.Errorf(
+		"cannot convert %v to %v", realSrc.Type(), destField.Type(),
+	)
+}
+
+func nestedMapToStruct(
+	m map[string]any, destField reflect.Value,
+	realDestType reflect.Type, destIsPtr bool,
+) error {
+	if destIsPtr {
+		ptr := reflect.New(realDestType)
+		errs := assignMapFields(m, ptr.Elem(), true)
+		destField.Set(ptr)
+		return stdErr.Join(errs...)
+	}
+	return stdErr.Join(assignMapFields(m, destField, true)...)
+}
+
+func nestedStructToStruct(
+	src, destField reflect.Value,
+	realDestType reflect.Type, destIsPtr bool,
+) error {
+	srcFields := gatherJsonFields(src, true)
+	if destIsPtr {
+		ptr := reflect.New(realDestType)
+		errs := applyJsonFields(srcFields, ptr.Elem(), true)
+		destField.Set(ptr)
+		return stdErr.Join(errs...)
+	}
+	return stdErr.Join(
+		applyJsonFields(srcFields, destField, true)...,
+	)
+}
+
+func assignSlice(
+	realSrc, destField reflect.Value,
+	realDestType reflect.Type, destIsPtr bool,
+) error {
+	destElemType := realDestType.Elem()
+	srcLen := realSrc.Len()
+	result := reflect.MakeSlice(realDestType, srcLen, srcLen)
+	for i := 0; i < srcLen; i++ {
+		srcItem := unwrapIface(realSrc.Index(i))
+		if !srcItem.IsValid() {
+			continue
+		}
+		if err := convertSliceItem(
+			srcItem, result.Index(i), destElemType, i,
+		); err != nil {
+			return err
+		}
+	}
+	return setOrWrap(
+		result, destField, destIsPtr, realDestType,
+	)
+}
+
+// convertSliceItem applies the 4-step conversion for a single
+// slice element: (1) direct assign, (2) reflect convert,
+// (3) custom converter, (4) error. No recursive descent into
+// struct, slice, or map element values.
+func convertSliceItem(
+	srcItem, destItem reflect.Value,
+	destElemType reflect.Type, idx int,
+) error {
+	srcType := srcItem.Type()
+	if srcType.AssignableTo(destElemType) {
+		destItem.Set(srcItem)
+		return nil
+	}
+	if srcType.ConvertibleTo(destElemType) {
+		destItem.Set(srcItem.Convert(destElemType))
+		return nil
+	}
+	if conv, ok := lookupConverter(
+		srcType, destElemType,
+	); ok {
+		res, err := conv(srcItem)
+		if err != nil {
+			return errors.Errorf(
+				"convertSliceItem: element [%d]: %w", idx, err,
+			)
+		}
+		destItem.Set(res)
+		return nil
+	}
+	return errors.Errorf(
+		"convertSliceItem: element [%d]: cannot convert %v to %v",
+		idx, srcType, destElemType,
+	)
+}
+
+func setOrWrap(
+	val, destField reflect.Value,
+	wrapPtr bool, innerType reflect.Type,
+) error {
+	if wrapPtr {
+		ptr := reflect.New(innerType)
+		ptr.Elem().Set(val)
+		destField.Set(ptr)
+		return nil
+	}
+	destField.Set(val)
+	return nil
+}
+
+// ---------- json tag handling ----------
+
+func parseJsonTag(
+	field reflect.StructField,
+) (key string, skip bool, omitempty bool) {
 	tag := field.Tag.Get("json")
 	if tag == "-" {
 		return "", true, false
@@ -402,266 +531,86 @@ func jsonKey(field reflect.StructField) (key string, skip bool, omitempty bool) 
 	return tag, false, omitempty
 }
 
-func assignFromAny(val any, destField reflect.Value) error {
-	srcVal := reflect.ValueOf(val)
-	if err, ok := tryDirectAssign(srcVal, destField); ok {
-		return err
-	}
-	if srcVal.Type().ConvertibleTo(destField.Type()) {
-		destField.Set(srcVal.Convert(destField.Type()))
-		return nil
-	}
-	if conv, ok := lookupConverter(srcVal.Type(), destField.Type()); ok {
-		return applyConverter(conv, srcVal, destField)
-	}
-	return errors.Errorf("cannot assign %T to %v", val, destField.Type())
+func isInlineEmbed(field reflect.StructField) bool {
+	return field.Anonymous && field.Tag.Get("json") == ""
 }
 
-func requirePtrArgs[TDest any](src any) (reflect.Value, reflect.Type, error) {
-	srcVal := reflect.ValueOf(src)
-	if srcVal.Kind() != reflect.Ptr {
-		return reflect.Value{}, nil, errors.Errorf("src must be a pointer, got %T", src)
-	}
-	destType := reflect.TypeOf((*TDest)(nil)).Elem()
-	if destType.Kind() != reflect.Ptr {
-		return reflect.Value{}, nil, errors.Errorf("TDest must be a pointer type, got %v", destType)
-	}
-	return srcVal, destType, nil
-}
+// ---------- embedded struct handling ----------
 
-func requirePtrDest[TDest any]() (reflect.Type, error) {
-	destType := reflect.TypeOf((*TDest)(nil)).Elem()
-	if destType.Kind() != reflect.Ptr {
-		return nil, errors.Errorf("TDest must be a pointer type, got %v", destType)
-	}
-	return destType, nil
-}
-
-// resolveSrcToStruct resolves src to its underlying struct Value, accepting both
-// pointer and non-pointer structs. Returns (zero, false, nil) for nil pointers.
-func resolveSrcToStruct(src any) (reflect.Value, bool, error) {
-	srcVal := reflect.ValueOf(src)
-	if srcVal.Kind() == reflect.Ptr {
-		if srcVal.IsNil() {
-			return reflect.Value{}, false, nil
+func initEmbedded(fv reflect.Value) reflect.Value {
+	if fv.Kind() == reflect.Ptr {
+		if fv.IsNil() {
+			fv.Set(reflect.New(fv.Type().Elem()))
 		}
-		resolved := resolvePtr(srcVal.Elem())
-		return resolved, resolved.IsValid(), nil
+		return fv.Elem()
 	}
-	if srcVal.Kind() == reflect.Struct {
-		return srcVal, true, nil
-	}
-	return reflect.Value{}, false, errors.Errorf("src must be a pointer, struct, or map[string]any, got %T", src)
+	return fv
 }
 
-// tryCastReflect attempts a zero-copy (or minimal-copy) cast via reflect
-// for pointer-indirection and type-convertible cases.
-func tryCastReflect(srcType, destType reflect.Type, srcVal reflect.Value) (reflect.Value, bool) {
-	if srcType.Kind() == reflect.Ptr && srcType.Elem() == destType {
-		if srcVal.IsNil() {
-			return reflect.Zero(destType), true
+// ---------- reflect utilities ----------
+
+// ensureAddr guarantees that a struct Value is addressable (and
+// therefore its exported fields are settable). When v is already
+// addressable it is returned as-is. Otherwise a heap-allocated copy
+// is created via reflect.New and its Elem is returned.
+func ensureAddr(v reflect.Value) reflect.Value {
+	if v.Kind() != reflect.Struct || v.CanAddr() {
+		return v
+	}
+	ptr := reflect.New(v.Type())
+	ptr.Elem().Set(v)
+	return ptr.Elem()
+}
+
+func unwrapIface(v reflect.Value) reflect.Value {
+	if v.Kind() == reflect.Interface {
+		if v.IsNil() {
+			return reflect.Value{}
 		}
-		return srcVal.Elem(), true
+		return v.Elem()
 	}
-	if destType.Kind() == reflect.Ptr && destType.Elem() == srcType {
-		newPtr := reflect.New(srcType)
-		newPtr.Elem().Set(srcVal)
-		return newPtr, true
-	}
-	if srcType.ConvertibleTo(destType) {
-		return srcVal.Convert(destType), true
-	}
-	return reflect.Value{}, false
+	return v
 }
 
-// mapFields iterates exported fields of srcVal and assigns them to matching
-// fields in destVal, returning one error per unmappable field.
-func mapFields(srcVal, destVal reflect.Value) []error {
-	if srcVal.Kind() != reflect.Struct || destVal.Kind() != reflect.Struct {
-		return []error{errors.Errorf("both src and dest must be structs, got %v → %v", srcVal.Kind(), destVal.Kind())}
-	}
-	var errs []error
-	for _, pair := range collectFields(srcVal) {
-		if pair.meta.Tag.Get(mapperTag) == tagOmit {
-			continue
+func derefValue(v reflect.Value) reflect.Value {
+	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return reflect.Value{}
 		}
-		destField := destVal.FieldByName(pair.meta.Name)
-		if !destField.IsValid() || !destField.CanSet() {
-			continue
-		}
-		if err := assignField(pair.value, destField); err != nil {
-			errs = append(errs, errors.Errorf("field %s: %w", pair.meta.Name, err))
-		}
+		v = v.Elem()
 	}
-	return errs
+	return v
 }
 
-// collectFields returns a flat list of all exported fields, expanding
-// anonymous (embedded) struct fields recursively.
-func collectFields(val reflect.Value) []fieldPair {
-	val = resolvePtr(val)
-	if !val.IsValid() || val.Kind() != reflect.Struct {
-		return nil
+func stripPtrType(t reflect.Type) (reflect.Type, bool) {
+	if t.Kind() == reflect.Ptr {
+		return t.Elem(), true
 	}
-	var pairs []fieldPair
-	t := val.Type()
-	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
-		fv := val.Field(i)
-		if !f.IsExported() {
-			continue
-		}
-		if f.Anonymous {
-			resolved := resolvePtr(fv)
-			if resolved.IsValid() && resolved.Kind() == reflect.Struct {
-				pairs = append(pairs, collectFields(resolved)...)
-				continue
-			}
-		}
-		pairs = append(pairs, fieldPair{meta: f, value: fv})
-	}
-	return pairs
+	return t, false
 }
 
-// assignField dispatches a single field assignment using the best available strategy.
-func assignField(srcField, destField reflect.Value) error {
-	srcBase := baseType(srcField.Type())
-	destBase := baseType(destField.Type())
-	if srcBase.Kind() == reflect.Map && destBase.Kind() == reflect.Map {
-		return shallowCopyMap(srcField, destField)
-	}
-	if srcBase.Kind() == reflect.Struct && srcBase == destBase {
-		return copyNestedStruct(srcField, destField)
-	}
-	if err, ok := tryDirectAssign(srcField, destField); ok {
-		return err
-	}
-	if conv, ok := lookupConverter(srcField.Type(), destField.Type()); ok {
-		return applyConverter(conv, srcField, destField)
-	}
-	return errors.Errorf("no mapping strategy from %v to %v", srcField.Type(), destField.Type())
+func isMapBased(t reflect.Type) bool {
+	return t.Kind() == reflect.Map && t.ConvertibleTo(mapType)
 }
 
-// shallowCopyMap copies all entries from srcField into a freshly allocated map set on destField.
-func shallowCopyMap(srcField, destField reflect.Value) error {
-	srcMap := resolvePtr(srcField)
-	if !srcMap.IsValid() || srcMap.IsNil() {
-		return nil
+// ---------- converter registry ----------
+
+func storeConverter(
+	srcType, destType reflect.Type, conv Converter,
+) {
+	if _, ok := converterRegistry[srcType]; !ok {
+		converterRegistry[srcType] = make(map[reflect.Type]Converter)
 	}
-	destMapType := baseType(destField.Type())
-	newMap := reflect.MakeMap(destMapType)
-	if err := fillMapEntries(srcMap, newMap, destMapType); err != nil {
-		return err
-	}
-	return setMapField(destField, newMap)
+	converterRegistry[srcType][destType] = conv
 }
 
-// fillMapEntries copies each key/value pair from srcMap into newMap.
-func fillMapEntries(srcMap, newMap reflect.Value, destMapType reflect.Type) error {
-	for _, key := range srcMap.MapKeys() {
-		copiedKey, err := assignMapEntry(key, destMapType.Key())
-		if err != nil {
-			return errors.Errorf("map key %v: %w", key, err)
-		}
-		copiedVal, err := assignMapEntry(srcMap.MapIndex(key), destMapType.Elem())
-		if err != nil {
-			return errors.Errorf("map value at key %v: %w", key, err)
-		}
-		newMap.SetMapIndex(copiedKey, copiedVal)
-	}
-	return nil
-}
-
-// assignMapEntry assigns val into a temporary slot of targetType using the full
-// assignField dispatch chain.
-func assignMapEntry(val reflect.Value, targetType reflect.Type) (reflect.Value, error) {
-	tmp := reflect.New(targetType).Elem()
-	if err := assignField(val, tmp); err != nil {
-		return reflect.Value{}, err
-	}
-	return tmp, nil
-}
-
-// setMapField assigns newMap into destField, wrapping in a pointer when required.
-func setMapField(destField, newMap reflect.Value) error {
-	if destField.Type().Kind() == reflect.Ptr {
-		ptr := reflect.New(newMap.Type())
-		ptr.Elem().Set(newMap)
-		destField.Set(ptr)
-		return nil
-	}
-	destField.Set(newMap)
-	return nil
-}
-
-// tryDirectAssign covers same-type, pointer-to-value, value-to-pointer, and assignable cases.
-func tryDirectAssign(srcField, destField reflect.Value) (error, bool) {
-	srcType, destType := srcField.Type(), destField.Type()
-	if srcType == destType {
-		destField.Set(srcField)
-		return nil, true
-	}
-	if srcType.Kind() == reflect.Ptr && srcType.Elem() == destType {
-		if !srcField.IsNil() {
-			destField.Set(srcField.Elem())
-		}
-		return nil, true
-	}
-	if destType.Kind() == reflect.Ptr && destType.Elem() == srcType {
-		ptr := reflect.New(srcType)
-		ptr.Elem().Set(srcField)
-		destField.Set(ptr)
-		return nil, true
-	}
-	if srcType.AssignableTo(destType) {
-		destField.Set(srcField)
-		return nil, true
-	}
-	return nil, false
-}
-
-// copyNestedStruct recursively copies a struct field, handling pointer wrapping/unwrapping.
-func copyNestedStruct(srcField, destField reflect.Value) error {
-	srcStruct := resolvePtr(srcField)
-	if !srcStruct.IsValid() {
-		return nil
-	}
-	if destField.Type().Kind() == reflect.Ptr {
-		newDest := reflect.New(destField.Type().Elem())
-		errs := mapFields(srcStruct, newDest.Elem())
-		destField.Set(newDest)
-		return stdErr.Join(errs...)
-	}
-	return stdErr.Join(mapFields(srcStruct, destField)...)
-}
-
-// applyConverter invokes a registered converter and sets the result on destField.
-func applyConverter(conv func(reflect.Value) (reflect.Value, error), srcField, destField reflect.Value) error {
-	result, err := conv(srcField)
-	if err != nil {
-		return err
-	}
-	destField.Set(result)
-	return nil
-}
-
-// lookupConverter searches the registry for a converter from srcType to destType.
-func lookupConverter(srcType, destType reflect.Type) (Converter, bool) {
-	if m, ok := converterRegistry[srcType]; ok {
-		if conv, ok := m[destType]; ok {
-			return conv, true
-		}
-	}
-	return nil, false
-}
-
-// synthesizePointerConverter wraps baseConv so it handles any combination of
-// pointer src/dest, dereferencing src and re-wrapping dest as needed.
-func synthesizePointerConverter(srcType, destType, baseDest reflect.Type, baseConv Converter) Converter {
+func synthesizePtrConv(
+	srcType, destType, baseDest reflect.Type, baseConv Converter,
+) Converter {
 	srcIsPtr := srcType.Kind() == reflect.Ptr
 	destIsPtr := destType.Kind() == reflect.Ptr
 	return func(in reflect.Value) (reflect.Value, error) {
-		src := derefConverterSrc(in, srcIsPtr)
+		src := derefConvSrc(in, srcIsPtr)
 		if !src.IsValid() {
 			return reflect.Zero(destType), nil
 		}
@@ -678,9 +627,7 @@ func synthesizePointerConverter(srcType, destType, baseDest reflect.Type, baseCo
 	}
 }
 
-// derefConverterSrc dereferences a pointer src for converter dispatch.
-// Returns an invalid Value when the pointer is nil.
-func derefConverterSrc(in reflect.Value, isPtr bool) reflect.Value {
+func derefConvSrc(in reflect.Value, isPtr bool) reflect.Value {
 	if !isPtr {
 		return in
 	}
@@ -690,21 +637,25 @@ func derefConverterSrc(in reflect.Value, isPtr bool) reflect.Value {
 	return in.Elem()
 }
 
-// resolvePtr dereferences pointer chains, returning an invalid Value for nil pointers.
-func resolvePtr(v reflect.Value) reflect.Value {
-	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
-		if v.IsNil() {
-			return reflect.Value{}
-		}
-		v = v.Elem()
+func applyConverter(
+	conv func(reflect.Value) (reflect.Value, error),
+	srcField, destField reflect.Value,
+) error {
+	result, err := conv(srcField)
+	if err != nil {
+		return err
 	}
-	return v
+	destField.Set(result)
+	return nil
 }
 
-// baseType strips all pointer indirection to reach the underlying type.
-func baseType(t reflect.Type) reflect.Type {
-	for t.Kind() == reflect.Ptr {
-		t = t.Elem()
+func lookupConverter(
+	srcType, destType reflect.Type,
+) (Converter, bool) {
+	if m, ok := converterRegistry[srcType]; ok {
+		if conv, ok := m[destType]; ok {
+			return conv, true
+		}
 	}
-	return t
+	return nil, false
 }

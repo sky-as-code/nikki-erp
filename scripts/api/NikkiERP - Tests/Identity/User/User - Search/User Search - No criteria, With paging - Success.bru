@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/users?page=2&size=7
+  url: {{api_host}}/v1/identity/users?page=1&size=7
   body: none
   auth: inherit
 }
 
 params:query {
-  page: 2
+  page: 1
   size: 7
 }
 
@@ -45,4 +45,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

@@ -42,6 +42,40 @@ func (this DynamicFields) SetString(key string, v *string) {
 	this[key] = *v
 }
 
+func (this DynamicFields) GetStrings(key string) []string {
+	val, ok := this[key]
+	if !ok || val == nil {
+		return nil
+	}
+	s := val.([]string)
+	return s
+}
+
+func (this DynamicFields) SetStrings(key string, v []string) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	this[key] = v
+}
+
+func (this DynamicFields) GetAny(key string) any {
+	val, ok := this[key]
+	if !ok || val == nil {
+		return nil
+	}
+	s := val
+	return s
+}
+
+func (this DynamicFields) SetAny(key string, v any) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	this[key] = v
+}
+
 // GetModelId returns the model.Id value at key. Returns nil if key is missing or value is nil.
 // Caller must ensure the map is initialized (non-nil).
 func (this DynamicFields) GetModelId(key string) *model.Id {
@@ -62,6 +96,23 @@ func (this DynamicFields) SetModelId(key string, v *model.Id) {
 		return
 	}
 	this[key] = string(*v)
+}
+
+func (this DynamicFields) GetInt(key string) *int {
+	val, ok := this[key]
+	if !ok || val == nil {
+		return nil
+	}
+	s := val.(int)
+	return &s
+}
+
+func (this DynamicFields) SetInt(key string, v *int) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	this[key] = *v
 }
 
 // GetInt64 returns the int64 value at key. Returns nil if key is missing or value is nil.
