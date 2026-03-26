@@ -85,6 +85,62 @@ func (this GetDriveFileShareByFileIdQuery) Validate() fault.ValidationErrors {
 type GetDriveFileShareByFileIdResultData = crud.PagedResult[*domain.DriveFileShare]
 type GetDriveFileShareByFileIdResult = crud.OpResult[*GetDriveFileShareByFileIdResultData]
 
+type GetDriveFileAncestorOwnersByFileIdQuery struct {
+	DriveFileId model.Id `param:"driveFileId" json:"driveFileId"`
+}
+
+func (this GetDriveFileAncestorOwnersByFileIdQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.DriveFileId, true),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type GetDriveFileAncestorOwnersByFileIdResult = crud.OpResult[[]*domain.DriveFileShare]
+
+type GetDriveFileResolvedSharesByFileIdQuery struct {
+	crud.SearchQuery `json:",inline"`
+	DriveFileId      model.Id `param:"driveFileId" json:"driveFileId"`
+}
+
+func (this GetDriveFileResolvedSharesByFileIdQuery) Validate() fault.ValidationErrors {
+	rules := this.SearchQuery.ValidationRules()
+	rules = append(rules, model.IdValidateRule(&this.DriveFileId, true))
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+func (this *GetDriveFileResolvedSharesByFileIdQuery) SetDefaults() {
+	this.SearchQuery.SetDefaults()
+}
+
+type GetDriveFileResolvedSharesByFileIdResultData = crud.PagedResult[*domain.DriveFileShare]
+type GetDriveFileResolvedSharesByFileIdResult = crud.OpResult[*GetDriveFileResolvedSharesByFileIdResultData]
+
+type GetDriveFileUserShareDetailsQuery struct {
+	DriveFileId model.Id `param:"driveFileId" json:"driveFileId"`
+	UserId      model.Id `param:"userId" json:"userId"`
+}
+
+func (this GetDriveFileUserShareDetailsQuery) Validate() fault.ValidationErrors {
+	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.DriveFileId, true),
+		model.IdValidateRule(&this.UserId, true),
+	}
+	return validator.ApiBased.ValidateStruct(&this, rules...)
+}
+
+type DriveFileUserShareDetail struct {
+	model.ModelBase
+	model.AuditableBase
+	FileRef    model.Id                   `json:"file_ref"`
+	UserRef    model.Id                   `json:"user_ref"`
+	Permission enum.DriveFilePerm         `json:"permission"`
+	User       *domain.DriveFileShareUser `json:"user,omitempty"`
+	File       *domain.DriveFileShareFile  `json:"file,omitempty"`
+}
+
+type GetDriveFileUserShareDetailsResult = crud.OpResult[[]*DriveFileUserShareDetail]
+
 type GetDriveFileShareByUserQuery struct {
 	UserId model.Id `param:"userId" json:"user_id"`
 }

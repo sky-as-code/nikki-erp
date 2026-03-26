@@ -1,7 +1,10 @@
 package repository
 
 import (
-	"entgo.io/ent/dialect/sql"
+	"fmt"
+	"strings"
+
+	entsql "entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -83,7 +86,7 @@ func (d *driveFileShareRepository) ListByFileRef(ctx crud.Context, param drive_f
 	parentPred = entDrivefileshare.FileRef(string(param.FileRef))
 	combined := orm.Predicate(parentPred)
 	if param.Predicate != nil {
-		combined = orm.Predicate(sql.AndPredicates(combined, *param.Predicate))
+		combined = orm.Predicate(entsql.AndPredicates(combined, *param.Predicate))
 	}
 
 	return d.Search(ctx, drive_file_share.SearchParam{
@@ -92,6 +95,144 @@ func (d *driveFileShareRepository) ListByFileRef(ctx crud.Context, param drive_f
 		Page:      param.Page,
 		Size:      param.Size,
 	})
+}
+
+func (d *driveFileShareRepository) ListResolvedByFileRefs(
+	ctx crud.Context,
+	fileRef model.Id,
+	refs []model.Id,
+	excludedUserRefs []model.Id,
+	page int,
+	size int,
+) (*crud.PagedResult[*domain.DriveFileShare], error) {
+	if len(refs) == 0 {
+		return &crud.PagedResult[*domain.DriveFileShare]{Items: []*domain.DriveFileShare{}, Total: 0}, nil
+	}
+	if size <= 0 {
+		size = 20
+	}
+	if page < 0 {
+		page = 0
+	}
+
+	placeholders := make([]string, 0, len(refs))
+	args := make([]any, 0, len(refs)+len(excludedUserRefs)+2)
+	for i, id := range refs {
+		placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
+		args = append(args, string(id))
+	}
+	inClause := strings.Join(placeholders, ",")
+
+	excludeClause := ""
+	if len(excludedUserRefs) > 0 {
+		ex := make([]string, 0, len(excludedUserRefs))
+		for i := range excludedUserRefs {
+			p := len(args) + i + 1
+			ex = append(ex, fmt.Sprintf("$%d", p))
+		}
+		for _, uid := range excludedUserRefs {
+			args = append(args, string(uid))
+		}
+		excludeClause = fmt.Sprintf(" AND user_ref NOT IN (%s) ", strings.Join(ex, ","))
+	}
+
+	countSQL := fmt.Sprintf(`
+		SELECT COUNT(1)
+		FROM (
+			SELECT user_ref
+			FROM dri_file_shares
+			WHERE file_ref IN (%s) %s
+			GROUP BY user_ref
+		) t
+	`, inClause, excludeClause)
+
+	dbClient := d.client.DB()
+	var total int
+	if err := dbClient.QueryRowContext(ctx.InnerContext(), countSQL, args...).Scan(&total); err != nil {
+		return nil, err
+	}
+	if total == 0 {
+		return &crud.PagedResult[*domain.DriveFileShare]{Items: []*domain.DriveFileShare{}, Total: 0}, nil
+	}
+
+	offset := page * size
+	// Append target file ref (to distinguish direct vs inherited),
+	// then limit/offset for paging.
+	dataArgs := append(args, string(fileRef), size, offset)
+	targetPos := len(args) + 1
+	limitPos := len(args) + 2
+	offsetPos := len(args) + 3
+	dataSQL := fmt.Sprintf(`
+		SELECT
+			user_ref,
+			MAX(
+				CASE permission
+					-- direct share on the target file
+					WHEN 'edit-trash' THEN
+						CASE WHEN file_ref = $%d THEN 6 ELSE 3 END
+					WHEN 'edit' THEN
+						CASE WHEN file_ref = $%d THEN 5 ELSE 2 END
+					WHEN 'view' THEN
+						CASE WHEN file_ref = $%d THEN 4 ELSE 1 END
+					ELSE 0
+				END
+			) AS perm_rank
+		FROM dri_file_shares
+		WHERE file_ref IN (%s) %s
+		GROUP BY user_ref
+		ORDER BY perm_rank DESC, user_ref ASC
+		LIMIT $%d OFFSET $%d
+	`, targetPos, targetPos, targetPos, inClause, excludeClause, limitPos, offsetPos)
+
+	rows, err := dbClient.QueryContext(ctx.InnerContext(), dataSQL, dataArgs...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	items := make([]*domain.DriveFileShare, 0, size)
+	for rows.Next() {
+		var userRef string
+		var rank int
+		if err := rows.Scan(&userRef, &rank); err != nil {
+			return nil, err
+		}
+		perm := enum.DriveFilePermNone
+		switch rank {
+		// direct share ranks
+		case 6:
+			perm = enum.DriveFilePermEditTrash
+		case 5:
+			perm = enum.DriveFilePermEdit
+		case 4:
+			perm = enum.DriveFilePermView
+		// inherited share ranks (came from ancestor file_ref)
+		case 3:
+			perm = enum.DriveFilePermInheritedEditTrash
+		case 2:
+			perm = enum.DriveFilePermInheritedEdit
+		case 1:
+			perm = enum.DriveFilePermInheritedView
+		}
+		if perm == enum.DriveFilePermNone {
+			continue
+		}
+		items = append(items, &domain.DriveFileShare{
+			FileRef:    fileRef,
+			UserRef:    model.Id(userRef),
+			Permission: perm,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return &crud.PagedResult[*domain.DriveFileShare]{
+		Items: items,
+		Total: total,
+		Page:  page,
+		Size:  size,
+	}, nil
 }
 
 func (d *driveFileShareRepository) ListByUserRef(ctx crud.Context, userRef model.Id) ([]*domain.DriveFileShare, error) {

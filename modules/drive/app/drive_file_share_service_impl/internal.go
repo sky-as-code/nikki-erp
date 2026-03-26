@@ -1,11 +1,12 @@
 package drive_file_share_service_impl
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/collections"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/drive/domain"
-	"github.com/sky-as-code/nikki-erp/common/collections"
+	it "github.com/sky-as-code/nikki-erp/modules/drive/interfaces/drive_file_share"
 )
 
 func (this *DriveFileShareServiceImpl) enrichDriveFileSharesWithUsers(
@@ -58,6 +59,111 @@ func (this *DriveFileShareServiceImpl) enrichDriveFileSharesWithUsers(
 			}
 		} else {
 			s.User = nil
+		}
+	}
+
+	return nil
+}
+
+func driveFileShareFileFromDomain(f *domain.DriveFile) *domain.DriveFileShareFile {
+	if f == nil || f.Id == nil {
+		return nil
+	}
+	return &domain.DriveFileShareFile{
+		Id:       *f.Id,
+		Name:     f.Name,
+		IsFolder: f.IsFolder,
+	}
+}
+
+func (this *DriveFileShareServiceImpl) enrichDriveFileSharesWithFiles(
+	ctx crud.Context,
+	shares []*domain.DriveFileShare,
+) error {
+	if len(shares) == 0 {
+		return nil
+	}
+
+	fileIdSet := collections.NewSet([]string{})
+	for _, s := range shares {
+		if s == nil || s.FileRef == "" {
+			continue
+		}
+		fileIdSet.Add(string(s.FileRef))
+	}
+	ids := fileIdSet.GetValues()
+	if len(ids) == 0 {
+		return nil
+	}
+
+	filesById := make(map[model.Id]*domain.DriveFile, len(ids))
+	for _, idStr := range ids {
+		f, err := this.driveFileRepo.FindById(ctx, model.Id(idStr))
+		if err != nil {
+			return err
+		}
+		if f != nil && f.Id != nil {
+			filesById[*f.Id] = f
+		}
+	}
+
+	for _, s := range shares {
+		if s == nil {
+			continue
+		}
+		if f := filesById[s.FileRef]; f != nil {
+			s.File = driveFileShareFileFromDomain(f)
+		} else {
+			s.File = nil
+		}
+	}
+
+	return nil
+}
+
+func (this *DriveFileShareServiceImpl) enrichDriveFileSharesWithViews(ctx crud.Context, shares []*domain.DriveFileShare) error {
+	if err := this.enrichDriveFileSharesWithUsers(ctx, shares); err != nil {
+		return err
+	}
+	return this.enrichDriveFileSharesWithFiles(ctx, shares)
+}
+
+func (this *DriveFileShareServiceImpl) enrichDriveFileUserShareDetailsWithFiles(ctx crud.Context, out []*it.DriveFileUserShareDetail) error {
+	if len(out) == 0 {
+		return nil
+	}
+
+	fileIdSet := collections.NewSet([]string{})
+	for _, item := range out {
+		if item == nil || item.FileRef == "" {
+			continue
+		}
+		fileIdSet.Add(string(item.FileRef))
+	}
+	ids := fileIdSet.GetValues()
+	if len(ids) == 0 {
+		return nil
+	}
+
+	filesById := make(map[model.Id]*domain.DriveFile, len(ids))
+	for _, idStr := range ids {
+		f, err := this.driveFileRepo.FindById(ctx, model.Id(idStr))
+		if err != nil {
+			return err
+		}
+		if f != nil && f.Id != nil {
+			filesById[*f.Id] = f
+		}
+	}
+
+	for _, item := range out {
+		if item == nil {
+			continue
+		}
+		if f := filesById[item.FileRef]; f != nil {
+			item.File = driveFileShareFileFromDomain(f)
+		} else {
+			item.File = nil
 		}
 	}
 

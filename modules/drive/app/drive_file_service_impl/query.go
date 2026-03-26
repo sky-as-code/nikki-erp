@@ -42,6 +42,7 @@ func (this *DriveFileServiceImpl) GetDriveFileById(ctx crud.Context, query it.Ge
 			return &it.GetDriveFileByIdResult{ClientError: vErrs.ToClientError()}
 		},
 		ToSuccessResult: func(d *domain.DriveFile) *it.GetDriveFileByIdResult {
+			ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, []*domain.DriveFile{d}))
 			return &it.GetDriveFileByIdResult{HasData: true, Data: d}
 		},
 	})
@@ -134,6 +135,9 @@ func (this *DriveFileServiceImpl) GetDriveFileByParent(ctx crud.Context, query i
 				return &it.GetDriveFileByParentResult{ClientError: vErrs.ToClientError()}
 			},
 			ToSuccessResult: func(paged *crud.PagedResult[*domain.DriveFile]) *it.GetDriveFileByParentResult {
+				if paged != nil {
+					ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, paged.Items))
+				}
 				return &it.GetDriveFileByParentResult{Data: paged, HasData: true}
 			},
 		})
@@ -159,6 +163,9 @@ func (this *DriveFileServiceImpl) GetDriveFileByParent(ctx crud.Context, query i
 			return &it.GetDriveFileByParentResult{ClientError: vErrs.ToClientError()}
 		},
 		ToSuccessResult: func(paged *crud.PagedResult[*domain.DriveFile]) *it.GetDriveFileByParentResult {
+			if paged != nil {
+				ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, paged.Items))
+			}
 			return &it.GetDriveFileByParentResult{Data: paged, HasData: true}
 		},
 	})
@@ -189,6 +196,9 @@ func (this *DriveFileServiceImpl) SearchDriveFile(ctx crud.Context, query it.Sea
 			return &it.SearchDriveFileResult{ClientError: vErrs.ToClientError()}
 		},
 		ToSuccessResult: func(paged *crud.PagedResult[*domain.DriveFile]) *it.SearchDriveFileResult {
+			if paged != nil {
+				ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, paged.Items))
+			}
 			return &it.SearchDriveFileResult{Data: paged, HasData: paged.Items != nil}
 		},
 	})
@@ -220,6 +230,9 @@ func (this *DriveFileServiceImpl) SearchDriveFilesShared(ctx crud.Context, query
 			return &it.SearchDriveFileResult{ClientError: vErrs.ToClientError()}
 		},
 		ToSuccessResult: func(paged *crud.PagedResult[*domain.DriveFile]) *it.SearchDriveFileResult {
+			if paged != nil {
+				ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, paged.Items))
+			}
 			return &it.SearchDriveFileResult{Data: paged, HasData: paged.Items != nil}
 		},
 	})
@@ -242,15 +255,17 @@ func (this *DriveFileServiceImpl) GetDriveFileAncestors(ctx crud.Context, query 
 
 	// Root has no parent: only owner roots are allowed.
 	if driveFile.ParentDriveFileRef == nil {
-		if driveFile.OwnerRef != nil && *driveFile.OwnerRef == query.UserId {
-			return &it.GetDriveFileAncestorsResult{HasData: true, Data: []*domain.DriveFile{driveFile}}, nil
+		// Root may be viewable either by owner OR by direct share.
+		// Use the same permission resolver for consistent behavior.
+		perm, err := this.resolvePermission(ctx, driveFile, query.UserId)
+		ft.PanicOnErr(err)
+		if !perm.CanView() {
+			return &it.GetDriveFileAncestorsResult{HasData: true, Data: []*domain.DriveFile{}}, nil
 		}
-		return &it.GetDriveFileAncestorsResult{
-			ClientError: &fault.ClientError{
-				Code:    "forbidden",
-				Details: "drive file root is not allowed",
-			},
-		}, nil
+
+		data := []*domain.DriveFile{driveFile}
+		ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, data))
+		return &it.GetDriveFileAncestorsResult{HasData: true, Data: data}, nil
 	}
 
 	ancestors, err := this.driveFileRepo.GetDriveFileParents(ctx, *driveFile.Id)
@@ -265,10 +280,19 @@ func (this *DriveFileServiceImpl) GetDriveFileAncestors(ctx crud.Context, query 
 		idToFile[*f.Id] = f
 	}
 
-	// Walk upward from the original file until we find the first parent (ancestor)
-	// that has at least `view` permission. We only return results up to that node.
-	waiting := make([]*domain.DriveFile, 0)
-	res := make([]*domain.DriveFile, 0)
+	// Walk upward and keep track of the farthest node (highest ancestor)
+	// that has at least `view` permission. Only return 403 when no node
+	// in the chain can be viewed.
+	path := make([]*domain.DriveFile, 0, len(ancestors)+1)
+	path = append(path, driveFile) // index 0 = the original file
+
+	highestViewIdx := -1
+	selfPerm, err := this.resolvePermission(ctx, driveFile, query.UserId)
+	ft.PanicOnErr(err)
+	if selfPerm.CanView() {
+		highestViewIdx = 0
+	}
+
 	cur := driveFile
 	for cur != nil && cur.ParentDriveFileRef != nil && *cur.ParentDriveFileRef != "" {
 		parentId := *cur.ParentDriveFileRef
@@ -277,29 +301,31 @@ func (this *DriveFileServiceImpl) GetDriveFileAncestors(ctx crud.Context, query 
 			break
 		}
 
-		permission, err := this.resolvePermission(ctx, parent, query.UserId)
+		path = append(path, parent)
+		perm, err := this.resolvePermission(ctx, parent, query.UserId)
 		ft.PanicOnErr(err)
-		if !permission.CanView() {
-			waiting = append(waiting, parent)
-			cur = parent
-			continue
+		if perm.CanView() {
+			highestViewIdx = len(path) - 1
 		}
 
-		// Found the first allowed ancestor. Append it and the waiting chain (from farthest to closest),
-		// then append the original file.
-		res = append(res, parent)
-		for i := len(waiting) - 1; i >= 0; i-- {
-			res = append(res, waiting[i])
-		}
-		res = append(res, driveFile)
-
-		return &it.GetDriveFileAncestorsResult{HasData: true, Data: res}, nil
+		cur = parent
 	}
 
-	return &it.GetDriveFileAncestorsResult{
-		ClientError: &fault.ClientError{
-			Code:    "forbidden",
-			Details: "drive file ancestors are not allowed",
-		},
-	}, nil
+	if highestViewIdx == -1 {
+		return &it.GetDriveFileAncestorsResult{
+			ClientError: &fault.ClientError{
+				Code:    "forbidden",
+				Details: "drive file ancestors are not allowed",
+			},
+		}, nil
+	}
+
+	// res order: from highest view ancestor down to the original file.
+	res := make([]*domain.DriveFile, 0, highestViewIdx+1)
+	for i := highestViewIdx; i >= 0; i-- {
+		res = append(res, path[i])
+	}
+
+	ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, res))
+	return &it.GetDriveFileAncestorsResult{HasData: true, Data: res}, nil
 }

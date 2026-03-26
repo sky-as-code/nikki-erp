@@ -18,6 +18,13 @@ type DriveFileShareDto struct {
 	Permission enum.DriveFilePerm `json:"permission"`
 
 	User *DriveFileShareUserDto `json:"user,omitempty"`
+	File *DriveFileShareFileDto `json:"file,omitempty"`
+}
+
+type DriveFileShareFileDto struct {
+	Id       model.Id `json:"id"`
+	Name     string   `json:"name"`
+	IsFolder bool     `json:"isFolder"`
 }
 
 type DriveFileShareUserDto struct {
@@ -39,6 +46,11 @@ func (this *DriveFileShareDto) FromDriveFileShare(s domain.DriveFileShare) {
 		tmp := DriveFileShareUserDto{}
 		model.MustCopy(*s.User, &tmp)
 		this.User = &tmp
+	}
+	if s.File != nil {
+		tmp := DriveFileShareFileDto{}
+		model.MustCopy(*s.File, &tmp)
+		this.File = &tmp
 	}
 }
 
@@ -70,6 +82,26 @@ func (this *GetDriveFileShareByFileIdResponse) FromResult(result *shareIt.GetDri
 		return item
 	})
 }
+
+type GetDriveFileAncestorOwnersByFileIdRequest = shareIt.GetDriveFileAncestorOwnersByFileIdQuery
+type GetDriveFileAncestorOwnersByFileIdResponse = []DriveFileShareDto
+
+type GetDriveFileResolvedSharesByFileIdRequest = shareIt.GetDriveFileResolvedSharesByFileIdQuery
+type GetDriveFileResolvedSharesByFileIdResponse httpserver.RestSearchResponse[DriveFileShareDto]
+
+func (this *GetDriveFileResolvedSharesByFileIdResponse) FromResult(result *shareIt.GetDriveFileResolvedSharesByFileIdResultData) {
+	this.Total = result.Total
+	this.Page = result.Page
+	this.Size = result.Size
+	this.Items = array.Map(result.Items, func(s *domain.DriveFileShare) DriveFileShareDto {
+		item := DriveFileShareDto{}
+		item.FromDriveFileShare(*s)
+		return item
+	})
+}
+
+type GetDriveFileUserShareDetailsRequest = shareIt.GetDriveFileUserShareDetailsQuery
+type GetDriveFileUserShareDetailsResponse = []DriveFileShareDto
 
 type GetDriveFileShareByUserRequest = shareIt.GetDriveFileShareByUserQuery
 type GetDriveFileShareByUserResponse httpserver.RestSearchResponse[DriveFileShareDto]

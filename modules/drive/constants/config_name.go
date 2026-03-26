@@ -12,5 +12,12 @@ const (
 	S3StorageBucket      core_constants.ConfigName = "DRIVE_S3_STORAGE_BUCKET"
 	S3StorageBucketDrive core_constants.ConfigName = "DRIVE_S3_STORAGE_BUCKET_DRIVE"
 
-	CrontabDeleteTrashedFile = "DRIVE_CRONTAB_DELETE_TRASHED_FILE"
+	CrontabDeleteTrashedFile core_constants.ConfigName = "DRIVE_CRONTAB_DELETE_TRASHED_FILE"
+)
+
+const (
+	RedisHost     core_constants.ConfigName = "DRIVE_REDIS_HOST"
+	RedisPost     core_constants.ConfigName = "DRIVE_REDIS_PORT"
+	RedisPassword core_constants.ConfigName = "DRIVE_REDIS_PASSWORD"
+	RedisDB       core_constants.ConfigName = "DRIVE_REDIS_DB"
 )

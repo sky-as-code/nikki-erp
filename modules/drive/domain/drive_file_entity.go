@@ -41,6 +41,9 @@ type DriveFile struct {
 
 	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 
+	// Owner is optional view populated by the application layer for API responses; not persisted.
+	Owner *DriveFileShareUser `json:"owner,omitempty"`
+
 	// UserId is the acting user for permission checks on mutations; not persisted.
 	UserId model.Id `json:"-"`
 }

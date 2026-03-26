@@ -18,6 +18,16 @@ type DriveFileShare struct {
 	// User is an optional view populated by application layer when returning API responses.
 	// It is not persisted in DriveFileShare storage.
 	User *DriveFileShareUser `json:"user,omitempty"`
+
+	// File is an optional view for the referenced drive file (by FileRef); not persisted.
+	File *DriveFileShareFile `json:"file,omitempty"`
+}
+
+// DriveFileShareFile is a minimal file projection for API responses (not persisted).
+type DriveFileShareFile struct {
+	Id       model.Id `json:"id"`
+	Name     string   `json:"name"`
+	IsFolder bool     `json:"isFolder"`
 }
 
 type DriveFileShareUser struct {

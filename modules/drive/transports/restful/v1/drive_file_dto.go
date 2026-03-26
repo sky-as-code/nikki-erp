@@ -29,13 +29,44 @@ type DriveFileDto struct {
 	Status     enum.DriveFileStatus     `json:"status"`
 	// Children   []*DriveFileDto          `json:"children,omitempty" model:"-"`
 
+	Owner *DriveFileShareUserDto `json:"owner,omitempty"`
+
 	DeletedAt *time.Time `json:"deletedAt,omitempty"`
 }
 
 func (this *DriveFileDto) FromDriveFile(f domain.DriveFile) {
 	model.MustCopy(f.ModelBase, this)
 	model.MustCopy(f.AuditableBase, this)
-	model.MustCopy(f, this)
+
+	// Copy primitive/struct fields explicitly to avoid modelmapper type mismatch
+	// between domain.DriveFileShareUser and v1.DriveFileShareUserDto (field Owner).
+	if f.OwnerRef != nil {
+		this.OwnerRef = *f.OwnerRef
+	}
+	if f.ParentDriveFileRef != nil {
+		this.ParentDriveFileRef = *f.ParentDriveFileRef
+	}
+	this.MaterializedPath = f.MaterializedPath
+	this.Name = f.Name
+	this.MINE = f.MINE
+	this.IsFolder = f.IsFolder
+	this.Size = f.Size
+	this.Storage = f.Storage
+	this.Visibility = f.Visibility
+	this.Status = f.Status
+	this.DeletedAt = f.DeletedAt
+
+	if f.Owner != nil {
+		u := DriveFileShareUserDto{
+			Id:          f.Owner.Id,
+			DisplayName: f.Owner.DisplayName,
+			Email:       f.Owner.Email,
+			AvatarUrl:   f.Owner.AvatarUrl,
+		}
+		this.Owner = &u
+	} else {
+		this.Owner = nil
+	}
 }
 
 type CreateDriveFileRequest = it.CreateDriveFileCommand

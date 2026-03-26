@@ -1,11 +1,15 @@
 package v1
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/drive/domain"
 	shareIt "github.com/sky-as-code/nikki-erp/modules/drive/interfaces/drive_file_share"
 )
 
@@ -146,6 +150,94 @@ func (this DriveFileShareRest) GetDriveFileShareByFileId(echoCtx echo.Context) (
 	)
 
 	return err
+}
+
+func (this DriveFileShareRest) GetDriveFileAncestorOwnersByFileId(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get ancestor owners by file id"); e != nil {
+			err = e
+		}
+	}()
+
+	var req GetDriveFileAncestorOwnersByFileIdRequest
+	if err = echoCtx.Bind(&req); err != nil {
+		return httpserver.HandleBindError(echoCtx, err)
+	}
+	reqCtx := echoCtx.Request().Context().(crud.Context)
+	result, err := this.DriveFileShareSvc.GetDriveFileAncestorOwnersByFileId(reqCtx, req)
+	if err != nil {
+		return httpserver.HandleServiceError(echoCtx, err)
+	}
+	if errResp := httpserver.HandleResultError(echoCtx, *result); errResp != nil {
+		return errResp
+	}
+	response := array.Map(result.Data, func(s *domain.DriveFileShare) DriveFileShareDto {
+		item := DriveFileShareDto{}
+		item.FromDriveFileShare(*s)
+		return item
+	})
+	return httpserver.JsonOk(echoCtx, response)
+}
+
+func (this DriveFileShareRest) GetDriveFileResolvedSharesByFileId(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get resolved shares by file id"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequest(
+		echoCtx, this.DriveFileShareSvc.GetDriveFileResolvedSharesByFileId,
+		func(request GetDriveFileResolvedSharesByFileIdRequest) shareIt.GetDriveFileResolvedSharesByFileIdQuery {
+			return request
+		},
+		func(result shareIt.GetDriveFileResolvedSharesByFileIdResult) GetDriveFileResolvedSharesByFileIdResponse {
+			response := GetDriveFileResolvedSharesByFileIdResponse{}
+			response.FromResult(result.Data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+
+	return err
+}
+
+func (this DriveFileShareRest) GetDriveFileUserShareDetails(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get file-user share details"); e != nil {
+			err = e
+		}
+	}()
+
+	return httpserver.ServeRequest(
+		echoCtx, this.DriveFileShareSvc.GetDriveFileUserShareDetails,
+		func(request GetDriveFileUserShareDetailsRequest) shareIt.GetDriveFileUserShareDetailsQuery {
+			return request
+		},
+		func(result shareIt.GetDriveFileUserShareDetailsResult) GetDriveFileUserShareDetailsResponse {
+			return array.Map(result.Data, func(s *shareIt.DriveFileUserShareDetail) DriveFileShareDto {
+				item := DriveFileShareDto{
+					ModelBase:     s.ModelBase,
+					AuditableBase: s.AuditableBase,
+					FileRef:    s.FileRef,
+					UserRef:    s.UserRef,
+					Permission: s.Permission,
+				}
+				if s.User != nil {
+					u := DriveFileShareUserDto{}
+					model.MustCopy(*s.User, &u)
+					item.User = &u
+				}
+				if s.File != nil {
+					f := DriveFileShareFileDto{}
+					model.MustCopy(*s.File, &f)
+					item.File = &f
+				}
+				return item
+			})
+		},
+		httpserver.JsonOk,
+	)
 }
 
 func (this DriveFileShareRest) GetDriveFileShareByUser(echoCtx echo.Context) (err error) {
