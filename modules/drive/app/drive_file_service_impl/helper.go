@@ -149,26 +149,6 @@ func (this *DriveFileServiceImpl) sanitizeDriveFile(d *domain.DriveFile) {
 	}
 }
 
-func (this *DriveFileServiceImpl) assertDriveFileActionAllowed(
-	ctx crud.Context,
-	file *domain.DriveFile,
-	userId model.Id,
-	allow func(FilePermissionResult) bool,
-	vErrs *ft.ValidationErrors,
-) error {
-	if file == nil || file.Id == nil || userId == "" {
-		return nil
-	}
-	perm, err := this.resolvePermission(ctx, file, userId)
-	if err != nil {
-		return err
-	}
-	if !allow(perm) {
-		vErrs.AppendNotAllowed("driveFileId", "drive file")
-	}
-	return nil
-}
-
 func (this *DriveFileServiceImpl) assertDriveFileExists(ctx crud.Context, d *domain.DriveFile, vErrs *ft.ValidationErrors) (*domain.DriveFile, error) {
 	if d == nil || d.Id == nil {
 		return nil, nil

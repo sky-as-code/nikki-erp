@@ -13,12 +13,14 @@ type CreateDriveFileShareCommand struct {
 	FileRef    model.Id                `param:"driveFileId"`
 	UserRef    model.Id                `json:"userRef"`
 	Permission enum.DriveFilePerm `json:"permission"`
+	UserId     model.Id              `json:"-"`
 }
 
 func (this CreateDriveFileShareCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.FileRef, true),
 		model.IdValidateRule(&this.UserRef, true),
+		model.IdValidateRule(&this.UserId, true),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -29,12 +31,14 @@ type CreateBulkDriveFileShareCommand struct {
 	FileRef    model.Id                `param:"driveFileId"`
 	UserRefs   []model.Id              `json:"userRefs"`
 	Permission enum.DriveFilePerm `json:"permission"`
+	UserId     model.Id              `json:"-"`
 }
 
 func (this CreateBulkDriveFileShareCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
 		model.IdValidateRule(&this.FileRef, true),
 		model.IdValidateRuleMulti(&this.UserRefs, true, 1, model.MODEL_RULE_ID_ARR_MAX),
+		model.IdValidateRule(&this.UserId, true),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -42,15 +46,19 @@ func (this CreateBulkDriveFileShareCommand) Validate() fault.ValidationErrors {
 type CreateBulkDriveFileShareResult = crud.OpResult[[]*domain.DriveFileShare]
 
 type UpdateDriveFileShareCommand struct {
-	Id         model.Id                `param:"driveFileShareId" json:"driveFileShareId"`
-	Etag       model.Etag              `json:"etag"`
-	Permission enum.DriveFilePerm `json:"permission"`
+	DriveFileId model.Id `param:"driveFileId" json:"-"`
+	Id          model.Id `param:"driveFileShareId" json:"driveFileShareId"`
+	Etag        model.Etag              `json:"etag"`
+	Permission  enum.DriveFilePerm `json:"permission"`
+	UserId      model.Id              `json:"-"`
 }
 
 func (this UpdateDriveFileShareCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.DriveFileId, true),
 		model.IdValidateRule(&this.Id, true),
 		model.EtagValidateRule(&this.Etag, true),
+		model.IdValidateRule(&this.UserId, true),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }
@@ -188,12 +196,16 @@ type SearchDriveFileShareResultData = crud.PagedResult[*domain.DriveFileShare]
 type SearchDriveFileShareResult = crud.OpResult[*SearchDriveFileShareResultData]
 
 type DeleteDriveFileShareCommand struct {
+	DriveFileId      model.Id `param:"driveFileId" json:"-"`
 	DriveFileShareId model.Id `param:"driveFileShareId" json:"driveFileShareId"`
+	UserId           model.Id `json:"-"`
 }
 
 func (this DeleteDriveFileShareCommand) Validate() fault.ValidationErrors {
 	rules := []*validator.FieldRules{
+		model.IdValidateRule(&this.DriveFileId, true),
 		model.IdValidateRule(&this.DriveFileShareId, true),
+		model.IdValidateRule(&this.UserId, true),
 	}
 	return validator.ApiBased.ValidateStruct(&this, rules...)
 }

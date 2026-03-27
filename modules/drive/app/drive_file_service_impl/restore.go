@@ -100,7 +100,7 @@ func (this *DriveFileServiceImpl) assertRestoreDriveFileRules(
 	}
 
 	if d.UserId != "" {
-		if err := this.assertDriveFileActionAllowed(ctx, fromDb, d.UserId, func(p FilePermissionResult) bool {
+		if err := this.permissionSvc.AssertDriveFileActionAllowed(ctx, fromDb, d.UserId, func(p it.FilePermissionResult) bool {
 			return p.CanRestore()
 		}, vErrs); err != nil {
 			return err
@@ -136,7 +136,7 @@ func (this *DriveFileServiceImpl) assertRestoreDriveFileRules(
 		}
 
 		if d.UserId != "" {
-			if err := this.assertDriveFileActionAllowed(ctx, parent, d.UserId, func(p FilePermissionResult) bool {
+			if err := this.permissionSvc.AssertDriveFileActionAllowed(ctx, parent, d.UserId, func(p it.FilePermissionResult) bool {
 				return p.CanCreateTo()
 			}, vErrs); err != nil {
 				return err

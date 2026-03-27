@@ -30,7 +30,7 @@ func (this *DriveFileServiceImpl) GetDriveFileById(ctx crud.Context, query it.Ge
 				return nil, nil
 			}
 
-			permission, err := this.resolvePermission(ctx, driveFile, q.UserId)
+			permission, err := this.permissionSvc.ResolvePermission(ctx, driveFile, q.UserId)
 			ft.PanicOnErr(err)
 			if !permission.CanView() {
 				vErrs.AppendNotAllowed("driveFileId", "drive file")
@@ -43,7 +43,7 @@ func (this *DriveFileServiceImpl) GetDriveFileById(ctx crud.Context, query it.Ge
 		},
 		ToSuccessResult: func(d *domain.DriveFile) *it.GetDriveFileByIdResult {
 			ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, []*domain.DriveFile{d}))
-			ft.PanicOnErr(this.enrichDriveFilesWithPermissions(ctx, []*domain.DriveFile{d}, query.UserId))
+			ft.PanicOnErr(this.permissionSvc.EnrichDriveFilesWithPermissions(ctx, []*domain.DriveFile{d}, query.UserId))
 			return &it.GetDriveFileByIdResult{HasData: true, Data: d}
 		},
 	})
@@ -104,7 +104,7 @@ func (this *DriveFileServiceImpl) GetDriveFileByParent(ctx crud.Context, query i
 			return &it.GetDriveFileByParentResult{ClientError: vErrsAssert.ToClientError()}, nil
 		}
 
-		permission, err := this.resolvePermission(ctx, parent, query.UserId)
+		permission, err := this.permissionSvc.ResolvePermission(ctx, parent, query.UserId)
 		ft.PanicOnErr(err)
 		if !permission.CanView() {
 			return &it.GetDriveFileByParentResult{
@@ -138,7 +138,7 @@ func (this *DriveFileServiceImpl) GetDriveFileByParent(ctx crud.Context, query i
 		ToSuccessResult: func(paged *crud.PagedResult[*domain.DriveFile]) *it.GetDriveFileByParentResult {
 			if paged != nil {
 				ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, paged.Items))
-				ft.PanicOnErr(this.enrichDriveFilesWithPermissions(ctx, paged.Items, query.UserId))
+				ft.PanicOnErr(this.permissionSvc.EnrichDriveFilesWithPermissions(ctx, paged.Items, query.UserId))
 			}
 			return &it.GetDriveFileByParentResult{Data: paged, HasData: true}
 		},
@@ -167,7 +167,7 @@ func (this *DriveFileServiceImpl) GetDriveFileByParent(ctx crud.Context, query i
 		ToSuccessResult: func(paged *crud.PagedResult[*domain.DriveFile]) *it.GetDriveFileByParentResult {
 			if paged != nil {
 				ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, paged.Items))
-				ft.PanicOnErr(this.enrichDriveFilesWithPermissions(ctx, paged.Items, query.UserId))
+				ft.PanicOnErr(this.permissionSvc.EnrichDriveFilesWithPermissions(ctx, paged.Items, query.UserId))
 			}
 			return &it.GetDriveFileByParentResult{Data: paged, HasData: true}
 		},
@@ -201,7 +201,7 @@ func (this *DriveFileServiceImpl) SearchDriveFile(ctx crud.Context, query it.Sea
 		ToSuccessResult: func(paged *crud.PagedResult[*domain.DriveFile]) *it.SearchDriveFileResult {
 			if paged != nil {
 				ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, paged.Items))
-				ft.PanicOnErr(this.enrichDriveFilesWithPermissions(ctx, paged.Items, query.UserId))
+				ft.PanicOnErr(this.permissionSvc.EnrichDriveFilesWithPermissions(ctx, paged.Items, query.UserId))
 			}
 			return &it.SearchDriveFileResult{Data: paged, HasData: paged.Items != nil}
 		},
@@ -236,7 +236,7 @@ func (this *DriveFileServiceImpl) SearchDriveFilesShared(ctx crud.Context, query
 		ToSuccessResult: func(paged *crud.PagedResult[*domain.DriveFile]) *it.SearchDriveFileResult {
 			if paged != nil {
 				ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, paged.Items))
-				ft.PanicOnErr(this.enrichDriveFilesWithPermissions(ctx, paged.Items, query.UserId))
+				ft.PanicOnErr(this.permissionSvc.EnrichDriveFilesWithPermissions(ctx, paged.Items, query.UserId))
 			}
 			return &it.SearchDriveFileResult{Data: paged, HasData: paged.Items != nil}
 		},
@@ -262,7 +262,7 @@ func (this *DriveFileServiceImpl) GetDriveFileAncestors(ctx crud.Context, query 
 	if driveFile.ParentDriveFileRef == nil {
 		// Root may be viewable either by owner OR by direct share.
 		// Use the same permission resolver for consistent behavior.
-		perm, err := this.resolvePermission(ctx, driveFile, query.UserId)
+		perm, err := this.permissionSvc.ResolvePermission(ctx, driveFile, query.UserId)
 		ft.PanicOnErr(err)
 		if !perm.CanView() {
 			return &it.GetDriveFileAncestorsResult{HasData: true, Data: []*domain.DriveFile{}}, nil
@@ -270,7 +270,7 @@ func (this *DriveFileServiceImpl) GetDriveFileAncestors(ctx crud.Context, query 
 
 		data := []*domain.DriveFile{driveFile}
 		ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, data))
-		ft.PanicOnErr(this.enrichDriveFilesWithPermissions(ctx, data, query.UserId))
+		ft.PanicOnErr(this.permissionSvc.EnrichDriveFilesWithPermissions(ctx, data, query.UserId))
 		return &it.GetDriveFileAncestorsResult{HasData: true, Data: data}, nil
 	}
 
@@ -293,7 +293,7 @@ func (this *DriveFileServiceImpl) GetDriveFileAncestors(ctx crud.Context, query 
 	path = append(path, driveFile) // index 0 = the original file
 
 	highestViewIdx := -1
-	selfPerm, err := this.resolvePermission(ctx, driveFile, query.UserId)
+	selfPerm, err := this.permissionSvc.ResolvePermission(ctx, driveFile, query.UserId)
 	ft.PanicOnErr(err)
 	if selfPerm.CanView() {
 		highestViewIdx = 0
@@ -308,7 +308,7 @@ func (this *DriveFileServiceImpl) GetDriveFileAncestors(ctx crud.Context, query 
 		}
 
 		path = append(path, parent)
-		perm, err := this.resolvePermission(ctx, parent, query.UserId)
+		perm, err := this.permissionSvc.ResolvePermission(ctx, parent, query.UserId)
 		ft.PanicOnErr(err)
 		if perm.CanView() {
 			highestViewIdx = len(path) - 1
@@ -333,6 +333,6 @@ func (this *DriveFileServiceImpl) GetDriveFileAncestors(ctx crud.Context, query 
 	}
 
 	ft.PanicOnErr(this.enrichDriveFilesWithOwners(ctx, res))
-	ft.PanicOnErr(this.enrichDriveFilesWithPermissions(ctx, res, query.UserId))
+	ft.PanicOnErr(this.permissionSvc.EnrichDriveFilesWithPermissions(ctx, res, query.UserId))
 	return &it.GetDriveFileAncestorsResult{HasData: true, Data: res}, nil
 }

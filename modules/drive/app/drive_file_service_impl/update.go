@@ -43,7 +43,7 @@ func (this *DriveFileServiceImpl) assertUpdateDriveFileMetadataRules(
 	if d.UserId == "" || fromDb == nil {
 		return nil
 	}
-	return this.assertDriveFileActionAllowed(ctx, fromDb, d.UserId, func(p FilePermissionResult) bool {
+	return this.permissionSvc.AssertDriveFileActionAllowed(ctx, fromDb, d.UserId, func(p it.FilePermissionResult) bool {
 		return p.CanUpdate()
 	}, vErrs)
 }
@@ -100,7 +100,7 @@ func (this *DriveFileServiceImpl) UpdateDriveFileContent(ctx crud.Context, cmd i
 
 func (this *DriveFileServiceImpl) assertUpdateDriveFileContentRules(ctx crud.Context, d *domain.DriveFile, fromDb *domain.DriveFile, vErrs *ft.ValidationErrors) error {
 	if d.UserId != "" && fromDb != nil {
-		if err := this.assertDriveFileActionAllowed(ctx, fromDb, d.UserId, func(p FilePermissionResult) bool {
+		if err := this.permissionSvc.AssertDriveFileActionAllowed(ctx, fromDb, d.UserId, func(p it.FilePermissionResult) bool {
 			return p.CanUpdate()
 		}, vErrs); err != nil {
 			return err

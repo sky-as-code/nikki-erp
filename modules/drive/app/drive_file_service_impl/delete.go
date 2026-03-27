@@ -47,7 +47,7 @@ func (this *DriveFileServiceImpl) DeleteDriveFile(ctx crud.Context, cmd it.Delet
 	}
 
 	if cmd.UserId != "" {
-		if err := this.assertDriveFileActionAllowed(ctx, driveFile, cmd.UserId, func(p FilePermissionResult) bool {
+		if err := this.permissionSvc.AssertDriveFileActionAllowed(ctx, driveFile, cmd.UserId, func(p it.FilePermissionResult) bool {
 			return p.CanDelete()
 		}, vErrs); err != nil {
 			ft.PanicOnErr(err)

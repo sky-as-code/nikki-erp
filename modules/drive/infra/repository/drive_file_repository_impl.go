@@ -175,7 +175,7 @@ func (d *driveFileRepository) Create(ctx crud.Context, driveFile *domain.DriveFi
 	if err != nil {
 		if ent.IsConstraintError(err) && isDriveFileUniqueNameConstraint(err) {
 			return nil, &fault.ClientError{
-				Code:    "duplicate_name",
+				Code:    "duplicate",
 				Details: fault.ValidationErrors{"name": "a file or folder with this name already exists in this location"},
 			}
 		}
@@ -357,7 +357,7 @@ func permissionPredicate(userId string) predicate.DriveFile {
 
 		// 1. Direct share: user has a share row pointing at this file
 		directShareSub := entSql.
-			Select("1").
+			SelectExpr(entSql.Raw("1")).
 			From(shareTable).
 			Where(
 				entSql.And(
@@ -368,7 +368,7 @@ func permissionPredicate(userId string) predicate.DriveFile {
 
 		// 2. Ancestor share: user has a share on one of the file's ancestors
 		ancestorShareSub := entSql.
-			Select("1").
+			SelectExpr(entSql.Raw("1")).
 			From(ancestorTable).
 			Join(shareTable).
 			On(
@@ -385,7 +385,7 @@ func permissionPredicate(userId string) predicate.DriveFile {
 		// 3. Ancestor owner: user owns one of the file's ancestors
 		ancestorFileTable := entSql.Table(entDrivefile.Table).As("af")
 		ancestorOwnerSub := entSql.
-			Select("1").
+			SelectExpr(entSql.Raw("1")).
 			From(ancestorTable).
 			Join(ancestorFileTable).
 			On(

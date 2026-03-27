@@ -107,7 +107,7 @@ func (this *DriveFileServiceImpl) assertCreateDriveFileRules(ctx crud.Context, d
 			actorID = *d.OwnerRef
 		}
 		if actorID != "" {
-			if err := this.assertDriveFileActionAllowed(ctx, parent, actorID, func(p FilePermissionResult) bool {
+			if err := this.permissionSvc.AssertDriveFileActionAllowed(ctx, parent, actorID, func(p it.FilePermissionResult) bool {
 				return p.CanCreateTo()
 			}, vErrs); err != nil {
 				return err

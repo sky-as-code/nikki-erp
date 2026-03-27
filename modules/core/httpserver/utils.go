@@ -44,7 +44,8 @@ func HandleServiceError(echoCtx echo.Context, err error) error {
 // Returns nil when the result is successful so the caller can build the response.
 func HandleResultError(echoCtx echo.Context, result CmdResult) error {
 	if (result).GetClientError() != nil {
-		return JsonBadRequest(echoCtx, (result).GetClientError())
+		ce := (result).GetClientError()
+		return echoCtx.JSON(mapClientErrorStatus(ce.Code), ce)
 	}
 
 	if !(result).GetHasData() {
@@ -60,8 +61,10 @@ func HandleResultError(echoCtx echo.Context, result CmdResult) error {
 
 func mapClientErrorStatus(code string) int {
 	switch code {
-	case "duplicate_name":
+	case "duplicate":
 		return http.StatusConflict
+	case "forbidden":
+		return http.StatusForbidden
 	default:
 		return http.StatusBadRequest
 	}
@@ -88,7 +91,8 @@ func ServeRequest[THttpReq any, THttpResp any, TSvcCommand any, TSvcResult CmdRe
 	}
 
 	if (*result).GetClientError() != nil {
-		return JsonBadRequest(echoCtx, (*result).GetClientError())
+		ce := (*result).GetClientError()
+		return echoCtx.JSON(mapClientErrorStatus(ce.Code), ce)
 	}
 
 	if !(*result).GetHasData() {

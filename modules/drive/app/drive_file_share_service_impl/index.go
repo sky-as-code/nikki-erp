@@ -9,13 +9,20 @@ import (
 type DriveFileShareServiceImpl struct {
 	driveFileShareRepo it.DriveFileShareRepository
 	driveFileRepo      driFileIt.DriveFileRepository
+	permissionSvc      driFileIt.DriveFilePermissionService
 	identityCqrs       identity_cqrs.IdentityCqrsAdapter
 }
 
-func NewDriveFileShareService(driveFileShareRepo it.DriveFileShareRepository, driveFileRepo driFileIt.DriveFileRepository, identityCqrsAdapter identity_cqrs.IdentityCqrsAdapter) it.DriveFileShareService {
+func NewDriveFileShareService(
+	driveFileShareRepo it.DriveFileShareRepository,
+	driveFileRepo driFileIt.DriveFileRepository,
+	permissionSvc driFileIt.DriveFilePermissionService,
+	identityCqrsAdapter identity_cqrs.IdentityCqrsAdapter,
+) it.DriveFileShareService {
 	return &DriveFileShareServiceImpl{
 		driveFileShareRepo: driveFileShareRepo,
 		driveFileRepo:      driveFileRepo,
+		permissionSvc:      permissionSvc,
 		identityCqrs:       identityCqrsAdapter,
 	}
 }

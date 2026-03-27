@@ -6,6 +6,7 @@ import (
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/middleware"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -40,6 +41,7 @@ func (this DriveFileShareRest) CreateDriveFileShare(echoCtx echo.Context) (err e
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileShareSvc.CreateDriveFileShare,
 		func(request CreateDriveFileShareRequest) shareIt.CreateDriveFileShareCommand {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result shareIt.CreateDriveFileShareResult) CreateDriveFileShareResponse {
@@ -63,6 +65,7 @@ func (this DriveFileShareRest) CreateBulkDriveFileShares(echoCtx echo.Context) (
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileShareSvc.CreateBulkDriveFileShares,
 		func(request CreateBulkDriveFileShareRequest) shareIt.CreateBulkDriveFileShareCommand {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result shareIt.CreateBulkDriveFileShareResult) CreateBulkDriveFileShareResponse {
@@ -93,6 +96,7 @@ func (this DriveFileShareRest) UpdateDriveFileShare(echoCtx echo.Context) (err e
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileShareSvc.UpdateDriveFileShare,
 		func(request UpdateDriveFileShareRequest) shareIt.UpdateDriveFileShareCommand {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result shareIt.UpdateDriveFileShareResult) UpdateDriveFileShareResponse {
@@ -296,6 +300,7 @@ func (this DriveFileShareRest) DeleteDriveFileShare(echoCtx echo.Context) (err e
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileShareSvc.DeleteDriveFileShare,
 		func(request DeleteDriveFileShareRequest) shareIt.DeleteDriveFileShareCommand {
+			request.UserId = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
 			return request
 		},
 		func(result shareIt.DeleteDriveFileShareResult) DeleteDriveFileShareResponse {
