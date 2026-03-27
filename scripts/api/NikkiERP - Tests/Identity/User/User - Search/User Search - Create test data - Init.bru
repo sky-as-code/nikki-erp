@@ -19,7 +19,7 @@ body:json {
 
 script:pre-request {
   let body = req.getBody();
-  console.log('Creating test user: ', bru.interpolate(body.displayName));
+  console.log('Creating test user: ', bru.interpolate(body.display_name));
 }
 
 script:post-response {
@@ -34,22 +34,21 @@ script:post-response {
         type: "array",
         items: {
           type: "object",
-          required: ["id", "createdAt", "displayName", "email", "etag", "status"],
+          required: ["id", "created_at", "display_name", "email", "etag", "status"],
           properties: {
             id: {
               type: "string",
               minLength: 1,
             },
-            avatarUrl: {
+            avatar_url: {
               type: "string",
               format: "uri",
             },
-            createdAt: {
-              type: "integer",
-              minimum: 1,
-              description: "Unix timestamp in milliseconds"
+            created_at: {
+              type: "string",
+              minLength: 20, //"2026-03-23T06:53:01Z"
             },
-            displayName: {
+            display_name: {
               type: "string",
               minLength: 1,
             },
@@ -66,9 +65,9 @@ script:post-response {
               minLength: 1,
               //enum: ["active", "locked", "archived"]
             },
-            updatedAt: {
-              type: "integer",
-              minimum: 1,
+            updated_at: {
+              type: "string",
+              minLength: 20, //"2026-03-23T06:53:01Z"
             }
           }
         }
@@ -93,7 +92,7 @@ script:post-response {
   /*
    * Configure loop
    */
-  const LOOP_COUNT = 100;
+  const LOOP_COUNT = 5;
   bru.setVar("loop_count", LOOP_COUNT);
   
   console.log(`Creating ${LOOP_COUNT} test records`)

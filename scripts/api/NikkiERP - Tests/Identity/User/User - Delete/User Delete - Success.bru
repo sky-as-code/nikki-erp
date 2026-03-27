@@ -15,15 +15,14 @@ script:post-response {
   
   const schema = {
       type: "object",
-      required: ["id", "deletedAt"],
+      required: ["affected_count", "affected_at"],
       properties: {
-          id: {
-              type: "string",
-              minLength: 1,
-          },
-          deletedAt: {
+          affected_count: {
               type: "integer",
-              minimum: 1,
+          },
+          affected_at: {
+              type: "string",
+              minLength: 20, //"2026-03-23T06:53:01Z"
           },
       },
       additionalProperties: false
@@ -43,4 +42,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

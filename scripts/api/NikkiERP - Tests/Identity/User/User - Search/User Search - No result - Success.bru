@@ -17,17 +17,41 @@ params:query {
 script:post-response {
   const tv4 = require('tv4');
   
-  const schema = bru.getVar("search_schema");
   const payload = res.getBody();
+  const schema = {
+    type: "object",
+    properties: {
+      items: {
+        type: "array",
+        minItems: 0,
+        maxItems: 0,
+      },
+      total: {
+        type: "integer",
+        minimum: 0
+      },
+      page: {
+        type: "integer",
+        minimum: 0
+      },
+      size: {
+        type: "integer",
+        minimum: 1
+      }
+    },
+    required: ["items", "total", "page", "size"]
+  }
   
   test("Status code is 200", function () {
     expect(res.getStatus()).to.equal(200);
   });
   
   test("Response matches expected JSON schema", function () {
+    console.log({body: res.getBody()});
     const valid = tv4.validate(res.getBody(), schema);
+    tv4.error && console.error(tv4.error);
     expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;
+    expect(valid).to.be.true;  
   });
   
   test("Response has no items", function () {
@@ -38,4 +62,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

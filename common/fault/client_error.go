@@ -3,7 +3,6 @@ package fault
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"text/template"
 
 	invopop "github.com/invopop/validation"
@@ -107,20 +106,18 @@ func NewAnonymousBusinessViolation(key string, message string, vars ...map[strin
 	}
 }
 
-func NewNotFoundError(schemaName string) *ClientErrorItem {
-	codeName := strings.ReplaceAll(schemaName, ".", "_")
+func NewNotFoundError() *ClientErrorItem {
 	return NewAnonymousBusinessViolation(
-		fmt.Sprintf("common.err_not_found_%s", codeName),
-		fmt.Sprintf("%s not found", schemaName),
+		"common.err_not_found",
+		"The desired data could not be found",
 	)
 }
 
-func NewEtagMismatchedError(schemaName string) *ClientErrorItem {
-	codeName := strings.ReplaceAll(schemaName, ".", "_")
+func NewEtagMismatchedError() *ClientErrorItem {
 	return NewBusinessViolation(
 		"etag",
-		fmt.Sprintf("common.err_etag_mismatched_%s", codeName),
-		fmt.Sprintf("%s was modified by another process", schemaName),
+		"common.err_etag_mismatched",
+		"This data has been modified by another process",
 	)
 }
 

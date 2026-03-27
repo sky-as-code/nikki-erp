@@ -1,11 +1,11 @@
 meta {
-  name: User Get - Not found ID - Validation errors
+  name: User Delete - Invalid ID format - Validation errors
   type: http
   seq: 4
 }
 
-get {
-  url: {{api_host}}/v1/identity/users/01KMMNZ9M0EEF6JG6RMWWPSBKM
+delete {
+  url: {{api_host}}/v1/identity/users/not-existing-1234567890123
   body: none
   auth: inherit
 }
@@ -19,7 +19,7 @@ script:post-response {
       maxItems: 1,
       items: {
           type: "object",
-          required: ["key", "message", "type"],
+          required: ["field", "message", "type"],
           properties: {
               field: {
                   type: "string",
@@ -27,15 +27,15 @@ script:post-response {
               },
               key: {
                   type: "string",
-                  enum: ["common.err_not_found"],
+                  enum: ["common.err_invalid_data_type"],
               },
               message: {
                   type: "string",
-                  enum: ["The desired data could not be found"],
+                  enum: ["invalid data type"],
               },
               type: {
                   type: "string",
-                  enum: ["business"],
+                  enum: ["validation"],
               },
           },
           additionalProperties: false,

@@ -159,7 +159,7 @@ func execDelete(
 	}
 	if delResult.IsEmpty {
 		cErrs := ft.ClientErrors{}
-		cErrs.Append(*ft.NewNotFoundError(baseRepo.GetSchema().Name()))
+		cErrs.Append(*ft.NewNotFoundError())
 		return &crud.OpResult[crud.MutateResultData]{
 			ClientErrors: cErrs,
 		}, nil
@@ -208,7 +208,7 @@ func GetOne[
 		return &crud.OpResult[TDomain]{ClientErrors: dbFound.ClientErrors}, nil
 	}
 	if dbFound.IsEmpty {
-		cErrs.Append(*ft.NewNotFoundError(baseRepo.GetSchema().Name()))
+		cErrs.Append(*ft.NewNotFoundError())
 		return &crud.OpResult[TDomain]{ClientErrors: cErrs}, nil
 	}
 
@@ -452,13 +452,13 @@ func checkExistenceAndEtag(
 		return nil
 	}
 	if dbRes.IsEmpty {
-		vErrs.Append(*ft.NewNotFoundError(schema.Name()))
+		vErrs.Append(*ft.NewNotFoundError())
 		return nil
 	}
 	dbRecord := dbRes.Data
 
 	if _, hasEtag := schema.Field("etag"); hasEtag && fieldData["etag"] != dbRecord["etag"] {
-		vErrs.Append(*ft.NewEtagMismatchedError(schema.Name()))
+		vErrs.Append(*ft.NewEtagMismatchedError())
 	}
 	return nil
 }

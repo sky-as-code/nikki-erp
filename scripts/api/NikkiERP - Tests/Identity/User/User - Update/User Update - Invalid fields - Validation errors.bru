@@ -19,22 +19,59 @@ body:json {
 }
 
 script:post-response {
-  const expected = {
-      code: "validation_error",
-      details: {
-          displayName: "the length must be between 1 and 200",
-          email: "must be a valid email address",
-          etag: "the length must be between 7 and 30",
-          // TODO: Validate orgIds
+  const tv4 = require('tv4');
+  
+  const schema = {
+      type: "array",
+      minItems: 2,
+      maxItems: 3,
+      items: {
+          type: "object",
+          required: ["field", "key", "message", "type"],
+          properties: {
+              field: {
+                  type: "string",
+                  enum: ["etag", "display_name", "email"],
+              },
+              key: {
+                  type: "string",
+                  enum: ["common.err_invalid_length", "common.err_invalid_email"],
+              },
+              message: {
+                  type: "string",
+                  enum: ["must have length between {{.min}} and {{.max}}", "must be a valid email address"],
+              },
+              type: {
+                  type: "string",
+                  enum: ["validation"],
+              },
+              vars: {
+                  type: "object",
+                  properties: {
+                    max: {
+                      type: "integer",
+                    },
+                    min: {
+                      type: "integer",
+                    },
+                  },
+              },
+          },
+          additionalProperties: false,
       },
+      additionalItems: false
   };
   
   test("Status code is 400", function () {
       expect(res.getStatus()).to.equal(400);
   });
   
-  test("Response body matches expected JSON exactly", function () {
-      expect(res.getBody()).to.eql(expected);
+  test("Response matches expected JSON schema", function () {
+    console.log({body: res.getBody()});
+    const valid = tv4.validate(res.getBody(), schema);
+    tv4.error && console.error(tv4.error);
+    expect(tv4.error).not.to.exist;
+    expect(valid).to.be.true;  
   });
   
 }

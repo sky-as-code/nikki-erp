@@ -33,11 +33,11 @@ script:post-response {
               },
               key: {
                   type: "string",
-                  enum: ["common.err_etag_mismatched_identity_user"],
+                  enum: ["common.err_etag_mismatched"],
               },
               message: {
                   type: "string",
-                  enum: ["identity.user was modified by another process"],
+                  enum: ["This data has been modified by another process"],
               },
               type: {
                   type: "string",

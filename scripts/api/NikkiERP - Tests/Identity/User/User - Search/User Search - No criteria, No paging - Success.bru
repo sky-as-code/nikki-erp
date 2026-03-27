@@ -21,9 +21,11 @@ script:post-response {
   });
   
   test("Response matches expected JSON schema", function () {
+    console.log({body: res.getBody()});
     const valid = tv4.validate(res.getBody(), schema);
+    tv4.error && console.error(tv4.error);
     expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;
+    expect(valid).to.be.true;  
   });
   
   const defaultPageSize = 50; // Change this number according to Backend default
@@ -35,4 +37,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

@@ -5,30 +5,59 @@ meta {
 }
 
 delete {
-  url: {{api_host}}/v1/identity/users/not-existing-1234567890123
+  url: {{api_host}}/v1/identity/users/01KMMNZ9M0EEF6JG6RMWWPSBKM
   body: none
   auth: inherit
 }
 
 script:post-response {
-  const expected = {
-      code: "validation_error",
-      details: {
-          id: "user id not found",
-      },
-  };
+  const tv4 = require('tv4');
   
+  const schema = {
+      type: "array",
+      minItems: 1,
+      maxItems: 1,
+      items: {
+          type: "object",
+          required: ["key", "message", "type"],
+          properties: {
+              field: {
+                  type: "string",
+                  enum: ["id"],
+              },
+              key: {
+                  type: "string",
+                  enum: ["common.err_not_found"],
+              },
+              message: {
+                  type: "string",
+                  enum: ["The desired data could not be found"],
+              },
+              type: {
+                  type: "string",
+                  enum: ["business"],
+              },
+          },
+          additionalProperties: false,
+      },
+      additionalItems: false
+  };
   
   test("Status code is 400", function () {
       expect(res.getStatus()).to.equal(400);
   });
   
-  test("Response body matches expected JSON exactly", function () {
-      expect(res.getBody()).to.eql(expected);
+  test("Response matches expected JSON schema", function () {
+    console.log({body: res.getBody()});
+    const valid = tv4.validate(res.getBody(), schema);
+    tv4.error && console.error(tv4.error);
+    expect(tv4.error).not.to.exist;
+    expect(valid).to.be.true;  
   });
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

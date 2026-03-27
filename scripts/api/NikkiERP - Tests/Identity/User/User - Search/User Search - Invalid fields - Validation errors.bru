@@ -21,25 +21,53 @@ script:pre-request {
 }
 
 script:post-response {
-  const expected = {
-      code: "validation_error",
-      details: {
-          "graph.condition": "invalid field 'fake-field' of entity 'user' in condition '[fake-field = Owner]'",
-          page: "must be no less than 0",
-          size: "must be no greater than 500",
+  const tv4 = require('tv4');
+  
+  const schema = {
+      type: "array",
+      minItems: 1,
+      maxItems: 1,
+      items: {
+          type: "object",
+          required: ["field", "key", "message", "type"],
+          properties: {
+              field: {
+                  type: "string",
+                  enum: ["fake-field"],
+              },
+              key: {
+                  type: "string",
+                  enum: ["common.err_unknown_schema_field"],
+              },
+              message: {
+                  type: "string",
+                  enum: ["field is not defined on this schema"],
+              },
+              type: {
+                  type: "string",
+                  enum: ["validation"],
+              },
+          },
+          additionalProperties: false,
       },
+      additionalItems: false
   };
   
   test("Status code is 400", function () {
       expect(res.getStatus()).to.equal(400);
   });
   
-  test("Response body matches expected JSON exactly", function () {
-      expect(res.getBody()).to.eql(expected);
+  test("Response matches expected JSON schema", function () {
+    console.log({body: res.getBody()});
+    const valid = tv4.validate(res.getBody(), schema);
+    tv4.error && console.error(tv4.error);
+    expect(tv4.error).not.to.exist;
+    expect(valid).to.be.true;  
   });
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

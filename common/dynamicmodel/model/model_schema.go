@@ -202,7 +202,7 @@ func (this *ModelSchema) Validate(input DynamicFields, forEdit ...bool) (Dynamic
 		}
 
 		val, exists := input[name]
-		if !exists && isForEdit {
+		if !exists && isForEdit && !this.IsVersioningKey(name) {
 			continue
 		}
 

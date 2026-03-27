@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/users?page=1&size=7
+  url: {{api_host}}/v1/identity/users?page=2&size=7
   body: none
   auth: inherit
 }
 
 params:query {
-  page: 1
+  page: 2
   size: 7
 }
 
@@ -26,9 +26,11 @@ script:post-response {
   });
   
   test("Response matches expected JSON schema", function () {
+    console.log({body: res.getBody()});
     const valid = tv4.validate(res.getBody(), schema);
+    tv4.error && console.error(tv4.error);
     expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;
+    expect(valid).to.be.true;  
   });
   
   // Change these numbers according to the query string params

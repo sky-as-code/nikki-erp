@@ -26,13 +26,13 @@ script:post-response {
   
   const schema = {
       type: "object",
-      required: ["id", "updated_at", "etag"],
+      required: ["affected_count", "affected_at", "etag"],
       properties: {
-          id: {
-              type: "string",
-              minLength: 1,
+          affected_count: {
+              type: "integer",
+              enum: [1]
           },
-          updated_at: {
+          affected_at: {
               type: "string",
               minLength: 20, //"2026-03-23T06:53:01Z"
           },
