@@ -1,5 +1,5 @@
 env "local" {
-  dev = "docker://postgres/17/test?search_path=public"
+  dev = "postgresql://nikki_admin:nikki_password@127.0.0.1:5432/nikki_atlas_dev?sslmode=disable&search_path=public"
 
   diff {
     skip {
@@ -8,6 +8,6 @@ env "local" {
     }
   }
   migration {
-    exclude = [""]
+    exclude = []
   }
 }

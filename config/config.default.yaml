@@ -61,3 +61,16 @@ CORE:
 AUTHENTICATE:
   # Number of seconds before a login attempt expires
   LOGIN_ATTEMPT_DURATION_SECS: 300
+
+DRIVE:
+  S3_STORAGE:
+    REGION_NAME: "hcm"
+    ACCESS_TOKEN: "access-token"
+    SECRET_KEY: "secret-key"
+    ENDPOINT: "https://hcm.ss.bfcplatform.vn"
+    BUCKET_DEFAULT: "drive"
+    BUCKET_DRIVE: "drive"
+
+  CRONTAB:
+    # At 00:00 every day
+    DELETE_TRASHED_FILE: "0 0 * * *"

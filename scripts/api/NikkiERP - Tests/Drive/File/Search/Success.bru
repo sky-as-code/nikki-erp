@@ -1,0 +1,15 @@
+meta {
+  name: Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/drive/files
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

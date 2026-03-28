@@ -1,0 +1,48 @@
+meta {
+  name: Not found
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/drive/files/:Id/content
+  body: multipartForm
+  auth: inherit
+}
+
+params:path {
+  Id: {{NotFoundId}}
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "etag": "{{driveFileEtag}}",
+    "name": "abc",
+    "visibility": "",
+    "status": ""
+  }
+}
+
+body:multipart-form {
+  file: @file(/home/quocsi/golint)
+  etag: {{driveFileEtag}}
+}
+
+tests {
+  test("Status is 400", function() {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  test("Should has error", function() {
+      expect(res.getBody()?.details?.driveFileId).to.equal("drive file not found");
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

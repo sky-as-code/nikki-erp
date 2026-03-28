@@ -1,0 +1,20 @@
+meta {
+  name: Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/drive/files/:driveFileId/ancestors
+  body: none
+  auth: inherit
+}
+
+params:path {
+  driveFileId: 01KKDJF717NZEMC82DSXVFWVH4
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

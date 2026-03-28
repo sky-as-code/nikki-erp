@@ -31,6 +31,10 @@ func JsonBadRequest(echoCtx echo.Context, err any) error {
 	return echoCtx.JSON(http.StatusBadRequest, err)
 }
 
+func JsonConflict(echoCtx echo.Context, err any) error {
+	return echoCtx.JSON(http.StatusConflict, err)
+}
+
 type RestCreateResponse struct {
 	Id        model.Id   `json:"id"`
 	CreatedAt int64      `json:"createdAt"`

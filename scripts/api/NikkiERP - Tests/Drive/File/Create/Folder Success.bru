@@ -1,0 +1,37 @@
+meta {
+  name: Folder Success
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/drive/files
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:multipart-form {
+  name: test-folder3
+  isFolder: true
+  visibility: owner
+  ~file: 
+}
+
+script:post-response {
+  bru.setEnvVar("parentFileId", res.getBody()?.id)
+}
+
+tests {
+  test("Status is 201", function() {
+      expect(res.getStatus()).to.equal(201);
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

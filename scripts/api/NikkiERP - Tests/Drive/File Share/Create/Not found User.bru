@@ -1,0 +1,41 @@
+meta {
+  name: Not found User
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/drive/files/:driveFileId/shares
+  body: json
+  auth: inherit
+}
+
+params:path {
+  driveFileId: {{DriveFileId}}
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:json {
+  {
+    "userRef": "01JWNXT3EY7FG47VDJTEPTDC90",
+    "permission": "edit"
+  }
+}
+
+script:post-response {
+  bru.setEnvVar("LatestDriveFileShareId", res.getBody().id)
+}
+
+tests {
+  test("Status is 201", function() {
+      expect(res.getStatus()).to.equal(201);
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

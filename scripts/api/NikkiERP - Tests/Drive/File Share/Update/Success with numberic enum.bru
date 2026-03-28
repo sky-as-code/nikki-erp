@@ -1,0 +1,28 @@
+meta {
+  name: Success with numberic enum
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{api_host}}/v1/drive/files/:driveFileId/shares/:driveFileShareId
+  body: json
+  auth: inherit
+}
+
+params:path {
+  driveFileId: {{DriveFileId}}
+  driveFileShareId: {{LatestDriveFileShareId}}
+}
+
+body:json {
+  {
+    "etag": "{{DriveFileShareEtag}}",
+    "permission": 3
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
