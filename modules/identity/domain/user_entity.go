@@ -93,6 +93,7 @@ const (
 	UserFieldDisplayName = "display_name"
 	UserFieldEmail       = "email"
 	UserFieldIsOwner     = "is_owner"
+	UserFieldIsLocked    = "is_locked"
 	UserFieldStatus      = "status"
 )
 
@@ -178,12 +179,24 @@ func (this *UserEntity) SetFieldData(data dmodel.DynamicFields) {
 	this.fields = data
 }
 
-func (this UserEntity) GetDisplayName() *string {
-	return this.fields.GetString(UserFieldDisplayName)
+func (this UserEntity) GetId() *model.Id {
+	return this.fields.GetModelId(basemodel.FieldId)
 }
 
-func (this *UserEntity) SetDisplayName(v *string) {
-	this.fields.SetString(UserFieldDisplayName, v)
+func (this *UserEntity) SetId(v *model.Id) {
+	this.fields.SetModelId(basemodel.FieldId, v)
+}
+
+func (this UserEntity) IsArchived() bool {
+	val := this.fields.GetBool(basemodel.FieldIsArchived)
+	if val == nil {
+		return false
+	}
+	return *val
+}
+
+func (this *UserEntity) SetIsArchived(v *bool) {
+	this.fields.SetBool(basemodel.FieldIsArchived, v)
 }
 
 func (this UserEntity) GetAvatarUrl() *string {
@@ -192,6 +205,14 @@ func (this UserEntity) GetAvatarUrl() *string {
 
 func (this *UserEntity) SetAvatarUrl(v *string) {
 	this.fields.SetString(UserFieldAvatarUrl, v)
+}
+
+func (this UserEntity) GetDisplayName() *string {
+	return this.fields.GetString(UserFieldDisplayName)
+}
+
+func (this *UserEntity) SetDisplayName(v *string) {
+	this.fields.SetString(UserFieldDisplayName, v)
 }
 
 func (this UserEntity) GetEmail() *string {

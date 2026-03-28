@@ -50,26 +50,20 @@ func (this *UserDynamicRepository) Create(ctx corectx.Context, user domain.UserE
 	return baserepo.Insert[domain.UserEntity](ctx, this.dynamicRepo, user)
 }
 
+func (this *UserDynamicRepository) GetOne(ctx corectx.Context, param coredyn.RepoGetOneParam) (
+	*crud.OpResult[domain.UserEntity], error,
+) {
+	return baserepo.GetOne[domain.UserEntity](ctx, this.dynamicRepo, param)
+}
+
+func (this *UserDynamicRepository) Search(
+	ctx corectx.Context, param coredyn.RepoSearchParam,
+) (*crud.OpResult[crud.PagedResultData[domain.UserEntity]], error) {
+	return baserepo.Search[domain.UserEntity](ctx, this.dynamicRepo, param)
+}
+
 func (this *UserDynamicRepository) Update(ctx corectx.Context, user domain.UserEntity) (
 	*crud.OpResult[domain.UserEntity], error,
 ) {
 	return baserepo.Update[domain.UserEntity](ctx, this.dynamicRepo, user)
-}
-
-func (this *UserDynamicRepository) FindOne(ctx corectx.Context, param coredyn.GetOneParam) (
-	*crud.OpResult[domain.UserEntity], error,
-) {
-	return baserepo.FindOne[domain.UserEntity](ctx, this.dynamicRepo, param)
-}
-
-func (this *UserDynamicRepository) Archive(ctx corectx.Context, user domain.UserEntity) (
-	*crud.OpResult[domain.UserEntity], error,
-) {
-	return baserepo.Archive[domain.UserEntity](ctx, this.dynamicRepo, user)
-}
-
-func (this *UserDynamicRepository) Search(
-	ctx corectx.Context, param coredyn.SearchParam,
-) (*crud.OpResult[crud.PagedResultData[domain.UserEntity]], error) {
-	return baserepo.Search[domain.UserEntity](ctx, this.dynamicRepo, param)
 }

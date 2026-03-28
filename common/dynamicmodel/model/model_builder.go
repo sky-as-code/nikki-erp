@@ -210,79 +210,6 @@ func DefineField() *FieldBuilder {
 	}
 }
 
-func (this *FieldBuilder) Name(name string) *FieldBuilder {
-	this.field.name = strings.TrimSpace(name)
-	return this
-}
-
-func (this *FieldBuilder) Label(label model.LangJson) *FieldBuilder {
-	this.field.label = label
-	return this
-}
-
-func (this *FieldBuilder) VersioningKey() *FieldBuilder {
-	this.field.isVersioningKey = true
-	return this
-}
-
-func (this *FieldBuilder) IsRequired(isRequired bool) *FieldBuilder {
-	this.field.isRequiredCreate = isRequired
-	this.field.isRequiredUpdate = isRequired
-	return this
-}
-
-func (this *FieldBuilder) IsRequiredForCreate(isRequired bool) *FieldBuilder {
-	this.field.isRequiredCreate = isRequired
-	return this
-}
-
-func (this *FieldBuilder) IsRequiredForUpdate(isRequired bool) *FieldBuilder {
-	this.field.isRequiredUpdate = isRequired
-	return this
-}
-
-func (this *FieldBuilder) IsReadOnly(isReadOnly bool) *FieldBuilder {
-	this.field.isReadOnly = isReadOnly
-	return this
-}
-
-func (this *FieldBuilder) ReadOnly() *FieldBuilder {
-	this.field.isReadOnly = true
-	return this
-}
-
-func (this *FieldBuilder) RequiredForCreate() *FieldBuilder {
-	this.field.isRequiredCreate = true
-	return this
-}
-
-func (this *FieldBuilder) RequiredForUpdate() *FieldBuilder {
-	this.field.isRequiredUpdate = true
-	return this
-}
-
-func (this *FieldBuilder) PrimaryKey() *FieldBuilder {
-	this.field.isPrimaryKey = true
-	this.RequiredForCreate()
-	this.RequiredForUpdate()
-	this.ReadOnly()
-	return this
-}
-
-func (this *FieldBuilder) TenantKey() *FieldBuilder {
-	this.field.isTenantKey = true
-	return this
-}
-
-func (this *FieldBuilder) Unique() *FieldBuilder {
-	this.field.isUnique = true
-	return this
-}
-
-func (this *FieldBuilder) LabelRef(key string) *FieldBuilder {
-	return this.Label(model.LangJson{model.LabelRefLanguageCode: key})
-}
-
 func (this *FieldBuilder) Description(description model.LangJson) *FieldBuilder {
 	this.field.description = description
 	return this
@@ -293,6 +220,90 @@ func (this *FieldBuilder) DataType(dataType FieldDataType) *FieldBuilder {
 	return this
 }
 
+func (this *FieldBuilder) Foreign(relationBuilder *RelationBuilder) *FieldBuilder {
+	this.field.relation = relationBuilder.Build()
+	return this
+}
+
+func (this *FieldBuilder) Label(label model.LangJson) *FieldBuilder {
+	this.field.label = label
+	return this
+}
+
+func (this *FieldBuilder) LabelRef(key string) *FieldBuilder {
+	return this.Label(model.LangJson{model.LabelRefLanguageCode: key})
+}
+
+func (this *FieldBuilder) Name(name string) *FieldBuilder {
+	this.field.name = strings.TrimSpace(name)
+	return this
+}
+
+// Indicates that the field value cannot be set by user but by the system.
+// Any input value will be silently ignored when creating or updating the model.
+// If a default value is registered, it will be used in create operations.
+func (this *FieldBuilder) ReadOnly() *FieldBuilder {
+	this.field.isReadOnly = true
+	return this
+}
+
+// Uses this for schemas which is used for validation and not for SQL generation.
+func (this *FieldBuilder) Required() *FieldBuilder {
+	this.field.isRequiredForCreate = true
+	this.field.isRequiredForUpdate = true
+	return this
+}
+
+// Causes the field to be required for create operations,
+// and determines the "NOT NULL" constraint for the database column.
+// Missing field error will occur when the input value is nil and the field doesn't have a registered default value.
+func (this *FieldBuilder) RequiredForCreate() *FieldBuilder {
+	this.field.isRequiredForCreate = true
+	return this
+}
+
+// Causes the field to be required for update operations,
+// but doesn't affect the generated CREATE SQL query.
+// Missing field error will occur when the input value is nil REGARDLESS the field has a registered default value or not.
+func (this *FieldBuilder) RequiredForUpdate() *FieldBuilder {
+	this.field.isRequiredForUpdate = true
+	return this
+}
+
+func (this *FieldBuilder) IsRequired(isRequired bool) *FieldBuilder {
+	this.field.isRequiredForCreate = isRequired
+	this.field.isRequiredForUpdate = isRequired
+	return this
+}
+
+func (this *FieldBuilder) IsRequiredForCreate(isRequired bool) *FieldBuilder {
+	this.field.isRequiredForCreate = isRequired
+	return this
+}
+
+func (this *FieldBuilder) IsRequiredForUpdate(isRequired bool) *FieldBuilder {
+	this.field.isRequiredForUpdate = isRequired
+	return this
+}
+
+func (this *FieldBuilder) IsReadOnly(isReadOnly bool) *FieldBuilder {
+	this.field.isReadOnly = isReadOnly
+	return this
+}
+
+func (this *FieldBuilder) PrimaryKey() *FieldBuilder {
+	this.field.isPrimaryKey = true
+	this.RequiredForCreate() // NOT NULL column
+	this.RequiredForUpdate()
+	this.ReadOnly()
+	return this
+}
+
+func (this *FieldBuilder) TenantKey() *FieldBuilder {
+	this.field.isTenantKey = true
+	return this
+}
+
 func (this *FieldBuilder) Rule(rule FieldRule) *FieldBuilder {
 	rules := this.field.rules
 	rules = append(rules, &rule)
@@ -300,18 +311,50 @@ func (this *FieldBuilder) Rule(rule FieldRule) *FieldBuilder {
 	return this
 }
 
+// Sets the default value for the field.
+// Default value is only used for create operations and when the input field is nil.
+// Read-only fields are always set to the default value regardless of the input.
+// The precedence is: Default > DefaultFn > UseTypeDefault.
 func (this *FieldBuilder) Default(val any) *FieldBuilder {
 	this.field.defaultValue = util.ToPtr(Value(val))
 	return this
 }
 
+// Registers a function to generate the default value for the field.
+// Default value is only used for create operations and when the input field is nil.
+// Read-only fields are always set to the default value regardless of the input.
+// The precedence is: Default > DefaultFn > UseTypeDefault.
 func (this *FieldBuilder) DefaultFn(fn func() any) *FieldBuilder {
 	this.field.defaultFn = fn
 	return this
 }
 
-func (this *FieldBuilder) Foreign(relationBuilder *RelationBuilder) *FieldBuilder {
-	this.field.relation = relationBuilder.Build()
+// Indicates that the field should use the default value from the type definition.
+// Default value is only used for create operations and when the input field is nil.
+// Read-only fields are always set to the default value regardless of the input.
+// The precedence is: Default > DefaultFn > UseTypeDefault.
+func (this *FieldBuilder) UseTypeDefault() *FieldBuilder {
+	this.field.useTypeDefault = true
+	return this
+}
+
+func (this *FieldBuilder) SetUseTypeDefault(useTypeDefault bool) *FieldBuilder {
+	this.field.useTypeDefault = useTypeDefault
+	return this
+}
+
+func (this *FieldBuilder) Unique() *FieldBuilder {
+	this.field.isUnique = true
+	return this
+}
+
+// Indicates that the field value is used for versioning the model,
+// which means it is both read-only and required for update operations.
+func (this *FieldBuilder) VersioningKey() *FieldBuilder {
+	this.field.isVersioningKey = true
+	this.RequiredForCreate() // NOT NULL column
+	this.RequiredForUpdate()
+	this.ReadOnly()
 	return this
 }
 

@@ -1,6 +1,7 @@
 package baserepo
 
 import (
+	"database/sql"
 	"reflect"
 	"sort"
 	"strings"
@@ -55,6 +56,75 @@ func (this *BaseRepositoryImpl) GetSchema() *dmodel.ModelSchema {
 	return this.schema
 }
 
+// CheckUniqueCollisions returns unique key groups that have collisions. Empty slice means no collisions.
+func (this *BaseRepositoryImpl) CheckUniqueCollisions(ctx corectx.Context, data dmodel.DynamicFields) (
+	*crud.OpResult[[][]string], error,
+) {
+	uniqueKeysToCheck := this.filterUniqueKeysWithValues(data)
+	if len(uniqueKeysToCheck) == 0 {
+		return &crud.OpResult[[][]string]{Data: nil, IsEmpty: true}, nil
+	}
+
+	sqlQuery, err := this.queryBuilder.SqlCheckUniqueCollisions(this.schema, uniqueKeysToCheck, data)
+	if err != nil {
+		return nil, err
+	}
+	if len(sqlQuery.ClientErrors) > 0 {
+		return &crud.OpResult[[][]string]{ClientErrors: sqlQuery.ClientErrors}, nil
+	}
+
+	this.logQuery(sqlQuery.Data.Sql)
+	rows, err := this.client.Query(ctx, sqlQuery.Data.Sql, sqlQuery.Data.Args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var collidingKeys [][]string
+	idx := 0
+	for rows.Next() {
+		var val int
+		if err := rows.Scan(&val); err != nil {
+			return nil, err
+		}
+		if val == 1 && idx < len(uniqueKeysToCheck) {
+			collidingKeys = append(collidingKeys, uniqueKeysToCheck[idx])
+		}
+		idx++
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return &crud.OpResult[[][]string]{Data: collidingKeys, IsEmpty: len(collidingKeys) == 0}, nil
+}
+
+func (this *BaseRepositoryImpl) DeleteOne(ctx corectx.Context, keys dmodel.DynamicFields) (*crud.OpResult[int], error) {
+	if err := this.validateKeyMap(keys); err != nil {
+		return nil, err
+	}
+	// if err := this.ensureTenantKeyIn(keys); err != nil {
+	// 	return nil, err
+	// }
+	sqlQuery, err := this.queryBuilder.SqlDeleteEqual(this.schema, keys)
+	if err != nil {
+		return nil, err
+	}
+	if len(sqlQuery.ClientErrors) > 0 {
+		return &crud.OpResult[int]{ClientErrors: sqlQuery.ClientErrors}, nil
+	}
+
+	this.logQuery(sqlQuery.Data)
+	result, err := this.client.Exec(ctx, sqlQuery.Data)
+	if err != nil {
+		return nil, err
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	return &crud.OpResult[int]{Data: int(n), IsEmpty: n == 0}, nil
+}
+
 // Insert inserts a record to database. If the schema defines "created_at", sets current UTC timestamp.
 // On success, Data holds the inserted field map; IsEmpty is false when Data is non-nil.
 func (this *BaseRepositoryImpl) Insert(ctx corectx.Context, data dmodel.DynamicFields) (
@@ -64,51 +134,18 @@ func (this *BaseRepositoryImpl) Insert(ctx corectx.Context, data dmodel.DynamicF
 	// if err := this.ensureTenantKeyIn(data); err != nil {
 	// 	return nil, err
 	// }
-	this.trySetCreatedAt(data)
-	this.trySetEtag(data)
-	qbRes, err := this.queryBuilder.SqlInsert(this.schema, data)
+	// this.trySetCreatedAt(data)
+	// this.trySetEtag(data)
+	sqlQuery, err := this.queryBuilder.SqlInsert(this.schema, data)
 	if err != nil {
 		return nil, err
 	}
-	if len(qbRes.ClientErrors) > 0 {
-		return &crud.OpResult[dmodel.DynamicFields]{ClientErrors: qbRes.ClientErrors}, nil
+	if len(sqlQuery.ClientErrors) > 0 {
+		return &crud.OpResult[dmodel.DynamicFields]{ClientErrors: sqlQuery.ClientErrors}, nil
 	}
-	query := qbRes.Data
 
-	this.logQuery(query)
-	_, err = this.client.Exec(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	return &crud.OpResult[dmodel.DynamicFields]{Data: data, IsEmpty: false}, nil
-}
-
-// Update updates a record. The data map must contain primary keys and tenant key.
-// If the schema defines "updated_at", sets current UTC timestamp.
-func (this *BaseRepositoryImpl) Update(ctx corectx.Context, data dmodel.DynamicFields) (
-	*crud.OpResult[dmodel.DynamicFields], error,
-) {
-	// TODO: Extract later
-	// if err := this.ensureTenantKeyIn(data); err != nil {
-	// 	return nil, err
-	// }
-	filters := this.extractKeyMap(data)
-	this.trySetUpdatedAt(data)
-	prevEtag := this.trySetEtag(data)
-	if len(prevEtag) > 0 {
-		filters[basemodel.FieldEtag] = prevEtag
-	}
-	qbRes, err := this.queryBuilder.SqlUpdateEqual(this.schema, data, filters)
-	if err != nil {
-		return nil, err
-	}
-	if len(qbRes.ClientErrors) > 0 {
-		return &crud.OpResult[dmodel.DynamicFields]{ClientErrors: qbRes.ClientErrors}, nil
-	}
-	query := qbRes.Data
-
-	this.logQuery(query)
-	_, err = this.client.Exec(ctx, query)
+	this.logQuery(sqlQuery.Data)
+	_, err = this.client.Exec(ctx, sqlQuery.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -116,32 +153,31 @@ func (this *BaseRepositoryImpl) Update(ctx corectx.Context, data dmodel.DynamicF
 }
 
 // Implements BaseRepository interface
-func (this *BaseRepositoryImpl) GetOne(ctx corectx.Context, param coredyn.GetOneParam) (
+func (this *BaseRepositoryImpl) GetOne(ctx corectx.Context, param coredyn.RepoGetOneParam) (
 	*crud.OpResult[dmodel.DynamicFields], error,
 ) {
 	if vErr := this.validateGetOneColumnsAndFilter(param.Columns, param.Filter); vErr != nil {
 		return &crud.OpResult[dmodel.DynamicFields]{ClientErrors: ft.ClientErrors{*vErr}}, nil
 	}
-	if err := this.ensureTenantKeyIn(param.Filter); err != nil {
-		return nil, err
-	}
-	graph, err := this.buildFindOneGraph(param.Filter, param.IncludeArchived)
+	// if err := this.ensureTenantKeyIn(param.Filter); err != nil {
+	// 	return nil, err
+	// }
+	graph, err := this.buildFindOneGraph(param.Filter)
 	if err != nil {
 		return nil, err
 	}
-	qbRes, err := this.queryBuilder.SqlSelectGraph(this.schema, graph, orm.SqlSelectGraphOpts{
+	sqlQuery, err := this.queryBuilder.SqlSelectGraph(this.schema, graph, orm.SqlSelectGraphOpts{
 		Columns: param.Columns,
 	})
 	if err != nil {
 		return nil, err
 	}
-	if len(qbRes.ClientErrors) > 0 {
-		return &crud.OpResult[dmodel.DynamicFields]{ClientErrors: qbRes.ClientErrors}, nil
+	if len(sqlQuery.ClientErrors) > 0 {
+		return &crud.OpResult[dmodel.DynamicFields]{ClientErrors: sqlQuery.ClientErrors}, nil
 	}
-	query := qbRes.Data
 
-	this.logQuery(query)
-	rows, err := this.queryAndScan(ctx, query)
+	this.logQuery(sqlQuery.Data)
+	rows, err := this.queryAndScan(ctx, sqlQuery.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +190,7 @@ func (this *BaseRepositoryImpl) GetOne(ctx corectx.Context, param coredyn.GetOne
 // Search fetches records matching the SearchGraph criteria.
 // When the schema is tenant-scoped, filter must be provided and contain the tenant key.
 // Data uses PagedResult: Total is from COUNT when Size > 0, otherwise len(Items).
-func (this *BaseRepositoryImpl) Search(ctx corectx.Context, param coredyn.SearchParam) (
+func (this *BaseRepositoryImpl) Search(ctx corectx.Context, param coredyn.RepoSearchParam) (
 	*crud.OpResult[crud.PagedResultData[dmodel.DynamicFields]], error,
 ) {
 	// merged, err := this.mergeFilterIntoGraph(param.Graph, param.Filter)
@@ -215,9 +251,9 @@ func (this *BaseRepositoryImpl) countRowsMatchingGraph(
 }
 
 func (this *BaseRepositoryImpl) runSelectGraphScan(
-	ctx corectx.Context, graph *dmodel.SearchGraph, param coredyn.SearchParam,
+	ctx corectx.Context, graph *dmodel.SearchGraph, param coredyn.RepoSearchParam,
 ) ([]dmodel.DynamicFields, ft.ClientErrors, error) {
-	qbRes, err := this.queryBuilder.SqlSelectGraph(this.schema, graph, orm.SqlSelectGraphOpts{
+	sqlQuery, err := this.queryBuilder.SqlSelectGraph(this.schema, graph, orm.SqlSelectGraphOpts{
 		Columns: param.Columns,
 		Page:    param.Page,
 		Size:    param.Size,
@@ -225,12 +261,12 @@ func (this *BaseRepositoryImpl) runSelectGraphScan(
 	if err != nil {
 		return nil, nil, err
 	}
-	if len(qbRes.ClientErrors) > 0 {
-		return nil, qbRes.ClientErrors, nil
+	if len(sqlQuery.ClientErrors) > 0 {
+		return nil, sqlQuery.ClientErrors, nil
 	}
-	query := qbRes.Data
-	this.logQuery(query)
-	rows, err := this.queryAndScan(ctx, query)
+
+	this.logQuery(sqlQuery.Data)
+	rows, err := this.queryAndScan(ctx, sqlQuery.Data)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -249,113 +285,55 @@ func (this *BaseRepositoryImpl) queryScalarInt(ctx corectx.Context, query string
 	return n, nil
 }
 
-// Archive sets archive_at to current UTC timestamp for the record identified by keys.
-// Returns error if the schema does not define "archive_at" column.
-func (this *BaseRepositoryImpl) Archive(ctx corectx.Context, keys dmodel.DynamicFields) (
+// Update updates a record. The data map must contain primary keys and tenant key.
+// If the schema defines "updated_at", sets current UTC timestamp.
+func (this *BaseRepositoryImpl) Update(ctx corectx.Context, data dmodel.DynamicFields) (
 	*crud.OpResult[dmodel.DynamicFields], error,
 ) {
-	if _, ok := this.schema.Column(basemodel.FieldArchivedAt); !ok {
-		return nil, errors.Errorf(
-			"Archive: schema '%s' does not define column '%s'", this.schema.Name(), basemodel.FieldArchivedAt)
+	// TODO: Extract later
+	// if err := this.ensureTenantKeyIn(data); err != nil {
+	// 	return nil, err
+	// }
+	filters := this.extractKeyMap(data)
+	this.trySetUpdatedAt(data)
+	prevEtag := this.trySetEtag(data)
+	if len(prevEtag) > 0 {
+		filters[basemodel.FieldEtag] = prevEtag
 	}
-	oneRes, err := this.GetOne(ctx, coredyn.GetOneParam{Filter: keys})
+	sqlQuery, err := this.queryBuilder.SqlUpdateEqual(this.schema, data, filters)
 	if err != nil {
 		return nil, err
 	}
-	if len(oneRes.ClientErrors) > 0 {
-		return &crud.OpResult[dmodel.DynamicFields]{ClientErrors: oneRes.ClientErrors}, nil
+	if len(sqlQuery.ClientErrors) > 0 {
+		return &crud.OpResult[dmodel.DynamicFields]{ClientErrors: sqlQuery.ClientErrors}, nil
 	}
-	if oneRes.IsEmpty {
-		return &crud.OpResult[dmodel.DynamicFields]{IsEmpty: true}, nil
-	}
-	record := oneRes.Data
-	ok := this.trySetArchivedAt(record)
-	if !ok {
-		return nil, errors.Errorf(
-			"Archive: schema '%s' does not define column '%s'", this.schema.Name(), basemodel.FieldArchivedAt)
-	}
-	updRes, err := this.Update(ctx, record)
+
+	this.logQuery(sqlQuery.Data)
+	_, err = this.client.Exec(ctx, sqlQuery.Data)
 	if err != nil {
 		return nil, err
 	}
-	if len(updRes.ClientErrors) > 0 {
-		return &crud.OpResult[dmodel.DynamicFields]{ClientErrors: updRes.ClientErrors}, nil
-	}
-	return &crud.OpResult[dmodel.DynamicFields]{Data: updRes.Data, IsEmpty: false}, nil
+	return &crud.OpResult[dmodel.DynamicFields]{Data: data, IsEmpty: false}, nil
 }
 
-// Delete removes the record identified by primary keys and tenant key.
-// Data holds RowsAffected; IsEmpty is true when no row was deleted.
-func (this *BaseRepositoryImpl) Delete(ctx corectx.Context, keys dmodel.DynamicFields) (*crud.OpResult[int], error) {
-	if err := this.validateKeyMap(keys); err != nil {
-		return nil, err
-	}
-	if err := this.ensureTenantKeyIn(keys); err != nil {
-		return nil, err
-	}
-	qbRes, err := this.queryBuilder.SqlDeleteEqual(this.schema, keys)
+func (this *BaseRepositoryImpl) execUpdate(
+	ctx corectx.Context, data dmodel.DynamicFields, filters dmodel.DynamicFields,
+) (sql.Result, ft.ClientErrors, error) {
+	qbRes, err := this.queryBuilder.SqlUpdateEqual(this.schema, data, filters)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if len(qbRes.ClientErrors) > 0 {
-		return &crud.OpResult[int]{ClientErrors: qbRes.ClientErrors}, nil
+		return nil, qbRes.ClientErrors, nil
 	}
 	query := qbRes.Data
 
 	this.logQuery(query)
-	result, err := this.client.Exec(ctx, query)
+	sqlResult, err := this.client.Exec(ctx, query)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	n, err := result.RowsAffected()
-	if err != nil {
-		return nil, err
-	}
-	return &crud.OpResult[int]{Data: int(n), IsEmpty: n == 0}, nil
-}
-
-// CheckUniqueCollisions returns unique key groups that have collisions. Empty slice means no collisions.
-func (this *BaseRepositoryImpl) CheckUniqueCollisions(ctx corectx.Context, data dmodel.DynamicFields) (
-	*crud.OpResult[[][]string], error,
-) {
-	uniqueKeysToCheck := this.filterUniqueKeysWithValues(data)
-	if len(uniqueKeysToCheck) == 0 {
-		return &crud.OpResult[[][]string]{Data: nil, IsEmpty: true}, nil
-	}
-
-	qbRes, err := this.queryBuilder.SqlCheckUniqueCollisions(this.schema, uniqueKeysToCheck, data)
-	if err != nil {
-		return nil, err
-	}
-	if len(qbRes.ClientErrors) > 0 {
-		return &crud.OpResult[[][]string]{ClientErrors: qbRes.ClientErrors}, nil
-	}
-	query := qbRes.Data.Sql
-	args := qbRes.Data.Args
-
-	this.logQuery(query)
-	rows, err := this.client.Query(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var collidingKeys [][]string
-	idx := 0
-	for rows.Next() {
-		var val int
-		if err := rows.Scan(&val); err != nil {
-			return nil, err
-		}
-		if val == 1 && idx < len(uniqueKeysToCheck) {
-			collidingKeys = append(collidingKeys, uniqueKeysToCheck[idx])
-		}
-		idx++
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return &crud.OpResult[[][]string]{Data: collidingKeys, IsEmpty: len(collidingKeys) == 0}, nil
+	return sqlResult, nil, nil
 }
 
 func (this *BaseRepositoryImpl) logQuery(query string) {
@@ -389,14 +367,15 @@ func (this *BaseRepositoryImpl) filterUniqueKeysWithValues(data dmodel.DynamicFi
 	return result
 }
 
-func (this *BaseRepositoryImpl) trySetArchivedAt(data dmodel.DynamicFields) bool {
-	if _, ok := this.schema.Column(basemodel.FieldArchivedAt); !ok {
-		return false
-	}
-	field := this.schema.MustField(basemodel.FieldArchivedAt)
-	data[basemodel.FieldArchivedAt] = *field.DataType().DefaultValue().Get()
-	return true
-}
+// func (this *BaseRepositoryImpl) trySetArchivedAt(data dmodel.DynamicFields) error {
+// 	if _, ok := this.schema.Column(basemodel.FieldArchivedAt); !ok {
+// 		return errors.Errorf(
+// 			"Archive: schema '%s' does not define field '%s'", this.schema.Name(), basemodel.FieldArchivedAt)
+// 	}
+// 	field := this.schema.MustField(basemodel.FieldArchivedAt)
+// 	data[basemodel.FieldArchivedAt] = *field.DataType().DefaultValue().Get()
+// 	return nil
+// }
 
 func (this *BaseRepositoryImpl) trySetCreatedAt(data dmodel.DynamicFields) {
 	if _, ok := this.schema.Column(basemodel.FieldCreatedAt); !ok {
@@ -438,6 +417,7 @@ func (this *BaseRepositoryImpl) extractKeyMap(data dmodel.DynamicFields) dmodel.
 	for _, key := range this.schema.KeyColumns() {
 		if v, ok := data[key]; ok {
 			result[key] = v
+			delete(data, key)
 		}
 	}
 	return result
@@ -587,16 +567,10 @@ func (this *BaseRepositoryImpl) buildEqualNodes(filter dmodel.DynamicFields) ([]
 	return nodes, nil
 }
 
-func (this *BaseRepositoryImpl) buildFindOneGraph(
-	filter dmodel.DynamicFields, includeArchived bool,
-) (*dmodel.SearchGraph, error) {
+func (this *BaseRepositoryImpl) buildFindOneGraph(filter dmodel.DynamicFields) (*dmodel.SearchGraph, error) {
 	allNodes, err := this.buildEqualNodes(filter)
 	if err != nil {
 		return &dmodel.SearchGraph{}, err
-	}
-	if !includeArchived {
-		archiveCond := dmodel.NewCondition(basemodel.FieldArchivedAt, dmodel.IsNotSet)
-		allNodes = append(allNodes, *(&dmodel.SearchNode{}).Condition(util.ToPtr(archiveCond)))
 	}
 	g := &dmodel.SearchGraph{}
 	g.And(allNodes...)

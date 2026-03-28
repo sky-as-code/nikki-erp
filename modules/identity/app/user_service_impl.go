@@ -3,12 +3,10 @@ package app
 import (
 	"strings"
 
-	"github.com/sky-as-code/nikki-erp/common/defense"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
-	util "github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -49,10 +47,6 @@ type UserServiceImpl struct {
 	cqrs          cqrs.CqrsBus
 }
 
-func (this *UserServiceImpl) ArchiveUser(ctx corectx.Context, cmd it.ArchiveUserCommand2) (*it.ArchiveUserResult2, error) {
-	return corecrud.Archive[domain.UserEntity](ctx, this.userRepo2, cmd.GetFieldData())
-}
-
 func (this *UserServiceImpl) GetUserContext(ctx crud.Context, query it.GetUserContextQuery) (result *it.GetUserContextResultData, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "add or remove users"); e != nil {
@@ -70,7 +64,7 @@ func (this *UserServiceImpl) GetUserContext(ctx crud.Context, query it.GetUserCo
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
 			dbUser, err = this.getUserByIdFull(ctx, it.GetUserQuery{
-				Id: query.UserId,
+				Id: &query.UserId,
 				// WithOrg:       true,
 				// WithHierarchy: true,
 			}, vErrs)
@@ -112,10 +106,10 @@ func (this *UserServiceImpl) CreateUser(ctx corectx.Context, cmd it.CreateUserCo
 }
 
 func (this *UserServiceImpl) DeleteUser(ctx corectx.Context, cmd it.DeleteUserCommand) (*it.DeleteUserResult, error) {
-	return corecrud.DeleteEqual(ctx, corecrud.DeleteEqualParam{
+	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete user",
 		DbRepoGetter: this.userRepo2,
-		Cmd:          cmd,
+		Cmd:          corecrud.DeleteOneQuery(cmd),
 	})
 }
 
@@ -123,8 +117,18 @@ func (this *UserServiceImpl) GetUser(ctx corectx.Context, query it.GetUserQuery)
 	return corecrud.GetOne[domain.UserEntity](ctx, corecrud.GetOneParam{
 		Action:       "get user",
 		DbRepoGetter: this.userRepo2,
-		Query:        query,
+		Query:        corecrud.GetOneQuery(query),
 	})
+}
+
+func (this *UserServiceImpl) SearchUsers2(
+	ctx corectx.Context, query it.SearchUsersQuery2,
+) (*it.SearchUsersResult2, error) {
+	return corecrud.Search[domain.UserEntity](ctx, this.userRepo2, query.SearchQuery)
+}
+
+func (this *UserServiceImpl) SetUserIsArchived(ctx corectx.Context, cmd it.SetUserIsArchived) (*it.SetUserIsArchivedResult, error) {
+	return corecrud.SetIsArchived(ctx, this.userRepo2, corecrud.SetIsArchivedCommand(cmd))
 }
 
 func (this *UserServiceImpl) UpdateUser(ctx corectx.Context, cmd it.UpdateUserCommand) (*it.UpdateUserResult, error) {
@@ -133,36 +137,6 @@ func (this *UserServiceImpl) UpdateUser(ctx corectx.Context, cmd it.UpdateUserCo
 		DbRepoGetter: this.userRepo2,
 		Data:         cmd,
 	})
-}
-
-func (this *UserServiceImpl) SearchUsers2(
-	ctx corectx.Context, query it.SearchUsersQuery2,
-) (*it.SearchUsersResult2, error) {
-	return corecrud.Search[domain.UserEntity](ctx, this.userRepo2, query)
-}
-
-func (this *UserServiceImpl) sanitizeUser(user *domain.User) {
-	if user.Email != nil {
-		user.Email = util.ToPtr(strings.ToLower(*user.Email))
-	}
-	if user.DisplayName != nil {
-		cleanedName := strings.TrimSpace(*user.DisplayName)
-		cleanedName = defense.SanitizePlainText(cleanedName)
-		user.DisplayName = &cleanedName
-	}
-}
-
-func (this *UserServiceImpl) setUserDefaults(user *domain.User) {
-	user.SetDefaults()
-	user.Status = util.ToPtr(domain.UserStatusActive)
-}
-
-func (this *UserServiceImpl) assertUpdateRules(ctx crud.Context, updatedUser *domain.User, _ *domain.User, vErrs *ft.ValidationErrors) error {
-	return this.assertUserUnique(ctx, updatedUser, vErrs)
-}
-
-func (this *UserServiceImpl) assertCreateRules(ctx crud.Context, user *domain.User, vErrs *ft.ValidationErrors) error {
-	return this.assertUserUnique(ctx, user, vErrs)
 }
 
 func (this *UserServiceImpl) assertUserUnique(ctx crud.Context, user *domain.User, vErrs *ft.ValidationErrors) error {
@@ -182,7 +156,7 @@ func (this *UserServiceImpl) assertUserUnique(ctx crud.Context, user *domain.Use
 
 func (this *UserServiceImpl) assertUserIdExists(ctx crud.Context, user *domain.User, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {
 	dbUser, err = this.userRepo.FindById(ctx, it.FindByIdParam{
-		Id: *user.Id,
+		Id: user.Id,
 		// ScopeRef: user.ScopeRef,
 	})
 	if dbUser == nil {
@@ -446,7 +420,9 @@ func (this *UserServiceImpl) SearchUsers(ctx crud.Context, query it.SearchUsersQ
 // }
 
 func (this *UserServiceImpl) assertUserExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (user *domain.User, err error) {
-	user, err = this.userRepo.FindById(ctx, it.FindByIdParam{Id: id})
+	user, err = this.userRepo.FindById(ctx, it.FindByIdParam{
+		Id: &id,
+	})
 	ft.PanicOnErr(err)
 
 	if user == nil {

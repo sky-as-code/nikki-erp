@@ -227,3 +227,19 @@ func getLength(value any) (int, error) {
 		return 0, errors.Errorf("getLength: length rule applies to strings and slices, got %T", value)
 	}
 }
+
+// isNilOrEmpty reports whether val is nil (including nil pointers and interfaces) or an empty
+// string, slice, array, or map. Other kinds are not treated as empty. Pointer and interface
+// values are peeled the same way as in validation that uses length (see getLength kinds).
+func isNilOrEmpty(val any) bool {
+	if isNil(val) {
+		return true
+	}
+	rv := reflect.ValueOf(val)
+	switch rv.Kind() {
+	case reflect.String, reflect.Slice, reflect.Array, reflect.Map:
+		return rv.Len() == 0
+	default:
+		return false
+	}
+}

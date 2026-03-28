@@ -60,7 +60,7 @@ func (c Condition) Value() any {
 }
 
 func (c Condition) Values() []any {
-	if len(c) <= 2 {
+	if len(c) < 3 {
 		return nil
 	}
 	return c[2:]

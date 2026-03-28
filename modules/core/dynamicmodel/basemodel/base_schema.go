@@ -6,16 +6,15 @@ import (
 )
 
 const (
-	FieldId              = "id"
-	FieldArchivedAt      = "archived_at"
-	FieldCreatedAt       = "created_at"
-	FieldColumns         = "columns"
-	FieldIncludeArchived = "include_archived"
-	FieldGraph           = "graph"
-	FieldPage            = "page"
-	FieldSize            = "size"
-	FieldUpdatedAt       = "updated_at"
-	FieldEtag            = "etag"
+	FieldId         = "id"
+	FieldCreatedAt  = "created_at"
+	FieldColumns    = "columns"
+	FieldIsArchived = "is_archived"
+	FieldGraph      = "graph"
+	FieldPage       = "page"
+	FieldSize       = "size"
+	FieldUpdatedAt  = "updated_at"
+	FieldEtag       = "etag"
 )
 
 var baseBuilder *dmodel.ModelSchemaBuilder
@@ -28,14 +27,8 @@ func BaseModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 					Name(FieldId).
 					Label(model.LangJson{"en-US": "ID"}).
 					DataType(dmodel.FieldDataTypeUlid()).
-					PrimaryKey().
-					DefaultFn(func() any {
-						id, err := model.NewId()
-						if err != nil {
-							panic(err)
-						}
-						return *id
-					}),
+					UseTypeDefault().
+					PrimaryKey(),
 			)
 	}
 	return baseBuilder
@@ -45,8 +38,10 @@ func ArchivableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel("core.basemodel.archivable_model").
 		Field(
 			dmodel.DefineField().
-				Name(FieldArchivedAt).
-				DataType(dmodel.FieldDataTypeDateTime()).
+				Name(FieldIsArchived).
+				DataType(dmodel.FieldDataTypeBoolean()).
+				RequiredForCreate().
+				Default(false).
 				ReadOnly(),
 		)
 }
@@ -58,6 +53,7 @@ func AuditableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Name(FieldCreatedAt).
 				DataType(dmodel.FieldDataTypeDateTime()).
 				RequiredForCreate().
+				UseTypeDefault().
 				ReadOnly(),
 		).
 		Field(
@@ -75,9 +71,7 @@ func VersionedModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Name(FieldEtag).
 				DataType(dmodel.FieldDataTypeEtag()).
 				VersioningKey().
-				RequiredForCreate().
-				RequiredForUpdate().
-				ReadOnly(),
+				UseTypeDefault(),
 		)
 }
 

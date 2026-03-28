@@ -111,7 +111,7 @@ func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
 ) error {
 	reqCtx := echoCtx.Request().Context().(corectx.Context)
 
-	reqFields := make(dmodel.DynamicFields)
+	reqFields := make(map[string]any)
 	if err := echoCtx.Bind(&reqFields); err != nil {
 		_, isHttpErr := err.(*echo.HTTPError)
 		if isHttpErr {
@@ -132,6 +132,11 @@ func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
 
 	if result.ClientErrors != nil && result.ClientErrors.Count() > 0 {
 		return JsonBadRequest(echoCtx, result.ClientErrors)
+	}
+
+	if result.IsEmpty {
+		cErrs := ft.ClientErrors{*ft.NewNotFoundError()}
+		return JsonBadRequest(echoCtx, cErrs)
 	}
 
 	response := resultToResponseFn(result.Data)
@@ -160,6 +165,11 @@ func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData 
 
 	if result.ClientErrors != nil && result.ClientErrors.Count() > 0 {
 		return JsonBadRequest(echoCtx, result.ClientErrors)
+	}
+
+	if result.IsEmpty {
+		cErrs := ft.ClientErrors{*ft.NewNotFoundError()}
+		return JsonBadRequest(echoCtx, cErrs)
 	}
 
 	response := resultToResponseFn(result.Data)

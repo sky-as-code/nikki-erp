@@ -14,7 +14,7 @@ type UserService interface {
 	SearchUsers(ctx crud.Context, query SearchUsersQuery) (*SearchUsersResult, error)
 	GetUserContext(ctx crud.Context, query GetUserContextQuery) (*GetUserContextResultData, error)
 
-	ArchiveUser(ctx corectx.Context, cmd ArchiveUserCommand2) (*ArchiveUserResult2, error)
+	SetUserIsArchived(ctx corectx.Context, cmd SetUserIsArchived) (*SetUserIsArchivedResult, error)
 	CreateUser(ctx corectx.Context, cmd CreateUserCommand) (*CreateUserResult, error)
 	DeleteUser(ctx corectx.Context, cmd DeleteUserCommand) (*DeleteUserResult, error)
 	UpdateUser(ctx corectx.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)

@@ -14,8 +14,9 @@ type InitParams struct {
 
 func InitSubModule(params InitParams) error {
 	// err := errors.Join(
-	// 	deps.Register(orm.NewPgQueryBuilder),
+	// 	deps.Invoke(registerCoreSearchPredicates),
 	// )
 
+	// return err
 	return nil
 }

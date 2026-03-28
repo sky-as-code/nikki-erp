@@ -41,6 +41,7 @@ script:post-response {
   
   test("Response matches expected JSON schema", function () {
     const valid = tv4.validate(res.getBody(), schema);
+    tv4.error && console.error(tv4.error);
     expect(tv4.error).not.to.exist;
     expect(valid).to.be.true;
   });

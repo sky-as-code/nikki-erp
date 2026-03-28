@@ -7,30 +7,29 @@ import (
 )
 
 type BaseRepository interface {
-	Insert(ctx corectx.Context, data dmodel.DynamicFields) (*crud.OpResult[dmodel.DynamicFields], error)
-	Update(ctx corectx.Context, data dmodel.DynamicFields) (*crud.OpResult[dmodel.DynamicFields], error)
-	GetOne(ctx corectx.Context, param GetOneParam) (*crud.OpResult[dmodel.DynamicFields], error)
-	Search(ctx corectx.Context, param SearchParam) (*crud.OpResult[crud.PagedResultData[dmodel.DynamicFields]], error)
-	Archive(ctx corectx.Context, keys dmodel.DynamicFields) (*crud.OpResult[dmodel.DynamicFields], error)
-	Delete(ctx corectx.Context, keys dmodel.DynamicFields) (*crud.OpResult[int], error)
 	// CheckUniqueCollisions returns unique key groups that have collisions. Empty slice means no collisions.
 	CheckUniqueCollisions(ctx corectx.Context, data dmodel.DynamicFields) (*crud.OpResult[[][]string], error)
+	// DeleteOne deletes a single record by primary key then returns the number of affected rows.
+	// If affected rows is 0, the record is not found.
+	DeleteOne(ctx corectx.Context, keys dmodel.DynamicFields) (*crud.OpResult[int], error)
+	Insert(ctx corectx.Context, data dmodel.DynamicFields) (*crud.OpResult[dmodel.DynamicFields], error)
+	GetOne(ctx corectx.Context, param RepoGetOneParam) (*crud.OpResult[dmodel.DynamicFields], error)
+	Search(ctx corectx.Context, param RepoSearchParam) (*crud.OpResult[crud.PagedResultData[dmodel.DynamicFields]], error)
+	Update(ctx corectx.Context, data dmodel.DynamicFields) (*crud.OpResult[dmodel.DynamicFields], error)
 	GetSchema() *dmodel.ModelSchema
 }
 
-type GetOneParam struct {
-	Filter          dmodel.DynamicFields
-	Columns         []string
-	IncludeArchived bool
+type RepoGetOneParam struct {
+	Filter  dmodel.DynamicFields
+	Columns []string
 }
 
-type SearchParam struct {
-	Graph           *dmodel.SearchGraph
-	Columns         []string
-	Filter          []dmodel.DynamicFields
-	IncludeArchived bool
-	Page            int
-	Size            int
+type RepoSearchParam struct {
+	Graph   *dmodel.SearchGraph
+	Columns []string
+	Filter  []dmodel.DynamicFields
+	Page    int
+	Size    int
 }
 
 type BaseRepoGetter interface {

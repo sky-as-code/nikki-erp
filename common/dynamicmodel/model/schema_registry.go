@@ -122,12 +122,11 @@ func MustGetSchema(name string) *ModelSchema {
 
 // GetOrRegisterSchema first attempts to retrieve a registered schema by its name.
 // If not found, it builds a new schema using the builder and registers it.
-func GetOrRegisterSchema(newSchema *ModelSchema) *ModelSchema {
-	name := newSchema.Name()
-	schema := schemaRegistry.Get(name)
+func GetOrRegisterSchema(schemaName string, getBuilder func() *ModelSchemaBuilder) *ModelSchema {
+	schema := schemaRegistry.Get(schemaName)
 	if schema == nil {
-		RegisterSchema(newSchema)
-		schema = schemaRegistry.Get(name)
+		RegisterSchema(getBuilder().Name(schemaName).Build())
+		schema = schemaRegistry.Get(schemaName)
 	}
 	return schema
 }

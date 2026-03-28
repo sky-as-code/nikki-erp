@@ -38,14 +38,16 @@ type SqlCheckUniqueCollisionsData struct {
 
 type QueryBuilder interface {
 	SqlCreateTable(schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry) (*crud.OpResult[string], error)
-	SqlSelectGraph(entSchema *dmodel.ModelSchema, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts) (
+	SqlSelectGraph(schema *dmodel.ModelSchema, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts) (
 		*crud.OpResult[string], error)
 	// SqlCountGraph builds SELECT COUNT(*) with the same WHERE as SqlSelectGraph (no ORDER BY, LIMIT, OFFSET).
-	SqlCountGraph(entSchema *dmodel.ModelSchema, graph *dmodel.SearchGraph) (*crud.OpResult[string], error)
+	SqlCountGraph(schema *dmodel.ModelSchema, graph *dmodel.SearchGraph) (*crud.OpResult[string], error)
 	SqlInsert(schema *dmodel.ModelSchema, data dmodel.DynamicFields) (*crud.OpResult[string], error)
 	SqlInsertBulk(schema *dmodel.ModelSchema, rows []dmodel.DynamicFields) (*crud.OpResult[string], error)
 	SqlUpdateEqual(schema *dmodel.ModelSchema, data dmodel.DynamicFields, filters dmodel.DynamicFields) (
 		*crud.OpResult[string], error)
+	// SqlDeleteEqual generates a DELETE statement with the given filters using only equal predicates.
+	// This DELETE statement can result in one or multiple rows being deleted.
 	SqlDeleteEqual(schema *dmodel.ModelSchema, filters dmodel.DynamicFields) (*crud.OpResult[string], error)
 	// SqlCheckUniqueCollisions builds SQL that returns 1 per row where the unique key has a collision, else 0.
 	// Input: uniqueKeysToCheck - subset of dmodel.AllUniques() where data has all values (no nil).
@@ -53,6 +55,10 @@ type QueryBuilder interface {
 	SqlCheckUniqueCollisions(
 		schema *dmodel.ModelSchema, uniqueKeysToCheck [][]string, data dmodel.DynamicFields,
 	) (*crud.OpResult[SqlCheckUniqueCollisionsData], error)
+	// RegisterPredefinedPredicate binds a filter field name to a treatment. Omit schemaName to apply to all schemas
+	// (PredefinedPredicateAllSchemas). Operator uses dmodel.Operator values from model/database condition operators.
+	RegisterPredefinedPredicate(fieldName string, treatment PredefinedPredicateTreatment, schemaName ...string) error
+	GetPredefinedPredicate(fieldName string, schemaName string) PredefinedPredicateTreatment
 }
 
 // Ensure interface implementation at compile time.
@@ -60,21 +66,24 @@ var _ QueryBuilder = (*PgQueryBuilder)(nil)
 
 // PgQueryBuilder implements QueryBuilder for PostgreSQL.
 type PgQueryBuilder struct {
+	predefinedPredicates map[string]map[string]PredefinedPredicateTreatment
 }
 
 func NewPgQueryBuilder() QueryBuilder {
-	return &PgQueryBuilder{}
+	return &PgQueryBuilder{
+		predefinedPredicates: make(map[string]map[string]PredefinedPredicateTreatment),
+	}
 }
 
 func (this *PgQueryBuilder) SqlCreateTable(
-	entSchema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry,
+	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry,
 ) (*crud.OpResult[string], error) {
-	builder := sqlbuilder.PostgreSQL.NewCreateTableBuilder().CreateTable(pgQuote(entSchema.TableName()))
-	if err := this.defineColumns(builder, entSchema); err != nil {
+	builder := sqlbuilder.PostgreSQL.NewCreateTableBuilder().CreateTable(pgQuote(schema.TableName()))
+	if err := this.defineColumns(builder, schema); err != nil {
 		return nil, err
 	}
-	this.defineKeys(builder, entSchema)
-	if err := this.defineForeignKeys(builder, entSchema, registry); err != nil {
+	this.defineKeys(builder, schema)
+	if err := this.defineForeignKeys(builder, schema, registry); err != nil {
 		return nil, err
 	}
 	sql, _ := builder.Build()
@@ -83,9 +92,9 @@ func (this *PgQueryBuilder) SqlCreateTable(
 }
 
 func (this *PgQueryBuilder) defineColumns(
-	builder *sqlbuilder.CreateTableBuilder, entSchema *dmodel.ModelSchema,
+	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema,
 ) error {
-	for _, col := range entSchema.Columns() {
+	for _, col := range schema.Columns() {
 		pgType, err := resolveGenericToPgType(col.ColumnType())
 		if err != nil {
 			return errors.Wrapf(err, "defineColumns: column '%s'", col.Name())
@@ -96,25 +105,25 @@ func (this *PgQueryBuilder) defineColumns(
 }
 
 func (this *PgQueryBuilder) defineKeys(
-	builder *sqlbuilder.CreateTableBuilder, entSchema *dmodel.ModelSchema,
+	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema,
 ) {
-	if keys := entSchema.KeyColumns(); len(keys) > 0 {
+	if keys := schema.KeyColumns(); len(keys) > 0 {
 		builder.Define("PRIMARY KEY", fmt.Sprintf("(%s)", strings.Join(pgQuoteArr(keys), ", ")))
 	}
-	for _, unique := range entSchema.AllUniques() {
+	for _, unique := range schema.AllUniques() {
 		if len(unique) == 0 {
 			continue
 		}
-		name := pgQuote(fmt.Sprintf("%s_%s_ukey", entSchema.TableName(), strings.Join(unique, "_")))
+		name := pgQuote(fmt.Sprintf("%s_%s_ukey", schema.TableName(), strings.Join(unique, "_")))
 		cols := fmt.Sprintf("(%s)", strings.Join(pgQuoteArr(unique), ", "))
 		builder.Define(fmt.Sprintf("CONSTRAINT %s UNIQUE", name), cols)
 	}
 }
 
 func (this *PgQueryBuilder) defineForeignKeys(
-	builder *sqlbuilder.CreateTableBuilder, entSchema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry,
+	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry,
 ) error {
-	for _, rel := range entSchema.Relations() {
+	for _, rel := range schema.Relations() {
 		if !isFkOwnerRelationType(rel.RelationType) {
 			continue
 		}
@@ -123,7 +132,7 @@ func (this *PgQueryBuilder) defineForeignKeys(
 			return errors.Errorf(
 				"defineForeignKeys: destination schema not found for foreign key on field '%s'", rel.SrcField)
 		}
-		fkName := pgQuote(fmt.Sprintf("%s_%s_fkey", entSchema.TableName(), rel.SrcField))
+		fkName := pgQuote(fmt.Sprintf("%s_%s_fkey", schema.TableName(), rel.SrcField))
 		fkBody := fmt.Sprintf("(%s) REFERENCES %s (%s) ON UPDATE %s ON DELETE %s",
 			pgQuote(rel.SrcField), pgQuote(destSchema.TableName()), pgQuote(rel.DestField),
 			rel.OnUpdate.Sql(), rel.OnDelete.Sql())
@@ -133,9 +142,9 @@ func (this *PgQueryBuilder) defineForeignKeys(
 }
 
 func (this *PgQueryBuilder) SqlSelectGraph(
-	entSchema *dmodel.ModelSchema, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
+	schema *dmodel.ModelSchema, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
 ) (*crud.OpResult[string], error) {
-	sql, err := this.buildSqlSelectGraph(entSchema, graph, opts)
+	sql, err := this.buildSqlSelectGraph(schema, graph, opts)
 	if err != nil {
 		return extractClientErr[string](err)
 	}
@@ -143,23 +152,23 @@ func (this *PgQueryBuilder) SqlSelectGraph(
 }
 
 func (this *PgQueryBuilder) buildSqlSelectGraph(
-	entSchema *dmodel.ModelSchema, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
+	schema *dmodel.ModelSchema, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
 ) (string, error) {
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	if err := this.applySelectColumns(sb, entSchema, opts.Columns); err != nil {
+	if err := this.applySelectColumns(sb, schema, opts.Columns); err != nil {
 		return "", err
 	}
-	sb.From(this.tableExpression(entSchema))
+	sb.From(this.tableExpression(schema))
 	if graph != nil {
 		predicate, ok, err := this.graphExpression(
-			entSchema, sb, graph.GetCondition(), graph.GetAnd(), graph.GetOr())
+			schema, sb, graph.GetCondition(), graph.GetAnd(), graph.GetOr())
 		if err != nil {
 			return "", err
 		}
 		if ok {
 			sb.Where(predicate)
 		}
-		orderExprs, err := this.orderExprs(entSchema, graph.GetOrder())
+		orderExprs, err := this.orderExprs(schema, graph.GetOrder())
 		if err != nil {
 			return "", err
 		}
@@ -177,9 +186,9 @@ func (this *PgQueryBuilder) buildSqlSelectGraph(
 }
 
 func (this *PgQueryBuilder) SqlCountGraph(
-	entSchema *dmodel.ModelSchema, graph *dmodel.SearchGraph,
+	schema *dmodel.ModelSchema, graph *dmodel.SearchGraph,
 ) (*crud.OpResult[string], error) {
-	sql, err := this.buildSqlCountGraph(entSchema, graph)
+	sql, err := this.buildSqlCountGraph(schema, graph)
 	if err != nil {
 		return extractClientErr[string](err)
 	}
@@ -187,14 +196,14 @@ func (this *PgQueryBuilder) SqlCountGraph(
 }
 
 func (this *PgQueryBuilder) buildSqlCountGraph(
-	entSchema *dmodel.ModelSchema, graph *dmodel.SearchGraph,
+	schema *dmodel.ModelSchema, graph *dmodel.SearchGraph,
 ) (string, error) {
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	sb.Select("COUNT(*)")
-	sb.From(this.tableExpression(entSchema))
+	sb.From(this.tableExpression(schema))
 	if graph != nil {
 		predicate, ok, err := this.graphExpression(
-			entSchema, sb, graph.GetCondition(), graph.GetAnd(), graph.GetOr())
+			schema, sb, graph.GetCondition(), graph.GetAnd(), graph.GetOr())
 		if err != nil {
 			return "", err
 		}
@@ -211,7 +220,7 @@ func (this *PgQueryBuilder) buildSqlCountGraph(
 }
 
 func (this *PgQueryBuilder) applySelectColumns(
-	sb *sqlbuilder.SelectBuilder, entSchema *dmodel.ModelSchema, columns []string,
+	sb *sqlbuilder.SelectBuilder, schema *dmodel.ModelSchema, columns []string,
 ) error {
 	if len(columns) == 0 {
 		sb.Select("*")
@@ -219,7 +228,7 @@ func (this *PgQueryBuilder) applySelectColumns(
 	}
 	selectCols := make([]string, len(columns))
 	for i, col := range columns {
-		field, ok := entSchema.Column(col)
+		field, ok := schema.Column(col)
 		if !ok || field.IsVirtualModelField() {
 			return errors.Wrap(&errClientUnknownField{Field: col}, "applySelectColumns")
 		}
@@ -239,40 +248,40 @@ func (this *PgQueryBuilder) applyPagination(sb *sqlbuilder.SelectBuilder, page, 
 	}
 }
 
-func (this *PgQueryBuilder) tableExpression(entSchema *dmodel.ModelSchema) string {
-	tableName := entSchema.TableName()
+func (this *PgQueryBuilder) tableExpression(schema *dmodel.ModelSchema) string {
+	tableName := schema.TableName()
 	if tableName == "" {
-		tableName = entSchema.Name()
+		tableName = schema.Name()
 	}
 	return pgQuoteTable(strings.Split(tableName, ".")...)
 }
 
-func (this *PgQueryBuilder) SqlInsert(entSchema *dmodel.ModelSchema, data dmodel.DynamicFields) (
+func (this *PgQueryBuilder) SqlInsert(schema *dmodel.ModelSchema, data dmodel.DynamicFields) (
 	*crud.OpResult[string], error,
 ) {
-	return this.SqlInsertBulk(entSchema, []dmodel.DynamicFields{data})
+	return this.SqlInsertBulk(schema, []dmodel.DynamicFields{data})
 }
 
-func (this *PgQueryBuilder) SqlInsertBulk(entSchema *dmodel.ModelSchema, rows []dmodel.DynamicFields) (
+func (this *PgQueryBuilder) SqlInsertBulk(schema *dmodel.ModelSchema, rows []dmodel.DynamicFields) (
 	*crud.OpResult[string], error,
 ) {
-	prepared, err := this.rowsFrom(entSchema, rows, nil)
+	prepared, err := this.rowsFrom(schema, rows, nil)
 	if err != nil {
 		return extractClientErr[string](err)
 	}
-	sql, ierr := this.buildInsertSql(entSchema, prepared)
+	sql, ierr := this.buildInsertSql(schema, prepared)
 	if ierr != nil {
 		return extractClientErr[string](ierr)
 	}
 	return &crud.OpResult[string]{Data: sql, IsEmpty: false}, nil
 }
 
-func (this *PgQueryBuilder) buildInsertSql(entSchema *dmodel.ModelSchema, rows []rowData) (string, error) {
+func (this *PgQueryBuilder) buildInsertSql(schema *dmodel.ModelSchema, rows []rowData) (string, error) {
 	if len(rows) == 0 {
 		return "", errors.New("buildInsertSql: no rows provided")
 	}
 	ib := sqlbuilder.PostgreSQL.NewInsertBuilder()
-	ib.InsertInto(this.tableExpression(entSchema))
+	ib.InsertInto(this.tableExpression(schema))
 	ib.Cols(pgQuoteArr(rows[0].columns)...)
 	for _, row := range rows {
 		ib.Values(row.values...)
@@ -286,7 +295,7 @@ func (this *PgQueryBuilder) buildInsertSql(entSchema *dmodel.ModelSchema, rows [
 }
 
 func (this *PgQueryBuilder) SqlUpdateEqual(
-	entSchema *dmodel.ModelSchema,
+	schema *dmodel.ModelSchema,
 	data dmodel.DynamicFields,
 	filters dmodel.DynamicFields,
 ) (*crud.OpResult[string], error) {
@@ -294,8 +303,8 @@ func (this *PgQueryBuilder) SqlUpdateEqual(
 		return nil, errors.New("SqlUpdateEqual: no filters provided")
 	}
 
-	target, err := this.rowFromMap(entSchema, data, func(name string) bool {
-		return !entSchema.IsPrimaryKey(name) && !entSchema.IsTenantKey(name)
+	target, err := this.rowFromMap(schema, data, func(name string) bool {
+		return !schema.IsPrimaryKey(name) && !schema.IsTenantKey(name)
 	})
 	if err != nil {
 		return extractClientErr[string](err)
@@ -304,11 +313,11 @@ func (this *PgQueryBuilder) SqlUpdateEqual(
 		return nil, errors.New("SqlUpdateEqual: no updatable columns provided")
 	}
 
-	lookup, err := this.rowFromMap(entSchema, filters, nil)
+	lookup, err := this.rowFromMap(schema, filters, nil)
 	if err != nil {
 		return extractClientErr[string](err)
 	}
-	sql, ierr := this.buildUpdateSql(entSchema, target, lookup)
+	sql, ierr := this.buildUpdateSql(schema, target, lookup)
 	if ierr != nil {
 		return extractClientErr[string](ierr)
 	}
@@ -316,10 +325,10 @@ func (this *PgQueryBuilder) SqlUpdateEqual(
 }
 
 func (this *PgQueryBuilder) buildUpdateSql(
-	entSchema *dmodel.ModelSchema, target rowData, lookup rowData,
+	schema *dmodel.ModelSchema, target rowData, lookup rowData,
 ) (string, error) {
 	ub := sqlbuilder.PostgreSQL.NewUpdateBuilder()
-	ub.Update(this.tableExpression(entSchema))
+	ub.Update(this.tableExpression(schema))
 	assignments := make([]string, len(target.columns))
 	for i, col := range target.columns {
 		assignments[i] = ub.Assign(pgQuote(col), target.values[i])
@@ -340,14 +349,14 @@ func (this *PgQueryBuilder) buildUpdateSql(
 	return out, nil
 }
 
-func (this *PgQueryBuilder) SqlDeleteEqual(entSchema *dmodel.ModelSchema, filters dmodel.DynamicFields) (
+func (this *PgQueryBuilder) SqlDeleteEqual(schema *dmodel.ModelSchema, filters dmodel.DynamicFields) (
 	*crud.OpResult[string], error,
 ) {
 	if len(filters) == 0 {
 		return nil, errors.New("SqlDeleteEqual: no filters provided")
 	}
 
-	row, err := this.rowFromMap(entSchema, filters, nil)
+	row, err := this.rowFromMap(schema, filters, nil)
 	if err != nil {
 		return extractClientErr[string](err)
 	}
@@ -356,7 +365,7 @@ func (this *PgQueryBuilder) SqlDeleteEqual(entSchema *dmodel.ModelSchema, filter
 	}
 
 	db := sqlbuilder.PostgreSQL.NewDeleteBuilder()
-	db.DeleteFrom(this.tableExpression(entSchema))
+	db.DeleteFrom(this.tableExpression(schema))
 	for i, col := range row.columns {
 		db.Where(db.Equal(pgQuote(col), row.values[i]))
 	}
@@ -379,20 +388,20 @@ func (this *PgQueryBuilder) SqlDeleteEqual(entSchema *dmodel.ModelSchema, filter
 //	UNION ALL
 //	SELECT CASE WHEN EXISTS (SELECT 1 FROM "public"."users" WHERE "code" = $4) THEN 1 ELSE 0 END
 func (this *PgQueryBuilder) SqlCheckUniqueCollisions(
-	entSchema *dmodel.ModelSchema, uniqueKeysToCheck [][]string, data dmodel.DynamicFields,
+	schema *dmodel.ModelSchema, uniqueKeysToCheck [][]string, data dmodel.DynamicFields,
 ) (*crud.OpResult[SqlCheckUniqueCollisionsData], error) {
 	if len(uniqueKeysToCheck) == 0 {
 		return &crud.OpResult[SqlCheckUniqueCollisionsData]{IsEmpty: true}, nil
 	}
 
-	tableRef := this.tableExpression(entSchema)
-	tenantKey := entSchema.TenantKey()
+	tableRef := this.tableExpression(schema)
+	tenantKey := schema.TenantKey()
 	var args []any
 	argIdx := 1
 	var parts []string
 
 	for _, uniqueFields := range uniqueKeysToCheck {
-		part, partArgs, err := this.buildUniqueCheckPart(entSchema, tableRef, tenantKey, uniqueFields, data, argIdx)
+		part, partArgs, err := this.buildUniqueCheckPart(schema, tableRef, tenantKey, uniqueFields, data, argIdx)
 		if err != nil {
 			return extractClientErr[SqlCheckUniqueCollisionsData](err)
 		}
@@ -409,14 +418,14 @@ func (this *PgQueryBuilder) SqlCheckUniqueCollisions(
 }
 
 func (this *PgQueryBuilder) buildUniqueCheckPart(
-	entSchema *dmodel.ModelSchema, tableRef string, tenantKey string,
+	schema *dmodel.ModelSchema, tableRef string, tenantKey string,
 	uniqueFields []string, data dmodel.DynamicFields, argIdx int,
 ) (string, []any, error) {
 	if len(uniqueFields) == 0 {
 		return "SELECT 0", nil, nil
 	}
 	columns := prependTenantKey(tenantKey, uniqueFields)
-	values, hasAll, err := this.resolveColumnValues(entSchema, columns, data)
+	values, hasAll, err := this.resolveColumnValues(schema, columns, data)
 	if err != nil {
 		return "", nil, err
 	}
@@ -427,7 +436,7 @@ func (this *PgQueryBuilder) buildUniqueCheckPart(
 }
 
 func (this *PgQueryBuilder) resolveColumnValues(
-	entSchema *dmodel.ModelSchema, columns []string, data dmodel.DynamicFields,
+	schema *dmodel.ModelSchema, columns []string, data dmodel.DynamicFields,
 ) ([]any, bool, error) {
 	values := make([]any, 0, len(columns))
 	for _, col := range columns {
@@ -435,7 +444,7 @@ func (this *PgQueryBuilder) resolveColumnValues(
 		if !ok || v == nil {
 			return nil, false, nil
 		}
-		field, ok := entSchema.Column(col)
+		field, ok := schema.Column(col)
 		if !ok || field.IsVirtualModelField() {
 			return nil, false, errors.Wrap(&errClientUnknownField{Field: col}, "resolveColumnValues")
 		}
@@ -454,7 +463,7 @@ type rowData struct {
 }
 
 func (this *PgQueryBuilder) rowsFrom(
-	entSchema *dmodel.ModelSchema, rows []dmodel.DynamicFields, filter func(string) bool,
+	schema *dmodel.ModelSchema, rows []dmodel.DynamicFields, filter func(string) bool,
 ) ([]rowData, error) {
 	if len(rows) == 0 {
 		return nil, errors.New("rowsFrom: no rows provided")
@@ -464,7 +473,7 @@ func (this *PgQueryBuilder) rowsFrom(
 	var reference []string
 
 	for index, row := range rows {
-		item, err := this.rowFromMap(entSchema, row, filter)
+		item, err := this.rowFromMap(schema, row, filter)
 		if err != nil {
 			return nil, err
 		}
@@ -483,7 +492,7 @@ func (this *PgQueryBuilder) rowsFrom(
 }
 
 func (this *PgQueryBuilder) rowFromMap(
-	entSchema *dmodel.ModelSchema, values dmodel.DynamicFields, include func(string) bool,
+	schema *dmodel.ModelSchema, values dmodel.DynamicFields, include func(string) bool,
 ) (rowData, error) {
 	includeFn := include
 	if includeFn == nil {
@@ -495,7 +504,7 @@ func (this *PgQueryBuilder) rowFromMap(
 		if !includeFn(key) {
 			continue
 		}
-		field, ok := entSchema.Column(key)
+		field, ok := schema.Column(key)
 		if !ok {
 			return rowData{}, errors.Wrap(&errClientUnknownField{Field: key}, "rowFromMap")
 		}
@@ -511,7 +520,7 @@ func (this *PgQueryBuilder) rowFromMap(
 		values:  make([]any, len(keys)),
 	}
 	for i, key := range keys {
-		field, ok := entSchema.Column(key)
+		field, ok := schema.Column(key)
 		if !ok {
 			return rowData{}, errors.Wrap(&errClientUnknownField{Field: key}, "rowFromMap")
 		}
@@ -525,19 +534,19 @@ func (this *PgQueryBuilder) rowFromMap(
 	return result, nil
 }
 
-func (this *PgQueryBuilder) rowForKeys(entSchema *dmodel.ModelSchema, values dmodel.DynamicFields, keys []string) (rowData, error) {
+func (this *PgQueryBuilder) rowForKeys(schema *dmodel.ModelSchema, values dmodel.DynamicFields, keys []string) (rowData, error) {
 	result := rowData{
 		columns: make([]string, len(keys)),
 		values:  make([]any, len(keys)),
 	}
 
 	for i, key := range keys {
-		field, ok := entSchema.Column(key)
+		field, ok := schema.Column(key)
 		if !ok {
 			return rowData{}, errors.Wrap(&errClientUnknownField{Field: key}, "rowForKeys")
 		}
 		if field.IsVirtualModelField() {
-			return rowData{}, errors.Errorf("rowForKeys: key column '%s' is not stored in the database", key)
+			return rowData{}, errors.Errorf("rowForKeys: key field '%s' is not defined in this schema", key)
 		}
 		raw, ok := values[key]
 		if !ok {
@@ -555,7 +564,7 @@ func (this *PgQueryBuilder) rowForKeys(entSchema *dmodel.ModelSchema, values dmo
 }
 
 func (this *PgQueryBuilder) graphExpression(
-	entSchema *dmodel.ModelSchema,
+	schema *dmodel.ModelSchema,
 	sb *sqlbuilder.SelectBuilder,
 	condition *dmodel.Condition,
 	and []dmodel.SearchNode,
@@ -563,19 +572,19 @@ func (this *PgQueryBuilder) graphExpression(
 ) (condStr string, ok bool, err error) {
 	switch {
 	case condition != nil:
-		condStr, err = this.conditionExpression(entSchema, sb, *condition)
+		condStr, err = this.conditionExpression(schema, sb, *condition)
 		return condStr, err == nil, err
 	case len(and) > 0:
-		return this.combineNodes(entSchema, sb, and, sb.And)
+		return this.combineNodes(schema, sb, and, sb.And)
 	case len(or) > 0:
-		return this.combineNodes(entSchema, sb, or, sb.Or)
+		return this.combineNodes(schema, sb, or, sb.Or)
 	default:
 		return "", false, nil
 	}
 }
 
 func (this *PgQueryBuilder) combineNodes(
-	entSchema *dmodel.ModelSchema,
+	schema *dmodel.ModelSchema,
 	sb *sqlbuilder.SelectBuilder,
 	nodes []dmodel.SearchNode,
 	join func(...string) string,
@@ -583,7 +592,7 @@ func (this *PgQueryBuilder) combineNodes(
 	conditions := make([]string, 0, len(nodes))
 	for _, node := range nodes {
 		condStr, condOk, condErr := this.graphExpression(
-			entSchema, sb, node.GetCondition(), node.GetAnd(), node.GetOr())
+			schema, sb, node.GetCondition(), node.GetAnd(), node.GetOr())
 		if condErr != nil {
 			return "", false, condErr
 		}
@@ -598,43 +607,66 @@ func (this *PgQueryBuilder) combineNodes(
 }
 
 func (this *PgQueryBuilder) conditionExpression(
-	entSchema *dmodel.ModelSchema,
+	schema *dmodel.ModelSchema,
 	sb *sqlbuilder.SelectBuilder,
 	cond dmodel.Condition,
 ) (string, error) {
-	field, quotedField, err := this.prepareCondition(entSchema, cond.Field())
+	originalField := cond.Field()
+	fieldName := originalField
+	operator := cond.Operator()
+	value := cond.Value()
+	valueArr := cond.Values()
+
+	predefinedPredicateFn := this.GetPredefinedPredicate(fieldName, schema.Name())
+	if predefinedPredicateFn != nil {
+		result, cErr := predefinedPredicateFn(operator, value)
+		if cErr.Count() > 0 {
+			return "", wrapClientSqlErrors(cErr)
+		}
+		if result.NewFieldName != "" {
+			fieldName = result.NewFieldName
+		}
+		if result.NewOperator != "" {
+			operator = result.NewOperator
+		}
+		if result.NewValue != nil {
+			value = result.NewValue
+		}
+		if result.NewValues != nil {
+			valueArr = result.NewValues
+		}
+	}
+
+	field, quotedField, err := this.prepareColName(schema, fieldName)
 	if err != nil {
 		return "", err
 	}
 
-	switch cond.Operator() {
+	switch operator {
 	case dmodel.Equals, dmodel.NotEquals, dmodel.GreaterThan,
 		dmodel.GreaterEqual, dmodel.LessThan, dmodel.LessEqual:
-		return this.comparisonPredicate(sb, quotedField, field, cond.Operator(), cond.Value())
+		return this.comparisonPredicate(sb, quotedField, field, operator, value)
 	case dmodel.In, dmodel.NotIn:
-		return this.collectionPredicate(sb, quotedField, field, cond.Operator(), cond.Values())
+		return this.collectionPredicate(sb, quotedField, field, operator, valueArr)
 	case dmodel.Contains, dmodel.NotContains, dmodel.StartsWith,
 		dmodel.NotStartsWith, dmodel.EndsWith, dmodel.NotEndsWith:
-		return this.stringPredicate(sb, quotedField, field, cond.Operator(), cond.Value())
+		return this.stringPredicate(sb, quotedField, field, operator, value)
 	case dmodel.IsSet, dmodel.IsNotSet:
-		return nullPredicate(sb, quotedField, cond.Operator()), nil
+		return nullPredicate(sb, quotedField, operator), nil
 	default:
-		return "", errors.Errorf("conditionExpression: unsupported operator '%s'", cond.Operator())
+		return "", wrapClientSqlErrors(ClientErrorsUnsupportedFilterOperator(originalField))
 	}
 }
 
-func (this *PgQueryBuilder) prepareCondition(
-	entSchema *dmodel.ModelSchema, fieldName string,
+func (this *PgQueryBuilder) prepareColName(
+	schema *dmodel.ModelSchema, fieldName string,
 ) (*dmodel.ModelField, string, error) {
 	if strings.Contains(fieldName, ".") {
-		return nil, "", errors.Errorf("prepareCondition: nested fields not supported: %s", fieldName)
+		return nil, "", wrapClientSqlErrors(clientErrorsNestedFieldNotSupported(fieldName))
 	}
-	field, ok := entSchema.Column(fieldName)
-	if !ok {
-		return nil, "", errors.Wrap(&errClientUnknownField{Field: fieldName}, "prepareCondition")
-	}
-	if field.IsVirtualModelField() {
-		return nil, "", errors.Errorf("prepareCondition: field '%s' is not a database column", fieldName)
+	field, ok := schema.Column(fieldName)
+	if !ok || field.IsVirtualModelField() {
+		return nil, "", errors.Wrap(&errClientUnknownField{Field: fieldName}, "prepareColName")
 	}
 	return field, pgQuote(field.Name()), nil
 }
@@ -661,7 +693,7 @@ func (this *PgQueryBuilder) comparisonPredicate(
 	case dmodel.LessEqual:
 		return sb.LessEqualThan(quotedField, converted), nil
 	default:
-		return "", errors.Errorf("comparisonPredicate: unsupported comparison operator '%s'", op)
+		panic("comparisonPredicate: unsupported operator (internal)")
 	}
 }
 
@@ -688,7 +720,7 @@ func (this *PgQueryBuilder) stringPredicate(
 ) (string, error) {
 	if columnCategoryFor(field.ColumnType()) != columnString {
 		return "", errors.Errorf(
-			"stringPredicate: operator '%s' requires string column '%s'", op, field.Name())
+			"stringPredicate: operator '%s' requires string field '%s'", op, field.Name())
 	}
 	converted, err := this.convertValue(field, value)
 	if err != nil {
@@ -716,7 +748,7 @@ func nullPredicate(sb *sqlbuilder.SelectBuilder, quotedField string, op dmodel.O
 func (this *PgQueryBuilder) convertValues(field *dmodel.ModelField, values []any) ([]any, error) {
 	if len(values) == 0 {
 		return nil, errors.Errorf(
-			"convertValues: operator requires at least one value for column '%s'", field.Name())
+			"convertValues: operator requires at least one value for field '%s'", field.Name())
 	}
 	converted := make([]any, len(values))
 	for i, value := range values {
@@ -730,7 +762,7 @@ func (this *PgQueryBuilder) convertValues(field *dmodel.ModelField, values []any
 }
 
 func (this *PgQueryBuilder) orderExprs(
-	entSchema *dmodel.ModelSchema, order dmodel.SearchOrder,
+	schema *dmodel.ModelSchema, order dmodel.SearchOrder,
 ) ([]string, error) {
 	exprs := make([]string, 0, len(order))
 	for _, item := range order {
@@ -739,15 +771,15 @@ func (this *PgQueryBuilder) orderExprs(
 		}
 		fieldName := item[0]
 		if strings.Contains(fieldName, ".") {
-			return nil, errors.Errorf("orderExprs: nested order not supported: %s", fieldName)
+			return nil, wrapClientSqlErrors(clientErrorsNestedFieldNotSupported(fieldName))
 		}
-		field, ok := entSchema.Column(fieldName)
+		field, ok := schema.Column(fieldName)
 		if !ok {
 			return nil, errors.Wrap(&errClientUnknownField{Field: fieldName}, "orderExprs")
 		}
 		if field.IsVirtualModelField() {
 			return nil, errors.Errorf(
-				"orderExprs: order column '%s' is not stored in the database", fieldName)
+				"orderExprs: order field '%s' is not stored in this schema", fieldName)
 		}
 		dir := "ASC"
 		if item.Direction() == dmodel.Desc {
@@ -760,24 +792,24 @@ func (this *PgQueryBuilder) orderExprs(
 
 func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (any, error) {
 	if field.IsVirtualModelField() {
-		return nil, errors.Errorf("convertValue: column '%s' is not stored in the database", field.Name())
+		return nil, errors.Errorf("convertValue: field '%s' is not available", field.Name())
 	}
 	if value == nil {
 		if field.IsNullable() {
 			return nil, nil
 		}
-		return nil, errors.Errorf("convertValue: column '%s' does not allow NULL", field.Name())
+		return nil, errors.Errorf("convertValue: field '%s' does not allow NULL", field.Name())
 	}
 	v, ok := unwrapValue(reflect.ValueOf(value))
 	if !ok {
 		if field.IsNullable() {
 			return nil, nil
 		}
-		return nil, errors.Errorf("convertValue: column '%s' does not allow NULL", field.Name())
+		return nil, errors.Errorf("convertValue: field '%s' does not allow NULL", field.Name())
 	}
 	if !valueAllowed(columnCategoryFor(field.ColumnType()), v) {
 		return nil, errors.Errorf(
-			"convertValue: column '%s': incompatible value type %T", field.Name(), v.Interface())
+			"convertValue: field '%s': incompatible value type %T", field.Name(), v.Interface())
 	}
 	return v.Interface(), nil
 }
@@ -980,7 +1012,7 @@ func (e *errClientUnknownField) Error() string {
 	if e == nil {
 		return ""
 	}
-	return fmt.Sprintf("unknown column '%s'", e.Field)
+	return fmt.Sprintf("unknown field '%s'", e.Field)
 }
 
 func clientErrorsUnknownField(field string) ft.ClientErrors {
@@ -997,6 +1029,10 @@ func extractClientErr[T any](err error) (*crud.OpResult[T], error) {
 	var unk *errClientUnknownField
 	if stdErr.As(err, &unk) {
 		return &crud.OpResult[T]{ClientErrors: clientErrorsUnknownField(unk.Field)}, nil
+	}
+	var sqlErr *errClientSqlErrors
+	if stdErr.As(err, &sqlErr) {
+		return &crud.OpResult[T]{ClientErrors: sqlErr.errors}, nil
 	}
 	return nil, err
 }

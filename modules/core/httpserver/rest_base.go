@@ -35,12 +35,6 @@ func JsonBadRequest(echoCtx echo.Context, err any) error {
 	return echoCtx.JSON(http.StatusBadRequest, err)
 }
 
-type RestArchivedResponse struct {
-	Id         model.Id   `json:"id"`
-	ArchivedAt string     `json:"archived_at"`
-	Etag       model.Etag `json:"etag"`
-}
-
 func NewRestCreateResponseDyn(fields dmodel.DynamicFields) *RestCreateResponse {
 	response := &RestCreateResponse{}
 	err := modelmapper.MapToStruct(fields, response)

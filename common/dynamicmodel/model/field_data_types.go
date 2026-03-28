@@ -1179,7 +1179,7 @@ func validateArrayAfterTryConvert(
 		if clientErr != nil {
 			return Value(nil), clientErr
 		}
-		result[i] = validated
+		result[i] = *validated.Get()
 	}
 	return Value(result), nil
 }

@@ -2,78 +2,80 @@ package crud
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-type GetOneQuery interface {
-	dmodel.SchemaGetter
-	GetIncludeArchived() bool
-	GetColumns() []string
-	DeleteFieldData(fields *dmodel.DynamicFields)
+type SetIsArchivedCommand struct {
+	Id         *model.Id   `json:"id" param:"id"`
+	Etag       *model.Etag `json:"etag" param:"etag"`
+	IsArchived *bool       `json:"is_archived" param:"is_archived"`
 }
 
-type GetOneQueryBase struct {
-	IncludeArchived bool     `json:"include_archived" query:"include_archived"`
-	Columns         []string `json:"columns" query:"columns"`
+type ToDomainModelFunc[TDomain any] func(data dmodel.DynamicFields) TDomain
+type BeforeValidationFunc[TDomain any] func(ctx corectx.Context, model TDomain) (TDomain, error)
+type AfterValidationFunc[TDomain any] func(ctx corectx.Context, model TDomain) (TDomain, error)
+type ValidateExtraFunc[TDomain any] func(ctx corectx.Context, model TDomain, vErrs *ft.ClientErrors) error
+
+type CreateParam[
+	TDomain any,
+	TDomainPtr coredyn.DynamicModelPtr[TDomain],
+] struct {
+	// Action name for logging and error messages
+	Action         string
+	BaseRepoGetter coredyn.BaseRepoGetter
+
+	// Data to create
+	Data dmodel.DynamicModelGetter
+
+	// Optional function to do some processing on the domain model before validation.
+	BeforeValidation BeforeValidationFunc[TDomainPtr]
+
+	// Optional function to do some processing on the domain model after validation.
+	AfterValidation AfterValidationFunc[TDomainPtr]
+
+	// Optional function for advanced validation (business rules) in addition to built-in schema validation.
+	ValidateExtra ValidateExtraFunc[TDomainPtr]
 }
 
-// Implements GetOneQuery interface
-func (this GetOneQueryBase) GetIncludeArchived() bool {
-	return this.IncludeArchived
+type DeleteOneQuery struct {
+	Id *model.Id `json:"id" param:"id"`
 }
 
-// Implements GetOneQuery interface
-func (this GetOneQueryBase) GetColumns() []string {
-	return this.Columns
-}
-
-func (this GetOneQueryBase) GetFieldData() dmodel.DynamicFields {
-	return dmodel.DynamicFields{
-		basemodel.FieldIncludeArchived: this.IncludeArchived,
-		basemodel.FieldColumns:         this.Columns,
-	}
-}
-
-func (this GetOneQueryBase) DeleteFieldData(fields *dmodel.DynamicFields) {
-	delete(*fields, basemodel.FieldIncludeArchived)
-	delete(*fields, basemodel.FieldColumns)
+type GetOneQuery struct {
+	Id      *model.Id `json:"id" param:"id"`
+	Columns []string  `json:"columns" query:"columns"`
 }
 
 type SearchQuery struct {
-	Columns         []string            `json:"columns" query:"columns"`
-	Graph           *dmodel.SearchGraph `json:"graph" query:"graph"`
-	IncludeArchived *bool               `json:"include_archived" query:"include_archived"`
-	Page            *int                `json:"page" query:"page"`
-	Size            *int                `json:"size" query:"size"`
-	Relations       []string            `json:"relations" query:"relations"`
+	Columns []string            `json:"columns" query:"columns"`
+	Graph   *dmodel.SearchGraph `json:"graph" query:"graph"`
+	Page    *int                `json:"page" query:"page"`
+	Size    *int                `json:"size" query:"size"`
 }
 
-func (this SearchQuery) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetOrRegisterSchema(
-		dmodel.DefineModel("core.crud.search_query").
-			Extend(SearchQuerySchemaBuilder()).
-			Build(),
-	)
+func DeleteOneQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel("_").
+		Field(dmodel.DefineField().
+			Name(basemodel.FieldId).
+			DataType(dmodel.FieldDataTypeUlid()))
 }
 
 func GetOneQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel("core.crud.get_one_query").
+	return dmodel.DefineModel("_").
 		Field(dmodel.DefineField().
-			Name(basemodel.FieldIncludeArchived).
-			DataType(dmodel.FieldDataTypeBoolean()).
-			Default(false)).
+			Name(basemodel.FieldId).
+			DataType(dmodel.FieldDataTypeUlid())).
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldColumns).
 			DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_COL_LENGTH_MIN, model.MODEL_RULE_COL_LENGTH_MAX).ArrayType()))
 }
 
 func SearchQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel("core.crud.search_query").
-		Field(dmodel.DefineField().
-			Name(basemodel.FieldIncludeArchived).
-			DataType(dmodel.FieldDataTypeBoolean()).
-			Default(false)).
+	return dmodel.DefineModel("_").
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldColumns).
 			DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_COL_LENGTH_MIN, model.MODEL_RULE_COL_LENGTH_MAX).ArrayType()).
@@ -86,4 +88,20 @@ func SearchQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 			Name(basemodel.FieldSize).
 			DataType(dmodel.FieldDataTypeInteger()).
 			Default(model.MODEL_RULE_PAGE_DEFAULT_SIZE))
+}
+
+func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel("_").
+		Field(dmodel.DefineField().
+			Name(basemodel.FieldId).
+			DataType(dmodel.FieldDataTypeUlid()).
+			Required()).
+		Field(dmodel.DefineField().
+			Name(basemodel.FieldEtag).
+			DataType(dmodel.FieldDataTypeEtag()).
+			VersioningKey()).
+		Field(dmodel.DefineField().
+			Name(basemodel.FieldIsArchived).
+			DataType(dmodel.FieldDataTypeBoolean()).
+			Required())
 }

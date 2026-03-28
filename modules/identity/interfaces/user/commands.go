@@ -10,7 +10,6 @@ import (
 	itAuthorize "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	dCrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
@@ -19,16 +18,30 @@ func init() {
 	// Assert interface implementation
 	var req cqrs.Request
 	req = (*CreateUserCommand)(nil)
-	req = (*UpdateUserCommand)(nil)
 	req = (*DeleteUserCommand)(nil)
 	req = (*GetUserQuery)(nil)
 	req = (*GetUserByEmailQuery)(nil)
 	req = (*SearchUsersQuery)(nil)
+	req = (*UpdateUserCommand)(nil)
 	req = (*UserExistsQuery)(nil)
 	req = (*UserExistsMultiQuery)(nil)
 	req = (*FindDirectApproverQuery)(nil)
 	util.Unused(req)
 }
+
+var deleteUserCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "user",
+	Action:    "delete",
+}
+
+type DeleteUserCommand dCrud.DeleteOneQuery
+
+func (DeleteUserCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteUserCommandType
+}
+
+type DeleteUserResult = crud.OpResult[crud.MutateResultData]
 
 var getUserContextQueryType = cqrs.RequestType{
 	Module:    "identity",
@@ -83,22 +96,16 @@ type CreateUserResult = crud.OpResult[domain.UserEntity]
 var archiveUserCommandType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "user",
-	Action:    "archive",
+	Action:    "setUserIsArchived",
 }
 
-type ArchiveUserCommand2 struct {
-	domain.UserEntity
-}
+type SetUserIsArchived dCrud.SetIsArchivedCommand
 
-func (ArchiveUserCommand2) CqrsRequestType() cqrs.RequestType {
+func (SetUserIsArchived) CqrsRequestType() cqrs.RequestType {
 	return archiveUserCommandType
 }
 
-func (this ArchiveUserCommand2) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.UserSchemaName)
-}
-
-type ArchiveUserResult2 = crud.OpResult[domain.UserEntity]
+type SetUserIsArchivedResult = crud.OpResult[crud.MutateResultData]
 
 var updateUserCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -119,47 +126,6 @@ func (this UpdateUserCommand) GetSchema() *dmodel.ModelSchema {
 }
 
 type UpdateUserResult = crud.OpResult[crud.MutateResultData]
-
-var deleteUserCommandType = cqrs.RequestType{
-	Module:    "identity",
-	Submodule: "user",
-	Action:    "delete",
-}
-
-type DeleteUserCommand struct {
-	domain.UserEntity
-	// Id       model.Id  `json:"id" param:"id"`
-	// ScopeRef *model.Id `query:"scopeRef" json:"scopeRef"`
-}
-
-func (DeleteUserCommand) CqrsRequestType() cqrs.RequestType {
-	return deleteUserCommandType
-}
-
-func (this DeleteUserCommand) GetSchema() *dmodel.ModelSchema {
-	fullSchema := dmodel.GetSchema(domain.UserSchemaName)
-	return dmodel.GetOrRegisterSchema(
-		dmodel.DefineModel("identity.user.delete_user").
-			CopyField(fullSchema, basemodel.FieldId).
-			Build(),
-	)
-	// return dmodel.GetOrRegisterSchema(
-	// 	dmodel.DefineModel("identity.user.delete_user").
-	// 		Extend(basemodel.BaseModelSchemaBuilder()).
-	// 		Build(),
-	// )
-}
-
-// func (this DeleteUserCommand) Validate() ft.ValidationErrors {
-// 	rules := []*val.FieldRules{
-// 		model.IdValidateRule(&this.Id, true),
-// 		model.IdPtrValidateRule(&this.ScopeRef, false),
-// 	}
-
-// 	return val.ApiBased.ValidateStruct(&this, rules...)
-// }
-
-type DeleteUserResult = crud.OpResult[crud.MutateResultData]
 
 var existsCommandType = cqrs.RequestType{
 	Module:    "identity",
@@ -221,34 +187,36 @@ var getUserByIdQueryType = cqrs.RequestType{
 	Action:    "getUserById",
 }
 
-type GetUserQuery struct {
-	dCrud.GetOneQueryBase
+type GetUserQuery dCrud.GetOneQuery
 
-	Id     model.Id           `json:"id" param:"id"`
-	Status *domain.UserStatus `json:"status" query:"status"`
-}
+// type GetUserQuery struct {
+// 	dCrud.GetOneQueryBase
+
+// 	Id     model.Id           `json:"id" param:"id"`
+// 	Status *domain.UserStatus `json:"status" query:"status"`
+// }
 
 func (GetUserQuery) CqrsRequestType() cqrs.RequestType {
 	return getUserByIdQueryType
 }
 
-func (this GetUserQuery) GetSchema() *dmodel.ModelSchema {
-	fullSchema := dmodel.GetSchema(domain.UserSchemaName)
-	return dmodel.GetOrRegisterSchema(
-		dmodel.DefineModel("identity.user.get_user").
-			CopyField(fullSchema, basemodel.FieldId).
-			CopyField(fullSchema, domain.UserFieldStatus).
-			Extend(dCrud.GetOneQuerySchemaBuilder()).
-			Build(),
-	)
-}
+// func (this GetUserQuery) GetSchema() *dmodel.ModelSchema {
+// 	fullSchema := dmodel.GetSchema(domain.UserSchemaName)
+// 	return dmodel.GetOrRegisterSchema(
+// 		dmodel.DefineModel("identity.user.get_user").
+// 			CopyField(fullSchema, basemodel.FieldId).
+// 			CopyField(fullSchema, domain.UserFieldStatus).
+// 			Extend(dCrud.GetOneQuerySchemaBuilder()).
+// 			Build(),
+// 	)
+// }
 
-func (this GetUserQuery) GetFieldData() dmodel.DynamicFields {
-	fields := this.GetOneQueryBase.GetFieldData()
-	fields[basemodel.FieldId] = this.Id
-	fields[domain.UserFieldStatus] = this.Status
-	return fields
-}
+// func (this GetUserQuery) GetFieldData() dmodel.DynamicFields {
+// 	fields := this.GetOneQueryBase.GetFieldData()
+// 	fields[basemodel.FieldId] = this.Id
+// 	fields[domain.UserFieldStatus] = this.Status
+// 	return fields
+// }
 
 type GetUserResult = crud.OpResult[domain.UserEntity]
 
@@ -377,7 +345,14 @@ var searchUsersQuery2Type = cqrs.RequestType{
 // 	return fields
 // }
 
-type SearchUsersQuery2 = dCrud.SearchQuery
+type SearchUsersQuery2 struct {
+	dCrud.SearchQuery
+}
+
+func (SearchUsersQuery2) CqrsRequestType() cqrs.RequestType {
+	return searchUsersQueryType
+}
+
 type SearchUsersResultData2 = crud.PagedResultData[domain.UserEntity]
 type SearchUsersResult2 = crud.OpResult[SearchUsersResultData2]
 

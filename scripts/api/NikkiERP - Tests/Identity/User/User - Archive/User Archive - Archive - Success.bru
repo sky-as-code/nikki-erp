@@ -1,0 +1,72 @@
+meta {
+  name: User Archive - Archive - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/users/{{user_id}}/archived
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "etag": "{{etag}}",
+    "is_archived": true
+  }
+}
+
+script:post-response {
+  const tv4 = require('tv4');
+  
+  const schema = {
+      type: "object",
+      required: ["affected_count", "affected_at", "etag"],
+      properties: {
+          affected_count: {
+              type: "integer",
+              enum: [1]
+          },
+          affected_at: {
+              type: "string",
+              minLength: 20, //"2026-03-23T06:53:01Z"
+          },
+          etag: {
+              type: "string",
+              minLength: 1,
+          },
+      },
+      additionalProperties: false
+  };
+  
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+  
+  test("Response matches expected JSON schema", function () {
+    const valid = tv4.validate(res.getBody(), schema);
+    expect(tv4.error).not.to.exist;
+    expect(valid).to.be.true;  
+  });
+  
+  const requestBody = req.getBody();
+  bru.setVar('email', requestBody.email);
+  
+  const { id, etag, email } = res.getBody();
+  const previousEtag = bru.getVar("etag");
+  
+  test("Response 'etag' is different from previous", () => {
+      expect(etag).to.not.eql(previousEtag);
+  });
+  
+  id && bru.setVar('user_id', id);
+  etag && bru.setVar('etag', etag);
+  email && bru.setVar('email', email);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

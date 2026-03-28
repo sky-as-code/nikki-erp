@@ -68,7 +68,7 @@ func initV1(
 	route.GET("/users", userRest.SearchUsers2)
 	route.GET("/users/:id", userRest.GetUser)
 	route.PUT("/users/:id", userRest.UpdateUser)
-	route.POST("/users/:id/archive", userRest.ArchiveUser)
+	route.POST("/users/:id/archived", userRest.SetUserIsArchived)
 	route.DELETE("/users/:id", userRest.DeleteUser)
 	// protected.POST("/users", userRest.CreateUser, middlewares.RequestContextMiddleware2, mwUserCreate)
 	// protected.DELETE("/users/:id", userRest.DeleteUser, mwUserDelete)

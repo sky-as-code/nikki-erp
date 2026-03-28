@@ -8,11 +8,34 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/json"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/modelmapper"
 )
 
 type DynamicFields map[string]any
+
+// func (this DynamicFields) MarshalText() ([]byte, error) {
+// 	// Temp type to avoid infinite recursion
+// 	raw := map[string]any(this)
+// 	return json.Marshal(raw)
+// }
+
+// Implements encoding.TextUnmarshaler interface
+func (this *DynamicFields) UnmarshalText(text []byte) error {
+	// Temp type to avoid infinite recursion
+	raw := map[string]any{}
+	if err := json.Unmarshal(text, &raw); err != nil {
+		return err
+	}
+	*this = DynamicFields(raw)
+	return nil
+}
+
+// Implements json.Unmarshaler interface
+func (this *DynamicFields) UnmarshalJSON(data []byte) error {
+	return this.UnmarshalText(data)
+}
 
 func Value(val any) value {
 	return value{val: &val}
@@ -281,21 +304,26 @@ const (
 )
 
 type ModelField struct {
-	name             string
-	label            model.LangJson
-	dataType         FieldDataType
-	description      model.LangJson
-	isReadOnly       bool
-	isRequiredCreate bool
-	isRequiredUpdate bool
-	isVersioningKey  bool
-	isPrimaryKey     bool
-	isTenantKey      bool
-	isUnique         bool
-	rules            []*FieldRule
-	defaultValue     *value
-	defaultFn        func() any
-	relation         *ModelRelation
+	name        string
+	label       model.LangJson
+	dataType    FieldDataType
+	description model.LangJson
+	isReadOnly  bool
+	// Determines the "NOT NULL" constraint for the database column,
+	// and causes the field to be required for create operations.
+	isRequiredForCreate bool
+	// Causes the field to be required for update operations,
+	// but doesn't affect the generated CREATE SQL query.
+	isRequiredForUpdate bool
+	isVersioningKey     bool
+	isPrimaryKey        bool
+	isTenantKey         bool
+	isUnique            bool
+	rules               []*FieldRule
+	defaultValue        *value
+	defaultFn           func() any
+	useTypeDefault      bool
+	relation            *ModelRelation
 }
 
 // Getter methods
@@ -336,11 +364,11 @@ func (this *ModelField) IsReadOnly() bool {
 }
 
 func (this *ModelField) IsRequiredForCreate() bool {
-	return this.isRequiredCreate
+	return this.isRequiredForCreate
 }
 
 func (this *ModelField) IsRequiredForUpdate() bool {
-	return this.isRequiredUpdate
+	return this.isRequiredForUpdate
 }
 
 func (this *ModelField) IsPrimaryKey() bool {
@@ -362,7 +390,7 @@ func (this *ModelField) ColumnType() string {
 
 // ColumnNullable returns "NOT NULL" if required, else "NULL".
 func (this *ModelField) ColumnNullable() string {
-	if this.isRequiredCreate {
+	if this.isRequiredForCreate {
 		return "NOT NULL"
 	}
 	return "NULL"
@@ -370,7 +398,7 @@ func (this *ModelField) ColumnNullable() string {
 
 // IsNullable returns true if the column allows NULL.
 func (this *ModelField) IsNullable() bool {
-	return !this.isRequiredCreate
+	return !this.isRequiredForCreate
 }
 
 func (this *ModelField) Rules() []*FieldRule {
@@ -393,7 +421,7 @@ func (this *ModelField) Validate(val any, forEdit ...bool) (value, *ft.ClientErr
 
 	if isNil(val) {
 		if isForEdit {
-			if this.isRequiredUpdate {
+			if this.isRequiredForUpdate {
 				return Value(nil), NewMissingFieldErr(this.name)
 			}
 			return Value(val), nil
@@ -405,7 +433,10 @@ func (this *ModelField) Validate(val any, forEdit ...bool) (value, *ft.ClientErr
 		if this.defaultFn != nil {
 			return Value(this.defaultFn()), nil
 		}
-		if this.isRequiredCreate && !this.isReadOnly {
+		if this.useTypeDefault {
+			return this.dataType.DefaultValue(), nil
+		}
+		if this.isRequiredForCreate && !this.isReadOnly {
 			return Value(nil), NewMissingFieldErr(this.name)
 		}
 		return Value(val), nil
@@ -513,19 +544,20 @@ func FieldRuleArrayLength(min, max int) FieldRule {
 
 func (this *ModelField) Clone() *ModelField {
 	cloned := &ModelField{
-		name:             this.name,
-		label:            this.label,
-		dataType:         this.dataType,
-		description:      this.description,
-		isRequiredCreate: this.isRequiredCreate,
-		isRequiredUpdate: this.isRequiredUpdate,
-		isPrimaryKey:     this.isPrimaryKey,
-		isTenantKey:      this.isTenantKey,
-		isUnique:         this.isUnique,
-		rules:            make([]*FieldRule, len(this.rules)),
-		defaultValue:     this.defaultValue,
-		defaultFn:        this.defaultFn,
-		relation:         this.relation,
+		name:                this.name,
+		label:               this.label,
+		dataType:            this.dataType,
+		description:         this.description,
+		isRequiredForCreate: this.isRequiredForCreate,
+		isRequiredForUpdate: this.isRequiredForUpdate,
+		isPrimaryKey:        this.isPrimaryKey,
+		isTenantKey:         this.isTenantKey,
+		isUnique:            this.isUnique,
+		rules:               make([]*FieldRule, len(this.rules)),
+		defaultValue:        this.defaultValue,
+		defaultFn:           this.defaultFn,
+		useTypeDefault:      this.useTypeDefault,
+		relation:            this.relation,
 	}
 	copy(cloned.rules, this.rules)
 	return cloned

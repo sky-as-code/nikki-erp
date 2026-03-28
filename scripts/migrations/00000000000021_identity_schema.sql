@@ -53,9 +53,9 @@ CREATE TABLE "ident_users" (
   "email" character varying NOT NULL,
   "etag" character varying NOT NULL,
   "is_owner" boolean NULL,
+  "is_archived" boolean NOT NULL,
   "status" character varying NOT NULL,
   "updated_at" timestamptz NULL,
-  "archived_at" timestamptz NULL,
   PRIMARY KEY ("id")
 );
 -- Create index "ident_users_email_key" to table: "ident_users"

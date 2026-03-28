@@ -3,8 +3,10 @@ package baserepo
 import (
 	crud "github.com/sky-as-code/nikki-erp/common/crud"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
 func Insert[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
@@ -24,25 +26,8 @@ func Insert[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
 	return &crud.OpResult[TDomain]{Data: result, IsEmpty: false}, nil
 }
 
-func Update[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, repo coredyn.BaseRepository, domainModel dmodel.DynamicModelGetter,
-) (*crud.OpResult[TDomain], error) {
-	data := domainModel.GetFieldData()
-	updated, err := repo.Update(ctx, data)
-	if err != nil {
-		return nil, err
-	}
-	if len(updated.ClientErrors) > 0 {
-		return &crud.OpResult[TDomain]{ClientErrors: updated.ClientErrors}, nil
-	}
-
-	var result TDomain
-	TDomainPtr(&result).SetFieldData(updated.Data)
-	return &crud.OpResult[TDomain]{Data: result, IsEmpty: false}, nil
-}
-
-func FindOne[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, repo coredyn.BaseRepository, findParam coredyn.GetOneParam,
+func GetOne[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
+	ctx corectx.Context, repo coredyn.BaseRepository, findParam coredyn.RepoGetOneParam,
 ) (*crud.OpResult[TDomain], error) {
 	found, err := repo.GetOne(ctx, findParam)
 	if err != nil {
@@ -59,26 +44,8 @@ func FindOne[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
 	return &crud.OpResult[TDomain]{Data: result, IsEmpty: false}, nil
 }
 
-func Archive[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, repo coredyn.BaseRepository, domainModel dmodel.DynamicModelGetter,
-) (*crud.OpResult[TDomain], error) {
-	archived, err := repo.Archive(ctx, domainModel.GetFieldData())
-	if err != nil {
-		return nil, err
-	}
-	if len(archived.ClientErrors) > 0 {
-		return &crud.OpResult[TDomain]{ClientErrors: archived.ClientErrors}, nil
-	}
-	if archived.IsEmpty {
-		return &crud.OpResult[TDomain]{IsEmpty: true}, nil
-	}
-	var result TDomain
-	TDomainPtr(&result).SetFieldData(archived.Data)
-	return &crud.OpResult[TDomain]{Data: result, IsEmpty: false}, nil
-}
-
 func Search[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, repo coredyn.BaseRepository, searchParam coredyn.SearchParam,
+	ctx corectx.Context, repo coredyn.BaseRepository, searchParam coredyn.RepoSearchParam,
 ) (*crud.OpResult[crud.PagedResultData[TDomain]], error) {
 	found, err := repo.Search(ctx, searchParam)
 	if err != nil {
@@ -101,4 +68,78 @@ func Search[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
 		Size:  paged.Size,
 	}
 	return &crud.OpResult[crud.PagedResultData[TDomain]]{Data: out, IsEmpty: len(items) == 0}, nil
+}
+
+func Update[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
+	ctx corectx.Context, repo coredyn.BaseRepository, domainModel dmodel.DynamicModelGetter,
+) (*crud.OpResult[TDomain], error) {
+	data := domainModel.GetFieldData()
+	updated, err := repo.Update(ctx, data)
+	if err != nil {
+		return nil, err
+	}
+	if len(updated.ClientErrors) > 0 {
+		return &crud.OpResult[TDomain]{ClientErrors: updated.ClientErrors}, nil
+	}
+
+	var result TDomain
+	TDomainPtr(&result).SetFieldData(updated.Data)
+	return &crud.OpResult[TDomain]{Data: result, IsEmpty: false}, nil
+}
+
+func DeleteOne(
+	ctx corectx.Context,
+	repo coredyn.BaseRepository,
+	keys dmodel.DynamicFields,
+) (*crud.OpResult[crud.MutateResultData], error) {
+	delResult, err := repo.DeleteOne(ctx, keys)
+	if err != nil {
+		return nil, err
+	}
+	if delResult.ClientErrors.Count() > 0 {
+		return &crud.OpResult[crud.MutateResultData]{ClientErrors: delResult.ClientErrors}, nil
+	}
+	if delResult.IsEmpty {
+		return &crud.OpResult[crud.MutateResultData]{IsEmpty: true}, nil
+	}
+	return &crud.OpResult[crud.MutateResultData]{
+		Data: crud.MutateResultData{
+			AffectedCount: delResult.Data,
+			AffectedAt:    model.NewModelDateTime(),
+		},
+	}, nil
+}
+
+func UpdateMutate(
+	ctx corectx.Context,
+	repo coredyn.BaseRepository,
+	data dmodel.DynamicFields,
+) (*crud.OpResult[crud.MutateResultData], error) {
+	updatedRes, err := repo.Update(ctx, data)
+	if err != nil {
+		return nil, err
+	}
+	if len(updatedRes.ClientErrors) > 0 {
+		return &crud.OpResult[crud.MutateResultData]{ClientErrors: updatedRes.ClientErrors}, nil
+	}
+	updatedAt, etag := readUpdatedAtAndEtagFromFields(updatedRes.Data)
+	return &crud.OpResult[crud.MutateResultData]{
+		Data: crud.MutateResultData{
+			AffectedCount: 1,
+			AffectedAt:    updatedAt,
+			Etag:          etag,
+		},
+	}, nil
+}
+
+func readUpdatedAtAndEtagFromFields(data dmodel.DynamicFields) (updatedAt model.ModelDateTime, etag model.Etag) {
+	upt, ok := data[basemodel.FieldUpdatedAt]
+	if ok {
+		updatedAt = upt.(model.ModelDateTime)
+	}
+	et, ok := data[basemodel.FieldEtag]
+	if ok {
+		etag = et.(string)
+	}
+	return
 }

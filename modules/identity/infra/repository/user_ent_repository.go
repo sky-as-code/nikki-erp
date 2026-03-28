@@ -110,7 +110,7 @@ func (this *UserEntRepository) ExistsMulti(ctx crud.Context, ids []model.Id, org
 }
 
 func (this *UserEntRepository) FindById(ctx crud.Context, param it.FindByIdParam) (*domain.User, error) {
-	query := this.userClient(ctx).Query().Where(entUser.ID(param.Id))
+	query := this.userClient(ctx).Query().Where(entUser.ID(*param.Id))
 
 	// if param.WithGroup {
 	// 	query = query.WithGroups()
@@ -137,12 +137,12 @@ func (this *UserEntRepository) FindById(ctx crud.Context, param it.FindByIdParam
 func (this *UserEntRepository) FindByIdForUpdate(ctx crud.Context, param it.FindByIdParam) (*domain.User, *db.DbLock, error) {
 	tx, _ := this.client.Tx(ctx)
 	query := tx.User.Query().
-		Where(entUser.ID(param.Id)).
+		Where(entUser.ID(*param.Id)).
 		ForUpdate(sql.WithLockAction(sql.NoWait))
 
-	if param.Status != nil {
-		query = query.Where(entUser.StatusEQ(string(*param.Status)))
-	}
+	// if param.Status != nil {
+	// 	query = query.Where(entUser.StatusEQ(string(*param.Status)))
+	// }
 
 	return db.FindOneForUpdate[ent.User, domain.User](ctx, query, ent.IsNotFound, entToUser, tx)
 }

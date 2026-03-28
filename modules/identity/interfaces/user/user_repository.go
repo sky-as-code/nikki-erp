@@ -30,9 +30,8 @@ type UserRepository2 interface {
 	dEnt.BaseRepoGetter
 	Create(ctx corectx.Context, user domain.UserEntity) (*crud.OpResult[domain.UserEntity], error)
 	Update(ctx corectx.Context, user domain.UserEntity) (*crud.OpResult[domain.UserEntity], error)
-	FindOne(ctx corectx.Context, param dEnt.GetOneParam) (*crud.OpResult[domain.UserEntity], error)
-	Search(ctx corectx.Context, param dEnt.SearchParam) (*crud.OpResult[crud.PagedResultData[domain.UserEntity]], error)
-	Archive(ctx corectx.Context, user domain.UserEntity) (*crud.OpResult[domain.UserEntity], error)
+	GetOne(ctx corectx.Context, param dEnt.RepoGetOneParam) (*crud.OpResult[domain.UserEntity], error)
+	Search(ctx corectx.Context, param dEnt.RepoSearchParam) (*crud.OpResult[crud.PagedResultData[domain.UserEntity]], error)
 }
 
 type DeleteParam = DeleteUserCommand

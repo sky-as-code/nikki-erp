@@ -18,7 +18,7 @@ func GenCreateSql(registry *model.SchemaRegistry, dialect string) ([]string, err
 	if dialect != DialectPostgres {
 		return nil, errors.Errorf("GenCreateSql: dialect '%s' is not supported", dialect)
 	}
-	builder := &PgQueryBuilder{}
+	builder := NewPgQueryBuilder()
 	var results []string
 	err := registry.ForEachOrder(func(schemaName string, s *model.ModelSchema) error {
 		sqlRes, genErr := builder.SqlCreateTable(s, registry)

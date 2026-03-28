@@ -5,11 +5,9 @@ import (
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/common/crud"
-	dcrud "github.com/sky-as-code/nikki-erp/common/crud"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	middleWare "github.com/sky-as-code/nikki-erp/common/middleware"
-	"github.com/sky-as-code/nikki-erp/common/modelmapper"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
@@ -30,31 +28,6 @@ func NewUserRest(params userRestParams) *UserRest {
 type UserRest struct {
 	httpserver.RestBase
 	UserSvc it.UserService
-}
-
-func (this UserRest) ArchiveUser(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST archive user"); e != nil {
-			err = e
-		}
-	}()
-
-	return httpserver.ServeRequestDynamic(
-		echoCtx,
-		this.UserSvc.ArchiveUser,
-		func(requestFields dmodel.DynamicFields) it.ArchiveUserCommand2 {
-			cmd := it.ArchiveUserCommand2{}
-			cmd.SetFieldData(requestFields)
-			return cmd
-		},
-		func(data domain.UserEntity) ArchiveUser2Response {
-			response := &ArchiveUser2Response{}
-			err := modelmapper.MapToStruct(data.GetFieldData(), response)
-			ft.PanicOnErr(err)
-			return *response
-		},
-		httpserver.JsonOk,
-	)
 }
 
 func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
@@ -86,15 +59,13 @@ func (this UserRest) DeleteUser(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequestDynamic(
+	err = httpserver.ServeRequest2(
 		echoCtx,
 		this.UserSvc.DeleteUser,
-		func(requestFields dmodel.DynamicFields) it.DeleteUserCommand {
-			cmd := it.DeleteUserCommand{}
-			cmd.SetFieldData(requestFields)
-			return cmd
+		func(request DeleteUserRequest) it.DeleteUserCommand {
+			return it.DeleteUserCommand(request)
 		},
-		func(data dcrud.MutateResultData) DeleteUserResponse {
+		func(data crud.MutateResultData) DeleteUserResponse {
 			response := httpserver.NewRestDeleteResponse2(data)
 			return response
 		},
@@ -118,6 +89,27 @@ func (this UserRest) GetUser(echoCtx echo.Context) (err error) {
 		},
 		func(data domain.UserEntity) dmodel.DynamicFields {
 			return data.GetFieldData()
+		},
+		httpserver.JsonOk,
+	)
+}
+
+func (this UserRest) SetUserIsArchived(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST set user is_archived"); e != nil {
+			err = e
+		}
+	}()
+
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.UserSvc.SetUserIsArchived,
+		func(request SetUserIsArchivedRequest) it.SetUserIsArchived {
+			return request
+		},
+		func(data crud.MutateResultData) SetUserIsArchivedResponse {
+			response := httpserver.NewRestUpdateResponse2(data)
+			return response
 		},
 		httpserver.JsonOk,
 	)
