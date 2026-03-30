@@ -1,7 +1,7 @@
 meta {
   name: User Create - Empty strings - Validation errors
   type: http
-  seq: 4
+  seq: 5
 }
 
 post {
@@ -18,42 +18,9 @@ body:json {
 }
 
 script:post-response {
-  const pkg = require('./scripts/common-test-response');
+  const pkg = require('./scripts/error-400-fields-missing');
   
-  const schema = {
-      type: "array",
-      minItems: 2,
-      maxItems: 2,
-      items: {
-          type: "object",
-          required: ["field", "key", "message", "type"],
-          properties: {
-              field: {
-                  type: "string",
-                  enum: ["display_name", "email"],
-              },
-              key: {
-                  type: "string",
-                  enum: ["common.err_missing_required_field"],
-              },
-              message: {
-                  type: "string",
-                  enum: ["field is required"],
-              },
-              type: {
-                  type: "string",
-                  enum: ["validation"],
-              },
-              vars: {
-                type: "object"
-              }
-          },
-          additionalProperties: false,
-      },
-      additionalItems: false
-  };
-  
-  pkg.testHttpResponse(schema, 400);
+  pkg.testMissingFields("display_name", "email");
   
 }
 

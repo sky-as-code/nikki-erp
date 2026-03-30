@@ -226,6 +226,9 @@ func (this *BaseRepositoryImpl) GetOne(ctx corectx.Context, param dyn.RepoGetOne
 	if vErr := this.validateGetOneColumnsAndFilter(param.Columns, param.Filter); vErr != nil {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: ft.ClientErrors{*vErr}}, nil
 	}
+	if this.hasNestedOrEdgeColumns(param.Columns) {
+		return this.getOneWithNestedColumns(ctx, param)
+	}
 	// if err := this.ensureTenantKeyIn(param.Filter); err != nil {
 	// 	return nil, err
 	// }
@@ -235,7 +238,7 @@ func (this *BaseRepositoryImpl) GetOne(ctx corectx.Context, param dyn.RepoGetOne
 	}
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(
 		this.schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-			Columns: param.Columns,
+			Columns: this.ensurePrimaryKeyColumns(param.Columns),
 		})
 	if err != nil {
 		return nil, err
@@ -251,6 +254,37 @@ func (this *BaseRepositoryImpl) GetOne(ctx corectx.Context, param dyn.RepoGetOne
 	}
 	if len(rows) == 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{HasData: false}, nil
+	}
+	return &dyn.OpResult[dmodel.DynamicFields]{Data: rows[0], HasData: true}, nil
+}
+
+func (this *BaseRepositoryImpl) getOneWithNestedColumns(
+	ctx corectx.Context, param dyn.RepoGetOneParam,
+) (*dyn.OpResult[dmodel.DynamicFields], error) {
+	graph, err := this.buildFindOneGraph(param.Filter)
+	if err != nil {
+		return nil, err
+	}
+	plan, cErrs := this.buildNestedSelectPlan(param.Columns)
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: cErrs}, nil
+	}
+	rows, scanErrs, err := this.runSelectGraphScan(ctx, graph, dyn.RepoSearchParam{
+		Columns: plan.MainColumns,
+		Page:    0,
+		Size:    1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(scanErrs) > 0 {
+		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: scanErrs}, nil
+	}
+	if len(rows) == 0 {
+		return &dyn.OpResult[dmodel.DynamicFields]{HasData: false}, nil
+	}
+	if err := this.hydrateNestedEdgesForRows(ctx, rows, plan.EdgeLeafColumns); err != nil {
+		return nil, err
 	}
 	return &dyn.OpResult[dmodel.DynamicFields]{Data: rows[0], HasData: true}, nil
 }
@@ -416,6 +450,9 @@ func appendMissingKeyErrors(errs *ft.ClientErrors, fieldPrefix string, keys dmod
 func (this *BaseRepositoryImpl) Search(ctx corectx.Context, param dyn.RepoSearchParam) (
 	*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error,
 ) {
+	if this.hasNestedOrEdgeColumns(param.Columns) {
+		return this.searchWithNestedColumns(ctx, param)
+	}
 	// merged, err := this.mergeFilterIntoGraph(param.Graph, param.Filter)
 	// if err != nil {
 	// 	return nil, err
@@ -433,7 +470,11 @@ func (this *BaseRepositoryImpl) Search(ctx corectx.Context, param dyn.RepoSearch
 			ClientErrors: countClientErrs,
 		}, nil
 	}
-	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, param)
+	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, dyn.RepoSearchParam{
+		Columns: this.ensurePrimaryKeyColumns(param.Columns),
+		Page:    param.Page,
+		Size:    param.Size,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -455,6 +496,412 @@ func (this *BaseRepositoryImpl) Search(ctx corectx.Context, param dyn.RepoSearch
 		Data:    paged,
 		HasData: len(rows) != 0,
 	}, nil
+}
+
+func (this *BaseRepositoryImpl) searchWithNestedColumns(
+	ctx corectx.Context, param dyn.RepoSearchParam,
+) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error) {
+	plan, cErrs := this.buildNestedSelectPlan(param.Columns)
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
+	}
+	merged := param.Graph
+	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged)
+	if err != nil {
+		return nil, err
+	}
+	if len(countClientErrs) > 0 {
+		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{
+			ClientErrors: countClientErrs,
+		}, nil
+	}
+	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, dyn.RepoSearchParam{
+		Columns: plan.MainColumns,
+		Page:    param.Page,
+		Size:    param.Size,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(scanClientErrs) > 0 {
+		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{
+			ClientErrors: scanClientErrs,
+		}, nil
+	}
+	if err := this.hydrateNestedEdgesForRows(ctx, rows, plan.EdgeLeafColumns); err != nil {
+		return nil, err
+	}
+	if param.Size <= 0 {
+		total = len(rows)
+	}
+	paged := dyn.PagedResultData[dmodel.DynamicFields]{
+		Items: rows,
+		Total: total,
+		Page:  param.Page,
+		Size:  param.Size,
+	}
+	return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{
+		Data:    paged,
+		HasData: len(rows) != 0,
+	}, nil
+}
+
+type nestedSelectPlan struct {
+	MainColumns    []string
+	EdgeLeafColumns map[string][]string
+}
+
+func (this *BaseRepositoryImpl) hasNestedOrEdgeColumns(columns []string) bool {
+	for _, col := range columns {
+		if strings.Contains(col, ".") {
+			return true
+		}
+		field, ok := this.schema.Field(col)
+		if ok && field.IsVirtualModelField() {
+			return true
+		}
+	}
+	return false
+}
+
+func (this *BaseRepositoryImpl) buildNestedSelectPlan(columns []string) (nestedSelectPlan, ft.ClientErrors) {
+	var errs ft.ClientErrors
+	mainSet := make(map[string]struct{})
+	for _, key := range this.schema.PrimaryKeys() {
+		mainSet[key] = struct{}{}
+	}
+	edgeLeafSet := make(map[string]map[string]struct{})
+	for _, col := range columns {
+		if strings.Count(col, ".") == 0 {
+			field, ok := this.schema.Field(col)
+			if ok && field.IsVirtualModelField() {
+				rel, hasRel := this.relationByEdge(col)
+				if !hasRel {
+					errs.Append(*ft.NewValidationError(
+						col, ft.ErrorKey("err_unknown_schema_field"), "edge is not defined on this schema",
+					))
+					continue
+				}
+				destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
+				if destSchema == nil {
+					errs.Append(*ft.NewAnonymousValidationError(
+						ft.ErrorKey("err_schema_not_found"), "edge destination schema not found", nil,
+					))
+					continue
+				}
+				if edgeLeafSet[col] == nil {
+					edgeLeafSet[col] = make(map[string]struct{})
+				}
+				for _, edgeCol := range physicalColumnNames(destSchema) {
+					edgeLeafSet[col][edgeCol] = struct{}{}
+				}
+				continue
+			}
+			mainSet[col] = struct{}{}
+			continue
+		}
+		parts, partErr := this.parseNestedColumn(col)
+		if partErr != nil {
+			errs.Append(*partErr)
+			continue
+		}
+		if edgeLeafSet[parts[0]] == nil {
+			edgeLeafSet[parts[0]] = make(map[string]struct{})
+		}
+		edgeLeafSet[parts[0]][parts[1]] = struct{}{}
+	}
+	if errs.Count() > 0 {
+		return nestedSelectPlan{}, errs
+	}
+	mainCols := mapKeysSorted(mainSet)
+	edgeCols := make(map[string][]string, len(edgeLeafSet))
+	for edge, fields := range edgeLeafSet {
+		edgeCols[edge] = mapKeysSorted(fields)
+	}
+	return nestedSelectPlan{
+		MainColumns:    mainCols,
+		EdgeLeafColumns: edgeCols,
+	}, nil
+}
+
+func mapKeysSorted(in map[string]struct{}) []string {
+	out := make([]string, 0, len(in))
+	for key := range in {
+		out = append(out, key)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func (this *BaseRepositoryImpl) parseNestedColumn(col string) ([]string, *ft.ClientErrorItem) {
+	if strings.Count(col, ".") > orm.MaxSelectGraphColumnDots {
+		return nil, ft.NewValidationError(
+			col, ft.ErrorKey("err_graph_field_path_too_deep"),
+			fmt.Sprintf("field path exceeds maximum of %d dot separators", orm.MaxSelectGraphColumnDots),
+		)
+	}
+	parts := strings.Split(col, ".")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return nil, ft.NewValidationError(
+			col, ft.ErrorKey("err_invalid_graph_field_path"),
+			"field path must be {edge}.{field}",
+		)
+	}
+	rel, ok := this.relationByEdge(parts[0])
+	if !ok {
+		return nil, ft.NewValidationError(parts[0], ft.ErrorKey("err_unknown_schema_field"), "edge is not defined on this schema")
+	}
+	destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
+	if destSchema == nil {
+		return nil, ft.NewAnonymousValidationError(ft.ErrorKey("err_schema_not_found"), "edge destination schema not found", nil)
+	}
+	f, ok := destSchema.Column(parts[1])
+	if !ok || f.IsVirtualModelField() {
+		return nil, ft.NewValidationError(col, ft.ErrorKey("err_unknown_schema_field"), "field is not defined on edge schema")
+	}
+	return parts, nil
+}
+
+func physicalColumnNames(schema *dmodel.ModelSchema) []string {
+	cols := schema.Columns()
+	out := make([]string, 0, len(cols))
+	for _, col := range cols {
+		out = append(out, col.Name())
+	}
+	return out
+}
+
+func (this *BaseRepositoryImpl) relationByEdge(edge string) (dmodel.ModelRelation, bool) {
+	for _, rel := range this.schema.Relations() {
+		if rel.Edge == edge {
+			return rel, true
+		}
+	}
+	return dmodel.ModelRelation{}, false
+}
+
+func (this *BaseRepositoryImpl) hydrateNestedEdgesForRows(
+	ctx corectx.Context, rows []dmodel.DynamicFields, edgeLeafColumns map[string][]string,
+) error {
+	for i := range rows {
+		for edge, leafCols := range edgeLeafColumns {
+			val, err := this.fetchNestedEdgeValue(ctx, rows[i], edge, leafCols)
+			if err != nil {
+				return err
+			}
+			rows[i][edge] = val
+		}
+	}
+	return nil
+}
+
+func (this *BaseRepositoryImpl) fetchNestedEdgeValue(
+	ctx corectx.Context, srcRow dmodel.DynamicFields, edge string, leafColumns []string,
+) (any, error) {
+	rel, ok := this.relationByEdge(edge)
+	if !ok {
+		return nil, errors.Errorf("fetchNestedEdgeValue: unknown edge '%s'", edge)
+	}
+	destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
+	if destSchema == nil {
+		return nil, errors.Errorf("fetchNestedEdgeValue: schema '%s' not found", rel.DestSchemaName)
+	}
+	destCols := withPrimaryKeys(destSchema.PrimaryKeys(), leafColumns)
+	switch rel.RelationType {
+	case dmodel.RelationTypeManyToMany:
+		return this.fetchManyToManyEdgeRows(ctx, srcRow, rel, destSchema, destCols)
+	case dmodel.RelationTypeOneToMany:
+		return this.fetchOneToManyEdgeRows(ctx, srcRow, rel, destSchema, destCols)
+	case dmodel.RelationTypeManyToOne, dmodel.RelationTypeOneToOne:
+		return this.fetchSingleEdgeRow(ctx, srcRow, rel, destSchema, destCols)
+	default:
+		return nil, errors.Errorf("fetchNestedEdgeValue: unsupported relation type '%s'", rel.RelationType)
+	}
+}
+
+func withPrimaryKeys(primaryKeys []string, columns []string) []string {
+	set := make(map[string]struct{})
+	for _, key := range primaryKeys {
+		set[key] = struct{}{}
+	}
+	for _, col := range columns {
+		set[col] = struct{}{}
+	}
+	return mapKeysSorted(set)
+}
+
+func (this *BaseRepositoryImpl) fetchSingleEdgeRow(
+	ctx corectx.Context, srcRow dmodel.DynamicFields, rel dmodel.ModelRelation,
+	destSchema *dmodel.ModelSchema, columns []string,
+) (dmodel.DynamicFields, error) {
+	filter, ok := this.filterForSingleEdge(srcRow, rel)
+	if !ok {
+		return nil, nil
+	}
+	rows, err := this.selectRowsByFilter(ctx, destSchema, filter, columns, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	return rows[0], nil
+}
+
+func (this *BaseRepositoryImpl) filterForSingleEdge(
+	srcRow dmodel.DynamicFields, rel dmodel.ModelRelation,
+) (dmodel.DynamicFields, bool) {
+	filter := make(dmodel.DynamicFields)
+	for _, pair := range rel.EffectiveForeignKeys() {
+		srcVal, ok := srcRow[pair.FkColumn]
+		if !ok || srcVal == nil {
+			return nil, false
+		}
+		filter[pair.ReferencedColumn] = srcVal
+	}
+	return filter, true
+}
+
+func (this *BaseRepositoryImpl) fetchOneToManyEdgeRows(
+	ctx corectx.Context, srcRow dmodel.DynamicFields, rel dmodel.ModelRelation,
+	destSchema *dmodel.ModelSchema, columns []string,
+) ([]dmodel.DynamicFields, error) {
+	filter := make(dmodel.DynamicFields)
+	for _, pair := range rel.EffectiveForeignKeys() {
+		srcVal, ok := srcRow[pair.ReferencedColumn]
+		if !ok || srcVal == nil {
+			return []dmodel.DynamicFields{}, nil
+		}
+		filter[pair.FkColumn] = srcVal
+	}
+	return this.selectRowsByFilter(ctx, destSchema, filter, columns, 0)
+}
+
+func (this *BaseRepositoryImpl) fetchManyToManyEdgeRows(
+	ctx corectx.Context, srcRow dmodel.DynamicFields, rel dmodel.ModelRelation,
+	destSchema *dmodel.ModelSchema, columns []string,
+) ([]dmodel.DynamicFields, error) {
+	throughSchema := dmodel.GetSchemaRegistry().Get(rel.M2mThroughSchemaName)
+	if throughSchema == nil {
+		return nil, errors.Errorf("fetchManyToManyEdgeRows: through schema '%s' not found", rel.M2mThroughSchemaName)
+	}
+	filters, ok := this.buildM2mThroughFilter(srcRow, rel)
+	if !ok {
+		return []dmodel.DynamicFields{}, nil
+	}
+	destKeys, err := this.selectDestKeyFiltersFromThrough(ctx, throughSchema, rel, filters, destSchema)
+	if err != nil {
+		return nil, err
+	}
+	if len(destKeys) == 0 {
+		return []dmodel.DynamicFields{}, nil
+	}
+	return this.selectRowsByAnyFilter(ctx, destSchema, destKeys, columns)
+}
+
+func (this *BaseRepositoryImpl) buildM2mThroughFilter(
+	srcRow dmodel.DynamicFields, rel dmodel.ModelRelation,
+) (dmodel.DynamicFields, bool) {
+	filter := make(dmodel.DynamicFields)
+	for _, srcPk := range this.schema.PrimaryKeys() {
+		val, ok := srcRow[srcPk]
+		if !ok || val == nil {
+			return nil, false
+		}
+		filter[dmodel.PrefixedThroughColumn(rel.M2mSrcFieldPrefix, srcPk)] = val
+	}
+	srcTk := this.schema.TenantKey()
+	if srcTk != "" {
+		if val, ok := srcRow[srcTk]; ok && val != nil {
+			filter[dmodel.PrefixedThroughColumn(rel.M2mSrcFieldPrefix, srcTk)] = val
+		}
+	}
+	return filter, true
+}
+
+func (this *BaseRepositoryImpl) selectDestKeyFiltersFromThrough(
+	ctx corectx.Context, throughSchema *dmodel.ModelSchema, rel dmodel.ModelRelation,
+	throughFilter dmodel.DynamicFields, destSchema *dmodel.ModelSchema,
+) ([]dmodel.DynamicFields, error) {
+	destPrefixedPks := make([]string, 0, len(destSchema.PrimaryKeys()))
+	for _, key := range destSchema.PrimaryKeys() {
+		destPrefixedPks = append(destPrefixedPks, dmodel.PrefixedThroughColumn(rel.M2mDestFieldPrefix, key))
+	}
+	destTk := destSchema.TenantKey()
+	if destTk != "" {
+		destPrefixedPks = append(destPrefixedPks, dmodel.PrefixedThroughColumn(rel.M2mDestFieldPrefix, destTk))
+	}
+	throughRows, err := this.selectRowsByFilter(ctx, throughSchema, throughFilter, destPrefixedPks, 0)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]dmodel.DynamicFields, 0, len(throughRows))
+	for _, row := range throughRows {
+		item := make(dmodel.DynamicFields)
+		for _, key := range destSchema.PrimaryKeys() {
+			v := row[dmodel.PrefixedThroughColumn(rel.M2mDestFieldPrefix, key)]
+			item[key] = v
+		}
+		if destTk != "" {
+			v, ok := row[dmodel.PrefixedThroughColumn(rel.M2mDestFieldPrefix, destTk)]
+			if ok && v != nil {
+				item[destTk] = v
+			}
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func (this *BaseRepositoryImpl) selectRowsByFilter(
+	ctx corectx.Context, schema *dmodel.ModelSchema, filter dmodel.DynamicFields, columns []string, size int,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	nodes := make([]dmodel.SearchNode, 0, len(filter))
+	for field, value := range filter {
+		nodes = append(nodes, *dmodel.NewSearchNode().NewCondition(field, dmodel.Equals, value))
+	}
+	graph.And(nodes...)
+	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
+		Columns: columns,
+		Size:    size,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if qbClientErrs != nil && qbClientErrs.Count() > 0 {
+		return nil, errors.Errorf("selectRowsByFilter: invalid query graph")
+	}
+	this.logQuery(*sqlQuery)
+	return this.queryAndScan(ctx, *sqlQuery)
+}
+
+func (this *BaseRepositoryImpl) selectRowsByAnyFilter(
+	ctx corectx.Context, schema *dmodel.ModelSchema, filters []dmodel.DynamicFields, columns []string,
+) ([]dmodel.DynamicFields, error) {
+	graph := &dmodel.SearchGraph{}
+	ors := make([]dmodel.SearchNode, 0, len(filters))
+	for _, filter := range filters {
+		andNodes := make([]dmodel.SearchNode, 0, len(filter))
+		for field, value := range filter {
+			andNodes = append(andNodes, *dmodel.NewSearchNode().NewCondition(field, dmodel.Equals, value))
+		}
+		node := dmodel.NewSearchNode()
+		node.And(andNodes...)
+		ors = append(ors, *node)
+	}
+	graph.Or(ors...)
+	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
+		Columns: columns,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if qbClientErrs != nil && qbClientErrs.Count() > 0 {
+		return nil, errors.Errorf("selectRowsByAnyFilter: invalid query graph")
+	}
+	this.logQuery(*sqlQuery)
+	return this.queryAndScan(ctx, *sqlQuery)
 }
 
 func (this *BaseRepositoryImpl) countRowsMatchingGraph(
@@ -663,7 +1110,25 @@ func (this *BaseRepositoryImpl) validateGetOneColumnsAndFilter(
 	columns []string, filter dmodel.DynamicFields,
 ) *ft.ClientErrorItem {
 	for _, col := range columns {
-		if _, ok := this.schema.Column(col); !ok {
+		field, hasField := this.schema.Field(col)
+		if hasField && field.IsVirtualModelField() {
+			if _, ok := this.relationByEdge(col); !ok {
+				return ft.NewValidationError(
+					col,
+					ft.ErrorKey("err_unknown_schema_field"),
+					"edge is not defined on this schema",
+				)
+			}
+			continue
+		}
+		if strings.Contains(col, ".") {
+			if _, err := this.parseNestedColumn(col); err != nil {
+				return err
+			}
+			continue
+		}
+		field, ok := this.schema.Column(col)
+		if !ok || field.IsVirtualModelField() {
 			return ft.NewValidationError(
 				col,
 				ft.ErrorKey("err_unknown_schema_field"),
@@ -689,6 +1154,20 @@ func (this *BaseRepositoryImpl) validateGetOneColumnsAndFilter(
 		}
 	}
 	return nil
+}
+
+func (this *BaseRepositoryImpl) ensurePrimaryKeyColumns(columns []string) []string {
+	if len(columns) == 0 {
+		return columns
+	}
+	set := make(map[string]struct{})
+	for _, col := range columns {
+		set[col] = struct{}{}
+	}
+	for _, key := range this.schema.PrimaryKeys() {
+		set[key] = struct{}{}
+	}
+	return mapKeysSorted(set)
 }
 
 func (this *BaseRepositoryImpl) ensureTenantKeyIn(values dmodel.DynamicFields) error {

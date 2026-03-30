@@ -1,0 +1,70 @@
+meta {
+  name: Group Get - Edge columns - Success
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/identity/groups/{{seed_group_id}}?columns=name&columns=users.display_name&columns=users.email
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: name
+  columns: users.display_name
+  columns: users.email
+}
+
+script:post-response {
+  
+  const { testHttpResponse } = require('./scripts/common-test-response');
+  
+  const schema = {
+    type: "object",
+    required: ["id", "name", "users"],
+    properties: {
+      id: {
+        type: "string",
+        minLength: 1,
+      },
+      name: {
+        type: "string",
+        minLength: 1,
+      },
+      users: {
+        type: "array",
+        minItems: 1,
+        items: {
+          type: "object",
+          required: ["id", "display_name", "email"],
+          properties: {
+            id: {
+              type: "string",
+              minLength: 1,
+            },
+            display_name: {
+                type: "string",
+                minLength: 1,
+            },
+            email: {
+                type: "string",
+                format: "email",
+                minLength: 1,
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    additionalProperties: false,
+  };
+  
+  testHttpResponse(schema, 200);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

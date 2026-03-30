@@ -9,8 +9,11 @@ import (
 type UserStatus string
 
 const (
-	UserStatusNeverLogIn = UserStatus("never_log_in")
-	UserStatusInUse      = UserStatus("in_use")
+	UserStatusDraft      = UserStatus("draft")
+	UserStatusInvited    = UserStatus("invited")
+	UserStatusActive     = UserStatus("active")
+	UserStatusSuspended  = UserStatus("suspended")
+	UserStatusTerminated = UserStatus("terminated")
 )
 
 func (this UserStatus) String() string {
@@ -94,10 +97,10 @@ func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Name(UserFieldStatus).
 				Label(model.LangJson{"en-US": "Status"}).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(UserStatusInUse), string(UserStatusNeverLogIn),
+					string(UserStatusDraft), string(UserStatusInvited), string(UserStatusActive), string(UserStatusSuspended), string(UserStatusTerminated),
 				})).
 				RequiredForCreate().
-				Default(string(UserStatusInUse)),
+				Default(string(UserStatusDraft)),
 		).
 		Field(
 			dmodel.DefineField().

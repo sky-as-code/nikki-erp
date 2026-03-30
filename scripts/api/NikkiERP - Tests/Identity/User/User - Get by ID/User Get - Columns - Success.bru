@@ -21,8 +21,12 @@ script:post-response {
   
   const schema = {
       type: "object",
-      required: ["display_name", "email"],
+      required: ["id", "display_name", "email"],
       properties: {
+          id: {
+              type: "string",
+              minLength: 1,
+          },
           display_name: {
               type: "string",
               minLength: 1,

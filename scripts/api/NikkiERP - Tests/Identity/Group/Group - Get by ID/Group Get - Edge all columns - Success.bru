@@ -1,0 +1,99 @@
+meta {
+  name: Group Get - Edge all columns - Success
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/identity/groups/{{seed_group_id}}?columns=name&columns=users
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: name
+  columns: users
+}
+
+script:post-response {
+  
+  const { testHttpResponse } = require('./scripts/common-test-response');
+  
+  const schema = {
+    type: "object",
+    required: ["id", "name", "users"],
+    properties: {
+      id: {
+        type: "string",
+        minLength: 1,
+      },
+      name: {
+        type: "string",
+        minLength: 1,
+      },
+      users: {
+        type: "array",
+        minItems: 1,
+        items: {
+          type: "object",
+          required: ["id", "created_at", "display_name", "email", "etag", "is_archived", "status"],
+          properties: {
+            id: {
+              type: "string",
+              minLength: 1,
+            },
+            avatar_url: {
+                type: "string",
+                format: "uri",
+            },
+            created_at: {
+                type: "string",
+                minLength: 20, //"2026-03-23T06:53:01Z"
+            },
+            display_name: {
+                type: "string",
+                minLength: 1,
+            },
+            email: {
+                type: "string",
+                format: "email",
+                minLength: 1,
+            },
+            etag: {
+                type: "string",
+                minLength: 1,
+            },
+            is_owner: {
+                type: "boolean",
+            },
+            is_archived: {
+                type: "boolean",
+            },
+            status: {
+                type: "string",
+                minLength: 1,
+            },
+            updated_at: {
+                type: "string",
+                minLength: 20, //"2026-03-23T06:53:01Z"
+            },
+            hierarchy_id: {
+              type: "string",
+              minLength: 1,
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    additionalProperties: false,
+  };
+  
+  testHttpResponse(schema, 200);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

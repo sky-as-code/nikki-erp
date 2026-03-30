@@ -1,0 +1,28 @@
+meta {
+  name: Group Get - Non-exist column - Validation
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}?columns=name&columns=bla_bla_field
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: name
+  columns: bla_bla_field
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-nonexist-fields');
+  
+  pkg.testNonExistFields('bla_bla_field');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

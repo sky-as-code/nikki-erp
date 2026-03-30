@@ -74,7 +74,11 @@ script:post-response {
             updated_at: {
               type: "string",
               minLength: 20, //"2026-03-23T06:53:01Z"
-            }
+            },
+            hierarchy_id: {
+              type: "string",
+              minLength: 1,
+            },
           }
         }
       },

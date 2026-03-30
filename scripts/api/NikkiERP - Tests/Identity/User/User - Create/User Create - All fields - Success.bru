@@ -1,11 +1,11 @@
 meta {
-  name: User Update - Success
+  name: User Create - All fields - Success
   type: http
-  seq: 1
+  seq: 3
 }
 
-put {
-  url: {{api_host}}/v1/identity/users/{{user_id}}
+post {
+  url: {{api_host}}/v1/identity/users
   body: json
   auth: inherit
 }
@@ -22,9 +22,9 @@ body:json {
 }
 
 script:post-response {
-  const pkg = require('./scripts/update-success');
+  const pkg = require('./scripts/create-success');
   
-  pkg.testUpdate(1);
+  pkg.testCreate('user_id');
   
   const { email } = req.getBody();
   email && bru.setVar('email', email);

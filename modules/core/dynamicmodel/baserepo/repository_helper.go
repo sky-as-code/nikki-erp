@@ -9,9 +9,9 @@ import (
 )
 
 func GetOne[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, dynamicRepo dyn.BaseRepository, findParam dyn.RepoGetOneParam,
+	ctx corectx.Context, dynamicRepo dyn.BaseRepository, param dyn.RepoGetOneParam,
 ) (*dyn.OpResult[TDomain], error) {
-	found, err := dynamicRepo.GetOne(ctx, findParam)
+	found, err := dynamicRepo.GetOne(ctx, param)
 	if err != nil {
 		return nil, err
 	}
@@ -25,23 +25,6 @@ func GetOne[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 	TDomainPtr(&result).SetFieldData(found.Data)
 	return &dyn.OpResult[TDomain]{Data: result, HasData: true}, nil
 }
-
-// func Update[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
-// 	ctx corectx.Context, repo dyn.BaseRepository, domainModel dmodel.DynamicModelGetter,
-// ) (*dyn.OpResult[TDomain], error) {
-// 	data := domainModel.GetFieldData()
-// 	updated, err := repo.Update(ctx, data)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if len(updated.ClientErrors) > 0 {
-// 		return &dyn.OpResult[TDomain]{ClientErrors: updated.ClientErrors}, nil
-// 	}
-
-// 	var result TDomain
-// 	TDomainPtr(&result).SetFieldData(updated.Data)
-// 	return &dyn.OpResult[TDomain]{Data: result, HasData: true}, nil
-// }
 
 func DeleteOne(
 	ctx corectx.Context, dynamicRepo dyn.BaseRepository, keys dmodel.DynamicFields,

@@ -1,40 +1,21 @@
-meta {
-  name: User Create - Invalid fields - Validation errors
-  type: http
-  seq: 7
-}
+const { testHttpResponse } = require('./common-test-response');
 
-post {
-  url: {{api_host}}/v1/identity/users
-  body: json
-  auth: inherit
-}
-
-body:json {
-  {
-      "display_name": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
-      "email": "invalid@"
-  }
-}
-
-script:post-response {
-  const pkg = require('./scripts/common-test-response');
-  
+module.exports.testInvalidLength = function (...fields) {  
   const schema = {
       type: "array",
-      minItems: 2,
-      maxItems: 2,
+      minItems: fields.length,
+      maxItems: fields.length,
       items: {
           type: "object",
-          required: ["field", "key", "message", "type"],
+          required: ["field", "message", "type"],
           properties: {
               field: {
                   type: "string",
-                  enum: ["display_name", "email"],
+                  enum: [...fields],
               },
               key: {
-                  type: "string",
-                  enum: ["common.err_invalid_length", "common.err_invalid_email"],
+                type: "string",
+                enum: ["common.err_invalid_length"],
               },
               message: {
                   type: "string",
@@ -60,12 +41,6 @@ script:post-response {
       },
       additionalItems: false
   };
-  
-  pkg.testHttpResponse(schema, 400);
-  
-}
 
-settings {
-  encodeUrl: true
-  timeout: 0
-}
+  testHttpResponse(schema, 400);
+};

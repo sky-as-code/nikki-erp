@@ -10,9 +10,9 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 )
 
-const maxSelectGraphColumnDots = 1
-const maxOrderGraphFieldDots = 1
-const maxSearchGraphConditionDots = 5
+const MaxSelectGraphColumnDots = 1
+const MaxOrderGraphFieldDots = 1
+const MaxSearchGraphConditionDots = 5
 
 type graphJoinSpec struct {
 	tableWithAlias string
@@ -326,11 +326,11 @@ func (p *joinPlanner) resolveFieldSqlRef(field string, maxDots int) (*dmodel.Mod
 }
 
 func (p *joinPlanner) selectExprForColumn(requested string) (string, error) {
-	segments, err := parseDottedPath(requested, maxSelectGraphColumnDots)
+	segments, err := parseDottedPath(requested, MaxSelectGraphColumnDots)
 	if err != nil {
 		return "", err
 	}
-	_, ref, err := p.resolveFieldSqlRef(requested, maxSelectGraphColumnDots)
+	_, ref, err := p.resolveFieldSqlRef(requested, MaxSelectGraphColumnDots)
 	if err != nil {
 		return "", err
 	}
@@ -345,7 +345,7 @@ func collectGraphFieldPaths(graph *dmodel.SearchGraph, into map[string]struct{})
 	if graph == nil || len(graph.GetCondition().Field()) == 0 {
 		return nil
 	}
-	if err := noteGraphFieldName(graph.GetCondition().Field(), maxSearchGraphConditionDots, into); err != nil {
+	if err := noteGraphFieldName(graph.GetCondition().Field(), MaxSearchGraphConditionDots, into); err != nil {
 		return err
 	}
 	if err := walkSearchNodesForFields(graph.GetAnd(), into); err != nil {
@@ -358,7 +358,7 @@ func collectGraphFieldPaths(graph *dmodel.SearchGraph, into map[string]struct{})
 		if len(item) == 0 || item[0] == "" {
 			continue
 		}
-		if err := noteGraphFieldName(item[0], maxOrderGraphFieldDots, into); err != nil {
+		if err := noteGraphFieldName(item[0], MaxOrderGraphFieldDots, into); err != nil {
 			return err
 		}
 	}
@@ -368,7 +368,7 @@ func collectGraphFieldPaths(graph *dmodel.SearchGraph, into map[string]struct{})
 func walkSearchNodesForFields(nodes []dmodel.SearchNode, into map[string]struct{}) error {
 	for i := range nodes {
 		node := &nodes[i]
-		if err := noteGraphFieldName(node.GetCondition().Field(), maxSearchGraphConditionDots, into); err != nil {
+		if err := noteGraphFieldName(node.GetCondition().Field(), MaxSearchGraphConditionDots, into); err != nil {
 			return err
 		}
 		if err := walkSearchNodesForFields(node.GetAnd(), into); err != nil {
@@ -398,7 +398,7 @@ func collectSelectAndGraphPaths(graph *dmodel.SearchGraph, opts SqlSelectGraphOp
 		if col == "" {
 			continue
 		}
-		if err := noteGraphFieldName(col, maxSelectGraphColumnDots, paths); err != nil {
+		if err := noteGraphFieldName(col, MaxSelectGraphColumnDots, paths); err != nil {
 			return nil, err
 		}
 	}
@@ -430,12 +430,12 @@ func (this *PgQueryBuilder) planGraphJoins(
 	planner := newJoinPlanner(this, registry, root)
 	maxDotsFor := func(path string) int {
 		if pathInSelectColumns(path, opts.Columns) {
-			return maxSelectGraphColumnDots
+			return MaxSelectGraphColumnDots
 		}
 		if pathInOrder(path, graph) {
-			return maxOrderGraphFieldDots
+			return MaxOrderGraphFieldDots
 		}
-		return maxSearchGraphConditionDots
+		return MaxSearchGraphConditionDots
 	}
 	for path := range paths {
 		if err := planner.ensureFullPath(path, maxDotsFor(path)); err != nil {
@@ -476,5 +476,5 @@ func (this *PgQueryBuilder) prepareColNameForGraph(
 	if ctx == nil || ctx.planner == nil {
 		return this.prepareColName(schema, fieldName)
 	}
-	return ctx.planner.resolveFieldSqlRef(fieldName, maxSearchGraphConditionDots)
+	return ctx.planner.resolveFieldSqlRef(fieldName, MaxSearchGraphConditionDots)
 }
