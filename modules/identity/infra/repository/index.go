@@ -4,17 +4,16 @@ import (
 	stdErr "errors"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/common/orm"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent"
 )
 
 func InitRepositories() error {
 	err := stdErr.Join(
-		orm.RegisterEntity(BuildUserDescriptor()),
-		orm.RegisterEntity(BuildGroupDescriptor()),
-		orm.RegisterEntity(BuildOrganizationDescriptor()),
-		orm.RegisterEntity(BuildHierarchyLevelDescriptor()),
+	// orm.RegisterEntity(BuildUserDescriptor()),
+	// orm.RegisterEntity(BuildGroupDescriptor()),
+	// orm.RegisterEntity(BuildOrganizationDescriptor()),
+	// orm.RegisterEntity(BuildHierarchyLevelDescriptor()),
 	)
 	if err != nil {
 		return err
@@ -22,12 +21,12 @@ func InitRepositories() error {
 
 	err = stdErr.Join(
 		deps.Register(newIdentityClient),
-		deps.Invoke(registerIdentitySearchPredicates),
-		deps.Register(NewUserEntRepository),
+		// deps.Invoke(registerIdentitySearchPredicates),
+		// deps.Register(NewUserEntRepository),
 		deps.Register(NewUserDynamicRepository),
-		deps.Register(NewGroupEntRepository),
-		deps.Register(NewOrganizationEntRepository),
-		deps.Register(NewHierarchyLevelEntRepository),
+		deps.Register(NewGroupDynamicRepository),
+		deps.Register(NewOrganizationDynamicRepository),
+		deps.Register(NewHierarchyDynamicRepository),
 	)
 
 	return err

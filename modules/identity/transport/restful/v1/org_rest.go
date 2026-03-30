@@ -4,15 +4,18 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 )
 
 type organizationRestParams struct {
 	dig.In
 
-	OrgSvc itOrg.OrganizationService
+	OrgSvc it.OrganizationService
 }
 
 func NewOrganizationRest(params organizationRestParams) *OrganizationRest {
@@ -23,131 +26,165 @@ func NewOrganizationRest(params organizationRestParams) *OrganizationRest {
 
 type OrganizationRest struct {
 	httpserver.RestBase
-	OrgSvc itOrg.OrganizationService
+	OrgSvc it.OrganizationService
 }
 
-func (this OrganizationRest) CreateOrganization(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) CreateOrg(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create organization"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.OrgSvc.CreateOrganization,
-		func(request CreateOrganizationRequest) itOrg.CreateOrganizationCommand {
-			return itOrg.CreateOrganizationCommand(request)
+	return httpserver.ServeRequestDynamic(
+		echoCtx,
+		this.OrgSvc.CreateOrg,
+		func(requestFields dmodel.DynamicFields) it.CreateOrgCommand {
+			cmd := it.CreateOrgCommand{}
+			cmd.SetFieldData(requestFields)
+			return cmd
 		},
-		func(result itOrg.CreateOrganizationResult) CreateOrganizationResponse {
-			response := CreateOrganizationResponse{}
-			response.FromEntity(result.Data)
-			return response
+		func(data domain.Organization) CreateOrgResponse {
+			response := httpserver.NewRestCreateResponseDyn(data.GetFieldData())
+			return *response
 		},
 		httpserver.JsonCreated,
 	)
-	return err
 }
 
-func (this OrganizationRest) UpdateOrganization(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update organization"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.OrgSvc.UpdateOrganization,
-		func(request UpdateOrganizationRequest) itOrg.UpdateOrganizationCommand {
-			return itOrg.UpdateOrganizationCommand(request)
-		},
-		func(result itOrg.UpdateOrganizationResult) UpdateOrganizationResponse {
-			response := UpdateOrganizationResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
-	)
-	return err
-}
-
-func (this OrganizationRest) DeleteOrganization(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) DeleteOrg(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete organization"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.OrgSvc.DeleteOrganization,
-		func(request DeleteOrganizationRequest) itOrg.DeleteOrganizationCommand {
-			return itOrg.DeleteOrganizationCommand(request)
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.OrgSvc.DeleteOrg,
+		func(request DeleteOrgRequest) it.DeleteOrgCommand {
+			return it.DeleteOrgCommand(request)
 		},
-		func(result itOrg.DeleteOrganizationResult) DeleteOrganizationResponse {
-			response := DeleteOrganizationResponse{}
-			response.FromNonEntity(result.Data)
-			return response
+		func(data dyn.MutateResultData) DeleteOrgResponse {
+			return httpserver.NewRestDeleteResponse2(data)
 		},
 		httpserver.JsonOk,
 	)
-	return err
 }
 
-func (this OrganizationRest) GetOrganizationBySlug(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) GetOrg(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get organization by slug"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.OrgSvc.GetOrganizationBySlug,
-		func(request GetOrganizationBySlugRequest) itOrg.GetOrganizationBySlugQuery {
-			return itOrg.GetOrganizationBySlugQuery(request)
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.OrgSvc.GetOrg,
+		func(request GetOrgRequest) it.GetOrgQuery {
+			return it.GetOrgQuery(request)
 		},
-		func(result itOrg.GetOrganizationBySlugResult) GetOrganizationBySlugResponse {
-			response := GetOrganizationBySlugResponse{}
-			response.FromOrg(*result.Data)
-			return response
+		func(data domain.Organization) GetOrgResponse {
+			return data.GetFieldData()
 		},
 		httpserver.JsonOk,
 	)
-	return err
 }
 
-func (this OrganizationRest) SearchOrganizations(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) ManageOrgUsers(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST manage org users"); e != nil {
+			err = e
+		}
+	}()
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.OrgSvc.ManageOrgUsers,
+		func(request ManageOrgUsersRequest) it.ManageOrgUsersCommand {
+			return it.ManageOrgUsersCommand(request)
+		},
+		func(data dyn.MutateResultData) ManageOrgsResponse {
+			return httpserver.NewRestMutateResponse(data)
+		},
+		httpserver.JsonOk,
+	)
+}
+
+func (this OrganizationRest) OrgExists(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST organization exists"); e != nil {
+			err = e
+		}
+	}()
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.OrgSvc.OrgExists,
+		func(request OrgExistsRequest) it.OrgExistsQuery {
+			return it.OrgExistsQuery(request)
+		},
+		func(data dyn.ExistsResultData) OrgExistsResponse {
+			return OrgExistsResponse(data)
+		},
+		httpserver.JsonOk,
+	)
+}
+
+func (this OrganizationRest) SearchOrgs(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search organizations"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.OrgSvc.SearchOrganizations,
-		func(request SearchOrganizationsRequest) itOrg.SearchOrganizationsQuery {
-			return itOrg.SearchOrganizationsQuery(request)
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.OrgSvc.SearchOrgs,
+		func(request SearchOrgsRequest) it.SearchOrgsQuery {
+			return it.SearchOrgsQuery(request)
 		},
-		func(result itOrg.SearchOrganizationsResult) SearchOrganizationsResponse {
-			response := SearchOrganizationsResponse{}
-			response.FromResult(result.Data)
-			return response
+		func(data it.SearchOrgsResultData) SearchOrgsResponse {
+			return httpserver.NewSearchUsersResponseDyn(data)
 		},
 		httpserver.JsonOk,
+		true,
 	)
-	return err
 }
 
-func (this OrganizationRest) ManageOrganizationUsers(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) SetOrgIsArchived(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST manage users"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST set organization is_archived"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.OrgSvc.AddRemoveUsers,
-		func(request ManageOrganizationUsersRequest) itOrg.AddRemoveUsersCommand {
-			return itOrg.AddRemoveUsersCommand(request)
+
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.OrgSvc.SetOrgIsArchived,
+		func(request SetOrgIsArchivedRequest) it.SetOrgIsArchivedCommand {
+			return request
 		},
-		func(result itOrg.AddRemoveUsersResult) ManageOrganizationUsersResponse {
-			response := ManageOrganizationUsersResponse{}
-			response.FromNonEntity(result.Data)
+		func(data dyn.MutateResultData) SetOrgIsArchivedResponse {
+			response := httpserver.NewRestUpdateResponse2(data)
 			return response
 		},
 		httpserver.JsonOk,
 	)
-	return err
+}
+
+func (this OrganizationRest) UpdateOrg(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update organization"); e != nil {
+			err = e
+		}
+	}()
+	return httpserver.ServeRequestDynamic(
+		echoCtx,
+		this.OrgSvc.UpdateOrg,
+		func(requestFields dmodel.DynamicFields) it.UpdateOrgCommand {
+			cmd := it.UpdateOrgCommand{}
+			cmd.SetFieldData(requestFields)
+			return cmd
+		},
+		func(data dyn.MutateResultData) UpdateOrgResponse {
+			return httpserver.NewRestUpdateResponse2(data)
+		},
+		httpserver.JsonOk,
+	)
 }

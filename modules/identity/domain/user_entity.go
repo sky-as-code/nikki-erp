@@ -2,71 +2,15 @@ package domain
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
-
-type User struct {
-	model.ModelBase
-	model.AuditableBase
-
-	AvatarUrl   *string     `json:"avatarUrl"`
-	DisplayName *string     `json:"displayName"`
-	Email       *string     `json:"email"`
-	HierarchyId *model.Id   `json:"hierarchyId"`
-	OrgId       *model.Id   `json:"orgId"`
-	Status      *UserStatus `json:"status,omitempty"`
-	ScopeRef    *model.Id   `json:"scopeRef,omitempty" model:"-"`
-
-	Groups    []Group          `json:"groups,omitempty" model:"-"` // TODO: Handle copy
-	Hierarchy []HierarchyLevel `json:"hierarchy,omitempty" model:"-"`
-	Orgs      []Organization   `json:"orgs,omitempty" model:"-"`
-}
-
-func (this *User) SetDefaults() {
-	this.ModelBase.SetDefaults()
-}
-
-func (this *User) Validate(forEdit bool) ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.AvatarUrl,
-			val.When(this.AvatarUrl != nil,
-				val.Length(1, model.MODEL_RULE_URL_LENGTH_MAX),
-				val.IsUrl,
-			),
-		),
-		val.Field(&this.DisplayName,
-			val.NotNilWhen(!forEdit),
-			val.When(this.DisplayName != nil,
-				val.NotEmpty,
-				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
-			),
-		),
-		val.Field(&this.Email,
-			val.NotNilWhen(!forEdit),
-			val.When(this.Email != nil,
-				val.NotEmpty,
-				val.IsEmail,
-				val.Length(5, model.MODEL_RULE_USERNAME_LENGTH),
-			),
-		),
-		UserStatusValidateRule(&this.Status),
-		model.IdPtrValidateRule(&this.HierarchyId, false),
-	}
-	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
-	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
-
-	return val.ApiBased.ValidateStruct(this, rules...)
-}
 
 type UserStatus string
 
 const (
-	UserStatusActive   = UserStatus("active")
-	UserStatusArchived = UserStatus("archived")
-	UserStatusLocked   = UserStatus("locked")
+	UserStatusNeverLogIn = UserStatus("never_log_in")
+	UserStatusInUse      = UserStatus("in_use")
 )
 
 func (this UserStatus) String() string {
@@ -78,35 +22,52 @@ func WrapUserStatus(s string) *UserStatus {
 	return &st
 }
 
-func UserStatusValidateRule(field **UserStatus) *val.FieldRules {
-	return val.Field(field,
-		val.When(*field != nil,
-			val.NotEmpty,
-			val.OneOf(UserStatusActive, UserStatusArchived, UserStatusLocked),
-		),
-	)
-}
-
 const (
 	UserSchemaName       = "identity.user"
 	UserFieldAvatarUrl   = "avatar_url"
 	UserFieldDisplayName = "display_name"
 	UserFieldEmail       = "email"
+	UserFieldId          = basemodel.FieldId
 	UserFieldIsOwner     = "is_owner"
 	UserFieldIsLocked    = "is_locked"
+	UserFieldHierarchyId = "hierarchy_id"
 	UserFieldStatus      = "status"
+
+	UserEdgeGroups    = "groups"
+	UserEdgeOrgs      = "orgs"
+	UserEdgeHierarchy = "hierarchy"
 )
+
+const (
+	UsrGrpRelSchemaName   = "identity.user_group_rel"
+	UsrGrpRelFieldUserId  = "user_id"
+	UsrGrpRelFieldGroupId = "group_id"
+)
+
+func UserGroupRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(UsrGrpRelSchemaName).
+		TableName("ident_user_group_rel").
+		ShouldBuildDb().
+		Field(
+			dmodel.DefineField().
+				Name(UsrGrpRelFieldUserId).
+				DataType(dmodel.FieldDataTypeUlid()).
+				PrimaryKey(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(UsrGrpRelFieldGroupId).
+				DataType(dmodel.FieldDataTypeUlid()).
+				PrimaryKey(),
+		)
+}
 
 func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserSchemaName).
 		Label(model.LangJson{"en-US": "User"}).
 		TableName("ident_users").
-		CompositeUnique("email", "display_name").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
-		Extend(basemodel.ArchivableModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder()).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().
 				Name(UserFieldAvatarUrl).
@@ -133,61 +94,75 @@ func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Name(UserFieldStatus).
 				Label(model.LangJson{"en-US": "Status"}).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(UserStatusActive), string(UserStatusLocked),
+					string(UserStatusInUse), string(UserStatusNeverLogIn),
 				})).
 				RequiredForCreate().
-				Default(string(UserStatusActive)),
+				Default(string(UserStatusInUse)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(UserFieldIsOwner).
 				Label(model.LangJson{"en-US": "Is Owner"}).
 				DataType(dmodel.FieldDataTypeBoolean()).
-				Default(nil),
+				Unique(), // Only one owner per deployment
+		).
+		Extend(basemodel.ArchivableModelSchemaBuilder()).
+		Extend(basemodel.VersionedModelSchemaBuilder()).
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Field(
+			dmodel.DefineField().
+				Name(UserFieldHierarchyId).
+				Label(model.LangJson{"en-US": "Hierarchy Level"}).
+				DataType(dmodel.FieldDataTypeUlid()),
+		).
+		EdgeTo(
+			dmodel.Edge(UserEdgeHierarchy).
+				ManyToOne(HierarchyLevelSchemaName, dmodel.DynamicFields{
+					UserFieldHierarchyId: basemodel.FieldId,
+				}).
+				OnDelete(dmodel.RelationCascadeSetNull),
+		).
+		EdgeTo(
+			dmodel.Edge(UserEdgeGroups).
+				ManyToMany(GroupSchemaName, UsrGrpRelSchemaName, "user").
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeTo(
+			dmodel.Edge(UserEdgeOrgs).
+				ManyToMany(OrganizationSchemaName, UsrOrgRelSchemaName, "user").
+				OnDelete(dmodel.RelationCascadeCascade),
 		)
-	// Field(
-	// 	dmodel.DefineField().
-	// 		Name("group_id").
-	// 		DataType(dmodel.FieldDataTypeUlid()).
-	// 		Foreign(
-	// 			dmodel.Edge("group").
-	// 				Label(model.LangJson{"en-US": "Group"}).
-	// 				ManyToOne("identity.group", "id").
-	// 				OnDelete(dmodel.RelationCascadeSetNull),
-	// 		),
-	// )
-
 }
 
-type UserEntity struct {
+type User struct {
 	fields dmodel.DynamicFields
 }
 
-func NewUserEntity() *UserEntity {
-	return &UserEntity{fields: make(dmodel.DynamicFields)}
+func NewUser() *User {
+	return &User{fields: make(dmodel.DynamicFields)}
 }
 
-func NewUserEntityFrom(src dmodel.DynamicFields) *UserEntity {
-	return &UserEntity{fields: src}
+func NewUserFrom(src dmodel.DynamicFields) *User {
+	return &User{fields: src}
 }
 
-func (this UserEntity) GetFieldData() dmodel.DynamicFields {
+func (this User) GetFieldData() dmodel.DynamicFields {
 	return this.fields
 }
 
-func (this *UserEntity) SetFieldData(data dmodel.DynamicFields) {
+func (this *User) SetFieldData(data dmodel.DynamicFields) {
 	this.fields = data
 }
 
-func (this UserEntity) GetId() *model.Id {
+func (this User) GetId() *model.Id {
 	return this.fields.GetModelId(basemodel.FieldId)
 }
 
-func (this *UserEntity) SetId(v *model.Id) {
+func (this *User) SetId(v *model.Id) {
 	this.fields.SetModelId(basemodel.FieldId, v)
 }
 
-func (this UserEntity) IsArchived() bool {
+func (this User) IsArchived() bool {
 	val := this.fields.GetBool(basemodel.FieldIsArchived)
 	if val == nil {
 		return false
@@ -195,35 +170,35 @@ func (this UserEntity) IsArchived() bool {
 	return *val
 }
 
-func (this *UserEntity) SetIsArchived(v *bool) {
+func (this *User) SetIsArchived(v *bool) {
 	this.fields.SetBool(basemodel.FieldIsArchived, v)
 }
 
-func (this UserEntity) GetAvatarUrl() *string {
+func (this User) GetAvatarUrl() *string {
 	return this.fields.GetString(UserFieldAvatarUrl)
 }
 
-func (this *UserEntity) SetAvatarUrl(v *string) {
+func (this *User) SetAvatarUrl(v *string) {
 	this.fields.SetString(UserFieldAvatarUrl, v)
 }
 
-func (this UserEntity) GetDisplayName() *string {
+func (this User) GetDisplayName() *string {
 	return this.fields.GetString(UserFieldDisplayName)
 }
 
-func (this *UserEntity) SetDisplayName(v *string) {
+func (this *User) SetDisplayName(v *string) {
 	this.fields.SetString(UserFieldDisplayName, v)
 }
 
-func (this UserEntity) GetEmail() *string {
+func (this User) GetEmail() *string {
 	return this.fields.GetString(UserFieldEmail)
 }
 
-func (this *UserEntity) SetEmail(v *string) {
+func (this *User) SetEmail(v *string) {
 	this.fields.SetString(UserFieldEmail, v)
 }
 
-func (this UserEntity) IsOwner() bool {
+func (this User) IsOwner() bool {
 	val := this.fields.GetBool(UserFieldIsOwner)
 	if val == nil {
 		return false
@@ -231,11 +206,11 @@ func (this UserEntity) IsOwner() bool {
 	return *val
 }
 
-func (this *UserEntity) SetIsOwner(v *bool) {
+func (this *User) SetIsOwner(v *bool) {
 	this.fields.SetBool(UserFieldIsOwner, v)
 }
 
-func (this UserEntity) GetStatus() *UserStatus {
+func (this User) GetStatus() *UserStatus {
 	s := this.fields.GetString(UserFieldStatus)
 	if s == nil {
 		return nil
@@ -244,11 +219,19 @@ func (this UserEntity) GetStatus() *UserStatus {
 	return &st
 }
 
-func (this *UserEntity) SetStatus(v *UserStatus) {
+func (this *User) SetStatus(v *UserStatus) {
 	if v == nil {
 		this.fields.SetString(UserFieldStatus, nil)
 		return
 	}
 	s := string(*v)
 	this.fields.SetString(UserFieldStatus, &s)
+}
+
+func (this User) GetHierarchyId() *model.Id {
+	return this.fields.GetModelId(UserFieldHierarchyId)
+}
+
+func (this *User) SetHierarchyId(v *model.Id) {
+	this.fields.SetModelId(UserFieldHierarchyId, v)
 }

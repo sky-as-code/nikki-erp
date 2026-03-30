@@ -165,7 +165,7 @@ func FieldDataTypeModel() FieldDataType {
 	return fieldDataTypeModel{fieldDataTypeBase{name: "model", options: nil}}
 }
 
-func IsModelDataType(dt FieldDataType) bool {
+func IsFieldDataTypeModel(dt FieldDataType) bool {
 	return dt.String() == "model"
 }
 
@@ -308,6 +308,11 @@ func (this fieldDataTypeEmail) validateScalar(val value) (value, *ft.ClientError
 }
 
 func (this fieldDataTypeEmail) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(string)
+	_, ptrSameType := val.(*string)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	str, err := toString(val)
 	if err != nil {
 		return Value(nil), err
@@ -334,6 +339,11 @@ func (this fieldDataTypePhone) validateScalar(val value) (value, *ft.ClientError
 }
 
 func (this fieldDataTypePhone) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(string)
+	_, ptrSameType := val.(*string)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	str, err := toString(val)
 	if err != nil {
 		return Value(nil), err
@@ -464,6 +474,11 @@ func sanitizeByType(s string, t SanitizeType) string {
 }
 
 func (this fieldDataTypeString) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(string)
+	_, ptrSameType := val.(*string)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	str, err := toString(val)
 	if err != nil {
 		return Value(nil), err
@@ -490,6 +505,11 @@ func (this fieldDataTypeSecret) validateScalar(val value) (value, *ft.ClientErro
 }
 
 func (this fieldDataTypeSecret) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(string)
+	_, ptrSameType := val.(*string)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	str, err := toString(val)
 	if err != nil {
 		return Value(nil), err
@@ -520,6 +540,11 @@ func (this fieldDataTypeUrl) validateScalar(val value) (value, *ft.ClientErrorIt
 }
 
 func (this fieldDataTypeUrl) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(string)
+	_, ptrSameType := val.(*string)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	str, err := toString(val)
 	if err != nil {
 		return Value(nil), err
@@ -565,6 +590,11 @@ func (this fieldDataTypeUlid) validateScalar(val value) (value, *ft.ClientErrorI
 }
 
 func (this fieldDataTypeUlid) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(string)
+	_, ptrSameType := val.(*string)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	str, err := toString(val)
 	if err != nil {
 		return Value(nil), err
@@ -598,6 +628,11 @@ func (this fieldDataTypeUuid) validateScalar(val value) (value, *ft.ClientErrorI
 }
 
 func (this fieldDataTypeUuid) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(string)
+	_, ptrSameType := val.(*string)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	str, err := toString(val)
 	if err != nil {
 		return Value(nil), err
@@ -630,6 +665,11 @@ func (this fieldDataTypeInteger) validateScalar(val value) (value, *ft.ClientErr
 }
 
 func (this fieldDataTypeInteger) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(int64)
+	_, ptrSameType := val.(*int64)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	result, err := toInt64(val)
 	if err != nil {
 		return Value(nil), err
@@ -660,6 +700,9 @@ func (this fieldDataTypeFloat) validateScalar(val value) (value, *ft.ClientError
 }
 
 func (this fieldDataTypeFloat) TryConvert(val any, options FieldDataTypeOptions) (value, error) {
+	if f, ok := float64IfExactOrPtr(val); ok {
+		return Value(applyFloatPrecision(f, options)), nil
+	}
 	result, err := toFloat64(val, options)
 	if err != nil {
 		return Value(nil), err
@@ -690,6 +733,11 @@ func (this fieldDataTypeBoolean) validateScalar(val value) (value, *ft.ClientErr
 }
 
 func (this fieldDataTypeBoolean) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(bool)
+	_, ptrSameType := val.(*bool)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	result, err := toBool(val)
 	if err != nil {
 		return Value(nil), err
@@ -718,14 +766,15 @@ func (this fieldDataTypeDate) Validate(val value) (value, *ft.ClientErrorItem) {
 }
 
 func (this fieldDataTypeDate) validateScalar(val value) (value, *ft.ClientErrorItem) {
-	sanitized, err := this.TryConvert(val.Get(), this.options)
-	if err != nil {
-		return Value(nil), ft.NewAnonymousValidationError("invalid_date", "invalid date, must have format 'YYYY-MM-DD'", nil)
-	}
-	return sanitized, nil
+	return val, nil
 }
 
 func (this fieldDataTypeDate) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(model.ModelDate)
+	_, ptrSameType := val.(*model.ModelDate)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	result, err := toDate(val)
 	if err != nil {
 		return Value(nil), err
@@ -752,14 +801,15 @@ func (this fieldDataTypeTime) Validate(val value) (value, *ft.ClientErrorItem) {
 }
 
 func (this fieldDataTypeTime) validateScalar(val value) (value, *ft.ClientErrorItem) {
-	sanitized, err := this.TryConvert(val.Get(), this.options)
-	if err != nil {
-		return Value(nil), ft.NewAnonymousValidationError("invalid_time", "invalid time, must have format 'HH:MM:SS'", nil)
-	}
-	return sanitized, nil
+	return val, nil
 }
 
 func (this fieldDataTypeTime) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(model.ModelTime)
+	_, ptrSameType := val.(*model.ModelTime)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	result, err := toTime(val)
 	if err != nil {
 		return Value(nil), err
@@ -786,14 +836,15 @@ func (this fieldDataTypeDateTime) Validate(val value) (value, *ft.ClientErrorIte
 }
 
 func (this fieldDataTypeDateTime) validateScalar(val value) (value, *ft.ClientErrorItem) {
-	sanitized, err := this.TryConvert(val.Get(), this.options)
-	if err != nil {
-		return Value(nil), ft.NewAnonymousValidationError("invalid_datetime", "invalid datetime, must be a RFC3339 timestamp", nil)
-	}
-	return sanitized, nil
+	return val, nil
 }
 
 func (this fieldDataTypeDateTime) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(model.ModelDateTime)
+	_, ptrSameType := val.(*model.ModelDateTime)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	result, err := toDateTime(val)
 	if err != nil {
 		return Value(nil), err
@@ -837,6 +888,11 @@ func (this fieldDataTypeEnumString) validateScalar(val value) (value, *ft.Client
 }
 
 func (this fieldDataTypeEnumString) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(string)
+	_, ptrSameType := val.(*string)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	str, err := toString(val)
 	if err != nil {
 		return Value(nil), err
@@ -881,6 +937,11 @@ func (this fieldDataTypeEnumInteger) validateScalar(value value) (value, *ft.Cli
 }
 
 func (this fieldDataTypeEnumInteger) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(int64)
+	_, ptrSameType := val.(*int64)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	result, err := toInt64(val)
 	if err != nil {
 		return Value(nil), err
@@ -917,6 +978,11 @@ func (this fieldDataTypeEtag) validateScalar(val value) (value, *ft.ClientErrorI
 }
 
 func (this fieldDataTypeEtag) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(string)
+	_, ptrSameType := val.(*string)
+	if sameType || ptrSameType {
+		return Value(val), nil
+	}
 	str, err := toString(val)
 	if err != nil {
 		return Value(nil), err
@@ -1131,6 +1197,23 @@ var (
 	reflectTypeFloat64 = reflect.TypeOf(float64(0))
 	reflectTypeBool    = reflect.TypeOf(false)
 )
+
+func float64IfExactOrPtr(val any) (float64, bool) {
+	if val == nil {
+		return 0, false
+	}
+	switch x := val.(type) {
+	case float64:
+		return x, true
+	case *float64:
+		if x == nil {
+			return 0, false
+		}
+		return *x, true
+	default:
+		return 0, false
+	}
+}
 
 func tryConvertOrIncompatible(dt FieldDataType, raw any) (value, *ft.ClientErrorItem) {
 	converted, err := dt.TryConvert(raw, dt.Options())

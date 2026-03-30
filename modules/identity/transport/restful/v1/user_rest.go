@@ -4,10 +4,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/common/crud"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	middleWare "github.com/sky-as-code/nikki-erp/common/middleware"
+
+	// middleWare "github.com/sky-as-code/nikki-erp/common/middleware"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
@@ -39,12 +40,12 @@ func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
 	err = httpserver.ServeRequestDynamic(
 		echoCtx,
 		this.UserSvc.CreateUser,
-		func(requestFields dmodel.DynamicFields) CreateUserRequest {
-			cmd := CreateUserRequest{}
+		func(requestFields dmodel.DynamicFields) it.CreateUserCommand {
+			cmd := it.CreateUserCommand{}
 			cmd.SetFieldData(requestFields)
 			return cmd
 		},
-		func(data domain.UserEntity) CreateUserResponse {
+		func(data domain.User) CreateUserResponse {
 			response := httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 			return *response
 		},
@@ -65,7 +66,7 @@ func (this UserRest) DeleteUser(echoCtx echo.Context) (err error) {
 		func(request DeleteUserRequest) it.DeleteUserCommand {
 			return it.DeleteUserCommand(request)
 		},
-		func(data crud.MutateResultData) DeleteUserResponse {
+		func(data dyn.MutateResultData) DeleteUserResponse {
 			response := httpserver.NewRestDeleteResponse2(data)
 			return response
 		},
@@ -87,11 +88,32 @@ func (this UserRest) GetUser(echoCtx echo.Context) (err error) {
 		func(request GetUserRequest) it.GetUserQuery {
 			return request
 		},
-		func(data domain.UserEntity) dmodel.DynamicFields {
+		func(data domain.User) dmodel.DynamicFields {
 			return data.GetFieldData()
 		},
 		httpserver.JsonOk,
 	)
+}
+
+func (this UserRest) SearchUsers(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search users 2"); e != nil {
+			err = e
+		}
+	}()
+	err = httpserver.ServeRequest2(
+		echoCtx,
+		this.UserSvc.SearchUsers,
+		func(request SearchUsers2Request) it.SearchUsersQuery {
+			return it.SearchUsersQuery(request)
+		},
+		func(data it.SearchUsersResultData) SearchUsersResponse2 {
+			return httpserver.NewSearchUsersResponseDyn(data)
+		},
+		httpserver.JsonOk,
+		true,
+	)
+	return err
 }
 
 func (this UserRest) SetUserIsArchived(echoCtx echo.Context) (err error) {
@@ -104,35 +126,15 @@ func (this UserRest) SetUserIsArchived(echoCtx echo.Context) (err error) {
 	return httpserver.ServeRequest2(
 		echoCtx,
 		this.UserSvc.SetUserIsArchived,
-		func(request SetUserIsArchivedRequest) it.SetUserIsArchived {
+		func(request SetUserIsArchivedRequest) it.SetUserIsArchivedCommand {
 			return request
 		},
-		func(data crud.MutateResultData) SetUserIsArchivedResponse {
+		func(data dyn.MutateResultData) SetUserIsArchivedResponse {
 			response := httpserver.NewRestUpdateResponse2(data)
 			return response
 		},
 		httpserver.JsonOk,
 	)
-}
-
-func (this UserRest) SearchUsers2(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search users 2"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest2(
-		echoCtx,
-		this.UserSvc.SearchUsers2,
-		func(request SearchUsers2Request) it.SearchUsersQuery2 {
-			return it.SearchUsersQuery2(request)
-		},
-		func(data it.SearchUsersResultData2) SearchUsersResponse2 {
-			return httpserver.NewSearchUsersResponseDyn(data)
-		},
-		httpserver.JsonOk,
-	)
-	return err
 }
 
 func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
@@ -150,7 +152,7 @@ func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
 			cmd.SetFieldData(requestFields)
 			return cmd
 		},
-		func(data crud.MutateResultData) UpdateUserResponse {
+		func(data dyn.MutateResultData) UpdateUserResponse {
 			response := httpserver.NewRestUpdateResponse2(data)
 			return response
 		},
@@ -159,41 +161,41 @@ func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this UserRest) UserExistsMulti(echoCtx echo.Context) (err error) {
+func (this UserRest) UserExists(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST user exists multi"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST user exists"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UserSvc.ExistsMulti,
-		func(request UserExistsMultiRequest) it.UserExistsMultiQuery {
-			return it.UserExistsMultiQuery(request)
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.UserSvc.UserExists,
+		func(request UserExistsRequest) it.UserExistsQuery {
+			return it.UserExistsQuery(request)
 		},
-		func(result it.UserExistsMultiResult) UserExistsMultiResponse {
-			return *result.Data
+		func(data dyn.ExistsResultData) UserExistsResponse {
+			return UserExistsResponse(data)
 		},
 		httpserver.JsonOk,
 	)
-	return err
 }
 
-func (this UserRest) GetUserContext(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user context"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UserSvc.GetUserContext,
-		func(request GetUserContextRequest) it.GetUserContextQuery {
-			request.UserId = middleWare.GetUserIdFromContext(echoCtx.Request().Context())
-			return it.GetUserContextQuery(request)
-		},
-		func(result it.GetUserContextResultData) GetUserContextResponse {
-			return *result.Data
-		},
-		httpserver.JsonOk,
-	)
-	return err
-}
+// func (this UserRest) GetUserContext(echoCtx echo.Context) (err error) {
+// 	defer func() {
+// 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user context"); e != nil {
+// 			err = e
+// 		}
+// 	}()
+// 	err = httpserver.ServeRequest(
+// 		echoCtx, this.UserSvc.GetUserContext,
+// 		func(request GetUserContextRequest) it.GetUserContextQuery {
+// 			request.UserId = middleWare.GetUserIdFromContext(echoCtx.Request().Context())
+// 			return it.GetUserContextQuery(request)
+// 		},
+// 		func(result it.GetUserContextResultData) GetUserContextResponse {
+// 			return *result.Data
+// 		},
+// 		httpserver.JsonOk,
+// 	)
+// 	return err
+// }

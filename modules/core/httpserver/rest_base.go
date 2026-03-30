@@ -6,7 +6,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	crud "github.com/sky-as-code/nikki-erp/common/crud"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -14,6 +13,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -108,7 +108,7 @@ type RestSearchResponse[TItem any] struct {
 }
 
 func NewSearchUsersResponseDyn[TItem dmodel.DynamicModelGetter](
-	data crud.PagedResultData[TItem],
+	data dyn.PagedResultData[TItem],
 ) RestSearchResponse[dmodel.DynamicFields] {
 
 	items := dmodel.ExtractFieldsArr(data.Items)
@@ -142,7 +142,7 @@ type RestDeleteResponse2 struct {
 	AffectedAt    string `json:"affected_at"`
 }
 
-func NewRestDeleteResponse2(src crud.MutateResultData) RestDeleteResponse2 {
+func NewRestDeleteResponse2(src dyn.MutateResultData) RestDeleteResponse2 {
 	response := RestDeleteResponse2{}
 	response.AffectedCount = src.AffectedCount
 	response.AffectedAt = src.AffectedAt.String()
@@ -155,10 +155,23 @@ type RestUpdateResponse2 struct {
 	Etag          model.Etag `json:"etag"`
 }
 
-func NewRestUpdateResponse2(src crud.MutateResultData) RestUpdateResponse2 {
+func NewRestUpdateResponse2(src dyn.MutateResultData) RestUpdateResponse2 {
 	response := RestUpdateResponse2{}
 	response.AffectedCount = src.AffectedCount
 	response.AffectedAt = src.AffectedAt.String()
 	response.Etag = src.Etag
 	return response
+}
+
+// RestMutateResponse is a mutation payload without etag (e.g. junction-only updates).
+type RestMutateResponse struct {
+	AffectedCount int    `json:"affected_count"`
+	AffectedAt    string `json:"affected_at"`
+}
+
+func NewRestMutateResponse(src dyn.MutateResultData) RestMutateResponse {
+	return RestMutateResponse{
+		AffectedCount: src.AffectedCount,
+		AffectedAt:    src.AffectedAt.String(),
+	}
 }

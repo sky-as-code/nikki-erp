@@ -58,6 +58,10 @@ func (this value) Same(another any) bool {
 	return *this.val == another
 }
 
+func (this value) IsEmpty() bool {
+	return this.val == nil
+}
+
 type ModelSchema struct {
 	// Persistent fields
 	name             string
@@ -66,6 +70,7 @@ type ModelSchema struct {
 	description      model.LangJson
 	fieldsOrder      []string
 	compositeUniques [][]string
+	partialUniques   [][]string
 	primaryKeys      []string
 	tenantKey        *string
 
@@ -74,6 +79,34 @@ type ModelSchema struct {
 
 	relations []ModelRelation
 	fields    map[string]*ModelField
+
+	// m2mPeerByDest maps peer (destination) schema name to resolved M2M metadata.
+	// Populated by SchemaRegistry.FinalizeRelations. At most one edge per peer name.
+	m2mPeerByDest map[string]*M2mPeerLink
+
+	// exclusiveFieldGroups: each inner slice lists any number of field names (minimum two per group)
+	// where exactly one must be non-empty in validated input. Zero or more than one non-empty
+	// in that group yields client errors. Schemas may define multiple groups.
+	exclusiveFieldGroups [][]string
+}
+
+// M2mPeerLink holds junction and FK-prefix metadata for a finalized many-to-many edge from the
+// owning schema toward DestSchema (peer). Used by repositories to insert junction rows without a schema registry.
+type M2mPeerLink struct {
+	DestSchema      *ModelSchema
+	ThroughSchema   *ModelSchema
+	SrcFieldPrefix  string
+	DestFieldPrefix string
+	Edge            string
+}
+
+// M2mPeerLinkForDest returns the link for associating this schema with the given peer schema name.
+func (this *ModelSchema) M2mPeerLinkForDest(destSchemaName string) (*M2mPeerLink, bool) {
+	if this.m2mPeerByDest == nil {
+		return nil, false
+	}
+	link, ok := this.m2mPeerByDest[destSchemaName]
+	return link, ok
 }
 
 func (this ModelSchema) Name() string {
@@ -114,10 +147,16 @@ func (this ModelSchema) TableName() string {
 	return this.tableName
 }
 
-// UniqueFields returns the list of composite unique constraints.
+// CompositeUniques returns schema-level composite UNIQUE constraints (all columns NOT NULL).
 // Each inner slice is a group of field names.
 func (this ModelSchema) CompositeUniques() [][]string {
 	return this.compositeUniques
+}
+
+// PartialUniques returns pairs of field names for partial unique indexes: UNIQUE (required column)
+// WHERE (nullable column) IS NULL. Only populated after ShouldBuildDb / populateDbMetadata validation.
+func (this ModelSchema) PartialUniques() [][]string {
+	return this.partialUniques
 }
 
 // TenantKey returns the tenant key column name, or empty if not tenant-scoped.
@@ -235,15 +274,40 @@ func (this *ModelSchema) Validate(input DynamicFields, forEdit ...bool) (Dynamic
 			errs.Append(*vErr)
 			continue
 		}
-		if !validated.Same(val) {
+		if !validated.IsEmpty() {
 			result[name] = *validated.Get()
 		}
 	}
+
+	this.appendExclusiveFieldErrors(&errs, result)
 
 	if errs.Count() > 0 {
 		return nil, errs
 	}
 	return result, nil
+}
+
+func (this *ModelSchema) appendExclusiveFieldErrors(errs *ft.ClientErrors, result DynamicFields) {
+	for _, group := range this.exclusiveFieldGroups {
+		if len(group) < 2 {
+			continue
+		}
+		presentCount := 0
+		for _, name := range group {
+			val, ok := result[name]
+			if !ok {
+				continue
+			}
+			if !isNilOrEmpty(val) {
+				presentCount++
+			}
+		}
+		if presentCount > 1 {
+			errs.Append(*ft.NewExclusiveFieldsError(group))
+		} else if presentCount == 0 {
+			errs.Append(*ft.NewExclusiveFieldsMissingError(group))
+		}
+	}
 }
 
 // ValidateStruct validates a struct pointer by converting to map and validating.
@@ -278,20 +342,39 @@ func (this RelationCascade) Sql() string {
 	return string(this)
 }
 
-type ModelRelation struct {
-	Edge           string          `json:"edge"`
-	SrcField       string          `json:"src_field"`
-	RelationType   RelationType    `json:"relation_type"`
-	label          model.LangJson  `json:"label"`
-	DestSchemaName string          `json:"dest_schema_name"`
-	DestField      string          `json:"dest_field"`
-	OnDelete       RelationCascade `json:"on_delete"`
-	OnUpdate       RelationCascade `json:"on_update"`
+// ForeignKeyColumnPair describes one column of a (possibly composite) foreign key.
+// FkColumn is always on the table that owns the FK constraint; ReferencedColumn is on the referenced table.
+type ForeignKeyColumnPair struct {
+	FkColumn         string `json:"fk_column"`
+	ReferencedColumn string `json:"referenced_column"`
+}
 
-	ThroughModel     *ModelSchema `json:"through_model,omitempty"`
-	ThroughTableName string       `json:"through_table_name,omitempty"`
-	ThroughSrcCol    string       `json:"through_foreign_col,omitempty"`
-	ThroughDestCol   string       `json:"through_dest_col,omitempty"`
+type ModelRelation struct {
+	Edge           string         `json:"edge"`
+	SrcField       string         `json:"src_field"`
+	RelationType   RelationType   `json:"relation_type"`
+	label          model.LangJson `json:"label"`
+	DestSchemaName string         `json:"dest_schema_name"`
+	DestField      string         `json:"dest_field"`
+	// ForeignKeys is the canonical multi-column FK. When empty, SrcField/DestField represent a single pair.
+	ForeignKeys []ForeignKeyColumnPair `json:"foreign_keys,omitempty"`
+	// UnvalidatedFkMap is consumed by SchemaRegistry.FinalizeRelations (src field name -> dest field name).
+	UnvalidatedFkMap DynamicFields `json:"-"`
+	// InversePeerSchemaName and InversePeerEdgeName are set by EdgeFrom / Existing() and cleared after finalize.
+	InversePeerSchemaName string          `json:"inverse_peer_schema_name,omitempty"`
+	InversePeerEdgeName   string          `json:"inverse_peer_edge_name,omitempty"`
+	OnDelete              RelationCascade `json:"on_delete"`
+	OnUpdate              RelationCascade `json:"on_update"`
+
+	M2mThroughModel      *ModelSchema `json:"through_model,omitempty"`
+	M2mThroughSchemaName string       `json:"through_table_name,omitempty"`
+	// M2mSrcFieldPrefix is this (src) schema's junction-table FK prefix, not a single physical column name.
+	// JOINs use PrefixedThroughColumn(M2mSrcFieldPrefix, pk) for each entry in this schema's PrimaryKeys(),
+	// and PrefixedThroughColumn(M2mSrcFieldPrefix, tenantKey) when a tenant key exists (e.g. user -> user_id,
+	// user_tenant_id). The peer (dest) side uses DestFieldPrefix the same way.
+	M2mSrcFieldPrefix string `json:"src_field_prefix,omitempty"`
+	// M2mDestFieldPrefix is the peer (dest) schema's junction FK prefix; set by FinalizeRelations.
+	M2mDestFieldPrefix string `json:"dest_field_prefix,omitempty"`
 }
 
 type RelationType string
@@ -344,7 +427,7 @@ func (this *ModelField) IsVirtualModelField() bool {
 	if this == nil || this.dataType == nil {
 		return false
 	}
-	return IsModelDataType(this.dataType)
+	return IsFieldDataTypeModel(this.dataType)
 }
 
 func (this *ModelField) Description() model.LangJson {
@@ -419,7 +502,8 @@ func (this *ModelField) DefaultFn() func() any {
 func (this *ModelField) Validate(val any, forEdit ...bool) (value, *ft.ClientErrorItem) {
 	isForEdit := len(forEdit) > 0 && forEdit[0]
 
-	if isNil(val) {
+	var wrappedVal value
+	if isNilOrEmpty(val) {
 		if isForEdit {
 			if this.isRequiredForUpdate {
 				return Value(nil), NewMissingFieldErr(this.name)
@@ -427,27 +511,29 @@ func (this *ModelField) Validate(val any, forEdit ...bool) (value, *ft.ClientErr
 			return Value(val), nil
 		}
 
-		if this.defaultValue != nil {
-			return *this.defaultValue, nil
-		}
-		if this.defaultFn != nil {
-			return Value(this.defaultFn()), nil
-		}
-		if this.useTypeDefault {
-			return this.dataType.DefaultValue(), nil
-		}
-		if this.isRequiredForCreate && !this.isReadOnly {
+		if this.defaultValue != nil && !this.defaultValue.IsEmpty() {
+			wrappedVal = *this.defaultValue
+		} else if this.defaultFn != nil {
+			wrappedVal = Value(this.defaultFn())
+		} else if this.useTypeDefault {
+			wrappedVal = this.dataType.DefaultValue()
+		} else if this.isRequiredForCreate && !this.isReadOnly {
 			return Value(nil), NewMissingFieldErr(this.name)
 		}
-		return Value(val), nil
+
+		if wrappedVal.IsEmpty() {
+			return Value(val), nil
+		}
+	} else {
+		wrappedVal = Value(val)
 	}
 
-	if vErr := this.applyFieldRulesForValue(val); vErr != nil {
+	if vErr := this.applyFieldRulesForValue(*wrappedVal.Get()); vErr != nil {
 		vErr.Field = this.name
 		return Value(nil), vErr
 	}
 
-	validated, vErr := this.dataType.Validate(Value(val))
+	validated, vErr := this.dataType.Validate(wrappedVal)
 	if vErr != nil {
 		vErr.Field = this.name
 		return Value(nil), vErr
@@ -540,6 +626,11 @@ const (
 
 func FieldRuleArrayLength(min, max int) FieldRule {
 	return FieldRule{FieldRuleArrayLengthType, []int{min, max}}
+}
+
+// PrefixedThroughColumn returns junction column name prefix_fieldName (e.g. user + id -> user_id).
+func PrefixedThroughColumn(prefix, fieldName string) string {
+	return prefix + "_" + fieldName
 }
 
 func (this *ModelField) Clone() *ModelField {

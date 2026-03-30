@@ -13,7 +13,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
@@ -30,7 +29,6 @@ type OrganizationQuery struct {
 	predicates      []predicate.Organization
 	withUsers       *UserQuery
 	withHierarchies *HierarchyLevelQuery
-	withGroups      *GroupQuery
 	withUserOrgs    *UserOrgQuery
 	modifiers       []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
@@ -106,28 +104,6 @@ func (oq *OrganizationQuery) QueryHierarchies() *HierarchyLevelQuery {
 			sqlgraph.From(organization.Table, organization.FieldID, selector),
 			sqlgraph.To(hierarchylevel.Table, hierarchylevel.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, organization.HierarchiesTable, organization.HierarchiesColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryGroups chains the current query on the "groups" edge.
-func (oq *OrganizationQuery) QueryGroups() *GroupQuery {
-	query := (&GroupClient{config: oq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := oq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := oq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(organization.Table, organization.FieldID, selector),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, organization.GroupsTable, organization.GroupsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(oq.driver.Dialect(), step)
 		return fromU, nil
@@ -351,7 +327,6 @@ func (oq *OrganizationQuery) Clone() *OrganizationQuery {
 		predicates:      append([]predicate.Organization{}, oq.predicates...),
 		withUsers:       oq.withUsers.Clone(),
 		withHierarchies: oq.withHierarchies.Clone(),
-		withGroups:      oq.withGroups.Clone(),
 		withUserOrgs:    oq.withUserOrgs.Clone(),
 		// clone intermediate query.
 		sql:       oq.sql.Clone(),
@@ -379,17 +354,6 @@ func (oq *OrganizationQuery) WithHierarchies(opts ...func(*HierarchyLevelQuery))
 		opt(query)
 	}
 	oq.withHierarchies = query
-	return oq
-}
-
-// WithGroups tells the query-builder to eager-load the nodes that are connected to
-// the "groups" edge. The optional arguments are used to configure the query builder of the edge.
-func (oq *OrganizationQuery) WithGroups(opts ...func(*GroupQuery)) *OrganizationQuery {
-	query := (&GroupClient{config: oq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	oq.withGroups = query
 	return oq
 }
 
@@ -482,10 +446,9 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	var (
 		nodes       = []*Organization{}
 		_spec       = oq.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [3]bool{
 			oq.withUsers != nil,
 			oq.withHierarchies != nil,
-			oq.withGroups != nil,
 			oq.withUserOrgs != nil,
 		}
 	)
@@ -521,13 +484,6 @@ func (oq *OrganizationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		if err := oq.loadHierarchies(ctx, query, nodes,
 			func(n *Organization) { n.Edges.Hierarchies = []*HierarchyLevel{} },
 			func(n *Organization, e *HierarchyLevel) { n.Edges.Hierarchies = append(n.Edges.Hierarchies, e) }); err != nil {
-			return nil, err
-		}
-	}
-	if query := oq.withGroups; query != nil {
-		if err := oq.loadGroups(ctx, query, nodes,
-			func(n *Organization) { n.Edges.Groups = []*Group{} },
-			func(n *Organization, e *Group) { n.Edges.Groups = append(n.Edges.Groups, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -627,39 +583,6 @@ func (oq *OrganizationQuery) loadHierarchies(ctx context.Context, query *Hierarc
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "org_id" returned %v for node %v`, fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (oq *OrganizationQuery) loadGroups(ctx context.Context, query *GroupQuery, nodes []*Organization, init func(*Organization), assign func(*Organization, *Group)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*Organization)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(group.FieldOrgID)
-	}
-	query.Where(predicate.Group(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(organization.GroupsColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.OrgID
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "org_id" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "org_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -13,7 +13,6 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/defense"
-	"github.com/sky-as-code/nikki-erp/common/modelmapper"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 )
@@ -394,53 +393,4 @@ func (this *ModelTime) UnmarshalText(data []byte) error {
 	}
 	*this = parsed
 	return nil
-}
-
-func init() {
-	modelmapper.AddConversion[ModelDateTime, string](func(in reflect.Value) (reflect.Value, error) {
-		result := in.Interface().(ModelDateTime)
-		return reflect.ValueOf(result.String()), nil
-	})
-
-	modelmapper.AddConversion[ModelDate, string](func(in reflect.Value) (reflect.Value, error) {
-		result := in.Interface().(ModelDate)
-		return reflect.ValueOf(result.String()), nil
-	})
-
-	modelmapper.AddConversion[ModelTime, string](func(in reflect.Value) (reflect.Value, error) {
-		result := in.Interface().(ModelTime)
-		return reflect.ValueOf(result.String()), nil
-	})
-
-	AddConversion[LangJson, *LangJson](func(in reflect.Value) (reflect.Value, error) {
-		if in.IsNil() {
-			return reflect.ValueOf((*LangJson)(nil)), nil
-		}
-
-		result := in.Interface().(LangJson)
-		return reflect.ValueOf(&result), nil
-	})
-
-	AddConversion[*LangJson, LangJson](func(in reflect.Value) (reflect.Value, error) {
-		if in.IsNil() {
-			return reflect.ValueOf((LangJson)(nil)), nil
-		}
-
-		result := *in.Interface().(*LangJson)
-		return reflect.ValueOf(result), nil
-	})
-
-	AddConversion[Id, *Id](func(in reflect.Value) (reflect.Value, error) {
-		result := in.Interface().(Id)
-		return reflect.ValueOf(&result), nil
-	})
-
-	AddConversion[*Id, Id](func(in reflect.Value) (reflect.Value, error) {
-		if in.IsNil() {
-			return reflect.ValueOf(Id("")), nil
-		}
-
-		result := *in.Interface().(*Id)
-		return reflect.ValueOf(result), nil
-	})
 }

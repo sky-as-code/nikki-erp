@@ -15,26 +15,9 @@ params:query {
 }
 
 script:post-response {
-  const tv4 = require('tv4');
+  const pkg = require('./scripts/search-success');
   
-  const schema = bru.getVar("search_schema");
-  const payload = res.getBody();
-  
-  test("Status code is 200", function () {
-    expect(res.getStatus()).to.equal(200);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-    console.log({body: res.getBody()});
-    const valid = tv4.validate(res.getBody(), schema);
-    tv4.error && console.error(tv4.error);
-    expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;  
-  });
-  
-  test("Response has positive number of items", function () {
-    expect(payload.items.length).to.be.greaterThan(0)
-  });
+  pkg.testSearch(50);
   
 }
 

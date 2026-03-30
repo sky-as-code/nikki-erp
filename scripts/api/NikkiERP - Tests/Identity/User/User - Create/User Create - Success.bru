@@ -18,44 +18,13 @@ body:json {
 }
 
 script:post-response {
-  const tv4 = require('tv4');
+  const pkg = require('./scripts/create-success');
   
-  const schema = {
-      type: "object",
-      required: ["id", "created_at", "etag"],
-      properties: {
-          id: {
-              type: "string",
-              minLength: 1,
-          },
-          created_at: {
-              type: "string",
-              minLength: 20, //"2026-03-23T06:53:01Z"
-          },
-          etag: {
-              type: "string",
-              minLength: 1,
-          },
-      },
-      additionalProperties: false
-  };
-  
-  test("Status code is 201", function () {
-      expect(res.getStatus()).to.equal(201);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-    const valid = tv4.validate(res.getBody(), schema);
-    expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;  
-  });
+  pkg.testCreate('user_id');
   
   const { email } = req.getBody();
   email && bru.setVar('email', email);
   
-  const { id, etag } = res.getBody();
-  id && bru.setVar('user_id', id);
-  etag && bru.setVar('etag', etag);
 }
 
 settings {

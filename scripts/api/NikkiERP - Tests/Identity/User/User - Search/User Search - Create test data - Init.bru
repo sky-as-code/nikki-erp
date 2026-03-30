@@ -18,8 +18,8 @@ body:json {
 }
 
 script:pre-request {
-  let body = req.getBody();
-  console.log('Creating test user: ', bru.interpolate(body.display_name));
+  const body = req.getBody();
+  console.log('User Search: Creating test user: ', bru.interpolate(body.display_name));
 }
 
 script:post-response {
@@ -34,7 +34,7 @@ script:post-response {
         type: "array",
         items: {
           type: "object",
-          required: ["id", "created_at", "display_name", "email", "etag", "status"],
+          required: ["id", "created_at", "display_name", "email", "etag", "is_archived", "status"],
           properties: {
             id: {
               type: "string",
@@ -59,6 +59,12 @@ script:post-response {
             etag: {
               type: "string",
               minLength: 1,
+            },
+            is_archived: {
+              type: "boolean",
+            },
+            is_owner: {
+              type: "boolean",
             },
             status: {
               type: "string",
@@ -95,8 +101,7 @@ script:post-response {
   const LOOP_COUNT = 100;
   bru.setVar("loop_count", LOOP_COUNT);
   
-  console.log(`Creating ${LOOP_COUNT} test records`)
-  // console.log('Set next request: ', UserSearch_CreateTestData_1_Loop_RequestId)
+  console.log(`User Search: Creating ${LOOP_COUNT} test records`)
   bru.runner.setNextRequest('User Search - Create test data - Loop 100');
   
   

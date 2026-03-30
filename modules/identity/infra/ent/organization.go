@@ -49,13 +49,11 @@ type OrganizationEdges struct {
 	Users []*User `json:"users,omitempty"`
 	// Hierarchies holds the value of the hierarchies edge.
 	Hierarchies []*HierarchyLevel `json:"hierarchies,omitempty"`
-	// Groups holds the value of the groups edge.
-	Groups []*Group `json:"groups,omitempty"`
 	// UserOrgs holds the value of the user_orgs edge.
 	UserOrgs []*UserOrg `json:"user_orgs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [3]bool
 }
 
 // UsersOrErr returns the Users value or an error if the edge
@@ -76,19 +74,10 @@ func (e OrganizationEdges) HierarchiesOrErr() ([]*HierarchyLevel, error) {
 	return nil, &NotLoadedError{edge: "hierarchies"}
 }
 
-// GroupsOrErr returns the Groups value or an error if the edge
-// was not loaded in eager-loading.
-func (e OrganizationEdges) GroupsOrErr() ([]*Group, error) {
-	if e.loadedTypes[2] {
-		return e.Groups, nil
-	}
-	return nil, &NotLoadedError{edge: "groups"}
-}
-
 // UserOrgsOrErr returns the UserOrgs value or an error if the edge
 // was not loaded in eager-loading.
 func (e OrganizationEdges) UserOrgsOrErr() ([]*UserOrg, error) {
-	if e.loadedTypes[3] {
+	if e.loadedTypes[2] {
 		return e.UserOrgs, nil
 	}
 	return nil, &NotLoadedError{edge: "user_orgs"}
@@ -210,11 +199,6 @@ func (o *Organization) QueryUsers() *UserQuery {
 // QueryHierarchies queries the "hierarchies" edge of the Organization entity.
 func (o *Organization) QueryHierarchies() *HierarchyLevelQuery {
 	return NewOrganizationClient(o.config).QueryHierarchies(o)
-}
-
-// QueryGroups queries the "groups" edge of the Organization entity.
-func (o *Organization) QueryGroups() *GroupQuery {
-	return NewOrganizationClient(o.config).QueryGroups(o)
 }
 
 // QueryUserOrgs queries the "user_orgs" edge of the Organization entity.

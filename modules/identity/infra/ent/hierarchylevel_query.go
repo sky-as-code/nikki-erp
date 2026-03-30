@@ -17,22 +17,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/userhierarchy"
 )
 
 // HierarchyLevelQuery is the builder for querying HierarchyLevel entities.
 type HierarchyLevelQuery struct {
 	config
-	ctx               *QueryContext
-	order             []hierarchylevel.OrderOption
-	inters            []Interceptor
-	predicates        []predicate.HierarchyLevel
-	withChildren      *HierarchyLevelQuery
-	withUsers         *UserQuery
-	withParent        *HierarchyLevelQuery
-	withOrg           *OrganizationQuery
-	withUserHierarchy *UserHierarchyQuery
-	modifiers         []func(*sql.Selector)
+	ctx          *QueryContext
+	order        []hierarchylevel.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.HierarchyLevel
+	withChildren *HierarchyLevelQuery
+	withUsers    *UserQuery
+	withParent   *HierarchyLevelQuery
+	withOrg      *OrganizationQuery
+	modifiers    []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -105,7 +103,7 @@ func (hlq *HierarchyLevelQuery) QueryUsers() *UserQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, hierarchylevel.UsersTable, hierarchylevel.UsersPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, true, hierarchylevel.UsersTable, hierarchylevel.UsersColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(hlq.driver.Dialect(), step)
 		return fromU, nil
@@ -150,28 +148,6 @@ func (hlq *HierarchyLevelQuery) QueryOrg() *OrganizationQuery {
 			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, selector),
 			sqlgraph.To(organization.Table, organization.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, hierarchylevel.OrgTable, hierarchylevel.OrgColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(hlq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryUserHierarchy chains the current query on the "user_hierarchy" edge.
-func (hlq *HierarchyLevelQuery) QueryUserHierarchy() *UserHierarchyQuery {
-	query := (&UserHierarchyClient{config: hlq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := hlq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := hlq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(hierarchylevel.Table, hierarchylevel.FieldID, selector),
-			sqlgraph.To(userhierarchy.Table, userhierarchy.HierarchyColumn),
-			sqlgraph.Edge(sqlgraph.O2M, true, hierarchylevel.UserHierarchyTable, hierarchylevel.UserHierarchyColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(hlq.driver.Dialect(), step)
 		return fromU, nil
@@ -366,16 +342,15 @@ func (hlq *HierarchyLevelQuery) Clone() *HierarchyLevelQuery {
 		return nil
 	}
 	return &HierarchyLevelQuery{
-		config:            hlq.config,
-		ctx:               hlq.ctx.Clone(),
-		order:             append([]hierarchylevel.OrderOption{}, hlq.order...),
-		inters:            append([]Interceptor{}, hlq.inters...),
-		predicates:        append([]predicate.HierarchyLevel{}, hlq.predicates...),
-		withChildren:      hlq.withChildren.Clone(),
-		withUsers:         hlq.withUsers.Clone(),
-		withParent:        hlq.withParent.Clone(),
-		withOrg:           hlq.withOrg.Clone(),
-		withUserHierarchy: hlq.withUserHierarchy.Clone(),
+		config:       hlq.config,
+		ctx:          hlq.ctx.Clone(),
+		order:        append([]hierarchylevel.OrderOption{}, hlq.order...),
+		inters:       append([]Interceptor{}, hlq.inters...),
+		predicates:   append([]predicate.HierarchyLevel{}, hlq.predicates...),
+		withChildren: hlq.withChildren.Clone(),
+		withUsers:    hlq.withUsers.Clone(),
+		withParent:   hlq.withParent.Clone(),
+		withOrg:      hlq.withOrg.Clone(),
 		// clone intermediate query.
 		sql:       hlq.sql.Clone(),
 		path:      hlq.path,
@@ -424,17 +399,6 @@ func (hlq *HierarchyLevelQuery) WithOrg(opts ...func(*OrganizationQuery)) *Hiera
 		opt(query)
 	}
 	hlq.withOrg = query
-	return hlq
-}
-
-// WithUserHierarchy tells the query-builder to eager-load the nodes that are connected to
-// the "user_hierarchy" edge. The optional arguments are used to configure the query builder of the edge.
-func (hlq *HierarchyLevelQuery) WithUserHierarchy(opts ...func(*UserHierarchyQuery)) *HierarchyLevelQuery {
-	query := (&UserHierarchyClient{config: hlq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	hlq.withUserHierarchy = query
 	return hlq
 }
 
@@ -516,12 +480,11 @@ func (hlq *HierarchyLevelQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 	var (
 		nodes       = []*HierarchyLevel{}
 		_spec       = hlq.querySpec()
-		loadedTypes = [5]bool{
+		loadedTypes = [4]bool{
 			hlq.withChildren != nil,
 			hlq.withUsers != nil,
 			hlq.withParent != nil,
 			hlq.withOrg != nil,
-			hlq.withUserHierarchy != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -571,13 +534,6 @@ func (hlq *HierarchyLevelQuery) sqlAll(ctx context.Context, hooks ...queryHook) 
 			return nil, err
 		}
 	}
-	if query := hlq.withUserHierarchy; query != nil {
-		if err := hlq.loadUserHierarchy(ctx, query, nodes,
-			func(n *HierarchyLevel) { n.Edges.UserHierarchy = []*UserHierarchy{} },
-			func(n *HierarchyLevel, e *UserHierarchy) { n.Edges.UserHierarchy = append(n.Edges.UserHierarchy, e) }); err != nil {
-			return nil, err
-		}
-	}
 	return nodes, nil
 }
 
@@ -615,63 +571,35 @@ func (hlq *HierarchyLevelQuery) loadChildren(ctx context.Context, query *Hierarc
 	return nil
 }
 func (hlq *HierarchyLevelQuery) loadUsers(ctx context.Context, query *UserQuery, nodes []*HierarchyLevel, init func(*HierarchyLevel), assign func(*HierarchyLevel, *User)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[string]*HierarchyLevel)
-	nids := make(map[string]map[*HierarchyLevel]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[string]*HierarchyLevel)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
 		if init != nil {
-			init(node)
+			init(nodes[i])
 		}
 	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(hierarchylevel.UsersTable)
-		s.Join(joinT).On(s.C(user.FieldID), joinT.C(hierarchylevel.UsersPrimaryKey[0]))
-		s.Where(sql.InValues(joinT.C(hierarchylevel.UsersPrimaryKey[1]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(hierarchylevel.UsersPrimaryKey[1]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(user.FieldHierarchyID)
 	}
-	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
-		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-			assign := spec.Assign
-			values := spec.ScanValues
-			spec.ScanValues = func(columns []string) ([]any, error) {
-				values, err := values(columns[1:])
-				if err != nil {
-					return nil, err
-				}
-				return append([]any{new(sql.NullString)}, values...), nil
-			}
-			spec.Assign = func(columns []string, values []any) error {
-				outValue := values[0].(*sql.NullString).String
-				inValue := values[1].(*sql.NullString).String
-				if nids[inValue] == nil {
-					nids[inValue] = map[*HierarchyLevel]struct{}{byID[outValue]: {}}
-					return assign(columns[1:], values[1:])
-				}
-				nids[inValue][byID[outValue]] = struct{}{}
-				return nil
-			}
-		})
-	})
-	neighbors, err := withInterceptors[[]*User](ctx, query, qr, query.inters)
+	query.Where(predicate.User(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(hierarchylevel.UsersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
+		fk := n.HierarchyID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "hierarchy_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected "users" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "hierarchy_id" returned %v for node %v`, *fk, n.ID)
 		}
-		for kn := range nodes {
-			assign(kn, n)
-		}
+		assign(node, n)
 	}
 	return nil
 }
@@ -733,36 +661,6 @@ func (hlq *HierarchyLevelQuery) loadOrg(ctx context.Context, query *Organization
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
-	}
-	return nil
-}
-func (hlq *HierarchyLevelQuery) loadUserHierarchy(ctx context.Context, query *UserHierarchyQuery, nodes []*HierarchyLevel, init func(*HierarchyLevel), assign func(*HierarchyLevel, *UserHierarchy)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[string]*HierarchyLevel)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(userhierarchy.FieldHierarchyID)
-	}
-	query.Where(predicate.UserHierarchy(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(hierarchylevel.UserHierarchyColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.HierarchyID
-		node, ok := nodeids[fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "hierarchy_id" returned %v for node %v`, fk, n)
-		}
-		assign(node, n)
 	}
 	return nil
 }

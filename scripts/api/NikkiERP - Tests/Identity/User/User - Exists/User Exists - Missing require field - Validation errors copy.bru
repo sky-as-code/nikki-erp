@@ -1,0 +1,28 @@
+meta {
+  name: User Exists - Missing require field - Validation errors copy
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{api_host}}/v1/identity/users/exists
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-fields-missing');
+  
+  pkg.testMissingFields("ids");
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

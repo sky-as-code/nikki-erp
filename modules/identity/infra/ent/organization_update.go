@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
@@ -218,21 +217,6 @@ func (ou *OrganizationUpdate) AddHierarchies(h ...*HierarchyLevel) *Organization
 	return ou.AddHierarchyIDs(ids...)
 }
 
-// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
-func (ou *OrganizationUpdate) AddGroupIDs(ids ...string) *OrganizationUpdate {
-	ou.mutation.AddGroupIDs(ids...)
-	return ou
-}
-
-// AddGroups adds the "groups" edges to the Group entity.
-func (ou *OrganizationUpdate) AddGroups(g ...*Group) *OrganizationUpdate {
-	ids := make([]string, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return ou.AddGroupIDs(ids...)
-}
-
 // Mutation returns the OrganizationMutation object of the builder.
 func (ou *OrganizationUpdate) Mutation() *OrganizationMutation {
 	return ou.mutation
@@ -278,27 +262,6 @@ func (ou *OrganizationUpdate) RemoveHierarchies(h ...*HierarchyLevel) *Organizat
 		ids[i] = h[i].ID
 	}
 	return ou.RemoveHierarchyIDs(ids...)
-}
-
-// ClearGroups clears all "groups" edges to the Group entity.
-func (ou *OrganizationUpdate) ClearGroups() *OrganizationUpdate {
-	ou.mutation.ClearGroups()
-	return ou
-}
-
-// RemoveGroupIDs removes the "groups" edge to Group entities by IDs.
-func (ou *OrganizationUpdate) RemoveGroupIDs(ids ...string) *OrganizationUpdate {
-	ou.mutation.RemoveGroupIDs(ids...)
-	return ou
-}
-
-// RemoveGroups removes "groups" edges to Group entities.
-func (ou *OrganizationUpdate) RemoveGroups(g ...*Group) *OrganizationUpdate {
-	ids := make([]string, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return ou.RemoveGroupIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -468,51 +431,6 @@ func (ou *OrganizationUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ou.mutation.GroupsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   organization.GroupsTable,
-			Columns: []string{organization.GroupsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ou.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !ou.mutation.GroupsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   organization.GroupsTable,
-			Columns: []string{organization.GroupsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ou.mutation.GroupsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   organization.GroupsTable,
-			Columns: []string{organization.GroupsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {
@@ -728,21 +646,6 @@ func (ouo *OrganizationUpdateOne) AddHierarchies(h ...*HierarchyLevel) *Organiza
 	return ouo.AddHierarchyIDs(ids...)
 }
 
-// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
-func (ouo *OrganizationUpdateOne) AddGroupIDs(ids ...string) *OrganizationUpdateOne {
-	ouo.mutation.AddGroupIDs(ids...)
-	return ouo
-}
-
-// AddGroups adds the "groups" edges to the Group entity.
-func (ouo *OrganizationUpdateOne) AddGroups(g ...*Group) *OrganizationUpdateOne {
-	ids := make([]string, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return ouo.AddGroupIDs(ids...)
-}
-
 // Mutation returns the OrganizationMutation object of the builder.
 func (ouo *OrganizationUpdateOne) Mutation() *OrganizationMutation {
 	return ouo.mutation
@@ -788,27 +691,6 @@ func (ouo *OrganizationUpdateOne) RemoveHierarchies(h ...*HierarchyLevel) *Organ
 		ids[i] = h[i].ID
 	}
 	return ouo.RemoveHierarchyIDs(ids...)
-}
-
-// ClearGroups clears all "groups" edges to the Group entity.
-func (ouo *OrganizationUpdateOne) ClearGroups() *OrganizationUpdateOne {
-	ouo.mutation.ClearGroups()
-	return ouo
-}
-
-// RemoveGroupIDs removes the "groups" edge to Group entities by IDs.
-func (ouo *OrganizationUpdateOne) RemoveGroupIDs(ids ...string) *OrganizationUpdateOne {
-	ouo.mutation.RemoveGroupIDs(ids...)
-	return ouo
-}
-
-// RemoveGroups removes "groups" edges to Group entities.
-func (ouo *OrganizationUpdateOne) RemoveGroups(g ...*Group) *OrganizationUpdateOne {
-	ids := make([]string, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return ouo.RemoveGroupIDs(ids...)
 }
 
 // Where appends a list predicates to the OrganizationUpdate builder.
@@ -1008,51 +890,6 @@ func (ouo *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizat
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if ouo.mutation.GroupsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   organization.GroupsTable,
-			Columns: []string{organization.GroupsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ouo.mutation.RemovedGroupsIDs(); len(nodes) > 0 && !ouo.mutation.GroupsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   organization.GroupsTable,
-			Columns: []string{organization.GroupsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := ouo.mutation.GroupsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   organization.GroupsTable,
-			Columns: []string{organization.GroupsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

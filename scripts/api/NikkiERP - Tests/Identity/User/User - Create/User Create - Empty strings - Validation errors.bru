@@ -18,7 +18,7 @@ body:json {
 }
 
 script:post-response {
-  const tv4 = require('tv4');
+  const pkg = require('./scripts/common-test-response');
   
   const schema = {
       type: "array",
@@ -34,11 +34,11 @@ script:post-response {
               },
               key: {
                   type: "string",
-                  enum: ["common.err_invalid_length", "common.err_invalid_email"],
+                  enum: ["common.err_missing_required_field"],
               },
               message: {
                   type: "string",
-                  enum: ["must have length between {{.min}} and {{.max}}", "must be a valid email address"],
+                  enum: ["field is required"],
               },
               type: {
                   type: "string",
@@ -53,17 +53,7 @@ script:post-response {
       additionalItems: false
   };
   
-  test("Status code is 400", function () {
-      expect(res.getStatus()).to.equal(400);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-    console.log({body: res.getBody()});
-    const valid = tv4.validate(res.getBody(), schema);
-    tv4.error && console.error(tv4.error);
-    expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;  
-  });
+  pkg.testHttpResponse(schema, 400);
   
 }
 

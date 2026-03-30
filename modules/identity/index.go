@@ -53,7 +53,11 @@ func (*IdentityModule) Init() error {
 // Init implements InCodeModule.
 func (this *IdentityModule) RegisterModels() error {
 	return errors.Join(
-		dmodel.RegisterSchemaB(domain.UserSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.UserGroupRelSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.UserOrgRelSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.OrganizationSchemaBuilder()),
 		dmodel.RegisterSchemaB(domain.GroupSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.HierarchyLevelSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.UserSchemaBuilder()),
 	)
 }

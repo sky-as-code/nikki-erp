@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
@@ -62,20 +61,6 @@ func (gc *GroupCreate) SetName(s string) *GroupCreate {
 	return gc
 }
 
-// SetOrgID sets the "org_id" field.
-func (gc *GroupCreate) SetOrgID(s string) *GroupCreate {
-	gc.mutation.SetOrgID(s)
-	return gc
-}
-
-// SetNillableOrgID sets the "org_id" field if the given value is not nil.
-func (gc *GroupCreate) SetNillableOrgID(s *string) *GroupCreate {
-	if s != nil {
-		gc.SetOrgID(*s)
-	}
-	return gc
-}
-
 // SetUpdatedAt sets the "updated_at" field.
 func (gc *GroupCreate) SetUpdatedAt(t time.Time) *GroupCreate {
 	gc.mutation.SetUpdatedAt(t)
@@ -109,11 +94,6 @@ func (gc *GroupCreate) AddUsers(u ...*User) *GroupCreate {
 		ids[i] = u[i].ID
 	}
 	return gc.AddUserIDs(ids...)
-}
-
-// SetOrg sets the "org" edge to the Organization entity.
-func (gc *GroupCreate) SetOrg(o *Organization) *GroupCreate {
-	return gc.SetOrgID(o.ID)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -242,23 +222,6 @@ func (gc *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := gc.mutation.OrgIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   group.OrgTable,
-			Columns: []string{group.OrgColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.OrgID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

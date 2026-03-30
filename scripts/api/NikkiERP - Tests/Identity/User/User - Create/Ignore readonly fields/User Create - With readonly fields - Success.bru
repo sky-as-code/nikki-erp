@@ -16,49 +16,20 @@ body:json {
     "display_name": "{{$randomFullName}}",
     "email": "{{$randomEmail}}",
     "is_owner": true,
-    "archived_at": "2026-03-24T10:54:50.610762Z"
+    "is_archived": "2026-03-24T10:54:50.610762Z"
   }
 }
 
 script:post-response {
-  const tv4 = require('tv4');
+  const { testCreate } = require('./scripts/create-success');
   
-  const schema = {
-      type: "object",
-      required: ["id", "created_at", "etag"],
-      properties: {
-          id: {
-              type: "string",
-              minLength: 1,
-          },
-          created_at: {
-              type: "string",
-              minLength: 20, //"2026-03-23T06:53:01Z"
-          },
-          etag: {
-              type: "string",
-              minLength: 1,
-          },
-      },
-      additionalProperties: false
-  };
+  testCreate('user_id');
   
-  test("Status code is 201", function () {
-      expect(res.getStatus()).to.equal(201);
-  });
+  const { email, is_owner, is_archived } = req.getBody();
+  bru.setVar('email', email);
+  bru.setVar('ignoredIsOwner', is_owner);
+  bru.setVar('ignoredIsArchived', is_archived);
   
-  test("Response matches expected JSON schema", function () {
-    const valid = tv4.validate(res.getBody(), schema);
-    expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;  
-  });
-  
-  const { email } = req.getBody();
-  email && bru.setVar('email', email);
-  
-  const { id, etag } = res.getBody();
-  id && bru.setVar('user_id', id);
-  etag && bru.setVar('etag', etag);
 }
 
 settings {

@@ -1,13 +1,14 @@
 package crud
 
 import (
-	crud "github.com/sky-as-code/nikki-erp/common/crud"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	corerepo "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 )
 
 func Create[
@@ -15,11 +16,11 @@ func Create[
 	TDomainPtr coredyn.DynamicModelPtr[TDomain],
 ](
 	ctx corectx.Context,
-	param CreateParam[TDomain, TDomainPtr],
-) (*crud.OpResult[TDomain], error) {
+	param dyn.CreateParam[TDomain, TDomainPtr],
+) (*dyn.OpResult[TDomain], error) {
 
-	baseRepo := param.BaseRepoGetter.GetBaseRepo()
-	schema := baseRepo.GetSchema()
+	dynamicRepo := param.BaseRepoGetter.GetBaseRepo()
+	schema := dynamicRepo.GetSchema()
 	fieldData := param.Data.GetFieldData()
 	newModel := TDomainPtr(new(TDomain))
 	newModel.SetFieldData(fieldData)
@@ -46,7 +47,7 @@ func Create[
 			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
-			validateUniques(ctx, fieldData, baseRepo, vErrs)
+			validateUniques(ctx, fieldData, dynamicRepo, vErrs)
 			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
@@ -73,30 +74,30 @@ func Create[
 	}
 
 	if clientErrs != nil && clientErrs.Count() > 0 {
-		return &crud.OpResult[TDomain]{
+		return &dyn.OpResult[TDomain]{
 			ClientErrors: clientErrs,
 		}, nil
 	}
 
 	newModel.SetFieldData(fieldData)
-	insertRes, err := corerepo.Insert[TDomain, TDomainPtr](ctx, baseRepo, newModel)
+	insRes, err := baserepo.Insert(ctx, dynamicRepo, newModel)
 	if err != nil {
 		return nil, err
 	}
-	if len(insertRes.ClientErrors) > 0 {
-		return &crud.OpResult[TDomain]{ClientErrors: insertRes.ClientErrors}, nil
+	if insRes.ClientErrors.Count() > 0 {
+		return &dyn.OpResult[TDomain]{ClientErrors: insRes.ClientErrors}, nil
 	}
 
-	return insertRes, nil
+	return &dyn.OpResult[TDomain]{Data: *newModel, HasData: true}, nil
 }
 
 type DeleteOneParam struct {
 	Action       string
 	DbRepoGetter coredyn.BaseRepoGetter
-	Cmd          DeleteOneQuery
+	Cmd          dyn.DeleteOneQuery
 }
 
-func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *crud.OpResult[crud.MutateResultData], err error) {
+func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *dyn.OpResult[dyn.MutateResultData], err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), param.Action); e != nil {
 			err = e
@@ -107,12 +108,12 @@ func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *crud.OpResult
 	sanitizedFields, cErrs := querySchema.ValidateStruct(param.Cmd)
 
 	if cErrs.Count() > 0 {
-		return &crud.OpResult[crud.MutateResultData]{ClientErrors: cErrs}, nil
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, nil
 	}
 
-	cmd := *(sanitizedFields.(*DeleteOneQuery))
-	baseRepo := param.DbRepoGetter.GetBaseRepo()
-	delResult, err := corerepo.DeleteOne(ctx, baseRepo, dmodel.DynamicFields{
+	cmd := *(sanitizedFields.(*dyn.DeleteOneQuery))
+	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
+	delResult, err := baserepo.DeleteOne(ctx, dynamicRepo, dmodel.DynamicFields{
 		basemodel.FieldId: cmd.Id,
 	})
 
@@ -121,9 +122,84 @@ func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *crud.OpResult
 
 func deleteOneSchema() *dmodel.ModelSchema {
 	return dmodel.GetOrRegisterSchema(
-		"core.crud.delete_one_query",
+		"core.delete_one_query",
 		func() *dmodel.ModelSchemaBuilder {
-			return DeleteOneQuerySchemaBuilder()
+			return dyn.DeleteOneQuerySchemaBuilder()
+		},
+	)
+}
+
+type ExistsParam struct {
+	Action       string
+	DbRepoGetter coredyn.BaseRepoGetter
+	Query        dyn.ExistsQuery
+}
+
+func Exists(ctx corectx.Context, param ExistsParam) (result *dyn.OpResult[dyn.ExistsResultData], err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), param.Action); e != nil {
+			err = e
+		}
+	}()
+
+	sanitized, cErrs := existsQuerySchema().ValidateStruct(param.Query)
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.ExistsResultData]{ClientErrors: cErrs}, nil
+	}
+	cmd := *(sanitized.(*dyn.ExistsQuery))
+	keys := existsQueryToKeyMaps(cmd)
+	repoOut, err := baserepo.Exists(ctx, param.DbRepoGetter.GetBaseRepo(), keys)
+	if err != nil {
+		return nil, err
+	}
+	if len(repoOut.ClientErrors) > 0 {
+		return &dyn.OpResult[dyn.ExistsResultData]{ClientErrors: repoOut.ClientErrors}, nil
+	}
+	data := existsRepoResultToData(repoOut.Data)
+	return &dyn.OpResult[dyn.ExistsResultData]{Data: data, HasData: true}, nil
+}
+
+func existsQueryToKeyMaps(query dyn.ExistsQuery) []dmodel.DynamicFields {
+	keys := make([]dmodel.DynamicFields, len(query.Ids))
+	for i, id := range query.Ids {
+		keys[i] = dmodel.DynamicFields{basemodel.FieldId: id}
+	}
+	return keys
+}
+
+func existsRepoResultToData(repo dyn.RepoExistsResult) dyn.ExistsResultData {
+	out := dyn.ExistsResultData{
+		Existing:    make([]model.Id, 0),
+		NotExisting: make([]model.Id, 0),
+	}
+	for _, f := range repo.Existing {
+		out.Existing = append(out.Existing, idFromExistsFieldMap(f))
+	}
+	for _, f := range repo.NotExisting {
+		out.NotExisting = append(out.NotExisting, idFromExistsFieldMap(f))
+	}
+	return out
+}
+
+func idFromExistsFieldMap(f dmodel.DynamicFields) model.Id {
+	v, ok := f[basemodel.FieldId]
+	if !ok {
+		return ""
+	}
+	if id, ok := v.(model.Id); ok {
+		return id
+	}
+	if s, ok := v.(string); ok {
+		return model.Id(s)
+	}
+	return model.Id("")
+}
+
+func existsQuerySchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"core.exists_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dyn.ExistsQuerySchemaBuilder()
 		},
 	)
 }
@@ -131,7 +207,7 @@ func deleteOneSchema() *dmodel.ModelSchema {
 type GetOneParam struct {
 	Action       string
 	DbRepoGetter coredyn.BaseRepoGetter
-	Query        GetOneQuery
+	Query        dyn.GetOneQuery
 }
 
 func GetOne[
@@ -139,20 +215,16 @@ func GetOne[
 	TDomainPtr coredyn.DynamicModelPtr[TDomain],
 ](
 	ctx corectx.Context, param GetOneParam,
-) (*crud.OpResult[TDomain], error) {
+) (*dyn.OpResult[TDomain], error) {
 	querySchema := getOneSchema()
-	// querySchema := param.Query.GetSchema()
-	// queryFields := param.Query.GetFieldData()
 	sanitized, cErrs := querySchema.ValidateStruct(param.Query)
 	if cErrs.Count() > 0 {
-		return &crud.OpResult[TDomain]{ClientErrors: cErrs}, nil
+		return &dyn.OpResult[TDomain]{ClientErrors: cErrs}, nil
 	}
-	sanitizedQuery := sanitized.(*GetOneQuery)
+	sanitizedQuery := sanitized.(*dyn.GetOneQuery)
 
-	// param.Query.DeleteFieldData(&sanitizedFields)
-
-	baseRepo := param.DbRepoGetter.GetBaseRepo()
-	return corerepo.GetOne[TDomain, TDomainPtr](ctx, baseRepo, coredyn.RepoGetOneParam{
+	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
+	return baserepo.GetOne[TDomain, TDomainPtr](ctx, dynamicRepo, coredyn.RepoGetOneParam{
 		Filter: dmodel.DynamicFields{
 			basemodel.FieldId: sanitizedQuery.Id,
 		},
@@ -162,43 +234,44 @@ func GetOne[
 
 func getOneSchema() *dmodel.ModelSchema {
 	return dmodel.GetOrRegisterSchema(
-		"core.crud.get_one_query",
+		"core.get_one_query",
 		func() *dmodel.ModelSchemaBuilder {
-			return GetOneQuerySchemaBuilder()
+			return dyn.GetOneQuerySchemaBuilder()
 		},
 	)
 }
 
-func Search[
-	TDomain any,
-	TDomainPtr coredyn.DynamicModelPtr[TDomain],
-](
-	ctx corectx.Context,
-	dbRepoGetter coredyn.BaseRepoGetter,
-	query SearchQuery,
-) (*crud.OpResult[crud.PagedResultData[TDomain]], error) {
+type SearchParam struct {
+	Action       string
+	DbRepoGetter coredyn.BaseRepoGetter
+	Query        dyn.SearchQuery
+}
+
+func Search[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
+	ctx corectx.Context, param SearchParam,
+) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error) {
 	querySchema := searchSchema()
-	sanitizedQuery, cErrs := querySchema.ValidateStruct(query)
+	sanitized, cErrs := querySchema.ValidateStruct(param.Query)
 
 	if cErrs.Count() > 0 {
-		return &crud.OpResult[crud.PagedResultData[TDomain]]{ClientErrors: cErrs}, nil
+		return &dyn.OpResult[dyn.PagedResultData[TDomain]]{ClientErrors: cErrs}, nil
 	}
 
-	query = *(sanitizedQuery.(*SearchQuery))
-	baseRepo := dbRepoGetter.GetBaseRepo()
-	return corerepo.Search[TDomain, TDomainPtr](ctx, baseRepo, coredyn.RepoSearchParam{
-		Graph:   query.Graph,
-		Columns: query.Columns,
-		Page:    *query.Page,
-		Size:    *query.Size,
+	sanitizedQuery := *(sanitized.(*dyn.SearchQuery))
+	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
+	return baserepo.Search[TDomain, TDomainPtr](ctx, dynamicRepo, coredyn.RepoSearchParam{
+		Graph:   sanitizedQuery.Graph,
+		Columns: sanitizedQuery.Columns,
+		Page:    sanitizedQuery.Page,
+		Size:    sanitizedQuery.Size,
 	})
 }
 
 func searchSchema() *dmodel.ModelSchema {
 	return dmodel.GetOrRegisterSchema(
-		"core.crud.search_query",
+		"core.search_query",
 		func() *dmodel.ModelSchemaBuilder {
-			return SearchQuerySchemaBuilder()
+			return dyn.SearchQuerySchemaBuilder()
 		},
 	)
 }
@@ -231,23 +304,23 @@ func validateUniques(ctx corectx.Context, data dmodel.DynamicFields, dbRepo core
 func SetIsArchived(
 	ctx corectx.Context,
 	dbRepoGetter coredyn.BaseRepoGetter,
-	cmd SetIsArchivedCommand,
-) (*crud.OpResult[crud.MutateResultData], error) {
+	cmd dyn.SetIsArchivedCommand,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
 	cmdSchema := setIsArchivedSchema()
 	sanitizedCmd, cErrs := cmdSchema.ValidateStruct(cmd, true)
 
 	if cErrs.Count() > 0 {
-		return &crud.OpResult[crud.MutateResultData]{ClientErrors: cErrs}, nil
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, nil
 	}
 
-	cmd = *(sanitizedCmd.(*SetIsArchivedCommand))
+	cmd = *(sanitizedCmd.(*dyn.SetIsArchivedCommand))
 	result, err := UpdateRegardless(ctx, UpdateRegardlessParam{
 		Action:       "setIsArchived",
 		DbRepoGetter: dbRepoGetter,
 		Data: dmodel.DynamicFields{
-			basemodel.FieldId:         *cmd.Id,
-			basemodel.FieldEtag:       *cmd.Etag,
-			basemodel.FieldIsArchived: *cmd.IsArchived,
+			basemodel.FieldId:         cmd.Id,
+			basemodel.FieldEtag:       cmd.Etag,
+			basemodel.FieldIsArchived: cmd.IsArchived,
 		},
 	})
 
@@ -256,9 +329,9 @@ func SetIsArchived(
 
 func setIsArchivedSchema() *dmodel.ModelSchema {
 	return dmodel.GetOrRegisterSchema(
-		"core.crud.set_archived_command",
+		"core.set_archived_command",
 		func() *dmodel.ModelSchemaBuilder {
-			return SetArchivedCommandSchemaBuilder()
+			return dyn.SetArchivedCommandSchemaBuilder()
 		},
 	)
 }
@@ -270,9 +343,9 @@ type UpdateParam[
 	Action           string
 	DbRepoGetter     coredyn.BaseRepoGetter
 	Data             dmodel.DynamicModelGetter
-	BeforeValidation BeforeValidationFunc[TDomainPtr]
-	AfterValidation  AfterValidationFunc[TDomainPtr]
-	ValidateExtra    ValidateExtraFunc[TDomainPtr]
+	BeforeValidation dyn.BeforeValidationFunc[TDomainPtr]
+	AfterValidation  dyn.AfterValidationFunc[TDomainPtr]
+	ValidateExtra    dyn.ValidateExtraFunc[TDomainPtr]
 }
 
 func Update[
@@ -281,7 +354,7 @@ func Update[
 ](
 	ctx corectx.Context,
 	param UpdateParam[TDomain, TDomainPtr],
-) (*crud.OpResult[crud.MutateResultData], error) {
+) (*dyn.OpResult[dyn.MutateResultData], error) {
 	model := TDomainPtr(new(TDomain))
 	model.SetFieldData(param.Data.GetFieldData())
 
@@ -291,15 +364,15 @@ func Update[
 	}
 
 	if clientErrs != nil && clientErrs.Count() > 0 {
-		return &crud.OpResult[crud.MutateResultData]{ClientErrors: clientErrs}, nil
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: clientErrs}, nil
 	}
 
 	if !isExisting {
-		return &crud.OpResult[crud.MutateResultData]{IsEmpty: true}, nil
+		return &dyn.OpResult[dyn.MutateResultData]{HasData: false}, nil
 	}
 
-	baseRepo := param.DbRepoGetter.GetBaseRepo()
-	return corerepo.UpdateMutate(ctx, baseRepo, model.GetFieldData())
+	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
+	return baserepo.Update(ctx, dynamicRepo, model.GetFieldData())
 }
 
 type UpdateRegardlessParam struct {
@@ -312,7 +385,12 @@ type UpdateRegardlessParam struct {
 func UpdateRegardless(
 	ctx corectx.Context,
 	param UpdateRegardlessParam,
-) (*crud.OpResult[crud.MutateResultData], error) {
+) (_ *dyn.OpResult[dyn.MutateResultData], err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), param.Action); e != nil {
+			err = e
+		}
+	}()
 
 	isExisting, clientErrs, err := runUpdateRegardlessCheckingFlow(ctx, param)
 	if err != nil {
@@ -320,15 +398,15 @@ func UpdateRegardless(
 	}
 
 	if clientErrs != nil && clientErrs.Count() > 0 {
-		return &crud.OpResult[crud.MutateResultData]{ClientErrors: clientErrs}, nil
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: clientErrs}, nil
 	}
 
 	if !isExisting {
-		return &crud.OpResult[crud.MutateResultData]{IsEmpty: true}, nil
+		return &dyn.OpResult[dyn.MutateResultData]{HasData: false}, nil
 	}
 
-	baseRepo := param.DbRepoGetter.GetBaseRepo()
-	return corerepo.UpdateMutate(ctx, baseRepo, param.Data)
+	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
+	return baserepo.Update(ctx, dynamicRepo, param.Data)
 }
 
 func runUpdateValidationFlow[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
@@ -336,8 +414,8 @@ func runUpdateValidationFlow[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDo
 	param UpdateParam[TDomain, TDomainPtr],
 	model TDomainPtr,
 ) (bool, ft.ClientErrors, error) {
-	baseRepo := param.DbRepoGetter.GetBaseRepo()
-	schema := baseRepo.GetSchema()
+	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
+	schema := dynamicRepo.GetSchema()
 
 	isExisting := false
 	cErr, err := coredyn.StartValidationFlow().
@@ -361,7 +439,7 @@ func runUpdateValidationFlow[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDo
 			return nil
 		}).
 		StepS(func(vErrs *ft.ClientErrors, stopFlow func()) error {
-			existing, err := checkExistenceAndEtag(ctx, schema, baseRepo, model.GetFieldData(), vErrs)
+			existing, err := checkExistenceAndEtag(ctx, schema, dynamicRepo, model.GetFieldData(), vErrs)
 			if err != nil {
 				return err
 			}
@@ -372,7 +450,7 @@ func runUpdateValidationFlow[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDo
 			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
-			validateUniques(ctx, model.GetFieldData(), baseRepo, vErrs)
+			validateUniques(ctx, model.GetFieldData(), dynamicRepo, vErrs)
 			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
@@ -400,13 +478,13 @@ func runUpdateRegardlessCheckingFlow(
 	ctx corectx.Context,
 	param UpdateRegardlessParam,
 ) (bool, ft.ClientErrors, error) {
-	baseRepo := param.DbRepoGetter.GetBaseRepo()
-	schema := baseRepo.GetSchema()
+	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
+	schema := dynamicRepo.GetSchema()
 
 	isExisting := false
 	cErr, err := coredyn.StartValidationFlow().
 		StepS(func(vErrs *ft.ClientErrors, stopFlow func()) error {
-			existing, err := checkExistenceAndEtag(ctx, schema, baseRepo, param.Data, vErrs)
+			existing, err := checkExistenceAndEtag(ctx, schema, dynamicRepo, param.Data, vErrs)
 			if err != nil {
 				return err
 			}
@@ -417,7 +495,7 @@ func runUpdateRegardlessCheckingFlow(
 			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
-			validateUniques(ctx, param.Data, baseRepo, vErrs)
+			validateUniques(ctx, param.Data, dynamicRepo, vErrs)
 			return nil
 		}).
 		End()
@@ -425,10 +503,43 @@ func runUpdateRegardlessCheckingFlow(
 	return isExisting, cErr, err
 }
 
+type ManageM2mParam struct {
+	Action         string
+	DbRepoGetter   coredyn.BaseRepoGetter
+	DestSchemaName string
+	Associations   []coredyn.RepoM2mAssociation
+	Desociations   []coredyn.RepoM2mAssociation
+}
+
+func ManageM2m(ctx corectx.Context, param ManageM2mParam) (
+	result *dyn.OpResult[dyn.MutateResultData], err error,
+) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), param.Action); e != nil {
+			err = e
+		}
+	}()
+	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
+	repoOut, err := dynamicRepo.ManageM2m(
+		ctx, param.DestSchemaName, param.Associations, param.Desociations,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if repoOut.ClientErrors.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: repoOut.ClientErrors}, nil
+	}
+	data := dyn.MutateResultData{
+		AffectedCount: repoOut.Data,
+		AffectedAt:    model.NewModelDateTime(),
+	}
+	return &dyn.OpResult[dyn.MutateResultData]{Data: data, HasData: true}, nil
+}
+
 func checkExistenceAndEtag(
 	ctx corectx.Context,
 	schema *dmodel.ModelSchema,
-	baseRepo coredyn.BaseRepository,
+	dynamicRepo coredyn.BaseRepository,
 	fieldData dmodel.DynamicFields,
 	vErrs *ft.ClientErrors,
 ) (bool, error) {
@@ -437,7 +548,7 @@ func checkExistenceAndEtag(
 		primaryKeys[key] = fieldData[key]
 	}
 
-	dbRes, err := baseRepo.GetOne(ctx, coredyn.RepoGetOneParam{Filter: primaryKeys})
+	dbRes, err := dynamicRepo.GetOne(ctx, coredyn.RepoGetOneParam{Filter: primaryKeys})
 	if err != nil {
 		return false, err
 	}
@@ -447,7 +558,7 @@ func checkExistenceAndEtag(
 		}
 		return false, nil
 	}
-	if dbRes.IsEmpty {
+	if !dbRes.HasData {
 		return false, nil
 	}
 	dbRecord := dbRes.Data

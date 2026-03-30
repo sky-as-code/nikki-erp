@@ -1,15 +1,15 @@
 package hierarchy
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 type HierarchyService interface {
-	AddRemoveUsers(ctx crud.Context, cmd AddRemoveUsersCommand) (*AddRemoveUsersResult, error)
-	CreateHierarchyLevel(ctx crud.Context, cmd CreateHierarchyLevelCommand) (*CreateHierarchyLevelResult, error)
-	DeleteHierarchyLevel(ctx crud.Context, cmd DeleteHierarchyLevelCommand) (*DeleteHierarchyLevelResult, error)
-	GetHierarchyLevelById(ctx crud.Context, query GetHierarchyLevelByIdQuery) (*GetHierarchyLevelByIdResult, error)
-	SearchHierarchyLevels(ctx crud.Context, query SearchHierarchyLevelsQuery) (*SearchHierarchyLevelsResult, error)
-	UpdateHierarchyLevel(ctx crud.Context, cmd UpdateHierarchyLevelCommand) (*UpdateHierarchyLevelResult, error)
-	ExistsHierarchyById(ctx crud.Context, query ExistsHierarchyLevelByIdQuery) (*ExistsHierarchyLevelByIdResult, error)
+	CreateHierarchyLevel(ctx corectx.Context, cmd CreateHierarchyLevelCommand) (*CreateHierarchyLevelResult, error)
+	DeleteHierarchyLevel(ctx corectx.Context, cmd DeleteHierarchyLevelCommand) (*DeleteHierarchyLevelResult, error)
+	GetHierarchyLevel(ctx corectx.Context, query GetHierarchyLevelQuery) (*GetHierarchyLevelResult, error)
+	HierarchyLevelExists(ctx corectx.Context, cmd HierarchyLevelExistsQuery) (*HierarchyLevelExistsResult, error)
+	ManageHierarchyLevelUsers(ctx corectx.Context, cmd ManageHierarchyLevelUsersCommand) (*ManageHierarchyLevelUsersResult, error)
+	SearchHierarchyLevels(ctx corectx.Context, query SearchHierarchyLevelsQuery) (*SearchHierarchyLevelsResult, error)
+	UpdateHierarchyLevel(ctx corectx.Context, cmd UpdateHierarchyLevelCommand) (*UpdateHierarchyLevelResult, error)
 }

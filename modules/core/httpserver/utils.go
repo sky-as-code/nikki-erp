@@ -3,11 +3,11 @@ package httpserver
 import (
 	"github.com/labstack/echo/v4"
 
-	crud "github.com/sky-as-code/nikki-erp/common/crud"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 // BindToDynamicEntity parses the echo request body and returns a DynamicEntity
@@ -89,7 +89,7 @@ type CmdResult interface {
 // 		return JsonBadRequest(echoCtx, result.ClientErrors)
 // 	}
 
-// 	if result.IsEmpty {
+// 	if !result.HasData {
 // 		cErr := ft.NewAnonymousBusinessViolation(ft.ErrorKey("err_resource_not_found", reqCtx.GetModuleName()), "resource not found")
 // 		return JsonBadRequest(echoCtx, []any{cErr})
 // 	}
@@ -104,7 +104,7 @@ type CmdResult interface {
 
 func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
 	echoCtx echo.Context,
-	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*crud.OpResult[TSvcResultData], error),
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
 	requestToCommandFn func(requestFields dmodel.DynamicFields) TSvcCommand,
 	resultToResponseFn func(data TSvcResultData) THttpResp,
 	jsonSuccessFn func(echo.Context, any) error,
@@ -134,7 +134,7 @@ func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
 		return JsonBadRequest(echoCtx, result.ClientErrors)
 	}
 
-	if result.IsEmpty {
+	if !result.HasData {
 		cErrs := ft.ClientErrors{*ft.NewNotFoundError()}
 		return JsonBadRequest(echoCtx, cErrs)
 	}
@@ -145,10 +145,11 @@ func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
 
 func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData any](
 	echoCtx echo.Context,
-	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*crud.OpResult[TSvcResultData], error),
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
 	requestToCommandFn func(request THttpReq) TSvcCommand,
 	resultToResponseFn func(resultData TSvcResultData) THttpResp,
 	jsonSuccessFn func(echo.Context, any) error,
+	skipNotFoundError ...bool,
 ) error {
 	var request THttpReq
 	if err := echoCtx.Bind(&request); err != nil {
@@ -167,7 +168,7 @@ func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData 
 		return JsonBadRequest(echoCtx, result.ClientErrors)
 	}
 
-	if result.IsEmpty {
+	if !result.HasData && (len(skipNotFoundError) == 0 || !skipNotFoundError[0]) {
 		cErrs := ft.ClientErrors{*ft.NewNotFoundError()}
 		return JsonBadRequest(echoCtx, cErrs)
 	}

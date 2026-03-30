@@ -18,15 +18,15 @@ type UserHandler struct {
 	UserSvc it.UserService
 }
 
-func (this *UserHandler) Create(ctx context.Context, packet *cqrs.RequestPacket[it.CreateUserCommand]) (*cqrs.Reply[it.CreateUserResult], error) {
+func (this *UserHandler) CreateUser(ctx context.Context, packet *cqrs.RequestPacket[it.CreateUserCommand]) (*cqrs.Reply[it.CreateUserResult], error) {
 	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.CreateUser)
 }
 
-func (this *UserHandler) Update(ctx context.Context, packet *cqrs.RequestPacket[it.UpdateUserCommand]) (*cqrs.Reply[it.UpdateUserResult], error) {
+func (this *UserHandler) UpdateUser(ctx context.Context, packet *cqrs.RequestPacket[it.UpdateUserCommand]) (*cqrs.Reply[it.UpdateUserResult], error) {
 	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.UpdateUser)
 }
 
-func (this *UserHandler) Delete(ctx context.Context, packet *cqrs.RequestPacket[it.DeleteUserCommand]) (*cqrs.Reply[it.DeleteUserResult], error) {
+func (this *UserHandler) DeleteUser(ctx context.Context, packet *cqrs.RequestPacket[it.DeleteUserCommand]) (*cqrs.Reply[it.DeleteUserResult], error) {
 	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.DeleteUser)
 }
 
@@ -34,22 +34,14 @@ func (this *UserHandler) GetUser(ctx context.Context, packet *cqrs.RequestPacket
 	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.GetUser)
 }
 
-func (this *UserHandler) GetUserByEmail(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserByEmailQuery]) (*cqrs.Reply[it.GetUserByEmailResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.GetUserByEmail)
-}
-
-func (this *UserHandler) MustGetActiveUser(ctx context.Context, packet *cqrs.RequestPacket[it.MustGetActiveUserQuery]) (*cqrs.Reply[it.MustGetActiveUserResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.MustGetActiveUser)
+func (this *UserHandler) GetActiveUser(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserQuery]) (*cqrs.Reply[it.GetUserResult], error) {
+	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.GetActiveUser)
 }
 
 func (this *UserHandler) SearchUsers(ctx context.Context, packet *cqrs.RequestPacket[it.SearchUsersQuery]) (*cqrs.Reply[it.SearchUsersResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.SearchUsers)
+	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.SearchUsers)
 }
 
 func (this *UserHandler) UserExists(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsQuery]) (*cqrs.Reply[it.UserExistsResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.Exists)
-}
-
-func (this *UserHandler) UserExistsMulti(ctx context.Context, packet *cqrs.RequestPacket[it.UserExistsMultiQuery]) (*cqrs.Reply[it.UserExistsMultiResult], error) {
-	return cqrs.HandlePacket(ctx, packet, this.UserSvc.ExistsMulti)
+	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.UserExists)
 }

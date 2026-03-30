@@ -1,21 +1,22 @@
 package app
 
 import (
-	"fmt"
-
+	"github.com/sky-as-code/nikki-erp/common/array"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-
 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/external"
 	itGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_request"
 	itGrantResponse "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_response"
 	itPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/permission_history"
 	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role"
 	itRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role_suite"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	itGroup "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
@@ -44,6 +45,7 @@ func NewGrantRequestServiceImpl(
 	roleRepo itRole.RoleRepository,
 	suiteRepo itRoleSuite.RoleSuiteRepository,
 	permissionHistoryRepo itPermissionHistory.PermissionHistoryRepository,
+	orgExtSvc external.OrganizationExtService,
 	cqrsBus cqrs.CqrsBus,
 ) itGrantRequest.GrantRequestService {
 	return &GrantRequestServiceImpl{
@@ -52,6 +54,7 @@ func NewGrantRequestServiceImpl(
 		roleRepo:              roleRepo,
 		suiteRepo:             suiteRepo,
 		permissionHistoryRepo: permissionHistoryRepo,
+		orgExtSvc:             orgExtSvc,
 		cqrsBus:               cqrsBus,
 	}
 }
@@ -62,6 +65,7 @@ type GrantRequestServiceImpl struct {
 	roleRepo              itRole.RoleRepository
 	suiteRepo             itRoleSuite.RoleSuiteRepository
 	permissionHistoryRepo itPermissionHistory.PermissionHistoryRepository
+	orgExtSvc             external.OrganizationExtService
 	cqrsBus               cqrs.CqrsBus
 }
 
@@ -358,7 +362,7 @@ func (this *GrantRequestServiceImpl) SearchGrantRequests(ctx crud.Context, query
 			}
 
 			// Batch fetch organizations
-			orgMap := make(map[model.Id]*domain.Organization)
+			orgMap := make(map[model.Id]*external.Organization)
 			for orgId := range orgIdSet {
 				org, err := this.getOrganizationById(ctx, orgId)
 				fault.PanicOnErr(err)
@@ -375,7 +379,7 @@ func (this *GrantRequestServiceImpl) SearchGrantRequests(ctx crud.Context, query
 				if result.Items[i].OrgId != nil {
 					if org, exists := orgMap[*result.Items[i].OrgId]; exists {
 						result.Items[i].Organization = org
-						result.Items[i].OrgName = org.DisplayName
+						result.Items[i].OrgName = org.GetDisplayName()
 					}
 				}
 			}
@@ -407,19 +411,19 @@ func (this *GrantRequestServiceImpl) assertOrgExists(ctx crud.Context, grantRequ
 		return nil
 	}
 
-	existCmd := &itOrg.ExistsOrgByIdCommand{
-		Id: *grantRequest.OrgId,
+	existCmd := &itOrg.OrgExistsQuery{
+		Ids: []model.Id{*grantRequest.OrgId},
 	}
-	existRes := itOrg.ExistsOrgByIdResult{}
+	existRes := itOrg.OrgExistsResult{}
 	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
 	fault.PanicOnErr(err)
 
-	if existRes.ClientError != nil {
-		vErrs.MergeClientError(existRes.ClientError)
+	if len(existRes.ClientErrors) > 0 {
+		appendClientErrorsToValidation(vErrs, existRes.ClientErrors)
 		return nil
 	}
 
-	if !existRes.Data {
+	if !existRes.Data.Exists(*grantRequest.OrgId) {
 		vErrs.Append("org_id", "not existing organization")
 	}
 	return nil
@@ -462,35 +466,38 @@ func (this *GrantRequestServiceImpl) assertReceiver(ctx crud.Context, grantReque
 	switch *grantRequest.ReceiverType {
 	case domain.ReceiverTypeUser:
 		existCmd := &itUser.UserExistsQuery{
-			Id: *grantRequest.ReceiverId,
+			Ids: []model.Id{*grantRequest.ReceiverId},
 		}
 		existRes := itUser.UserExistsResult{}
 		err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
 		fault.PanicOnErr(err)
 
-		if existRes.ClientError != nil {
-			vErrs.MergeClientError(existRes.ClientError)
+		if existRes.ClientErrors != nil && existRes.ClientErrors.Count() > 0 {
+			vErrs.Append("receiverId", "user existence check failed")
 			return
 		}
 
-		if !existRes.Data {
+		if !array.Contains(existRes.Data.Existing, *grantRequest.ReceiverId) {
 			vErrs.Append("receiverId", "not existing user")
 		}
 		return
 	case domain.ReceiverTypeGroup:
-		existCmd := &itGroup.GroupExistsCommand{
-			Id: *grantRequest.ReceiverId,
+		existCmd := &itGroup.GroupExistsQuery{
+			Ids: []model.Id{*grantRequest.ReceiverId},
 		}
 		existRes := itGroup.GroupExistsResult{}
 		err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
 		fault.PanicOnErr(err)
 
-		if existRes.ClientError != nil {
-			vErrs.MergeClientError(existRes.ClientError)
+		if existRes.ClientErrors.Count() > 0 {
+			for i := range existRes.ClientErrors {
+				e := existRes.ClientErrors[i]
+				vErrs.Append(e.Field, e.Message)
+			}
 			return
 		}
 
-		if !existRes.Data {
+		if !existRes.Data.Exists(*grantRequest.ReceiverId) {
 			vErrs.Append("receiverId", "not existing group")
 		}
 		return
@@ -699,28 +706,24 @@ func (this *GrantRequestServiceImpl) getUsersInGroup(ctx crud.Context, groupId s
 	size := model.MODEL_RULE_PAGE_DEFAULT_SIZE
 
 	for {
-		graph := fmt.Sprintf("{\"if\":[\"groups.id\", \"=\", \"%s\"]}", groupId)
-		searchParam := &crud.SearchQuery{
-			Graph: &graph,
-			Page:  &page,
-			Size:  &size,
+		graph := dmodel.NewSearchGraph()
+		graph.NewCondition("groups.id", dmodel.Equals, groupId)
+		expandedUserQuery := &itUser.SearchUsersQuery{
+			Graph: graph,
+			Page:  page,
+			Size:  size,
 		}
-		expandedUserQuery := &itUser.SearchUsersQuery{SearchQuery: *searchParam}
 
 		searchRes := itUser.SearchUsersResult{}
 		err := this.cqrsBus.Request(ctx, *expandedUserQuery, &searchRes)
 		fault.PanicOnErr(err)
 
-		if searchRes.ClientError != nil {
-			return nil, searchRes.ClientError
-		}
-
-		if searchRes.Data == nil || searchRes.Data.Items == nil || len(searchRes.Data.Items) == 0 {
+		if !searchRes.HasData {
 			break
 		}
 
 		for _, user := range searchRes.Data.Items {
-			allUserIds = append(allUserIds, string(*user.Id))
+			allUserIds = append(allUserIds, string(*user.GetId()))
 		}
 
 		currentPageCount := len(searchRes.Data.Items)
@@ -1116,7 +1119,7 @@ func (this *GrantRequestServiceImpl) populateGrantRequestDetails(ctx crud.Contex
 		fault.PanicOnErr(err)
 		if org != nil {
 			dbGrantRequest.Organization = org
-			dbGrantRequest.OrgName = org.DisplayName
+			dbGrantRequest.OrgName = org.GetDisplayName()
 		}
 	}
 
@@ -1127,60 +1130,78 @@ func (this *GrantRequestServiceImpl) getUserDisplayName(ctx crud.Context, id mod
 	switch entityType {
 	case "user":
 		cmd := &itUser.GetUserQuery{Id: &id}
-		res := itUser.GetUserByIdResult{}
+		res := itUser.GetUserResult{}
 		err := this.cqrsBus.Request(ctx, *cmd, &res)
 		fault.PanicOnErr(err)
 
-		if res.ClientError != nil {
-			vErrs.MergeClientError(res.ClientError)
+		if res.ClientErrors.Count() > 0 {
+			for i := range res.ClientErrors {
+				e := res.ClientErrors[i]
+				vErrs.Append(e.Field, e.Message)
+			}
 			return nil, nil
 		}
-		if res.Data == nil {
+		if !res.HasData {
 			return nil, nil
 		}
 
-		return res.Data.DisplayName, nil
+		return res.Data.GetDisplayName(), nil
 
 	case "group":
-		cmd := &itGroup.GetGroupByIdQuery{Id: id}
-		res := itGroup.GetGroupByIdResult{}
+		cmd := &itGroup.GetGroupQuery{
+			Id: id,
+		}
+		res := itGroup.GetGroupResult{}
 		err := this.cqrsBus.Request(ctx, *cmd, &res)
 		fault.PanicOnErr(err)
 
-		if res.ClientError != nil {
-			vErrs.MergeClientError(res.ClientError)
+		if res.ClientErrors.Count() > 0 {
+			for i := range res.ClientErrors {
+				e := res.ClientErrors[i]
+				vErrs.Append(e.Field, e.Message)
+			}
 			return nil, nil
 		}
-		if res.Data == nil {
+		if !res.HasData {
 			return nil, nil
 		}
 
-		return res.Data.Name, nil
+		return res.Data.GetName(), nil
 	}
 
 	return nil, nil
 }
 
-func (this *GrantRequestServiceImpl) getOrganizationById(ctx crud.Context, orgId model.Id) (*domain.Organization, error) {
-	orgQuery := &itOrg.GetOrganizationByIdQuery{
-		Id: orgId,
+func (this *GrantRequestServiceImpl) getOrganizationById(ctx crud.Context, orgId model.Id) (*external.Organization, error) {
+	query := external.GetOrgQuery{
+		Id: &orgId,
 	}
-	orgRes := itOrg.GetOrganizationByIdResult{}
-	err := this.cqrsBus.Request(ctx, *orgQuery, &orgRes)
-	fault.PanicOnErr(err)
+	coreCtx := ctx.(corectx.Context)
+	orgRes, err := this.orgExtSvc.GetOrg(coreCtx, query)
+	if err != nil {
+		return nil, err
+	}
 
-	if orgRes.ClientError != nil {
+	if orgRes.ClientErrors.Count() > 0 || !orgRes.HasData {
 		return nil, nil
 	}
 
-	if orgRes.Data == nil {
-		return nil, nil
-	}
+	return &orgRes.Data, nil
+}
 
-	return &domain.Organization{
-		Id:          orgRes.Data.Id,
-		DisplayName: orgRes.Data.DisplayName,
-	}, nil
+func appendClientErrorsToValidation(vErrs *fault.ValidationErrors, errs fault.ClientErrors) {
+	for i := range errs {
+		item := errs[i]
+		field := item.Field
+		if field == "" {
+			field = "_"
+		}
+		msg := item.String()
+		if msg == "" {
+			msg = item.Message
+		}
+		vErrs.Append(field, msg)
+	}
 }
 
 func (this *GrantRequestServiceImpl) findGrantRequestsByTarget(ctx crud.Context, targetType domain.GrantRequestTargetType, targetRef model.Id) ([]domain.GrantRequest, error) {

@@ -7,6 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	entRoleSuite "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/rolesuite"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/external"
 )
 
 type RoleSuite struct {
@@ -24,8 +25,8 @@ type RoleSuite struct {
 	OrgId                *model.Id           `json:"orgId,omitempty"`
 	OrgName              *string             `json:"orgName,omitempty" model:"-"` // Populated from Organization.DisplayName
 
-	Roles        []Role        `json:"roles,omitempty" model:"-"`        // TODO: Handle copy
-	Organization *Organization `json:"organization,omitempty" model:"-"` // TODO: Handle copy
+	Roles        []Role                 `json:"roles,omitempty" model:"-"`        // TODO: Handle copy
+	Organization *external.Organization `json:"organization,omitempty" model:"-"` // TODO: Handle copy
 }
 
 func (this *RoleSuite) Validate(forEdit bool) ft.ValidationErrors {

@@ -15,10 +15,11 @@ import (
 	c "github.com/sky-as-code/nikki-erp/modules/authenticate/constants"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/external"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	itUser "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
 type NewAttemptServiceParam struct {
@@ -26,6 +27,7 @@ type NewAttemptServiceParam struct {
 
 	AttemptRepo it.AttemptRepository
 	ConfigSvc   config.ConfigService
+	UserExtSvc  external.UserExtService
 	CqrsBus     cqrs.CqrsBus
 }
 
@@ -34,12 +36,14 @@ func NewAttemptServiceImpl(param NewAttemptServiceParam) it.AttemptService {
 		cqrsBus:             param.CqrsBus,
 		attemptRepo:         param.AttemptRepo,
 		attemptDurationSecs: param.ConfigSvc.GetInt(c.LoginAttemptDurationSecs),
+		userExtSvc:          param.UserExtSvc,
 	}
 }
 
 type AttemptServiceImpl struct {
 	cqrsBus     cqrs.CqrsBus
 	attemptRepo it.AttemptRepository
+	userExtSvc  external.UserExtService
 
 	attemptDurationSecs int
 }
@@ -254,29 +258,41 @@ func (this *AttemptServiceImpl) assertSubjectExists(ctx crud.Context, subjectTyp
 }
 
 func (this *AttemptServiceImpl) assertUserExists(ctx crud.Context, username string, vErrs *ft.ValidationErrors) (*attemptSubject, error) {
-	result := itUser.GetUserByEmailResult{}
-	err := this.cqrsBus.Request(ctx, &itUser.GetUserByEmailQuery{
-		Email: username,
-	}, &result)
-	if err != nil {
-		return nil, err
-	}
+	// result := itUser.GetUserByEmailResult{}
+	// err := this.cqrsBus.Request(ctx, &itUser.GetUserByEmailQuery{
+	// 	Email: username,
+	// }, &result)
+	// if err != nil {
+	// 	return nil, err
+	// }
 	// If not validation error but another client error
 	// if !vErrs.MergeClientError(result.ClientError) {
 	// 	return nil, result.ClientError
 	// }
-	if result.Data == nil {
-		vErrs.Append("user: ", "username not found")
-		return nil, nil
-	}
+	// if result.Data == nil {
+	// 	vErrs.Append("user: ", "username not found")
+	// 	return nil, nil
+	// }
 
 	// if vErrs.Count() > 0 {
 	// 	vErrs.RenameKey("email", "username")
 	// 	return nil, nil
 	// }
+	query := external.GetUserQuery{
+		Email: &username,
+	}
+	coreCtx := ctx.(corectx.Context)
+	userRes, err := this.userExtSvc.GetUser(coreCtx, query)
+	if err != nil {
+		return nil, err
+	}
+	if userRes.ClientErrors.Count() > 0 || !userRes.HasData {
+		return nil, nil
+	}
+	user := userRes.Data
 	return &attemptSubject{
-		Id:       *result.Data.Id,
-		Name:     *result.Data.DisplayName,
-		Username: *result.Data.Email,
+		Id:       *user.GetId(),
+		Name:     *user.GetDisplayName(),
+		Username: *user.GetEmail(),
 	}, nil
 }

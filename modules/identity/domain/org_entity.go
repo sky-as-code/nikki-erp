@@ -1,74 +1,160 @@
 package domain
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
-
-type Organization struct {
-	model.ModelBase
-	model.AuditableBase
-
-	Address     *string     `json:"address"`
-	DisplayName *string     `json:"displayName"`
-	LegalName   *string     `json:"legalName"`
-	PhoneNumber *string     `json:"phoneNumber"`
-	Slug        *model.Slug `param:"slug" json:"slug"`
-	Status      *OrgStatus  `json:"status,omitempty"`
-}
-
-func (this *Organization) SetDefaults() {
-	this.ModelBase.SetDefaults()
-}
-
-func (this *Organization) Validate(forEdit bool) ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.Address,
-			val.Length(0, model.MODEL_RULE_LONG_NAME_LENGTH),
-		),
-		val.Field(&this.DisplayName,
-			val.NotNilWhen(!forEdit),
-			val.When(this.DisplayName != nil,
-				val.NotEmpty,
-				val.Length(1, model.MODEL_RULE_SHORT_NAME_LENGTH),
-			),
-		),
-		val.Field(&this.LegalName,
-			val.Length(0, model.MODEL_RULE_LONG_NAME_LENGTH),
-		),
-
-		OrgStatusValidateRule(&this.Status),
-		model.IdPtrValidateRule(&this.Id, false), // Id is not required but Slug is mandatory in all cases
-		model.SlugPtrValidateRule(&this.Slug, true),
-		model.EtagPtrValidateRule(&this.Etag, forEdit),
-	}
-	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
-
-	return val.ApiBased.ValidateStruct(this, rules...)
-}
-
-type OrgStatus string
 
 const (
-	OrgStatusActive   = OrgStatus("active")
-	OrgStatusArchived = OrgStatus("archived")
+	OrganizationSchemaName = "identity.organization"
+	OrgFieldAddress        = "address"
+	OrgFieldDisplayName    = "display_name"
+	OrgFieldLegalName      = "legal_name"
+	OrgFieldPhoneNumber    = "phone_number"
+	OrgFieldSlug           = "slug"
+	UsrOrgRelSchemaName    = "identity.user_org_rel"
+	UsrOrgRelFieldUserId   = "user_id"
+	UsrOrgRelFieldOrgId    = "org_id"
+
+	OrgEdgeHierarchies = "hierarchies"
+	OrgEdgeUsers       = "users"
 )
 
-func (this OrgStatus) String() string {
-	return string(this)
+func UserOrgRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(UsrOrgRelSchemaName).
+		TableName("ident_user_org_rel").
+		ShouldBuildDb().
+		Field(
+			dmodel.DefineField().
+				Name(UsrOrgRelFieldUserId).
+				DataType(dmodel.FieldDataTypeUlid()).
+				PrimaryKey(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(UsrOrgRelFieldOrgId).
+				DataType(dmodel.FieldDataTypeUlid()).
+				PrimaryKey(),
+		)
 }
 
-func WrapOrgStatus(s string) *OrgStatus {
-	st := OrgStatus(s)
-	return &st
+func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(OrganizationSchemaName).
+		Label(model.LangJson{"en-US": "Organization"}).
+		TableName("ident_organizations").
+		ShouldBuildDb().
+		Extend(basemodel.BaseModelSchemaBuilder()).
+		Field(
+			dmodel.DefineField().
+				Name(OrgFieldAddress).
+				Label(model.LangJson{"en-US": "Address"}).
+				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(OrgFieldDisplayName).
+				Label(model.LangJson{"en-US": "Display Name"}).
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
+				RequiredForCreate().
+				Unique(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(OrgFieldLegalName).
+				Label(model.LangJson{"en-US": "Legal Name"}).
+				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(OrgFieldPhoneNumber).
+				Label(model.LangJson{"en-US": "Phone"}).
+				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(OrgFieldSlug).
+				Label(model.LangJson{"en-US": "Slug"}).
+				DataType(dmodel.FieldDataTypeSlug()).
+				RequiredForCreate().
+				Unique(),
+		).
+		Extend(basemodel.VersionedModelSchemaBuilder()).
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		EdgeTo(
+			dmodel.Edge(OrgEdgeUsers).
+				ManyToMany(UserSchemaName, UsrOrgRelSchemaName, "org").
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeFrom(
+			dmodel.Edge(OrgEdgeHierarchies).
+				Label(model.LangJson{"en-US": "Hierarchy Levels"}).
+				Existing(HierarchyLevelSchemaName, HierEdgeOrg),
+		)
 }
 
-func OrgStatusValidateRule(field **OrgStatus) *val.FieldRules {
-	return val.Field(field,
-		val.When(*field != nil,
-			val.NotEmpty,
-			val.OneOf(OrgStatusActive, OrgStatusArchived),
-		),
-	)
+type Organization struct {
+	fields dmodel.DynamicFields
+}
+
+func NewOrganization() *Organization {
+	return &Organization{fields: make(dmodel.DynamicFields)}
+}
+
+func NewOrganizationFrom(src dmodel.DynamicFields) *Organization {
+	return &Organization{fields: src}
+}
+
+func (this Organization) GetFieldData() dmodel.DynamicFields {
+	return this.fields
+}
+
+func (this *Organization) SetFieldData(data dmodel.DynamicFields) {
+	this.fields = data
+}
+
+func (this Organization) GetId() *model.Id {
+	return this.fields.GetModelId(basemodel.FieldId)
+}
+
+func (this *Organization) SetId(v *model.Id) {
+	this.fields.SetModelId(basemodel.FieldId, v)
+}
+
+func (this Organization) GetSlug() *model.Slug {
+	s := this.fields.GetString(OrgFieldSlug)
+	if s == nil {
+		return nil
+	}
+	v := model.Slug(*s)
+	return &v
+}
+
+func (this *Organization) SetSlug(v *model.Slug) {
+	if v == nil {
+		this.fields.SetString(OrgFieldSlug, nil)
+		return
+	}
+	s := string(*v)
+	this.fields.SetString(OrgFieldSlug, &s)
+}
+
+func (this Organization) IsArchived() bool {
+	isArchived := this.fields.GetBool(basemodel.FieldIsArchived)
+	if isArchived == nil {
+		return false
+	}
+	return *isArchived
+}
+
+func (this Organization) GetEtag() *model.Etag {
+	return this.fields.GetEtag(basemodel.FieldEtag)
+}
+
+func (this *Organization) SetEtag(v *model.Etag) {
+	this.fields.SetEtag(basemodel.FieldEtag, v)
+}
+
+func (this Organization) GetDisplayName() *string {
+	return this.fields.GetString(OrgFieldDisplayName)
 }

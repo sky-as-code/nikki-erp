@@ -296,10 +296,10 @@ func (hlc *HierarchyLevelCreate) createSpec() (*HierarchyLevel, *sqlgraph.Create
 	}
 	if nodes := hlc.mutation.UsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: hierarchylevel.UsersPrimaryKey,
+			Columns: []string{hierarchylevel.UsersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),

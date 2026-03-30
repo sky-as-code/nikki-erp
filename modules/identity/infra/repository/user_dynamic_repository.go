@@ -1,17 +1,17 @@
 package repository
 
 import (
-	crud "github.com/sky-as-code/nikki-erp/common/crud"
+	"go.uber.org/dig"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
-	"go.uber.org/dig"
 )
 
 type UserDynamicRepositoryParam struct {
@@ -23,7 +23,7 @@ type UserDynamicRepositoryParam struct {
 	Logger       logging.LoggerService
 }
 
-func NewUserDynamicRepository(param UserDynamicRepositoryParam) it.UserRepository2 {
+func NewUserDynamicRepository(param UserDynamicRepositoryParam) it.UserRepository {
 	dynamicRepo := baserepo.NewBaseRepositoryImpl(
 		baserepo.NewBaseRepositoryParam{
 			Client:       param.Client,
@@ -37,33 +37,33 @@ func NewUserDynamicRepository(param UserDynamicRepositoryParam) it.UserRepositor
 }
 
 type UserDynamicRepository struct {
-	dynamicRepo coredyn.BaseRepository
+	dynamicRepo dyn.BaseRepository
 }
 
-func (this *UserDynamicRepository) GetBaseRepo() coredyn.BaseRepository {
+func (this *UserDynamicRepository) GetBaseRepo() dyn.BaseRepository {
 	return this.dynamicRepo
 }
 
-func (this *UserDynamicRepository) Create(ctx corectx.Context, user domain.UserEntity) (
-	*crud.OpResult[domain.UserEntity], error,
-) {
-	return baserepo.Insert[domain.UserEntity](ctx, this.dynamicRepo, user)
+func (this *UserDynamicRepository) Insert(
+	ctx corectx.Context, user domain.User,
+) (*dyn.OpResult[int], error) {
+	return baserepo.Insert(ctx, this.dynamicRepo, user)
 }
 
-func (this *UserDynamicRepository) GetOne(ctx corectx.Context, param coredyn.RepoGetOneParam) (
-	*crud.OpResult[domain.UserEntity], error,
-) {
-	return baserepo.GetOne[domain.UserEntity](ctx, this.dynamicRepo, param)
+func (this *UserDynamicRepository) GetOne(
+	ctx corectx.Context, param dyn.RepoGetOneParam,
+) (*dyn.OpResult[domain.User], error) {
+	return baserepo.GetOne[domain.User](ctx, this.dynamicRepo, param)
 }
 
 func (this *UserDynamicRepository) Search(
-	ctx corectx.Context, param coredyn.RepoSearchParam,
-) (*crud.OpResult[crud.PagedResultData[domain.UserEntity]], error) {
-	return baserepo.Search[domain.UserEntity](ctx, this.dynamicRepo, param)
+	ctx corectx.Context, param dyn.RepoSearchParam,
+) (*dyn.OpResult[dyn.PagedResultData[domain.User]], error) {
+	return baserepo.Search[domain.User](ctx, this.dynamicRepo, param)
 }
 
-func (this *UserDynamicRepository) Update(ctx corectx.Context, user domain.UserEntity) (
-	*crud.OpResult[domain.UserEntity], error,
+func (this *UserDynamicRepository) Update(ctx corectx.Context, user domain.User) (
+	*dyn.OpResult[dyn.MutateResultData], error,
 ) {
-	return baserepo.Update[domain.UserEntity](ctx, this.dynamicRepo, user)
+	return baserepo.Update(ctx, this.dynamicRepo, user.GetFieldData())
 }

@@ -17,45 +17,9 @@ body:json {
 }
 
 script:post-response {
-  const tv4 = require('tv4');
+  const pkg = require('./scripts/error-400-not-found');
   
-  const schema = {
-      type: "array",
-      minItems: 1,
-      maxItems: 1,
-      items: {
-          type: "object",
-          required: ["key", "message", "type"],
-          properties: {
-              key: {
-                  type: "string",
-                  enum: ["common.err_not_found"],
-              },
-              message: {
-                  type: "string",
-                  enum: ["The desired data could not be found"],
-              },
-              type: {
-                  type: "string",
-                  enum: ["business"],
-              },
-          },
-          additionalProperties: false,
-      },
-      additionalItems: false
-  };
-  
-  test("Status code is 400", function () {
-      expect(res.getStatus()).to.equal(400);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-    console.log({body: res.getBody()});
-    const valid = tv4.validate(res.getBody(), schema);
-    tv4.error && console.error(tv4.error);
-    expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;  
-  });
+  pkg.testNotFound();
   
 }
 

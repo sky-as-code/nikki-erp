@@ -1,268 +1,156 @@
 package organization
 
 import (
-	"errors"
-	"time"
-
-	"github.com/sky-as-code/nikki-erp/common/array"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/datastructure"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
 func init() {
-	// Assert interface implementation
 	var req cqrs.Request
-	req = (*CreateOrganizationCommand)(nil)
-	req = (*UpdateOrganizationCommand)(nil)
-	req = (*DeleteOrganizationCommand)(nil)
-	req = (*GetOrganizationBySlugQuery)(nil)
-	req = (*SearchOrganizationsQuery)(nil)
-	req = (*ExistsOrgByIdCommand)(nil)
+	req = (*CreateOrgCommand)(nil)
+	req = (*DeleteOrgCommand)(nil)
+	req = (*GetOrgQuery)(nil)
+	req = (*SearchOrgsQuery)(nil)
+	req = (*ManageOrgUsersCommand)(nil)
+	req = (*OrgExistsQuery)(nil)
+	req = (*UpdateOrgCommand)(nil)
 	util.Unused(req)
 }
-
-var AddRemoveUsersCommandType = cqrs.RequestType{
-	Module:    "identity",
-	Submodule: "organization",
-	Action:    "addRemoveUsers",
-}
-
-type AddRemoveUsersCommand struct {
-	OrgId  model.Id   `param:"orgId" json:"orgId"`
-	Add    []model.Id `json:"add,omitempty"`
-	Remove []model.Id `json:"remove,omitempty"`
-	Etag   model.Etag `json:"etag"`
-}
-
-func (AddRemoveUsersCommand) CqrsRequestType() cqrs.RequestType {
-	return AddRemoveUsersCommandType
-}
-
-func (this *AddRemoveUsersCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.OrgId, true),
-		model.IdValidateRuleMulti(&this.Add, false, 0, model.MODEL_RULE_ID_ARR_MAX),
-		model.IdValidateRuleMulti(&this.Remove, false, 0, model.MODEL_RULE_ID_ARR_MAX),
-		val.Field(&this.Add, val.By(func(value any) error {
-			if this.Add == nil || this.Remove == nil || len(this.Remove) == 0 {
-				return nil
-			}
-			ids, _ := value.([]model.Id)
-			for _, addedId := range ids {
-				if array.Contains(this.Remove, addedId) {
-					return errors.New("add and remove must not contain the same id")
-				}
-			}
-			return nil
-		})),
-	}
-	return val.ApiBased.ValidateStruct(this, rules...)
-}
-
-type AddRemoveUsersData struct {
-	Id        model.Id   `json:"id"`
-	Etag      model.Etag `json:"etag"`
-	UpdatedAt time.Time  `json:"updatedAt"`
-}
-
-type AddRemoveUsersResult = crud.OpResult[*AddRemoveUsersData]
 
 var createOrganizationCommandType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "organization",
-	Action:    "create",
+	Action:    "createOrg",
 }
 
-type CreateOrganizationCommand struct {
-	Address     *string    `json:"address,omitempty"`
-	DisplayName *string    `json:"displayName"`
-	LegalName   *string    `json:"legalName,omitempty"`
-	PhoneNumber *string    `json:"phoneNumber,omitempty"`
-	Slug        model.Slug `json:"slug"`
+type CreateOrgCommand struct {
+	domain.Organization
 }
 
-func (CreateOrganizationCommand) CqrsRequestType() cqrs.RequestType {
+func (CreateOrgCommand) CqrsRequestType() cqrs.RequestType {
 	return createOrganizationCommandType
 }
 
-type CreateOrganizationResult = crud.OpResult[*domain.Organization]
-
-var updateOrganizationCommandType = cqrs.RequestType{
-	Module:    "identity",
-	Submodule: "organization",
-	Action:    "update",
+func (CreateOrgCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.OrganizationSchemaName)
 }
 
-type UpdateOrganizationCommand struct {
-	Slug model.Slug `param:"slug" json:"slug"`
-
-	Address     *string     `json:"address"`
-	DisplayName *string     `json:"displayName"`
-	Etag        model.Etag  `json:"etag"`
-	LegalName   *string     `json:"legalName"`
-	PhoneNumber *string     `json:"phoneNumber"`
-	NewSlug     *model.Slug `json:"newSlug"`
-	StatusId    *model.Id   `json:"statusId"`
-	StatusValue *string     `json:"statusValue"`
-}
-
-func (UpdateOrganizationCommand) CqrsRequestType() cqrs.RequestType {
-	return updateOrganizationCommandType
-}
-
-func (this UpdateOrganizationCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.EtagValidateRule(&this.Etag, true),
-		model.SlugValidateRule(&this.Slug, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type UpdateOrganizationResult = crud.OpResult[*domain.Organization]
+type CreateOrgResult = dyn.OpResult[domain.Organization]
 
 var deleteOrganizationCommandType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "organization",
-	Action:    "delete",
+	Action:    "deleteOrg",
 }
 
-type DeleteOrganizationCommand struct {
-	Slug model.Slug `param:"slug" json:"slug"`
-}
+type DeleteOrgCommand dyn.DeleteOneQuery
 
-func (DeleteOrganizationCommand) CqrsRequestType() cqrs.RequestType {
+func (DeleteOrgCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteOrganizationCommandType
 }
 
-func (this DeleteOrganizationCommand) ToDomainModel() *domain.Organization {
-	org := &domain.Organization{}
-	org.Slug = &this.Slug
-	return org
-}
+type DeleteOrgResult = dyn.OpResult[dyn.MutateResultData]
 
-func (this DeleteOrganizationCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.SlugValidateRule(&this.Slug, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type DeleteOrganizationResultData struct {
-	Slug         model.Slug `json:"slug"`
-	DeletedAt    time.Time  `json:"deletedAt"`
-	DeletedCount *int       `json:"deletedCount,omitempty"`
-}
-
-type DeleteOrganizationResult = crud.OpResult[*DeleteOrganizationResultData]
-
-var getOrganizationByIdQueryType = cqrs.RequestType{
+var getOrgQueryType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "organization",
-	Action:    "getOrganizationById",
+	Action:    "getOrg",
 }
 
-type GetOrganizationByIdQuery struct {
-	Id             model.Id `param:"id" json:"id"`
-	IncludeDeleted bool     `query:"includeDeleted" json:"includeDeleted,omitempty"`
+type GetOrgQuery struct {
+	Columns []string `json:"columns" query:"columns"`
+	Id      *string  `json:"id" param:"id"`
+	Slug    *string  `json:"slug"`
 }
 
-func (GetOrganizationByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return getOrganizationByIdQueryType
+func (GetOrgQuery) CqrsRequestType() cqrs.RequestType {
+	return getOrgQueryType
 }
 
-func (this GetOrganizationByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
+type GetOrgResult = dyn.OpResult[domain.Organization]
 
-type GetOrganizationByIdResult = crud.OpResult[*domain.Organization]
-
-var getOrganizationBySlugQueryType = cqrs.RequestType{
+var orgExistsQueryType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "organization",
-	Action:    "getOrganizationBySlug",
+	Action:    "orgExists",
 }
 
-type GetOrganizationBySlugQuery struct {
-	Slug           model.Slug `param:"slug" json:"slug"`
-	IncludeDeleted bool       `query:"includeDeleted" json:"includeDeleted,omitempty"`
+type OrgExistsQuery dyn.ExistsQuery
+
+func (OrgExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return orgExistsQueryType
 }
 
-func (GetOrganizationBySlugQuery) CqrsRequestType() cqrs.RequestType {
-	return getOrganizationBySlugQueryType
-}
+type OrgExistsResult = dyn.OpResult[dyn.ExistsResultData]
 
-func (this GetOrganizationBySlugQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.SlugValidateRule(&this.Slug, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type GetOrganizationBySlugResult = crud.OpResult[*domain.Organization]
-
-var searchOrganizationsQueryType = cqrs.RequestType{
+var manageOrgUsersCommandType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "organization",
-	Action:    "search",
+	Action:    "manageOrgUsers",
 }
 
-type SearchOrganizationsQuery struct {
-	crud.SearchQuery
-	IncludeDeleted bool `json:"includeDeleted" query:"includeDeleted"`
+type ManageOrgUsersCommand struct {
+	OrgId  model.Id                    `json:"org_id" param:"org_id"`
+	Add    datastructure.Set[model.Id] `json:"add"`
+	Remove datastructure.Set[model.Id] `json:"remove"`
 }
 
-func (SearchOrganizationsQuery) CqrsRequestType() cqrs.RequestType {
-	return searchOrganizationsQueryType
+func (ManageOrgUsersCommand) CqrsRequestType() cqrs.RequestType {
+	return manageOrgUsersCommandType
 }
 
-func (this *SearchOrganizationsQuery) SetDefaults() {
-	safe.SetDefaultValue(&this.Page, model.MODEL_RULE_PAGE_INDEX_START)
-	safe.SetDefaultValue(&this.Size, model.MODEL_RULE_PAGE_DEFAULT_SIZE)
-}
+type ManageOrgUsersResult = dyn.OpResult[dyn.MutateResultData]
 
-func (this SearchOrganizationsQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		crud.PageIndexValidateRule(&this.Page),
-		crud.PageSizeValidateRule(&this.Size),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type SearchOrganizationsResultData = crud.PagedResult[domain.Organization]
-type SearchOrganizationsResult = crud.OpResult[*SearchOrganizationsResultData]
-
-var existsOrgById = cqrs.RequestType{
+var searchOrgsQueryType = cqrs.RequestType{
 	Module:    "identity",
 	Submodule: "organization",
-	Action:    "existsOrgById",
+	Action:    "searchOrgs",
 }
 
-type ExistsOrgByIdCommand struct {
-	Id model.Id `param:"id" json:"id"`
+type SearchOrgsQuery dyn.SearchQuery
+
+func (SearchOrgsQuery) CqrsRequestType() cqrs.RequestType {
+	return searchOrgsQueryType
 }
 
-func (ExistsOrgByIdCommand) CqrsRequestType() cqrs.RequestType {
-	return existsOrgById
+type SearchOrgsResultData = dyn.PagedResultData[domain.Organization]
+type SearchOrgsResult = dyn.OpResult[SearchOrgsResultData]
+
+var setOrgIsArchivedCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "organization",
+	Action:    "setOrgIsArchived",
 }
 
-func (this ExistsOrgByIdCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
+type SetOrgIsArchivedCommand dyn.SetIsArchivedCommand
+
+func (SetOrgIsArchivedCommand) CqrsRequestType() cqrs.RequestType {
+	return setOrgIsArchivedCommandType
 }
 
-type ExistsOrgByIdResult = crud.OpResult[bool]
+type SetOrgIsArchivedResult = dyn.OpResult[dyn.MutateResultData]
+
+var updateOrgCommandType = cqrs.RequestType{
+	Module:    "identity",
+	Submodule: "organization",
+	Action:    "updateOrg",
+}
+
+type UpdateOrgCommand struct {
+	domain.Organization
+}
+
+func (UpdateOrgCommand) CqrsRequestType() cqrs.RequestType {
+	return updateOrgCommandType
+}
+
+func (UpdateOrgCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.OrganizationSchemaName)
+}
+
+type UpdateOrgResult = dyn.OpResult[dyn.MutateResultData]

@@ -108,7 +108,7 @@ func NewAnonymousBusinessViolation(key string, message string, vars ...map[strin
 
 func NewNotFoundError() *ClientErrorItem {
 	return NewAnonymousBusinessViolation(
-		"common.err_not_found",
+		ErrorKey("err_not_found"),
 		"The desired data could not be found",
 	)
 }
@@ -116,8 +116,28 @@ func NewNotFoundError() *ClientErrorItem {
 func NewEtagMismatchedError() *ClientErrorItem {
 	return NewBusinessViolation(
 		"etag",
-		"common.err_etag_mismatched",
+		ErrorKey("err_etag_mismatched"),
 		"This data has been modified by another process",
+	)
+}
+
+func NewExclusiveFieldsError(conflictFields []string) *ClientErrorItem {
+	return NewAnonymousBusinessViolation(
+		ErrorKey("err_exclusive_fields"),
+		"The following fields are exclusive: {.excFields}",
+		map[string]any{
+			"excFields": conflictFields,
+		},
+	)
+}
+
+func NewExclusiveFieldsMissingError(missingFields []string) *ClientErrorItem {
+	return NewAnonymousBusinessViolation(
+		ErrorKey("err_exclusive_fields_missing"),
+		"One of these fields (not all of them) is required: {.excFields}",
+		map[string]any{
+			"excFields": missingFields,
+		},
 	)
 }
 

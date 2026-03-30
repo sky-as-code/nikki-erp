@@ -73,6 +73,12 @@ func (this *Application) GenSql(moduleName string, dialect string) string {
 	}
 
 	registry := dmodel.GetSchemaRegistry()
+	err = registry.FinalizeRelations()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to finalize schema relations: %v\n", err)
+		os.Exit(1)
+	}
+
 	err = orm.ValidateRelations(registry)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to validate relations: %v\n", err)
@@ -208,6 +214,10 @@ func (this *Application) registerModelInOrder(moduleMap map[string]modules.InCod
 			return err
 		}
 		this.logger.Infof("Registered models for module %s", mod.Name())
+	}
+
+	if err := dmodel.GetSchemaRegistry().FinalizeRelations(); err != nil {
+		return errors.Wrap(err, "FinalizeRelations")
 	}
 
 	return nil

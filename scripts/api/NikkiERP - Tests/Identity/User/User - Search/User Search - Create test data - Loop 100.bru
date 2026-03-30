@@ -18,8 +18,8 @@ body:json {
 }
 
 script:pre-request {
-  let body = req.getBody();
-  console.log('Creating test user: ', bru.interpolate(body.displayName));
+  const body = req.getBody();
+  console.log('User Search: Creating test user: ', bru.interpolate(body.displayName));
 }
 
 script:post-response {

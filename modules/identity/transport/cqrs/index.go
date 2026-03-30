@@ -25,14 +25,13 @@ func initUserHandlers() error {
 		ctx := context.Background()
 		return cqrsBus.SubscribeRequests(
 			ctx,
-			cqrs.NewHandler(handler.Create),
-			cqrs.NewHandler(handler.Delete),
-			cqrs.NewHandler(handler.GetUserByEmail),
-			cqrs.NewHandler(handler.MustGetActiveUser),
-			cqrs.NewHandler(handler.SearchUsers),
-			cqrs.NewHandler(handler.Update),
+			cqrs.NewHandler(handler.CreateUser),
+			cqrs.NewHandler(handler.DeleteUser),
 			cqrs.NewHandler(handler.UserExists),
-			cqrs.NewHandler(handler.UserExistsMulti),
+			cqrs.NewHandler(handler.GetActiveUser),
+			cqrs.NewHandler(handler.GetUser),
+			cqrs.NewHandler(handler.SearchUsers),
+			cqrs.NewHandler(handler.UpdateUser),
 		)
 	})
 }
@@ -44,14 +43,13 @@ func initGroupHandlers() error {
 		ctx := context.Background()
 		return cqrsBus.SubscribeRequests(
 			ctx,
-			cqrs.NewHandler(handler.AddRemoveUsers),
 			cqrs.NewHandler(handler.CreateGroup),
 			cqrs.NewHandler(handler.DeleteGroup),
-			cqrs.NewHandler(handler.GetGroupById),
+			cqrs.NewHandler(handler.GetGroup),
+			cqrs.NewHandler(handler.GroupExists),
+			cqrs.NewHandler(handler.ManageGroupUsers),
 			cqrs.NewHandler(handler.SearchGroups),
 			cqrs.NewHandler(handler.UpdateGroup),
-			cqrs.NewHandler(handler.SearchGroups),
-			cqrs.NewHandler(handler.GroupExists),
 		)
 	})
 }
@@ -63,13 +61,13 @@ func initOrganizationHandlers() error {
 		ctx := context.Background()
 		return cqrsBus.SubscribeRequests(
 			ctx,
-			cqrs.NewHandler(handler.CreateOrganization),
-			cqrs.NewHandler(handler.UpdateOrganization),
-			cqrs.NewHandler(handler.DeleteOrganization),
-			cqrs.NewHandler(handler.GetOrganizationBySlug),
-			cqrs.NewHandler(handler.SearchOrganizations),
-			cqrs.NewHandler(handler.ExistsOrgById),
-			cqrs.NewHandler(handler.GetOrganizationById),
+			cqrs.NewHandler(handler.CreateOrg),
+			cqrs.NewHandler(handler.DeleteOrg),
+			cqrs.NewHandler(handler.GetOrg),
+			cqrs.NewHandler(handler.OrgExists),
+			cqrs.NewHandler(handler.ManageOrgUsers),
+			cqrs.NewHandler(handler.SearchOrgs),
+			cqrs.NewHandler(handler.UpdateOrg),
 		)
 	})
 }
@@ -82,11 +80,12 @@ func initHierarchyHandlers() error {
 		return cqrsBus.SubscribeRequests(
 			ctx,
 			cqrs.NewHandler(handler.CreateHierarchyLevel),
-			cqrs.NewHandler(handler.UpdateHierarchyLevel),
 			cqrs.NewHandler(handler.DeleteHierarchyLevel),
-			cqrs.NewHandler(handler.GetHierarchyLevelById),
+			cqrs.NewHandler(handler.GetHierarchyLevel),
+			cqrs.NewHandler(handler.HierarchyLevelExists),
+			cqrs.NewHandler(handler.ManageHierarchyLevelUsers),
 			cqrs.NewHandler(handler.SearchHierarchyLevels),
-			cqrs.NewHandler(handler.ExistsHierarchyById),
+			cqrs.NewHandler(handler.UpdateHierarchyLevel),
 		)
 	})
 }

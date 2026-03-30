@@ -85,11 +85,6 @@ func Name(v string) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldName, v))
 }
 
-// OrgID applies equality check predicate on the "org_id" field. It's identical to OrgIDEQ.
-func OrgID(v string) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldOrgID, v))
-}
-
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldUpdatedAt, v))
@@ -340,81 +335,6 @@ func NameContainsFold(v string) predicate.Group {
 	return predicate.Group(sql.FieldContainsFold(FieldName, v))
 }
 
-// OrgIDEQ applies the EQ predicate on the "org_id" field.
-func OrgIDEQ(v string) predicate.Group {
-	return predicate.Group(sql.FieldEQ(FieldOrgID, v))
-}
-
-// OrgIDNEQ applies the NEQ predicate on the "org_id" field.
-func OrgIDNEQ(v string) predicate.Group {
-	return predicate.Group(sql.FieldNEQ(FieldOrgID, v))
-}
-
-// OrgIDIn applies the In predicate on the "org_id" field.
-func OrgIDIn(vs ...string) predicate.Group {
-	return predicate.Group(sql.FieldIn(FieldOrgID, vs...))
-}
-
-// OrgIDNotIn applies the NotIn predicate on the "org_id" field.
-func OrgIDNotIn(vs ...string) predicate.Group {
-	return predicate.Group(sql.FieldNotIn(FieldOrgID, vs...))
-}
-
-// OrgIDGT applies the GT predicate on the "org_id" field.
-func OrgIDGT(v string) predicate.Group {
-	return predicate.Group(sql.FieldGT(FieldOrgID, v))
-}
-
-// OrgIDGTE applies the GTE predicate on the "org_id" field.
-func OrgIDGTE(v string) predicate.Group {
-	return predicate.Group(sql.FieldGTE(FieldOrgID, v))
-}
-
-// OrgIDLT applies the LT predicate on the "org_id" field.
-func OrgIDLT(v string) predicate.Group {
-	return predicate.Group(sql.FieldLT(FieldOrgID, v))
-}
-
-// OrgIDLTE applies the LTE predicate on the "org_id" field.
-func OrgIDLTE(v string) predicate.Group {
-	return predicate.Group(sql.FieldLTE(FieldOrgID, v))
-}
-
-// OrgIDContains applies the Contains predicate on the "org_id" field.
-func OrgIDContains(v string) predicate.Group {
-	return predicate.Group(sql.FieldContains(FieldOrgID, v))
-}
-
-// OrgIDHasPrefix applies the HasPrefix predicate on the "org_id" field.
-func OrgIDHasPrefix(v string) predicate.Group {
-	return predicate.Group(sql.FieldHasPrefix(FieldOrgID, v))
-}
-
-// OrgIDHasSuffix applies the HasSuffix predicate on the "org_id" field.
-func OrgIDHasSuffix(v string) predicate.Group {
-	return predicate.Group(sql.FieldHasSuffix(FieldOrgID, v))
-}
-
-// OrgIDIsNil applies the IsNil predicate on the "org_id" field.
-func OrgIDIsNil() predicate.Group {
-	return predicate.Group(sql.FieldIsNull(FieldOrgID))
-}
-
-// OrgIDNotNil applies the NotNil predicate on the "org_id" field.
-func OrgIDNotNil() predicate.Group {
-	return predicate.Group(sql.FieldNotNull(FieldOrgID))
-}
-
-// OrgIDEqualFold applies the EqualFold predicate on the "org_id" field.
-func OrgIDEqualFold(v string) predicate.Group {
-	return predicate.Group(sql.FieldEqualFold(FieldOrgID, v))
-}
-
-// OrgIDContainsFold applies the ContainsFold predicate on the "org_id" field.
-func OrgIDContainsFold(v string) predicate.Group {
-	return predicate.Group(sql.FieldContainsFold(FieldOrgID, v))
-}
-
 // UpdatedAtEQ applies the EQ predicate on the "updated_at" field.
 func UpdatedAtEQ(v time.Time) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldUpdatedAt, v))
@@ -480,29 +400,6 @@ func HasUsers() predicate.Group {
 func HasUsersWith(preds ...predicate.User) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
 		step := newUsersStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasOrg applies the HasEdge predicate on the "org" edge.
-func HasOrg() predicate.Group {
-	return predicate.Group(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, OrgTable, OrgColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasOrgWith applies the HasEdge predicate on the "org" edge with a given conditions (other predicates).
-func HasOrgWith(preds ...predicate.Organization) predicate.Group {
-	return predicate.Group(func(s *sql.Selector) {
-		step := newOrgStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

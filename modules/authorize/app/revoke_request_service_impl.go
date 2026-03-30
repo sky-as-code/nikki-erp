@@ -402,35 +402,39 @@ func (this *RevokeRequestServiceImpl) getUserDisplayName(ctx crud.Context, id mo
 	switch entityType {
 	case "user":
 		cmd := &itUser.GetUserQuery{Id: &id}
-		res := itUser.GetUserByIdResult{}
+		res := itUser.GetUserResult{}
 		err := this.cqrsBus.Request(ctx, *cmd, &res)
 		fault.PanicOnErr(err)
 
-		if res.ClientError != nil {
-			vErrs.MergeClientError(res.ClientError)
+		if res.ClientErrors.Count() > 0 {
+			for i := range res.ClientErrors {
+				e := res.ClientErrors[i]
+				vErrs.Append(e.Field, e.Message)
+			}
 			return nil, nil
 		}
-		if res.Data == nil {
+		if !res.HasData {
 			return nil, nil
 		}
-
-		return res.Data.DisplayName, nil
+		return res.Data.GetDisplayName(), nil
 
 	case "group":
-		cmd := &itGroup.GetGroupByIdQuery{Id: id}
-		res := itGroup.GetGroupByIdResult{}
+		cmd := &itGroup.GetGroupQuery{
+			Id: id,
+		}
+		res := itGroup.GetGroupResult{}
 		err := this.cqrsBus.Request(ctx, *cmd, &res)
 		fault.PanicOnErr(err)
 
-		if res.ClientError != nil {
-			vErrs.MergeClientError(res.ClientError)
+		if len(res.ClientErrors) > 0 {
+			appendClientErrorsToValidation(vErrs, res.ClientErrors)
 			return nil, nil
 		}
-		if res.Data == nil {
+		if !res.HasData {
 			return nil, nil
 		}
 
-		return res.Data.Name, nil
+		return res.Data.GetName(), nil
 	}
 
 	return nil, nil

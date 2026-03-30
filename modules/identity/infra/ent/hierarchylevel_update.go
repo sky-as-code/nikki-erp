@@ -355,10 +355,10 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if hlu.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: hierarchylevel.UsersPrimaryKey,
+			Columns: []string{hierarchylevel.UsersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
@@ -368,10 +368,10 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if nodes := hlu.mutation.RemovedUsersIDs(); len(nodes) > 0 && !hlu.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: hierarchylevel.UsersPrimaryKey,
+			Columns: []string{hierarchylevel.UsersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
@@ -384,10 +384,10 @@ func (hlu *HierarchyLevelUpdate) sqlSave(ctx context.Context) (n int, err error)
 	}
 	if nodes := hlu.mutation.UsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: hierarchylevel.UsersPrimaryKey,
+			Columns: []string{hierarchylevel.UsersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
@@ -804,10 +804,10 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 	}
 	if hluo.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: hierarchylevel.UsersPrimaryKey,
+			Columns: []string{hierarchylevel.UsersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
@@ -817,10 +817,10 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 	}
 	if nodes := hluo.mutation.RemovedUsersIDs(); len(nodes) > 0 && !hluo.mutation.UsersCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: hierarchylevel.UsersPrimaryKey,
+			Columns: []string{hierarchylevel.UsersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
@@ -833,10 +833,10 @@ func (hluo *HierarchyLevelUpdateOne) sqlSave(ctx context.Context) (_node *Hierar
 	}
 	if nodes := hluo.mutation.UsersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.O2M,
 			Inverse: true,
 			Table:   hierarchylevel.UsersTable,
-			Columns: hierarchylevel.UsersPrimaryKey,
+			Columns: []string{hierarchylevel.UsersColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),

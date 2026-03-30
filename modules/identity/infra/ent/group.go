@@ -10,7 +10,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 )
 
 // Group is the model entity for the Group schema.
@@ -26,8 +25,6 @@ type Group struct {
 	Etag string `json:"etag,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
-	// OrgID holds the value of the "org_id" field.
-	OrgID *string `json:"org_id,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -40,13 +37,11 @@ type Group struct {
 type GroupEdges struct {
 	// Users holds the value of the users edge.
 	Users []*User `json:"users,omitempty"`
-	// Org holds the value of the org edge.
-	Org *Organization `json:"org,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [2]bool
 }
 
 // UsersOrErr returns the Users value or an error if the edge
@@ -58,21 +53,10 @@ func (e GroupEdges) UsersOrErr() ([]*User, error) {
 	return nil, &NotLoadedError{edge: "users"}
 }
 
-// OrgOrErr returns the Org value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e GroupEdges) OrgOrErr() (*Organization, error) {
-	if e.Org != nil {
-		return e.Org, nil
-	} else if e.loadedTypes[1] {
-		return nil, &NotFoundError{label: organization.Label}
-	}
-	return nil, &NotLoadedError{edge: "org"}
-}
-
 // UserGroupsOrErr returns the UserGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) UserGroupsOrErr() ([]*UserGroup, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.UserGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_groups"}
@@ -83,7 +67,7 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldID, group.FieldDescription, group.FieldEtag, group.FieldName, group.FieldOrgID:
+		case group.FieldID, group.FieldDescription, group.FieldEtag, group.FieldName:
 			values[i] = new(sql.NullString)
 		case group.FieldCreatedAt, group.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -133,13 +117,6 @@ func (gr *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				gr.Name = value.String
 			}
-		case group.FieldOrgID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field org_id", values[i])
-			} else if value.Valid {
-				gr.OrgID = new(string)
-				*gr.OrgID = value.String
-			}
 		case group.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
@@ -163,11 +140,6 @@ func (gr *Group) Value(name string) (ent.Value, error) {
 // QueryUsers queries the "users" edge of the Group entity.
 func (gr *Group) QueryUsers() *UserQuery {
 	return NewGroupClient(gr.config).QueryUsers(gr)
-}
-
-// QueryOrg queries the "org" edge of the Group entity.
-func (gr *Group) QueryOrg() *OrganizationQuery {
-	return NewGroupClient(gr.config).QueryOrg(gr)
 }
 
 // QueryUserGroups queries the "user_groups" edge of the Group entity.
@@ -211,11 +183,6 @@ func (gr *Group) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(gr.Name)
-	builder.WriteString(", ")
-	if v := gr.OrgID; v != nil {
-		builder.WriteString("org_id=")
-		builder.WriteString(*v)
-	}
 	builder.WriteString(", ")
 	if v := gr.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")

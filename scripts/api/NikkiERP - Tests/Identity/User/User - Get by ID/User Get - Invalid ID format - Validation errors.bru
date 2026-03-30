@@ -5,55 +5,15 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/users/not-existing-1234567890123
+  url: {{api_host}}/v1/identity/users/not-valid-1234567890123
   body: none
   auth: inherit
 }
 
 script:post-response {
-  const tv4 = require('tv4');
+  const pkg = require('./scripts/error-400-invalid-format');
   
-  const schema = {
-      type: "array",
-      minItems: 1,
-      maxItems: 1,
-      items: {
-          type: "object",
-          required: ["field", "message", "type"],
-          properties: {
-              field: {
-                  type: "string",
-                  enum: ["id"],
-              },
-              key: {
-                  type: "string",
-                  enum: ["common.err_invalid_data_type"],
-              },
-              message: {
-                  type: "string",
-                  enum: ["invalid data type"],
-              },
-              type: {
-                  type: "string",
-                  enum: ["validation"],
-              },
-          },
-          additionalProperties: false,
-      },
-      additionalItems: false
-  };
-  
-  test("Status code is 400", function () {
-      expect(res.getStatus()).to.equal(400);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-    console.log({body: res.getBody()});
-    const valid = tv4.validate(res.getBody(), schema);
-    tv4.error && console.error(tv4.error);
-    expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;  
-  });
+  pkg.testInvalidFormat('id');
   
 }
 

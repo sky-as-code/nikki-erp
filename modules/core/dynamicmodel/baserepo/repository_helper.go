@@ -1,58 +1,100 @@
 package baserepo
 
 import (
-	crud "github.com/sky-as-code/nikki-erp/common/crud"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-func Insert[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, repo coredyn.BaseRepository, domainModel dmodel.DynamicModelGetter,
-) (*crud.OpResult[TDomain], error) {
+func GetOne[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
+	ctx corectx.Context, dynamicRepo dyn.BaseRepository, findParam dyn.RepoGetOneParam,
+) (*dyn.OpResult[TDomain], error) {
+	found, err := dynamicRepo.GetOne(ctx, findParam)
+	if err != nil {
+		return nil, err
+	}
+	if len(found.ClientErrors) > 0 {
+		return &dyn.OpResult[TDomain]{ClientErrors: found.ClientErrors}, nil
+	}
+	if !found.HasData {
+		return &dyn.OpResult[TDomain]{HasData: false}, nil
+	}
+	var result TDomain
+	TDomainPtr(&result).SetFieldData(found.Data)
+	return &dyn.OpResult[TDomain]{Data: result, HasData: true}, nil
+}
+
+// func Update[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
+// 	ctx corectx.Context, repo dyn.BaseRepository, domainModel dmodel.DynamicModelGetter,
+// ) (*dyn.OpResult[TDomain], error) {
+// 	data := domainModel.GetFieldData()
+// 	updated, err := repo.Update(ctx, data)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if len(updated.ClientErrors) > 0 {
+// 		return &dyn.OpResult[TDomain]{ClientErrors: updated.ClientErrors}, nil
+// 	}
+
+// 	var result TDomain
+// 	TDomainPtr(&result).SetFieldData(updated.Data)
+// 	return &dyn.OpResult[TDomain]{Data: result, HasData: true}, nil
+// }
+
+func DeleteOne(
+	ctx corectx.Context, dynamicRepo dyn.BaseRepository, keys dmodel.DynamicFields,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	delResult, err := dynamicRepo.DeleteOne(ctx, keys)
+	if err != nil {
+		return nil, err
+	}
+	if delResult.ClientErrors.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: delResult.ClientErrors}, nil
+	}
+	if !delResult.HasData {
+		return &dyn.OpResult[dyn.MutateResultData]{HasData: false}, nil
+	}
+	return &dyn.OpResult[dyn.MutateResultData]{
+		Data: dyn.MutateResultData{
+			AffectedCount: delResult.Data,
+			AffectedAt:    model.NewModelDateTime(),
+		},
+		HasData: true,
+	}, nil
+}
+
+func Exists(
+	ctx corectx.Context, dynamicRepo dyn.BaseRepository, keys []dmodel.DynamicFields,
+) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	return dynamicRepo.Exists(ctx, keys)
+}
+
+func Insert(
+	ctx corectx.Context, dynamicRepo dyn.BaseRepository, domainModel dmodel.DynamicModelGetter,
+) (*dyn.OpResult[int], error) {
 	data := domainModel.GetFieldData()
-	creation, err := repo.Insert(ctx, data)
+	creation, err := dynamicRepo.Insert(ctx, data)
 	if err != nil {
 		return nil, err
 	}
 	if len(creation.ClientErrors) > 0 {
-		return &crud.OpResult[TDomain]{ClientErrors: creation.ClientErrors}, nil
+		return &dyn.OpResult[int]{ClientErrors: creation.ClientErrors}, nil
 	}
 
-	var result TDomain
-	TDomainPtr(&result).SetFieldData(creation.Data)
-	return &crud.OpResult[TDomain]{Data: result, IsEmpty: false}, nil
+	return &dyn.OpResult[int]{Data: creation.Data, HasData: true}, nil
 }
 
-func GetOne[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, repo coredyn.BaseRepository, findParam coredyn.RepoGetOneParam,
-) (*crud.OpResult[TDomain], error) {
-	found, err := repo.GetOne(ctx, findParam)
+func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
+	ctx corectx.Context, dynamicRepo dyn.BaseRepository, searchParam dyn.RepoSearchParam,
+) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error) {
+	found, err := dynamicRepo.Search(ctx, searchParam)
 	if err != nil {
 		return nil, err
 	}
 	if len(found.ClientErrors) > 0 {
-		return &crud.OpResult[TDomain]{ClientErrors: found.ClientErrors}, nil
-	}
-	if found.IsEmpty {
-		return &crud.OpResult[TDomain]{IsEmpty: true}, nil
-	}
-	var result TDomain
-	TDomainPtr(&result).SetFieldData(found.Data)
-	return &crud.OpResult[TDomain]{Data: result, IsEmpty: false}, nil
-}
-
-func Search[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, repo coredyn.BaseRepository, searchParam coredyn.RepoSearchParam,
-) (*crud.OpResult[crud.PagedResultData[TDomain]], error) {
-	found, err := repo.Search(ctx, searchParam)
-	if err != nil {
-		return nil, err
-	}
-	if len(found.ClientErrors) > 0 {
-		return &crud.OpResult[crud.PagedResultData[TDomain]]{ClientErrors: found.ClientErrors}, nil
+		return &dyn.OpResult[dyn.PagedResultData[TDomain]]{ClientErrors: found.ClientErrors}, nil
 	}
 	paged := found.Data
 	items := make([]TDomain, len(paged.Items))
@@ -61,74 +103,37 @@ func Search[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
 		TDomainPtr(&m).SetFieldData(record)
 		items[i] = m
 	}
-	out := crud.PagedResultData[TDomain]{
+	out := dyn.PagedResultData[TDomain]{
 		Items: items,
 		Total: paged.Total,
 		Page:  paged.Page,
 		Size:  paged.Size,
 	}
-	return &crud.OpResult[crud.PagedResultData[TDomain]]{Data: out, IsEmpty: len(items) == 0}, nil
-}
 
-func Update[TDomain any, TDomainPtr coredyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, repo coredyn.BaseRepository, domainModel dmodel.DynamicModelGetter,
-) (*crud.OpResult[TDomain], error) {
-	data := domainModel.GetFieldData()
-	updated, err := repo.Update(ctx, data)
-	if err != nil {
-		return nil, err
-	}
-	if len(updated.ClientErrors) > 0 {
-		return &crud.OpResult[TDomain]{ClientErrors: updated.ClientErrors}, nil
-	}
-
-	var result TDomain
-	TDomainPtr(&result).SetFieldData(updated.Data)
-	return &crud.OpResult[TDomain]{Data: result, IsEmpty: false}, nil
-}
-
-func DeleteOne(
-	ctx corectx.Context,
-	repo coredyn.BaseRepository,
-	keys dmodel.DynamicFields,
-) (*crud.OpResult[crud.MutateResultData], error) {
-	delResult, err := repo.DeleteOne(ctx, keys)
-	if err != nil {
-		return nil, err
-	}
-	if delResult.ClientErrors.Count() > 0 {
-		return &crud.OpResult[crud.MutateResultData]{ClientErrors: delResult.ClientErrors}, nil
-	}
-	if delResult.IsEmpty {
-		return &crud.OpResult[crud.MutateResultData]{IsEmpty: true}, nil
-	}
-	return &crud.OpResult[crud.MutateResultData]{
-		Data: crud.MutateResultData{
-			AffectedCount: delResult.Data,
-			AffectedAt:    model.NewModelDateTime(),
-		},
+	return &dyn.OpResult[dyn.PagedResultData[TDomain]]{
+		Data:    out,
+		HasData: len(items) != 0,
 	}, nil
 }
 
-func UpdateMutate(
-	ctx corectx.Context,
-	repo coredyn.BaseRepository,
-	data dmodel.DynamicFields,
-) (*crud.OpResult[crud.MutateResultData], error) {
-	updatedRes, err := repo.Update(ctx, data)
+func Update(
+	ctx corectx.Context, dynamicRepo dyn.BaseRepository, data dmodel.DynamicFields,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	updatedRes, err := dynamicRepo.Update(ctx, data)
 	if err != nil {
 		return nil, err
 	}
 	if len(updatedRes.ClientErrors) > 0 {
-		return &crud.OpResult[crud.MutateResultData]{ClientErrors: updatedRes.ClientErrors}, nil
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: updatedRes.ClientErrors}, nil
 	}
 	updatedAt, etag := readUpdatedAtAndEtagFromFields(updatedRes.Data)
-	return &crud.OpResult[crud.MutateResultData]{
-		Data: crud.MutateResultData{
+	return &dyn.OpResult[dyn.MutateResultData]{
+		Data: dyn.MutateResultData{
 			AffectedCount: 1,
 			AffectedAt:    updatedAt,
 			Etag:          etag,
 		},
+		HasData: true,
 	}, nil
 }
 

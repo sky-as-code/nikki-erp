@@ -1,35 +1,134 @@
 package domain
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-type HierarchyLevel struct {
-	model.ModelBase
-	model.AuditableBase
+const (
+	HierarchyLevelSchemaName = "identity.hierarchy_level"
+	HierFieldName            = "name"
+	HierFieldParentId        = "parent_id"
+	HierFieldOrgId           = "org_id"
+	HierFieldUsers           = "users"
 
-	Name     *string
-	ParentId *model.Id
-	OrgId    *model.Id
-	ScopeRef *model.Id `json:"scopeRef,omitempty" model:"-"`
+	HierEdgeChildren = "children"
+	HierEdgeParent   = "parent"
+	HierEdgeOrg      = "org"
+)
 
-	Org      *Organization    `json:"org,omitempty" model:"-"`
-	Parent   *HierarchyLevel  `json:"parent,omitempty" model:"-"`
-	Children []HierarchyLevel `json:"children,omitempty" model:"-"`
+func HierarchyLevelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(HierarchyLevelSchemaName).
+		Label(model.LangJson{"en-US": "Hierarchy Level"}).
+		TableName("ident_hierarchy_levels").
+		PartialUnique(HierFieldName, HierFieldOrgId).
+		ShouldBuildDb().
+		Extend(basemodel.BaseModelSchemaBuilder()).
+		Field(
+			dmodel.DefineField().
+				Name(HierFieldName).
+				Label(model.LangJson{"en-US": "Name"}).
+				DataType(dmodel.FieldDataTypeString(1, 50)).
+				RequiredForCreate(),
+		).
+		Extend(basemodel.VersionedModelSchemaBuilder()).
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		Field(
+			dmodel.DefineField().
+				Name(HierFieldParentId).
+				DataType(dmodel.FieldDataTypeUlid()),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(HierFieldOrgId).
+				Label(model.LangJson{"en-US": "Organization"}).
+				DataType(dmodel.FieldDataTypeUlid()),
+		).
+		EdgeTo(
+			dmodel.Edge(HierEdgeParent).
+				Label(model.LangJson{"en-US": "Parent Level"}).
+				ManyToOne(HierarchyLevelSchemaName, dmodel.DynamicFields{
+					HierFieldParentId: basemodel.FieldId,
+				}).
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeTo(
+			dmodel.Edge(HierEdgeOrg).
+				Label(model.LangJson{"en-US": "Org"}).
+				ManyToOne(OrganizationSchemaName, dmodel.DynamicFields{
+					HierFieldOrgId: basemodel.FieldId,
+				}).
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeFrom(
+			dmodel.Edge(HierFieldUsers).
+				Label(model.LangJson{"en-US": "Users"}).
+				Existing(UserSchemaName, UserEdgeHierarchy),
+		).
+		EdgeFrom(
+			dmodel.Edge(HierEdgeChildren).
+				Label(model.LangJson{"en-US": "Children Levels"}).
+				Existing(HierarchyLevelSchemaName, HierEdgeParent),
+		)
 }
 
-func (this *HierarchyLevel) Validate(forEdit bool) ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.Name,
-			val.NotEmptyWhen(!forEdit),
-			val.Length(1, 50),
-		),
-		model.IdPtrValidateRule(&this.ParentId, false),
-		model.IdPtrValidateRule(&this.OrgId, !forEdit),
-	}
-	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
-	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
-	return val.ApiBased.ValidateStruct(this, rules...)
+type HierarchyLevel struct {
+	fields dmodel.DynamicFields
+}
+
+func NewHierarchyLevel() *HierarchyLevel {
+	return &HierarchyLevel{fields: make(dmodel.DynamicFields)}
+}
+
+func NewHierarchyLevelFrom(src dmodel.DynamicFields) *HierarchyLevel {
+	return &HierarchyLevel{fields: src}
+}
+
+func (this HierarchyLevel) GetFieldData() dmodel.DynamicFields {
+	return this.fields
+}
+
+func (this *HierarchyLevel) SetFieldData(data dmodel.DynamicFields) {
+	this.fields = data
+}
+
+func (this HierarchyLevel) GetId() *model.Id {
+	return this.fields.GetModelId(basemodel.FieldId)
+}
+
+func (this *HierarchyLevel) SetId(v *model.Id) {
+	this.fields.SetModelId(basemodel.FieldId, v)
+}
+
+func (this HierarchyLevel) GetName() *string {
+	return this.fields.GetString(HierFieldName)
+}
+
+func (this *HierarchyLevel) SetName(v *string) {
+	this.fields.SetString(HierFieldName, v)
+}
+
+func (this HierarchyLevel) GetOrgId() *model.Id {
+	return this.fields.GetModelId(HierFieldOrgId)
+}
+
+func (this *HierarchyLevel) SetOrgId(v *model.Id) {
+	this.fields.SetModelId(HierFieldOrgId, v)
+}
+
+func (this HierarchyLevel) GetParentId() *model.Id {
+	return this.fields.GetModelId(HierFieldParentId)
+}
+
+func (this *HierarchyLevel) SetParentId(v *model.Id) {
+	this.fields.SetModelId(HierFieldParentId, v)
+}
+
+func (this HierarchyLevel) GetEtag() *model.Etag {
+	return this.fields.GetEtag(basemodel.FieldEtag)
+}
+
+func (this *HierarchyLevel) SetEtag(v *model.Etag) {
+	this.fields.SetEtag(basemodel.FieldEtag, v)
 }

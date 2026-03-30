@@ -12,7 +12,6 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/predicate"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
@@ -79,26 +78,6 @@ func (gu *GroupUpdate) SetNillableName(s *string) *GroupUpdate {
 	return gu
 }
 
-// SetOrgID sets the "org_id" field.
-func (gu *GroupUpdate) SetOrgID(s string) *GroupUpdate {
-	gu.mutation.SetOrgID(s)
-	return gu
-}
-
-// SetNillableOrgID sets the "org_id" field if the given value is not nil.
-func (gu *GroupUpdate) SetNillableOrgID(s *string) *GroupUpdate {
-	if s != nil {
-		gu.SetOrgID(*s)
-	}
-	return gu
-}
-
-// ClearOrgID clears the value of the "org_id" field.
-func (gu *GroupUpdate) ClearOrgID() *GroupUpdate {
-	gu.mutation.ClearOrgID()
-	return gu
-}
-
 // SetUpdatedAt sets the "updated_at" field.
 func (gu *GroupUpdate) SetUpdatedAt(t time.Time) *GroupUpdate {
 	gu.mutation.SetUpdatedAt(t)
@@ -134,11 +113,6 @@ func (gu *GroupUpdate) AddUsers(u ...*User) *GroupUpdate {
 	return gu.AddUserIDs(ids...)
 }
 
-// SetOrg sets the "org" edge to the Organization entity.
-func (gu *GroupUpdate) SetOrg(o *Organization) *GroupUpdate {
-	return gu.SetOrgID(o.ID)
-}
-
 // Mutation returns the GroupMutation object of the builder.
 func (gu *GroupUpdate) Mutation() *GroupMutation {
 	return gu.mutation
@@ -163,12 +137,6 @@ func (gu *GroupUpdate) RemoveUsers(u ...*User) *GroupUpdate {
 		ids[i] = u[i].ID
 	}
 	return gu.RemoveUserIDs(ids...)
-}
-
-// ClearOrg clears the "org" edge to the Organization entity.
-func (gu *GroupUpdate) ClearOrg() *GroupUpdate {
-	gu.mutation.ClearOrg()
-	return gu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -289,35 +257,6 @@ func (gu *GroupUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if gu.mutation.OrgCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   group.OrgTable,
-			Columns: []string{group.OrgColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := gu.mutation.OrgIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   group.OrgTable,
-			Columns: []string{group.OrgColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	_spec.AddModifiers(gu.modifiers...)
 	if n, err = sqlgraph.UpdateNodes(ctx, gu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -388,26 +327,6 @@ func (guo *GroupUpdateOne) SetNillableName(s *string) *GroupUpdateOne {
 	return guo
 }
 
-// SetOrgID sets the "org_id" field.
-func (guo *GroupUpdateOne) SetOrgID(s string) *GroupUpdateOne {
-	guo.mutation.SetOrgID(s)
-	return guo
-}
-
-// SetNillableOrgID sets the "org_id" field if the given value is not nil.
-func (guo *GroupUpdateOne) SetNillableOrgID(s *string) *GroupUpdateOne {
-	if s != nil {
-		guo.SetOrgID(*s)
-	}
-	return guo
-}
-
-// ClearOrgID clears the value of the "org_id" field.
-func (guo *GroupUpdateOne) ClearOrgID() *GroupUpdateOne {
-	guo.mutation.ClearOrgID()
-	return guo
-}
-
 // SetUpdatedAt sets the "updated_at" field.
 func (guo *GroupUpdateOne) SetUpdatedAt(t time.Time) *GroupUpdateOne {
 	guo.mutation.SetUpdatedAt(t)
@@ -443,11 +362,6 @@ func (guo *GroupUpdateOne) AddUsers(u ...*User) *GroupUpdateOne {
 	return guo.AddUserIDs(ids...)
 }
 
-// SetOrg sets the "org" edge to the Organization entity.
-func (guo *GroupUpdateOne) SetOrg(o *Organization) *GroupUpdateOne {
-	return guo.SetOrgID(o.ID)
-}
-
 // Mutation returns the GroupMutation object of the builder.
 func (guo *GroupUpdateOne) Mutation() *GroupMutation {
 	return guo.mutation
@@ -472,12 +386,6 @@ func (guo *GroupUpdateOne) RemoveUsers(u ...*User) *GroupUpdateOne {
 		ids[i] = u[i].ID
 	}
 	return guo.RemoveUserIDs(ids...)
-}
-
-// ClearOrg clears the "org" edge to the Organization entity.
-func (guo *GroupUpdateOne) ClearOrg() *GroupUpdateOne {
-	guo.mutation.ClearOrg()
-	return guo
 }
 
 // Where appends a list predicates to the GroupUpdate builder.
@@ -621,35 +529,6 @@ func (guo *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if guo.mutation.OrgCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   group.OrgTable,
-			Columns: []string{group.OrgColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := guo.mutation.OrgIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: false,
-			Table:   group.OrgTable,
-			Columns: []string{group.OrgColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(organization.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

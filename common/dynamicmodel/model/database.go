@@ -39,6 +39,9 @@ func NewCondition(field string, operator Operator, values ...any) Condition {
 }
 
 func (c Condition) Field() string {
+	if len(c) == 0 {
+		return ""
+	}
 	return fmt.Sprint(c[0])
 }
 
@@ -117,13 +120,17 @@ func NewSearchGraph() *SearchGraph {
 }
 
 type SearchGraph struct {
-	condition *Condition
+	condition Condition
 	and       []SearchNode
 	or        []SearchNode
 	order     SearchOrder
 }
 
-func (this *SearchGraph) Condition(c *Condition) *SearchGraph {
+func (this *SearchGraph) NewCondition(field string, operator Operator, values ...any) *SearchGraph {
+	return this.Condition(NewCondition(field, operator, values...))
+}
+
+func (this *SearchGraph) Condition(c Condition) *SearchGraph {
 	this.condition = c
 	this.and = nil
 	this.or = nil
@@ -178,7 +185,7 @@ func (this *SearchGraph) validate() error {
 // MarshalJSON implements json.Marshaler.
 func (this *SearchGraph) MarshalJSON() ([]byte, error) {
 	payload := struct {
-		Condition *Condition   `json:"if,omitempty"`
+		Condition Condition    `json:"if,omitempty"`
 		And       []SearchNode `json:"and,omitempty"`
 		Or        []SearchNode `json:"or,omitempty"`
 		Order     SearchOrder  `json:"order,omitempty"`
@@ -194,7 +201,7 @@ func (this *SearchGraph) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements json.Unmarshaler.
 func (this *SearchGraph) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Condition *Condition   `json:"if,omitempty"`
+		Condition Condition    `json:"if,omitempty"`
 		And       []SearchNode `json:"and,omitempty"`
 		Or        []SearchNode `json:"or,omitempty"`
 		Order     SearchOrder  `json:"order,omitempty"`
@@ -213,7 +220,7 @@ func (this *SearchGraph) UnmarshalText(text []byte) error {
 	return this.UnmarshalJSON(text)
 }
 
-func (this *SearchGraph) GetCondition() *Condition {
+func (this *SearchGraph) GetCondition() Condition {
 	return this.condition
 }
 
@@ -229,13 +236,21 @@ func (this *SearchGraph) GetOrder() SearchOrder {
 	return this.order
 }
 
+func NewSearchNode() *SearchNode {
+	return &SearchNode{}
+}
+
 type SearchNode struct {
-	condition *Condition
+	condition Condition
 	and       []SearchNode
 	or        []SearchNode
 }
 
-func (this *SearchNode) Condition(c *Condition) *SearchNode {
+func (this *SearchNode) NewCondition(field string, operator Operator, values ...any) *SearchNode {
+	return this.Condition(NewCondition(field, operator, values...))
+}
+
+func (this *SearchNode) Condition(c Condition) *SearchNode {
 	this.condition = c
 	this.and = nil
 	this.or = nil
@@ -243,18 +258,18 @@ func (this *SearchNode) Condition(c *Condition) *SearchNode {
 	return this
 }
 
-func (this *SearchNode) And(node SearchNode) *SearchNode {
+func (this *SearchNode) And(nodes ...SearchNode) *SearchNode {
 	this.condition = nil
-	this.and = []SearchNode{node}
+	this.and = nodes
 	this.or = nil
 	_ = this.validate()
 	return this
 }
 
-func (this *SearchNode) Or(node SearchNode) *SearchNode {
+func (this *SearchNode) Or(nodes ...SearchNode) *SearchNode {
 	this.condition = nil
 	this.and = nil
-	this.or = []SearchNode{node}
+	this.or = nodes
 	_ = this.validate()
 	return this
 }
@@ -280,7 +295,7 @@ func (this *SearchNode) validate() error {
 // MarshalJSON implements json.Marshaler.
 func (this *SearchNode) MarshalJSON() ([]byte, error) {
 	payload := struct {
-		Condition *Condition   `json:"if,omitempty"`
+		Condition Condition    `json:"if,omitempty"`
 		And       []SearchNode `json:"and,omitempty"`
 		Or        []SearchNode `json:"or,omitempty"`
 	}{
@@ -294,7 +309,7 @@ func (this *SearchNode) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements json.Unmarshaler.
 func (this *SearchNode) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Condition *Condition   `json:"if,omitempty"`
+		Condition Condition    `json:"if,omitempty"`
 		And       []SearchNode `json:"and,omitempty"`
 		Or        []SearchNode `json:"or,omitempty"`
 	}
@@ -307,7 +322,7 @@ func (this *SearchNode) UnmarshalJSON(data []byte) error {
 	return this.validate()
 }
 
-func (this *SearchNode) GetCondition() *Condition {
+func (this *SearchNode) GetCondition() Condition {
 	return this.condition
 }
 
@@ -328,7 +343,11 @@ func populateDbMetadata(schema *ModelSchema) error {
 	if err != nil {
 		return err
 	}
-	schemaUnique, err := validateAndCollectUniques(schema, columnSet)
+	schemaUnique, err := validateCompositeUniquesForDb(schema, columnSet)
+	if err != nil {
+		return err
+	}
+	validatedPartial, err := validatePartialUniquesForDb(schema, columnSet)
 	if err != nil {
 		return err
 	}
@@ -336,6 +355,7 @@ func populateDbMetadata(schema *ModelSchema) error {
 		return errors.Errorf("populateDbMetadata: model '%s' must define at least one primary key column", name)
 	}
 	schema.primaryKeys = append([]string{}, primaryKeys...)
+	schema.partialUniques = validatedPartial
 	schema.allUniqueKeys = append(fieldUnique, schemaUnique...)
 	if tenantKey != "" {
 		schema.tenantKey = &tenantKey
@@ -393,32 +413,140 @@ func buildDbMetadata(
 	return columnSet, primary, tenant, uniques, nil
 }
 
-func validateAndCollectUniques(
+func validateCompositeUniquesForDb(
 	schema *ModelSchema,
 	columnSet map[string]struct{},
 ) ([][]string, error) {
 	uniqueFields := schema.CompositeUniques()
 	uniqueKeys := make([][]string, 0, len(uniqueFields))
 	for _, compositeKey := range uniqueFields {
-		if len(compositeKey) == 0 {
-			continue
-		}
-		validated := make([]string, 0, len(compositeKey))
-		for _, name := range compositeKey {
-			trimmed := strings.TrimSpace(name)
-			if trimmed == "" {
-				continue
-			}
-			if _, ok := columnSet[trimmed]; !ok {
-				return nil, errors.Errorf(
-					"validateAndCollectUniques: model '%s': unknown column reference '%s' in unique constraint",
-					schema.Name(), trimmed)
-			}
-			validated = append(validated, trimmed)
+		validated, err := validateCompositeUniqueKey(schema, columnSet, compositeKey)
+		if err != nil {
+			return nil, err
 		}
 		if len(validated) > 0 {
 			uniqueKeys = append(uniqueKeys, validated)
 		}
 	}
 	return uniqueKeys, nil
+}
+
+func validateCompositeUniqueKey(
+	schema *ModelSchema,
+	columnSet map[string]struct{},
+	compositeKey []string,
+) ([]string, error) {
+	if len(compositeKey) == 0 {
+		return nil, nil
+	}
+	validated := make([]string, 0, len(compositeKey))
+	for _, name := range compositeKey {
+		trimmed := strings.TrimSpace(name)
+		if trimmed == "" {
+			continue
+		}
+		if _, ok := columnSet[trimmed]; !ok {
+			return nil, errors.Errorf(
+				"validateCompositeUniquesForDb: model '%s': unknown column reference '%s' in composite unique",
+				schema.Name(), trimmed)
+		}
+		field := schema.fields[trimmed]
+		if field != nil && !field.IsRequiredForCreate() {
+			return nil, errors.Errorf(
+				"validateCompositeUniquesForDb: model '%s': composite unique includes field '%s' which is not "+
+					"requiredForCreate; use PartialUnique() instead",
+				schema.Name(), trimmed)
+		}
+		validated = append(validated, trimmed)
+	}
+	return validated, nil
+}
+
+func validatePartialUniquesForDb(
+	schema *ModelSchema,
+	columnSet map[string]struct{},
+) ([][]string, error) {
+	raw := schema.partialUniques
+	out := make([][]string, 0, len(raw))
+	for _, pair := range raw {
+		validated, err := validatePartialUniquePair(schema, columnSet, pair)
+		if err != nil {
+			return nil, err
+		}
+		if len(validated) == 2 {
+			out = append(out, validated)
+		}
+	}
+	return out, nil
+}
+
+func validatePartialUniquePair(
+	schema *ModelSchema,
+	columnSet map[string]struct{},
+	pair []string,
+) ([]string, error) {
+	if len(pair) == 0 {
+		return nil, nil
+	}
+	a, b, err := parsePartialUniquePairNames(schema, pair)
+	if err != nil {
+		return nil, err
+	}
+	if err := ensurePartialUniqueColumnsExist(schema, columnSet, a, b); err != nil {
+		return nil, err
+	}
+	return finalizePartialUniquePair(schema, a, b)
+}
+
+func parsePartialUniquePairNames(schema *ModelSchema, pair []string) (string, string, error) {
+	if len(pair) != 2 {
+		return "", "", errors.Errorf(
+			"validatePartialUniquesForDb: model '%s': PartialUnique supports exactly two fields per key",
+			schema.Name())
+	}
+	a := strings.TrimSpace(pair[0])
+	b := strings.TrimSpace(pair[1])
+	if a == "" || b == "" {
+		return "", "", errors.Errorf(
+			"validatePartialUniquesForDb: model '%s': PartialUnique requires two non-empty field names",
+			schema.Name())
+	}
+	return a, b, nil
+}
+
+func ensurePartialUniqueColumnsExist(
+	schema *ModelSchema, columnSet map[string]struct{}, a, b string,
+) error {
+	for _, col := range []string{a, b} {
+		if _, ok := columnSet[col]; !ok {
+			return errors.Errorf(
+				"validatePartialUniquesForDb: model '%s': unknown column reference '%s' in partial unique",
+				schema.Name(), col)
+		}
+	}
+	return nil
+}
+
+func finalizePartialUniquePair(schema *ModelSchema, a, b string) ([]string, error) {
+	fa := schema.fields[a]
+	fb := schema.fields[b]
+	if fa == nil || fb == nil {
+		return nil, errors.Errorf(
+			"validatePartialUniquesForDb: model '%s': missing field for partial unique", schema.Name())
+	}
+	ra := fa.IsRequiredForCreate()
+	rb := fb.IsRequiredForCreate()
+	if ra && rb {
+		return nil, errors.Errorf(
+			"validatePartialUniquesForDb: model '%s': partial unique on '%s' and '%s': both are requiredForCreate; "+
+				"use CompositeUnique() instead",
+			schema.Name(), a, b)
+	}
+	if !ra && !rb {
+		return nil, errors.Errorf(
+			"validatePartialUniquesForDb: model '%s': partial unique on '%s' and '%s': one field must be "+
+				"requiredForCreate, the other must not",
+			schema.Name(), a, b)
+	}
+	return []string{a, b}, nil
 }

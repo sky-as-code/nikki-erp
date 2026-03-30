@@ -1,7 +1,7 @@
 meta {
   name: User Update - Empty strings - Validation errors
   type: http
-  seq: 5
+  seq: 6
 }
 
 put {
@@ -20,53 +20,9 @@ body:json {
 }
 
 script:post-response {
-  const tv4 = require('tv4');
+  const pkg = require('./scripts/error-400-fields-missing');
   
-  const schema = {
-      type: "array",
-      minItems: 4,
-      maxItems: 4,
-      items: {
-          type: "object",
-          required: ["field", "key", "message", "type"],
-          properties: {
-              field: {
-                  type: "string",
-                  enum: ["display_name", "email", "etag", "avatar_url"],
-              },
-              key: {
-                  type: "string",
-                  enum: ["common.err_invalid_length", "common.err_invalid_email"],
-              },
-              message: {
-                  type: "string",
-                  enum: ["must have length between {{.min}} and {{.max}}", "must be a valid email address"],
-              },
-              type: {
-                  type: "string",
-                  enum: ["validation"],
-              },
-              vars: {
-                type: "object",
-              }
-          },
-          additionalProperties: false,
-      },
-      additionalItems: false
-  };
-  
-  test("Status code is 400", function () {
-      expect(res.getStatus()).to.equal(400);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-    console.log({body: res.getBody()});
-    const valid = tv4.validate(res.getBody(), schema);
-    tv4.error && console.error(tv4.error);
-    expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;  
-  });
-  
+  pkg.testMissingFields('etag');
   
 }
 

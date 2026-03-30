@@ -80,6 +80,26 @@ func (uu *UserUpdate) SetNillableEmail(s *string) *UserUpdate {
 	return uu
 }
 
+// SetHierarchyID sets the "hierarchy_id" field.
+func (uu *UserUpdate) SetHierarchyID(s string) *UserUpdate {
+	uu.mutation.SetHierarchyID(s)
+	return uu
+}
+
+// SetNillableHierarchyID sets the "hierarchy_id" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableHierarchyID(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetHierarchyID(*s)
+	}
+	return uu
+}
+
+// ClearHierarchyID clears the value of the "hierarchy_id" field.
+func (uu *UserUpdate) ClearHierarchyID() *UserUpdate {
+	uu.mutation.ClearHierarchyID()
+	return uu
+}
+
 // SetEtag sets the "etag" field.
 func (uu *UserUpdate) SetEtag(s string) *UserUpdate {
 	uu.mutation.SetEtag(s)
@@ -143,19 +163,9 @@ func (uu *UserUpdate) AddGroups(g ...*Group) *UserUpdate {
 	return uu.AddGroupIDs(ids...)
 }
 
-// AddHierarchyIDs adds the "hierarchy" edge to the HierarchyLevel entity by IDs.
-func (uu *UserUpdate) AddHierarchyIDs(ids ...string) *UserUpdate {
-	uu.mutation.AddHierarchyIDs(ids...)
-	return uu
-}
-
-// AddHierarchy adds the "hierarchy" edges to the HierarchyLevel entity.
-func (uu *UserUpdate) AddHierarchy(h ...*HierarchyLevel) *UserUpdate {
-	ids := make([]string, len(h))
-	for i := range h {
-		ids[i] = h[i].ID
-	}
-	return uu.AddHierarchyIDs(ids...)
+// SetHierarchy sets the "hierarchy" edge to the HierarchyLevel entity.
+func (uu *UserUpdate) SetHierarchy(h *HierarchyLevel) *UserUpdate {
+	return uu.SetHierarchyID(h.ID)
 }
 
 // AddOrgIDs adds the "orgs" edge to the Organization entity by IDs.
@@ -199,25 +209,10 @@ func (uu *UserUpdate) RemoveGroups(g ...*Group) *UserUpdate {
 	return uu.RemoveGroupIDs(ids...)
 }
 
-// ClearHierarchy clears all "hierarchy" edges to the HierarchyLevel entity.
+// ClearHierarchy clears the "hierarchy" edge to the HierarchyLevel entity.
 func (uu *UserUpdate) ClearHierarchy() *UserUpdate {
 	uu.mutation.ClearHierarchy()
 	return uu
-}
-
-// RemoveHierarchyIDs removes the "hierarchy" edge to HierarchyLevel entities by IDs.
-func (uu *UserUpdate) RemoveHierarchyIDs(ids ...string) *UserUpdate {
-	uu.mutation.RemoveHierarchyIDs(ids...)
-	return uu
-}
-
-// RemoveHierarchy removes "hierarchy" edges to HierarchyLevel entities.
-func (uu *UserUpdate) RemoveHierarchy(h ...*HierarchyLevel) *UserUpdate {
-	ids := make([]string, len(h))
-	for i := range h {
-		ids[i] = h[i].ID
-	}
-	return uu.RemoveHierarchyIDs(ids...)
 }
 
 // ClearOrgs clears all "orgs" edges to the Organization entity.
@@ -357,39 +352,23 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if uu.mutation.HierarchyCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   user.HierarchyTable,
-			Columns: user.HierarchyPrimaryKey,
+			Columns: []string{user.HierarchyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uu.mutation.RemovedHierarchyIDs(); len(nodes) > 0 && !uu.mutation.HierarchyCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.HierarchyTable,
-			Columns: user.HierarchyPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := uu.mutation.HierarchyIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   user.HierarchyTable,
-			Columns: user.HierarchyPrimaryKey,
+			Columns: []string{user.HierarchyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
@@ -515,6 +494,26 @@ func (uuo *UserUpdateOne) SetNillableEmail(s *string) *UserUpdateOne {
 	return uuo
 }
 
+// SetHierarchyID sets the "hierarchy_id" field.
+func (uuo *UserUpdateOne) SetHierarchyID(s string) *UserUpdateOne {
+	uuo.mutation.SetHierarchyID(s)
+	return uuo
+}
+
+// SetNillableHierarchyID sets the "hierarchy_id" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableHierarchyID(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetHierarchyID(*s)
+	}
+	return uuo
+}
+
+// ClearHierarchyID clears the value of the "hierarchy_id" field.
+func (uuo *UserUpdateOne) ClearHierarchyID() *UserUpdateOne {
+	uuo.mutation.ClearHierarchyID()
+	return uuo
+}
+
 // SetEtag sets the "etag" field.
 func (uuo *UserUpdateOne) SetEtag(s string) *UserUpdateOne {
 	uuo.mutation.SetEtag(s)
@@ -578,19 +577,9 @@ func (uuo *UserUpdateOne) AddGroups(g ...*Group) *UserUpdateOne {
 	return uuo.AddGroupIDs(ids...)
 }
 
-// AddHierarchyIDs adds the "hierarchy" edge to the HierarchyLevel entity by IDs.
-func (uuo *UserUpdateOne) AddHierarchyIDs(ids ...string) *UserUpdateOne {
-	uuo.mutation.AddHierarchyIDs(ids...)
-	return uuo
-}
-
-// AddHierarchy adds the "hierarchy" edges to the HierarchyLevel entity.
-func (uuo *UserUpdateOne) AddHierarchy(h ...*HierarchyLevel) *UserUpdateOne {
-	ids := make([]string, len(h))
-	for i := range h {
-		ids[i] = h[i].ID
-	}
-	return uuo.AddHierarchyIDs(ids...)
+// SetHierarchy sets the "hierarchy" edge to the HierarchyLevel entity.
+func (uuo *UserUpdateOne) SetHierarchy(h *HierarchyLevel) *UserUpdateOne {
+	return uuo.SetHierarchyID(h.ID)
 }
 
 // AddOrgIDs adds the "orgs" edge to the Organization entity by IDs.
@@ -634,25 +623,10 @@ func (uuo *UserUpdateOne) RemoveGroups(g ...*Group) *UserUpdateOne {
 	return uuo.RemoveGroupIDs(ids...)
 }
 
-// ClearHierarchy clears all "hierarchy" edges to the HierarchyLevel entity.
+// ClearHierarchy clears the "hierarchy" edge to the HierarchyLevel entity.
 func (uuo *UserUpdateOne) ClearHierarchy() *UserUpdateOne {
 	uuo.mutation.ClearHierarchy()
 	return uuo
-}
-
-// RemoveHierarchyIDs removes the "hierarchy" edge to HierarchyLevel entities by IDs.
-func (uuo *UserUpdateOne) RemoveHierarchyIDs(ids ...string) *UserUpdateOne {
-	uuo.mutation.RemoveHierarchyIDs(ids...)
-	return uuo
-}
-
-// RemoveHierarchy removes "hierarchy" edges to HierarchyLevel entities.
-func (uuo *UserUpdateOne) RemoveHierarchy(h ...*HierarchyLevel) *UserUpdateOne {
-	ids := make([]string, len(h))
-	for i := range h {
-		ids[i] = h[i].ID
-	}
-	return uuo.RemoveHierarchyIDs(ids...)
 }
 
 // ClearOrgs clears all "orgs" edges to the Organization entity.
@@ -822,39 +796,23 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if uuo.mutation.HierarchyCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   user.HierarchyTable,
-			Columns: user.HierarchyPrimaryKey,
+			Columns: []string{user.HierarchyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
 			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uuo.mutation.RemovedHierarchyIDs(); len(nodes) > 0 && !uuo.mutation.HierarchyCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   user.HierarchyTable,
-			Columns: user.HierarchyPrimaryKey,
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
 	if nodes := uuo.mutation.HierarchyIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
+			Rel:     sqlgraph.M2O,
 			Inverse: false,
 			Table:   user.HierarchyTable,
-			Columns: user.HierarchyPrimaryKey,
+			Columns: []string{user.HierarchyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),

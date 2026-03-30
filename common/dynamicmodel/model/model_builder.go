@@ -108,7 +108,28 @@ func (this *ModelSchemaBuilder) Extend(builder *ModelSchemaBuilder) *ModelSchema
 	}
 	this.schema.relations = append(this.schema.relations, builder.schema.relations...)
 	this.schema.compositeUniques = append(this.schema.compositeUniques, builder.schema.compositeUniques...)
+	this.schema.partialUniques = append(this.schema.partialUniques, builder.schema.partialUniques...)
+	this.schema.exclusiveFieldGroups = append(
+		this.schema.exclusiveFieldGroups, builder.schema.exclusiveFieldGroups...)
 	return this
+}
+
+// ExclusiveFieldGroup registers one exclusive group: exactly one of the listed fields must be
+// non-empty on validate. The slice may contain any number of field names (minimum two). Call
+// multiple times to register multiple independent groups. Each name must exist on the schema
+// when Build runs.
+func (this *ModelSchemaBuilder) ExclusiveFieldGroup(fieldNames []string) *ModelSchemaBuilder {
+	if len(fieldNames) < 2 {
+		panic(errors.New("ExclusiveFieldGroup: at least two field names are required"))
+	}
+	group := append([]string{}, fieldNames...)
+	this.schema.exclusiveFieldGroups = append(this.schema.exclusiveFieldGroups, group)
+	return this
+}
+
+// ExclusiveFields is equivalent to ExclusiveFieldGroup(fieldNames) for a variadic argument list.
+func (this *ModelSchemaBuilder) ExclusiveFields(fieldNames ...string) *ModelSchemaBuilder {
+	return this.ExclusiveFieldGroup(fieldNames)
 }
 
 func (this *ModelSchemaBuilder) addImplicitEdgeField(rel *ModelRelation) {
@@ -125,9 +146,69 @@ func (this *ModelSchemaBuilder) TableName(tableName string) *ModelSchemaBuilder 
 	return this
 }
 
+func (this *ModelSchemaBuilder) EdgeFrom(rb *RelationBuilder) *ModelSchemaBuilder {
+	rel := rb.Build()
+	if rel.InversePeerSchemaName == "" || rel.InversePeerEdgeName == "" {
+		panic(errors.New("EdgeFrom: Existing(srcSchemaName, srcEdgeName) is required"))
+	}
+	if rel.RelationType != "" {
+		panic(errors.New("EdgeFrom: do not set relation type; it is derived from the peer EdgeTo"))
+	}
+	if rel.Edge == "" {
+		panic(errors.New("EdgeFrom: edge name is required"))
+	}
+	this.schema.relations = append(this.schema.relations, *rel)
+	return this
+}
+
+func (this *ModelSchemaBuilder) EdgeTo(rb *RelationBuilder) *ModelSchemaBuilder {
+	rel := rb.Build()
+	if rel.RelationType == RelationTypeManyToMany {
+		this.validateManyToManyCascade(*rel)
+		if rel.OnDelete == "" {
+			rel.OnDelete = RelationCascadeNoAction
+		}
+		if rel.OnUpdate == "" {
+			rel.OnUpdate = RelationCascadeNoAction
+		}
+		// Will be set by SchemaRegistry.FinalizeRelations()
+		rel.SrcField = ""
+		rel.DestField = ""
+	}
+	this.schema.relations = append(this.schema.relations, *rel)
+	if rel.Edge != "" {
+		this.addImplicitEdgeField(rel)
+	}
+	return this
+}
+
+func (this *ModelSchemaBuilder) validateManyToManyCascade(rel ModelRelation) {
+	if rel.OnDelete != "" && rel.OnDelete != RelationCascadeNoAction &&
+		rel.OnDelete != RelationCascadeCascade {
+		panic(errors.Errorf(
+			"validateManyToManyCascade: relation '%s': OnDelete must be NO ACTION or CASCADE", rel.Edge))
+	}
+	if rel.OnUpdate != "" && rel.OnUpdate != RelationCascadeNoAction &&
+		rel.OnUpdate != RelationCascadeCascade {
+		panic(errors.Errorf(
+			"validateManyToManyCascade: relation '%s': OnUpdate must be NO ACTION or CASCADE", rel.Edge))
+	}
+}
+
 func (this *ModelSchemaBuilder) CompositeUnique(composite ...string) *ModelSchemaBuilder {
 	if len(composite) > 0 {
 		this.schema.compositeUniques = append(this.schema.compositeUniques, composite)
+	}
+	return this
+}
+
+// PartialUnique registers a partial unique index on two columns: exactly one must be requiredForCreate
+// (NOT NULL) and the other nullable. Enforced in Build() when ShouldBuildDb is set.
+func (this *ModelSchemaBuilder) PartialUnique(field1, field2 string) *ModelSchemaBuilder {
+	a := strings.TrimSpace(field1)
+	b := strings.TrimSpace(field2)
+	if a != "" && b != "" {
+		this.schema.partialUniques = append(this.schema.partialUniques, []string{a, b})
 	}
 	return this
 }
@@ -139,10 +220,29 @@ func (this *ModelSchemaBuilder) SetCompositeUniques(allUniques [][]string) *Mode
 
 func (this *ModelSchemaBuilder) Build() *ModelSchema {
 	schema := &this.schema
+	if err := validateExclusiveFieldGroups(schema); err != nil {
+		panic(errors.Wrap(err, "Build"))
+	}
 	if this.shouldBuildDb {
 		ft.PanicOnErr(populateDbMetadata(schema))
 	}
 	return schema
+}
+
+func validateExclusiveFieldGroups(schema *ModelSchema) error {
+	for gi, group := range schema.exclusiveFieldGroups {
+		if len(group) < 2 {
+			return errors.Errorf("exclusive field group %d: at least two field names required", gi)
+		}
+		for _, name := range group {
+			if _, ok := schema.Field(name); !ok {
+				return errors.Errorf(
+					"exclusive field group %d: field %q is not defined on schema %q",
+					gi, name, schema.name)
+			}
+		}
+	}
+	return nil
 }
 
 func copyField(schema *ModelSchema, fieldName string) *FieldBuilder {
@@ -382,32 +482,38 @@ func (this *RelationBuilder) Label(label model.LangJson) *RelationBuilder {
 	return this
 }
 
-func (this *RelationBuilder) OneToOne(schemaName string, destField string) *RelationBuilder {
+func (this *RelationBuilder) OneToOne(destSchemaName string, srcDestKeyMap DynamicFields) *RelationBuilder {
 	this.relation.RelationType = RelationTypeOneToOne
-	this.relation.DestSchemaName = schemaName
-	this.relation.DestField = destField
+	this.relation.DestSchemaName = strings.TrimSpace(destSchemaName)
+	this.relation.UnvalidatedFkMap = srcDestKeyMap
 	return this
 }
 
-func (this *RelationBuilder) OneToMany(schemaName string, destField string) *RelationBuilder {
+func (this *RelationBuilder) OneToMany(destSchemaName string, srcDestKeyMap DynamicFields) *RelationBuilder {
 	this.relation.RelationType = RelationTypeOneToMany
-	this.relation.DestSchemaName = schemaName
-	this.relation.DestField = destField
+	this.relation.DestSchemaName = strings.TrimSpace(destSchemaName)
+	this.relation.UnvalidatedFkMap = srcDestKeyMap
 	return this
 }
 
-func (this *RelationBuilder) ManyToOne(schemaName string, targetField string) *RelationBuilder {
+func (this *RelationBuilder) ManyToOne(destSchemaName string, srcDestKeyMap DynamicFields) *RelationBuilder {
 	this.relation.RelationType = RelationTypeManyToOne
-	this.relation.DestSchemaName = schemaName
-	this.relation.DestField = targetField
+	this.relation.DestSchemaName = strings.TrimSpace(destSchemaName)
+	this.relation.UnvalidatedFkMap = srcDestKeyMap
 	return this
 }
 
-func (this *RelationBuilder) ManyToMany(throughTableName string, throughSrcCol string, throughDestCol string) *RelationBuilder {
+func (this *RelationBuilder) Existing(srcSchemaName, srcEdgeName string) *RelationBuilder {
+	this.relation.InversePeerSchemaName = strings.TrimSpace(srcSchemaName)
+	this.relation.InversePeerEdgeName = strings.TrimSpace(srcEdgeName)
+	return this
+}
+
+func (this *RelationBuilder) ManyToMany(peerSchemaName, throughSchemaName, srcFieldPrefix string) *RelationBuilder {
 	this.relation.RelationType = RelationTypeManyToMany
-	this.relation.ThroughTableName = throughTableName
-	this.relation.ThroughSrcCol = throughSrcCol
-	this.relation.ThroughDestCol = throughDestCol
+	this.relation.DestSchemaName = peerSchemaName
+	this.relation.M2mThroughSchemaName = throughSchemaName
+	this.relation.M2mSrcFieldPrefix = srcFieldPrefix
 	return this
 }
 

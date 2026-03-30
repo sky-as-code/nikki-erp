@@ -49,6 +49,7 @@ type RepoFindByIdParam interface {
 type PagingOptions = db.PagingOptions
 type PagedResult[T any] = db.PagedResult[T]
 
+// Deprecated: Use common/crud.OpResult instead
 type OpResult[TData any] struct {
 	Data TData `json:"data"`
 
@@ -68,6 +69,7 @@ func (this OpResult[TData]) GetHasData() bool {
 	return this.HasData
 }
 
+// Deprecated: Use common/crud.OpResult instead
 type EntityOpResult[TData any] struct {
 	Data TData `json:"data"`
 
@@ -79,14 +81,17 @@ type EntityOpResult[TData any] struct {
 	ClientError *ft.ClientError `json:"error,omitempty"`
 }
 
+// Deprecated: OpResult[MutateResultData]
 type DeletionResultData struct {
 	Id           model.Id  `json:"id"`
 	DeletedAt    time.Time `json:"deletedAt"`
 	DeletedCount *int      `json:"deletedCount,omitempty"`
 }
 
+// Deprecated: OpResult[MutateResultData]
 type DeletionResult = OpResult[*DeletionResultData]
 
+// Deprecated: OpResult[MutateResultData]
 func NewSuccessDeletionResult(id model.Id, deletedCount ...*int) *DeletionResult {
 	var del *int
 	if len(deletedCount) > 0 {
@@ -102,6 +107,7 @@ func NewSuccessDeletionResult(id model.Id, deletedCount ...*int) *DeletionResult
 	}
 }
 
+// Deprecated: ExistsResultData
 type ExistsResult = OpResult[bool]
 
 func NewSuccessExistsResult(isExisting bool) *ExistsResult {
