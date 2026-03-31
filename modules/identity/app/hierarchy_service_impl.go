@@ -51,7 +51,7 @@ func (this *HierarchyServiceImpl) DeleteHierarchyLevel(
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete hierarchy level",
 		DbRepoGetter: this.hierarchyRepo2,
-		Cmd:          dyn.DeleteOneQuery(cmd),
+		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
 }
 

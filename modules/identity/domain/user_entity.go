@@ -81,7 +81,7 @@ func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			dmodel.DefineField().
 				Name(UserFieldDisplayName).
 				Label(model.LangJson{"en-US": "Display Name"}).
-				DataType(dmodel.FieldDataTypeString(3, model.MODEL_RULE_LONG_NAME_LENGTH)).
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(

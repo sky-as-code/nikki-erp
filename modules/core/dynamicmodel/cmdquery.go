@@ -40,7 +40,7 @@ type CreateParam[
 	ValidateExtra ValidateExtraFunc[TDomainPtr]
 }
 
-type DeleteOneQuery struct {
+type DeleteOneCommand struct {
 	Id model.Id `json:"id" param:"id"`
 }
 type ExistsQuery struct {

@@ -12,109 +12,56 @@ post {
 
 body:json {
   {
-      "name": "Manager team",
-      "description": "For managers and team leaders"
+      "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}}",
+      "description": "{{$randomLoremParagraphs}}"
   }
-}
-
-script:pre-request {
-  const rawBody = req.getBody().raw;
-  const payload = JSON.parse(rawBody);
-  
-  // Generate a 6-char alphanumeric string
-  function randomString(length = 6) {
-      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let result = '';
-      for (let i = 0; i < length; i++) {
-          result += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return result;
-  }
-  
-  const rand = randomString();
-  
-  if (payload.name) {
-      payload.name += ' ' + rand;
-  }
-  if (payload.description) {
-      payload.description += ' ' + rand;
-  }
-  
-  // Write modified payload back to request
-  req.getBody().raw = JSON.stringify(payload, null, 2);
-  
 }
 
 script:post-response {
+  const pkg = require('./scripts/common-test-response');
+  
   const schema = {
-      type: "object",
-      properties: {
-          items: {
-              type: "array",
-              items: {
-                  type: "object",
-                  properties: {
-                      id: {
-                          type: "string",
-                          minLength: 1,
-                      },
-                      createdAt: {
-                          type: "integer",
-                          minimum: 1,
-                          description: "Unix timestamp in milliseconds"
-                      },
-                      name: {
-                          type: "string",
-                          minLength: 1,
-                      },
-                      description: {
-                          type: "string",
-                          minLength: 1,
-                      },
-                      etag: {
-                          type: "string",
-                          minLength: 1,
-                      },
-                      updatedAt: {
-                          type: "integer",
-                          minimum: 1,
-                          description: "Unix timestamp in milliseconds"
-                      }
-                  },
-                  required: ["id", "createdAt", "name", "etag"],
-                  additionalProperties: false
-              }
-          },
-          total: {
-              type: "integer",
-              minimum: 0
-          },
-          page: {
-              type: "integer",
-              minimum: 0
-          },
-          size: {
-              type: "integer",
-              minimum: 1
-          }
+    type: 'object',
+    required: ['id', 'description', 'created_at', 'name', 'etag', 'is_archived'],
+    properties: {
+      id: {
+        type: 'string',
+        minLength: 1,
       },
-      required: ["items", "total", "page", "size"]
+      created_at: {
+        type: "string",
+        minLength: 20, //"2026-03-23T06:53:01Z"
+      },
+      name: {
+        type: 'string',
+        minLength: 1,
+      },
+      description: {
+        type: 'string',
+        minLength: 1,
+      },
+      etag: {
+        type: 'string',
+        minLength: 1,
+      },
+      is_archived: {
+        type: "boolean",
+      },
+      updated_at: {
+        type: "string",
+        minLength: 20, //"2026-03-23T06:53:01Z"
+      },
+    },
+    additionalProperties: false,
   };
-  bru.setVar("search_schema", schema);
   
-  /*
-   * Configure loop
-   */
-  const LOOP_COUNT = 100;
-  bru.setVar("loop_count", LOOP_COUNT);
-  
-  const GroupSearch_CreateTestData_Loop_RequestId = "347c2615-00f4-4024-b1f7-68989b1b2129"
-  
-  console.log(`Creating ${LOOP_COUNT} test records`)
-  bru.runner.setNextRequest(GroupSearch_CreateTestData_Loop_RequestId);
-  
+  pkg.initTestData(
+    'Group Search', schema,
+    'Group Search - Create test data - Loop 50',
+  );
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

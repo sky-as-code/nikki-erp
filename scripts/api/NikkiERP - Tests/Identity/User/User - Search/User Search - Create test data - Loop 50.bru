@@ -1,0 +1,38 @@
+meta {
+  name: User Search - Create test data - Loop 50
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "display_name": "Tester {{$randomFirstName}} {{loop_count}}",
+      "email": "{{loop_count}}-{{$randomEmail}}"
+  }
+}
+
+script:pre-request {
+  const body = req.getBody();
+  console.log('User Search: Creating test user: ', bru.interpolate(body.displayName));
+}
+
+script:post-response {
+  const pkg = require('./scripts/common-test-response');
+  
+  pkg.loopTestData(
+    'User Search - Create test data - Loop 50',
+    'User Search - No criteria, No paging - Success',
+  );
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

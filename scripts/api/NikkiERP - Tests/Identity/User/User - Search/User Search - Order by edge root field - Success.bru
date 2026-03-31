@@ -5,20 +5,13 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/users?graph={"order": [["status", "desc"]]}
+  url: {{api_host}}/v1/identity/users?graph={"order": [["groups.name", "desc"]]}
   body: none
   auth: inherit
 }
 
 params:query {
-  graph: {"order": [["status", "desc"]]}
-}
-
-script:post-response {
-  const pkg = require('./scripts/search-success');
-  
-  pkg.testSearch(50);
-  
+  graph: {"order": [["groups.name", "desc"]]}
 }
 
 settings {

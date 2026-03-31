@@ -51,7 +51,7 @@ var deleteUserCommandType = cqrs.RequestType{
 	Action:    "delete",
 }
 
-type DeleteUserCommand dyn.DeleteOneQuery
+type DeleteUserCommand dyn.DeleteOneCommand
 
 func (DeleteUserCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteUserCommandType

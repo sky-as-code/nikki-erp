@@ -106,7 +106,7 @@ func (this *UserServiceImpl) DeleteUser(ctx corectx.Context, cmd it.DeleteUserCo
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete user",
 		DbRepoGetter: this.userRepo2,
-		Cmd:          dyn.DeleteOneQuery(cmd),
+		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
 }
 

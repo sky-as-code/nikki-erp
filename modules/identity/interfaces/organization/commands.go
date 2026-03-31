@@ -48,7 +48,7 @@ var deleteOrganizationCommandType = cqrs.RequestType{
 	Action:    "deleteOrg",
 }
 
-type DeleteOrgCommand dyn.DeleteOneQuery
+type DeleteOrgCommand dyn.DeleteOneCommand
 
 func (DeleteOrgCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteOrganizationCommandType

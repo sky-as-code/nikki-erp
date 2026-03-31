@@ -94,7 +94,7 @@ func Create[
 type DeleteOneParam struct {
 	Action       string
 	DbRepoGetter coredyn.BaseRepoGetter
-	Cmd          dyn.DeleteOneQuery
+	Cmd          dyn.DeleteOneCommand
 }
 
 func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *dyn.OpResult[dyn.MutateResultData], err error) {
@@ -111,7 +111,7 @@ func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *dyn.OpResult[
 		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, nil
 	}
 
-	cmd := *(sanitizedFields.(*dyn.DeleteOneQuery))
+	cmd := *(sanitizedFields.(*dyn.DeleteOneCommand))
 	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
 	delResult, err := baserepo.DeleteOne(ctx, dynamicRepo, dmodel.DynamicFields{
 		basemodel.FieldId: cmd.Id,

@@ -5,7 +5,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Launch Program",
+			"name": "Main Program",
 			"type": "go",
 			"request": "launch",
 			"mode": "debug",
@@ -15,6 +15,26 @@
 				"WORKING_DIR": "${workspaceRoot}",
 				"GENERAL_LOG_LEVEL": "debug",
 			}
+		},
+		{
+			"name": "Migration",
+			"type": "go",
+			"request": "launch",
+			"mode": "debug",
+			"program": "${workspaceRoot}",
+			"buildFlags": "-tags=staticmods",
+			"args": [
+				"-createsql",
+				"-dialect=postgres",
+				"-module=${input:module}"
+			]
+		}
+	],
+	"inputs": [
+		{
+			"id": "module",
+			"type": "promptString",
+			"description": "Module name for migration"
 		}
 	]
 }

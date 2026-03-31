@@ -47,7 +47,7 @@ var deleteGroupCommandType = cqrs.RequestType{
 	Action:    "deleteGroup",
 }
 
-type DeleteGroupCommand dyn.DeleteOneQuery
+type DeleteGroupCommand dyn.DeleteOneCommand
 
 func (DeleteGroupCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteGroupCommandType

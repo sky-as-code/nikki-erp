@@ -48,7 +48,7 @@ var deleteHierarchyLevelCommandType = cqrs.RequestType{
 	Action:    "deleteHierarchyLevel",
 }
 
-type DeleteHierarchyLevelCommand dyn.DeleteOneQuery
+type DeleteHierarchyLevelCommand dyn.DeleteOneCommand
 
 func (DeleteHierarchyLevelCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteHierarchyLevelCommandType

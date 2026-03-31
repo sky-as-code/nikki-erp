@@ -42,7 +42,7 @@ func (this *OrganizationServiceImpl) DeleteOrg(
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete organization",
 		DbRepoGetter: this.orgRepo2,
-		Cmd:          dyn.DeleteOneQuery(cmd),
+		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
 }
 

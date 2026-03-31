@@ -1,0 +1,29 @@
+meta {
+  name: User Search - If edge field - Success
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{api_host}}/v1/identity/users?graph={"if": ["groups.name", "!^", "brand"]}&columns=display_name&columns=groups.name
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"if": ["groups.name", "!^", "brand"]}
+  columns: display_name
+  columns: groups.name
+}
+
+script:post-response {
+  const pkg = require('./scripts/search-success');
+  
+  pkg.testSearch(50);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

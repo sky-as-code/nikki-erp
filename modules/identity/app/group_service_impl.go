@@ -43,7 +43,7 @@ func (this *GroupServiceImpl) DeleteGroup(ctx corectx.Context, cmd itGrp.DeleteG
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete group",
 		DbRepoGetter: this.groupRepo2,
-		Cmd:          dyn.DeleteOneQuery{Id: cmd.Id},
+		Cmd:          dyn.DeleteOneCommand{Id: cmd.Id},
 	})
 }
 

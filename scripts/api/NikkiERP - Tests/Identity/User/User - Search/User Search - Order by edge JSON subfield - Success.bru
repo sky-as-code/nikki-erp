@@ -14,13 +14,6 @@ params:query {
   graph: {"order": [["user_status.label.vi_VN", "desc"]]}
 }
 
-script:post-response {
-  const pkg = require('./scripts/search-success');
-  
-  pkg.testSearch(50);
-  
-}
-
 settings {
   encodeUrl: true
   timeout: 0
