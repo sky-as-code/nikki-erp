@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
 )
 
@@ -25,6 +26,8 @@ type User struct {
 	DisplayName string `json:"display_name,omitempty"`
 	// Email holds the value of the "email" field.
 	Email string `json:"-"`
+	// HierarchyID holds the value of the "hierarchy_id" field.
+	HierarchyID *string `json:"hierarchy_id,omitempty"`
 	// Etag holds the value of the "etag" field.
 	Etag string `json:"etag,omitempty"`
 	// Whether the user is an owner with root privileges in this deployment
@@ -44,18 +47,16 @@ type UserEdges struct {
 	// Groups holds the value of the groups edge.
 	Groups []*Group `json:"groups,omitempty"`
 	// Hierarchy holds the value of the hierarchy edge.
-	Hierarchy []*HierarchyLevel `json:"hierarchy,omitempty"`
+	Hierarchy *HierarchyLevel `json:"hierarchy,omitempty"`
 	// Orgs holds the value of the orgs edge.
 	Orgs []*Organization `json:"orgs,omitempty"`
 	// UserGroups holds the value of the user_groups edge.
 	UserGroups []*UserGroup `json:"user_groups,omitempty"`
-	// UserHierarchy holds the value of the user_hierarchy edge.
-	UserHierarchy []*UserHierarchy `json:"user_hierarchy,omitempty"`
 	// UserOrgs holds the value of the user_orgs edge.
 	UserOrgs []*UserOrg `json:"user_orgs,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [5]bool
 }
 
 // GroupsOrErr returns the Groups value or an error if the edge
@@ -68,10 +69,12 @@ func (e UserEdges) GroupsOrErr() ([]*Group, error) {
 }
 
 // HierarchyOrErr returns the Hierarchy value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) HierarchyOrErr() ([]*HierarchyLevel, error) {
-	if e.loadedTypes[1] {
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) HierarchyOrErr() (*HierarchyLevel, error) {
+	if e.Hierarchy != nil {
 		return e.Hierarchy, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: hierarchylevel.Label}
 	}
 	return nil, &NotLoadedError{edge: "hierarchy"}
 }
@@ -94,19 +97,10 @@ func (e UserEdges) UserGroupsOrErr() ([]*UserGroup, error) {
 	return nil, &NotLoadedError{edge: "user_groups"}
 }
 
-// UserHierarchyOrErr returns the UserHierarchy value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) UserHierarchyOrErr() ([]*UserHierarchy, error) {
-	if e.loadedTypes[4] {
-		return e.UserHierarchy, nil
-	}
-	return nil, &NotLoadedError{edge: "user_hierarchy"}
-}
-
 // UserOrgsOrErr returns the UserOrgs value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserOrgsOrErr() ([]*UserOrg, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[4] {
 		return e.UserOrgs, nil
 	}
 	return nil, &NotLoadedError{edge: "user_orgs"}
@@ -119,7 +113,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case user.FieldIsOwner:
 			values[i] = new(sql.NullBool)
-		case user.FieldID, user.FieldAvatarURL, user.FieldDisplayName, user.FieldEmail, user.FieldEtag, user.FieldStatus:
+		case user.FieldID, user.FieldAvatarURL, user.FieldDisplayName, user.FieldEmail, user.FieldHierarchyID, user.FieldEtag, user.FieldStatus:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt, user.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -168,6 +162,13 @@ func (u *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field email", values[i])
 			} else if value.Valid {
 				u.Email = value.String
+			}
+		case user.FieldHierarchyID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field hierarchy_id", values[i])
+			} else if value.Valid {
+				u.HierarchyID = new(string)
+				*u.HierarchyID = value.String
 			}
 		case user.FieldEtag:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -227,11 +228,6 @@ func (u *User) QueryUserGroups() *UserGroupQuery {
 	return NewUserClient(u.config).QueryUserGroups(u)
 }
 
-// QueryUserHierarchy queries the "user_hierarchy" edge of the User entity.
-func (u *User) QueryUserHierarchy() *UserHierarchyQuery {
-	return NewUserClient(u.config).QueryUserHierarchy(u)
-}
-
 // QueryUserOrgs queries the "user_orgs" edge of the User entity.
 func (u *User) QueryUserOrgs() *UserOrgQuery {
 	return NewUserClient(u.config).QueryUserOrgs(u)
@@ -272,6 +268,11 @@ func (u *User) String() string {
 	builder.WriteString(u.DisplayName)
 	builder.WriteString(", ")
 	builder.WriteString("email=<sensitive>")
+	builder.WriteString(", ")
+	if v := u.HierarchyID; v != nil {
+		builder.WriteString("hierarchy_id=")
+		builder.WriteString(*v)
+	}
 	builder.WriteString(", ")
 	builder.WriteString("etag=")
 	builder.WriteString(u.Etag)

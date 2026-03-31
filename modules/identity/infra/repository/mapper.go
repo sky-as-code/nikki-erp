@@ -10,11 +10,6 @@ import (
 func entToGroup(dbGroup *ent.Group) *domain.Group {
 	group := &domain.Group{}
 	model.MustCopy(dbGroup, group)
-
-	if dbGroup.Edges.Org != nil {
-		group.Org = entToOrganization(dbGroup.Edges.Org)
-	}
-
 	return group
 }
 
@@ -39,62 +34,5 @@ func entToOrganizations(dbOrgs []*ent.Organization) []domain.Organization {
 	}
 	return array.Map(dbOrgs, func(entOrg *ent.Organization) domain.Organization {
 		return *entToOrganization(entOrg)
-	})
-}
-
-func entToUser(dbUser *ent.User) *domain.User {
-	user := &domain.User{}
-	model.MustCopy(dbUser, user)
-	user.AvatarUrl = dbUser.AvatarURL
-
-	if dbUser.Edges.Groups != nil {
-		user.Groups = entToGroups(dbUser.Edges.Groups)
-	}
-
-	if dbUser.Edges.Hierarchy != nil {
-		user.Hierarchy = entToHierarchyLevels(dbUser.Edges.Hierarchy)
-	}
-
-	if dbUser.Edges.Orgs != nil {
-		user.Orgs = entToOrganizations(dbUser.Edges.Orgs)
-	}
-	return user
-}
-
-func entToUsers(dbUsers []*ent.User) []domain.User {
-	if dbUsers == nil {
-		return nil
-	}
-	return array.Map(dbUsers, func(entUser *ent.User) domain.User {
-		return *entToUser(entUser)
-	})
-}
-
-func entToHierarchyLevel(dbHierarchy *ent.HierarchyLevel) *domain.HierarchyLevel {
-	hierarchy := &domain.HierarchyLevel{}
-	model.MustCopy(dbHierarchy, hierarchy)
-
-	if dbHierarchy.Edges.Org != nil {
-		hierarchy.Org = entToOrganization(dbHierarchy.Edges.Org)
-	}
-
-	if dbHierarchy.Edges.Parent != nil {
-		hierarchy.ParentId = &dbHierarchy.Edges.Parent.ID
-		hierarchy.Parent = entToHierarchyLevel(dbHierarchy.Edges.Parent)
-	}
-
-	if dbHierarchy.Edges.Children != nil {
-		hierarchy.Children = entToHierarchyLevels(dbHierarchy.Edges.Children)
-	}
-
-	return hierarchy
-}
-
-func entToHierarchyLevels(dbHierarchies []*ent.HierarchyLevel) []domain.HierarchyLevel {
-	if dbHierarchies == nil {
-		return nil
-	}
-	return array.Map(dbHierarchies, func(entHierarchy *ent.HierarchyLevel) domain.HierarchyLevel {
-		return *entToHierarchyLevel(entHierarchy)
 	})
 }

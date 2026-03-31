@@ -47,6 +47,7 @@ build: build-dynamic
 
 # START: ORM & Database
 migration_dir := file://./scripts/migrations
+migration_dir_nikki := file://./scripts/migrations-nikki
 
 ent-init:
 	@if [ -z "$(module)" ]; then \
@@ -106,6 +107,26 @@ ent-migration:
 		--config file://./scripts/atlas.hcl \
 		--env local
 
+ent-migration-nikki:
+	@if [ -z "$(module)" ]; then \
+		echo "Error: module parameter is required. Usage: make ent-migration module=<module_name> name=<name>"; \
+		exit 1; \
+	fi
+	@if [ -z "$(name)" ]; then \
+		echo "Error: name parameter is required. Usage: make ent-migration module=<module_name> name=<name>"; \
+		exit 1; \
+	fi
+	@if [ ! -d "./modules/$(module)/infra/ent" ]; then \
+		echo "Error: ent schema directory not found for module '$(module)'"; \
+		exit 1; \
+	fi
+	@echo "Generating migration named '$(name)' for module '$(module)' to '$(migration_dir_nikki)'..."
+	atlas migrate diff $(name) \
+		--dir "$(migration_dir_nikki)" \
+		--config file://./scripts/atlas.hcl \
+		--env nikki \
+		--var module=$(module)
+
 ent-apply:
 	@echo "Applying migration files in '$(migration_dir)'..."
 	atlas migrate apply \
@@ -146,6 +167,11 @@ infra-swarm-svc:
 install-tools:
 	go install go.uber.org/mock/mockgen@latest
 # curl -sSf https://atlasgo.sh | sh
+
+gensql:
+	@[ -f config/local.env ] || cp config/local.env.sample config/local.env
+	@[ -f config/config.yaml ] || cp config/config.default.yaml config/config.yaml
+	go run -tags=staticmods *.go -createsql -dialect=postgres -module=$(module)
 
 nikki:
 	@[ -f config/local.env ] || cp config/local.env.sample config/local.env

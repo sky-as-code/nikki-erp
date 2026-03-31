@@ -11,50 +11,48 @@ get {
 }
 
 script:post-response {
+  const { testHttpResponse } = require('./scripts/common-test-response');
+  
   const schema = {
-      type: "object",
+      type: 'object',
+      required: ['id', 'description', 'created_at', 'name', 'etag', 'is_archived'],
       properties: {
           id: {
-              "type": "string",
+              type: 'string',
               minLength: 1,
           },
-          createdAt: {
-              type: "integer",
-              minimum: 1,
-              description: "Unix timestamp in milliseconds"
+          created_at: {
+              type: "string",
+              minLength: 20, //"2026-03-23T06:53:01Z"
           },
           name: {
-              type: "string",
+              type: 'string',
               minLength: 1,
           },
           description: {
-              type: "string",
+              type: 'string',
               minLength: 1,
           },
           etag: {
-              type: "string",
+              type: 'string',
               minLength: 1,
           },
-          updatedAt: {
-              type: "integer",
-              minimum: 1,
-              description: "Unix timestamp in milliseconds"
-          }
+          is_archived: {
+              type: "boolean",
+          },
+          updated_at: {
+              type: "string",
+              minLength: 20, //"2026-03-23T06:53:01Z"
+          },
       },
-      "required": ["id", "createdAt", "name", "etag"],
-      "additionalProperties": false
+      additionalProperties: false
   };
   
-  test("Status code is 200", function () {
-      expect(res.getStatus()).to.equal(200);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
-  });
+  testHttpResponse(schema, 200);
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

@@ -1,7 +1,7 @@
 meta {
   name: User Create - Missing required fields - Validation errors
   type: http
-  seq: 2
+  seq: 4
 }
 
 post {
@@ -16,24 +16,13 @@ body:json {
 }
 
 script:post-response {
-  const expected = {
-      code: "validation_error",
-      details: {
-          displayName: "cannot be blank",
-          email: "cannot be blank",
-      },
-  };
+  const pkg = require('./scripts/error-400-fields-missing');
   
-  test("Status code is 400", function () {
-      expect(res.getStatus()).to.equal(400);
-  });
-  
-  test("Response body matches expected JSON exactly", function () {
-      expect(res.getBody()).to.eql(expected);
-  });
+  pkg.testMissingFields("display_name", "email");
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

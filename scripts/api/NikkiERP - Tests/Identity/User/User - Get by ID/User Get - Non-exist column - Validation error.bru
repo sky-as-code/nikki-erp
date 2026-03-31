@@ -1,0 +1,29 @@
+meta {
+  name: User Get - Non-exist column - Validation error
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api_host}}/v1/identity/users/{{user_id}}?columns=display_name&columns=email&columns=non_exist
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: display_name
+  columns: email
+  columns: non_exist
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-nonexist-fields');
+  
+  pkg.testNonExistFields('non_exist');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

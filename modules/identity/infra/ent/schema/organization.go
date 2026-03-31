@@ -81,9 +81,6 @@ func (Organization) Edges() []ent.Edge {
 
 		edge.From("hierarchies", HierarchyLevel.Type).
 			Ref("org"),
-
-		edge.From("groups", Group.Type).
-			Ref("org"),
 	}
 }
 

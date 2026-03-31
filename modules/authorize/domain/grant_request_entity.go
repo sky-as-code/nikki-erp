@@ -5,6 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/validator"
 	entGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/grantrequest"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/external"
 )
 
 type GrantRequest struct {
@@ -28,10 +29,10 @@ type GrantRequest struct {
 	OrgId           *model.Id               `json:"orgId,omitempty"`
 	OrgName         *string                 `json:"orgName,omitempty" model:"-"` // Populated from Organization.DisplayName
 
-	Role           *Role           `json:"role,omitempty" model:"-"` // TODO: Handle copy
-	RoleSuite      *RoleSuite      `json:"roleSuite,omitempty" model:"-"`
-	GrantResponses []GrantResponse `json:"grantResponses,omitempty" model:"-"`
-	Organization   *Organization   `json:"organization,omitempty" model:"-"` // TODO: Handle copy
+	Role           *Role                  `json:"role,omitempty" model:"-"` // TODO: Handle copy
+	RoleSuite      *RoleSuite             `json:"roleSuite,omitempty" model:"-"`
+	GrantResponses []GrantResponse        `json:"grantResponses,omitempty" model:"-"`
+	Organization   *external.Organization `json:"organization,omitempty" model:"-"` // TODO: Handle copy
 }
 
 func (this *GrantRequest) Validate(forEdit bool) fault.ValidationErrors {
@@ -45,7 +46,7 @@ func (this *GrantRequest) Validate(forEdit bool) fault.ValidationErrors {
 		validator.Field(&this.AttachmentURL,
 			validator.When(this.AttachmentURL != nil,
 				validator.NotEmpty,
-				validator.Length(1, model.MODEL_RULE_URL_LENGTH),
+				validator.Length(1, model.MODEL_RULE_URL_LENGTH_MAX),
 			),
 		),
 		validator.Field(&this.Comment,

@@ -1,0 +1,37 @@
+meta {
+  name: User Create - All fields - Success
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "avatar_url": "{{$randomUrl}}/{{$randomWord}}.jpg",
+      "display_name": "{{$randomFullName}}",
+      "email": "{{$randomEmail}}",
+      "etag": "{{etag}}",
+      "status": "invited"
+  }
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/create-success');
+  
+  pkg.testCreate('user_id');
+  
+  const { email } = req.getBody();
+  email && bru.setVar('email', email);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -50,7 +50,7 @@ func (this CreateGrantRequestCommand) Validate() fault.ValidationErrors {
 		validator.Field(&this.AttachmentURL,
 			validator.When(this.AttachmentURL != nil,
 				validator.NotEmpty,
-				validator.Length(1, model.MODEL_RULE_URL_LENGTH),
+				validator.Length(1, model.MODEL_RULE_URL_LENGTH_MAX),
 			),
 		),
 		validator.Field(&this.Comment,

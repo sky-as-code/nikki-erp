@@ -1,0 +1,50 @@
+meta {
+  name: User Get - Columns - Success
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/identity/users/{{user_id}}?columns=email&columns=display_name
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: email
+  columns: display_name
+}
+
+script:post-response {
+  
+  const { testHttpResponse } = require('./scripts/common-test-response');
+  
+  const schema = {
+      type: "object",
+      required: ["id", "display_name", "email"],
+      properties: {
+          id: {
+              type: "string",
+              minLength: 1,
+          },
+          display_name: {
+              type: "string",
+              minLength: 1,
+          },
+          email: {
+              type: "string",
+              format: "email",
+              minLength: 1,
+          },
+      },
+      additionalProperties: false
+  };
+  
+  testHttpResponse(schema, 200);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

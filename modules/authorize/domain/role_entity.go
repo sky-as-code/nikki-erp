@@ -5,6 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	entRole "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/role"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/external"
 )
 
 type Role struct {
@@ -22,10 +23,10 @@ type Role struct {
 	OrgId                *model.Id      `json:"orgId,omitempty"`
 	OrgName              *string        `json:"orgName,omitempty" model:"-"` // Populated from Organization.DisplayName
 
-	Entitlements   []Entitlement   `json:"entitlements,omitempty" model:"-"` // TODO: Handle copy
-	GrantRequests  []GrantRequest  `json:"grantRequests,omitempty" model:"-"`
-	RevokeRequests []RevokeRequest `json:"revokeRequests,omitempty" model:"-"`
-	Organization   *Organization   `json:"organization,omitempty" model:"-"` // TODO: Handle copy
+	Entitlements   []Entitlement          `json:"entitlements,omitempty" model:"-"` // TODO: Handle copy
+	GrantRequests  []GrantRequest         `json:"grantRequests,omitempty" model:"-"`
+	RevokeRequests []RevokeRequest        `json:"revokeRequests,omitempty" model:"-"`
+	Organization   *external.Organization `json:"organization,omitempty" model:"-"` // TODO: Handle copy
 }
 
 type Organization struct {

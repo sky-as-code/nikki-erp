@@ -1,39 +1,88 @@
 package domain
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-type Group struct {
-	model.ModelBase
-	model.AuditableBase
+const (
+	GroupSchemaName = "identity.group"
+	GroupFieldName  = "name"
+	GroupFieldDesc  = "description"
+	GroupFieldUsers = "users"
+)
 
-	Name        *string   `json:"name"`
-	Description *string   `json:"description"`
-	OrgId       *model.Id `json:"orgId"`
-	ScopeRef    *model.Id `json:"scopeRef,omitempty" model:"-"`
-
-	Org *Organization `json:"organization,omitempty" model:"-"` // TODO: Handle copy
+func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(GroupSchemaName).
+		Label(model.LangJson{"en-US": "User Group"}).
+		TableName("ident_groups").
+		ShouldBuildDb().
+		Extend(basemodel.BaseModelSchemaBuilder()).
+		Field(
+			dmodel.DefineField().
+				Name(GroupFieldName).
+				Label(model.LangJson{"en-US": "Name"}).
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
+				RequiredForCreate().
+				Unique(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(GroupFieldDesc).
+				Label(model.LangJson{"en-US": "Description"}).
+				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
+		).
+		EdgeTo(
+			dmodel.Edge(GroupFieldUsers).
+				ManyToMany(UserSchemaName, UsrGrpRelSchemaName, "group").
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		Extend(basemodel.ArchivableModelSchemaBuilder()).
+		Extend(basemodel.VersionedModelSchemaBuilder()).
+		Extend(basemodel.AuditableModelSchemaBuilder())
 }
 
-func (this *Group) Validate(forEdit bool) ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.Name,
-			val.NotNilWhen(!forEdit),
-			val.When(this.Name != nil,
-				val.NotEmpty,
-				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
-			),
-		),
-		val.Field(&this.Description,
-			val.Length(0, model.MODEL_RULE_DESC_LENGTH),
-		),
-		model.IdPtrValidateRule(&this.OrgId, false),
-	}
-	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
-	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
+type Group struct {
+	fields dmodel.DynamicFields
+}
 
-	return val.ApiBased.ValidateStruct(this, rules...)
+func NewGroup() *Group {
+	return &Group{fields: make(dmodel.DynamicFields)}
+}
+
+func NewGroupFrom(src dmodel.DynamicFields) *Group {
+	return &Group{fields: src}
+}
+
+func (this Group) GetFieldData() dmodel.DynamicFields {
+	return this.fields
+}
+
+func (this *Group) SetFieldData(data dmodel.DynamicFields) {
+	this.fields = data
+}
+
+func (this Group) GetId() *model.Id {
+	return this.fields.GetModelId(basemodel.FieldId)
+}
+
+func (this *Group) SetId(v *model.Id) {
+	this.fields.SetModelId(basemodel.FieldId, v)
+}
+
+func (this Group) GetName() *string {
+	return this.fields.GetString(GroupFieldName)
+}
+
+func (this *Group) SetName(v *string) {
+	this.fields.SetString(GroupFieldName, v)
+}
+
+func (this Group) GetEtag() *model.Etag {
+	return this.fields.GetEtag(basemodel.FieldEtag)
+}
+
+func (this *Group) SetEtag(v *model.Etag) {
+	this.fields.SetEtag(basemodel.FieldEtag, v)
 }

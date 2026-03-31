@@ -1,33 +1,15 @@
 package organization
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
 type OrganizationRepository interface {
-	AddRemoveUsers(ctx crud.Context, param AddRemoveUsersParam) (*ft.ClientError, error)
-	Create(ctx crud.Context, organization *domain.Organization) (*domain.Organization, error)
-	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
-	DeleteSoft(ctx crud.Context, param DeleteParam) (*domain.Organization, error)
-	FindById(ctx crud.Context, id model.Id) (*domain.Organization, error)
-	FindBySlug(ctx crud.Context, query FindBySlugParam) (*domain.Organization, error)
-	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Organization], error)
-	Update(ctx crud.Context, organization *domain.Organization, prevEtag model.Etag) (*domain.Organization, error)
-	Exists(ctx crud.Context, id model.Id) (bool, error)
-}
-
-type AddRemoveUsersParam = AddRemoveUsersCommand
-type DeleteParam = DeleteOrganizationCommand
-type FindBySlugParam = GetOrganizationBySlugQuery
-type SearchParam struct {
-	Predicate      *orm.Predicate
-	Order          []orm.OrderOption
-	Page           int
-	Size           int
-	IncludeDeleted bool
+	dyn.BaseRepoGetter
+	Insert(ctx corectx.Context, org domain.Organization) (*dyn.OpResult[int], error)
+	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.Organization], error)
+	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.Organization]], error)
+	Update(ctx corectx.Context, org domain.Organization) (*dyn.OpResult[dyn.MutateResultData], error)
 }

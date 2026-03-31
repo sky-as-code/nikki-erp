@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 
@@ -99,16 +100,16 @@ func (this *EntitlementAssignmentServiceImpl) DeleteHardAssignment(ctx crud.Cont
 		Command:             cmd,
 		AssertExists:        this.assertEntitlementAssignmentExistsById,
 		AssertBusinessRules: this.assertBusinessRuleDeleteEntitlementAssignment,
-		RepoDelete: func(ctx crud.Context, model *domain.EntitlementAssignment) (int, error) {
-			return this.entitlementAssignmentRepo.DeleteHard(ctx, it.DeleteEntitlementAssignmentByIdCommand{Id: *model.Id})
+		RepoDelete: func(ctx crud.Context, row *domain.EntitlementAssignment) (int, error) {
+			return this.entitlementAssignmentRepo.DeleteHard(ctx, it.DeleteEntitlementAssignmentByIdCommand{Id: *row.Id})
 		},
 		ToFailureResult: func(vErrs *fault.ValidationErrors) *it.DeleteEntitlementAssignmentByIdResult {
 			return &it.DeleteEntitlementAssignmentByIdResult{
 				ClientError: vErrs.ToClientError(),
 			}
 		},
-		ToSuccessResult: func(model *domain.EntitlementAssignment, deletedCount int) *it.DeleteEntitlementAssignmentByIdResult {
-			return crud.NewSuccessDeletionResult(*model.Id, &deletedCount)
+		ToSuccessResult: func(row *domain.EntitlementAssignment, deletedCount int) *it.DeleteEntitlementAssignmentByIdResult {
+			return crud.NewSuccessDeletionResult(*row.Id, &deletedCount)
 		},
 	})
 }
@@ -235,20 +236,18 @@ func (this *EntitlementAssignmentServiceImpl) assertScopeRefByScopeType(ctx crud
 			return nil
 		}
 
-		existCmd := &itOrg.ExistsOrgByIdCommand{
-			Id: *assignment.ScopeRef,
+		existCmd := itOrg.OrgExistsQuery{
+			Ids: []model.Id{*assignment.ScopeRef},
 		}
-		existRes := itOrg.ExistsOrgByIdResult{}
-		err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
+		existRes := itOrg.OrgExistsResult{}
+		err := this.cqrsBus.Request(ctx, existCmd, &existRes)
 		fault.PanicOnErr(err)
 
-		if existRes.ClientError != nil {
-			vErrs.MergeClientError(existRes.ClientError)
-			return nil
-		}
-
-		if !existRes.Data {
-			vErrs.AppendNotFound("scope_ref", *assignment.ScopeRef)
+		if existRes.ClientErrors.Count() > 0 {
+			for i := range existRes.ClientErrors {
+				e := existRes.ClientErrors[i]
+				vErrs.Append(e.Field, e.Message)
+			}
 			return nil
 		}
 
@@ -258,19 +257,22 @@ func (this *EntitlementAssignmentServiceImpl) assertScopeRefByScopeType(ctx crud
 			return nil
 		}
 
-		existCmd := &itHierarchy.ExistsHierarchyLevelByIdQuery{
-			Id: *assignment.ScopeRef,
+		existCmd := &itHierarchy.HierarchyLevelExistsQuery{
+			Ids: []model.Id{*assignment.ScopeRef},
 		}
-		existRes := itHierarchy.ExistsHierarchyLevelByIdResult{}
+		existRes := itHierarchy.HierarchyLevelExistsResult{}
 		err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
 		fault.PanicOnErr(err)
 
-		if existRes.ClientError != nil {
-			vErrs.MergeClientError(existRes.ClientError)
+		if len(existRes.ClientErrors) > 0 {
+			for i := range existRes.ClientErrors {
+				e := existRes.ClientErrors[i]
+				vErrs.Append(e.Field, e.Message)
+			}
 			return nil
 		}
 
-		if !existRes.Data {
+		if !existRes.Data.Exists(*assignment.ScopeRef) {
 			vErrs.AppendNotFound("scope_ref", "scope ref")
 			return nil
 		}

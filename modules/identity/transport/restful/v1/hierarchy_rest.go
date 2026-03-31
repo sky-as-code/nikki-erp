@@ -4,8 +4,11 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/hierarchy"
 )
 
@@ -32,40 +35,20 @@ func (this HierarchyRest) CreateHierarchyLevel(echoCtx echo.Context) (err error)
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.HierarchySvc.CreateHierarchyLevel,
-		func(request CreateHierarchyLevelRequest) it.CreateHierarchyLevelCommand {
-			return it.CreateHierarchyLevelCommand(request)
+	return httpserver.ServeRequestDynamic(
+		echoCtx,
+		this.HierarchySvc.CreateHierarchyLevel,
+		func(requestFields dmodel.DynamicFields) it.CreateHierarchyLevelCommand {
+			cmd := it.CreateHierarchyLevelCommand{}
+			cmd.SetFieldData(requestFields)
+			return cmd
 		},
-		func(result it.CreateHierarchyLevelResult) CreateHierarchyLevelResponse {
-			response := CreateHierarchyLevelResponse{}
-			response.FromEntity(result.Data)
-			return response
+		func(data domain.HierarchyLevel) CreateHierarchyLevelResponse {
+			response := httpserver.NewRestCreateResponseDyn(data.GetFieldData())
+			return *response
 		},
 		httpserver.JsonCreated,
 	)
-	return err
-}
-
-func (this HierarchyRest) UpdateHierarchyLevel(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update hierarchy level"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.HierarchySvc.UpdateHierarchyLevel,
-		func(request UpdateHierarchyLevelRequest) it.UpdateHierarchyLevelCommand {
-			return it.UpdateHierarchyLevelCommand(request)
-		},
-		func(result it.UpdateHierarchyLevelResult) UpdateHierarchyLevelResponse {
-			response := UpdateHierarchyLevelResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
-	)
-	return err
 }
 
 func (this HierarchyRest) DeleteHierarchyLevel(echoCtx echo.Context) (err error) {
@@ -74,61 +57,55 @@ func (this HierarchyRest) DeleteHierarchyLevel(echoCtx echo.Context) (err error)
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.HierarchySvc.DeleteHierarchyLevel,
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.HierarchySvc.DeleteHierarchyLevel,
 		func(request DeleteHierarchyLevelRequest) it.DeleteHierarchyLevelCommand {
 			return it.DeleteHierarchyLevelCommand(request)
 		},
-		func(result it.DeleteHierarchyLevelResult) DeleteHierarchyLevelResponse {
-			response := DeleteHierarchyLevelResponse{}
-			response.FromNonEntity(result.Data)
-			return response
+		func(data dyn.MutateResultData) DeleteHierarchyLevelResponse {
+			return httpserver.NewRestDeleteResponse2(data)
 		},
 		httpserver.JsonOk,
 	)
-	return err
 }
 
-func (this HierarchyRest) GetHierarchyLevelById(echoCtx echo.Context) (err error) {
+func (this HierarchyRest) GetHierarchyLevel(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get hierarchy level by id"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get hierarchy level"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.HierarchySvc.GetHierarchyLevelById,
-		func(request GetHierarchyLevelByIdRequest) it.GetHierarchyLevelByIdQuery {
-			return it.GetHierarchyLevelByIdQuery(request)
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.HierarchySvc.GetHierarchyLevel,
+		func(request GetHierarchyLevelRequest) it.GetHierarchyLevelQuery {
+			return it.GetHierarchyLevelQuery(request)
 		},
-		func(result it.GetHierarchyLevelByIdResult) GetHierarchyLevelByIdResponse {
-			response := GetHierarchyLevelByIdResponse{}
-			response.FromHierarchyLevel(*result.Data)
-			return response
+		func(data domain.HierarchyLevel) dmodel.DynamicFields {
+			return data.GetFieldData()
 		},
 		httpserver.JsonOk,
 	)
-	return err
 }
 
-func (this HierarchyRest) SearchHierarchyLevels(echoCtx echo.Context) (err error) {
+func (this HierarchyRest) HierarchyLevelExists(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search hierarchy levels"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST hierarchy level exists"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.HierarchySvc.SearchHierarchyLevels,
-		func(request SearchHierarchyLevelsRequest) it.SearchHierarchyLevelsQuery {
-			return it.SearchHierarchyLevelsQuery(request)
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.HierarchySvc.HierarchyLevelExists,
+		func(request HierarchyLevelExistsRequest) it.HierarchyLevelExistsQuery {
+			return it.HierarchyLevelExistsQuery(request)
 		},
-		func(result it.SearchHierarchyLevelsResult) SearchHierarchyLevelsResponse {
-			response := SearchHierarchyLevelsResponse{}
-			response.FromResult(result.Data)
-			return response
+		func(data dyn.ExistsResultData) HierarchyLevelExistsResponse {
+			return HierarchyLevelExistsResponse(data)
 		},
 		httpserver.JsonOk,
 	)
-	return err
 }
 
 func (this HierarchyRest) ManageHierarchyUsers(echoCtx echo.Context) (err error) {
@@ -137,17 +114,56 @@ func (this HierarchyRest) ManageHierarchyUsers(echoCtx echo.Context) (err error)
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.HierarchySvc.AddRemoveUsers,
-		func(request ManageUsersHierarchyRequest) it.AddRemoveUsersCommand {
-			return it.AddRemoveUsersCommand(request)
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.HierarchySvc.ManageHierarchyLevelUsers,
+		func(request ManageHierarchyLevelUsersRequest) it.ManageHierarchyLevelUsersCommand {
+			return it.ManageHierarchyLevelUsersCommand(request)
 		},
-		func(result it.AddRemoveUsersResult) ManageUsersHierarchyResponse {
-			response := ManageUsersHierarchyResponse{}
-			response.FromNonEntity(result.Data)
-			return response
+		func(data dyn.MutateResultData) ManageHierarchyLevelUsersResponse {
+			return httpserver.NewRestMutateResponse(data)
 		},
 		httpserver.JsonOk,
 	)
-	return err
+}
+
+func (this HierarchyRest) SearchHierarchyLevels(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search hierarchy levels"); e != nil {
+			err = e
+		}
+	}()
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.HierarchySvc.SearchHierarchyLevels,
+		func(request SearchHierarchyLevelsRequest) it.SearchHierarchyLevelsQuery {
+			return it.SearchHierarchyLevelsQuery(request)
+		},
+		func(data it.SearchHierarchyLevelsResultData) SearchHierarchyLevelsResponse {
+			return httpserver.NewSearchUsersResponseDyn(data)
+		},
+		httpserver.JsonOk,
+		true,
+	)
+}
+
+func (this HierarchyRest) UpdateHierarchyLevel(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update hierarchy level"); e != nil {
+			err = e
+		}
+	}()
+	return httpserver.ServeRequestDynamic(
+		echoCtx,
+		this.HierarchySvc.UpdateHierarchyLevel,
+		func(requestFields dmodel.DynamicFields) it.UpdateHierarchyLevelCommand {
+			cmd := it.UpdateHierarchyLevelCommand{}
+			cmd.SetFieldData(requestFields)
+			return cmd
+		},
+		func(data dyn.MutateResultData) UpdateHierarchyLevelResponse {
+			return httpserver.NewRestUpdateResponse2(data)
+		},
+		httpserver.JsonOk,
+	)
 }

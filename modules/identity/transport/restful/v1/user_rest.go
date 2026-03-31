@@ -4,9 +4,13 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	middleWare "github.com/sky-as-code/nikki-erp/common/middleware"
+
+	// middleWare "github.com/sky-as-code/nikki-erp/common/middleware"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -33,38 +37,19 @@ func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UserSvc.CreateUser,
-		func(request CreateUserRequest) it.CreateUserCommand {
-			return it.CreateUserCommand(request)
+	err = httpserver.ServeRequestDynamic(
+		echoCtx,
+		this.UserSvc.CreateUser,
+		func(requestFields dmodel.DynamicFields) it.CreateUserCommand {
+			cmd := it.CreateUserCommand{}
+			cmd.SetFieldData(requestFields)
+			return cmd
 		},
-		func(result it.CreateUserResult) CreateUserResponse {
-			response := CreateUserResponse{}
-			response.FromEntity(result.Data)
-			return response
+		func(data domain.User) CreateUserResponse {
+			response := httpserver.NewRestCreateResponseDyn(data.GetFieldData())
+			return *response
 		},
 		httpserver.JsonCreated,
-	)
-	return err
-}
-
-func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update user"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UserSvc.UpdateUser,
-		func(request UpdateUserRequest) it.UpdateUserCommand {
-			return it.UpdateUserCommand(request)
-		},
-		func(result it.UpdateUserResult) UpdateUserResponse {
-			response := UpdateUserResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
 	)
 	return err
 }
@@ -75,14 +60,14 @@ func (this UserRest) DeleteUser(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UserSvc.DeleteUser,
+	err = httpserver.ServeRequest2(
+		echoCtx,
+		this.UserSvc.DeleteUser,
 		func(request DeleteUserRequest) it.DeleteUserCommand {
 			return it.DeleteUserCommand(request)
 		},
-		func(result it.DeleteUserResult) DeleteUserResponse {
-			response := DeleteUserResponse{}
-			response.FromNonEntity(result.Data)
+		func(data dyn.MutateResultData) DeleteUserResponse {
+			response := httpserver.NewRestDeleteResponse2(data)
 			return response
 		},
 		httpserver.JsonOk,
@@ -90,41 +75,85 @@ func (this UserRest) DeleteUser(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this UserRest) GetUserById(echoCtx echo.Context) (err error) {
+func (this UserRest) GetUser(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user by id"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UserSvc.GetUserById,
-		func(request GetUserByIdRequest) it.GetUserByIdQuery {
-			return it.GetUserByIdQuery(request)
+
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.UserSvc.GetUser,
+		func(request GetUserRequest) it.GetUserQuery {
+			return request
 		},
-		func(result it.GetUserByIdResult) GetUserByIdResponse {
-			response := GetUserByIdResponse{}
-			response.FromUser(*result.Data)
-			return response
+		func(data domain.User) dmodel.DynamicFields {
+			return data.GetFieldData()
 		},
 		httpserver.JsonOk,
 	)
-	return err
 }
 
 func (this UserRest) SearchUsers(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search users"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search users 2"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UserSvc.SearchUsers,
-		func(request SearchUsersRequest) it.SearchUsersQuery {
+	err = httpserver.ServeRequest2(
+		echoCtx,
+		this.UserSvc.SearchUsers,
+		func(request SearchUsers2Request) it.SearchUsersQuery {
 			return it.SearchUsersQuery(request)
 		},
-		func(result it.SearchUsersResult) SearchUsersResponse {
-			response := SearchUsersResponse{}
-			response.FromResult(result.Data)
+		func(data it.SearchUsersResultData) SearchUsersResponse2 {
+			return httpserver.NewSearchUsersResponseDyn(data)
+		},
+		httpserver.JsonOk,
+		true,
+	)
+	return err
+}
+
+func (this UserRest) SetUserIsArchived(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST set user is_archived"); e != nil {
+			err = e
+		}
+	}()
+
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.UserSvc.SetUserIsArchived,
+		func(request SetUserIsArchivedRequest) it.SetUserIsArchivedCommand {
+			return request
+		},
+		func(data dyn.MutateResultData) SetUserIsArchivedResponse {
+			response := httpserver.NewRestUpdateResponse2(data)
+			return response
+		},
+		httpserver.JsonOk,
+	)
+}
+
+func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update user"); e != nil {
+			err = e
+		}
+	}()
+
+	err = httpserver.ServeRequestDynamic(
+		echoCtx,
+		this.UserSvc.UpdateUser,
+		func(requestFields dmodel.DynamicFields) it.UpdateUserCommand {
+			cmd := it.UpdateUserCommand{}
+			cmd.SetFieldData(requestFields)
+			return cmd
+		},
+		func(data dyn.MutateResultData) UpdateUserResponse {
+			response := httpserver.NewRestUpdateResponse2(data)
 			return response
 		},
 		httpserver.JsonOk,
@@ -132,41 +161,41 @@ func (this UserRest) SearchUsers(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this UserRest) UserExistsMulti(echoCtx echo.Context) (err error) {
+func (this UserRest) UserExists(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST user exists multi"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST user exists"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UserSvc.ExistsMulti,
-		func(request UserExistsMultiRequest) it.UserExistsMultiQuery {
-			return it.UserExistsMultiQuery(request)
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.UserSvc.UserExists,
+		func(request UserExistsRequest) it.UserExistsQuery {
+			return it.UserExistsQuery(request)
 		},
-		func(result it.UserExistsMultiResult) UserExistsMultiResponse {
-			return *result.Data
+		func(data dyn.ExistsResultData) UserExistsResponse {
+			return UserExistsResponse(data)
 		},
 		httpserver.JsonOk,
 	)
-	return err
 }
 
-func (this UserRest) GetUserContext(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user context"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UserSvc.GetUserContext,
-		func(request GetUserContextRequest) it.GetUserContextQuery {
-			request.UserId = middleWare.GetUserIdFromContext(echoCtx.Request().Context())
-			return it.GetUserContextQuery(request)
-		},
-		func(result it.GetUserContextResultData) GetUserContextResponse {
-			return *result.Data
-		},
-		httpserver.JsonOk,
-	)
-	return err
-}
+// func (this UserRest) GetUserContext(echoCtx echo.Context) (err error) {
+// 	defer func() {
+// 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user context"); e != nil {
+// 			err = e
+// 		}
+// 	}()
+// 	err = httpserver.ServeRequest(
+// 		echoCtx, this.UserSvc.GetUserContext,
+// 		func(request GetUserContextRequest) it.GetUserContextQuery {
+// 			request.UserId = middleWare.GetUserIdFromContext(echoCtx.Request().Context())
+// 			return it.GetUserContextQuery(request)
+// 		},
+// 		func(result it.GetUserContextResultData) GetUserContextResponse {
+// 			return *result.Data
+// 		},
+// 		httpserver.JsonOk,
+// 	)
+// 	return err
+// }

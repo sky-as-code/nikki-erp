@@ -1,7 +1,7 @@
 meta {
   name: User Update - Empty strings - Validation errors
   type: http
-  seq: 5
+  seq: 6
 }
 
 put {
@@ -12,36 +12,21 @@ put {
 
 body:json {
   {
-      "avatarUrl": "",
-      "displayName": "",
+      "avatar_url": "",
+      "display_name": "",
       "email": "",
-      "etag": "",
-      "password": "",
-      "orgIds": [""]
+      "etag": ""
   }
 }
 
 script:post-response {
-  const expected = {
-      code: "validation_error",
-      details: {
-          displayName: "cannot be blank",
-          email: "cannot be blank",
-          etag: "cannot be blank",
-          // TODO: Validate orgIds
-      },
-  };
+  const pkg = require('./scripts/error-400-fields-missing');
   
-  test("Status code is 400", function () {
-      expect(res.getStatus()).to.equal(400);
-  });
-  
-  test("Response body matches expected JSON exactly", function () {
-      expect(res.getBody()).to.eql(expected);
-  });
+  pkg.testMissingFields('etag');
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

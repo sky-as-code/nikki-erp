@@ -38,14 +38,14 @@ func (this *subjectHelper) assertSubjectExists(
 }
 
 func (this *subjectHelper) assertUserExists(ctx context.Context, userId *string, username *string, vErrs *ft.ValidationErrors) (*loginSubject, error) {
-	result := itUser.MustGetActiveUserResult{}
+	result := itUser.GetUserResult{}
 	var field string
 	if userId != nil {
 		field = "id"
 	} else {
 		field = "email"
 	}
-	err := this.cqrsBus.Request(ctx, &itUser.MustGetActiveUserQuery{
+	err := this.cqrsBus.Request(ctx, itUser.GetUserQuery{
 		Email: username,
 		Id:    userId,
 	}, &result)
@@ -53,7 +53,7 @@ func (this *subjectHelper) assertUserExists(ctx context.Context, userId *string,
 		return nil, err
 	}
 
-	if result.Data == nil {
+	if !result.HasData {
 		vErrs.Append("user: ", "user id not found or not active")
 		return nil, nil
 	}
@@ -67,8 +67,8 @@ func (this *subjectHelper) assertUserExists(ctx context.Context, userId *string,
 		return nil, nil
 	}
 	return &loginSubject{
-		Id:       *result.Data.Id,
-		Name:     *result.Data.DisplayName,
-		Username: *result.Data.Email,
+		Id:       *result.Data.GetId(),
+		Name:     *result.Data.GetDisplayName(),
+		Username: *result.Data.GetEmail(),
 	}, nil
 }

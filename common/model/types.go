@@ -278,36 +278,119 @@ func LangJsonPtrValidateRule(field **LangJson, isRequired bool, minLength int, m
 	)
 }
 
-func init() {
-	AddConversion[LangJson, *LangJson](func(in reflect.Value) (reflect.Value, error) {
-		if in.IsNil() {
-			return reflect.ValueOf((*LangJson)(nil)), nil
-		}
+func NewModelDateTime() ModelDateTime {
+	return ModelDateTime(time.Now().UTC())
+}
 
-		result := in.Interface().(LangJson)
-		return reflect.ValueOf(&result), nil
-	})
+func ParseModelDateTime(timestamp string) (ModelDateTime, error) {
+	if !strings.HasSuffix(timestamp, "Z") {
+		return ModelDateTime{}, errors.New("timestamp must be in RFC3339 format and in UTC (end with 'Z' only)")
+	}
 
-	AddConversion[*LangJson, LangJson](func(in reflect.Value) (reflect.Value, error) {
-		if in.IsNil() {
-			return reflect.ValueOf((LangJson)(nil)), nil
-		}
+	parsed, err := time.Parse(time.RFC3339, timestamp)
+	if err != nil {
+		return ModelDateTime{}, err
+	}
+	return ModelDateTime(parsed), nil
+}
 
-		result := *in.Interface().(*LangJson)
-		return reflect.ValueOf(result), nil
-	})
+// A time.Time wrapper to represent a date-time. Use this to consistently handle date-time thoughout this application.
+type ModelDateTime time.Time
 
-	AddConversion[Id, *Id](func(in reflect.Value) (reflect.Value, error) {
-		result := in.Interface().(Id)
-		return reflect.ValueOf(&result), nil
-	})
+func (this ModelDateTime) GoTime() time.Time {
+	return time.Time(this)
+}
 
-	AddConversion[*Id, Id](func(in reflect.Value) (reflect.Value, error) {
-		if in.IsNil() {
-			return reflect.ValueOf(Id("")), nil
-		}
+func (this ModelDateTime) String() string {
+	return time.Time(this).Format(time.RFC3339)
+}
 
-		result := *in.Interface().(*Id)
-		return reflect.ValueOf(result), nil
-	})
+func (this ModelDateTime) MarshalText() ([]byte, error) {
+	return []byte(this.String()), nil
+}
+
+func (this *ModelDateTime) UnmarshalText(data []byte) error {
+	parsed, err := ParseModelDateTime(string(data))
+	if err != nil {
+		return err
+	}
+	*this = parsed
+	return nil
+}
+
+func NewModelDate() ModelDate {
+	now := time.Now().UTC()
+	y, m, d := now.Date()
+	dateOnly := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	return ModelDate(dateOnly)
+}
+
+func ParseModelDate(timestamp string) (ModelDate, error) {
+	parsed, err := time.Parse(time.DateOnly, timestamp)
+	if err != nil {
+		return ModelDate{}, err
+	}
+	return ModelDate(parsed), nil
+}
+
+// A time.Time wrapper to represent a date without time. Use this to consistently handle date thoughout this application.
+type ModelDate time.Time
+
+func (this ModelDate) GoTime() time.Time {
+	return time.Time(this)
+}
+
+func (this ModelDate) String() string {
+	return time.Time(this).Format(time.DateOnly)
+}
+
+func (this ModelDate) MarshalText() ([]byte, error) {
+	return []byte(this.String()), nil
+}
+
+func (this *ModelDate) UnmarshalText(data []byte) error {
+	parsed, err := ParseModelDate(string(data))
+	if err != nil {
+		return err
+	}
+	*this = parsed
+	return nil
+}
+
+func NewModelTime() ModelTime {
+	now := time.Now().UTC()
+	onlyTime := time.Date(0, 1, 1, now.Hour(), now.Minute(), now.Second(), now.Nanosecond(), time.UTC)
+	return ModelTime(onlyTime)
+}
+
+func ParseModelTime(timestamp string) (ModelTime, error) {
+	parsed, err := time.Parse(time.TimeOnly, timestamp)
+	if err != nil {
+		return ModelTime{}, err
+	}
+	return ModelTime(parsed), nil
+}
+
+// A time.Time wrapper to represent a time without date. Use this to consistently handle time this application.
+type ModelTime time.Time
+
+func (this ModelTime) GoTime() time.Time {
+	return time.Time(this)
+}
+
+func (this ModelTime) String() string {
+	return time.Time(this).Format(time.TimeOnly)
+}
+
+func (this ModelTime) MarshalText() ([]byte, error) {
+	return []byte(this.String()), nil
+}
+
+func (this *ModelTime) UnmarshalText(data []byte) error {
+	parsed, err := ParseModelTime(string(data))
+	if err != nil {
+		return err
+	}
+	*this = parsed
+	return nil
 }

@@ -1,7 +1,7 @@
 meta {
   name: User Create - Invalid fields - Validation errors
   type: http
-  seq: 4
+  seq: 7
 }
 
 post {
@@ -12,33 +12,60 @@ post {
 
 body:json {
   {
-      "displayName": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
-      "email": "invalid@",
-      "password": "short",
-      "orgIds": [""]
+      "display_name": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+      "email": "invalid@"
   }
 }
 
 script:post-response {
-  const expected = {
-      code: "validation_error",
-      details: {
-          displayName: "the length must be between 1 and 200",
-          email: "must be a valid email address",
-          // TODO: Validate orgIds
+  const pkg = require('./scripts/common-test-response');
+  
+  const schema = {
+      type: "array",
+      minItems: 2,
+      maxItems: 2,
+      items: {
+          type: "object",
+          required: ["field", "key", "message", "type"],
+          properties: {
+              field: {
+                  type: "string",
+                  enum: ["display_name", "email"],
+              },
+              key: {
+                  type: "string",
+                  enum: ["common.err_invalid_length", "common.err_invalid_email"],
+              },
+              message: {
+                  type: "string",
+                  enum: ["must have length between {{.min}} and {{.max}}", "must be a valid email address"],
+              },
+              type: {
+                  type: "string",
+                  enum: ["validation"],
+              },
+              vars: {
+                  type: "object",
+                  properties: {
+                    max: {
+                      type: "integer",
+                    },
+                    min: {
+                      type: "integer",
+                    },
+                  },
+              },
+          },
+          additionalProperties: false,
       },
+      additionalItems: false
   };
   
-  test("Status code is 400", function () {
-      expect(res.getStatus()).to.equal(400);
-  });
-  
-  test("Response body matches expected JSON exactly", function () {
-      expect(res.getBody()).to.eql(expected);
-  });
+  pkg.testHttpResponse(schema, 400);
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

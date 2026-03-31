@@ -6,10 +6,14 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/modelmapper"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -31,15 +35,24 @@ func JsonBadRequest(echoCtx echo.Context, err any) error {
 	return echoCtx.JSON(http.StatusBadRequest, err)
 }
 
+func NewRestCreateResponseDyn(fields dmodel.DynamicFields) *RestCreateResponse {
+	response := &RestCreateResponse{}
+	err := modelmapper.MapToStruct(fields, response)
+	ft.PanicOnErr(err)
+	return response
+}
+
 type RestCreateResponse struct {
-	Id        model.Id   `json:"id"`
-	CreatedAt int64      `json:"createdAt"`
-	Etag      model.Etag `json:"etag"`
+	Id model.Id `json:"id"`
+	// For backward compatibility. Will be removed.
+	CreatedAtMs int64      `json:"createdAt,omitempty"`
+	CreatedAt   string     `json:"created_at,omitempty"`
+	Etag        model.Etag `json:"etag"`
 }
 
 func (this *RestCreateResponse) FromEntity(src createdEntity) {
 	this.Id = *src.GetId()
-	this.CreatedAt = *safe.Indirect(src.GetCreatedAt(), func(srcTime time.Time) *int64 {
+	this.CreatedAtMs = *safe.Indirect(src.GetCreatedAt(), func(srcTime time.Time) *int64 {
 		milli := srcTime.UnixMilli()
 		return &milli
 	})
@@ -51,9 +64,10 @@ func (this *RestCreateResponse) FromNonEntity(src any) {
 }
 
 type RestUpdateResponse struct {
-	Id        model.Id   `json:"id"`
-	UpdatedAt int64      `json:"updatedAt"`
-	Etag      model.Etag `json:"etag"`
+	Id          model.Id   `json:"id"`
+	UpdatedAtMs int64      `json:"updatedAt,omitempty"`
+	UpdatedAt   string     `json:"updated_at,omitempty"`
+	Etag        model.Etag `json:"etag"`
 }
 
 func (this *RestUpdateResponse) FromEntity(src updatedEntity) {
@@ -61,7 +75,7 @@ func (this *RestUpdateResponse) FromEntity(src updatedEntity) {
 	this.Etag = *src.GetEtag()
 
 	if updatedAt := src.GetUpdatedAt(); updatedAt != nil {
-		this.UpdatedAt = updatedAt.UnixMilli()
+		this.UpdatedAtMs = updatedAt.UnixMilli()
 	}
 }
 
@@ -71,7 +85,7 @@ func (this *RestUpdateResponse) FromNonEntity(src any) {
 
 type RestDeleteResponse struct {
 	Id        model.Id `json:"id"`
-	DeletedAt int64    `json:"deletedAt"`
+	DeletedAt int64    `json:"deleted_at"`
 }
 
 func (this *RestDeleteResponse) FromEntity(src deletedEntity) {
@@ -93,6 +107,19 @@ type RestSearchResponse[TItem any] struct {
 	Size  int     `json:"size"`
 }
 
+func NewSearchUsersResponseDyn[TItem dmodel.DynamicModelGetter](
+	data dyn.PagedResultData[TItem],
+) RestSearchResponse[dmodel.DynamicFields] {
+
+	items := dmodel.ExtractFieldsArr(data.Items)
+	return RestSearchResponse[dmodel.DynamicFields]{
+		Items: items,
+		Total: data.Total,
+		Page:  data.Page,
+		Size:  data.Size,
+	}
+}
+
 type createdEntity interface {
 	GetId() *model.Id
 	GetCreatedAt() *time.Time
@@ -108,4 +135,43 @@ type updatedEntity interface {
 type deletedEntity interface {
 	GetId() *model.Id
 	GetDeletedAt() *time.Time
+}
+
+type RestDeleteResponse2 struct {
+	AffectedCount int    `json:"affected_count"`
+	AffectedAt    string `json:"affected_at"`
+}
+
+func NewRestDeleteResponse2(src dyn.MutateResultData) RestDeleteResponse2 {
+	response := RestDeleteResponse2{}
+	response.AffectedCount = src.AffectedCount
+	response.AffectedAt = src.AffectedAt.String()
+	return response
+}
+
+type RestUpdateResponse2 struct {
+	AffectedCount int        `json:"affected_count"`
+	AffectedAt    string     `json:"affected_at"`
+	Etag          model.Etag `json:"etag"`
+}
+
+func NewRestUpdateResponse2(src dyn.MutateResultData) RestUpdateResponse2 {
+	response := RestUpdateResponse2{}
+	response.AffectedCount = src.AffectedCount
+	response.AffectedAt = src.AffectedAt.String()
+	response.Etag = src.Etag
+	return response
+}
+
+// RestMutateResponse is a mutation payload without etag (e.g. junction-only updates).
+type RestMutateResponse struct {
+	AffectedCount int    `json:"affected_count"`
+	AffectedAt    string `json:"affected_at"`
+}
+
+func NewRestMutateResponse(src dyn.MutateResultData) RestMutateResponse {
+	return RestMutateResponse{
+		AffectedCount: src.AffectedCount,
+		AffectedAt:    src.AffectedAt.String(),
+	}
 }

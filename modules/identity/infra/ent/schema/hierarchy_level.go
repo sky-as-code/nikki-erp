@@ -79,8 +79,7 @@ func (HierarchyLevel) Edges() []ent.Edge {
 			Ref("parent"),
 
 		edge.From("users", User.Type).
-			Ref("hierarchy").
-			Through("user_hierarchy", UserHierarchy.Type),
+			Ref("hierarchy"),
 
 		edge.To("parent", HierarchyLevel.Type).
 			Field("parent_id").

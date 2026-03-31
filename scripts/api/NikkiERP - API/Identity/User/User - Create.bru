@@ -12,9 +12,8 @@ post {
 
 body:json {
   {
-      "displayName": "{{$randomFullName}}",
-      "email": "{{$randomEmail}}",
-      "password": "p@sswo0rd"
+      "display_name": "{{$randomFullName}}",
+      "email": "{{$randomEmail}}"
   }
 }
 
@@ -29,4 +28,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

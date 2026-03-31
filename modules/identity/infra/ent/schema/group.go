@@ -35,10 +35,6 @@ func (GroupMixin) Fields() []ent.Field {
 		field.String("name").
 			NotEmpty(),
 
-		field.String("org_id").
-			Optional().
-			Nillable(),
-
 		field.Time("updated_at").
 			Optional().
 			Nillable(),
@@ -68,14 +64,6 @@ func (Group) Edges() []ent.Edge {
 		edge.From("users", User.Type).
 			Ref("groups").
 			Through("user_groups", UserGroup.Type),
-
-		// A group may belong to an organization (optional)
-		edge.To("org", Organization.Type).
-			Field("org_id").
-			Unique().
-			Annotations(entsql.Annotation{
-				OnDelete: entsql.Cascade,
-			}),
 	}
 }
 

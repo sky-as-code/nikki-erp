@@ -1,0 +1,38 @@
+meta {
+  name: User Create - With readonly fields - Success
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "id": "00000000000000000000000000",
+    "display_name": "{{$randomFullName}}",
+    "email": "{{$randomEmail}}",
+    "is_owner": true,
+    "is_archived": "2026-03-24T10:54:50.610762Z"
+  }
+}
+
+script:post-response {
+  const { testCreate } = require('./scripts/create-success');
+  
+  testCreate('user_id');
+  
+  const { email, is_owner, is_archived } = req.getBody();
+  bru.setVar('email', email);
+  bru.setVar('ignoredIsOwner', is_owner);
+  bru.setVar('ignoredIsArchived', is_archived);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

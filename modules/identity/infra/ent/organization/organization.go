@@ -38,8 +38,6 @@ const (
 	EdgeUsers = "users"
 	// EdgeHierarchies holds the string denoting the hierarchies edge name in mutations.
 	EdgeHierarchies = "hierarchies"
-	// EdgeGroups holds the string denoting the groups edge name in mutations.
-	EdgeGroups = "groups"
 	// EdgeUserOrgs holds the string denoting the user_orgs edge name in mutations.
 	EdgeUserOrgs = "user_orgs"
 	// Table holds the table name of the organization in the database.
@@ -56,13 +54,6 @@ const (
 	HierarchiesInverseTable = "ident_hierarchy_levels"
 	// HierarchiesColumn is the table column denoting the hierarchies relation/edge.
 	HierarchiesColumn = "org_id"
-	// GroupsTable is the table that holds the groups relation/edge.
-	GroupsTable = "ident_groups"
-	// GroupsInverseTable is the table name for the Group entity.
-	// It exists in this package in order to avoid circular dependency with the "group" package.
-	GroupsInverseTable = "ident_groups"
-	// GroupsColumn is the table column denoting the groups relation/edge.
-	GroupsColumn = "org_id"
 	// UserOrgsTable is the table that holds the user_orgs relation/edge.
 	UserOrgsTable = "ident_user_org_rel"
 	// UserOrgsInverseTable is the table name for the UserOrg entity.
@@ -194,20 +185,6 @@ func ByHierarchies(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByGroupsCount orders the results by groups count.
-func ByGroupsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newGroupsStep(), opts...)
-	}
-}
-
-// ByGroups orders the results by groups terms.
-func ByGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newGroupsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByUserOrgsCount orders the results by user_orgs count.
 func ByUserOrgsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -245,19 +222,6 @@ func newHierarchiesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(HierarchiesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, true, HierarchiesTable, HierarchiesColumn),
-	)
-}
-
-// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
-func NewGroupsStepNikki() *sqlgraph.Step {
-	return newGroupsStep()
-}
-
-func newGroupsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(GroupsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, true, GroupsTable, GroupsColumn),
 	)
 }
 

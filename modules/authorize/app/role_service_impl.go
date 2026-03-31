@@ -9,6 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	itHierarchy "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/hierarchy"
@@ -17,6 +18,7 @@ import (
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	itEntitlement "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement"
 	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement_assignment"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/external"
 	itGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_request"
 	itRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/revoke_request"
 	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role"
@@ -28,6 +30,7 @@ func NewRoleServiceImpl(
 	entitlementService itEntitlement.EntitlementService,
 	grantRequestService itGrantRequest.GrantRequestService,
 	revokeRequestService itRevokeRequest.RevokeRequestService,
+	orgExtSvc external.OrganizationExtService,
 	roleRepo itRole.RoleRepository,
 ) itRole.RoleService {
 	return &RoleServiceImpl{
@@ -36,6 +39,7 @@ func NewRoleServiceImpl(
 		entitlementService:   entitlementService,
 		grantRequestService:  grantRequestService,
 		revokeRequestService: revokeRequestService,
+		orgExtSvc:            orgExtSvc,
 		roleRepo:             roleRepo,
 	}
 }
@@ -47,6 +51,7 @@ type RoleServiceImpl struct {
 	grantRequestService  itGrantRequest.GrantRequestService
 	revokeRequestService itRevokeRequest.RevokeRequestService
 	roleRepo             itRole.RoleRepository
+	orgExtSvc            external.OrganizationExtService
 }
 
 func (this *RoleServiceImpl) AddEntitlements(ctx crud.Context, cmd itRole.AddEntitlementsCommand) (result *itRole.AddEntitlementsResult, err error) {
@@ -538,19 +543,22 @@ func (this *RoleServiceImpl) assertOrgExists(ctx crud.Context, role *domain.Role
 		return nil
 	}
 
-	existCmd := &itOrg.ExistsOrgByIdCommand{
-		Id: *role.OrgId,
+	existCmd := &itOrg.OrgExistsQuery{
+		Ids: []model.Id{*role.OrgId},
 	}
-	existRes := itOrg.ExistsOrgByIdResult{}
+	existRes := itOrg.OrgExistsResult{}
 	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
 	fault.PanicOnErr(err)
 
-	if existRes.ClientError != nil {
-		vErrs.MergeClientError(existRes.ClientError)
+	if len(existRes.ClientErrors) > 0 {
+		for i := range existRes.ClientErrors {
+			e := existRes.ClientErrors[i]
+			vErrs.Append(e.Field, e.Message)
+		}
 		return nil
 	}
 
-	if !existRes.Data {
+	if !existRes.Data.Exists(*role.OrgId) {
 		vErrs.Append("orgId", "not existing organization")
 	}
 	return nil
@@ -647,7 +655,7 @@ func (this *RoleServiceImpl) getRoleByIdFull(ctx crud.Context, query itRole.GetR
 		fault.PanicOnErr(err)
 		if org != nil {
 			dbRole.Organization = org
-			dbRole.OrgName = org.DisplayName
+			dbRole.OrgName = org.GetDisplayName()
 		}
 	}
 
@@ -664,7 +672,7 @@ func (this *RoleServiceImpl) populateRoleDetails(ctx crud.Context, dbRoles []dom
 	}
 
 	// Batch fetch organizations
-	orgMap := make(map[model.Id]*domain.Organization)
+	orgMap := make(map[model.Id]*external.Organization)
 	for orgId := range orgIdSet {
 		org, err := this.getOrganizationById(ctx, orgId)
 		fault.PanicOnErr(err)
@@ -688,7 +696,7 @@ func (this *RoleServiceImpl) populateRoleDetails(ctx crud.Context, dbRoles []dom
 		if dbRoles[i].OrgId != nil {
 			if org, exists := orgMap[*dbRoles[i].OrgId]; exists {
 				dbRoles[i].Organization = org
-				dbRoles[i].OrgName = org.DisplayName
+				dbRoles[i].OrgName = org.GetDisplayName()
 			}
 		}
 	}
@@ -696,26 +704,21 @@ func (this *RoleServiceImpl) populateRoleDetails(ctx crud.Context, dbRoles []dom
 	return nil
 }
 
-func (this *RoleServiceImpl) getOrganizationById(ctx crud.Context, orgId model.Id) (*domain.Organization, error) {
-	orgQuery := &itOrg.GetOrganizationByIdQuery{
-		Id: orgId,
+func (this *RoleServiceImpl) getOrganizationById(ctx crud.Context, orgId model.Id) (*external.Organization, error) {
+	query := external.GetOrgQuery{
+		Id: &orgId,
 	}
-	orgRes := itOrg.GetOrganizationByIdResult{}
-	err := this.cqrsBus.Request(ctx, *orgQuery, &orgRes)
-	fault.PanicOnErr(err)
+	coreCtx := ctx.(corectx.Context)
+	orgRes, err := this.orgExtSvc.GetOrg(coreCtx, query)
+	if err != nil {
+		return nil, err
+	}
 
-	if orgRes.ClientError != nil {
+	if orgRes.ClientErrors.Count() > 0 || !orgRes.HasData {
 		return nil, nil
 	}
 
-	if orgRes.Data == nil {
-		return nil, nil
-	}
-
-	return &domain.Organization{
-		Id:          orgRes.Data.Id,
-		DisplayName: orgRes.Data.DisplayName,
-	}, nil
+	return &orgRes.Data, nil
 }
 
 // makeEntitlementKey create composite key
@@ -905,24 +908,29 @@ func (this *RoleServiceImpl) assertRoleOrgIsolationForEntitlement(
 			return nil
 		}
 
-		hierarchyQuery := &itHierarchy.GetHierarchyLevelByIdQuery{
-			Id: *input.ScopeRef,
+		sid := *input.ScopeRef
+		hierarchyQuery := &itHierarchy.GetHierarchyLevelQuery{
+			Id: sid,
 		}
-		hierarchyRes := itHierarchy.GetHierarchyLevelByIdResult{}
+		hierarchyRes := itHierarchy.GetHierarchyLevelResult{}
 		err := this.cqrsBus.Request(ctx, *hierarchyQuery, &hierarchyRes)
 		fault.PanicOnErr(err)
 
-		if hierarchyRes.ClientError != nil {
-			vErrs.MergeClientError(hierarchyRes.ClientError)
+		if len(hierarchyRes.ClientErrors) > 0 {
+			for i := range hierarchyRes.ClientErrors {
+				e := hierarchyRes.ClientErrors[i]
+				vErrs.Append(e.Field, e.Message)
+			}
 			return nil
 		}
 
-		if hierarchyRes.Data == nil {
+		if !hierarchyRes.HasData {
 			vErrs.AppendNotFound("scopeRef", "hierarchy level not found")
 			return nil
 		}
 
-		if hierarchyRes.Data.OrgId == nil || *hierarchyRes.Data.OrgId != *dbRole.OrgId {
+		hOrgId := hierarchyRes.Data.GetOrgId()
+		if hOrgId == nil || *hOrgId != *dbRole.OrgId {
 			vErrs.AppendNotAllowed("scopeRef", "hierarchy level must belong to role's organization")
 			return nil
 		}

@@ -12,97 +12,73 @@ post {
 
 body:json {
   {
-      "displayName": "Tester Lead {{$randomFirstName}}",
+      "display_name": "Tester Lead {{$randomFirstName}}",
       "email": "{{$randomEmail}}"
   }
 }
 
 script:pre-request {
-  let body = req.getBody();
-  console.log('Creating test user: ', bru.interpolate(body.displayName));
+  const body = req.getBody();
+  console.log('User Search: Creating test user: ', bru.interpolate(body.display_name));
 }
 
 script:post-response {
-  test("Status code is 201", function () {
-    expect(res.getStatus()).to.equal(201);
-  });
+  const pkg = require('./scripts/common-test-response');
   
   const schema = {
     type: "object",
+    required: ["id", "created_at", "display_name", "email", "etag", "is_archived", "status"],
     properties: {
-      items: {
-        type: "array",
-        items: {
-          type: "object",
-          required: ["id", "createdAt", "displayName", "email", "etag", "status"],
-          properties: {
-            id: {
-              type: "string",
-              minLength: 1,
-            },
-            avatarUrl: {
-              type: "string",
-              format: "uri",
-            },
-            createdAt: {
-              type: "integer",
-              minimum: 1,
-              description: "Unix timestamp in milliseconds"
-            },
-            displayName: {
-              type: "string",
-              minLength: 1,
-            },
-            email: {
-              type: "string",
-              minLength: 1,
-            },
-            etag: {
-              type: "string",
-              minLength: 1,
-            },
-            status: {
-              type: "string",
-              minLength: 1,
-              //enum: ["active", "locked", "archived"]
-            },
-            updatedAt: {
-              type: "integer",
-              minimum: 1,
-            }
-          }
-        }
+      id: {
+        type: "string",
+        minLength: 1,
       },
-      total: {
-        type: "integer",
-        minimum: 0
+      avatar_url: {
+        type: "string",
+        format: "uri",
       },
-      page: {
-        type: "integer",
-        minimum: 0
+      created_at: {
+        type: "string",
+        minLength: 20, //"2026-03-23T06:53:01Z"
       },
-      size: {
-        type: "integer",
-        minimum: 1
-      }
+      display_name: {
+        type: "string",
+        minLength: 1,
+      },
+      email: {
+        type: "string",
+        minLength: 1,
+      },
+      etag: {
+        type: "string",
+        minLength: 1,
+      },
+      is_archived: {
+        type: "boolean",
+      },
+      is_owner: {
+        type: "boolean",
+      },
+      status: {
+        type: "string",
+        minLength: 1,
+        //enum: ["active", "locked", "archived"]
+      },
+      updated_at: {
+        type: "string",
+        minLength: 20, //"2026-03-23T06:53:01Z"
+      },
+      hierarchy_id: {
+        type: "string",
+        minLength: 1,
+      },
     },
-    required: ["items", "total", "page", "size"]
-  }
-  bru.setVar("search_schema", schema);
+  };
   
-  /*
-   * Configure loop
-   */
-  const LOOP_COUNT = 100;
-  bru.setVar("loop_count", LOOP_COUNT);
-  
-  console.log(`Creating ${LOOP_COUNT} test records`)
-  // console.log('Set next request: ', UserSearch_CreateTestData_1_Loop_RequestId)
-  bru.runner.setNextRequest('User Search - Create test data - Loop 100');
-  
-  
+  pkg.initTestData('User Search', schema, 'User Search - Create test data - Loop 50');
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

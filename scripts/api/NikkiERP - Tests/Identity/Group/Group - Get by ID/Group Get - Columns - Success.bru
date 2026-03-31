@@ -1,0 +1,43 @@
+meta {
+  name: Group Get - Columns - Success
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}?columns=name&columns=is_archived
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: name
+  columns: is_archived
+}
+
+script:post-response {
+  const { testHttpResponse } = require('./scripts/common-test-response');
+  
+  const schema = {
+      type: 'object',
+      required: ['name', 'is_archived'],
+      properties: {
+          name: {
+              type: 'string',
+              minLength: 1,
+          },
+          is_archived: {
+              type: "boolean",
+          },
+      },
+      additionalProperties: false
+  };
+  
+  testHttpResponse(schema, 200);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

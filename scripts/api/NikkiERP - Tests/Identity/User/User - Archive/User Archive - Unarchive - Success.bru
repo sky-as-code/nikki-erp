@@ -1,0 +1,30 @@
+meta {
+  name: User Archive - Unarchive - Success
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/users/{{user_id}}/archived
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "etag": "{{etag}}",
+    "is_archived": false
+  }
+}
+
+script:post-response {
+  const { testUpdate } = require('./scripts/update-success');
+  
+  testUpdate(1);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

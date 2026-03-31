@@ -10,6 +10,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/go-model"
+	"github.com/sky-as-code/nikki-erp/common/modelmapper"
 )
 
 func AddConversion[TIn any, TOut any](converter model.Converter) {
@@ -48,6 +49,53 @@ func Sanitize(target any) {
 }
 
 func init() {
+	modelmapper.AddConversion[ModelDateTime, string](func(in reflect.Value) (reflect.Value, error) {
+		result := in.Interface().(ModelDateTime)
+		return reflect.ValueOf(result.String()), nil
+	})
+
+	modelmapper.AddConversion[ModelDate, string](func(in reflect.Value) (reflect.Value, error) {
+		result := in.Interface().(ModelDate)
+		return reflect.ValueOf(result.String()), nil
+	})
+
+	modelmapper.AddConversion[ModelTime, string](func(in reflect.Value) (reflect.Value, error) {
+		result := in.Interface().(ModelTime)
+		return reflect.ValueOf(result.String()), nil
+	})
+
+	AddConversion[LangJson, *LangJson](func(in reflect.Value) (reflect.Value, error) {
+		if in.IsNil() {
+			return reflect.ValueOf((*LangJson)(nil)), nil
+		}
+
+		result := in.Interface().(LangJson)
+		return reflect.ValueOf(&result), nil
+	})
+
+	AddConversion[*LangJson, LangJson](func(in reflect.Value) (reflect.Value, error) {
+		if in.IsNil() {
+			return reflect.ValueOf((LangJson)(nil)), nil
+		}
+
+		result := *in.Interface().(*LangJson)
+		return reflect.ValueOf(result), nil
+	})
+
+	AddConversion[Id, *Id](func(in reflect.Value) (reflect.Value, error) {
+		result := in.Interface().(Id)
+		return reflect.ValueOf(&result), nil
+	})
+
+	AddConversion[*Id, Id](func(in reflect.Value) (reflect.Value, error) {
+		if in.IsNil() {
+			return reflect.ValueOf(Id("")), nil
+		}
+
+		result := *in.Interface().(*Id)
+		return reflect.ValueOf(result), nil
+	})
+
 	AddConversion[map[string]string, *map[string]string](func(in reflect.Value) (reflect.Value, error) {
 		if in.IsNil() {
 			return reflect.ValueOf((*map[string]string)(nil)), nil

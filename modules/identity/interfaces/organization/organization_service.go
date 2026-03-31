@@ -1,16 +1,16 @@
 package organization
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 type OrganizationService interface {
-	AddRemoveUsers(ctx crud.Context, cmd AddRemoveUsersCommand) (*AddRemoveUsersResult, error)
-	CreateOrganization(ctx crud.Context, cmd CreateOrganizationCommand) (*CreateOrganizationResult, error)
-	DeleteOrganization(ctx crud.Context, cmd DeleteOrganizationCommand) (*DeleteOrganizationResult, error)
-	GetOrganizationBySlug(ctx crud.Context, query GetOrganizationBySlugQuery) (*GetOrganizationBySlugResult, error)
-	GetOrganizationById(ctx crud.Context, query GetOrganizationByIdQuery) (*GetOrganizationByIdResult, error)
-	SearchOrganizations(ctx crud.Context, query SearchOrganizationsQuery) (*SearchOrganizationsResult, error)
-	UpdateOrganization(ctx crud.Context, cmd UpdateOrganizationCommand) (*UpdateOrganizationResult, error)
-	ExistsOrgById(ctx crud.Context, cmd ExistsOrgByIdCommand) (*ExistsOrgByIdResult, error)
+	CreateOrg(ctx corectx.Context, cmd CreateOrgCommand) (*CreateOrgResult, error)
+	DeleteOrg(ctx corectx.Context, cmd DeleteOrgCommand) (*DeleteOrgResult, error)
+	GetOrg(ctx corectx.Context, query GetOrgQuery) (*GetOrgResult, error)
+	OrgExists(ctx corectx.Context, query OrgExistsQuery) (*OrgExistsResult, error)
+	ManageOrgUsers(ctx corectx.Context, cmd ManageOrgUsersCommand) (*ManageOrgUsersResult, error)
+	SearchOrgs(ctx corectx.Context, query SearchOrgsQuery) (*SearchOrgsResult, error)
+	SetOrgIsArchived(ctx corectx.Context, cmd SetOrgIsArchivedCommand) (*SetOrgIsArchivedResult, error)
+	UpdateOrg(ctx corectx.Context, cmd UpdateOrgCommand) (*UpdateOrgResult, error)
 }

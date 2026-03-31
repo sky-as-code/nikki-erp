@@ -16,10 +16,6 @@ params:query {
   graph: {"if":["fake-field", "=", "Squad"]}
 }
 
-script:pre-request {
-  bru.deleteVar('search_schema')
-}
-
 script:post-response {
   const expected = {
       code: "validation_error",
@@ -53,4 +49,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

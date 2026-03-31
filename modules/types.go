@@ -41,6 +41,16 @@ type InCodeModule interface {
 	Version() semver.SemVer
 }
 
+type DynamicModule interface {
+	Deps() []string
+	// LabelKey is the translation key.
+	LabelKey() string
+	Name() string
+	Init() error
+	RegisterModels() error
+	Version() semver.SemVer
+}
+
 type InCodeModuleAppStarted interface {
 	OnAppStarted() error
 }

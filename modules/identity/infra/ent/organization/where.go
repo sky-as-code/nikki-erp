@@ -786,29 +786,6 @@ func HasHierarchiesWith(preds ...predicate.HierarchyLevel) predicate.Organizatio
 	})
 }
 
-// HasGroups applies the HasEdge predicate on the "groups" edge.
-func HasGroups() predicate.Organization {
-	return predicate.Organization(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, true, GroupsTable, GroupsColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasGroupsWith applies the HasEdge predicate on the "groups" edge with a given conditions (other predicates).
-func HasGroupsWith(preds ...predicate.Group) predicate.Organization {
-	return predicate.Organization(func(s *sql.Selector) {
-		step := newGroupsStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasUserOrgs applies the HasEdge predicate on the "user_orgs" edge.
 func HasUserOrgs() predicate.Organization {
 	return predicate.Organization(func(s *sql.Selector) {

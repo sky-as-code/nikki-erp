@@ -22,14 +22,10 @@ const (
 	FieldEtag = "etag"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-	// FieldOrgID holds the string denoting the org_id field in the database.
-	FieldOrgID = "org_id"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
 	// EdgeUsers holds the string denoting the users edge name in mutations.
 	EdgeUsers = "users"
-	// EdgeOrg holds the string denoting the org edge name in mutations.
-	EdgeOrg = "org"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
 	EdgeUserGroups = "user_groups"
 	// Table holds the table name of the group in the database.
@@ -39,13 +35,6 @@ const (
 	// UsersInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
 	UsersInverseTable = "ident_users"
-	// OrgTable is the table that holds the org relation/edge.
-	OrgTable = "ident_groups"
-	// OrgInverseTable is the table name for the Organization entity.
-	// It exists in this package in order to avoid circular dependency with the "organization" package.
-	OrgInverseTable = "ident_organizations"
-	// OrgColumn is the table column denoting the org relation/edge.
-	OrgColumn = "org_id"
 	// UserGroupsTable is the table that holds the user_groups relation/edge.
 	UserGroupsTable = "ident_user_group_rel"
 	// UserGroupsInverseTable is the table name for the UserGroup entity.
@@ -62,7 +51,6 @@ var Columns = []string{
 	FieldDescription,
 	FieldEtag,
 	FieldName,
-	FieldOrgID,
 	FieldUpdatedAt,
 }
 
@@ -117,11 +105,6 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
 }
 
-// ByOrgID orders the results by the org_id field.
-func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
-}
-
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
@@ -138,13 +121,6 @@ func ByUsersCount(opts ...sql.OrderTermOption) OrderOption {
 func ByUsers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newUsersStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
-// ByOrgField orders the results by org field.
-func ByOrgField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newOrgStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -172,19 +148,6 @@ func newUsersStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, true, UsersTable, UsersPrimaryKey...),
-	)
-}
-
-// Added by NikkieERP scripts/ent_templates/dialect/sql/meta.tmpl
-func NewOrgStepNikki() *sqlgraph.Step {
-	return newOrgStep()
-}
-
-func newOrgStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(OrgInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, OrgTable, OrgColumn),
 	)
 }
 

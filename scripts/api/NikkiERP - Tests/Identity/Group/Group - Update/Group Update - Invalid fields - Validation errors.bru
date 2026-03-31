@@ -1,7 +1,7 @@
 meta {
   name: Group Update - Invalid fields - Validation errors
   type: http
-  seq: 6
+  seq: 7
 }
 
 put {
@@ -18,35 +18,13 @@ body:json {
 }
 
 script:post-response {
-  const expected = {
-      code: "validation_error",
-      details: {
-          etag: "the length must be between 7 and 30",
-          name: "the length must be between 1 and 200"
-      },
-  };
+  const pkg = require('./scripts/error-400-invalid-length');
   
-  // Parse response body
-  let jsonData;
-  try {
-      jsonData = res.getBody();
-  } catch (e) {
-      test("Response is valid JSON", function () {
-          expect.fail("Response is not valid JSON");
-      });
-      return;
-  }
-  
-  test("Status code is 400", function () {
-      expect(res.getStatus()).to.equal(400);
-  });
-  
-  test("Response body matches expected JSON exactly", function () {
-      expect(jsonData).to.eql(expected);
-  });
+  pkg.testInvalidLength('etag', 'name');
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

@@ -16,33 +16,13 @@ params:query {
 }
 
 script:post-response {
-  const tv4 = require('tv4');
+  const pkg = require('./scripts/search-success');
   
-  const schema = bru.getVar("search_schema");
-  const payload = res.getBody();
-  
-  test("Status code is 200", function () {
-    expect(res.getStatus()).to.equal(200);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-    const valid = tv4.validate(res.getBody(), schema);
-    expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;
-  });
-  
-  // Change these numbers according to the query string params
-  const pageIndex = 2;
-  const pageSize = 7;
-  
-  test("Response has correct requested number of paged items", function () {
-      expect(payload.items.length).to.equal(pageSize)
-      expect(payload.page).to.equal(pageIndex)
-      expect(payload.size).to.equal(pageSize)
-  });
+  pkg.testSearch(7, 2);
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

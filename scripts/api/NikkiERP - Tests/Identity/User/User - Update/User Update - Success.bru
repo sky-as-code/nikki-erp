@@ -12,64 +12,26 @@ put {
 
 body:json {
   {
-      "avatarUrl": "{{$randomUrl}}/{{$randomWord}}.jpg",
-      "displayName": "{{$randomFullName}}",
+      "avatar_url": "{{$randomUrl}}/{{$randomWord}}.jpg",
+      "display_name": "{{$randomFullName}}",
       "email": "{{$randomEmail}}",
       "etag": "{{etag}}",
-      "statusValue": "archived"
+      "status": "invited"
   }
   
 }
 
 script:post-response {
-  const tv4 = require('tv4');
+  const pkg = require('./scripts/update-success');
   
-  const schema = {
-      type: "object",
-      required: ["id", "etag", "updatedAt"],
-      properties: {
-          id: {
-              type: "string",
-              minLength: 1,
-          },
-          etag: {
-              type: "string",
-              minLength: 1,
-          },
-          updatedAt: {
-              type: "integer",
-              minimum: 1,
-          }
-      },
-      additionalProperties: false
-  };
+  pkg.testUpdate(1);
   
-  test("Status code is 200", function () {
-      expect(res.getStatus()).to.equal(200);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-    const valid = tv4.validate(res.getBody(), schema);
-    expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;
-  });
-  
-  const requestBody = req.getBody();
-  bru.setVar('email', requestBody.email);
-  
-  const { id, etag, email } = res.getBody();
-  const previousEtag = bru.getVar("etag");
-  
-  test("Response 'etag' is different from previous", () => {
-      expect(etag).to.not.eql(previousEtag);
-  });
-  
-  id && bru.setVar('user_id', id);
-  etag && bru.setVar('etag', etag);
+  const { email } = req.getBody();
   email && bru.setVar('email', email);
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

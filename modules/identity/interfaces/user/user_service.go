@@ -1,19 +1,19 @@
 package user
 
 import (
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
 
 type UserService interface {
-	CreateUser(ctx crud.Context, cmd CreateUserCommand) (*CreateUserResult, error)
-	DeleteUser(ctx crud.Context, cmd DeleteUserCommand) (*DeleteUserResult, error)
-	Exists(ctx crud.Context, cmd UserExistsQuery) (*UserExistsResult, error)
-	ExistsMulti(ctx crud.Context, cmd UserExistsMultiQuery) (*UserExistsMultiResult, error)
-	GetUserById(ctx crud.Context, query GetUserByIdQuery) (*GetUserByIdResult, error)
-	GetUserByEmail(ctx crud.Context, query GetUserByEmailQuery) (*GetUserByEmailResult, error)
-	MustGetActiveUser(ctx crud.Context, query MustGetActiveUserQuery) (*MustGetActiveUserResult, error)
-	SearchUsers(ctx crud.Context, query SearchUsersQuery) (*SearchUsersResult, error)
-	UpdateUser(ctx crud.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)
-	// FindDirectApprover(ctx crud.Context, query FindDirectApproverQuery) (*FindDirectApproverResult, error)
-	GetUserContext(ctx crud.Context, query GetUserContextQuery) (*GetUserContextResultData, error)
+	GetUserContext(ctx crud.Context, query GetUserContextQuery) (any, error)
+
+	CreateUser(ctx corectx.Context, cmd CreateUserCommand) (*CreateUserResult, error)
+	DeleteUser(ctx corectx.Context, cmd DeleteUserCommand) (*DeleteUserResult, error)
+	GetActiveUser(ctx corectx.Context, query GetUserQuery) (*GetUserResult, error)
+	GetUser(ctx corectx.Context, query GetUserQuery) (*GetUserResult, error)
+	SearchUsers(ctx corectx.Context, query SearchUsersQuery) (*SearchUsersResult, error)
+	SetUserIsArchived(ctx corectx.Context, cmd SetUserIsArchivedCommand) (*SetUserIsArchivedResult, error)
+	UserExists(ctx corectx.Context, query UserExistsQuery) (*UserExistsResult, error)
+	UpdateUser(ctx corectx.Context, cmd UpdateUserCommand) (*UpdateUserResult, error)
 }

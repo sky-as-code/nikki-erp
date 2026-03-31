@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/group"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/hierarchylevel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/organization"
 	"github.com/sky-as-code/nikki-erp/modules/identity/infra/ent/user"
@@ -165,21 +164,6 @@ func (oc *OrganizationCreate) AddHierarchies(h ...*HierarchyLevel) *Organization
 		ids[i] = h[i].ID
 	}
 	return oc.AddHierarchyIDs(ids...)
-}
-
-// AddGroupIDs adds the "groups" edge to the Group entity by IDs.
-func (oc *OrganizationCreate) AddGroupIDs(ids ...string) *OrganizationCreate {
-	oc.mutation.AddGroupIDs(ids...)
-	return oc
-}
-
-// AddGroups adds the "groups" edges to the Group entity.
-func (oc *OrganizationCreate) AddGroups(g ...*Group) *OrganizationCreate {
-	ids := make([]string, len(g))
-	for i := range g {
-		ids[i] = g[i].ID
-	}
-	return oc.AddGroupIDs(ids...)
 }
 
 // Mutation returns the OrganizationMutation object of the builder.
@@ -340,22 +324,6 @@ func (oc *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(hierarchylevel.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := oc.mutation.GroupsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: true,
-			Table:   organization.GroupsTable,
-			Columns: []string{organization.GroupsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeString),
 			},
 		}
 		for _, k := range nodes {

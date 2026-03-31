@@ -330,12 +330,15 @@ func (this *ModuleServiceImpl) SyncModuleMetadata(ctx crud.Context, installedMod
 	accquired, err := this.moduleRepo.AcquireLock(ctx)
 	ft.PanicOnErr(err)
 	if !accquired {
-		this.logger.Infof("Could not acquired lock to sync module metadata. Another instance has acquired it")
+		this.logger.Debugf("Could not acquired lock to sync module metadata. Another instance has acquired it")
 		return false, nil
 	}
-	this.logger.Infof("Acquired lock successfully to sync module metadata")
+	this.logger.Debugf("Acquired lock successfully to sync module metadata")
 
-	defer this.moduleRepo.ReleaseLock(ctx)
+	defer func() {
+		this.logger.Debugf("Releasing lock for module metadata sync")
+		this.moduleRepo.ReleaseLock(ctx)
+	}()
 
 	trxCtx, err := this.moduleRepo.IncludeTransaction(ctx)
 	ft.PanicOnErr(err)
@@ -343,8 +346,6 @@ func (this *ModuleServiceImpl) SyncModuleMetadata(ctx crud.Context, installedMod
 
 	dbModules, err := this.moduleRepo.List(trxCtx, it.ListParam{})
 	ft.PanicOnErr(err)
-
-	// INSERT_YOUR_CODE
 
 	// Build maps for quick lookup
 	dbMap := make(map[string]domain.ModuleMetadata)
@@ -427,30 +428,6 @@ func (this *ModuleServiceImpl) SyncModuleMetadata(ctx crud.Context, installedMod
 	})
 
 	updatedCmds = append(updatedCmds, orphanedCmds...)
-	// result, err = this.UpdateBulkModules(trxCtx, it.UpdateBulkModulesCommand{
-	// 	Modules: updatedCmds,
-	// })
-	// ft.PanicOnErr(err)
-
-	// if result.ClientError != nil {
-	// 	return false, fmt.Errorf("failed to update modified modules: %v", result.ClientError)
-	// }
 
 	return true, nil
 }
-
-// func (this *ModuleServiceImpl) sprintModuleMetadata(mods []domain.ModuleMetadata) string {
-// 	modStr := []string{}
-// 	for _, m := range mods {
-// 		modStr = append(modStr, fmt.Sprintf("%s %s", *m.Name, *m.Version))
-// 	}
-// 	return strings.Join(modStr, ", ")
-// }
-
-// func (this *ModuleServiceImpl) sprintInCodeModule(mods []modules.InCodeModule) string {
-// 	modStr := []string{}
-// 	for _, m := range mods {
-// 		modStr = append(modStr, fmt.Sprintf("%s %s", m.Name(), m.Version()))
-// 	}
-// 	return strings.Join(modStr, ", ")
-// }

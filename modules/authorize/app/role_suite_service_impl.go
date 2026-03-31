@@ -7,12 +7,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 
 	domain "github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	itAssign "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement_assignment"
+	"github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/external"
 	itGrantRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_request"
 	itRevokeRequest "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/revoke_request"
 	itRole "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role"
@@ -25,6 +27,7 @@ func NewRoleSuiteServiceImpl(
 	grantRequestService itGrantRequest.GrantRequestService,
 	revokeRequestService itRevokeRequest.RevokeRequestService,
 	roleService itRole.RoleService,
+	orgExtSvc external.OrganizationExtService,
 	roleSuiteRepo it.RoleSuiteRepository,
 ) it.RoleSuiteService {
 	return &RoleSuiteServiceImpl{
@@ -33,6 +36,7 @@ func NewRoleSuiteServiceImpl(
 		grantRequestService:  grantRequestService,
 		revokeRequestService: revokeRequestService,
 		roleService:          roleService,
+		orgExtSvc:            orgExtSvc,
 		roleSuiteRepo:        roleSuiteRepo,
 	}
 }
@@ -44,6 +48,7 @@ type RoleSuiteServiceImpl struct {
 	revokeRequestService itRevokeRequest.RevokeRequestService
 	roleService          itRole.RoleService
 	roleSuiteRepo        it.RoleSuiteRepository
+	orgExtSvc            external.OrganizationExtService
 }
 
 func (this *RoleSuiteServiceImpl) CreateRoleSuite(ctx crud.Context, cmd it.CreateRoleSuiteCommand) (result *it.CreateRoleSuiteResult, err error) {
@@ -210,7 +215,7 @@ func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx crud.Context, query it.Se
 			}
 
 			// Batch fetch organizations
-			orgMap := make(map[model.Id]*domain.Organization)
+			orgMap := make(map[model.Id]*external.Organization)
 			for orgId := range orgIdSet {
 				org, err := this.getOrganizationById(ctx, orgId)
 				fault.PanicOnErr(err)
@@ -224,7 +229,7 @@ func (this *RoleSuiteServiceImpl) SearchRoleSuites(ctx crud.Context, query it.Se
 				if result.Items[i].OrgId != nil {
 					if org, exists := orgMap[*result.Items[i].OrgId]; exists {
 						result.Items[i].Organization = org
-						result.Items[i].OrgName = org.DisplayName
+						result.Items[i].OrgName = org.GetDisplayName()
 					}
 				}
 			}
@@ -305,7 +310,7 @@ func (this *RoleSuiteServiceImpl) getRoleSuiteByIdFull(ctx crud.Context, query i
 		fault.PanicOnErr(err)
 		if org != nil {
 			dbRoleSuite.Organization = org
-			dbRoleSuite.OrgName = org.DisplayName
+			dbRoleSuite.OrgName = org.GetDisplayName()
 		}
 	}
 
@@ -441,44 +446,42 @@ func (this *RoleSuiteServiceImpl) assertOrgExists(ctx crud.Context, roleSuite *d
 		return nil
 	}
 
-	existCmd := &itOrg.ExistsOrgByIdCommand{
-		Id: *roleSuite.OrgId,
+	existCmd := &itOrg.OrgExistsQuery{
+		Ids: []model.Id{*roleSuite.OrgId},
 	}
-	existRes := itOrg.ExistsOrgByIdResult{}
+	existRes := itOrg.OrgExistsResult{}
 	err := this.cqrsBus.Request(ctx, *existCmd, &existRes)
 	fault.PanicOnErr(err)
 
-	if existRes.ClientError != nil {
-		vErrs.MergeClientError(existRes.ClientError)
+	if len(existRes.ClientErrors) > 0 {
+		for i := range existRes.ClientErrors {
+			e := existRes.ClientErrors[i]
+			vErrs.Append(e.Field, e.Message)
+		}
 		return nil
 	}
 
-	if !existRes.Data {
+	if !existRes.Data.Exists(*roleSuite.OrgId) {
 		vErrs.Append("orgId", "not existing organization")
 	}
 	return nil
 }
 
-func (this *RoleSuiteServiceImpl) getOrganizationById(ctx crud.Context, orgId model.Id) (*domain.Organization, error) {
-	orgQuery := &itOrg.GetOrganizationByIdQuery{
-		Id: orgId,
+func (this *RoleSuiteServiceImpl) getOrganizationById(ctx crud.Context, orgId model.Id) (*external.Organization, error) {
+	query := external.GetOrgQuery{
+		Id: &orgId,
 	}
-	orgRes := itOrg.GetOrganizationByIdResult{}
-	err := this.cqrsBus.Request(ctx, *orgQuery, &orgRes)
-	fault.PanicOnErr(err)
+	coreCtx := ctx.(corectx.Context)
+	orgRes, err := this.orgExtSvc.GetOrg(coreCtx, query)
+	if err != nil {
+		return nil, err
+	}
 
-	if orgRes.ClientError != nil {
+	if orgRes.ClientErrors.Count() > 0 || !orgRes.HasData {
 		return nil, nil
 	}
 
-	if orgRes.Data == nil {
-		return nil, nil
-	}
-
-	return &domain.Organization{
-		Id:          orgRes.Data.Id,
-		DisplayName: orgRes.Data.DisplayName,
-	}, nil
+	return &orgRes.Data, nil
 }
 
 func (this *RoleSuiteServiceImpl) assertBusinessRuleDeleteRoleSuite(ctx crud.Context, cmd it.DeleteRoleSuiteCommand, roleSuiteDB *domain.RoleSuite, vErrs *fault.ValidationErrors) error {

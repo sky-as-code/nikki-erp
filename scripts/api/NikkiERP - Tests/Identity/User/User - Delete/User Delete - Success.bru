@@ -11,36 +11,13 @@ delete {
 }
 
 script:post-response {
-  const tv4 = require('tv4');
+  const pkg = require('./scripts/delete-success');
   
-  const schema = {
-      type: "object",
-      required: ["id", "deletedAt"],
-      properties: {
-          id: {
-              type: "string",
-              minLength: 1,
-          },
-          deletedAt: {
-              type: "integer",
-              minimum: 1,
-          },
-      },
-      additionalProperties: false
-  };
-  
-  test("Status code is 200", function () {
-      expect(res.getStatus()).to.equal(200);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-    const valid = tv4.validate(res.getBody(), schema);
-    expect(tv4.error).not.to.exist;
-    expect(valid).to.be.true;
-  });
+  pkg.testDelete(1);
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }
