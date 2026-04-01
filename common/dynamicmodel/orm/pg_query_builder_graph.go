@@ -342,7 +342,7 @@ func (p *joinPlanner) selectExprForColumn(requested string) (string, error) {
 }
 
 func collectGraphFieldPaths(graph *dmodel.SearchGraph, into map[string]struct{}) error {
-	if graph == nil || len(graph.GetCondition().Field()) == 0 {
+	if graph == nil {
 		return nil
 	}
 	if err := noteGraphFieldName(graph.GetCondition().Field(), MaxSearchGraphConditionDots, into); err != nil {

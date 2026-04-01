@@ -47,26 +47,10 @@ func ValidateMin(value any, opts any) *ft.ClientErrorItem {
 	}
 	val, err := toComparableValue(value)
 	if err != nil {
-		return ft.NewAnonymousValidationError("common.err_invalid_value_type_number", "invalid value type, must be a number", nil)
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_invalid_value_type_number"), "invalid value type, must be a number", nil)
 	}
 	if !isGreaterOrEqual(val, minVal) {
-		return ft.NewAnonymousValidationError("common.err_less_than_min", "must not be less than {{.min}}", map[string]any{"min": fmt.Sprint(opts)})
-	}
-	return nil
-}
-
-// ValidateLength validates that string or slice length is between minLen and maxLen (inclusive).
-func ValidateLength(value any, minLen int, maxLen int) *ft.ClientErrorItem {
-	length, err := getLength(value)
-	if err != nil {
-		return ft.NewAnonymousValidationError("common.err_invalid_value_type", "invalid value type", nil)
-	}
-	if length < minLen || length > maxLen {
-		return ft.NewAnonymousValidationError(
-			"common.err_invalid_length",
-			"must have length between {{.min}} and {{.max}}",
-			map[string]any{"min": minLen, "max": maxLen},
-		)
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_less_than_min"), "must not be less than {{.min}}", map[string]any{"min": fmt.Sprint(opts)})
 	}
 	return nil
 }
@@ -82,11 +66,11 @@ func ValidateArrayLength(value any, opts any) *ft.ClientErrorItem {
 	minLen, maxLen := arr[0], arr[1]
 	rv := reflect.ValueOf(value)
 	if rv.Kind() != reflect.Slice && rv.Kind() != reflect.Array {
-		return ft.NewAnonymousValidationError("common.err_invalid_value_type_array", "invalid value type, must be an array", nil)
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_invalid_value_type_array"), "invalid value type, must be an array", nil)
 	}
 	n := rv.Len()
 	if n < minLen || n > maxLen {
-		return ft.NewAnonymousValidationError("common.err_invalid_length", "array length must be between {{.min}} and {{.max}}", map[string]any{"min": minLen, "max": maxLen})
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_invalid_array_length"), "array length must be between {{.min}} and {{.max}}", map[string]any{"min": minLen, "max": maxLen})
 	}
 	return nil
 }
@@ -109,25 +93,25 @@ func ValidateOneOf(value any, opts any) *ft.ClientErrorItem {
 	for i, v := range values {
 		parts[i] = fmt.Sprint(v)
 	}
-	return ft.NewAnonymousValidationError("common.err_not_one_of", "must be one of: {{.allowed}}", map[string]any{"allowed": strings.Join(parts, ", ")})
+	return ft.NewAnonymousValidationError(ft.ErrorKey("err_not_one_of"), "must be one of: {{.allowed}}", map[string]any{"allowed": strings.Join(parts, ", ")})
 }
 
 // --- Data type validation helpers ---
 
 func ValidateNotEmpty(value any) *ft.ClientErrorItem {
 	if isNil(value) {
-		return ft.NewAnonymousValidationError("common.err_not_empty_required", "must not be empty", nil)
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_not_empty_required"), "must not be empty", nil)
 	}
 	return nil
 }
 
 func ValidateNotNil(value any) *ft.ClientErrorItem {
 	if value == nil {
-		return ft.NewAnonymousValidationError("common.err_not_nil_required", "must not be nil", nil)
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_not_nil_required"), "must not be nil", nil)
 	}
 	v := reflect.ValueOf(value)
 	if v.Kind() == reflect.Ptr && v.IsNil() {
-		return ft.NewAnonymousValidationError("common.err_not_nil_required", "must not be nil", nil)
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_not_nil_required"), "must not be nil", nil)
 	}
 	return nil
 }
@@ -136,7 +120,7 @@ var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]
 
 func ValidateEmail(value string) *ft.ClientErrorItem {
 	if !emailRegex.MatchString(value) {
-		return ft.NewAnonymousValidationError("common.err_invalid_email", "must be a valid email address", nil)
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_invalid_email"), "must be a valid email address", nil)
 	}
 	return nil
 }
@@ -145,7 +129,7 @@ var urlRegex = regexp.MustCompile(`^https?://[^\s]+$`)
 
 func ValidateUrl(value string) *ft.ClientErrorItem {
 	if !urlRegex.MatchString(value) {
-		return ft.NewAnonymousValidationError("common.err_invalid_url", "must be a valid URL", nil)
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_invalid_url"), "must be a valid URL", nil)
 	}
 	return nil
 }

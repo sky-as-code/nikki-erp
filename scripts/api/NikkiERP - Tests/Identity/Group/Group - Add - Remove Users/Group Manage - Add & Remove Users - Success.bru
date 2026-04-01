@@ -1,0 +1,46 @@
+meta {
+  name: Group - Add & Remove Users - Success
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "add": ["<< Managed by script >>"],
+      "remove": ["<< Managed by script >>"],
+      "etag": "{{etag}}"
+  }
+}
+
+script:pre-request {
+  const pkg = require('./scripts/common-test-response');
+  const groupUserIds = pkg.getTestDataIds('user_ids');
+  
+  const payload = req.getBody();
+  
+  payload.add = groupUserIds.slice(groupUserIds.length/2);
+  payload.remove = groupUserIds.slice(0, groupUserIds.length/2);
+  
+  req.setBody(payload);
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/update-success');
+  const {getTestDataIds} = require('./scripts/common-test-response');
+  
+  const groupUserIds = getTestDataIds('user_ids');
+  
+  pkg.testUpdate(groupUserIds.length);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

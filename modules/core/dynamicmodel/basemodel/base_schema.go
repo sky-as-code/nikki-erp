@@ -6,15 +6,17 @@ import (
 )
 
 const (
-	FieldId         = "id"
-	FieldCreatedAt  = "created_at"
-	FieldColumns    = "columns"
-	FieldIsArchived = "is_archived"
-	FieldGraph      = "graph"
-	FieldPage       = "page"
-	FieldSize       = "size"
-	FieldUpdatedAt  = "updated_at"
-	FieldEtag       = "etag"
+	FieldAssociations = "add"
+	FieldDesociations = "remove"
+	FieldId           = "id"
+	FieldCreatedAt    = "created_at"
+	FieldColumns      = "columns"
+	FieldIsArchived   = "is_archived"
+	FieldGraph        = "graph"
+	FieldPage         = "page"
+	FieldSize         = "size"
+	FieldUpdatedAt    = "updated_at"
+	FieldEtag         = "etag"
 )
 
 var baseBuilder *dmodel.ModelSchemaBuilder

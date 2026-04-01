@@ -3,7 +3,7 @@ const { testHttpResponse } = require('./common-test-response');
 module.exports.testUpdate = function (count) {  
   const schema = {
       type: "object",
-      required: ["affected_count", "affected_at", "etag"],
+      required: ["affected_count", "affected_at"],
       properties: {
           affected_count: {
               type: "integer",

@@ -11,34 +11,13 @@ delete {
 }
 
 script:post-response {
-  const expected = {
-      code: "validation_error",
-      details: {
-          id: "group not found",
-      },
-  };
+  const pkg = require('./scripts/error-400-not-found');
   
-  // Parse response body
-  let jsonData;
-  try {
-      jsonData = res.getBody();
-  } catch (e) {
-      test("Response is valid JSON", function () {
-          expect.fail("Response is not valid JSON");
-      });
-      return;
-  }
-  
-  test("Status code is 400", function () {
-      expect(res.getStatus()).to.equal(400);
-  });
-  
-  test("Response body matches expected JSON exactly", function () {
-      expect(jsonData).to.eql(expected);
-  });
+  pkg.testNotFound();
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

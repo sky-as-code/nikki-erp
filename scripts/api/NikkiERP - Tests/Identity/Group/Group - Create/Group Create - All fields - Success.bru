@@ -1,0 +1,34 @@
+meta {
+  name: Group Create - All fields - Success
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "<p>{{$randomJobArea}} {{$randomCatchPhraseAdjective}}</p>",
+    "description": "<script src='./remote.js'></script><strong>{{$randomLoremParagraphs}}</strong>"
+  }
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/create-success');
+  
+  pkg.testCreate('group_id');
+  
+  const { name } = req.getBody();
+  name && bru.setVar('name', name);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

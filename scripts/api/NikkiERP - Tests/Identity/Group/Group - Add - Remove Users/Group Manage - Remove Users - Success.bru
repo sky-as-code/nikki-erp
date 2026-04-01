@@ -1,0 +1,45 @@
+meta {
+  name: Group - Remove Users - Success
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "remove": ["<< Managed by script >>"]
+  }
+}
+
+script:pre-request {
+  const pkg = require('./scripts/common-test-response');
+  const groupUserIds = pkg.getTestDataIds('user_ids');
+  
+  const payload = req.getBody();
+  
+  // Remove the previously-added users from group
+  payload.remove = groupUserIds;
+  console.log({'remove': payload.remove})
+  
+  req.setBody(payload);
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/update-success');
+  const {getTestDataIds} = require('./scripts/common-test-response');
+  
+  const groupUserIds = getTestDataIds('user_ids');
+  
+  pkg.testUpdate(groupUserIds.length/2);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

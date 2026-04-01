@@ -25,7 +25,7 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/pquerna/otp v1.5.0
 	github.com/redis/go-redis/v9 v9.11.0
-	github.com/stephenafamo/bob v0.42.0
+	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.10.0
 	github.com/thoas/go-funk v0.9.3
 	github.com/tidwall/gjson v1.18.0
@@ -42,7 +42,6 @@ require (
 require (
 	ariga.io/atlas v0.31.1-0.20250212144724-069be8033e83 // indirect
 	github.com/Rican7/retry v0.3.1 // indirect
-	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65 // indirect
 	github.com/agext/levenshtein v1.2.1 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
@@ -76,8 +75,6 @@ require (
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/qdm12/reprint v0.0.0-20200326205758-722754a53494 // indirect
-	github.com/stephenafamo/scan v0.7.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

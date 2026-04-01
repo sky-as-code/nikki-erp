@@ -1,5 +1,5 @@
 meta {
-  name: User Search - Create test data - Init
+  name: User Exists - Create test data - Init
   type: http
   seq: 1
 }
@@ -12,14 +12,14 @@ post {
 
 body:json {
   {
-      "display_name": "Tester Lead {{$randomFirstName}}",
-      "email": "{{$randomEmail}}"
+      "display_name": "{{$randomJobDescriptor}} {{$randomFirstName}} {{$timestamp}}",
+      "email": "{{$timestamp}}-{{$randomEmail}}"
   }
 }
 
 script:pre-request {
   const body = req.getBody();
-  console.log('User Search: Creating test user: ', bru.interpolate(body.display_name));
+  console.log('User Exists Init: Creating test user: ', bru.interpolate(body.display_name));
 }
 
 script:post-response {
@@ -75,7 +75,11 @@ script:post-response {
     },
   };
   
-  pkg.initTestData('User Search', schema, 'User Search - Create test data - Loop 50');
+  pkg.initTestData(
+    'User Exists', schema,
+    'User Exists - Create test data - Loop 50',
+  );
+  
 }
 
 settings {

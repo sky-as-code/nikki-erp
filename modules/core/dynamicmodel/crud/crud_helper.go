@@ -1,6 +1,7 @@
 package crud
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/datastructure"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -504,11 +505,13 @@ func runUpdateRegardlessCheckingFlow(
 }
 
 type ManageM2mParam struct {
-	Action         string
-	DbRepoGetter   coredyn.BaseRepoGetter
-	DestSchemaName string
-	Associations   []coredyn.RepoM2mAssociation
-	Desociations   []coredyn.RepoM2mAssociation
+	Action             string
+	DbRepoGetter       coredyn.BaseRepoGetter
+	DestSchemaName     string
+	SrcId              model.Id
+	SrcIdFieldForError string
+	AssociatedIds      datastructure.Set[model.Id]
+	DisassociatedIds   datastructure.Set[model.Id]
 }
 
 func ManageM2m(ctx corectx.Context, param ManageM2mParam) (
@@ -519,9 +522,25 @@ func ManageM2m(ctx corectx.Context, param ManageM2mParam) (
 			err = e
 		}
 	}()
+	_, cErrs := manageAssocsSchema().Validate(dmodel.DynamicFields{
+		basemodel.FieldId:           param.SrcId,
+		basemodel.FieldAssociations: param.AssociatedIds.ToSlice(),
+		basemodel.FieldDesociations: param.DisassociatedIds.ToSlice(),
+	})
+	if cErrs.Count() > 0 {
+		cErrs.RenameField(basemodel.FieldId, param.SrcIdFieldForError)
+		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, nil
+	}
+
 	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
-	repoOut, err := dynamicRepo.ManageM2m(
-		ctx, param.DestSchemaName, param.Associations, param.Desociations,
+	repoOut, err := baserepo.ManageM2m(
+		ctx, dynamicRepo, dyn.RepoManageM2mParam{
+			DestSchemaName:     param.DestSchemaName,
+			SrcId:              param.SrcId,
+			SrcIdFieldForError: param.SrcIdFieldForError,
+			AssociatedIds:      param.AssociatedIds,
+			DisassociatedIds:   param.DisassociatedIds,
+		},
 	)
 	if err != nil {
 		return nil, err
@@ -534,6 +553,15 @@ func ManageM2m(ctx corectx.Context, param ManageM2mParam) (
 		AffectedAt:    model.NewModelDateTime(),
 	}
 	return &dyn.OpResult[dyn.MutateResultData]{Data: data, HasData: true}, nil
+}
+
+func manageAssocsSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"core.manage_assocs_command",
+		func() *dmodel.ModelSchemaBuilder {
+			return dyn.ManageAssocsSchemaBuilder()
+		},
+	)
 }
 
 func checkExistenceAndEtag(

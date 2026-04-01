@@ -64,13 +64,16 @@ script:post-response {
   testHttpResponse(schema, 200);
   
   test('Readonly fields are ignored', function () {
+    ignoredEtag = bru.getVar('ignoredEtag');
     ignoredIsOwner = bru.getVar('ignoredIsOwner');
     ignoredIsArchived = bru.getVar('ignoredIsArchived');
     const {
+      etag: actualEtag,
       is_owner: actualIsOwner,
       is_archived: actualIsArchived,
     } = res.getBody();
   
+    expect(ignoredEtag).not.equal(actualEtag);
     expect(ignoredIsOwner).not.equal(actualIsOwner);
     expect(ignoredIsArchived).not.equal(actualIsArchived);
   });

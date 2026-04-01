@@ -1,0 +1,29 @@
+meta {
+  name: Group Search - Order by edge root field - Success
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{api_host}}/v1/identity/groups?graph={"order": [["users.display_name", "desc"]]}&columns=name&columns=users.display_name
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"order": [["users.display_name", "desc"]]}
+  columns: name
+  columns: users.display_name
+}
+
+script:post-response {
+  const pkg = require('./scripts/search-success');
+  
+  pkg.testSearch(50);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

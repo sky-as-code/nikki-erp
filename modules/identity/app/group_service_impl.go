@@ -1,12 +1,9 @@
 package app
 
 import (
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itGrp "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
@@ -70,24 +67,16 @@ func (this *GroupServiceImpl) GetGroup(
 func (this *GroupServiceImpl) ManageGroupUsers(
 	ctx corectx.Context, cmd itGrp.ManageGroupUsersCommand,
 ) (result *itGrp.ManageGroupUsersResult, err error) {
-	return corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
-		Action:         "manage group users",
-		DbRepoGetter:   this.groupRepo2,
-		DestSchemaName: domain.UserSchemaName,
-		Associations:   groupUserAssocs(cmd.GroupId, cmd.Add.ToSlice()),
-		Desociations:   groupUserAssocs(cmd.GroupId, cmd.Remove.ToSlice()),
-	})
-}
 
-func groupUserAssocs(groupId model.Id, userIds []model.Id) []dyn.RepoM2mAssociation {
-	out := make([]dyn.RepoM2mAssociation, 0, len(userIds))
-	for _, uid := range userIds {
-		out = append(out, dyn.RepoM2mAssociation{
-			SrcKeys:  dmodel.DynamicFields{basemodel.FieldId: groupId},
-			DestKeys: dmodel.DynamicFields{basemodel.FieldId: uid},
-		})
-	}
-	return out
+	return corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
+		Action:             "manage group users",
+		DbRepoGetter:       this.groupRepo2,
+		DestSchemaName:     domain.UserSchemaName,
+		SrcId:              cmd.GroupId,
+		SrcIdFieldForError: "group_id",
+		AssociatedIds:      cmd.Add,
+		DisassociatedIds:   cmd.Remove,
+	})
 }
 
 func (this *GroupServiceImpl) SearchGroups(ctx corectx.Context, query itGrp.SearchGroupsQuery) (

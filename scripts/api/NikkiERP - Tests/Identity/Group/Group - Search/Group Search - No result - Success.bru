@@ -1,7 +1,7 @@
 meta {
   name: Group Search - No result - Success
   type: http
-  seq: 5
+  seq: 3
 }
 
 get {
@@ -15,23 +15,13 @@ params:query {
 }
 
 script:post-response {
-  const schema = bru.getVar("search_schema");
-  const payload = res.getBody();
+  const pkg = require('./scripts/search-success');
   
-  test("Status code is 200", function () {
-      expect(res.getStatus()).to.equal(200);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
-  });
-  
-  test("Response has no items", function () {
-      expect(payload.items.length).to.equal(0)
-  });
+  pkg.testSearch(50, 99, 0);
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

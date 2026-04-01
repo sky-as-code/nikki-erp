@@ -585,10 +585,11 @@ type FieldDataTypeOptions map[FieldDataTypeOptName]any
 
 const (
 	FieldDataTypeOptEnumValues        = FieldDataTypeOptName("enumValues")
-	FieldDataTypeOptPrecision         = FieldDataTypeOptName("precision")
-	FieldDataTypeOptSanitizeType      = FieldDataTypeOptName("sanitizeType")
 	FieldDataTypeOptLangJsonWhitelist = FieldDataTypeOptName("langJsonWhitelist")
 	FieldDataTypeOptLength            = FieldDataTypeOptName("length")
+	FieldDataTypeOptRange             = FieldDataTypeOptName("range")
+	FieldDataTypeOptSanitizeType      = FieldDataTypeOptName("sanitizeType")
+	FieldDataTypeOptScale             = FieldDataTypeOptName("scale")
 )
 
 type SanitizeType string

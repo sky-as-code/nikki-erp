@@ -1,37 +1,27 @@
 meta {
   name: Group Search - If and - Success
   type: http
-  seq: 7
+  seq: 6
 }
 
 get {
-  url: {{api_host}}/v1/identity/groups?graph={"and":[{"if":["name", "^", "dev"]},{"if": ["description", "*", "99"]}]}
+  url: {{api_host}}/v1/identity/groups?graph={"and":[{"if":["name", "^", "quality"]},{"if": ["is_archived", "=", false]}]}
   body: none
   auth: inherit
 }
 
 params:query {
-  graph: {"and":[{"if":["name", "^", "dev"]},{"if": ["description", "*", "99"]}]}
+  graph: {"and":[{"if":["name", "^", "quality"]},{"if": ["is_archived", "=", false]}]}
 }
 
 script:post-response {
-  const schema = bru.getVar("search_schema");
-  const payload = res.getBody();
+  const pkg = require('./scripts/search-success');
   
-  test("Status code is 200", function () {
-      expect(res.getStatus()).to.equal(200);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
-  });
-  
-  test("Response has positive number of items", function () {
-      expect(payload.items.length).to.be.greaterThan(0)
-  });
+  pkg.testSearch(50);
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

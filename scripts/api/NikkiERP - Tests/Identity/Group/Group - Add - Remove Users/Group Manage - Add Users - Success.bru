@@ -1,0 +1,44 @@
+meta {
+  name: Group - Add Users - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "add": ["<< Managed by script >>"]
+  }
+}
+
+script:pre-request {
+  const pkg = require('./scripts/common-test-response');
+  const groupUserIds = pkg.getTestDataIds('user_ids');
+  
+  const payload = req.getBody();
+  
+  // Add 50% new users to group
+  payload.add = groupUserIds.slice(0, groupUserIds.length/2);
+  
+  req.setBody(payload);
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/update-success');
+  const {getTestDataIds} = require('./scripts/common-test-response');
+  
+  const groupUserIds = getTestDataIds('user_ids');
+  
+  pkg.testUpdate(groupUserIds.length/2);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

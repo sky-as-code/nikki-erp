@@ -1,7 +1,7 @@
 meta {
   name: User Search - Create test data - Loop 50
   type: http
-  seq: 2
+  seq: 1
 }
 
 post {
@@ -12,8 +12,8 @@ post {
 
 body:json {
   {
-      "display_name": "Tester {{$randomFirstName}} {{loop_count}}",
-      "email": "{{loop_count}}-{{$randomEmail}}"
+      "display_name": "{{$randomJobDescriptor}} {{$randomFirstName}} {{$timestamp}}",
+      "email": "{{$timestamp}}-{{$randomEmail}}"
   }
 }
 

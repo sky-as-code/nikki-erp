@@ -19,18 +19,22 @@ script:post-response {
   const { testHttpResponse } = require('./scripts/common-test-response');
   
   const schema = {
-      type: 'object',
-      required: ['name', 'is_archived'],
-      properties: {
-          name: {
-              type: 'string',
-              minLength: 1,
-          },
-          is_archived: {
-              type: "boolean",
-          },
+    type: 'object',
+    required: ['name', 'is_archived'],
+    properties: {
+      id: {
+          type: 'string',
+          minLength: 1,
+      },  
+      name: {
+          type: 'string',
+          minLength: 1,
       },
-      additionalProperties: false
+      is_archived: {
+          type: "boolean",
+      },
+    },
+    additionalProperties: false,
   };
   
   testHttpResponse(schema, 200);

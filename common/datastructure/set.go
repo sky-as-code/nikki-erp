@@ -66,6 +66,10 @@ func (this *Set[T]) UnmarshalJSON(data []byte) error {
 	return err
 }
 
+func (this *Set[T]) UnmarshalText(text []byte) error {
+	return this.UnmarshalJSON(text)
+}
+
 func (this *Set[T]) unmarshalArray(data []byte) error {
 	array := []T{}
 	var err error

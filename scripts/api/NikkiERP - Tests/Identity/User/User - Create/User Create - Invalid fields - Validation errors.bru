@@ -34,11 +34,11 @@ script:post-response {
               },
               key: {
                   type: "string",
-                  enum: ["common.err_invalid_length", "common.err_invalid_email"],
+                  enum: ["common.err_invalid_string_length", "common.err_invalid_email"],
               },
               message: {
                   type: "string",
-                  enum: ["must have length between {{.min}} and {{.max}}", "must be a valid email address"],
+                  enum: ["string length must be between {{.min}} and {{.max}}", "must be a valid email address"],
               },
               type: {
                   type: "string",

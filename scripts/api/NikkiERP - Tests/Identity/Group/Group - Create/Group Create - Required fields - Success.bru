@@ -1,0 +1,32 @@
+meta {
+  name: Group Create - Required fields - Success
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} RequiredOnly"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/create-success');
+  
+  pkg.testCreate('group_id');
+  
+  const { name } = req.getBody();
+  name && bru.setVar('name', name);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

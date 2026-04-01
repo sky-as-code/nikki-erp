@@ -1,7 +1,7 @@
 meta {
   name: User Exists - Many - Success
   type: http
-  seq: 4
+  seq: 2
 }
 
 post {
@@ -21,7 +21,7 @@ script:pre-request {
   const existing = bru.getVar('user_ids');
   const nonExisting = ["01KMMNZ9M0EEF6JG6RMWWPSBKM", "01KMVYY7ACN3G69SZCDVVZZV09", "01KMVYY7ACZ1SPG7YVRD0WDFME", "01KMVYY7AC4AY6ETFEPCZPEQGH", "01KMVYY7AC4AFXYEC8N3T3FGWM"];
   const newBody = {
-    ids: existing.split(",").slice(0, 45).concat(nonExisting),
+    ids: existing.slice(0, 45).concat(nonExisting),
   };
   req.setBody(newBody);
   

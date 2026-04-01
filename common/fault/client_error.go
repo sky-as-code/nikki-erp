@@ -67,6 +67,14 @@ func (this *ClientErrors) Has(field string) bool {
 	return false
 }
 
+func (this *ClientErrors) RenameField(oldField string, newField string) {
+	for i := range *this {
+		if (*this)[i].Field == oldField {
+			(*this)[i].Field = newField
+		}
+	}
+}
+
 type ClientErrorType string
 
 const (
@@ -104,41 +112,6 @@ func NewAnonymousBusinessViolation(key string, message string, vars ...map[strin
 		Vars:    msgVars,
 		Type:    ClientErrorTypeBusiness,
 	}
-}
-
-func NewNotFoundError() *ClientErrorItem {
-	return NewAnonymousBusinessViolation(
-		ErrorKey("err_not_found"),
-		"The desired data could not be found",
-	)
-}
-
-func NewEtagMismatchedError() *ClientErrorItem {
-	return NewBusinessViolation(
-		"etag",
-		ErrorKey("err_etag_mismatched"),
-		"This data has been modified by another process",
-	)
-}
-
-func NewExclusiveFieldsError(conflictFields []string) *ClientErrorItem {
-	return NewAnonymousBusinessViolation(
-		ErrorKey("err_exclusive_fields"),
-		"The following fields are exclusive: {.excFields}",
-		map[string]any{
-			"excFields": conflictFields,
-		},
-	)
-}
-
-func NewExclusiveFieldsMissingError(missingFields []string) *ClientErrorItem {
-	return NewAnonymousBusinessViolation(
-		ErrorKey("err_exclusive_fields_missing"),
-		"One of these fields (not all of them) is required: {.excFields}",
-		map[string]any{
-			"excFields": missingFields,
-		},
-	)
 }
 
 func NewValidationError(field string, key string, message string, vars ...map[string]any) *ClientErrorItem {

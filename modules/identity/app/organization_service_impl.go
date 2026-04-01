@@ -140,11 +140,13 @@ func (this *OrganizationServiceImpl) ManageOrgUsers(ctx corectx.Context, cmd it.
 	result *it.ManageOrgUsersResult, err error,
 ) {
 	return corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
-		Action:         "manage organization users",
-		DbRepoGetter:   this.orgRepo2,
-		DestSchemaName: domain.UserSchemaName,
-		Associations:   orgUserAssocs(cmd.OrgId, cmd.Add.ToSlice()),
-		Desociations:   orgUserAssocs(cmd.OrgId, cmd.Remove.ToSlice()),
+		Action:             "manage organization users",
+		DbRepoGetter:       this.orgRepo2,
+		DestSchemaName:     domain.UserSchemaName,
+		SrcId:              cmd.OrgId,
+		SrcIdFieldForError: "org_id",
+		AssociatedIds:      cmd.Add,
+		DisassociatedIds:   cmd.Remove,
 	})
 }
 

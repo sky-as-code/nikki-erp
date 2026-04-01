@@ -1,7 +1,9 @@
 package dynamicmodel
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/datastructure"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
@@ -11,10 +13,9 @@ type BaseRepository interface {
 	// DeleteOne deletes a single record by primary key then returns the number of affected rows.
 	// If affected rows is 0, the record is not found.
 	DeleteOne(ctx corectx.Context, keys dmodel.DynamicFields) (*OpResult[int], error)
-	// ManageM2m inserts and/or deletes junction rows for a finalized many-to-many link to destSchemaName
-	// (peer schema name). SrcKeys / DestKeys must include KeyColumns() for the respective schemas.
-	// Returns total affected row count (inserts + deletes). Not wrapped in a DB transaction.
-	ManageM2m(ctx corectx.Context, destSchemaName string, associations []RepoM2mAssociation, desociations []RepoM2mAssociation) (*OpResult[int], error)
+	// ManageM2m inserts and/or deletes junction rows for a finalized many-to-many link to dest schema.
+	// Source and destination are identified by id.
+	ManageM2m(ctx corectx.Context, param RepoManageM2mParam) (*OpResult[int], error)
 	Insert(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[int], error)
 	GetOne(ctx corectx.Context, param RepoGetOneParam) (*OpResult[dmodel.DynamicFields], error)
 	Search(ctx corectx.Context, param RepoSearchParam) (*OpResult[PagedResultData[dmodel.DynamicFields]], error)
@@ -46,6 +47,14 @@ type RepoSearchParam struct {
 	Filter  []dmodel.DynamicFields
 	Page    int
 	Size    int
+}
+
+type RepoManageM2mParam struct {
+	DestSchemaName     string
+	SrcId              model.Id
+	SrcIdFieldForError string
+	AssociatedIds      datastructure.Set[model.Id]
+	DisassociatedIds   datastructure.Set[model.Id]
 }
 
 type BaseRepoGetter interface {

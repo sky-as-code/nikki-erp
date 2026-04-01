@@ -1,7 +1,7 @@
 meta {
   name: Group Search - No criteria, With paging - Success
   type: http
-  seq: 4
+  seq: 2
 }
 
 get {
@@ -16,29 +16,13 @@ params:query {
 }
 
 script:post-response {
-  const schema = bru.getVar("search_schema");
-  const payload = res.getBody();
+  const pkg = require('./scripts/search-success');
   
-  test("Status code is 200", function () {
-      expect(res.getStatus()).to.equal(200);
-  });
-  
-  test("Response matches expected JSON schema", function () {
-  //     pm.response.to.have.jsonSchema(schema);
-  });
-  
-  // Change these numbers according to the query string params
-  const pageIndex = 2;
-  const pageSize = 7;
-  
-  test("Response has correct requested number of paged items", function () {
-      expect(payload.items.length).to.equal(pageSize)
-      expect(payload.page).to.equal(pageIndex)
-      expect(payload.size).to.equal(pageSize)
-  });
+  pkg.testSearch(7, 2);
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }
