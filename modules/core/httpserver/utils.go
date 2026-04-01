@@ -135,7 +135,7 @@ func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
 	}
 
 	if !result.HasData {
-		cErrs := ft.ClientErrors{*ft.NewNotFoundError()}
+		cErrs := ft.ClientErrors{*ft.NewAnonymousNotFoundError()}
 		return JsonBadRequest(echoCtx, cErrs)
 	}
 
@@ -169,7 +169,7 @@ func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData 
 	}
 
 	if !result.HasData && (len(skipNotFoundError) == 0 || !skipNotFoundError[0]) {
-		cErrs := ft.ClientErrors{*ft.NewNotFoundError()}
+		cErrs := ft.ClientErrors{*ft.NewAnonymousNotFoundError()}
 		return JsonBadRequest(echoCtx, cErrs)
 	}
 

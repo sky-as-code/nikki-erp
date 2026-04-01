@@ -20,7 +20,7 @@ body:json {
 script:post-response {
   const pkg = require('./scripts/error-400-invalid-length');
   
-  pkg.testInvalidLength('etag', 'name');
+  pkg.testInvalidStringLength('etag', 'name');
   
 }
 

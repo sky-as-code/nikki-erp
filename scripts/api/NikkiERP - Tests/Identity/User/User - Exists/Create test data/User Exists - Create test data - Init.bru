@@ -1,0 +1,88 @@
+meta {
+  name: User Exists - Create test data - Init
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "display_name": "{{$randomJobDescriptor}} {{$randomFirstName}} {{$timestamp}}",
+      "email": "{{$timestamp}}-{{$randomEmail}}"
+  }
+}
+
+script:pre-request {
+  const body = req.getBody();
+  console.log('User Exists Init: Creating test user: ', bru.interpolate(body.display_name));
+}
+
+script:post-response {
+  const pkg = require('./scripts/common-test-response');
+  
+  const schema = {
+    type: "object",
+    required: ["id", "created_at", "display_name", "email", "etag", "is_archived", "status"],
+    properties: {
+      id: {
+        type: "string",
+        minLength: 1,
+      },
+      avatar_url: {
+        type: "string",
+        format: "uri",
+      },
+      created_at: {
+        type: "string",
+        minLength: 20, //"2026-03-23T06:53:01Z"
+      },
+      display_name: {
+        type: "string",
+        minLength: 1,
+      },
+      email: {
+        type: "string",
+        minLength: 1,
+      },
+      etag: {
+        type: "string",
+        minLength: 1,
+      },
+      is_archived: {
+        type: "boolean",
+      },
+      is_owner: {
+        type: "boolean",
+      },
+      status: {
+        type: "string",
+        minLength: 1,
+        //enum: ["active", "locked", "archived"]
+      },
+      updated_at: {
+        type: "string",
+        minLength: 20, //"2026-03-23T06:53:01Z"
+      },
+      hierarchy_id: {
+        type: "string",
+        minLength: 1,
+      },
+    },
+  };
+  
+  pkg.initTestData(
+    'User Exists', schema,
+    'User Exists - Create test data - Loop 50',
+  );
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

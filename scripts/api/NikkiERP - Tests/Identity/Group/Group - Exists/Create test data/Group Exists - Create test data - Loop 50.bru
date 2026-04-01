@@ -1,0 +1,39 @@
+meta {
+  name: Group Exists - Create test data - Loop 50
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} {{$timestamp}}",
+    "description": "{{$randomLoremParagraphs}}"
+  }
+}
+
+script:pre-request {
+  const body = req.getBody();
+  console.log('Group Exists Loop: Creating test group: ', bru.interpolate(body.name));
+}
+
+script:post-response {
+  const pkg = require('./scripts/common-test-response');
+  
+  pkg.loopTestDataWithIds(
+    'Group Exists - Create test data - Loop 50',
+    'Group Exists - One - Success',
+    'group_ids',
+  );
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -3,7 +3,9 @@ goarch ?= amd64
 goos ?= windows
 outfile ?= nikki-erp.exe
 
-cwd := $(dir $(lastword $(MAKEFILE_LIST)))
+ifndef cwd_nikki
+cwd_nikki := $(dir $(lastword $(MAKEFILE_LIST)))
+endif
 
 # START: Go builds
 
@@ -46,8 +48,11 @@ build: build-dynamic
 # END: Go builds
 
 # START: ORM & Database
-migration_dir := file://./scripts/migrations
-migration_dir_nikki := file://./scripts/migrations-nikki
+migration_dir := file://${cwd_nikki}scripts/migrations
+
+ifndef migration_dir_nikki
+migration_dir_nikki := file://${cwd_nikki}scripts/migrations-nikki
+endif
 
 ent-init:
 	@if [ -z "$(module)" ]; then \
@@ -80,7 +85,7 @@ ent-current:
 	atlas migrate diff current_state.tmp \
 		--dir "$(migration_dir)" \
 		--to "postgres://nikki_admin:nikki_password@localhost:5432/nikki_erp?sslmode=disable" \
-		--config file://./scripts/atlas.hcl \
+		--config file://${cwd_nikki}scripts/atlas.hcl \
 		--env local
 
 ent-hash:
@@ -104,7 +109,7 @@ ent-migration:
 	atlas migrate diff $(name) \
 		--dir "$(migration_dir)" \
 		--to "ent://modules/$(module)/infra/ent/schema" \
-		--config file://./scripts/atlas.hcl \
+		--config file://${cwd_nikki}scripts/atlas.hcl \
 		--env local
 
 ent-migration-nikki:
@@ -116,11 +121,6 @@ ent-migration-nikki:
 		echo "Error: name parameter is required. Usage: make ent-migration module=<module_name> name=<name>"; \
 		exit 1; \
 	fi
-	@if [ ! -d "./modules/$(module)/infra/ent" ]; then \
-		echo "Error: ent schema directory not found for module '$(module)'"; \
-		exit 1; \
-	fi
-	@echo "Generating migration named '$(name)' for module '$(module)' to '$(migration_dir_nikki)'..."
 	atlas migrate diff $(name) \
 		--dir "$(migration_dir_nikki)" \
 		--config file://./scripts/atlas.hcl \
@@ -138,7 +138,7 @@ ent-revert:
 	atlas migrate down \
 		--dir "$(migration_dir)" \
 		--url "postgres://nikki_admin:nikki_password@localhost:5432/nikki_erp?search_path=public&sslmode=disable" \
-		--config file://./scripts/atlas.hcl \
+		--config file://${cwd_nikki}scripts/atlas.hcl \
 		--env local
 
 # END: ORM & Database
@@ -146,10 +146,10 @@ ent-revert:
 # START: Local development
 
 infra-up:
-	docker compose -f "${cwd}/scripts/docker/docker-compose.local.yml" up -d
+	docker compose -f "${cwd_nikki}scripts/docker/docker-compose.local.yml" up -d
 
 infra-down:
-	docker compose -f "${cwd}/scripts/docker/docker-compose.local.yml" down -v
+	docker compose -f "${cwd_nikki}scripts/docker/docker-compose.local.yml" down -v
 
 infra-swarm-up:
 	./scripts/docker/infra-up.sh $(shell pwd)

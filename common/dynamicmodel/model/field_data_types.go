@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/ulid"
 
@@ -43,6 +44,7 @@ func FieldDataTypePhone() FieldDataType {
 }
 
 func FieldDataTypeString(minLength int, maxLength int, sanitizeType ...SanitizeType) FieldDataType {
+	validateRangeOrPanic(minLength, maxLength, "FieldDataTypeString")
 	st := SanitizeTypePlainText
 	if len(sanitizeType) > 0 && sanitizeType[0] != "" {
 		st = sanitizeType[0]
@@ -80,13 +82,25 @@ func FieldDataTypeUuid() FieldDataType {
 	return fieldDataTypeUuid{fieldDataTypeBase{name: "uuid", options: nil}}
 }
 
-func FieldDataTypeInteger() FieldDataType {
-	return fieldDataTypeInteger{fieldDataTypeBase{name: "integer", options: nil}}
+func FieldDataTypeInt64(min int64, max int64) FieldDataType {
+	validateRangeOrPanic(min, max, "FieldDataTypeInt64")
+	opts := FieldDataTypeOptions{FieldDataTypeOptRange: []int64{min, max}}
+	return fieldDataTypeInt64{fieldDataTypeBase{name: "int64", options: opts}}
 }
 
-func FieldDataTypeFloat(precision int) FieldDataType {
-	opts := FieldDataTypeOptions{FieldDataTypeOptPrecision: precision}
-	return fieldDataTypeFloat{fieldDataTypeBase{name: "float", options: opts}}
+func FieldDataTypeInt(min int, max int) FieldDataType {
+	validateRangeOrPanic(min, max, "FieldDataTypeInt")
+	opts := FieldDataTypeOptions{FieldDataTypeOptRange: []int{min, max}}
+	return fieldDataTypeInt{fieldDataTypeBase{name: "int", options: opts}}
+}
+
+func FieldDataTypeDecimal(min string, max string, scale uint) FieldDataType {
+	validateDecimalRangeAndScaleOrPanic(min, max, scale)
+	opts := FieldDataTypeOptions{
+		FieldDataTypeOptRange: []string{min, max},
+		FieldDataTypeOptScale: scale,
+	}
+	return fieldDataTypeDecimal{fieldDataTypeBase{name: "decimal", options: opts}}
 }
 
 func FieldDataTypeBoolean() FieldDataType {
@@ -137,15 +151,6 @@ func FieldDataTypeLangCode() FieldDataType {
 	return fieldDataTypeLangCode{fieldDataTypeBase{name: "nikkiLangCode", options: nil}}
 }
 
-// func FieldDataTypeModelId() FieldDataType {
-// 	return fieldDataTypeModelId{fieldDataTypeBase{
-// 		name: "nikkiModelId",
-// 		options: FieldDataTypeOptions{
-// 			FieldDataTypeOptLength: []int{model.MODEL_RULE_ULID_LENGTH, model.MODEL_RULE_ULID_LENGTH},
-// 		},
-// 	}}
-// }
-
 func FieldDataTypeSlug() FieldDataType {
 	return fieldDataTypeSlug{fieldDataTypeBase{
 		name: "nikkiSlug",
@@ -154,10 +159,6 @@ func FieldDataTypeSlug() FieldDataType {
 		},
 	}}
 }
-
-// func FieldDataTypeObject() FieldDataType {
-// 	return fieldDataTypeObject{fieldDataTypeBase{name: "object", options: nil}}
-// }
 
 // FieldDataTypeModel represents a virtual/implicit field that holds a related model or slice of models.
 // It is not persisted as a DB column; it is used for graph traversal and API response expansion.
@@ -227,58 +228,6 @@ func (this fieldDataTypeModel) TryConvert(val any, _ FieldDataTypeOptions) (valu
 	}
 	return Value(val), nil
 }
-
-// type fieldDataTypeObject struct{ fieldDataTypeBase }
-
-// func (this fieldDataTypeObject) ArrayType() FieldDataType {
-// 	this.isArray = true
-// 	return this
-// }
-
-// func (this fieldDataTypeObject) DefaultValue() value {
-// 	return Value(nil)
-// }
-
-// func (this fieldDataTypeObject) Validate(value value) (value, *ft.ClientErrorItem) {
-// 	if this.isArray {
-// 		return validateArrayAfterTryConvert(this, value, this.validateScalar)
-// 	}
-// 	return validateScalarAfterTryConvert(this, value, this.validateScalar)
-// }
-
-// func (this fieldDataTypeObject) validateScalar(val value) (value, *ft.ClientErrorItem) {
-// 	if val.Get() == nil {
-// 		return Value(nil), errIncompatibleDataType()
-// 	}
-// 	rv := reflect.ValueOf(*val.Get())
-// 	if rv.Kind() == reflect.Ptr {
-// 		if rv.IsNil() {
-// 			return Value(nil), errIncompatibleDataType()
-// 		}
-// 		rv = rv.Elem()
-// 	}
-// 	if rv.Kind() != reflect.Struct {
-// 		return Value(nil), errIncompatibleDataType()
-// 	}
-// 	return val, nil
-// }
-
-// func (this fieldDataTypeObject) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
-// 	if val == nil {
-// 		return Value(nil), errors.New("value cannot be nil")
-// 	}
-// 	rv := reflect.ValueOf(val)
-// 	if rv.Kind() == reflect.Ptr {
-// 		if rv.IsNil() {
-// 			return Value(nil), errors.New("value cannot be nil")
-// 		}
-// 		rv = rv.Elem()
-// 	}
-// 	if rv.Kind() != reflect.Struct {
-// 		return Value(nil), errors.Errorf("cannot convert %T to object", val)
-// 	}
-// 	return Value(rv.Interface()), nil
-// }
 
 // --- String-like types ---
 
@@ -409,9 +358,17 @@ func validateStringLength(s string, options FieldDataTypeOptions) *ft.ClientErro
 		return nil
 	}
 	limits := opts.([]int)
+	length := len(s)
 	min := limits[0]
 	max := limits[1]
-	return ValidateLength(s, min, max)
+	if length < min || length > max {
+		return ft.NewAnonymousValidationError(
+			ft.ErrorKey("err_invalid_string_length"),
+			"string length must be between {{.min}} and {{.max}}",
+			map[string]any{"min": min, "max": max},
+		)
+	}
+	return nil
 }
 
 func sanitizeStringValue(value any, options FieldDataTypeOptions) (any, *ft.ClientErrorItem) {
@@ -642,29 +599,44 @@ func (this fieldDataTypeUuid) TryConvert(val any, _ FieldDataTypeOptions) (value
 
 // --- Numeric types ---
 
-type fieldDataTypeInteger struct{ fieldDataTypeBase }
+type fieldDataTypeInt64 struct{ fieldDataTypeBase }
 
-func (this fieldDataTypeInteger) ArrayType() FieldDataType {
+func (this fieldDataTypeInt64) ArrayType() FieldDataType {
 	this.isArray = true
 	return this
 }
 
-func (this fieldDataTypeInteger) DefaultValue() value {
+func (this fieldDataTypeInt64) DefaultValue() value {
 	return Value(int64(0))
 }
 
-func (this fieldDataTypeInteger) Validate(val value) (value, *ft.ClientErrorItem) {
+func (this fieldDataTypeInt64) Validate(val value) (value, *ft.ClientErrorItem) {
 	if this.isArray {
 		return validateArrayAfterTryConvert(this, val, this.validateScalar)
 	}
 	return validateScalarAfterTryConvert(this, val, this.validateScalar)
 }
 
-func (this fieldDataTypeInteger) validateScalar(val value) (value, *ft.ClientErrorItem) {
+func (this fieldDataTypeInt64) validateScalar(val value) (value, *ft.ClientErrorItem) {
+	if val.Get() == nil {
+		return Value(nil), NewInvalidDataTypeErr("")
+	}
+	n, ok := (*val.Get()).(int64)
+	if !ok {
+		return Value(nil), NewInvalidDataTypeErr("")
+	}
+	limits := getInt64Range(this.options)
+	if len(limits) == 2 && (n < limits[0] || n > limits[1]) {
+		return Value(nil), ft.NewAnonymousValidationError(
+			ft.ErrorKey("err_invalid_number_range"),
+			"value must be between {{.min}} and {{.max}}",
+			map[string]any{"min": limits[0], "max": limits[1]},
+		)
+	}
 	return val, nil
 }
 
-func (this fieldDataTypeInteger) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+func (this fieldDataTypeInt64) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
 	_, sameType := val.(int64)
 	_, ptrSameType := val.(*int64)
 	if sameType || ptrSameType {
@@ -677,37 +649,116 @@ func (this fieldDataTypeInteger) TryConvert(val any, _ FieldDataTypeOptions) (va
 	return Value(result), nil
 }
 
-type fieldDataTypeFloat struct{ fieldDataTypeBase }
+type fieldDataTypeInt struct{ fieldDataTypeBase }
 
-func (this fieldDataTypeFloat) ArrayType() FieldDataType {
+func (this fieldDataTypeInt) ArrayType() FieldDataType {
 	this.isArray = true
 	return this
 }
 
-func (this fieldDataTypeFloat) DefaultValue() value {
-	return Value(float64(0))
+func (this fieldDataTypeInt) DefaultValue() value {
+	return Value(int(0))
 }
 
-func (this fieldDataTypeFloat) Validate(val value) (value, *ft.ClientErrorItem) {
+func (this fieldDataTypeInt) Validate(val value) (value, *ft.ClientErrorItem) {
 	if this.isArray {
 		return validateArrayAfterTryConvert(this, val, this.validateScalar)
 	}
 	return validateScalarAfterTryConvert(this, val, this.validateScalar)
 }
 
-func (this fieldDataTypeFloat) validateScalar(val value) (value, *ft.ClientErrorItem) {
+func (this fieldDataTypeInt) validateScalar(val value) (value, *ft.ClientErrorItem) {
+	if val.Get() == nil {
+		return Value(nil), NewInvalidDataTypeErr("")
+	}
+	n, ok := (*val.Get()).(int)
+	if !ok {
+		return Value(nil), NewInvalidDataTypeErr("")
+	}
+	limits := getIntRange(this.options)
+	if len(limits) == 2 && (n < limits[0] || n > limits[1]) {
+		return Value(nil), ft.NewAnonymousValidationError(
+			ft.ErrorKey("err_invalid_number_range"),
+			"value must be between {{.min}} and {{.max}}",
+			map[string]any{"min": limits[0], "max": limits[1]},
+		)
+	}
 	return val, nil
 }
 
-func (this fieldDataTypeFloat) TryConvert(val any, options FieldDataTypeOptions) (value, error) {
-	if f, ok := float64IfExactOrPtr(val); ok {
-		return Value(applyFloatPrecision(f, options)), nil
+func (this fieldDataTypeInt) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	_, sameType := val.(int)
+	_, ptrSameType := val.(*int)
+	if sameType || ptrSameType {
+		return Value(val), nil
 	}
-	result, err := toFloat64(val, options)
+	result, err := toInt(val)
 	if err != nil {
 		return Value(nil), err
 	}
 	return Value(result), nil
+}
+
+type fieldDataTypeDecimal struct{ fieldDataTypeBase }
+
+func (this fieldDataTypeDecimal) ArrayType() FieldDataType {
+	this.isArray = true
+	return this
+}
+
+func (this fieldDataTypeDecimal) DefaultValue() value {
+	return Value(nil)
+}
+
+func (this fieldDataTypeDecimal) Validate(val value) (value, *ft.ClientErrorItem) {
+	if this.isArray {
+		return validateArrayAfterTryConvert(this, val, this.validateScalar)
+	}
+	return validateScalarAfterTryConvert(this, val, this.validateScalar)
+}
+
+func (this fieldDataTypeDecimal) validateScalar(val value) (value, *ft.ClientErrorItem) {
+	if val.Get() == nil {
+		return Value(nil), NewInvalidDataTypeErr("")
+	}
+	n, err := toDecimal(*val.Get())
+	if err != nil {
+		return Value(nil), NewInvalidDataTypeErr("")
+	}
+	minMax, err := getDecimalRange(this.options)
+	if err != nil {
+		return Value(nil), NewInvalidDataTypeErr("")
+	}
+	if len(minMax) == 2 && (n.LessThan(minMax[0]) || n.GreaterThan(minMax[1])) {
+		return Value(nil), ft.NewAnonymousValidationError(
+			ft.ErrorKey("err_invalid_number_range"),
+			"value must be between {{.min}} and {{.max}}",
+			map[string]any{"min": minMax[0].String(), "max": minMax[1].String()},
+		)
+	}
+	scaled := applyDecimalScale(n, this.options)
+	return Value(scaled), nil
+}
+
+func (this fieldDataTypeDecimal) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	switch typed := val.(type) {
+	case decimal.Decimal:
+		return Value(typed), nil
+	case *decimal.Decimal:
+		if typed == nil {
+			return Value(nil), errors.New("fieldDataTypeDecimal.TryConvert: value cannot be nil")
+		}
+		return Value(typed), nil
+	case string:
+		result, err := decimal.NewFromString(typed)
+		if err != nil {
+			return Value(nil), err
+		}
+		scaled := applyDecimalScale(result, this.options)
+		return Value(scaled), nil
+	default:
+		return Value(nil), errors.New("fieldDataTypeDecimal.TryConvert: value must be decimal or string")
+	}
 }
 
 type fieldDataTypeBoolean struct{ fieldDataTypeBase }
@@ -1119,40 +1170,6 @@ func (this fieldDataTypeLangCode) TryConvert(val any, _ FieldDataTypeOptions) (v
 	return Value(canonical), nil
 }
 
-// type fieldDataTypeModelId struct{ fieldDataTypeBase }
-
-// func (this fieldDataTypeModelId) ArrayType() FieldDataType {
-// 	this.isArray = true
-// 	return this
-// }
-
-// func (this fieldDataTypeModelId) DefaultValue() any {
-// 	id, err := model.NewId()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	return *id
-// }
-
-// func (this fieldDataTypeModelId) Validate(value value) (value, *ft.ClientErrorItem) {
-// 	if this.isArray {
-// 		return validateArray(value, this.validateScalar)
-// 	}
-// 	return this.validateScalar(value)
-// }
-
-// func (this fieldDataTypeModelId) validateScalar(value value) (value, *ft.ClientErrorItem) {
-// 	sanitized, clientErr := validateStringBase(value, this.options)
-// 	if clientErr != nil {
-// 		return nil, clientErr
-// 	}
-// 	return sanitized, nil
-// }
-
-// func (this fieldDataTypeModelId) TryConvert(value any, _ FieldDataTypeOptions) (any, error) {
-// 	return toString(value)
-// }
-
 var slugRegex = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
 type fieldDataTypeSlug struct{ fieldDataTypeBase }
@@ -1194,6 +1211,7 @@ func (this fieldDataTypeSlug) TryConvert(val any, _ FieldDataTypeOptions) (value
 
 var (
 	reflectTypeInt64   = reflect.TypeOf(int64(0))
+	reflectTypeInt     = reflect.TypeOf(int(0))
 	reflectTypeFloat64 = reflect.TypeOf(float64(0))
 	reflectTypeBool    = reflect.TypeOf(false)
 )
@@ -1301,24 +1319,23 @@ func toInt64(value any) (int64, error) {
 	return rv.Convert(reflectTypeInt64).Int(), nil
 }
 
-func toFloat64(value any, options FieldDataTypeOptions) (float64, error) {
+func toInt(value any) (int, error) {
 	unwrapped, err := unwrapOnePointerLevel(value)
 	if err != nil {
 		return 0, err
 	}
 	rv := reflect.ValueOf(unwrapped)
 	if rv.Kind() == reflect.String {
-		f, parseErr := strconv.ParseFloat(rv.String(), 64)
+		n, parseErr := strconv.Atoi(rv.String())
 		if parseErr != nil {
 			return 0, parseErr
 		}
-		return applyFloatPrecision(f, options), nil
+		return n, nil
 	}
-	if !rv.Type().ConvertibleTo(reflectTypeFloat64) {
-		return 0, errors.Errorf("toFloat64: cannot convert %T to float", unwrapped)
+	if !rv.Type().ConvertibleTo(reflectTypeInt) {
+		return 0, errors.Errorf("toInt: cannot convert %T to int", unwrapped)
 	}
-	f := rv.Convert(reflectTypeFloat64).Float()
-	return applyFloatPrecision(f, options), nil
+	return int(rv.Convert(reflectTypeInt).Int()), nil
 }
 
 func toBool(value any) (bool, error) {
@@ -1473,15 +1490,25 @@ func getLangJsonWhitelist(options FieldDataTypeOptions) []model.LanguageCode {
 	}
 }
 
-func getPrecision(options FieldDataTypeOptions) int {
+func getScale(options FieldDataTypeOptions) int {
 	if options == nil {
 		return -1
 	}
-	raw, ok := options[FieldDataTypeOptPrecision]
+	raw, ok := options[FieldDataTypeOptScale]
 	if !ok || raw == nil {
 		return -1
 	}
 	switch v := raw.(type) {
+	case uint:
+		return int(v)
+	case uint8:
+		return int(v)
+	case uint16:
+		return int(v)
+	case uint32:
+		return int(v)
+	case uint64:
+		return int(v)
 	case int:
 		return v
 	case int64:
@@ -1493,6 +1520,105 @@ func getPrecision(options FieldDataTypeOptions) int {
 		return n
 	default:
 		return -1
+	}
+}
+
+func toDecimal(value any) (decimal.Decimal, error) {
+	switch typed := value.(type) {
+	case decimal.Decimal:
+		return typed, nil
+	case *decimal.Decimal:
+		if typed == nil {
+			return decimal.Decimal{}, errors.New("toDecimal: value cannot be nil")
+		}
+		return *typed, nil
+	default:
+		return decimal.Decimal{}, errors.Errorf("toDecimal: cannot convert %T to decimal", value)
+	}
+}
+
+func getInt64Range(options FieldDataTypeOptions) []int64 {
+	if options == nil {
+		return nil
+	}
+	raw, ok := options[FieldDataTypeOptRange]
+	if !ok || raw == nil {
+		return nil
+	}
+	limits, ok := raw.([]int64)
+	if !ok || len(limits) != 2 {
+		return nil
+	}
+	return limits
+}
+
+func getIntRange(options FieldDataTypeOptions) []int {
+	if options == nil {
+		return nil
+	}
+	raw, ok := options[FieldDataTypeOptRange]
+	if !ok || raw == nil {
+		return nil
+	}
+	limits, ok := raw.([]int)
+	if !ok || len(limits) != 2 {
+		return nil
+	}
+	return limits
+}
+
+func getDecimalRange(options FieldDataTypeOptions) ([]decimal.Decimal, error) {
+	if options == nil {
+		return nil, nil
+	}
+	raw, ok := options[FieldDataTypeOptRange]
+	if !ok || raw == nil {
+		return nil, nil
+	}
+	rangeValues, ok := raw.([]string)
+	if !ok || len(rangeValues) != 2 {
+		return nil, errors.New("getDecimalRange: invalid range options")
+	}
+	min, err := decimal.NewFromString(rangeValues[0])
+	if err != nil {
+		return nil, err
+	}
+	max, err := decimal.NewFromString(rangeValues[1])
+	if err != nil {
+		return nil, err
+	}
+	return []decimal.Decimal{min, max}, nil
+}
+
+func applyDecimalScale(value decimal.Decimal, options FieldDataTypeOptions) decimal.Decimal {
+	scale := getScale(options)
+	if scale < 0 {
+		return value
+	}
+	return value.Round(int32(scale))
+}
+
+func validateRangeOrPanic[T ~int | ~int64](min T, max T, fnName string) {
+	if min <= max {
+		return
+	}
+	panic(errors.Errorf("%s: min must be less than or equal to max", fnName))
+}
+
+func validateDecimalRangeAndScaleOrPanic(min string, max string, scale uint) {
+	if scale > 20 {
+		panic(errors.New("FieldDataTypeDecimal: scale cannot be greater than 20"))
+	}
+	minDecimal, err := decimal.NewFromString(min)
+	if err != nil {
+		panic(errors.Wrap(err, "FieldDataTypeDecimal: invalid min decimal"))
+	}
+	maxDecimal, err := decimal.NewFromString(max)
+	if err != nil {
+		panic(errors.Wrap(err, "FieldDataTypeDecimal: invalid max decimal"))
+	}
+	if minDecimal.GreaterThan(maxDecimal) {
+		panic(errors.New("FieldDataTypeDecimal: min must be less than or equal to max"))
 	}
 }
 
@@ -1510,18 +1636,6 @@ func unwrapOnePointerLevel(value any) (any, error) {
 		return nil, errors.New("unwrapOnePointerLevel: value cannot be nil")
 	}
 	return rv.Elem().Interface(), nil
-}
-
-func applyFloatPrecision(f float64, options FieldDataTypeOptions) float64 {
-	precision := getPrecision(options)
-	if precision < 0 {
-		return f
-	}
-	mult := 1.0
-	for i := 0; i < precision; i++ {
-		mult *= 10
-	}
-	return float64(int64(f*mult+0.5)) / mult
 }
 
 func parseLooseBoolString(raw string) (bool, error) {

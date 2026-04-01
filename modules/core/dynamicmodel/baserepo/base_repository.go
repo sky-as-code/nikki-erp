@@ -12,6 +12,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -135,7 +136,27 @@ func (this *BaseRepositoryImpl) Exists(
 			HasData: true,
 		}, nil
 	}
-	sqlRes, qbClientErrs, err := this.queryBuilder.SqlExistsMany(this.schema, keys)
+	return this.existsOnSchema(ctx, this.schema, keys)
+	// sqlRes, qbClientErrs, err := this.queryBuilder.SqlExistsMany(this.schema, keys)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if qbClientErrs != nil && qbClientErrs.Count() > 0 {
+	// 	return &dyn.OpResult[dyn.RepoExistsResult]{ClientErrors: *qbClientErrs}, nil
+	// }
+	// if sqlRes == nil {
+	// 	return &dyn.OpResult[dyn.RepoExistsResult]{
+	// 		Data:    dyn.RepoExistsResult{},
+	// 		HasData: true,
+	// 	}, nil
+	// }
+	// return this.runExistsManyQuery(ctx, *sqlRes, keys)
+}
+
+func (this *BaseRepositoryImpl) existsOnSchema(
+	ctx corectx.Context, schema *dmodel.ModelSchema, keys []dmodel.DynamicFields,
+) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	sqlRes, qbClientErrs, err := this.queryBuilder.SqlExistsMany(schema, keys)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +220,7 @@ func (this *BaseRepositoryImpl) Insert(ctx corectx.Context, data dmodel.DynamicF
 	// }
 	// this.trySetCreatedAt(data)
 	// this.trySetEtag(data)
-	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlInsert(this.schema, data)
+	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlInsert(this.schema, data, false)
 	if err != nil {
 		return nil, err
 	}
@@ -289,40 +310,196 @@ func (this *BaseRepositoryImpl) getOneWithNestedColumns(
 	return &dyn.OpResult[dmodel.DynamicFields]{Data: rows[0], HasData: true}, nil
 }
 
-func (this *BaseRepositoryImpl) ManageM2m(ctx corectx.Context, destSchemaName string,
-	associations []dyn.RepoM2mAssociation, desociations []dyn.RepoM2mAssociation,
+func (this *BaseRepositoryImpl) ManageM2m(
+	ctx corectx.Context, param dyn.RepoManageM2mParam,
 ) (*dyn.OpResult[int], error) {
-	if len(associations) == 0 && len(desociations) == 0 {
-		return &dyn.OpResult[int]{Data: 0, HasData: false}, nil
-	}
-	link, ok := this.schema.M2mPeerLinkForDest(destSchemaName)
+	link, ok := this.schema.M2mPeerLinkForDest(param.DestSchemaName)
 	if !ok {
 		return nil, errors.Errorf(
-			"ManageM2m: no M2M relation from '%s' to '%s'", this.schema.Name(), destSchemaName,
+			"ManageM2m: no M2M relation from '%s' to '%s'", this.schema.Name(), param.DestSchemaName,
 		)
 	}
-	total := 0
-	if len(associations) > 0 {
-		insertRes, err := this.insertJunctionRows(ctx, link, associations)
-		if err != nil {
-			return nil, err
-		}
-		if len(insertRes.ClientErrors) > 0 {
-			return &dyn.OpResult[int]{ClientErrors: insertRes.ClientErrors}, nil
-		}
-		total += insertRes.Data
+	if overlapErrs := assertNoAssociationOverlap(param); overlapErrs.Count() > 0 {
+		return &dyn.OpResult[int]{ClientErrors: overlapErrs}, nil
 	}
-	if len(desociations) > 0 {
-		deleteRes, err := this.deleteJunctionRows(ctx, link, desociations)
-		if err != nil {
-			return nil, err
-		}
-		if len(deleteRes.ClientErrors) > 0 {
-			return &dyn.OpResult[int]{ClientErrors: deleteRes.ClientErrors}, nil
-		}
-		total += deleteRes.Data
+	srcExistsErrs, err := this.assertSrcIdExists(ctx, param)
+	if err != nil {
+		return nil, err
 	}
+	if srcExistsErrs.Count() > 0 {
+		return &dyn.OpResult[int]{ClientErrors: srcExistsErrs}, nil
+	}
+	associations, disassociations, prepClientErrs, err := this.prepareM2mAssociations(ctx, link, param)
+	if err != nil {
+		return nil, err
+	}
+	if prepClientErrs.Count() > 0 {
+		return &dyn.OpResult[int]{ClientErrors: prepClientErrs}, nil
+	}
+	if len(associations) == 0 && len(disassociations) == 0 {
+		return &dyn.OpResult[int]{Data: 0, HasData: false}, nil
+	}
+	return this.applyM2mAssociations(ctx, link, associations, disassociations)
+}
+
+func assertNoAssociationOverlap(param dyn.RepoManageM2mParam) ft.ClientErrors {
+	if len(param.AssociatedIds) == 0 || len(param.DisassociatedIds) == 0 {
+		return nil
+	}
+	for id := range param.AssociatedIds {
+		if param.DisassociatedIds.Contains(id) {
+			return ft.ClientErrors{
+				*ft.NewOverlappedFieldsError(
+					[]string{basemodel.FieldAssociations, basemodel.FieldDesociations},
+				),
+			}
+		}
+	}
+	return nil
+}
+
+func (this *BaseRepositoryImpl) prepareM2mAssociations(
+	ctx corectx.Context, link *dmodel.M2mPeerLink, param dyn.RepoManageM2mParam,
+) ([]dyn.RepoM2mAssociation, []dyn.RepoM2mAssociation, ft.ClientErrors, error) {
+	validAssociatedIds, destClientErrs, err := this.validateAssociatedDestIds(ctx, link, param.AssociatedIds.ToSlice())
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if destClientErrs.Count() > 0 {
+		return nil, nil, destClientErrs, nil
+	}
+	srcKeys := dmodel.DynamicFields{basemodel.FieldId: param.SrcId}
+	associations := this.buildM2mAssociations(srcKeys, idsToDynamicFields(validAssociatedIds))
+	disassociations := this.buildM2mAssociations(srcKeys, idsToDynamicFields(param.DisassociatedIds.ToSlice()))
+	return associations, disassociations, nil, nil
+}
+
+func (this *BaseRepositoryImpl) applyM2mAssociations(
+	ctx corectx.Context, link *dmodel.M2mPeerLink,
+	associations []dyn.RepoM2mAssociation, disassociations []dyn.RepoM2mAssociation,
+) (*dyn.OpResult[int], error) {
+	total, cErrs, err := this.insertM2mAssociations(ctx, link, associations)
+	if err != nil {
+		return nil, err
+	}
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[int]{ClientErrors: cErrs}, nil
+	}
+	deleted, cErrs, err := this.deleteM2mAssociations(ctx, link, disassociations)
+	if err != nil {
+		return nil, err
+	}
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[int]{ClientErrors: cErrs}, nil
+	}
+	total += deleted
 	return &dyn.OpResult[int]{Data: total, HasData: true}, nil
+}
+
+func (this *BaseRepositoryImpl) insertM2mAssociations(
+	ctx corectx.Context, link *dmodel.M2mPeerLink, associations []dyn.RepoM2mAssociation,
+) (int, ft.ClientErrors, error) {
+	if len(associations) == 0 {
+		return 0, nil, nil
+	}
+	insertRes, err := this.insertJunctionRows(ctx, link, associations)
+	if err != nil {
+		return 0, nil, err
+	}
+	return insertRes.Data, insertRes.ClientErrors, nil
+}
+
+func (this *BaseRepositoryImpl) deleteM2mAssociations(
+	ctx corectx.Context, link *dmodel.M2mPeerLink, disassociations []dyn.RepoM2mAssociation,
+) (int, ft.ClientErrors, error) {
+	if len(disassociations) == 0 {
+		return 0, nil, nil
+	}
+	deleteRes, err := this.deleteJunctionRows(ctx, link, disassociations)
+	if err != nil {
+		return 0, nil, err
+	}
+	return deleteRes.Data, deleteRes.ClientErrors, nil
+}
+
+func (this *BaseRepositoryImpl) assertSrcIdExists(
+	ctx corectx.Context, param dyn.RepoManageM2mParam,
+) (ft.ClientErrors, error) {
+	existsRes, err := this.Exists(ctx, []dmodel.DynamicFields{{basemodel.FieldId: param.SrcId}})
+	if err != nil {
+		return nil, err
+	}
+	if existsRes.ClientErrors.Count() > 0 {
+		return existsRes.ClientErrors, nil
+	}
+	if len(existsRes.Data.NotExisting) == 0 {
+		return nil, nil
+	}
+	errs := ft.ClientErrors{}
+	fieldName := param.SrcIdFieldForError
+	if fieldName == "" {
+		fieldName = basemodel.FieldId
+	}
+	errs.Append(*ft.NewNotFoundError(fieldName))
+	return errs, nil
+}
+
+func (this *BaseRepositoryImpl) validateAssociatedDestIds(
+	ctx corectx.Context, link *dmodel.M2mPeerLink, associatedIds []model.Id,
+) ([]model.Id, ft.ClientErrors, error) {
+	if len(associatedIds) == 0 {
+		return []model.Id{}, nil, nil
+	}
+	existsRes, err := this.existsOnSchema(ctx, link.DestSchema, idsToDynamicFields(associatedIds))
+	if err != nil {
+		return nil, nil, err
+	}
+	if existsRes.ClientErrors.Count() > 0 {
+		return nil, existsRes.ClientErrors, nil
+	}
+	if len(existsRes.Data.NotExisting) > 0 {
+		return nil, ft.ClientErrors{*ft.NewNotFoundValError(associatedIds)}, nil
+	}
+	return dynamicFieldsToIds(existsRes.Data.Existing), nil, nil
+}
+
+func (this *BaseRepositoryImpl) buildM2mAssociations(
+	srcPk dmodel.DynamicFields, destPks []dmodel.DynamicFields,
+) []dyn.RepoM2mAssociation {
+	out := make([]dyn.RepoM2mAssociation, 0, len(destPks))
+	for _, destPk := range destPks {
+		out = append(out, dyn.RepoM2mAssociation{
+			SrcKeys:  srcPk,
+			DestKeys: destPk,
+		})
+	}
+	return out
+}
+
+func idsToDynamicFields(ids []model.Id) []dmodel.DynamicFields {
+	out := make([]dmodel.DynamicFields, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, dmodel.DynamicFields{basemodel.FieldId: id})
+	}
+	return out
+}
+
+func dynamicFieldsToIds(fields []dmodel.DynamicFields) []model.Id {
+	out := make([]model.Id, 0, len(fields))
+	for _, item := range fields {
+		raw, ok := item[basemodel.FieldId]
+		if !ok || raw == nil {
+			continue
+		}
+		if id, ok := raw.(model.Id); ok {
+			out = append(out, id)
+			continue
+		}
+		if id, ok := raw.(string); ok {
+			out = append(out, model.Id(id))
+		}
+	}
+	return out
 }
 
 func (this *BaseRepositoryImpl) deleteJunctionRows(ctx corectx.Context,
@@ -358,7 +535,7 @@ func (this *BaseRepositoryImpl) insertJunctionRows(ctx corectx.Context,
 	if len(clientErrs) > 0 {
 		return &dyn.OpResult[int]{ClientErrors: clientErrs}, nil
 	}
-	sqlRes, qbClientErrs, err := this.queryBuilder.SqlInsertBulk(link.ThroughSchema, rows)
+	sqlRes, qbClientErrs, err := this.queryBuilder.SqlInsertBulk(link.ThroughSchema, rows, true)
 	if err != nil {
 		return nil, err
 	}
@@ -547,7 +724,7 @@ func (this *BaseRepositoryImpl) searchWithNestedColumns(
 }
 
 type nestedSelectPlan struct {
-	MainColumns    []string
+	MainColumns     []string
 	EdgeLeafColumns map[string][]string
 }
 
@@ -619,7 +796,7 @@ func (this *BaseRepositoryImpl) buildNestedSelectPlan(columns []string) (nestedS
 		edgeCols[edge] = mapKeysSorted(fields)
 	}
 	return nestedSelectPlan{
-		MainColumns:    mainCols,
+		MainColumns:     mainCols,
 		EdgeLeafColumns: edgeCols,
 	}, nil
 }
@@ -985,26 +1162,6 @@ func (this *BaseRepositoryImpl) Update(ctx corectx.Context, data dmodel.DynamicF
 		return nil, err
 	}
 	return &dyn.OpResult[dmodel.DynamicFields]{Data: data, HasData: true}, nil
-}
-
-func (this *BaseRepositoryImpl) execUpdate(
-	ctx corectx.Context, data dmodel.DynamicFields, filters dmodel.DynamicFields,
-) (sql.Result, ft.ClientErrors, error) {
-	qbRes, qbClientErrs, err := this.queryBuilder.SqlUpdateEqual(this.schema, data, filters)
-	if err != nil {
-		return nil, nil, err
-	}
-	if qbClientErrs != nil && qbClientErrs.Count() > 0 {
-		return nil, *qbClientErrs, nil
-	}
-	query := *qbRes
-
-	this.logQuery(query)
-	sqlResult, err := this.client.Exec(ctx, query)
-	if err != nil {
-		return nil, nil, err
-	}
-	return sqlResult, nil, nil
 }
 
 func (this *BaseRepositoryImpl) logQuery(query string) {

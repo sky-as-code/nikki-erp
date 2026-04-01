@@ -22,7 +22,6 @@ data "external_schema" "nikki" {
     "run",
     "-tags=staticmods",
     "main.go",
-    "application.go",
     "-createsql",
     "-dialect=postgres",
     "-module=${var.module}"

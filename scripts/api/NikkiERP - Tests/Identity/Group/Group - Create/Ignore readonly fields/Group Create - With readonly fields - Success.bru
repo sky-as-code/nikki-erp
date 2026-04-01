@@ -1,0 +1,36 @@
+meta {
+  name: Group Create - With readonly fields - Success
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "id": "00000000000000000000000000",
+    "description": "{{$randomLoremParagraphs}}",
+    "is_archived": "2026-03-24T10:54:50.610762Z",
+    "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} ReadonlyIgnored"
+  }
+}
+
+script:post-response {
+  const { testCreate } = require('./scripts/create-success');
+  
+  testCreate('group_id');
+  
+  const { name, is_archived } = req.getBody();
+  bru.setVar('name', name);
+  bru.setVar('ignoredIsArchived', is_archived);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -69,6 +69,10 @@ func Insert(
 	return &dyn.OpResult[int]{Data: creation.Data, HasData: true}, nil
 }
 
+func ManageM2m(ctx corectx.Context, dynamicRepo dyn.BaseRepository, param dyn.RepoManageM2mParam) (*dyn.OpResult[int], error) {
+	return dynamicRepo.ManageM2m(ctx, param)
+}
+
 func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 	ctx corectx.Context, dynamicRepo dyn.BaseRepository, searchParam dyn.RepoSearchParam,
 ) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error) {

@@ -1,0 +1,29 @@
+meta {
+  name: Group Search - If edge field - Success
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api_host}}/v1/identity/groups?graph={"if": ["users.hierarchy_id", "is_set"]}&columns=name&columns=users.display_name
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"if": ["users.hierarchy_id", "is_set"]}
+  columns: name
+  columns: users.display_name
+}
+
+script:post-response {
+  const pkg = require('./scripts/search-success');
+  
+  pkg.testSearch(50);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

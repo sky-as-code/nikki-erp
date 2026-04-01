@@ -1,46 +1,14 @@
 const { testHttpResponse } = require('./common-test-response');
+const { sameErrorSchema } = require('./common-utils');
 
-module.exports.testInvalidLength = function (...fields) {  
-  const schema = {
-      type: "array",
-      minItems: fields.length,
-      maxItems: fields.length,
-      items: {
-          type: "object",
-          required: ["field", "message", "type"],
-          properties: {
-              field: {
-                  type: "string",
-                  enum: [...fields],
-              },
-              key: {
-                type: "string",
-                enum: ["common.err_invalid_length"],
-              },
-              message: {
-                  type: "string",
-                  enum: ["must have length between {{.min}} and {{.max}}", "must be a valid email address"],
-              },
-              type: {
-                  type: "string",
-                  enum: ["validation"],
-              },
-              vars: {
-                  type: "object",
-                  properties: {
-                    max: {
-                      type: "integer",
-                    },
-                    min: {
-                      type: "integer",
-                    },
-                  },
-              },
-          },
-          additionalProperties: false,
-      },
-      additionalItems: false
-  };
+module.exports.testInvalidStringLength = function (...fields) {  
+  const schema = sameErrorSchema(fields, "common.err_invalid_string_length", "string length must be between {{.min}} and {{.max}}");
+
+  testHttpResponse(schema, 400);
+};
+
+module.exports.testInvalidArrayLength = function (...fields) {  
+  const schema = sameErrorSchema(fields, "common.err_invalid_array_length", "array length must be between {{.min}} and {{.max}}");
 
   testHttpResponse(schema, 400);
 };

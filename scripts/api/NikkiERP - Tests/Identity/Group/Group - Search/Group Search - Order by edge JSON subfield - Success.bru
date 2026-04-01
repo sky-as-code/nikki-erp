@@ -1,0 +1,20 @@
+meta {
+  name: Group Search - Order by edge JSON subfield - Success
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{api_host}}/v1/identity/groups?graph={"order": [["users.user_status.label.vi_VN", "desc"]]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"order": [["users.user_status.label.vi_VN", "desc"]]}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

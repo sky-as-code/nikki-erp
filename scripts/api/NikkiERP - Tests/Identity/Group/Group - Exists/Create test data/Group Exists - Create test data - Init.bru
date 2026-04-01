@@ -1,0 +1,73 @@
+meta {
+  name: Group Exists - Create test data - Init
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} {{$timestamp}}",
+    "description": "{{$randomLoremParagraphs}}"
+  }
+}
+
+script:pre-request {
+  const body = req.getBody();
+  console.log('Group Exists Init: Creating test group: ', bru.interpolate(body.name));
+}
+
+script:post-response {
+  const pkg = require('./scripts/common-test-response');
+  
+  const schema = {
+    type: 'object',
+    required: ['id', 'description', 'created_at', 'name', 'etag', 'is_archived'],
+    properties: {
+      id: {
+        type: 'string',
+        minLength: 1,
+      },
+      created_at: {
+        type: "string",
+        minLength: 20, //"2026-03-23T06:53:01Z"
+      },
+      name: {
+        type: 'string',
+        minLength: 1,
+      },
+      description: {
+        type: 'string',
+        minLength: 1,
+      },
+      etag: {
+        type: 'string',
+        minLength: 1,
+      },
+      is_archived: {
+        type: "boolean",
+      },
+      updated_at: {
+        type: "string",
+        minLength: 20, //"2026-03-23T06:53:01Z"
+      },
+    },
+    additionalProperties: false,
+  };
+  
+  pkg.initTestDataWithIds(
+    'Group Exists', schema,
+    'Group Exists - Create test data - Loop 50',
+    'group_ids',
+  );
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

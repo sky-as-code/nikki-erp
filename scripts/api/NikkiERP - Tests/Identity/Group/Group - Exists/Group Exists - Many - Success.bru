@@ -1,0 +1,42 @@
+meta {
+  name: Group Exists - Many - Success
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups/exists
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ids": ["Populated by Pre-request script"]
+  }
+}
+
+script:pre-request {
+  const pkg = require('./scripts/common-test-response');
+  const existing = pkg.getTestDataIds('group_ids');
+  
+  const body = req.getBody();
+  const nonExisting = ["01KMMNZ9M0EEF6JG6RMWWPSBKM", "01KMVYY7ACN3G69SZCDVVZZV09", "01KMVYY7ACZ1SPG7YVRD0WDFME", "01KMVYY7AC4AY6ETFEPCZPEQGH", "01KMVYY7AC4AFXYEC8N3T3FGWM"];
+  const newBody = {
+    ids: existing.slice(0, 45).concat(nonExisting),
+  };
+  req.setBody(newBody);
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/exists-success');
+  
+  pkg.testExists(45, 5);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

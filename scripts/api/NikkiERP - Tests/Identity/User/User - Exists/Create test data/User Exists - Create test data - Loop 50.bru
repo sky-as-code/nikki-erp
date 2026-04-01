@@ -1,0 +1,38 @@
+meta {
+  name: User Exists - Create test data - Loop 50
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "display_name": "{{$randomJobDescriptor}} {{$randomFirstName}} {{$timestamp}}",
+      "email": "{{$timestamp}}-{{$randomEmail}}"
+  }
+}
+
+script:pre-request {
+  const body = req.getBody();
+  console.log('User Exists Loop: Creating test user: ', bru.interpolate(body.displayName));
+}
+
+script:post-response {
+  const pkg = require('./scripts/common-test-response');
+  
+  pkg.loopTestData(
+    'User Exists - Create test data - Loop 50',
+    'User Exists - One - Success',
+  );
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

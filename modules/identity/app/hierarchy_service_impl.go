@@ -99,11 +99,13 @@ func (this *HierarchyServiceImpl) ManageHierarchyLevelUsers(
 	ctx corectx.Context, cmd itHier.ManageHierarchyLevelUsersCommand,
 ) (result *itHier.ManageHierarchyLevelUsersResult, err error) {
 	return corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
-		Action:         "manage hierarchy level users",
-		DbRepoGetter:   this.hierarchyRepo2,
-		DestSchemaName: domain.UserSchemaName,
-		Associations:   hierarchyUserAssocs(cmd.HierarchyId, cmd.Add.ToSlice()),
-		Desociations:   hierarchyUserAssocs(cmd.HierarchyId, cmd.Remove.ToSlice()),
+		Action:             "manage hierarchy level users",
+		DbRepoGetter:       this.hierarchyRepo2,
+		DestSchemaName:     domain.UserSchemaName,
+		SrcId:              cmd.HierarchyId,
+		SrcIdFieldForError: "hierarchy_id",
+		AssociatedIds:      cmd.Add,
+		DisassociatedIds:   cmd.Remove,
 	})
 }
 

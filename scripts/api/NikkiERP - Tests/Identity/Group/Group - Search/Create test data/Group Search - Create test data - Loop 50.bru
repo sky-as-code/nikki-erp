@@ -1,0 +1,33 @@
+meta {
+  name: Group Search - Create test data - Loop 50
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} {{$timestamp}}",
+    "description": "{{$randomLoremParagraphs}}"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/common-test-response');
+  
+  pkg.loopTestData(
+    'Group Search - Create test data - Loop 50',
+    'Group Search - No criteria, No paging - Success',
+  );
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

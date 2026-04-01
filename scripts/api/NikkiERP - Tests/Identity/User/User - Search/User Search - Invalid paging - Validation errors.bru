@@ -1,0 +1,29 @@
+meta {
+  name: User Search - Invalid paging - Validation errors
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{api_host}}/v1/identity/users?page=1&size=100&graph={"if":["fake-field", "=", "Owner"]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  size: 100
+  graph: {"if":["fake-field", "=", "Owner"]}
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-nonexist-fields');
+  
+  pkg.testNonExistFields('fake-field');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

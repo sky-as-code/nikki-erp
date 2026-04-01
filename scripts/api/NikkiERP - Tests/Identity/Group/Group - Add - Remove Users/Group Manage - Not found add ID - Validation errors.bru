@@ -1,0 +1,31 @@
+meta {
+  name: Group Manage - Not found add ID - Validation errors
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups/{{group_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "add": ["111118H8J88XJXRXY6BWNY221T", "222228H8J82AXFHJT8K45K1RB3"],
+      "remove": ["333338H8J8J2XYSYW0MEYAZDVX"]
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-not-found');
+  
+  const payload = req.getBody();
+  pkg.testValueNotFound(...payload.add);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
