@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -12,34 +12,44 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/loader"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
-func newApplication(logger logging.LoggerService) *Application {
+type ModuleLoader interface {
+	LoadModules() ([]modules.InCodeModule, error)
+	LoadModule(name string) (modules.InCodeModule, error)
+}
+
+func NewApplication(logger logging.LoggerService, moduleLoader ModuleLoader) *Application {
 	return &Application{
-		logger: logger,
+		logger:       logger,
+		moduleLoader: moduleLoader,
 	}
 }
 
 type Application struct {
-	modules []modules.InCodeModule
-	config  config.ConfigService
-	logger  logging.LoggerService
+	modules      []modules.InCodeModule
+	config       config.ConfigService
+	logger       logging.LoggerService
+	moduleLoader ModuleLoader
 }
 
 func (this *Application) Config() config.ConfigService {
 	return this.config
 }
 
+func (this *Application) Logger() logging.LoggerService {
+	return this.logger
+}
+
 func (this *Application) Start() {
 	modules := []modules.InCodeModule{}
 	var err error
 
-	modules, err = loader.LoadModules()
+	modules, err = this.moduleLoader.LoadModules()
 	if err != nil {
 		this.logger.Errorf("failed to load modules: %v", err)
 	}
@@ -55,7 +65,7 @@ func (this *Application) Start() {
 }
 
 func (this *Application) GenSql(moduleName string, dialect string) string {
-	module, err := loader.LoadModule(moduleName)
+	module, err := this.moduleLoader.LoadModule(moduleName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to load modules: %v\n", err)
 	}
@@ -68,7 +78,7 @@ func (this *Application) GenSql(moduleName string, dialect string) string {
 
 	err = dynamicModule.RegisterModels()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to register entities: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to register models: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -110,21 +120,6 @@ func (this *Application) initModules() error {
 	}
 
 	return this.initializeInOrder(moduleMap, depGraph)
-}
-
-func (this *Application) registerEntities() error {
-	moduleMap := this.buildModuleMap()
-
-	depGraph, err := this.buildDependencyGraph(moduleMap)
-	if err != nil {
-		return err
-	}
-
-	if err := this.validateDependencies(depGraph); err != nil {
-		return err
-	}
-
-	return this.registerModelInOrder(moduleMap, depGraph)
 }
 
 func (this *Application) buildModuleMap() map[string]modules.InCodeModule {

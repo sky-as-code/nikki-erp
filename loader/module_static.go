@@ -15,12 +15,15 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity"
 )
 
-func LoadModules() ([]modules.InCodeModule, error) {
-	return getStaticModules(), nil
+type StaticModuleLoader struct {
 }
 
-func LoadModule(name string) (modules.InCodeModule, error) {
-	allMods := getStaticModules()
+func (this StaticModuleLoader) LoadModules() ([]modules.InCodeModule, error) {
+	return this.getStaticModules(), nil
+}
+
+func (this StaticModuleLoader) LoadModule(name string) (modules.InCodeModule, error) {
+	allMods := this.getStaticModules()
 	for _, mod := range allMods {
 		if mod.Name() == name {
 			return mod, nil
@@ -29,7 +32,7 @@ func LoadModule(name string) (modules.InCodeModule, error) {
 	return nil, errors.Errorf("module '%s' not found", name)
 }
 
-func getStaticModules() []modules.InCodeModule {
+func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 	modules := []modules.InCodeModule{
 		// Sort alphabetically. The order of initialization will be handled properly.
 		authorize.ModuleSingleton,
