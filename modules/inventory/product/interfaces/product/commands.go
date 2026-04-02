@@ -25,7 +25,7 @@ type CreateProductCommand struct {
 	UnitId        *model.Id       `json:"unitId,omitempty"`
 	Sku           *string         `json:"sku,omitempty"`
 	Status        *string         `json:"status,omitempty"`
-	ThumbnailUrl  *string         `json:"thumbnailUrl,omitempty"`
+	ThumbnailURL  *string         `json:"thumbnailURL,omitempty"`
 	ProposedPrice *float64        `json:"proposedPrice,omitempty"`
 }
 
@@ -58,7 +58,7 @@ type UpdateProductCommand struct {
 	UnitId           *model.Id       `json:"unitId,omitempty"`
 	Status           *string         `json:"status,omitempty"`
 	DefaultVariantId *model.Id       `json:"defaultVariantId,omitempty"`
-	ThumbnailUrl     *string         `json:"thumbnailUrl,omitempty"`
+	ThumbnailURL     *string         `json:"thumbnailURL,omitempty"`
 }
 
 func (UpdateProductCommand) CqrsRequestType() cqrs.RequestType {

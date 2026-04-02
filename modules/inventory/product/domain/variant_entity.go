@@ -19,7 +19,8 @@ type Variant struct {
 	ImageURL      *string                 `json:"imageURL,omitempty"`
 	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
 
-	AttributeValue []AttributeValue `json:"attributeValue,omitempty"`
+	Product        *Product         `json:"product,omitempty" model:"-"`
+	AttributeValue []AttributeValue `json:"attributeValue,omitempty" model:"-"`
 }
 
 func (this *Variant) Validate(forEdit bool) ft.ValidationErrors {

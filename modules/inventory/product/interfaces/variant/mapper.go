@@ -10,12 +10,17 @@ import (
 
 func EntToVariant(entVariant *ent.Variant) *domain.Variant {
 	variant := &domain.Variant{}
+	variant.Product = &domain.Product{}
 	model.MustCopy(entVariant, variant)
 
 	if entVariant.Edges.AttributeValue != nil {
 		variant.AttributeValue = array.Map(entVariant.Edges.AttributeValue, func(entAttributeValue *ent.AttributeValue) domain.AttributeValue {
 			return *itAttributeValue.EntToAttributeValue(entAttributeValue)
 		})
+	}
+
+	if entVariant.Edges.Product != nil {
+		model.MustCopy(entVariant.Edges.Product, variant.Product)
 	}
 	return variant
 }

@@ -42,11 +42,23 @@ func (this *VariantServiceImpl) SetAttributeService(attribute itAttribute.Attrib
 // Create
 
 func (s *VariantServiceImpl) CreateVariant(ctx crud.Context, cmd itVariant.CreateVariantCommand) (result *itVariant.CreateVariantResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to add or remove users"); e != nil {
-			err = e
-		}
-	}()
+	// entTx, err := s.variantRepo.BeginTransaction(ctx)
+	// ft.PanicOnErr(err)
+
+	// ctx.SetDbTranx(entTx)
+
+	// defer func() {
+	// 	if err != nil {
+	// 		entTx.Rollback()
+	// 		return
+	// 	}
+	// 	if result != nil && result.ClientError != nil {
+	// 		entTx.Rollback()
+	// 		return
+	// 	}
+
+	// 	entTx.Commit()
+	// }()
 
 	variant := cmd.ToDomainModel()
 	variant.SetDefaults()
@@ -81,8 +93,26 @@ func (s *VariantServiceImpl) CreateVariant(ctx crud.Context, cmd itVariant.Creat
 
 // Update
 
-func (s *VariantServiceImpl) UpdateVariant(ctx crud.Context, cmd itVariant.UpdateVariantCommand) (*itVariant.UpdateVariantResult, error) {
-	result, err := crud.Update(ctx, crud.UpdateParam[*domain.Variant, itVariant.UpdateVariantCommand, itVariant.UpdateVariantResult]{
+func (s *VariantServiceImpl) UpdateVariant(ctx crud.Context, cmd itVariant.UpdateVariantCommand) (result *itVariant.UpdateVariantResult, err error) {
+	// entTx, err := s.variantRepo.BeginTransaction(ctx)
+	// ft.PanicOnErr(err)
+
+	// ctx.SetDbTranx(entTx)
+
+	// defer func() {
+	// 	if err != nil {
+	// 		entTx.Rollback()
+	// 		return
+	// 	}
+	// 	if result != nil && result.ClientError != nil {
+	// 		entTx.Rollback()
+	// 		return
+	// 	}
+
+	// 	entTx.Commit()
+	// }()
+
+	result, err = crud.Update(ctx, crud.UpdateParam[*domain.Variant, itVariant.UpdateVariantCommand, itVariant.UpdateVariantResult]{
 		Action:       "update variant",
 		Command:      cmd,
 		AssertExists: s.assertVariantIdExists,
@@ -100,7 +130,28 @@ func (s *VariantServiceImpl) UpdateVariant(ctx crud.Context, cmd itVariant.Updat
 			}
 		},
 	})
-	return result, err
+	if err != nil || (result != nil && result.ClientError != nil) {
+		return result, err
+	}
+
+	if cmd.Attributes != nil {
+		variant := cmd.ToDomainModel()
+
+		err = s.attributeValue.UnlinkVariantAttributes(ctx, cmd.Id)
+		ft.PanicOnErr(err)
+
+		vErrs := ft.NewValidationErrors()
+		err = s.assertCreateVariant(ctx, variant, &vErrs)
+		ft.PanicOnErr(err)
+
+		if vErrs.Count() > 0 {
+			return &itVariant.UpdateVariantResult{
+				ClientError: vErrs.ToClientError(),
+			}, nil
+		}
+	}
+
+	return result, nil
 }
 
 // Delete
@@ -277,7 +328,9 @@ func (s *VariantServiceImpl) assertCreateVariant(ctx crud.Context, variant *doma
 			ProductId: *variant.ProductId,
 			CodeName:  codename,
 		})
-		ft.PanicOnErr(err)
+		if err != nil {
+			return err
+		}
 
 		if attribute.Data == nil {
 			vErrs.Append("attributes", "codename "+codename+" not found")
@@ -297,7 +350,11 @@ func (s *VariantServiceImpl) assertCreateVariant(ctx crud.Context, variant *doma
 				VariantId:   *variant.Id,
 				ValueNumber: &valueNumber,
 			})
-			ft.PanicOnErr(err)
+			if err != nil {
+				vErrs.Append("attributes."+codename, "failed to save attribute value")
+				return nil
+			}
+
 		} else {
 			bytes, err := json.Marshal(value)
 			if err != nil {
@@ -318,7 +375,10 @@ func (s *VariantServiceImpl) assertCreateVariant(ctx crud.Context, variant *doma
 				VariantId:   *variant.Id,
 				ValueText:   &langJson,
 			})
-			ft.PanicOnErr(err)
+			if err != nil {
+				vErrs.Append("attributes."+codename, "failed to save attribute value")
+				return nil
+			}
 		}
 	}
 	return nil

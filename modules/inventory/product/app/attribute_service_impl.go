@@ -238,7 +238,7 @@ func (this *AttributeServiceImpl) assertCreateAttribute(ctx crud.Context, attrib
 		return nil
 	}
 
-	if *attribute.DataType == "string" {
+	if *attribute.DataType == "text" {
 		for _, v := range *attribute.EnumValue {
 			var enumValue model.LangJson
 			err := json.Unmarshal(v, &enumValue)
@@ -257,7 +257,7 @@ func (this *AttributeServiceImpl) assertCreateAttribute(ctx crud.Context, attrib
 			}
 		}
 	} else {
-		vErrs.Append("dataType", "invalid data type, only string and number are allowed for enum attribute")
+		vErrs.Append("dataType", "invalid data type, only text and number are allowed for enum attribute")
 	}
 
 	return nil

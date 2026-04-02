@@ -30,7 +30,7 @@ type AttributeDto struct {
 	VariantsCount *int            `json:"variantsCount,omitempty"`
 
 	AttributeValues []AttributeValueDto `json:"attributeValues,omitempty"`
-	Variants        []VariantDto        `json:"variants,omitempty"`
+	// Variants        []VariantDto        `json:"variants,omitempty"`
 }
 
 func (this *AttributeDto) FromAttribute(a domain.Attribute) {
@@ -39,7 +39,7 @@ func (this *AttributeDto) FromAttribute(a domain.Attribute) {
 	model.MustCopy(a, this)
 
 	if a.EnumValue != nil {
-		if *a.DataType == "string" {
+		if *a.DataType == "text" {
 			for _, v := range *a.EnumValue {
 				var enumValue model.LangJson
 				err := json.Unmarshal(v, &enumValue)
@@ -109,11 +109,11 @@ func (this *AttributeDto) FromResult(a domain.Attribute) {
 		})
 	}
 
-	if len(a.Variants) > 0 {
-		this.Variants = array.Map(a.Variants, func(v domain.Variant) VariantDto {
-			vDto := VariantDto{}
-			vDto.FromVariant(v)
-			return vDto
-		})
-	}
+	// if len(a.Variants) > 0 {
+	// 	this.Variants = array.Map(a.Variants, func(v domain.Variant) VariantDto {
+	// 		vDto := VariantDto{}
+	// 		vDto.FromVariant(v)
+	// 		return vDto
+	// 	})
+	// }
 }

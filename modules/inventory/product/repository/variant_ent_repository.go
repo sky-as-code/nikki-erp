@@ -24,6 +24,10 @@ type VariantEntRepository struct {
 	client *ent.Client
 }
 
+func (r *VariantEntRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error) {
+	return r.client.Tx(ctx)
+}
+
 func (r *VariantEntRepository) variantClient(ctx crud.Context) *ent.VariantClient {
 	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
 	if isOk {
@@ -81,6 +85,7 @@ func (r *VariantEntRepository) FindById(ctx crud.Context, query itVariant.FindBy
 	dbQuery := r.variantClient(ctx).Query().
 		Where(entVariant.ProductID(query.ProductId)).
 		Where(entVariant.ID(query.Id)).
+		WithProduct().
 		WithAttributeValue()
 
 	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itVariant.EntToVariant)
@@ -89,7 +94,8 @@ func (r *VariantEntRepository) FindById(ctx crud.Context, query itVariant.FindBy
 // ✅ Search (advanced)
 func (r *VariantEntRepository) Search(ctx crud.Context, param itVariant.SearchParam) (*crud.PagedResult[domain.Variant], error) {
 	query := r.client.Variant.Query().
-		WithAttributeValue()
+		WithAttributeValue().
+		WithProduct()
 
 	if param.ProductId != nil {
 		query.Where(entVariant.ProductID(*param.ProductId))

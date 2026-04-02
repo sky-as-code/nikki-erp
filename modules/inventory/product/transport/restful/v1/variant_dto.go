@@ -22,12 +22,25 @@ type VariantDto struct {
 	ImageURL      *string                 `json:"imageURL,omitempty"`
 	Status        string                  `json:"status"`
 	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
+
+	Product *GetVariantRespProduct `json:"product,omitempty" model:"-"`
+}
+type GetVariantRespProduct struct {
+	Id   model.Id       `json:"id"`
+	Name model.LangJson `json:"name"`
 }
 
 func (this *VariantDto) FromVariant(v domain.Variant) {
 	model.MustCopy(v.AuditableBase, this)
 	model.MustCopy(v.ModelBase, this)
 	model.MustCopy(v, this)
+
+	if v.Product != nil {
+		this.Product = &GetVariantRespProduct{
+			Id:   *v.Product.Id,
+			Name: *v.Product.Name,
+		}
+	}
 }
 
 type CreateVariantRequest = itVariant.CreateVariantCommand

@@ -36,23 +36,23 @@ func (this *ProductServiceImpl) SetVariantService(variantService itVariant.Varia
 // Create
 
 func (this *ProductServiceImpl) CreateProduct(ctx crud.Context, cmd itProduct.CreateProductCommand) (result *itProduct.CreateProductResult, err error) {
-	entTx, err := this.productRepo.BeginTransaction(ctx)
-	ft.PanicOnErr(err)
+	// entTx, err := this.productRepo.BeginTransaction(ctx)
+	// ft.PanicOnErr(err)
 
-	ctx.SetDbTranx(entTx)
+	// ctx.SetDbTranx(entTx)
 
-	defer func() {
-		if err != nil {
-			entTx.Rollback()
-			return
-		}
-		if result != nil && result.ClientError != nil {
-			entTx.Rollback()
-			return
-		}
+	// defer func() {
+	// 	if err != nil {
+	// 		entTx.Rollback()
+	// 		return
+	// 	}
+	// 	if result != nil && result.ClientError != nil {
+	// 		entTx.Rollback()
+	// 		return
+	// 	}
 
-		entTx.Commit()
-	}()
+	// 	entTx.Commit()
+	// }()
 
 	var dbProduct *domain.Product
 	var idVariant string
@@ -76,6 +76,14 @@ func (this *ProductServiceImpl) CreateProduct(ctx crud.Context, cmd itProduct.Cr
 		Step(func(vErrs *ft.ValidationErrors) error {
 			idVariant, _ = this.assertCreateVariant(ctx, cmd, *dbProduct.Id, vErrs)
 			product.DefaultVariantId = &idVariant
+			return nil
+		}).
+		Step(func(vErrs *ft.ValidationErrors) error {
+			dbProduct.DefaultVariantId = &idVariant
+			if idVariant != "" {
+				dbProduct, err = this.productRepo.Update(ctx, dbProduct, *dbProduct.Etag)
+				return err
+			}
 			return nil
 		}).
 		End()

@@ -5,6 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 )
 
@@ -15,6 +16,7 @@ type VariantRepository interface {
 	FindById(ctx crud.Context, query FindByIdParam) (*domain.Variant, error)
 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Variant], error)
+	BeginTransaction(ctx crud.Context) (*ent.Tx, error)
 }
 
 type DeleteParam = DeleteVariantCommand

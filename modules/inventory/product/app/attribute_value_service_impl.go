@@ -2,6 +2,7 @@ package app
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
@@ -189,6 +190,10 @@ func (this *AttributeValueServiceImpl) SearchAttributeValues(ctx crud.Context, q
 		},
 	})
 	return result, err
+}
+
+func (s *AttributeValueServiceImpl) UnlinkVariantAttributes(ctx crud.Context, variantId model.Id) error {
+	return s.attributeValueRepo.DeleteByVariantId(ctx, variantId)
 }
 
 // Helpers

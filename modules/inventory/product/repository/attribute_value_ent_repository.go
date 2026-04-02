@@ -1,8 +1,9 @@
 package repository
 
 import (
+	"encoding/json"
+
 	"entgo.io/ent/dialect/sql"
-	"entgo.io/ent/dialect/sql/sqljson"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/orm"
@@ -10,6 +11,7 @@ import (
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
 	entAttributeValue "github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attributevalue"
+	entVariant "github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/variant"
 	entVariantAttributeRel "github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/variantattributerel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 	itAttributeValue "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributevalue"
@@ -121,7 +123,7 @@ func (r *AttributeValueEntRepository) LinkVariant(ctx crud.Context, attributeVal
 func (r *AttributeValueEntRepository) UnlinkVariant(ctx crud.Context, variantId model.Id, prevEtag model.Etag) (*domain.AttributeValue, bool, error) {
 	values, err := r.attributeValueClient(ctx).
 		Query().
-		Where(entAttributeValue.HasVariantWith(entVariantAttributeRel.VariantID(variantId))).
+		Where(entAttributeValue.HasVariantWith(entVariant.ID(variantId))).
 		All(ctx)
 
 	if err != nil {
@@ -173,6 +175,37 @@ func (r *AttributeValueEntRepository) Update(ctx crud.Context, attributeValue *d
 }
 
 // ✅ Delete AttributeValue by ID
+func (r *AttributeValueEntRepository) DeleteByVariantId(ctx crud.Context, variantId model.Id) error {
+	values, err := r.attributeValueClient(ctx).
+		Query().
+		Where(entAttributeValue.HasVariantWith(entVariant.ID(variantId))).
+		All(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range values {
+		if v.VariantCount <= 1 {
+			_, err := r.client.AttributeValue.Delete().
+				Where(entAttributeValue.ID(v.ID)).
+				Exec(ctx)
+			if err != nil {
+				return err
+			}
+		} else {
+			err := r.attributeValueClient(ctx).
+				UpdateOneID(v.ID).
+				RemoveVariantIDs(variantId).
+				SetVariantCount(v.VariantCount - 1).
+				Exec(ctx)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (r *AttributeValueEntRepository) DeleteById(ctx crud.Context, id model.Id) (int, error) {
 	return r.client.AttributeValue.Delete().
 		Where(entAttributeValue.ID(id)).
@@ -194,14 +227,16 @@ func (r *AttributeValueEntRepository) FindByValueRef(ctx crud.Context, attribute
 	switch dataType {
 	case "text":
 		if attributeValue.ValueText != nil {
-			dbQuery = dbQuery.Where(func(s *sql.Selector) {
-				s.Where(
-					sqljson.ValueEQ(
-						entAttributeValue.FieldValueText,
-						*attributeValue.ValueText,
-					),
-				)
-			})
+			jsonBytes, err := json.Marshal(*attributeValue.ValueText)
+			if err == nil {
+				dbQuery = dbQuery.Where(func(s *sql.Selector) {
+					s.Where(sql.P(func(b *sql.Builder) {
+						b.WriteString(s.C(entAttributeValue.FieldValueText))
+						b.WriteString("::jsonb = ")
+						b.Arg(json.RawMessage(jsonBytes))
+					}))
+				})
+			}
 		}
 	case "number":
 		if attributeValue.ValueNumber != nil {
@@ -253,7 +288,8 @@ func BuildAttributeValueDescriptor() *orm.EntityDescriptor {
 		Field(entAttributeValue.FieldValueText, entity.ValueText).
 		Field(entAttributeValue.FieldValueRef, entity.ValueRef).
 		Field(entAttributeValue.FieldID, entity.ID).
-		Field(entAttributeValue.FieldUpdatedAt, entity.UpdatedAt)
+		Field(entAttributeValue.FieldUpdatedAt, entity.UpdatedAt).
+		Edge(entAttributeValue.EdgeVariant, orm.ToEdgePredicate(entAttributeValue.HasVariantAttributeRelWith))
 
 	return builder.Descriptor()
 }

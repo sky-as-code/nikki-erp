@@ -14,6 +14,7 @@ type AttributeValueRepository interface {
 	Update(ctx crud.Context, attributeValue *domain.AttributeValue, prevEtag model.Etag) (*domain.AttributeValue, error)
 	LinkVariant(ctx crud.Context, attributeValueId model.Id, variantId model.Id, prevEtag model.Etag) (*domain.AttributeValue, bool, error)
 	UnlinkVariant(ctx crud.Context, variantId model.Id, prevEtag model.Etag) (*domain.AttributeValue, bool, error)
+	DeleteByVariantId(ctx crud.Context, variantId model.Id) error
 	DeleteById(ctx crud.Context, id model.Id) (int, error)
 	FindById(ctx crud.Context, query FindByIdParam) (*domain.AttributeValue, error)
 	FindByValueRef(ctx crud.Context, attributeValue *domain.AttributeValue, dataType string) (*domain.AttributeValue, error)
