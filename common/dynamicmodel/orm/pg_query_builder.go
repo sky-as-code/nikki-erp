@@ -1,6 +1,7 @@
 package orm
 
 import (
+	"encoding/json"
 	stdErr "errors"
 	"fmt"
 	"math/big"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/convert"
@@ -1172,6 +1174,16 @@ func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (a
 	if !valueAllowed(columnCategoryFor(field.ColumnType()), v) {
 		return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name())}, nil
 	}
+
+	if columnCategoryFor(field.ColumnType()) == columnJSON {
+		raw, err := json.Marshal(v.Interface())
+		if err != nil {
+			return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name())}, errors.Wrapf(err, "convertValue: field '%s': marshal json", field.Name())
+		}
+
+		return string(raw), nil, nil
+	}
+
 	return v.Interface(), nil, nil
 }
 
@@ -1397,7 +1409,7 @@ func resolveGenericToPgType(genericType string) (string, error) {
 		return "time without time zone", nil
 	case "dateTime", "nikkiDateTime":
 		return "timestamptz", nil
-	case "nikkiLangJson":
+	case "nikkiLangJson", "jsonmap":
 		return "jsonb", nil
 	default:
 		return "", errors.Errorf("resolveGenericToPgType: unsupported generic type '%s'", genericType)
@@ -1536,6 +1548,18 @@ var modelDateType = reflect.TypeOf(cmodel.NewModelDate())
 var modelDateTimeType = reflect.TypeOf(cmodel.NewModelDateTime())
 var modelTimeType = reflect.TypeOf(cmodel.NewModelTime())
 
+func isShopspringDecimalValue(v reflect.Value) bool {
+	x := v.Interface()
+	switch typed := x.(type) {
+	case decimal.Decimal:
+		return true
+	case *decimal.Decimal:
+		return typed != nil
+	default:
+		return false
+	}
+}
+
 func valueAllowed(cat columnCategory, v reflect.Value) bool {
 	switch cat {
 	case columnString:
@@ -1545,7 +1569,8 @@ func valueAllowed(cat columnCategory, v reflect.Value) bool {
 	case columnInt:
 		return isIntKind(v.Kind()) || isUintKind(v.Kind())
 	case columnNumeric:
-		return isIntKind(v.Kind()) || isUintKind(v.Kind()) ||
+		return isShopspringDecimalValue(v) ||
+			isIntKind(v.Kind()) || isUintKind(v.Kind()) ||
 			isFloatKind(v.Kind()) || isBigNumber(v.Interface())
 	case columnTime:
 		return v.Type() == timeType ||
