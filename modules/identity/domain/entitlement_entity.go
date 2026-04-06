@@ -12,7 +12,9 @@ const (
 	EntitlementFieldId          = "id"
 	EntitlementFieldDescription = "description"
 	EntitlementFieldName        = "name"
+	EntitlementFieldExpression  = "expression"
 	EntitlementFieldActionId    = "action_id"
+	EntitlementFieldResourceId  = "resource_id"
 	EntitlementFieldScope       = "scope"
 	EntitlementFieldOrgId       = "org_id"
 	EntitlementFieldOrgUnitId   = "org_unit_id"
@@ -34,23 +36,31 @@ func EntitlementSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(EntitlementSchemaName).
 		Label(model.LangJson{"en-US": "Entitlement"}).
 		TableName("authz_entitlements").
+		CompositeUnique(EntitlementFieldRoleId, EntitlementFieldName).
+		CompositeUnique(EntitlementFieldRoleId, EntitlementFieldExpression).
 		ShouldBuildDb().
-		CompositeUnique(EntitlementFieldActionId, EntitlementFieldRoleId).
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().Name(EntitlementFieldName).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
-				RequiredForCreate().
-				Unique(),
+				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().Name(EntitlementFieldDescription).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
-			dmodel.DefineField().Name(EntitlementFieldActionId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			dmodel.DefineField().Name(EntitlementFieldExpression).
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
 				RequiredForCreate(),
+		).
+		Field(
+			dmodel.DefineField().Name(EntitlementFieldActionId).
+				DataType(dmodel.FieldDataTypeUlid()),
+		).
+		Field(
+			dmodel.DefineField().Name(EntitlementFieldResourceId).
+				DataType(dmodel.FieldDataTypeUlid()),
 		).
 		Field(
 			dmodel.DefineField().Name(EntitlementFieldRoleId).

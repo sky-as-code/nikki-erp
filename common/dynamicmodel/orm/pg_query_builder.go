@@ -14,6 +14,7 @@ import (
 	"github.com/huandu/go-sqlbuilder"
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/common/convert"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	cmodel "github.com/sky-as-code/nikki-erp/common/model"
@@ -64,18 +65,10 @@ func (this *PgQueryBuilder) buildCreateTableSql(
 }
 
 func (this *PgQueryBuilder) partialUniqueIndexSqls(schema *dmodel.ModelSchema) ([]string, error) {
-	pairs := schema.PartialUniques()
-	out := make([]string, 0, len(pairs)*2)
-	for _, pair := range pairs {
-		if len(pair) != 2 {
-			continue
-		}
-		if schemaHasSingleColumnUniqueOn(schema, pair[0]) {
-			return nil, errors.Errorf(
-				"partialUniqueIndexSqls: table '%s': column '%s' already has a single-column UNIQUE constraint",
-				schema.TableName(), pair[0])
-		}
-		lines, err := formatPartialUniqueIndexPair(schema.TableName(), pair[0], pair[1], schema)
+	groups := schema.PartialUniqueGroups()
+	out := make([]string, 0, len(groups)*2)
+	for _, group := range groups {
+		lines, err := formatPartialUniqueGroupIndexPair(schema, group)
 		if err != nil {
 			return nil, err
 		}
@@ -93,42 +86,90 @@ func schemaHasSingleColumnUniqueOn(schema *dmodel.ModelSchema, col string) bool 
 	return false
 }
 
-func formatPartialUniqueIndexPair(
-	tableName, fieldName1, fieldName2 string, schema *dmodel.ModelSchema,
-) ([]string, error) {
-	f1, ok1 := schema.Field(fieldName1)
-	f2, ok2 := schema.Field(fieldName2)
-	if !ok1 || !ok2 || f1 == nil || f2 == nil {
+func formatPartialUniqueGroupIndexPair(schema *dmodel.ModelSchema, group dmodel.PartialUniqueGroup) ([]string, error) {
+	if len(group.NotNullFields) == 0 {
 		return nil, errors.Errorf(
-			"formatPartialUniqueIndexPair: table '%s': unknown field in partial unique", tableName)
+			"formatPartialUniqueGroupIndexPair: table '%s': at least one not-null field is required", schema.TableName())
 	}
-	var notNullCol, nullCol string
-	if f1.IsRequiredForCreate() && !f2.IsRequiredForCreate() {
-		notNullCol, nullCol = fieldName1, fieldName2
-	} else if !f1.IsRequiredForCreate() && f2.IsRequiredForCreate() {
-		notNullCol, nullCol = fieldName2, fieldName1
-	} else {
+	nullable := strings.TrimSpace(group.NullableField)
+	if nullable == "" {
 		return nil, errors.Errorf(
-			"formatPartialUniqueIndexPair: table '%s': expected one requiredForCreate and one nullable column",
-			tableName)
+			"formatPartialUniqueGroupIndexPair: table '%s': nullable field is required", schema.TableName())
 	}
-	base := fmt.Sprintf("%s_%s_%s", tableName, fieldName1, fieldName2)
+	for _, col := range group.NotNullFields {
+		if schemaHasSingleColumnUniqueOn(schema, col) {
+			return nil, errors.Errorf(
+				"partialUniqueIndexSqls: table '%s': column '%s' already has a single-column UNIQUE constraint",
+				schema.TableName(), col)
+		}
+	}
+	indexName := resolvePartialUniqueGroupIndexName(schema.TableName(), group)
+	colsWithNullable := make([]string, 0, len(group.NotNullFields)+1)
+	for _, col := range group.NotNullFields {
+		colsWithNullable = append(colsWithNullable, pgQuote(col))
+	}
+	colsWithNullable = append(colsWithNullable, pgQuote(nullable))
+	quotedNotNull := pgQuoteArr(group.NotNullFields)
+	tableRef := pgQuoteTable(strings.Split(schema.TableName(), ".")...)
 	lineNN := fmt.Sprintf(
-		"CREATE UNIQUE INDEX %s ON %s (%s, %s) WHERE %s IS NOT NULL",
-		pgQuote(base+"_ukey_notnull"),
-		pgQuote(tableName),
-		pgQuote(notNullCol),
-		pgQuote(nullCol),
-		pgQuote(nullCol),
+		"CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s IS NOT NULL",
+		pgQuote(indexName+"_ukey_notnull"),
+		tableRef,
+		strings.Join(colsWithNullable, ", "),
+		pgQuote(nullable),
 	)
 	lineNull := fmt.Sprintf(
 		"CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s IS NULL",
-		pgQuote(base+"_ukey_null"),
-		pgQuote(tableName),
-		pgQuote(notNullCol),
-		pgQuote(nullCol),
+		pgQuote(indexName+"_ukey_null"),
+		tableRef,
+		strings.Join(quotedNotNull, ", "),
+		pgQuote(nullable),
 	)
 	return []string{lineNN, lineNull}, nil
+}
+
+func resolvePartialUniqueGroupIndexName(tableName string, group dmodel.PartialUniqueGroup) string {
+	raw := strings.TrimSpace(group.IndexName)
+	if raw == "" {
+		raw = fmt.Sprintf("%s_%s_%s", tableName, strings.Join(group.NotNullFields, "_"), group.NullableField)
+	}
+	return toSnakeLower(raw)
+}
+
+func toSnakeLower(input string) string {
+	if strings.TrimSpace(input) == "" {
+		return ""
+	}
+	var b strings.Builder
+	runes := []rune(strings.TrimSpace(input))
+	for i, current := range runes {
+		if current == ' ' || current == '-' || current == '.' {
+			if b.Len() > 0 && b.String()[b.Len()-1] != '_' {
+				b.WriteByte('_')
+			}
+			continue
+		}
+		if i > 0 && isUpperAscii(current) && (isLowerOrDigitAscii(runes[i-1]) ||
+			(i+1 < len(runes) && isLowerAscii(runes[i+1]))) {
+			if b.Len() > 0 && b.String()[b.Len()-1] != '_' {
+				b.WriteByte('_')
+			}
+		}
+		b.WriteRune(current)
+	}
+	return strings.ToLower(convert.ToUnicodeSnakeCase(b.String()))
+}
+
+func isUpperAscii(r rune) bool {
+	return r >= 'A' && r <= 'Z'
+}
+
+func isLowerAscii(r rune) bool {
+	return r >= 'a' && r <= 'z'
+}
+
+func isLowerOrDigitAscii(r rune) bool {
+	return isLowerAscii(r) || (r >= '0' && r <= '9')
 }
 
 func (this *PgQueryBuilder) defineColumns(

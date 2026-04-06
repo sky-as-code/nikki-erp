@@ -9,6 +9,8 @@ const (
 	UserPermissionSchemaName = "authorize.user_permission"
 
 	UserPermFieldUserId            = "user_id"
+	UserPermFieldEntExpression     = "ent_expression"
+	UserPermFieldEntId             = "ent_id"
 	UserPermFieldActionId          = "action_id"
 	UserPermFieldActionCode        = "action_code"
 	UserPermFieldResourceId        = "resource_id"
@@ -23,6 +25,7 @@ const (
 	UserPermEdgeUser            = "user"
 	UserPermEdgeAction          = "action"
 	UserPermEdgeResource        = "resource"
+	UserPermEdgeEntitlement     = "entitlement"
 	UserPermEdgeRoleAssignment  = "role_assignment"
 	UserPermEdgeOrg             = "org"
 	UserPermEdgeOrgUnit         = "org_unit"
@@ -34,9 +37,7 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserPermissionSchemaName).
 		Label(model.LangJson{"en-US": "User Permission"}).
 		TableName("authz_user_permissions").
-		CompositeUnique(
-			UserPermFieldUserId, UserPermFieldActionCode, UserPermFieldResourceCode, UserPermFieldScope, UserPermFieldOrgId, UserPermFieldOrgUnitId,
-		).
+		CompositeUnique(UserPermFieldUserId, UserPermFieldEntExpression).
 		ShouldBuildDb().
 		Field(
 			dmodel.DefineField().Name(UserPermFieldUserId).
@@ -44,24 +45,30 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				PrimaryKey(),
 		).
 		Field(
-			dmodel.DefineField().Name(UserPermFieldActionId).
+			dmodel.DefineField().Name(UserPermFieldEntId).
 				DataType(dmodel.FieldDataTypeUlid()).
 				PrimaryKey(),
+		).
+		Field(
+			dmodel.DefineField().Name(UserPermFieldEntExpression).
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
+				RequiredForCreate(),
+		).
+		Field(
+			dmodel.DefineField().Name(UserPermFieldActionId).
+				DataType(dmodel.FieldDataTypeUlid()),
 		).
 		Field(
 			dmodel.DefineField().Name(UserPermFieldActionCode).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate(),
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().Name(UserPermFieldResourceId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
+				DataType(dmodel.FieldDataTypeUlid()),
 		).
 		Field(
 			dmodel.DefineField().Name(UserPermFieldResourceCode).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				RequiredForCreate(),
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().Name(UserPermFieldRoleAssignmentId).
@@ -71,27 +78,26 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().Name(UserPermFieldScope).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
-				PrimaryKey(),
+				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().Name(UserPermFieldOrgId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
+				DataType(dmodel.FieldDataTypeUlid()),
 		).
 		Field(
 			dmodel.DefineField().Name(UserPermFieldOrgMembershipId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				RequiredForCreate(),
+				DataType(dmodel.FieldDataTypeUlid()),
 		).
 		Field(
 			dmodel.DefineField().Name(UserPermFieldGroupMembershipId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				RequiredForCreate(),
+				DataType(dmodel.FieldDataTypeUlid()),
 		).
+		//
+		// When one of the following record is deleted, the user permission record will be deleted too.
+		//
 		Field(
 			dmodel.DefineField().Name(UserPermFieldOrgUnitId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
+				DataType(dmodel.FieldDataTypeUlid()),
 		).
 		EdgeTo(
 			dmodel.Edge(UserPermEdgeUser).
@@ -114,6 +120,14 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Label(model.LangJson{"en-US": "Resource"}).
 				ManyToOne(ActionSchemaName, dmodel.DynamicFields{
 					UserPermFieldResourceId: ResourceFieldId,
+				}).
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeTo(
+			dmodel.Edge(UserPermEdgeEntitlement).
+				Label(model.LangJson{"en-US": "Entitlement"}).
+				ManyToOne(EntitlementSchemaName, dmodel.DynamicFields{
+					UserPermFieldEntId: EntitlementFieldId,
 				}).
 				OnDelete(dmodel.RelationCascadeCascade),
 		).

@@ -1,6 +1,8 @@
 CREATE OR REPLACE FUNCTION authz_calc_user_perm(p_user_id varchar DEFAULT NULL)
 RETURNS TABLE (
 	user_id        varchar,
+	ent_expression varchar,
+	ent_id         varchar,
 	action_id      varchar,
 	action_code    varchar,
 	resource_id    varchar,
@@ -19,6 +21,8 @@ WITH role_entitlements AS (
 	-- Direct user roles
 	SELECT
 		ra.receiver_user_id AS user_id,
+		e.expression        AS ent_expression,
+		e.id                AS ent_id,
 		a.id                AS action_id,
 		a.code              AS action_code,
 		res.id              AS resource_id,
@@ -44,6 +48,8 @@ WITH role_entitlements AS (
 	-- Group roles exploded to users
 	SELECT
 		gur.user_id     AS user_id,
+		e.expression    AS ent_expression,
+		e.id            AS ent_id,
 		a.id            AS action_id,
 		a.code          AS action_code,
 		res.id          AS resource_id,

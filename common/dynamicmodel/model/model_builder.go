@@ -5,6 +5,7 @@ import (
 
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -99,7 +100,7 @@ func (this *ModelSchemaBuilder) Extend(builder *ModelSchemaBuilder) *ModelSchema
 	this.schema.toRelations = append(this.schema.toRelations, builder.schema.toRelations...)
 	this.schema.fromRelations = append(this.schema.fromRelations, builder.schema.fromRelations...)
 	this.schema.compositeUniques = append(this.schema.compositeUniques, builder.schema.compositeUniques...)
-	this.schema.partialUniques = append(this.schema.partialUniques, builder.schema.partialUniques...)
+	this.schema.partialUniqueGroups = append(this.schema.partialUniqueGroups, builder.schema.partialUniqueGroups...)
 	this.schema.exclusiveFieldGroups = append(
 		this.schema.exclusiveFieldGroups, builder.schema.exclusiveFieldGroups...)
 	return this
@@ -184,12 +185,35 @@ func (this *ModelSchemaBuilder) CompositeUnique(composite ...string) *ModelSchem
 
 // PartialUnique registers a partial unique index on two columns: exactly one must be requiredForCreate
 // (NOT NULL) and the other nullable. Enforced in Build() when ShouldBuildDb is set.
-func (this *ModelSchemaBuilder) PartialUnique(field1, field2 string) *ModelSchemaBuilder {
-	a := strings.TrimSpace(field1)
-	b := strings.TrimSpace(field2)
+func (this *ModelSchemaBuilder) PartialUnique(notNullField, nullableField string) *ModelSchemaBuilder {
+	a := strings.TrimSpace(notNullField)
+	b := strings.TrimSpace(nullableField)
 	if a != "" && b != "" {
-		this.schema.partialUniques = append(this.schema.partialUniques, []string{a, b})
+		this.PartialUniqueGroup(PartialUniqueGroup{
+			NotNullFields: []string{a},
+			NullableField: b,
+		})
 	}
+	return this
+}
+
+type PartialUniqueGroup struct {
+	IndexName     string
+	NotNullFields []string
+	NullableField string
+}
+
+func (this *ModelSchemaBuilder) PartialUniqueGroup(group PartialUniqueGroup) *ModelSchemaBuilder {
+	indexName := strings.TrimSpace(group.IndexName)
+	nullableField := strings.TrimSpace(group.NullableField)
+	notNullFields := array.Map(group.NotNullFields, func(fieldName string) string {
+		return strings.TrimSpace(fieldName)
+	})
+	this.schema.partialUniqueGroups = append(this.schema.partialUniqueGroups, PartialUniqueGroup{
+		IndexName:     indexName,
+		NotNullFields: notNullFields,
+		NullableField: nullableField,
+	})
 	return this
 }
 

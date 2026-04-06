@@ -64,15 +64,16 @@ func (this value) IsEmpty() bool {
 
 type ModelSchema struct {
 	// Persistent fields
-	name             string
-	tableName        string
-	label            model.LangJson
-	description      model.LangJson
-	fieldsOrder      []string
-	compositeUniques [][]string
-	partialUniques   [][]string
-	primaryKeys      []string
-	tenantKey        *string
+	name                string
+	tableName           string
+	label               model.LangJson
+	description         model.LangJson
+	fieldsOrder         []string
+	compositeUniques    [][]string
+	partialUniques      [][]string
+	partialUniqueGroups []PartialUniqueGroup
+	primaryKeys         []string
+	tenantKey           *string
 
 	// Computed fields
 	allUniqueKeys [][]string
@@ -188,6 +189,11 @@ func (this ModelSchema) CompositeUniques() [][]string {
 // WHERE (nullable column) IS NULL. Only populated after ShouldBuildDb / populateDbMetadata validation.
 func (this ModelSchema) PartialUniques() [][]string {
 	return this.partialUniques
+}
+
+// PartialUniqueGroups returns grouped partial unique index definitions.
+func (this ModelSchema) PartialUniqueGroups() []PartialUniqueGroup {
+	return this.partialUniqueGroups
 }
 
 // TenantKey returns the tenant key column name, or empty if not tenant-scoped.
