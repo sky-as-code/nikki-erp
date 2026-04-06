@@ -1128,6 +1128,75 @@ func (this fieldDataTypeLangJson) TryConvert(val any, _ FieldDataTypeOptions) (v
 	}
 }
 
+// FieldDataTypeJsonMap stores arbitrary JSON objects in jsonb columns (map[string]any).
+func FieldDataTypeJsonMap() FieldDataType {
+	return fieldDataTypeJsonMap{fieldDataTypeBase{name: "jsonmap", options: nil}}
+}
+
+type fieldDataTypeJsonMap struct{ fieldDataTypeBase }
+
+func (this fieldDataTypeJsonMap) ArrayType() FieldDataType {
+	this.isArray = true
+	return this
+}
+
+func (this fieldDataTypeJsonMap) DefaultValue() value {
+	return Value(map[string]any{})
+}
+
+func (this fieldDataTypeJsonMap) Validate(val value) (value, *ft.ClientErrorItem) {
+	if this.isArray {
+		return validateArrayAfterTryConvert(this, val, this.validateScalar)
+	}
+	return validateScalarAfterTryConvert(this, val, this.validateScalar)
+}
+
+func (this fieldDataTypeJsonMap) validateScalar(value value) (value, *ft.ClientErrorItem) {
+	if value.Get() == nil {
+		return Value(nil), nil
+	}
+	if _, ok := jsonMapFromAny(*value.Get()); !ok {
+		return Value(nil), NewInvalidDataTypeErr("")
+	}
+	return value, nil
+}
+
+func jsonMapFromAny(v any) (map[string]any, bool) {
+	switch m := v.(type) {
+	case map[string]any:
+		return m, true
+	default:
+		rv := reflect.ValueOf(v)
+		if rv.Kind() == reflect.Map && rv.Type().Key().Kind() == reflect.String {
+			out := make(map[string]any, rv.Len())
+			iter := rv.MapRange()
+			for iter.Next() {
+				out[iter.Key().String()] = iter.Value().Interface()
+			}
+			return out, true
+		}
+		return nil, false
+	}
+}
+
+func (this fieldDataTypeJsonMap) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if val == nil {
+		return Value(nil), nil
+	}
+	rv := reflect.ValueOf(val)
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
+			return Value(nil), nil
+		}
+		val = rv.Elem().Interface()
+	}
+	m, ok := jsonMapFromAny(val)
+	if !ok {
+		return Value(nil), errors.Errorf("fieldDataTypeJsonMap.TryConvert: cannot convert %T to map", val)
+	}
+	return Value(m), nil
+}
+
 type fieldDataTypeLangCode struct{ fieldDataTypeBase }
 
 func (this fieldDataTypeLangCode) ArrayType() FieldDataType {
