@@ -1,320 +1,326 @@
 package grant_request
 
-import (
-	"github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/util"
-	"github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-)
+// import (
+// 	"github.com/sky-as-code/nikki-erp/common/fault"
+// 	"github.com/sky-as-code/nikki-erp/common/model"
+// 	"github.com/sky-as-code/nikki-erp/common/util"
+// 	"github.com/sky-as-code/nikki-erp/common/validator"
+// 	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
+// 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+// 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+// )
 
-func init() {
-	// Assert interface implementation
-	var req cqrs.Request
-	req = (*CreateGrantRequestCommand)(nil)
-	req = (*CancelGrantRequestCommand)(nil)
-	req = (*DeleteGrantRequestCommand)(nil)
-	req = (*GetGrantRequestByIdQuery)(nil)
-	req = (*RespondToGrantRequestCommand)(nil)
-	req = (*TargetIsDeletedCommand)(nil)
-	req = (*GetGrantRequestsByTargetQuery)(nil)
-	util.Unused(req)
-}
+// func init() {
+// 	// Assert interface implementation
+// 	var req cqrs.Request
+// 	req = (*CreateGrantRequestCommand)(nil)
+// 	req = (*CancelGrantRequestCommand)(nil)
+// 	req = (*DeleteGrantRequestCommand)(nil)
+// 	req = (*GetGrantRequestByIdQuery)(nil)
+// 	req = (*RespondToGrantRequestCommand)(nil)
+// 	req = (*TargetIsDeletedCommand)(nil)
+// 	req = (*GetGrantRequestsByTargetQuery)(nil)
+// 	util.Unused(req)
+// }
 
-// START: CreateGrantRequestCommand
-var createGrantRequestCommandType = cqrs.RequestType{
-	Module:    "authorize",
-	Submodule: "grant_request",
-	Action:    "create",
-}
+// // START: CreateGrantRequestCommand
+// var createGrantRequestCommandType = cqrs.RequestType{
+// 	Module:    "authorize",
+// 	Submodule: "grant_request",
+// 	Action:    "create",
+// }
 
-type CreateGrantRequestCommand struct {
-	AttachmentURL *string                       `json:"attachmentUrl"`
-	Comment       *string                       `json:"comment"`
-	RequestorId   model.Id                      `json:"requestorId"`
-	ReceiverType  domain.ReceiverType           `json:"receiverType"`
-	ReceiverId    model.Id                      `json:"receiverId"`
-	TargetType    domain.GrantRequestTargetType `json:"targetType"`
-	TargetRef     model.Id                      `json:"targetRef"`
-	OrgId         *model.Id                     `json:"orgId"`
-}
+// type CreateGrantRequestCommand struct {
+// 	AttachmentURL *string                         `json:"attachmentUrl"`
+// 	Comment       *string                         `json:"comment"`
+// 	RequestorId   model.Id                        `json:"requestorId"`
+// 	ReceiverType  domain.GrantRequestReceiverType `json:"receiverType"`
+// 	ReceiverId    model.Id                        `json:"receiverId"`
+// 	TargetType    domain.GrantRequestTargetType   `json:"targetType"`
+// 	TargetRef     model.Id                        `json:"targetRef"`
+// 	OrgId         *model.Id                       `json:"orgId"`
+// }
 
-func (CreateGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
-	return createGrantRequestCommandType
-}
+// func (CreateGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
+// 	return createGrantRequestCommandType
+// }
 
-func (this CreateGrantRequestCommand) Validate() fault.ValidationErrors {
-	rules := []*validator.FieldRules{
-		validator.Field(&this.AttachmentURL,
-			validator.When(this.AttachmentURL != nil,
-				validator.NotEmpty,
-				validator.Length(1, model.MODEL_RULE_URL_LENGTH_MAX),
-			),
-		),
-		validator.Field(&this.Comment,
-			validator.When(this.Comment != nil,
-				validator.NotEmpty,
-				validator.Length(1, model.MODEL_RULE_DESC_LENGTH),
-			),
-		),
-		validator.Field(&this.OrgId,
-			validator.When(this.OrgId != nil,
-				validator.NotEmpty,
-				validator.Length(1, model.MODEL_RULE_ULID_LENGTH),
-			),
-		),
-		GrantRequestTargetTypeValidateRule(&this.TargetType),
-		ReceiverTypeValidateRule(&this.ReceiverType),
-		model.IdValidateRule(&this.RequestorId, true),
-		model.IdValidateRule(&this.ReceiverId, true),
-		model.IdValidateRule(&this.TargetRef, true),
-	}
+// func (this CreateGrantRequestCommand) Validate() fault.ValidationErrors {
+// 	rules := []*validator.FieldRules{
+// 		validator.Field(&this.AttachmentURL,
+// 			validator.When(this.AttachmentURL != nil,
+// 				validator.NotEmpty,
+// 				validator.Length(1, model.MODEL_RULE_URL_LENGTH_MAX),
+// 			),
+// 		),
+// 		validator.Field(&this.Comment,
+// 			validator.When(this.Comment != nil,
+// 				validator.NotEmpty,
+// 				validator.Length(1, model.MODEL_RULE_DESC_LENGTH),
+// 			),
+// 		),
+// 		validator.Field(&this.OrgId,
+// 			validator.When(this.OrgId != nil,
+// 				validator.NotEmpty,
+// 				validator.Length(1, model.MODEL_RULE_ULID_LENGTH),
+// 			),
+// 		),
+// 		GrantRequestTargetTypeValidateRule(&this.TargetType),
+// 		ReceiverTypeValidateRule(&this.ReceiverType),
+// 		model.IdValidateRule(&this.RequestorId, true),
+// 		model.IdValidateRule(&this.ReceiverId, true),
+// 		model.IdValidateRule(&this.TargetRef, true),
+// 	}
 
-	return validator.ApiBased.ValidateStruct(&this, rules...)
-}
+// 	return validator.ApiBased.ValidateStruct(&this, rules...)
+// }
 
-func GrantRequestTargetTypeValidateRule(field *domain.GrantRequestTargetType) *validator.FieldRules {
-	return validator.Field(field,
-		validator.NotEmpty,
-		validator.OneOf(
-			domain.GrantRequestTargetTypeRole,
-			domain.GrantRequestTargetTypeSuite,
-		),
-	)
-}
+// func GrantRequestTargetTypeValidateRule(field *domain.GrantRequestTargetType) *validator.FieldRules {
+// 	return validator.Field(field,
+// 		validator.NotEmpty,
+// 		validator.OneOf(
+// 			domain.GrantRequestTargetTypeRole,
+// 			domain.GrantRequestTargetTypeSuite,
+// 		),
+// 	)
+// }
 
-func ReceiverTypeValidateRule(field *domain.ReceiverType) *validator.FieldRules {
-	return validator.Field(field,
-		validator.NotEmpty,
-		validator.OneOf(
-			domain.ReceiverTypeUser,
-			domain.ReceiverTypeGroup,
-		),
-	)
-}
+// func ReceiverTypeValidateRule(field *domain.GrantRequestReceiverType) *validator.FieldRules {
+// 	return validator.Field(field,
+// 		validator.NotEmpty,
+// 		validator.OneOf(
+// 			domain.GrantReqReceiverTypeUser,
+// 			domain.GrantRequestReceiverTypeGroup,
+// 		),
+// 	)
+// }
 
-type CreateGrantRequestResult = crud.OpResult[*domain.GrantRequest]
+// type CreateGrantRequestResult = crud.OpResult[*domain.GrantRequest]
 
-// END: CreateGrantRequestCommand
+// // END: CreateGrantRequestCommand
 
-// START: Exist
+// // START: Exist
 
-// START: CancelGrantRequestCommand
-var cancelGrantRequestCommandType = cqrs.RequestType{
-	Module:    "authorize",
-	Submodule: "grant_request",
-	Action:    "cancel",
-}
+// // START: CancelGrantRequestCommand
+// var cancelGrantRequestCommandType = cqrs.RequestType{
+// 	Module:    "authorize",
+// 	Submodule: "grant_request",
+// 	Action:    "cancel",
+// }
 
-type CancelGrantRequestCommand struct {
-	Id          model.Id   `json:"id" param:"id"`
-	ResponderId model.Id   `json:"responderId"`
-	Etag        model.Etag `json:"etag"`
-}
+// type CancelGrantRequestCommand struct {
+// 	Id          model.Id   `json:"id" param:"id"`
+// 	ResponderId model.Id   `json:"responderId"`
+// 	Etag        model.Etag `json:"etag"`
+// }
 
-func (this CancelGrantRequestCommand) Validate() fault.ValidationErrors {
-	rules := []*validator.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-		model.IdValidateRule(&this.ResponderId, true),
-		model.EtagValidateRule(&this.Etag, true),
-	}
+// func (this CancelGrantRequestCommand) Validate() fault.ValidationErrors {
+// 	rules := []*validator.FieldRules{
+// 		model.IdValidateRule(&this.Id, true),
+// 		model.IdValidateRule(&this.ResponderId, true),
+// 		model.EtagValidateRule(&this.Etag, true),
+// 	}
 
-	return validator.ApiBased.ValidateStruct(&this, rules...)
-}
+// 	return validator.ApiBased.ValidateStruct(&this, rules...)
+// }
 
-func (CancelGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
-	return cancelGrantRequestCommandType
-}
+// func (CancelGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
+// 	return cancelGrantRequestCommandType
+// }
 
-type CancelGrantRequestResult = crud.OpResult[*domain.GrantRequest]
+// type CancelGrantRequestResult = crud.OpResult[*domain.GrantRequest]
 
-// END: CancelGrantRequestCommand
+// // END: CancelGrantRequestCommand
 
-// START: DeleteGrantRequestCommand
-var deleteGrantRequestCommandType = cqrs.RequestType{
-	Module:    "authorize",
-	Submodule: "grant_request",
-	Action:    "delete",
-}
+// // START: DeleteGrantRequestCommand
+// var deleteGrantRequestCommandType = cqrs.RequestType{
+// 	Module:    "authorize",
+// 	Submodule: "grant_request",
+// 	Action:    "delete",
+// }
 
-type DeleteGrantRequestCommand struct {
-	Id model.Id `json:"id" param:"id"`
-}
+// type DeleteGrantRequestCommand struct {
+// 	Id model.Id `json:"id" param:"id"`
+// }
 
-func (this DeleteGrantRequestCommand) Validate() fault.ValidationErrors {
-	rules := []*validator.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
+// func (this DeleteGrantRequestCommand) Validate() fault.ValidationErrors {
+// 	rules := []*validator.FieldRules{
+// 		model.IdValidateRule(&this.Id, true),
+// 	}
 
-	return validator.ApiBased.ValidateStruct(&this, rules...)
-}
+// 	return validator.ApiBased.ValidateStruct(&this, rules...)
+// }
 
-func (DeleteGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
-	return deleteGrantRequestCommandType
-}
+// func (DeleteGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
+// 	return deleteGrantRequestCommandType
+// }
 
-type DeleteGrantRequestResult = crud.DeletionResult
+// type DeleteGrantRequestResult = crud.DeletionResult
 
-// END: DeleteGrantRequestCommand
+// // END: DeleteGrantRequestCommand
 
-// START: RespondToGrantRequestCommand
-var respondToGrantRequestCommandType = cqrs.RequestType{
-	Module:    "authorize",
-	Submodule: "grant_request",
-	Action:    "respond",
-}
+// // START: RespondToGrantRequestCommand
+// var respondToGrantRequestCommandType = cqrs.RequestType{
+// 	Module:    "authorize",
+// 	Submodule: "grant_request",
+// 	Action:    "respond",
+// }
 
-type RespondToGrantRequestCommand struct {
-	Id          model.Id                    `param:"id" json:"id"`
-	Decision    domain.GrantRequestDecision `json:"decision"`
-	Reason      *string                     `json:"reason"`
-	ResponderId model.Id                    `json:"responderId"`
-	Etag        model.Etag                  `json:"etag"`
-}
+// type RespondToGrantRequestCommand struct {
+// 	Id          model.Id                    `param:"id" json:"id"`
+// 	Decision    domain.GrantRequestDecision `json:"decision"`
+// 	Reason      *string                     `json:"reason"`
+// 	ResponderId model.Id                    `json:"responderId"`
+// 	Etag        model.Etag                  `json:"etag"`
+// }
 
-func (RespondToGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
-	return respondToGrantRequestCommandType
-}
+// func (RespondToGrantRequestCommand) CqrsRequestType() cqrs.RequestType {
+// 	return respondToGrantRequestCommandType
+// }
 
-func (this RespondToGrantRequestCommand) Validate() fault.ValidationErrors {
-	rules := []*validator.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-		validator.Field(&this.Decision,
-			validator.NotEmpty,
-			validator.OneOf(
-				domain.GrantRequestDecisionApprove,
-				domain.GrantRequestDecisionDeny,
-			),
-		),
-		validator.Field(&this.Reason,
-			validator.When(this.Reason != nil,
-				validator.NotEmpty,
-				validator.Length(1, model.MODEL_RULE_DESC_LENGTH),
-			),
-		),
-		model.IdValidateRule(&this.ResponderId, true),
-		model.EtagValidateRule(&this.Etag, true),
-	}
+// func (this RespondToGrantRequestCommand) Validate() fault.ValidationErrors {
+// 	rules := []*validator.FieldRules{
+// 		model.IdValidateRule(&this.Id, true),
+// 		validator.Field(&this.Decision,
+// 			validator.NotEmpty,
+// 			validator.OneOf(
+// 				domain.GrantRequestDecisionApprove,
+// 				domain.GrantRequestDecisionDeny,
+// 			),
+// 		),
+// 		validator.Field(&this.Reason,
+// 			validator.When(this.Reason != nil,
+// 				validator.NotEmpty,
+// 				validator.Length(1, model.MODEL_RULE_DESC_LENGTH),
+// 			),
+// 		),
+// 		model.IdValidateRule(&this.ResponderId, true),
+// 		model.EtagValidateRule(&this.Etag, true),
+// 	}
 
-	return validator.ApiBased.ValidateStruct(&this, rules...)
-}
+// 	return validator.ApiBased.ValidateStruct(&this, rules...)
+// }
 
-type RespondToGrantRequestResult = crud.OpResult[*domain.GrantRequest]
+// type RespondToGrantRequestResult = crud.OpResult[*domain.GrantRequest]
 
-// END: RespondToGrantRequestCommand
+// // END: RespondToGrantRequestCommand
 
-// START: GetGrantRequestByIdQuery
-var getGrantRequestByIdQuery = cqrs.RequestType{
-	Module:    "authorize",
-	Submodule: "grant_request",
-	Action:    "getById",
-}
+// // START: GetGrantRequestByIdQuery
+// var getGrantRequestByIdQuery = cqrs.RequestType{
+// 	Module:    "authorize",
+// 	Submodule: "grant_request",
+// 	Action:    "getById",
+// }
 
-type GetGrantRequestByIdQuery struct {
-	Id model.Id `param:"id" json:"id"`
-}
+// type GetGrantRequestByIdQuery struct {
+// 	Id model.Id `param:"id" json:"id"`
+// }
 
-func (this GetGrantRequestByIdQuery) Validate() fault.ValidationErrors {
-	rules := []*validator.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
+// func (this GetGrantRequestByIdQuery) Validate() fault.ValidationErrors {
+// 	rules := []*validator.FieldRules{
+// 		model.IdValidateRule(&this.Id, true),
+// 	}
 
-	return validator.ApiBased.ValidateStruct(&this, rules...)
-}
+// 	return validator.ApiBased.ValidateStruct(&this, rules...)
+// }
 
-func (GetGrantRequestByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return getGrantRequestByIdQuery
-}
+// func (GetGrantRequestByIdQuery) CqrsRequestType() cqrs.RequestType {
+// 	return getGrantRequestByIdQuery
+// }
 
-type GetGrantRequestByIdResult = crud.OpResult[*domain.GrantRequest]
+// // GrantRequestByIdData bundles the grant request row with responses loaded separately (no nested slice on domain.GrantRequest).
+// type GrantRequestByIdData struct {
+// 	GrantRequest   *domain.GrantRequest
+// 	GrantResponses []domain.GrantResponse
+// }
 
-// END: GetGrantRequestByIdQuery
+// type GetGrantRequestByIdResult = crud.OpResult[*GrantRequestByIdData]
 
-// START: SearchGrantRequestsQuery
-var searchGrantRequestsQueryType = cqrs.RequestType{
-	Module:    "authorize",
-	Submodule: "grant_request",
-	Action:    "search",
-}
+// // END: GetGrantRequestByIdQuery
 
-type SearchGrantRequestsQuery struct {
-	crud.SearchQuery
-}
+// // START: SearchGrantRequestsQuery
+// var searchGrantRequestsQueryType = cqrs.RequestType{
+// 	Module:    "authorize",
+// 	Submodule: "grant_request",
+// 	Action:    "search",
+// }
 
-func (SearchGrantRequestsQuery) CqrsRequestType() cqrs.RequestType {
-	return searchGrantRequestsQueryType
-}
+// type SearchGrantRequestsQuery struct {
+// 	crud.SearchQuery
+// }
 
-func (this SearchGrantRequestsQuery) Validate() fault.ValidationErrors {
-	rules := this.SearchQuery.ValidationRules()
+// func (SearchGrantRequestsQuery) CqrsRequestType() cqrs.RequestType {
+// 	return searchGrantRequestsQueryType
+// }
 
-	return validator.ApiBased.ValidateStruct(&this, rules...)
-}
+// func (this SearchGrantRequestsQuery) Validate() fault.ValidationErrors {
+// 	rules := this.SearchQuery.ValidationRules()
 
-type SearchGrantRequestsResultData = crud.PagedResult[domain.GrantRequest]
-type SearchGrantRequestsResult = crud.OpResult[*SearchGrantRequestsResultData]
+// 	return validator.ApiBased.ValidateStruct(&this, rules...)
+// }
 
-// END: SearchGrantRequestsQuery
+// type SearchGrantRequestsResultData = crud.PagedResult[domain.GrantRequest]
+// type SearchGrantRequestsResult = crud.OpResult[*SearchGrantRequestsResultData]
 
-// START: TargetIsDeletedCommand
-var targetIsDeletedCommandType = cqrs.RequestType{
-	Module:    "authorize",
-	Submodule: "grant_request",
-	Action:    "roleIdDeleted",
-}
+// // END: SearchGrantRequestsQuery
 
-type TargetIsDeletedCommand struct {
-	Id         model.Id                      `json:"id"`
-	TargetType domain.GrantRequestTargetType `json:"targetType"`
-	TargetRef  model.Id                      `json:"targetRef"`
-	TargetName string                        `json:"targetName"`
-}
+// // START: TargetIsDeletedCommand
+// var targetIsDeletedCommandType = cqrs.RequestType{
+// 	Module:    "authorize",
+// 	Submodule: "grant_request",
+// 	Action:    "roleIdDeleted",
+// }
 
-func (TargetIsDeletedCommand) CqrsRequestType() cqrs.RequestType {
-	return targetIsDeletedCommandType
-}
+// type TargetIsDeletedCommand struct {
+// 	Id         model.Id                      `json:"id"`
+// 	TargetType domain.GrantRequestTargetType `json:"targetType"`
+// 	TargetRef  model.Id                      `json:"targetRef"`
+// 	TargetName string                        `json:"targetName"`
+// }
 
-func (this TargetIsDeletedCommand) Validate() fault.ValidationErrors {
-	rules := []*validator.FieldRules{
-		model.IdValidateRule(&this.TargetRef, true),
-		validator.Field(&this.TargetName, validator.NotEmpty),
-		GrantRequestTargetTypeValidateRule(&this.TargetType),
-	}
+// func (TargetIsDeletedCommand) CqrsRequestType() cqrs.RequestType {
+// 	return targetIsDeletedCommandType
+// }
 
-	return validator.ApiBased.ValidateStruct(&this, rules...)
-}
+// func (this TargetIsDeletedCommand) Validate() fault.ValidationErrors {
+// 	rules := []*validator.FieldRules{
+// 		model.IdValidateRule(&this.TargetRef, true),
+// 		validator.Field(&this.TargetName, validator.NotEmpty),
+// 		GrantRequestTargetTypeValidateRule(&this.TargetType),
+// 	}
 
-type TargetIsDeletedResult = crud.OpResult[bool]
+// 	return validator.ApiBased.ValidateStruct(&this, rules...)
+// }
 
-// END: TargetIsDeletedCommand
+// type TargetIsDeletedResult = crud.OpResult[bool]
 
-// START: GetGrantRequestsByTarget
-var getGrantRequestsByTargetQueryType = cqrs.RequestType{
-	Module:    "authorize",
-	Submodule: "grant_request",
-	Action:    "getByTarget",
-}
+// // END: TargetIsDeletedCommand
 
-type GetGrantRequestsByTargetQuery struct {
-	TargetType domain.GrantRequestTargetType
-	TargetRef  model.Id
-}
+// // START: GetGrantRequestsByTarget
+// var getGrantRequestsByTargetQueryType = cqrs.RequestType{
+// 	Module:    "authorize",
+// 	Submodule: "grant_request",
+// 	Action:    "getByTarget",
+// }
 
-func (GetGrantRequestsByTargetQuery) CqrsRequestType() cqrs.RequestType {
-	return getGrantRequestsByTargetQueryType
-}
+// type GetGrantRequestsByTargetQuery struct {
+// 	TargetType domain.GrantRequestTargetType
+// 	TargetRef  model.Id
+// }
 
-func (this GetGrantRequestsByTargetQuery) Validate() fault.ValidationErrors {
-	rules := []*validator.FieldRules{
-		GrantRequestTargetTypeValidateRule(&this.TargetType),
-		model.IdValidateRule(&this.TargetRef, true),
-	}
+// func (GetGrantRequestsByTargetQuery) CqrsRequestType() cqrs.RequestType {
+// 	return getGrantRequestsByTargetQueryType
+// }
 
-	return validator.ApiBased.ValidateStruct(&this, rules...)
-}
+// func (this GetGrantRequestsByTargetQuery) Validate() fault.ValidationErrors {
+// 	rules := []*validator.FieldRules{
+// 		GrantRequestTargetTypeValidateRule(&this.TargetType),
+// 		model.IdValidateRule(&this.TargetRef, true),
+// 	}
 
-type GetGrantRequestsByTargetResult = crud.OpResult[[]domain.GrantRequest]
+// 	return validator.ApiBased.ValidateStruct(&this, rules...)
+// }
 
-// END: GetGrantRequestsByTarget
+// type GetGrantRequestsByTargetResult = crud.OpResult[[]domain.GrantRequest]
+
+// // END: GetGrantRequestsByTarget

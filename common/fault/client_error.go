@@ -8,6 +8,7 @@ import (
 	invopop "github.com/invopop/validation"
 )
 
+// Deprecated: Use ClientErrorItem instead
 type ValidationErrorItem struct {
 	Field   string
 	Error   string
@@ -35,6 +36,7 @@ func (this *ValidationErrorItem) String() string {
 	return buf.String()
 }
 
+// Deprecated: Use ClientErrors instead
 type ClientError struct {
 	Code    string `json:"code"`
 	Details any    `json:"details"`
@@ -200,8 +202,10 @@ func (this ClientErrorItem) String() string {
 	return buf.String()
 }
 
+// Deprecated: Use ClientErrors instead
 type ValidationErrorCollection map[string]string
 
+// Deprecated: Use ClientErrors instead
 type ValidationErrors map[string]string
 
 func (this *ValidationErrors) Append(field string, err string) {

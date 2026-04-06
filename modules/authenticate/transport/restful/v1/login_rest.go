@@ -7,7 +7,6 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 )
 
@@ -37,37 +36,31 @@ func (this LoginRest) StartLoginFlow(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	var request StartLoginFlowRequest
-	if err := echoCtx.Bind(&request); err != nil {
-		return err
-	}
 
-	var deviceName *string
-	deviceName = util.ToPtr(echoCtx.Request().Header.Get("User-Agent"))
-	if len(*deviceName) == 0 && request.DeviceName != nil && len(*request.DeviceName) > 0 {
-		deviceName = request.DeviceName
-	}
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.attemptSvc.CreateLoginAttempt,
+		func(request StartLoginFlowRequest) it.CreateLoginAttemptCommand {
+			var deviceName *string
+			deviceName = util.ToPtr(echoCtx.Request().Header.Get("User-Agent"))
+			if len(*deviceName) == 0 && request.DeviceName != nil && len(*request.DeviceName) > 0 {
+				deviceName = request.DeviceName
+			}
 
-	cmd := it.CreateLoginAttemptCommand{
-		DeviceIp:       util.ToPtr(echoCtx.RealIP()),
-		DeviceName:     deviceName,
-		DeviceLocation: util.ToPtr(echoCtx.RealIP()), // Use geoip service to get location
-		SubjectType:    request.SubjectType,
-		Username:       request.Username,
-	}
-	reqCtx := echoCtx.Request().Context().(crud.Context)
-	result, err := this.attemptSvc.CreateLoginAttempt(reqCtx, cmd)
-
-	if err != nil {
-		return err
-	}
-
-	if result.ClientError != nil {
-		return httpserver.JsonBadRequest(echoCtx, *result.ClientError)
-	}
-
-	response := NewStartLoginFlowResponse(*result)
-	return httpserver.JsonCreated(echoCtx, response)
+			cmd := it.CreateLoginAttemptCommand{
+				DeviceIp:       util.ToPtr(echoCtx.RealIP()),
+				DeviceName:     deviceName,
+				DeviceLocation: util.ToPtr(echoCtx.RealIP()), // Use geoip service to get location
+				SubjectType:    request.SubjectType,
+				Username:       request.Username,
+			}
+			return cmd
+		},
+		func(data *it.CreateLoginAttemptResultData) StartLoginFlowResponse {
+			return NewStartLoginFlowResponse(data)
+		},
+		httpserver.JsonCreated,
+	)
 }
 
 func (this LoginRest) Authenticate(echoCtx echo.Context) (err error) {
@@ -76,13 +69,17 @@ func (this LoginRest) Authenticate(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.loginSvc.Authenticate,
+	err = httpserver.ServeRequest2(
+		echoCtx,
+		this.loginSvc.Authenticate,
 		func(request AuthenticateRequest) it.AuthenticateCommand {
 			return it.AuthenticateCommand(request)
 		},
-		func(result it.AuthenticateResult) AuthenticateResponse {
-			return AuthenticateResponse(*result.Data)
+		func(data *it.AuthenticateResultData) AuthenticateResponse {
+			if data == nil {
+				return AuthenticateResponse{}
+			}
+			return AuthenticateResponse(*data)
 		},
 		httpserver.JsonOk,
 	)
@@ -95,13 +92,17 @@ func (this LoginRest) RefreshToken(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.loginSvc.RefreshToken,
+	err = httpserver.ServeRequest2(
+		echoCtx,
+		this.loginSvc.RefreshToken,
 		func(request RefreshTokenRequest) it.RefreshTokenCommand {
 			return it.RefreshTokenCommand(request)
 		},
-		func(result it.RefreshTokenResult) RefreshTokenResponse {
-			return RefreshTokenResponse(*result.Data)
+		func(data *it.RefreshTokenResultData) RefreshTokenResponse {
+			if data == nil {
+				return RefreshTokenResponse{}
+			}
+			return RefreshTokenResponse(*data)
 		},
 		httpserver.JsonOk,
 	)

@@ -100,7 +100,7 @@ func (this GetUserContextQuery) Validate() ft.ValidationErrors {
 
 // type GetUserContextResult struct {
 // 	User        *domain.User                                       `json:"user,omitempty"`
-// 	Hierachies  []domain.HierarchyLevel                            `json:"hierarchies,omitempty"`
+// 	Hierachies  []domain.OrganizationUnit                            `json:"orgunits,omitempty"`
 // 	Orgs        []domain.Organization                              `json:"orgs,omitempty"`
 // 	Permissions *map[string][]itAuthorize.ResourceScopePermissions `json:"permissions,omitempty"`
 // }

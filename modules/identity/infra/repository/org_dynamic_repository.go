@@ -3,10 +3,12 @@ package repository
 import (
 	"go.uber.org/dig"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
@@ -24,7 +26,7 @@ type OrganizationDynamicRepositoryParam struct {
 }
 
 func NewOrganizationDynamicRepository(param OrganizationDynamicRepositoryParam) it.OrganizationRepository {
-	dynamicRepo := baserepo.NewBaseRepositoryImpl(
+	dynamicRepo := baserepo.NewBaseDynamicRepository(
 		baserepo.NewBaseRepositoryParam{
 			Client:       param.Client,
 			ConfigSvc:    param.ConfigSvc,
@@ -37,11 +39,26 @@ func NewOrganizationDynamicRepository(param OrganizationDynamicRepositoryParam) 
 }
 
 type OrganizationDynamicRepository struct {
-	dynamicRepo dyn.BaseRepository
+	dynamicRepo dyn.BaseDynamicRepository
 }
 
-func (this *OrganizationDynamicRepository) GetBaseRepo() dyn.BaseRepository {
+func (this *OrganizationDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository {
 	return this.dynamicRepo
+}
+
+func (this *OrganizationDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
+	return this.dynamicRepo.BeginTransaction(ctx)
+}
+
+func (this *OrganizationDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.Organization) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
+}
+
+func (this *OrganizationDynamicRepository) Exists(ctx corectx.Context, keys []domain.Organization) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	dynamicKeys := array.Map(keys, func(key domain.Organization) dmodel.DynamicFields {
+		return key.GetFieldData()
+	})
+	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
 }
 
 func (this *OrganizationDynamicRepository) Insert(ctx corectx.Context, org domain.Organization) (

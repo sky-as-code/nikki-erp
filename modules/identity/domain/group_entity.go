@@ -8,14 +8,47 @@ import (
 
 const (
 	GroupSchemaName = "identity.group"
-	GroupFieldName  = "name"
-	GroupFieldDesc  = "description"
-	GroupFieldUsers = "users"
+
+	GroupFieldId      = basemodel.FieldId
+	GroupFieldName    = "name"
+	GroupFieldDesc    = "description"
+	GroupFieldOwnerId = "owner_id"
+
+	GroupEdgeOwner                = "owner"
+	GroupEdgeRoles                = "roles"
+	GroupEdgePrivateRole          = "private_role"
+	GroupEdgeUsers                = "users"
+	GroupEdgeBenefitGrantRequests = "benefit_grant_requests"
 )
+
+const (
+	GrpUsrRelSchemaName = "identity.group_user_rel"
+
+	GrpUsrRelFieldGroupId = "group_id"
+	GrpUsrRelFieldUserId  = "user_id"
+)
+
+func GroupUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(GrpUsrRelSchemaName).
+		TableName("ident_group_user_rel").
+		ShouldBuildDb().
+		Field(
+			dmodel.DefineField().
+				Name(GrpUsrRelFieldGroupId).
+				DataType(dmodel.FieldDataTypeUlid()).
+				PrimaryKey(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(GrpUsrRelFieldUserId).
+				DataType(dmodel.FieldDataTypeUlid()).
+				PrimaryKey(),
+		)
+}
 
 func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(GroupSchemaName).
-		Label(model.LangJson{"en-US": "User Group"}).
+		Label(model.LangJson{"en-US": "User group"}).
 		TableName("ident_groups").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -33,14 +66,44 @@ func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Label(model.LangJson{"en-US": "Description"}).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
-		EdgeTo(
-			dmodel.Edge(GroupFieldUsers).
-				ManyToMany(UserSchemaName, UsrGrpRelSchemaName, "group").
-				OnDelete(dmodel.RelationCascadeCascade),
+		Field(
+			dmodel.DefineField().
+				Name(GroupFieldOwnerId).
+				DataType(dmodel.FieldDataTypeUlid()).
+				RequiredForCreate().
+				Description(model.LangJson{"en-US": "User who owns the group, is notified when membership is updated and " +
+					"is responsible for reviewing the membership periodically.",
+				}),
 		).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder())
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		EdgeTo(
+			dmodel.Edge(GroupEdgeOwner).
+				ManyToOne(UserSchemaName, dmodel.DynamicFields{
+					GroupFieldOwnerId: UserFieldId,
+				}),
+		).
+		EdgeTo(
+			dmodel.Edge(GroupEdgeUsers).
+				ManyToMany(UserSchemaName, GrpUsrRelSchemaName, "group").
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeTo(
+			dmodel.Edge(GroupEdgeRoles).
+				ManyToMany(RoleSchemaName, RoleAssignmentSchemaName, "receiver_group").
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeFrom(
+			dmodel.Edge(GroupEdgePrivateRole).
+				Label(model.LangJson{"en-US": "Private role"}).
+				Existing(RoleSchemaName, RoleEdgeDedicatedGroup),
+		).
+		EdgeFrom(
+			dmodel.Edge(GroupEdgeBenefitGrantRequests).
+				Label(model.LangJson{"en-US": "Grant requests for this group"}).
+				Existing(RoleRequestSchemaName, RoleReqEdgeReceiverGroup),
+		)
 }
 
 type Group struct {

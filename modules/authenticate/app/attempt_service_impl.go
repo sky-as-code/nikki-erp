@@ -7,19 +7,20 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	"github.com/sky-as-code/nikki-erp/common/defense"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/app/methods"
 	c "github.com/sky-as-code/nikki-erp/modules/authenticate/constants"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
-	"github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/external"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
 type NewAttemptServiceParam struct {
@@ -48,7 +49,7 @@ type AttemptServiceImpl struct {
 	attemptDurationSecs int
 }
 
-func (this *AttemptServiceImpl) CreateLoginAttempt(ctx crud.Context, cmd it.CreateLoginAttemptCommand) (result *it.CreateLoginAttemptResult, err error) {
+func (this *AttemptServiceImpl) CreateLoginAttempt(ctx corectx.Context, cmd it.CreateLoginAttemptCommand) (result *it.CreateLoginAttemptResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "create attempt attempt"); e != nil {
 			err = e
@@ -59,45 +60,50 @@ func (this *AttemptServiceImpl) CreateLoginAttempt(ctx crud.Context, cmd it.Crea
 	attempt.SetDefaults()
 
 	var subject *attemptSubject
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = attempt.Validate(false)
+	flow := dyn.StartValidationFlow()
+	clientErrs, err := flow.
+		Step(func(clientErrs *ft.ClientErrors) error {
+			appendClientErrors(clientErrs, domain.ValidateLoginAttempt(attempt, false))
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(clientErrs *ft.ClientErrors) error {
 			this.sanitizeAttempt(attempt)
-			subject, err = this.assertSubjectExists(ctx, *attempt.SubjectType, cmd.Username, vErrs)
+			subject, err = this.assertSubjectExists(ctx, *attempt.GetSubjectType(), cmd.Username, clientErrs)
 			return err
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(clientErrs *ft.ClientErrors) error {
 			methods := []string{"password"} // TODO: load method settings from DB
 			if len(methods) == 0 {
-				return ft.ClientError{
-					Code:    "unauthorized",
-					Details: "no attempt methods available",
-				}
+				clientErrs.Append(*ft.NewAnonymousBusinessViolation("", "no attempt methods available"))
+				return nil
 			}
-			attempt.Methods = methods
+			attempt.SetMethods(methods)
 			return nil
 		}).
 		End()
 	ft.PanicOnErr(err)
 
-	if vErrs.Count() > 0 {
+	if clientErrs.Count() > 0 {
 		return &it.CreateLoginAttemptResult{
-			ClientError: vErrs.ToClientError(),
+			ClientErrors: clientErrs,
 		}, nil
 	}
 
 	durationTime := time.Duration(this.attemptDurationSecs) * time.Second
-	attempt.ExpiredAt = util.ToPtr(time.Now().Add(durationTime))
-	attempt.CurrentMethod = util.ToPtr(attempt.Methods[0])
-	attempt.SubjectRef = util.ToPtr(subject.Id)
-	attempt.SubjectType = &cmd.SubjectType
-	attempt.Username = &cmd.Username
+	attempt.SetExpiredAt(util.ToPtr(time.Now().Add(durationTime)))
+	m := attempt.GetMethods()
+	attempt.SetCurrentMethod(util.ToPtr(m[0]))
+	attempt.SetSubjectRef(util.ToPtr(subject.Id))
+	attempt.SetSubjectType(&cmd.SubjectType)
+	attempt.SetUsername(&cmd.Username)
 
-	attempt, err = this.attemptRepo.Create(ctx, *attempt)
+	insertRes, err := this.attemptRepo.Insert(ctx, *attempt)
+	ft.PanicOnErr(err)
+	if insertRes.ClientErrors.Count() > 0 {
+		return &it.CreateLoginAttemptResult{ClientErrors: insertRes.ClientErrors}, nil
+	}
+
+	attempt, err = this.getAttemptById(ctx, *attempt.GetId())
 	ft.PanicOnErr(err)
 
 	return &it.CreateLoginAttemptResult{
@@ -109,7 +115,7 @@ func (this *AttemptServiceImpl) CreateLoginAttempt(ctx crud.Context, cmd it.Crea
 	}, nil
 }
 
-func (this *AttemptServiceImpl) UpdateLoginAttempt(ctx crud.Context, cmd it.UpdateLoginAttemptCommand) (result *it.UpdateLoginAttemptResult, err error) {
+func (this *AttemptServiceImpl) UpdateLoginAttempt(ctx corectx.Context, cmd it.UpdateLoginAttemptCommand) (result *it.UpdateLoginAttemptResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "create attempt attempt"); e != nil {
 			err = e
@@ -119,38 +125,44 @@ func (this *AttemptServiceImpl) UpdateLoginAttempt(ctx crud.Context, cmd it.Upda
 	attempt := cmd.ToLoginAttempt()
 
 	var dbAttempt *domain.LoginAttempt
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = attempt.Validate(true)
+	flow := dyn.StartValidationFlow()
+	clientErrs, err := flow.
+		Step(func(clientErrs *ft.ClientErrors) error {
+			appendClientErrors(clientErrs, domain.ValidateLoginAttempt(attempt, true))
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			dbAttempt, err = this.assertAttemptExists(ctx, cmd.Id, vErrs)
+		Step(func(clientErrs *ft.ClientErrors) error {
+			dbAttempt, err = this.assertAttemptExists(ctx, cmd.Id, clientErrs)
 			return err
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			this.assertNewStatusValid(ctx, dbAttempt, attempt.Status, vErrs)
+		Step(func(clientErrs *ft.ClientErrors) error {
+			this.assertNewStatusValid(ctx, dbAttempt, attempt.GetStatus(), clientErrs)
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			this.assertNewMethodValid(ctx, dbAttempt, attempt.CurrentMethod, vErrs)
+		Step(func(clientErrs *ft.ClientErrors) error {
+			this.assertNewMethodValid(ctx, dbAttempt, attempt.GetCurrentMethod(), clientErrs)
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(clientErrs *ft.ClientErrors) error {
 			this.sanitizeAttempt(attempt)
 			return nil
 		}).
 		End()
 	ft.PanicOnErr(err)
 
-	if vErrs.Count() > 0 {
+	if clientErrs.Count() > 0 {
 		return &it.UpdateLoginAttemptResult{
-			ClientError: vErrs.ToClientError(),
+			ClientErrors: clientErrs,
 		}, nil
 	}
 
-	attempt, err = this.attemptRepo.Update(ctx, *attempt)
+	updateRes, err := this.attemptRepo.Update(ctx, *attempt)
+	ft.PanicOnErr(err)
+	if updateRes.ClientErrors.Count() > 0 {
+		return &it.UpdateLoginAttemptResult{ClientErrors: updateRes.ClientErrors}, nil
+	}
+
+	attempt, err = this.getAttemptById(ctx, cmd.Id)
 	ft.PanicOnErr(err)
 
 	return &it.UpdateLoginAttemptResult{
@@ -160,15 +172,15 @@ func (this *AttemptServiceImpl) UpdateLoginAttempt(ctx crud.Context, cmd it.Upda
 }
 
 func (this *AttemptServiceImpl) sanitizeAttempt(attempt *domain.LoginAttempt) {
-	if attempt.DeviceName != nil {
-		attempt.DeviceName = util.ToPtr(defense.SanitizePlainText(*attempt.DeviceName, true))
+	if attempt.GetDeviceName() != nil {
+		attempt.SetDeviceName(util.ToPtr(defense.SanitizePlainText(*attempt.GetDeviceName(), true)))
 	}
-	if attempt.DeviceLocation != nil {
-		attempt.DeviceLocation = util.ToPtr(defense.SanitizePlainText(*attempt.DeviceLocation, true))
+	if attempt.GetDeviceLocation() != nil {
+		attempt.SetDeviceLocation(util.ToPtr(defense.SanitizePlainText(*attempt.GetDeviceLocation(), true)))
 	}
 }
 
-func (this *AttemptServiceImpl) GetAttemptById(ctx crud.Context, query it.GetAttemptByIdQuery) (result *it.GetAttemptByIdResult, err error) {
+func (this *AttemptServiceImpl) GetAttemptById(ctx corectx.Context, query it.GetAttemptByIdQuery) (result *it.GetAttemptByIdResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "get attempt by id"); e != nil {
 			err = e
@@ -176,22 +188,21 @@ func (this *AttemptServiceImpl) GetAttemptById(ctx crud.Context, query it.GetAtt
 	}()
 
 	var dbAttempt *domain.LoginAttempt
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = query.Validate()
+	flow := dyn.StartValidationFlow(query)
+	clientErrs, err := flow.
+		Step(func(clientErrs *ft.ClientErrors) error {
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			dbAttempt, err = this.assertAttemptExists(ctx, query.Id, vErrs)
+		Step(func(clientErrs *ft.ClientErrors) error {
+			dbAttempt, err = this.assertAttemptExists(ctx, query.Id, clientErrs)
 			return err
 		}).
 		End()
 	ft.PanicOnErr(err)
 
-	if vErrs.Count() > 0 {
+	if clientErrs.Count() > 0 {
 		return &it.GetAttemptByIdResult{
-			ClientError: vErrs.ToClientError(),
+			ClientErrors: clientErrs,
 		}, nil
 	}
 
@@ -201,39 +212,52 @@ func (this *AttemptServiceImpl) GetAttemptById(ctx crud.Context, query it.GetAtt
 	}, nil
 }
 
-func (this *AttemptServiceImpl) assertAttemptExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (attempt *domain.LoginAttempt, err error) {
-	attempt, err = this.attemptRepo.FindById(ctx, it.FindByIdParam{Id: id})
+func (this *AttemptServiceImpl) assertAttemptExists(
+	ctx corectx.Context, id model.Id, clientErrs *ft.ClientErrors,
+) (attempt *domain.LoginAttempt, err error) {
+	attempt, err = this.getAttemptById(ctx, id)
 	if attempt == nil {
-		vErrs.AppendNotFound("id", "attempt")
+		appendNotFoundError(clientErrs, "id", "attempt")
 	}
 	return
 }
 
-func (this *AttemptServiceImpl) assertNewStatusValid(ctx crud.Context, attempt *domain.LoginAttempt, newStatus *domain.AttemptStatus, vErrs *ft.ValidationErrors) {
+func (this *AttemptServiceImpl) assertNewStatusValid(
+	ctx corectx.Context, attempt *domain.LoginAttempt, newStatus *domain.AttemptStatus, clientErrs *ft.ClientErrors,
+) {
 	if newStatus == nil {
 		return
 	}
-	if *attempt.Status != domain.AttemptStatusPending {
-		vErrs.Append("status", "attempt already settled")
+	st := attempt.GetStatus()
+	if st != nil && *st != domain.AttemptStatusPending {
+		appendValidationError(clientErrs, "status", "attempt already settled")
 	}
 	return
 }
 
-func (this *AttemptServiceImpl) assertNewMethodValid(ctx crud.Context, attempt *domain.LoginAttempt, newMethod *string, vErrs *ft.ValidationErrors) {
+func (this *AttemptServiceImpl) assertNewMethodValid(
+	ctx corectx.Context, attempt *domain.LoginAttempt, newMethod *string, clientErrs *ft.ClientErrors,
+) {
 	if newMethod == nil {
 		return
 	}
 	methodImpl := methods.GetLoginMethod(*newMethod)
 	notExists := methodImpl == nil
 
-	newIdx := array.IndexOf(attempt.Methods, *newMethod)
+	meths := attempt.GetMethods()
+	cur := attempt.GetCurrentMethod()
+	var curStr string
+	if cur != nil {
+		curStr = *cur
+	}
+	newIdx := array.IndexOf(meths, *newMethod)
 	notAssigned := newIdx == -1
 
-	curIdx := array.IndexOf(attempt.Methods, *attempt.CurrentMethod)
+	curIdx := array.IndexOf(meths, curStr)
 	notNextStep := newIdx <= curIdx
 
 	if notExists || notAssigned || notNextStep {
-		vErrs.Append("currentMethod", "invalid login method")
+		appendValidationError(clientErrs, "current_method", "invalid login method")
 	}
 }
 
@@ -243,10 +267,12 @@ type attemptSubject struct {
 	Username string
 }
 
-func (this *AttemptServiceImpl) assertSubjectExists(ctx crud.Context, subjectType domain.SubjectType, username string, vErrs *ft.ValidationErrors) (subject *attemptSubject, err error) {
+func (this *AttemptServiceImpl) assertSubjectExists(
+	ctx corectx.Context, subjectType domain.SubjectType, username string, clientErrs *ft.ClientErrors,
+) (subject *attemptSubject, err error) {
 	switch subjectType {
 	case domain.SubjectTypeUser:
-		subject, err = this.assertUserExists(ctx, username, vErrs)
+		subject, err = this.assertUserExists(ctx, username, clientErrs)
 	}
 	// case domain.SubjectTypeCustomer:
 	// 	subject, err = this.assertCustomerExists(ctx, username, vErrs)
@@ -257,7 +283,9 @@ func (this *AttemptServiceImpl) assertSubjectExists(ctx crud.Context, subjectTyp
 	return subject, nil
 }
 
-func (this *AttemptServiceImpl) assertUserExists(ctx crud.Context, username string, vErrs *ft.ValidationErrors) (*attemptSubject, error) {
+func (this *AttemptServiceImpl) assertUserExists(
+	ctx corectx.Context, username string, clientErrs *ft.ClientErrors,
+) (*attemptSubject, error) {
 	// result := itUser.GetUserByEmailResult{}
 	// err := this.cqrsBus.Request(ctx, &itUser.GetUserByEmailQuery{
 	// 	Email: username,
@@ -286,7 +314,11 @@ func (this *AttemptServiceImpl) assertUserExists(ctx crud.Context, username stri
 	if err != nil {
 		return nil, err
 	}
-	if userRes.ClientErrors.Count() > 0 || !userRes.HasData {
+	if userRes.ClientErrors.Count() > 0 {
+		appendClientErrors(clientErrs, userRes.ClientErrors)
+		return nil, nil
+	}
+	if !userRes.HasData {
 		return nil, nil
 	}
 	user := userRes.Data
@@ -295,4 +327,17 @@ func (this *AttemptServiceImpl) assertUserExists(ctx crud.Context, username stri
 		Name:     *user.GetDisplayName(),
 		Username: *user.GetEmail(),
 	}, nil
+}
+
+func (this *AttemptServiceImpl) getAttemptById(ctx corectx.Context, id model.Id) (*domain.LoginAttempt, error) {
+	result, err := this.attemptRepo.GetOne(ctx, dyn.RepoGetOneParam{
+		Filter: dmodel.DynamicFields{basemodel.FieldId: string(id)},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if result.ClientErrors.Count() > 0 || !result.HasData {
+		return nil, nil
+	}
+	return &result.Data, nil
 }

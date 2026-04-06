@@ -8,7 +8,7 @@ import (
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 var createPasswordOtpCommandType = cqrs.RequestType{
@@ -18,29 +18,29 @@ var createPasswordOtpCommandType = cqrs.RequestType{
 }
 
 type CreateOtpPasswordCommand struct {
-	SubjectType domain.SubjectType `json:"subjectType"`
-	SubjectRef  model.Id           `json:"subjectRef"`
+	SubjectType domain.SubjectType `json:"subject_type"`
+	SubjectRef  model.Id           `json:"subject_ref"`
 }
 
 func (CreateOtpPasswordCommand) CqrsRequestType() cqrs.RequestType {
 	return createPasswordOtpCommandType
 }
 
-func (this CreateOtpPasswordCommand) Validate() ft.ValidationErrors {
+func (this CreateOtpPasswordCommand) Validate() ft.ClientErrors {
 	rules := []*val.FieldRules{
 		domain.SubjectTypeValidateRule(&this.SubjectType, true),
 		model.IdValidateRule(&this.SubjectRef, true),
 	}
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+	return domain.ValidationErrorsToClientErrors(val.ApiBased.ValidateStruct(&this, rules...))
 }
 
 type CreatePasswordOtpResultData struct {
-	CreatedAt time.Time `json:"createdAt"`
-	ExpiredAt time.Time `json:"expiredAt"`
-	OtpUrl    string    `json:"otpUrl"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiredAt time.Time `json:"expired_at"`
+	OtpUrl    string    `json:"otp_url"`
 }
-type CreateOtpPasswordResult = crud.OpResult[*CreatePasswordOtpResultData]
+type CreateOtpPasswordResult = dyn.OpResult[*CreatePasswordOtpResultData]
 
 var confirmOtpPasswordCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -49,30 +49,30 @@ var confirmOtpPasswordCommandType = cqrs.RequestType{
 }
 
 type ConfirmOtpPasswordCommand struct {
-	SubjectType domain.SubjectType `json:"subjectType"`
-	SubjectRef  model.Id           `json:"subjectRef"`
-	OtpCode     domain.OtpCode     `json:"otpCode"`
+	SubjectType domain.SubjectType `json:"subject_type"`
+	SubjectRef  model.Id           `json:"subject_ref"`
+	OtpCode     domain.OtpCode     `json:"otp_code"`
 }
 
 func (ConfirmOtpPasswordCommand) CqrsRequestType() cqrs.RequestType {
 	return confirmOtpPasswordCommandType
 }
 
-func (this ConfirmOtpPasswordCommand) Validate() ft.ValidationErrors {
+func (this ConfirmOtpPasswordCommand) Validate() ft.ClientErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.SubjectRef, true),
 		domain.SubjectTypeValidateRule(&this.SubjectType, true),
 		domain.OtpCodeValidateRule(&this.OtpCode, true),
 	}
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+	return domain.ValidationErrorsToClientErrors(val.ApiBased.ValidateStruct(&this, rules...))
 }
 
 type ConfirmOtpPasswordResultData struct {
-	ConfirmedAt   time.Time `json:"confirmedAt"`
-	RecoveryCodes []string  `json:"recoveryCodes"`
+	ConfirmedAt   time.Time `json:"confirmed_at"`
+	RecoveryCodes []string  `json:"recovery_codes"`
 }
-type ConfirmOtpPasswordResult = crud.OpResult[*ConfirmOtpPasswordResultData]
+type ConfirmOtpPasswordResult = dyn.OpResult[*ConfirmOtpPasswordResultData]
 
 var createTempPasswordCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -81,8 +81,8 @@ var createTempPasswordCommandType = cqrs.RequestType{
 }
 
 type CreateTempPasswordCommand struct {
-	SubjectType domain.SubjectType `json:"subjectType"`
-	SendChannel domain.SendChannel `json:"sendChannel"`
+	SubjectType domain.SubjectType `json:"subject_type"`
+	SendChannel domain.SendChannel `json:"send_channel"`
 	Username    string             `json:"username"`
 }
 
@@ -90,7 +90,7 @@ func (CreateTempPasswordCommand) CqrsRequestType() cqrs.RequestType {
 	return createTempPasswordCommandType
 }
 
-func (this CreateTempPasswordCommand) Validate() ft.ValidationErrors {
+func (this CreateTempPasswordCommand) Validate() ft.ClientErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Username,
 			val.NotEmpty,
@@ -100,14 +100,14 @@ func (this CreateTempPasswordCommand) Validate() ft.ValidationErrors {
 		domain.SubjectTypeValidateRule(&this.SubjectType, true),
 	}
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+	return domain.ValidationErrorsToClientErrors(val.ApiBased.ValidateStruct(&this, rules...))
 }
 
 type CreateTempPasswordResultData struct {
-	CreatedAt time.Time `json:"createdAt"`
-	ExpiredAt time.Time `json:"expiredAt"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiredAt time.Time `json:"expired_at"`
 }
-type CreateTempPasswordResult = crud.OpResult[*CreateTempPasswordResultData]
+type CreateTempPasswordResult = dyn.OpResult[*CreateTempPasswordResultData]
 
 var setPasswordCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -116,17 +116,17 @@ var setPasswordCommandType = cqrs.RequestType{
 }
 
 type SetPasswordCommand struct {
-	SubjectType     domain.SubjectType `json:"subjectType"`
-	SubjectRef      model.Id           `json:"subjectRef"`
-	CurrentPassword *string            `json:"currentPassword"`
-	NewPassword     string             `json:"newPassword"`
+	SubjectType     domain.SubjectType `json:"subject_type"`
+	SubjectRef      model.Id           `json:"subject_ref"`
+	CurrentPassword *string            `json:"current_password"`
+	NewPassword     string             `json:"new_password"`
 }
 
 func (SetPasswordCommand) CqrsRequestType() cqrs.RequestType {
 	return setPasswordCommandType
 }
 
-func (this SetPasswordCommand) Validate() ft.ValidationErrors {
+func (this SetPasswordCommand) Validate() ft.ClientErrors {
 
 	rules := []*val.FieldRules{
 		domain.SubjectTypeValidateRule(&this.SubjectType, true),
@@ -140,13 +140,13 @@ func (this SetPasswordCommand) Validate() ft.ValidationErrors {
 		),
 	}
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+	return domain.ValidationErrorsToClientErrors(val.ApiBased.ValidateStruct(&this, rules...))
 }
 
 type SetPasswordResultData struct {
-	UpdatedAt time.Time `json:"updatedAt"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
-type SetPasswordResult = crud.OpResult[*SetPasswordResultData]
+type SetPasswordResult = dyn.OpResult[*SetPasswordResultData]
 
 var verifyPasswordQueryType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -155,7 +155,7 @@ var verifyPasswordQueryType = cqrs.RequestType{
 }
 
 type VerifyPasswordQuery struct {
-	SubjectType domain.SubjectType `json:"subjectType"`
+	SubjectType domain.SubjectType `json:"subject_type"`
 	Username    string             `json:"username"`
 	Password    string             `json:"password"`
 }
@@ -164,7 +164,7 @@ func (VerifyPasswordQuery) CqrsRequestType() cqrs.RequestType {
 	return verifyPasswordQueryType
 }
 
-func (this VerifyPasswordQuery) Validate() ft.ValidationErrors {
+func (this VerifyPasswordQuery) Validate() ft.ClientErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Username,
 			val.NotEmpty,
@@ -177,14 +177,14 @@ func (this VerifyPasswordQuery) Validate() ft.ValidationErrors {
 		domain.SubjectTypeValidateRule(&this.SubjectType, true),
 	}
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+	return domain.ValidationErrorsToClientErrors(val.ApiBased.ValidateStruct(&this, rules...))
 }
 
 type VerifyPasswordResultData struct {
-	IsVerified   bool   `json:"isVerified"`
-	FailedReason string `json:"failedReason,omitempty"`
+	IsVerified   bool   `json:"is_verified"`
+	FailedReason string `json:"failed_reason,omitempty"`
 }
-type VerifyPasswordResult = crud.OpResult[*VerifyPasswordResultData]
+type VerifyPasswordResult = dyn.OpResult[*VerifyPasswordResultData]
 
 var verifyOtpCodeQueryType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -193,16 +193,16 @@ var verifyOtpCodeQueryType = cqrs.RequestType{
 }
 
 type VerifyOtpCodeQuery struct {
-	SubjectType domain.SubjectType `json:"subjectType"`
+	SubjectType domain.SubjectType `json:"subject_type"`
 	Username    string             `json:"username"`
-	OtpCode     domain.OtpCode     `json:"otpCode"`
+	OtpCode     domain.OtpCode     `json:"otp_code"`
 }
 
 func (VerifyOtpCodeQuery) CqrsRequestType() cqrs.RequestType {
 	return verifyOtpCodeQueryType
 }
 
-func (this VerifyOtpCodeQuery) Validate() ft.ValidationErrors {
+func (this VerifyOtpCodeQuery) Validate() ft.ClientErrors {
 	rules := []*val.FieldRules{
 		val.Field(&this.Username,
 			val.NotEmpty,
@@ -212,7 +212,7 @@ func (this VerifyOtpCodeQuery) Validate() ft.ValidationErrors {
 		domain.OtpCodeValidateRule(&this.OtpCode, true),
 	}
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+	return domain.ValidationErrorsToClientErrors(val.ApiBased.ValidateStruct(&this, rules...))
 }
 
 type VerifyOtpCodeResult = VerifyPasswordResult

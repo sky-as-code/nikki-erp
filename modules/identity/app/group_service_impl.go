@@ -1,46 +1,95 @@
 package app
 
 import (
+	"fmt"
+
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itGrp "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
+	itRole "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/role"
+	"go.bryk.io/pkg/errors"
 )
 
 func NewGroupServiceImpl(
 	groupRepo2 itGrp.GroupRepository,
+	roleSvc itRole.RoleService,
 	cqrsBus cqrs.CqrsBus,
 ) itGrp.GroupService {
 	return &GroupServiceImpl{
 		cqrsBus:    cqrsBus,
 		groupRepo2: groupRepo2,
+		roleSvc:    roleSvc,
 	}
 }
 
 type GroupServiceImpl struct {
 	cqrsBus    cqrs.CqrsBus
 	groupRepo2 itGrp.GroupRepository
+	roleSvc    itRole.RoleService
 }
 
 func (this *GroupServiceImpl) CreateGroup(
 	ctx corectx.Context, cmd itGrp.CreateGroupCommand,
 ) (*itGrp.CreateGroupResult, error) {
-	return corecrud.Create(ctx, dyn.CreateParam[domain.Group, *domain.Group]{
-		Action:         "create group",
-		BaseRepoGetter: this.groupRepo2,
-		Data:           cmd,
+	return corecrud.ExecInTranx(ctx, this.groupRepo2, func(tranxCtx corectx.Context) (*itGrp.CreateGroupResult, error) {
+		result, err := corecrud.Create(tranxCtx, dyn.CreateParam[domain.Group, *domain.Group]{
+			Action:         "create group",
+			BaseRepoGetter: this.groupRepo2,
+			Data:           cmd,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if result.ClientErrors.Count() > 0 {
+			return result, nil
+		}
+		result, err = this.createPrivateRole(tranxCtx, result)
+		return result, err
 	})
+}
+
+func (this *GroupServiceImpl) createPrivateRole(tranxCtx corectx.Context, grpResult *itGrp.CreateGroupResult) (*itGrp.CreateGroupResult, error) {
+	sid := string(*grpResult.Data.GetId())
+	newRole := domain.NewRoleFrom(dmodel.DynamicFields{
+		domain.RoleFieldName:              fmt.Sprintf("Private role for group %s", sid),
+		domain.RoleFieldDedicatedGroupId:  sid,
+		domain.RoleFieldOwnerGroupId:      sid,
+		domain.RoleFieldIsRequestable:     false,
+		domain.RoleFieldIsRequiredAttach:  false,
+		domain.RoleFieldIsRequiredComment: false,
+	})
+	cmd := itRole.CreateRoleCommand{Role: *newRole}
+
+	roleRes, rErr := this.roleSvc.CreateRole(tranxCtx, cmd)
+	if rErr != nil {
+		return nil, rErr
+	}
+	if roleRes.ClientErrors.Count() > 0 {
+		return nil, errors.Errorf("create private role: %v", roleRes.ClientErrors)
+	}
+	return grpResult, nil
 }
 
 func (this *GroupServiceImpl) DeleteGroup(ctx corectx.Context, cmd itGrp.DeleteGroupCommand) (
 	*itGrp.DeleteGroupResult, error,
 ) {
-	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:       "delete group",
-		DbRepoGetter: this.groupRepo2,
-		Cmd:          dyn.DeleteOneCommand{Id: cmd.Id},
+	return corecrud.ExecInTranx(ctx, this.groupRepo2, func(tranxCtx corectx.Context) (*itGrp.DeleteGroupResult, error) {
+		privRes, pErr := this.roleSvc.DeletePrivateRole(tranxCtx, itRole.DeletePrivateRoleCommand{OwnerId: cmd.Id})
+		if pErr != nil {
+			return nil, pErr
+		}
+		if privRes.ClientErrors.Count() > 0 {
+			return nil, errors.Errorf("delete private role: %v", privRes.ClientErrors)
+		}
+		return corecrud.DeleteOne(tranxCtx, corecrud.DeleteOneParam{
+			Action:       "delete group",
+			DbRepoGetter: this.groupRepo2,
+			Cmd:          dyn.DeleteOneCommand{Id: cmd.Id},
+		})
 	})
 }
 

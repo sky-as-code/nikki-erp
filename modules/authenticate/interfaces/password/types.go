@@ -3,25 +3,26 @@ package password
 import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 type PasswordService interface {
-	CreateOtpPassword(ctx crud.Context, cmd CreateOtpPasswordCommand) (*CreateOtpPasswordResult, error)
-	ConfirmOtpPassword(ctx crud.Context, cmd ConfirmOtpPasswordCommand) (*ConfirmOtpPasswordResult, error)
-	CreateTempPassword(ctx crud.Context, cmd CreateTempPasswordCommand) (*CreateTempPasswordResult, error)
-	SetPassword(ctx crud.Context, cmd SetPasswordCommand) (*SetPasswordResult, error)
-	VerifyPassword(ctx crud.Context, cmd VerifyPasswordQuery) (*VerifyPasswordResult, error)
-	VerifyOtpCode(ctx crud.Context, cmd VerifyOtpCodeQuery) (*VerifyOtpCodeResult, error)
+	CreateOtpPassword(ctx corectx.Context, cmd CreateOtpPasswordCommand) (*CreateOtpPasswordResult, error)
+	ConfirmOtpPassword(ctx corectx.Context, cmd ConfirmOtpPasswordCommand) (*ConfirmOtpPasswordResult, error)
+	CreateTempPassword(ctx corectx.Context, cmd CreateTempPasswordCommand) (*CreateTempPasswordResult, error)
+	SetPassword(ctx corectx.Context, cmd SetPasswordCommand) (*SetPasswordResult, error)
+	VerifyPassword(ctx corectx.Context, cmd VerifyPasswordQuery) (*VerifyPasswordResult, error)
+	VerifyOtpCode(ctx corectx.Context, cmd VerifyOtpCodeQuery) (*VerifyOtpCodeResult, error)
 }
 
 type PasswordStoreRepository interface {
-	Create(ctx crud.Context, store domain.PasswordStore) (*domain.PasswordStore, error)
-	Update(ctx crud.Context, store domain.PasswordStore) (*domain.PasswordStore, error)
-	FindBySubject(ctx crud.Context, param FindBySubjectParam) (*domain.PasswordStore, error)
+	Insert(ctx corectx.Context, store domain.PasswordStore) (*dyn.OpResult[int], error)
+	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.PasswordStore], error)
+	Update(ctx corectx.Context, store domain.PasswordStore) (*dyn.OpResult[dyn.MutateResultData], error)
 }
 
 type FindBySubjectParam struct {
-	SubjectType domain.SubjectType `json:"subjectType"`
-	SubjectRef  model.Id           `json:"subjectRef"`
+	SubjectType domain.SubjectType `json:"subject_type"`
+	SubjectRef  model.Id           `json:"subject_ref"`
 }

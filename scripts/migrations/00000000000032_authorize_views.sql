@@ -1,255 +1,106 @@
 DO $$
 BEGIN
-	IF 7 = (
-		SELECT COUNT(*) FROM information_schema.tables 
-		WHERE table_schema = 'public' AND (
-			table_name = 'authz_entitlement_assignments' OR 
-			table_name = 'ident_user_group_rel' OR
-			table_name = 'authz_entitlements' OR
-			table_name = 'authz_resources' OR
-			table_name = 'authz_role_user' OR
-			table_name = 'authz_role_suite_user' OR
-			table_name = 'authz_role_rolesuite'
-		)
-	) THEN
-
-		-- View for user effective entitlements (direct, roles, suites, and via groups)
+	IF (
+		SELECT COUNT(*) FROM information_schema.tables
+		WHERE table_schema = 'public'
+			AND table_name IN (
+				'ident_users',
+				'ident_groups',
+				'ident_group_user_rel',
+				'authz_role_assignments',
+				'authz_entitlement_role_rel',
+				'authz_entitlements',
+				'authz_actions',
+				'authz_resources',
+				'authz_roles'
+			)
+	) = 9 THEN
 		CREATE OR REPLACE VIEW authz_effective_user_entitlements AS
-		WITH 
-		-- 1. Direct assignments to user
-		user_direct_assignments AS (
+		WITH
+		user_role_entitlements AS (
 			SELECT
-				assignment.subject_ref AS user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_user' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			WHERE assignment.subject_type = 'nikki_user'
+				ra.receiver_user_id AS user_id,
+				e.id AS entitlement_id,
+				e.scope AS entitlement_scope,
+				r.org_id AS entitlement_org_id,
+				e.org_unit_id AS entitlement_org_unit_id,
+				a.name AS action_code,
+				res.name AS resource_code,
+				r.id AS role_id,
+				ra.id AS role_assignment_id,
+				'user_role'::text AS source
+			FROM authz_role_assignments ra
+			JOIN ident_users u ON u.id = ra.receiver_user_id AND u.is_archived = FALSE
+			JOIN authz_roles r ON r.id = ra.role_id AND r.is_archived = FALSE
+			JOIN authz_entitlement_role_rel er ON er.role_id = ra.role_id
+			JOIN authz_entitlements e ON e.id = er.entitlement_id AND e.is_archived = FALSE
+			JOIN authz_actions a ON a.id = e.action_id
+			JOIN authz_resources res ON res.id = a.resource_id
+			WHERE (ra.expires_at IS NULL OR ra.expires_at > NOW())
 		),
-		-- 2. User's groups
-		user_groups AS (
-			SELECT user_id, group_id
-			FROM ident_user_group_rel
-		),
-		-- 3. Assignments to groups the user belongs to
-		group_assignments AS (
+		group_role_entitlements AS (
 			SELECT
-				user_group.user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN user_groups user_group ON assignment.subject_type = 'nikki_group' AND assignment.subject_ref = user_group.group_id
-		),
-		-- 4. User's roles (direct)
-		user_roles AS (
-			SELECT receiver_ref AS user_id, role_id
-			FROM authz_role_user
-			WHERE receiver_type = 'user'
-		),
-		-- 5. Assignments to roles directly assigned to user
-		user_role_assignments AS (
-			SELECT
-				user_role.user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_role' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN user_roles user_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = user_role.role_id
-		),
-		-- 6. User's suites
-		user_suites AS (
-			SELECT receiver_ref AS user_id, role_suite_id
-			FROM authz_role_suite_user
-			WHERE receiver_type = 'user'
-		),
-		-- 7. Roles in user's suites
-		suite_roles AS (
-			SELECT us.user_id, rr.role_id
-			FROM authz_role_rolesuite rr
-			JOIN user_suites us ON rr.role_suite_id = us.role_suite_id
-		),
-		-- 8. Assignments to roles in user's suites
-		user_suite_assignments AS (
-			SELECT
-				suite_role.user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_suite' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN suite_roles suite_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = suite_role.role_id
-		),
-		-- 9. Roles assigned to user's groups
-		group_roles AS (
-			SELECT ug.user_id, ru.role_id
-			FROM authz_role_user ru
-			JOIN user_groups ug ON ru.receiver_type = 'group' AND ru.receiver_ref = ug.group_id
-		),
-		-- 10. Assignments to roles assigned to user's groups
-		group_role_assignments AS (
-			SELECT
-				group_role.user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group_role' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN group_roles group_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = group_role.role_id
-		),
-		-- 11. Suites assigned to user's groups
-		group_suites AS (
-			SELECT ug.user_id, rsu.role_suite_id
-			FROM authz_role_suite_user rsu
-			JOIN user_groups ug ON rsu.receiver_type = 'group' AND rsu.receiver_ref = ug.group_id
-		),
-		-- 12. Roles in suites assigned to user's groups
-		group_suite_roles AS (
-			SELECT gs.user_id, rr.role_id
-			FROM authz_role_rolesuite rr
-			JOIN group_suites gs ON rr.role_suite_id = gs.role_suite_id
-		),
-		-- 13. Assignments to roles in suites assigned to user's groups
-		group_suite_assignments AS (
-			SELECT
-				group_suite_role.user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group_suite' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN group_suite_roles group_suite_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = group_suite_role.role_id
+				gur.user_id,
+				e.id AS entitlement_id,
+				e.scope AS entitlement_scope,
+				r.org_id AS entitlement_org_id,
+				e.org_unit_id AS entitlement_org_unit_id,
+				a.code AS action_code,
+				res.code AS resource_code,
+				r.id AS role_id,
+				ra.id AS role_assignment_id,
+				'group_role'::text AS source
+			FROM authz_role_assignments ra
+			JOIN ident_groups g ON g.id = ra.receiver_group_id AND g.is_archived = FALSE
+			JOIN ident_group_user_rel gur ON gur.group_id = ra.receiver_group_id
+			JOIN ident_users u ON u.id = gur.user_id AND u.is_archived = FALSE
+			JOIN authz_roles r ON r.id = ra.role_id AND r.is_archived = FALSE
+			JOIN authz_entitlement_role_rel er ON er.role_id = ra.role_id
+			JOIN authz_entitlements e ON e.id = er.entitlement_id AND e.is_archived = FALSE
+			JOIN authz_actions a ON a.id = e.action_id
+			JOIN authz_resources res ON res.id = a.resource_id
+			WHERE (ra.expires_at IS NULL OR ra.expires_at > NOW())
 		)
-		-- Final union of all sources for user
-		SELECT * FROM user_direct_assignments
-		UNION
-		SELECT * FROM group_assignments
-		UNION
-		SELECT * FROM user_role_assignments
-		UNION
-		SELECT * FROM user_suite_assignments
-		UNION
-		SELECT * FROM group_role_assignments
-		UNION
-		SELECT * FROM group_suite_assignments;
+		SELECT DISTINCT ON (user_id, entitlement_id, role_assignment_id)
+			user_id,
+			entitlement_id,
+			entitlement_scope,
+			entitlement_org_id,
+			entitlement_org_unit_id,
+			action_code,
+			resource_code,
+			role_id,
+			role_assignment_id,
+			source
+		FROM (
+			SELECT * FROM user_role_entitlements
+			UNION ALL
+			SELECT * FROM group_role_entitlements
+		) AS combined
+		ORDER BY
+			user_id,
+			entitlement_id,
+			role_assignment_id,
+			CASE source WHEN 'user_role' THEN 0 ELSE 1 END; -- Force DISTINCT ON to keep user_role when there are duplicated trio: user_id, entitlement_id, role_assignment_id
 
-		-- View for group effective entitlements (direct, roles, and suites)
 		CREATE OR REPLACE VIEW authz_effective_group_entitlements AS
-		WITH 
-		-- 1. Direct assignments to group
-		group_direct_assignments AS (
-			SELECT
-				assignment.subject_ref AS group_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			WHERE assignment.subject_type = 'nikki_group'
-		),
-		-- 2. Group's roles (direct)
-		group_roles AS (
-			SELECT receiver_ref AS group_id, role_id
-			FROM authz_role_user
-			WHERE receiver_type = 'group'
-		),
-		-- 3. Assignments to roles directly assigned to group
-		group_role_assignments AS (
-			SELECT
-				group_role.group_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group_role' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN group_roles group_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = group_role.role_id
-		),
-		-- 4. Group's suites
-		group_suites AS (
-			SELECT receiver_ref AS group_id, role_suite_id
-			FROM authz_role_suite_user
-			WHERE receiver_type = 'group'
-		),
-		-- 5. Roles in group's suites
-		group_suite_roles AS (
-			SELECT gs.group_id, rr.role_id
-			FROM authz_role_rolesuite rr
-			JOIN group_suites gs ON rr.role_suite_id = gs.role_suite_id
-		),
-		-- 6. Assignments to roles in group's suites
-		group_suite_assignments AS (
-			SELECT
-				group_suite_role.group_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group_suite' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN group_suite_roles group_suite_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = group_suite_role.role_id
-		)
-		-- Final union of all sources for group
-		SELECT * FROM group_direct_assignments
-		UNION
-		SELECT * FROM group_role_assignments
-		UNION
-		SELECT * FROM group_suite_assignments;
-
+		SELECT
+			ra.receiver_group_id AS group_id,
+			e.id AS entitlement_id,
+			e.scope AS entitlement_scope,
+			e.org_id AS entitlement_org_id,
+			e.org_unit_id AS entitlement_org_unit_id,
+			a.code AS action_code,
+			res.code AS resource_code,
+			r.id AS role_id,
+			ra.id AS role_assignment_id,
+			'group_role'::text AS source
+		FROM authz_role_assignments ra
+		JOIN ident_groups g ON g.id = ra.receiver_group_id AND g.is_archived = FALSE
+		JOIN authz_roles r ON r.id = ra.role_id AND r.is_archived = FALSE
+		JOIN authz_entitlement_role_rel er ON er.role_id = ra.role_id
+		JOIN authz_entitlements e ON e.id = er.entitlement_id AND e.is_archived = FALSE
+		JOIN authz_actions a ON a.id = e.action_id
+		WHERE (ra.expires_at IS NULL OR ra.expires_at > NOW());
 	END IF;
 END $$;

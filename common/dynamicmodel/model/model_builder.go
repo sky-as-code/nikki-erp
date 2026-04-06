@@ -57,16 +57,6 @@ func (this *ModelSchemaBuilder) Field(fieldBuilder *FieldBuilder) *ModelSchemaBu
 	field := fieldBuilder.Build()
 	this.addField(field)
 
-	if field.relation != nil {
-		rel := field.relation
-		rel.SrcField = field.name
-		this.schema.relations = append(this.schema.relations, *rel)
-		field.relation = nil
-		if rel.Edge != "" {
-			this.addImplicitEdgeField(rel)
-		}
-	}
-
 	return this
 }
 
@@ -106,7 +96,8 @@ func (this *ModelSchemaBuilder) Extend(builder *ModelSchemaBuilder) *ModelSchema
 	for _, fieldName := range builder.schema.fieldsOrder {
 		this.addField(builder.schema.fields[fieldName])
 	}
-	this.schema.relations = append(this.schema.relations, builder.schema.relations...)
+	this.schema.toRelations = append(this.schema.toRelations, builder.schema.toRelations...)
+	this.schema.fromRelations = append(this.schema.fromRelations, builder.schema.fromRelations...)
 	this.schema.compositeUniques = append(this.schema.compositeUniques, builder.schema.compositeUniques...)
 	this.schema.partialUniques = append(this.schema.partialUniques, builder.schema.partialUniques...)
 	this.schema.exclusiveFieldGroups = append(
@@ -114,22 +105,17 @@ func (this *ModelSchemaBuilder) Extend(builder *ModelSchemaBuilder) *ModelSchema
 	return this
 }
 
-// ExclusiveFieldGroup registers one exclusive group: exactly one of the listed fields must be
+// ExclusiveFields registers one exclusive group: exactly one of the listed fields must be
 // non-empty on validate. The slice may contain any number of field names (minimum two). Call
 // multiple times to register multiple independent groups. Each name must exist on the schema
 // when Build runs.
-func (this *ModelSchemaBuilder) ExclusiveFieldGroup(fieldNames []string) *ModelSchemaBuilder {
+func (this *ModelSchemaBuilder) ExclusiveFields(fieldNames ...string) *ModelSchemaBuilder {
 	if len(fieldNames) < 2 {
 		panic(errors.New("ExclusiveFieldGroup: at least two field names are required"))
 	}
 	group := append([]string{}, fieldNames...)
 	this.schema.exclusiveFieldGroups = append(this.schema.exclusiveFieldGroups, group)
 	return this
-}
-
-// ExclusiveFields is equivalent to ExclusiveFieldGroup(fieldNames) for a variadic argument list.
-func (this *ModelSchemaBuilder) ExclusiveFields(fieldNames ...string) *ModelSchemaBuilder {
-	return this.ExclusiveFieldGroup(fieldNames)
 }
 
 func (this *ModelSchemaBuilder) addImplicitEdgeField(rel *ModelRelation) {
@@ -157,7 +143,7 @@ func (this *ModelSchemaBuilder) EdgeFrom(rb *RelationBuilder) *ModelSchemaBuilde
 	if rel.Edge == "" {
 		panic(errors.New("EdgeFrom: edge name is required"))
 	}
-	this.schema.relations = append(this.schema.relations, *rel)
+	this.schema.fromRelations = append(this.schema.fromRelations, *rel)
 	return this
 }
 
@@ -165,17 +151,11 @@ func (this *ModelSchemaBuilder) EdgeTo(rb *RelationBuilder) *ModelSchemaBuilder 
 	rel := rb.Build()
 	if rel.RelationType == RelationTypeManyToMany {
 		this.validateManyToManyCascade(*rel)
-		if rel.OnDelete == "" {
-			rel.OnDelete = RelationCascadeNoAction
-		}
-		if rel.OnUpdate == "" {
-			rel.OnUpdate = RelationCascadeNoAction
-		}
 		// Will be set by SchemaRegistry.FinalizeRelations()
 		rel.SrcField = ""
 		rel.DestField = ""
 	}
-	this.schema.relations = append(this.schema.relations, *rel)
+	this.schema.toRelations = append(this.schema.toRelations, *rel)
 	if rel.Edge != "" {
 		this.addImplicitEdgeField(rel)
 	}
@@ -223,6 +203,9 @@ func (this *ModelSchemaBuilder) Build() *ModelSchema {
 	if err := validateExclusiveFieldGroups(schema); err != nil {
 		panic(errors.Wrap(err, "Build"))
 	}
+	if err := validateRequiredWithFields(schema); err != nil {
+		panic(errors.Wrap(err, "Build"))
+	}
 	if this.shouldBuildDb {
 		ft.PanicOnErr(populateDbMetadata(schema))
 	}
@@ -239,6 +222,17 @@ func validateExclusiveFieldGroups(schema *ModelSchema) error {
 				return errors.Errorf(
 					"exclusive field group %d: field %q is not defined on schema %q",
 					gi, name, schema.name)
+			}
+		}
+	}
+	return nil
+}
+
+func validateRequiredWithFields(schema *ModelSchema) error {
+	for _, field := range schema.fields {
+		if field.requiredWithFieldName != "" {
+			if _, ok := schema.Field(field.requiredWithFieldName); !ok {
+				return errors.Errorf("validateRequiredWithFields: field '%s' depends on undefined field '%s'", field.name, field.requiredWithFieldName)
 			}
 		}
 	}
@@ -320,11 +314,6 @@ func (this *FieldBuilder) DataType(dataType FieldDataType) *FieldBuilder {
 	return this
 }
 
-func (this *FieldBuilder) Foreign(relationBuilder *RelationBuilder) *FieldBuilder {
-	this.field.relation = relationBuilder.Build()
-	return this
-}
-
 func (this *FieldBuilder) Label(label model.LangJson) *FieldBuilder {
 	this.field.label = label
 	return this
@@ -342,8 +331,8 @@ func (this *FieldBuilder) Name(name string) *FieldBuilder {
 // Indicates that the field value cannot be set by user but by the system.
 // Any input value will be silently ignored when creating or updating the model.
 // If a default value is registered, it will be used in create operations.
-func (this *FieldBuilder) ReadOnly() *FieldBuilder {
-	this.field.isReadOnly = true
+func (this *FieldBuilder) AutoGenerated() *FieldBuilder {
+	this.field.isAutoGenerated = true
 	return this
 }
 
@@ -370,6 +359,11 @@ func (this *FieldBuilder) RequiredForUpdate() *FieldBuilder {
 	return this
 }
 
+func (this *FieldBuilder) RequiredWith(otherFieldName string) *FieldBuilder {
+	this.field.requiredWithFieldName = otherFieldName
+	return this
+}
+
 func (this *FieldBuilder) IsRequired(isRequired bool) *FieldBuilder {
 	this.field.isRequiredForCreate = isRequired
 	this.field.isRequiredForUpdate = isRequired
@@ -386,8 +380,14 @@ func (this *FieldBuilder) IsRequiredForUpdate(isRequired bool) *FieldBuilder {
 	return this
 }
 
-func (this *FieldBuilder) IsReadOnly(isReadOnly bool) *FieldBuilder {
-	this.field.isReadOnly = isReadOnly
+func (this *FieldBuilder) IsAutoGenerated(isAutoGenerated bool) *FieldBuilder {
+	this.field.isAutoGenerated = isAutoGenerated
+	return this
+}
+
+// Allows setting value on create but not on update.
+func (this *FieldBuilder) NoUpdate() *FieldBuilder {
+	this.field.noUpdate = true
 	return this
 }
 
@@ -395,7 +395,7 @@ func (this *FieldBuilder) PrimaryKey() *FieldBuilder {
 	this.field.isPrimaryKey = true
 	this.RequiredForCreate() // NOT NULL column
 	this.RequiredForUpdate()
-	this.ReadOnly()
+	this.IsAutoGenerated(true)
 	return this
 }
 
@@ -454,7 +454,7 @@ func (this *FieldBuilder) VersioningKey() *FieldBuilder {
 	this.field.isVersioningKey = true
 	this.RequiredForCreate() // NOT NULL column
 	this.RequiredForUpdate()
-	this.ReadOnly()
+	this.AutoGenerated()
 	return this
 }
 
@@ -528,5 +528,11 @@ func (this *RelationBuilder) OnUpdate(onUpdate RelationCascade) *RelationBuilder
 }
 
 func (this *RelationBuilder) Build() *ModelRelation {
+	if this.relation.OnDelete == "" {
+		this.relation.OnDelete = RelationCascadeNoAction
+	}
+	if this.relation.OnUpdate == "" {
+		this.relation.OnUpdate = RelationCascadeNoAction
+	}
 	return this.relation
 }

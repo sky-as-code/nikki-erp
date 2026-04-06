@@ -8,32 +8,38 @@ import (
 
 const (
 	OrganizationSchemaName = "identity.organization"
-	OrgFieldAddress        = "address"
-	OrgFieldDisplayName    = "display_name"
-	OrgFieldLegalName      = "legal_name"
-	OrgFieldPhoneNumber    = "phone_number"
-	OrgFieldSlug           = "slug"
-	UsrOrgRelSchemaName    = "identity.user_org_rel"
-	UsrOrgRelFieldUserId   = "user_id"
-	UsrOrgRelFieldOrgId    = "org_id"
 
-	OrgEdgeHierarchies = "hierarchies"
-	OrgEdgeUsers       = "users"
+	OrgFieldId          = basemodel.FieldId
+	OrgFieldAddress     = "address"
+	OrgFieldDisplayName = "display_name"
+	OrgFieldLegalName   = "legal_name"
+	OrgFieldPhoneNumber = "phone_number"
+	OrgFieldSlug        = "slug"
+
+	OrgEdgeOrgUnits     = "org_units"
+	OrgEdgeUsers        = "users"
+	OrgEdgeEntitlements = "entitlements"
 )
 
-func UserOrgRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(UsrOrgRelSchemaName).
-		TableName("ident_user_org_rel").
+const (
+	OrgUsrRelSchemaName  = "identity.org_user_rel"
+	OrgUsrRelFieldUserId = "user_id"
+	OrgUsrRelFieldOrgId  = "org_id"
+)
+
+func OrgUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(OrgUsrRelSchemaName).
+		TableName("ident_org_user_rel").
 		ShouldBuildDb().
 		Field(
 			dmodel.DefineField().
-				Name(UsrOrgRelFieldUserId).
+				Name(OrgUsrRelFieldOrgId).
 				DataType(dmodel.FieldDataTypeUlid()).
 				PrimaryKey(),
 		).
 		Field(
 			dmodel.DefineField().
-				Name(UsrOrgRelFieldOrgId).
+				Name(OrgUsrRelFieldUserId).
 				DataType(dmodel.FieldDataTypeUlid()).
 				PrimaryKey(),
 		)
@@ -83,13 +89,18 @@ func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.AuditableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(OrgEdgeUsers).
-				ManyToMany(UserSchemaName, UsrOrgRelSchemaName, "org").
+				ManyToMany(UserSchemaName, OrgUsrRelSchemaName, "org").
 				OnDelete(dmodel.RelationCascadeCascade),
 		).
 		EdgeFrom(
-			dmodel.Edge(OrgEdgeHierarchies).
-				Label(model.LangJson{"en-US": "Hierarchy Levels"}).
-				Existing(HierarchyLevelSchemaName, HierEdgeOrg),
+			dmodel.Edge(OrgEdgeOrgUnits).
+				Label(model.LangJson{"en-US": "Organizational Units"}).
+				Existing(OrganizationalUnitSchemaName, OrgUnitEdgeOrg),
+		).
+		EdgeFrom(
+			dmodel.Edge(OrgEdgeEntitlements).
+				Label(model.LangJson{"en-US": "Entitlements"}).
+				Existing(EntitlementSchemaName, EntitlementEdgeOrg),
 		)
 }
 

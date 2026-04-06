@@ -32,8 +32,9 @@ func (this PasswordRest) CreateOtpPassword(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.passwordSvc.CreateOtpPassword,
+	err = httpserver.ServeRequest2(
+		echoCtx,
+		this.passwordSvc.CreateOtpPassword,
 		func(request CreateOtpPasswordRequest) it.CreateOtpPasswordCommand {
 			return it.CreateOtpPasswordCommand(request)
 		},
@@ -49,8 +50,9 @@ func (this PasswordRest) ConfirmOtpPassword(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.passwordSvc.ConfirmOtpPassword,
+	err = httpserver.ServeRequest2(
+		echoCtx,
+		this.passwordSvc.ConfirmOtpPassword,
 		func(request ConfirmOtpPasswordRequest) it.ConfirmOtpPasswordCommand {
 			return it.ConfirmOtpPasswordCommand(request)
 		},
@@ -66,8 +68,9 @@ func (this PasswordRest) CreateTempPassword(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.passwordSvc.CreateTempPassword,
+	err = httpserver.ServeRequest2(
+		echoCtx,
+		this.passwordSvc.CreateTempPassword,
 		func(request CreateTempPasswordRequest) it.CreateTempPasswordCommand {
 			return it.CreateTempPasswordCommand(request)
 		},
@@ -83,8 +86,9 @@ func (this PasswordRest) SetPassword(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.passwordSvc.SetPassword,
+	err = httpserver.ServeRequest2(
+		echoCtx,
+		this.passwordSvc.SetPassword,
 		func(request SetPasswordRequest) it.SetPasswordCommand {
 			return it.SetPasswordCommand(request)
 		},

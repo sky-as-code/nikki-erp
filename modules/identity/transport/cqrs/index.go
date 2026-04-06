@@ -13,7 +13,7 @@ func InitCqrsHandlers() error {
 		initUserHandlers(),
 		initGroupHandlers(),
 		initOrganizationHandlers(),
-		initHierarchyHandlers(),
+		initOrgUnitHandlers(),
 	)
 	return err
 }
@@ -72,20 +72,20 @@ func initOrganizationHandlers() error {
 	})
 }
 
-func initHierarchyHandlers() error {
-	deps.Register(NewHierarchyHandler)
+func initOrgUnitHandlers() error {
+	deps.Register(NewOrgUnitHandler)
 
-	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *HierarchyHandler) error {
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *OrgUnitHandler) error {
 		ctx := context.Background()
 		return cqrsBus.SubscribeRequests(
 			ctx,
-			cqrs.NewHandler(handler.CreateHierarchyLevel),
-			cqrs.NewHandler(handler.DeleteHierarchyLevel),
-			cqrs.NewHandler(handler.GetHierarchyLevel),
-			cqrs.NewHandler(handler.HierarchyLevelExists),
-			cqrs.NewHandler(handler.ManageHierarchyLevelUsers),
-			cqrs.NewHandler(handler.SearchHierarchyLevels),
-			cqrs.NewHandler(handler.UpdateHierarchyLevel),
+			cqrs.NewHandler(handler.CreateOrgUnit),
+			cqrs.NewHandler(handler.DeleteOrgUnit),
+			cqrs.NewHandler(handler.GetOrgUnit),
+			cqrs.NewHandler(handler.OrgUnitExists),
+			cqrs.NewHandler(handler.ManageOrgUnitUsers),
+			cqrs.NewHandler(handler.SearchOrgUnits),
+			cqrs.NewHandler(handler.UpdateOrgUnit),
 		)
 	})
 }

@@ -46,14 +46,70 @@ func ValidateRelations(registry *model.SchemaRegistry) error {
 		return errors.New("ValidateRelations: schema registry is required")
 	}
 	err := registry.ForEach(func(schemaName string, s *model.ModelSchema) error {
-		for _, relation := range s.Relations() {
+		for _, relation := range s.ToRelations() {
 			if err := validateRelation(registry, schemaName, relation); err != nil {
 				return errors.Wrapf(err, "ValidateRelations: schema '%s' relation '%s'", schemaName, relation.Edge)
+			}
+		}
+		for _, relation := range s.FromRelations() {
+			if relation.RelationType == model.RelationTypeManyToMany {
+				return errors.Errorf(
+					"ValidateRelations: schema '%s' from-relation '%s': many:many must use EdgeTo, not EdgeFrom",
+					schemaName, relation.Edge,
+				)
+			}
+			if err := validateRelation(registry, schemaName, relation); err != nil {
+				return errors.Wrapf(err, "ValidateRelations: schema '%s' from-relation '%s'", schemaName, relation.Edge)
+			}
+			if err := validateFromRelationHasPeerForward(registry, schemaName, relation); err != nil {
+				return errors.Wrapf(err, "ValidateRelations: schema '%s' from-relation '%s'", schemaName, relation.Edge)
 			}
 		}
 		return nil
 	})
 	return err
+}
+
+func inverseRelationTypesMatch(forward, inverse model.RelationType) bool {
+	switch forward {
+	case model.RelationTypeOneToMany:
+		return inverse == model.RelationTypeManyToOne
+	case model.RelationTypeManyToOne:
+		return inverse == model.RelationTypeOneToMany
+	case model.RelationTypeOneToOne:
+		return inverse == model.RelationTypeOneToOne
+	default:
+		return false
+	}
+}
+
+func validateFromRelationHasPeerForward(
+	registry *model.SchemaRegistry, inverseSchemaName string, inv model.ModelRelation,
+) error {
+	peer := registry.Get(inv.DestSchemaName)
+	if peer == nil {
+		return errors.Errorf(
+			"validateFromRelationHasPeerForward: peer schema '%s' not found", inv.DestSchemaName,
+		)
+	}
+	for _, fwd := range peer.ToRelations() {
+		if fwd.RelationType == model.RelationTypeManyToMany {
+			continue
+		}
+		if fwd.DestSchemaName != inverseSchemaName {
+			continue
+		}
+		if !inverseRelationTypesMatch(fwd.RelationType, inv.RelationType) {
+			continue
+		}
+		if model.RelationsShareForeignKeyColumns(fwd, inv) {
+			return nil
+		}
+	}
+	return errors.Errorf(
+		"validateFromRelationHasPeerForward: no matching EdgeTo on peer schema '%s' for the EdgeFrom on '%s'",
+		inv.DestSchemaName, inverseSchemaName,
+	)
 }
 
 func validateRelation(

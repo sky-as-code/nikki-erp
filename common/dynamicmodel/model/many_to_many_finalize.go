@@ -19,8 +19,8 @@ func finalizeManyToManyRelationsUnlocked(reg *SchemaRegistry) error {
 
 func resolveManyToManyPeers(reg *SchemaRegistry) error {
 	for _, srcSch := range reg.schemas {
-		for i := range srcSch.relations {
-			rel := &srcSch.relations[i]
+		for i := range srcSch.toRelations {
+			rel := &srcSch.toRelations[i]
 			if rel.RelationType != RelationTypeManyToMany {
 				continue
 			}
@@ -76,10 +76,10 @@ func validateManyToManyLayout(reg *SchemaRegistry, srcSch *ModelSchema, rel *Mod
 	srcThroughCols := prefixedColumns(rel.M2mSrcFieldPrefix, srcPks)
 	peerThroughCols := prefixedColumns(peerPrefix, peerPks)
 	allPkCols := append(append([]string{}, srcThroughCols...), peerThroughCols...)
-	if !multisetEqualStrings(through.PrimaryKeys(), allPkCols) {
+	if !throughSatisfiesAssociationUniqueness(through, allPkCols) {
 		return errors.Errorf(
-			"junction '%s' primary key %v must equal %v ∪ %v as a multiset",
-			through.Name(), through.PrimaryKeys(), srcThroughCols, peerThroughCols,
+			"junction '%s' must have primary key %v ∪ %v as a multiset or a composite UNIQUE on exactly those columns (PK %v, uniques %v)",
+			through.Name(), srcThroughCols, peerThroughCols, through.PrimaryKeys(), through.AllUniques(),
 		)
 	}
 	for i, pk := range srcPks {
@@ -87,17 +87,11 @@ func validateManyToManyLayout(reg *SchemaRegistry, srcSch *ModelSchema, rel *Mod
 		if err := ensureFieldTypesMatch(srcSch, pk, through, tc); err != nil {
 			return errors.Wrapf(err, "junction '%s' src FK '%s'", through.Name(), tc)
 		}
-		if !through.MustField(tc).IsPrimaryKey() {
-			return errors.Errorf("junction '%s': column '%s' must be primary key", through.Name(), tc)
-		}
 	}
 	for i, pk := range peerPks {
 		tc := peerThroughCols[i]
 		if err := ensureFieldTypesMatch(peerSch, pk, through, tc); err != nil {
 			return errors.Wrapf(err, "junction '%s' peer FK '%s'", through.Name(), tc)
-		}
-		if !through.MustField(tc).IsPrimaryKey() {
-			return errors.Errorf("junction '%s': column '%s' must be primary key", through.Name(), tc)
 		}
 	}
 	srcTk := srcSch.TenantKey()
@@ -127,17 +121,20 @@ func validateManyToManyLayout(reg *SchemaRegistry, srcSch *ModelSchema, rel *Mod
 	for _, c := range allPkCols {
 		allowedPhys[c] = struct{}{}
 	}
+	for _, pk := range through.PrimaryKeys() {
+		allowedPhys[pk] = struct{}{}
+	}
 	if srcTk != "" {
 		allowedPhys[PrefixedThroughColumn(rel.M2mSrcFieldPrefix, srcTk)] = struct{}{}
 	}
-	for _, name := range physicalColumnNames(through) {
-		if _, ok := allowedPhys[name]; !ok {
-			return errors.Errorf(
-				"junction '%s': unexpected physical column '%s' for many-to-many '%s'",
-				through.Name(), name, rel.Edge,
-			)
-		}
-	}
+	// for _, name := range physicalColumnNames(through) {
+	// 	if _, ok := allowedPhys[name]; !ok {
+	// 		return errors.Errorf(
+	// 			"junction '%s': unexpected physical column '%s' for many-to-many '%s'",
+	// 			through.Name(), name, rel.Edge,
+	// 		)
+	// 	}
+	// }
 	rel.M2mDestFieldPrefix = peerPrefix
 	return registerM2mPeerLink(srcSch, through, peerSch, rel)
 }
@@ -146,24 +143,34 @@ func registerM2mPeerLink(srcSch, through, peerSch *ModelSchema, rel *ModelRelati
 	if srcSch.m2mPeerByDest == nil {
 		srcSch.m2mPeerByDest = make(map[string]*M2mPeerLink)
 	}
+	if srcSch.m2mPeerByEdge == nil {
+		srcSch.m2mPeerByEdge = make(map[string]*M2mPeerLink)
+	}
 	if _, dup := srcSch.m2mPeerByDest[rel.DestSchemaName]; dup {
 		return errors.Errorf(
 			"many-to-many on '%s': duplicate peer schema '%s' (only one M2M edge per peer is supported)",
 			srcSch.Name(), rel.DestSchemaName,
 		)
 	}
-	srcSch.m2mPeerByDest[rel.DestSchemaName] = &M2mPeerLink{
+	if _, dup := srcSch.m2mPeerByEdge[rel.Edge]; dup {
+		return errors.Errorf(
+			"many-to-many on '%s': duplicate edge name '%s'", srcSch.Name(), rel.Edge,
+		)
+	}
+	link := &M2mPeerLink{
 		DestSchema:      peerSch,
 		ThroughSchema:   through,
 		SrcFieldPrefix:  rel.M2mSrcFieldPrefix,
 		DestFieldPrefix: rel.M2mDestFieldPrefix,
 		Edge:            rel.Edge,
 	}
+	srcSch.m2mPeerByDest[rel.DestSchemaName] = link
+	srcSch.m2mPeerByEdge[rel.Edge] = link
 	return nil
 }
 
 func findPeerM2M(peerSch *ModelSchema, throughName, oppositeSchemaName string) (ModelRelation, error) {
-	for _, r := range peerSch.Relations() {
+	for _, r := range peerSch.ToRelations() {
 		if r.RelationType != RelationTypeManyToMany {
 			continue
 		}
@@ -184,6 +191,18 @@ func prefixedColumns(prefix string, names []string) []string {
 		out[i] = PrefixedThroughColumn(prefix, n)
 	}
 	return out
+}
+
+func throughSatisfiesAssociationUniqueness(through *ModelSchema, cols []string) bool {
+	if multisetEqualStrings(through.PrimaryKeys(), cols) {
+		return true
+	}
+	for _, u := range through.AllUniques() {
+		if len(u) > 0 && multisetEqualStrings(u, cols) {
+			return true
+		}
+	}
+	return false
 }
 
 func multisetEqualStrings(a, b []string) bool {
@@ -233,8 +252,8 @@ func ensureFieldTypesMatch(a *ModelSchema, aField string, b *ModelSchema, bField
 
 func injectThroughSchemaManyToOnes(reg *SchemaRegistry) error {
 	for _, srcSch := range reg.schemas {
-		for i := range srcSch.relations {
-			rel := &srcSch.relations[i]
+		for i := range srcSch.toRelations {
+			rel := &srcSch.toRelations[i]
 			if rel.RelationType != RelationTypeManyToMany || rel.M2mDestFieldPrefix == "" {
 				continue
 			}
@@ -250,12 +269,12 @@ func injectThroughSchemaManyToOnes(reg *SchemaRegistry) error {
 			for _, pk := range srcSch.PrimaryKeys() {
 				col := PrefixedThroughColumn(rel.M2mSrcFieldPrefix, pk)
 				inj := ModelRelation{
-					Edge:         throughFkImplicitEdgeName(col),
-					SrcField:     col,
-					RelationType: RelationTypeManyToOne,
+					Edge:           throughFkImplicitEdgeName(col),
+					SrcField:       col,
+					RelationType:   RelationTypeManyToOne,
 					DestSchemaName: srcSch.Name(),
 					DestField:      pk,
-					ForeignKeys: []ForeignKeyColumnPair{{FkColumn: col, ReferencedColumn: pk}},
+					ForeignKeys:    []ForeignKeyColumnPair{{FkColumn: col, ReferencedColumn: pk}},
 					OnDelete:       rel.OnDelete,
 					OnUpdate:       rel.OnUpdate,
 				}
@@ -264,12 +283,12 @@ func injectThroughSchemaManyToOnes(reg *SchemaRegistry) error {
 			for _, pk := range peerSch.PrimaryKeys() {
 				col := PrefixedThroughColumn(rel.M2mDestFieldPrefix, pk)
 				inj := ModelRelation{
-					Edge:         throughFkImplicitEdgeName(col),
-					SrcField:     col,
-					RelationType: RelationTypeManyToOne,
+					Edge:           throughFkImplicitEdgeName(col),
+					SrcField:       col,
+					RelationType:   RelationTypeManyToOne,
 					DestSchemaName: peerSch.Name(),
 					DestField:      pk,
-					ForeignKeys: []ForeignKeyColumnPair{{FkColumn: col, ReferencedColumn: pk}},
+					ForeignKeys:    []ForeignKeyColumnPair{{FkColumn: col, ReferencedColumn: pk}},
 					OnDelete:       peerRel.OnDelete,
 					OnUpdate:       peerRel.OnUpdate,
 				}
@@ -278,12 +297,12 @@ func injectThroughSchemaManyToOnes(reg *SchemaRegistry) error {
 			if tk := srcSch.TenantKey(); tk != "" {
 				col := PrefixedThroughColumn(rel.M2mSrcFieldPrefix, tk)
 				inj := ModelRelation{
-					Edge:         throughFkImplicitEdgeName(col),
-					SrcField:     col,
-					RelationType: RelationTypeManyToOne,
+					Edge:           throughFkImplicitEdgeName(col),
+					SrcField:       col,
+					RelationType:   RelationTypeManyToOne,
 					DestSchemaName: srcSch.Name(),
 					DestField:      tk,
-					ForeignKeys: []ForeignKeyColumnPair{{FkColumn: col, ReferencedColumn: tk}},
+					ForeignKeys:    []ForeignKeyColumnPair{{FkColumn: col, ReferencedColumn: tk}},
 					OnDelete:       rel.OnDelete,
 					OnUpdate:       rel.OnUpdate,
 				}
@@ -305,12 +324,12 @@ func throughFkImplicitEdgeName(fkCol string) string {
 }
 
 func appendManyToOneToThroughSchema(through *ModelSchema, rel ModelRelation) {
-	for _, existing := range through.relations {
+	for _, existing := range through.toRelations {
 		if existing.DestSchemaName == rel.DestSchemaName && relationHasSameFkColumns(existing, rel) {
 			return
 		}
 	}
-	through.relations = append(through.relations, rel)
+	through.toRelations = append(through.toRelations, rel)
 	addVirtualEdgeFieldOnSchema(through, rel)
 }
 

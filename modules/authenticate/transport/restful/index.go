@@ -4,7 +4,9 @@ import (
 	"github.com/labstack/echo/v4"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	c "github.com/sky-as-code/nikki-erp/modules/authenticate/constants"
 	v1 "github.com/sky-as-code/nikki-erp/modules/authenticate/transport/restful/v1"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 )
 
 func InitRestfulHandlers() error {
@@ -18,6 +20,7 @@ func InitRestfulHandlers() error {
 		passwordRest *v1.PasswordRest,
 	) {
 		v1 := route.Group("/v1/authn")
+		v1.Use(middlewares.RequestContextMiddleware2(c.AuthenticateModuleName))
 		initV1(v1, loginRest, passwordRest)
 	})
 }

@@ -43,17 +43,31 @@ func FieldDataTypePhone() FieldDataType {
 	return fieldDataTypePhone{fieldDataTypeBase{name: "phone", options: nil}}
 }
 
-func FieldDataTypeString(minLength int, maxLength int, sanitizeType ...SanitizeType) FieldDataType {
+type FieldDataTypeStringOpts struct {
+	SanitizeType SanitizeType
+	Regex        *regexp.Regexp
+}
+
+func FieldDataTypeString(minLength int, maxLength int, stringOpts ...FieldDataTypeStringOpts) FieldDataType {
 	validateRangeOrPanic(minLength, maxLength, "FieldDataTypeString")
 	st := SanitizeTypePlainText
-	if len(sanitizeType) > 0 && sanitizeType[0] != "" {
-		st = sanitizeType[0]
+	var pattern *regexp.Regexp
+	for _, o := range stringOpts {
+		if o.SanitizeType != "" {
+			st = o.SanitizeType
+		}
+		if o.Regex != nil {
+			pattern = o.Regex
+		}
 	}
-	opts := FieldDataTypeOptions{
+	dtOpts := FieldDataTypeOptions{
 		FieldDataTypeOptSanitizeType: st,
 		FieldDataTypeOptLength:       []int{minLength, maxLength},
 	}
-	return fieldDataTypeString{fieldDataTypeBase{name: "string", options: opts}}
+	if pattern != nil {
+		dtOpts[FieldDataTypeOptPattern] = pattern
+	}
+	return fieldDataTypeString{fieldDataTypeBase{name: "string", options: dtOpts}}
 }
 
 func FieldDataTypeSecret() FieldDataType {
@@ -346,7 +360,32 @@ func validateStringBase(val value, options FieldDataTypeOptions) (value, *ft.Cli
 	default:
 		return Value(nil), NewInvalidDataTypeErr("")
 	}
+	if clientErr := validateStringPattern(out, options); clientErr != nil {
+		return Value(nil), clientErr
+	}
 	return Value(out), nil
+}
+
+func validateStringPattern(s string, options FieldDataTypeOptions) *ft.ClientErrorItem {
+	if options == nil {
+		return nil
+	}
+	raw, ok := options[FieldDataTypeOptPattern]
+	if !ok || raw == nil {
+		return nil
+	}
+	re, ok := raw.(*regexp.Regexp)
+	if !ok || re == nil {
+		return nil
+	}
+	if !re.MatchString(s) {
+		return ft.NewAnonymousValidationError(
+			ft.ErrorKey("err_invalid_string_pattern"),
+			"string must match the required pattern",
+			nil,
+		)
+	}
+	return nil
 }
 
 func validateStringLength(s string, options FieldDataTypeOptions) *ft.ClientErrorItem {

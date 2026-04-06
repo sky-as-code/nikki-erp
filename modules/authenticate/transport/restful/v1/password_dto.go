@@ -8,51 +8,71 @@ import (
 type CreateOtpPasswordRequest = it.CreateOtpPasswordCommand
 
 type CreatePasswordOtpResponse struct {
-	CreatedAt int64  `json:"createdAt"`
-	ExpiredAt int64  `json:"expiredAt"`
-	OtpUrl    string `json:"otpUrl"`
+	CreatedAt string `json:"created_at"`
+	ExpiredAt string `json:"expired_at"`
+	OtpUrl    string `json:"otp_url"`
 }
 
-func NewCreateOtpPasswordResponse(result it.CreateOtpPasswordResult) CreatePasswordOtpResponse {
+func NewCreateOtpPasswordResponse(data *it.CreatePasswordOtpResultData) CreatePasswordOtpResponse {
 	response := CreatePasswordOtpResponse{}
-	model.MustCopy(result.Data, &response)
+	if data == nil {
+		return response
+	}
+
+	response.CreatedAt = model.ModelDateTime(data.CreatedAt).String()
+	response.ExpiredAt = model.ModelDateTime(data.ExpiredAt).String()
+	response.OtpUrl = data.OtpUrl
 	return response
 }
 
 type ConfirmOtpPasswordRequest = it.ConfirmOtpPasswordCommand
 
 type ConfirmOtpPasswordResponse struct {
-	ConfirmedAt   int64    `json:"confirmedAt"`
-	RecoveryCodes []string `json:"recoveryCodes"`
+	ConfirmedAt   string   `json:"confirmed_at"`
+	RecoveryCodes []string `json:"recovery_codes"`
 }
 
-func NewConfirmOtpPasswordResponse(result it.ConfirmOtpPasswordResult) ConfirmOtpPasswordResponse {
+func NewConfirmOtpPasswordResponse(data *it.ConfirmOtpPasswordResultData) ConfirmOtpPasswordResponse {
 	response := ConfirmOtpPasswordResponse{}
-	model.MustCopy(result.Data, &response)
+	if data == nil {
+		return response
+	}
+
+	response.ConfirmedAt = model.ModelDateTime(data.ConfirmedAt).String()
+	response.RecoveryCodes = data.RecoveryCodes
 	return response
 }
 
 type CreateTempPasswordRequest = it.CreateTempPasswordCommand
 
 type CreateTempPasswordResponse struct {
-	CreatedAt int64 `json:"createdAt"`
-	ExpiredAt int64 `json:"expiredAt"`
+	CreatedAt string `json:"created_at"`
+	ExpiredAt string `json:"expired_at"`
 }
 
-func NewCreateTempPasswordResponse(result it.CreateTempPasswordResult) CreateTempPasswordResponse {
+func NewCreateTempPasswordResponse(data *it.CreateTempPasswordResultData) CreateTempPasswordResponse {
 	response := CreateTempPasswordResponse{}
-	model.MustCopy(result.Data, &response)
+	if data == nil {
+		return response
+	}
+
+	response.CreatedAt = model.ModelDateTime(data.CreatedAt).String()
+	response.ExpiredAt = model.ModelDateTime(data.ExpiredAt).String()
 	return response
 }
 
 type SetPasswordRequest = it.SetPasswordCommand
 
 type SetPasswordResponse struct {
-	UpdatedAt int64 `json:"updatedAt"`
+	UpdatedAt string `json:"updated_at"`
 }
 
-func NewSetPasswordResponse(result it.SetPasswordResult) SetPasswordResponse {
+func NewSetPasswordResponse(data *it.SetPasswordResultData) SetPasswordResponse {
 	response := SetPasswordResponse{}
-	model.MustCopy(result.Data, &response)
+	if data == nil {
+		return response
+	}
+
+	response.UpdatedAt = model.ModelDateTime(data.UpdatedAt).String()
 	return response
 }

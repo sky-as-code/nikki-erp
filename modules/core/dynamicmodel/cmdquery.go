@@ -15,7 +15,7 @@ type SetIsArchivedCommand struct {
 }
 
 type ToDomainModelFunc[TDomain any] func(data dmodel.DynamicFields) TDomain
-type BeforeValidationFunc[TDomain any] func(ctx corectx.Context, model TDomain) (TDomain, error)
+type BeforeValidationFunc[TDomain any] func(ctx corectx.Context, model TDomain, vErrs *ft.ClientErrors) (TDomain, error)
 type AfterValidationFunc[TDomain any] func(ctx corectx.Context, model TDomain) (TDomain, error)
 type ValidateExtraFunc[TDomain any] func(ctx corectx.Context, model TDomain, vErrs *ft.ClientErrors) error
 
@@ -25,7 +25,7 @@ type CreateParam[
 ] struct {
 	// Action name for logging and error messages
 	Action         string
-	BaseRepoGetter BaseRepoGetter
+	BaseRepoGetter DynamicModelRepository
 
 	// Data to create
 	Data dmodel.DynamicModelGetter
@@ -43,6 +43,16 @@ type CreateParam[
 type DeleteOneCommand struct {
 	Id model.Id `json:"id" param:"id"`
 }
+
+func (this DeleteOneCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"core.delete_one_command",
+		func() *dmodel.ModelSchemaBuilder {
+			return DeleteOneQuerySchemaBuilder()
+		},
+	)
+}
+
 type ExistsQuery struct {
 	Ids []model.Id `json:"ids" param:"ids"`
 }

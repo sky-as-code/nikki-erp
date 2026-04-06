@@ -52,10 +52,6 @@ func (this DynamicFields) GetStrings(key string) []string {
 }
 
 func (this DynamicFields) SetStrings(key string, v []string) {
-	if v == nil {
-		this[key] = nil
-		return
-	}
 	this[key] = v
 }
 
@@ -69,10 +65,6 @@ func (this DynamicFields) GetAny(key string) any {
 }
 
 func (this DynamicFields) SetAny(key string, v any) {
-	if v == nil {
-		this[key] = nil
-		return
-	}
 	this[key] = v
 }
 
@@ -156,4 +148,40 @@ func (this DynamicFields) SetEtag(key string, v *model.Etag) {
 		return
 	}
 	this[key] = *v
+}
+
+func (this DynamicFields) GetModelDateTime(key string) *model.ModelDateTime {
+	val, ok := this[key]
+	if !ok || val == nil {
+		return nil
+	}
+	return val.(*model.ModelDateTime)
+}
+
+func (this DynamicFields) SetModelDateTime(key string, v model.ModelDateTime) {
+	this[key] = v
+}
+
+func (this DynamicFields) GetModelDate(key string) *model.ModelDate {
+	val, ok := this[key]
+	if !ok || val == nil {
+		return nil
+	}
+	return val.(*model.ModelDate)
+}
+
+func (this DynamicFields) SetModelDate(key string, v model.ModelDate) {
+	this[key] = v
+}
+
+func (this DynamicFields) GetModelTime(key string) *model.ModelTime {
+	val, ok := this[key]
+	if !ok || val == nil {
+		return nil
+	}
+	return val.(*model.ModelTime)
+}
+
+func (this DynamicFields) SetModelTime(key string, v model.ModelTime) {
+	this[key] = v
 }

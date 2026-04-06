@@ -11,7 +11,12 @@ func InitServices() error {
 		deps.Register(NewUserServiceImpl),
 		deps.Register(NewGroupServiceImpl),
 		deps.Register(NewOrganizationServiceImpl),
-		deps.Register(NewHierarchyServiceImpl),
+		deps.Register(NewOrgUnitServiceImpl),
+		deps.Register(NewResourceServiceImpl),
+		deps.Register(NewActionServiceImpl),
+		deps.Register(NewEntitlementServiceImpl),
+		deps.Register(NewRoleServiceImpl),
+		deps.Register(NewRoleRequestServiceImpl),
 	)
 	return err
 }

@@ -395,10 +395,11 @@ func noteGraphFieldName(name string, maxDots int, into map[string]struct{}) erro
 func collectSelectAndGraphPaths(graph *dmodel.SearchGraph, opts SqlSelectGraphOpts) (map[string]struct{}, error) {
 	paths := make(map[string]struct{})
 	for _, col := range opts.Columns {
-		if col == "" {
+		path := col.joinPlanningPath()
+		if path == "" {
 			continue
 		}
-		if err := noteGraphFieldName(col, MaxSelectGraphColumnDots, paths); err != nil {
+		if err := noteGraphFieldName(path, MaxSelectGraphColumnDots, paths); err != nil {
 			return nil, err
 		}
 	}
@@ -457,9 +458,12 @@ func pathInOrder(path string, graph *dmodel.SearchGraph) bool {
 	return false
 }
 
-func pathInSelectColumns(path string, columns []string) bool {
+func pathInSelectColumns(path string, columns []SelectColumn) bool {
 	for _, c := range columns {
-		if c == path {
+		if c.joinPlanningPath() == path {
+			return true
+		}
+		if strings.TrimSpace(c.rawString()) == path {
 			return true
 		}
 	}

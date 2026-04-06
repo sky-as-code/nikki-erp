@@ -16,54 +16,27 @@ const (
 	UserStatusTerminated = UserStatus("terminated")
 )
 
-func (this UserStatus) String() string {
-	return string(this)
-}
-
-func WrapUserStatus(s string) *UserStatus {
-	st := UserStatus(s)
-	return &st
-}
-
 const (
-	UserSchemaName       = "identity.user"
+	UserSchemaName = "identity.user"
+
+	UserFieldId          = basemodel.FieldId
 	UserFieldAvatarUrl   = "avatar_url"
 	UserFieldDisplayName = "display_name"
 	UserFieldEmail       = "email"
-	UserFieldId          = basemodel.FieldId
 	UserFieldIsOwner     = "is_owner"
 	UserFieldIsLocked    = "is_locked"
-	UserFieldHierarchyId = "hierarchy_id"
+	UserFieldOrgUnitId   = "org_unit_id"
 	UserFieldStatus      = "status"
 
-	UserEdgeGroups    = "groups"
-	UserEdgeOrgs      = "orgs"
-	UserEdgeHierarchy = "hierarchy"
+	UserEdgeGroups                = "groups"
+	UserEdgeOrgs                  = "orgs"
+	UserEdgeOrgUnit               = "org_unit"
+	UserEdgeRoles                 = "roles"
+	UserEdgePrivateRole           = "private_role"
+	UserEdgeBenefitRoleRequests   = "benefit_role_requests"
+	UserEdgeCreatedRoleRequests   = "created_role_requests"
+	UserEdgeRespondedRoleRequests = "responded_role_requests"
 )
-
-const (
-	UsrGrpRelSchemaName   = "identity.user_group_rel"
-	UsrGrpRelFieldUserId  = "user_id"
-	UsrGrpRelFieldGroupId = "group_id"
-)
-
-func UserGroupRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(UsrGrpRelSchemaName).
-		TableName("ident_user_group_rel").
-		ShouldBuildDb().
-		Field(
-			dmodel.DefineField().
-				Name(UsrGrpRelFieldUserId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(UsrGrpRelFieldGroupId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
-		)
-}
 
 func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserSchemaName).
@@ -109,31 +82,56 @@ func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				DataType(dmodel.FieldDataTypeBoolean()).
 				Unique(), // Only one owner per deployment
 		).
+		Field(
+			dmodel.DefineField().
+				Name(UserFieldOrgUnitId).
+				Label(model.LangJson{"en-US": "Organizational Unit"}).
+				DataType(dmodel.FieldDataTypeUlid()),
+		).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
-		Field(
-			dmodel.DefineField().
-				Name(UserFieldHierarchyId).
-				Label(model.LangJson{"en-US": "Hierarchy Level"}).
-				DataType(dmodel.FieldDataTypeUlid()),
-		).
 		EdgeTo(
-			dmodel.Edge(UserEdgeHierarchy).
-				ManyToOne(HierarchyLevelSchemaName, dmodel.DynamicFields{
-					UserFieldHierarchyId: basemodel.FieldId,
+			dmodel.Edge(UserEdgeOrgUnit).
+				ManyToOne(OrganizationalUnitSchemaName, dmodel.DynamicFields{
+					UserFieldOrgUnitId: basemodel.FieldId,
 				}).
 				OnDelete(dmodel.RelationCascadeSetNull),
 		).
 		EdgeTo(
 			dmodel.Edge(UserEdgeGroups).
-				ManyToMany(GroupSchemaName, UsrGrpRelSchemaName, "user").
+				ManyToMany(GroupSchemaName, GrpUsrRelSchemaName, "user").
 				OnDelete(dmodel.RelationCascadeCascade),
 		).
 		EdgeTo(
 			dmodel.Edge(UserEdgeOrgs).
-				ManyToMany(OrganizationSchemaName, UsrOrgRelSchemaName, "user").
+				ManyToMany(OrganizationSchemaName, OrgUsrRelSchemaName, "user").
 				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeTo(
+			dmodel.Edge(UserEdgeRoles).
+				ManyToMany(RoleSchemaName, RoleAssignmentSchemaName, "receiver_user").
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeFrom(
+			dmodel.Edge(UserEdgePrivateRole).
+				Label(model.LangJson{"en-US": "Private role"}).
+				Existing(RoleSchemaName, RoleEdgeDedicatedUser),
+		).
+		EdgeFrom(
+			dmodel.Edge(UserEdgeBenefitRoleRequests).
+				Label(model.LangJson{"en-US": "Grant requests for me"}).
+				Existing(RoleRequestSchemaName, RoleReqEdgeReceiverUser),
+		).
+		EdgeFrom(
+			dmodel.Edge(UserEdgeCreatedRoleRequests).
+				Label(model.LangJson{"en-US": "Grant requests created by me"}).
+				Existing(RoleRequestSchemaName, RoleReqEdgeRequestor),
+		).
+		EdgeFrom(
+			dmodel.Edge(UserEdgeRespondedRoleRequests).
+				Label(model.LangJson{"en-US": "Grant requests responded by me"}).
+				Existing(RoleRequestSchemaName, RoleReqEdgeResponder),
 		)
 }
 
@@ -231,10 +229,10 @@ func (this *User) SetStatus(v *UserStatus) {
 	this.fields.SetString(UserFieldStatus, &s)
 }
 
-func (this User) GetHierarchyId() *model.Id {
-	return this.fields.GetModelId(UserFieldHierarchyId)
+func (this User) GetOrgUnitId() *model.Id {
+	return this.fields.GetModelId(UserFieldOrgUnitId)
 }
 
-func (this *User) SetHierarchyId(v *model.Id) {
-	this.fields.SetModelId(UserFieldHierarchyId, v)
+func (this *User) SetOrgUnitId(v *model.Id) {
+	this.fields.SetModelId(UserFieldOrgUnitId, v)
 }

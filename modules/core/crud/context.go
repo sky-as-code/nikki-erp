@@ -7,6 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
+// Deprecated: Use nikkierp/modules/core/context/context.go instead
 type Context interface {
 	context.Context
 
@@ -35,6 +36,7 @@ func CloneRequestContext(ctx Context) Context {
 	}
 }
 
+// Deprecated: Use nikkierp/modules/core/context/context.go instead
 type RequestContext struct {
 	context.Context
 

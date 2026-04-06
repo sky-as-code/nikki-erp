@@ -8,7 +8,7 @@ import (
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 var authenticateCommandType = cqrs.RequestType{
@@ -18,7 +18,7 @@ var authenticateCommandType = cqrs.RequestType{
 }
 
 type AuthenticateCommand struct {
-	AttemptId model.Id          `json:"attemptId"`
+	AttemptId model.Id          `json:"attempt_id"`
 	Passwords map[string]string `json:"passwords"`
 }
 
@@ -26,19 +26,27 @@ func (AuthenticateCommand) CqrsRequestType() cqrs.RequestType {
 	return authenticateCommandType
 }
 
+func (this AuthenticateCommand) Validate() ft.ClientErrors {
+	rules := []*val.FieldRules{
+		model.IdValidateRule(&this.AttemptId, true),
+	}
+
+	return domain.ValidationErrorsToClientErrors(val.ApiBased.ValidateStruct(&this, rules...))
+}
+
 type AuthenticateSuccessData struct {
-	AccessToken           string    `json:"accessToken"`
-	AccessTokenExpiresAt  time.Time `json:"accessTokenExpiresAt"`
-	RefreshToken          string    `json:"refreshToken"`
-	RefreshTokenExpiresAt time.Time `json:"refreshTokenExpiresAt"`
+	AccessToken           string    `json:"access_token"`
+	AccessTokenExpiresAt  time.Time `json:"access_token_expires_at"`
+	RefreshToken          string    `json:"refresh_token"`
+	RefreshTokenExpiresAt time.Time `json:"refresh_token_expires_at"`
 }
 
 type AuthenticateResultData struct {
 	Done     bool                     `json:"done"`
-	NextStep *string                  `json:"nextStep,omitempty"`
+	NextStep *string                  `json:"next_step,omitempty"`
 	Data     *AuthenticateSuccessData `json:"data,omitempty"`
 }
-type AuthenticateResult = crud.OpResult[*AuthenticateResultData]
+type AuthenticateResult = dyn.OpResult[*AuthenticateResultData]
 
 var createLoginAttemptCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -47,11 +55,11 @@ var createLoginAttemptCommandType = cqrs.RequestType{
 }
 
 type CreateLoginAttemptCommand struct {
-	DeviceIp         *string            `json:"deviceIp,omitempty"`
-	DeviceName       *string            `json:"deviceName,omitempty"`
-	DeviceLocation   *string            `json:"deviceLocation,omitempty"`
-	SubjectType      domain.SubjectType `json:"subjectType"`
-	SubjectSourceRef *string            `json:"subjectSourceRef,omitempty"`
+	DeviceIp         *string            `json:"device_ip,omitempty"`
+	DeviceName       *string            `json:"device_name,omitempty"`
+	DeviceLocation   *string            `json:"device_location,omitempty"`
+	SubjectType      domain.SubjectType `json:"subject_type"`
+	SubjectSourceRef *string            `json:"subject_source_ref,omitempty"`
 	Username         string             `json:"username"`
 }
 
@@ -61,9 +69,9 @@ func (CreateLoginAttemptCommand) CqrsRequestType() cqrs.RequestType {
 
 type CreateLoginAttemptResultData struct {
 	Attempt     domain.LoginAttempt `json:"attempt"`
-	SubjectName string              `json:"subjectName"`
+	SubjectName string              `json:"subject_name"`
 }
-type CreateLoginAttemptResult = crud.OpResult[*CreateLoginAttemptResultData]
+type CreateLoginAttemptResult = dyn.OpResult[*CreateLoginAttemptResultData]
 
 var updateLoginAttemptCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -73,8 +81,8 @@ var updateLoginAttemptCommandType = cqrs.RequestType{
 
 type UpdateLoginAttemptCommand struct {
 	Id            model.Id              `json:"id"`
-	IsGenuine     *bool                 `json:"isGenuine,omitempty"`
-	CurrentMethod *string               `json:"currentMethod,omitempty"`
+	IsGenuine     *bool                 `json:"is_genuine,omitempty"`
+	CurrentMethod *string               `json:"current_method,omitempty"`
 	Status        *domain.AttemptStatus `json:"status,omitempty"`
 }
 
@@ -82,7 +90,7 @@ func (UpdateLoginAttemptCommand) CqrsRequestType() cqrs.RequestType {
 	return updateLoginAttemptCommandType
 }
 
-type UpdateLoginAttemptResult = crud.OpResult[*domain.LoginAttempt]
+type UpdateLoginAttemptResult = dyn.OpResult[*domain.LoginAttempt]
 
 var startLoginFlowCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -91,9 +99,9 @@ var startLoginFlowCommandType = cqrs.RequestType{
 }
 
 type StartLoginFlowCommand struct {
-	DeviceName       *string            `json:"deviceName,omitempty"`
-	SubjectType      domain.SubjectType `json:"subjectType"`
-	SubjectSourceRef *string            `json:"subjectSourceRef,omitempty"`
+	DeviceName       *string            `json:"device_name,omitempty"`
+	SubjectType      domain.SubjectType `json:"subject_type"`
+	SubjectSourceRef *string            `json:"subject_source_ref,omitempty"`
 	Username         string             `json:"username"`
 }
 
@@ -115,15 +123,15 @@ func (GetAttemptByIdQuery) CqrsRequestType() cqrs.RequestType {
 	return getAttemptByIdQueryType
 }
 
-func (this GetAttemptByIdQuery) Validate() ft.ValidationErrors {
+func (this GetAttemptByIdQuery) Validate() ft.ClientErrors {
 	rules := []*val.FieldRules{
 		model.IdValidateRule(&this.Id, true),
 	}
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+	return domain.ValidationErrorsToClientErrors(val.ApiBased.ValidateStruct(&this, rules...))
 }
 
-type GetAttemptByIdResult = crud.OpResult[*domain.LoginAttempt]
+type GetAttemptByIdResult = dyn.OpResult[*domain.LoginAttempt]
 
 var refreshTokenCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -132,7 +140,7 @@ var refreshTokenCommandType = cqrs.RequestType{
 }
 
 type RefreshTokenCommand struct {
-	RefreshToken string `json:"refreshToken"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func (RefreshTokenCommand) CqrsRequestType() cqrs.RequestType {
@@ -140,9 +148,9 @@ func (RefreshTokenCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 type RefreshTokenResultData struct {
-	AccessToken           string    `json:"accessToken"`
-	AccessTokenExpiresAt  time.Time `json:"accessTokenExpiresAt"`
-	RefreshToken          string    `json:"refreshToken"`
-	RefreshTokenExpiresAt time.Time `json:"refreshTokenExpiresAt"`
+	AccessToken           string    `json:"access_token"`
+	AccessTokenExpiresAt  time.Time `json:"access_token_expires_at"`
+	RefreshToken          string    `json:"refresh_token"`
+	RefreshTokenExpiresAt time.Time `json:"refresh_token_expires_at"`
 }
-type RefreshTokenResult = crud.OpResult[*RefreshTokenResultData]
+type RefreshTokenResult = dyn.OpResult[*RefreshTokenResultData]

@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	itLogin "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
 	itPass "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/password"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 type LoginMethodOtpCode struct {
@@ -19,7 +19,7 @@ func (this *LoginMethodOtpCode) SkipMethod() *itLogin.SkippedMethod {
 	return nil
 }
 
-func (this *LoginMethodOtpCode) Execute(ctx crud.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
+func (this *LoginMethodOtpCode) Execute(ctx corectx.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
 	var result *itPass.VerifyPasswordResult
 	var err error
 	err = deps.Invoke(func(passwordSvc itPass.PasswordService) error {
@@ -33,9 +33,9 @@ func (this *LoginMethodOtpCode) Execute(ctx crud.Context, param itLogin.LoginPar
 	if err != nil {
 		return nil, err
 	}
-	if result.ClientError != nil {
+	if result.ClientErrors.Count() > 0 {
 		return &itLogin.ExecuteResult{
-			ClientErr: result.ClientError,
+			ClientErrors: result.ClientErrors,
 		}, nil
 	}
 	return &itLogin.ExecuteResult{
