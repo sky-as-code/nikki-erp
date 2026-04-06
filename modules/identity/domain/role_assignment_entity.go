@@ -9,6 +9,7 @@ import (
 const (
 	RoleAssignmentSchemaName = "authorize.role_assignment"
 
+	RoleAssignFieldId              = basemodel.FieldId
 	RoleAssignFieldRoleId          = "role_id"
 	RoleAssignFieldReceiverGroupId = "receiver_group_id"
 	RoleAssignFieldReceiverUserId  = "receiver_user_id"
@@ -32,7 +33,7 @@ func RoleAssignmentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().Name(RoleAssignFieldRoleId).
 				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
+				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().Name(RoleAssignFieldReceiverGroupId).

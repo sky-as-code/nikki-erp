@@ -68,5 +68,6 @@ func (this *IdentityModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(domain.RoleSchemaBuilder()),
 		dmodel.RegisterSchemaB(domain.RoleRequestSchemaBuilder()),
 		dmodel.RegisterSchemaB(domain.RoleAssignmentSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.UserPermissionSchemaBuilder()),
 	)
 }

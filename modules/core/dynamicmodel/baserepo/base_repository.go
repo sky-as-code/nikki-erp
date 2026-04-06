@@ -69,6 +69,30 @@ func (this *BaseDynamicRepositoryImpl) BeginTransaction(ctx corectx.Context) (da
 	return this.client.BeginTx(ctx.InnerContext(), nil)
 }
 
+func (this *BaseDynamicRepositoryImpl) ExecFunc(ctx corectx.Context, sqlFuncName string, sqlFuncArgs ...any) error {
+	sqlFuncName = strings.TrimSpace(sqlFuncName)
+	if sqlFuncName == "" {
+		return errors.New("sql function name is required")
+	}
+
+	sqlBuilder := strings.Builder{}
+	sqlBuilder.WriteString("SELECT ")
+	sqlBuilder.WriteString(sqlFuncName)
+	sqlBuilder.WriteString("(")
+	for i := range sqlFuncArgs {
+		if i > 0 {
+			sqlBuilder.WriteString(", ")
+		}
+		sqlBuilder.WriteString(fmt.Sprintf("$p%d", i+1))
+	}
+	sqlBuilder.WriteString(")")
+
+	sqlQuery := sqlBuilder.String()
+	this.logQuery(sqlQuery)
+	_, err := this.ExtractClient(ctx).Exec(ctx.InnerContext(), sqlQuery, sqlFuncArgs...)
+	return err
+}
+
 // CheckUniqueCollisions returns unique key groups that have collisions. Empty slice means no collisions.
 func (this *BaseDynamicRepositoryImpl) CheckUniqueCollisions(ctx corectx.Context, data dmodel.DynamicFields) (
 	*dyn.OpResult[[][]string], error,
@@ -338,7 +362,7 @@ func (this *BaseDynamicRepositoryImpl) ManageM2m(
 	if len(associations) == 0 && len(disassociations) == 0 {
 		return &dyn.OpResult[int]{Data: 0, HasData: false}, nil
 	}
-	return this.applyM2mAssociations(ctx, link, associations, disassociations)
+	return this.applyM2mAssociations(ctx, link, associations, disassociations, param.BeforeInsert)
 }
 
 func (this *BaseDynamicRepositoryImpl) ExistsM2m(ctx corectx.Context, param dyn.RepoExistsM2mParam) (bool, error) {
@@ -436,8 +460,9 @@ func (this *BaseDynamicRepositoryImpl) prepareM2mAssociations(
 func (this *BaseDynamicRepositoryImpl) applyM2mAssociations(
 	ctx corectx.Context, link *dmodel.M2mPeerLink,
 	associations []dyn.RepoM2mAssociation, disassociations []dyn.RepoM2mAssociation,
+	beforeInsert dyn.RepoBeforeInsertM2mFn,
 ) (*dyn.OpResult[int], error) {
-	total, cErrs, err := this.insertM2mAssociations(ctx, link, associations)
+	total, cErrs, err := this.insertM2mAssociations(ctx, link, associations, beforeInsert)
 	if err != nil {
 		return nil, err
 	}
@@ -457,11 +482,12 @@ func (this *BaseDynamicRepositoryImpl) applyM2mAssociations(
 
 func (this *BaseDynamicRepositoryImpl) insertM2mAssociations(
 	ctx corectx.Context, link *dmodel.M2mPeerLink, associations []dyn.RepoM2mAssociation,
+	beforeInsert dyn.RepoBeforeInsertM2mFn,
 ) (int, ft.ClientErrors, error) {
 	if len(associations) == 0 {
 		return 0, nil, nil
 	}
-	insertRes, err := this.insertJunctionRows(ctx, link, associations)
+	insertRes, err := this.insertJunctionRows(ctx, link, associations, beforeInsert)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -589,10 +615,17 @@ func (this *BaseDynamicRepositoryImpl) deleteJunctionRows(ctx corectx.Context,
 
 func (this *BaseDynamicRepositoryImpl) insertJunctionRows(ctx corectx.Context,
 	link *dmodel.M2mPeerLink, associations []dyn.RepoM2mAssociation,
+	beforeInsert dyn.RepoBeforeInsertM2mFn,
 ) (*dyn.OpResult[int], error) {
 	rows, clientErrs := this.assocToJuncRowArr(link, associations)
 	if len(clientErrs) > 0 {
 		return &dyn.OpResult[int]{ClientErrors: clientErrs}, nil
+	}
+	if beforeInsert != nil {
+		err := beforeInsert(ctx, rows)
+		if err != nil {
+			return nil, err
+		}
 	}
 	sqlRes, qbClientErrs, err := this.queryBuilder.SqlInsertBulk(link.ThroughSchema, rows, true)
 	if err != nil {

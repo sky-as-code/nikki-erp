@@ -543,6 +543,7 @@ type ManageM2mParam struct {
 	SrcIdFieldForError string
 	AssociatedIds      datastructure.Set[model.Id]
 	DisassociatedIds   datastructure.Set[model.Id]
+	BeforeInsert       func(ctx corectx.Context, dbRecords []dmodel.DynamicFields) error
 }
 
 func ManageM2m(ctx corectx.Context, param ManageM2mParam) (
@@ -571,6 +572,7 @@ func ManageM2m(ctx corectx.Context, param ManageM2mParam) (
 			SrcIdFieldForError: param.SrcIdFieldForError,
 			AssociatedIds:      param.AssociatedIds,
 			DisassociatedIds:   param.DisassociatedIds,
+			BeforeInsert:       param.BeforeInsert,
 		},
 	)
 	if err != nil {

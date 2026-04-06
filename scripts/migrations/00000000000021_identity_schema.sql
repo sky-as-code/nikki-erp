@@ -2,6 +2,7 @@
 CREATE TABLE "authz_resources" (
   "id" character varying NOT NULL,
   "name" character varying NOT NULL,
+  "code" character varying NOT NULL,
   "description" character varying NULL,
   "owner_type" character varying NOT NULL,
   "max_scope" character varying NOT NULL,
@@ -16,33 +17,14 @@ CREATE TABLE "authz_resources" (
 CREATE TABLE "authz_actions" (
   "id" character varying NOT NULL,
   "name" character varying NOT NULL,
+  "code" character varying NOT NULL,
   "description" character varying NULL,
   "resource_id" character varying NOT NULL,
   "etag" character varying NOT NULL,
   PRIMARY KEY ("id"),
+  CONSTRAINT "authz_actions_name_resource_id_ukey" UNIQUE ("name", "resource_id"),
   CONSTRAINT "authz_actions_resource_id_fkey" FOREIGN KEY ("resource_id") REFERENCES "authz_resources" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
 );
--- Create "authz_entitlements" table
-CREATE TABLE "authz_entitlements" (
-  "id" character varying NOT NULL,
-  "name" character varying NOT NULL,
-  "description" character varying NULL,
-  "action_id" character varying NOT NULL,
-  "scope" character varying NULL,
-  "org_unit_id" character varying NULL,
-  "is_archived" boolean NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "etag" character varying NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "authz_entitlements_name_ukey" UNIQUE ("name"),
-  CONSTRAINT "authz_entitlements_action_id_fkey" FOREIGN KEY ("action_id") REFERENCES "authz_actions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "authz_entitlements_org_unit_id_fkey" FOREIGN KEY ("org_unit_id") REFERENCES "authz_resources" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
-);
--- Create index "authz_entitlements_action_id_org_unit_id_ukey_notnull" to table: "authz_entitlements"
-CREATE UNIQUE INDEX "authz_entitlements_action_id_org_unit_id_ukey_notnull" ON "authz_entitlements" ("action_id", "org_unit_id") WHERE (org_unit_id IS NOT NULL);
--- Create index "authz_entitlements_action_id_org_unit_id_ukey_null" to table: "authz_entitlements"
-CREATE UNIQUE INDEX "authz_entitlements_action_id_org_unit_id_ukey_null" ON "authz_entitlements" ("action_id") WHERE (org_unit_id IS NULL);
 -- Create "ident_organizations" table
 CREATE TABLE "ident_organizations" (
   "id" character varying NOT NULL,
@@ -136,13 +118,27 @@ CREATE TABLE "authz_roles" (
 CREATE UNIQUE INDEX "authz_roles_name_org_id_ukey_notnull" ON "authz_roles" ("name", "org_id") WHERE (org_id IS NOT NULL);
 -- Create index "authz_roles_name_org_id_ukey_null" to table: "authz_roles"
 CREATE UNIQUE INDEX "authz_roles_name_org_id_ukey_null" ON "authz_roles" ("name") WHERE (org_id IS NULL);
--- Create "authz_entitlement_role_rel" table
-CREATE TABLE "authz_entitlement_role_rel" (
-  "entitlement_id" character varying NOT NULL,
+-- Create "authz_entitlements" table
+CREATE TABLE "authz_entitlements" (
+  "id" character varying NOT NULL,
+  "name" character varying NOT NULL,
+  "description" character varying NULL,
+  "action_id" character varying NOT NULL,
   "role_id" character varying NOT NULL,
-  PRIMARY KEY ("entitlement_id", "role_id"),
-  CONSTRAINT "authz_entitlement_role_rel_entitlement_id_fkey" FOREIGN KEY ("entitlement_id") REFERENCES "authz_entitlements" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "authz_entitlement_role_rel_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "authz_roles" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  "scope" character varying NOT NULL,
+  "org_id" character varying NULL,
+  "org_unit_id" character varying NULL,
+  "is_archived" boolean NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  "etag" character varying NOT NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "authz_entitlements_action_id_role_id_ukey" UNIQUE ("action_id", "role_id"),
+  CONSTRAINT "authz_entitlements_name_ukey" UNIQUE ("name"),
+  CONSTRAINT "authz_entitlements_action_id_fkey" FOREIGN KEY ("action_id") REFERENCES "authz_actions" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "authz_entitlements_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "ident_organizations" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "authz_entitlements_org_unit_id_fkey" FOREIGN KEY ("org_unit_id") REFERENCES "ident_org_units" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
+  CONSTRAINT "authz_entitlements_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "authz_roles" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "authz_grant_requests" table
 CREATE TABLE "authz_grant_requests" (
@@ -179,7 +175,7 @@ CREATE TABLE "authz_role_assignments" (
   "approver_id" character varying NULL,
   "role_request_id" character varying NULL,
   "expires_at" timestamptz NULL,
-  PRIMARY KEY ("id", "role_id"),
+  PRIMARY KEY ("id"),
   CONSTRAINT "authz_role_assignments_role_id_receiver_group_id_ukey" UNIQUE ("role_id", "receiver_group_id"),
   CONSTRAINT "authz_role_assignments_role_id_receiver_user_id_ukey" UNIQUE ("role_id", "receiver_user_id"),
   CONSTRAINT "authz_role_assignments_approver_id_fkey" FOREIGN KEY ("approver_id") REFERENCES "ident_users" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
@@ -190,17 +186,45 @@ CREATE TABLE "authz_role_assignments" (
 );
 -- Create "ident_group_user_rel" table
 CREATE TABLE "ident_group_user_rel" (
+  "id" character varying NOT NULL,
   "group_id" character varying NOT NULL,
   "user_id" character varying NOT NULL,
-  PRIMARY KEY ("group_id", "user_id"),
+  PRIMARY KEY ("id"),
+  CONSTRAINT "ident_group_user_rel_group_id_user_id_ukey" UNIQUE ("group_id", "user_id"),
   CONSTRAINT "ident_group_user_rel_group_id_fkey" FOREIGN KEY ("group_id") REFERENCES "ident_groups" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "ident_group_user_rel_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "ident_users" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "ident_org_user_rel" table
 CREATE TABLE "ident_org_user_rel" (
+  "id" character varying NOT NULL,
   "org_id" character varying NOT NULL,
   "user_id" character varying NOT NULL,
-  PRIMARY KEY ("org_id", "user_id"),
+  PRIMARY KEY ("id"),
+  CONSTRAINT "ident_org_user_rel_org_id_user_id_ukey" UNIQUE ("org_id", "user_id"),
   CONSTRAINT "ident_org_user_rel_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "ident_organizations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "ident_org_user_rel_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "ident_users" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+);
+-- Create "authz_user_permissions" table
+CREATE TABLE "authz_user_permissions" (
+  "user_id" character varying NOT NULL,
+  "action_id" character varying NOT NULL,
+  "action_code" character varying NOT NULL,
+  "resource_id" character varying NOT NULL,
+  "resource_code" character varying NOT NULL,
+  "role_assignment_id" character varying NOT NULL,
+  "scope" character varying NOT NULL,
+  "org_id" character varying NOT NULL,
+  "org_membership_id" character varying NOT NULL,
+  "group_membership_id" character varying NOT NULL,
+  "org_unit_id" character varying NOT NULL,
+  PRIMARY KEY ("user_id", "action_id", "resource_id", "scope", "org_id", "org_unit_id"),
+  CONSTRAINT "authz_user_permissions_user_id_action_code_resource_code_scope_" UNIQUE ("user_id", "action_code", "resource_code", "scope", "org_id", "org_unit_id"),
+  CONSTRAINT "authz_user_permissions_action_id_fkey" FOREIGN KEY ("action_id") REFERENCES "authz_actions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "authz_user_permissions_group_membership_id_fkey" FOREIGN KEY ("group_membership_id") REFERENCES "ident_group_user_rel" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "authz_user_permissions_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "ident_organizations" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "authz_user_permissions_org_membership_id_fkey" FOREIGN KEY ("org_membership_id") REFERENCES "ident_org_user_rel" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "authz_user_permissions_org_unit_id_fkey" FOREIGN KEY ("org_unit_id") REFERENCES "ident_org_units" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "authz_user_permissions_resource_id_fkey" FOREIGN KEY ("resource_id") REFERENCES "authz_actions" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "authz_user_permissions_role_assignment_id_fkey" FOREIGN KEY ("role_assignment_id") REFERENCES "authz_role_assignments" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "authz_user_permissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "ident_users" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );

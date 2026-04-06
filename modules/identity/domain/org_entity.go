@@ -22,7 +22,9 @@ const (
 )
 
 const (
-	OrgUsrRelSchemaName  = "identity.org_user_rel"
+	OrgUsrRelSchemaName = "identity.org_user_rel"
+
+	OrgUsrRelFieldId     = basemodel.FieldId
 	OrgUsrRelFieldUserId = "user_id"
 	OrgUsrRelFieldOrgId  = "org_id"
 )
@@ -31,17 +33,20 @@ func OrgUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(OrgUsrRelSchemaName).
 		TableName("ident_org_user_rel").
 		ShouldBuildDb().
+		// Add `id` column to cascade delete to user_permissions table
+		Extend(basemodel.BaseModelSchemaBuilder()).
+		CompositeUnique(OrgUsrRelFieldOrgId, OrgUsrRelFieldUserId).
 		Field(
 			dmodel.DefineField().
 				Name(OrgUsrRelFieldOrgId).
 				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
+				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(OrgUsrRelFieldUserId).
 				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
+				RequiredForCreate(),
 		)
 }
 

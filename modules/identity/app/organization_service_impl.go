@@ -147,6 +147,13 @@ func (this *OrganizationServiceImpl) ManageOrgUsers(ctx corectx.Context, cmd it.
 		SrcIdFieldForError: "org_id",
 		AssociatedIds:      cmd.Add,
 		DisassociatedIds:   cmd.Remove,
+		BeforeInsert: func(ctx corectx.Context, dbRecords []dmodel.DynamicFields) error {
+			ulidType := dmodel.FieldDataTypeUlid()
+			for _, rec := range dbRecords {
+				rec[basemodel.FieldId] = *ulidType.DefaultValue().Get()
+			}
+			return nil
+		},
 	})
 }
 

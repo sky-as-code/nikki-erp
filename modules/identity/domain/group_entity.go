@@ -24,6 +24,7 @@ const (
 const (
 	GrpUsrRelSchemaName = "identity.group_user_rel"
 
+	GrpUsrRelFieldId      = basemodel.FieldId
 	GrpUsrRelFieldGroupId = "group_id"
 	GrpUsrRelFieldUserId  = "user_id"
 )
@@ -32,17 +33,19 @@ func GroupUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(GrpUsrRelSchemaName).
 		TableName("ident_group_user_rel").
 		ShouldBuildDb().
+		Extend(basemodel.BaseModelSchemaBuilder()).
+		CompositeUnique(GrpUsrRelFieldGroupId, GrpUsrRelFieldUserId).
 		Field(
 			dmodel.DefineField().
 				Name(GrpUsrRelFieldGroupId).
 				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
+				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(GrpUsrRelFieldUserId).
 				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
+				RequiredForCreate(),
 		)
 }
 

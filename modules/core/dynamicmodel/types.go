@@ -16,16 +16,18 @@ type DynamicModelRepository interface {
 
 type BaseDynamicRepository interface {
 	Schema() *dmodel.ModelSchema
-	ExtractClient(ctx corectx.Context) orm.DbClient
 	BeginTransaction(ctx corectx.Context) (database.DbTransaction, error)
+	ExtractClient(ctx corectx.Context) orm.DbClient
+	ExecFunc(ctx corectx.Context, sqlFuncName string, sqlFuncArgs ...any) error
+
 	CheckUniqueCollisions(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[[][]string], error)
+	CountM2m(ctx corectx.Context, param RepoCountM2mParam) (*OpResult[int], error)
 	DeleteOne(ctx corectx.Context, keys dmodel.DynamicFields) (*OpResult[int], error)
 	Exists(ctx corectx.Context, keys []dmodel.DynamicFields) (*OpResult[RepoExistsResult], error)
-	Insert(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[int], error)
-	GetOne(ctx corectx.Context, param RepoGetOneParam) (*OpResult[dmodel.DynamicFields], error)
-	ManageM2m(ctx corectx.Context, param RepoManageM2mParam) (*OpResult[int], error)
 	ExistsM2m(ctx corectx.Context, param RepoExistsM2mParam) (bool, error)
-	CountM2m(ctx corectx.Context, param RepoCountM2mParam) (*OpResult[int], error)
+	GetOne(ctx corectx.Context, param RepoGetOneParam) (*OpResult[dmodel.DynamicFields], error)
+	Insert(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[int], error)
+	ManageM2m(ctx corectx.Context, param RepoManageM2mParam) (*OpResult[int], error)
 	Search(ctx corectx.Context, param RepoSearchParam) (*OpResult[PagedResultData[dmodel.DynamicFields]], error)
 	Update(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[dmodel.DynamicFields], error)
 }
@@ -64,7 +66,10 @@ type RepoManageM2mParam struct {
 	SrcEdgeName      string
 	AssociatedIds    datastructure.Set[model.Id]
 	DisassociatedIds datastructure.Set[model.Id]
+	BeforeInsert     RepoBeforeInsertM2mFn
 }
+
+type RepoBeforeInsertM2mFn func(ctx corectx.Context, dbRecords []dmodel.DynamicFields) error
 
 // RepoExistsM2mParam checks the junction for an outgoing many-to-many edge on the repository schema.
 // When dest_id is omitted, null, or empty, checks that SrcId has at least one junction row; otherwise checks the (SrcId, DestId) pair.

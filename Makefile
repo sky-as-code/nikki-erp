@@ -123,9 +123,10 @@ ent-migration-nikki:
 	fi
 	atlas migrate diff $(name) \
 		--dir "$(migration_dir_nikki)" \
-		--config file://./scripts/atlas.hcl \
+		--config file://${cwd_nikki}scripts/atlas.hcl \
 		--env nikki \
-		--var module=$(module)
+		--var module=$(module) \
+		--var cwd='${cwd_nikki}'
 
 ent-apply:
 	@echo "Applying migration files in '$(migration_dir)'..."
