@@ -57,6 +57,12 @@ CORE:
     SECRET_KEY: "your-secret-key-here-change-in-production"
     # Token expiry time in hours
     EXPIRY_HOURS: 24
+  REQUEST_GUARD:
+    CORS_ENABLED: true
+    MTLS_ENABLED: false
+    ACCESS_TOKEN_ENABLED: true
+    ACCESS_TOKEN_DPOP_ENABLED: false
+    SESSION_BLACKLIST_ENABLED: false
 
 AUTHENTICATE:
   # Number of seconds before a login attempt expires

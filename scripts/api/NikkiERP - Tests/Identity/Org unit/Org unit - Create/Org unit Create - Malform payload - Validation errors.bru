@@ -1,0 +1,30 @@
+meta {
+  name: Org unit Create - Malform payload - Validation errors
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/identity/orgunits
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "",
+    "org_id": "",
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-malform-payload');
+  
+  pkg.testMalformPayload();
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -29,7 +29,7 @@ type OrganizationServiceImpl struct {
 func (this *OrganizationServiceImpl) CreateOrg(
 	ctx corectx.Context, cmd it.CreateOrgCommand,
 ) (*it.CreateOrgResult, error) {
-	return corecrud.Create(ctx, dyn.CreateParam[domain.Organization, *domain.Organization]{
+	return corecrud.Create(ctx, corecrud.CreateParam[domain.Organization, *domain.Organization]{
 		Action:         "create organization",
 		BaseRepoGetter: this.orgRepo2,
 		Data:           cmd,

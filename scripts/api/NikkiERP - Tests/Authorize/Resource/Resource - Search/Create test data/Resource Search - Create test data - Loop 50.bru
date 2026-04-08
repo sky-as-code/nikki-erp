@@ -1,0 +1,43 @@
+meta {
+  name: Resource Search - Create test data - Loop 50
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{$randomColor}} {{$randomWord}} {{$timestamp}}",
+    "code": "<Modified by Pre-request Script>",
+    "description": "{{$randomLoremParagraphs}}",
+    "max_scope": "domain",
+    "min_scope": "private"
+  }
+}
+
+script:pre-request {
+  const body = req.getBody();
+  body.name = bru.interpolate(body.name);
+  body.code = body.name.toLowerCase().replace(/\s/g, "_");
+  req.setBody(body);
+}
+
+script:post-response {
+  const pkg = require('./scripts/common-test-response');
+  
+  pkg.loopTestData(
+    'Resource Search - Create test data - Loop 50',
+    'Resource Search - No criteria, No paging - Success',
+  );
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

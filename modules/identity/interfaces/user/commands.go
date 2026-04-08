@@ -7,7 +7,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	corecrud "github.com/sky-as-code/nikki-erp/modules/core/crud"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
@@ -21,7 +20,6 @@ func init() {
 	req = (*SearchUsersQuery)(nil)
 	req = (*UpdateUserCommand)(nil)
 	req = (*UserExistsQuery)(nil)
-	req = (*UserExistsMultiQuery)(nil)
 	util.Unused(req)
 }
 
@@ -169,20 +167,3 @@ func (UserExistsQuery) CqrsRequestType() cqrs.RequestType {
 }
 
 type UserExistsResult = dyn.OpResult[dyn.ExistsResultData]
-
-var userExistsMultiCommandType = cqrs.RequestType{
-	Module:    "identity",
-	Submodule: "user",
-	Action:    "existsMulti",
-}
-
-type UserExistsMultiQuery struct {
-	Ids   []model.Id `json:"ids"`
-	OrgId *model.Id  `json:"org_id,omitempty"`
-}
-
-func (UserExistsMultiQuery) CqrsRequestType() cqrs.RequestType {
-	return userExistsMultiCommandType
-}
-
-type UserExistsMultiResult = corecrud.OpResult[*dyn.ExistsResultData]

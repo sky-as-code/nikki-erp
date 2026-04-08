@@ -50,17 +50,14 @@ func RoleRequestSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
-			dmodel.DefineField().Name(RoleReqFieldRoleId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(RoleReqFieldRoleId).
 				RequiredForCreate(),
 		).
 		Field(
-			dmodel.DefineField().Name(RoleReqFieldReceiverGroupId).
-				DataType(dmodel.FieldDataTypeUlid()),
+			basemodel.DefineFieldId(RoleReqFieldReceiverGroupId),
 		).
 		Field(
-			dmodel.DefineField().Name(RoleReqFieldReceiverUserId).
-				DataType(dmodel.FieldDataTypeUlid()),
+			basemodel.DefineFieldId(RoleReqFieldReceiverUserId),
 		).
 		ExclusiveFields(RoleReqFieldReceiverGroupId, RoleReqFieldReceiverUserId).
 		Field(
@@ -92,8 +89,7 @@ func RoleRequestSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_COMMENT_LENGTH)),
 		).
 		Field(
-			dmodel.DefineField().Name(RoleReqFieldRequestorId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(RoleReqFieldRequestorId).
 				RequiredForCreate(),
 		).
 		Field(
@@ -105,8 +101,7 @@ func RoleRequestSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				DataType(dmodel.FieldDataTypeDateTime()),
 		).
 		Field(
-			dmodel.DefineField().Name(RoleReqFieldResponderId).
-				DataType(dmodel.FieldDataTypeUlid()),
+			basemodel.DefineFieldId(RoleReqFieldResponderId),
 		).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).

@@ -2,10 +2,12 @@ package fault
 
 import (
 	"bytes"
+	stdErr "errors"
 	"fmt"
 	"text/template"
 
 	invopop "github.com/invopop/validation"
+	"go.bryk.io/pkg/errors"
 )
 
 // Deprecated: Use ClientErrorItem instead
@@ -51,6 +53,17 @@ func NewClientErrors() *ClientErrors {
 }
 
 type ClientErrors []ClientErrorItem
+
+func (this *ClientErrors) ToError() error {
+	if this == nil || len(*this) == 0 {
+		return nil
+	}
+	var err error
+	for _, item := range *this {
+		err = stdErr.Join(err, item.ToError())
+	}
+	return err
+}
 
 func (this *ClientErrors) Append(item ClientErrorItem) {
 	*this = append(*this, item)
@@ -170,6 +183,25 @@ type ClientErrorItem struct {
 
 	// Variables for substitution into Message.
 	Vars map[string]any `json:"vars,omitempty"`
+}
+
+func (this *ClientErrorItem) ToError() error {
+	if this == nil {
+		return errors.New("")
+	}
+	msg := this.Message
+	if msg != "" && len(this.Vars) > 0 {
+		tmpl, err := template.New("ClientErrorItem").Parse(this.Message)
+		if err == nil {
+			var buf bytes.Buffer
+			if err2 := tmpl.Execute(&buf, this.Vars); err2 == nil {
+				msg = buf.String()
+			}
+		}
+	} else if msg == "" {
+		msg = "unknown error"
+	}
+	return errors.Errorf("%s: %s", this.Field, msg)
 }
 
 // Error implements the error interface for use as a return value from APIs that report client-facing validation issues.

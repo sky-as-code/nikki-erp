@@ -54,3 +54,5 @@ type DynamicModule interface {
 type InCodeModuleAppStarted interface {
 	OnAppStarted() error
 }
+
+type DefaultConfig []byte

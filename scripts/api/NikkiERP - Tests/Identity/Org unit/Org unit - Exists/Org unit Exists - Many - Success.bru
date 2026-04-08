@@ -1,0 +1,41 @@
+meta {
+  name: Org unit Exists - Many - Success
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/orgunits/{{orgunit_id}}/exists
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ids": ["Populated by Pre-request script"]
+  }
+}
+
+script:pre-request {
+  const pkg = require('./scripts/common-test-response');
+  const existing = pkg.getTestDataIds('orgunit_ids');
+  const body = req.getBody();
+  const nonExisting = ["01KMMNZ9M0EEF6JG6RMWWPSBKM", "01KMVYY7ACN3G69SZCDVVZZV09"];
+  const newBody = {
+    ids: existing.slice(0, 5).concat(nonExisting),
+  };
+  req.setBody(newBody);
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/exists-success');
+  
+  pkg.testExists(5, 2);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

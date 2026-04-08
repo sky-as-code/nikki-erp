@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 
+	"go.bryk.io/pkg/errors"
+
 	"github.com/sky-as-code/nikki-erp/common/datastructure"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -42,7 +44,7 @@ type RoleServiceImpl struct {
 func (this *RoleServiceImpl) CreateRole(
 	ctx corectx.Context, cmd itRole.CreateRoleCommand,
 ) (*itRole.CreateRoleResult, error) {
-	return corecrud.Create(ctx, dyn.CreateParam[domain.Role, *domain.Role]{
+	return corecrud.Create(ctx, corecrud.CreateParam[domain.Role, *domain.Role]{
 		Action:         "create role",
 		BaseRepoGetter: this.roleRepo,
 		Data:           cmd,
@@ -52,27 +54,28 @@ func (this *RoleServiceImpl) CreateRole(
 func (this *RoleServiceImpl) CreatePrivateRole(
 	ctx corectx.Context, cmd itRole.CreatePrivateRoleCommand,
 ) (*itRole.CreateRoleResult, error) {
-	sanitizedCmd, cErrs := corecrud.Validate(cmd)
+	sanitized, cErrs := cmd.GetSchema().ValidateStruct(cmd)
 	if cErrs.Count() > 0 {
 		return &itRole.CreateRoleResult{ClientErrors: cErrs}, nil
 	}
+	cmd = *(sanitized.(*itRole.CreatePrivateRoleCommand))
 
 	return corecrud.ExecInTranx(ctx, this.roleRepo, func(tranxCtx corectx.Context) (*itRole.CreateRoleResult, error) {
 		var newRole *domain.Role
-		ownerId := string(sanitizedCmd.OwnerId)
-		if sanitizedCmd.OwnerType == "user" {
+		ownerId := string(cmd.OwnerId)
+		if cmd.OwnerType == "user" {
 			newRole = domain.NewRoleFrom(dmodel.DynamicFields{
-				domain.RoleFieldName:            fmt.Sprintf("Private role for user %s", ownerId),
-				domain.RoleFieldDedicatedUserId: ownerId,
-				domain.RoleFieldOwnerUserId:     ownerId,
-				domain.RoleFieldIsRequestable:   false, // Important!
+				domain.RoleFieldName:          fmt.Sprintf("Private role for user %s", ownerId),
+				domain.RoleFieldIsPrivate:     true,
+				domain.RoleFieldOwnerUserId:   ownerId,
+				domain.RoleFieldIsRequestable: false, // Important!
 			})
 		} else {
 			newRole = domain.NewRoleFrom(dmodel.DynamicFields{
-				domain.RoleFieldName:             fmt.Sprintf("Private role for group %s", ownerId),
-				domain.RoleFieldDedicatedGroupId: ownerId,
-				domain.RoleFieldOwnerGroupId:     ownerId,
-				domain.RoleFieldIsRequestable:    false, // Important!
+				domain.RoleFieldName:          fmt.Sprintf("Private role for group %s", ownerId),
+				domain.RoleFieldIsPrivate:     true,
+				domain.RoleFieldOwnerGroupId:  ownerId,
+				domain.RoleFieldIsRequestable: false, // Important!
 			})
 		}
 		createCmd := itRole.CreateRoleCommand{Role: *newRole}
@@ -94,19 +97,42 @@ func (this *RoleServiceImpl) DeleteRole(
 		Action:       "delete role",
 		DbRepoGetter: this.roleRepo,
 		Cmd:          dyn.DeleteOneCommand(cmd),
+		ValidateExtra: func(ctx corectx.Context, keyFields dmodel.DynamicFields, vErrs *ft.ClientErrors) error {
+			resRole, err := this.roleRepo.GetOne(ctx, dyn.RepoGetOneParam{
+				Filter:  keyFields,
+				Columns: []string{domain.RoleFieldIsPrivate},
+			})
+			if err != nil {
+				return err
+			}
+			if resRole.ClientErrors.Count() > 0 {
+				return errors.Wrap(resRole.ClientErrors.ToError(), "failed to get role before deletion")
+			}
+			if !resRole.HasData {
+				return ft.NewAnonymousNotFoundError()
+			}
+			if *resRole.Data.IsPrivate() {
+				return ft.NewAnonymousBusinessViolation(
+					ft.ErrorKey("authorize", "err_private_role_deletion_not_allowed"),
+					"private role deletion is not allowed, it's automatically removed when its owner is deleted.",
+				)
+			}
+			return nil
+		},
 	})
 }
 
 func (this *RoleServiceImpl) DeletePrivateRole(
 	ctx corectx.Context, cmd itRole.DeletePrivateRoleCommand,
 ) (*itRole.DeleteRoleResult, error) {
-	sanitizedCmd, cErrs := corecrud.Validate(cmd)
+	sanitized, cErrs := cmd.GetSchema().ValidateStruct(cmd)
 	if cErrs.Count() > 0 {
-		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, nil
+		return &itRole.DeleteRoleResult{ClientErrors: cErrs}, nil
 	}
+	cmd = *(sanitized.(*itRole.DeletePrivateRoleCommand))
 
 	searchRes, err := this.roleRepo.Search(ctx, dyn.RepoSearchParam{
-		Graph:   privateRoleOwnerSearchGraph(sanitizedCmd.OwnerId),
+		Graph:   privateRoleOwnerSearchGraph(cmd.OwnerId),
 		Columns: []string{basemodel.FieldId},
 		Page:    0,
 		Size:    1,
@@ -132,11 +158,13 @@ func (this *RoleServiceImpl) DeletePrivateRole(
 }
 
 func privateRoleOwnerSearchGraph(ownerId model.Id) *dmodel.SearchGraph {
-	sid := string(ownerId)
-	userNode := dmodel.NewSearchNode().NewCondition(domain.RoleFieldDedicatedUserId, dmodel.Equals, sid)
-	groupNode := dmodel.NewSearchNode().NewCondition(domain.RoleFieldDedicatedGroupId, dmodel.Equals, sid)
+	oid := string(ownerId)
+	userNode := dmodel.NewSearchNode().NewCondition(domain.RoleFieldOwnerUserId, dmodel.Equals, oid)
+	groupNode := dmodel.NewSearchNode().NewCondition(domain.RoleFieldOwnerGroupId, dmodel.Equals, oid)
+	nodeIsPrivate := dmodel.NewSearchNode().NewCondition(domain.RoleFieldIsPrivate, dmodel.Equals, true)
+	nodeOwner := dmodel.NewSearchNode().Or(*userNode, *groupNode)
 	graph := dmodel.NewSearchGraph()
-	graph.Or(*userNode, *groupNode)
+	graph.And(*nodeIsPrivate, *nodeOwner)
 	return graph
 }
 

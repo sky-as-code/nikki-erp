@@ -1,0 +1,30 @@
+meta {
+  name: Role Update - Unmatched etag - Validation errors
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/authorize/roles/{{role_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} Role Updated",
+    "etag": "old-etag"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-etag-unmatched');
+  
+  pkg.testUnmatchedEtag();
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

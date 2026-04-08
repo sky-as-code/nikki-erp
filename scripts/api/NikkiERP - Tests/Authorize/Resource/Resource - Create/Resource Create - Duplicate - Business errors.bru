@@ -1,0 +1,32 @@
+meta {
+  name: Resource Create - Duplicate - Business errors
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{api_host}}/v1/authorize/resources
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{name}}",
+    "code": "{{resource_code}}",
+    "max_scope": "domain",
+    "min_scope": "org_unit"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-duplicate-value');
+  
+  pkg.testDuplicateValues(["name"], ["code"]);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

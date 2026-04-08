@@ -39,12 +39,12 @@ type OrgUnitServiceImpl struct {
 func (this *OrgUnitServiceImpl) CreateOrgUnit(
 	ctx corectx.Context, cmd itHier.CreateOrgUnitCommand,
 ) (*itHier.CreateOrgUnitResult, error) {
-	return corecrud.Create(ctx, dyn.CreateParam[domain.OrganizationalUnit, *domain.OrganizationalUnit]{
+	return corecrud.Create(ctx, corecrud.CreateParam[domain.OrganizationalUnit, *domain.OrganizationalUnit]{
 		Action:         "create orgunit level",
 		BaseRepoGetter: this.orgunitRepo2,
 		Data:           cmd,
-		ValidateExtra: func(ctx corectx.Context, unit *domain.OrganizationalUnit, vErrs *ft.ClientErrors) error {
-			this.applyOrgUnitPathForCreate(ctx, unit, vErrs)
+		ValidateExtra: func(ctx corectx.Context, inputModel *domain.OrganizationalUnit, vErrs *ft.ClientErrors) error {
+			this.applyOrgUnitPathForCreate(ctx, inputModel, vErrs)
 			return nil
 		},
 	})

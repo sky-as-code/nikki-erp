@@ -1,0 +1,29 @@
+meta {
+  name: Action Search - Not found Resource ID - Validation errors
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources/01KMMJYC5G8K5PHEAV3VZQQ63F/actions
+  body: none
+  auth: inherit
+}
+
+body:json {
+  {
+      "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-not-found');
+  
+  pkg.testFieldNotFound('resource_id');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

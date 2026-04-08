@@ -1,6 +1,7 @@
 package app
 
 import (
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -24,13 +25,21 @@ type ResourceServiceImpl struct {
 func (this *ResourceServiceImpl) CreateResource(
 	ctx corectx.Context, cmd itRes.CreateResourceCommand,
 ) (*itRes.CreateResourceResult, error) {
-	return corecrud.Create(ctx, dyn.CreateParam[domain.Resource, *domain.Resource]{
+	return corecrud.Create(ctx, corecrud.CreateParam[domain.Resource, *domain.Resource]{
 		Action:         "create resource",
 		BaseRepoGetter: this.resourceRepo,
 		Data:           cmd,
+		ValidateExtra:  validateNewResourceScope,
 	})
 }
-
+func validateNewResourceScope(ctx corectx.Context, inputResrc *domain.Resource, vErrs *ft.ClientErrors) error {
+	minScope := domain.AuthzScopeWidth(*inputResrc.GetMinScope())
+	maxScope := domain.AuthzScopeWidth(*inputResrc.GetMaxScope())
+	if minScope > maxScope {
+		vErrs.Append(*ft.NewValidationError(domain.ResourceFieldMinScope, "err_min_scope_greater_than_max_scope", "min_scope must be less than or equal to max_scope"))
+	}
+	return nil
+}
 func (this *ResourceServiceImpl) DeleteResource(
 	ctx corectx.Context, cmd itRes.DeleteResourceCommand,
 ) (*itRes.DeleteResourceResult, error) {
@@ -75,8 +84,23 @@ func (this *ResourceServiceImpl) UpdateResource(
 	ctx corectx.Context, cmd itRes.UpdateResourceCommand,
 ) (*itRes.UpdateResourceResult, error) {
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Resource, *domain.Resource]{
-		Action:       "update resource",
-		DbRepoGetter: this.resourceRepo,
-		Data:         cmd,
+		Action:        "update resource",
+		DbRepoGetter:  this.resourceRepo,
+		Data:          cmd,
+		ValidateExtra: validateUpdateResourceScope,
 	})
+}
+
+func validateUpdateResourceScope(ctx corectx.Context, inputResrc *domain.Resource, foundResrc *domain.Resource, vErrs *ft.ClientErrors) error {
+	inputMinScope := inputResrc.GetMinScope()
+	foundMaxScope := foundResrc.GetMaxScope()
+	if inputMinScope != nil && domain.AuthzScopeWidth(*inputMinScope) > domain.AuthzScopeWidth(*foundMaxScope) {
+		vErrs.Append(*ft.NewValidationError(domain.ResourceFieldMinScope, "identity.err_min_scope_greater_than_max_scope", "min_scope must be less than or equal to max_scope"))
+	}
+	inputMaxScope := inputResrc.GetMaxScope()
+	foundMinScope := foundResrc.GetMinScope()
+	if inputMaxScope != nil && domain.AuthzScopeWidth(*inputMaxScope) < domain.AuthzScopeWidth(*foundMinScope) {
+		vErrs.Append(*ft.NewValidationError(domain.ResourceFieldMaxScope, "identity.err_max_scope_less_than_min_scope", "max_scope must be greater than or equal to min_scope"))
+	}
+	return nil
 }

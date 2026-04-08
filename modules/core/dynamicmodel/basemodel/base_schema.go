@@ -25,15 +25,25 @@ func BaseModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	if baseBuilder == nil {
 		baseBuilder = dmodel.DefineModel("core.basemodel.base_model").
 			Field(
-				dmodel.DefineField().
-					Name(FieldId).
+				DefineFieldId(FieldId).
 					Label(model.LangJson{"en-US": "ID"}).
-					DataType(dmodel.FieldDataTypeUlid()).
 					UseTypeDefault().
 					PrimaryKey(),
 			)
 	}
 	return baseBuilder
+}
+
+func DefineFieldId(fieldName string) *dmodel.FieldBuilder {
+	return dmodel.DefineField().
+		Name(fieldName).
+		DataType(dmodel.FieldDataTypeUlid())
+}
+
+func DefineFieldIdArr(fieldName string) *dmodel.FieldBuilder {
+	return dmodel.DefineField().
+		Name(fieldName).
+		DataType(dmodel.FieldDataTypeUlid().ArrayType())
 }
 
 func ArchivableModelSchemaBuilder() *dmodel.ModelSchemaBuilder {

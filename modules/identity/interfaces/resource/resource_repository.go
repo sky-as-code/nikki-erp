@@ -1,7 +1,6 @@
 package resource
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
@@ -19,6 +18,6 @@ type ResourceRepository interface {
 }
 
 type RepoGetByActionParam struct {
-	ActionId model.Id `json:"action_id"`
-	Columns  []string
+	ActionCode string `json:"action_code"`
+	Columns    []string
 }

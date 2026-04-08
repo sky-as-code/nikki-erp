@@ -7,6 +7,7 @@ import (
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/apptrait"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate"
 	"github.com/sky-as-code/nikki-erp/modules/essential"
 	"github.com/sky-as-code/nikki-erp/modules/identity"
@@ -33,6 +34,7 @@ func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 	modules := []modules.InCodeModule{
 		// Sort alphabetically. The order of initialization will be handled properly.
 		// authorize.ModuleSingleton,
+		apptrait.ModuleSingleton,
 		authenticate.ModuleSingleton,
 		// contacts.ModuleSingleton,
 		essential.ModuleSingleton,

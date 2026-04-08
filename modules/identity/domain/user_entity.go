@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"go.bryk.io/pkg/errors"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -32,7 +34,7 @@ const (
 	UserEdgeOrgs                  = "orgs"
 	UserEdgeOrgUnit               = "org_unit"
 	UserEdgeRoles                 = "roles"
-	UserEdgePrivateRole           = "private_role"
+	UserEdgeOwnRoles              = "own_roles"
 	UserEdgeBenefitRoleRequests   = "benefit_role_requests"
 	UserEdgeCreatedRoleRequests   = "created_role_requests"
 	UserEdgeRespondedRoleRequests = "responded_role_requests"
@@ -83,10 +85,8 @@ func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Unique(), // Only one owner per deployment
 		).
 		Field(
-			dmodel.DefineField().
-				Name(UserFieldOrgUnitId).
-				Label(model.LangJson{"en-US": "Organizational Unit"}).
-				DataType(dmodel.FieldDataTypeUlid()),
+			basemodel.DefineFieldId(UserFieldOrgUnitId).
+				Label(model.LangJson{"en-US": "Organizational Unit"}),
 		).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
@@ -110,13 +110,13 @@ func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		EdgeTo(
 			dmodel.Edge(UserEdgeRoles).
-				ManyToMany(RoleSchemaName, RoleAssignmentSchemaName, "receiver_user").
+				ManyToMany(RoleSchemaName, RoleUserAssignmentSchemaName, "receiver_user").
 				OnDelete(dmodel.RelationCascadeCascade),
 		).
 		EdgeFrom(
-			dmodel.Edge(UserEdgePrivateRole).
-				Label(model.LangJson{"en-US": "Private role"}).
-				Existing(RoleSchemaName, RoleEdgeDedicatedUser),
+			dmodel.Edge(UserEdgeOwnRoles).
+				Label(model.LangJson{"en-US": "Owned roles"}).
+				Existing(RoleSchemaName, RoleEdgeOwnerUser),
 		).
 		EdgeFrom(
 			dmodel.Edge(UserEdgeBenefitRoleRequests).
@@ -163,12 +163,20 @@ func (this *User) SetId(v *model.Id) {
 	this.fields.SetModelId(basemodel.FieldId, v)
 }
 
-func (this User) IsArchived() bool {
-	val := this.fields.GetBool(basemodel.FieldIsArchived)
+func (this User) IsActive() bool {
+	return this.MustIsArchived() == false && this.MustGetStatus() == UserStatusActive
+}
+
+func (this User) MustIsArchived() bool {
+	val := this.IsArchived()
 	if val == nil {
-		return false
+		panic(errors.New("User.IsActive: is_archived is nil"))
 	}
 	return *val
+}
+
+func (this User) IsArchived() *bool {
+	return this.fields.GetBool(basemodel.FieldIsArchived)
 }
 
 func (this *User) SetIsArchived(v *bool) {
@@ -199,16 +207,28 @@ func (this *User) SetEmail(v *string) {
 	this.fields.SetString(UserFieldEmail, v)
 }
 
-func (this User) IsOwner() bool {
+func (this User) MustIsOwner() bool {
 	val := this.fields.GetBool(UserFieldIsOwner)
 	if val == nil {
-		return false
+		panic(errors.New("User.MustIsOwner: is_owner is nil"))
 	}
 	return *val
 }
 
+func (this User) IsOwner() *bool {
+	return this.fields.GetBool(UserFieldIsOwner)
+}
+
 func (this *User) SetIsOwner(v *bool) {
 	this.fields.SetBool(UserFieldIsOwner, v)
+}
+
+func (this User) MustGetStatus() UserStatus {
+	val := this.GetStatus()
+	if val == nil {
+		panic(errors.New("User.MustGetStatus: status is nil"))
+	}
+	return *val
 }
 
 func (this User) GetStatus() *UserStatus {

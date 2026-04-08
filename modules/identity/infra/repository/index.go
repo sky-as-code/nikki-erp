@@ -19,15 +19,16 @@ func InitRepositories() error {
 
 	err = stdErr.Join(
 		// deps.Invoke(registerIdentitySearchPredicates),
-		deps.Register(NewUserDynamicRepository),
+		deps.Register(NewActionDynamicRepository),
+		deps.Register(NewEntitlementDynamicRepository),
 		deps.Register(NewGroupDynamicRepository),
 		deps.Register(NewOrganizationDynamicRepository),
 		deps.Register(NewOrgUnitDynamicRepository),
+		deps.Register(NewUserPermissionRepositoryImpl),
 		deps.Register(NewResourceDynamicRepository),
-		deps.Register(NewActionDynamicRepository),
-		deps.Register(NewEntitlementDynamicRepository),
 		deps.Register(NewRoleDynamicRepository),
 		deps.Register(NewRoleRequestDynamicRepository),
+		deps.Register(NewUserDynamicRepository),
 	)
 
 	return err

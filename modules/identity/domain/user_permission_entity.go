@@ -3,34 +3,36 @@ package domain
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
 const (
 	UserPermissionSchemaName = "authorize.user_permission"
 
-	UserPermFieldUserId            = "user_id"
-	UserPermFieldEntExpression     = "ent_expression"
-	UserPermFieldEntId             = "ent_id"
-	UserPermFieldActionId          = "action_id"
-	UserPermFieldActionCode        = "action_code"
-	UserPermFieldResourceId        = "resource_id"
-	UserPermFieldResourceCode      = "resource_code"
-	UserPermFieldRoleAssignmentId  = "role_assignment_id"
-	UserPermFieldScope             = "scope"
-	UserPermFieldOrgId             = "org_id"
-	UserPermFieldOrgUnitId         = "org_unit_id"
-	UserPermFieldOrgMembershipId   = "org_membership_id"
-	UserPermFieldGroupMembershipId = "group_membership_id"
+	UserPermFieldUserId                = "user_id"
+	UserPermFieldEntExpression         = "ent_expression"
+	UserPermFieldEntId                 = "ent_id"
+	UserPermFieldActionId              = "action_id"
+	UserPermFieldResourceId            = "resource_id"
+	UserPermFieldResourceCode          = "resource_code"
+	UserPermFieldRoleGroupAssignmentId = "role_group_assignment_id"
+	UserPermFieldRoleUserAssignmentId  = "role_user_assignment_id"
+	UserPermFieldScope                 = "scope"
+	UserPermFieldOrgId                 = "org_id"
+	UserPermFieldOrgUnitId             = "org_unit_id"
+	UserPermFieldOrgMembershipId       = "org_membership_id"
+	UserPermFieldGroupMembershipId     = "group_membership_id"
 
-	UserPermEdgeUser            = "user"
-	UserPermEdgeAction          = "action"
-	UserPermEdgeResource        = "resource"
-	UserPermEdgeEntitlement     = "entitlement"
-	UserPermEdgeRoleAssignment  = "role_assignment"
-	UserPermEdgeOrg             = "org"
-	UserPermEdgeOrgUnit         = "org_unit"
-	UserPermEdgeOrgMembership   = "org_membership"
-	UserPermEdgeGroupMembership = "group_membership"
+	UserPermEdgeUser                = "user"
+	UserPermEdgeAction              = "action"
+	UserPermEdgeResource            = "resource"
+	UserPermEdgeEntitlement         = "entitlement"
+	UserPermEdgeRoleGroupAssignment = "role_group_assignment"
+	UserPermEdgeRoleUserAssignment  = "role_user_assignment"
+	UserPermEdgeOrg                 = "org"
+	UserPermEdgeOrgUnit             = "org_unit"
+	UserPermEdgeOrgMembership       = "org_membership"
+	UserPermEdgeGroupMembership     = "group_membership"
 )
 
 func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -40,40 +42,31 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		CompositeUnique(UserPermFieldUserId, UserPermFieldEntExpression).
 		ShouldBuildDb().
 		Field(
-			dmodel.DefineField().Name(UserPermFieldUserId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(UserPermFieldUserId).
 				PrimaryKey(),
 		).
 		Field(
-			dmodel.DefineField().Name(UserPermFieldEntId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(UserPermFieldEntId).
 				PrimaryKey(),
 		).
 		Field(
-			dmodel.DefineField().Name(UserPermFieldEntExpression).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
+			DefineEntitlementFieldExpression(UserPermFieldEntExpression).
 				RequiredForCreate(),
 		).
 		Field(
-			dmodel.DefineField().Name(UserPermFieldActionId).
-				DataType(dmodel.FieldDataTypeUlid()),
+			basemodel.DefineFieldId(UserPermFieldActionId),
 		).
 		Field(
-			dmodel.DefineField().Name(UserPermFieldActionCode).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)),
+			basemodel.DefineFieldId(UserPermFieldResourceId),
 		).
 		Field(
-			dmodel.DefineField().Name(UserPermFieldResourceId).
-				DataType(dmodel.FieldDataTypeUlid()),
+			DefineResourceFieldCode(UserPermFieldResourceCode),
 		).
 		Field(
-			dmodel.DefineField().Name(UserPermFieldResourceCode).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)),
+			basemodel.DefineFieldId(UserPermFieldRoleGroupAssignmentId),
 		).
 		Field(
-			dmodel.DefineField().Name(UserPermFieldRoleAssignmentId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				RequiredForCreate(),
+			basemodel.DefineFieldId(UserPermFieldRoleUserAssignmentId),
 		).
 		Field(
 			dmodel.DefineField().Name(UserPermFieldScope).
@@ -81,23 +74,19 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				RequiredForCreate(),
 		).
 		Field(
-			dmodel.DefineField().Name(UserPermFieldOrgId).
-				DataType(dmodel.FieldDataTypeUlid()),
+			basemodel.DefineFieldId(UserPermFieldOrgId),
 		).
 		Field(
-			dmodel.DefineField().Name(UserPermFieldOrgMembershipId).
-				DataType(dmodel.FieldDataTypeUlid()),
+			basemodel.DefineFieldId(UserPermFieldOrgMembershipId),
 		).
 		Field(
-			dmodel.DefineField().Name(UserPermFieldGroupMembershipId).
-				DataType(dmodel.FieldDataTypeUlid()),
+			basemodel.DefineFieldId(UserPermFieldGroupMembershipId),
 		).
 		//
 		// When one of the following record is deleted, the user permission record will be deleted too.
 		//
 		Field(
-			dmodel.DefineField().Name(UserPermFieldOrgUnitId).
-				DataType(dmodel.FieldDataTypeUlid()),
+			basemodel.DefineFieldId(UserPermFieldOrgUnitId),
 		).
 		EdgeTo(
 			dmodel.Edge(UserPermEdgeUser).
@@ -118,7 +107,7 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		EdgeTo(
 			dmodel.Edge(UserPermEdgeResource).
 				Label(model.LangJson{"en-US": "Resource"}).
-				ManyToOne(ActionSchemaName, dmodel.DynamicFields{
+				ManyToOne(ResourceSchemaName, dmodel.DynamicFields{
 					UserPermFieldResourceId: ResourceFieldId,
 				}).
 				OnDelete(dmodel.RelationCascadeCascade),
@@ -132,10 +121,18 @@ func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				OnDelete(dmodel.RelationCascadeCascade),
 		).
 		EdgeTo(
-			dmodel.Edge(UserPermEdgeRoleAssignment).
-				Label(model.LangJson{"en-US": "Role Assignment"}).
-				ManyToOne(RoleAssignmentSchemaName, dmodel.DynamicFields{
-					UserPermFieldRoleAssignmentId: RoleAssignFieldId,
+			dmodel.Edge(UserPermEdgeRoleGroupAssignment).
+				Label(model.LangJson{"en-US": "Role-Group Assignment"}).
+				ManyToOne(RoleGroupAssignmentSchemaName, dmodel.DynamicFields{
+					UserPermFieldRoleGroupAssignmentId: RoleGroupAssignFieldId,
+				}).
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeTo(
+			dmodel.Edge(UserPermEdgeRoleUserAssignment).
+				Label(model.LangJson{"en-US": "Role-User Assignment"}).
+				ManyToOne(RoleUserAssignmentSchemaName, dmodel.DynamicFields{
+					UserPermFieldRoleUserAssignmentId: RoleUserAssignFieldId,
 				}).
 				OnDelete(dmodel.RelationCascadeCascade),
 		).

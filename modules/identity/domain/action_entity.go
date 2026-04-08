@@ -11,7 +11,7 @@ import (
 const (
 	ActionSchemaName = "authorize.action"
 
-	ActionFieldId          = basemodel.FieldId
+	ActionFieldId          = "id"
 	ActionFieldName        = "name"
 	ActionFieldCode        = "code"
 	ActionFieldDescription = "description"
@@ -25,7 +25,8 @@ func ActionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ActionSchemaName).
 		Label(model.LangJson{"en-US": "Action"}).
 		TableName("authz_actions").
-		CompositeUnique(ActionFieldName, ActionFieldResourceId).
+		CompositeUnique(ActionFieldResourceId, ActionFieldName).
+		CompositeUnique(ActionFieldResourceId, ActionFieldCode).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
@@ -34,20 +35,15 @@ func ActionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				RequiredForCreate(),
 		).
 		Field(
-			dmodel.DefineField().Name(ActionFieldCode).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH, dmodel.FieldDataTypeStringOpts{
-					Regex: regexp.MustCompile("^[a-zA-Z0-9_-]+$"),
-				})).
-				RequiredForCreate().
-				NoUpdate(),
+			DefineActionFieldCode(ActionFieldCode).
+				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().Name(ActionFieldDescription).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
-			dmodel.DefineField().Name(ActionFieldResourceId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(ActionFieldResourceId).
 				RequiredForCreate(),
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
@@ -64,6 +60,24 @@ func ActionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Label(model.LangJson{"en-US": "Entitlements"}).
 				Existing(EntitlementSchemaName, EntitlementEdgeAction),
 		)
+}
+
+func DefineActionFieldCode(fieldName string) *dmodel.FieldBuilder {
+	return dmodel.DefineField().Name(fieldName).
+		DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH, dmodel.FieldDataTypeStringOpts{
+			Regex: regexp.MustCompile(`^\*|[a-zA-Z0-9_-]+$`),
+		}))
+}
+
+func DefineActionFieldCodeArr(fieldName ...string) *dmodel.FieldBuilder {
+	fName := ActionFieldCode
+	if len(fieldName) > 0 {
+		fName = fieldName[0]
+	}
+	return dmodel.DefineField().Name(fName).
+		DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH, dmodel.FieldDataTypeStringOpts{
+			Regex: regexp.MustCompile(`^\*|[a-zA-Z0-9_-]+$`),
+		}).ArrayType())
 }
 
 type Action struct {
@@ -86,26 +100,34 @@ func (this *Action) SetFieldData(data dmodel.DynamicFields) {
 	this.fields = data
 }
 
+func (this Action) GetId() *model.Id {
+	return this.fields.GetModelId(ActionFieldId)
+}
+
+func (this *Action) SetId(v *model.Id) {
+	this.fields.SetModelId(ActionFieldId, v)
+}
+
 func (this Action) GetCode() *string {
-	return this.fields[ActionFieldCode].(*string)
+	return this.fields.GetString(ActionFieldCode)
 }
 
 func (this *Action) SetCode(v *string) {
-	this.fields[ActionFieldCode] = v
+	this.fields.SetString(ActionFieldCode, v)
 }
 
 func (this Action) GetResourceId() *model.Id {
-	return this.fields[ActionFieldResourceId].(*model.Id)
+	return this.fields.GetModelId(ActionFieldResourceId)
 }
 
 func (this *Action) SetResourceId(v *model.Id) {
-	this.fields[ActionFieldResourceId] = v
+	this.fields.SetModelId(ActionFieldResourceId, v)
 }
 
 func (this Action) GetName() *string {
-	return this.fields[ActionFieldName].(*string)
+	return this.fields.GetString(ActionFieldName)
 }
 
 func (this *Action) SetName(v *string) {
-	this.fields[ActionFieldName] = v
+	this.fields.SetString(ActionFieldName, v)
 }

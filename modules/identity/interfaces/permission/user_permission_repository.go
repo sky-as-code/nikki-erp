@@ -1,23 +1,22 @@
 package permission
 
 import (
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
 type UserPermissionRepository interface {
 	RebuildUserPermission(ctx corectx.Context, userId model.Id) error
 	RebuildAllUserPermissions(ctx corectx.Context) error
-	GetOne(ctx corectx.Context, param GetUserPermissionParam) (*dyn.OpResult[dmodel.DynamicFields], error)
+	MatchPermisions(ctx corectx.Context, param RepoMatchUserPermParam) (*dyn.OpResult[[]domain.UserPermission], error)
 }
 
-type GetUserPermissionParam struct {
-	UserId       model.Id `json:"user_id"`
-	ActionCode   string   `json:"action_code"`
-	ResourceCode string   `json:"resource_code"`
-	Scope        string   `json:"scope"`
-	OrgId        model.Id `json:"org_id"`
-	OrgUnitId    model.Id `json:"org_unit_id"`
+type RepoMatchUserPermParam struct {
+	UserId       model.Id
+	ActionCode   string
+	ResourceCode string
+	Scope        domain.ResourceScope
+	ScopeId      *model.Id
 }

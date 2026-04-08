@@ -1,0 +1,30 @@
+meta {
+  name: Resource Update - Unmatched etag - Validation errors
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "description": "{{$randomLoremParagraphs}}",
+    "etag": "___________________"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-etag-unmatched');
+  
+  pkg.testUnmatchedEtag();
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

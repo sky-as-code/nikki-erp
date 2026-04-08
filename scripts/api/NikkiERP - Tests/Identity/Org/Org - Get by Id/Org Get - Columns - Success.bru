@@ -1,0 +1,48 @@
+meta {
+  name: Org Get - Columns - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/identity/organizations/{{org_id}}?columns=display_name&columns=slug
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: display_name
+  columns: slug
+}
+
+script:post-response {
+  const { testHttpResponse } = require('./scripts/common-test-response');
+  
+  const schema = {
+    type: 'object',
+    required: ['display_name', 'slug'],
+    properties: {
+      id: {
+        type: 'string',
+        minLength: 1,
+      },
+      display_name: {
+        type: 'string',
+        minLength: 1,
+      },
+      slug: {
+        type: 'string',
+        minLength: 1,
+      },
+    },
+    additionalProperties: false,
+  };
+  
+  testHttpResponse(schema, 200);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

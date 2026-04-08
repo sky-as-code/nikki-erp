@@ -80,8 +80,8 @@ func (this *ResourceDynamicRepository) GetOne(ctx corectx.Context, param dyn.Rep
 }
 
 func (this *ResourceDynamicRepository) GetByAction(ctx corectx.Context, param it.RepoGetByActionParam) (*dyn.OpResult[domain.Resource], error) {
-	path := domain.ResourceEdgeActions + "." + domain.ActionFieldId
-	graph := dmodel.NewSearchGraph().NewCondition(path, dmodel.Equals, param.ActionId)
+	path := domain.ResourceEdgeActions + "." + domain.ActionFieldCode
+	graph := dmodel.NewSearchGraph().NewCondition(path, dmodel.Equals, param.ActionCode)
 	result, err := baserepo.Search[domain.Resource](ctx, this.dynamicRepo, dyn.RepoSearchParam{
 		Graph:   graph,
 		Columns: param.Columns,

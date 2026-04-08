@@ -164,22 +164,28 @@ func (this *SearchGraph) Order(o SearchOrder) *SearchGraph {
 	return this
 }
 
-func (this *SearchGraph) validate() error {
-	setCount := 0
-	if this.condition != nil {
-		setCount++
+func (this *SearchGraph) ToSearchNode() *SearchNode {
+	return &SearchNode{
+		condition: this.condition,
+		and:       this.and,
+		or:        this.or,
 	}
-	if len(this.and) > 0 {
-		setCount++
-	}
-	if len(this.or) > 0 {
-		setCount++
-	}
-	if setCount > 1 {
-		return errors.New(
-			"SearchGraph.validate: condition, and, or are mutually exclusive; at most one may be set")
-	}
-	return nil
+}
+
+func (this *SearchGraph) GetCondition() Condition {
+	return this.condition
+}
+
+func (this *SearchGraph) GetAnd() []SearchNode {
+	return this.and
+}
+
+func (this *SearchGraph) GetOr() []SearchNode {
+	return this.or
+}
+
+func (this *SearchGraph) GetOrder() SearchOrder {
+	return this.order
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -220,20 +226,22 @@ func (this *SearchGraph) UnmarshalText(text []byte) error {
 	return this.UnmarshalJSON(text)
 }
 
-func (this *SearchGraph) GetCondition() Condition {
-	return this.condition
-}
-
-func (this *SearchGraph) GetAnd() []SearchNode {
-	return this.and
-}
-
-func (this *SearchGraph) GetOr() []SearchNode {
-	return this.or
-}
-
-func (this *SearchGraph) GetOrder() SearchOrder {
-	return this.order
+func (this *SearchGraph) validate() error {
+	setCount := 0
+	if this.condition != nil {
+		setCount++
+	}
+	if len(this.and) > 0 {
+		setCount++
+	}
+	if len(this.or) > 0 {
+		setCount++
+	}
+	if setCount > 1 {
+		return errors.New(
+			"SearchGraph.validate: condition, and, or are mutually exclusive; at most one may be set")
+	}
+	return nil
 }
 
 func NewSearchNode() *SearchNode {
@@ -351,11 +359,16 @@ func populateDbMetadata(schema *ModelSchema) error {
 	if err != nil {
 		return err
 	}
+	validatedSearchIndexGroups, err := validateSearchIndexGroupsForDb(schema, columnSet)
+	if err != nil {
+		return err
+	}
 	if len(primaryKeys) == 0 {
 		return errors.Errorf("populateDbMetadata: model '%s' must define at least one primary key column", name)
 	}
 	schema.primaryKeys = append([]string{}, primaryKeys...)
 	schema.partialUniqueGroups = validatedPartialGroups
+	schema.searchIndexGroups = validatedSearchIndexGroups
 	schema.allUniqueKeys = append(fieldUnique, schemaUnique...)
 	if tenantKey != "" {
 		schema.tenantKey = &tenantKey
@@ -554,10 +567,10 @@ func finalizePartialUniquePair(schema *ModelSchema, a, b string) ([]string, erro
 func validatePartialUniqueGroupsForDb(
 	schema *ModelSchema,
 	columnSet map[string]struct{},
-) ([]PartialUniqueGroup, error) {
+) ([]PartialUniqueGroupParam, error) {
 	raw := schema.partialUniqueGroups
 	legacyPartial := schema.partialUniques
-	out := make([]PartialUniqueGroup, 0, len(raw))
+	out := make([]PartialUniqueGroupParam, 0, len(raw))
 	for _, pair := range legacyPartial {
 		group, err := partialUniquePairToGroup(schema, pair)
 		if err != nil {
@@ -579,19 +592,19 @@ func validatePartialUniqueGroupsForDb(
 	return out, nil
 }
 
-func partialUniquePairToGroup(schema *ModelSchema, pair []string) (PartialUniqueGroup, error) {
+func partialUniquePairToGroup(schema *ModelSchema, pair []string) (PartialUniqueGroupParam, error) {
 	a, b, err := parsePartialUniquePairNames(schema, pair)
 	if err != nil {
-		return PartialUniqueGroup{}, err
+		return PartialUniqueGroupParam{}, err
 	}
 	validatedPair, err := finalizePartialUniquePair(schema, a, b)
 	if err != nil {
-		return PartialUniqueGroup{}, err
+		return PartialUniqueGroupParam{}, err
 	}
 	if len(validatedPair) != 2 {
-		return PartialUniqueGroup{}, nil
+		return PartialUniqueGroupParam{}, nil
 	}
-	return PartialUniqueGroup{
+	return PartialUniqueGroupParam{
 		NotNullFields: []string{validatedPair[0]},
 		NullableField: validatedPair[1],
 	}, nil
@@ -600,21 +613,21 @@ func partialUniquePairToGroup(schema *ModelSchema, pair []string) (PartialUnique
 func validatePartialUniqueGroup(
 	schema *ModelSchema,
 	columnSet map[string]struct{},
-	group PartialUniqueGroup,
-) (PartialUniqueGroup, error) {
+	group PartialUniqueGroupParam,
+) (PartialUniqueGroupParam, error) {
 	indexName := strings.TrimSpace(group.IndexName)
 	nullableField := strings.TrimSpace(group.NullableField)
 	if nullableField == "" {
-		return PartialUniqueGroup{}, nil
+		return PartialUniqueGroupParam{}, nil
 	}
 	if columnSet != nil {
 		if err := ensurePartialUniqueColumnsExist(schema, columnSet, nullableField, nullableField); err != nil {
-			return PartialUniqueGroup{}, err
+			return PartialUniqueGroupParam{}, err
 		}
 	}
 	nullable, ok := schema.fields[nullableField]
 	if !ok || nullable == nil {
-		return PartialUniqueGroup{}, errors.Errorf(
+		return PartialUniqueGroupParam{}, errors.Errorf(
 			"validatePartialUniqueGroupsForDb: model '%s': unknown column '%s' in partial unique group",
 			schema.Name(), nullableField)
 	}
@@ -626,17 +639,17 @@ func validatePartialUniqueGroup(
 		}
 		if columnSet != nil {
 			if err := ensurePartialUniqueColumnsExist(schema, columnSet, trimmed, trimmed); err != nil {
-				return PartialUniqueGroup{}, err
+				return PartialUniqueGroupParam{}, err
 			}
 		}
 		field := schema.fields[trimmed]
 		if field == nil {
-			return PartialUniqueGroup{}, errors.Errorf(
+			return PartialUniqueGroupParam{}, errors.Errorf(
 				"validatePartialUniqueGroupsForDb: model '%s': unknown column '%s' in partial unique group",
 				schema.Name(), trimmed)
 		}
 		if trimmed == nullableField {
-			return PartialUniqueGroup{}, errors.Errorf(
+			return PartialUniqueGroupParam{}, errors.Errorf(
 				"validatePartialUniqueGroupsForDb: model '%s': field '%s' cannot be both nullable and not-null in the same partial unique group",
 				schema.Name(), trimmed)
 		}
@@ -651,42 +664,87 @@ func validatePartialUniqueGroup(
 			notNullField = schema.fields[notNullFields[0]]
 		}
 		if notNullField == nil || !notNullField.IsRequiredForCreate() {
-			return PartialUniqueGroup{}, errors.Errorf(
+			return PartialUniqueGroupParam{}, errors.Errorf(
 				"validatePartialUniqueGroupsForDb: model '%s': not-null field '%s' must be requiredForCreate",
 				schema.Name(), notNullFields[0])
 		}
 		if nullable == nil || nullable.IsRequiredForCreate() {
-			return PartialUniqueGroup{}, errors.Errorf(
+			return PartialUniqueGroupParam{}, errors.Errorf(
 				"validatePartialUniqueGroupsForDb: model '%s': nullable field '%s' must not be requiredForCreate",
 				schema.Name(), nullableField)
 		}
-		return PartialUniqueGroup{
+		return PartialUniqueGroupParam{
 			IndexName:     indexName,
 			NotNullFields: notNullFields,
 			NullableField: nullableField,
 		}, nil
 	}
 	if nullable.IsRequiredForCreate() {
-		return PartialUniqueGroup{}, errors.Errorf(
+		return PartialUniqueGroupParam{}, errors.Errorf(
 			"validatePartialUniqueGroupsForDb: model '%s': nullable field '%s' must not be requiredForCreate",
 			schema.Name(), nullableField)
 	}
 	for _, trimmed := range notNullFields {
 		field := schema.fields[trimmed]
 		if field == nil || !field.IsRequiredForCreate() {
-			return PartialUniqueGroup{}, errors.Errorf(
+			return PartialUniqueGroupParam{}, errors.Errorf(
 				"validatePartialUniqueGroupsForDb: model '%s': not-null field '%s' must be requiredForCreate",
 				schema.Name(), trimmed)
 		}
 	}
 	if len(notNullFields) == 0 {
-		return PartialUniqueGroup{}, errors.Errorf(
+		return PartialUniqueGroupParam{}, errors.Errorf(
 			"validatePartialUniqueGroupsForDb: model '%s': partial unique group '%s' requires at least one not-null field",
 			schema.Name(), indexName)
 	}
-	return PartialUniqueGroup{
+	return PartialUniqueGroupParam{
 		IndexName:     indexName,
 		NotNullFields: notNullFields,
 		NullableField: nullableField,
+	}, nil
+}
+
+func validateSearchIndexGroupsForDb(
+	schema *ModelSchema,
+	columnSet map[string]struct{},
+) ([]SearchIndexGroupParam, error) {
+	raw := schema.searchIndexGroups
+	out := make([]SearchIndexGroupParam, 0, len(raw))
+	for _, group := range raw {
+		validated, err := validateSearchIndexGroup(schema, columnSet, group)
+		if err != nil {
+			return nil, err
+		}
+		if len(validated.Fields) > 0 {
+			out = append(out, validated)
+		}
+	}
+	return out, nil
+}
+
+func validateSearchIndexGroup(
+	schema *ModelSchema,
+	columnSet map[string]struct{},
+	group SearchIndexGroupParam,
+) (SearchIndexGroupParam, error) {
+	fields := make([]string, 0, len(group.Fields))
+	for _, name := range group.Fields {
+		trimmed := strings.TrimSpace(name)
+		if trimmed == "" {
+			continue
+		}
+		if _, ok := columnSet[trimmed]; !ok {
+			return SearchIndexGroupParam{}, errors.Errorf(
+				"validateSearchIndexGroupsForDb: model '%s': unknown column '%s' in search index group",
+				schema.Name(), trimmed)
+		}
+		fields = append(fields, trimmed)
+	}
+	if len(fields) == 0 {
+		return SearchIndexGroupParam{}, nil
+	}
+	return SearchIndexGroupParam{
+		IndexName: strings.TrimSpace(group.IndexName),
+		Fields:    fields,
 	}, nil
 }

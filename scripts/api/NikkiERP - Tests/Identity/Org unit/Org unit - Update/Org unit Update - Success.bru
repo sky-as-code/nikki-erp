@@ -1,0 +1,31 @@
+meta {
+  name: Org unit Update - Success
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{api_host}}/v1/identity/orgunits/{{orgunit_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{$randomDepartment}} Updated",
+    "description": "{{$randomLoremParagraphs}}",
+    "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/update-success');
+  
+  pkg.testUpdate(1);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

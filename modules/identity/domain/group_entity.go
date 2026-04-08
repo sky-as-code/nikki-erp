@@ -16,7 +16,7 @@ const (
 
 	GroupEdgeOwner                = "owner"
 	GroupEdgeRoles                = "roles"
-	GroupEdgePrivateRole          = "private_role"
+	GroupEdgeOwnRoles             = "own_roles"
 	GroupEdgeUsers                = "users"
 	GroupEdgeBenefitGrantRequests = "benefit_grant_requests"
 )
@@ -36,15 +36,11 @@ func GroupUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		CompositeUnique(GrpUsrRelFieldGroupId, GrpUsrRelFieldUserId).
 		Field(
-			dmodel.DefineField().
-				Name(GrpUsrRelFieldGroupId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(GrpUsrRelFieldGroupId).
 				RequiredForCreate(),
 		).
 		Field(
-			dmodel.DefineField().
-				Name(GrpUsrRelFieldUserId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(GrpUsrRelFieldUserId).
 				RequiredForCreate(),
 		)
 }
@@ -70,9 +66,7 @@ func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
-			dmodel.DefineField().
-				Name(GroupFieldOwnerId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(GroupFieldOwnerId).
 				RequiredForCreate().
 				Description(model.LangJson{"en-US": "User who owns the group, is notified when membership is updated and " +
 					"is responsible for reviewing the membership periodically.",
@@ -94,13 +88,13 @@ func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		EdgeTo(
 			dmodel.Edge(GroupEdgeRoles).
-				ManyToMany(RoleSchemaName, RoleAssignmentSchemaName, "receiver_group").
+				ManyToMany(RoleSchemaName, RoleGroupAssignmentSchemaName, "receiver_group").
 				OnDelete(dmodel.RelationCascadeCascade),
 		).
 		EdgeFrom(
-			dmodel.Edge(GroupEdgePrivateRole).
-				Label(model.LangJson{"en-US": "Private role"}).
-				Existing(RoleSchemaName, RoleEdgeDedicatedGroup),
+			dmodel.Edge(GroupEdgeOwnRoles).
+				Label(model.LangJson{"en-US": "Owned roles"}).
+				Existing(RoleSchemaName, RoleEdgeOwnerGroup),
 		).
 		EdgeFrom(
 			dmodel.Edge(GroupEdgeBenefitGrantRequests).

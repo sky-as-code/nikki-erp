@@ -24,7 +24,7 @@ type RoleRequestServiceImpl struct {
 func (this *RoleRequestServiceImpl) CreateRoleRequest(
 	ctx corectx.Context, cmd itRr.CreateRoleRequestCommand,
 ) (*itRr.CreateRoleRequestResult, error) {
-	return corecrud.Create(ctx, dyn.CreateParam[domain.RoleRequest, *domain.RoleRequest]{
+	return corecrud.Create(ctx, corecrud.CreateParam[domain.RoleRequest, *domain.RoleRequest]{
 		Action:         "create grant request",
 		BaseRepoGetter: this.roleRequestRepo,
 		Data:           cmd,

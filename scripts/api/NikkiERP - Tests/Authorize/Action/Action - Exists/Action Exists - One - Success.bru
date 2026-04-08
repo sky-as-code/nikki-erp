@@ -1,0 +1,29 @@
+meta {
+  name: Action Exists - One - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}/actions/exists
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "action_ids": ["{{action_id}}"]
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/exists-success');
+  
+  pkg.testExists(1, 0);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

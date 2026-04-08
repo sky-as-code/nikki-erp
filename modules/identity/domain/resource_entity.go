@@ -3,6 +3,7 @@ package domain
 import (
 	"regexp"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -49,11 +50,9 @@ func ResourceSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Unique(),
 		).
 		Field(
-			dmodel.DefineField().Name(ResourceFieldCode).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH, dmodel.FieldDataTypeStringOpts{
-					Regex: regexp.MustCompile("^[a-zA-Z0-9_-]+$"),
-				})).
+			DefineResourceFieldCode(ResourceFieldCode).
 				RequiredForCreate().
+				Unique().
 				NoUpdate(),
 		).
 		Field(
@@ -103,6 +102,21 @@ func ResourceSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		)
 }
 
+func DefineResourceFieldCode(fieldName string) *dmodel.FieldBuilder {
+	return dmodel.DefineField().Name(fieldName).
+		DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH, dmodel.FieldDataTypeStringOpts{
+			Regex: regexp.MustCompile(`^\*|[a-zA-Z0-9_-]+$`),
+		}))
+}
+
+func DefineResourceFieldScope(fieldName string) *dmodel.FieldBuilder {
+	return dmodel.DefineField().Name(fieldName).
+		DataType(dmodel.FieldDataTypeEnumString([]string{
+			string(ResourceScopeDomain), string(ResourceScopeOrg),
+			string(ResourceScopeOrgUnit), string(ResourceScopePrivate),
+		}))
+}
+
 type Resource struct {
 	fields dmodel.DynamicFields
 }
@@ -121,6 +135,14 @@ func (this Resource) GetFieldData() dmodel.DynamicFields {
 
 func (this *Resource) SetFieldData(data dmodel.DynamicFields) {
 	this.fields = data
+}
+
+func (this Resource) GetId() *model.Id {
+	return this.fields.GetModelId(basemodel.FieldId)
+}
+
+func (this *Resource) SetId(v *model.Id) {
+	this.fields.SetModelId(basemodel.FieldId, v)
 }
 
 func (this Resource) GetMaxScope() *ResourceScope {
@@ -157,4 +179,15 @@ func (this *Resource) SetMinScope(v *ResourceScope) {
 	}
 	s := string(*v)
 	this.fields.SetString(ResourceFieldMinScope, &s)
+}
+
+func (this Resource) GetActions() []Action {
+	if this.fields[ResourceEdgeActions] == nil {
+		return nil
+	}
+	rawActions := this.fields[ResourceEdgeActions].([]dmodel.DynamicFields)
+	actions := array.Map(rawActions, func(rawAction dmodel.DynamicFields) Action {
+		return *NewActionFrom(rawAction)
+	})
+	return actions
 }

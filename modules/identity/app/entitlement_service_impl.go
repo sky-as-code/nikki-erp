@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -11,6 +13,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itAct "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/action"
 	itEnt "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/entitlement"
+	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 	itOrgUnit "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/orgunit"
 	itRes "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/resource"
 )
@@ -19,6 +22,7 @@ func NewEntitlementServiceImpl(
 	entitlementRepo itEnt.EntitlementRepository,
 	actionRepo itAct.ActionRepository,
 	resourceRepo itRes.ResourceRepository,
+	orgRepo itOrg.OrganizationRepository,
 	orgUnitRepo itOrgUnit.OrgUnitRepository,
 	cqrsBus cqrs.CqrsBus,
 ) itEnt.EntitlementService {
@@ -36,76 +40,121 @@ type EntitlementServiceImpl struct {
 	entitlementRepo itEnt.EntitlementRepository
 	actionRepo      itAct.ActionRepository
 	resourceRepo    itRes.ResourceRepository
+	orgRepo         itOrg.OrganizationRepository
 	orgUnitRepo     itOrgUnit.OrgUnitRepository
 }
 
 func (this *EntitlementServiceImpl) CreateEntitlement(
 	ctx corectx.Context, cmd itEnt.CreateEntitlementCommand,
 ) (*itEnt.CreateEntitlementResult, error) {
-	return corecrud.Create(ctx, dyn.CreateParam[domain.Entitlement, *domain.Entitlement]{
+	return corecrud.Create(ctx, corecrud.CreateParam[domain.Entitlement, *domain.Entitlement]{
 		Action:         "create entitlement",
 		BaseRepoGetter: this.entitlementRepo,
 		Data:           cmd,
-		// BeforeValidation: func(ctx corectx.Context, ent *domain.Entitlement, vErrs *ft.ClientErrors) (*domain.Entitlement, error) {
-		// 	return this.entitlementDefaultScopeFromResource(ctx, ent, vErrs)
-		// },
-		ValidateExtra: func(ctx corectx.Context, ent *domain.Entitlement, vErrs *ft.ClientErrors) error {
-			return this.validateScope(ctx, ent, vErrs)
+		BeforeValidation: func(ctx corectx.Context, ent *domain.Entitlement, vErrs *ft.ClientErrors) (*domain.Entitlement, error) {
+			ent.CalculateExpression()
+			return ent, this.validateScope(ctx, ent, vErrs)
 		},
 	})
 }
 
 func (this *EntitlementServiceImpl) validateScope(
-	ctx corectx.Context, ent *domain.Entitlement, vErrs *ft.ClientErrors,
+	ctx corectx.Context, ent *domain.Entitlement, cErrs *ft.ClientErrors,
 ) error {
-	actionId := *ent.GetActionId()
-	resource, err := this.fetchResourceForAction(ctx, actionId, vErrs)
+	resourceId := ent.GetResourceId()
+	resource, err := this.fetchResourceForAction(ctx, resourceId, cErrs)
 	if err != nil {
 		return err
 	}
-	if vErrs.Count() > 0 {
+	if cErrs.Count() > 0 {
 		return nil
 	}
 
 	minScope := *resource.GetMinScope()
 	maxScope := *resource.GetMaxScope()
 	entScope := *ent.GetScope()
+	orgId := ent.GetOrgId()
 	orgUnitId := ent.GetOrgUnitId()
 
-	if entScope == domain.ResourceScopeOrgUnit && orgUnitId == nil {
-		vErrs.Append(*dmodel.NewMissingFieldErr(domain.EntitlementFieldOrgUnitId))
+	_, err = dyn.StartValidationFlowWith(cErrs).
+		Step(func(cErrs *ft.ClientErrors) error {
+			return this.checkOrgExistence(ctx, entScope, orgId, cErrs)
+		}).
+		Step(func(cErrs *ft.ClientErrors) error {
+			return this.checkOrgUnitExistence(ctx, entScope, orgUnitId, cErrs)
+		}).
+		Step(func(cErrs *ft.ClientErrors) error {
+			if !domain.IsResourceScopeInBounds(minScope, maxScope, entScope) {
+				cErrs.Append(*ft.NewValidationError(
+					domain.EntitlementFieldScope, "err_scope_out_of_bounds",
+					"scope must be between the resource min_scope and max_scope (both inclusive)",
+				))
+			}
+			return nil
+		}).
+		End()
+
+	return err
+}
+
+func (this *EntitlementServiceImpl) checkOrgExistence(ctx corectx.Context, entScope domain.ResourceScope, orgId *model.Id, vErrs *ft.ClientErrors) error {
+	if entScope == domain.ResourceScopeOrg && orgId == nil {
+		vErrs.Append(*dmodel.NewMissingFieldErr(domain.EntitlementFieldOrgId))
 		return nil
 	}
-	orgUnit, err := this.orgUnitRepo.GetOne(ctx, dyn.RepoGetOneParam{
-		Filter: dmodel.DynamicFields{
-			domain.OrgUnitFieldId: *orgUnitId,
-		},
-	})
-	if err != nil {
-		return err
-	}
-	if !orgUnit.HasData {
-		vErrs.Append(*ft.NewNotFoundError(domain.EntitlementFieldOrgUnitId))
-	}
-
-	if !domain.IsResourceScopeInBounds(minScope, maxScope, entScope) {
-		vErrs.Append(*ft.NewValidationError(
-			domain.EntitlementFieldScope, "err_scope_out_of_bounds",
-			"scope must be between the resource min_scope and max_scope (both inclusive)",
-		))
+	if entScope == domain.ResourceScopeOrg && orgId != nil {
+		org := domain.NewOrganization()
+		org.SetId(orgId)
+		existence, err := this.orgRepo.Exists(ctx, []domain.Organization{*org})
+		if err != nil {
+			return err
+		}
+		if len(existence.Data.Existing) == 0 {
+			vErrs.Append(*ft.NewNotFoundError(domain.EntitlementFieldOrgId))
+			return nil
+		}
 	}
 	return nil
 }
 
-func (this *EntitlementServiceImpl) fetchResourceForAction(ctx corectx.Context, actionId model.Id, vErrs *ft.ClientErrors) (*domain.Resource, error) {
+func (this *EntitlementServiceImpl) checkOrgUnitExistence(ctx corectx.Context, entScope domain.ResourceScope, orgUnitId *model.Id, vErrs *ft.ClientErrors) error {
+	if entScope == domain.ResourceScopeOrgUnit && orgUnitId == nil {
+		vErrs.Append(*dmodel.NewMissingFieldErr(domain.EntitlementFieldOrgUnitId))
+		return nil
+	}
+	if entScope == domain.ResourceScopeOrgUnit && orgUnitId != nil {
+		orgUnit := domain.NewOrganizationalUnit()
+		orgUnit.SetId(orgUnitId)
+		existence, err := this.orgUnitRepo.Exists(ctx, []domain.OrganizationalUnit{*orgUnit})
+		if err != nil {
+			return err
+		}
+		if len(existence.Data.Existing) == 0 {
+			vErrs.Append(*ft.NewNotFoundError(domain.EntitlementFieldOrgUnitId))
+			return nil
+		}
+	}
+	return nil
+}
 
-	resRes, err := this.resourceRepo.GetByAction(ctx, itRes.RepoGetByActionParam{
-		ActionId: actionId,
+func (this *EntitlementServiceImpl) fetchResourceForAction(
+	ctx corectx.Context, resourceId *model.Id, vErrs *ft.ClientErrors,
+) (*domain.Resource, error) {
+
+	resRes, err := this.resourceRepo.GetOne(ctx, dyn.RepoGetOneParam{
+		Filter: dmodel.DynamicFields{
+			domain.ResourceFieldId: *resourceId,
+		},
+		Columns: []string{fmt.Sprintf("%s.%s", domain.ResourceEdgeActions, domain.ActionFieldId)},
 	})
 	if err != nil {
 		return nil, err
 	}
 	if !resRes.HasData {
+		vErrs.Append(*ft.NewNotFoundError(domain.EntitlementFieldResourceId))
+		return nil, nil
+	}
+	if resRes.Data.GetActions() == nil {
 		vErrs.Append(*ft.NewNotFoundError(domain.EntitlementFieldActionId))
 		return nil, nil
 	}

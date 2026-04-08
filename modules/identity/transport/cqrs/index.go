@@ -12,6 +12,7 @@ func InitCqrsHandlers() error {
 	err := errors.Join(
 		initUserHandlers(),
 		initGroupHandlers(),
+		initPermissionHandlers(),
 		initOrganizationHandlers(),
 		initOrgUnitHandlers(),
 	)
@@ -50,6 +51,18 @@ func initGroupHandlers() error {
 			cqrs.NewHandler(handler.ManageGroupUsers),
 			cqrs.NewHandler(handler.SearchGroups),
 			cqrs.NewHandler(handler.UpdateGroup),
+		)
+	})
+}
+
+func initPermissionHandlers() error {
+	deps.Register(NewPermissionHandler)
+
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *PermissionHandler) error {
+		ctx := context.Background()
+		return cqrsBus.SubscribeRequests(
+			ctx,
+			cqrs.NewHandler(handler.IsAuthorized),
 		)
 	})
 }

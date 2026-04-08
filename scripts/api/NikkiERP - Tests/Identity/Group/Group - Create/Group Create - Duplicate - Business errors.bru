@@ -1,0 +1,29 @@
+meta {
+  name: Group Create - Duplicate - Business errors
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "name": "{{name}}"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-duplicate-value');
+  
+  pkg.testDuplicateValues(['name']);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

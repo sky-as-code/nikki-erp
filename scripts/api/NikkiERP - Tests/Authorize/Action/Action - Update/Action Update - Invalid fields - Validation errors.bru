@@ -1,0 +1,30 @@
+meta {
+  name: Action Update - Invalid fields - Validation errors
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}/actions/{{action_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+    "etag": "fake"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-invalid-length');
+  
+  pkg.testInvalidStringLength('etag', 'name');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

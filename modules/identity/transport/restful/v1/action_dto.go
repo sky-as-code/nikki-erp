@@ -7,7 +7,10 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/action"
 )
 
-type CreateActionRequest = it.CreateActionCommand
+type CreateActionRequest struct {
+	dmodel.DynamicFields
+	ResourceId string `param:"resource_id"`
+}
 type CreateActionResponse = httpserver.RestCreateResponse
 
 type DeleteActionRequest = it.DeleteActionCommand
@@ -16,11 +19,18 @@ type DeleteActionResponse = httpserver.RestDeleteResponse2
 type GetActionRequest = it.GetActionQuery
 type GetActionResponse = dmodel.DynamicFields
 
-type ActionExistsRequest = it.ActionExistsQuery
+type ActionExistsRequest struct {
+	ActionIds  []string `json:"action_ids"`
+	ResourceId string   `param:"resource_id"`
+}
 type ActionExistsResponse = dyn.ExistsResultData
 
 type SearchActionsRequest = it.SearchActionsQuery
 type SearchActionsResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
 
-type UpdateActionRequest = it.UpdateActionCommand
+type UpdateActionRequest struct {
+	dmodel.DynamicFields
+	ActionId   string `param:"action_id"`
+	ResourceId string `param:"resource_id"`
+}
 type UpdateActionResponse = httpserver.RestUpdateResponse2

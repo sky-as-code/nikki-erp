@@ -36,7 +36,9 @@ func (*CoreModule) LabelKey() string {
 
 // Deps implements NikkiModule.
 func (*CoreModule) Deps() []string {
-	return nil
+	return []string{
+		"apptrait",
+	}
 }
 
 // Version implements NikkiModule.

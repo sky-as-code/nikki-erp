@@ -6,6 +6,7 @@ import (
 
 type RoleService interface {
 	CreateRole(ctx corectx.Context, cmd CreateRoleCommand) (*CreateRoleResult, error)
+	CreatePrivateRole(ctx corectx.Context, cmd CreatePrivateRoleCommand) (*CreateRoleResult, error)
 	DeleteRole(ctx corectx.Context, cmd DeleteRoleCommand) (*DeleteRoleResult, error)
 	DeletePrivateRole(ctx corectx.Context, cmd DeletePrivateRoleCommand) (*DeleteRoleResult, error)
 	GetRole(ctx corectx.Context, query GetRoleQuery) (*GetRoleResult, error)

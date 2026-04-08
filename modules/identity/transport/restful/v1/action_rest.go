@@ -4,8 +4,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
@@ -33,12 +34,14 @@ func (this ActionRest) CreateAction(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	return httpserver.ServeRequestDynamic(
+
+	return httpserver.ServeRequest2(
 		echoCtx,
 		this.ActionSvc.CreateAction,
-		func(requestFields dmodel.DynamicFields) it.CreateActionCommand {
+		func(request CreateActionRequest) it.CreateActionCommand {
 			cmd := it.CreateActionCommand{}
-			cmd.SetFieldData(requestFields)
+			cmd.SetFieldData(request.DynamicFields)
+			cmd.Action.SetResourceId(util.ToPtr(model.Id(request.ResourceId)))
 			return cmd
 		},
 		func(data domain.Action) CreateActionResponse {
@@ -132,12 +135,14 @@ func (this ActionRest) UpdateAction(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	return httpserver.ServeRequestDynamic(
+	return httpserver.ServeRequest2(
 		echoCtx,
 		this.ActionSvc.UpdateAction,
-		func(requestFields dmodel.DynamicFields) it.UpdateActionCommand {
+		func(request UpdateActionRequest) it.UpdateActionCommand {
 			cmd := it.UpdateActionCommand{}
-			cmd.SetFieldData(requestFields)
+			cmd.SetFieldData(request.DynamicFields)
+			cmd.Action.SetResourceId(util.ToPtr(model.Id(request.ResourceId)))
+			cmd.Action.SetId(util.ToPtr(model.Id(request.ActionId)))
 			return cmd
 		},
 		func(data dyn.MutateResultData) UpdateActionResponse {

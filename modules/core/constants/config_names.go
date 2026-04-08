@@ -41,6 +41,13 @@ const (
 	HttpCorsHeaders ConfigName = "CORE.HTTP.CORS_HEADERS"
 	HttpCorsMethods ConfigName = "CORE.HTTP.CORS_METHODS"
 
+	// Request Guard
+	RequestGuardCorsEnabled             ConfigName = "CORE.REQUEST_GUARD.CORS_ENABLED"
+	RequestGuardMtlsEnabled             ConfigName = "CORE.REQUEST_GUARD.MTLS_ENABLED"
+	RequestGuardAccessTokenEnabled      ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_ENABLED"
+	RequestGuardAccessTokenDpopEnabled  ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_DPOP_ENABLED"
+	RequestGuardSessionBlacklistEnabled ConfigName = "CORE.REQUEST_GUARD.SESSION_BLACKLIST_ENABLED"
+
 	// Token/Authentication
 	TokenSecretKey   ConfigName = "CORE.TOKEN.SECRET_KEY"
 	TokenExpiryHours ConfigName = "CORE.TOKEN.EXPIRY_HOURS"

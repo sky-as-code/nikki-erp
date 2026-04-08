@@ -12,20 +12,22 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/env"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	rootConfig "github.com/sky-as-code/nikki-erp/config"
+	mod "github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
 var configFilePath = filepath.Join("config", "config.yaml")
 
-func NewYamlConfigLoader(logger logging.LoggerService) *yamlConfigLoader {
+func NewYamlConfigLoader(logger logging.LoggerService, defaultConfig mod.DefaultConfig) *yamlConfigLoader {
 	return &yamlConfigLoader{
-		logger: logger,
+		logger:        logger,
+		defaultConfig: defaultConfig,
 	}
 }
 
 type yamlConfigLoader struct {
 	logger         logging.LoggerService
+	defaultConfig  mod.DefaultConfig
 	defaultYamlAst *ast.File
 	currentYamlAst *ast.File
 }
@@ -67,7 +69,7 @@ func (this *yamlConfigLoader) getValueByPath(yamlPath string, yamlAst *ast.File)
 }
 
 func (this *yamlConfigLoader) loadDefaultYaml() (result *ast.File, appErr error) {
-	return this.load([]byte(rootConfig.DefaultConfigYaml), "default YAML file")
+	return this.load([]byte(this.defaultConfig), "default YAML file")
 }
 
 func (this *yamlConfigLoader) loadCurrentYaml() (result *ast.File, appErr error) {

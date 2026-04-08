@@ -9,26 +9,44 @@ import (
 func StartValidationFlow(startWith ...Validatable) *ValidationFlow {
 	flow := ValidationFlow{}
 	if len(startWith) > 0 {
-		return flow.Start().Step(func(vErrs *ft.ClientErrors) error {
+		return flow.Start().Step(func(cErrs *ft.ClientErrors) error {
 			result := startWith[0].Validate()
 			if result != nil {
-				*vErrs = result
+				*cErrs = result
 			}
 			return nil
 		})
 	}
 	return flow.Start()
+}
 
+func StartValidationFlowWith(initClientErrs *ft.ClientErrors, startWith ...Validatable) *ValidationFlow {
+	flow := ValidationFlow{}
+	if len(startWith) > 0 {
+		return flow.StartWith(initClientErrs).Step(func(cErrs *ft.ClientErrors) error {
+			result := startWith[0].Validate()
+			if result != nil {
+				*cErrs = result
+			}
+			return nil
+		})
+	}
+	return flow.Start()
 }
 
 type ValidationFlow struct {
-	vErrs *ft.ClientErrors
+	cErrs *ft.ClientErrors
 	err   error
 	skip  bool
 }
 
 func (this *ValidationFlow) Start() *ValidationFlow {
-	this.vErrs = ft.NewClientErrors()
+	this.cErrs = ft.NewClientErrors()
+	return this
+}
+
+func (this *ValidationFlow) StartWith(cErrs *ft.ClientErrors) *ValidationFlow {
+	this.cErrs = cErrs
 	return this
 }
 
@@ -49,11 +67,11 @@ func (this *ValidationFlow) StepS(fn func(vErrs *ft.ClientErrors, stop func()) e
 		return
 	}
 
-	this.err = fn(this.vErrs, func() {
+	this.err = fn(this.cErrs, func() {
 		this.skip = true
 	})
 
-	if this.vErrs.Count() > 0 && (len(ignoreValidationError) == 0 || !ignoreValidationError[0]) {
+	if this.cErrs.Count() > 0 && (len(ignoreValidationError) == 0 || !ignoreValidationError[0]) {
 		this.skip = true
 	}
 	return
@@ -66,7 +84,7 @@ func (this *ValidationFlow) Step(fn func(vErrs *ft.ClientErrors) error, ignoreVa
 }
 
 func (this *ValidationFlow) End() (ft.ClientErrors, error) {
-	return *this.vErrs, this.err
+	return *this.cErrs, this.err
 }
 
 type Validatable interface {

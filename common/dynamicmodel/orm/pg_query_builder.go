@@ -45,7 +45,12 @@ func (this *PgQueryBuilder) SqlCreateTable(
 	if err != nil {
 		return nil, nil, err
 	}
+	searchIndexSqls, err := this.searchIndexSqls(schema)
+	if err != nil {
+		return nil, nil, err
+	}
 	out := append([]string{createSql}, indexSqls...)
+	out = append(out, searchIndexSqls...)
 	return out, nil, nil
 }
 
@@ -77,6 +82,21 @@ func (this *PgQueryBuilder) partialUniqueIndexSqls(schema *dmodel.ModelSchema) (
 	return out, nil
 }
 
+func (this *PgQueryBuilder) searchIndexSqls(schema *dmodel.ModelSchema) ([]string, error) {
+	groups := schema.SearchIndexGroups()
+	out := make([]string, 0, len(groups))
+	for _, group := range groups {
+		line, err := formatSearchIndexGroup(schema, group)
+		if err != nil {
+			return nil, err
+		}
+		if line != "" {
+			out = append(out, line)
+		}
+	}
+	return out, nil
+}
+
 func schemaHasSingleColumnUniqueOn(schema *dmodel.ModelSchema, col string) bool {
 	for _, u := range schema.AllUniques() {
 		if len(u) == 1 && u[0] == col {
@@ -86,7 +106,7 @@ func schemaHasSingleColumnUniqueOn(schema *dmodel.ModelSchema, col string) bool 
 	return false
 }
 
-func formatPartialUniqueGroupIndexPair(schema *dmodel.ModelSchema, group dmodel.PartialUniqueGroup) ([]string, error) {
+func formatPartialUniqueGroupIndexPair(schema *dmodel.ModelSchema, group dmodel.PartialUniqueGroupParam) ([]string, error) {
 	if len(group.NotNullFields) == 0 {
 		return nil, errors.Errorf(
 			"formatPartialUniqueGroupIndexPair: table '%s': at least one not-null field is required", schema.TableName())
@@ -128,7 +148,7 @@ func formatPartialUniqueGroupIndexPair(schema *dmodel.ModelSchema, group dmodel.
 	return []string{lineNN, lineNull}, nil
 }
 
-func resolvePartialUniqueGroupIndexName(tableName string, group dmodel.PartialUniqueGroup) string {
+func resolvePartialUniqueGroupIndexName(tableName string, group dmodel.PartialUniqueGroupParam) string {
 	raw := strings.TrimSpace(group.IndexName)
 	if raw == "" {
 		raw = fmt.Sprintf("%s_%s_%s", tableName, strings.Join(group.NotNullFields, "_"), group.NullableField)
@@ -158,6 +178,32 @@ func toSnakeLower(input string) string {
 		b.WriteRune(current)
 	}
 	return strings.ToLower(convert.ToUnicodeSnakeCase(b.String()))
+}
+
+func formatSearchIndexGroup(schema *dmodel.ModelSchema, group dmodel.SearchIndexGroupParam) (string, error) {
+	if len(group.Fields) == 0 {
+		return "", nil
+	}
+	indexName := resolveSearchIndexGroupIndexName(group)
+	if indexName == "" {
+		return "", errors.Errorf(
+			"formatSearchIndexGroup: table '%s': index name is required", schema.TableName())
+	}
+	tableRef := pgQuoteTable(strings.Split(schema.TableName(), ".")...)
+	return fmt.Sprintf(
+		"CREATE INDEX %s ON %s (%s)",
+		pgQuote(indexName),
+		tableRef,
+		strings.Join(pgQuoteArr(group.Fields), ", "),
+	), nil
+}
+
+func resolveSearchIndexGroupIndexName(group dmodel.SearchIndexGroupParam) string {
+	raw := strings.TrimSpace(group.IndexName)
+	if raw == "" {
+		raw = strings.Join(group.Fields, "_") + "_idx"
+	}
+	return toSnakeLower(raw)
 }
 
 func isUpperAscii(r rune) bool {

@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -10,7 +8,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
@@ -96,7 +93,7 @@ func (this *UserServiceImpl) GetUserContext(ctx crud.Context, query it.GetUserCo
 
 func (this *UserServiceImpl) CreateUser(ctx corectx.Context, cmd it.CreateUserCommand) (*it.CreateUserResult, error) {
 	return corecrud.ExecInTranx(ctx, this.userRepo, func(tranxCtx corectx.Context) (*it.CreateUserResult, error) {
-		result, err := corecrud.Create(tranxCtx, dyn.CreateParam[domain.User, *domain.User]{
+		result, err := corecrud.Create(tranxCtx, corecrud.CreateParam[domain.User, *domain.User]{
 			Action:         "create user",
 			BaseRepoGetter: this.userRepo,
 			Data:           cmd,
@@ -112,24 +109,13 @@ func (this *UserServiceImpl) CreateUser(ctx corectx.Context, cmd it.CreateUserCo
 		if result.ClientErrors.Count() > 0 {
 			return result, nil
 		}
-		result, err = this.createPrivateRole(tranxCtx, result)
-		return result, err
+		return this.createPrivateRole(tranxCtx, result)
 	})
 }
 
 func (this *UserServiceImpl) createPrivateRole(tranxCtx corectx.Context, usrResult *it.CreateUserResult) (*it.CreateUserResult, error) {
-	sid := string(*usrResult.Data.GetId())
-	newRole := domain.NewRoleFrom(dmodel.DynamicFields{
-		domain.RoleFieldName:              fmt.Sprintf("Private role for user %s", sid),
-		domain.RoleFieldDedicatedUserId:   sid,
-		domain.RoleFieldOwnerUserId:       sid,
-		domain.RoleFieldIsRequestable:     false,
-		domain.RoleFieldIsRequiredAttach:  false,
-		domain.RoleFieldIsRequiredComment: false,
-	})
-	cmd := itRole.CreateRoleCommand{Role: *newRole}
-
-	roleRes, rErr := this.roleSvc.CreateRole(tranxCtx, cmd)
+	oid := string(*usrResult.Data.GetId())
+	roleRes, rErr := this.roleSvc.CreatePrivateRole(tranxCtx, itRole.CreatePrivateRoleCommand{OwnerId: oid})
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -258,16 +244,6 @@ func (this *UserServiceImpl) UpdateUser(ctx corectx.Context, cmd it.UpdateUserCo
 		DbRepoGetter: this.userRepo,
 		Data:         cmd,
 	})
-}
-
-func (this *UserServiceImpl) setNewDbTranx(ctx corectx.Context) (database.DbTransaction, error) {
-	trx, err := this.userRepo.BeginTransaction(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx.SetDbTranx(trx)
-	return trx, nil
 }
 
 // func (this *UserServiceImpl) getUserByIdFull(ctx crud.Context, query it.GetUserQuery, vErrs *ft.ValidationErrors) (dbUser *domain.User, err error) {

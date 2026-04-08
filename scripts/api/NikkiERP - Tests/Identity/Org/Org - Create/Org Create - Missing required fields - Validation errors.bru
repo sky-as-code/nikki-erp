@@ -1,0 +1,28 @@
+meta {
+  name: Org Create - Missing required fields - Validation errors
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/identity/organizations
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-fields-missing');
+  
+  pkg.testMissingFields('display_name', 'slug');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

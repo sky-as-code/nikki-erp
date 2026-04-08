@@ -13,10 +13,9 @@ const (
 	RoleFieldId                = "id"
 	RoleFieldName              = "name"
 	RoleFieldDescription       = "description"
-	RoleFieldDedicatedUserId   = "dedicated_user_id"
-	RoleFieldDedicatedGroupId  = "dedicated_group_id"
 	RoleFieldOwnerUserId       = "owner_user_id"
 	RoleFieldOwnerGroupId      = "owner_group_id"
+	RoleFieldIsPrivate         = "is_private"
 	RoleFieldIsRequestable     = "is_requestable"
 	RoleFieldIsRequiredAttach  = "is_required_attachment"
 	RoleFieldIsRequiredComment = "is_required_comment"
@@ -26,8 +25,6 @@ const (
 	RoleEdgeEntitlements   = "entitlements"
 	RoleEdgeAssignedGroups = "assigned_groups"
 	RoleEdgeAssignedUsers  = "assigned_users"
-	RoleEdgeDedicatedGroup = "dedicated_group"
-	RoleEdgeDedicatedUser  = "dedicated_user"
 	RoleEdgeOwnerGroup     = "owner_group"
 	RoleEdgeOwnerUser      = "owner_user"
 )
@@ -49,29 +46,20 @@ func RoleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
-			dmodel.DefineField().Name(RoleFieldDedicatedGroupId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				Unique().
-				Description(model.LangJson{"en-US": "This role is implicit (hidden) role belonging to this group"}),
-		).
-		Field(
-			dmodel.DefineField().Name(RoleFieldDedicatedUserId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				Unique().
-				Description(model.LangJson{"en-US": "This role is implicit (hidden) role belonging to this user"}),
-		).
-		ExclusiveFields(RoleFieldDedicatedGroupId, RoleFieldDedicatedUserId).
-		Field(
-			dmodel.DefineField().Name(RoleFieldOwnerGroupId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(RoleFieldOwnerGroupId).
 				Description(model.LangJson{"en-US": "One of the users in this group can approve grant requests for this role"}),
 		).
 		Field(
-			dmodel.DefineField().Name(RoleFieldOwnerUserId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(RoleFieldOwnerUserId).
 				Description(model.LangJson{"en-US": "Only this user can approve grant requests for this role"}),
 		).
 		ExclusiveFields(RoleFieldOwnerGroupId, RoleFieldOwnerUserId).
+		Field(
+			dmodel.DefineField().Name(RoleFieldIsPrivate).
+				DataType(dmodel.FieldDataTypeBoolean()).
+				RequiredForCreate().
+				Default(false),
+		).
 		Field(
 			dmodel.DefineField().Name(RoleFieldIsRequestable).
 				DataType(dmodel.FieldDataTypeBoolean()).
@@ -88,8 +76,7 @@ func RoleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				RequiredForCreate(),
 		).
 		Field(
-			dmodel.DefineField().Name(RoleFieldOrgId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(RoleFieldOrgId).
 				Description(model.LangJson{"en-US": "If specified, the role only accepts entitlements whose org_unit_id belongs to this organization. " +
 					"Otherwise, the role only accepts entitlements with domain scope (org_unit_id is nil)",
 				}),
@@ -101,20 +88,6 @@ func RoleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			dmodel.Edge(RoleEdgeRoleRequests).
 				Label(model.LangJson{"en-US": "Grant requests"}).
 				Existing(RoleRequestSchemaName, RoleReqEdgeRole),
-		).
-		EdgeTo(
-			dmodel.Edge(RoleEdgeDedicatedGroup).
-				Label(model.LangJson{"en-US": "Dedicated group"}).
-				ManyToOne(GroupSchemaName, dmodel.DynamicFields{
-					RoleFieldDedicatedGroupId: GroupFieldId,
-				}),
-		).
-		EdgeTo(
-			dmodel.Edge(RoleEdgeDedicatedUser).
-				Label(model.LangJson{"en-US": "Dedicated user"}).
-				ManyToOne(UserSchemaName, dmodel.DynamicFields{
-					RoleFieldDedicatedUserId: UserFieldId,
-				}),
 		).
 		EdgeTo(
 			dmodel.Edge(RoleEdgeOwnerGroup).
@@ -138,12 +111,12 @@ func RoleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		EdgeTo(
 			dmodel.Edge(RoleEdgeAssignedGroups).
 				Label(model.LangJson{"en-US": "Assigned groups"}).
-				ManyToMany(GroupSchemaName, RoleAssignmentSchemaName, "role"),
+				ManyToMany(GroupSchemaName, RoleGroupAssignmentSchemaName, "role"),
 		).
 		EdgeTo(
 			dmodel.Edge(RoleEdgeAssignedUsers).
 				Label(model.LangJson{"en-US": "Assigned users"}).
-				ManyToMany(UserSchemaName, RoleAssignmentSchemaName, "role"),
+				ManyToMany(UserSchemaName, RoleUserAssignmentSchemaName, "role"),
 		)
 }
 
@@ -181,4 +154,12 @@ func (this Role) GetOrgId() *model.Id {
 
 func (this *Role) SetOrgId(id *model.Id) {
 	this.fields.SetModelId(RoleFieldOrgId, id)
+}
+
+func (this Role) IsPrivate() *bool {
+	return this.fields.GetBool(RoleFieldIsPrivate)
+}
+
+func (this *Role) SetIsPrivate(v *bool) {
+	this.fields.SetBool(RoleFieldIsPrivate, v)
 }

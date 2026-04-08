@@ -7,7 +7,11 @@ import (
 )
 
 func main() {
-	cmd.Main(func(logger logging.LoggerService) cmd.StartableApp {
-		return cmd.NewApplication(logger, loader.StaticModuleLoader{})
+	cmd.Main(cmd.MainParams{
+		CreateAppFn: createApp,
 	})
+}
+
+func createApp(logger logging.LoggerService) cmd.StartableApp {
+	return cmd.NewApplication(logger, loader.StaticModuleLoader{})
 }

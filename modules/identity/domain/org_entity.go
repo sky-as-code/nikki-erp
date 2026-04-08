@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"go.bryk.io/pkg/errors"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -37,15 +39,11 @@ func OrgUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		CompositeUnique(OrgUsrRelFieldOrgId, OrgUsrRelFieldUserId).
 		Field(
-			dmodel.DefineField().
-				Name(OrgUsrRelFieldOrgId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(OrgUsrRelFieldOrgId).
 				RequiredForCreate(),
 		).
 		Field(
-			dmodel.DefineField().
-				Name(OrgUsrRelFieldUserId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(OrgUsrRelFieldUserId).
 				RequiredForCreate(),
 		)
 }
@@ -155,12 +153,16 @@ func (this *Organization) SetSlug(v *model.Slug) {
 	this.fields.SetString(OrgFieldSlug, &s)
 }
 
-func (this Organization) IsArchived() bool {
-	isArchived := this.fields.GetBool(basemodel.FieldIsArchived)
-	if isArchived == nil {
-		return false
+func (this Organization) MustIsArchived() bool {
+	val := this.IsArchived()
+	if val == nil {
+		panic(errors.New("Organization.MustIsArchived: is_archived is nil"))
 	}
-	return *isArchived
+	return *val
+}
+
+func (this Organization) IsArchived() *bool {
+	return this.fields.GetBool(basemodel.FieldIsArchived)
 }
 
 func (this Organization) GetEtag() *model.Etag {

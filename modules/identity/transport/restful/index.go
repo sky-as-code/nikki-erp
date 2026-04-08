@@ -26,13 +26,13 @@ func InitRestfulHandlers() error {
 	)
 	err = stdErr.Join(
 		err,
-		initV1Idenity(),
+		initIdentityV1(),
 		initAuthorizeV1(),
 	)
 	return err
 }
 
-func initV1Idenity() error {
+func initIdentityV1() error {
 	return deps.Invoke(func(
 		route *echo.Group,
 		cqrsBus cqrs.CqrsBus,
@@ -67,13 +67,13 @@ func initV1Idenity() error {
 		// mwOrgUnitDelete := commonMiddleware.RequirePermission(checker, constants.ResourceOrganizationUnit, constants.ActionDelete, nil)
 		// mwOrgUnitManageUsers := commonMiddleware.RequirePermission(checker, constants.ResourceOrganizationUnit, constants.ActionManageUsers, nil)
 
-		route.DELETE("/users/:id", userRest.DeleteUser)
-		route.GET("/users/:id", userRest.GetUser)
-		route.GET("/users", userRest.SearchUsers)
-		route.POST("/users/exists", userRest.UserExists)
-		route.POST("/users/:id/archived", userRest.SetUserIsArchived)
-		route.POST("/users", userRest.CreateUser)
-		route.PUT("/users/:id", userRest.UpdateUser)
+		v1.DELETE("/users/:id", userRest.DeleteUser)
+		v1.GET("/users/:id", userRest.GetUser)
+		v1.GET("/users", userRest.SearchUsers)
+		v1.POST("/users/exists", userRest.UserExists)
+		v1.POST("/users/:id/archived", userRest.SetUserIsArchived)
+		v1.POST("/users", userRest.CreateUser)
+		v1.PUT("/users/:id", userRest.UpdateUser)
 		// protected.POST("/users", userRest.CreateUser, middlewares.RequestContextMiddleware2, mwUserCreate)
 		// protected.DELETE("/users/:id", userRest.DeleteUser, mwUserDelete)
 		// protected.GET("/users/:id", userRest.GetUserById, mwUserView)
@@ -86,30 +86,30 @@ func initV1Idenity() error {
 		// protected.POST("/users2/search", userRest.SearchUsers2, mwUserView, middlewares.RequestContextMiddleware2)
 		// protected.POST("/users2/:id/archive", userRest.ArchiveUser2, mwUserUpdate, middlewares.RequestContextMiddleware2)
 
-		route.DELETE("/groups/:id", groupRest.DeleteGroup)
-		route.GET("/groups/:id", groupRest.GetGroup)
-		route.GET("/groups", groupRest.SearchGroups)
-		route.POST("/groups/exists", groupRest.GroupExists)
-		route.POST("/groups/:group_id/manage-users", groupRest.ManageGroupUsers)
-		route.POST("/groups", groupRest.CreateGroup)
-		route.PUT("/groups/:id", groupRest.UpdateGroup)
+		v1.DELETE("/groups/:id", groupRest.DeleteGroup)
+		v1.GET("/groups/:id", groupRest.GetGroup)
+		v1.GET("/groups", groupRest.SearchGroups)
+		v1.POST("/groups/exists", groupRest.GroupExists)
+		v1.POST("/groups/:group_id/manage-users", groupRest.ManageGroupUsers)
+		v1.POST("/groups", groupRest.CreateGroup)
+		v1.PUT("/groups/:id", groupRest.UpdateGroup)
 
-		route.DELETE("/organizations/:id", orgRest.DeleteOrg)
-		route.GET("/organizations/:id", orgRest.GetOrg)
-		route.GET("/organizations", orgRest.SearchOrgs)
-		route.POST("/organizations/:id/archived", orgRest.SetOrgIsArchived)
-		route.POST("/organizations/:org_id/manage-users", orgRest.ManageOrgUsers)
-		route.POST("/organizations/exists", orgRest.OrgExists)
-		route.POST("/organizations", orgRest.CreateOrg)
-		route.PUT("/organizations/:id", orgRest.UpdateOrg)
+		v1.DELETE("/organizations/:id", orgRest.DeleteOrg)
+		v1.GET("/organizations/:id", orgRest.GetOrg)
+		v1.GET("/organizations", orgRest.SearchOrgs)
+		v1.POST("/organizations/:id/archived", orgRest.SetOrgIsArchived)
+		v1.POST("/organizations/:org_id/manage-users", orgRest.ManageOrgUsers)
+		v1.POST("/organizations/exists", orgRest.OrgExists)
+		v1.POST("/organizations", orgRest.CreateOrg)
+		v1.PUT("/organizations/:id", orgRest.UpdateOrg)
 
-		route.DELETE("/orgunits/:id", orgunitRest.DeleteOrgUnit)
-		route.GET("/orgunits/:id", orgunitRest.GetOrgUnit)
-		route.GET("/orgunits", orgunitRest.SearchOrgUnits)
-		route.POST("/orgunits/:id/exists", orgunitRest.OrgUnitExists)
-		route.POST("/orgunits/:orgunit_id/manage-users", orgunitRest.ManageOrgUnitUsers)
-		route.POST("/orgunits", orgunitRest.CreateOrgUnit)
-		route.PUT("/orgunits/:id", orgunitRest.UpdateOrgUnit)
+		v1.DELETE("/orgunits/:id", orgunitRest.DeleteOrgUnit)
+		v1.GET("/orgunits/:id", orgunitRest.GetOrgUnit)
+		v1.GET("/orgunits", orgunitRest.SearchOrgUnits)
+		v1.POST("/orgunits/:id/exists", orgunitRest.OrgUnitExists)
+		v1.POST("/orgunits/:orgunit_id/manage-users", orgunitRest.ManageOrgUnitUsers)
+		v1.POST("/orgunits", orgunitRest.CreateOrgUnit)
+		v1.PUT("/orgunits/:id", orgunitRest.UpdateOrgUnit)
 	})
 }
 
@@ -125,19 +125,20 @@ func initAuthorizeV1() error {
 	) {
 		v1 := route.Group("/v1/authorize")
 		v1.Use(middlewares.RequestContextMiddleware2(constants.IdentityModuleName))
+
+		v1.DELETE("/resources/:resource_id/actions/:action_id", actionRest.DeleteAction)
+		v1.GET("/resources/:resource_id/actions/:action_id", actionRest.GetAction)
+		v1.GET("/resources/:resource_id/actions", actionRest.SearchActions)
+		v1.POST("/resources/:resource_id/actions/exists", actionRest.ActionExists)
+		v1.POST("/resources/:resource_id/actions", actionRest.CreateAction)
+		v1.PUT("/resources/:resource_id/actions/:action_id", actionRest.UpdateAction)
+
 		v1.DELETE("/resources/:id", resourceRest.DeleteResource)
 		v1.GET("/resources/:id", resourceRest.GetResource)
 		v1.GET("/resources", resourceRest.SearchResources)
 		v1.POST("/resources/exists", resourceRest.ResourceExists)
 		v1.POST("/resources", resourceRest.CreateResource)
 		v1.PUT("/resources/:id", resourceRest.UpdateResource)
-
-		v1.DELETE("/actions/:id", actionRest.DeleteAction)
-		v1.GET("/actions/:id", actionRest.GetAction)
-		v1.GET("/actions", actionRest.SearchActions)
-		v1.POST("/actions/exists", actionRest.ActionExists)
-		v1.POST("/actions", actionRest.CreateAction)
-		v1.PUT("/actions/:id", actionRest.UpdateAction)
 
 		v1.DELETE("/entitlements/:id", entitlementRest.DeleteEntitlement)
 		v1.GET("/entitlements/:id", entitlementRest.GetEntitlement)

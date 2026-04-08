@@ -1,0 +1,23 @@
+meta {
+  name: Org unit Delete - Success
+  type: http
+  seq: 1
+}
+
+delete {
+  url: {{api_host}}/v1/identity/orgunits/{{orgunit_id}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const pkg = require('./scripts/delete-success');
+  
+  pkg.testDelete(1);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

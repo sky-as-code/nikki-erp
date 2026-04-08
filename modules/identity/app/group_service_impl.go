@@ -1,9 +1,6 @@
 package app
 
 import (
-	"fmt"
-
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -36,7 +33,7 @@ func (this *GroupServiceImpl) CreateGroup(
 	ctx corectx.Context, cmd itGrp.CreateGroupCommand,
 ) (*itGrp.CreateGroupResult, error) {
 	return corecrud.ExecInTranx(ctx, this.groupRepo2, func(tranxCtx corectx.Context) (*itGrp.CreateGroupResult, error) {
-		result, err := corecrud.Create(tranxCtx, dyn.CreateParam[domain.Group, *domain.Group]{
+		result, err := corecrud.Create(tranxCtx, corecrud.CreateParam[domain.Group, *domain.Group]{
 			Action:         "create group",
 			BaseRepoGetter: this.groupRepo2,
 			Data:           cmd,
@@ -47,24 +44,13 @@ func (this *GroupServiceImpl) CreateGroup(
 		if result.ClientErrors.Count() > 0 {
 			return result, nil
 		}
-		result, err = this.createPrivateRole(tranxCtx, result)
-		return result, err
+		return this.createPrivateRole(tranxCtx, result)
 	})
 }
 
 func (this *GroupServiceImpl) createPrivateRole(tranxCtx corectx.Context, grpResult *itGrp.CreateGroupResult) (*itGrp.CreateGroupResult, error) {
-	sid := string(*grpResult.Data.GetId())
-	newRole := domain.NewRoleFrom(dmodel.DynamicFields{
-		domain.RoleFieldName:              fmt.Sprintf("Private role for group %s", sid),
-		domain.RoleFieldDedicatedGroupId:  sid,
-		domain.RoleFieldOwnerGroupId:      sid,
-		domain.RoleFieldIsRequestable:     false,
-		domain.RoleFieldIsRequiredAttach:  false,
-		domain.RoleFieldIsRequiredComment: false,
-	})
-	cmd := itRole.CreateRoleCommand{Role: *newRole}
-
-	roleRes, rErr := this.roleSvc.CreateRole(tranxCtx, cmd)
+	oid := string(*grpResult.Data.GetId())
+	roleRes, rErr := this.roleSvc.CreatePrivateRole(tranxCtx, itRole.CreatePrivateRoleCommand{OwnerId: oid})
 	if rErr != nil {
 		return nil, rErr
 	}
