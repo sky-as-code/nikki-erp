@@ -77,6 +77,27 @@ func ManageM2m(ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, param
 	return dynamicRepo.ManageM2m(ctx, param)
 }
 
+func InsertBulk[T dmodel.DynamicModelGetter](
+	ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, data []T,
+) (*dyn.OpResult[int], error) {
+
+	dataArr := make([]dmodel.DynamicFields, len(data))
+	for i, record := range data {
+		dataArr[i] = record.GetFieldData()
+	}
+
+	insRes, err := dynamicRepo.InsertBulk(ctx, dataArr)
+	if err != nil {
+		return nil, err
+	}
+
+	if insRes.ClientErrors.Count() > 0 {
+		return &dyn.OpResult[int]{ClientErrors: insRes.ClientErrors}, nil
+	}
+
+	return &dyn.OpResult[int]{Data: insRes.Data, HasData: true}, nil
+}
+
 func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 	ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, searchParam dyn.RepoSearchParam,
 ) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error) {
