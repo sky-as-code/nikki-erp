@@ -1623,7 +1623,8 @@ func valueAllowed(cat columnCategory, v reflect.Value) bool {
 			v.Type() == modelDateTimeType ||
 			v.Type() == modelTimeType
 	case columnJSON:
-		return v.Kind() == reflect.Map
+		k := v.Kind()
+		return k == reflect.Map || k == reflect.Slice || k == reflect.Array
 	default:
 		return true
 	}
