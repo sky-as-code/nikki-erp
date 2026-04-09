@@ -1638,7 +1638,7 @@ func (this *BaseDynamicRepositoryImpl) queryAndScan(ctx corectx.Context, query s
 		}
 		row := make(dmodel.DynamicFields)
 		for i, col := range columns {
-			val := convertDbValue(values[i])
+			val := this.convertDbColumn(col, values[i])
 			if val != nil {
 				row[col] = val
 			}
@@ -1646,6 +1646,60 @@ func (this *BaseDynamicRepositoryImpl) queryAndScan(ctx corectx.Context, query s
 		result = append(result, row)
 	}
 	return result, rows.Err()
+}
+
+func (this *BaseRepositoryImpl) convertDbColumn(columnName string, v any) any {
+	if v == nil {
+		return nil
+	}
+	for _, name := range sqlColumnFieldNames(columnName) {
+		f, ok := this.schema.Field(name)
+		if !ok {
+			continue
+		}
+		if f.DataType().String() == fieldDataTypeJsonMapName {
+			return decodeJsonbColumnValue(v)
+		}
+	}
+	return convertDbValue(v)
+}
+
+func sqlColumnFieldNames(columnName string) []string {
+	if columnName == "" {
+		return nil
+	}
+	if i := strings.LastIndex(columnName, "."); i >= 0 {
+		suffix := columnName[i+1:]
+		if suffix != "" && suffix != columnName {
+			return []string{columnName, suffix}
+		}
+	}
+	return []string{columnName}
+}
+
+func decodeJsonbColumnValue(v any) any {
+	switch val := v.(type) {
+	case []byte:
+		if len(val) == 0 {
+			return nil
+		}
+		return unmarshalJsonbBytes(val)
+	case string:
+		if val == "" {
+			return nil
+		}
+		return unmarshalJsonbBytes([]byte(val))
+	default:
+		return v
+	}
+}
+
+func unmarshalJsonbBytes(raw []byte) any {
+	var out any
+	if err := erpjson.Unmarshal(raw, &out); err != nil {
+		return string(raw)
+	}
+	return out
 }
 
 func convertDbValue(v any) any {
