@@ -7,7 +7,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 )
 
 // Copied from identity::permission_service.go
@@ -45,11 +44,12 @@ var isAuthorizedQueryType = cqrs.RequestType{
 
 // Copied from identity::permission::commands.go
 type IsAuthorizedQuery struct {
-	UserId       model.Id             `json:"user_id"`
-	ActionCode   string               `json:"action_code"`
-	ResourceCode string               `json:"resource_code"`
-	Scope        domain.ResourceScope `json:"scope"`
-	ScopeId      *model.Id            `json:"scope_id"`
+	UserId       *model.Id `json:"user_id"`
+	UserEmail    *string   `json:"user_email"`
+	ActionCode   string    `json:"action_code"`
+	ResourceCode string    `json:"resource_code"`
+	Scope        string    `json:"scope"`
+	ScopeId      *model.Id `json:"scope_id"`
 }
 
 func (IsAuthorizedQuery) CqrsRequestType() cqrs.RequestType {

@@ -24,7 +24,8 @@ var isAuthorizedQueryType = cqrs.RequestType{
 }
 
 type IsAuthorizedQuery struct {
-	UserId       model.Id             `json:"user_id"`
+	UserEmail    *string              `json:"user_email"`
+	UserId       *model.Id            `json:"user_id"`
 	ActionCode   string               `json:"action_code"`
 	ResourceCode string               `json:"resource_code"`
 	Scope        domain.ResourceScope `json:"scope"`
@@ -40,7 +41,11 @@ func (IsAuthorizedQuery) GetSchema() *dmodel.ModelSchema {
 		"authorize.is_authorized_query",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(basemodel.DefineFieldId("user_id").Required()).
+				Field(basemodel.DefineFieldId("user_id")).
+				Field(dmodel.DefineField().Name("user_email").
+					DataType(dmodel.FieldDataTypeEmail()),
+				).
+				ExclusiveFields("user_id", "user_email").
 				Field(domain.DefineResourceFieldCode("resource_code").Required()).
 				Field(domain.DefineActionFieldCode("action_code").Required()).
 				Field(domain.DefineResourceFieldScope("scope").Required()).

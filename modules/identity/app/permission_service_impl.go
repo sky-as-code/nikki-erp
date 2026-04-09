@@ -51,11 +51,15 @@ func (this *PermissionServiceImpl) IsAuthorized(
 	query = *sanitized.(*itPerm.IsAuthorizedQuery)
 	// No need to check action_code and resource_code existence.
 
-	resActor, err := this.userRepo.GetOne(ctx, dyn.RepoGetOneParam{
-		Filter: dmodel.DynamicFields{
-			domain.UserFieldId: query.UserId,
-		},
-	})
+	filter := dmodel.DynamicFields{}
+	if query.UserId != nil {
+		filter[domain.UserFieldId] = *query.UserId
+	}
+	if query.UserEmail != nil {
+		filter[domain.UserFieldEmail] = *query.UserEmail
+	}
+
+	resActor, err := this.userRepo.GetOne(ctx, dyn.RepoGetOneParam{Filter: filter})
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +74,7 @@ func (this *PermissionServiceImpl) IsAuthorized(
 	}
 
 	resMat, err := this.userPermissionRepo.MatchPermisions(ctx, itPerm.RepoMatchUserPermParam{
-		UserId:       query.UserId,
+		UserId:       *resActor.Data.GetId(),
 		ResourceCode: query.ResourceCode,
 		ActionCode:   query.ActionCode,
 		Scope:        query.Scope,
@@ -99,10 +103,16 @@ func (this *PermissionServiceImpl) CheckPermissions(
 	query = *sanitized.(*itPerm.CheckPermissionsQuery)
 	// No need to check action_code and resource_code existence.
 
+	filter := dmodel.DynamicFields{}
+	if query.UserId != nil {
+		filter[domain.UserFieldId] = *query.UserId
+	}
+	if query.UserEmail != nil {
+		filter[domain.UserFieldEmail] = *query.UserEmail
+	}
+
 	resUser, err := this.userRepo.GetOne(ctx, dyn.RepoGetOneParam{
-		Filter: dmodel.DynamicFields{
-			domain.UserFieldId: query.UserId,
-		},
+		Filter: filter,
 	})
 	if err != nil {
 		return nil, err
@@ -132,7 +142,7 @@ func (this *PermissionServiceImpl) CheckPermissions(
 	}
 
 	resMat, err := this.userPermissionRepo.MatchPermisions(ctx, itPerm.RepoMatchUserPermParam{
-		UserId:       query.UserId,
+		UserId:       *resUser.Data.GetId(),
 		ResourceCode: query.ResourceCode,
 		ActionCode:   query.ActionCode,
 		Scope:        query.Scope,

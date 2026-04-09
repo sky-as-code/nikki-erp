@@ -42,10 +42,21 @@ const (
 	HttpCorsMethods ConfigName = "CORE.HTTP.CORS_METHODS"
 
 	// Request Guard
+	RequestGuardAccessTokenEnabled          ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_ENABLED"
+	RequestGuardAccessTokenDpopEnabled      ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_DPOP_ENABLED"
+	RequestGuardAccessTokenAlgorithm        ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_ALGORITHM"
+	RequestGuardAccessTokenAudience         ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_AUDIENCE"
+	RequestGuardAccessTokenExpiryMinutes    ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_EXPIRY_MINUTES"
+	RequestGuardAccessTokenIssuer           ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_ISSUER"
+	RequestGuardAccessTokenHttpHeaderName   ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_HTTP_HEADER_NAME"
+	RequestGuardAccessTokenHttpHeaderPrefix ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_HTTP_HEADER_PREFIX"
+	RequestGuardAccessTokenSha256Secret     ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_SHA256_SECRET"
+	RequestGuardAccessTokenRsaPublicKey     ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_RSA_PUBLIC_KEY"
+	RequestGuardAccessTokenRsaPrivateKey    ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_RSA_PRIVATE_KEY"
+	RequestGuardRefreshTokenExpiryMinutes   ConfigName = "CORE.REQUEST_GUARD.REFRESH_TOKEN_EXPIRY_MINUTES"
+
 	RequestGuardCorsEnabled             ConfigName = "CORE.REQUEST_GUARD.CORS_ENABLED"
 	RequestGuardMtlsEnabled             ConfigName = "CORE.REQUEST_GUARD.MTLS_ENABLED"
-	RequestGuardAccessTokenEnabled      ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_ENABLED"
-	RequestGuardAccessTokenDpopEnabled  ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_DPOP_ENABLED"
 	RequestGuardSessionBlacklistEnabled ConfigName = "CORE.REQUEST_GUARD.SESSION_BLACKLIST_ENABLED"
 
 	// Token/Authentication

@@ -15,7 +15,6 @@ import (
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 )
 
 type httpServerParams struct {
@@ -48,7 +47,7 @@ func initHttpServer(params httpServerParams) httpServerResult {
 	httpServer.Use(middleware.Logger())
 	httpServer.Use(middleware.Recover())
 	// httpServer.Use(middleware.CORSWithConfig(configCors(params.Config)))
-	httpServer.Use(requestguard.CorsEchoMiddleware())
+	httpServer.Use(m.CorsEchoMiddleware())
 	httpServer.Use(commonMiddleware.CaptureBearerToken(params.Config.GetStr(c.TokenSecretKey)))
 
 	httpServer.Use(m.RequestContextMiddleware)
