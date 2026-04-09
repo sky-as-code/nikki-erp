@@ -40,6 +40,9 @@ type BaseDynamicRepository interface {
 	DeleteOne(ctx corectx.Context, keys dmodel.DynamicFields) (*OpResult[int], error)
 	Exists(ctx corectx.Context, keys []dmodel.DynamicFields) (*OpResult[RepoExistsResult], error)
 	ExistsM2m(ctx corectx.Context, param RepoExistsM2mParam) (bool, error)
+	// ManageM2m inserts and/or deletes junction rows for a finalized many-to-many link to dest schema.
+	// Source and destination are identified by id.
+	InsertBulk(ctx corectx.Context, data []dmodel.DynamicFields) (*OpResult[int], error)
 	GetOne(ctx corectx.Context, param RepoGetOneParam) (*OpResult[dmodel.DynamicFields], error)
 	Insert(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[int], error)
 	ManageM2m(ctx corectx.Context, param RepoManageM2mParam) (*OpResult[int], error)

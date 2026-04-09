@@ -132,6 +132,128 @@ func Create[
 	return &dyn.OpResult[TDomain]{Data: *newModel, HasData: true}, nil
 }
 
+type CreateBulkParam[
+	TDomain any,
+	TDomainPtr dyn.DynamicModelPtr[TDomain],
+	TDomainGetter dmodel.DynamicModelGetter,
+] struct {
+	Action         string
+	BaseRepoGetter dyn.DynamicModelRepository
+
+	Data []TDomainGetter
+
+	// Optional function to do some processing on the domain model before validation.
+	BeforeValidation BeforeValidationFn[TDomainPtr]
+
+	// Optional function to do some processing on the domain model after validation.
+	AfterValidationSuccess AfterValidationSuccessFn[TDomainPtr]
+
+	// Optional function for advanced validation (business rules) in addition to built-in schema validation.
+	ValidateExtra CreateValidateExtraFn[TDomainPtr]
+}
+
+func CreateBulk[
+	TDomain any,
+	TDomainPtr dyn.DynamicModelPtr[TDomain],
+](
+	ctx corectx.Context,
+	param CreateBulkParam[TDomain, TDomainPtr, TDomainPtr],
+) (*dyn.OpResult[[]TDomain], error) {
+
+	dynamicRepo := param.BaseRepoGetter.GetBaseRepo()
+	schema := dynamicRepo.Schema()
+
+	allClientErrs := ft.NewClientErrors()
+	allNewModels := make([]TDomainPtr, 0, len(param.Data))
+
+	for _, dmodel := range param.Data {
+		fieldData := dmodel.GetFieldData()
+
+		newModel := TDomainPtr(new(TDomain))
+		newModel.SetFieldData(fieldData)
+
+		flow := dyn.StartValidationFlow()
+		clientErrs, err := flow.
+			Step(func(vErrs *ft.ClientErrors) error {
+				if param.BeforeValidation == nil {
+					return nil
+				}
+				result, err := param.BeforeValidation(ctx, newModel, vErrs)
+				if err == nil {
+					fieldData = result.GetFieldData()
+				}
+				return err
+			}).
+			Step(func(vErrs *ft.ClientErrors) error {
+				result, clientErrs := schema.Validate(fieldData)
+				if clientErrs != nil {
+					*vErrs = clientErrs
+				} else {
+					fieldData = result
+				}
+				return nil
+			}).
+			Step(func(vErrs *ft.ClientErrors) error {
+				validateUniques(ctx, fieldData, dynamicRepo, vErrs)
+				return nil
+			}).
+			Step(func(vErrs *ft.ClientErrors) error {
+				if param.ValidateExtra == nil {
+					return nil
+				}
+				newModel.SetFieldData(fieldData)
+				return param.ValidateExtra(ctx, newModel, vErrs)
+			}).
+			Step(func(vErrs *ft.ClientErrors) error {
+				if param.AfterValidationSuccess != nil {
+					result, err := param.AfterValidationSuccess(ctx, newModel)
+					if err == nil && result != nil && result != newModel {
+						fieldData = result.GetFieldData()
+					}
+					return errors.Wrap(err, "Create.AfterValidationSuccess")
+				}
+				return nil
+			}).
+			End()
+
+		if err != nil {
+			return nil, err
+		}
+
+		if clientErrs != nil && clientErrs.Count() > 0 {
+			for _, item := range clientErrs {
+				allClientErrs.Append(item)
+			}
+		}
+
+		newModel.SetFieldData(fieldData)
+		allNewModels = append(allNewModels, newModel)
+	}
+
+	if allClientErrs.Count() > 0 {
+		return &dyn.OpResult[[]TDomain]{
+			ClientErrors: *allClientErrs,
+			HasData:      false,
+		}, nil
+	}
+
+	insRes, err := baserepo.InsertBulk(ctx, dynamicRepo, allNewModels)
+	if err != nil {
+		return nil, err
+	}
+
+	if insRes.ClientErrors.Count() > 0 {
+		return &dyn.OpResult[[]TDomain]{ClientErrors: insRes.ClientErrors}, nil
+	}
+
+	data := make([]TDomain, 0, len(allNewModels))
+	for _, model := range allNewModels {
+		data = append(data, *model)
+	}
+
+	return &dyn.OpResult[[]TDomain]{Data: data, HasData: true}, nil
+}
+
 type DeleteOneParam struct {
 	Action                 string
 	DbRepoGetter           dyn.DynamicModelRepository

@@ -22,6 +22,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
+const MAX_BATCH_SIZE = 200
+
 func NewBaseDynamicRepository(param dyn.NewBaseRepoParam) dyn.BaseDynamicRepository {
 	sqlDebugEnabled := param.ConfigSvc.GetBool(c.DbDebugEnabled)
 
@@ -252,6 +254,33 @@ func (this *BaseDynamicRepositoryImpl) Insert(ctx corectx.Context, data dmodel.D
 	// 	return nil, err
 	// }
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlInsert(this.schema, data, false)
+	if err != nil {
+		return nil, err
+	}
+	if qbClientErrs != nil && qbClientErrs.Count() > 0 {
+		return &dyn.OpResult[int]{ClientErrors: *qbClientErrs}, nil
+	}
+
+	this.logQuery(*sqlQuery)
+	result, err := this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
+	if err != nil {
+		return nil, err
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	return &dyn.OpResult[int]{Data: int(n), HasData: n != 0}, nil
+}
+
+func (this *BaseDynamicRepositoryImpl) InsertBulk(ctx corectx.Context, data []dmodel.DynamicFields) (
+	*dyn.OpResult[int], error,
+) {
+	if len(data) > MAX_BATCH_SIZE {
+		return nil, fmt.Errorf("data length is greater than %d", MAX_BATCH_SIZE)
+	}
+
+	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlInsertBulk(this.schema, data, false)
 	if err != nil {
 		return nil, err
 	}
