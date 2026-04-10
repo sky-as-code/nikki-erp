@@ -254,6 +254,102 @@ func CreateBulk[
 	return &dyn.OpResult[[]TDomain]{Data: data, HasData: true}, nil
 }
 
+type UpdateBulkParam[
+	TDomain any,
+	TDomainPtr dyn.DynamicModelPtr[TDomain],
+	TDomainGetter dmodel.DynamicModelGetter,
+] struct {
+	Action         string
+	BaseRepoGetter dyn.DynamicModelRepository
+	Data           []TDomainGetter
+
+	BeforeValidation       BeforeValidationFn[TDomainPtr]
+	AfterValidationSuccess AfterValidationSuccessFn[TDomainPtr]
+	ValidateExtra          UpdateValidateExtraFn[TDomainPtr]
+}
+
+func UpdateBulk[
+	TDomain any,
+	TDomainPtr dyn.DynamicModelPtr[TDomain],
+](
+	ctx corectx.Context,
+	param UpdateBulkParam[TDomain, TDomainPtr, TDomainPtr],
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+
+	dynamicRepo := param.BaseRepoGetter.GetBaseRepo()
+	allClientErrs := ft.NewClientErrors()
+	allModels := make([]TDomainPtr, 0, len(param.Data))
+	anyNotExisting := false
+
+	for _, dmodelItem := range param.Data {
+		model := TDomainPtr(new(TDomain))
+		model.SetFieldData(dmodelItem.GetFieldData())
+
+		isExisting, clientErrs, err := runUpdateValidationFlow(ctx, UpdateParam[TDomain, TDomainPtr]{
+			Action:                 param.Action,
+			DbRepoGetter:           param.BaseRepoGetter,
+			BeforeValidation:       param.BeforeValidation,
+			AfterValidationSuccess: param.AfterValidationSuccess,
+			ValidateExtra:          param.ValidateExtra,
+		}, model)
+		if err != nil {
+			return nil, err
+		}
+
+		if clientErrs != nil && clientErrs.Count() > 0 {
+			for _, item := range clientErrs {
+				allClientErrs.Append(item)
+			}
+		}
+
+		if !isExisting {
+			anyNotExisting = true
+			continue
+		}
+
+		allModels = append(allModels, model)
+	}
+
+	if allClientErrs.Count() > 0 {
+		return &dyn.OpResult[dyn.MutateResultData]{
+			ClientErrors: *allClientErrs,
+			HasData:      false,
+		}, nil
+	}
+
+	if anyNotExisting {
+		return &dyn.OpResult[dyn.MutateResultData]{HasData: false}, nil
+	}
+
+	var totalAffected int
+	var lastAt model.ModelDateTime
+	var lastEtag model.Etag
+
+	for _, m := range allModels {
+		updRes, err := baserepo.Update(ctx, dynamicRepo, m.GetFieldData())
+		if err != nil {
+			return nil, err
+		}
+		if updRes.ClientErrors.Count() > 0 {
+			return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: updRes.ClientErrors}, nil
+		}
+		if updRes.HasData {
+			totalAffected += updRes.Data.AffectedCount
+			lastAt = updRes.Data.AffectedAt
+			lastEtag = updRes.Data.Etag
+		}
+	}
+
+	return &dyn.OpResult[dyn.MutateResultData]{
+		Data: dyn.MutateResultData{
+			AffectedCount: totalAffected,
+			AffectedAt:    lastAt,
+			Etag:          lastEtag,
+		},
+		HasData: true,
+	}, nil
+}
+
 type DeleteOneParam struct {
 	Action                 string
 	DbRepoGetter           dyn.DynamicModelRepository
