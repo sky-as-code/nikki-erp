@@ -8,13 +8,13 @@ import (
 )
 
 type SetUserIsArchivedRequest = it.SetUserIsArchivedCommand
-type SetUserIsArchivedResponse = httpserver.RestUpdateResponse2
+type SetUserIsArchivedResponse = httpserver.RestMutateResponse
 
 type CreateUserRequest = it.CreateUserCommand
 type CreateUserResponse = httpserver.RestCreateResponse
 
 type UpdateUserRequest = it.UpdateUserCommand
-type UpdateUserResponse = httpserver.RestUpdateResponse2
+type UpdateUserResponse = httpserver.RestMutateResponse
 
 type DeleteUserRequest = it.DeleteUserCommand
 type DeleteUserResponse = httpserver.RestDeleteResponse2

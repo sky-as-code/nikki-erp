@@ -14,31 +14,33 @@ import (
 	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	itRole "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/role"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
+	"go.bryk.io/pkg/errors"
 )
 
 func NewUserServiceImpl(
 	enumSvc enum.EnumService,
 	userRepo it.UserRepository,
-	userRepo2 it.UserRepository,
+	roleSvc itRole.RoleService,
 	cqrsBus cqrs.CqrsBus,
 	eventBus event.EventBus,
 ) it.UserService {
 	return &UserServiceImpl{
-		enumSvc:   enumSvc,
-		userRepo:  userRepo,
-		userRepo2: userRepo2,
-		cqrs:      cqrsBus,
-		eventBus:  eventBus,
+		enumSvc:  enumSvc,
+		userRepo: userRepo,
+		roleSvc:  roleSvc,
+		cqrs:     cqrsBus,
+		eventBus: eventBus,
 	}
 }
 
 type UserServiceImpl struct {
-	enumSvc   enum.EnumService
-	userRepo  it.UserRepository
-	userRepo2 it.UserRepository
-	eventBus  event.EventBus
-	cqrs      cqrs.CqrsBus
+	enumSvc  enum.EnumService
+	userRepo it.UserRepository
+	roleSvc  itRole.RoleService
+	eventBus event.EventBus
+	cqrs     cqrs.CqrsBus
 }
 
 func (this *UserServiceImpl) GetUserContext(ctx crud.Context, query it.GetUserContextQuery) (result any, err error) {
@@ -90,23 +92,56 @@ func (this *UserServiceImpl) GetUserContext(ctx crud.Context, query it.GetUserCo
 }
 
 func (this *UserServiceImpl) CreateUser(ctx corectx.Context, cmd it.CreateUserCommand) (*it.CreateUserResult, error) {
-	return corecrud.Create(ctx, dyn.CreateParam[domain.User, *domain.User]{
-		Action:         "create user",
-		BaseRepoGetter: this.userRepo2,
-		Data:           cmd,
-		BeforeValidation: func(ctx corectx.Context, model *domain.User) (*domain.User, error) {
-			// Normal users must not have this field set.
-			model.SetIsOwner(nil)
-			return model, nil
-		},
+	return corecrud.ExecInTranx(ctx, this.userRepo, func(tranxCtx corectx.Context) (*it.CreateUserResult, error) {
+		result, err := corecrud.Create(tranxCtx, corecrud.CreateParam[domain.User, *domain.User]{
+			Action:         "create user",
+			BaseRepoGetter: this.userRepo,
+			Data:           cmd,
+			BeforeValidation: func(_ corectx.Context, model *domain.User, _ *ft.ClientErrors) (*domain.User, error) {
+				// Normal users must not have this field set.
+				model.SetIsOwner(nil)
+				return model, nil
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		if result.ClientErrors.Count() > 0 {
+			return result, nil
+		}
+		return this.createPrivateRole(tranxCtx, result)
 	})
 }
 
+func (this *UserServiceImpl) createPrivateRole(tranxCtx corectx.Context, usrResult *it.CreateUserResult) (*it.CreateUserResult, error) {
+	oid := string(*usrResult.Data.GetId())
+	roleRes, rErr := this.roleSvc.CreatePrivateRole(tranxCtx, itRole.CreatePrivateRoleCommand{OwnerId: oid, OwnerType: "user"})
+	if rErr != nil {
+		return nil, rErr
+	}
+	if roleRes.ClientErrors.Count() > 0 {
+		return nil, errors.Wrap(roleRes.ClientErrors.ToError(), "createPrivateRole")
+	}
+	return usrResult, nil
+}
+
 func (this *UserServiceImpl) DeleteUser(ctx corectx.Context, cmd it.DeleteUserCommand) (*it.DeleteUserResult, error) {
-	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:       "delete user",
-		DbRepoGetter: this.userRepo2,
-		Cmd:          dyn.DeleteOneCommand(cmd),
+	return corecrud.ExecInTranx(ctx, this.userRepo, func(tranxCtx corectx.Context) (*it.DeleteUserResult, error) {
+		return corecrud.DeleteOne(tranxCtx, corecrud.DeleteOneParam{
+			Action:       "delete user",
+			DbRepoGetter: this.userRepo,
+			Cmd:          dyn.DeleteOneCommand(cmd),
+			AfterValidationSuccess: func(_ corectx.Context) error {
+				privRes, pErr := this.roleSvc.DeletePrivateRole(tranxCtx, itRole.DeletePrivateRoleCommand{OwnerId: cmd.Id})
+				if pErr != nil {
+					return pErr
+				}
+				if privRes.ClientErrors.Count() > 0 {
+					return errors.Wrap(privRes.ClientErrors.ToError(), "deletePrivateRole")
+				}
+				return nil
+			},
+		})
 	})
 }
 
@@ -114,7 +149,7 @@ func (this *UserServiceImpl) GetUser(ctx corectx.Context, query it.GetUserQuery)
 	return this.getUserWithArchived(ctx, query, nil)
 }
 
-func (this *UserServiceImpl) GetActiveUser(ctx corectx.Context, query it.GetUserQuery) (*it.GetUserResult, error) {
+func (this *UserServiceImpl) GetEnabledUser(ctx corectx.Context, query it.GetUserQuery) (*it.GetUserResult, error) {
 	return this.getUserWithArchived(ctx, query, util.ToPtr(true))
 }
 
@@ -189,19 +224,19 @@ func (this *UserServiceImpl) SearchUsers(
 ) (*it.SearchUsersResult, error) {
 	return corecrud.Search[domain.User](ctx, corecrud.SearchParam{
 		Action:       "search users",
-		DbRepoGetter: this.userRepo2,
+		DbRepoGetter: this.userRepo,
 		Query:        dyn.SearchQuery(query),
 	})
 }
 
 func (this *UserServiceImpl) SetUserIsArchived(ctx corectx.Context, cmd it.SetUserIsArchivedCommand) (*it.SetUserIsArchivedResult, error) {
-	return corecrud.SetIsArchived(ctx, this.userRepo2, dyn.SetIsArchivedCommand(cmd))
+	return corecrud.SetIsArchived(ctx, this.userRepo, dyn.SetIsArchivedCommand(cmd))
 }
 
 func (this *UserServiceImpl) UserExists(ctx corectx.Context, query it.UserExistsQuery) (*it.UserExistsResult, error) {
 	return corecrud.Exists(ctx, corecrud.ExistsParam{
 		Action:       "check if users exist",
-		DbRepoGetter: this.userRepo2,
+		DbRepoGetter: this.userRepo,
 		Query:        dyn.ExistsQuery(query),
 	})
 }
@@ -209,7 +244,7 @@ func (this *UserServiceImpl) UserExists(ctx corectx.Context, query it.UserExists
 func (this *UserServiceImpl) UpdateUser(ctx corectx.Context, cmd it.UpdateUserCommand) (*it.UpdateUserResult, error) {
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.User, *domain.User]{
 		Action:       "update user",
-		DbRepoGetter: this.userRepo2,
+		DbRepoGetter: this.userRepo,
 		Data:         cmd,
 	})
 }

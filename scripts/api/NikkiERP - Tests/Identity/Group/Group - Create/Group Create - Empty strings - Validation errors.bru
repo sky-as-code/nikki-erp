@@ -1,7 +1,7 @@
 meta {
   name: Group Create - Empty strings - Validation errors
   type: http
-  seq: 5
+  seq: 6
 }
 
 post {
@@ -12,15 +12,16 @@ post {
 
 body:json {
   {
-      "name": "",
-      "description": ""
+    "name": "",
+    "description": "",
+    "owner_id": ""
   }
 }
 
 script:post-response {
   const pkg = require('./scripts/error-400-fields-missing');
   
-  pkg.testMissingFields("name");
+  pkg.testMissingFields("name", "owner_id");
   
 }
 

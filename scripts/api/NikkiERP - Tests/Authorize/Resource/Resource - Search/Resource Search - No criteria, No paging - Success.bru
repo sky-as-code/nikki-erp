@@ -1,0 +1,23 @@
+meta {
+  name: Resource Search - No criteria, No paging - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const pkg = require('./scripts/search-success');
+  
+  pkg.testSearch(50);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

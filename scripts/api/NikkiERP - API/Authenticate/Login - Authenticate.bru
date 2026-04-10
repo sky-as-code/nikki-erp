@@ -12,7 +12,7 @@ post {
 
 body:json {
   {
-      "attemptId": "{{attemptId}}",
+      "attempt_id": "{{attempt_id}}",
       "passwords": {
         "password": "Passwo0rd123"
       }
@@ -25,8 +25,12 @@ vars:pre-request {
 
 script:post-response {
   const payload = res.getBody();
-  const { attemptId } = payload;
-  attemptId && bru.setVar('attemptId', attemptId);
+  const { done, data } = payload;
+  
+  if (done) {
+    bru.setVar('access_token', data.access_token);
+    bru.setVar('refresh_token', data.refresh_token);
+  }
   
 }
 

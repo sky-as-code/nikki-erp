@@ -1,0 +1,28 @@
+meta {
+  name: Resource Create - Missing required fields - Validation errors
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authorize/resources
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-fields-missing');
+  
+  pkg.testMissingFields('name', 'code', 'max_scope', 'min_scope');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

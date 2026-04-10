@@ -18,6 +18,7 @@ type Context interface {
 	SetDbTranx(trx db.DbTransaction)
 	GetDomainConstraints() dmodel.DynamicFields
 	GetModuleName() string
+	WithValue(key, val any)
 }
 
 func NewRequestContext(ctx context.Context, moduleName string) Context {
@@ -84,4 +85,9 @@ func (this RequestContext) GetDomainConstraints() dmodel.DynamicFields {
 
 func (this RequestContext) GetModuleName() string {
 	return this.moduleName
+}
+
+// Replace current inner context with a new one that has the given key and value.
+func (this *RequestContext) WithValue(key, val any) {
+	this.Context = context.WithValue(this.Context, key, val)
 }

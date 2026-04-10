@@ -129,10 +129,7 @@ func (this UserRest) SetUserIsArchived(echoCtx echo.Context) (err error) {
 		func(request SetUserIsArchivedRequest) it.SetUserIsArchivedCommand {
 			return request
 		},
-		func(data dyn.MutateResultData) SetUserIsArchivedResponse {
-			response := httpserver.NewRestUpdateResponse2(data)
-			return response
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }
@@ -152,10 +149,7 @@ func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
 			cmd.SetFieldData(requestFields)
 			return cmd
 		},
-		func(data dyn.MutateResultData) UpdateUserResponse {
-			response := httpserver.NewRestUpdateResponse2(data)
-			return response
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 	return err

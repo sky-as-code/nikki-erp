@@ -5,17 +5,16 @@ meta {
 }
 
 put {
-  url: {{api_host}}/v1/identity/organizations/{{org_slug}}
+  url: {{api_host}}/v1/identity/organizations/{{org_id}}
   body: json
   auth: inherit
 }
 
 body:json {
   {
-      "address": "{{$randomStreetAddress}}, TP.HCM",
-      "displayName": "{{$randomLoremWords}} Co.",
-      "phoneNumber": "{{$randomPhoneNumber}}",
-      "etag": "{{etag}}"
+    "display_name": "{{$randomCompanyName}} Updated",
+    "legal_name": "{{$randomCompanyName}} LLC",
+    "etag": "{{etag}}"
   }
 }
 
@@ -27,4 +26,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

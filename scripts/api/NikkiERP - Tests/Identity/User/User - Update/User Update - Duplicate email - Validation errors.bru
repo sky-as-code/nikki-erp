@@ -20,7 +20,7 @@ body:json {
 script:post-response {
   const pkg = require('./scripts/error-400-duplicate-value');
   
-  pkg.testDuplicateValues('email');
+  pkg.testDuplicateValues(['email']);
   
 }
 

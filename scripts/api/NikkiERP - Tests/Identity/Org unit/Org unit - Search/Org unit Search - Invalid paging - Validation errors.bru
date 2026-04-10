@@ -1,0 +1,28 @@
+meta {
+  name: Org unit Search - Invalid paging - Validation errors
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/identity/orgunits?page=-1&size=0
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: -1
+  size: 0
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-invalid-range');
+  
+  pkg.testInvalidNumberRange('page', 'size');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

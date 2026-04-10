@@ -46,10 +46,11 @@ func (this *Application) Logger() logging.LoggerService {
 }
 
 func (this *Application) Start() {
-	modules := []modules.InCodeModule{}
-	var err error
+	this.modules = []modules.InCodeModule{
+		core.ModuleSingleton,
+	}
 
-	modules, err = this.moduleLoader.LoadModules()
+	modules, err := this.moduleLoader.LoadModules()
 	if err != nil {
 		this.logger.Errorf("failed to load modules: %v", err)
 	}
@@ -124,7 +125,6 @@ func (this *Application) initModules() error {
 
 func (this *Application) buildModuleMap() map[string]modules.InCodeModule {
 	moduleMap := make(map[string]modules.InCodeModule)
-	moduleMap["core"] = core.ModuleSingleton
 	for _, mod := range this.modules {
 		moduleMap[mod.Name()] = mod
 	}
@@ -135,13 +135,17 @@ func (this *Application) buildDependencyGraph(moduleMap map[string]modules.InCod
 	depGraph := make(map[string][]string)
 
 	for _, mod := range this.modules {
+		modName := mod.Name()
 		deps := mod.Deps()
+		if modName != "apptrait" && modName != "core" {
+			deps = append(deps, "core")
+		}
 		for _, dep := range deps {
 			if _, exists := moduleMap[dep]; !exists {
 				return nil, errors.New(fmt.Errorf("module '%s' requires '%s' but it's not loaded", mod.Name(), dep))
 			}
 		}
-		depGraph[mod.Name()] = deps
+		depGraph[modName] = deps
 	}
 
 	return depGraph, nil
@@ -162,7 +166,6 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 		return errors.Wrap(err, "failed to determine module initialization order")
 	}
 
-	initOrder = array.Prepend(initOrder, "core")
 	orderedMods := make([]modules.InCodeModule, 0)
 	for _, modName := range initOrder {
 		mod := moduleMap[modName]

@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/model"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
 )
 
@@ -14,19 +13,31 @@ type RefreshTokenResponse = it.RefreshTokenResultData
 type StartLoginFlowRequest = it.StartLoginFlowCommand
 
 type StartLoginFlowResponse struct {
-	AttemptId     string   `json:"attemptId"`
-	CreatedAt     int64    `json:"createdAt"`
-	CurrentMethod string   `json:"currentMethod"`
-	ExpiredAt     int64    `json:"expiredAt"`
+	AttemptId     string   `json:"attempt_id"`
+	CreatedAt     string   `json:"created_at"`
+	CurrentMethod string   `json:"current_method"`
+	ExpiresAt     string   `json:"expires_at"`
 	Methods       []string `json:"methods"`
-	SubjectName   string   `json:"subjectName"`
+	PrincipalName string   `json:"principal_name"`
 }
 
-func NewStartLoginFlowResponse(result it.CreateLoginAttemptResult) StartLoginFlowResponse {
-	response := StartLoginFlowResponse{
-		AttemptId:   *result.Data.Attempt.Id,
-		SubjectName: result.Data.SubjectName,
+func NewStartLoginFlowResponse(data it.CreateLoginAttemptResultData) StartLoginFlowResponse {
+	response := StartLoginFlowResponse{}
+
+	if attemptId := data.Attempt.GetId(); attemptId != nil {
+		response.AttemptId = string(*attemptId)
 	}
-	model.MustCopy(result.Data.Attempt, &response)
+	if createdAt := data.Attempt.GetCreatedAt(); createdAt != nil {
+		response.CreatedAt = createdAt.String()
+	}
+	if currentMethod := data.Attempt.GetCurrentMethod(); currentMethod != nil {
+		response.CurrentMethod = *currentMethod
+	}
+	if expiredAt := data.Attempt.GetExpiresAt(); expiredAt != nil {
+		response.ExpiresAt = expiredAt.String()
+	}
+
+	response.Methods = data.Attempt.GetMethods()
+	response.PrincipalName = data.PrincipalName
 	return response
 }

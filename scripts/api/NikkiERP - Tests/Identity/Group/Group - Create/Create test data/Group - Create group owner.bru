@@ -1,0 +1,33 @@
+meta {
+  name: Group - Create group owner
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "display_name": "Group Owner {{$randomFullName}}",
+      "email": "{{$randomEmail}}"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/create-success');
+  
+  pkg.testCreate('user_id');
+  
+  const { email } = req.getBody();
+  email && bru.setVar('email', email);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -28,9 +28,7 @@ func GetOneQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 			Name(basemodel.FieldId).
 			DataType(dmodel.FieldDataTypeUlid()).
 			Required()).
-		Field(dmodel.DefineField().
-			Name(basemodel.FieldColumns).
-			DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_COL_LENGTH_MIN, model.MODEL_RULE_COL_LENGTH_MAX).ArrayType()))
+		Field(DefineFieldSearchColumns())
 }
 
 func ManageAssocsSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -51,18 +49,10 @@ func ManageAssocsSchemaBuilder() *dmodel.ModelSchemaBuilder {
 
 func SearchQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel("_").
-		Field(dmodel.DefineField().
-			Name(basemodel.FieldColumns).
-			DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_COL_LENGTH_MIN, model.MODEL_RULE_COL_LENGTH_MAX).ArrayType()).
-			Rule(dmodel.FieldRuleArrayLength(0, 20))).
-		Field(dmodel.DefineField().
-			Name(basemodel.FieldPage).
-			DataType(dmodel.FieldDataTypeInt(model.MODEL_RULE_PAGE_INDEX_START, model.MODEL_RULE_PAGE_INDEX_END)).
-			Default(model.MODEL_RULE_PAGE_INDEX_START)).
-		Field(dmodel.DefineField().
-			Name(basemodel.FieldSize).
-			DataType(dmodel.FieldDataTypeInt(model.MODEL_RULE_PAGE_MIN_SIZE, model.MODEL_RULE_PAGE_MAX_SIZE)).
-			Default(model.MODEL_RULE_PAGE_DEFAULT_SIZE))
+		Field(DefineFieldSearchColumns()).
+		Field(DefineFieldSearchGraph()).
+		Field(DefineFieldSearchPage()).
+		Field(DefineFieldSearchSize())
 }
 
 func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -79,4 +69,31 @@ func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			Name(basemodel.FieldIsArchived).
 			DataType(dmodel.FieldDataTypeBoolean()).
 			Required())
+}
+
+func DefineFieldSearchColumns() *dmodel.FieldBuilder {
+	return dmodel.DefineField().
+		Name(basemodel.FieldColumns).
+		DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_COL_LENGTH_MIN, model.MODEL_RULE_COL_LENGTH_MAX).ArrayType()).
+		Rule(dmodel.FieldRuleArrayLength(0, 20))
+}
+
+func DefineFieldSearchPage() *dmodel.FieldBuilder {
+	return dmodel.DefineField().
+		Name(basemodel.FieldPage).
+		DataType(dmodel.FieldDataTypeInt(model.MODEL_RULE_PAGE_INDEX_START, model.MODEL_RULE_PAGE_INDEX_END)).
+		Default(model.MODEL_RULE_PAGE_INDEX_START)
+}
+
+func DefineFieldSearchSize() *dmodel.FieldBuilder {
+	return dmodel.DefineField().
+		Name(basemodel.FieldSize).
+		DataType(dmodel.FieldDataTypeInt(model.MODEL_RULE_PAGE_MIN_SIZE, model.MODEL_RULE_PAGE_MAX_SIZE)).
+		Default(model.MODEL_RULE_PAGE_DEFAULT_SIZE)
+}
+
+func DefineFieldSearchGraph() *dmodel.FieldBuilder {
+	return dmodel.DefineField().
+		Name(basemodel.FieldGraph).
+		DataType(dmodel.FieldDataTypeModel())
 }

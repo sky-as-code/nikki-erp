@@ -1,0 +1,30 @@
+meta {
+  name: Org Create - Required fields - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/organizations
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "display_name": "{{$randomCompanyName}}",
+    "slug": "{{$randomLoremSlug}}"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/create-success');
+  
+  pkg.testCreate('org_id');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"go.bryk.io/pkg/errors"
@@ -10,15 +11,17 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
 	m "github.com/sky-as-code/nikki-erp/modules/authenticate/app/methods"
 	c "github.com/sky-as-code/nikki-erp/modules/authenticate/constants"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
+	ext "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
+	coretoken "github.com/sky-as-code/nikki-erp/modules/core/authtoken"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
-	coreConstants "github.com/sky-as-code/nikki-erp/modules/core/constants"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
 type NewLoginServiceParam struct {
@@ -27,132 +30,173 @@ type NewLoginServiceParam struct {
 	AttemptSvc it.AttemptService
 	ConfigSvc  config.ConfigService
 	CqrsBus    cqrs.CqrsBus
+	Logger     logging.LoggerService
+	TokenSvc   coretoken.AuthTokenService
+	UserSvc    ext.UserExtService
 }
 
 func NewLoginServiceImpl(param NewLoginServiceParam) it.LoginService {
 	return &LoginServiceImpl{
-		cqrsBus:             param.CqrsBus,
-		attemptSvc:          param.AttemptSvc,
-		configSvc:           param.ConfigSvc,
+		cqrsBus:    param.CqrsBus,
+		attemptSvc: param.AttemptSvc,
+		configSvc:  param.ConfigSvc,
+		logger:     param.Logger,
+		tokenSvc:   param.TokenSvc,
+		userSvc:    param.UserSvc,
+
 		attemptDurationSecs: param.ConfigSvc.GetInt(c.LoginAttemptDurationSecs),
-		subjectHelper: subjectHelper{
+		principalHelper: principalHelper{
 			cqrsBus: param.CqrsBus,
+			userSvc: param.UserSvc,
 		},
 	}
 }
 
 type LoginServiceImpl struct {
-	cqrsBus       cqrs.CqrsBus
-	attemptSvc    it.AttemptService
-	subjectHelper subjectHelper
-	configSvc     config.ConfigService
+	cqrsBus    cqrs.CqrsBus
+	attemptSvc it.AttemptService
+	configSvc  config.ConfigService
+	logger     logging.LoggerService
+	tokenSvc   coretoken.AuthTokenService
+	userSvc    ext.UserExtService
 
 	attemptDurationSecs int
+	principalHelper     principalHelper
 }
 
-func (s *LoginServiceImpl) Authenticate(ctx crud.Context, cmd it.AuthenticateCommand) (result *it.AuthenticateResult, err error) {
+func (this *LoginServiceImpl) Authenticate(ctx corectx.Context, cmd it.AuthenticateCommand) (result *it.AuthenticateResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "authenticate"); e != nil {
 			err = e
 		}
 	}()
 
-	attempt, vErrs, err := s.validateAuthInput(ctx, cmd)
+	// TODO: Prevent login with "system" account.
+	dbAttempt, cErrs, err := this.validateAuthInput(ctx, cmd)
 	ft.PanicOnErr(err)
 
-	if vErrs.Count() > 0 {
-		return &it.AuthenticateResult{ClientError: vErrs.ToClientError()}, nil
+	if cErrs.Count() > 0 {
+		return &it.AuthenticateResult{ClientErrors: cErrs}, nil
 	}
 
-	done, err := s.performLoginMethods(ctx, cmd, attempt, vErrs)
+	done, err := this.performLoginMethods(ctx, cmd, dbAttempt, &cErrs)
 	ft.PanicOnErr(err)
 
-	if vErrs.Count() > 0 {
-		return &it.AuthenticateResult{ClientError: vErrs.ToClientError()}, nil
+	if cErrs.Count() > 0 {
+		return &it.AuthenticateResult{ClientErrors: cErrs}, nil
 	}
 
-	if err := s.updateAttemptStatus(ctx, attempt); err != nil {
+	if err := this.updateAttemptStatus(ctx, dbAttempt); err != nil {
 		return nil, err
 	}
 
-	return s.buildAuthenticateResult(done, attempt), nil
+	if !done {
+		return &it.AuthenticateResult{
+			Data: it.AuthenticateResultData{
+				Done:     false,
+				NextStep: dbAttempt.GetCurrentMethod(),
+			},
+			HasData: true,
+		}, nil
+	}
+
+	tokenPack, err := this.buildTokenPack(
+		ctx,
+		dbAttempt.MustGetUsername(),
+		dbAttempt.MustGetPrincipalType(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &it.AuthenticateResult{
+		Data: it.AuthenticateResultData{
+			Done: true,
+			Data: tokenPack,
+		},
+		HasData: true,
+	}, nil
 }
 
-func (s *LoginServiceImpl) RefreshToken(ctx crud.Context, cmd it.RefreshTokenCommand) (result *it.RefreshTokenResult, err error) {
+func (this *LoginServiceImpl) RefreshToken(ctx corectx.Context, cmd it.RefreshTokenCommand) (result *it.RefreshTokenResult, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "refresh token"); e != nil {
 			err = e
 		}
 	}()
 
-	vErrs := ft.NewValidationErrors()
-	if len(cmd.RefreshToken) == 0 {
-		vErrs.Append("refreshToken", "required")
-		return &it.RefreshTokenResult{ClientError: vErrs.ToClientError()}, nil
+	sanitized, cErrs := cmd.GetSchema().ValidateStruct(cmd)
+	if cErrs.Count() > 0 {
+		return &it.RefreshTokenResult{ClientErrors: cErrs}, nil
 	}
+	cmd = *sanitized.(*it.RefreshTokenCommand)
 
-	payload, err := util.ParseGJWToken(cmd.RefreshToken, s.configSvc.GetStr(coreConstants.TokenSecretKey))
+	resVerify, err := this.tokenSvc.VerifyJwt(ctx, coretoken.VerifyJwtParam{
+		Token: cmd.RefreshToken,
+	})
 	if err != nil {
-		vErrs.Append("refreshToken invalid token", err.Error())
-		return &it.RefreshTokenResult{ClientError: vErrs.ToClientError()}, nil
+		return nil, err
+	}
+	if !resVerify.IsOk {
+		cErrs.Append(*ft.NewValidationError("refresh_token", ft.ErrorKey("err_invalid_refresh_token", "authenticate"), "Invalid refresh token"))
+		return &it.RefreshTokenResult{ClientErrors: cErrs}, nil
 	}
 
-	accessExpireSeconds := int64(time.Hour.Seconds())
-	refreshExpireSeconds := int64((24 * 7) * time.Hour.Seconds())
+	sub := resVerify.Claims["sub"].(string)
+	subParts := strings.Split(sub, ":")
+	username := subParts[0]
+	principalType := domain.PrincipalType(subParts[1])
 
-	accessToken, genErr := util.GenerateGJWToken(
-		s.configSvc.GetStr(coreConstants.TokenSecretKey),
-		payload.DId,
-		payload.UserId,
-		"nikki-erp",
-		payload.Roles,
-		accessExpireSeconds,
+	_, err = this.principalHelper.assertPrincipalExists(
+		ctx, principalType, nil, &username, &cErrs,
 	)
-	if genErr != nil {
-		return nil, genErr
+	if err != nil {
+		return nil, err
+	}
+	if cErrs.Count() > 0 {
+		return &it.RefreshTokenResult{ClientErrors: cErrs}, nil
+	}
+	tokenPack, err := this.buildTokenPack(ctx, username, principalType)
+	if err != nil {
+		return nil, err
 	}
 
-	refreshToken, genErr := util.GenerateGJWToken(
-		s.configSvc.GetStr(coreConstants.TokenSecretKey),
-		payload.DId,
-		payload.UserId,
-		"nikki-erp",
-		payload.Roles,
-		refreshExpireSeconds,
-	)
-	if genErr != nil {
-		return nil, genErr
-	}
-
-	now := time.Now()
 	return &it.RefreshTokenResult{
-		Data: &it.RefreshTokenResultData{
-			AccessToken:           accessToken,
-			AccessTokenExpiresAt:  now.Add(time.Duration(accessExpireSeconds) * time.Second),
-			RefreshToken:          refreshToken,
-			RefreshTokenExpiresAt: now.Add(time.Duration(refreshExpireSeconds) * time.Second),
+		Data: it.RefreshTokenResultData{
+			AccessToken:           tokenPack.AccessToken,
+			AccessTokenExpiresAt:  tokenPack.AccessTokenExpiresAt,
+			RefreshToken:          tokenPack.RefreshToken,
+			RefreshTokenExpiresAt: tokenPack.RefreshTokenExpiresAt,
 		},
 		HasData: true,
 	}, nil
 }
 
-func (s *LoginServiceImpl) validateAuthInput(ctx crud.Context, cmd it.AuthenticateCommand) (*domain.LoginAttempt, *ft.ValidationErrors, error) {
-	var attempt *domain.LoginAttempt
+func (this *LoginServiceImpl) validateAuthInput(ctx corectx.Context, cmd it.AuthenticateCommand) (*domain.LoginAttempt, ft.ClientErrors, error) {
+	var dbAttempt *domain.LoginAttempt
 
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
+	sanitized, cErrs := cmd.GetSchema().ValidateStruct(cmd)
+	if cErrs.Count() > 0 {
+		return nil, cErrs, nil
+	}
+	cmd = *sanitized.(*it.AuthenticateCommand)
+
+	flow := dyn.StartValidationFlowCopy(&cErrs)
+	cErrs, err := flow.
+		Step(func(cErrs *ft.ClientErrors) error {
 			var err error
-			attempt, err = s.assertAttemptExists(ctx, cmd.AttemptId, vErrs)
+			dbAttempt, err = this.assertAttemptExists(ctx, cmd.AttemptId, cErrs)
 			return err
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			s.assertAttemptValid(ctx, attempt, vErrs)
+		Step(func(cErrs *ft.ClientErrors) error {
+			this.assertAttemptValid(dbAttempt, cErrs)
 			return nil
 		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
+		Step(func(cErrs *ft.ClientErrors) error {
 			var err error
-			_, err = s.subjectHelper.assertSubjectExists(ctx, *attempt.SubjectType, nil, attempt.Username, vErrs)
+			_, err = this.principalHelper.assertPrincipalExists(
+				ctx, dbAttempt.MustGetPrincipalType(), nil, dbAttempt.GetUsername(), cErrs,
+			)
 			return err
 		}).
 		End()
@@ -160,25 +204,31 @@ func (s *LoginServiceImpl) validateAuthInput(ctx crud.Context, cmd it.Authentica
 	if err != nil {
 		return nil, nil, err
 	}
-	return attempt, &vErrs, nil
+	return dbAttempt, cErrs, nil
 }
 
-func (s *LoginServiceImpl) performLoginMethods(
-	ctx crud.Context,
-	cmd it.AuthenticateCommand,
-	attempt *domain.LoginAttempt,
-	vErrs *ft.ValidationErrors,
+func (this *LoginServiceImpl) performLoginMethods(
+	ctx corectx.Context, cmd it.AuthenticateCommand,
+	dbAttempt *domain.LoginAttempt, cErrs *ft.ClientErrors,
 ) (done bool, err error) {
-
-	requiredMethod := *attempt.CurrentMethod
+	currentMethod := dbAttempt.GetCurrentMethod()
+	requiredMethod := *currentMethod
 
 	for {
-		methodName := *attempt.CurrentMethod
-		submittedPassword, ok := cmd.Passwords[methodName]
+		currentMethod = dbAttempt.GetCurrentMethod()
+		if currentMethod == nil {
+			return false, nil
+		}
+		methodName := *currentMethod
+		submittedPassword, isPasswordSent := cmd.Passwords[methodName]
 
-		if !ok {
+		if !isPasswordSent {
 			if methodName == requiredMethod {
-				vErrs.Appendf(fmt.Sprintf("passwords.%s", methodName), "%s mismatched", methodName)
+				cErrs.Append(*ft.NewValidationError(
+					"passwords.s"+methodName,
+					ft.ErrorKey("err_password_mismatched_"+methodName, "authenticate"),
+					"Incorrect password",
+				))
 			}
 			break
 		}
@@ -186,113 +236,118 @@ func (s *LoginServiceImpl) performLoginMethods(
 		method := m.GetLoginMethod(methodName)
 		var exeResult *it.ExecuteResult
 		exeResult, err = method.Execute(ctx, it.LoginParam{
-			SubjectType: *attempt.SubjectType,
-			Username:    *attempt.Username,
-			Password:    submittedPassword,
+			PrincipalType: dbAttempt.MustGetPrincipalType(),
+			Username:      dbAttempt.MustGetUsername(),
+			Password:      submittedPassword,
 		})
 		if err != nil {
 			return false, err
 		}
 
-		if exeResult.ClientErr != nil {
-			if vErrs.MergeClientError(exeResult.ClientErr) {
-				return false, nil
-			} else {
-				return false, exeResult.ClientErr
-			}
-		}
-
-		if !exeResult.IsVerified {
-			vErrs.Append(fmt.Sprintf("passwords.%s", methodName), exeResult.FailedReason)
+		if exeResult.ClientErrors.Count() > 0 {
+			cErrs.Append(exeResult.ClientErrors...)
 			return false, nil
 		}
 
-		if nextMethod := attempt.NextMethod(); nextMethod == nil {
-			attempt.CurrentMethod = nil
-			attempt.Status = util.ToPtr(domain.AttemptStatusSuccess)
+		if !exeResult.IsVerified {
+			cErrs.Append(*ft.NewValidationError(
+				"passwords."+methodName,
+				exeResult.FailedReason.Key,
+				exeResult.FailedReason.Message,
+			))
+			return false, nil
+		}
+
+		if nextMethod := dbAttempt.NextMethod(); nextMethod == nil {
+			dbAttempt.SetCurrentMethod(nil)
+			dbAttempt.SetStatus(util.ToPtr(domain.AttemptStatusSuccess))
 			return true, nil
 		} else {
-			attempt.CurrentMethod = nextMethod
+			dbAttempt.SetCurrentMethod(nextMethod)
 		}
 	}
 	return false, nil
 }
 
-func (s *LoginServiceImpl) updateAttemptStatus(ctx crud.Context, attempt *domain.LoginAttempt) error {
-	attResult, err := s.attemptSvc.UpdateLoginAttempt(ctx, it.UpdateLoginAttemptCommand{
-		Id:            *attempt.Id,
-		CurrentMethod: attempt.CurrentMethod,
-		Status:        attempt.Status,
+func (this *LoginServiceImpl) updateAttemptStatus(ctx corectx.Context, dbAttempt *domain.LoginAttempt) error {
+	updatedAtt := domain.NewLoginAttempt()
+	updatedAtt.SetId(dbAttempt.GetId())
+	updatedAtt.SetCurrentMethod(dbAttempt.GetCurrentMethod())
+	updatedAtt.SetStatus(dbAttempt.GetStatus())
+	attResult, err := this.attemptSvc.UpdateLoginAttempt(ctx, it.UpdateLoginAttemptCommand{
+		LoginAttempt: *updatedAtt,
 	})
 	if err != nil {
 		return err
 	}
-	if attResult.ClientError != nil {
-		return errors.Wrap(attResult.ClientError, "failed to update attempt status")
+	if attResult.ClientErrors.Count() > 0 {
+		return errors.Wrap(attResult.ClientErrors.ToError(), "updateAttemptStatus")
 	}
 	return nil
 }
 
-func (s *LoginServiceImpl) buildAuthenticateResult(done bool, attempt *domain.LoginAttempt) *it.AuthenticateResult {
-	// accessExpireSeconds := int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours) * 1)
-    // refreshExpireSeconds := int64(s.configSvc.GetInt(coreConstants.TokenExpiryHours) * 12)
-	accessExpireSeconds := int64(time.Hour.Seconds())
-	refreshExpireSeconds := int64((24 * 7) * time.Hour.Seconds())
+func (this *LoginServiceImpl) buildTokenPack(
+	ctx corectx.Context, username string, principalType domain.PrincipalType,
+) (*it.AuthenticateSuccessData, error) {
+	sub := fmt.Sprintf("%s:%s", username, principalType)
+	jwtAccess, err := this.tokenSvc.CreateJwt(ctx, coretoken.CreateJwtParam{
+		Sub:     sub,
+		Purpose: coretoken.JwtPurposeAccessToken,
+	})
 
-	accessToken, _ := util.GenerateGJWToken(
-		s.configSvc.GetStr(coreConstants.TokenSecretKey),
-		*attempt.DeviceIp,
-		*attempt.SubjectRef,
-		"nikki-erp",
-		attempt.Methods,
-		accessExpireSeconds,
-	)
-	refreshToken, _ := util.GenerateGJWToken(
-		s.configSvc.GetStr(coreConstants.TokenSecretKey),
-		*attempt.DeviceIp,
-		*attempt.SubjectRef,
-		"nikki-erp",
-		attempt.Methods,
-		refreshExpireSeconds,
-	)
-	if done {
-		now := time.Now()
-		return &it.AuthenticateResult{
-			Data: &it.AuthenticateResultData{
-				Done: true,
-				Data: &it.AuthenticateSuccessData{
-					AccessToken:           accessToken,
-					AccessTokenExpiresAt:  now.Add(time.Duration(accessExpireSeconds) * time.Second),
-					RefreshToken:          refreshToken,
-					RefreshTokenExpiresAt: now.Add(time.Duration(refreshExpireSeconds) * time.Second),
-				},
-			},
-			HasData: true,
-		}
-	}
-	return &it.AuthenticateResult{
-		Data: &it.AuthenticateResultData{
-			Done:     false,
-			NextStep: attempt.CurrentMethod,
-		},
-		HasData: true,
-	}
-}
-
-func (this *LoginServiceImpl) assertAttemptExists(ctx crud.Context, id model.Id, vErrs *ft.ValidationErrors) (attempt *domain.LoginAttempt, err error) {
-	result, err := this.attemptSvc.GetAttemptById(ctx, it.GetAttemptByIdQuery{Id: id})
 	if err != nil {
 		return nil, err
 	}
-	vErrs.MergeClientError(result.ClientError)
-	attempt = result.Data
-	return
+
+	jwtId := jwtAccess.Claims["jti"].(string)
+	jwtRefresh, err := this.tokenSvc.CreateJwt(ctx, coretoken.CreateJwtParam{
+		Sub:     sub,
+		Jti:     &jwtId,
+		Purpose: coretoken.JwtPurposeRefreshToken,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	accessExpTime, _ := jwtAccess.Claims.GetExpirationTime()
+	refreshExpTime, _ := jwtRefresh.Claims.GetExpirationTime()
+
+	return &it.AuthenticateSuccessData{
+		AccessToken:           jwtAccess.Token,
+		AccessTokenExpiresAt:  model.WrapModelDateTime(accessExpTime.Time),
+		RefreshToken:          jwtRefresh.Token,
+		RefreshTokenExpiresAt: model.WrapModelDateTime(refreshExpTime.Time),
+	}, nil
 }
 
-func (this *LoginServiceImpl) assertAttemptValid(ctx crud.Context, attempt *domain.LoginAttempt, vErrs *ft.ValidationErrors) {
-	if attempt.ExpiredAt.Before(time.Now()) {
-		vErrs.Append("attemptId", "attempt expired")
-	} else if *attempt.Status != domain.AttemptStatusPending {
-		vErrs.Append("attemptId", "attempt already settled")
+func (this *LoginServiceImpl) assertAttemptExists(
+	ctx corectx.Context, id model.Id, cErrs *ft.ClientErrors,
+) (*domain.LoginAttempt, error) {
+	result, err := this.attemptSvc.GetAttempt(ctx, it.GetAttemptQuery{Id: id})
+	if err != nil {
+		return nil, err
+	}
+	if !result.HasData {
+		cErrs.Append(*ft.NewNotFoundError("attempt_id"))
+		return nil, nil
+	}
+	return &result.Data, nil
+}
+
+func (this *LoginServiceImpl) assertAttemptValid(dbAttempt *domain.LoginAttempt, cErrs *ft.ClientErrors) {
+	expiresAt := dbAttempt.GetExpiresAt()
+	status := dbAttempt.GetStatus()
+
+	if expiresAt != nil && expiresAt.BeforeT(time.Now()) {
+		cErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey("err_login_attempt_expired", "authenticate"),
+			"Login attempt expired",
+		))
+	} else if status != nil && *status != domain.AttemptStatusPending {
+		cErrs.Append(*ft.NewAnonymousBusinessViolation(
+			ft.ErrorKey("err_login_attempt_already_settled", "authenticate"),
+			"Login attempt already settled",
+		))
 	}
 }

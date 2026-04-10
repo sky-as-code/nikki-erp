@@ -11,10 +11,9 @@ require (
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/go-sanitize/sanitize v1.1.0
 	github.com/goccy/go-yaml v1.18.0
-	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.2
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang/mock v1.7.0-rc.1
-	github.com/google/uuid v1.6.0
 	github.com/huandu/go-sqlbuilder v1.39.1
 	github.com/invopop/validation v0.8.0
 	github.com/joho/godotenv v1.5.1
@@ -36,7 +35,6 @@ require (
 	golang.org/x/mod v0.25.0
 	golang.org/x/text v0.26.0
 	gopkg.in/jeevatkm/go-model.v1 v1.1.0
-	gorm.io/gorm v1.30.0
 )
 
 require (
@@ -59,12 +57,11 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/hashicorp/hcl/v2 v2.13.0 // indirect
 	github.com/huandu/go-clone v1.7.3 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
-	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.7 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect

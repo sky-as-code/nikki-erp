@@ -234,6 +234,11 @@ func (p *joinPlanner) appendManyToManyJoin(
 		throughOn = append(throughOn, fmt.Sprintf("%s.%s = %s.%s",
 			parentAlias, pgQuote(pk), throughAlias, pgQuote(tc)))
 	}
+	srcTk := parentSch.TenantKey()
+	if srcTk != "" {
+		throughOn = append(throughOn, fmt.Sprintf("%s.%s = %s.%s",
+			parentAlias, pgQuote(srcTk), throughAlias, pgQuote(srcTk)))
+	}
 	onThrough := strings.Join(throughOn, " AND ")
 	throughRef := fmt.Sprintf("%s AS %s", p.qb.tableExpression(throughSch), throughAlias)
 	p.joins = append(p.joins, graphJoinSpec{tableWithAlias: throughRef, onExpr: onThrough})
@@ -248,17 +253,16 @@ func (p *joinPlanner) appendManyToManyJoin(
 		destOn = append(destOn, fmt.Sprintf("%s.%s = %s.%s",
 			throughAlias, pgQuote(tc), destAlias, pgQuote(pk)))
 	}
+	destTk := destSch.TenantKey()
+	if srcTk != "" && destTk != "" {
+		destOn = append(destOn, fmt.Sprintf("%s.%s = %s.%s",
+			throughAlias, pgQuote(srcTk), destAlias, pgQuote(destTk)))
+	}
 	onDest := strings.Join(destOn, " AND ")
 	destRef := fmt.Sprintf("%s AS %s", p.qb.tableExpression(destSch), destAlias)
 	p.joins = append(p.joins, graphJoinSpec{tableWithAlias: destRef, onExpr: onDest})
 	p.pathKeyAli[cacheKey] = destAlias
 	p.pathKeySch[cacheKey] = destSch
-	srcTk := parentSch.TenantKey()
-	destTk := destSch.TenantKey()
-	if srcTk != "" && destTk != "" {
-		p.m2mTenantWheres = append(p.m2mTenantWheres, fmt.Sprintf("%s.%s = %s.%s",
-			parentAlias, pgQuote(srcTk), destAlias, pgQuote(destTk)))
-	}
 	return destAlias, destSch, nil
 }
 
@@ -395,10 +399,11 @@ func noteGraphFieldName(name string, maxDots int, into map[string]struct{}) erro
 func collectSelectAndGraphPaths(graph *dmodel.SearchGraph, opts SqlSelectGraphOpts) (map[string]struct{}, error) {
 	paths := make(map[string]struct{})
 	for _, col := range opts.Columns {
-		if col == "" {
+		path := col.joinPlanningPath()
+		if path == "" {
 			continue
 		}
-		if err := noteGraphFieldName(col, MaxSelectGraphColumnDots, paths); err != nil {
+		if err := noteGraphFieldName(path, MaxSelectGraphColumnDots, paths); err != nil {
 			return nil, err
 		}
 	}
@@ -457,9 +462,12 @@ func pathInOrder(path string, graph *dmodel.SearchGraph) bool {
 	return false
 }
 
-func pathInSelectColumns(path string, columns []string) bool {
+func pathInSelectColumns(path string, columns []SelectColumn) bool {
 	for _, c := range columns {
-		if c == path {
+		if c.joinPlanningPath() == path {
+			return true
+		}
+		if strings.TrimSpace(c.rawString()) == path {
 			return true
 		}
 	}

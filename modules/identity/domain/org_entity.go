@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"go.bryk.io/pkg/errors"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -8,34 +10,41 @@ import (
 
 const (
 	OrganizationSchemaName = "identity.organization"
-	OrgFieldAddress        = "address"
-	OrgFieldDisplayName    = "display_name"
-	OrgFieldLegalName      = "legal_name"
-	OrgFieldPhoneNumber    = "phone_number"
-	OrgFieldSlug           = "slug"
-	UsrOrgRelSchemaName    = "identity.user_org_rel"
-	UsrOrgRelFieldUserId   = "user_id"
-	UsrOrgRelFieldOrgId    = "org_id"
 
-	OrgEdgeHierarchies = "hierarchies"
-	OrgEdgeUsers       = "users"
+	OrgFieldId          = basemodel.FieldId
+	OrgFieldAddress     = "address"
+	OrgFieldDisplayName = "display_name"
+	OrgFieldLegalName   = "legal_name"
+	OrgFieldPhoneNumber = "phone_number"
+	OrgFieldSlug        = "slug"
+
+	OrgEdgeOrgUnits     = "org_units"
+	OrgEdgeUsers        = "users"
+	OrgEdgeEntitlements = "entitlements"
 )
 
-func UserOrgRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(UsrOrgRelSchemaName).
-		TableName("ident_user_org_rel").
+const (
+	OrgUsrRelSchemaName = "identity.org_user_rel"
+
+	OrgUsrRelFieldId     = basemodel.FieldId
+	OrgUsrRelFieldUserId = "user_id"
+	OrgUsrRelFieldOrgId  = "org_id"
+)
+
+func OrgUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(OrgUsrRelSchemaName).
+		TableName("ident_org_user_rel").
 		ShouldBuildDb().
+		// Add `id` column to cascade delete to user_permissions table
+		Extend(basemodel.BaseModelSchemaBuilder()).
+		CompositeUnique(OrgUsrRelFieldOrgId, OrgUsrRelFieldUserId).
 		Field(
-			dmodel.DefineField().
-				Name(UsrOrgRelFieldUserId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
+			basemodel.DefineFieldId(OrgUsrRelFieldOrgId).
+				RequiredForCreate(),
 		).
 		Field(
-			dmodel.DefineField().
-				Name(UsrOrgRelFieldOrgId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
+			basemodel.DefineFieldId(OrgUsrRelFieldUserId).
+				RequiredForCreate(),
 		)
 }
 
@@ -83,13 +92,18 @@ func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.AuditableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(OrgEdgeUsers).
-				ManyToMany(UserSchemaName, UsrOrgRelSchemaName, "org").
+				ManyToMany(UserSchemaName, OrgUsrRelSchemaName, "org").
 				OnDelete(dmodel.RelationCascadeCascade),
 		).
 		EdgeFrom(
-			dmodel.Edge(OrgEdgeHierarchies).
-				Label(model.LangJson{"en-US": "Hierarchy Levels"}).
-				Existing(HierarchyLevelSchemaName, HierEdgeOrg),
+			dmodel.Edge(OrgEdgeOrgUnits).
+				Label(model.LangJson{"en-US": "Organizational Units"}).
+				Existing(OrganizationalUnitSchemaName, OrgUnitEdgeOrg),
+		).
+		EdgeFrom(
+			dmodel.Edge(OrgEdgeEntitlements).
+				Label(model.LangJson{"en-US": "Entitlements"}).
+				Existing(EntitlementSchemaName, EntitlementEdgeOrg),
 		)
 }
 
@@ -139,12 +153,16 @@ func (this *Organization) SetSlug(v *model.Slug) {
 	this.fields.SetString(OrgFieldSlug, &s)
 }
 
-func (this Organization) IsArchived() bool {
-	isArchived := this.fields.GetBool(basemodel.FieldIsArchived)
-	if isArchived == nil {
-		return false
+func (this Organization) MustIsArchived() bool {
+	val := this.IsArchived()
+	if val == nil {
+		panic(errors.New("is_archived is nil"))
 	}
-	return *isArchived
+	return *val
+}
+
+func (this Organization) IsArchived() *bool {
+	return this.fields.GetBool(basemodel.FieldIsArchived)
 }
 
 func (this Organization) GetEtag() *model.Etag {

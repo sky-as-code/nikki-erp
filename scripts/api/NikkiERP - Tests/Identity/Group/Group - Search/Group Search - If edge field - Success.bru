@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/groups?graph={"if": ["users.hierarchy_id", "is_set"]}&columns=name&columns=users.display_name
+  url: {{api_host}}/v1/identity/groups?graph={"if": ["users.org_unit_id", "is_set"]}&columns=name&columns=users.display_name
   body: none
   auth: inherit
 }
 
 params:query {
-  graph: {"if": ["users.hierarchy_id", "is_set"]}
+  graph: {"if": ["users.org_unit_id", "is_set"]}
   columns: name
   columns: users.display_name
 }

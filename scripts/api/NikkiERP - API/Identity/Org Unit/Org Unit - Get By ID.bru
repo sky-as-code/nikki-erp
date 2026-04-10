@@ -1,0 +1,16 @@
+meta {
+  name: Org Unit - Get By ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/identity/hierarchy/{{hierarchy_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

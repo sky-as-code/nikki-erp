@@ -5,88 +5,37 @@ meta {
 }
 
 put {
-  url: {{api_host}}/v1/authorize/actions/{{action_id}}
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}/actions/{{action_id}}
   body: json
   auth: inherit
 }
 
 body:json {
   {
-      "description": "Description",
-      "etag": "{{etag}}"
+    "name": "{{$randomVerb}}   {{$timestamp}}",
+    "description": "{{$randomLoremParagraphs}}",
+    "etag": "{{etag}}"
   }
 }
 
 script:pre-request {
-  let payload;
-  try {
-      payload = req.getBody();
-  } catch (e) {
-      console.error("❌ Failed to parse: ", e);
-      return;
+  const body = req.getBody();
+  
+  if (body.hasOwnProperty('code')) {
+    body.name = bru.interpolate(body.name);
+    body.code = body.name.toLowerCase().replace(/\s+/g, "_");
+    req.setBody(body);
   }
-  
-  // Optionally randomize description for better coverage
-  const randDesc = `Updated description ${Math.floor(Math.random() * 1000)}`;
-  payload.description = randDesc;
-  
-  req.setBody(payload)
-  
-  console.log("✅ Final request payload for update:", payload);
-  
 }
 
 script:post-response {
-  // Check status code
-  let isStatusValid = false;
-  test("Status code is 200", function () {
-      isStatusValid = res.getStatus() === 200;
-      expect(isStatusValid).to.be.true;
-  });
+  const pkg = require('./scripts/update-success');
   
-  // Parse JSON response
-  let body;
-  let isJsonValid = true;
-  try {
-      body = res.getBody();
-      console.log("📥 Response body:", body);
-  } catch (err) {
-      isJsonValid = false;
-      expect.fail("❌ Response is not valid JSON");
-  }
-  
-  // Validate response structure
-  let isStructureValid = false;
-  if (isStatusValid && isJsonValid) {
-      test("Response contains required fields", function () {
-          const requiredFields = ["id", "etag", "updatedAt"];
-          requiredFields.forEach(field => {
-              expect(body).to.have.property(field);
-          });
-          isStructureValid = true;
-      });
-  
-      // Set variable: etag
-      if (typeof body.etag === "string" && body.etag.length > 0) {
-          bru.setVar("etag", body.etag);
-          console.log("✅ etag set to:", body.etag);
-      } else {
-          console.warn("⚠️ etag missing or invalid");
-      }
-  
-      // Set variable: action_id
-      if (typeof body.id === "string" && body.id.length > 0) {
-          bru.setVar("action_id", body.id);
-          console.log("✅ action_id set to:", body.id);
-      } else {
-          console.warn("⚠️ id missing or invalid");
-      }
-  } else {
-      console.warn("⚠️ Skipped field validation or variable setting due to invalid status/JSON");
-  }
+  pkg.testUpdate(1);
   
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

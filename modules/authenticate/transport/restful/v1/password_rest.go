@@ -9,13 +9,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 )
 
-type passwordRestParams struct {
+type passwordRestParam struct {
 	dig.In
 
 	PasswordSvc it.PasswordService
 }
 
-func NewPasswordRest(params passwordRestParams) *PasswordRest {
+func NewPasswordRest(params passwordRestParam) *PasswordRest {
 	return &PasswordRest{
 		passwordSvc: params.PasswordSvc,
 	}
@@ -26,55 +26,55 @@ type PasswordRest struct {
 	passwordSvc it.PasswordService
 }
 
-func (this PasswordRest) CreateOtpPassword(echoCtx echo.Context) (err error) {
+func (this PasswordRest) CreatePasswordOtp(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create otp password"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create password OTP"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.passwordSvc.CreateOtpPassword,
-		func(request CreateOtpPasswordRequest) it.CreateOtpPasswordCommand {
-			return it.CreateOtpPasswordCommand(request)
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.passwordSvc.CreatePasswordOtp,
+		func(request CreateOtpPasswordRequest) it.CreatePasswordOtpCommand {
+			return it.CreatePasswordOtpCommand(request)
 		},
 		NewCreateOtpPasswordResponse,
 		httpserver.JsonOk,
 	)
-	return err
 }
 
-func (this PasswordRest) ConfirmOtpPassword(echoCtx echo.Context) (err error) {
+func (this PasswordRest) ConfirmPasswordOtp(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST confirm otp password"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST confirm password OTP"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.passwordSvc.ConfirmOtpPassword,
-		func(request ConfirmOtpPasswordRequest) it.ConfirmOtpPasswordCommand {
-			return it.ConfirmOtpPasswordCommand(request)
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.passwordSvc.ConfirmPasswordOtp,
+		func(request ConfirmOtpPasswordRequest) it.ConfirmPasswordOtpCommand {
+			return it.ConfirmPasswordOtpCommand(request)
 		},
 		NewConfirmOtpPasswordResponse,
 		httpserver.JsonOk,
 	)
-	return err
 }
 
-func (this PasswordRest) CreateTempPassword(echoCtx echo.Context) (err error) {
+func (this PasswordRest) CreatePasswordTemp(echoCtx echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create temp password"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create password temp"); e != nil {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.passwordSvc.CreateTempPassword,
-		func(request CreateTempPasswordRequest) it.CreateTempPasswordCommand {
-			return it.CreateTempPasswordCommand(request)
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.passwordSvc.CreatePasswordTemp,
+		func(request CreateTempPasswordRequest) it.CreatePasswordTempCommand {
+			return it.CreatePasswordTempCommand(request)
 		},
 		NewCreateTempPasswordResponse,
 		httpserver.JsonOk,
 	)
-	return err
 }
 
 func (this PasswordRest) SetPassword(echoCtx echo.Context) (err error) {
@@ -83,13 +83,13 @@ func (this PasswordRest) SetPassword(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.passwordSvc.SetPassword,
+	return httpserver.ServeRequest2(
+		echoCtx,
+		this.passwordSvc.SetPassword,
 		func(request SetPasswordRequest) it.SetPasswordCommand {
 			return it.SetPasswordCommand(request)
 		},
 		NewSetPasswordResponse,
 		httpserver.JsonOk,
 	)
-	return err
 }

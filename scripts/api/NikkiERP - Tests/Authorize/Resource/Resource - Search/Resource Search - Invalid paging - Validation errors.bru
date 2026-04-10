@@ -1,0 +1,28 @@
+meta {
+  name: Resource Search - Invalid paging - Validation errors
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources?page=-1&size=-1
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: -1
+  size: -1
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-invalid-range');
+  
+  pkg.testInvalidNumberRange('page', 'size');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

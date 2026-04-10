@@ -1,14 +1,18 @@
 package model
 
 import (
+	"regexp"
 	"strings"
 
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 )
+
+var indexNameRegex = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
 
 type ModelSchemaBuilder struct {
 	schema        ModelSchema
@@ -57,16 +61,6 @@ func (this *ModelSchemaBuilder) Field(fieldBuilder *FieldBuilder) *ModelSchemaBu
 	field := fieldBuilder.Build()
 	this.addField(field)
 
-	if field.relation != nil {
-		rel := field.relation
-		rel.SrcField = field.name
-		this.schema.relations = append(this.schema.relations, *rel)
-		field.relation = nil
-		if rel.Edge != "" {
-			this.addImplicitEdgeField(rel)
-		}
-	}
-
 	return this
 }
 
@@ -106,30 +100,27 @@ func (this *ModelSchemaBuilder) Extend(builder *ModelSchemaBuilder) *ModelSchema
 	for _, fieldName := range builder.schema.fieldsOrder {
 		this.addField(builder.schema.fields[fieldName])
 	}
-	this.schema.relations = append(this.schema.relations, builder.schema.relations...)
+	this.schema.toRelations = append(this.schema.toRelations, builder.schema.toRelations...)
+	this.schema.fromRelations = append(this.schema.fromRelations, builder.schema.fromRelations...)
 	this.schema.compositeUniques = append(this.schema.compositeUniques, builder.schema.compositeUniques...)
-	this.schema.partialUniques = append(this.schema.partialUniques, builder.schema.partialUniques...)
+	this.schema.partialUniqueGroups = append(this.schema.partialUniqueGroups, builder.schema.partialUniqueGroups...)
+	this.schema.searchIndexGroups = append(this.schema.searchIndexGroups, builder.schema.searchIndexGroups...)
 	this.schema.exclusiveFieldGroups = append(
 		this.schema.exclusiveFieldGroups, builder.schema.exclusiveFieldGroups...)
 	return this
 }
 
-// ExclusiveFieldGroup registers one exclusive group: exactly one of the listed fields must be
+// ExclusiveFields registers one exclusive group: exactly one of the listed fields must be
 // non-empty on validate. The slice may contain any number of field names (minimum two). Call
 // multiple times to register multiple independent groups. Each name must exist on the schema
 // when Build runs.
-func (this *ModelSchemaBuilder) ExclusiveFieldGroup(fieldNames []string) *ModelSchemaBuilder {
+func (this *ModelSchemaBuilder) ExclusiveFields(fieldNames ...string) *ModelSchemaBuilder {
 	if len(fieldNames) < 2 {
 		panic(errors.New("ExclusiveFieldGroup: at least two field names are required"))
 	}
 	group := append([]string{}, fieldNames...)
 	this.schema.exclusiveFieldGroups = append(this.schema.exclusiveFieldGroups, group)
 	return this
-}
-
-// ExclusiveFields is equivalent to ExclusiveFieldGroup(fieldNames) for a variadic argument list.
-func (this *ModelSchemaBuilder) ExclusiveFields(fieldNames ...string) *ModelSchemaBuilder {
-	return this.ExclusiveFieldGroup(fieldNames)
 }
 
 func (this *ModelSchemaBuilder) addImplicitEdgeField(rel *ModelRelation) {
@@ -157,7 +148,7 @@ func (this *ModelSchemaBuilder) EdgeFrom(rb *RelationBuilder) *ModelSchemaBuilde
 	if rel.Edge == "" {
 		panic(errors.New("EdgeFrom: edge name is required"))
 	}
-	this.schema.relations = append(this.schema.relations, *rel)
+	this.schema.fromRelations = append(this.schema.fromRelations, *rel)
 	return this
 }
 
@@ -165,17 +156,11 @@ func (this *ModelSchemaBuilder) EdgeTo(rb *RelationBuilder) *ModelSchemaBuilder 
 	rel := rb.Build()
 	if rel.RelationType == RelationTypeManyToMany {
 		this.validateManyToManyCascade(*rel)
-		if rel.OnDelete == "" {
-			rel.OnDelete = RelationCascadeNoAction
-		}
-		if rel.OnUpdate == "" {
-			rel.OnUpdate = RelationCascadeNoAction
-		}
 		// Will be set by SchemaRegistry.FinalizeRelations()
 		rel.SrcField = ""
 		rel.DestField = ""
 	}
-	this.schema.relations = append(this.schema.relations, *rel)
+	this.schema.toRelations = append(this.schema.toRelations, *rel)
 	if rel.Edge != "" {
 		this.addImplicitEdgeField(rel)
 	}
@@ -204,13 +189,92 @@ func (this *ModelSchemaBuilder) CompositeUnique(composite ...string) *ModelSchem
 
 // PartialUnique registers a partial unique index on two columns: exactly one must be requiredForCreate
 // (NOT NULL) and the other nullable. Enforced in Build() when ShouldBuildDb is set.
-func (this *ModelSchemaBuilder) PartialUnique(field1, field2 string) *ModelSchemaBuilder {
-	a := strings.TrimSpace(field1)
-	b := strings.TrimSpace(field2)
+func (this *ModelSchemaBuilder) PartialUnique(notNullField, nullableField string) *ModelSchemaBuilder {
+	a := strings.TrimSpace(notNullField)
+	b := strings.TrimSpace(nullableField)
 	if a != "" && b != "" {
-		this.schema.partialUniques = append(this.schema.partialUniques, []string{a, b})
+		this.PartialUniqueGroup(PartialUniqueGroupParam{
+			NotNullFields: []string{a},
+			NullableField: b,
+		})
 	}
 	return this
+}
+
+// SearchIndex causes the migration script to generate CREATE INDEX statement for the given fields.
+// Field order matters: Place the most frequently queried column or
+// the one with the highest selectivity (most unique values) first.
+func (this *ModelSchemaBuilder) SearchIndex(fields ...string) *ModelSchemaBuilder {
+	return this.SearchIndexGroup(SearchIndexGroupParam{Fields: fields})
+}
+
+type SearchIndexGroupParam struct {
+	// If not specified, a default name will be generated from all field names.
+	// Recommend to provide an index name when the number of fields is more than 2.
+	IndexName string
+	// Field order matters: Place the most frequently queried column or
+	// the one with the highest selectivity (most unique values) first.
+	Fields []string
+}
+
+// SearchIndexGroup causes the migration script to generate CREATE INDEX statement for the given fields.
+func (this *ModelSchemaBuilder) SearchIndexGroup(group SearchIndexGroupParam) *ModelSchemaBuilder {
+	if len(group.Fields) == 0 {
+		panic(errors.New("SearchIndexGroup: field list must not be empty"))
+	}
+	fields := array.Map(group.Fields, func(fieldName string) string {
+		trimName := strings.TrimSpace(fieldName)
+		if trimName == "" {
+			panic(errors.Errorf("SearchIndexGroup: field name must not be empty: %s", fieldName))
+		}
+		return trimName
+	})
+
+	this.schema.searchIndexGroups = append(this.schema.searchIndexGroups, SearchIndexGroupParam{
+		IndexName: mustNormalizeIndexName(group.IndexName),
+		Fields:    fields,
+	})
+	return this
+}
+
+type PartialUniqueGroupParam struct {
+	IndexName     string
+	NotNullFields []string
+	NullableField string
+}
+
+func (this *ModelSchemaBuilder) PartialUniqueGroup(group PartialUniqueGroupParam) *ModelSchemaBuilder {
+	indexName := mustNormalizeIndexName(group.IndexName)
+	nullableField := strings.TrimSpace(group.NullableField)
+	notNullFields := array.Map(group.NotNullFields, func(fieldName string) string {
+		trimName := strings.TrimSpace(fieldName)
+		if trimName == "" {
+			panic(errors.Errorf("PartialUniqueGroup: field name must not be empty: %s", fieldName))
+		}
+		return trimName
+	})
+	this.schema.partialUniqueGroups = append(this.schema.partialUniqueGroups, PartialUniqueGroupParam{
+		IndexName:     indexName,
+		NotNullFields: notNullFields,
+		NullableField: nullableField,
+	})
+	return this
+}
+
+func mustNormalizeIndexName(raw string) string {
+	indexName := strings.TrimSpace(raw)
+	if indexName == "" {
+		return ""
+	}
+	if !indexNameRegex.MatchString(indexName) {
+		panic(errors.Errorf(
+			"mustNormalizeIndexName: invalid index name '%s'; only alphanumeric and '_' are allowed",
+			indexName))
+	}
+	if !strings.HasSuffix(indexName, "_idx") {
+		indexName += "_idx"
+	}
+	return indexName
 }
 
 func (this *ModelSchemaBuilder) SetCompositeUniques(allUniques [][]string) *ModelSchemaBuilder {
@@ -221,6 +285,9 @@ func (this *ModelSchemaBuilder) SetCompositeUniques(allUniques [][]string) *Mode
 func (this *ModelSchemaBuilder) Build() *ModelSchema {
 	schema := &this.schema
 	if err := validateExclusiveFieldGroups(schema); err != nil {
+		panic(errors.Wrap(err, "Build"))
+	}
+	if err := validateRequiredWithFields(schema); err != nil {
 		panic(errors.Wrap(err, "Build"))
 	}
 	if this.shouldBuildDb {
@@ -239,6 +306,17 @@ func validateExclusiveFieldGroups(schema *ModelSchema) error {
 				return errors.Errorf(
 					"exclusive field group %d: field %q is not defined on schema %q",
 					gi, name, schema.name)
+			}
+		}
+	}
+	return nil
+}
+
+func validateRequiredWithFields(schema *ModelSchema) error {
+	for _, field := range schema.fields {
+		if field.requiredWithFieldName != "" {
+			if _, ok := schema.Field(field.requiredWithFieldName); !ok {
+				return errors.Errorf("validateRequiredWithFields: field '%s' depends on undefined field '%s'", field.name, field.requiredWithFieldName)
 			}
 		}
 	}
@@ -320,11 +398,6 @@ func (this *FieldBuilder) DataType(dataType FieldDataType) *FieldBuilder {
 	return this
 }
 
-func (this *FieldBuilder) Foreign(relationBuilder *RelationBuilder) *FieldBuilder {
-	this.field.relation = relationBuilder.Build()
-	return this
-}
-
 func (this *FieldBuilder) Label(label model.LangJson) *FieldBuilder {
 	this.field.label = label
 	return this
@@ -342,8 +415,8 @@ func (this *FieldBuilder) Name(name string) *FieldBuilder {
 // Indicates that the field value cannot be set by user but by the system.
 // Any input value will be silently ignored when creating or updating the model.
 // If a default value is registered, it will be used in create operations.
-func (this *FieldBuilder) ReadOnly() *FieldBuilder {
-	this.field.isReadOnly = true
+func (this *FieldBuilder) AutoGenerated() *FieldBuilder {
+	this.field.isAutoGenerated = true
 	return this
 }
 
@@ -370,6 +443,11 @@ func (this *FieldBuilder) RequiredForUpdate() *FieldBuilder {
 	return this
 }
 
+func (this *FieldBuilder) RequiredWith(otherFieldName string) *FieldBuilder {
+	this.field.requiredWithFieldName = otherFieldName
+	return this
+}
+
 func (this *FieldBuilder) IsRequired(isRequired bool) *FieldBuilder {
 	this.field.isRequiredForCreate = isRequired
 	this.field.isRequiredForUpdate = isRequired
@@ -386,21 +464,32 @@ func (this *FieldBuilder) IsRequiredForUpdate(isRequired bool) *FieldBuilder {
 	return this
 }
 
-func (this *FieldBuilder) IsReadOnly(isReadOnly bool) *FieldBuilder {
-	this.field.isReadOnly = isReadOnly
+func (this *FieldBuilder) IsAutoGenerated(isAutoGenerated bool) *FieldBuilder {
+	this.field.isAutoGenerated = isAutoGenerated
 	return this
 }
 
-func (this *FieldBuilder) PrimaryKey() *FieldBuilder {
+// Allows setting value on create but not on update.
+func (this *FieldBuilder) NoUpdate() *FieldBuilder {
+	this.field.noUpdate = true
+	return this
+}
+
+func (this *FieldBuilder) PrimaryKey(isAutoGenerated ...bool) *FieldBuilder {
 	this.field.isPrimaryKey = true
 	this.RequiredForCreate() // NOT NULL column
 	this.RequiredForUpdate()
-	this.ReadOnly()
+	if len(isAutoGenerated) == 0 {
+		this.IsAutoGenerated(true)
+	} else {
+		this.IsAutoGenerated(isAutoGenerated[0])
+	}
 	return this
 }
 
 func (this *FieldBuilder) TenantKey() *FieldBuilder {
 	this.field.isTenantKey = true
+	this.RequiredForCreate() // NOT NULL column
 	return this
 }
 
@@ -454,7 +543,7 @@ func (this *FieldBuilder) VersioningKey() *FieldBuilder {
 	this.field.isVersioningKey = true
 	this.RequiredForCreate() // NOT NULL column
 	this.RequiredForUpdate()
-	this.ReadOnly()
+	this.AutoGenerated()
 	return this
 }
 
@@ -528,5 +617,11 @@ func (this *RelationBuilder) OnUpdate(onUpdate RelationCascade) *RelationBuilder
 }
 
 func (this *RelationBuilder) Build() *ModelRelation {
+	if this.relation.OnDelete == "" {
+		this.relation.OnDelete = RelationCascadeNoAction
+	}
+	if this.relation.OnUpdate == "" {
+		this.relation.OnUpdate = RelationCascadeNoAction
+	}
 	return this.relation
 }

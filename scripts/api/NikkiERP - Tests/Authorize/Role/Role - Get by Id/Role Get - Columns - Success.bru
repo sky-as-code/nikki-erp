@@ -1,0 +1,51 @@
+meta {
+  name: Role Get - Columns - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/authorize/roles/{{role_id}}?columns=name&columns=is_archived&columns=is_requestable
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: name
+  columns: is_archived
+  columns: is_requestable
+}
+
+script:post-response {
+  const { testHttpResponse } = require('./scripts/common-test-response');
+  
+  const schema = {
+    type: 'object',
+    required: ['name', 'is_archived', 'is_requestable'],
+    properties: {
+      id: {
+        type: 'string',
+        minLength: 1,
+      },
+      name: {
+        type: 'string',
+        minLength: 1,
+      },
+      is_archived: {
+        type: 'boolean',
+      },
+      is_requestable: {
+        type: 'boolean',
+      },
+    },
+    additionalProperties: false,
+  };
+  
+  testHttpResponse(schema, 200);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -3,25 +3,33 @@ package dynamicmodel
 import (
 	"github.com/sky-as-code/nikki-erp/common/datastructure"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
 )
 
-type BaseRepository interface {
-	// CheckUniqueCollisions returns unique key groups that have collisions. Empty slice means no collisions.
+type DynamicModelRepository interface {
+	BeginTransaction(ctx corectx.Context) (database.DbTransaction, error)
+	GetBaseRepo() BaseDynamicRepository
+}
+
+type BaseDynamicRepository interface {
+	Schema() *dmodel.ModelSchema
+	BeginTransaction(ctx corectx.Context) (database.DbTransaction, error)
+	ExtractClient(ctx corectx.Context) orm.DbClient
+	ExecFunc(ctx corectx.Context, sqlFuncName string, sqlFuncArgs ...any) error
+
 	CheckUniqueCollisions(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[[][]string], error)
-	// DeleteOne deletes a single record by primary key then returns the number of affected rows.
-	// If affected rows is 0, the record is not found.
+	CountM2m(ctx corectx.Context, param RepoCountM2mParam) (*OpResult[int], error)
 	DeleteOne(ctx corectx.Context, keys dmodel.DynamicFields) (*OpResult[int], error)
-	// ManageM2m inserts and/or deletes junction rows for a finalized many-to-many link to dest schema.
-	// Source and destination are identified by id.
-	ManageM2m(ctx corectx.Context, param RepoManageM2mParam) (*OpResult[int], error)
-	Insert(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[int], error)
+	Exists(ctx corectx.Context, keys []dmodel.DynamicFields) (*OpResult[RepoExistsResult], error)
+	ExistsM2m(ctx corectx.Context, param RepoExistsM2mParam) (bool, error)
 	GetOne(ctx corectx.Context, param RepoGetOneParam) (*OpResult[dmodel.DynamicFields], error)
+	Insert(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[int], error)
+	ManageM2m(ctx corectx.Context, param RepoManageM2mParam) (*OpResult[int], error)
 	Search(ctx corectx.Context, param RepoSearchParam) (*OpResult[PagedResultData[dmodel.DynamicFields]], error)
 	Update(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[dmodel.DynamicFields], error)
-	Exists(ctx corectx.Context, keys []dmodel.DynamicFields) (*OpResult[RepoExistsResult], error)
-	GetSchema() *dmodel.ModelSchema
 }
 
 // RepoM2mAssociation is one row to insert into the M2M junction: source entity keys and peer entity keys.
@@ -50,15 +58,31 @@ type RepoSearchParam struct {
 }
 
 type RepoManageM2mParam struct {
-	DestSchemaName     string
-	SrcId              model.Id
+	DestSchemaName string
+	SrcId          model.Id
+	// Field name for the source ID used to include in the error message.
 	SrcIdFieldForError string
-	AssociatedIds      datastructure.Set[model.Id]
-	DisassociatedIds   datastructure.Set[model.Id]
+	// M2M edge name on the source schema.
+	SrcEdgeName      string
+	AssociatedIds    datastructure.Set[model.Id]
+	DisassociatedIds datastructure.Set[model.Id]
+	BeforeInsert     RepoBeforeInsertM2mFn
 }
 
-type BaseRepoGetter interface {
-	GetBaseRepo() BaseRepository
+type RepoBeforeInsertM2mFn func(ctx corectx.Context, dbRecords []dmodel.DynamicFields) error
+
+// RepoExistsM2mParam checks the junction for an outgoing many-to-many edge on the repository schema.
+// When dest_id is omitted, null, or empty, checks that SrcId has at least one junction row; otherwise checks the (SrcId, DestId) pair.
+type RepoExistsM2mParam struct {
+	M2mEdge string    `json:"m2m_edge"`
+	SrcId   model.Id  `json:"src_id"`
+	DestId  *model.Id `json:"dest_id"`
+}
+
+// RepoCountM2mParam counts junction rows for one source record on an outgoing many-to-many edge.
+type RepoCountM2mParam struct {
+	M2mEdge string   `json:"m2m_edge"`
+	SrcId   model.Id `json:"src_id"`
 }
 
 type DynamicModelPtr[TDomain any] interface {

@@ -8,7 +8,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/common/validator"
 
-	"github.com/sky-as-code/nikki-erp/modules/authorize/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 )
@@ -166,7 +165,7 @@ func WrapSubjectType(s string) *SubjectTypeAuthorize {
 	return &st
 }
 
-func WrapSubjectTypeEnt(s domain.EntitlementAssignmentSubjectType) *SubjectTypeAuthorize {
+func WrapSubjectTypeEnt(s string) *SubjectTypeAuthorize {
 	st := SubjectTypeAuthorize(s)
 	return &st
 }

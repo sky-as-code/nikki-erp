@@ -1,0 +1,39 @@
+meta {
+  name: Org unit Manage - Remove Users - Success
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/identity/orgunits/{{orgunit_id}}/manage-users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "remove": ["<< Managed by script >>"]
+  }
+}
+
+script:pre-request {
+  const pkg = require('./scripts/common-test-response');
+  const userIds = pkg.getTestDataIds('user_ids');
+  const payload = req.getBody();
+  
+  payload.remove = userIds;
+  req.setBody(payload);
+}
+
+script:post-response {
+  const pkg = require('./scripts/update-success');
+  const { getTestDataIds } = require('./scripts/common-test-response');
+  const userIds = getTestDataIds('user_ids');
+  
+  pkg.testUpdate(userIds.length / 2);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

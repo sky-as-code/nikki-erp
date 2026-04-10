@@ -1,0 +1,28 @@
+meta {
+  name: Org unit Search - No criteria, With paging - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/identity/orgunits?page=1&size=5
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  size: 5
+}
+
+script:post-response {
+  const pkg = require('./scripts/search-success');
+  
+  pkg.testSearch(5, 1);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

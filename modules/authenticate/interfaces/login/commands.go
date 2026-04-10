@@ -1,14 +1,12 @@
 package login
 
 import (
-	"time"
-
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
 var authenticateCommandType = cqrs.RequestType{
@@ -18,7 +16,7 @@ var authenticateCommandType = cqrs.RequestType{
 }
 
 type AuthenticateCommand struct {
-	AttemptId model.Id          `json:"attemptId"`
+	AttemptId model.Id          `json:"attempt_id"`
 	Passwords map[string]string `json:"passwords"`
 }
 
@@ -26,19 +24,35 @@ func (AuthenticateCommand) CqrsRequestType() cqrs.RequestType {
 	return authenticateCommandType
 }
 
+func (this AuthenticateCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"authenticate.authenticate_command",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(basemodel.DefineFieldId("attempt_id").Required()).
+				Field(
+					dmodel.DefineField().
+						Name("passwords").
+						DataType(dmodel.FieldDataTypeModel()).
+						Required(),
+				)
+		},
+	)
+}
+
 type AuthenticateSuccessData struct {
-	AccessToken           string    `json:"accessToken"`
-	AccessTokenExpiresAt  time.Time `json:"accessTokenExpiresAt"`
-	RefreshToken          string    `json:"refreshToken"`
-	RefreshTokenExpiresAt time.Time `json:"refreshTokenExpiresAt"`
+	AccessToken           string              `json:"access_token"`
+	AccessTokenExpiresAt  model.ModelDateTime `json:"access_token_expires_at"`
+	RefreshToken          string              `json:"refresh_token"`
+	RefreshTokenExpiresAt model.ModelDateTime `json:"refresh_token_expires_at"`
 }
 
 type AuthenticateResultData struct {
 	Done     bool                     `json:"done"`
-	NextStep *string                  `json:"nextStep,omitempty"`
+	NextStep *string                  `json:"next_step,omitempty"`
 	Data     *AuthenticateSuccessData `json:"data,omitempty"`
 }
-type AuthenticateResult = crud.OpResult[*AuthenticateResultData]
+type AuthenticateResult = dyn.OpResult[AuthenticateResultData]
 
 var createLoginAttemptCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -46,24 +60,30 @@ var createLoginAttemptCommandType = cqrs.RequestType{
 	Action:    "createAttempt",
 }
 
+func NewCreateLoginAttemptCommand() CreateLoginAttemptCommand {
+	return CreateLoginAttemptCommand{
+		LoginAttempt: *domain.NewLoginAttempt(),
+	}
+}
+
 type CreateLoginAttemptCommand struct {
-	DeviceIp         *string            `json:"deviceIp,omitempty"`
-	DeviceName       *string            `json:"deviceName,omitempty"`
-	DeviceLocation   *string            `json:"deviceLocation,omitempty"`
-	SubjectType      domain.SubjectType `json:"subjectType"`
-	SubjectSourceRef *string            `json:"subjectSourceRef,omitempty"`
-	Username         string             `json:"username"`
+	domain.LoginAttempt
 }
 
 func (CreateLoginAttemptCommand) CqrsRequestType() cqrs.RequestType {
 	return createLoginAttemptCommandType
 }
 
-type CreateLoginAttemptResultData struct {
-	Attempt     domain.LoginAttempt `json:"attempt"`
-	SubjectName string              `json:"subjectName"`
+func (this CreateLoginAttemptCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.LoginAttemptSchemaName)
 }
-type CreateLoginAttemptResult = crud.OpResult[*CreateLoginAttemptResultData]
+
+type CreateLoginAttemptResultData struct {
+	Attempt       domain.LoginAttempt `json:"attempt"`
+	PrincipalName string              `json:"principal_name"`
+}
+
+type CreateLoginAttemptResult = dyn.OpResult[CreateLoginAttemptResultData]
 
 var updateLoginAttemptCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -72,17 +92,18 @@ var updateLoginAttemptCommandType = cqrs.RequestType{
 }
 
 type UpdateLoginAttemptCommand struct {
-	Id            model.Id              `json:"id"`
-	IsGenuine     *bool                 `json:"isGenuine,omitempty"`
-	CurrentMethod *string               `json:"currentMethod,omitempty"`
-	Status        *domain.AttemptStatus `json:"status,omitempty"`
+	domain.LoginAttempt
 }
 
 func (UpdateLoginAttemptCommand) CqrsRequestType() cqrs.RequestType {
 	return updateLoginAttemptCommandType
 }
 
-type UpdateLoginAttemptResult = crud.OpResult[*domain.LoginAttempt]
+func (this UpdateLoginAttemptCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.LoginAttemptSchemaName)
+}
+
+type UpdateLoginAttemptResult = dyn.OpResult[dyn.MutateResultData]
 
 var startLoginFlowCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -91,14 +112,25 @@ var startLoginFlowCommandType = cqrs.RequestType{
 }
 
 type StartLoginFlowCommand struct {
-	DeviceName       *string            `json:"deviceName,omitempty"`
-	SubjectType      domain.SubjectType `json:"subjectType"`
-	SubjectSourceRef *string            `json:"subjectSourceRef,omitempty"`
-	Username         string             `json:"username"`
+	DeviceName    *string               `json:"device_name,omitempty"`
+	PrincipalType *domain.PrincipalType `json:"principal_type,omitempty"`
+	Username      string                `json:"username"`
 }
 
 func (StartLoginFlowCommand) CqrsRequestType() cqrs.RequestType {
 	return startLoginFlowCommandType
+}
+
+func (this StartLoginFlowCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"authenticate.start_login_flow_command",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(domain.DefinePrincipalDeviceNameField()).
+				Field(domain.DefinePrincipalTypeField("principal_type").Default(domain.PrincipalTypeNikkiUser)).
+				Field(domain.DefinePrincipalUsernameField("username").Required())
+		},
+	)
 }
 
 var getAttemptByIdQueryType = cqrs.RequestType{
@@ -107,23 +139,13 @@ var getAttemptByIdQueryType = cqrs.RequestType{
 	Action:    "getAttemptById",
 }
 
-type GetAttemptByIdQuery struct {
-	Id model.Id `param:"id" json:"id"`
-}
+type GetAttemptQuery dyn.GetOneQuery
 
-func (GetAttemptByIdQuery) CqrsRequestType() cqrs.RequestType {
+func (this GetAttemptQuery) CqrsRequestType() cqrs.RequestType {
 	return getAttemptByIdQueryType
 }
 
-func (this GetAttemptByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type GetAttemptByIdResult = crud.OpResult[*domain.LoginAttempt]
+type GetAttemptResult = dyn.OpResult[domain.LoginAttempt]
 
 var refreshTokenCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -132,17 +154,27 @@ var refreshTokenCommandType = cqrs.RequestType{
 }
 
 type RefreshTokenCommand struct {
-	RefreshToken string `json:"refreshToken"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func (RefreshTokenCommand) CqrsRequestType() cqrs.RequestType {
 	return refreshTokenCommandType
 }
 
-type RefreshTokenResultData struct {
-	AccessToken           string    `json:"accessToken"`
-	AccessTokenExpiresAt  time.Time `json:"accessTokenExpiresAt"`
-	RefreshToken          string    `json:"refreshToken"`
-	RefreshTokenExpiresAt time.Time `json:"refreshTokenExpiresAt"`
+func (this RefreshTokenCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"authenticate.refresh_token_command",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(
+					dmodel.DefineField().
+						Name("refresh_token").
+						DataType(dmodel.FieldDataTypeString(1, 1000)).
+						Required(),
+				)
+		},
+	)
 }
-type RefreshTokenResult = crud.OpResult[*RefreshTokenResultData]
+
+type RefreshTokenResultData = AuthenticateSuccessData
+type RefreshTokenResult = dyn.OpResult[RefreshTokenResultData]

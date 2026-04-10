@@ -1,255 +1,100 @@
-DO $$
+CREATE OR REPLACE FUNCTION authz_calc_user_perm(p_user_id varchar DEFAULT NULL)
+RETURNS TABLE (
+	-- The order must exactly match CREATE TABLE "authz_user_permissions"
+	user_id                   varchar,
+	ent_id                    varchar,
+	ent_expression            varchar,
+	action_id                 varchar,
+	resource_id               varchar,
+	resource_code             varchar,
+	role_group_assignment_id  varchar,
+	role_user_assignment_id   varchar,
+	scope                     varchar,
+	org_id                    varchar,
+	org_membership_id         varchar,
+	group_membership_id       varchar,
+	org_unit_id               varchar
+)
+LANGUAGE sql
+AS $$
+WITH role_entitlements AS (
+
+	-- Direct user roles
+	SELECT
+		ra.receiver_user_id AS user_id,
+		e.id                AS ent_id,
+		e.expression        AS ent_expression,
+		a.id                AS action_id,
+		res.id              AS resource_id,
+		res.code            AS resource_code,
+		NULL                AS role_group_assignment_id,
+		ra.id               AS role_user_assignment_id,
+		e.scope,
+		e.org_id,
+		our.id               AS org_membership_id,
+		NULL                 AS group_membership_id,
+		e.org_unit_id
+	FROM authz_role_user_assignments ra
+		JOIN authz_roles r ON r.id = ra.role_id AND r.is_archived = FALSE
+		JOIN authz_entitlements e ON e.role_id = r.id AND e.is_archived = FALSE
+		LEFT JOIN authz_actions a ON a.id = e.action_id AND a.resource_id = e.resource_id
+		LEFT JOIN authz_resources res ON res.id = a.resource_id
+		LEFT JOIN ident_org_user_rel our ON our.user_id = ra.receiver_user_id
+	WHERE (p_user_id IS NULL OR ra.receiver_user_id = p_user_id)
+		AND ra.receiver_user_id IS NOT NULL
+		AND (ra.expires_at IS NULL OR ra.expires_at > NOW())
+
+	UNION ALL
+
+	-- Group roles exploded to users
+	SELECT
+		gur.user_id     AS user_id,
+		e.id            AS ent_id,
+		e.expression    AS ent_expression,
+		a.id            AS action_id,
+		res.id          AS resource_id,
+		res.code        AS resource_code,
+		ra.id           AS role_group_assignment_id,
+		NULL            AS role_user_assignment_id,
+		e.scope,
+		e.org_id,
+		NULL            AS org_membership_id,
+		gur.id          AS group_membership_id,
+		e.org_unit_id
+	FROM ident_group_user_rel gur
+		JOIN authz_role_group_assignments ra ON ra.receiver_group_id = gur.group_id AND (ra.expires_at IS NULL OR ra.expires_at > NOW())
+		JOIN authz_roles r ON r.id = ra.role_id AND r.is_archived = FALSE
+		JOIN authz_entitlements e ON e.role_id = r.id AND e.is_archived = FALSE
+		LEFT JOIN authz_actions a ON a.id = e.action_id AND a.resource_id = e.resource_id
+		LEFT JOIN authz_resources res ON res.id = a.resource_id
+	WHERE (p_user_id IS NULL OR gur.user_id = p_user_id)
+)
+SELECT * FROM role_entitlements re;
+$$;
+
+
+CREATE OR REPLACE FUNCTION authz_rebuild_user_perm(p_user_id varchar)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
 BEGIN
-	IF 7 = (
-		SELECT COUNT(*) FROM information_schema.tables 
-		WHERE table_schema = 'public' AND (
-			table_name = 'authz_entitlement_assignments' OR 
-			table_name = 'ident_user_group_rel' OR
-			table_name = 'authz_entitlements' OR
-			table_name = 'authz_resources' OR
-			table_name = 'authz_role_user' OR
-			table_name = 'authz_role_suite_user' OR
-			table_name = 'authz_role_rolesuite'
-		)
-	) THEN
+	DELETE FROM authz_user_permissions WHERE user_id = p_user_id;
 
-		-- View for user effective entitlements (direct, roles, suites, and via groups)
-		CREATE OR REPLACE VIEW authz_effective_user_entitlements AS
-		WITH 
-		-- 1. Direct assignments to user
-		user_direct_assignments AS (
-			SELECT
-				assignment.subject_ref AS user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_user' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			WHERE assignment.subject_type = 'nikki_user'
-		),
-		-- 2. User's groups
-		user_groups AS (
-			SELECT user_id, group_id
-			FROM ident_user_group_rel
-		),
-		-- 3. Assignments to groups the user belongs to
-		group_assignments AS (
-			SELECT
-				user_group.user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN user_groups user_group ON assignment.subject_type = 'nikki_group' AND assignment.subject_ref = user_group.group_id
-		),
-		-- 4. User's roles (direct)
-		user_roles AS (
-			SELECT receiver_ref AS user_id, role_id
-			FROM authz_role_user
-			WHERE receiver_type = 'user'
-		),
-		-- 5. Assignments to roles directly assigned to user
-		user_role_assignments AS (
-			SELECT
-				user_role.user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_role' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN user_roles user_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = user_role.role_id
-		),
-		-- 6. User's suites
-		user_suites AS (
-			SELECT receiver_ref AS user_id, role_suite_id
-			FROM authz_role_suite_user
-			WHERE receiver_type = 'user'
-		),
-		-- 7. Roles in user's suites
-		suite_roles AS (
-			SELECT us.user_id, rr.role_id
-			FROM authz_role_rolesuite rr
-			JOIN user_suites us ON rr.role_suite_id = us.role_suite_id
-		),
-		-- 8. Assignments to roles in user's suites
-		user_suite_assignments AS (
-			SELECT
-				suite_role.user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_suite' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN suite_roles suite_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = suite_role.role_id
-		),
-		-- 9. Roles assigned to user's groups
-		group_roles AS (
-			SELECT ug.user_id, ru.role_id
-			FROM authz_role_user ru
-			JOIN user_groups ug ON ru.receiver_type = 'group' AND ru.receiver_ref = ug.group_id
-		),
-		-- 10. Assignments to roles assigned to user's groups
-		group_role_assignments AS (
-			SELECT
-				group_role.user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group_role' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN group_roles group_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = group_role.role_id
-		),
-		-- 11. Suites assigned to user's groups
-		group_suites AS (
-			SELECT ug.user_id, rsu.role_suite_id
-			FROM authz_role_suite_user rsu
-			JOIN user_groups ug ON rsu.receiver_type = 'group' AND rsu.receiver_ref = ug.group_id
-		),
-		-- 12. Roles in suites assigned to user's groups
-		group_suite_roles AS (
-			SELECT gs.user_id, rr.role_id
-			FROM authz_role_rolesuite rr
-			JOIN group_suites gs ON rr.role_suite_id = gs.role_suite_id
-		),
-		-- 13. Assignments to roles in suites assigned to user's groups
-		group_suite_assignments AS (
-			SELECT
-				group_suite_role.user_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group_suite' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN group_suite_roles group_suite_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = group_suite_role.role_id
-		)
-		-- Final union of all sources for user
-		SELECT * FROM user_direct_assignments
-		UNION
-		SELECT * FROM group_assignments
-		UNION
-		SELECT * FROM user_role_assignments
-		UNION
-		SELECT * FROM user_suite_assignments
-		UNION
-		SELECT * FROM group_role_assignments
-		UNION
-		SELECT * FROM group_suite_assignments;
-
-		-- View for group effective entitlements (direct, roles, and suites)
-		CREATE OR REPLACE VIEW authz_effective_group_entitlements AS
-		WITH 
-		-- 1. Direct assignments to group
-		group_direct_assignments AS (
-			SELECT
-				assignment.subject_ref AS group_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			WHERE assignment.subject_type = 'nikki_group'
-		),
-		-- 2. Group's roles (direct)
-		group_roles AS (
-			SELECT receiver_ref AS group_id, role_id
-			FROM authz_role_user
-			WHERE receiver_type = 'group'
-		),
-		-- 3. Assignments to roles directly assigned to group
-		group_role_assignments AS (
-			SELECT
-				group_role.group_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group_role' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN group_roles group_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = group_role.role_id
-		),
-		-- 4. Group's suites
-		group_suites AS (
-			SELECT receiver_ref AS group_id, role_suite_id
-			FROM authz_role_suite_user
-			WHERE receiver_type = 'group'
-		),
-		-- 5. Roles in group's suites
-		group_suite_roles AS (
-			SELECT gs.group_id, rr.role_id
-			FROM authz_role_rolesuite rr
-			JOIN group_suites gs ON rr.role_suite_id = gs.role_suite_id
-		),
-		-- 6. Assignments to roles in group's suites
-		group_suite_assignments AS (
-			SELECT
-				group_suite_role.group_id,
-				entitlement.action_expr,
-				entitlement.resource_id,
-				assignment.resource_name,
-				resource.scope_type,
-				entitlement.action_id,
-				assignment.scope_ref,
-				assignment.action_name,
-				'nikki_group_suite' AS source
-			FROM authz_entitlement_assignments assignment
-			JOIN authz_entitlements entitlement ON assignment.entitlement_id = entitlement.id
-			LEFT JOIN authz_resources resource ON entitlement.resource_id = resource.id
-			JOIN group_suite_roles group_suite_role ON assignment.subject_type = 'nikki_role' AND assignment.subject_ref = group_suite_role.role_id
-		)
-		-- Final union of all sources for group
-		SELECT * FROM group_direct_assignments
-		UNION
-		SELECT * FROM group_role_assignments
-		UNION
-		SELECT * FROM group_suite_assignments;
-
-	END IF;
+	INSERT INTO authz_user_permissions
+		SELECT * FROM authz_calc_user_perm(p_user_id)
+		ON CONFLICT DO NOTHING;
 END $$;
+
+
+CREATE OR REPLACE FUNCTION authz_rebuild_all_user_perms()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	TRUNCATE TABLE authz_user_permissions;
+
+	INSERT INTO authz_user_permissions
+		SELECT * FROM authz_calc_user_perm(NULL)
+		ON CONFLICT DO NOTHING;
+END $$;
+

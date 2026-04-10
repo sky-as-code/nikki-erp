@@ -26,11 +26,21 @@ func (this *SchemaRegistry) FinalizeRelations() error {
 
 func normalizeAllForeignKeyMapsUnlocked(reg *SchemaRegistry) error {
 	for _, sch := range reg.schemas {
-		for i := range sch.relations {
-			rel := &sch.relations[i]
-			if err := normalizeRelationForeignKeys(reg, sch, rel); err != nil {
-				return errors.Wrapf(err, "schema '%s' relation '%s'", sch.Name(), rel.Edge)
-			}
+		if err := normalizeRelationSliceForeignKeys(reg, sch, &sch.toRelations); err != nil {
+			return err
+		}
+		if err := normalizeRelationSliceForeignKeys(reg, sch, &sch.fromRelations); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func normalizeRelationSliceForeignKeys(reg *SchemaRegistry, sch *ModelSchema, slice *[]ModelRelation) error {
+	for i := range *slice {
+		rel := &(*slice)[i]
+		if err := normalizeRelationForeignKeys(reg, sch, rel); err != nil {
+			return errors.Wrapf(err, "schema '%s' relation '%s'", sch.Name(), rel.Edge)
 		}
 	}
 	return nil
@@ -220,8 +230,8 @@ func assertMatchingTypes(leftSch *ModelSchema, leftCol string, rightSch *ModelSc
 
 func finalizePeerInverseEdgesUnlocked(reg *SchemaRegistry) error {
 	for _, destSch := range reg.schemas {
-		for i := range destSch.relations {
-			rel := &destSch.relations[i]
+		for i := range destSch.fromRelations {
+			rel := &destSch.fromRelations[i]
 			if rel.InversePeerSchemaName == "" {
 				continue
 			}
@@ -229,7 +239,7 @@ func finalizePeerInverseEdgesUnlocked(reg *SchemaRegistry) error {
 			if err != nil {
 				return errors.Wrapf(err, "schema '%s' peer edge '%s'", destSch.Name(), rel.Edge)
 			}
-			destSch.relations[i] = resolved
+			destSch.fromRelations[i] = resolved
 			addVirtualEdgeFieldOnSchema(destSch, resolved)
 		}
 	}
@@ -253,7 +263,7 @@ func resolvePeerInverseEdge(reg *SchemaRegistry, destSch *ModelSchema, pending *
 }
 
 func findForwardPeerRelation(srcSch *ModelSchema, edgeName, destSchemaName string) (ModelRelation, error) {
-	for _, rel := range srcSch.Relations() {
+	for _, rel := range srcSch.ToRelations() {
 		if rel.Edge != edgeName || rel.DestSchemaName != destSchemaName {
 			continue
 		}

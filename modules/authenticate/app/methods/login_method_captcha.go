@@ -1,8 +1,9 @@
 package methods
 
 import (
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	itLogin "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 var (
@@ -21,15 +22,15 @@ func (this *LoginMethodCaptcha) SkipMethod() *itLogin.SkippedMethod {
 	return nil
 }
 
-func (this *LoginMethodCaptcha) Execute(ctx crud.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
+func (this *LoginMethodCaptcha) Execute(ctx corectx.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
 	result := &itLogin.ExecuteResult{}
 	switch param.Password {
 	case "NIKKI":
 		result.IsVerified = true
 	case "EXPIRED":
-		result.FailedReason = errExpired
+		result.FailedReason = ft.NewBusinessViolation("password", "err_captcha_expired", "Captcha expired")
 	default:
-		result.FailedReason = errMismatched
+		result.FailedReason = ft.NewBusinessViolation("password", "err_captcha_mismatched", "Captcha mismatched")
 	}
 	return result, nil
 }

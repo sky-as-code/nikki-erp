@@ -8,8 +8,12 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
+// type BaseRepoGetter interface {
+// 	GetBaseRepo() dyn.BaseDynamicRepository
+// }
+
 func GetOne[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, dynamicRepo dyn.BaseRepository, param dyn.RepoGetOneParam,
+	ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, param dyn.RepoGetOneParam,
 ) (*dyn.OpResult[TDomain], error) {
 	found, err := dynamicRepo.GetOne(ctx, param)
 	if err != nil {
@@ -27,7 +31,7 @@ func GetOne[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 }
 
 func DeleteOne(
-	ctx corectx.Context, dynamicRepo dyn.BaseRepository, keys dmodel.DynamicFields,
+	ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, keys dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	delResult, err := dynamicRepo.DeleteOne(ctx, keys)
 	if err != nil {
@@ -49,13 +53,13 @@ func DeleteOne(
 }
 
 func Exists(
-	ctx corectx.Context, dynamicRepo dyn.BaseRepository, keys []dmodel.DynamicFields,
+	ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, keys []dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.RepoExistsResult], error) {
 	return dynamicRepo.Exists(ctx, keys)
 }
 
 func Insert(
-	ctx corectx.Context, dynamicRepo dyn.BaseRepository, domainModel dmodel.DynamicModelGetter,
+	ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, domainModel dmodel.DynamicModelGetter,
 ) (*dyn.OpResult[int], error) {
 	data := domainModel.GetFieldData()
 	creation, err := dynamicRepo.Insert(ctx, data)
@@ -69,12 +73,12 @@ func Insert(
 	return &dyn.OpResult[int]{Data: creation.Data, HasData: true}, nil
 }
 
-func ManageM2m(ctx corectx.Context, dynamicRepo dyn.BaseRepository, param dyn.RepoManageM2mParam) (*dyn.OpResult[int], error) {
+func ManageM2m(ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, param dyn.RepoManageM2mParam) (*dyn.OpResult[int], error) {
 	return dynamicRepo.ManageM2m(ctx, param)
 }
 
 func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
-	ctx corectx.Context, dynamicRepo dyn.BaseRepository, searchParam dyn.RepoSearchParam,
+	ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, searchParam dyn.RepoSearchParam,
 ) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error) {
 	found, err := dynamicRepo.Search(ctx, searchParam)
 	if err != nil {
@@ -104,7 +108,7 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 }
 
 func Update(
-	ctx corectx.Context, dynamicRepo dyn.BaseRepository, data dmodel.DynamicFields,
+	ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, data dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	updatedRes, err := dynamicRepo.Update(ctx, data)
 	if err != nil {

@@ -56,7 +56,7 @@ script:post-response {
               type: "string",
               minLength: 20, //"2026-03-23T06:53:01Z"
           },
-          hierarchy_id: {
+          org_unit_id: {
             type: "string",
             minLength: 1,
           },
@@ -66,6 +66,8 @@ script:post-response {
   
   testHttpResponse(schema, 200);
   
+  const { etag } = res.getBody();
+  etag && bru.setVar('etag', etag);
 }
 
 settings {

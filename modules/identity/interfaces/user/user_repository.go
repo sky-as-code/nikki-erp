@@ -14,14 +14,16 @@ import (
 // 	FindById(ctx corecrud.Context, param FindByIdParam) (*domain.User, error)
 // 	FindByIdForUpdate(ctx corecrud.Context, param FindByIdParam) (*domain.User, *db.DbLock, error)
 // 	FindByEmail(ctx corecrud.Context, param FindByEmailParam) (*domain.User, error)
-// 	// FindByHierarchyId(ctx crud.Context, param FindByHierarchyIdParam) ([]domain.User, error)
+// 	// FindByOrgUnitId(ctx crud.Context, param FindByOrgUnitIdParam) ([]domain.User, error)
 // 	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
 // 	Search(ctx corecrud.Context, param SearchParam) (*corecrud.PagedResult[domain.User], error)
 // 	Update(ctx corecrud.Context, user *domain.User, prevEtag model.Etag) (*domain.User, error)
 // }
 
 type UserRepository interface {
-	dyn.BaseRepoGetter
+	dyn.DynamicModelRepository
+	DeleteOne(ctx corectx.Context, keys domain.User) (*dyn.OpResult[dyn.MutateResultData], error)
+	Exists(ctx corectx.Context, keys []domain.User) (*dyn.OpResult[dyn.RepoExistsResult], error)
 	Insert(ctx corectx.Context, user domain.User) (*dyn.OpResult[int], error)
 	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.User], error)
 	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.User]], error)
@@ -33,8 +35,8 @@ type UserRepository interface {
 // type ExistsMultiParam = UserExistsMultiQuery
 // type FindByIdParam = GetUserQuery
 // type FindByEmailParam = GetUserByEmailQuery
-// type FindByHierarchyIdParam struct {
-// 	HierarchyId model.Id
+// type FindByOrgUnitIdParam struct {
+// 	OrgUnitId model.Id
 // 	Status      *domain.UserStatus
 // }
 // type SearchParam struct {
@@ -43,7 +45,7 @@ type UserRepository interface {
 // 	Page          int
 // 	Size          int
 // 	WithGroups    bool
-// 	WithHierarchy bool
+// 	WithOrgUnit bool
 // 	WithOrgs      bool
 // 	OrgId         *model.Id
 // }

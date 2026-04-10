@@ -10,8 +10,8 @@ import (
 // Function signature types for CRUD operations
 type SetDefaultFunc[TDomain any] func(model TDomain)
 type SanitizeFunc[TDomain any] func(model TDomain)
-type AssertBusinessRulesForCreateFunc[TDomain ValidatableForEdit] func(ctx Context, model TDomain, vErrs *ft.ValidationErrors) error
-type AssertBusinessRulesForUpdateFunc[TDomain ValidatableForEdit] func(ctx Context, domainModel TDomain, modelFromDb TDomain, vErrs *ft.ValidationErrors) error
+type AssertBusinessRulesForCreateFunc[TDomain any] func(ctx Context, model TDomain, vErrs *ft.ValidationErrors) error
+type AssertBusinessRulesForUpdateFunc[TDomain any] func(ctx Context, domainModel TDomain, modelFromDb TDomain, vErrs *ft.ValidationErrors) error
 type AssertBusinessRulesForDeleteFunc[TDomain any, TCommand DeleteCommander[TDomain]] func(ctx Context, command TCommand, modelFromDb TDomain, vErrs *ft.ValidationErrors) error
 type AssertExistsFunc[TDomain any] func(ctx Context, domainModel TDomain, vErrs *ft.ValidationErrors) (TDomain, error)
 type RepoCreateFunc[TDomain any] func(ctx Context, model TDomain) (TDomain, error)
@@ -32,7 +32,7 @@ type ToSuccessResultBoolFunc[TResult any] func(existing bool) *TResult
 type ToSuccessResultPagedFunc[TDomain any, TResult any] func(pagedResult *PagedResult[TDomain]) *TResult
 
 type CreateParam[
-	TDomain ValidatableForEdit,
+	TDomain any,
 	TCommand DomainModelProducer[TDomain],
 	TResult any,
 ] struct {
@@ -47,8 +47,9 @@ type CreateParam[
 	ToSuccessResult     ToSuccessResultFunc[TDomain, TResult]
 }
 
+// Deprecated: Use nikkierp/modules/core/dynamicmodel/crud/crud_helper.go
 func Create[
-	TDomain ValidatableForEdit,
+	TDomain any,
 	TCommand DomainModelProducer[TDomain],
 	TResult any,
 ](ctx Context, param CreateParam[TDomain, TCommand, TResult]) (result *TResult, err error) {
@@ -73,7 +74,7 @@ func Create[
 }
 
 type CreateBulkParam[
-	TDomain ValidatableForEdit,
+	TDomain any,
 	TCommand DomainModelBulkProducer[TDomain],
 	TResult any,
 ] struct {
@@ -88,8 +89,9 @@ type CreateBulkParam[
 	ToSuccessResult     ToSuccessResultBulkFunc[TDomain, TResult]
 }
 
+// Deprecated: Use nikkierp/modules/core/dynamicmodel/crud/crud_helper.go
 func CreateBulk[
-	TDomain ValidatableForEdit,
+	TDomain any,
 	TCommand DomainModelBulkProducer[TDomain],
 	TResult any,
 ](ctx Context, param CreateBulkParam[TDomain, TCommand, TResult]) (result *TResult, err error) {
@@ -118,15 +120,25 @@ func CreateBulk[
 	return param.ToSuccessResult(createdModels), nil
 }
 
+func domainValidateForEditIfPresent(model any, forEdit bool) ft.ValidationErrors {
+	type domainValidator interface {
+		Validate(forEdit bool) ft.ValidationErrors
+	}
+	if v, ok := model.(domainValidator); ok {
+		return v.Validate(forEdit)
+	}
+	return ft.ValidationErrors{}
+}
+
 func validateForCreate[
-	TDomain ValidatableForEdit,
+	TDomain any,
 ](ctx Context, model TDomain, setDefault SetDefaultFunc[TDomain], sanitize SanitizeFunc[TDomain], assertBusinessRules AssertBusinessRulesForCreateFunc[TDomain]) (*ft.ValidationErrors, error) {
 	setDefault(model)
 
 	flow := val.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = model.Validate(false)
+			*vErrs = domainValidateForEditIfPresent(model, false)
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
@@ -142,7 +154,7 @@ func validateForCreate[
 }
 
 type UpdateParam[
-	TDomain ValidatableForEdit,
+	TDomain any,
 	TCommand DomainModelProducer[TDomain],
 	TResult any,
 ] struct {
@@ -157,8 +169,9 @@ type UpdateParam[
 	ToSuccessResult     ToSuccessResultFunc[TDomain, TResult]
 }
 
+// Deprecated: Use nikkierp/modules/core/dynamicmodel/crud/crud_helper.go
 func Update[
-	TDomain ValidatableForEdit,
+	TDomain any,
 	TCommand DomainModelProducer[TDomain],
 	TResult any,
 ](ctx Context, param UpdateParam[TDomain, TCommand, TResult]) (result *TResult, err error) {
@@ -196,7 +209,7 @@ func Update[
 }
 
 type UpdateBulkParam[
-	TDomain ValidatableForEdit,
+	TDomain any,
 	TCommand DomainModelBulkProducer[TDomain],
 	TResult any,
 ] struct {
@@ -211,8 +224,9 @@ type UpdateBulkParam[
 	ToSuccessResult     ToSuccessResultBulkFunc[TDomain, TResult]
 }
 
+// Deprecated: Use nikkierp/modules/core/dynamicmodel/crud/crud_helper.go
 func UpdateBulk[
-	TDomain ValidatableForEdit,
+	TDomain any,
 	TCommand DomainModelBulkProducer[TDomain],
 	TResult any,
 ](ctx Context, param UpdateBulkParam[TDomain, TCommand, TResult]) (result *TResult, err error) {
@@ -258,7 +272,7 @@ func UpdateBulk[
 }
 
 func validateForUpdate[
-	TDomain ValidatableForEdit,
+	TDomain any,
 ](
 	ctx Context, model TDomain,
 	assertExists AssertExistsFunc[TDomain],
@@ -271,7 +285,7 @@ func validateForUpdate[
 	flow := val.StartValidationFlow()
 	vErrs, err := flow.
 		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = model.Validate(true)
+			*vErrs = domainValidateForEditIfPresent(model, true)
 			return nil
 		}).
 		Step(func(vErrs *ft.ValidationErrors) error {
@@ -315,6 +329,7 @@ type DeleteHardParam[
 	ToSuccessResult     ToSuccessResultWithCountFunc[TDomain, TResult]
 }
 
+// Deprecated: Use nikkierp/modules/core/dynamicmodel/crud/crud_helper.go
 func DeleteHard[
 	TDomain any,
 	TCommand DeleteCommander[TDomain],
@@ -369,6 +384,7 @@ type ExistsOneParam[
 	ToSuccessResult ToSuccessResultBoolFunc[TResult]
 }
 
+// Deprecated: Use nikkierp/modules/core/dynamicmodel/crud/crud_helper.go
 func ExistsOne[
 	TDomain any,
 	TQuery Validatable,
@@ -410,6 +426,7 @@ type GetOneParam[
 	ToSuccessResult ToSuccessResultFunc[TDomain, TResult]
 }
 
+// Deprecated: Use nikkierp/modules/core/dynamicmodel/crud/crud_helper.go
 func GetOne[
 	TDomain any,
 	TQuery Validatable,
@@ -451,6 +468,7 @@ type ListAllParam[
 	ToSuccessResult ToSuccessResultBulkFunc[TDomain, TResult]
 }
 
+// Deprecated: Use nikkierp/modules/core/dynamicmodel/crud/crud_helper.go
 func ListAll[
 	TDomain any,
 	TQuery Validatable,
@@ -494,6 +512,7 @@ type SearchParam[
 	ToSuccessResult  ToSuccessResultPagedFunc[TDomain, TResult]
 }
 
+// Deprecated: Use nikkierp/modules/core/dynamicmodel/crud/crud_helper.go
 func Search[
 	TDomain any,
 	TQuery Searchable,

@@ -12,9 +12,10 @@ post {
 
 body:json {
   {
-      "name": "{{$randomJobArea}} Team",
-      "description": "This is {{$randomJobArea}} team"
+    "name": "<p>{{$randomJobArea}} {{$randomCatchPhraseAdjective}}</p>",
+    "description": "<script src='./remote.js'></script><strong>{{$randomLoremParagraphs}}</strong>"
   }
+  
 }
 
 script:post-response {
@@ -26,4 +27,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

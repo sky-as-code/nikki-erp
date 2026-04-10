@@ -1,0 +1,67 @@
+meta {
+  name: Resource Create - Invalid fields - Validation errors
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{api_host}}/v1/authorize/resources
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+    "code": "too_longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+    "max_scope": "maxinvalid",
+    "min_scope": "mininvalid",
+    "owner_type": "ownerinvalid"
+  }
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/common-test-response');
+  
+  const schema = {
+      type: "array",
+      minItems: 5,
+      maxItems: 5,
+      items: {
+          type: "object",
+          required: ["field", "key", "message", "type", "vars"],
+          properties: {
+              field: {
+                  type: "string",
+                  enum: ["name", "code", "owner_type", "max_scope", "min_scope"],
+              },
+              key: {
+                  type: "string",
+                  enum: ["common.err_invalid_string_length", "common.err_not_one_of"],
+              },
+              message: {
+                  type: "string",
+                  enum: ["string length must be between {{.min}} and {{.max}}", "must be one of: {{.allowed}}"],
+              },
+              type: {
+                  type: "string",
+                  enum: ["validation"],
+              },
+              vars: {
+                  type: "object",
+              },
+          },
+          additionalProperties: false,
+      },
+      additionalItems: false
+  };
+  
+  pkg.testHttpResponse(schema, 400);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

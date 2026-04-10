@@ -25,15 +25,8 @@ module.exports.sameErrorSchema = function (fields, key, message, type='validatio
         },
         vars: {
           type: "object",
-          properties: {
-            max: {
-              type: "integer",
-            },
-            min: {
-              type: "integer",
-            },
-          },
         },
+        
       },
       additionalProperties: false,
     },
@@ -64,14 +57,6 @@ module.exports.oneErrorSchemaNoField = function (key, message, type='validation'
         },
         vars: {
           type: "object",
-          properties: {
-            max: {
-              type: "integer",
-            },
-            min: {
-              type: "integer",
-            },
-          },
         },
       },
       additionalProperties: false,
