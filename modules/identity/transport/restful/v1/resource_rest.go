@@ -140,9 +140,7 @@ func (this ResourceRest) UpdateResource(echoCtx echo.Context) (err error) {
 			cmd.SetFieldData(requestFields)
 			return cmd
 		},
-		func(data dyn.MutateResultData) UpdateResourceResponse {
-			return httpserver.NewRestUpdateResponse2(data)
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }

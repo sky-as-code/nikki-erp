@@ -156,7 +156,7 @@ func (this *Organization) SetSlug(v *model.Slug) {
 func (this Organization) MustIsArchived() bool {
 	val := this.IsArchived()
 	if val == nil {
-		panic(errors.New("Organization.MustIsArchived: is_archived is nil"))
+		panic(errors.New("is_archived is nil"))
 	}
 	return *val
 }

@@ -26,7 +26,7 @@ type SearchOrgsRequest = it.SearchOrgsQuery
 type SearchOrgsResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
 
 type SetOrgIsArchivedRequest = it.SetOrgIsArchivedCommand
-type SetOrgIsArchivedResponse = httpserver.RestUpdateResponse2
+type SetOrgIsArchivedResponse = httpserver.RestMutateResponse
 
 type UpdateOrgRequest = it.UpdateOrgCommand
-type UpdateOrgResponse = httpserver.RestUpdateResponse2
+type UpdateOrgResponse = httpserver.RestMutateResponse

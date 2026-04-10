@@ -8,11 +8,13 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
+const LoginOtpCode = "otpCode"
+
 type LoginMethodOtpCode struct {
 }
 
 func (this *LoginMethodOtpCode) Name() string {
-	return "otpCode"
+	return LoginOtpCode
 }
 
 func (this *LoginMethodOtpCode) SkipMethod() *itLogin.SkippedMethod {
@@ -23,10 +25,10 @@ func (this *LoginMethodOtpCode) Execute(ctx corectx.Context, param itLogin.Login
 	var result *itPass.VerifyPasswordResult
 	var err error
 	err = deps.Invoke(func(passwordSvc itPass.PasswordService) error {
-		result, err = passwordSvc.VerifyOtpCode(ctx, itPass.VerifyOtpCodeQuery{
-			SubjectType: param.SubjectType,
-			Username:    param.Username,
-			OtpCode:     domain.OtpCode(param.Password),
+		result, err = passwordSvc.VerifyOtpCode(ctx, itPass.VerifyPasswordOtpQuery{
+			PrincipalType: param.PrincipalType,
+			Username:      param.Username,
+			OtpCode:       domain.OtpCode(param.Password),
 		})
 		return err
 	})

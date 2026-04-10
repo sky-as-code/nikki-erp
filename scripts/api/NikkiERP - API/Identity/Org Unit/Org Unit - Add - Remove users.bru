@@ -1,5 +1,5 @@
 meta {
-  name: Hierarchy - Add / Remove Hierarchy
+  name: Org Unit - Add / Remove users
   type: http
   seq: 6
 }
@@ -13,11 +13,11 @@ post {
 body:json {
   {
       "add": ["01JZQFZFK6GM2D5X6MYHWH6FND", "01JZQFY6EXRG0959Z95Y2EM3AM"],
-      "remove": [],
-      "etag": "{{etag}}"
+      "remove": []
   }
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

@@ -205,12 +205,7 @@ func validateManyToManyRelation(
 	}
 	srcTk := sourceSchema.TenantKey()
 	if srcTk != "" {
-		if peerSchema.TenantKey() == "" {
-			return errors.Errorf(
-				"validateManyToManyRelation: peer '%s' must define tenant key", peerSchema.Name(),
-			)
-		}
-		tcol := model.PrefixedThroughColumn(relation.M2mSrcFieldPrefix, srcTk)
+		tcol := srcTk
 		tf, ok := through.Field(tcol)
 		if !ok {
 			return errors.Errorf(

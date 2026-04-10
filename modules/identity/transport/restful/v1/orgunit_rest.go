@@ -161,9 +161,7 @@ func (this OrgUnitRest) UpdateOrgUnit(echoCtx echo.Context) (err error) {
 			cmd.SetFieldData(requestFields)
 			return cmd
 		},
-		func(data dyn.MutateResultData) UpdateOrgUnitResponse {
-			return httpserver.NewRestUpdateResponse2(data)
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }

@@ -40,6 +40,8 @@ script:post-response {
   
   testHttpResponse(schema, 200);
   
+  const { etag } = res.getBody();
+  etag && bru.setVar('etag', etag);
 }
 
 settings {

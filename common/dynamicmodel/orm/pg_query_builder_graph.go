@@ -234,6 +234,11 @@ func (p *joinPlanner) appendManyToManyJoin(
 		throughOn = append(throughOn, fmt.Sprintf("%s.%s = %s.%s",
 			parentAlias, pgQuote(pk), throughAlias, pgQuote(tc)))
 	}
+	srcTk := parentSch.TenantKey()
+	if srcTk != "" {
+		throughOn = append(throughOn, fmt.Sprintf("%s.%s = %s.%s",
+			parentAlias, pgQuote(srcTk), throughAlias, pgQuote(srcTk)))
+	}
 	onThrough := strings.Join(throughOn, " AND ")
 	throughRef := fmt.Sprintf("%s AS %s", p.qb.tableExpression(throughSch), throughAlias)
 	p.joins = append(p.joins, graphJoinSpec{tableWithAlias: throughRef, onExpr: onThrough})
@@ -248,17 +253,16 @@ func (p *joinPlanner) appendManyToManyJoin(
 		destOn = append(destOn, fmt.Sprintf("%s.%s = %s.%s",
 			throughAlias, pgQuote(tc), destAlias, pgQuote(pk)))
 	}
+	destTk := destSch.TenantKey()
+	if srcTk != "" && destTk != "" {
+		destOn = append(destOn, fmt.Sprintf("%s.%s = %s.%s",
+			throughAlias, pgQuote(srcTk), destAlias, pgQuote(destTk)))
+	}
 	onDest := strings.Join(destOn, " AND ")
 	destRef := fmt.Sprintf("%s AS %s", p.qb.tableExpression(destSch), destAlias)
 	p.joins = append(p.joins, graphJoinSpec{tableWithAlias: destRef, onExpr: onDest})
 	p.pathKeyAli[cacheKey] = destAlias
 	p.pathKeySch[cacheKey] = destSch
-	srcTk := parentSch.TenantKey()
-	destTk := destSch.TenantKey()
-	if srcTk != "" && destTk != "" {
-		p.m2mTenantWheres = append(p.m2mTenantWheres, fmt.Sprintf("%s.%s = %s.%s",
-			parentAlias, pgQuote(srcTk), destAlias, pgQuote(destTk)))
-	}
 	return destAlias, destSch, nil
 }
 

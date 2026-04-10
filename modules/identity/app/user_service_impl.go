@@ -115,29 +115,32 @@ func (this *UserServiceImpl) CreateUser(ctx corectx.Context, cmd it.CreateUserCo
 
 func (this *UserServiceImpl) createPrivateRole(tranxCtx corectx.Context, usrResult *it.CreateUserResult) (*it.CreateUserResult, error) {
 	oid := string(*usrResult.Data.GetId())
-	roleRes, rErr := this.roleSvc.CreatePrivateRole(tranxCtx, itRole.CreatePrivateRoleCommand{OwnerId: oid})
+	roleRes, rErr := this.roleSvc.CreatePrivateRole(tranxCtx, itRole.CreatePrivateRoleCommand{OwnerId: oid, OwnerType: "user"})
 	if rErr != nil {
 		return nil, rErr
 	}
 	if roleRes.ClientErrors.Count() > 0 {
-		return nil, errors.Errorf("create private role: %v", roleRes.ClientErrors)
+		return nil, errors.Wrap(roleRes.ClientErrors.ToError(), "createPrivateRole")
 	}
 	return usrResult, nil
 }
 
 func (this *UserServiceImpl) DeleteUser(ctx corectx.Context, cmd it.DeleteUserCommand) (*it.DeleteUserResult, error) {
 	return corecrud.ExecInTranx(ctx, this.userRepo, func(tranxCtx corectx.Context) (*it.DeleteUserResult, error) {
-		privRes, pErr := this.roleSvc.DeletePrivateRole(tranxCtx, itRole.DeletePrivateRoleCommand{OwnerId: cmd.Id})
-		if pErr != nil {
-			return nil, pErr
-		}
-		if privRes.ClientErrors.Count() > 0 {
-			return nil, errors.Errorf("delete private role: %v", privRes.ClientErrors)
-		}
 		return corecrud.DeleteOne(tranxCtx, corecrud.DeleteOneParam{
 			Action:       "delete user",
 			DbRepoGetter: this.userRepo,
 			Cmd:          dyn.DeleteOneCommand(cmd),
+			AfterValidationSuccess: func(_ corectx.Context) error {
+				privRes, pErr := this.roleSvc.DeletePrivateRole(tranxCtx, itRole.DeletePrivateRoleCommand{OwnerId: cmd.Id})
+				if pErr != nil {
+					return pErr
+				}
+				if privRes.ClientErrors.Count() > 0 {
+					return errors.Wrap(privRes.ClientErrors.ToError(), "deletePrivateRole")
+				}
+				return nil
+			},
 		})
 	})
 }
@@ -146,7 +149,7 @@ func (this *UserServiceImpl) GetUser(ctx corectx.Context, query it.GetUserQuery)
 	return this.getUserWithArchived(ctx, query, nil)
 }
 
-func (this *UserServiceImpl) GetActiveUser(ctx corectx.Context, query it.GetUserQuery) (*it.GetUserResult, error) {
+func (this *UserServiceImpl) GetEnabledUser(ctx corectx.Context, query it.GetUserQuery) (*it.GetUserResult, error) {
 	return this.getUserWithArchived(ctx, query, util.ToPtr(true))
 }
 

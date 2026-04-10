@@ -33,7 +33,6 @@ func (this StaticModuleLoader) LoadModule(name string) (modules.InCodeModule, er
 func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 	modules := []modules.InCodeModule{
 		// Sort alphabetically. The order of initialization will be handled properly.
-		// authorize.ModuleSingleton,
 		apptrait.ModuleSingleton,
 		authenticate.ModuleSingleton,
 		// contacts.ModuleSingleton,

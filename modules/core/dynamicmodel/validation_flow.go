@@ -20,10 +20,10 @@ func StartValidationFlow(startWith ...Validatable) *ValidationFlow {
 	return flow.Start()
 }
 
-func StartValidationFlowWith(initClientErrs *ft.ClientErrors, startWith ...Validatable) *ValidationFlow {
+func StartValidationFlowCopy(initClientErrs *ft.ClientErrors, startWith ...Validatable) *ValidationFlow {
 	flow := ValidationFlow{}
 	if len(startWith) > 0 {
-		return flow.StartWith(initClientErrs).Step(func(cErrs *ft.ClientErrors) error {
+		return flow.StartCopy(initClientErrs).Step(func(cErrs *ft.ClientErrors) error {
 			result := startWith[0].Validate()
 			if result != nil {
 				*cErrs = result
@@ -45,9 +45,13 @@ func (this *ValidationFlow) Start() *ValidationFlow {
 	return this
 }
 
-func (this *ValidationFlow) StartWith(cErrs *ft.ClientErrors) *ValidationFlow {
-	this.cErrs = cErrs
-	return this
+func (this *ValidationFlow) StartCopy(initialErrs *ft.ClientErrors) *ValidationFlow {
+	this.cErrs = ft.NewClientErrors()
+	this.cErrs.Concat(*initialErrs)
+	return this.Step(func(cErrs *ft.ClientErrors) error {
+		// Stop flow immediately if cErrs has errors
+		return nil
+	})
 }
 
 func (this *ValidationFlow) StepS(fn func(vErrs *ft.ClientErrors, stop func()) error, ignoreValidationError ...bool) (out *ValidationFlow) {

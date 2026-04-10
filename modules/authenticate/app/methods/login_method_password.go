@@ -7,11 +7,13 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
+const LoginPassword = "password"
+
 type LoginMethodPassword struct {
 }
 
 func (this *LoginMethodPassword) Name() string {
-	return "password"
+	return LoginPassword
 }
 
 func (this *LoginMethodPassword) SkipMethod() *itLogin.SkippedMethod {
@@ -23,9 +25,9 @@ func (this *LoginMethodPassword) Execute(ctx corectx.Context, param itLogin.Logi
 	var err error
 	err = deps.Invoke(func(passwordService itPass.PasswordService) error {
 		result, err = passwordService.VerifyPassword(ctx, itPass.VerifyPasswordQuery{
-			SubjectType: param.SubjectType,
-			Username:    param.Username,
-			Password:    param.Password,
+			PrincipalType: param.PrincipalType,
+			Username:      param.Username,
+			Password:      param.Password,
 		})
 		return err
 	})

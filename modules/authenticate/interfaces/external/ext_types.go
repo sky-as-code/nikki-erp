@@ -8,6 +8,11 @@ import (
 	itUsr "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
+const (
+	UserStatusInvited = identDomain.UserStatusInvited
+	UserStatusActive  = identDomain.UserStatusActive
+)
+
 type UserExtService = itUsr.UserService
 type OrganizationExtService = itOrg.OrganizationService
 type OrgUnitExtService = itOrgUnit.OrgUnitService

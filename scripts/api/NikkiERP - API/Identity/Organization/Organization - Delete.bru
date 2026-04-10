@@ -5,11 +5,12 @@ meta {
 }
 
 delete {
-  url: {{api_host}}/v1/identity/organizations/{{org_slug}}
+  url: {{api_host}}/v1/identity/organizations/{{org_id}}
   body: none
   auth: inherit
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

@@ -23,4 +23,4 @@ type SearchResourcesRequest = it.SearchResourcesQuery
 type SearchResourcesResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
 
 type UpdateResourceRequest = it.UpdateResourceCommand
-type UpdateResourceResponse = httpserver.RestUpdateResponse2
+type UpdateResourceResponse = httpserver.RestMutateResponse

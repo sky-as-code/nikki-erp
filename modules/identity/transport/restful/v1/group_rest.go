@@ -160,9 +160,7 @@ func (this GroupRest) UpdateGroup(echoCtx echo.Context) (err error) {
 			cmd.SetFieldData(requestFields)
 			return cmd
 		},
-		func(data dyn.MutateResultData) UpdateGroupResponse {
-			return httpserver.NewRestUpdateResponse2(data)
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }

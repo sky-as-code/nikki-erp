@@ -68,12 +68,12 @@ func RoleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().Name(RoleFieldIsRequiredAttach).
 				DataType(dmodel.FieldDataTypeBoolean()).
-				RequiredForCreate(),
+				Default(false),
 		).
 		Field(
 			dmodel.DefineField().Name(RoleFieldIsRequiredComment).
 				DataType(dmodel.FieldDataTypeBoolean()).
-				RequiredForCreate(),
+				Default(false),
 		).
 		Field(
 			basemodel.DefineFieldId(RoleFieldOrgId).

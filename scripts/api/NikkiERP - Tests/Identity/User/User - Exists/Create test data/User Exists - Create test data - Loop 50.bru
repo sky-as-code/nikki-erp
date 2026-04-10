@@ -25,9 +25,10 @@ script:pre-request {
 script:post-response {
   const pkg = require('./scripts/common-test-response');
   
-  pkg.loopTestData(
+  pkg.loopTestDataWithIds(
     'User Exists - Create test data - Loop 50',
     'User Exists - One - Success',
+    'user_ids',
   );
   
 }

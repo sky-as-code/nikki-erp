@@ -157,9 +157,7 @@ func (this EntitlementRest) SetEntitlementIsArchived(echoCtx echo.Context) (err 
 		func(request SetEntitlementIsArchivedRequest) it.SetEntitlementIsArchivedCommand {
 			return request
 		},
-		func(data dyn.MutateResultData) SetEntitlementIsArchivedResponse {
-			return httpserver.NewRestUpdateResponse2(data)
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }
@@ -178,9 +176,7 @@ func (this EntitlementRest) UpdateEntitlement(echoCtx echo.Context) (err error) 
 			cmd.SetFieldData(requestFields)
 			return cmd
 		},
-		func(data dyn.MutateResultData) UpdateEntitlementResponse {
-			return httpserver.NewRestUpdateResponse2(data)
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }

@@ -29,7 +29,7 @@ func initUserHandlers() error {
 			cqrs.NewHandler(handler.CreateUser),
 			cqrs.NewHandler(handler.DeleteUser),
 			cqrs.NewHandler(handler.UserExists),
-			cqrs.NewHandler(handler.GetActiveUser),
+			cqrs.NewHandler(handler.GetEnabledUser),
 			cqrs.NewHandler(handler.GetUser),
 			cqrs.NewHandler(handler.SearchUsers),
 			cqrs.NewHandler(handler.UpdateUser),

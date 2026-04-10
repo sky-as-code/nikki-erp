@@ -96,17 +96,11 @@ func validateManyToManyLayout(reg *SchemaRegistry, srcSch *ModelSchema, rel *Mod
 	}
 	srcTk := srcSch.TenantKey()
 	if srcTk != "" {
-		if peerSch.TenantKey() == "" {
-			return errors.Errorf(
-				"many-to-many '%s': peer schema '%s' must define a tenant key because '%s' has one",
-				rel.Edge, peerSch.Name(), srcSch.Name(),
-			)
-		}
-		tcol := PrefixedThroughColumn(rel.M2mSrcFieldPrefix, srcTk)
+		tcol := srcTk
 		tf, ok := through.Field(tcol)
 		if !ok {
 			return errors.Errorf(
-				"junction '%s' must define column '%s' (tenant FK for src '%s')",
+				"junction '%s' must define tenant column '%s' (matching src '%s')",
 				through.Name(), tcol, srcSch.Name(),
 			)
 		}
@@ -125,7 +119,7 @@ func validateManyToManyLayout(reg *SchemaRegistry, srcSch *ModelSchema, rel *Mod
 		allowedPhys[pk] = struct{}{}
 	}
 	if srcTk != "" {
-		allowedPhys[PrefixedThroughColumn(rel.M2mSrcFieldPrefix, srcTk)] = struct{}{}
+		allowedPhys[srcTk] = struct{}{}
 	}
 	// for _, name := range physicalColumnNames(through) {
 	// 	if _, ok := allowedPhys[name]; !ok {
@@ -291,20 +285,6 @@ func injectThroughSchemaManyToOnes(reg *SchemaRegistry) error {
 					ForeignKeys:    []ForeignKeyColumnPair{{FkColumn: col, ReferencedColumn: pk}},
 					OnDelete:       peerRel.OnDelete,
 					OnUpdate:       peerRel.OnUpdate,
-				}
-				appendManyToOneToThroughSchema(through, inj)
-			}
-			if tk := srcSch.TenantKey(); tk != "" {
-				col := PrefixedThroughColumn(rel.M2mSrcFieldPrefix, tk)
-				inj := ModelRelation{
-					Edge:           throughFkImplicitEdgeName(col),
-					SrcField:       col,
-					RelationType:   RelationTypeManyToOne,
-					DestSchemaName: srcSch.Name(),
-					DestField:      tk,
-					ForeignKeys:    []ForeignKeyColumnPair{{FkColumn: col, ReferencedColumn: tk}},
-					OnDelete:       rel.OnDelete,
-					OnUpdate:       rel.OnUpdate,
 				}
 				appendManyToOneToThroughSchema(through, inj)
 			}

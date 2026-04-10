@@ -1,5 +1,5 @@
 meta {
-  name: Hierarchy - Update
+  name: Org Unit - Update
   type: http
   seq: 2
 }
@@ -12,9 +12,9 @@ put {
 
 body:json {
   {
-      "name": "Ngan Hang MBank",
-      "parentId" : "01K0G5JN9AGHPT5R9C1JS2PGW5",
-      "etag" : "{{etag}}"
+    "name": "{{$randomDepartment}} Updated",
+    "description": "{{$randomLoremParagraphs}}",
+    "etag": "{{etag}}"
   }
 }
 
@@ -26,4 +26,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

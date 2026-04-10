@@ -155,6 +155,14 @@ func (this *User) SetFieldData(data dmodel.DynamicFields) {
 	this.fields = data
 }
 
+func (this User) MustGetId() model.Id {
+	v := this.fields.GetModelId(basemodel.FieldId)
+	if v == nil {
+		panic("id is nil")
+	}
+	return *v
+}
+
 func (this User) GetId() *model.Id {
 	return this.fields.GetModelId(basemodel.FieldId)
 }
@@ -170,7 +178,7 @@ func (this User) IsActive() bool {
 func (this User) MustIsArchived() bool {
 	val := this.IsArchived()
 	if val == nil {
-		panic(errors.New("User.IsActive: is_archived is nil"))
+		panic(errors.New("is_archived is nil"))
 	}
 	return *val
 }
@@ -191,12 +199,28 @@ func (this *User) SetAvatarUrl(v *string) {
 	this.fields.SetString(UserFieldAvatarUrl, v)
 }
 
+func (this User) MustGetDisplayName() string {
+	v := this.fields.GetString(UserFieldDisplayName)
+	if v == nil {
+		panic("display_name is nil")
+	}
+	return *v
+}
+
 func (this User) GetDisplayName() *string {
 	return this.fields.GetString(UserFieldDisplayName)
 }
 
 func (this *User) SetDisplayName(v *string) {
 	this.fields.SetString(UserFieldDisplayName, v)
+}
+
+func (this User) MustGetEmail() string {
+	v := this.fields.GetString(UserFieldEmail)
+	if v == nil {
+		panic("email is nil")
+	}
+	return *v
 }
 
 func (this User) GetEmail() *string {
@@ -210,7 +234,7 @@ func (this *User) SetEmail(v *string) {
 func (this User) MustIsOwner() bool {
 	val := this.fields.GetBool(UserFieldIsOwner)
 	if val == nil {
-		panic(errors.New("User.MustIsOwner: is_owner is nil"))
+		panic("is_owner is nil")
 	}
 	return *val
 }
@@ -226,7 +250,7 @@ func (this *User) SetIsOwner(v *bool) {
 func (this User) MustGetStatus() UserStatus {
 	val := this.GetStatus()
 	if val == nil {
-		panic(errors.New("User.MustGetStatus: status is nil"))
+		panic("status is nil")
 	}
 	return *val
 }

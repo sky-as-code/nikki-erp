@@ -11,10 +11,6 @@ func appendClientErrors(dest *ft.ClientErrors, src ft.ClientErrors) {
 	}
 }
 
-func appendValidationError(dest *ft.ClientErrors, field string, message string) {
-	dest.Append(*ft.NewValidationError(field, "", message))
-}
-
 func appendNotFoundError(dest *ft.ClientErrors, field string, resourceLabel string) {
 	dest.Append(*ft.NewValidationError(field, "", resourceLabel+" not found"))
 }

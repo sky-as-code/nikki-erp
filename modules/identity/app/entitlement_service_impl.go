@@ -59,14 +59,14 @@ func (this *EntitlementServiceImpl) CreateEntitlement(
 }
 
 func (this *EntitlementServiceImpl) validateScope(
-	ctx corectx.Context, ent *domain.Entitlement, cErrs *ft.ClientErrors,
+	ctx corectx.Context, ent *domain.Entitlement, cErrsTotal *ft.ClientErrors,
 ) error {
 	resourceId := ent.GetResourceId()
-	resource, err := this.fetchResourceForAction(ctx, resourceId, cErrs)
+	resource, err := this.fetchResourceForAction(ctx, resourceId, cErrsTotal)
 	if err != nil {
 		return err
 	}
-	if cErrs.Count() > 0 {
+	if cErrsTotal.Count() > 0 {
 		return nil
 	}
 
@@ -76,7 +76,7 @@ func (this *EntitlementServiceImpl) validateScope(
 	orgId := ent.GetOrgId()
 	orgUnitId := ent.GetOrgUnitId()
 
-	_, err = dyn.StartValidationFlowWith(cErrs).
+	cErrs, err := dyn.StartValidationFlowCopy(cErrsTotal).
 		Step(func(cErrs *ft.ClientErrors) error {
 			return this.checkOrgExistence(ctx, entScope, orgId, cErrs)
 		}).
@@ -93,6 +93,7 @@ func (this *EntitlementServiceImpl) validateScope(
 			return nil
 		}).
 		End()
+	cErrsTotal.Concat(cErrs)
 
 	return err
 }

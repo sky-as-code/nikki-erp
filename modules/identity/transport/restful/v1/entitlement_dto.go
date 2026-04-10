@@ -26,7 +26,7 @@ type SearchEntitlementsRequest = it.SearchEntitlementsQuery
 type SearchEntitlementsResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
 
 type SetEntitlementIsArchivedRequest = it.SetEntitlementIsArchivedCommand
-type SetEntitlementIsArchivedResponse = httpserver.RestUpdateResponse2
+type SetEntitlementIsArchivedResponse = httpserver.RestMutateResponse
 
 type UpdateEntitlementRequest = it.UpdateEntitlementCommand
-type UpdateEntitlementResponse = httpserver.RestUpdateResponse2
+type UpdateEntitlementResponse = httpserver.RestMutateResponse

@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	cmd.Main(cmd.MainParams{
+	cmd.Main(cmd.MainParam{
 		CreateAppFn: createApp,
 	})
 }

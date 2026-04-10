@@ -7,8 +7,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/lib/pq"
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -241,8 +243,6 @@ func (this *BaseDynamicRepositoryImpl) Insert(ctx corectx.Context, data dmodel.D
 	// if err := this.ensureTenantKeyIn(data); err != nil {
 	// 	return nil, err
 	// }
-	// this.trySetCreatedAt(data)
-	// this.trySetEtag(data)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlInsert(this.schema, data, false)
 	if err != nil {
 		return nil, err
@@ -362,6 +362,7 @@ func (this *BaseDynamicRepositoryImpl) ManageM2m(
 	if len(associations) == 0 && len(disassociations) == 0 {
 		return &dyn.OpResult[int]{Data: 0, HasData: false}, nil
 	}
+
 	return this.applyM2mAssociations(ctx, link, associations, disassociations, param.BeforeInsert)
 }
 
@@ -1332,24 +1333,6 @@ func (this *BaseDynamicRepositoryImpl) filterUniqueKeysWithValues(data dmodel.Dy
 	return result
 }
 
-// func (this *BaseRepositoryImpl) trySetArchivedAt(data dmodel.DynamicFields) error {
-// 	if _, ok := this.schema.Column(basemodel.FieldArchivedAt); !ok {
-// 		return errors.Errorf(
-// 			"Archive: schema '%s' does not define field '%s'", this.schema.Name(), basemodel.FieldArchivedAt)
-// 	}
-// 	field := this.schema.MustField(basemodel.FieldArchivedAt)
-// 	data[basemodel.FieldArchivedAt] = *field.DataType().DefaultValue().Get()
-// 	return nil
-// }
-
-func (this *BaseDynamicRepositoryImpl) trySetCreatedAt(data dmodel.DynamicFields) {
-	if _, ok := this.schema.Column(basemodel.FieldCreatedAt); !ok {
-		return
-	}
-	field := this.schema.MustField(basemodel.FieldCreatedAt)
-	data[basemodel.FieldCreatedAt] = *field.DataType().DefaultValue().Get()
-}
-
 func (this *BaseDynamicRepositoryImpl) trySetUpdatedAt(data dmodel.DynamicFields) {
 	if _, ok := this.schema.Column(basemodel.FieldUpdatedAt); !ok {
 		return
@@ -1403,6 +1386,7 @@ func (this *BaseDynamicRepositoryImpl) validateKeyMap(keys dmodel.DynamicFields)
 func (this *BaseDynamicRepositoryImpl) validateGetOneColumnsAndFilter(
 	columns []string, filter dmodel.DynamicFields,
 ) *ft.ClientErrorItem {
+	this.removeNilFilterFields(filter)
 	for _, col := range columns {
 		field, hasField := this.schema.Field(col)
 		if hasField && field.IsVirtualModelField() {
@@ -1430,9 +1414,6 @@ func (this *BaseDynamicRepositoryImpl) validateGetOneColumnsAndFilter(
 			)
 		}
 	}
-	if filter == nil {
-		return nil
-	}
 	keys := make([]string, 0, len(filter))
 	for k := range filter {
 		keys = append(keys, k)
@@ -1447,7 +1428,85 @@ func (this *BaseDynamicRepositoryImpl) validateGetOneColumnsAndFilter(
 			)
 		}
 	}
+	if vErr := this.validateGetOneFilterForUniqueLookup(filter); vErr != nil {
+		return vErr
+	}
 	return nil
+}
+
+func (this *BaseDynamicRepositoryImpl) validateGetOneFilterForUniqueLookup(
+	filter dmodel.DynamicFields,
+) *ft.ClientErrorItem {
+	if len(filter) == 0 {
+		return dmodel.NewMissingFieldErr("filter")
+	}
+
+	candidates := this.buildGetOneUniqueFilterCandidates()
+	for _, candidate := range candidates {
+		if this.matchesGetOneFilterCandidate(filter, candidate) {
+			return nil
+		}
+	}
+
+	return ft.NewValidationError(
+		"filter",
+		ft.ErrorKey("err_invalid_get_one_filter"),
+		"filter must match exactly one primary key, or one unique key, or composite unique keys, or partial unique keys",
+	)
+}
+
+func (this *BaseDynamicRepositoryImpl) buildGetOneUniqueFilterCandidates() []dmodel.PartialUniqueGroupParam {
+	candidates := make([]dmodel.PartialUniqueGroupParam, 0, 1+len(this.schema.AllUniques())+len(this.schema.PartialUniqueGroups()))
+	candidates = append(candidates, dmodel.PartialUniqueGroupParam{
+		NotNullFields: append([]string{}, this.schema.PrimaryKeys()...),
+	})
+	for _, uniqueFields := range this.schema.AllUniques() {
+		if len(uniqueFields) == 0 {
+			continue
+		}
+		candidates = append(candidates, dmodel.PartialUniqueGroupParam{
+			NotNullFields: append([]string{}, uniqueFields...),
+		})
+	}
+	for _, group := range this.schema.PartialUniqueGroups() {
+		copied := dmodel.PartialUniqueGroupParam{
+			NotNullFields: append([]string{}, group.NotNullFields...),
+			NullableField: group.NullableField,
+		}
+		candidates = append(candidates, copied)
+	}
+	return candidates
+}
+
+func (this *BaseDynamicRepositoryImpl) matchesGetOneFilterCandidate(
+	filter dmodel.DynamicFields, candidate dmodel.PartialUniqueGroupParam,
+) bool {
+	requiredNonNil := make([]string, 0, len(candidate.NotNullFields)+1)
+	requiredNonNil = append(requiredNonNil, candidate.NotNullFields...)
+	if tenantKey := this.schema.TenantKey(); tenantKey != "" && !array.Contains(requiredNonNil, tenantKey) {
+		requiredNonNil = append(requiredNonNil, tenantKey)
+	}
+
+	for _, fieldName := range requiredNonNil {
+		val, ok := filter[fieldName]
+		if !ok || isNilAnyValue(val) {
+			return false
+		}
+	}
+	if nullableField := strings.TrimSpace(candidate.NullableField); nullableField != "" {
+		if val, exists := filter[nullableField]; exists && !isNilAnyValue(val) {
+			return false
+		}
+	}
+	return true
+}
+
+func (this *BaseDynamicRepositoryImpl) removeNilFilterFields(filter dmodel.DynamicFields) {
+	for key, value := range filter {
+		if isNilAnyValue(value) {
+			delete(filter, key)
+		}
+	}
 }
 
 func (this *BaseDynamicRepositoryImpl) ensurePrimaryKeyColumns(columns []string) []string {
@@ -1525,41 +1584,22 @@ func (this *BaseDynamicRepositoryImpl) shouldIncludeEqualFilterField(field strin
 	return ok
 }
 
-func missingKeyColumnNames(found map[string]bool, keyColumns []string) []string {
-	missing := make([]string, 0, len(keyColumns))
-	for _, k := range keyColumns {
-		if !found[k] {
-			missing = append(missing, k)
-		}
-	}
-	return missing
-}
-
-// buildEqualNodes builds an Equals SearchNode for each defined, non-nil filter field.
-// Unknown keys and nil values are ignored. Key columns must still be present (non-nil).
+// buildEqualNodes builds an Equals SearchNode for each defined filter field.
 func (this *BaseDynamicRepositoryImpl) buildEqualNodes(filter dmodel.DynamicFields) ([]dmodel.SearchNode, error) {
-	keyColumns := this.schema.KeyColumns()
-	found := make(map[string]bool, len(keyColumns))
-	for _, k := range keyColumns {
-		found[k] = false
+	if len(filter) == 0 {
+		return nil, errors.New("buildEqualNodes: filter is required")
 	}
 
 	nodes := make([]dmodel.SearchNode, 0, len(filter))
 	for field, val := range filter {
 		if !this.shouldIncludeEqualFilterField(field, val) {
-			continue
+			return nil, errors.Errorf("buildEqualNodes: field '%s' is not defined on schema '%s'", field, this.schema.Name())
 		}
 		n := dmodel.NewSearchNode().NewCondition(field, dmodel.Equals, val)
 		nodes = append(nodes, *n)
-		if _, isKey := found[field]; isKey {
-			found[field] = true
-		}
 	}
-
-	missing := missingKeyColumnNames(found, keyColumns)
-	if len(missing) > 0 {
-		return nil, errors.Errorf(
-			"buildEqualNodes: missing required key columns: %s", strings.Join(missing, ", "))
+	if len(nodes) == 0 {
+		return nil, errors.New("buildEqualNodes: filter does not contain any valid schema columns")
 	}
 	return nodes, nil
 }
@@ -1614,8 +1654,24 @@ func convertDbValue(v any) any {
 	}
 	switch val := v.(type) {
 	case []byte:
+		if parsed := tryParsePostgresTextStringArray(val); parsed != nil {
+			return parsed
+		}
 		return string(val)
 	default:
 		return v
 	}
+}
+
+// tryParsePostgresTextStringArray returns []string when src is PostgreSQL text format for varchar/text[] (e.g. `{a}` or `"{a}"`).
+// If src is not that format or parsing fails, returns nil.
+func tryParsePostgresTextStringArray(src []byte) []string {
+	if len(src) < 2 || src[0] != '{' || src[len(src)-1] != '}' {
+		return nil
+	}
+	var arr pq.StringArray
+	if err := arr.Scan(src); err != nil {
+		return nil
+	}
+	return []string(arr)
 }

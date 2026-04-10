@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
@@ -139,7 +141,8 @@ func (this DynamicFields) GetEtag(key string) *model.Etag {
 	if !ok || val == nil {
 		return nil
 	}
-	return val.(*model.Etag)
+	etag := val.(model.Etag)
+	return &etag
 }
 
 func (this DynamicFields) SetEtag(key string, v *model.Etag) {
@@ -155,11 +158,24 @@ func (this DynamicFields) GetModelDateTime(key string) *model.ModelDateTime {
 	if !ok || val == nil {
 		return nil
 	}
-	return val.(*model.ModelDateTime)
+	var modelDateTime model.ModelDateTime
+	switch v := val.(type) {
+	case model.ModelDateTime:
+		modelDateTime = v
+	case time.Time:
+		modelDateTime = model.WrapModelDateTime(v)
+	default:
+		return nil
+	}
+	return &modelDateTime
 }
 
-func (this DynamicFields) SetModelDateTime(key string, v model.ModelDateTime) {
-	this[key] = v
+func (this DynamicFields) SetModelDateTime(key string, v *model.ModelDateTime) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	this[key] = *v
 }
 
 func (this DynamicFields) GetModelDate(key string) *model.ModelDate {
@@ -167,11 +183,24 @@ func (this DynamicFields) GetModelDate(key string) *model.ModelDate {
 	if !ok || val == nil {
 		return nil
 	}
-	return val.(*model.ModelDate)
+	var modelDate model.ModelDate
+	switch v := val.(type) {
+	case model.ModelDate:
+		modelDate = v
+	case time.Time:
+		modelDate = model.WrapModelDate(v)
+	default:
+		return nil
+	}
+	return &modelDate
 }
 
-func (this DynamicFields) SetModelDate(key string, v model.ModelDate) {
-	this[key] = v
+func (this DynamicFields) SetModelDate(key string, v *model.ModelDate) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	this[key] = *v
 }
 
 func (this DynamicFields) GetModelTime(key string) *model.ModelTime {
@@ -179,9 +208,22 @@ func (this DynamicFields) GetModelTime(key string) *model.ModelTime {
 	if !ok || val == nil {
 		return nil
 	}
-	return val.(*model.ModelTime)
+	var modelTime model.ModelTime
+	switch v := val.(type) {
+	case model.ModelTime:
+		modelTime = v
+	case time.Time:
+		modelTime = model.WrapModelTime(v)
+	default:
+		return nil
+	}
+	return &modelTime
 }
 
-func (this DynamicFields) SetModelTime(key string, v model.ModelTime) {
-	this[key] = v
+func (this DynamicFields) SetModelTime(key string, v *model.ModelTime) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	this[key] = *v
 }

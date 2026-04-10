@@ -6,6 +6,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/core/authtoken"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
@@ -51,6 +52,7 @@ func (*CoreModule) Init() error {
 	err := errors.Join(
 		deps.Invoke(config.InitSubModule),
 		deps.Invoke(cqrs.InitSubModule),
+		deps.Invoke(authtoken.InitSubModule),
 		deps.Invoke(event.InitSubModule),
 		deps.Invoke(db.InitSubModule),
 		deps.Invoke(coredyn.InitSubModule),

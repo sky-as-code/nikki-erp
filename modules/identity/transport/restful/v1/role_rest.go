@@ -157,9 +157,7 @@ func (this RoleRest) SetRoleIsArchived(echoCtx echo.Context) (err error) {
 		func(request SetRoleIsArchivedRequest) it.SetRoleIsArchivedCommand {
 			return request
 		},
-		func(data dyn.MutateResultData) SetRoleIsArchivedResponse {
-			return httpserver.NewRestUpdateResponse2(data)
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }
@@ -178,9 +176,7 @@ func (this RoleRest) UpdateRole(echoCtx echo.Context) (err error) {
 			cmd.SetFieldData(requestFields)
 			return cmd
 		},
-		func(data dyn.MutateResultData) UpdateRoleResponse {
-			return httpserver.NewRestUpdateResponse2(data)
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }

@@ -60,34 +60,32 @@ func (this *RoleServiceImpl) CreatePrivateRole(
 	}
 	cmd = *(sanitized.(*itRole.CreatePrivateRoleCommand))
 
-	return corecrud.ExecInTranx(ctx, this.roleRepo, func(tranxCtx corectx.Context) (*itRole.CreateRoleResult, error) {
-		var newRole *domain.Role
-		ownerId := string(cmd.OwnerId)
-		if cmd.OwnerType == "user" {
-			newRole = domain.NewRoleFrom(dmodel.DynamicFields{
-				domain.RoleFieldName:          fmt.Sprintf("Private role for user %s", ownerId),
-				domain.RoleFieldIsPrivate:     true,
-				domain.RoleFieldOwnerUserId:   ownerId,
-				domain.RoleFieldIsRequestable: false, // Important!
-			})
-		} else {
-			newRole = domain.NewRoleFrom(dmodel.DynamicFields{
-				domain.RoleFieldName:          fmt.Sprintf("Private role for group %s", ownerId),
-				domain.RoleFieldIsPrivate:     true,
-				domain.RoleFieldOwnerGroupId:  ownerId,
-				domain.RoleFieldIsRequestable: false, // Important!
-			})
-		}
-		createCmd := itRole.CreateRoleCommand{Role: *newRole}
-		createRes, err := this.CreateRole(tranxCtx, createCmd)
-		if err != nil {
-			return nil, err
-		}
-		if createRes.ClientErrors.Count() > 0 {
-			return createRes, nil
-		}
+	var newRole *domain.Role
+	ownerId := string(cmd.OwnerId)
+	if cmd.OwnerType == "user" {
+		newRole = domain.NewRoleFrom(dmodel.DynamicFields{
+			domain.RoleFieldName:          fmt.Sprintf("Private role for user %s", ownerId),
+			domain.RoleFieldIsPrivate:     true,
+			domain.RoleFieldOwnerUserId:   ownerId,
+			domain.RoleFieldIsRequestable: false, // Important!
+		})
+	} else {
+		newRole = domain.NewRoleFrom(dmodel.DynamicFields{
+			domain.RoleFieldName:          fmt.Sprintf("Private role for group %s", ownerId),
+			domain.RoleFieldIsPrivate:     true,
+			domain.RoleFieldOwnerGroupId:  ownerId,
+			domain.RoleFieldIsRequestable: false, // Important!
+		})
+	}
+	createCmd := itRole.CreateRoleCommand{Role: *newRole}
+	createRes, err := this.CreateRole(ctx, createCmd)
+	if err != nil {
+		return nil, err
+	}
+	if createRes.ClientErrors.Count() > 0 {
 		return createRes, nil
-	})
+	}
+	return createRes, nil
 }
 
 func (this *RoleServiceImpl) DeleteRole(

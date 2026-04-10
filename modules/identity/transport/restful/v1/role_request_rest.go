@@ -140,9 +140,7 @@ func (this RoleRequestRest) UpdateRoleRequest(echoCtx echo.Context) (err error) 
 			cmd.SetFieldData(requestFields)
 			return cmd
 		},
-		func(data dyn.MutateResultData) UpdateRoleRequestResponse {
-			return httpserver.NewRestUpdateResponse2(data)
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }

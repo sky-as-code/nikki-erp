@@ -16,24 +16,24 @@ import (
 )
 
 func NewOrgUnitServiceImpl(
-	orgunitRepo2 itHier.OrgUnitRepository,
-	userRepo2 itUser.UserRepository,
+	orgUnitRepo itHier.OrgUnitRepository,
+	userRepo itUser.UserRepository,
 	orgSvc itOrg.OrganizationService,
 	cqrsBus cqrs.CqrsBus,
 ) itHier.OrgUnitService {
 	return &OrgUnitServiceImpl{
-		cqrsBus:      cqrsBus,
-		orgSvc:       orgSvc,
-		orgunitRepo2: orgunitRepo2,
-		userRepo2:    userRepo2,
+		cqrsBus:     cqrsBus,
+		orgSvc:      orgSvc,
+		orgUnitRepo: orgUnitRepo,
+		userRepo:    userRepo,
 	}
 }
 
 type OrgUnitServiceImpl struct {
-	cqrsBus      cqrs.CqrsBus
-	orgSvc       itOrg.OrganizationService
-	orgunitRepo2 itHier.OrgUnitRepository
-	userRepo2    itUser.UserRepository
+	cqrsBus     cqrs.CqrsBus
+	orgSvc      itOrg.OrganizationService
+	orgUnitRepo itHier.OrgUnitRepository
+	userRepo    itUser.UserRepository
 }
 
 func (this *OrgUnitServiceImpl) CreateOrgUnit(
@@ -41,7 +41,7 @@ func (this *OrgUnitServiceImpl) CreateOrgUnit(
 ) (*itHier.CreateOrgUnitResult, error) {
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.OrganizationalUnit, *domain.OrganizationalUnit]{
 		Action:         "create orgunit level",
-		BaseRepoGetter: this.orgunitRepo2,
+		BaseRepoGetter: this.orgUnitRepo,
 		Data:           cmd,
 		ValidateExtra: func(ctx corectx.Context, inputModel *domain.OrganizationalUnit, vErrs *ft.ClientErrors) error {
 			this.applyOrgUnitPathForCreate(ctx, inputModel, vErrs)
@@ -67,7 +67,7 @@ func (this *OrgUnitServiceImpl) appendOrgUnitPathFromParent(
 	ctx corectx.Context, unit *domain.OrganizationalUnit, vErrs *ft.ClientErrors,
 	parentId *model.Id, org, self string,
 ) {
-	parentRes, err := this.orgunitRepo2.GetOne(ctx, dyn.RepoGetOneParam{
+	parentRes, err := this.orgUnitRepo.GetOne(ctx, dyn.RepoGetOneParam{
 		Filter:  dmodel.DynamicFields{basemodel.FieldId: *parentId},
 		Columns: []string{domain.OrgUnitFieldPath, domain.OrgUnitFieldOrgId},
 	})
@@ -99,7 +99,7 @@ func (this *OrgUnitServiceImpl) DeleteOrgUnit(
 ) (*itHier.DeleteOrgUnitResult, error) {
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete orgunit level",
-		DbRepoGetter: this.orgunitRepo2,
+		DbRepoGetter: this.orgUnitRepo,
 		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
 }
@@ -109,7 +109,7 @@ func (this *OrgUnitServiceImpl) GetOrgUnit(
 ) (*itHier.GetOrgUnitResult, error) {
 	return corecrud.GetOne[domain.OrganizationalUnit](ctx, corecrud.GetOneParam{
 		Action:       "get orgunit level",
-		DbRepoGetter: this.orgunitRepo2,
+		DbRepoGetter: this.orgUnitRepo,
 		Query:        dyn.GetOneQuery(query),
 	})
 }
@@ -119,7 +119,7 @@ func (this *OrgUnitServiceImpl) SearchOrgUnits(
 ) (*itHier.SearchOrgUnitsResult, error) {
 	return corecrud.Search[domain.OrganizationalUnit](ctx, corecrud.SearchParam{
 		Action:       "search orgunit levels",
-		DbRepoGetter: this.orgunitRepo2,
+		DbRepoGetter: this.orgUnitRepo,
 		Query:        dyn.SearchQuery(query),
 	})
 }
@@ -129,7 +129,7 @@ func (this *OrgUnitServiceImpl) OrgUnitExists(
 ) (*itHier.OrgUnitExistsResult, error) {
 	return corecrud.Exists(ctx, corecrud.ExistsParam{
 		Action:       "check if orgunit level exists",
-		DbRepoGetter: this.orgunitRepo2,
+		DbRepoGetter: this.orgUnitRepo,
 		Query:        dyn.ExistsQuery(query),
 	})
 }
@@ -139,7 +139,7 @@ func (this *OrgUnitServiceImpl) UpdateOrgUnit(
 ) (*itHier.UpdateOrgUnitResult, error) {
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Group, *domain.Group]{
 		Action:       "update group",
-		DbRepoGetter: this.orgunitRepo2,
+		DbRepoGetter: this.orgUnitRepo,
 		Data:         cmd,
 	})
 }
@@ -149,7 +149,7 @@ func (this *OrgUnitServiceImpl) ManageOrgUnitUsers(
 ) (result *itHier.ManageOrgUnitUsersResult, err error) {
 	return corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
 		Action:             "manage orgunit level users",
-		DbRepoGetter:       this.orgunitRepo2,
+		DbRepoGetter:       this.orgUnitRepo,
 		DestSchemaName:     domain.UserSchemaName,
 		SrcId:              cmd.OrgUnitId,
 		SrcIdFieldForError: "org_unit_id",

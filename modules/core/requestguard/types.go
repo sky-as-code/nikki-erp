@@ -9,13 +9,6 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 )
 
-const (
-	JWT_ALGO_HS256     = "HS256"
-	JWT_ALGO_RS256     = "RS256"
-	JWT_EXP_MAX_MINS   = 60 * 24 // 1 day
-	JWT_NBF_DRIFT_MINS = 3       // 10 minutes
-)
-
 type RequestGuardService interface {
 	// Calculate a fingerprint for the request that can be used to identify the request.
 	// This can be used for caching or to prevent replay attacks.

@@ -26,4 +26,4 @@ type SearchOrgUnitsRequest = it.SearchOrgUnitsQuery
 type SearchOrgUnitsResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
 
 type UpdateOrgUnitRequest = it.UpdateOrgUnitCommand
-type UpdateOrgUnitResponse = httpserver.RestUpdateResponse2
+type UpdateOrgUnitResponse = httpserver.RestMutateResponse

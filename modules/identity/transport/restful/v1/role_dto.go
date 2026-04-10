@@ -26,7 +26,7 @@ type SearchRolesRequest = it.SearchRolesQuery
 type SearchRolesResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
 
 type SetRoleIsArchivedRequest = it.SetRoleIsArchivedCommand
-type SetRoleIsArchivedResponse = httpserver.RestUpdateResponse2
+type SetRoleIsArchivedResponse = httpserver.RestMutateResponse
 
 type UpdateRoleRequest = it.UpdateRoleCommand
-type UpdateRoleResponse = httpserver.RestUpdateResponse2
+type UpdateRoleResponse = httpserver.RestMutateResponse

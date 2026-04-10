@@ -1,47 +1,35 @@
 package domain
 
 import (
-	"regexp"
-
-	val "github.com/sky-as-code/nikki-erp/common/validator"
-	c "github.com/sky-as-code/nikki-erp/modules/authenticate/constants"
-	"go.bryk.io/pkg/errors"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
-type SubjectType string
+// Account type. Can be Nikki user account or custom account.
+// Custom account must be accompanied by a subject source.
+// Authenticate Module supports login with accounts from different sources.
+type PrincipalType string
 
 const (
-	SubjectTypeUser   = SubjectType("user")
-	SubjectTypeCustom = SubjectType("custom")
+	PrincipalTypeNikkiUser = PrincipalType("nikkiuser")
+	PrincipalTypeCustom    = PrincipalType("custom")
 )
 
-func (this SubjectType) String() string {
-	return string(this)
+func DefinePrincipalTypeField(fieldName string) *dmodel.FieldBuilder {
+	return dmodel.DefineField().Name(fieldName).
+		DataType(dmodel.FieldDataTypeEnumString([]string{
+			string(PrincipalTypeNikkiUser), string(PrincipalTypeCustom),
+		}))
 }
 
-func WrapSubjectType(s string) *SubjectType {
-	st := SubjectType(s)
-	return &st
+func DefinePrincipalDeviceNameField() *dmodel.FieldBuilder {
+	return dmodel.DefineField().Name(AttemptFieldDeviceName).
+		DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH))
 }
 
-func SubjectTypeValidateRule(field *SubjectType, isRequired bool) *val.FieldRules {
-	return val.Field(field,
-		val.NotNilWhen(isRequired),
-		val.When(field != nil,
-			val.NotEmpty,
-			val.OneOf(SubjectTypeUser, SubjectTypeCustom),
-		),
-	)
-}
-
-func SubjectTypePtrValidateRule(field **SubjectType, isRequired bool) *val.FieldRules {
-	return val.Field(field,
-		val.NotNilWhen(isRequired),
-		val.When(*field != nil,
-			val.NotEmpty,
-			val.OneOf(SubjectTypeUser, SubjectTypeCustom),
-		),
-	)
+func DefinePrincipalUsernameField(fieldName string) *dmodel.FieldBuilder {
+	return dmodel.DefineField().Name(fieldName).
+		DataType(dmodel.FieldDataTypeString(5, model.MODEL_RULE_USERNAME_LENGTH))
 }
 
 type SendChannel string
@@ -51,42 +39,9 @@ const (
 	SendChannelSms   = SendChannel("sms")
 )
 
-func (this SendChannel) String() string {
-	return string(this)
-}
-
-func WrapSendChannel(s string) *SendChannel {
-	sc := SendChannel(s)
-	return &sc
-}
-
-func SendChannelValidateRule(field *SendChannel) *val.FieldRules {
-	return val.Field(field,
-		val.NotEmpty,
-		val.OneOf(SendChannelEmail, SendChannelSms),
-	)
-}
-
-type OtpCode string
-
-func (this OtpCode) String() string {
-	return string(this)
-}
-
-var otpCodeRegexp = regexp.MustCompile(`^\d+$`)
-
-func OtpCodeValidateRule(field *OtpCode, isRequired bool) *val.FieldRules {
-	return val.Field(field,
-		val.NotNilWhen(isRequired),
-		val.When(field != nil,
-			val.NotEmpty,
-			val.By(func(value any) error {
-				otpCode := *(value.(*OtpCode))
-				if otpCodeRegexp.MatchString(otpCode.String()) && len(otpCode.String()) == c.OTP_CODE_LENGTH {
-					return nil
-				}
-				return errors.New("invalid otp code")
-			}),
-		),
-	)
+func DefinePasswordSendChannelField(fieldName string) *dmodel.FieldBuilder {
+	return dmodel.DefineField().Name(fieldName).
+		DataType(dmodel.FieldDataTypeEnumString([]string{
+			string(SendChannelEmail), string(SendChannelSms),
+		}))
 }

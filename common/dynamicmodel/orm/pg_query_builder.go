@@ -72,7 +72,9 @@ func (this *PgQueryBuilder) buildCreateTableSql(
 func (this *PgQueryBuilder) partialUniqueIndexSqls(schema *dmodel.ModelSchema) ([]string, error) {
 	groups := schema.PartialUniqueGroups()
 	out := make([]string, 0, len(groups)*2)
+	tenantKey := schema.TenantKey()
 	for _, group := range groups {
+		group.NotNullFields = prependTenantKey(tenantKey, group.NotNullFields)
 		lines, err := formatPartialUniqueGroupIndexPair(schema, group)
 		if err != nil {
 			return nil, err
@@ -226,7 +228,7 @@ func (this *PgQueryBuilder) defineColumns(
 		if err != nil {
 			return errors.Wrapf(err, "defineColumns: column '%s'", col.Name())
 		}
-		builder.Define(col.Name(), pgType, col.ColumnNullable())
+		builder.Define(pgQuote(col.Name()), pgType, col.ColumnNullable())
 	}
 	return nil
 }
@@ -234,15 +236,17 @@ func (this *PgQueryBuilder) defineColumns(
 func (this *PgQueryBuilder) defineKeys(
 	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema,
 ) {
-	if keys := schema.KeyColumns(); len(keys) > 0 {
+	if keys := schema.PrimaryKeys(); len(keys) > 0 {
 		builder.Define("PRIMARY KEY", fmt.Sprintf("(%s)", strings.Join(pgQuoteArr(keys), ", ")))
 	}
+	tenantKey := schema.TenantKey()
 	for _, unique := range schema.AllUniques() {
 		if len(unique) == 0 {
 			continue
 		}
-		name := pgQuote(fmt.Sprintf("%s_%s_ukey", schema.TableName(), strings.Join(unique, "_")))
-		cols := fmt.Sprintf("(%s)", strings.Join(pgQuoteArr(unique), ", "))
+		effectiveUnique := prependTenantKey(tenantKey, unique)
+		name := pgQuote(fmt.Sprintf("%s_%s_ukey", schema.TableName(), strings.Join(effectiveUnique, "_")))
+		cols := fmt.Sprintf("(%s)", strings.Join(pgQuoteArr(effectiveUnique), ", "))
 		builder.Define(fmt.Sprintf("CONSTRAINT %s UNIQUE", name), cols)
 	}
 }
@@ -554,9 +558,10 @@ func (this *PgQueryBuilder) buildInsertSql(schema *dmodel.ModelSchema, rows []ro
 		ib.Values(row.values...)
 	}
 	if ignoreConflict {
-		if err := this.appendInsertOnConflictPkDoNothing(ib, schema); err != nil {
-			return "", err
-		}
+		ib.SQL(" ON CONFLICT DO NOTHING")
+		// if err := this.appendInsertOnConflictPkDoNothing(ib, schema); err != nil {
+		// 	return "", err
+		// }
 	}
 	sql, args := ib.Build()
 	out, ierr := interpolate(sql, args)
@@ -1423,6 +1428,9 @@ func prependTenantKey(tenantKey string, fields []string) []string {
 	if tenantKey == "" {
 		return fields
 	}
+	if slices.Contains(fields, tenantKey) {
+		return fields
+	}
 	cols := make([]string, 0, len(fields)+1)
 	cols = append(cols, tenantKey)
 	return append(cols, fields...)
@@ -1524,9 +1532,9 @@ func unwrapValue(v reflect.Value) (reflect.Value, bool) {
 }
 
 var timeType = reflect.TypeOf(time.Time{})
-var modelDateType = reflect.TypeOf(cmodel.ModelDate(time.Time{}))
-var modelDateTimeType = reflect.TypeOf(cmodel.ModelDateTime(time.Time{}))
-var modelTimeType = reflect.TypeOf(cmodel.ModelTime(time.Time{}))
+var modelDateType = reflect.TypeOf(cmodel.NewModelDate())
+var modelDateTimeType = reflect.TypeOf(cmodel.NewModelDateTime())
+var modelTimeType = reflect.TypeOf(cmodel.NewModelTime())
 
 func valueAllowed(cat columnCategory, v reflect.Value) bool {
 	switch cat {

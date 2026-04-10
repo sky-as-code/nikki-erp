@@ -1,28 +1,32 @@
 package domain
 
 import (
-	"time"
+	"regexp"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/util"
+	c "github.com/sky-as-code/nikki-erp/modules/authenticate/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
+
+type OtpCode string
+
+var OtpCodePattern = regexp.MustCompile(`^\d+$`)
 
 const (
 	PasswordStoreSchemaName = "authenticate.password_store"
 
+	PasswordStoreFieldId                   = basemodel.FieldId
+	PasswordStoreFieldPrincipalType        = "principal_type"
+	PasswordStoreFieldPrincipalId          = "principal_id"
 	PasswordStoreFieldPassword             = "password"
-	PasswordStoreFieldPasswordExpiredAt    = "password_expired_at"
+	PasswordStoreFieldPasswordExpiresAt    = "password_expires_at"
 	PasswordStoreFieldPasswordUpdatedAt    = "password_updated_at"
-	PasswordStoreFieldPasswordtmp          = "passwordtmp"
-	PasswordStoreFieldPasswordtmpExpiredAt = "passwordtmp_expired_at"
-	PasswordStoreFieldPasswordotp          = "passwordotp"
-	PasswordStoreFieldPasswordotpExpiredAt = "passwordotp_expired_at"
-	PasswordStoreFieldPasswordotpRecovery  = "passwordotp_recovery"
-	PasswordStoreFieldSubjectType          = "subject_type"
-	PasswordStoreFieldSubjectRef           = "subject_ref"
-	PasswordStoreFieldSubjectSourceRef     = "subject_source_ref"
+	PasswordStoreFieldPasswordTmp          = "passwordtmp"
+	PasswordStoreFieldPasswordTmpExpiresAt = "passwordtmp_expires_at"
+	PasswordStoreFieldPasswordOtp          = "passwordotp"
+	PasswordStoreFieldPasswordOtpExpiresAt = "passwordotp_expires_at"
+	PasswordStoreFieldPasswordOtpRecovery  = "passwordotp_recovery"
 )
 
 func PasswordStoreSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -30,68 +34,69 @@ func PasswordStoreSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Label(model.LangJson{"en-US": "Password Store"}).
 		TableName("authn_password_stores").
 		ShouldBuildDb().
-		CompositeUnique(PasswordStoreFieldSubjectType, PasswordStoreFieldSubjectRef).
+		CompositeUnique(PasswordStoreFieldPrincipalType, PasswordStoreFieldPrincipalId).
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
-			dmodel.DefineField().Name(PasswordStoreFieldPassword).
-				Label(model.LangJson{"en-US": "Password"}).
-				DataType(dmodel.FieldDataTypeSecret()),
+			DefinePrincipalTypeField(PasswordStoreFieldPrincipalType).
+				Label(model.LangJson{"en-US": "Principal type"}).
+				RequiredForCreate(),
 		).
 		Field(
-			dmodel.DefineField().Name(PasswordStoreFieldPasswordExpiredAt).
-				Label(model.LangJson{"en-US": "Password Expired At"}).
+			basemodel.DefineFieldId(PasswordStoreFieldPrincipalId).
+				Label(model.LangJson{"en-US": "Principal ID"}).
+				RequiredForCreate(),
+		).
+		Field(
+			DefinePasswordTextField(PasswordStoreFieldPassword).
+				Label(model.LangJson{"en-US": "Password"}),
+		).
+		Field(
+			dmodel.DefineField().Name(PasswordStoreFieldPasswordExpiresAt).
+				Label(model.LangJson{"en-US": "Password expired at"}).
 				DataType(dmodel.FieldDataTypeDateTime()),
 		).
 		Field(
 			dmodel.DefineField().Name(PasswordStoreFieldPasswordUpdatedAt).
-				Label(model.LangJson{"en-US": "Password Updated At"}).
+				Label(model.LangJson{"en-US": "Password updated at"}).
 				DataType(dmodel.FieldDataTypeDateTime()),
 		).
 		Field(
-			dmodel.DefineField().Name(PasswordStoreFieldPasswordtmp).
-				Label(model.LangJson{"en-US": "Temp Password"}).
-				DataType(dmodel.FieldDataTypeSecret()),
+			DefinePasswordTextField(PasswordStoreFieldPasswordTmp).
+				Label(model.LangJson{"en-US": "Temporary password"}),
 		).
 		Field(
-			dmodel.DefineField().Name(PasswordStoreFieldPasswordtmpExpiredAt).
-				Label(model.LangJson{"en-US": "Temp Password Expired At"}).
+			dmodel.DefineField().Name(PasswordStoreFieldPasswordTmpExpiresAt).
+				Label(model.LangJson{"en-US": "Temporary password expired at"}).
 				DataType(dmodel.FieldDataTypeDateTime()),
 		).
 		Field(
-			dmodel.DefineField().Name(PasswordStoreFieldPasswordotp).
-				Label(model.LangJson{"en-US": "OTP Secret"}).
-				DataType(dmodel.FieldDataTypeSecret()),
+			DefinePasswordOtpField(PasswordStoreFieldPasswordOtp).
+				Label(model.LangJson{"en-US": "OTP secret"}),
 		).
 		Field(
-			dmodel.DefineField().Name(PasswordStoreFieldPasswordotpExpiredAt).
-				Label(model.LangJson{"en-US": "OTP Expired At"}).
+			dmodel.DefineField().Name(PasswordStoreFieldPasswordOtpExpiresAt).
+				Label(model.LangJson{"en-US": "OTP expired at"}).
 				DataType(dmodel.FieldDataTypeDateTime()),
 		).
 		Field(
-			dmodel.DefineField().Name(PasswordStoreFieldPasswordotpRecovery).
-				Label(model.LangJson{"en-US": "OTP Recovery"}).
-				DataType(dmodel.FieldDataTypeString(1, 32).ArrayType()),
-		).
-		Field(
-			dmodel.DefineField().Name(PasswordStoreFieldSubjectType).
-				Label(model.LangJson{"en-US": "Subject Type"}).
-				DataType(dmodel.FieldDataTypeEnumString([]string{string(SubjectTypeUser), string(SubjectTypeCustom)})).
-				RequiredForCreate().
-				AutoGenerated(),
-		).
-		Field(
-			dmodel.DefineField().Name(PasswordStoreFieldSubjectRef).
-				Label(model.LangJson{"en-US": "Subject Ref"}).
-				DataType(dmodel.FieldDataTypeUlid()).
-				RequiredForCreate().
-				AutoGenerated(),
-		).
-		Field(
-			dmodel.DefineField().Name(PasswordStoreFieldSubjectSourceRef).
-				Label(model.LangJson{"en-US": "Subject Source Ref"}).
-				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)).
-				AutoGenerated(),
+			DefinePasswordOtpRecoveryField(PasswordStoreFieldPasswordOtpRecovery).
+				Label(model.LangJson{"en-US": "OTP recovery"}),
 		)
+}
+
+func DefinePasswordTextField(fieldName string) *dmodel.FieldBuilder {
+	return dmodel.DefineField().Name(fieldName).
+		DataType(dmodel.FieldDataTypeSecret(model.MODEL_RULE_PASSWORD_MIN_LENGTH, model.MODEL_RULE_PASSWORD_MAX_LENGTH))
+}
+
+func DefinePasswordOtpField(fieldName string) *dmodel.FieldBuilder {
+	return dmodel.DefineField().Name(fieldName).
+		DataType(dmodel.FieldDataTypeSecret(c.OtpCodeLength, c.OtpCodeLength))
+}
+
+func DefinePasswordOtpRecoveryField(fieldName string) *dmodel.FieldBuilder {
+	return dmodel.DefineField().Name(fieldName).
+		DataType(dmodel.FieldDataTypeSecret(c.OtpRecoveryCodeLength, c.OtpRecoveryCodeLength).ArrayType())
 }
 
 type PasswordStore struct {
@@ -130,115 +135,91 @@ func (this *PasswordStore) SetPassword(v *string) {
 	this.fields.SetString(PasswordStoreFieldPassword, v)
 }
 
-func (this PasswordStore) GetPasswordExpiredAt() *time.Time {
-	return AnyToTimePtr(this.fields.GetAny(PasswordStoreFieldPasswordExpiredAt))
+func (this PasswordStore) GetPasswordExpiresAt() *model.ModelDateTime {
+	return this.fields.GetModelDateTime(PasswordStoreFieldPasswordExpiresAt)
 }
 
-func (this *PasswordStore) SetPasswordExpiredAt(v *time.Time) {
+func (this *PasswordStore) SetPasswordExpiresAt(v *model.ModelDateTime) {
+	this.fields.SetModelDateTime(PasswordStoreFieldPasswordExpiresAt, v)
+}
+
+func (this PasswordStore) GetPasswordUpdatedAt() *model.ModelDateTime {
+	return this.fields.GetModelDateTime(PasswordStoreFieldPasswordUpdatedAt)
+}
+
+func (this *PasswordStore) SetPasswordUpdatedAt(v *model.ModelDateTime) {
+	this.fields.SetModelDateTime(PasswordStoreFieldPasswordUpdatedAt, v)
+}
+
+func (this PasswordStore) GetPasswordTmp() *string {
+	return this.fields.GetString(PasswordStoreFieldPasswordTmp)
+}
+
+func (this *PasswordStore) SetPasswordTmp(v *string) {
+	this.fields.SetString(PasswordStoreFieldPasswordTmp, v)
+}
+
+func (this PasswordStore) GetPasswordTmpExpiresAt() *model.ModelDateTime {
+	return this.fields.GetModelDateTime(PasswordStoreFieldPasswordTmpExpiresAt)
+}
+
+func (this *PasswordStore) SetPasswordTmpExpiresAt(v *model.ModelDateTime) {
+	this.fields.SetModelDateTime(PasswordStoreFieldPasswordTmpExpiresAt, v)
+}
+
+func (this PasswordStore) MustGetPasswordOtp() string {
+	v := this.fields.GetString(PasswordStoreFieldPasswordOtp)
 	if v == nil {
-		this.fields.SetAny(PasswordStoreFieldPasswordExpiredAt, nil)
-		return
+		panic("password OTP is not set")
 	}
-	this.fields.SetAny(PasswordStoreFieldPasswordExpiredAt, TimePtrToModelDateTime(v))
+	return *v
 }
 
-func (this PasswordStore) GetPasswordUpdatedAt() *time.Time {
-	return AnyToTimePtr(this.fields.GetAny(PasswordStoreFieldPasswordUpdatedAt))
+func (this PasswordStore) GetPasswordOtp() *string {
+	return this.fields.GetString(PasswordStoreFieldPasswordOtp)
 }
 
-func (this *PasswordStore) SetPasswordUpdatedAt(v *time.Time) {
-	if v == nil {
-		this.fields.SetAny(PasswordStoreFieldPasswordUpdatedAt, nil)
-		return
-	}
-	this.fields.SetAny(PasswordStoreFieldPasswordUpdatedAt, TimePtrToModelDateTime(v))
+func (this *PasswordStore) SetPasswordOtp(v *string) {
+	this.fields.SetString(PasswordStoreFieldPasswordOtp, v)
 }
 
-func (this PasswordStore) GetPasswordtmp() *string {
-	return this.fields.GetString(PasswordStoreFieldPasswordtmp)
+func (this PasswordStore) GetPasswordOtpExpiresAt() *model.ModelDateTime {
+	return this.fields.GetModelDateTime(PasswordStoreFieldPasswordOtpExpiresAt)
 }
 
-func (this *PasswordStore) SetPasswordtmp(v *string) {
-	this.fields.SetString(PasswordStoreFieldPasswordtmp, v)
+func (this *PasswordStore) SetPasswordOtpExpiresAt(v *model.ModelDateTime) {
+	this.fields.SetModelDateTime(PasswordStoreFieldPasswordOtpExpiresAt, v)
 }
 
-func (this PasswordStore) GetPasswordtmpExpiredAt() *time.Time {
-	return AnyToTimePtr(this.fields.GetAny(PasswordStoreFieldPasswordtmpExpiredAt))
+func (this PasswordStore) GetPasswordOtpRecovery() []string {
+	return this.fields.GetStrings(PasswordStoreFieldPasswordOtpRecovery)
 }
 
-func (this *PasswordStore) SetPasswordtmpExpiredAt(v *time.Time) {
-	if v == nil {
-		this.fields.SetAny(PasswordStoreFieldPasswordtmpExpiredAt, nil)
-		return
-	}
-	this.fields.SetAny(PasswordStoreFieldPasswordtmpExpiredAt, TimePtrToModelDateTime(v))
+func (this *PasswordStore) SetPasswordOtpRecovery(v []string) {
+	this.fields.SetStrings(PasswordStoreFieldPasswordOtpRecovery, v)
 }
 
-func (this PasswordStore) GetPasswordotp() *string {
-	return this.fields.GetString(PasswordStoreFieldPasswordotp)
-}
-
-func (this *PasswordStore) SetPasswordotp(v *string) {
-	this.fields.SetString(PasswordStoreFieldPasswordotp, v)
-}
-
-func (this PasswordStore) GetPasswordotpExpiredAt() *time.Time {
-	return AnyToTimePtr(this.fields.GetAny(PasswordStoreFieldPasswordotpExpiredAt))
-}
-
-func (this *PasswordStore) SetPasswordotpExpiredAt(v *time.Time) {
-	if v == nil {
-		this.fields.SetAny(PasswordStoreFieldPasswordotpExpiredAt, nil)
-		return
-	}
-	this.fields.SetAny(PasswordStoreFieldPasswordotpExpiredAt, TimePtrToModelDateTime(v))
-}
-
-func (this PasswordStore) GetPasswordotpRecovery() []string {
-	return this.fields.GetStrings(PasswordStoreFieldPasswordotpRecovery)
-}
-
-func (this *PasswordStore) SetPasswordotpRecovery(v []string) {
-	this.fields.SetStrings(PasswordStoreFieldPasswordotpRecovery, v)
-}
-
-func (this PasswordStore) GetSubjectType() *SubjectType {
-	s := this.fields.GetString(PasswordStoreFieldSubjectType)
+func (this PasswordStore) GetPrincipalType() *PrincipalType {
+	s := this.fields.GetString(PasswordStoreFieldPrincipalType)
 	if s == nil {
 		return nil
 	}
-	st := SubjectType(*s)
+	st := PrincipalType(*s)
 	return &st
 }
 
-func (this *PasswordStore) SetSubjectType(v *SubjectType) {
+func (this *PasswordStore) SetPrincipalType(v *PrincipalType) {
 	if v == nil {
-		this.fields.SetString(PasswordStoreFieldSubjectType, nil)
+		this.fields.SetString(PasswordStoreFieldPrincipalType, nil)
 		return
 	}
-	this.fields.SetString(PasswordStoreFieldSubjectType, util.ToPtr(v.String()))
+	this.fields.SetString(PasswordStoreFieldPrincipalType, (*string)(v))
 }
 
-func (this PasswordStore) GetSubjectRef() *model.Id {
-	return this.fields.GetModelId(PasswordStoreFieldSubjectRef)
+func (this PasswordStore) GetPrincipalId() *model.Id {
+	return this.fields.GetModelId(PasswordStoreFieldPrincipalId)
 }
 
-func (this *PasswordStore) SetSubjectRef(v *model.Id) {
-	this.fields.SetModelId(PasswordStoreFieldSubjectRef, v)
-}
-
-func (this PasswordStore) GetSubjectSourceRef() *string {
-	return this.fields.GetString(PasswordStoreFieldSubjectSourceRef)
-}
-
-func (this *PasswordStore) SetSubjectSourceRef(v *string) {
-	this.fields.SetString(PasswordStoreFieldSubjectSourceRef, v)
-}
-
-func (this *PasswordStore) SetDefaults() {
-	id, err := model.NewId()
-	if err != nil {
-		panic(err)
-	}
-	this.SetId(id)
+func (this *PasswordStore) SetPrincipalId(v *model.Id) {
+	this.fields.SetModelId(PasswordStoreFieldPrincipalId, v)
 }

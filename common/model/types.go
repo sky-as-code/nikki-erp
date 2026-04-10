@@ -282,6 +282,10 @@ func NewModelDateTime() ModelDateTime {
 	return ModelDateTime(time.Now().UTC())
 }
 
+func WrapModelDateTime(t time.Time) ModelDateTime {
+	return ModelDateTime(t.UTC())
+}
+
 func ParseModelDateTime(timestamp string) (ModelDateTime, error) {
 	if !strings.HasSuffix(timestamp, "Z") {
 		return ModelDateTime{}, errors.New("timestamp must be in RFC3339 format and in UTC (end with 'Z' only)")
@@ -299,6 +303,28 @@ type ModelDateTime time.Time
 
 func (this ModelDateTime) GoTime() time.Time {
 	return time.Time(this)
+}
+
+// Calc invokes `fn` with this inner `time.Time` to do some stuff,
+// then return the new `time.Time` to wrap in a new ModelDateTime.
+func (this ModelDateTime) Calc(fn func(t time.Time) time.Time) ModelDateTime {
+	return ModelDateTime(fn(this.GoTime()))
+}
+
+func (this ModelDateTime) After(t ModelDateTime) bool {
+	return this.AfterT(t.GoTime())
+}
+
+func (this ModelDateTime) Before(t ModelDateTime) bool {
+	return this.BeforeT(t.GoTime())
+}
+
+func (this ModelDateTime) BeforeT(t time.Time) bool {
+	return time.Time(this).Before(t)
+}
+
+func (this ModelDateTime) AfterT(t time.Time) bool {
+	return time.Time(this).After(t)
 }
 
 func (this ModelDateTime) String() string {
@@ -325,6 +351,10 @@ func NewModelDate() ModelDate {
 	return ModelDate(dateOnly)
 }
 
+func WrapModelDate(t time.Time) ModelDate {
+	return ModelDate(t.UTC())
+}
+
 func ParseModelDate(timestamp string) (ModelDate, error) {
 	parsed, err := time.Parse(time.DateOnly, timestamp)
 	if err != nil {
@@ -338,6 +368,28 @@ type ModelDate time.Time
 
 func (this ModelDate) GoTime() time.Time {
 	return time.Time(this)
+}
+
+// Calc invokes `fn` with this inner `time.Time` to do some stuff,
+// then return the new `time.Time` to wrap in a new ModelDate.
+func (this ModelDate) Calc(fn func(t time.Time) time.Time) ModelDate {
+	return ModelDate(fn(this.GoTime()))
+}
+
+func (this ModelDate) After(t ModelDate) bool {
+	return this.AfterT(t.GoTime())
+}
+
+func (this ModelDate) Before(t ModelDate) bool {
+	return this.BeforeT(t.GoTime())
+}
+
+func (this ModelDate) BeforeT(t time.Time) bool {
+	return time.Time(this).Before(t)
+}
+
+func (this ModelDate) AfterT(t time.Time) bool {
+	return time.Time(this).After(t)
 }
 
 func (this ModelDate) String() string {
@@ -363,6 +415,10 @@ func NewModelTime() ModelTime {
 	return ModelTime(onlyTime)
 }
 
+func WrapModelTime(t time.Time) ModelTime {
+	return ModelTime(t.UTC())
+}
+
 func ParseModelTime(timestamp string) (ModelTime, error) {
 	parsed, err := time.Parse(time.TimeOnly, timestamp)
 	if err != nil {
@@ -376,6 +432,29 @@ type ModelTime time.Time
 
 func (this ModelTime) GoTime() time.Time {
 	return time.Time(this)
+}
+
+// Calc invokes `fn` with this inner `time.Time` to do some stuff,
+// then return the new `time.Time` to wrap in a new ModelTime.
+func (this ModelTime) Calc(fn func(t time.Time) time.Time) ModelTime {
+	newTime := fn(this.GoTime())
+	return ModelTime(newTime)
+}
+
+func (this ModelTime) After(t ModelTime) bool {
+	return this.AfterT(t.GoTime())
+}
+
+func (this ModelTime) Before(t ModelTime) bool {
+	return this.BeforeT(t.GoTime())
+}
+
+func (this ModelTime) BeforeT(t time.Time) bool {
+	return time.Time(this).Before(t)
+}
+
+func (this ModelTime) AfterT(t time.Time) bool {
+	return time.Time(this).After(t)
 }
 
 func (this ModelTime) String() string {

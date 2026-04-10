@@ -41,24 +41,20 @@ func (this LoginRest) StartLoginFlow(echoCtx echo.Context) (err error) {
 		echoCtx,
 		this.attemptSvc.CreateLoginAttempt,
 		func(request StartLoginFlowRequest) it.CreateLoginAttemptCommand {
-			var deviceName *string
-			deviceName = util.ToPtr(echoCtx.Request().Header.Get("User-Agent"))
-			if len(*deviceName) == 0 && request.DeviceName != nil && len(*request.DeviceName) > 0 {
-				deviceName = request.DeviceName
+			deviceName := echoCtx.Request().Header.Get("User-Agent")
+			if deviceName == "" && request.DeviceName != nil && len(*request.DeviceName) > 0 {
+				deviceName = *request.DeviceName
 			}
 
-			cmd := it.CreateLoginAttemptCommand{
-				DeviceIp:       util.ToPtr(echoCtx.RealIP()),
-				DeviceName:     deviceName,
-				DeviceLocation: util.ToPtr(echoCtx.RealIP()), // Use geoip service to get location
-				SubjectType:    request.SubjectType,
-				Username:       request.Username,
-			}
+			cmd := it.NewCreateLoginAttemptCommand()
+			cmd.SetDeviceIp(util.ToPtr(echoCtx.RealIP()))
+			cmd.SetDeviceName(&deviceName)
+			cmd.SetDeviceLocation(util.ToPtr(echoCtx.RealIP())) // TODO: Use geoip service to get location
+			cmd.SetPrincipalType(request.PrincipalType)
+			cmd.SetUsername(&request.Username)
 			return cmd
 		},
-		func(data *it.CreateLoginAttemptResultData) StartLoginFlowResponse {
-			return NewStartLoginFlowResponse(data)
-		},
+		NewStartLoginFlowResponse,
 		httpserver.JsonCreated,
 	)
 }
@@ -69,21 +65,17 @@ func (this LoginRest) Authenticate(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest2(
+	return httpserver.ServeRequest2(
 		echoCtx,
 		this.loginSvc.Authenticate,
 		func(request AuthenticateRequest) it.AuthenticateCommand {
 			return it.AuthenticateCommand(request)
 		},
-		func(data *it.AuthenticateResultData) AuthenticateResponse {
-			if data == nil {
-				return AuthenticateResponse{}
-			}
-			return AuthenticateResponse(*data)
+		func(data it.AuthenticateResultData) AuthenticateResponse {
+			return AuthenticateResponse(data)
 		},
 		httpserver.JsonOk,
 	)
-	return err
 }
 
 func (this LoginRest) RefreshToken(echoCtx echo.Context) (err error) {
@@ -92,19 +84,15 @@ func (this LoginRest) RefreshToken(echoCtx echo.Context) (err error) {
 			err = e
 		}
 	}()
-	err = httpserver.ServeRequest2(
+	return httpserver.ServeRequest2(
 		echoCtx,
 		this.loginSvc.RefreshToken,
 		func(request RefreshTokenRequest) it.RefreshTokenCommand {
 			return it.RefreshTokenCommand(request)
 		},
-		func(data *it.RefreshTokenResultData) RefreshTokenResponse {
-			if data == nil {
-				return RefreshTokenResponse{}
-			}
-			return RefreshTokenResponse(*data)
+		func(data it.RefreshTokenResultData) RefreshTokenResponse {
+			return RefreshTokenResponse(data)
 		},
 		httpserver.JsonOk,
 	)
-	return err
 }

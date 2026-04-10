@@ -1,6 +1,8 @@
 package app
 
 import (
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -12,30 +14,30 @@ import (
 )
 
 func NewGroupServiceImpl(
-	groupRepo2 itGrp.GroupRepository,
+	groupRepo itGrp.GroupRepository,
 	roleSvc itRole.RoleService,
 	cqrsBus cqrs.CqrsBus,
 ) itGrp.GroupService {
 	return &GroupServiceImpl{
-		cqrsBus:    cqrsBus,
-		groupRepo2: groupRepo2,
-		roleSvc:    roleSvc,
+		cqrsBus:   cqrsBus,
+		groupRepo: groupRepo,
+		roleSvc:   roleSvc,
 	}
 }
 
 type GroupServiceImpl struct {
-	cqrsBus    cqrs.CqrsBus
-	groupRepo2 itGrp.GroupRepository
-	roleSvc    itRole.RoleService
+	cqrsBus   cqrs.CqrsBus
+	groupRepo itGrp.GroupRepository
+	roleSvc   itRole.RoleService
 }
 
 func (this *GroupServiceImpl) CreateGroup(
 	ctx corectx.Context, cmd itGrp.CreateGroupCommand,
 ) (*itGrp.CreateGroupResult, error) {
-	return corecrud.ExecInTranx(ctx, this.groupRepo2, func(tranxCtx corectx.Context) (*itGrp.CreateGroupResult, error) {
+	return corecrud.ExecInTranx(ctx, this.groupRepo, func(tranxCtx corectx.Context) (*itGrp.CreateGroupResult, error) {
 		result, err := corecrud.Create(tranxCtx, corecrud.CreateParam[domain.Group, *domain.Group]{
 			Action:         "create group",
-			BaseRepoGetter: this.groupRepo2,
+			BaseRepoGetter: this.groupRepo,
 			Data:           cmd,
 		})
 		if err != nil {
@@ -50,7 +52,7 @@ func (this *GroupServiceImpl) CreateGroup(
 
 func (this *GroupServiceImpl) createPrivateRole(tranxCtx corectx.Context, grpResult *itGrp.CreateGroupResult) (*itGrp.CreateGroupResult, error) {
 	oid := string(*grpResult.Data.GetId())
-	roleRes, rErr := this.roleSvc.CreatePrivateRole(tranxCtx, itRole.CreatePrivateRoleCommand{OwnerId: oid})
+	roleRes, rErr := this.roleSvc.CreatePrivateRole(tranxCtx, itRole.CreatePrivateRoleCommand{OwnerId: oid, OwnerType: "group"})
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -63,18 +65,21 @@ func (this *GroupServiceImpl) createPrivateRole(tranxCtx corectx.Context, grpRes
 func (this *GroupServiceImpl) DeleteGroup(ctx corectx.Context, cmd itGrp.DeleteGroupCommand) (
 	*itGrp.DeleteGroupResult, error,
 ) {
-	return corecrud.ExecInTranx(ctx, this.groupRepo2, func(tranxCtx corectx.Context) (*itGrp.DeleteGroupResult, error) {
-		privRes, pErr := this.roleSvc.DeletePrivateRole(tranxCtx, itRole.DeletePrivateRoleCommand{OwnerId: cmd.Id})
-		if pErr != nil {
-			return nil, pErr
-		}
-		if privRes.ClientErrors.Count() > 0 {
-			return nil, errors.Errorf("delete private role: %v", privRes.ClientErrors)
-		}
+	return corecrud.ExecInTranx(ctx, this.groupRepo, func(tranxCtx corectx.Context) (*itGrp.DeleteGroupResult, error) {
 		return corecrud.DeleteOne(tranxCtx, corecrud.DeleteOneParam{
 			Action:       "delete group",
-			DbRepoGetter: this.groupRepo2,
+			DbRepoGetter: this.groupRepo,
 			Cmd:          dyn.DeleteOneCommand{Id: cmd.Id},
+			AfterValidationSuccess: func(_ corectx.Context) error {
+				privRes, pErr := this.roleSvc.DeletePrivateRole(tranxCtx, itRole.DeletePrivateRoleCommand{OwnerId: cmd.Id})
+				if pErr != nil {
+					return pErr
+				}
+				if privRes.ClientErrors.Count() > 0 {
+					return errors.Wrap(privRes.ClientErrors.ToError(), "deletePrivateRole")
+				}
+				return nil
+			},
 		})
 	})
 }
@@ -84,7 +89,7 @@ func (this *GroupServiceImpl) GroupExists(ctx corectx.Context, query itGrp.Group
 ) {
 	return corecrud.Exists(ctx, corecrud.ExistsParam{
 		Action:       "check if group exists",
-		DbRepoGetter: this.groupRepo2,
+		DbRepoGetter: this.groupRepo,
 		Query:        dyn.ExistsQuery(query),
 	})
 }
@@ -94,7 +99,7 @@ func (this *GroupServiceImpl) GetGroup(
 ) (*itGrp.GetGroupResult, error) {
 	return corecrud.GetOne[domain.Group](ctx, corecrud.GetOneParam{
 		Action:       "get group",
-		DbRepoGetter: this.groupRepo2,
+		DbRepoGetter: this.groupRepo,
 		Query:        dyn.GetOneQuery(query),
 	})
 }
@@ -102,15 +107,24 @@ func (this *GroupServiceImpl) GetGroup(
 func (this *GroupServiceImpl) ManageGroupUsers(
 	ctx corectx.Context, cmd itGrp.ManageGroupUsersCommand,
 ) (result *itGrp.ManageGroupUsersResult, err error) {
-
 	return corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
 		Action:             "manage group users",
-		DbRepoGetter:       this.groupRepo2,
+		DbRepoGetter:       this.groupRepo,
 		DestSchemaName:     domain.UserSchemaName,
 		SrcId:              cmd.GroupId,
 		SrcIdFieldForError: "group_id",
 		AssociatedIds:      cmd.Add,
 		DisassociatedIds:   cmd.Remove,
+		BeforeInsert: func(ctx corectx.Context, dbRecords []dmodel.DynamicFields) error {
+			for _, record := range dbRecords {
+				relationId, err := model.NewId()
+				if err != nil {
+					return err
+				}
+				record[domain.GrpUsrRelFieldId] = *relationId
+			}
+			return nil
+		},
 	})
 }
 
@@ -119,7 +133,7 @@ func (this *GroupServiceImpl) SearchGroups(ctx corectx.Context, query itGrp.Sear
 ) {
 	return corecrud.Search[domain.Group](ctx, corecrud.SearchParam{
 		Action:       "search groups",
-		DbRepoGetter: this.groupRepo2,
+		DbRepoGetter: this.groupRepo,
 		Query:        dyn.SearchQuery(query),
 	})
 }
@@ -129,7 +143,7 @@ func (this *GroupServiceImpl) UpdateGroup(
 ) (*itGrp.UpdateGroupResult, error) {
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Group, *domain.Group]{
 		Action:       "update group",
-		DbRepoGetter: this.groupRepo2,
+		DbRepoGetter: this.groupRepo,
 		Data:         cmd,
 	})
 }

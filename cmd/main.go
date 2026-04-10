@@ -18,34 +18,34 @@ type StartableApp interface {
 	GenSql(module string, dialect string) string
 }
 
-type MainParams struct {
+type MainParam struct {
 	CreateAppFn       CreateAppFn
 	BeforeHttpStartFn BeforeHttpStartFn
 }
 type CreateAppFn func(logging.LoggerService) StartableApp
 type BeforeHttpStartFn func() error
 
-func Main(params MainParams) {
+func Main(param MainParam) {
 	isCreateSql := flag.Bool("createsql", false, "Generate CREATE SQL for model schemas and write to stdout")
 	module := flag.String("module", "", "Module name (required when -createsql is set)")
 	dialect := flag.String("dialect", "", "SQL dialect (required when -createsql is set)")
 	flag.Parse()
 
 	if *isCreateSql {
-		runCreateSql(params.CreateAppFn, *module, *dialect)
+		runCreateSql(param.CreateAppFn, *module, *dialect)
 		return
 	}
 
 	logging.InitSubModule()
 
-	app := params.CreateAppFn(logging.Logger())
+	app := param.CreateAppFn(logging.Logger())
 	app.Start()
 
 	var server *httpserver.HttpServer
 	go func() {
 		var err error
-		if params.BeforeHttpStartFn != nil {
-			err = params.BeforeHttpStartFn()
+		if param.BeforeHttpStartFn != nil {
+			err = param.BeforeHttpStartFn()
 		}
 
 		if err == nil {

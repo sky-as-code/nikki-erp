@@ -15,10 +15,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 )
 
-type BeforeValidationFn[TDomain any] func(ctx corectx.Context, model TDomain, vErrs *ft.ClientErrors) (TDomain, error)
-type AfterValidationFn[TDomain any] func(ctx corectx.Context, model TDomain) (TDomain, error)
-type CreateValidateExtraFn[TDomain any] func(ctx corectx.Context, inputModel TDomain, vErrs *ft.ClientErrors) error
-type UpdateValidateExtraFn[TDomain any] func(ctx corectx.Context, inputModel TDomain, foundModel TDomain, vErrs *ft.ClientErrors) error
+type BeforeValidationFn[T any] func(ctx corectx.Context, model T, vErrs *ft.ClientErrors) (T, error)
+type AfterValidationSuccessFn[T any] func(ctx corectx.Context, model T) (T, error)
+type AfterDeleteValidationSuccessFn func(ctx corectx.Context) error
+type CreateValidateExtraFn[T any] func(ctx corectx.Context, inputModel T, vErrs *ft.ClientErrors) error
+type UpdateValidateExtraFn[T any] func(ctx corectx.Context, inputModel T, foundModel T, vErrs *ft.ClientErrors) error
 type DeleteValidateExtraFn func(ctx corectx.Context, keyFields dmodel.DynamicFields, vErrs *ft.ClientErrors) error
 
 type CreateParam[
@@ -36,7 +37,7 @@ type CreateParam[
 	BeforeValidation BeforeValidationFn[TDomainPtr]
 
 	// Optional function to do some processing on the domain model after validation.
-	AfterValidation AfterValidationFn[TDomainPtr]
+	AfterValidationSuccess AfterValidationSuccessFn[TDomainPtr]
 
 	// Optional function for advanced validation (business rules) in addition to built-in schema validation.
 	ValidateExtra CreateValidateExtraFn[TDomainPtr]
@@ -63,7 +64,7 @@ func Create[
 				return nil
 			}
 			result, err := param.BeforeValidation(ctx, newModel, vErrs)
-			if err == nil && vErrs.Count() == 0 {
+			if err == nil && vErrs.Count() == 0 && result != nil && result != newModel {
 				fieldData = result.GetFieldData()
 			}
 			return err
@@ -89,9 +90,9 @@ func Create[
 			return param.ValidateExtra(ctx, newModel, vErrs)
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
-			if param.AfterValidation != nil {
-				result, err := param.AfterValidation(ctx, newModel)
-				if err == nil {
+			if param.AfterValidationSuccess != nil {
+				result, err := param.AfterValidationSuccess(ctx, newModel)
+				if err == nil && result != nil && result != newModel {
 					fieldData = result.GetFieldData()
 				}
 				return err
@@ -123,10 +124,11 @@ func Create[
 }
 
 type DeleteOneParam struct {
-	Action        string
-	DbRepoGetter  dyn.DynamicModelRepository
-	Cmd           dyn.DeleteOneCommand
-	ValidateExtra DeleteValidateExtraFn
+	Action                 string
+	DbRepoGetter           dyn.DynamicModelRepository
+	Cmd                    dyn.DeleteOneCommand
+	ValidateExtra          DeleteValidateExtraFn
+	AfterValidationSuccess AfterDeleteValidationSuccessFn
 }
 
 func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *dyn.OpResult[dyn.MutateResultData], err error) {
@@ -150,6 +152,12 @@ func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *dyn.OpResult[
 		}
 		if cErrs.Count() > 0 {
 			return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: cErrs}, nil
+		}
+	}
+	if param.AfterValidationSuccess != nil {
+		err := param.AfterValidationSuccess(ctx)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -398,7 +406,7 @@ type UpdateParam[
 	DbRepoGetter     dyn.DynamicModelRepository
 	Data             dmodel.DynamicModelGetter
 	BeforeValidation BeforeValidationFn[TDomainPtr]
-	AfterValidation  AfterValidationFn[TDomainPtr]
+	AfterValidation  AfterValidationSuccessFn[TDomainPtr]
 	ValidateExtra    UpdateValidateExtraFn[TDomainPtr]
 }
 

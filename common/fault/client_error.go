@@ -65,8 +65,19 @@ func (this *ClientErrors) ToError() error {
 	return err
 }
 
-func (this *ClientErrors) Append(item ClientErrorItem) {
-	*this = append(*this, item)
+func (this *ClientErrors) Append(item ...ClientErrorItem) {
+	*this = append(*this, item...)
+}
+
+func (this *ClientErrors) Concat(other ClientErrors) {
+	*this = append(*this, other...)
+}
+
+func (this *ClientErrors) ConcatPtr(other *ClientErrors) {
+	if other == nil {
+		return
+	}
+	*this = append(*this, *other...)
 }
 
 func (this *ClientErrors) Count() int {

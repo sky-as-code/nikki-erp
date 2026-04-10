@@ -1,7 +1,7 @@
 meta {
   name: Group Create - Invalid fields - Validation errors
   type: http
-  seq: 7
+  seq: 8
 }
 
 post {
@@ -12,14 +12,56 @@ post {
 
 body:json {
   {
-      "name": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"
+      "name": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+    "owner_id": "not-valid-1234567890123"
   }
 }
 
 script:post-response {
-  const pkg = require('./scripts/error-400-invalid-length');
+  const pkg = require('./scripts/common-test-response');
   
-  pkg.testInvalidStringLength('name');
+  const schema = {
+      type: "array",
+      minItems: 2,
+      maxItems: 2,
+      items: {
+          type: "object",
+          required: ["field", "key", "message", "type"],
+          properties: {
+              field: {
+                  type: "string",
+                  enum: ["name", "owner_id"],
+              },
+              key: {
+                  type: "string",
+                  enum: ["common.err_invalid_string_length", "common.err_invalid_data_type"],
+              },
+              message: {
+                  type: "string",
+                  enum: ["string length must be between {{.min}} and {{.max}}", "invalid data type"],
+              },
+              type: {
+                  type: "string",
+                  enum: ["validation"],
+              },
+              vars: {
+                  type: "object",
+                  properties: {
+                    max: {
+                      type: "integer",
+                    },
+                    min: {
+                      type: "integer",
+                    },
+                  },
+              },
+          },
+          additionalProperties: false,
+      },
+      additionalItems: false
+  };
+  
+  pkg.testHttpResponse(schema, 400);
   
 }
 

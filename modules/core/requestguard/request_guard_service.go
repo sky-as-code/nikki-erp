@@ -1,40 +1,38 @@
 package requestguard
 
 import (
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.bryk.io/pkg/errors"
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	coretoken "github.com/sky-as-code/nikki-erp/modules/core/authtoken"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 type StaticRequestGuardServiceParams struct {
 	dig.In
 
 	ConfigSvc config.ConfigService
+	TokenSvc  coretoken.AuthTokenService
 }
 
 func NewStaticRequestGuardServiceImpl(params StaticRequestGuardServiceParams) RequestGuardService {
-	svc := &StaticRequestGuardServiceImpl{
+	return &StaticRequestGuardServiceImpl{
 		configSvc: params.ConfigSvc,
+		tokenSvc:  params.TokenSvc,
 	}
-	svc.validateConfig()
-	return svc
 }
 
 type StaticRequestGuardServiceImpl struct {
 	configSvc      config.ConfigService
+	tokenSvc       coretoken.AuthTokenService
 	corsMiddleware echo.MiddlewareFunc
 }
 
@@ -98,27 +96,13 @@ func (this *StaticRequestGuardServiceImpl) VerifyJwt(request *http.Request) (*Ve
 		return jwtVerifyFailure(), nil
 	}
 
-	algo := cfg.GetStr(c.RequestGuardAccessTokenAlgorithm)
-	issuer := cfg.GetStr(c.RequestGuardAccessTokenIssuer)
-	audiences := nonEmptyStrings(cfg.GetStrArr(c.RequestGuardAccessTokenAudience, ""))
-
-	var secretBytes any
-	if algo == JWT_ALGO_RS256 {
-		var err error
-		secretBytes, err = rsaPublicKeyFromPem(cfg.GetStr(c.RequestGuardAccessTokenRsaPublicKey))
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	secret := cfg.GetStr(c.RequestGuardAccessTokenSha256Secret)
-	secretBytes = []byte(secret)
-	parser := jwt.NewParser(jwtParserOptions(algo, issuer, audiences)...)
-	claims := &jwt.RegisteredClaims{}
-	jwtToken, err := parser.ParseWithClaims(rawToken, claims, func(_ *jwt.Token) (any, error) {
-		return secretBytes, nil
+	verifyResult, err := this.tokenSvc.VerifyJwt(corectx.NewRequestContext(request.Context(), "core"), coretoken.VerifyJwtParam{
+		Token: rawToken,
 	})
 	if err != nil {
+		return nil, err
+	}
+	if !verifyResult.IsOk {
 		return jwtVerifyFailure(), nil
 	}
 
@@ -131,35 +115,8 @@ func (this *StaticRequestGuardServiceImpl) VerifyJwt(request *http.Request) (*Ve
 	return &VerifyRequestResult{
 		IsOk:       true,
 		HttpStatus: http.StatusOK,
-		JwtClaims:  jwtToken.Claims,
+		JwtClaims:  verifyResult.Claims,
 	}, nil
-}
-
-func jwtParserOptions(algo, issuer string, audiences []string) []jwt.ParserOption {
-	opts := []jwt.ParserOption{
-		jwt.WithValidMethods([]string{algo}),
-		jwt.WithLeeway(time.Duration(JWT_NBF_DRIFT_MINS) * time.Minute),
-		jwt.WithExpirationRequired(),
-		jwt.WithIssuedAt(),
-	}
-	if issuer != "" {
-		opts = append(opts, jwt.WithIssuer(issuer))
-	}
-	if len(audiences) > 0 {
-		opts = append(opts, jwt.WithAllAudiences(audiences...))
-	}
-	return opts
-}
-
-func nonEmptyStrings(values []string) []string {
-	var out []string
-	for _, s := range values {
-		t := strings.TrimSpace(s)
-		if t != "" {
-			out = append(out, t)
-		}
-	}
-	return out
 }
 
 func (this *StaticRequestGuardServiceImpl) bearerAccessToken(request *http.Request) string {
@@ -191,29 +148,6 @@ func jwtVerifyFailure() *VerifyRequestResult {
 	}
 }
 
-func rsaPublicKeyFromPem(pemStr string) (*rsa.PublicKey, error) {
-	block, _ := pem.Decode([]byte(pemStr))
-	if block == nil {
-		return nil, errors.New("RSA public key PEM decode failed")
-	}
-	if strings.Contains(block.Type, "RSA PUBLIC KEY") {
-		pub, err := x509.ParsePKCS1PublicKey(block.Bytes)
-		if err != nil {
-			return nil, errors.Wrap(err, "RSA PKCS1 public key parse failed")
-		}
-		return pub, nil
-	}
-	pubAny, err := x509.ParsePKIXPublicKey(block.Bytes)
-	if err != nil {
-		return nil, errors.Wrap(err, "RSA PKIX public key parse failed")
-	}
-	pub, ok := pubAny.(*rsa.PublicKey)
-	if !ok {
-		return nil, errors.New("public key is not RSA")
-	}
-	return pub, nil
-}
-
 // Verify JWT DPoP (OAuth2 Demonstraing Proof of Possession)
 func (this *StaticRequestGuardServiceImpl) VerifyJwtDpop(request *http.Request) (*VerifyRequestResult, error) {
 
@@ -223,41 +157,4 @@ func (this *StaticRequestGuardServiceImpl) VerifyJwtDpop(request *http.Request) 
 func (this *StaticRequestGuardServiceImpl) VerifySessionBlacklist(request *http.Request) (*VerifyRequestResult, error) {
 
 	return nil, nil
-}
-
-func (this *StaticRequestGuardServiceImpl) validateConfig() {
-	cfg := this.configSvc
-	headerName := strings.TrimSpace(cfg.GetStr(c.RequestGuardAccessTokenHttpHeaderName))
-	if headerName == "" {
-		panic(errors.Errorf("config '%s' and '%s' are required", c.RequestGuardAccessTokenHttpHeaderName, c.RequestGuardAccessTokenHttpHeaderPrefix))
-	}
-
-	prefix := strings.TrimSpace(cfg.GetStr(c.RequestGuardAccessTokenHttpHeaderPrefix))
-	if prefix == "" {
-		panic(errors.Errorf("config '%s' is required", c.RequestGuardAccessTokenHttpHeaderPrefix))
-	}
-
-	algo := cfg.GetStr(c.RequestGuardAccessTokenAlgorithm)
-	expiryMins := cfg.GetUint(c.RequestGuardAccessTokenExpiryMinutes)
-
-	if algo != JWT_ALGO_HS256 && algo != JWT_ALGO_RS256 {
-		panic(errors.Errorf("config '%s' must be either '%s' or '%s'", c.RequestGuardAccessTokenAlgorithm, JWT_ALGO_HS256, JWT_ALGO_RS256))
-	}
-
-	if algo == JWT_ALGO_HS256 {
-		secret := cfg.GetStr(c.RequestGuardAccessTokenSha256Secret)
-		if secret == "" {
-			panic(errors.Errorf("config '%s' is required when '%s' is '%s'", c.RequestGuardAccessTokenSha256Secret, c.RequestGuardAccessTokenAlgorithm, JWT_ALGO_HS256))
-		}
-	} else if algo == JWT_ALGO_RS256 {
-		publicKey := cfg.GetStr(c.RequestGuardAccessTokenRsaPublicKey)
-		privateKey := cfg.GetStr(c.RequestGuardAccessTokenRsaPrivateKey)
-		if publicKey == "" || privateKey == "" {
-			panic(errors.Errorf("config '%s' and '%s' are required when '%s' is '%s'", c.RequestGuardAccessTokenRsaPublicKey, c.RequestGuardAccessTokenRsaPrivateKey, c.RequestGuardAccessTokenAlgorithm, JWT_ALGO_RS256))
-		}
-	}
-
-	if expiryMins == 0 || expiryMins > JWT_EXP_MAX_MINS {
-		panic(errors.Errorf("config '%s' must be > 0 and <= %d", c.RequestGuardAccessTokenExpiryMinutes, JWT_EXP_MAX_MINS))
-	}
 }

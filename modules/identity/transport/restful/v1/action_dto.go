@@ -33,4 +33,4 @@ type UpdateActionRequest struct {
 	ActionId   string `param:"action_id"`
 	ResourceId string `param:"resource_id"`
 }
-type UpdateActionResponse = httpserver.RestUpdateResponse2
+type UpdateActionResponse = httpserver.RestMutateResponse

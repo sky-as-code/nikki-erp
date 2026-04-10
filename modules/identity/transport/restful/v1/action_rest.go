@@ -145,9 +145,7 @@ func (this ActionRest) UpdateAction(echoCtx echo.Context) (err error) {
 			cmd.Action.SetId(util.ToPtr(model.Id(request.ActionId)))
 			return cmd
 		},
-		func(data dyn.MutateResultData) UpdateActionResponse {
-			return httpserver.NewRestUpdateResponse2(data)
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }
