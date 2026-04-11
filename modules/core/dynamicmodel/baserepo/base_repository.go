@@ -14,6 +14,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	erpjson "github.com/sky-as-code/nikki-erp/common/json"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
@@ -23,6 +24,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
+
+const fieldDataTypeJsonMapName = "jsonmap"
 
 type NewBaseRepositoryParam struct {
 	Client       orm.DbClient
@@ -1648,7 +1651,7 @@ func (this *BaseDynamicRepositoryImpl) queryAndScan(ctx corectx.Context, query s
 	return result, rows.Err()
 }
 
-func (this *BaseRepositoryImpl) convertDbColumn(columnName string, v any) any {
+func (this *BaseDynamicRepositoryImpl) convertDbColumn(columnName string, v any) any {
 	if v == nil {
 		return nil
 	}
