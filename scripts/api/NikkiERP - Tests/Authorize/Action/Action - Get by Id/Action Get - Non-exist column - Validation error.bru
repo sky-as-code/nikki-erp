@@ -1,0 +1,28 @@
+meta {
+  name: Action Get - Non-exist column - Validation error
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}/actions/{{action_id}}?columns=name&columns=bla_bla_field
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: name
+  columns: bla_bla_field
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-nonexist-fields');
+  
+  pkg.testNonExistFields('bla_bla_field');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

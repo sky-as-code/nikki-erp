@@ -1,168 +1,169 @@
 package v1
 
-import (
-	"github.com/labstack/echo/v4"
-	"go.uber.org/dig"
+// import (
+// 	"github.com/labstack/echo/v4"
+// 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+// 	"github.com/sky-as-code/nikki-erp/common/fault"
+// 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_request"
-)
+// 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/grant_request"
+// )
 
-type grantRequestRestParams struct {
-	dig.In
+// type grantRequestRestParams struct {
+// 	dig.In
 
-	GrantRequestSvc it.GrantRequestService
-}
+// 	GrantRequestSvc it.GrantRequestService
+// }
 
-func NewGrantRequestRest(params grantRequestRestParams) *GrantRequestRest {
-	return &GrantRequestRest{
-		GrantRequestSvc: params.GrantRequestSvc,
-	}
-}
+// func NewGrantRequestRest(params grantRequestRestParams) *GrantRequestRest {
+// 	return &GrantRequestRest{
+// 		GrantRequestSvc: params.GrantRequestSvc,
+// 	}
+// }
 
-type GrantRequestRest struct {
-	httpserver.RestBase
-	GrantRequestSvc it.GrantRequestService
-}
+// type GrantRequestRest struct {
+// 	httpserver.RestBase
+// 	GrantRequestSvc it.GrantRequestService
+// }
 
-func (this GrantRequestRest) CreateGrantRequest(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create grant request"); e != nil {
-			err = e
-		}
-	}()
+// func (this GrantRequestRest) CreateGrantRequest(echoCtx echo.Context) (err error) {
+// 	defer func() {
+// 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create grant request"); e != nil {
+// 			err = e
+// 		}
+// 	}()
 
-	err = httpserver.ServeRequest(
-		echoCtx, this.GrantRequestSvc.CreateGrantRequest,
-		func(request CreateGrantRequestRequest) it.CreateGrantRequestCommand {
-			return it.CreateGrantRequestCommand(request)
-		},
-		func(result it.CreateGrantRequestResult) CreateGrantRequestResponse {
-			response := CreateGrantRequestResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonCreated,
-	)
+// 	err = httpserver.ServeRequest(
+// 		echoCtx, this.GrantRequestSvc.CreateGrantRequest,
+// 		func(request CreateGrantRequestRequest) it.CreateGrantRequestCommand {
+// 			return it.CreateGrantRequestCommand(request)
+// 		},
+// 		func(result it.CreateGrantRequestResult) CreateGrantRequestResponse {
+// 			response := CreateGrantRequestResponse{}
+// 			response.FromEntity(result.Data)
+// 			return response
+// 		},
+// 		httpserver.JsonCreated,
+// 	)
 
-	return err
-}
+// 	return err
+// }
 
-func (this GrantRequestRest) CancelGrantRequest(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "handle REST cancel grant request"); e != nil {
-			err = e
-		}
-	}()
+// func (this GrantRequestRest) CancelGrantRequest(echoCtx echo.Context) (err error) {
+// 	defer func() {
+// 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST cancel grant request"); e != nil {
+// 			err = e
+// 		}
+// 	}()
 
-	err = httpserver.ServeRequest(
-		echoCtx, this.GrantRequestSvc.CancelGrantRequest,
-		func(request CancelGrantRequestRequest) it.CancelGrantRequestCommand {
-			return it.CancelGrantRequestCommand(request)
-		},
-		func(result it.CancelGrantRequestResult) CancelGrantRequestResponse {
-			response := CancelGrantRequestResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
-	)
+// 	err = httpserver.ServeRequest(
+// 		echoCtx, this.GrantRequestSvc.CancelGrantRequest,
+// 		func(request CancelGrantRequestRequest) it.CancelGrantRequestCommand {
+// 			return it.CancelGrantRequestCommand(request)
+// 		},
+// 		func(result it.CancelGrantRequestResult) CancelGrantRequestResponse {
+// 			response := CancelGrantRequestResponse{}
+// 			response.FromEntity(result.Data)
+// 			return response
+// 		},
+// 		httpserver.JsonOk,
+// 	)
 
-	return err
-}
+// 	return err
+// }
 
+// func (this GrantRequestRest) DeleteGrantRequest(echoCtx echo.Context) (err error) {
+// 	defer func() {
+// 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete grant request"); e != nil {
+// 			err = e
+// 		}
+// 	}()
 
-func (this GrantRequestRest) DeleteGrantRequest(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete grant request"); e != nil {
-			err = e
-		}
-	}()
+// 	err = httpserver.ServeRequest(
+// 		echoCtx, this.GrantRequestSvc.DeleteGrantRequest,
+// 		func(request DeleteGrantRequestRequest) it.DeleteGrantRequestCommand {
+// 			return it.DeleteGrantRequestCommand(request)
+// 		},
+// 		func(result it.DeleteGrantRequestResult) DeleteGrantRequestResponse {
+// 			response := DeleteGrantRequestResponse{}
+// 			response.FromNonEntity(result.Data)
+// 			return response
+// 		},
+// 		httpserver.JsonOk,
+// 	)
 
-	err = httpserver.ServeRequest(
-		echoCtx, this.GrantRequestSvc.DeleteGrantRequest,
-		func(request DeleteGrantRequestRequest) it.DeleteGrantRequestCommand {
-			return it.DeleteGrantRequestCommand(request)
-		},
-		func(result it.DeleteGrantRequestResult) DeleteGrantRequestResponse {
-			response := DeleteGrantRequestResponse{}
-			response.FromNonEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
-	)
+// 	return err
+// }
 
-	return err
-}
+// func (this GrantRequestRest) GetGrantRequestById(echoCtx echo.Context) (err error) {
+// 	defer func() {
+// 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get grant request by id"); e != nil {
+// 			err = e
+// 		}
+// 	}()
 
-func (this GrantRequestRest) GetGrantRequestById(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get grant request by id"); e != nil {
-			err = e
-		}
-	}()
+// 	err = httpserver.ServeRequest(
+// 		echoCtx, this.GrantRequestSvc.GetGrantRequestById,
+// 		func(request GetGrantRequestByIdRequest) it.GetGrantRequestByIdQuery {
+// 			return it.GetGrantRequestByIdQuery(request)
+// 		},
 
-	err = httpserver.ServeRequest(
-		echoCtx, this.GrantRequestSvc.GetGrantRequestById,
-		func(request GetGrantRequestByIdRequest) it.GetGrantRequestByIdQuery {
-			return it.GetGrantRequestByIdQuery(request)
-		},
+// 		func(result it.GetGrantRequestByIdResult) GetGrantRequestByIdResponse {
+// 			response := GetGrantRequestByIdResponse{}
+// 			if result.Data != nil && result.Data.GrantRequest != nil {
+// 				response.FromGrantRequest(*result.Data.GrantRequest, result.Data.GrantResponses)
+// 			}
+// 			return response
+// 		},
+// 		httpserver.JsonOk,
+// 	)
 
-		func(result it.GetGrantRequestByIdResult) GetGrantRequestByIdResponse {
-			response := GetGrantRequestByIdResponse{}
-			response.FromGrantRequest(*result.Data)
-			return response
-		},
-		httpserver.JsonOk,
-	)
+// 	return err
+// }
 
-	return err
-}
+// func (this GrantRequestRest) SearchGrantRequests(echoCtx echo.Context) (err error) {
+// 	defer func() {
+// 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search grant requests"); e != nil {
+// 			err = e
+// 		}
+// 	}()
 
-func (this GrantRequestRest) SearchGrantRequests(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search grant requests"); e != nil {
-			err = e
-		}
-	}()
+// 	err = httpserver.ServeRequest(
+// 		echoCtx, this.GrantRequestSvc.SearchGrantRequests,
+// 		func(request SearchGrantRequestsRequest) it.SearchGrantRequestsQuery {
+// 			return it.SearchGrantRequestsQuery(request)
+// 		},
+// 		func(result it.SearchGrantRequestsResult) SearchGrantRequestsResponse {
+// 			response := SearchGrantRequestsResponse{}
+// 			response.FromResult(result.Data)
+// 			return response
+// 		},
+// 		httpserver.JsonOk,
+// 	)
 
-	err = httpserver.ServeRequest(
-		echoCtx, this.GrantRequestSvc.SearchGrantRequests,
-		func(request SearchGrantRequestsRequest) it.SearchGrantRequestsQuery {
-			return it.SearchGrantRequestsQuery(request)
-		},
-		func(result it.SearchGrantRequestsResult) SearchGrantRequestsResponse {
-			response := SearchGrantRequestsResponse{}
-			response.FromResult(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
-	)
+// 	return err
+// }
 
-	return err
-}
+// func (this GrantRequestRest) RespondToGrantRequest(echoCtx echo.Context) (err error) {
+// 	defer func() {
+// 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST respond to grant request"); e != nil {
+// 			err = e
+// 		}
+// 	}()
 
-func (this GrantRequestRest) RespondToGrantRequest(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "handle REST respond to grant request"); e != nil {
-			err = e
-		}
-	}()
+// 	err = httpserver.ServeRequest(
+// 		echoCtx, this.GrantRequestSvc.RespondToGrantRequest,
+// 		func(request RespondToGrantRequestRequest) it.RespondToGrantRequestCommand {
+// 			return it.RespondToGrantRequestCommand(request)
+// 		},
+// 		func(result it.RespondToGrantRequestResult) RespondToGrantRequestResponse {
+// 			response := RespondToGrantRequestResponse{}
+// 			response.FromEntity(result.Data)
+// 			return response
+// 		},
+// 		httpserver.JsonOk,
+// 	)
 
-	err = httpserver.ServeRequest(
-		echoCtx, this.GrantRequestSvc.RespondToGrantRequest,
-		func(request RespondToGrantRequestRequest) it.RespondToGrantRequestCommand {
-			return it.RespondToGrantRequestCommand(request)
-		},
-		func(result it.RespondToGrantRequestResult) RespondToGrantRequestResponse {
-			response := RespondToGrantRequestResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
-	)
-
-	return err
-}
+// 	return err
+// }

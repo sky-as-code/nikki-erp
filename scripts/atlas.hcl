@@ -16,12 +16,16 @@ variable "module" {
   type = string
 }
 
+variable "cwd" {
+  type = string
+}
+
 data "external_schema" "nikki" {
   program = [
     "go",
     "run",
     "-tags=staticmods",
-    "main.go",
+    "${var.cwd}main.go",
     "-createsql",
     "-dialect=postgres",
     "-module=${var.module}"

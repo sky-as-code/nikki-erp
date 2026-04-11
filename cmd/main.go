@@ -18,30 +18,42 @@ type StartableApp interface {
 	GenSql(module string, dialect string) string
 }
 
+type MainParam struct {
+	CreateAppFn       CreateAppFn
+	BeforeHttpStartFn BeforeHttpStartFn
+}
 type CreateAppFn func(logging.LoggerService) StartableApp
+type BeforeHttpStartFn func() error
 
-func Main(createAppFn CreateAppFn) {
+func Main(param MainParam) {
 	isCreateSql := flag.Bool("createsql", false, "Generate CREATE SQL for model schemas and write to stdout")
 	module := flag.String("module", "", "Module name (required when -createsql is set)")
 	dialect := flag.String("dialect", "", "SQL dialect (required when -createsql is set)")
 	flag.Parse()
 
 	if *isCreateSql {
-		runCreateSql(createAppFn, *module, *dialect)
+		runCreateSql(param.CreateAppFn, *module, *dialect)
 		return
 	}
 
 	logging.InitSubModule()
 
-	app := createAppFn(logging.Logger())
+	app := param.CreateAppFn(logging.Logger())
 	app.Start()
 
 	var server *httpserver.HttpServer
 	go func() {
-		err := deps.Invoke(func(s *httpserver.HttpServer) error {
-			server = s
-			return server.Start()
-		})
+		var err error
+		if param.BeforeHttpStartFn != nil {
+			err = param.BeforeHttpStartFn()
+		}
+
+		if err == nil {
+			err = deps.Invoke(func(s *httpserver.HttpServer) error {
+				server = s
+				return server.Start()
+			})
+		}
 		if err != nil {
 			app.Logger().Error("failed to start HTTP server", err)
 			os.Exit(1)

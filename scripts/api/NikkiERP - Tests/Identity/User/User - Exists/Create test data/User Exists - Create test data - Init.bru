@@ -75,9 +75,10 @@ script:post-response {
     },
   };
   
-  pkg.initTestData(
+  pkg.initTestDataWithIds(
     'User Exists', schema,
     'User Exists - Create test data - Loop 50',
+    'user_ids',
   );
   
 }

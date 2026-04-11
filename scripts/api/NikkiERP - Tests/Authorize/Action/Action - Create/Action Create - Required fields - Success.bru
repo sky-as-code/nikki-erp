@@ -1,0 +1,37 @@
+meta {
+  name: Action Create - Required fields - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}/actions
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{$randomVerb}}   {{$timestamp}}",
+    "code": "action_{{$timestamp}}"
+  }
+}
+
+script:pre-request {
+  const body = req.getBody();
+  body.name = bru.interpolate(body.name);
+  body.code = body.name.toLowerCase().replace(/\s+/g, "_");
+  req.setBody(body);
+}
+
+script:post-response {
+  const pkg = require('./scripts/create-success');
+  
+  pkg.testCreate('action_id');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

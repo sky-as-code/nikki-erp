@@ -1,0 +1,50 @@
+meta {
+  name: Org unit Get - Columns - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/identity/orgunits/{{orgunit_id}}?columns=name&columns=org_id
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: name
+  columns: org_id
+}
+
+script:post-response {
+  const { testHttpResponse } = require('./scripts/common-test-response');
+  
+  const schema = {
+    type: 'object',
+    required: ['name', 'org_id'],
+    properties: {
+      id: {
+        type: 'string',
+        minLength: 1,
+      },
+      name: {
+        type: 'string',
+        minLength: 1,
+      },
+      org_id: {
+        type: 'string',
+        minLength: 1,
+      },
+    },
+    additionalProperties: false,
+  };
+  
+  testHttpResponse(schema, 200);
+  
+  const { etag } = res.getBody();
+  etag && bru.setVar('etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

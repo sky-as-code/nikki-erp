@@ -7,7 +7,9 @@ import (
 )
 
 type GroupRepository interface {
-	dyn.BaseRepoGetter
+	dyn.DynamicModelRepository
+	DeleteOne(ctx corectx.Context, keys domain.Group) (*dyn.OpResult[dyn.MutateResultData], error)
+	Exists(ctx corectx.Context, keys []domain.Group) (*dyn.OpResult[dyn.RepoExistsResult], error)
 	Insert(ctx corectx.Context, group domain.Group) (*dyn.OpResult[int], error)
 	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.Group], error)
 	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.Group]], error)

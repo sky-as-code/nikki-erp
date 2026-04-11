@@ -1,0 +1,46 @@
+meta {
+  name: Resource Create - Required fields - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/resources
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{$randomColor}}  {{$randomWord}}  {{$timestamp}}",
+    "code": "<Modified by Pre-request Script>",
+    "max_scope": "domain",
+    "min_scope": "private"
+  }
+}
+
+script:pre-request {
+  const body = req.getBody();
+  body.name = bru.interpolate(body.name);
+  body.code = body.name.toLowerCase().replace(/\s+/g, "_");
+  req.setBody(body);
+}
+
+script:post-response {
+  const pkg = require('./scripts/create-success');
+  
+  pkg.testCreate('resource_id');
+  
+  const { name, code } = req.getBody();
+  name && bru.setVar('name', name);
+  code && bru.setVar('resource_code', code);
+  
+  const { id } = res.getBody();
+  id && bru.setVar('resource_id', id);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

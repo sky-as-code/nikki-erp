@@ -1,0 +1,30 @@
+meta {
+  name: User Create - Duplicate - Business errors
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "display_name": "John Doe",
+      "email": "{{email}}"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-duplicate-value');
+  
+  pkg.testDuplicateValues(["email"]);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

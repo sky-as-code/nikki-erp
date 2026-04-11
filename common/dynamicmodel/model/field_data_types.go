@@ -43,24 +43,39 @@ func FieldDataTypePhone() FieldDataType {
 	return fieldDataTypePhone{fieldDataTypeBase{name: "phone", options: nil}}
 }
 
-func FieldDataTypeString(minLength int, maxLength int, sanitizeType ...SanitizeType) FieldDataType {
+type FieldDataTypeStringOpts struct {
+	SanitizeType SanitizeType
+	Regex        *regexp.Regexp
+}
+
+func FieldDataTypeString(minLength int, maxLength int, stringOpts ...FieldDataTypeStringOpts) FieldDataType {
 	validateRangeOrPanic(minLength, maxLength, "FieldDataTypeString")
 	st := SanitizeTypePlainText
-	if len(sanitizeType) > 0 && sanitizeType[0] != "" {
-		st = sanitizeType[0]
+	var pattern *regexp.Regexp
+	for _, o := range stringOpts {
+		if o.SanitizeType != "" {
+			st = o.SanitizeType
+		}
+		if o.Regex != nil {
+			pattern = o.Regex
+		}
 	}
-	opts := FieldDataTypeOptions{
+	dtOpts := FieldDataTypeOptions{
 		FieldDataTypeOptSanitizeType: st,
 		FieldDataTypeOptLength:       []int{minLength, maxLength},
 	}
-	return fieldDataTypeString{fieldDataTypeBase{name: "string", options: opts}}
+	if pattern != nil {
+		dtOpts[FieldDataTypeOptPattern] = pattern
+	}
+	return fieldDataTypeString{fieldDataTypeBase{name: "string", options: dtOpts}}
 }
 
-func FieldDataTypeSecret() FieldDataType {
-	return fieldDataTypeSecret{fieldDataTypeBase{
+func FieldDataTypeSecret(minLength int, maxLength int) FieldDataType {
+	return fieldDataTypeString{fieldDataTypeBase{
 		name: "secret",
 		options: FieldDataTypeOptions{
 			FieldDataTypeOptSanitizeType: SanitizeTypeNone,
+			FieldDataTypeOptLength:       []int{minLength, maxLength},
 		},
 	}}
 }
@@ -346,7 +361,32 @@ func validateStringBase(val value, options FieldDataTypeOptions) (value, *ft.Cli
 	default:
 		return Value(nil), NewInvalidDataTypeErr("")
 	}
+	if clientErr := validateStringPattern(out, options); clientErr != nil {
+		return Value(nil), clientErr
+	}
 	return Value(out), nil
+}
+
+func validateStringPattern(s string, options FieldDataTypeOptions) *ft.ClientErrorItem {
+	if options == nil {
+		return nil
+	}
+	raw, ok := options[FieldDataTypeOptPattern]
+	if !ok || raw == nil {
+		return nil
+	}
+	re, ok := raw.(*regexp.Regexp)
+	if !ok || re == nil {
+		return nil
+	}
+	if !re.MatchString(s) {
+		return ft.NewAnonymousValidationError(
+			ft.ErrorKey("err_invalid_string_pattern"),
+			"string must match the required pattern",
+			nil,
+		)
+	}
+	return nil
 }
 
 func validateStringLength(s string, options FieldDataTypeOptions) *ft.ClientErrorItem {
@@ -431,37 +471,6 @@ func sanitizeByType(s string, t SanitizeType) string {
 }
 
 func (this fieldDataTypeString) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
-	_, sameType := val.(string)
-	_, ptrSameType := val.(*string)
-	if sameType || ptrSameType {
-		return Value(val), nil
-	}
-	str, err := toString(val)
-	if err != nil {
-		return Value(nil), err
-	}
-	return Value(str), nil
-}
-
-type fieldDataTypeSecret struct{ fieldDataTypeBase }
-
-func (this fieldDataTypeSecret) ArrayType() FieldDataType {
-	this.isArray = true
-	return this
-}
-
-func (this fieldDataTypeSecret) Validate(val value) (value, *ft.ClientErrorItem) {
-	if this.isArray {
-		return validateArrayAfterTryConvert(this, val, this.validateScalar)
-	}
-	return validateScalarAfterTryConvert(this, val, this.validateScalar)
-}
-
-func (this fieldDataTypeSecret) validateScalar(val value) (value, *ft.ClientErrorItem) {
-	return validateStringBase(val, this.options)
-}
-
-func (this fieldDataTypeSecret) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
 	_, sameType := val.(string)
 	_, ptrSameType := val.(*string)
 	if sameType || ptrSameType {
@@ -1428,12 +1437,12 @@ func toDate(value any) (model.ModelDate, error) {
 	}
 	switch v := value.(type) {
 	case time.Time:
-		return model.ModelDate(v), nil
+		return model.WrapModelDate(v), nil
 	case *time.Time:
 		if v == nil {
 			return model.ModelDate{}, errors.New("toDate: value cannot be nil")
 		}
-		return model.ModelDate(*v), nil
+		return model.WrapModelDate(*v), nil
 	case string:
 		return model.ParseModelDate(v)
 	default:
@@ -1447,12 +1456,12 @@ func toTime(value any) (model.ModelTime, error) {
 	}
 	switch v := value.(type) {
 	case time.Time:
-		return model.ModelTime(v), nil
+		return model.WrapModelTime(v), nil
 	case *time.Time:
 		if v == nil {
 			return model.ModelTime{}, errors.New("toTime: value cannot be nil")
 		}
-		return model.ModelTime(*v), nil
+		return model.WrapModelTime(*v), nil
 	case string:
 		return model.ParseModelTime(v)
 	default:
@@ -1466,12 +1475,12 @@ func toDateTime(value any) (model.ModelDateTime, error) {
 	}
 	switch v := value.(type) {
 	case time.Time:
-		return model.ModelDateTime(v), nil
+		return model.WrapModelDateTime(v), nil
 	case *time.Time:
 		if v == nil {
 			return model.ModelDateTime{}, errors.New("toDateTime: value cannot be nil")
 		}
-		return model.ModelDateTime(*v), nil
+		return model.WrapModelDateTime(*v), nil
 	case string:
 		return model.ParseModelDateTime(v)
 	default:

@@ -1,51 +1,51 @@
 package v1
 
-import (
-	"github.com/labstack/echo/v4"
-	"go.uber.org/dig"
+// import (
+// 	"github.com/labstack/echo/v4"
+// 	"go.uber.org/dig"
 
-	"github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+// 	"github.com/sky-as-code/nikki-erp/common/fault"
+// 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 
-	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
-)
+// 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces"
+// )
 
-type authorizeRestParams struct {
-	dig.In
+// type authorizeRestParams struct {
+// 	dig.In
 
-	AuthorizeSvc it.AuthorizeService
-}
+// 	AuthorizeSvc it.AuthorizeService
+// }
 
-func NewAuthorizeRest(params authorizeRestParams) *AuthorizeRest {
-	return &AuthorizeRest{
-		AuthorizeSvc: params.AuthorizeSvc,
-	}
-}
+// func NewAuthorizeRest(params authorizeRestParams) *AuthorizeRest {
+// 	return &AuthorizeRest{
+// 		AuthorizeSvc: params.AuthorizeSvc,
+// 	}
+// }
 
-type AuthorizeRest struct {
-	httpserver.RestBase
-	AuthorizeSvc it.AuthorizeService
-}
+// type AuthorizeRest struct {
+// 	httpserver.RestBase
+// 	AuthorizeSvc it.AuthorizeService
+// }
 
-func (this AuthorizeRest) IsAuthorized(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := fault.RecoverPanicFailedTo(recover(), "handle REST is authorized"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx,
-		this.AuthorizeSvc.IsAuthorized,
-		func(request IsAuthorizedRequest) it.IsAuthorizedQuery {
-			return it.IsAuthorizedQuery(request)
-		},
-		func(result it.IsAuthorizedResult) IsAuthorizedResponse {
-			response := IsAuthorizedResponse{}
-			response.FromResult(result)
-			return response
-		},
-		httpserver.JsonOk,
-	)
+// func (this AuthorizeRest) IsAuthorized(echoCtx echo.Context) (err error) {
+// 	defer func() {
+// 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST is authorized"); e != nil {
+// 			err = e
+// 		}
+// 	}()
+// 	err = httpserver.ServeRequest(
+// 		echoCtx,
+// 		this.AuthorizeSvc.IsAuthorized,
+// 		func(request IsAuthorizedRequest) it.IsAuthorizedQuery {
+// 			return it.IsAuthorizedQuery(request)
+// 		},
+// 		func(result it.IsAuthorizedResult) IsAuthorizedResponse {
+// 			response := IsAuthorizedResponse{}
+// 			response.FromResult(result)
+// 			return response
+// 		},
+// 		httpserver.JsonOk,
+// 	)
 
-	return err
-}
+// 	return err
+// }

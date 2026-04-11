@@ -12,8 +12,7 @@ post {
 
 body:json {
   {
-      "subjectType": "user",
-      "username": "owj@nikki.com"
+      "username": "owner@nikki.com"
   }
 }
 
@@ -23,8 +22,8 @@ vars:pre-request {
 
 script:post-response {
   const payload = res.getBody();
-  const { attemptId } = payload;
-  attemptId && bru.setVar('attemptId', attemptId);
+  const { attempt_id } = payload;
+  attempt_id && bru.setVar('attempt_id', attempt_id);
   
 }
 

@@ -1,0 +1,27 @@
+meta {
+  name: Org Search - No result - Success
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/identity/organizations?page=99
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 99
+}
+
+script:post-response {
+  const pkg = require('./scripts/search-success');
+  
+  pkg.testSearch(50, 99, 0);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

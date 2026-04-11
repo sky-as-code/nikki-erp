@@ -57,6 +57,28 @@ CORE:
     SECRET_KEY: "your-secret-key-here-change-in-production"
     # Token expiry time in hours
     EXPIRY_HOURS: 24
+  REQUEST_GUARD:
+    ACCESS_TOKEN_ENABLED: true
+    ACCESS_TOKEN_DPOP_ENABLED: false
+    # Supported algorithms: HS256 | RS256
+    # If using HS256, ACCESS_TOKEN_SHA256_SECRET must be specified.
+    # If using RS256, ACCESS_TOKEN_RSA_PUBLIC_KEY and ACCESS_TOKEN_RSA_PRIVATE_KEY must be specified.
+    ACCESS_TOKEN_ALGORITHM: "HS256"
+    ACCESS_TOKEN_EXPIRY_MINUTES: 3
+    ACCESS_TOKEN_ISSUER: "nikki-erp"
+    ACCESS_TOKEN_HTTP_HEADER_NAME: "Authorization"
+    # Leading and trailing whitespace will be trimmed from this prefix
+    # before prepending it to the access token value.
+    # The result header: "{Prefix} {AccessToken}"
+    ACCESS_TOKEN_HTTP_HEADER_PREFIX: "Bearer"
+    ACCESS_TOKEN_SHA256_SECRET: "your-secret-key-here-change-in-production"
+    ACCESS_TOKEN_RSA_PUBLIC_KEY: "path-to-rsa-public-key-change-in-production"
+    ACCESS_TOKEN_RSA_PRIVATE_KEY: "path-to-rsa-private-key-change-in-production"
+    # Refresh token expiry time in minutes.
+    REFRESH_TOKEN_EXPIRY_MINUTES: 30
+    CORS_ENABLED: true
+    MTLS_ENABLED: false
+    SESSION_BLACKLIST_ENABLED: false
 
 AUTHENTICATE:
   # Number of seconds before a login attempt expires

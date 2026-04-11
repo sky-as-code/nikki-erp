@@ -1,0 +1,30 @@
+meta {
+  name: Org unit Create - Required fields - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/orgunits
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{$randomDepartment}} {{$timestamp}}",
+    "org_id": "{{org_id}}"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/create-success');
+  
+  pkg.testCreate('orgunit_id');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

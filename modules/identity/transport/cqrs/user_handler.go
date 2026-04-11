@@ -34,8 +34,8 @@ func (this *UserHandler) GetUser(ctx context.Context, packet *cqrs.RequestPacket
 	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.GetUser)
 }
 
-func (this *UserHandler) GetActiveUser(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserQuery]) (*cqrs.Reply[it.GetUserResult], error) {
-	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.GetActiveUser)
+func (this *UserHandler) GetEnabledUser(ctx context.Context, packet *cqrs.RequestPacket[it.GetUserQuery]) (*cqrs.Reply[it.GetUserResult], error) {
+	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.UserSvc.GetEnabledUser)
 }
 
 func (this *UserHandler) SearchUsers(ctx context.Context, packet *cqrs.RequestPacket[it.SearchUsersQuery]) (*cqrs.Reply[it.SearchUsersResult], error) {

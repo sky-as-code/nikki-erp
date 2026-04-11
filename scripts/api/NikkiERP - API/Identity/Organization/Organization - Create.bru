@@ -12,10 +12,8 @@ post {
 
 body:json {
   {
-      "address": "{{$randomStreetAddress}}, <b>planet Earth</b>, <a onclick=\"alert()\">Milky Way galaxy</a>",
-      "displayName": "<i>{{$randomLoremWords}} company<i><script>hacked</script>",
-      "legalName": "{{$randomLoremSentence}} Co. Ltd.",
-      "slug": "{{$randomLoremSlug}}"
+    "display_name": "{{$randomCompanyName}}",
+    "slug": "{{$randomLoremSlug}}"
   }
 }
 
@@ -30,4 +28,5 @@ script:post-response {
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

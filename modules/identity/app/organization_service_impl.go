@@ -15,23 +15,23 @@ import (
 )
 
 func NewOrganizationServiceImpl(
-	orgRepo2 it.OrganizationRepository,
+	orgRepo it.OrganizationRepository,
 	cqrsBus cqrs.CqrsBus,
 ) it.OrganizationService {
-	return &OrganizationServiceImpl{cqrsBus: cqrsBus, orgRepo2: orgRepo2}
+	return &OrganizationServiceImpl{cqrsBus: cqrsBus, orgRepo: orgRepo}
 }
 
 type OrganizationServiceImpl struct {
-	cqrsBus  cqrs.CqrsBus
-	orgRepo2 it.OrganizationRepository
+	cqrsBus cqrs.CqrsBus
+	orgRepo it.OrganizationRepository
 }
 
 func (this *OrganizationServiceImpl) CreateOrg(
 	ctx corectx.Context, cmd it.CreateOrgCommand,
 ) (*it.CreateOrgResult, error) {
-	return corecrud.Create(ctx, dyn.CreateParam[domain.Organization, *domain.Organization]{
+	return corecrud.Create(ctx, corecrud.CreateParam[domain.Organization, *domain.Organization]{
 		Action:         "create organization",
-		BaseRepoGetter: this.orgRepo2,
+		BaseRepoGetter: this.orgRepo,
 		Data:           cmd,
 	})
 }
@@ -41,7 +41,7 @@ func (this *OrganizationServiceImpl) DeleteOrg(
 ) (*it.DeleteOrgResult, error) {
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete organization",
-		DbRepoGetter: this.orgRepo2,
+		DbRepoGetter: this.orgRepo,
 		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
 }
@@ -119,7 +119,7 @@ func (this *OrganizationServiceImpl) OrgExists(
 ) (*it.OrgExistsResult, error) {
 	return corecrud.Exists(ctx, corecrud.ExistsParam{
 		Action:       "check if organizations exist",
-		DbRepoGetter: this.orgRepo2,
+		DbRepoGetter: this.orgRepo,
 		Query:        dyn.ExistsQuery(query),
 	})
 }
@@ -141,12 +141,19 @@ func (this *OrganizationServiceImpl) ManageOrgUsers(ctx corectx.Context, cmd it.
 ) {
 	return corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
 		Action:             "manage organization users",
-		DbRepoGetter:       this.orgRepo2,
+		DbRepoGetter:       this.orgRepo,
 		DestSchemaName:     domain.UserSchemaName,
 		SrcId:              cmd.OrgId,
 		SrcIdFieldForError: "org_id",
 		AssociatedIds:      cmd.Add,
 		DisassociatedIds:   cmd.Remove,
+		BeforeInsert: func(ctx corectx.Context, dbRecords []dmodel.DynamicFields) error {
+			ulidType := dmodel.FieldDataTypeUlid()
+			for _, rec := range dbRecords {
+				rec[basemodel.FieldId] = *ulidType.DefaultValue().Get()
+			}
+			return nil
+		},
 	})
 }
 
@@ -155,13 +162,13 @@ func (this *OrganizationServiceImpl) SearchOrgs(
 ) (*it.SearchOrgsResult, error) {
 	return corecrud.Search[domain.Organization](ctx, corecrud.SearchParam{
 		Action:       "search organizations",
-		DbRepoGetter: this.orgRepo2,
+		DbRepoGetter: this.orgRepo,
 		Query:        dyn.SearchQuery(query),
 	})
 }
 
 func (this *OrganizationServiceImpl) SetOrgIsArchived(ctx corectx.Context, cmd it.SetOrgIsArchivedCommand) (*it.SetOrgIsArchivedResult, error) {
-	return corecrud.SetIsArchived(ctx, this.orgRepo2, dyn.SetIsArchivedCommand(cmd))
+	return corecrud.SetIsArchived(ctx, this.orgRepo, dyn.SetIsArchivedCommand(cmd))
 }
 
 func (this *OrganizationServiceImpl) UpdateOrg(
@@ -169,7 +176,7 @@ func (this *OrganizationServiceImpl) UpdateOrg(
 ) (*it.UpdateOrgResult, error) {
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Organization, *domain.Organization]{
 		Action:       "update organization",
-		DbRepoGetter: this.orgRepo2,
+		DbRepoGetter: this.orgRepo,
 		Data:         cmd,
 	})
 }

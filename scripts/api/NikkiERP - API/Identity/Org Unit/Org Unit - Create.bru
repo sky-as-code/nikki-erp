@@ -1,0 +1,30 @@
+meta {
+  name: Org Unit - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/hierarchy
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{$randomDepartment}} {{$timestamp}}",
+    "org_id": "{{org_id}}"
+  }
+}
+
+script:post-response {
+  const { id, etag } = res.getBody();
+  id && bru.setVar('hierarchy_id', id);
+  etag && bru.setVar('etag', etag);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

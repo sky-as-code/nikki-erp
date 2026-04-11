@@ -1,0 +1,40 @@
+meta {
+  name: Role Exists - Too many - Validation errors
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/authorize/roles/exists
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ids": ["Populated by Pre-request script"]
+  }
+}
+
+script:pre-request {
+  const body = req.getBody();
+  const existing = bru.getVar('role_ids');
+  const nonExisting = ["01KMMNZ9M0EEF6JG6RMWWPSBKM", "01KMVYY7ACN3G69SZCDVVZZV09", "01KMVYY7ACZ1SPG7YVRD0WDFME"];
+  const newBody = {
+    ids: existing.concat(nonExisting),
+  };
+  req.setBody(newBody);
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-invalid-length');
+  
+  pkg.testInvalidArrayLength('ids');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

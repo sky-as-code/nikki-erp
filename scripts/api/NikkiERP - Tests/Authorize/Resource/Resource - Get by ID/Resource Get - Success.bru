@@ -1,0 +1,71 @@
+meta {
+  name: Resource Get - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const { testHttpResponse } = require('./scripts/common-test-response');
+  
+  const schema = {
+    type: 'object',
+    required: ['id', 'name', 'code', 'max_scope', 'min_scope', 'owner_type', 'etag'],
+    properties: {
+      id: {
+        type: 'string',
+        minLength: 1,
+      },
+      code: {
+        type: 'string',
+        minLength: 1,
+      },
+      description: {
+        type: 'string',
+        minLength: 1,
+      },
+      etag: {
+          type: 'string',
+          minLength: 1,
+      },
+      name: {
+        type: 'string',
+        minLength: 1,
+      },
+      max_scope: {
+        type: 'string',
+        minLength: 1,
+      },
+      min_scope: {
+        type: 'string',
+        minLength: 1,
+      },
+      owner_type: {
+        type: 'string',
+        minLength: 1,
+      },
+      created_at: {
+        type: "string",
+        minLength: 20, //"2026-03-23T06:53:01Z"
+      },
+      updated_at: {
+        type: "string",
+        minLength: 20, //"2026-03-23T06:53:01Z"
+      },
+    },
+    additionalProperties: false,
+  };
+  
+  testHttpResponse(schema, 200);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

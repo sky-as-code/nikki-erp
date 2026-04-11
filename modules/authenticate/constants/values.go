@@ -1,7 +1,8 @@
 package constants
 
 const (
-	OTP_CODE_LENGTH = 6
-	OTP_PERIOD      = 30
-	OTP_SKEW        = 1
+	OtpCodeLength         = 6
+	OtpPeriod             = 30
+	OtpSkew               = 1
+	OtpRecoveryCodeLength = 19
 )

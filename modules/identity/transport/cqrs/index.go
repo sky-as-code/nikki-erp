@@ -12,8 +12,9 @@ func InitCqrsHandlers() error {
 	err := errors.Join(
 		initUserHandlers(),
 		initGroupHandlers(),
+		initPermissionHandlers(),
 		initOrganizationHandlers(),
-		initHierarchyHandlers(),
+		initOrgUnitHandlers(),
 	)
 	return err
 }
@@ -28,7 +29,7 @@ func initUserHandlers() error {
 			cqrs.NewHandler(handler.CreateUser),
 			cqrs.NewHandler(handler.DeleteUser),
 			cqrs.NewHandler(handler.UserExists),
-			cqrs.NewHandler(handler.GetActiveUser),
+			cqrs.NewHandler(handler.GetEnabledUser),
 			cqrs.NewHandler(handler.GetUser),
 			cqrs.NewHandler(handler.SearchUsers),
 			cqrs.NewHandler(handler.UpdateUser),
@@ -54,6 +55,18 @@ func initGroupHandlers() error {
 	})
 }
 
+func initPermissionHandlers() error {
+	deps.Register(NewPermissionHandler)
+
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *PermissionHandler) error {
+		ctx := context.Background()
+		return cqrsBus.SubscribeRequests(
+			ctx,
+			cqrs.NewHandler(handler.IsAuthorized),
+		)
+	})
+}
+
 func initOrganizationHandlers() error {
 	deps.Register(NewOrganizationHandler)
 
@@ -72,20 +85,20 @@ func initOrganizationHandlers() error {
 	})
 }
 
-func initHierarchyHandlers() error {
-	deps.Register(NewHierarchyHandler)
+func initOrgUnitHandlers() error {
+	deps.Register(NewOrgUnitHandler)
 
-	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *HierarchyHandler) error {
+	return deps.Invoke(func(cqrsBus cqrs.CqrsBus, handler *OrgUnitHandler) error {
 		ctx := context.Background()
 		return cqrsBus.SubscribeRequests(
 			ctx,
-			cqrs.NewHandler(handler.CreateHierarchyLevel),
-			cqrs.NewHandler(handler.DeleteHierarchyLevel),
-			cqrs.NewHandler(handler.GetHierarchyLevel),
-			cqrs.NewHandler(handler.HierarchyLevelExists),
-			cqrs.NewHandler(handler.ManageHierarchyLevelUsers),
-			cqrs.NewHandler(handler.SearchHierarchyLevels),
-			cqrs.NewHandler(handler.UpdateHierarchyLevel),
+			cqrs.NewHandler(handler.CreateOrgUnit),
+			cqrs.NewHandler(handler.DeleteOrgUnit),
+			cqrs.NewHandler(handler.GetOrgUnit),
+			cqrs.NewHandler(handler.OrgUnitExists),
+			cqrs.NewHandler(handler.ManageOrgUnitUsers),
+			cqrs.NewHandler(handler.SearchOrgUnits),
+			cqrs.NewHandler(handler.UpdateOrgUnit),
 		)
 	})
 }

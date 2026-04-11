@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"go.bryk.io/pkg/errors"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -16,54 +18,27 @@ const (
 	UserStatusTerminated = UserStatus("terminated")
 )
 
-func (this UserStatus) String() string {
-	return string(this)
-}
-
-func WrapUserStatus(s string) *UserStatus {
-	st := UserStatus(s)
-	return &st
-}
-
 const (
-	UserSchemaName       = "identity.user"
+	UserSchemaName = "identity.user"
+
+	UserFieldId          = basemodel.FieldId
 	UserFieldAvatarUrl   = "avatar_url"
 	UserFieldDisplayName = "display_name"
 	UserFieldEmail       = "email"
-	UserFieldId          = basemodel.FieldId
 	UserFieldIsOwner     = "is_owner"
 	UserFieldIsLocked    = "is_locked"
-	UserFieldHierarchyId = "hierarchy_id"
+	UserFieldOrgUnitId   = "org_unit_id"
 	UserFieldStatus      = "status"
 
-	UserEdgeGroups    = "groups"
-	UserEdgeOrgs      = "orgs"
-	UserEdgeHierarchy = "hierarchy"
+	UserEdgeGroups                = "groups"
+	UserEdgeOrgs                  = "orgs"
+	UserEdgeOrgUnit               = "org_unit"
+	UserEdgeRoles                 = "roles"
+	UserEdgeOwnRoles              = "own_roles"
+	UserEdgeBenefitRoleRequests   = "benefit_role_requests"
+	UserEdgeCreatedRoleRequests   = "created_role_requests"
+	UserEdgeRespondedRoleRequests = "responded_role_requests"
 )
-
-const (
-	UsrGrpRelSchemaName   = "identity.user_group_rel"
-	UsrGrpRelFieldUserId  = "user_id"
-	UsrGrpRelFieldGroupId = "group_id"
-)
-
-func UserGroupRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	return dmodel.DefineModel(UsrGrpRelSchemaName).
-		TableName("ident_user_group_rel").
-		ShouldBuildDb().
-		Field(
-			dmodel.DefineField().
-				Name(UsrGrpRelFieldUserId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(UsrGrpRelFieldGroupId).
-				DataType(dmodel.FieldDataTypeUlid()).
-				PrimaryKey(),
-		)
-}
 
 func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserSchemaName).
@@ -109,31 +84,54 @@ func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				DataType(dmodel.FieldDataTypeBoolean()).
 				Unique(), // Only one owner per deployment
 		).
+		Field(
+			basemodel.DefineFieldId(UserFieldOrgUnitId).
+				Label(model.LangJson{"en-US": "Organizational Unit"}),
+		).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
-		Field(
-			dmodel.DefineField().
-				Name(UserFieldHierarchyId).
-				Label(model.LangJson{"en-US": "Hierarchy Level"}).
-				DataType(dmodel.FieldDataTypeUlid()),
-		).
 		EdgeTo(
-			dmodel.Edge(UserEdgeHierarchy).
-				ManyToOne(HierarchyLevelSchemaName, dmodel.DynamicFields{
-					UserFieldHierarchyId: basemodel.FieldId,
+			dmodel.Edge(UserEdgeOrgUnit).
+				ManyToOne(OrganizationalUnitSchemaName, dmodel.DynamicFields{
+					UserFieldOrgUnitId: basemodel.FieldId,
 				}).
 				OnDelete(dmodel.RelationCascadeSetNull),
 		).
 		EdgeTo(
 			dmodel.Edge(UserEdgeGroups).
-				ManyToMany(GroupSchemaName, UsrGrpRelSchemaName, "user").
+				ManyToMany(GroupSchemaName, GrpUsrRelSchemaName, "user").
 				OnDelete(dmodel.RelationCascadeCascade),
 		).
 		EdgeTo(
 			dmodel.Edge(UserEdgeOrgs).
-				ManyToMany(OrganizationSchemaName, UsrOrgRelSchemaName, "user").
+				ManyToMany(OrganizationSchemaName, OrgUsrRelSchemaName, "user").
 				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeTo(
+			dmodel.Edge(UserEdgeRoles).
+				ManyToMany(RoleSchemaName, RoleUserAssignmentSchemaName, "receiver_user").
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeFrom(
+			dmodel.Edge(UserEdgeOwnRoles).
+				Label(model.LangJson{"en-US": "Owned roles"}).
+				Existing(RoleSchemaName, RoleEdgeOwnerUser),
+		).
+		EdgeFrom(
+			dmodel.Edge(UserEdgeBenefitRoleRequests).
+				Label(model.LangJson{"en-US": "Grant requests for me"}).
+				Existing(RoleRequestSchemaName, RoleReqEdgeReceiverUser),
+		).
+		EdgeFrom(
+			dmodel.Edge(UserEdgeCreatedRoleRequests).
+				Label(model.LangJson{"en-US": "Grant requests created by me"}).
+				Existing(RoleRequestSchemaName, RoleReqEdgeRequestor),
+		).
+		EdgeFrom(
+			dmodel.Edge(UserEdgeRespondedRoleRequests).
+				Label(model.LangJson{"en-US": "Grant requests responded by me"}).
+				Existing(RoleRequestSchemaName, RoleReqEdgeResponder),
 		)
 }
 
@@ -157,6 +155,14 @@ func (this *User) SetFieldData(data dmodel.DynamicFields) {
 	this.fields = data
 }
 
+func (this User) MustGetId() model.Id {
+	v := this.fields.GetModelId(basemodel.FieldId)
+	if v == nil {
+		panic("id is nil")
+	}
+	return *v
+}
+
 func (this User) GetId() *model.Id {
 	return this.fields.GetModelId(basemodel.FieldId)
 }
@@ -165,12 +171,20 @@ func (this *User) SetId(v *model.Id) {
 	this.fields.SetModelId(basemodel.FieldId, v)
 }
 
-func (this User) IsArchived() bool {
-	val := this.fields.GetBool(basemodel.FieldIsArchived)
+func (this User) IsActive() bool {
+	return this.MustIsArchived() == false && this.MustGetStatus() == UserStatusActive
+}
+
+func (this User) MustIsArchived() bool {
+	val := this.IsArchived()
 	if val == nil {
-		return false
+		panic(errors.New("is_archived is nil"))
 	}
 	return *val
+}
+
+func (this User) IsArchived() *bool {
+	return this.fields.GetBool(basemodel.FieldIsArchived)
 }
 
 func (this *User) SetIsArchived(v *bool) {
@@ -185,12 +199,28 @@ func (this *User) SetAvatarUrl(v *string) {
 	this.fields.SetString(UserFieldAvatarUrl, v)
 }
 
+func (this User) MustGetDisplayName() string {
+	v := this.fields.GetString(UserFieldDisplayName)
+	if v == nil {
+		panic("display_name is nil")
+	}
+	return *v
+}
+
 func (this User) GetDisplayName() *string {
 	return this.fields.GetString(UserFieldDisplayName)
 }
 
 func (this *User) SetDisplayName(v *string) {
 	this.fields.SetString(UserFieldDisplayName, v)
+}
+
+func (this User) MustGetEmail() string {
+	v := this.fields.GetString(UserFieldEmail)
+	if v == nil {
+		panic("email is nil")
+	}
+	return *v
 }
 
 func (this User) GetEmail() *string {
@@ -201,16 +231,28 @@ func (this *User) SetEmail(v *string) {
 	this.fields.SetString(UserFieldEmail, v)
 }
 
-func (this User) IsOwner() bool {
+func (this User) MustIsOwner() bool {
 	val := this.fields.GetBool(UserFieldIsOwner)
 	if val == nil {
-		return false
+		panic("is_owner is nil")
 	}
 	return *val
 }
 
+func (this User) IsOwner() *bool {
+	return this.fields.GetBool(UserFieldIsOwner)
+}
+
 func (this *User) SetIsOwner(v *bool) {
 	this.fields.SetBool(UserFieldIsOwner, v)
+}
+
+func (this User) MustGetStatus() UserStatus {
+	val := this.GetStatus()
+	if val == nil {
+		panic("status is nil")
+	}
+	return *val
 }
 
 func (this User) GetStatus() *UserStatus {
@@ -231,10 +273,10 @@ func (this *User) SetStatus(v *UserStatus) {
 	this.fields.SetString(UserFieldStatus, &s)
 }
 
-func (this User) GetHierarchyId() *model.Id {
-	return this.fields.GetModelId(UserFieldHierarchyId)
+func (this User) GetOrgUnitId() *model.Id {
+	return this.fields.GetModelId(UserFieldOrgUnitId)
 }
 
-func (this *User) SetHierarchyId(v *model.Id) {
-	this.fields.SetModelId(UserFieldHierarchyId, v)
+func (this *User) SetOrgUnitId(v *model.Id) {
+	this.fields.SetModelId(UserFieldOrgUnitId, v)
 }

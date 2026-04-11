@@ -1,14 +1,13 @@
 package password
 
 import (
-	"time"
-
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
 var createPasswordOtpCommandType = cqrs.RequestType{
@@ -17,97 +16,100 @@ var createPasswordOtpCommandType = cqrs.RequestType{
 	Action:    "createPasswordOtp",
 }
 
-type CreateOtpPasswordCommand struct {
-	SubjectType domain.SubjectType `json:"subjectType"`
-	SubjectRef  model.Id           `json:"subjectRef"`
+type CreatePasswordOtpCommand struct {
+	PrincipalType domain.PrincipalType `json:"principal_type"`
+	PrincipalId   model.Id             `json:"principal_id"`
 }
 
-func (CreateOtpPasswordCommand) CqrsRequestType() cqrs.RequestType {
+func (CreatePasswordOtpCommand) CqrsRequestType() cqrs.RequestType {
 	return createPasswordOtpCommandType
 }
 
-func (this CreateOtpPasswordCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		domain.SubjectTypeValidateRule(&this.SubjectType, true),
-		model.IdValidateRule(&this.SubjectRef, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (CreatePasswordOtpCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"authenticate.create_password_otp_command",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
+				Field(basemodel.DefineFieldId("principal_id").Required())
+		},
+	)
 }
 
 type CreatePasswordOtpResultData struct {
-	CreatedAt time.Time `json:"createdAt"`
-	ExpiredAt time.Time `json:"expiredAt"`
-	OtpUrl    string    `json:"otpUrl"`
+	CreatedAt model.ModelDateTime `json:"created_at"`
+	ExpiredAt model.ModelDateTime `json:"expired_at"`
+	OtpUrl    string              `json:"otp_url"`
 }
-type CreateOtpPasswordResult = crud.OpResult[*CreatePasswordOtpResultData]
+type CreatePasswordOtpResult = dyn.OpResult[CreatePasswordOtpResultData]
 
-var confirmOtpPasswordCommandType = cqrs.RequestType{
+var confirmPasswordOtpCommandType = cqrs.RequestType{
 	Module:    "authenticate",
 	Submodule: "password",
-	Action:    "confirmOtpPassword",
+	Action:    "confirmPasswordOtp",
 }
 
-type ConfirmOtpPasswordCommand struct {
-	SubjectType domain.SubjectType `json:"subjectType"`
-	SubjectRef  model.Id           `json:"subjectRef"`
-	OtpCode     domain.OtpCode     `json:"otpCode"`
+type ConfirmPasswordOtpCommand struct {
+	PrincipalType domain.PrincipalType `json:"principal_type"`
+	PrincipalId   model.Id             `json:"principal_id"`
+	OtpCode       domain.OtpCode       `json:"otp_code"`
 }
 
-func (ConfirmOtpPasswordCommand) CqrsRequestType() cqrs.RequestType {
-	return confirmOtpPasswordCommandType
+func (ConfirmPasswordOtpCommand) CqrsRequestType() cqrs.RequestType {
+	return confirmPasswordOtpCommandType
 }
 
-func (this ConfirmOtpPasswordCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.SubjectRef, true),
-		domain.SubjectTypeValidateRule(&this.SubjectType, true),
-		domain.OtpCodeValidateRule(&this.OtpCode, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (ConfirmPasswordOtpCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"authenticate.confirm_password_otp_command",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
+				Field(basemodel.DefineFieldId("principal_id").Required()).
+				Field(domain.DefinePasswordOtpField("otp_code").Required())
+		},
+	)
 }
 
-type ConfirmOtpPasswordResultData struct {
-	ConfirmedAt   time.Time `json:"confirmedAt"`
-	RecoveryCodes []string  `json:"recoveryCodes"`
+type ConfirmPasswordOtpResultData struct {
+	ConfirmedAt   model.ModelDateTime `json:"confirmed_at"`
+	RecoveryCodes []string            `json:"recovery_codes"`
 }
-type ConfirmOtpPasswordResult = crud.OpResult[*ConfirmOtpPasswordResultData]
+type ConfirmPasswordOtpResult = dyn.OpResult[ConfirmPasswordOtpResultData]
 
-var createTempPasswordCommandType = cqrs.RequestType{
+var createPasswordTempCommandType = cqrs.RequestType{
 	Module:    "authenticate",
 	Submodule: "password",
-	Action:    "createTempPassword",
+	Action:    "createPasswordTemp",
 }
 
-type CreateTempPasswordCommand struct {
-	SubjectType domain.SubjectType `json:"subjectType"`
-	SendChannel domain.SendChannel `json:"sendChannel"`
-	Username    string             `json:"username"`
+type CreatePasswordTempCommand struct {
+	PrincipalType domain.PrincipalType `json:"subject_type"`
+	SendChannel   domain.SendChannel   `json:"send_channel"`
+	Username      string               `json:"username"`
 }
 
-func (CreateTempPasswordCommand) CqrsRequestType() cqrs.RequestType {
-	return createTempPasswordCommandType
+func (CreatePasswordTempCommand) CqrsRequestType() cqrs.RequestType {
+	return createPasswordTempCommandType
 }
 
-func (this CreateTempPasswordCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.Username,
-			val.NotEmpty,
-			val.Length(5, model.MODEL_RULE_USERNAME_LENGTH),
-		),
-		domain.SendChannelValidateRule(&this.SendChannel),
-		domain.SubjectTypeValidateRule(&this.SubjectType, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (CreatePasswordTempCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"authenticate.create_password_temp_command",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
+				Field(domain.DefinePasswordSendChannelField("principal_id").Required()).
+				Field(domain.DefinePasswordOtpField("otp_code").Required())
+		},
+	)
 }
 
-type CreateTempPasswordResultData struct {
-	CreatedAt time.Time `json:"createdAt"`
-	ExpiredAt time.Time `json:"expiredAt"`
+type CreatePasswordTempResultData struct {
+	CreatedAt model.ModelDateTime `json:"created_at"`
+	ExpiresAt model.ModelDateTime `json:"expires_at"`
 }
-type CreateTempPasswordResult = crud.OpResult[*CreateTempPasswordResultData]
+type CreatePasswordTempResult = dyn.OpResult[CreatePasswordTempResultData]
 
 var setPasswordCommandType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -116,37 +118,30 @@ var setPasswordCommandType = cqrs.RequestType{
 }
 
 type SetPasswordCommand struct {
-	SubjectType     domain.SubjectType `json:"subjectType"`
-	SubjectRef      model.Id           `json:"subjectRef"`
-	CurrentPassword *string            `json:"currentPassword"`
-	NewPassword     string             `json:"newPassword"`
+	PrincipalType   domain.PrincipalType `json:"principal_type"`
+	PrincipalId     model.Id             `json:"principal_id"`
+	CurrentPassword *string              `json:"current_password"`
+	NewPassword     string               `json:"new_password"`
 }
 
 func (SetPasswordCommand) CqrsRequestType() cqrs.RequestType {
 	return setPasswordCommandType
 }
 
-func (this SetPasswordCommand) Validate() ft.ValidationErrors {
-
-	rules := []*val.FieldRules{
-		domain.SubjectTypeValidateRule(&this.SubjectType, true),
-		model.IdValidateRule(&this.SubjectRef, true),
-		val.Field(&this.CurrentPassword,
-			val.Length(model.MODEL_RULE_PASSWORD_MIN_LENGTH, model.MODEL_RULE_PASSWORD_MAX_LENGTH),
-		),
-		val.Field(&this.NewPassword,
-			val.NotEmpty,
-			val.Length(model.MODEL_RULE_PASSWORD_MIN_LENGTH, model.MODEL_RULE_PASSWORD_MAX_LENGTH),
-		),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (SetPasswordCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"authenticate.set_password_command",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
+				Field(basemodel.DefineFieldId("principal_id").Required()).
+				Field(domain.DefinePasswordTextField("current_password")).
+				Field(domain.DefinePasswordTextField("new_password").Required())
+		},
+	)
 }
 
-type SetPasswordResultData struct {
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-type SetPasswordResult = crud.OpResult[*SetPasswordResultData]
+type SetPasswordResult = dyn.OpResult[dyn.MutateResultData]
 
 var verifyPasswordQueryType = cqrs.RequestType{
 	Module:    "authenticate",
@@ -155,64 +150,59 @@ var verifyPasswordQueryType = cqrs.RequestType{
 }
 
 type VerifyPasswordQuery struct {
-	SubjectType domain.SubjectType `json:"subjectType"`
-	Username    string             `json:"username"`
-	Password    string             `json:"password"`
+	PrincipalType domain.PrincipalType `json:"principal_type"`
+	Username      string               `json:"username"`
+	Password      string               `json:"password"`
 }
 
 func (VerifyPasswordQuery) CqrsRequestType() cqrs.RequestType {
 	return verifyPasswordQueryType
 }
 
-func (this VerifyPasswordQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.Username,
-			val.NotEmpty,
-			val.Length(5, model.MODEL_RULE_USERNAME_LENGTH),
-		),
-		val.Field(&this.Password,
-			val.NotEmpty,
-			val.Length(model.MODEL_RULE_PASSWORD_MIN_LENGTH, model.MODEL_RULE_PASSWORD_MAX_LENGTH),
-		),
-		domain.SubjectTypeValidateRule(&this.SubjectType, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (VerifyPasswordQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"authenticate.verify_password_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
+				Field(domain.DefinePrincipalUsernameField("username").Required()).
+				Field(domain.DefinePasswordTextField("password").Required())
+		},
+	)
 }
 
 type VerifyPasswordResultData struct {
-	IsVerified   bool   `json:"isVerified"`
-	FailedReason string `json:"failedReason,omitempty"`
+	IsVerified   bool                `json:"is_verified"`
+	FailedReason *ft.ClientErrorItem `json:"failed_reason,omitempty"`
 }
-type VerifyPasswordResult = crud.OpResult[*VerifyPasswordResultData]
+type VerifyPasswordResult = dyn.OpResult[VerifyPasswordResultData]
 
-var verifyOtpCodeQueryType = cqrs.RequestType{
+var verifyPasswordOtpQueryType = cqrs.RequestType{
 	Module:    "authenticate",
 	Submodule: "password",
-	Action:    "isPasswordMatched",
+	Action:    "verifyPasswordOtp",
 }
 
-type VerifyOtpCodeQuery struct {
-	SubjectType domain.SubjectType `json:"subjectType"`
-	Username    string             `json:"username"`
-	OtpCode     domain.OtpCode     `json:"otpCode"`
+type VerifyPasswordOtpQuery struct {
+	PrincipalType domain.PrincipalType `json:"principal_type"`
+	Username      string               `json:"username"`
+	OtpCode       domain.OtpCode       `json:"otp_code"`
 }
 
-func (VerifyOtpCodeQuery) CqrsRequestType() cqrs.RequestType {
-	return verifyOtpCodeQueryType
+func (VerifyPasswordOtpQuery) CqrsRequestType() cqrs.RequestType {
+	return verifyPasswordOtpQueryType
 }
 
-func (this VerifyOtpCodeQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.Username,
-			val.NotEmpty,
-			val.Length(5, model.MODEL_RULE_USERNAME_LENGTH),
-		),
-		domain.SubjectTypeValidateRule(&this.SubjectType, true),
-		domain.OtpCodeValidateRule(&this.OtpCode, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (VerifyPasswordOtpQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"authenticate.verify_password_otp_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
+				Field(domain.DefinePrincipalUsernameField("username").Required()).
+				Field(domain.DefinePasswordOtpField("otp_code").Required())
+		},
+	)
 }
 
 type VerifyOtpCodeResult = VerifyPasswordResult

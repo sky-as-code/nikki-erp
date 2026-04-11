@@ -1,0 +1,30 @@
+meta {
+  name: Org Update - Invalid fields - Validation errors
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{api_host}}/v1/identity/organizations/{{org_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "display_name": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+    "etag": "fake"
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-invalid-length');
+  
+  pkg.testInvalidStringLength('etag', 'display_name');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

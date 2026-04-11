@@ -1,0 +1,28 @@
+meta {
+  name: Action Search - No criteria, With paging - Success
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}/actions?page=0&size=5
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 5
+}
+
+script:post-response {
+  const pkg = require('./scripts/search-success');
+  
+  pkg.testSearch(5, 1);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

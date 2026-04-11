@@ -5,7 +5,6 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 type SetIsArchivedCommand struct {
@@ -14,37 +13,21 @@ type SetIsArchivedCommand struct {
 	IsArchived *bool      `json:"is_archived" param:"is_archived"` // Pointer to trigger missing field error
 }
 
-type ToDomainModelFunc[TDomain any] func(data dmodel.DynamicFields) TDomain
-type BeforeValidationFunc[TDomain any] func(ctx corectx.Context, model TDomain) (TDomain, error)
-type AfterValidationFunc[TDomain any] func(ctx corectx.Context, model TDomain) (TDomain, error)
-type ValidateExtraFunc[TDomain any] func(ctx corectx.Context, model TDomain, vErrs *ft.ClientErrors) error
-
-type CreateParam[
-	TDomain any,
-	TDomainPtr DynamicModelPtr[TDomain],
-] struct {
-	// Action name for logging and error messages
-	Action         string
-	BaseRepoGetter BaseRepoGetter
-
-	// Data to create
-	Data dmodel.DynamicModelGetter
-
-	// Optional function to do some processing on the domain model before validation.
-	BeforeValidation BeforeValidationFunc[TDomainPtr]
-
-	// Optional function to do some processing on the domain model after validation.
-	AfterValidation AfterValidationFunc[TDomainPtr]
-
-	// Optional function for advanced validation (business rules) in addition to built-in schema validation.
-	ValidateExtra ValidateExtraFunc[TDomainPtr]
-}
-
 type DeleteOneCommand struct {
 	Id model.Id `json:"id" param:"id"`
 }
+
+func (this DeleteOneCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"core.delete_one_command",
+		func() *dmodel.ModelSchemaBuilder {
+			return DeleteOneQuerySchemaBuilder()
+		},
+	)
+}
+
 type ExistsQuery struct {
-	Ids []model.Id `json:"ids" param:"ids"`
+	Ids []model.Id `json:"ids" query:"ids"`
 }
 
 type ExistsResultData struct {

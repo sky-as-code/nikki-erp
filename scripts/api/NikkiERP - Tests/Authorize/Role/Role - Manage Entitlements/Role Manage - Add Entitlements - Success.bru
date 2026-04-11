@@ -1,0 +1,41 @@
+meta {
+  name: Role Manage - Add Entitlements - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/roles/{{role_id}}/manage-entitlements
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "add": ["<< Managed by script >>"]
+  }
+}
+
+script:pre-request {
+  const pkg = require('./scripts/common-test-response');
+  const entitlementIds = pkg.getTestDataIds('entitlement_ids');
+  const payload = req.getBody();
+  
+  payload.add = entitlementIds.slice(0, entitlementIds.length / 2);
+  req.setBody(payload);
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/update-success');
+  const { getTestDataIds } = require('./scripts/common-test-response');
+  const entitlementIds = getTestDataIds('entitlement_ids');
+  
+  pkg.testUpdate(entitlementIds.length / 2);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

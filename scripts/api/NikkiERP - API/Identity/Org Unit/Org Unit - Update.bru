@@ -1,0 +1,30 @@
+meta {
+  name: Org Unit - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/identity/hierarchy/{{hierarchy_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{$randomDepartment}} Updated",
+    "description": "{{$randomLoremParagraphs}}",
+    "etag": "{{etag}}"
+  }
+}
+
+script:post-response {
+  const payload = res.getBody();
+  const { etag } = payload;
+  etag && bru.setVar('etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

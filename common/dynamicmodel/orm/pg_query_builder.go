@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,73 +16,11 @@ import (
 	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/common/convert"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	cmodel "github.com/sky-as-code/nikki-erp/common/model"
 )
-
-// SqlSelectGraphOpts holds optional parameters for SqlSelectGraph.
-type SqlSelectGraphOpts struct {
-	// Columns limits which columns to fetch; empty means all columns (*).
-	Columns []string
-	// Page is the 0-based page index used to compute the OFFSET (OFFSET = Page * Size).
-	// Ignored when Size is 0.
-	Page int
-	// Size sets the LIMIT clause. 0 means no limit/offset is applied.
-	Size int
-}
-
-// SqlCheckUniqueCollisionsData holds parameterized SQL and arguments from SqlCheckUniqueCollisions.
-type SqlCheckUniqueCollisionsData struct {
-	Sql  string
-	Args []any
-}
-
-// SqlExistsManyData holds parameterized SQL and arguments from SqlExistsMany.
-type SqlExistsManyData struct {
-	Sql  string
-	Args []any
-}
-
-type QueryBuilder interface {
-	// SqlCreateTable returns DDL strings: [0] = CREATE TABLE, [1..] = CREATE UNIQUE INDEX per PartialUnique.
-	SqlCreateTable(schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry) ([]string, *ft.ClientErrors, error)
-	SqlSelectGraph(schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts) (
-		*string, *ft.ClientErrors, error)
-	// SqlCountGraph builds SELECT COUNT(*) with the same WHERE as SqlSelectGraph (no ORDER BY, LIMIT, OFFSET).
-	SqlCountGraph(schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph) (
-		*string, *ft.ClientErrors, error)
-	// SqlInsert builds INSERT for one row. When onConflictPkDoNothing is true, appends
-	// ON CONFLICT (<schema primary keys>) DO NOTHING.
-	SqlInsert(schema *dmodel.ModelSchema, data dmodel.DynamicFields, ignoreConflict bool) (
-		*string, *ft.ClientErrors, error)
-	// SqlInsertBulk builds a multi-row INSERT. When onConflictPkDoNothing is true, appends
-	// ON CONFLICT (<schema primary keys>) DO NOTHING.
-	SqlInsertBulk(schema *dmodel.ModelSchema, rows []dmodel.DynamicFields, ignoreConflict bool) (
-		*string, *ft.ClientErrors, error)
-	SqlUpdateEqual(schema *dmodel.ModelSchema, data dmodel.DynamicFields, filters dmodel.DynamicFields) (
-		*string, *ft.ClientErrors, error)
-	// SqlDeleteEqual generates a DELETE statement with the given filters using only equal predicates.
-	// This DELETE statement can result in one or multiple rows being deleted.
-	SqlDeleteEqual(schema *dmodel.ModelSchema, filters dmodel.DynamicFields) (*string, *ft.ClientErrors, error)
-	// SqlDeleteOrAndEquals deletes rows matching (AND of equals per map) OR (next map AND...) ...
-	SqlDeleteOrAndEquals(schema *dmodel.ModelSchema, filters []dmodel.DynamicFields) (*string, *ft.ClientErrors, error)
-	// SqlCheckUniqueCollisions builds SQL that returns 1 per row where the unique key has a collision, else 0.
-	// Input: uniqueKeysToCheck - subset of dmodel.AllUniques() where data has all values (no nil).
-	// Data.Sql / Data.Args are for execution. Result rows are single int: 1 = collision, 0 = no collision.
-	// Returns (nil, nil, nil) when uniqueKeysToCheck is empty.
-	SqlCheckUniqueCollisions(
-		schema *dmodel.ModelSchema, uniqueKeysToCheck [][]string, data dmodel.DynamicFields,
-	) (*SqlCheckUniqueCollisionsData, *ft.ClientErrors, error)
-	// SqlExistsMany builds SQL that returns one row per key set: 1 if a row exists matching all columns, else 0.
-	// Each key map must use the same column set; column order follows sorted keys from the first map.
-	// Returns (nil, nil, nil) when keys is empty.
-	SqlExistsMany(schema *dmodel.ModelSchema, keys []dmodel.DynamicFields) (*SqlExistsManyData, *ft.ClientErrors, error)
-	// RegisterPredefinedPredicate binds a filter field name to a treatment. Omit schemaName to apply to all schemas
-	// (PredefinedPredicateAllSchemas). Operator uses dmodel.Operator values from model/database condition operators.
-	RegisterPredefinedPredicate(fieldName string, treatment PredefinedPredicateTreatment, schemaName ...string) error
-	GetPredefinedPredicate(fieldName string, schemaName string) PredefinedPredicateTreatment
-}
 
 // Ensure interface implementation at compile time.
 var _ QueryBuilder = (*PgQueryBuilder)(nil)
@@ -108,7 +47,12 @@ func (this *PgQueryBuilder) SqlCreateTable(
 	if err != nil {
 		return nil, nil, err
 	}
+	searchIndexSqls, err := this.searchIndexSqls(schema)
+	if err != nil {
+		return nil, nil, err
+	}
 	out := append([]string{createSql}, indexSqls...)
+	out = append(out, searchIndexSqls...)
 	return out, nil, nil
 }
 
@@ -128,59 +72,165 @@ func (this *PgQueryBuilder) buildCreateTableSql(
 }
 
 func (this *PgQueryBuilder) partialUniqueIndexSqls(schema *dmodel.ModelSchema) ([]string, error) {
-	pairs := schema.PartialUniques()
-	out := make([]string, 0, len(pairs))
-	for _, pair := range pairs {
-		if len(pair) != 2 {
-			continue
-		}
-		line, err := formatPartialUniqueIndex(schema.TableName(), pair[0], pair[1], schema)
+	groups := schema.PartialUniqueGroups()
+	out := make([]string, 0, len(groups)*2)
+	tenantKey := schema.TenantKey()
+	for _, group := range groups {
+		group.NotNullFields = prependTenantKey(tenantKey, group.NotNullFields)
+		lines, err := formatPartialUniqueGroupIndexPair(schema, group)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, line)
+		out = append(out, lines...)
 	}
 	return out, nil
 }
 
-func formatPartialUniqueIndex(
-	tableName, fieldName1, fieldName2 string, schema *dmodel.ModelSchema,
-) (string, error) {
-	f1, ok1 := schema.Field(fieldName1)
-	f2, ok2 := schema.Field(fieldName2)
-	if !ok1 || !ok2 || f1 == nil || f2 == nil {
-		return "", errors.Errorf(
-			"formatPartialUniqueIndex: table '%s': unknown field in partial unique", tableName)
+func (this *PgQueryBuilder) searchIndexSqls(schema *dmodel.ModelSchema) ([]string, error) {
+	groups := schema.SearchIndexGroups()
+	out := make([]string, 0, len(groups))
+	for _, group := range groups {
+		line, err := formatSearchIndexGroup(schema, group)
+		if err != nil {
+			return nil, err
+		}
+		if line != "" {
+			out = append(out, line)
+		}
 	}
-	var notNullCol, nullCol string
-	if f1.IsRequiredForCreate() && !f2.IsRequiredForCreate() {
-		notNullCol, nullCol = fieldName1, fieldName2
-	} else if !f1.IsRequiredForCreate() && f2.IsRequiredForCreate() {
-		notNullCol, nullCol = fieldName2, fieldName1
-	} else {
-		return "", errors.Errorf(
-			"formatPartialUniqueIndex: table '%s': expected one requiredForCreate and one nullable column",
-			tableName)
+	return out, nil
+}
+
+func schemaHasSingleColumnUniqueOn(schema *dmodel.ModelSchema, col string) bool {
+	for _, u := range schema.AllUniques() {
+		if len(u) == 1 && u[0] == col {
+			return true
+		}
 	}
-	idx := fmt.Sprintf("%s_%s_%s_ukey", tableName, fieldName1, fieldName2)
-	return fmt.Sprintf(
+	return false
+}
+
+func formatPartialUniqueGroupIndexPair(schema *dmodel.ModelSchema, group dmodel.PartialUniqueGroupParam) ([]string, error) {
+	if len(group.NotNullFields) == 0 {
+		return nil, errors.Errorf(
+			"formatPartialUniqueGroupIndexPair: table '%s': at least one not-null field is required", schema.TableName())
+	}
+	nullable := strings.TrimSpace(group.NullableField)
+	if nullable == "" {
+		return nil, errors.Errorf(
+			"formatPartialUniqueGroupIndexPair: table '%s': nullable field is required", schema.TableName())
+	}
+	for _, col := range group.NotNullFields {
+		if schemaHasSingleColumnUniqueOn(schema, col) {
+			return nil, errors.Errorf(
+				"partialUniqueIndexSqls: table '%s': column '%s' already has a single-column UNIQUE constraint",
+				schema.TableName(), col)
+		}
+	}
+	indexName := resolvePartialUniqueGroupIndexName(schema.TableName(), group)
+	colsWithNullable := make([]string, 0, len(group.NotNullFields)+1)
+	for _, col := range group.NotNullFields {
+		colsWithNullable = append(colsWithNullable, pgQuote(col))
+	}
+	colsWithNullable = append(colsWithNullable, pgQuote(nullable))
+	quotedNotNull := pgQuoteArr(group.NotNullFields)
+	tableRef := pgQuoteTable(strings.Split(schema.TableName(), ".")...)
+	lineNN := fmt.Sprintf(
+		"CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s IS NOT NULL",
+		pgQuote(indexName+"_ukey_notnull"),
+		tableRef,
+		strings.Join(colsWithNullable, ", "),
+		pgQuote(nullable),
+	)
+	lineNull := fmt.Sprintf(
 		"CREATE UNIQUE INDEX %s ON %s (%s) WHERE %s IS NULL",
-		pgQuote(idx),
-		pgQuote(tableName),
-		pgQuote(notNullCol),
-		pgQuote(nullCol),
+		pgQuote(indexName+"_ukey_null"),
+		tableRef,
+		strings.Join(quotedNotNull, ", "),
+		pgQuote(nullable),
+	)
+	return []string{lineNN, lineNull}, nil
+}
+
+func resolvePartialUniqueGroupIndexName(tableName string, group dmodel.PartialUniqueGroupParam) string {
+	raw := strings.TrimSpace(group.IndexName)
+	if raw == "" {
+		raw = fmt.Sprintf("%s_%s_%s", tableName, strings.Join(group.NotNullFields, "_"), group.NullableField)
+	}
+	return toSnakeLower(raw)
+}
+
+func toSnakeLower(input string) string {
+	if strings.TrimSpace(input) == "" {
+		return ""
+	}
+	var b strings.Builder
+	runes := []rune(strings.TrimSpace(input))
+	for i, current := range runes {
+		if current == ' ' || current == '-' || current == '.' {
+			if b.Len() > 0 && b.String()[b.Len()-1] != '_' {
+				b.WriteByte('_')
+			}
+			continue
+		}
+		if i > 0 && isUpperAscii(current) && (isLowerOrDigitAscii(runes[i-1]) ||
+			(i+1 < len(runes) && isLowerAscii(runes[i+1]))) {
+			if b.Len() > 0 && b.String()[b.Len()-1] != '_' {
+				b.WriteByte('_')
+			}
+		}
+		b.WriteRune(current)
+	}
+	return strings.ToLower(convert.ToUnicodeSnakeCase(b.String()))
+}
+
+func formatSearchIndexGroup(schema *dmodel.ModelSchema, group dmodel.SearchIndexGroupParam) (string, error) {
+	if len(group.Fields) == 0 {
+		return "", nil
+	}
+	indexName := resolveSearchIndexGroupIndexName(group)
+	if indexName == "" {
+		return "", errors.Errorf(
+			"formatSearchIndexGroup: table '%s': index name is required", schema.TableName())
+	}
+	tableRef := pgQuoteTable(strings.Split(schema.TableName(), ".")...)
+	return fmt.Sprintf(
+		"CREATE INDEX %s ON %s (%s)",
+		pgQuote(indexName),
+		tableRef,
+		strings.Join(pgQuoteArr(group.Fields), ", "),
 	), nil
+}
+
+func resolveSearchIndexGroupIndexName(group dmodel.SearchIndexGroupParam) string {
+	raw := strings.TrimSpace(group.IndexName)
+	if raw == "" {
+		raw = strings.Join(group.Fields, "_") + "_idx"
+	}
+	return toSnakeLower(raw)
+}
+
+func isUpperAscii(r rune) bool {
+	return r >= 'A' && r <= 'Z'
+}
+
+func isLowerAscii(r rune) bool {
+	return r >= 'a' && r <= 'z'
+}
+
+func isLowerOrDigitAscii(r rune) bool {
+	return isLowerAscii(r) || (r >= '0' && r <= '9')
 }
 
 func (this *PgQueryBuilder) defineColumns(
 	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema,
 ) error {
 	for _, col := range schema.Columns() {
-		pgType, err := resolveGenericToPgType(col.ColumnType())
+		pgType, err := resolveModelFieldToPgType(col)
 		if err != nil {
 			return errors.Wrapf(err, "defineColumns: column '%s'", col.Name())
 		}
-		builder.Define(col.Name(), pgType, col.ColumnNullable())
+		builder.Define(pgQuote(col.Name()), pgType, col.ColumnNullable())
 	}
 	return nil
 }
@@ -188,15 +238,17 @@ func (this *PgQueryBuilder) defineColumns(
 func (this *PgQueryBuilder) defineKeys(
 	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema,
 ) {
-	if keys := schema.KeyColumns(); len(keys) > 0 {
+	if keys := schema.PrimaryKeys(); len(keys) > 0 {
 		builder.Define("PRIMARY KEY", fmt.Sprintf("(%s)", strings.Join(pgQuoteArr(keys), ", ")))
 	}
+	tenantKey := schema.TenantKey()
 	for _, unique := range schema.AllUniques() {
 		if len(unique) == 0 {
 			continue
 		}
-		name := pgQuote(fmt.Sprintf("%s_%s_ukey", schema.TableName(), strings.Join(unique, "_")))
-		cols := fmt.Sprintf("(%s)", strings.Join(pgQuoteArr(unique), ", "))
+		effectiveUnique := prependTenantKey(tenantKey, unique)
+		name := pgQuote(fmt.Sprintf("%s_%s_ukey", schema.TableName(), strings.Join(effectiveUnique, "_")))
+		cols := fmt.Sprintf("(%s)", strings.Join(pgQuoteArr(effectiveUnique), ", "))
 		builder.Define(fmt.Sprintf("CONSTRAINT %s UNIQUE", name), cols)
 	}
 }
@@ -213,7 +265,7 @@ func (this *PgQueryBuilder) defineForeignKeys(
 func (this *PgQueryBuilder) defineForeignKeysDeclaredOnSchema(
 	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry,
 ) error {
-	for _, rel := range schema.Relations() {
+	for _, rel := range schema.ToRelations() {
 		if !isFkOwnerRelationType(rel.RelationType) {
 			continue
 		}
@@ -234,7 +286,7 @@ func (this *PgQueryBuilder) defineForeignKeysFromParentOneToMany(
 	builder *sqlbuilder.CreateTableBuilder, schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry,
 ) error {
 	return registry.ForEach(func(_ string, parentSch *dmodel.ModelSchema) error {
-		for _, rel := range parentSch.Relations() {
+		for _, rel := range parentSch.ToRelations() {
 			if rel.RelationType != dmodel.RelationTypeOneToMany || rel.DestSchemaName != schema.Name() {
 				continue
 			}
@@ -252,7 +304,7 @@ func (this *PgQueryBuilder) defineForeignKeysFromParentOneToMany(
 func schemaAlreadyDeclaresFkToParent(
 	child, parent *dmodel.ModelSchema, parentOneToMany dmodel.ModelRelation,
 ) bool {
-	for _, r := range child.Relations() {
+	for _, r := range child.ToRelations() {
 		if !isFkOwnerRelationType(r.RelationType) || r.DestSchemaName != parent.Name() {
 			continue
 		}
@@ -307,7 +359,10 @@ func (this *PgQueryBuilder) buildSqlSelectGraph(
 	}
 	ctx := &graphSelectCtx{planner: planner}
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	if err := this.applySelectColumns(sb, schema, planner, opts.Columns); err != nil {
+	if anySelectColumnDistinct(opts.Columns) {
+		sb.Distinct()
+	}
+	if err := this.applySelectColumns(sb, planner, opts.Columns); err != nil {
 		return "", nil, err
 	}
 	this.applyFromWithJoins(sb, schema, planner)
@@ -339,6 +394,46 @@ func (this *PgQueryBuilder) buildSqlSelectGraph(
 		return "", nil, errors.Wrap(ierr, "buildSqlSelectGraph: interpolate")
 	}
 	return out, nil, nil
+}
+
+func (this *PgQueryBuilder) SqlExistsGraph(
+	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph,
+) (*string, *ft.ClientErrors, error) {
+	sql, cErrs, err := this.buildSqlExistsGraph(schema, registry, graph)
+	return stringSqlGraphOutcome(sql, cErrs, err)
+}
+
+func (this *PgQueryBuilder) buildSqlExistsGraph(
+	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph,
+) (string, ft.ClientErrors, error) {
+	planner, err := this.planGraphJoins(schema, registry, graph, SqlSelectGraphOpts{})
+	if err != nil {
+		return "", nil, err
+	}
+	ctx := &graphSelectCtx{planner: planner}
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	sb.Select("1")
+	this.applyFromWithJoins(sb, schema, planner)
+	this.appendPlannerM2MTenantWheres(sb, planner)
+	if graph != nil {
+		predicate, graphCErrs, err := this.graphExpression(
+			ctx, schema, sb, graph.GetCondition(), graph.GetAnd(), graph.GetOr())
+		if err != nil {
+			return "", nil, err
+		}
+		if len(graphCErrs) > 0 {
+			return "", graphCErrs, nil
+		}
+		if len(predicate) > 0 {
+			sb.Where(predicate)
+		}
+	}
+	innerSql, args := sb.Build()
+	innerOut, ierr := interpolate(innerSql, args)
+	if ierr != nil {
+		return "", nil, errors.Wrap(ierr, "buildSqlExistsGraph: interpolate inner")
+	}
+	return fmt.Sprintf("SELECT EXISTS (%s)", innerOut), nil, nil
 }
 
 func (this *PgQueryBuilder) SqlCountGraph(
@@ -379,30 +474,6 @@ func (this *PgQueryBuilder) buildSqlCountGraph(
 		return "", nil, errors.Wrap(ierr, "buildSqlCountGraph: interpolate")
 	}
 	return out, nil, nil
-}
-
-func (this *PgQueryBuilder) applySelectColumns(
-	sb *sqlbuilder.SelectBuilder, schema *dmodel.ModelSchema, planner *joinPlanner, columns []string,
-) error {
-	if len(columns) == 0 {
-		if planner != nil && planner.usesJoins() {
-			planner.ensureRootAliased()
-			sb.Select(fmt.Sprintf("%s.*", planner.rootAlias))
-		} else {
-			sb.Select("*")
-		}
-		return nil
-	}
-	selectCols := make([]string, len(columns))
-	for i, col := range columns {
-		expr, err := planner.selectExprForColumn(col)
-		if err != nil {
-			return errors.Wrap(err, "applySelectColumns")
-		}
-		selectCols[i] = expr
-	}
-	sb.Select(selectCols...)
-	return nil
 }
 
 func (this *PgQueryBuilder) appendPlannerM2MTenantWheres(sb *sqlbuilder.SelectBuilder, planner *joinPlanner) {
@@ -489,9 +560,10 @@ func (this *PgQueryBuilder) buildInsertSql(schema *dmodel.ModelSchema, rows []ro
 		ib.Values(row.values...)
 	}
 	if ignoreConflict {
-		if err := this.appendInsertOnConflictPkDoNothing(ib, schema); err != nil {
-			return "", err
-		}
+		ib.SQL(" ON CONFLICT DO NOTHING")
+		// if err := this.appendInsertOnConflictPkDoNothing(ib, schema); err != nil {
+		// 	return "", err
+		// }
 	}
 	sql, args := ib.Build()
 	out, ierr := interpolate(sql, args)
@@ -1083,6 +1155,9 @@ func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (a
 	if field.IsVirtualModelField() {
 		return nil, clientErrorsVirtualFieldUnavailable(field.Name()), nil
 	}
+	if field.IsArray() {
+		return convertArrayFieldValue(field, value)
+	}
 	if value == nil {
 		if field.IsNullable() {
 			return nil, nil, nil
@@ -1110,6 +1185,166 @@ func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (a
 	}
 
 	return v.Interface(), nil, nil
+}
+
+func convertArrayFieldValue(field *dmodel.ModelField, value any) (any, ft.ClientErrors, error) {
+	if value == nil {
+		if field.IsNullable() {
+			return nil, nil, nil
+		}
+		return nil, nil, errors.Errorf("convertArrayFieldValue: field '%s' does not allow NULL", field.Name())
+	}
+	v, ok := unwrapValue(reflect.ValueOf(value))
+	if !ok {
+		if field.IsNullable() {
+			return nil, nil, nil
+		}
+		return nil, nil, errors.Errorf("convertArrayFieldValue: field '%s' does not allow NULL", field.Name())
+	}
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name())}, nil
+	}
+	cat := columnCategoryFor(field.ColumnType())
+	raw, err := buildPgArrayRaw(field, cat, v)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "convertArrayFieldValue: field '%s'", field.Name())
+	}
+	return raw, nil, nil
+}
+
+func buildPgArrayRaw(field *dmodel.ModelField, cat columnCategory, v reflect.Value) (any, error) {
+	castSuffix, err := pgArrayTypeCast(field)
+	if err != nil {
+		return nil, err
+	}
+	n := v.Len()
+	var b strings.Builder
+	b.WriteString("ARRAY[")
+	for i := 0; i < n; i++ {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		elem, elemErr := pgArrayElementSQL(cat, v.Index(i))
+		if elemErr != nil {
+			return nil, elemErr
+		}
+		b.WriteString(elem)
+	}
+	b.WriteString("]::")
+	b.WriteString(castSuffix)
+	return sqlbuilder.Raw(b.String()), nil
+}
+
+func pgArrayTypeCast(field *dmodel.ModelField) (string, error) {
+	base, err := resolveGenericToPgType(field.ColumnType())
+	if err != nil {
+		return "", err
+	}
+	return base + "[]", nil
+}
+
+func pgArrayElementSQL(cat columnCategory, elem reflect.Value) (string, error) {
+	ev, ok := unwrapValue(elem)
+	if !ok {
+		return "NULL", nil
+	}
+	switch cat {
+	case columnString:
+		if ev.Kind() != reflect.String {
+			return "", errors.Errorf("pgArrayElementSQL: expected string element, got %s", ev.Kind())
+		}
+		return "'" + strings.ReplaceAll(ev.String(), "'", "''") + "'", nil
+	case columnBool:
+		if ev.Kind() != reflect.Bool {
+			return "", errors.Errorf("pgArrayElementSQL: expected bool element, got %s", ev.Kind())
+		}
+		if ev.Bool() {
+			return "TRUE", nil
+		}
+		return "FALSE", nil
+	case columnInt:
+		if !(isIntKind(ev.Kind()) || isUintKind(ev.Kind())) {
+			return "", errors.Errorf("pgArrayElementSQL: expected integer element, got %s", ev.Kind())
+		}
+		return fmt.Sprintf("%d", ev.Interface()), nil
+	case columnNumeric:
+		switch ev.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return fmt.Sprintf("%d", ev.Int()), nil
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return fmt.Sprintf("%d", ev.Uint()), nil
+		case reflect.Float32, reflect.Float64:
+			return strconv.FormatFloat(ev.Float(), 'g', -1, 64), nil
+		default:
+			if isBigNumber(ev.Interface()) {
+				return fmt.Sprintf("%v", ev.Interface()), nil
+			}
+			return "", errors.Errorf("pgArrayElementSQL: unsupported numeric element %s", ev.Kind())
+		}
+	case columnTime:
+		t, tErr := modelTimeFromReflect(ev)
+		if tErr != nil {
+			return "", tErr
+		}
+		return "'" + t.UTC().Format("2006-01-02 15:04:05.999999 MST") + "'", nil
+	case columnJSON:
+		if ev.Kind() != reflect.Map {
+			return "", errors.New("pgArrayElementSQL: json element must be a map")
+		}
+		return "", errors.New("pgArrayElementSQL: jsonb array literals are not supported yet")
+	default:
+		return "", errors.Errorf("pgArrayElementSQL: unsupported column category %v", cat)
+	}
+}
+
+func modelTimeFromReflect(v reflect.Value) (time.Time, error) {
+	x := v.Interface()
+	switch t := x.(type) {
+	case time.Time:
+		return t, nil
+	case *time.Time:
+		if t == nil {
+			return time.Time{}, errors.New("modelTimeFromReflect: nil time pointer")
+		}
+		return *t, nil
+	case cmodel.ModelDateTime:
+		return t.GoTime(), nil
+	case *cmodel.ModelDateTime:
+		if t == nil {
+			return time.Time{}, errors.New("modelTimeFromReflect: nil ModelDateTime")
+		}
+		return t.GoTime(), nil
+	case cmodel.ModelDate:
+		return t.GoTime(), nil
+	case *cmodel.ModelDate:
+		if t == nil {
+			return time.Time{}, errors.New("modelTimeFromReflect: nil ModelDate")
+		}
+		return t.GoTime(), nil
+	case cmodel.ModelTime:
+		return t.GoTime(), nil
+	case *cmodel.ModelTime:
+		if t == nil {
+			return time.Time{}, errors.New("modelTimeFromReflect: nil ModelTime")
+		}
+		return t.GoTime(), nil
+	default:
+		return time.Time{}, errors.Errorf("modelTimeFromReflect: unsupported type %T", x)
+	}
+}
+
+func resolveModelFieldToPgType(col *dmodel.ModelField) (string, error) {
+	if col.IsVirtualModelField() {
+		return "", errors.Errorf("resolveModelFieldToPgType: virtual field '%s' has no SQL type", col.Name())
+	}
+	base, err := resolveGenericToPgType(col.ColumnType())
+	if err != nil {
+		return "", err
+	}
+	if col.IsArray() {
+		return base + "[]", nil
+	}
+	return base, nil
 }
 
 type columnCategory int
@@ -1162,7 +1397,7 @@ func resolveGenericToPgType(genericType string) (string, error) {
 		return "character varying", nil
 	case "uuid":
 		return "uuid", nil
-	case "int", "int64", "integer", "enumNumber":
+	case "int", "int64", "integer", "enumNumber", "enumInteger":
 		return "integer", nil
 	case "decimal", "float":
 		return "numeric", nil
@@ -1203,6 +1438,9 @@ func pgQuoteArr(ss []string) []string {
 
 func prependTenantKey(tenantKey string, fields []string) []string {
 	if tenantKey == "" {
+		return fields
+	}
+	if slices.Contains(fields, tenantKey) {
 		return fields
 	}
 	cols := make([]string, 0, len(fields)+1)
@@ -1306,9 +1544,21 @@ func unwrapValue(v reflect.Value) (reflect.Value, bool) {
 }
 
 var timeType = reflect.TypeOf(time.Time{})
-var modelDateType = reflect.TypeOf(cmodel.ModelDate(time.Time{}))
-var modelDateTimeType = reflect.TypeOf(cmodel.ModelDateTime(time.Time{}))
-var modelTimeType = reflect.TypeOf(cmodel.ModelTime(time.Time{}))
+var modelDateType = reflect.TypeOf(cmodel.NewModelDate())
+var modelDateTimeType = reflect.TypeOf(cmodel.NewModelDateTime())
+var modelTimeType = reflect.TypeOf(cmodel.NewModelTime())
+
+func isShopspringDecimalValue(v reflect.Value) bool {
+	x := v.Interface()
+	switch typed := x.(type) {
+	case decimal.Decimal:
+		return true
+	case *decimal.Decimal:
+		return typed != nil
+	default:
+		return false
+	}
+}
 
 func isShopspringDecimalValue(v reflect.Value) bool {
 	x := v.Interface()

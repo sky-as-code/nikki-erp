@@ -26,4 +26,4 @@ type SearchGroupsRequest = it.SearchGroupsQuery
 type SearchGroupsResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
 
 type UpdateGroupRequest = it.UpdateGroupCommand
-type UpdateGroupResponse = httpserver.RestUpdateResponse2
+type UpdateGroupResponse = httpserver.RestMutateResponse

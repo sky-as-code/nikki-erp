@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	mod "github.com/sky-as-code/nikki-erp/modules"
 	. "github.com/sky-as-code/nikki-erp/modules/core/config/loader"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
@@ -18,10 +19,10 @@ var configSvc ConfigService
 // 2) Look for environment variable with name DB_PASSWORD, if not empty, return it.
 // 3) Read in config/config.json, look for this key in current environment name group.
 func InitSubModule() (modErr error) {
-	err := deps.Register(func(logger logging.LoggerService) ConfigService {
+	err := deps.Register(func(logger logging.LoggerService, defaultConfig mod.DefaultConfig) ConfigService {
 		var configService *configServiceImpl
 		// jsonLoader := NewJsonConfigLoader(logger)
-		yamlLoader := NewYamlConfigLoader(logger)
+		yamlLoader := NewYamlConfigLoader(logger, defaultConfig)
 		envVarLoader := NewEnvVarConfigLoader(yamlLoader, logger)
 		secretFileLoader := NewSecretFileConfigLoader(envVarLoader, logger)
 		configService = NewConfigService(secretFileLoader)

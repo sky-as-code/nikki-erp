@@ -46,7 +46,8 @@ func initHttpServer(params httpServerParams) httpServerResult {
 
 	httpServer.Use(middleware.Logger())
 	httpServer.Use(middleware.Recover())
-	httpServer.Use(middleware.CORSWithConfig(configCors(params.Config)))
+	// httpServer.Use(middleware.CORSWithConfig(configCors(params.Config)))
+	httpServer.Use(m.CorsEchoMiddleware())
 	httpServer.Use(commonMiddleware.CaptureBearerToken(params.Config.GetStr(c.TokenSecretKey)))
 
 	httpServer.Use(m.RequestContextMiddleware)
@@ -57,24 +58,24 @@ func initHttpServer(params httpServerParams) httpServerResult {
 	}
 }
 
-func configCors(config config.ConfigService) middleware.CORSConfig {
-	corsOrigins := config.GetStrArr(c.HttpCorsOrigins)
-	corsHeaders := config.GetStrArr(c.HttpCorsHeaders, "")
-	if len(corsHeaders) == 0 {
-		corsHeaders = []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization}
-	}
-	corsMethods := config.GetStrArr(c.HttpCorsMethods, "")
-	if len(corsMethods) == 0 {
-		corsMethods = []string{echo.GET, echo.HEAD, echo.PUT, echo.PATCH, echo.POST, echo.DELETE}
-	}
+// func configCors(config config.ConfigService) middleware.CORSConfig {
+// 	corsOrigins := config.GetStrArr(c.HttpCorsOrigins)
+// 	corsHeaders := config.GetStrArr(c.HttpCorsHeaders, "")
+// 	if len(corsHeaders) == 0 {
+// 		corsHeaders = []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization}
+// 	}
+// 	corsMethods := config.GetStrArr(c.HttpCorsMethods, "")
+// 	if len(corsMethods) == 0 {
+// 		corsMethods = []string{echo.GET, echo.HEAD, echo.PUT, echo.PATCH, echo.POST, echo.DELETE}
+// 	}
 
-	return middleware.CORSConfig{
-		// TODO: Allow config CORS from database
-		AllowOrigins: corsOrigins,
-		AllowHeaders: corsHeaders,
-		AllowMethods: corsMethods,
-	}
-}
+// 	return middleware.CORSConfig{
+// 		// TODO: Allow config CORS from database
+// 		AllowOrigins: corsOrigins,
+// 		AllowHeaders: corsHeaders,
+// 		AllowMethods: corsMethods,
+// 	}
+// }
 
 func initRoutes(mainServer HttpServer, config config.ConfigService) *echo.Group {
 	basePath := config.GetStr(c.HttpBasePath) // or "/api"

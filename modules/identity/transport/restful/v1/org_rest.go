@@ -160,10 +160,7 @@ func (this OrganizationRest) SetOrgIsArchived(echoCtx echo.Context) (err error) 
 		func(request SetOrgIsArchivedRequest) it.SetOrgIsArchivedCommand {
 			return request
 		},
-		func(data dyn.MutateResultData) SetOrgIsArchivedResponse {
-			response := httpserver.NewRestUpdateResponse2(data)
-			return response
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }
@@ -182,9 +179,7 @@ func (this OrganizationRest) UpdateOrg(echoCtx echo.Context) (err error) {
 			cmd.SetFieldData(requestFields)
 			return cmd
 		},
-		func(data dyn.MutateResultData) UpdateOrgResponse {
-			return httpserver.NewRestUpdateResponse2(data)
-		},
+		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
 }

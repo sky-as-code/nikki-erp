@@ -149,29 +149,31 @@ func NewRestDeleteResponse2(src dyn.MutateResultData) RestDeleteResponse2 {
 	return response
 }
 
-type RestUpdateResponse2 struct {
-	AffectedCount int        `json:"affected_count"`
-	AffectedAt    string     `json:"affected_at"`
-	Etag          model.Etag `json:"etag"`
-}
+// type RestUpdateResponse2 struct {
+// 	AffectedCount int        `json:"affected_count"`
+// 	AffectedAt    string     `json:"affected_at"`
+// 	Etag          model.Etag `json:"etag,omitempty"`
+// }
 
-func NewRestUpdateResponse2(src dyn.MutateResultData) RestUpdateResponse2 {
-	response := RestUpdateResponse2{}
-	response.AffectedCount = src.AffectedCount
-	response.AffectedAt = src.AffectedAt.String()
-	response.Etag = src.Etag
-	return response
-}
+// func NewRestUpdateResponse2(src dyn.MutateResultData) RestUpdateResponse2 {
+// 	response := RestUpdateResponse2{}
+// 	response.AffectedCount = src.AffectedCount
+// 	response.AffectedAt = src.AffectedAt.String()
+// 	response.Etag = src.Etag
+// 	return response
+// }
 
 // RestMutateResponse is a mutation payload without etag (e.g. junction-only updates).
 type RestMutateResponse struct {
-	AffectedCount int    `json:"affected_count"`
-	AffectedAt    string `json:"affected_at"`
+	AffectedCount int        `json:"affected_count"`
+	AffectedAt    string     `json:"affected_at"`
+	Etag          model.Etag `json:"etag,omitempty"`
 }
 
 func NewRestMutateResponse(src dyn.MutateResultData) RestMutateResponse {
 	return RestMutateResponse{
 		AffectedCount: src.AffectedCount,
 		AffectedAt:    src.AffectedAt.String(),
+		Etag:          src.Etag,
 	}
 }

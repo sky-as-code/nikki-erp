@@ -1,0 +1,16 @@
+meta {
+  name: Org Unit - Search
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{api_host}}/v1/identity/hierarchy
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -183,11 +183,15 @@ func buildDepGraph(
 // based on FK-owning relations (many:one, one:one) whose destination is in the registry.
 func fkDependencies(s *ModelSchema, known map[string]bool) []string {
 	var deps []string
-	for _, rel := range s.relations {
-		if isFkOwnerRelation(rel.RelationType) && known[rel.DestSchemaName] {
-			deps = append(deps, rel.DestSchemaName)
+	appendDeps := func(rels []ModelRelation) {
+		for _, rel := range rels {
+			if isFkOwnerRelation(rel.RelationType) && known[rel.DestSchemaName] {
+				deps = append(deps, rel.DestSchemaName)
+			}
 		}
 	}
+	appendDeps(s.toRelations)
+	appendDeps(s.fromRelations)
 	return deps
 }
 

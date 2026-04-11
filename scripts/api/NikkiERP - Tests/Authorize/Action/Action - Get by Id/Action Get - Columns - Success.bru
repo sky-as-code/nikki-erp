@@ -1,0 +1,53 @@
+meta {
+  name: Action Get - Columns - Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}/actions/{{action_id}}?columns=name&columns=code&columns=resource_id
+  body: none
+  auth: inherit
+}
+
+params:query {
+  columns: name
+  columns: code
+  columns: resource_id
+}
+
+script:post-response {
+  const { testHttpResponse } = require('./scripts/common-test-response');
+  
+  const schema = {
+    type: 'object',
+    required: ['name', 'code', 'resource_id'],
+    properties: {
+      id: {
+        type: 'string',
+        minLength: 1,
+      },
+      name: {
+        type: 'string',
+        minLength: 1,
+      },
+      code: {
+        type: 'string',
+        minLength: 1,
+      },
+      resource_id: {
+        type: 'string',
+        minLength: 1,
+      },
+    },
+    additionalProperties: false,
+  };
+  
+  testHttpResponse(schema, 200);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

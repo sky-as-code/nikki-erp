@@ -3,9 +3,17 @@ goarch ?= amd64
 goos ?= windows
 outfile ?= nikki-erp.exe
 
-ifndef cwd_nikki
-cwd_nikki := $(dir $(lastword $(MAKEFILE_LIST)))
+ifndef cwd
+cwd := $(dir $(lastword $(MAKEFILE_LIST)))
 endif
+
+ifndef migration_dir_2
+migration_dir_2 := file://${cwd}scripts/migrations-nikki
+endif
+
+
+.PHONY: build build-mods build-static build-dynamic clean ent-init ent-gen ent-current ent-hash ent-migration ent-apply infra-up infra-down nikki
+
 
 # START: Go builds
 
@@ -48,11 +56,7 @@ build: build-dynamic
 # END: Go builds
 
 # START: ORM & Database
-migration_dir := file://${cwd_nikki}scripts/migrations
-
-ifndef migration_dir_nikki
-migration_dir_nikki := file://${cwd_nikki}scripts/migrations-nikki
-endif
+migration_dir := file://${cwd}scripts/migrations
 
 ent-init:
 	@if [ -z "$(module)" ]; then \
@@ -85,7 +89,7 @@ ent-current:
 	atlas migrate diff current_state.tmp \
 		--dir "$(migration_dir)" \
 		--to "postgres://nikki_admin:nikki_password@localhost:5432/nikki_erp?sslmode=disable" \
-		--config file://${cwd_nikki}scripts/atlas.hcl \
+		--config file://${cwd}scripts/atlas.hcl \
 		--env local
 
 ent-hash:
@@ -109,7 +113,7 @@ ent-migration:
 	atlas migrate diff $(name) \
 		--dir "$(migration_dir)" \
 		--to "ent://modules/$(module)/infra/ent/schema" \
-		--config file://${cwd_nikki}scripts/atlas.hcl \
+		--config file://${cwd}scripts/atlas.hcl \
 		--env local
 
 ent-migration-nikki:
@@ -122,10 +126,11 @@ ent-migration-nikki:
 		exit 1; \
 	fi
 	atlas migrate diff $(name) \
-		--dir "$(migration_dir_nikki)" \
-		--config file://./scripts/atlas.hcl \
+		--dir "$(migration_dir_2)" \
+		--config file://${cwd}scripts/atlas.hcl \
 		--env nikki \
-		--var module=$(module)
+		--var module=$(module) \
+		--var cwd='${cwd}'
 
 ent-apply:
 	@echo "Applying migration files in '$(migration_dir)'..."
@@ -138,7 +143,7 @@ ent-revert:
 	atlas migrate down \
 		--dir "$(migration_dir)" \
 		--url "postgres://nikki_admin:nikki_password@localhost:5432/nikki_erp?search_path=public&sslmode=disable" \
-		--config file://${cwd_nikki}scripts/atlas.hcl \
+		--config file://${cwd}scripts/atlas.hcl \
 		--env local
 
 # END: ORM & Database
@@ -146,10 +151,10 @@ ent-revert:
 # START: Local development
 
 infra-up:
-	docker compose -f "${cwd_nikki}scripts/docker/docker-compose.local.yml" up -d
+	docker compose -f "${cwd}scripts/docker/docker-compose.local.yml" up -d
 
 infra-down:
-	docker compose -f "${cwd_nikki}scripts/docker/docker-compose.local.yml" down -v
+	docker compose -f "${cwd}scripts/docker/docker-compose.local.yml" down -v
 
 infra-swarm-up:
 	./scripts/docker/infra-up.sh $(shell pwd)
@@ -179,5 +184,3 @@ nikki:
 	APP_ENV=$(env) WORKING_DIR="$(cwd)" GENERAL_LOG_LEVEL="info" go run -tags=staticmods *.go
 
 # END: Local development
-
-.PHONY: build build-mods build-static build-dynamic clean ent-init ent-gen ent-current ent-hash ent-migration ent-apply infra-up infra-down nikki

@@ -1,0 +1,29 @@
+meta {
+  name: Role Exists - One - Success
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authorize/roles/exists
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ids": ["{{role_id}}"]
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/exists-success');
+  
+  pkg.testExists(1, 0);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

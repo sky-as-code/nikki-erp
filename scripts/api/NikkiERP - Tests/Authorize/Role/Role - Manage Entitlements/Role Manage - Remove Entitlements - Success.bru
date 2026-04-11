@@ -1,0 +1,41 @@
+meta {
+  name: Role Manage - Remove Entitlements - Success
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_host}}/v1/authorize/roles/{{role_id}}/manage-entitlements
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "remove": ["<< Managed by script >>"]
+  }
+}
+
+script:pre-request {
+  const pkg = require('./scripts/common-test-response');
+  const entitlementIds = pkg.getTestDataIds('entitlement_ids');
+  const payload = req.getBody();
+  
+  payload.remove = entitlementIds;
+  req.setBody(payload);
+  
+}
+
+script:post-response {
+  const pkg = require('./scripts/update-success');
+  const { getTestDataIds } = require('./scripts/common-test-response');
+  const entitlementIds = getTestDataIds('entitlement_ids');
+  
+  pkg.testUpdate(entitlementIds.length / 2);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

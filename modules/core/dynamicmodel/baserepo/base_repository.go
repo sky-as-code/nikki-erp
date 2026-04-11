@@ -7,19 +7,25 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/lib/pq"
 	"go.bryk.io/pkg/errors"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	erpjson "github.com/sky-as-code/nikki-erp/common/json"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
+
+const fieldDataTypeJsonMapName = "jsonmap"
 
 type NewBaseRepositoryParam struct {
 	Client       orm.DbClient
@@ -29,10 +35,10 @@ type NewBaseRepositoryParam struct {
 	Schema       *dmodel.ModelSchema
 }
 
-func NewBaseRepositoryImpl(param NewBaseRepositoryParam) dyn.BaseRepository {
+func NewBaseDynamicRepository(param NewBaseRepositoryParam) dyn.BaseDynamicRepository {
 	sqlDebugEnabled := param.ConfigSvc.GetBool(c.DbDebugEnabled)
 
-	return &BaseRepositoryImpl{
+	return &BaseDynamicRepositoryImpl{
 		client:          param.Client,
 		queryBuilder:    param.QueryBuilder,
 		logger:          param.Logger,
@@ -41,10 +47,7 @@ func NewBaseRepositoryImpl(param NewBaseRepositoryParam) dyn.BaseRepository {
 	}
 }
 
-// Ensure interface implementation at compile time.
-var _ dyn.BaseRepository = (*BaseRepositoryImpl)(nil)
-
-type BaseRepositoryImpl struct {
+type BaseDynamicRepositoryImpl struct {
 	client          orm.DbClient
 	queryBuilder    orm.QueryBuilder
 	logger          logging.LoggerService
@@ -52,12 +55,51 @@ type BaseRepositoryImpl struct {
 	sqlDebugEnabled bool
 }
 
-func (this *BaseRepositoryImpl) GetSchema() *dmodel.ModelSchema {
+func (this *BaseDynamicRepositoryImpl) Schema() *dmodel.ModelSchema {
 	return this.schema
 }
 
+func (this *BaseDynamicRepositoryImpl) ExtractClient(ctx corectx.Context) orm.DbClient {
+	if ctx != nil {
+		if tx := ctx.GetDbTranx(); tx != nil {
+			if sqlClient, ok := tx.(orm.DbClient); ok {
+				return sqlClient
+			}
+		}
+	}
+	return this.client
+}
+
+func (this *BaseDynamicRepositoryImpl) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
+	return this.client.BeginTx(ctx.InnerContext(), nil)
+}
+
+func (this *BaseDynamicRepositoryImpl) ExecFunc(ctx corectx.Context, sqlFuncName string, sqlFuncArgs ...any) error {
+	sqlFuncName = strings.TrimSpace(sqlFuncName)
+	if sqlFuncName == "" {
+		return errors.New("sql function name is required")
+	}
+
+	sqlBuilder := strings.Builder{}
+	sqlBuilder.WriteString("SELECT ")
+	sqlBuilder.WriteString(sqlFuncName)
+	sqlBuilder.WriteString("(")
+	for i := range sqlFuncArgs {
+		if i > 0 {
+			sqlBuilder.WriteString(", ")
+		}
+		sqlBuilder.WriteString(fmt.Sprintf("$p%d", i+1))
+	}
+	sqlBuilder.WriteString(")")
+
+	sqlQuery := sqlBuilder.String()
+	this.logQuery(sqlQuery)
+	_, err := this.ExtractClient(ctx).Exec(ctx.InnerContext(), sqlQuery, sqlFuncArgs...)
+	return err
+}
+
 // CheckUniqueCollisions returns unique key groups that have collisions. Empty slice means no collisions.
-func (this *BaseRepositoryImpl) CheckUniqueCollisions(ctx corectx.Context, data dmodel.DynamicFields) (
+func (this *BaseDynamicRepositoryImpl) CheckUniqueCollisions(ctx corectx.Context, data dmodel.DynamicFields) (
 	*dyn.OpResult[[][]string], error,
 ) {
 	uniqueKeysToCheck := this.filterUniqueKeysWithValues(data)
@@ -74,7 +116,7 @@ func (this *BaseRepositoryImpl) CheckUniqueCollisions(ctx corectx.Context, data 
 	}
 
 	this.logQuery(sqlQuery.Sql)
-	rows, err := this.client.Query(ctx, sqlQuery.Sql, sqlQuery.Args...)
+	rows, err := this.ExtractClient(ctx).Query(ctx, sqlQuery.Sql, sqlQuery.Args...)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +140,7 @@ func (this *BaseRepositoryImpl) CheckUniqueCollisions(ctx corectx.Context, data 
 	return &dyn.OpResult[[][]string]{Data: collidingKeys, HasData: len(collidingKeys) != 0}, nil
 }
 
-func (this *BaseRepositoryImpl) DeleteOne(
+func (this *BaseDynamicRepositoryImpl) DeleteOne(
 	ctx corectx.Context, keys dmodel.DynamicFields,
 ) (*dyn.OpResult[int], error) {
 	if err := this.validateKeyMap(keys); err != nil {
@@ -116,7 +158,7 @@ func (this *BaseRepositoryImpl) DeleteOne(
 	}
 
 	this.logQuery(*sqlQuery)
-	result, err := this.client.Exec(ctx, *sqlQuery)
+	result, err := this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +169,7 @@ func (this *BaseRepositoryImpl) DeleteOne(
 	return &dyn.OpResult[int]{Data: int(n), HasData: n != 0}, nil
 }
 
-func (this *BaseRepositoryImpl) Exists(
+func (this *BaseDynamicRepositoryImpl) Exists(
 	ctx corectx.Context, keys []dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.RepoExistsResult], error) {
 	if len(keys) == 0 {
@@ -137,23 +179,9 @@ func (this *BaseRepositoryImpl) Exists(
 		}, nil
 	}
 	return this.existsOnSchema(ctx, this.schema, keys)
-	// sqlRes, qbClientErrs, err := this.queryBuilder.SqlExistsMany(this.schema, keys)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if qbClientErrs != nil && qbClientErrs.Count() > 0 {
-	// 	return &dyn.OpResult[dyn.RepoExistsResult]{ClientErrors: *qbClientErrs}, nil
-	// }
-	// if sqlRes == nil {
-	// 	return &dyn.OpResult[dyn.RepoExistsResult]{
-	// 		Data:    dyn.RepoExistsResult{},
-	// 		HasData: true,
-	// 	}, nil
-	// }
-	// return this.runExistsManyQuery(ctx, *sqlRes, keys)
 }
 
-func (this *BaseRepositoryImpl) existsOnSchema(
+func (this *BaseDynamicRepositoryImpl) existsOnSchema(
 	ctx corectx.Context, schema *dmodel.ModelSchema, keys []dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.RepoExistsResult], error) {
 	sqlRes, qbClientErrs, err := this.queryBuilder.SqlExistsMany(schema, keys)
@@ -172,11 +200,11 @@ func (this *BaseRepositoryImpl) existsOnSchema(
 	return this.runExistsManyQuery(ctx, *sqlRes, keys)
 }
 
-func (this *BaseRepositoryImpl) runExistsManyQuery(
+func (this *BaseDynamicRepositoryImpl) runExistsManyQuery(
 	ctx corectx.Context, sqlData orm.SqlExistsManyData, keys []dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.RepoExistsResult], error) {
 	this.logQuery(sqlData.Sql)
-	rows, err := this.client.Query(ctx, sqlData.Sql, sqlData.Args...)
+	rows, err := this.ExtractClient(ctx).Query(ctx, sqlData.Sql, sqlData.Args...)
 	if err != nil {
 		return nil, err
 	}
@@ -211,15 +239,13 @@ func scanExistsManyRows(rows *sql.Rows, keys []dmodel.DynamicFields) (*dyn.OpRes
 
 // Insert inserts a record to database. If the schema defines "created_at", sets current UTC timestamp.
 // On success, Data holds the inserted field map; HasData is true when Data is non-nil.
-func (this *BaseRepositoryImpl) Insert(ctx corectx.Context, data dmodel.DynamicFields) (
+func (this *BaseDynamicRepositoryImpl) Insert(ctx corectx.Context, data dmodel.DynamicFields) (
 	*dyn.OpResult[int], error,
 ) {
 	// TODO: Extract later
 	// if err := this.ensureTenantKeyIn(data); err != nil {
 	// 	return nil, err
 	// }
-	// this.trySetCreatedAt(data)
-	// this.trySetEtag(data)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlInsert(this.schema, data, false)
 	if err != nil {
 		return nil, err
@@ -229,7 +255,7 @@ func (this *BaseRepositoryImpl) Insert(ctx corectx.Context, data dmodel.DynamicF
 	}
 
 	this.logQuery(*sqlQuery)
-	result, err := this.client.Exec(ctx, *sqlQuery)
+	result, err := this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +267,7 @@ func (this *BaseRepositoryImpl) Insert(ctx corectx.Context, data dmodel.DynamicF
 }
 
 // Implements BaseRepository interface
-func (this *BaseRepositoryImpl) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (
+func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (
 	*dyn.OpResult[dmodel.DynamicFields], error,
 ) {
 	if vErr := this.validateGetOneColumnsAndFilter(param.Columns, param.Filter); vErr != nil {
@@ -259,7 +285,7 @@ func (this *BaseRepositoryImpl) GetOne(ctx corectx.Context, param dyn.RepoGetOne
 	}
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(
 		this.schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-			Columns: this.ensurePrimaryKeyColumns(param.Columns),
+			Columns: orm.ToSelectColumns(this.ensurePrimaryKeyColumns(param.Columns)),
 		})
 	if err != nil {
 		return nil, err
@@ -279,7 +305,7 @@ func (this *BaseRepositoryImpl) GetOne(ctx corectx.Context, param dyn.RepoGetOne
 	return &dyn.OpResult[dmodel.DynamicFields]{Data: rows[0], HasData: true}, nil
 }
 
-func (this *BaseRepositoryImpl) getOneWithNestedColumns(
+func (this *BaseDynamicRepositoryImpl) getOneWithNestedColumns(
 	ctx corectx.Context, param dyn.RepoGetOneParam,
 ) (*dyn.OpResult[dmodel.DynamicFields], error) {
 	graph, err := this.buildFindOneGraph(param.Filter)
@@ -310,7 +336,7 @@ func (this *BaseRepositoryImpl) getOneWithNestedColumns(
 	return &dyn.OpResult[dmodel.DynamicFields]{Data: rows[0], HasData: true}, nil
 }
 
-func (this *BaseRepositoryImpl) ManageM2m(
+func (this *BaseDynamicRepositoryImpl) ManageM2m(
 	ctx corectx.Context, param dyn.RepoManageM2mParam,
 ) (*dyn.OpResult[int], error) {
 	link, ok := this.schema.M2mPeerLinkForDest(param.DestSchemaName)
@@ -339,7 +365,68 @@ func (this *BaseRepositoryImpl) ManageM2m(
 	if len(associations) == 0 && len(disassociations) == 0 {
 		return &dyn.OpResult[int]{Data: 0, HasData: false}, nil
 	}
-	return this.applyM2mAssociations(ctx, link, associations, disassociations)
+
+	return this.applyM2mAssociations(ctx, link, associations, disassociations, param.BeforeInsert)
+}
+
+func (this *BaseDynamicRepositoryImpl) ExistsM2m(ctx corectx.Context, param dyn.RepoExistsM2mParam) (bool, error) {
+	link, ok := this.schema.M2mPeerLinkForEdge(param.M2mEdge)
+	if !ok {
+		return false, errors.Errorf(
+			"ExistsM2m: no many-to-many edge '%s' on schema '%s'", param.M2mEdge, this.schema.Name(),
+		)
+	}
+	srcKeys := dmodel.DynamicFields{basemodel.FieldId: param.SrcId}
+	var row dmodel.DynamicFields
+	if param.DestId == nil || *param.DestId == "" {
+		filter, filled := this.m2mThroughFilterForLink(srcKeys, link)
+		if !filled {
+			return false, nil
+		}
+		row = filter
+	} else {
+		destKeys := dmodel.DynamicFields{basemodel.FieldId: *param.DestId}
+		row = this.materializeM2mJunctionRow(link, dyn.RepoM2mAssociation{SrcKeys: srcKeys, DestKeys: destKeys})
+	}
+	graph := filterToAndGraph(row)
+	sqlPtr, qbClientErrs, err := this.queryBuilder.SqlExistsGraph(
+		link.ThroughSchema, dmodel.GetSchemaRegistry(), graph)
+	if err != nil {
+		return false, err
+	}
+	if qbClientErrs != nil && qbClientErrs.Count() > 0 {
+		return false, errors.Errorf("ExistsM2m: invalid query graph: %v", qbClientErrs)
+	}
+	if sqlPtr == nil {
+		return false, nil
+	}
+	this.logQuery(*sqlPtr)
+	return this.queryScalarBool(ctx, *sqlPtr)
+}
+
+func (this *BaseDynamicRepositoryImpl) CountM2m(
+	ctx corectx.Context, param dyn.RepoCountM2mParam,
+) (*dyn.OpResult[int], error) {
+	link, ok := this.schema.M2mPeerLinkForEdge(param.M2mEdge)
+	if !ok {
+		return nil, errors.Errorf(
+			"CountM2m: no many-to-many edge '%s' on schema '%s'", param.M2mEdge, this.schema.Name(),
+		)
+	}
+	srcKeys := dmodel.DynamicFields{basemodel.FieldId: param.SrcId}
+	filter, filled := this.m2mThroughFilterForLink(srcKeys, link)
+	if !filled {
+		return &dyn.OpResult[int]{Data: 0, HasData: false}, nil
+	}
+	graph := filterToAndGraph(filter)
+	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph)
+	if err != nil {
+		return nil, err
+	}
+	if countClientErrs.Count() > 0 {
+		return &dyn.OpResult[int]{ClientErrors: countClientErrs}, nil
+	}
+	return &dyn.OpResult[int]{Data: total, HasData: true}, nil
 }
 
 func assertNoAssociationOverlap(param dyn.RepoManageM2mParam) ft.ClientErrors {
@@ -358,7 +445,7 @@ func assertNoAssociationOverlap(param dyn.RepoManageM2mParam) ft.ClientErrors {
 	return nil
 }
 
-func (this *BaseRepositoryImpl) prepareM2mAssociations(
+func (this *BaseDynamicRepositoryImpl) prepareM2mAssociations(
 	ctx corectx.Context, link *dmodel.M2mPeerLink, param dyn.RepoManageM2mParam,
 ) ([]dyn.RepoM2mAssociation, []dyn.RepoM2mAssociation, ft.ClientErrors, error) {
 	validAssociatedIds, destClientErrs, err := this.validateAssociatedDestIds(ctx, link, param.AssociatedIds.ToSlice())
@@ -374,11 +461,12 @@ func (this *BaseRepositoryImpl) prepareM2mAssociations(
 	return associations, disassociations, nil, nil
 }
 
-func (this *BaseRepositoryImpl) applyM2mAssociations(
+func (this *BaseDynamicRepositoryImpl) applyM2mAssociations(
 	ctx corectx.Context, link *dmodel.M2mPeerLink,
 	associations []dyn.RepoM2mAssociation, disassociations []dyn.RepoM2mAssociation,
+	beforeInsert dyn.RepoBeforeInsertM2mFn,
 ) (*dyn.OpResult[int], error) {
-	total, cErrs, err := this.insertM2mAssociations(ctx, link, associations)
+	total, cErrs, err := this.insertM2mAssociations(ctx, link, associations, beforeInsert)
 	if err != nil {
 		return nil, err
 	}
@@ -396,20 +484,21 @@ func (this *BaseRepositoryImpl) applyM2mAssociations(
 	return &dyn.OpResult[int]{Data: total, HasData: true}, nil
 }
 
-func (this *BaseRepositoryImpl) insertM2mAssociations(
+func (this *BaseDynamicRepositoryImpl) insertM2mAssociations(
 	ctx corectx.Context, link *dmodel.M2mPeerLink, associations []dyn.RepoM2mAssociation,
+	beforeInsert dyn.RepoBeforeInsertM2mFn,
 ) (int, ft.ClientErrors, error) {
 	if len(associations) == 0 {
 		return 0, nil, nil
 	}
-	insertRes, err := this.insertJunctionRows(ctx, link, associations)
+	insertRes, err := this.insertJunctionRows(ctx, link, associations, beforeInsert)
 	if err != nil {
 		return 0, nil, err
 	}
 	return insertRes.Data, insertRes.ClientErrors, nil
 }
 
-func (this *BaseRepositoryImpl) deleteM2mAssociations(
+func (this *BaseDynamicRepositoryImpl) deleteM2mAssociations(
 	ctx corectx.Context, link *dmodel.M2mPeerLink, disassociations []dyn.RepoM2mAssociation,
 ) (int, ft.ClientErrors, error) {
 	if len(disassociations) == 0 {
@@ -422,7 +511,7 @@ func (this *BaseRepositoryImpl) deleteM2mAssociations(
 	return deleteRes.Data, deleteRes.ClientErrors, nil
 }
 
-func (this *BaseRepositoryImpl) assertSrcIdExists(
+func (this *BaseDynamicRepositoryImpl) assertSrcIdExists(
 	ctx corectx.Context, param dyn.RepoManageM2mParam,
 ) (ft.ClientErrors, error) {
 	existsRes, err := this.Exists(ctx, []dmodel.DynamicFields{{basemodel.FieldId: param.SrcId}})
@@ -444,7 +533,7 @@ func (this *BaseRepositoryImpl) assertSrcIdExists(
 	return errs, nil
 }
 
-func (this *BaseRepositoryImpl) validateAssociatedDestIds(
+func (this *BaseDynamicRepositoryImpl) validateAssociatedDestIds(
 	ctx corectx.Context, link *dmodel.M2mPeerLink, associatedIds []model.Id,
 ) ([]model.Id, ft.ClientErrors, error) {
 	if len(associatedIds) == 0 {
@@ -463,7 +552,7 @@ func (this *BaseRepositoryImpl) validateAssociatedDestIds(
 	return dynamicFieldsToIds(existsRes.Data.Existing), nil, nil
 }
 
-func (this *BaseRepositoryImpl) buildM2mAssociations(
+func (this *BaseDynamicRepositoryImpl) buildM2mAssociations(
 	srcPk dmodel.DynamicFields, destPks []dmodel.DynamicFields,
 ) []dyn.RepoM2mAssociation {
 	out := make([]dyn.RepoM2mAssociation, 0, len(destPks))
@@ -502,7 +591,7 @@ func dynamicFieldsToIds(fields []dmodel.DynamicFields) []model.Id {
 	return out
 }
 
-func (this *BaseRepositoryImpl) deleteJunctionRows(ctx corectx.Context,
+func (this *BaseDynamicRepositoryImpl) deleteJunctionRows(ctx corectx.Context,
 	link *dmodel.M2mPeerLink, desociations []dyn.RepoM2mAssociation,
 ) (*dyn.OpResult[int], error) {
 	rows, clientErrs := this.assocToJuncRowArr(link, desociations)
@@ -517,7 +606,7 @@ func (this *BaseRepositoryImpl) deleteJunctionRows(ctx corectx.Context,
 		return &dyn.OpResult[int]{ClientErrors: *qbClientErrs}, nil
 	}
 	this.logQuery(*sqlStr)
-	execRes, err := this.client.Exec(ctx, *sqlStr)
+	execRes, err := this.ExtractClient(ctx).Exec(ctx, *sqlStr)
 	if err != nil {
 		return nil, err
 	}
@@ -528,12 +617,19 @@ func (this *BaseRepositoryImpl) deleteJunctionRows(ctx corectx.Context,
 	return &dyn.OpResult[int]{Data: int(n), HasData: n != 0}, nil
 }
 
-func (this *BaseRepositoryImpl) insertJunctionRows(ctx corectx.Context,
+func (this *BaseDynamicRepositoryImpl) insertJunctionRows(ctx corectx.Context,
 	link *dmodel.M2mPeerLink, associations []dyn.RepoM2mAssociation,
+	beforeInsert dyn.RepoBeforeInsertM2mFn,
 ) (*dyn.OpResult[int], error) {
 	rows, clientErrs := this.assocToJuncRowArr(link, associations)
 	if len(clientErrs) > 0 {
 		return &dyn.OpResult[int]{ClientErrors: clientErrs}, nil
+	}
+	if beforeInsert != nil {
+		err := beforeInsert(ctx, rows)
+		if err != nil {
+			return nil, err
+		}
 	}
 	sqlRes, qbClientErrs, err := this.queryBuilder.SqlInsertBulk(link.ThroughSchema, rows, true)
 	if err != nil {
@@ -543,7 +639,7 @@ func (this *BaseRepositoryImpl) insertJunctionRows(ctx corectx.Context,
 		return &dyn.OpResult[int]{ClientErrors: *qbClientErrs}, nil
 	}
 	this.logQuery(*sqlRes)
-	execRes, err := this.client.Exec(ctx, *sqlRes)
+	execRes, err := this.ExtractClient(ctx).Exec(ctx, *sqlRes)
 	if err != nil {
 		return nil, err
 	}
@@ -554,7 +650,7 @@ func (this *BaseRepositoryImpl) insertJunctionRows(ctx corectx.Context,
 	return &dyn.OpResult[int]{Data: int(n), HasData: n != 0}, nil
 }
 
-func (this *BaseRepositoryImpl) assocToJuncRowArr(
+func (this *BaseDynamicRepositoryImpl) assocToJuncRowArr(
 	link *dmodel.M2mPeerLink, associations []dyn.RepoM2mAssociation,
 ) ([]dmodel.DynamicFields, ft.ClientErrors) {
 	var errs ft.ClientErrors
@@ -575,7 +671,7 @@ func (this *BaseRepositoryImpl) assocToJuncRowArr(
 	return out, nil
 }
 
-func (this *BaseRepositoryImpl) assocToJuncRow(
+func (this *BaseDynamicRepositoryImpl) assocToJuncRow(
 	link *dmodel.M2mPeerLink, idx int, assoc dyn.RepoM2mAssociation,
 ) (dmodel.DynamicFields, ft.ClientErrors) {
 	var errs ft.ClientErrors
@@ -596,7 +692,7 @@ func (this *BaseRepositoryImpl) assocToJuncRow(
 	return this.materializeM2mJunctionRow(link, assoc), nil
 }
 
-func (this *BaseRepositoryImpl) materializeM2mJunctionRow(
+func (this *BaseDynamicRepositoryImpl) materializeM2mJunctionRow(
 	link *dmodel.M2mPeerLink, assoc dyn.RepoM2mAssociation,
 ) dmodel.DynamicFields {
 	row := make(dmodel.DynamicFields)
@@ -624,7 +720,7 @@ func appendMissingKeyErrors(errs *ft.ClientErrors, fieldPrefix string, keys dmod
 // Search fetches records matching the SearchGraph criteria.
 // When the schema is tenant-scoped, filter must be provided and contain the tenant key.
 // Data uses PagedResult: Total is from COUNT when Size > 0, otherwise len(Items).
-func (this *BaseRepositoryImpl) Search(ctx corectx.Context, param dyn.RepoSearchParam) (
+func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.RepoSearchParam) (
 	*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error,
 ) {
 	if this.hasNestedOrEdgeColumns(param.Columns) {
@@ -675,7 +771,7 @@ func (this *BaseRepositoryImpl) Search(ctx corectx.Context, param dyn.RepoSearch
 	}, nil
 }
 
-func (this *BaseRepositoryImpl) searchWithNestedColumns(
+func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 	ctx corectx.Context, param dyn.RepoSearchParam,
 ) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error) {
 	plan, cErrs := this.buildNestedSelectPlan(param.Columns)
@@ -728,7 +824,7 @@ type nestedSelectPlan struct {
 	EdgeLeafColumns map[string][]string
 }
 
-func (this *BaseRepositoryImpl) hasNestedOrEdgeColumns(columns []string) bool {
+func (this *BaseDynamicRepositoryImpl) hasNestedOrEdgeColumns(columns []string) bool {
 	for _, col := range columns {
 		if strings.Contains(col, ".") {
 			return true
@@ -741,7 +837,7 @@ func (this *BaseRepositoryImpl) hasNestedOrEdgeColumns(columns []string) bool {
 	return false
 }
 
-func (this *BaseRepositoryImpl) buildNestedSelectPlan(columns []string) (nestedSelectPlan, ft.ClientErrors) {
+func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (nestedSelectPlan, ft.ClientErrors) {
 	var errs ft.ClientErrors
 	mainSet := make(map[string]struct{})
 	for _, key := range this.schema.PrimaryKeys() {
@@ -810,7 +906,7 @@ func mapKeysSorted(in map[string]struct{}) []string {
 	return out
 }
 
-func (this *BaseRepositoryImpl) parseNestedColumn(col string) ([]string, *ft.ClientErrorItem) {
+func (this *BaseDynamicRepositoryImpl) parseNestedColumn(col string) ([]string, *ft.ClientErrorItem) {
 	if strings.Count(col, ".") > orm.MaxSelectGraphColumnDots {
 		return nil, ft.NewValidationError(
 			col, ft.ErrorKey("err_graph_field_path_too_deep"),
@@ -848,7 +944,7 @@ func physicalColumnNames(schema *dmodel.ModelSchema) []string {
 	return out
 }
 
-func (this *BaseRepositoryImpl) relationByEdge(edge string) (dmodel.ModelRelation, bool) {
+func (this *BaseDynamicRepositoryImpl) relationByEdge(edge string) (dmodel.ModelRelation, bool) {
 	for _, rel := range this.schema.Relations() {
 		if rel.Edge == edge {
 			return rel, true
@@ -857,7 +953,7 @@ func (this *BaseRepositoryImpl) relationByEdge(edge string) (dmodel.ModelRelatio
 	return dmodel.ModelRelation{}, false
 }
 
-func (this *BaseRepositoryImpl) hydrateNestedEdgesForRows(
+func (this *BaseDynamicRepositoryImpl) hydrateNestedEdgesForRows(
 	ctx corectx.Context, rows []dmodel.DynamicFields, edgeLeafColumns map[string][]string,
 ) error {
 	for i := range rows {
@@ -872,7 +968,7 @@ func (this *BaseRepositoryImpl) hydrateNestedEdgesForRows(
 	return nil
 }
 
-func (this *BaseRepositoryImpl) fetchNestedEdgeValue(
+func (this *BaseDynamicRepositoryImpl) fetchNestedEdgeValue(
 	ctx corectx.Context, srcRow dmodel.DynamicFields, edge string, leafColumns []string,
 ) (any, error) {
 	rel, ok := this.relationByEdge(edge)
@@ -907,7 +1003,7 @@ func withPrimaryKeys(primaryKeys []string, columns []string) []string {
 	return mapKeysSorted(set)
 }
 
-func (this *BaseRepositoryImpl) fetchSingleEdgeRow(
+func (this *BaseDynamicRepositoryImpl) fetchSingleEdgeRow(
 	ctx corectx.Context, srcRow dmodel.DynamicFields, rel dmodel.ModelRelation,
 	destSchema *dmodel.ModelSchema, columns []string,
 ) (dmodel.DynamicFields, error) {
@@ -925,7 +1021,7 @@ func (this *BaseRepositoryImpl) fetchSingleEdgeRow(
 	return rows[0], nil
 }
 
-func (this *BaseRepositoryImpl) filterForSingleEdge(
+func (this *BaseDynamicRepositoryImpl) filterForSingleEdge(
 	srcRow dmodel.DynamicFields, rel dmodel.ModelRelation,
 ) (dmodel.DynamicFields, bool) {
 	filter := make(dmodel.DynamicFields)
@@ -939,7 +1035,7 @@ func (this *BaseRepositoryImpl) filterForSingleEdge(
 	return filter, true
 }
 
-func (this *BaseRepositoryImpl) fetchOneToManyEdgeRows(
+func (this *BaseDynamicRepositoryImpl) fetchOneToManyEdgeRows(
 	ctx corectx.Context, srcRow dmodel.DynamicFields, rel dmodel.ModelRelation,
 	destSchema *dmodel.ModelSchema, columns []string,
 ) ([]dmodel.DynamicFields, error) {
@@ -954,7 +1050,7 @@ func (this *BaseRepositoryImpl) fetchOneToManyEdgeRows(
 	return this.selectRowsByFilter(ctx, destSchema, filter, columns, 0)
 }
 
-func (this *BaseRepositoryImpl) fetchManyToManyEdgeRows(
+func (this *BaseDynamicRepositoryImpl) fetchManyToManyEdgeRows(
 	ctx corectx.Context, srcRow dmodel.DynamicFields, rel dmodel.ModelRelation,
 	destSchema *dmodel.ModelSchema, columns []string,
 ) ([]dmodel.DynamicFields, error) {
@@ -976,7 +1072,7 @@ func (this *BaseRepositoryImpl) fetchManyToManyEdgeRows(
 	return this.selectRowsByAnyFilter(ctx, destSchema, destKeys, columns)
 }
 
-func (this *BaseRepositoryImpl) buildM2mThroughFilter(
+func (this *BaseDynamicRepositoryImpl) buildM2mThroughFilter(
 	srcRow dmodel.DynamicFields, rel dmodel.ModelRelation,
 ) (dmodel.DynamicFields, bool) {
 	filter := make(dmodel.DynamicFields)
@@ -996,7 +1092,7 @@ func (this *BaseRepositoryImpl) buildM2mThroughFilter(
 	return filter, true
 }
 
-func (this *BaseRepositoryImpl) selectDestKeyFiltersFromThrough(
+func (this *BaseDynamicRepositoryImpl) selectDestKeyFiltersFromThrough(
 	ctx corectx.Context, throughSchema *dmodel.ModelSchema, rel dmodel.ModelRelation,
 	throughFilter dmodel.DynamicFields, destSchema *dmodel.ModelSchema,
 ) ([]dmodel.DynamicFields, error) {
@@ -1030,7 +1126,7 @@ func (this *BaseRepositoryImpl) selectDestKeyFiltersFromThrough(
 	return out, nil
 }
 
-func (this *BaseRepositoryImpl) selectRowsByFilter(
+func (this *BaseDynamicRepositoryImpl) selectRowsByFilter(
 	ctx corectx.Context, schema *dmodel.ModelSchema, filter dmodel.DynamicFields, columns []string, size int,
 ) ([]dmodel.DynamicFields, error) {
 	graph := &dmodel.SearchGraph{}
@@ -1040,7 +1136,7 @@ func (this *BaseRepositoryImpl) selectRowsByFilter(
 	}
 	graph.And(nodes...)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-		Columns: columns,
+		Columns: orm.ToSelectColumns(columns),
 		Size:    size,
 	})
 	if err != nil {
@@ -1053,7 +1149,7 @@ func (this *BaseRepositoryImpl) selectRowsByFilter(
 	return this.queryAndScan(ctx, *sqlQuery)
 }
 
-func (this *BaseRepositoryImpl) selectRowsByAnyFilter(
+func (this *BaseDynamicRepositoryImpl) selectRowsByAnyFilter(
 	ctx corectx.Context, schema *dmodel.ModelSchema, filters []dmodel.DynamicFields, columns []string,
 ) ([]dmodel.DynamicFields, error) {
 	graph := &dmodel.SearchGraph{}
@@ -1069,7 +1165,7 @@ func (this *BaseRepositoryImpl) selectRowsByAnyFilter(
 	}
 	graph.Or(ors...)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-		Columns: columns,
+		Columns: orm.ToSelectColumns(columns),
 	})
 	if err != nil {
 		return nil, err
@@ -1081,10 +1177,16 @@ func (this *BaseRepositoryImpl) selectRowsByAnyFilter(
 	return this.queryAndScan(ctx, *sqlQuery)
 }
 
-func (this *BaseRepositoryImpl) countRowsMatchingGraph(
+func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraph(
 	ctx corectx.Context, graph *dmodel.SearchGraph,
 ) (int, ft.ClientErrors, error) {
-	qbRes, qbClientErrs, err := this.queryBuilder.SqlCountGraph(this.schema, dmodel.GetSchemaRegistry(), graph)
+	return this.countRowsMatchingGraphOnSchema(ctx, this.schema, graph)
+}
+
+func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraphOnSchema(
+	ctx corectx.Context, schema *dmodel.ModelSchema, graph *dmodel.SearchGraph,
+) (int, ft.ClientErrors, error) {
+	qbRes, qbClientErrs, err := this.queryBuilder.SqlCountGraph(schema, dmodel.GetSchemaRegistry(), graph)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -1097,12 +1199,12 @@ func (this *BaseRepositoryImpl) countRowsMatchingGraph(
 	return n, nil, ierr
 }
 
-func (this *BaseRepositoryImpl) runSelectGraphScan(
+func (this *BaseDynamicRepositoryImpl) runSelectGraphScan(
 	ctx corectx.Context, graph *dmodel.SearchGraph, param dyn.RepoSearchParam,
 ) ([]dmodel.DynamicFields, ft.ClientErrors, error) {
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(
 		this.schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-			Columns: param.Columns,
+			Columns: orm.ToSelectColumns(param.Columns),
 			Page:    param.Page,
 			Size:    param.Size,
 		})
@@ -1124,8 +1226,8 @@ func (this *BaseRepositoryImpl) runSelectGraphScan(
 	return rows, nil, nil
 }
 
-func (this *BaseRepositoryImpl) queryScalarInt(ctx corectx.Context, query string) (int, error) {
-	row := this.client.QueryRow(ctx, query)
+func (this *BaseDynamicRepositoryImpl) queryScalarInt(ctx corectx.Context, query string) (int, error) {
+	row := this.ExtractClient(ctx).QueryRow(ctx, query)
 	var n int
 	if err := row.Scan(&n); err != nil {
 		return 0, err
@@ -1133,9 +1235,48 @@ func (this *BaseRepositoryImpl) queryScalarInt(ctx corectx.Context, query string
 	return n, nil
 }
 
+func (this *BaseDynamicRepositoryImpl) queryScalarBool(ctx corectx.Context, query string) (bool, error) {
+	row := this.ExtractClient(ctx).QueryRow(ctx, query)
+	var v bool
+	if err := row.Scan(&v); err != nil {
+		return false, err
+	}
+	return v, nil
+}
+
+func filterToAndGraph(filter dmodel.DynamicFields) *dmodel.SearchGraph {
+	graph := &dmodel.SearchGraph{}
+	nodes := make([]dmodel.SearchNode, 0, len(filter))
+	for field, value := range filter {
+		nodes = append(nodes, *dmodel.NewSearchNode().NewCondition(field, dmodel.Equals, value))
+	}
+	graph.And(nodes...)
+	return graph
+}
+
+func (this *BaseDynamicRepositoryImpl) m2mThroughFilterForLink(
+	srcKeys dmodel.DynamicFields, link *dmodel.M2mPeerLink,
+) (dmodel.DynamicFields, bool) {
+	filter := make(dmodel.DynamicFields)
+	for _, srcPk := range this.schema.PrimaryKeys() {
+		val, ok := srcKeys[srcPk]
+		if !ok || val == nil {
+			return nil, false
+		}
+		filter[dmodel.PrefixedThroughColumn(link.SrcFieldPrefix, srcPk)] = val
+	}
+	srcTk := this.schema.TenantKey()
+	if srcTk != "" {
+		if val, ok := srcKeys[srcTk]; ok && val != nil {
+			filter[dmodel.PrefixedThroughColumn(link.SrcFieldPrefix, srcTk)] = val
+		}
+	}
+	return filter, true
+}
+
 // Update updates a record. The data map must contain primary keys and tenant key.
 // If the schema defines "updated_at", sets current UTC timestamp.
-func (this *BaseRepositoryImpl) Update(ctx corectx.Context, data dmodel.DynamicFields) (
+func (this *BaseDynamicRepositoryImpl) Update(ctx corectx.Context, data dmodel.DynamicFields) (
 	*dyn.OpResult[dmodel.DynamicFields], error,
 ) {
 	// TODO: Extract later
@@ -1157,20 +1298,20 @@ func (this *BaseRepositoryImpl) Update(ctx corectx.Context, data dmodel.DynamicF
 	}
 
 	this.logQuery(*sqlQuery)
-	_, err = this.client.Exec(ctx, *sqlQuery)
+	_, err = this.ExtractClient(ctx).Exec(ctx, *sqlQuery)
 	if err != nil {
 		return nil, err
 	}
 	return &dyn.OpResult[dmodel.DynamicFields]{Data: data, HasData: true}, nil
 }
 
-func (this *BaseRepositoryImpl) logQuery(query string) {
+func (this *BaseDynamicRepositoryImpl) logQuery(query string) {
 	if this.sqlDebugEnabled {
 		this.logger.Debug(query, nil)
 	}
 }
 
-func (this *BaseRepositoryImpl) filterUniqueKeysWithValues(data dmodel.DynamicFields) [][]string {
+func (this *BaseDynamicRepositoryImpl) filterUniqueKeysWithValues(data dmodel.DynamicFields) [][]string {
 	var result [][]string
 	for _, uniqueFields := range this.schema.AllUniques() {
 		if len(uniqueFields) == 0 {
@@ -1195,25 +1336,7 @@ func (this *BaseRepositoryImpl) filterUniqueKeysWithValues(data dmodel.DynamicFi
 	return result
 }
 
-// func (this *BaseRepositoryImpl) trySetArchivedAt(data dmodel.DynamicFields) error {
-// 	if _, ok := this.schema.Column(basemodel.FieldArchivedAt); !ok {
-// 		return errors.Errorf(
-// 			"Archive: schema '%s' does not define field '%s'", this.schema.Name(), basemodel.FieldArchivedAt)
-// 	}
-// 	field := this.schema.MustField(basemodel.FieldArchivedAt)
-// 	data[basemodel.FieldArchivedAt] = *field.DataType().DefaultValue().Get()
-// 	return nil
-// }
-
-func (this *BaseRepositoryImpl) trySetCreatedAt(data dmodel.DynamicFields) {
-	if _, ok := this.schema.Column(basemodel.FieldCreatedAt); !ok {
-		return
-	}
-	field := this.schema.MustField(basemodel.FieldCreatedAt)
-	data[basemodel.FieldCreatedAt] = *field.DataType().DefaultValue().Get()
-}
-
-func (this *BaseRepositoryImpl) trySetUpdatedAt(data dmodel.DynamicFields) {
+func (this *BaseDynamicRepositoryImpl) trySetUpdatedAt(data dmodel.DynamicFields) {
 	if _, ok := this.schema.Column(basemodel.FieldUpdatedAt); !ok {
 		return
 	}
@@ -1221,7 +1344,7 @@ func (this *BaseRepositoryImpl) trySetUpdatedAt(data dmodel.DynamicFields) {
 	data[basemodel.FieldUpdatedAt] = *field.DataType().DefaultValue().Get()
 }
 
-func (this *BaseRepositoryImpl) trySetEtag(data dmodel.DynamicFields) (prevEtag string) {
+func (this *BaseDynamicRepositoryImpl) trySetEtag(data dmodel.DynamicFields) (prevEtag string) {
 	if _, ok := this.schema.Column(basemodel.FieldEtag); !ok {
 		return ""
 	}
@@ -1237,7 +1360,7 @@ func (this *BaseRepositoryImpl) trySetEtag(data dmodel.DynamicFields) (prevEtag 
 	return
 }
 
-func (this *BaseRepositoryImpl) extractKeyMap(data dmodel.DynamicFields) dmodel.DynamicFields {
+func (this *BaseDynamicRepositoryImpl) extractKeyMap(data dmodel.DynamicFields) dmodel.DynamicFields {
 	if data == nil {
 		return nil
 	}
@@ -1251,7 +1374,7 @@ func (this *BaseRepositoryImpl) extractKeyMap(data dmodel.DynamicFields) dmodel.
 	return result
 }
 
-func (this *BaseRepositoryImpl) validateKeyMap(keys dmodel.DynamicFields) error {
+func (this *BaseDynamicRepositoryImpl) validateKeyMap(keys dmodel.DynamicFields) error {
 	if len(keys) == 0 {
 		return errors.New("validateKeyMap: keys map is required")
 	}
@@ -1263,9 +1386,10 @@ func (this *BaseRepositoryImpl) validateKeyMap(keys dmodel.DynamicFields) error 
 	return nil
 }
 
-func (this *BaseRepositoryImpl) validateGetOneColumnsAndFilter(
+func (this *BaseDynamicRepositoryImpl) validateGetOneColumnsAndFilter(
 	columns []string, filter dmodel.DynamicFields,
 ) *ft.ClientErrorItem {
+	this.removeNilFilterFields(filter)
 	for _, col := range columns {
 		field, hasField := this.schema.Field(col)
 		if hasField && field.IsVirtualModelField() {
@@ -1293,9 +1417,6 @@ func (this *BaseRepositoryImpl) validateGetOneColumnsAndFilter(
 			)
 		}
 	}
-	if filter == nil {
-		return nil
-	}
 	keys := make([]string, 0, len(filter))
 	for k := range filter {
 		keys = append(keys, k)
@@ -1310,10 +1431,88 @@ func (this *BaseRepositoryImpl) validateGetOneColumnsAndFilter(
 			)
 		}
 	}
+	if vErr := this.validateGetOneFilterForUniqueLookup(filter); vErr != nil {
+		return vErr
+	}
 	return nil
 }
 
-func (this *BaseRepositoryImpl) ensurePrimaryKeyColumns(columns []string) []string {
+func (this *BaseDynamicRepositoryImpl) validateGetOneFilterForUniqueLookup(
+	filter dmodel.DynamicFields,
+) *ft.ClientErrorItem {
+	if len(filter) == 0 {
+		return dmodel.NewMissingFieldErr("filter")
+	}
+
+	candidates := this.buildGetOneUniqueFilterCandidates()
+	for _, candidate := range candidates {
+		if this.matchesGetOneFilterCandidate(filter, candidate) {
+			return nil
+		}
+	}
+
+	return ft.NewValidationError(
+		"filter",
+		ft.ErrorKey("err_invalid_get_one_filter"),
+		"filter must match exactly one primary key, or one unique key, or composite unique keys, or partial unique keys",
+	)
+}
+
+func (this *BaseDynamicRepositoryImpl) buildGetOneUniqueFilterCandidates() []dmodel.PartialUniqueGroupParam {
+	candidates := make([]dmodel.PartialUniqueGroupParam, 0, 1+len(this.schema.AllUniques())+len(this.schema.PartialUniqueGroups()))
+	candidates = append(candidates, dmodel.PartialUniqueGroupParam{
+		NotNullFields: append([]string{}, this.schema.PrimaryKeys()...),
+	})
+	for _, uniqueFields := range this.schema.AllUniques() {
+		if len(uniqueFields) == 0 {
+			continue
+		}
+		candidates = append(candidates, dmodel.PartialUniqueGroupParam{
+			NotNullFields: append([]string{}, uniqueFields...),
+		})
+	}
+	for _, group := range this.schema.PartialUniqueGroups() {
+		copied := dmodel.PartialUniqueGroupParam{
+			NotNullFields: append([]string{}, group.NotNullFields...),
+			NullableField: group.NullableField,
+		}
+		candidates = append(candidates, copied)
+	}
+	return candidates
+}
+
+func (this *BaseDynamicRepositoryImpl) matchesGetOneFilterCandidate(
+	filter dmodel.DynamicFields, candidate dmodel.PartialUniqueGroupParam,
+) bool {
+	requiredNonNil := make([]string, 0, len(candidate.NotNullFields)+1)
+	requiredNonNil = append(requiredNonNil, candidate.NotNullFields...)
+	if tenantKey := this.schema.TenantKey(); tenantKey != "" && !array.Contains(requiredNonNil, tenantKey) {
+		requiredNonNil = append(requiredNonNil, tenantKey)
+	}
+
+	for _, fieldName := range requiredNonNil {
+		val, ok := filter[fieldName]
+		if !ok || isNilAnyValue(val) {
+			return false
+		}
+	}
+	if nullableField := strings.TrimSpace(candidate.NullableField); nullableField != "" {
+		if val, exists := filter[nullableField]; exists && !isNilAnyValue(val) {
+			return false
+		}
+	}
+	return true
+}
+
+func (this *BaseDynamicRepositoryImpl) removeNilFilterFields(filter dmodel.DynamicFields) {
+	for key, value := range filter {
+		if isNilAnyValue(value) {
+			delete(filter, key)
+		}
+	}
+}
+
+func (this *BaseDynamicRepositoryImpl) ensurePrimaryKeyColumns(columns []string) []string {
 	if len(columns) == 0 {
 		return columns
 	}
@@ -1327,7 +1526,7 @@ func (this *BaseRepositoryImpl) ensurePrimaryKeyColumns(columns []string) []stri
 	return mapKeysSorted(set)
 }
 
-func (this *BaseRepositoryImpl) ensureTenantKeyIn(values dmodel.DynamicFields) error {
+func (this *BaseDynamicRepositoryImpl) ensureTenantKeyIn(values dmodel.DynamicFields) error {
 	key := this.schema.TenantKey()
 	if key == "" {
 		return nil
@@ -1338,7 +1537,7 @@ func (this *BaseRepositoryImpl) ensureTenantKeyIn(values dmodel.DynamicFields) e
 	return nil
 }
 
-func (this *BaseRepositoryImpl) mergeFilterIntoGraph(
+func (this *BaseDynamicRepositoryImpl) mergeFilterIntoGraph(
 	graph *dmodel.SearchGraph, filter []dmodel.DynamicFields,
 ) (*dmodel.SearchGraph, error) {
 	if len(filter) == 0 {
@@ -1380,7 +1579,7 @@ func isNilAnyValue(val any) bool {
 	}
 }
 
-func (this *BaseRepositoryImpl) shouldIncludeEqualFilterField(field string, val any) bool {
+func (this *BaseDynamicRepositoryImpl) shouldIncludeEqualFilterField(field string, val any) bool {
 	if isNilAnyValue(val) {
 		return false
 	}
@@ -1388,46 +1587,27 @@ func (this *BaseRepositoryImpl) shouldIncludeEqualFilterField(field string, val 
 	return ok
 }
 
-func missingKeyColumnNames(found map[string]bool, keyColumns []string) []string {
-	missing := make([]string, 0, len(keyColumns))
-	for _, k := range keyColumns {
-		if !found[k] {
-			missing = append(missing, k)
-		}
-	}
-	return missing
-}
-
-// buildEqualNodes builds an Equals SearchNode for each defined, non-nil filter field.
-// Unknown keys and nil values are ignored. Key columns must still be present (non-nil).
-func (this *BaseRepositoryImpl) buildEqualNodes(filter dmodel.DynamicFields) ([]dmodel.SearchNode, error) {
-	keyColumns := this.schema.KeyColumns()
-	found := make(map[string]bool, len(keyColumns))
-	for _, k := range keyColumns {
-		found[k] = false
+// buildEqualNodes builds an Equals SearchNode for each defined filter field.
+func (this *BaseDynamicRepositoryImpl) buildEqualNodes(filter dmodel.DynamicFields) ([]dmodel.SearchNode, error) {
+	if len(filter) == 0 {
+		return nil, errors.New("buildEqualNodes: filter is required")
 	}
 
 	nodes := make([]dmodel.SearchNode, 0, len(filter))
 	for field, val := range filter {
 		if !this.shouldIncludeEqualFilterField(field, val) {
-			continue
+			return nil, errors.Errorf("buildEqualNodes: field '%s' is not defined on schema '%s'", field, this.schema.Name())
 		}
 		n := dmodel.NewSearchNode().NewCondition(field, dmodel.Equals, val)
 		nodes = append(nodes, *n)
-		if _, isKey := found[field]; isKey {
-			found[field] = true
-		}
 	}
-
-	missing := missingKeyColumnNames(found, keyColumns)
-	if len(missing) > 0 {
-		return nil, errors.Errorf(
-			"buildEqualNodes: missing required key columns: %s", strings.Join(missing, ", "))
+	if len(nodes) == 0 {
+		return nil, errors.New("buildEqualNodes: filter does not contain any valid schema columns")
 	}
 	return nodes, nil
 }
 
-func (this *BaseRepositoryImpl) buildFindOneGraph(filter dmodel.DynamicFields) (*dmodel.SearchGraph, error) {
+func (this *BaseDynamicRepositoryImpl) buildFindOneGraph(filter dmodel.DynamicFields) (*dmodel.SearchGraph, error) {
 	allNodes, err := this.buildEqualNodes(filter)
 	if err != nil {
 		return &dmodel.SearchGraph{}, err
@@ -1437,8 +1617,8 @@ func (this *BaseRepositoryImpl) buildFindOneGraph(filter dmodel.DynamicFields) (
 	return g, nil
 }
 
-func (this *BaseRepositoryImpl) queryAndScan(ctx corectx.Context, query string) ([]dmodel.DynamicFields, error) {
-	rows, err := this.client.Query(ctx, query)
+func (this *BaseDynamicRepositoryImpl) queryAndScan(ctx corectx.Context, query string) ([]dmodel.DynamicFields, error) {
+	rows, err := this.ExtractClient(ctx).Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -1471,7 +1651,7 @@ func (this *BaseRepositoryImpl) queryAndScan(ctx corectx.Context, query string) 
 	return result, rows.Err()
 }
 
-func (this *BaseRepositoryImpl) convertDbColumn(columnName string, v any) any {
+func (this *BaseDynamicRepositoryImpl) convertDbColumn(columnName string, v any) any {
 	if v == nil {
 		return nil
 	}
@@ -1531,8 +1711,24 @@ func convertDbValue(v any) any {
 	}
 	switch val := v.(type) {
 	case []byte:
+		if parsed := tryParsePostgresTextStringArray(val); parsed != nil {
+			return parsed
+		}
 		return string(val)
 	default:
 		return v
 	}
+}
+
+// tryParsePostgresTextStringArray returns []string when src is PostgreSQL text format for varchar/text[] (e.g. `{a}` or `"{a}"`).
+// If src is not that format or parsing fails, returns nil.
+func tryParsePostgresTextStringArray(src []byte) []string {
+	if len(src) < 2 || src[0] != '{' || src[len(src)-1] != '}' {
+		return nil
+	}
+	var arr pq.StringArray
+	if err := arr.Scan(src); err != nil {
+		return nil
+	}
+	return []string(arr)
 }

@@ -1,0 +1,29 @@
+meta {
+  name: Action Exists - Not found Resource ID - Validation errors
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/authorize/resources/01KMMJYC5G8K5PHEAV3VZQQ63F/actions/exists
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "action_ids": ["{{action_id}}"]
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-not-found');
+  
+  pkg.testFieldNotFound('resource_id');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -18,7 +18,6 @@ type DynamicModelSetter interface {
 }
 
 type SchemaGetter interface {
-	GetFieldData() DynamicFields
 	GetSchema() *ModelSchema
 }
 

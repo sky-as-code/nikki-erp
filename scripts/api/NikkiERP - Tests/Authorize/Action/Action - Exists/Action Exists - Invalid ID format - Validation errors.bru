@@ -1,0 +1,29 @@
+meta {
+  name: Action Exists - Invalid ID format - Validation errors
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authorize/resources/{{resource_id}}/actions/exists
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ids": ["invalid"]
+  }
+}
+
+script:post-response {
+  const pkg = require('./scripts/error-400-invalid-format');
+  
+  pkg.testInvalidFormat('ids');
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
