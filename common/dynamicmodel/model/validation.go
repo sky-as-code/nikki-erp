@@ -11,8 +11,12 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 )
 
-func NewInvalidDataTypeErr(field string) *ft.ClientErrorItem {
-	return ft.NewValidationError(field, "common.err_invalid_data_type", "invalid data type")
+func NewInvalidDataTypeErr(field string, typeName ...string) *ft.ClientErrorItem {
+	var msgVars map[string]any = nil
+	if len(typeName) > 0 && typeName[0] != "" {
+		msgVars = map[string]any{"typeName": typeName[0]}
+	}
+	return ft.NewValidationError(field, "common.err_invalid_data_type", "invalid data type, must be a {{.typeName}}", msgVars)
 }
 
 func NewMissingFieldErr(field string) *ft.ClientErrorItem {

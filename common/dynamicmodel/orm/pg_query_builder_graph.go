@@ -8,6 +8,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
 const MaxSelectGraphColumnDots = 1
@@ -475,7 +476,8 @@ func pathInSelectColumns(path string, columns []SelectColumn) bool {
 }
 
 type graphSelectCtx struct {
-	planner *joinPlanner
+	planner  *joinPlanner
+	language *model.LanguageCode
 }
 
 func (this *PgQueryBuilder) prepareColNameForGraph(

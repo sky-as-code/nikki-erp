@@ -146,8 +146,8 @@ type TranslationKey = string
 var translationKeyRules val.Rule = val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9_\.]+$`))
 
 const (
-	LanguageCodeEnUS    = LanguageCode("en-US")
-	DefaultLanguageCode = LanguageCodeEnUS
+	LanguageCodeEnUs    = LanguageCode("en-US")
+	DefaultLanguageCode = LanguageCodeEnUs
 	// When this Label Reference is specified in a LangJson, all other keys are ignored.
 	//
 	LabelRefLanguageCode = LanguageCode("$ref")
@@ -179,6 +179,7 @@ func LanguageCodePtrValidateRule(field **LanguageCode, isRequired bool) *val.Fie
 
 type LangJson map[LanguageCode]string
 
+// SanitizeClone sanitizes the LangJson by removing the keys that are not in the whitelist and sanitizing the values.
 func (this LangJson) SanitizeClone(whitelistLangs []LanguageCode, isRichText bool) (*LangJson, int, error) {
 	sanitizedLabel := make(LangJson)
 	fieldCount := 0

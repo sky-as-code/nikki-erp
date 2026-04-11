@@ -47,12 +47,12 @@ BEGIN
 		WHERE table_schema = 'public' AND table_name = 'ident_groups'
 	) THEN
 		INSERT INTO "ident_groups" ("id", "name", "description", "owner_id", "is_archived", "etag", "created_at", "updated_at") VALUES
-		('01JWNXBR5QJBH7PE9PQ9FW746V', 'Domain Users', 'Default group for all domain users', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2A0', 'Administrators', 'System administrators group', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2A1', 'Project Managers', 'Project management team', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2B0', 'Legacy Support', 'Legacy system support team', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2B1', 'Archives Team', 'Archived content management', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
-		('01K1H8N3L0WX4Q6S8YRKT3D2B2', 'Maintenance Group', 'System maintenance personnel', '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL);
+		('01JWNXBR5QJBH7PE9PQ9FW746V', jsonb_build_object('en-US', 'Domain Users', 'vi-VN', 'Người dùng domain', 'zh-TW', '網域使用者'), jsonb_build_object('en-US', 'Default group for all domain users', 'vi-VN', 'Nhóm mặc định cho tất cả người dùng domain', 'zh-TW', '所有網域使用者的預設群組'), '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2A0', jsonb_build_object('en-US', 'Administrators', 'vi-VN', 'Quản trị viên', 'zh-TW', '管理員'), jsonb_build_object('en-US', 'System administrators group', 'vi-VN', 'Nhóm quản trị viên hệ thống', 'zh-TW', '系統管理員群組'), '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2A1', jsonb_build_object('en-US', 'Project Managers', 'vi-VN', 'Quản lý dự án', 'zh-TW', '專案經理'), jsonb_build_object('en-US', 'Project management team', 'vi-VN', 'Đội quản lý dự án', 'zh-TW', '專案管理團隊'), '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2B0', jsonb_build_object('en-US', 'Legacy Support', 'vi-VN', 'Hỗ trợ hệ thống cũ', 'zh-TW', '舊版支援'), jsonb_build_object('en-US', 'Legacy system support team', 'vi-VN', 'Đội hỗ trợ hệ thống kế thừa', 'zh-TW', '舊系統支援團隊'), '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2B1', jsonb_build_object('en-US', 'Archives Team', 'vi-VN', 'Đội lưu trữ', 'zh-TW', '檔案團隊'), jsonb_build_object('en-US', 'Archived content management', 'vi-VN', 'Quản lý nội dung đã lưu trữ', 'zh-TW', '封存內容管理'), '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL),
+		('01K1H8N3L0WX4Q6S8YRKT3D2B2', jsonb_build_object('en-US', 'Maintenance Group', 'vi-VN', 'Nhóm bảo trì', 'zh-TW', '維護群組'), jsonb_build_object('en-US', 'System maintenance personnel', 'vi-VN', 'Nhân sự bảo trì hệ thống', 'zh-TW', '系統維護人員'), '01JWNMZ36QHC7CQQ748H9NQ6J6', FALSE, (EXTRACT(EPOCH FROM clock_timestamp()) * 1e9)::bigint::text, NOW(), NULL);
 	END IF;
 
 	IF EXISTS (

@@ -7,14 +7,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/lib/pq"
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	erpjson "github.com/sky-as-code/nikki-erp/common/json"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
@@ -24,8 +22,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
-
-const fieldDataTypeJsonMapName = "jsonmap"
 
 type NewBaseRepositoryParam struct {
 	Client       orm.DbClient
@@ -295,7 +291,8 @@ func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.Rep
 	}
 
 	this.logQuery(*sqlQuery)
-	rows, err := this.queryAndScan(ctx, *sqlQuery)
+	mainColumns := this.ensurePrimaryKeyColumns(param.Columns)
+	rows, err := this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(this.schema, mainColumns))
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +416,7 @@ func (this *BaseDynamicRepositoryImpl) CountM2m(
 		return &dyn.OpResult[int]{Data: 0, HasData: false}, nil
 	}
 	graph := filterToAndGraph(filter)
-	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph)
+	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -734,7 +731,7 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 	page := param.Page
 	size := param.Size
 	var total int
-	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged)
+	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language)
 	if err != nil {
 		return nil, err
 	}
@@ -744,9 +741,10 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 		}, nil
 	}
 	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, dyn.RepoSearchParam{
-		Columns: this.ensurePrimaryKeyColumns(param.Columns),
-		Page:    param.Page,
-		Size:    param.Size,
+		Columns:  this.ensurePrimaryKeyColumns(param.Columns),
+		Page:     param.Page,
+		Size:     param.Size,
+		Language: param.Language,
 	})
 	if err != nil {
 		return nil, err
@@ -779,7 +777,7 @@ func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
 	}
 	merged := param.Graph
-	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged)
+	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language)
 	if err != nil {
 		return nil, err
 	}
@@ -789,9 +787,10 @@ func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 		}, nil
 	}
 	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, dyn.RepoSearchParam{
-		Columns: plan.MainColumns,
-		Page:    param.Page,
-		Size:    param.Size,
+		Columns:  plan.MainColumns,
+		Page:     param.Page,
+		Size:     param.Size,
+		Language: param.Language,
 	})
 	if err != nil {
 		return nil, err
@@ -1146,7 +1145,7 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByFilter(
 		return nil, errors.Errorf("selectRowsByFilter: invalid query graph")
 	}
 	this.logQuery(*sqlQuery)
-	return this.queryAndScan(ctx, *sqlQuery)
+	return this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(schema, columns))
 }
 
 func (this *BaseDynamicRepositoryImpl) selectRowsByAnyFilter(
@@ -1174,19 +1173,20 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByAnyFilter(
 		return nil, errors.Errorf("selectRowsByAnyFilter: invalid query graph")
 	}
 	this.logQuery(*sqlQuery)
-	return this.queryAndScan(ctx, *sqlQuery)
+	return this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(schema, columns))
 }
 
 func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraph(
-	ctx corectx.Context, graph *dmodel.SearchGraph,
+	ctx corectx.Context, graph *dmodel.SearchGraph, language *model.LanguageCode,
 ) (int, ft.ClientErrors, error) {
-	return this.countRowsMatchingGraphOnSchema(ctx, this.schema, graph)
+	return this.countRowsMatchingGraphOnSchema(ctx, this.schema, graph, language)
 }
 
 func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraphOnSchema(
-	ctx corectx.Context, schema *dmodel.ModelSchema, graph *dmodel.SearchGraph,
+	ctx corectx.Context, schema *dmodel.ModelSchema, graph *dmodel.SearchGraph, language *model.LanguageCode,
 ) (int, ft.ClientErrors, error) {
-	qbRes, qbClientErrs, err := this.queryBuilder.SqlCountGraph(schema, dmodel.GetSchemaRegistry(), graph)
+	qbRes, qbClientErrs, err := this.queryBuilder.SqlCountGraph(
+		schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{Language: language})
 	if err != nil {
 		return 0, nil, err
 	}
@@ -1204,9 +1204,10 @@ func (this *BaseDynamicRepositoryImpl) runSelectGraphScan(
 ) ([]dmodel.DynamicFields, ft.ClientErrors, error) {
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(
 		this.schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-			Columns: orm.ToSelectColumns(param.Columns),
-			Page:    param.Page,
-			Size:    param.Size,
+			Columns:  orm.ToSelectColumns(param.Columns),
+			Page:     param.Page,
+			Size:     param.Size,
+			Language: param.Language,
 		})
 	if err != nil {
 		return nil, nil, err
@@ -1216,7 +1217,7 @@ func (this *BaseDynamicRepositoryImpl) runSelectGraphScan(
 	}
 
 	this.logQuery(*sqlQuery)
-	rows, err := this.queryAndScan(ctx, *sqlQuery)
+	rows, err := this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(this.schema, param.Columns))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1617,7 +1618,9 @@ func (this *BaseDynamicRepositoryImpl) buildFindOneGraph(filter dmodel.DynamicFi
 	return g, nil
 }
 
-func (this *BaseDynamicRepositoryImpl) queryAndScan(ctx corectx.Context, query string) ([]dmodel.DynamicFields, error) {
+func (this *BaseDynamicRepositoryImpl) queryAndScan(
+	ctx corectx.Context, query string, modelFields []*dmodel.ModelField,
+) ([]dmodel.DynamicFields, error) {
 	rows, err := this.ExtractClient(ctx).Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -1641,7 +1644,10 @@ func (this *BaseDynamicRepositoryImpl) queryAndScan(ctx corectx.Context, query s
 		}
 		row := make(dmodel.DynamicFields)
 		for i, col := range columns {
-			val := this.convertDbColumn(col, values[i])
+			val, convErr := this.convertScanValue(col, values[i], modelFields, i)
+			if convErr != nil {
+				return nil, convErr
+			}
 			if val != nil {
 				row[col] = val
 			}
@@ -1651,84 +1657,74 @@ func (this *BaseDynamicRepositoryImpl) queryAndScan(ctx corectx.Context, query s
 	return result, rows.Err()
 }
 
-func (this *BaseDynamicRepositoryImpl) convertDbColumn(columnName string, v any) any {
-	if v == nil {
+func (this *BaseDynamicRepositoryImpl) convertScanValue(
+	columnName string, value any, modelFields []*dmodel.ModelField, index int,
+) (any, error) {
+	if value == nil {
+		return nil, nil
+	}
+	if index < len(modelFields) {
+		field := modelFields[index]
+		if field != nil {
+			converted, err := field.DataType().TryConvert(value, field.DataType().Options())
+			if err != nil {
+				return nil, errors.Wrapf(err, "convertScanValue: failed to convert column '%s'", columnName)
+			}
+			if converted.Get() == nil {
+				return nil, nil
+			}
+			return *converted.Get(), nil
+		}
+	}
+	return convertUnknownDbValue(value), nil
+}
+
+func (this *BaseDynamicRepositoryImpl) selectFieldsForSchema(
+	schema *dmodel.ModelSchema, columns []string,
+) []*dmodel.ModelField {
+	if schema == nil {
 		return nil
 	}
-	for _, name := range sqlColumnFieldNames(columnName) {
-		f, ok := this.schema.Field(name)
-		if !ok {
-			continue
-		}
-		if f.DataType().String() == fieldDataTypeJsonMapName {
-			return decodeJsonbColumnValue(v)
-		}
-	}
-	return convertDbValue(v)
-}
-
-func sqlColumnFieldNames(columnName string) []string {
-	if columnName == "" {
-		return nil
-	}
-	if i := strings.LastIndex(columnName, "."); i >= 0 {
-		suffix := columnName[i+1:]
-		if suffix != "" && suffix != columnName {
-			return []string{columnName, suffix}
+	cols := columns
+	if len(cols) == 0 {
+		physical := schema.Columns()
+		cols = make([]string, 0, len(physical))
+		for _, field := range physical {
+			cols = append(cols, field.Name())
 		}
 	}
-	return []string{columnName}
-}
-
-func decodeJsonbColumnValue(v any) any {
-	switch val := v.(type) {
-	case []byte:
-		if len(val) == 0 {
-			return nil
-		}
-		return unmarshalJsonbBytes(val)
-	case string:
-		if val == "" {
-			return nil
-		}
-		return unmarshalJsonbBytes([]byte(val))
-	default:
-		return v
-	}
-}
-
-func unmarshalJsonbBytes(raw []byte) any {
-	var out any
-	if err := erpjson.Unmarshal(raw, &out); err != nil {
-		return string(raw)
+	out := make([]*dmodel.ModelField, 0, len(cols))
+	for _, col := range cols {
+		out = append(out, resolveSchemaFieldByColumn(schema, col))
 	}
 	return out
 }
 
-func convertDbValue(v any) any {
-	if v == nil {
+func resolveSchemaFieldByColumn(schema *dmodel.ModelSchema, columnName string) *dmodel.ModelField {
+	if columnName == "" {
 		return nil
 	}
-	switch val := v.(type) {
-	case []byte:
-		if parsed := tryParsePostgresTextStringArray(val); parsed != nil {
-			return parsed
+	names := []string{columnName}
+	if i := strings.LastIndex(columnName, "."); i >= 0 {
+		suffix := columnName[i+1:]
+		if suffix != "" && suffix != columnName {
+			names = append(names, suffix)
 		}
-		return string(val)
-	default:
-		return v
 	}
+	for _, name := range names {
+		field, ok := schema.Field(name)
+		if ok {
+			return field
+		}
+	}
+	return nil
 }
 
-// tryParsePostgresTextStringArray returns []string when src is PostgreSQL text format for varchar/text[] (e.g. `{a}` or `"{a}"`).
-// If src is not that format or parsing fails, returns nil.
-func tryParsePostgresTextStringArray(src []byte) []string {
-	if len(src) < 2 || src[0] != '{' || src[len(src)-1] != '}' {
-		return nil
+func convertUnknownDbValue(value any) any {
+	switch typed := value.(type) {
+	case []byte:
+		return string(typed)
+	default:
+		return value
 	}
-	var arr pq.StringArray
-	if err := arr.Scan(src); err != nil {
-		return nil
-	}
-	return []string(arr)
 }

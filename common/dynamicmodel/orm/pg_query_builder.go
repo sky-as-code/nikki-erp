@@ -357,7 +357,7 @@ func (this *PgQueryBuilder) buildSqlSelectGraph(
 	if err != nil {
 		return "", nil, err
 	}
-	ctx := &graphSelectCtx{planner: planner}
+	ctx := &graphSelectCtx{planner: planner, language: opts.Language}
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	if anySelectColumnDistinct(opts.Columns) {
 		sb.Distinct()
@@ -437,20 +437,20 @@ func (this *PgQueryBuilder) buildSqlExistsGraph(
 }
 
 func (this *PgQueryBuilder) SqlCountGraph(
-	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph,
+	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
 ) (*string, *ft.ClientErrors, error) {
-	sql, cErrs, err := this.buildSqlCountGraph(schema, registry, graph)
+	sql, cErrs, err := this.buildSqlCountGraph(schema, registry, graph, opts)
 	return stringSqlGraphOutcome(sql, cErrs, err)
 }
 
 func (this *PgQueryBuilder) buildSqlCountGraph(
-	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph,
+	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
 ) (string, ft.ClientErrors, error) {
-	planner, err := this.planGraphJoins(schema, registry, graph, SqlSelectGraphOpts{})
+	planner, err := this.planGraphJoins(schema, registry, graph, opts)
 	if err != nil {
 		return "", nil, err
 	}
-	ctx := &graphSelectCtx{planner: planner}
+	ctx := &graphSelectCtx{planner: planner, language: opts.Language}
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	sb.Select("COUNT(*)")
 	this.applyFromWithJoins(sb, schema, planner)
@@ -984,6 +984,10 @@ func (this *PgQueryBuilder) conditionExpression(
 	if err != nil {
 		return "", nil, err
 	}
+	var language *cmodel.LanguageCode
+	if ctx != nil {
+		language = ctx.language
+	}
 
 	switch operator {
 	case dmodel.Equals, dmodel.NotEquals, dmodel.GreaterThan,
@@ -993,7 +997,7 @@ func (this *PgQueryBuilder) conditionExpression(
 		return this.collectionPredicate(sb, quotedField, field, operator, valueArr)
 	case dmodel.Contains, dmodel.NotContains, dmodel.StartsWith,
 		dmodel.NotStartsWith, dmodel.EndsWith, dmodel.NotEndsWith:
-		return this.stringPredicate(sb, quotedField, field, operator, value)
+		return this.stringPredicate(sb, quotedField, field, operator, value, language)
 	case dmodel.IsSet, dmodel.IsNotSet:
 		return nullPredicate(sb, quotedField, operator), nil, nil
 	default:
@@ -1065,13 +1069,16 @@ func (this *PgQueryBuilder) collectionPredicate(
 
 func (this *PgQueryBuilder) stringPredicate(
 	sb *sqlbuilder.SelectBuilder, quotedField string,
-	field *dmodel.ModelField, op dmodel.Operator, value any,
+	field *dmodel.ModelField, op dmodel.Operator, value any, language *cmodel.LanguageCode,
 ) (string, ft.ClientErrors, error) {
-	if columnCategoryFor(field.ColumnType()) != columnString {
+	expr := quotedField
+	if isLangJsonField(field) {
+		expr = langJsonStringPredicateExpr(quotedField, language)
+	} else if columnCategoryFor(field.ColumnType()) != columnString {
 		return "", nil, errors.Errorf(
 			"stringPredicate: operator '%s' requires string field '%s'", op, field.Name())
 	}
-	converted, cErrs, err := this.convertValue(field, value)
+	converted, cErrs, err := this.convertStringPredicateValue(field, value)
 	if err != nil {
 		return "", nil, err
 	}
@@ -1084,10 +1091,37 @@ func (this *PgQueryBuilder) stringPredicate(
 	}
 	switch op {
 	case dmodel.NotContains, dmodel.NotStartsWith, dmodel.NotEndsWith:
-		return sb.NotILike(quotedField, pattern), nil, nil
+		return sb.NotILike(expr, pattern), nil, nil
 	default:
-		return sb.ILike(quotedField, pattern), nil, nil
+		return sb.ILike(expr, pattern), nil, nil
 	}
+}
+
+func isLangJsonField(field *dmodel.ModelField) bool {
+	return field != nil && field.ColumnType() == "nikkiLangJson"
+}
+
+func langJsonStringPredicateExpr(sqlRef string, language *cmodel.LanguageCode) string {
+	if language == nil || strings.TrimSpace(string(*language)) == "" {
+		return fmt.Sprintf("(%s)::text", sqlRef)
+	}
+	return fmt.Sprintf("(%s ->> %s)", sqlRef, pgStringLiteral(string(*language)))
+}
+
+func (this *PgQueryBuilder) convertStringPredicateValue(field *dmodel.ModelField, value any) (
+	any, ft.ClientErrors, error,
+) {
+	if !isLangJsonField(field) {
+		return this.convertValue(field, value)
+	}
+	if value == nil {
+		return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name())}, nil
+	}
+	v, ok := unwrapValue(reflect.ValueOf(value))
+	if !ok || v.Kind() != reflect.String {
+		return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name())}, nil
+	}
+	return v.String(), nil, nil
 }
 
 func nullPredicate(sb *sqlbuilder.SelectBuilder, quotedField string, op dmodel.Operator) string {
@@ -1436,6 +1470,10 @@ func pgQuoteArr(ss []string) []string {
 	return quoted
 }
 
+func pgStringLiteral(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
+}
+
 func prependTenantKey(tenantKey string, fields []string) []string {
 	if tenantKey == "" {
 		return fields
@@ -1547,18 +1585,6 @@ var timeType = reflect.TypeOf(time.Time{})
 var modelDateType = reflect.TypeOf(cmodel.NewModelDate())
 var modelDateTimeType = reflect.TypeOf(cmodel.NewModelDateTime())
 var modelTimeType = reflect.TypeOf(cmodel.NewModelTime())
-
-func isShopspringDecimalValue(v reflect.Value) bool {
-	x := v.Interface()
-	switch typed := x.(type) {
-	case decimal.Decimal:
-		return true
-	case *decimal.Decimal:
-		return typed != nil
-	default:
-		return false
-	}
-}
 
 func isShopspringDecimalValue(v reflect.Value) bool {
 	x := v.Interface()

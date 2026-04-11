@@ -12,8 +12,12 @@ post {
 
 body:json {
   {
-    "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} {{$timestamp}}",
-    "description": "{{$randomLoremParagraphs}}",
+    "name": {
+      "en-US": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} {{$randomHexColor}}"
+    },
+    "description": {
+      "en-US": "{{$randomLoremParagraphs}}"
+    },
     "owner_id": "{{user_id}}"
   }
 }

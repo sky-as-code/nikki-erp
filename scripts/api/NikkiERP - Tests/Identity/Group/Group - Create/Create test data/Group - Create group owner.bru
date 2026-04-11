@@ -12,8 +12,8 @@ post {
 
 body:json {
   {
-      "display_name": "Group Owner {{$randomFullName}}",
-      "email": "{{$randomEmail}}"
+      "display_name": "Group Owner {{$randomFullName}} {{$randomHexColor}}",
+      "email": "{{$randomNanoId}}-{{$randomEmail}}"
   }
 }
 

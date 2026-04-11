@@ -12,7 +12,9 @@ post {
 
 body:json {
   {
-    "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} RequiredOnly",
+    "name": {
+      "en-US": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} {{$randomHexColor}}"
+    },
     "owner_id": "{{user_id}}"
   }
 }

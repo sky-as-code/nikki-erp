@@ -12,9 +12,13 @@ put {
 
 body:json {
   {
-      "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}}",
-      "description": "{{$randomLoremParagraphs}}",
-      "etag": "{{etag}}"
+    "name": {
+      "en-US": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} {{$randomHexColor}}"
+    },
+    "description": {
+      "en-US": "{{$randomLoremParagraphs}}"
+    },
+    "etag": "{{etag}}"
   }
 }
 

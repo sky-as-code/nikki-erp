@@ -12,8 +12,12 @@ post {
 
 body:json {
   {
-    "name": "<p>{{$randomJobArea}} {{$randomCatchPhraseAdjective}}</p>",
-    "description": "<script src='./remote.js'></script><strong>{{$randomLoremParagraphs}}</strong>",
+    "name": {
+      "en-US": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} {{$randomHexColor}}"
+    },
+    "description": {
+      "en-US": "<script src='./remote.js'></script><strong>{{$randomLoremParagraphs}}</strong>"
+    },
     "owner_id": "{{user_id}}"
   }
   

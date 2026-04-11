@@ -8,12 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/shopspring/decimal"
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/ulid"
 
 	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	erpjson "github.com/sky-as-code/nikki-erp/common/json"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 )
@@ -50,24 +52,25 @@ type FieldDataTypeStringOpts struct {
 
 func FieldDataTypeString(minLength int, maxLength int, stringOpts ...FieldDataTypeStringOpts) FieldDataType {
 	validateRangeOrPanic(minLength, maxLength, "FieldDataTypeString")
-	st := SanitizeTypePlainText
-	var pattern *regexp.Regexp
-	for _, o := range stringOpts {
-		if o.SanitizeType != "" {
-			st = o.SanitizeType
-		}
-		if o.Regex != nil {
-			pattern = o.Regex
-		}
-	}
-	dtOpts := FieldDataTypeOptions{
-		FieldDataTypeOptSanitizeType: st,
-		FieldDataTypeOptLength:       []int{minLength, maxLength},
-	}
-	if pattern != nil {
-		dtOpts[FieldDataTypeOptPattern] = pattern
-	}
+	dtOpts := processStringOpts(minLength, maxLength, stringOpts...)
 	return fieldDataTypeString{fieldDataTypeBase{name: "string", options: dtOpts}}
+}
+
+func processStringOpts(minLength int, maxLength int, stringOpts ...FieldDataTypeStringOpts) FieldDataTypeOptions {
+	result := FieldDataTypeOptions{
+		FieldDataTypeOptLength: []int{minLength, maxLength},
+	}
+	if len(stringOpts) == 0 {
+		return result
+	}
+	opts := stringOpts[0]
+	if opts.SanitizeType != "" {
+		result[FieldDataTypeOptSanitizeType] = opts.SanitizeType
+	}
+	if opts.Regex != nil {
+		result[FieldDataTypeOptPattern] = opts.Regex
+	}
+	return result
 }
 
 func FieldDataTypeSecret(minLength int, maxLength int) FieldDataType {
@@ -103,10 +106,10 @@ func FieldDataTypeInt64(min int64, max int64) FieldDataType {
 	return fieldDataTypeInt64{fieldDataTypeBase{name: "int64", options: opts}}
 }
 
-func FieldDataTypeInt(min int, max int) FieldDataType {
-	validateRangeOrPanic(min, max, "FieldDataTypeInt")
-	opts := FieldDataTypeOptions{FieldDataTypeOptRange: []int{min, max}}
-	return fieldDataTypeInt{fieldDataTypeBase{name: "int", options: opts}}
+func FieldDataTypeInt32(min int32, max int32) FieldDataType {
+	validateRangeOrPanic(min, max, "FieldDataTypeInt32")
+	opts := FieldDataTypeOptions{FieldDataTypeOptRange: []int32{min, max}}
+	return fieldDataTypeInt32{fieldDataTypeBase{name: "int32", options: opts}}
 }
 
 func FieldDataTypeDecimal(min string, max string, scale uint) FieldDataType {
@@ -139,9 +142,9 @@ func FieldDataTypeEnumString(enumValues []string) FieldDataType {
 	return fieldDataTypeEnumString{fieldDataTypeBase{name: "enumString", options: opts}}
 }
 
-func FieldDataTypeEnumInteger(enumValues []int64) FieldDataType {
+func FieldDataTypeEnumInt32(enumValues []int64) FieldDataType {
 	opts := FieldDataTypeOptions{FieldDataTypeOptEnumValues: enumValues}
-	return fieldDataTypeEnumInteger{fieldDataTypeBase{name: "enumInteger", options: opts}}
+	return fieldDataTypeEnumInt32{fieldDataTypeBase{name: "enumInt32", options: opts}}
 }
 
 func FieldDataTypeEtag() FieldDataType {
@@ -153,13 +156,13 @@ func FieldDataTypeEtag() FieldDataType {
 	}}
 }
 
-func FieldDataTypeLangJson(sanitizeType ...SanitizeType) FieldDataType {
-	st := SanitizeTypePlainText
-	if len(sanitizeType) > 0 && sanitizeType[0] != "" {
-		st = sanitizeType[0]
+func FieldDataTypeLangJson(minLength int, maxLength int, stringOpts ...FieldDataTypeStringOpts) FieldDataType {
+	validateRangeOrPanic(minLength, maxLength, "FieldDataTypeLangJson")
+	dtOpts := processStringOpts(minLength, maxLength, stringOpts...)
+	dtOpts[FieldDataTypeOptLangJsonWhitelist] = []model.LanguageCode{
+		model.DefaultLanguageCode,
 	}
-	opts := FieldDataTypeOptions{FieldDataTypeOptSanitizeType: st}
-	return fieldDataTypeLangJson{fieldDataTypeBase{name: "nikkiLangJson", options: opts}}
+	return fieldDataTypeLangJson{fieldDataTypeBase{name: "nikkiLangJson", options: dtOpts}}
 }
 
 func FieldDataTypeLangCode() FieldDataType {
@@ -272,6 +275,9 @@ func (this fieldDataTypeEmail) validateScalar(val value) (value, *ft.ClientError
 }
 
 func (this fieldDataTypeEmail) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertStringArrayValue(val)
+	}
 	_, sameType := val.(string)
 	_, ptrSameType := val.(*string)
 	if sameType || ptrSameType {
@@ -303,6 +309,9 @@ func (this fieldDataTypePhone) validateScalar(val value) (value, *ft.ClientError
 }
 
 func (this fieldDataTypePhone) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertStringArrayValue(val)
+	}
 	_, sameType := val.(string)
 	_, ptrSameType := val.(*string)
 	if sameType || ptrSameType {
@@ -471,6 +480,9 @@ func sanitizeByType(s string, t SanitizeType) string {
 }
 
 func (this fieldDataTypeString) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertStringArrayValue(val)
+	}
 	_, sameType := val.(string)
 	_, ptrSameType := val.(*string)
 	if sameType || ptrSameType {
@@ -506,6 +518,9 @@ func (this fieldDataTypeUrl) validateScalar(val value) (value, *ft.ClientErrorIt
 }
 
 func (this fieldDataTypeUrl) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertStringArrayValue(val)
+	}
 	_, sameType := val.(string)
 	_, ptrSameType := val.(*string)
 	if sameType || ptrSameType {
@@ -547,15 +562,18 @@ func (this fieldDataTypeUlid) validateScalar(val value) (value, *ft.ClientErrorI
 	}
 	s := (*sanitized.Get()).(string)
 	if len(s) != model.MODEL_RULE_ULID_LENGTH {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "ULID")
 	}
 	if _, err := ulid.Parse(s); err != nil {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "ULID")
 	}
 	return sanitized, nil
 }
 
 func (this fieldDataTypeUlid) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertStringArrayValue(val)
+	}
 	_, sameType := val.(string)
 	_, ptrSameType := val.(*string)
 	if sameType || ptrSameType {
@@ -588,12 +606,15 @@ func (this fieldDataTypeUuid) validateScalar(val value) (value, *ft.ClientErrorI
 		return Value(nil), clientErr
 	}
 	if !ValidateUuid((*sanitized.Get()).(string)) {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "UUID")
 	}
 	return sanitized, nil
 }
 
 func (this fieldDataTypeUuid) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertStringArrayValue(val)
+	}
 	_, sameType := val.(string)
 	_, ptrSameType := val.(*string)
 	if sameType || ptrSameType {
@@ -628,11 +649,11 @@ func (this fieldDataTypeInt64) Validate(val value) (value, *ft.ClientErrorItem) 
 
 func (this fieldDataTypeInt64) validateScalar(val value) (value, *ft.ClientErrorItem) {
 	if val.Get() == nil {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "int64")
 	}
 	n, ok := (*val.Get()).(int64)
 	if !ok {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "int64")
 	}
 	limits := getInt64Range(this.options)
 	if len(limits) == 2 && (n < limits[0] || n > limits[1]) {
@@ -646,6 +667,9 @@ func (this fieldDataTypeInt64) validateScalar(val value) (value, *ft.ClientError
 }
 
 func (this fieldDataTypeInt64) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertInt64ArrayValue(val)
+	}
 	_, sameType := val.(int64)
 	_, ptrSameType := val.(*int64)
 	if sameType || ptrSameType {
@@ -658,33 +682,33 @@ func (this fieldDataTypeInt64) TryConvert(val any, _ FieldDataTypeOptions) (valu
 	return Value(result), nil
 }
 
-type fieldDataTypeInt struct{ fieldDataTypeBase }
+type fieldDataTypeInt32 struct{ fieldDataTypeBase }
 
-func (this fieldDataTypeInt) ArrayType() FieldDataType {
+func (this fieldDataTypeInt32) ArrayType() FieldDataType {
 	this.isArray = true
 	return this
 }
 
-func (this fieldDataTypeInt) DefaultValue() value {
-	return Value(int(0))
+func (this fieldDataTypeInt32) DefaultValue() value {
+	return Value(int32(0))
 }
 
-func (this fieldDataTypeInt) Validate(val value) (value, *ft.ClientErrorItem) {
+func (this fieldDataTypeInt32) Validate(val value) (value, *ft.ClientErrorItem) {
 	if this.isArray {
 		return validateArrayAfterTryConvert(this, val, this.validateScalar)
 	}
 	return validateScalarAfterTryConvert(this, val, this.validateScalar)
 }
 
-func (this fieldDataTypeInt) validateScalar(val value) (value, *ft.ClientErrorItem) {
+func (this fieldDataTypeInt32) validateScalar(val value) (value, *ft.ClientErrorItem) {
 	if val.Get() == nil {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "int32")
 	}
-	n, ok := (*val.Get()).(int)
+	n, ok := (*val.Get()).(int32)
 	if !ok {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "int32")
 	}
-	limits := getIntRange(this.options)
+	limits := getInt32Range(this.options)
 	if len(limits) == 2 && (n < limits[0] || n > limits[1]) {
 		return Value(nil), ft.NewAnonymousValidationError(
 			ft.ErrorKey("err_invalid_number_range"),
@@ -695,13 +719,16 @@ func (this fieldDataTypeInt) validateScalar(val value) (value, *ft.ClientErrorIt
 	return val, nil
 }
 
-func (this fieldDataTypeInt) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
-	_, sameType := val.(int)
-	_, ptrSameType := val.(*int)
+func (this fieldDataTypeInt32) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertInt32ArrayValue(val)
+	}
+	_, sameType := val.(int32)
+	_, ptrSameType := val.(*int32)
 	if sameType || ptrSameType {
 		return Value(val), nil
 	}
-	result, err := toInt(val)
+	result, err := toInt32(val)
 	if err != nil {
 		return Value(nil), err
 	}
@@ -728,15 +755,15 @@ func (this fieldDataTypeDecimal) Validate(val value) (value, *ft.ClientErrorItem
 
 func (this fieldDataTypeDecimal) validateScalar(val value) (value, *ft.ClientErrorItem) {
 	if val.Get() == nil {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "decimal")
 	}
 	n, err := toDecimal(*val.Get())
 	if err != nil {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "decimal")
 	}
 	minMax, err := getDecimalRange(this.options)
 	if err != nil {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "decimal")
 	}
 	if len(minMax) == 2 && (n.LessThan(minMax[0]) || n.GreaterThan(minMax[1])) {
 		return Value(nil), ft.NewAnonymousValidationError(
@@ -750,6 +777,9 @@ func (this fieldDataTypeDecimal) validateScalar(val value) (value, *ft.ClientErr
 }
 
 func (this fieldDataTypeDecimal) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertDecimalArrayValue(val)
+	}
 	switch typed := val.(type) {
 	case decimal.Decimal:
 		return Value(typed), nil
@@ -793,6 +823,9 @@ func (this fieldDataTypeBoolean) validateScalar(val value) (value, *ft.ClientErr
 }
 
 func (this fieldDataTypeBoolean) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertBoolArrayValue(val)
+	}
 	_, sameType := val.(bool)
 	_, ptrSameType := val.(*bool)
 	if sameType || ptrSameType {
@@ -948,6 +981,9 @@ func (this fieldDataTypeEnumString) validateScalar(val value) (value, *ft.Client
 }
 
 func (this fieldDataTypeEnumString) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertStringArrayValue(val)
+	}
 	_, sameType := val.(string)
 	_, ptrSameType := val.(*string)
 	if sameType || ptrSameType {
@@ -960,25 +996,25 @@ func (this fieldDataTypeEnumString) TryConvert(val any, _ FieldDataTypeOptions) 
 	return Value(str), nil
 }
 
-type fieldDataTypeEnumInteger struct{ fieldDataTypeBase }
+type fieldDataTypeEnumInt32 struct{ fieldDataTypeBase }
 
-func (this fieldDataTypeEnumInteger) ArrayType() FieldDataType {
+func (this fieldDataTypeEnumInt32) ArrayType() FieldDataType {
 	this.isArray = true
 	return this
 }
 
-func (this fieldDataTypeEnumInteger) DefaultValue() value {
+func (this fieldDataTypeEnumInt32) DefaultValue() value {
 	return Value(int64(0))
 }
 
-func (this fieldDataTypeEnumInteger) Validate(value value) (value, *ft.ClientErrorItem) {
+func (this fieldDataTypeEnumInt32) Validate(value value) (value, *ft.ClientErrorItem) {
 	if this.isArray {
 		return validateArrayAfterTryConvert(this, value, this.validateScalar)
 	}
 	return validateScalarAfterTryConvert(this, value, this.validateScalar)
 }
 
-func (this fieldDataTypeEnumInteger) validateScalar(value value) (value, *ft.ClientErrorItem) {
+func (this fieldDataTypeEnumInt32) validateScalar(value value) (value, *ft.ClientErrorItem) {
 	allowed := getEnumNumberValues(this.options)
 	if len(allowed) == 0 {
 		return value, nil
@@ -988,7 +1024,7 @@ func (this fieldDataTypeEnumInteger) validateScalar(value value) (value, *ft.Cli
 		allowedAny[i] = n
 	}
 	if value.Get() == nil {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "int64")
 	}
 	if err := ValidateOneOf(*value.Get(), allowedAny); err != nil {
 		return Value(nil), err
@@ -996,7 +1032,10 @@ func (this fieldDataTypeEnumInteger) validateScalar(value value) (value, *ft.Cli
 	return value, nil
 }
 
-func (this fieldDataTypeEnumInteger) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+func (this fieldDataTypeEnumInt32) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertInt64ArrayValue(val)
+	}
 	_, sameType := val.(int64)
 	_, ptrSameType := val.(*int64)
 	if sameType || ptrSameType {
@@ -1038,6 +1077,9 @@ func (this fieldDataTypeEtag) validateScalar(val value) (value, *ft.ClientErrorI
 }
 
 func (this fieldDataTypeEtag) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertStringArrayValue(val)
+	}
 	_, sameType := val.(string)
 	_, ptrSameType := val.(*string)
 	if sameType || ptrSameType {
@@ -1050,11 +1092,12 @@ func (this fieldDataTypeEtag) TryConvert(val any, _ FieldDataTypeOptions) (value
 	return Value(str), nil
 }
 
-type fieldDataTypeLangJson struct{ fieldDataTypeBase }
+type fieldDataTypeLangJson struct {
+	fieldDataTypeBase
+}
 
 func (this fieldDataTypeLangJson) ArrayType() FieldDataType {
-	this.isArray = true
-	return this
+	panic(errors.New("this field data type does not support array type"))
 }
 
 func (this fieldDataTypeLangJson) DefaultValue() value {
@@ -1070,16 +1113,22 @@ func (this fieldDataTypeLangJson) Validate(val value) (value, *ft.ClientErrorIte
 
 func (this fieldDataTypeLangJson) validateScalar(value value) (value, *ft.ClientErrorItem) {
 	if value.Get() == nil {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "LangJson")
 	}
-	lj, clientErr := toLangJson(*value.Get())
+	langObj, clientErr := toLangJson(*value.Get())
 	if clientErr != nil {
 		return Value(nil), clientErr
 	}
-	sanitized, _, err := lj.SanitizeClone(
+	sanitized, _, err := langObj.SanitizeClone(
 		getLangJsonWhitelist(this.options),
-		this.options[FieldDataTypeOptSanitizeType] == SanitizeTypePlainText,
+		this.options[FieldDataTypeOptSanitizeType] == SanitizeTypeHtml,
 	)
+	for key, val := range *sanitized {
+		if cErr := validateStringLength(val, this.options); cErr != nil {
+			cErr.Field = "." + key
+			return Value(nil), cErr
+		}
+	}
 	if err != nil {
 		return Value(nil), &ft.ClientErrorItem{
 			Key: "lang_json_sanitize_failed", Message: err.Error(), Vars: nil,
@@ -1130,6 +1179,20 @@ func (this fieldDataTypeLangJson) TryConvert(val any, _ FieldDataTypeOptions) (v
 		return Value(*v), nil
 	case map[string]string:
 		return Value(model.LangJson(v)), nil
+	case map[string]any:
+		langJson := model.LangJson{}
+		for k, v := range v {
+			str, err := toString(v)
+			if err != nil {
+				return Value(nil), err
+			}
+			langJson[model.LanguageCode(k)] = str
+		}
+		return Value(langJson), nil
+	case []byte:
+		return tryConvertLangJsonBytes(v)
+	case string:
+		return tryConvertLangJsonBytes([]byte(v))
 	default:
 		return Value(nil), errors.Errorf(
 			"fieldDataTypeLangJson.TryConvert: cannot convert %T to LangJson", val,
@@ -1145,8 +1208,7 @@ func FieldDataTypeJsonMap() FieldDataType {
 type fieldDataTypeJsonMap struct{ fieldDataTypeBase }
 
 func (this fieldDataTypeJsonMap) ArrayType() FieldDataType {
-	this.isArray = true
-	return this
+	panic(errors.New("this field data type does not support array type"))
 }
 
 func (this fieldDataTypeJsonMap) DefaultValue() value {
@@ -1165,10 +1227,22 @@ func (this fieldDataTypeJsonMap) validateScalar(value value) (value, *ft.ClientE
 		return Value(nil), nil
 	}
 	if _, ok := jsonMapFromAny(*value.Get()); !ok {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "JSON Map")
 	}
 	return value, nil
 }
+
+// // fieldDataTypeJsonMap implements MarshallText interface
+// func (this fieldDataTypeJsonMap) MarshalText(value value) ([]byte, error) {
+// 	if value.Get() == nil {
+// 		return nil, nil
+// 	}
+// 	m, ok := jsonMapFromAny(*value.Get())
+// 	if !ok {
+// 		return nil, errors.Errorf("fieldDataTypeJsonMap.MarshalText: cannot convert %T to map", value.Get())
+// 	}
+// 	return json.Marshal(m)
+// }
 
 func jsonMapFromAny(v any) (map[string]any, bool) {
 	switch m := v.(type) {
@@ -1191,6 +1265,12 @@ func jsonMapFromAny(v any) (map[string]any, bool) {
 func (this fieldDataTypeJsonMap) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
 	if val == nil {
 		return Value(nil), nil
+	}
+	switch raw := val.(type) {
+	case []byte:
+		return tryConvertJsonMapBytes(raw)
+	case string:
+		return tryConvertJsonMapBytes([]byte(raw))
 	}
 	rv := reflect.ValueOf(val)
 	if rv.Kind() == reflect.Ptr {
@@ -1237,6 +1317,9 @@ func (this fieldDataTypeLangCode) validateScalar(value value) (value, *ft.Client
 }
 
 func (this fieldDataTypeLangCode) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertLangCodeArrayValue(val)
+	}
 	s, err := toString(val)
 	if err != nil {
 		return Value(nil), err
@@ -1270,12 +1353,15 @@ func (this fieldDataTypeSlug) validateScalar(val value) (value, *ft.ClientErrorI
 		return Value(nil), clientErr
 	}
 	if !ValidatePattern((*sanitized.Get()).(string), slugRegex) {
-		return Value(nil), NewInvalidDataTypeErr("")
+		return Value(nil), NewInvalidDataTypeErr("", "slug")
 	}
 	return sanitized, nil
 }
 
 func (this fieldDataTypeSlug) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertSlugArrayValue(val)
+	}
 	s, err := toString(val)
 	if err != nil {
 		return Value(nil), err
@@ -1289,7 +1375,7 @@ func (this fieldDataTypeSlug) TryConvert(val any, _ FieldDataTypeOptions) (value
 
 var (
 	reflectTypeInt64   = reflect.TypeOf(int64(0))
-	reflectTypeInt     = reflect.TypeOf(int(0))
+	reflectTypeInt32   = reflect.TypeOf(int32(0))
 	reflectTypeFloat64 = reflect.TypeOf(float64(0))
 	reflectTypeBool    = reflect.TypeOf(false)
 )
@@ -1342,7 +1428,26 @@ func validateArrayAfterTryConvert(
 	if val.Get() == nil {
 		return Value(nil), NewInvalidDataTypeErr("")
 	}
-	rv := reflect.ValueOf(*val.Get())
+	raw := *val.Get()
+	if converted, clientErr := tryConvertOrIncompatible(dt, raw); clientErr == nil {
+		if converted.Get() != nil {
+			rv := reflect.ValueOf(*converted.Get())
+			if rv.Kind() == reflect.Slice {
+				n := rv.Len()
+				result := make([]any, n)
+				for i := 0; i < n; i++ {
+					elem := rv.Index(i).Interface()
+					validated, elemErr := validateConverted(Value(elem))
+					if elemErr != nil {
+						return Value(nil), elemErr
+					}
+					result[i] = *validated.Get()
+				}
+				return Value(result), nil
+			}
+		}
+	}
+	rv := reflect.ValueOf(raw)
 	if rv.Kind() != reflect.Slice {
 		return Value(nil), NewInvalidDataTypeErr("")
 	}
@@ -1397,23 +1502,23 @@ func toInt64(value any) (int64, error) {
 	return rv.Convert(reflectTypeInt64).Int(), nil
 }
 
-func toInt(value any) (int, error) {
+func toInt32(value any) (int32, error) {
 	unwrapped, err := unwrapOnePointerLevel(value)
 	if err != nil {
 		return 0, err
 	}
 	rv := reflect.ValueOf(unwrapped)
 	if rv.Kind() == reflect.String {
-		n, parseErr := strconv.Atoi(rv.String())
+		n, parseErr := strconv.ParseInt(rv.String(), 10, 32)
 		if parseErr != nil {
 			return 0, parseErr
 		}
-		return n, nil
+		return int32(n), nil
 	}
-	if !rv.Type().ConvertibleTo(reflectTypeInt) {
-		return 0, errors.Errorf("toInt: cannot convert %T to int", unwrapped)
+	if !rv.Type().ConvertibleTo(reflectTypeInt32) {
+		return 0, errors.Errorf("toInt32: cannot convert %T to int32", unwrapped)
 	}
-	return int(rv.Convert(reflectTypeInt).Int()), nil
+	return int32(rv.Convert(reflectTypeInt32).Int()), nil
 }
 
 func toBool(value any) (bool, error) {
@@ -1615,6 +1720,197 @@ func toDecimal(value any) (decimal.Decimal, error) {
 	}
 }
 
+func tryConvertStringArrayValue(value any) (value, error) {
+	switch typed := value.(type) {
+	case []byte:
+		return scanPostgresStringArrayBytes(typed)
+	case []string:
+		return Value(typed), nil
+	case *[]string:
+		if typed == nil {
+			return Value(nil), errors.New("tryConvertStringArrayValue: value cannot be nil")
+		}
+		return Value(*typed), nil
+	default:
+		return Value(nil), errors.Errorf("tryConvertStringArrayValue: cannot convert %T to []string", value)
+	}
+}
+
+func tryConvertInt64ArrayValue(value any) (value, error) {
+	switch typed := value.(type) {
+	case []byte:
+		return scanPostgresInt64ArrayBytes(typed)
+	case []int64:
+		return Value(typed), nil
+	case *[]int64:
+		if typed == nil {
+			return Value(nil), errors.New("tryConvertInt64ArrayValue: value cannot be nil")
+		}
+		return Value(*typed), nil
+	default:
+		return Value(nil), errors.Errorf("tryConvertInt64ArrayValue: cannot convert %T to []int64", value)
+	}
+}
+
+func tryConvertInt32ArrayValue(value any) (value, error) {
+	switch typed := value.(type) {
+	case []byte:
+		parsed, err := scanPostgresInt32ArrayBytes(typed)
+		if err != nil {
+			return Value(nil), err
+		}
+		return Value(parsed), nil
+	case []int32:
+		return Value(typed), nil
+	case *[]int32:
+		if typed == nil {
+			return Value(nil), errors.New("tryConvertInt32ArrayValue: value cannot be nil")
+		}
+		return Value(*typed), nil
+	default:
+		return Value(nil), errors.Errorf("tryConvertInt32ArrayValue: cannot convert %T to []int32", value)
+	}
+}
+
+func tryConvertBoolArrayValue(value any) (value, error) {
+	switch typed := value.(type) {
+	case []byte:
+		return scanPostgresBoolArrayBytes(typed)
+	case []bool:
+		return Value(typed), nil
+	case *[]bool:
+		if typed == nil {
+			return Value(nil), errors.New("tryConvertBoolArrayValue: value cannot be nil")
+		}
+		return Value(*typed), nil
+	default:
+		return Value(nil), errors.Errorf("tryConvertBoolArrayValue: cannot convert %T to []bool", value)
+	}
+}
+
+func tryConvertDecimalArrayValue(value any) (value, error) {
+	switch typed := value.(type) {
+	case []byte:
+		return scanPostgresDecimalArrayBytes(typed)
+	case []decimal.Decimal:
+		return Value(typed), nil
+	case *[]decimal.Decimal:
+		if typed == nil {
+			return Value(nil), errors.New("tryConvertDecimalArrayValue: value cannot be nil")
+		}
+		return Value(*typed), nil
+	default:
+		return Value(nil), errors.Errorf("tryConvertDecimalArrayValue: cannot convert %T to []decimal.Decimal", value)
+	}
+}
+
+func tryConvertLangCodeArrayValue(value any) (value, error) {
+	stringsValue, err := tryConvertStringArrayValue(value)
+	if err != nil {
+		return Value(nil), err
+	}
+	if stringsValue.Get() == nil {
+		return Value(nil), errors.New("tryConvertLangCodeArrayValue: value cannot be nil")
+	}
+	raw := (*stringsValue.Get()).([]string)
+	out := make([]string, len(raw))
+	for i := range raw {
+		canonical, convErr := model.ToBCP47LanguageCode(raw[i])
+		if convErr != nil {
+			return Value(nil), convErr
+		}
+		out[i] = canonical
+	}
+	return Value(out), nil
+}
+
+func tryConvertSlugArrayValue(value any) (value, error) {
+	stringsValue, err := tryConvertStringArrayValue(value)
+	if err != nil {
+		return Value(nil), err
+	}
+	if stringsValue.Get() == nil {
+		return Value(nil), errors.New("tryConvertSlugArrayValue: value cannot be nil")
+	}
+	raw := (*stringsValue.Get()).([]string)
+	out := make([]string, len(raw))
+	for i := range raw {
+		item := strings.ToLower(strings.TrimSpace(raw[i]))
+		out[i] = strings.ReplaceAll(item, " ", "-")
+	}
+	return Value(out), nil
+}
+
+func scanPostgresStringArrayBytes(raw []byte) (value, error) {
+	var arr pq.StringArray
+	if err := arr.Scan(raw); err != nil {
+		return Value(nil), err
+	}
+	return Value([]string(arr)), nil
+}
+
+func scanPostgresBoolArrayBytes(raw []byte) (value, error) {
+	var arr pq.BoolArray
+	if err := arr.Scan(raw); err != nil {
+		return Value(nil), err
+	}
+	return Value([]bool(arr)), nil
+}
+
+func scanPostgresInt32ArrayBytes(raw []byte) ([]int32, error) {
+	var arr pq.Int32Array
+	if err := arr.Scan(raw); err != nil {
+		return nil, err
+	}
+	return []int32(arr), nil
+}
+
+func scanPostgresInt64ArrayBytes(raw []byte) (value, error) {
+	var arr pq.Int64Array
+	if err := arr.Scan(raw); err != nil {
+		return Value(nil), err
+	}
+	return Value([]int64(arr)), nil
+}
+
+func scanPostgresDecimalArrayBytes(raw []byte) (value, error) {
+	var arr pq.StringArray
+	if err := arr.Scan(raw); err != nil {
+		return Value(nil), err
+	}
+	out := make([]decimal.Decimal, len(arr))
+	for i := range arr {
+		item, convErr := decimal.NewFromString(arr[i])
+		if convErr != nil {
+			return Value(nil), convErr
+		}
+		out[i] = item
+	}
+	return Value(out), nil
+}
+
+func tryConvertLangJsonBytes(raw []byte) (value, error) {
+	if len(raw) == 0 {
+		return Value(nil), errors.New("fieldDataTypeLangJson.TryConvert: value cannot be empty")
+	}
+	var mapped map[string]string
+	if err := erpjson.Unmarshal(raw, &mapped); err != nil {
+		return Value(nil), err
+	}
+	return Value(model.LangJson(mapped)), nil
+}
+
+func tryConvertJsonMapBytes(raw []byte) (value, error) {
+	if len(raw) == 0 {
+		return Value(nil), nil
+	}
+	var mapped map[string]any
+	if err := erpjson.Unmarshal(raw, &mapped); err != nil {
+		return Value(nil), err
+	}
+	return Value(mapped), nil
+}
+
 func getInt64Range(options FieldDataTypeOptions) []int64 {
 	if options == nil {
 		return nil
@@ -1639,6 +1935,21 @@ func getIntRange(options FieldDataTypeOptions) []int {
 		return nil
 	}
 	limits, ok := raw.([]int)
+	if !ok || len(limits) != 2 {
+		return nil
+	}
+	return limits
+}
+
+func getInt32Range(options FieldDataTypeOptions) []int32 {
+	if options == nil {
+		return nil
+	}
+	raw, ok := options[FieldDataTypeOptRange]
+	if !ok || raw == nil {
+		return nil
+	}
+	limits, ok := raw.([]int32)
 	if !ok || len(limits) != 2 {
 		return nil
 	}
@@ -1676,7 +1987,7 @@ func applyDecimalScale(value decimal.Decimal, options FieldDataTypeOptions) deci
 	return value.Round(int32(scale))
 }
 
-func validateRangeOrPanic[T ~int | ~int64](min T, max T, fnName string) {
+func validateRangeOrPanic[T ~int | ~int32 | ~int64](min T, max T, fnName string) {
 	if min <= max {
 		return
 	}

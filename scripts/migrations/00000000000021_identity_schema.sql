@@ -80,8 +80,8 @@ CREATE TABLE "ident_users" (
 -- Create "ident_groups" table
 CREATE TABLE "ident_groups" (
   "id" character varying NOT NULL,
-  "name" character varying NOT NULL,
-  "description" character varying NULL,
+  "name" jsonb NOT NULL,
+  "description" jsonb NULL,
   "owner_id" character varying NOT NULL,
   "is_archived" boolean NOT NULL,
   "etag" character varying NOT NULL,
@@ -100,8 +100,8 @@ CREATE TABLE "authz_roles" (
   "owner_user_id" character varying NULL,
   "is_private" boolean NOT NULL,
   "is_requestable" boolean NOT NULL,
-  "is_required_attachment" boolean NOT NULL,
-  "is_required_comment" boolean NOT NULL,
+  "is_required_attachment" boolean NULL,
+  "is_required_comment" boolean NULL,
   "org_id" character varying NULL,
   "is_archived" boolean NOT NULL,
   "created_at" timestamptz NOT NULL,

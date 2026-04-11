@@ -602,7 +602,7 @@ func (this *ModelField) Validate(val any, forEdit ...bool) (value, *ft.ClientErr
 
 	validated, vErr := this.dataType.Validate(wrappedVal)
 	if vErr != nil {
-		vErr.Field = this.name
+		vErr.Field = this.name + vErr.Field
 		return Value(nil), vErr
 	}
 	return validated, nil

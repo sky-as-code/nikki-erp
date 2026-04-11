@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/users?graph={"and":[{"if":["display_name", "*", "tester"]},{"if": ["email", "$", ".com"]}]}
+  url: {{api_host}}/v1/identity/users?graph={"and":[{"if":["display_name", "*", "admin"]},{"if": ["email", "$", ".com"]}]}
   body: none
   auth: inherit
 }
 
 params:query {
-  graph: {"and":[{"if":["display_name", "*", "tester"]},{"if": ["email", "$", ".com"]}]}
+  graph: {"and":[{"if":["display_name", "*", "admin"]},{"if": ["email", "$", ".com"]}]}
 }
 
 script:post-response {

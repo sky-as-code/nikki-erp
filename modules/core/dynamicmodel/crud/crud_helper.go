@@ -324,10 +324,11 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 	sanitizedQuery := *(sanitized.(*dyn.SearchQuery))
 	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
 	return baserepo.Search[TDomain, TDomainPtr](ctx, dynamicRepo, dyn.RepoSearchParam{
-		Graph:   sanitizedQuery.Graph,
-		Columns: sanitizedQuery.Columns,
-		Page:    sanitizedQuery.Page,
-		Size:    sanitizedQuery.Size,
+		Columns:  sanitizedQuery.Columns,
+		Page:     sanitizedQuery.Page,
+		Size:     sanitizedQuery.Size,
+		Graph:    sanitizedQuery.Graph,
+		Language: sanitizedQuery.Language,
 	})
 }
 

@@ -38,7 +38,7 @@ script:post-response {
               },
               message: {
                   type: "string",
-                  enum: ["string length must be between {{.min}} and {{.max}}", "invalid data type"],
+                  enum: ["string length must be between {{.min}} and {{.max}}", "invalid data type, must be a {{.typeName}}"],
               },
               type: {
                   type: "string",
@@ -46,14 +46,6 @@ script:post-response {
               },
               vars: {
                   type: "object",
-                  properties: {
-                    max: {
-                      type: "integer",
-                    },
-                    min: {
-                      type: "integer",
-                    },
-                  },
               },
           },
           additionalProperties: false,
