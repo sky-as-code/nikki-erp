@@ -50,11 +50,12 @@ type RepoGetOneParam struct {
 }
 
 type RepoSearchParam struct {
-	Graph   *dmodel.SearchGraph
-	Columns []string
-	Filter  []dmodel.DynamicFields
-	Page    int
-	Size    int
+	Columns  []string
+	Filter   []dmodel.DynamicFields
+	Page     int
+	Size     int
+	Graph    *dmodel.SearchGraph
+	Language *model.LanguageCode
 }
 
 type RepoManageM2mParam struct {

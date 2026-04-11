@@ -13,9 +13,13 @@ post {
 body:json {
   {
     "id": "00000000000000000000000000",
-    "description": "{{$randomLoremParagraphs}}",
+    "description": {
+      "en-US": "{{$randomLoremParagraphs}}"
+    },
     "is_archived": "2026-03-24T10:54:50.610762Z",
-    "name": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} ReadonlyIgnored",
+    "name": {
+      "en-US": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} {{$randomHexColor}}"
+    },
     "owner_id": "{{user_id}}"
   }
 }

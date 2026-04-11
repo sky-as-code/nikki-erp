@@ -47,28 +47,28 @@ func GroupUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 
 func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(GroupSchemaName).
-		Label(model.LangJson{"en-US": "User group"}).
+		Label(model.LangJson{model.LanguageCodeEnUs: "User group"}).
 		TableName("ident_groups").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().
 				Name(GroupFieldName).
-				Label(model.LangJson{"en-US": "Name"}).
-				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
+				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
 				RequiredForCreate().
 				Unique(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(GroupFieldDesc).
-				Label(model.LangJson{"en-US": "Description"}).
-				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
+				Label(model.LangJson{model.LanguageCodeEnUs: "Description"}).
+				DataType(dmodel.FieldDataTypeLangJson(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
 			basemodel.DefineFieldId(GroupFieldOwnerId).
 				RequiredForCreate().
-				Description(model.LangJson{"en-US": "User who owns the group, is notified when membership is updated and " +
+				Description(model.LangJson{model.LanguageCodeEnUs: "User who owns the group, is notified when membership is updated and " +
 					"is responsible for reviewing the membership periodically.",
 				}),
 		).
@@ -93,12 +93,12 @@ func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		EdgeFrom(
 			dmodel.Edge(GroupEdgeOwnRoles).
-				Label(model.LangJson{"en-US": "Owned roles"}).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Owned roles"}).
 				Existing(RoleSchemaName, RoleEdgeOwnerGroup),
 		).
 		EdgeFrom(
 			dmodel.Edge(GroupEdgeBenefitGrantRequests).
-				Label(model.LangJson{"en-US": "Grant requests for this group"}).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Grant requests for this group"}).
 				Existing(RoleRequestSchemaName, RoleReqEdgeReceiverGroup),
 		)
 }

@@ -81,14 +81,14 @@ func DefineFieldSearchColumns() *dmodel.FieldBuilder {
 func DefineFieldSearchPage() *dmodel.FieldBuilder {
 	return dmodel.DefineField().
 		Name(basemodel.FieldPage).
-		DataType(dmodel.FieldDataTypeInt(model.MODEL_RULE_PAGE_INDEX_START, model.MODEL_RULE_PAGE_INDEX_END)).
+		DataType(dmodel.FieldDataTypeInt32(model.MODEL_RULE_PAGE_INDEX_START, model.MODEL_RULE_PAGE_INDEX_END)).
 		Default(model.MODEL_RULE_PAGE_INDEX_START)
 }
 
 func DefineFieldSearchSize() *dmodel.FieldBuilder {
 	return dmodel.DefineField().
 		Name(basemodel.FieldSize).
-		DataType(dmodel.FieldDataTypeInt(model.MODEL_RULE_PAGE_MIN_SIZE, model.MODEL_RULE_PAGE_MAX_SIZE)).
+		DataType(dmodel.FieldDataTypeInt32(model.MODEL_RULE_PAGE_MIN_SIZE, model.MODEL_RULE_PAGE_MAX_SIZE)).
 		Default(model.MODEL_RULE_PAGE_DEFAULT_SIZE)
 }
 

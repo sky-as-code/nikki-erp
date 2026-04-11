@@ -6,6 +6,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
 type DbClient interface {
@@ -46,6 +47,8 @@ type SqlSelectGraphOpts struct {
 	Page int
 	// Size sets the LIMIT clause. 0 means no limit/offset is applied.
 	Size int
+	// Optional language code used when filtering LangJson fields.
+	Language *model.LanguageCode
 }
 
 // SqlCheckUniqueCollisionsData holds parameterized SQL and arguments from SqlCheckUniqueCollisions.
@@ -69,7 +72,9 @@ type QueryBuilder interface {
 	SqlExistsGraph(schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph) (
 		*string, *ft.ClientErrors, error)
 	// SqlCountGraph builds SELECT COUNT(*) with the same WHERE as SqlSelectGraph (no ORDER BY, LIMIT, OFFSET).
-	SqlCountGraph(schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph) (
+	SqlCountGraph(
+		schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
+	) (
 		*string, *ft.ClientErrors, error)
 	// SqlInsert builds INSERT for one row. When onConflictPkDoNothing is true, appends
 	// ON CONFLICT (<schema primary keys>) DO NOTHING.

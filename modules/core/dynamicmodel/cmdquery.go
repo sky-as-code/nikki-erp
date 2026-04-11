@@ -45,10 +45,13 @@ type GetOneQuery struct {
 }
 
 type SearchQuery struct {
-	Columns []string            `json:"columns" query:"columns"`
-	Graph   *dmodel.SearchGraph `json:"graph" query:"graph"`
-	Page    int                 `json:"page" query:"page"`
-	Size    int                 `json:"size" query:"size"`
+	Columns []string `json:"columns" query:"columns"`
+	Page    int      `json:"page" query:"page"`
+	Size    int      `json:"size" query:"size"`
+	// Optional search graph for advanced search
+	Graph *dmodel.SearchGraph `json:"graph" query:"graph"`
+	// Optional language code to filter fields with LangJson type
+	Language *model.LanguageCode `json:"language" query:"language"`
 }
 
 type OpResult[TData any] struct {

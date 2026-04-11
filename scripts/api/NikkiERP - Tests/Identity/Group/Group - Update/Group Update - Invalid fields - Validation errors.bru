@@ -12,7 +12,9 @@ put {
 
 body:json {
   {
-      "name": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+      "name": {
+        "en-US": "too-longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"
+      },
       "etag": "fake"
   }
 }
@@ -20,7 +22,7 @@ body:json {
 script:post-response {
   const pkg = require('./scripts/error-400-invalid-length');
   
-  pkg.testInvalidStringLength('etag', 'name');
+  pkg.testInvalidStringLength('etag', 'name.en-US');
   
 }
 

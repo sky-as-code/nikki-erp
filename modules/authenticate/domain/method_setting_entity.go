@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"math"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -34,19 +36,19 @@ func MethodSettingSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().Name(MethodSettingFieldOrder).
 				Label(model.LangJson{"en-US": "Order"}).
-				DataType(dmodel.FieldDataTypeInt(1, 5)).
+				DataType(dmodel.FieldDataTypeInt32(1, 5)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().Name(MethodSettingFieldMaxFailures).
 				Label(model.LangJson{"en-US": "Max Failures"}).
-				DataType(dmodel.FieldDataTypeInt(1, int(model.MODEL_RULE_MAX_INT16))).
+				DataType(dmodel.FieldDataTypeInt32(1, int32(math.MaxInt16))).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().Name(MethodSettingFieldLockDurationSecs).
 				Label(model.LangJson{"en-US": "Lock Duration Secs"}).
-				DataType(dmodel.FieldDataTypeInt64(0, model.MODEL_RULE_MAX_INT64)),
+				DataType(dmodel.FieldDataTypeInt64(0, math.MaxInt64)),
 		).
 		Field(
 			dmodel.DefineField().Name(MethodSettingFieldSubjectType).

@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/groups?graph={"and":[{"if":["name", "^", "quality"]},{"if": ["is_archived", "=", false]}]}
+  url: {{api_host}}/v1/identity/groups?graph={"and":[{"if":["description", "is_set", "quality"]},{"if": ["is_archived", "=", false]}]}
   body: none
   auth: inherit
 }
 
 params:query {
-  graph: {"and":[{"if":["name", "^", "quality"]},{"if": ["is_archived", "=", false]}]}
+  graph: {"and":[{"if":["description", "is_set", "quality"]},{"if": ["is_archived", "=", false]}]}
 }
 
 script:post-response {
