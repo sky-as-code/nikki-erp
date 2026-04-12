@@ -140,7 +140,7 @@ func (this OrgUnitRest) SearchOrgUnits(echoCtx echo.Context) (err error) {
 			return it.SearchOrgUnitsQuery(request)
 		},
 		func(data it.SearchOrgUnitsResultData) SearchOrgUnitsResponse {
-			return httpserver.NewSearchUsersResponseDyn(data)
+			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
 		true,

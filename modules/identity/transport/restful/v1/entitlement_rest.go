@@ -138,7 +138,7 @@ func (this EntitlementRest) SearchEntitlements(echoCtx echo.Context) (err error)
 			return it.SearchEntitlementsQuery(request)
 		},
 		func(data it.SearchEntitlementsResultData) SearchEntitlementsResponse {
-			return httpserver.NewSearchUsersResponseDyn(data)
+			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
 		true,

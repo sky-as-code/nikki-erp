@@ -19,21 +19,6 @@ const (
 	FieldEtag         = "etag"
 )
 
-var baseBuilder *dmodel.ModelSchemaBuilder
-
-func BaseModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
-	if baseBuilder == nil {
-		baseBuilder = dmodel.DefineModel("core.basemodel.base_model").
-			Field(
-				DefineFieldId(FieldId).
-					Label(model.LangJson{"en-US": "ID"}).
-					UseTypeDefault().
-					PrimaryKey(),
-			)
-	}
-	return baseBuilder
-}
-
 func DefineFieldId(fieldName string) *dmodel.FieldBuilder {
 	return dmodel.DefineField().
 		Name(fieldName).
@@ -88,6 +73,17 @@ func AuditableReadonlyModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		)
 }
 
+func BaseModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel("core.basemodel.base_model").
+		Field(
+			DefineFieldId(FieldId).
+				Label(model.LangJson{"en-US": "ID"}).
+				UseTypeDefault().
+				PrimaryKey(),
+		).
+		ExtendBase()
+}
+
 func VersionedModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel("core.basemodel.versioned_model").
 		Field(
@@ -97,8 +93,4 @@ func VersionedModelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				VersioningKey().
 				UseTypeDefault(),
 		)
-}
-
-func SetBaseModelSchemaBuilder(builder *dmodel.ModelSchemaBuilder) {
-	baseBuilder = builder
 }

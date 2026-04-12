@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/ulid"
 	"golang.org/x/text/language"
@@ -28,6 +29,17 @@ func NewId() (*Id, error) {
 	}
 	id := Id(newUlid.String())
 	return &id, nil
+}
+
+type UUID = string
+
+func NewUUID() (*UUID, error) {
+	newUuid, err := uuid.NewV7()
+	if err != nil {
+		return nil, err
+	}
+	out := UUID(newUuid.String())
+	return &out, nil
 }
 
 func IdPtrValidateRule(field **Id, isRequired bool) *val.FieldRules {

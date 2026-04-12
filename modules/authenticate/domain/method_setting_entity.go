@@ -110,20 +110,20 @@ func (this *MethodSetting) SetMethod(v *string) {
 	this.fields.SetString(MethodSettingFieldMethod, v)
 }
 
-func (this MethodSetting) GetOrder() *int {
-	return this.fields.GetInt(MethodSettingFieldOrder)
+func (this MethodSetting) GetOrder() *int32 {
+	return this.fields.GetInt32(MethodSettingFieldOrder)
 }
 
-func (this *MethodSetting) SetOrder(v *int) {
-	this.fields.SetInt(MethodSettingFieldOrder, v)
+func (this *MethodSetting) SetOrder(v *int32) {
+	this.fields.SetInt32(MethodSettingFieldOrder, v)
 }
 
-func (this MethodSetting) GetMaxFailures() *int {
-	return this.fields.GetInt(MethodSettingFieldMaxFailures)
+func (this MethodSetting) GetMaxFailures() *int32 {
+	return this.fields.GetInt32(MethodSettingFieldMaxFailures)
 }
 
-func (this *MethodSetting) SetMaxFailures(v *int) {
-	this.fields.SetInt(MethodSettingFieldMaxFailures, v)
+func (this *MethodSetting) SetMaxFailures(v *int32) {
+	this.fields.SetInt32(MethodSettingFieldMaxFailures, v)
 }
 
 func (this MethodSetting) GetLockDurationSecs() *int64 {

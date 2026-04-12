@@ -107,7 +107,7 @@ type RestSearchResponse[TItem any] struct {
 	Size  int     `json:"size"`
 }
 
-func NewSearchUsersResponseDyn[TItem dmodel.DynamicModelGetter](
+func NewSearchResponseDyn[TItem dmodel.DynamicModelGetter](
 	data dyn.PagedResultData[TItem],
 ) RestSearchResponse[dmodel.DynamicFields] {
 

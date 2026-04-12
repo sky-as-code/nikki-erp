@@ -138,7 +138,7 @@ func (this RoleRest) SearchRoles(echoCtx echo.Context) (err error) {
 			return it.SearchRolesQuery(request)
 		},
 		func(data it.SearchRolesResultData) SearchRolesResponse {
-			return httpserver.NewSearchUsersResponseDyn(data)
+			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
 		true,

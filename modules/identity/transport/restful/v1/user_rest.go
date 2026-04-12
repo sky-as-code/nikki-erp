@@ -108,7 +108,7 @@ func (this UserRest) SearchUsers(echoCtx echo.Context) (err error) {
 			return it.SearchUsersQuery(request)
 		},
 		func(data it.SearchUsersResultData) SearchUsersResponse2 {
-			return httpserver.NewSearchUsersResponseDyn(data)
+			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
 		true,

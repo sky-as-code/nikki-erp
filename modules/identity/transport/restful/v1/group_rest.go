@@ -139,7 +139,7 @@ func (this GroupRest) SearchGroups(echoCtx echo.Context) (err error) {
 			return it.SearchGroupsQuery(request)
 		},
 		func(data it.SearchGroupsResultData) SearchGroupsResponse {
-			return httpserver.NewSearchUsersResponseDyn(data)
+			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
 		true,

@@ -119,7 +119,7 @@ func (this RoleRequestRest) SearchRoleRequests(echoCtx echo.Context) (err error)
 			return it.SearchRoleRequestsQuery(request)
 		},
 		func(data it.SearchRoleRequestsResultData) SearchRoleRequestsResponse {
-			return httpserver.NewSearchUsersResponseDyn(data)
+			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
 		true,

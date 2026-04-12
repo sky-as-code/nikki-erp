@@ -119,7 +119,7 @@ func (this ResourceRest) SearchResources(echoCtx echo.Context) (err error) {
 			return it.SearchResourcesQuery(request)
 		},
 		func(data it.SearchResourcesResultData) SearchResourcesResponse {
-			return httpserver.NewSearchUsersResponseDyn(data)
+			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
 		true,
