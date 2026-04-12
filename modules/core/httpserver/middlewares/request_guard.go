@@ -7,6 +7,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 )
 
@@ -14,7 +15,11 @@ import (
 // Only takes effect if enabled in the configuration.
 func CorsEchoMiddleware() echo.MiddlewareFunc {
 	return createMiddlewareFunc(func(c echo.Context, guardSvc requestguard.RequestGuardService, next echo.HandlerFunc) error {
-		corsMiddleware, err := guardSvc.GetCorsMiddleware()
+		reqCtx, err := corectx.AsRequestContext(c)
+		if err != nil {
+			return err
+		}
+		corsMiddleware, err := guardSvc.GetCorsMiddleware(reqCtx)
 		if err != nil {
 			return err
 		}
@@ -30,7 +35,11 @@ func CorsEchoMiddleware() echo.MiddlewareFunc {
 // Only takes effect if enabled in the configuration.
 func TrustedConnectionMiddleware() echo.MiddlewareFunc {
 	return createMiddlewareFunc(func(echoCtx echo.Context, guardSvc requestguard.RequestGuardService, next echo.HandlerFunc) error {
-		result, err := guardSvc.VerifyTrustedConnection(echoCtx.Request())
+		reqCtx, err := corectx.AsRequestContext(echoCtx)
+		if err != nil {
+			return err
+		}
+		result, err := guardSvc.VerifyTrustedConnection(reqCtx, echoCtx.Request())
 		if err != nil {
 			return err
 		}

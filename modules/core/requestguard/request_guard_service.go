@@ -36,7 +36,7 @@ type StaticRequestGuardServiceImpl struct {
 	corsMiddleware echo.MiddlewareFunc
 }
 
-func (this *StaticRequestGuardServiceImpl) CalcRequestFingerprint(request *http.Request) (fingerprint string, err error) {
+func (this *StaticRequestGuardServiceImpl) CalcRequestFingerprint(_ corectx.Context, request *http.Request) (fingerprint string, err error) {
 	if this.configSvc.GetBool(c.RequestGuardAccessTokenEnabled) {
 		rawToken := this.bearerAccessToken(request)
 		parts := strings.Split(rawToken, ".")
@@ -45,7 +45,7 @@ func (this *StaticRequestGuardServiceImpl) CalcRequestFingerprint(request *http.
 	return "", errors.New("not implemented")
 }
 
-func (this *StaticRequestGuardServiceImpl) GetCorsMiddleware() (echo.MiddlewareFunc, error) {
+func (this *StaticRequestGuardServiceImpl) GetCorsMiddleware(_ corectx.Context) (echo.MiddlewareFunc, error) {
 	if !this.configSvc.GetBool(c.RequestGuardCorsEnabled) {
 		return nil, nil
 	}
@@ -75,14 +75,14 @@ func (this *StaticRequestGuardServiceImpl) configCors() middleware.CORSConfig {
 	}
 }
 
-func (this *StaticRequestGuardServiceImpl) VerifyTrustedConnection(request *http.Request) (result *VerifyRequestResult, err error) {
+func (this *StaticRequestGuardServiceImpl) VerifyTrustedConnection(ctx corectx.Context, request *http.Request) (result *VerifyRequestResult, err error) {
 	return &VerifyRequestResult{
 		IsOk:       true,
 		HttpStatus: http.StatusOK,
 	}, nil
 }
 
-func (this *StaticRequestGuardServiceImpl) VerifyJwt(request *http.Request) (*VerifyRequestResult, error) {
+func (this *StaticRequestGuardServiceImpl) VerifyJwt(ctx corectx.Context, request *http.Request) (*VerifyRequestResult, error) {
 	cfg := this.configSvc
 	if !cfg.GetBool(c.RequestGuardAccessTokenEnabled) {
 		return &VerifyRequestResult{
@@ -96,7 +96,7 @@ func (this *StaticRequestGuardServiceImpl) VerifyJwt(request *http.Request) (*Ve
 		return jwtVerifyFailure(), nil
 	}
 
-	verifyResult, err := this.tokenSvc.VerifyJwt(corectx.NewRequestContext(request.Context(), "core"), coretoken.VerifyJwtParam{
+	verifyResult, err := this.tokenSvc.VerifyJwt(ctx, coretoken.VerifyJwtParam{
 		Token: rawToken,
 	})
 	if err != nil {
@@ -107,7 +107,7 @@ func (this *StaticRequestGuardServiceImpl) VerifyJwt(request *http.Request) (*Ve
 	}
 
 	if this.configSvc.GetBool(c.RequestGuardAccessTokenDpopEnabled) {
-		result, dpopErr := this.VerifyJwtDpop(request)
+		result, dpopErr := this.VerifyJwtDpop(ctx, request)
 		if result != nil || dpopErr != nil {
 			return result, dpopErr
 		}
@@ -149,12 +149,12 @@ func jwtVerifyFailure() *VerifyRequestResult {
 }
 
 // Verify JWT DPoP (OAuth2 Demonstraing Proof of Possession)
-func (this *StaticRequestGuardServiceImpl) VerifyJwtDpop(request *http.Request) (*VerifyRequestResult, error) {
+func (this *StaticRequestGuardServiceImpl) VerifyJwtDpop(ctx corectx.Context, request *http.Request) (*VerifyRequestResult, error) {
 
 	return nil, nil
 }
 
-func (this *StaticRequestGuardServiceImpl) VerifySessionBlacklist(request *http.Request) (*VerifyRequestResult, error) {
+func (this *StaticRequestGuardServiceImpl) VerifySessionBlacklist(ctx corectx.Context, request *http.Request) (*VerifyRequestResult, error) {
 
 	return nil, nil
 }
