@@ -101,6 +101,11 @@ func EtagValidateRule(field *Etag, isRequired bool) *val.FieldRules {
 
 type Slug = string
 
+func NewSlug(from string) *Slug {
+	slug := Slug(strings.ToLower(from))
+	return &slug
+}
+
 func SlugPtrValidateRule(field **Slug, isRequired bool) *val.FieldRules {
 	return val.Field(field,
 		val.NotNilWhen(isRequired),

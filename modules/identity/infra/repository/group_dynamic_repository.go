@@ -19,15 +19,16 @@ import (
 type GroupDynamicRepositoryParam struct {
 	dig.In
 
-	Client       orm.DbClient
-	ConfigSvc    config.ConfigService
-	QueryBuilder orm.QueryBuilder
-	Logger       logging.LoggerService
+	Client        orm.DbClient
+	ConfigSvc     config.ConfigService
+	QueryBuilder  orm.QueryBuilder
+	Logger        logging.LoggerService
+	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
 }
 
 func NewGroupDynamicRepository(param GroupDynamicRepositoryParam) it.GroupRepository {
-	dynamicRepo := baserepo.NewBaseDynamicRepository(
-		baserepo.NewBaseRepositoryParam{
+	dynamicRepo := param.NewBaseRepoFn(
+		dyn.NewBaseRepoParam{
 			Client:       param.Client,
 			ConfigSvc:    param.ConfigSvc,
 			QueryBuilder: param.QueryBuilder,

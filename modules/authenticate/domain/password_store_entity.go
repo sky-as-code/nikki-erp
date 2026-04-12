@@ -100,75 +100,67 @@ func DefinePasswordOtpRecoveryField(fieldName string) *dmodel.FieldBuilder {
 }
 
 type PasswordStore struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewPasswordStore() *PasswordStore {
-	return &PasswordStore{fields: make(dmodel.DynamicFields)}
+	return &PasswordStore{basemodel.NewDynamicModel()}
 }
 
 func NewPasswordStoreFrom(src dmodel.DynamicFields) *PasswordStore {
-	return &PasswordStore{fields: src}
-}
-
-func (this PasswordStore) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *PasswordStore) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &PasswordStore{basemodel.NewDynamicModel(src)}
 }
 
 func (this PasswordStore) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
 }
 
 func (this *PasswordStore) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	this.GetFieldData().SetModelId(basemodel.FieldId, v)
 }
 
 func (this PasswordStore) GetPassword() *string {
-	return this.fields.GetString(PasswordStoreFieldPassword)
+	return this.GetFieldData().GetString(PasswordStoreFieldPassword)
 }
 
 func (this *PasswordStore) SetPassword(v *string) {
-	this.fields.SetString(PasswordStoreFieldPassword, v)
+	this.GetFieldData().SetString(PasswordStoreFieldPassword, v)
 }
 
 func (this PasswordStore) GetPasswordExpiresAt() *model.ModelDateTime {
-	return this.fields.GetModelDateTime(PasswordStoreFieldPasswordExpiresAt)
+	return this.GetFieldData().GetModelDateTime(PasswordStoreFieldPasswordExpiresAt)
 }
 
 func (this *PasswordStore) SetPasswordExpiresAt(v *model.ModelDateTime) {
-	this.fields.SetModelDateTime(PasswordStoreFieldPasswordExpiresAt, v)
+	this.GetFieldData().SetModelDateTime(PasswordStoreFieldPasswordExpiresAt, v)
 }
 
 func (this PasswordStore) GetPasswordUpdatedAt() *model.ModelDateTime {
-	return this.fields.GetModelDateTime(PasswordStoreFieldPasswordUpdatedAt)
+	return this.GetFieldData().GetModelDateTime(PasswordStoreFieldPasswordUpdatedAt)
 }
 
 func (this *PasswordStore) SetPasswordUpdatedAt(v *model.ModelDateTime) {
-	this.fields.SetModelDateTime(PasswordStoreFieldPasswordUpdatedAt, v)
+	this.GetFieldData().SetModelDateTime(PasswordStoreFieldPasswordUpdatedAt, v)
 }
 
 func (this PasswordStore) GetPasswordTmp() *string {
-	return this.fields.GetString(PasswordStoreFieldPasswordTmp)
+	return this.GetFieldData().GetString(PasswordStoreFieldPasswordTmp)
 }
 
 func (this *PasswordStore) SetPasswordTmp(v *string) {
-	this.fields.SetString(PasswordStoreFieldPasswordTmp, v)
+	this.GetFieldData().SetString(PasswordStoreFieldPasswordTmp, v)
 }
 
 func (this PasswordStore) GetPasswordTmpExpiresAt() *model.ModelDateTime {
-	return this.fields.GetModelDateTime(PasswordStoreFieldPasswordTmpExpiresAt)
+	return this.GetFieldData().GetModelDateTime(PasswordStoreFieldPasswordTmpExpiresAt)
 }
 
 func (this *PasswordStore) SetPasswordTmpExpiresAt(v *model.ModelDateTime) {
-	this.fields.SetModelDateTime(PasswordStoreFieldPasswordTmpExpiresAt, v)
+	this.GetFieldData().SetModelDateTime(PasswordStoreFieldPasswordTmpExpiresAt, v)
 }
 
 func (this PasswordStore) MustGetPasswordOtp() string {
-	v := this.fields.GetString(PasswordStoreFieldPasswordOtp)
+	v := this.GetFieldData().GetString(PasswordStoreFieldPasswordOtp)
 	if v == nil {
 		panic("password OTP is not set")
 	}
@@ -176,31 +168,31 @@ func (this PasswordStore) MustGetPasswordOtp() string {
 }
 
 func (this PasswordStore) GetPasswordOtp() *string {
-	return this.fields.GetString(PasswordStoreFieldPasswordOtp)
+	return this.GetFieldData().GetString(PasswordStoreFieldPasswordOtp)
 }
 
 func (this *PasswordStore) SetPasswordOtp(v *string) {
-	this.fields.SetString(PasswordStoreFieldPasswordOtp, v)
+	this.GetFieldData().SetString(PasswordStoreFieldPasswordOtp, v)
 }
 
 func (this PasswordStore) GetPasswordOtpExpiresAt() *model.ModelDateTime {
-	return this.fields.GetModelDateTime(PasswordStoreFieldPasswordOtpExpiresAt)
+	return this.GetFieldData().GetModelDateTime(PasswordStoreFieldPasswordOtpExpiresAt)
 }
 
 func (this *PasswordStore) SetPasswordOtpExpiresAt(v *model.ModelDateTime) {
-	this.fields.SetModelDateTime(PasswordStoreFieldPasswordOtpExpiresAt, v)
+	this.GetFieldData().SetModelDateTime(PasswordStoreFieldPasswordOtpExpiresAt, v)
 }
 
 func (this PasswordStore) GetPasswordOtpRecovery() []string {
-	return this.fields.GetStrings(PasswordStoreFieldPasswordOtpRecovery)
+	return this.GetFieldData().GetStrings(PasswordStoreFieldPasswordOtpRecovery)
 }
 
 func (this *PasswordStore) SetPasswordOtpRecovery(v []string) {
-	this.fields.SetStrings(PasswordStoreFieldPasswordOtpRecovery, v)
+	this.GetFieldData().SetStrings(PasswordStoreFieldPasswordOtpRecovery, v)
 }
 
 func (this PasswordStore) GetPrincipalType() *PrincipalType {
-	s := this.fields.GetString(PasswordStoreFieldPrincipalType)
+	s := this.GetFieldData().GetString(PasswordStoreFieldPrincipalType)
 	if s == nil {
 		return nil
 	}
@@ -210,16 +202,16 @@ func (this PasswordStore) GetPrincipalType() *PrincipalType {
 
 func (this *PasswordStore) SetPrincipalType(v *PrincipalType) {
 	if v == nil {
-		this.fields.SetString(PasswordStoreFieldPrincipalType, nil)
+		this.GetFieldData().SetString(PasswordStoreFieldPrincipalType, nil)
 		return
 	}
-	this.fields.SetString(PasswordStoreFieldPrincipalType, (*string)(v))
+	this.GetFieldData().SetString(PasswordStoreFieldPrincipalType, (*string)(v))
 }
 
 func (this PasswordStore) GetPrincipalId() *model.Id {
-	return this.fields.GetModelId(PasswordStoreFieldPrincipalId)
+	return this.GetFieldData().GetModelId(PasswordStoreFieldPrincipalId)
 }
 
 func (this *PasswordStore) SetPrincipalId(v *model.Id) {
-	this.fields.SetModelId(PasswordStoreFieldPrincipalId, v)
+	this.GetFieldData().SetModelId(PasswordStoreFieldPrincipalId, v)
 }

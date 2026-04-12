@@ -35,7 +35,7 @@ func (this GroupRest) Create(echoCtx echo.Context) (err error) {
 }
 
 func (this GroupRest) Delete(echoCtx echo.Context) (err error) {
-	return httpserver.ServeDelete[DeleteGroupRequest](
+	return httpserver.ServeGeneralMutate(
 		"delete group",
 		echoCtx,
 		this.GroupSvc.DeleteGroup,
@@ -43,7 +43,7 @@ func (this GroupRest) Delete(echoCtx echo.Context) (err error) {
 }
 
 func (this GroupRest) GetOne(echoCtx echo.Context) (err error) {
-	return httpserver.ServeGetOne[GetGroupRequest](
+	return httpserver.ServeGetOne(
 		"get group by id",
 		echoCtx,
 		this.GroupSvc.GetGroup,
@@ -51,7 +51,7 @@ func (this GroupRest) GetOne(echoCtx echo.Context) (err error) {
 }
 
 func (this GroupRest) Exists(echoCtx echo.Context) (err error) {
-	return httpserver.ServeExists[GroupExistsRequest](
+	return httpserver.ServeExists(
 		"group exists",
 		echoCtx,
 		this.GroupSvc.GroupExists,
@@ -59,7 +59,7 @@ func (this GroupRest) Exists(echoCtx echo.Context) (err error) {
 }
 
 func (this GroupRest) ManageGroupUsers(echoCtx echo.Context) (err error) {
-	return httpserver.ServeManageM2m(
+	return httpserver.ServeGeneralMutate(
 		"manage group users",
 		echoCtx,
 		this.GroupSvc.ManageGroupUsers,

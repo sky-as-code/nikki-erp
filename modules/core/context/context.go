@@ -20,6 +20,7 @@ type Context interface {
 	GetDbTranx() db.DbTransaction
 	SetDbTranx(trx db.DbTransaction)
 	GetDomainConstraints() dmodel.DynamicFields
+	SetDomainConstraints(constraints dmodel.DynamicFields)
 	GetModuleName() string
 	// Replace current inner context with a new one that has the given key and value.
 	WithValue(key, val any)
@@ -100,6 +101,10 @@ func (this *RequestContext) SetDbTranx(trx db.DbTransaction) {
 
 func (this RequestContext) GetDomainConstraints() dmodel.DynamicFields {
 	return this.domainConstraints
+}
+
+func (this *RequestContext) SetDomainConstraints(constraints dmodel.DynamicFields) {
+	this.domainConstraints = constraints
 }
 
 func (this RequestContext) GetModuleName() string {

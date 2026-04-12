@@ -89,6 +89,7 @@ func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Unique(),
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
+		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(OrgEdgeUsers).
@@ -108,35 +109,27 @@ func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type Organization struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewOrganization() *Organization {
-	return &Organization{fields: make(dmodel.DynamicFields)}
+	return &Organization{basemodel.NewDynamicModel()}
 }
 
 func NewOrganizationFrom(src dmodel.DynamicFields) *Organization {
-	return &Organization{fields: src}
-}
-
-func (this Organization) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *Organization) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &Organization{basemodel.NewDynamicModel(src)}
 }
 
 func (this Organization) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
 }
 
 func (this *Organization) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	this.GetFieldData().SetModelId(basemodel.FieldId, v)
 }
 
 func (this Organization) GetSlug() *model.Slug {
-	s := this.fields.GetString(OrgFieldSlug)
+	s := this.GetFieldData().GetString(OrgFieldSlug)
 	if s == nil {
 		return nil
 	}
@@ -146,11 +139,11 @@ func (this Organization) GetSlug() *model.Slug {
 
 func (this *Organization) SetSlug(v *model.Slug) {
 	if v == nil {
-		this.fields.SetString(OrgFieldSlug, nil)
+		this.GetFieldData().SetString(OrgFieldSlug, nil)
 		return
 	}
 	s := string(*v)
-	this.fields.SetString(OrgFieldSlug, &s)
+	this.GetFieldData().SetString(OrgFieldSlug, &s)
 }
 
 func (this Organization) MustIsArchived() bool {
@@ -162,17 +155,17 @@ func (this Organization) MustIsArchived() bool {
 }
 
 func (this Organization) IsArchived() *bool {
-	return this.fields.GetBool(basemodel.FieldIsArchived)
+	return this.GetFieldData().GetBool(basemodel.FieldIsArchived)
 }
 
 func (this Organization) GetEtag() *model.Etag {
-	return this.fields.GetEtag(basemodel.FieldEtag)
+	return this.GetFieldData().GetEtag(basemodel.FieldEtag)
 }
 
 func (this *Organization) SetEtag(v *model.Etag) {
-	this.fields.SetEtag(basemodel.FieldEtag, v)
+	this.GetFieldData().SetEtag(basemodel.FieldEtag, v)
 }
 
 func (this Organization) GetDisplayName() *string {
-	return this.fields.GetString(OrgFieldDisplayName)
+	return this.GetFieldData().GetString(OrgFieldDisplayName)
 }

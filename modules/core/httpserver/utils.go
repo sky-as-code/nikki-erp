@@ -214,6 +214,10 @@ func ServeRequest[THttpReq any, THttpResp any, TSvcCommand any, TSvcResult CmdRe
 	return jsonSuccessFn(echoCtx, response)
 }
 
+func ItsMeMario[T any](me T) T {
+	return me
+}
+
 func ServeCreate[
 	TSvcCommand any,
 	TSvcCommandPtr dyn.DynamicModelSetterPtr[TSvcCommand],
@@ -243,61 +247,7 @@ func ServeCreate[
 	)
 }
 
-func ServeDelete[
-	THttpReq dyn.DeleteOneCommandShape,
-	TSvcCommand dyn.DeleteOneCommandShape,
-](
-	action string,
-	echoCtx echo.Context,
-	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[dyn.MutateResultData], error),
-) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
-			err = e
-		}
-	}()
-	err = ServeRequest2(
-		echoCtx,
-		serviceFn,
-		func(request THttpReq) TSvcCommand {
-			return TSvcCommand(request)
-		},
-		NewRestDeleteResponse2,
-		JsonOk,
-	)
-	return err
-}
-
-func ServeGetOne[
-	THttpReq dyn.GetOneQueryShape,
-	TSvcQuery dyn.GetOneQueryShape,
-	TDomain dmodel.DynamicModelGetter,
-](
-	action string,
-	echoCtx echo.Context,
-	serviceFn func(ctx corectx.Context, cmd TSvcQuery) (*dyn.OpResult[TDomain], error),
-) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
-			err = e
-		}
-	}()
-	err = ServeRequest2(
-		echoCtx,
-		serviceFn,
-		func(request THttpReq) TSvcQuery {
-			return TSvcQuery(request)
-		},
-		func(data TDomain) dmodel.DynamicFields {
-			return data.GetFieldData()
-		},
-		JsonOk,
-	)
-	return err
-}
-
 func ServeExists[
-	THttpReq dyn.ExistsQueryShape,
 	TSvcCommand dyn.ExistsQueryShape,
 ](
 	action string,
@@ -312,18 +262,41 @@ func ServeExists[
 	err = ServeRequest2(
 		echoCtx,
 		serviceFn,
-		func(request THttpReq) TSvcCommand {
-			return TSvcCommand(request)
-		},
-		func(data dyn.ExistsResultData) dyn.ExistsResultData {
-			return data
+		ItsMeMario,
+		ItsMeMario,
+		JsonOk,
+	)
+	return err
+}
+
+func ServeGetOne[
+	TSvcQuery any,
+	TDomain dmodel.DynamicModelGetter,
+](
+	action string,
+	echoCtx echo.Context,
+	serviceFn func(ctx corectx.Context, cmd TSvcQuery) (*dyn.OpResult[TDomain], error),
+) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
+			err = e
+		}
+	}()
+	err = ServeRequest2(
+		echoCtx,
+		serviceFn,
+		ItsMeMario,
+		func(data TDomain) dmodel.DynamicFields {
+			return data.GetFieldData()
 		},
 		JsonOk,
 	)
 	return err
 }
 
-func ServeManageM2m[
+// Use this function for mutation operations (delete, manageM2m, setIsArchived, etc.),
+// but not for update.
+func ServeGeneralMutate[
 	TSvcCommand any,
 ](
 	action string,
@@ -338,9 +311,7 @@ func ServeManageM2m[
 	err = ServeRequest2(
 		echoCtx,
 		serviceFn,
-		func(request TSvcCommand) TSvcCommand {
-			return request
-		},
+		ItsMeMario,
 		NewRestMutateResponse,
 		JsonOk,
 	)
@@ -354,6 +325,7 @@ func ServeSearch[
 	action string,
 	echoCtx echo.Context,
 	serviceFn func(ctx corectx.Context, cmd TSvcQuery) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error),
+	skipNotFoundError ...bool,
 ) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
@@ -363,11 +335,10 @@ func ServeSearch[
 	err = ServeRequest2(
 		echoCtx,
 		serviceFn,
-		func(request TSvcQuery) TSvcQuery {
-			return request
-		},
+		ItsMeMario,
 		NewSearchResponseDyn,
 		JsonOk,
+		skipNotFoundError...,
 	)
 	return err
 }
@@ -396,7 +367,7 @@ func ServeUpdate[
 		func(data dyn.MutateResultData) RestMutateResponse {
 			return NewRestMutateResponse(data)
 		},
-		JsonCreated,
+		JsonOk,
 	)
 }
 

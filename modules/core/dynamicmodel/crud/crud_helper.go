@@ -10,6 +10,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -288,6 +289,26 @@ func GetOne[
 ](
 	ctx corectx.Context, param GetOneParam,
 ) (_ *dyn.OpResult[TDomain], err error) {
+	result, err := getOneWithArchived[TDomain, TDomainPtr](ctx, param, nil)
+	return result, errors.Wrap(err, "GetOne")
+}
+
+func GetOneEnabled[
+	TDomain any,
+	TDomainPtr dyn.DynamicModelPtr[TDomain],
+](
+	ctx corectx.Context, param GetOneParam,
+) (_ *dyn.OpResult[TDomain], err error) {
+	result, err := getOneWithArchived[TDomain, TDomainPtr](ctx, param, util.ToPtr(false))
+	return result, errors.Wrap(err, "GetOneEnabled")
+}
+
+func getOneWithArchived[
+	TDomain any,
+	TDomainPtr dyn.DynamicModelPtr[TDomain],
+](
+	ctx corectx.Context, param GetOneParam, isArchived *bool,
+) (_ *dyn.OpResult[TDomain], err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), param.Action); e != nil {
 			err = e
@@ -301,14 +322,18 @@ func GetOne[
 	}
 	sanitizedQuery := sanitized.(*dyn.GetOneQuery)
 
+	filter := dmodel.DynamicFields{
+		basemodel.FieldId: sanitizedQuery.Id,
+	}
+	if isArchived != nil {
+		filter[basemodel.FieldIsArchived] = *isArchived
+	}
 	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
 	result, err := baserepo.GetOne[TDomain, TDomainPtr](ctx, dynamicRepo, dyn.RepoGetOneParam{
-		Filter: dmodel.DynamicFields{
-			basemodel.FieldId: sanitizedQuery.Id,
-		},
+		Filter:  filter,
 		Columns: sanitizedQuery.Columns,
 	})
-	return result, errors.Wrap(err, "GetOne")
+	return result, err
 }
 
 func getOneSchema() *dmodel.ModelSchema {

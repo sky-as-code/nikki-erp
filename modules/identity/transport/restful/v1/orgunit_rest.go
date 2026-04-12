@@ -4,11 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/orgunit"
 )
 
@@ -30,138 +26,60 @@ type OrgUnitRest struct {
 }
 
 func (this OrgUnitRest) Create(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create org unit"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequestDynamic(
+	return httpserver.ServeCreate(
+		"create org unit",
 		echoCtx,
+		&it.CreateOrgUnitCommand{},
 		this.OrgUnitSvc.CreateOrgUnit,
-		func(requestFields dmodel.DynamicFields) it.CreateOrgUnitCommand {
-			cmd := it.CreateOrgUnitCommand{}
-			cmd.SetFieldData(requestFields)
-			return cmd
-		},
-		func(data domain.OrganizationalUnit) CreateOrgUnitResponse {
-			response := httpserver.NewRestCreateResponseDyn(data.GetFieldData())
-			return *response
-		},
-		httpserver.JsonCreated,
 	)
 }
 
 func (this OrgUnitRest) Delete(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete org unit"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(
+	return httpserver.ServeGeneralMutate(
+		"delete org unit",
 		echoCtx,
 		this.OrgUnitSvc.DeleteOrgUnit,
-		func(request DeleteOrgUnitRequest) it.DeleteOrgUnitCommand {
-			return it.DeleteOrgUnitCommand(request)
-		},
-		func(data dyn.MutateResultData) DeleteOrgUnitResponse {
-			return httpserver.NewRestDeleteResponse2(data)
-		},
-		httpserver.JsonOk,
 	)
 }
 
 func (this OrgUnitRest) GetOne(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get org unit"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(
+	return httpserver.ServeGetOne(
+		"get org unit",
 		echoCtx,
 		this.OrgUnitSvc.GetOrgUnit,
-		func(request GetOrgUnitRequest) it.GetOrgUnitQuery {
-			return it.GetOrgUnitQuery(request)
-		},
-		func(data domain.OrganizationalUnit) dmodel.DynamicFields {
-			return data.GetFieldData()
-		},
-		httpserver.JsonOk,
 	)
 }
 
 func (this OrgUnitRest) Exists(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST org unit exists"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(
+	return httpserver.ServeExists(
+		"org unit exists",
 		echoCtx,
 		this.OrgUnitSvc.OrgUnitExists,
-		func(request OrgUnitExistsRequest) it.OrgUnitExistsQuery {
-			return it.OrgUnitExistsQuery(request)
-		},
-		func(data dyn.ExistsResultData) OrgUnitExistsResponse {
-			return OrgUnitExistsResponse(data)
-		},
-		httpserver.JsonOk,
 	)
 }
 
 func (this OrgUnitRest) ManageOrgUnitUsers(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST manage org unit users"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(
+	return httpserver.ServeGeneralMutate(
+		"manage org unit users",
 		echoCtx,
 		this.OrgUnitSvc.ManageOrgUnitUsers,
-		func(request ManageOrgUnitUsersRequest) it.ManageOrgUnitUsersCommand {
-			return it.ManageOrgUnitUsersCommand(request)
-		},
-		func(data dyn.MutateResultData) ManageOrgUnitUsersResponse {
-			return httpserver.NewRestMutateResponse(data)
-		},
-		httpserver.JsonOk,
 	)
 }
 
 func (this OrgUnitRest) Search(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search org units"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(
+	return httpserver.ServeSearch(
+		"search org units",
 		echoCtx,
 		this.OrgUnitSvc.SearchOrgUnits,
-		func(request SearchOrgUnitsRequest) it.SearchOrgUnitsQuery {
-			return it.SearchOrgUnitsQuery(request)
-		},
-		func(data it.SearchOrgUnitsResultData) SearchOrgUnitsResponse {
-			return httpserver.NewSearchResponseDyn(data)
-		},
-		httpserver.JsonOk,
 		true,
 	)
 }
 
 func (this OrgUnitRest) Update(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update org unit"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequestDynamic(
+	return httpserver.ServeUpdate(
+		"update org unit",
 		echoCtx,
+		&it.UpdateOrgUnitCommand{},
 		this.OrgUnitSvc.UpdateOrgUnit,
-		func(requestFields dmodel.DynamicFields) it.UpdateOrgUnitCommand {
-			cmd := it.UpdateOrgUnitCommand{}
-			cmd.SetFieldData(requestFields)
-			return cmd
-		},
-		httpserver.NewRestMutateResponse,
-		httpserver.JsonOk,
 	)
 }

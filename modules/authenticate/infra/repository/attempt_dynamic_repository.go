@@ -18,21 +18,24 @@ import (
 type AttemptDynamicRepositoryParam struct {
 	dig.In
 
-	Client       orm.DbClient
-	ConfigSvc    config.ConfigService
-	QueryBuilder orm.QueryBuilder
-	Logger       logging.LoggerService
+	Client        orm.DbClient
+	ConfigSvc     config.ConfigService
+	QueryBuilder  orm.QueryBuilder
+	Logger        logging.LoggerService
+	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
 }
 
 func NewAttemptDynamicRepository(param AttemptDynamicRepositoryParam) it.AttemptRepository {
 	schema := dmodel.MustGetSchema(domain.LoginAttemptSchemaName)
-	dynamicRepo := baserepo.NewBaseDynamicRepository(baserepo.NewBaseRepositoryParam{
-		Client:       param.Client,
-		ConfigSvc:    param.ConfigSvc,
-		QueryBuilder: param.QueryBuilder,
-		Logger:       param.Logger,
-		Schema:       schema,
-	})
+	dynamicRepo := param.NewBaseRepoFn(
+		dyn.NewBaseRepoParam{
+			Client:       param.Client,
+			ConfigSvc:    param.ConfigSvc,
+			QueryBuilder: param.QueryBuilder,
+			Logger:       param.Logger,
+			Schema:       schema,
+		},
+	)
 	return &AttemptDynamicRepository{dynamicRepo: dynamicRepo}
 }
 

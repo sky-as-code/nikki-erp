@@ -98,53 +98,45 @@ func OrganizationalUnitSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type OrganizationalUnit struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewOrganizationalUnit() *OrganizationalUnit {
-	return &OrganizationalUnit{fields: make(dmodel.DynamicFields)}
+	return &OrganizationalUnit{basemodel.NewDynamicModel()}
 }
 
 func NewOrganizationalUnitFrom(src dmodel.DynamicFields) *OrganizationalUnit {
-	return &OrganizationalUnit{fields: src}
-}
-
-func (this OrganizationalUnit) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *OrganizationalUnit) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &OrganizationalUnit{basemodel.NewDynamicModel(src)}
 }
 
 func (this OrganizationalUnit) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
 }
 
 func (this *OrganizationalUnit) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	this.GetFieldData().SetModelId(basemodel.FieldId, v)
 }
 
 func (this OrganizationalUnit) GetOrgId() *model.Id {
-	return this.fields.GetModelId(OrgUnitFieldOrgId)
+	return this.GetFieldData().GetModelId(OrgUnitFieldOrgId)
 }
 
 func (this *OrganizationalUnit) SetOrgId(v *model.Id) {
-	this.fields.SetModelId(OrgUnitFieldOrgId, v)
+	this.GetFieldData().SetModelId(OrgUnitFieldOrgId, v)
 }
 
 func (this OrganizationalUnit) GetParentId() *model.Id {
-	return this.fields.GetModelId(OrgUnitFieldParentId)
+	return this.GetFieldData().GetModelId(OrgUnitFieldParentId)
 }
 
 func (this *OrganizationalUnit) SetParentId(v *model.Id) {
-	this.fields.SetModelId(OrgUnitFieldParentId, v)
+	this.GetFieldData().SetModelId(OrgUnitFieldParentId, v)
 }
 
 func (this OrganizationalUnit) GetPath() []string {
-	return this.fields.GetStrings(OrgUnitFieldPath)
+	return this.GetFieldData().GetStrings(OrgUnitFieldPath)
 }
 
 func (this *OrganizationalUnit) SetPath(path []string) {
-	this.fields.SetStrings(OrgUnitFieldPath, path)
+	this.GetFieldData().SetStrings(OrgUnitFieldPath, path)
 }

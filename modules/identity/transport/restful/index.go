@@ -8,8 +8,6 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
-	"github.com/sky-as-code/nikki-erp/modules/identity/constants"
 	restv1 "github.com/sky-as-code/nikki-erp/modules/identity/transport/restful/v1"
 	v1 "github.com/sky-as-code/nikki-erp/modules/identity/transport/restful/v1"
 )
@@ -44,7 +42,6 @@ func initIdentityV1() error {
 		orgunitRest *v1.OrgUnitRest,
 	) error {
 		routeV1 := route.Group("/v1/identity")
-		routeV1.Use(middlewares.RequestContextMiddleware2(constants.IdentityModuleName))
 		// protected := route.Group("", commonMiddleware.RequireAuthMiddleware())
 		// checker := commonMiddleware.NewCqrsPermissionChecker(cqrsBus)
 
@@ -139,7 +136,6 @@ func initAuthorizeV1() error {
 		// roleRequestRest *v1.RoleRequestRest,
 	) {
 		v1 := route.Group("/v1/authorize")
-		v1.Use(middlewares.RequestContextMiddleware2(constants.IdentityModuleName))
 
 		v1.DELETE("/resources/:resource_id/actions/:action_id", actionRest.DeleteAction)
 		v1.GET("/resources/:resource_id/actions/:action_id", actionRest.GetAction)

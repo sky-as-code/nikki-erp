@@ -121,45 +121,37 @@ func RoleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type Role struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewRole() *Role {
-	return &Role{fields: make(dmodel.DynamicFields)}
+	return &Role{basemodel.NewDynamicModel()}
 }
 
 func NewRoleFrom(src dmodel.DynamicFields) *Role {
-	return &Role{fields: src}
-}
-
-func (this Role) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *Role) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &Role{basemodel.NewDynamicModel(src)}
 }
 
 func (this Role) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
 }
 
 func (this *Role) SetId(id *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, id)
+	this.GetFieldData().SetModelId(basemodel.FieldId, id)
 }
 
 func (this Role) GetOrgId() *model.Id {
-	return this.fields.GetModelId(RoleFieldOrgId)
+	return this.GetFieldData().GetModelId(RoleFieldOrgId)
 }
 
 func (this *Role) SetOrgId(id *model.Id) {
-	this.fields.SetModelId(RoleFieldOrgId, id)
+	this.GetFieldData().SetModelId(RoleFieldOrgId, id)
 }
 
 func (this Role) IsPrivate() *bool {
-	return this.fields.GetBool(RoleFieldIsPrivate)
+	return this.GetFieldData().GetBool(RoleFieldIsPrivate)
 }
 
 func (this *Role) SetIsPrivate(v *bool) {
-	this.fields.SetBool(RoleFieldIsPrivate, v)
+	this.GetFieldData().SetBool(RoleFieldIsPrivate, v)
 }

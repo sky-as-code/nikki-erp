@@ -19,15 +19,16 @@ import (
 type ResourceDynamicRepositoryParam struct {
 	dig.In
 
-	Client       dyorm.DbClient
-	ConfigSvc    config.ConfigService
-	QueryBuilder dyorm.QueryBuilder
-	Logger       logging.LoggerService
+	Client        dyorm.DbClient
+	ConfigSvc     config.ConfigService
+	QueryBuilder  dyorm.QueryBuilder
+	Logger        logging.LoggerService
+	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
 }
 
 func NewResourceDynamicRepository(param ResourceDynamicRepositoryParam) it.ResourceRepository {
-	dynamicRepo := baserepo.NewBaseDynamicRepository(
-		baserepo.NewBaseRepositoryParam{
+	dynamicRepo := param.NewBaseRepoFn(
+		dyn.NewBaseRepoParam{
 			Client:       param.Client,
 			ConfigSvc:    param.ConfigSvc,
 			QueryBuilder: param.QueryBuilder,

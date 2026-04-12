@@ -83,6 +83,7 @@ func (this *RestUpdateResponse) FromNonEntity(src any) {
 	model.MustCopy(src, this)
 }
 
+// Deprecated: Use RestMutateResponse instead.
 type RestDeleteResponse struct {
 	Id        model.Id `json:"id"`
 	DeletedAt int64    `json:"deleted_at"`
@@ -142,6 +143,7 @@ type RestDeleteResponse2 struct {
 	AffectedAt    string `json:"affected_at"`
 }
 
+// Deprecated: Use NewRestMutateResponse instead.
 func NewRestDeleteResponse2(src dyn.MutateResultData) RestDeleteResponse2 {
 	response := RestDeleteResponse2{}
 	response.AffectedCount = src.AffectedCount

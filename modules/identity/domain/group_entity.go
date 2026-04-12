@@ -104,45 +104,37 @@ func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type Group struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewGroup() *Group {
-	return &Group{fields: make(dmodel.DynamicFields)}
+	return &Group{basemodel.NewDynamicModel()}
 }
 
 func NewGroupFrom(src dmodel.DynamicFields) *Group {
-	return &Group{fields: src}
-}
-
-func (this Group) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *Group) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &Group{basemodel.NewDynamicModel(src)}
 }
 
 func (this Group) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
 }
 
 func (this *Group) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	this.GetFieldData().SetModelId(basemodel.FieldId, v)
 }
 
 func (this Group) GetName() *string {
-	return this.fields.GetString(GroupFieldName)
+	return this.GetFieldData().GetString(GroupFieldName)
 }
 
 func (this *Group) SetName(v *string) {
-	this.fields.SetString(GroupFieldName, v)
+	this.GetFieldData().SetString(GroupFieldName, v)
 }
 
 func (this Group) GetEtag() *model.Etag {
-	return this.fields.GetEtag(basemodel.FieldEtag)
+	return this.GetFieldData().GetEtag(basemodel.FieldEtag)
 }
 
 func (this *Group) SetEtag(v *model.Etag) {
-	this.fields.SetEtag(basemodel.FieldEtag, v)
+	this.GetFieldData().SetEtag(basemodel.FieldEtag, v)
 }

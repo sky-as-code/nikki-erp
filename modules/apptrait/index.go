@@ -7,6 +7,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/config"
 	"github.com/sky-as-code/nikki-erp/modules"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	httpserverExt "github.com/sky-as-code/nikki-erp/modules/core/httpserver/external"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 )
@@ -45,6 +47,9 @@ func (*AppTraitModule) Init() error {
 		deps.Register(httpserverExt.NewPermissionExtServiceImpl),
 		deps.Register(requestguard.NewStaticRequestGuardServiceImpl),
 		deps.Register(config.GetDefaultConfigYaml),
+		deps.Register(func() dyn.NewBaseDynamicRepositoryFn {
+			return baserepo.NewBaseDynamicRepository
+		}),
 	)
 
 	return err

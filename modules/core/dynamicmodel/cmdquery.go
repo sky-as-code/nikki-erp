@@ -60,15 +60,6 @@ type GetOneQuery struct {
 	Columns []string `json:"columns" query:"columns"`
 }
 
-// Helper type for generic type constraints.
-type GetOneQueryShape interface {
-	// MUST change this when `GetOneQuery` fields change.
-	~struct {
-		Id      model.Id `json:"id" param:"id"`
-		Columns []string `json:"columns" query:"columns"`
-	}
-}
-
 type SearchQuery struct {
 	Columns []string `json:"columns" query:"columns"`
 	Page    int      `json:"page" query:"page"`

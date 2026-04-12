@@ -144,25 +144,13 @@ func RoleRequestSchemaBuilder() *dmodel.ModelSchemaBuilder {
 
 // RoleRequest represents a request to assign a role to a receiver (user or group).
 type RoleRequest struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewRoleRequest() *RoleRequest {
-	return &RoleRequest{
-		fields: make(dmodel.DynamicFields),
-	}
+	return &RoleRequest{basemodel.NewDynamicModel()}
 }
 
 func NewRoleRequestFrom(src dmodel.DynamicFields) *RoleRequest {
-	return &RoleRequest{
-		fields: src,
-	}
-}
-
-func (this RoleRequest) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *RoleRequest) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &RoleRequest{basemodel.NewDynamicModel(src)}
 }

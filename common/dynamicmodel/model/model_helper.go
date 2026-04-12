@@ -246,3 +246,20 @@ func (this DynamicFields) SetModelTime(key string, v *model.ModelTime) {
 	}
 	this[key] = *v
 }
+
+func (this DynamicFields) GetSlug(key string) *model.Slug {
+	val, ok := this[key]
+	if !ok || val == nil {
+		return nil
+	}
+	slug := val.(model.Slug)
+	return &slug
+}
+
+func (this DynamicFields) SetSlug(key string, v *model.Slug) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	this[key] = string(*v)
+}
