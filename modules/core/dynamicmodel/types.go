@@ -5,14 +5,26 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
 type DynamicModelRepository interface {
 	BeginTransaction(ctx corectx.Context) (database.DbTransaction, error)
 	GetBaseRepo() BaseDynamicRepository
 }
+
+type NewBaseRepoParam struct {
+	Client       orm.DbClient
+	ConfigSvc    config.ConfigService
+	Logger       logging.LoggerService
+	QueryBuilder orm.QueryBuilder
+	Schema       *dmodel.ModelSchema
+}
+
+type NewBaseDynamicRepositoryFn func(param NewBaseRepoParam) BaseDynamicRepository
 
 type BaseDynamicRepository interface {
 	Schema() *dmodel.ModelSchema
@@ -86,7 +98,12 @@ type RepoCountM2mParam struct {
 	SrcId   model.Id `json:"src_id"`
 }
 
-type DynamicModelPtr[TDomain any] interface {
-	*TDomain
+type DynamicModelPtr[T any] interface {
+	*T
 	dmodel.DynamicModel
+}
+
+type DynamicModelSetterPtr[T any] interface {
+	*T
+	dmodel.DynamicModelSetter
 }

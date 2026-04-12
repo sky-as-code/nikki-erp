@@ -37,6 +37,13 @@ func (this *DynamicFields) UnmarshalJSON(data []byte) error {
 	return this.UnmarshalText(data)
 }
 
+func (this *DynamicFields) Merge(data DynamicFields) error {
+	for key, value := range data {
+		(*this)[key] = value
+	}
+	return nil
+}
+
 func Value(val any) value {
 	return value{val: &val}
 }

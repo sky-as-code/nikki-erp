@@ -173,23 +173,15 @@ func EntitlementExpression(actionCode *string, resourceCode *string, scope Resou
 // - When this OU is moved to under a different parent OU, no user's access rights will be affected.
 // - All user's access rights are explicitly managed by the entitlement grant process, and can be audited.
 type Entitlement struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewEntitlement() *Entitlement {
-	return &Entitlement{fields: make(dmodel.DynamicFields)}
+	return &Entitlement{basemodel.NewDynamicModel()}
 }
 
 func NewEntitlementFrom(src dmodel.DynamicFields) *Entitlement {
-	return &Entitlement{fields: src}
-}
-
-func (this Entitlement) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *Entitlement) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &Entitlement{basemodel.NewDynamicModel(src)}
 }
 
 func (this *Entitlement) CalculateExpression() string {
@@ -203,28 +195,28 @@ func (this *Entitlement) CalculateExpression() string {
 	expr := EntitlementExpression(
 		this.GetActionId(), this.GetResourceId(), *this.GetScope(), scopeId,
 	)
-	this.fields.SetString(EntitlementFieldExpression, &expr)
+	this.GetFieldData().SetString(EntitlementFieldExpression, &expr)
 	return expr
 }
 
 func (this Entitlement) GetActionId() *model.Id {
-	return this.fields.GetModelId(EntitlementFieldActionId)
+	return this.GetFieldData().GetModelId(EntitlementFieldActionId)
 }
 
 func (this *Entitlement) SetActionId(v *model.Id) {
-	this.fields.SetModelId(EntitlementFieldActionId, v)
+	this.GetFieldData().SetModelId(EntitlementFieldActionId, v)
 }
 
 func (this Entitlement) GetResourceId() *model.Id {
-	return this.fields.GetModelId(EntitlementFieldResourceId)
+	return this.GetFieldData().GetModelId(EntitlementFieldResourceId)
 }
 
 func (this *Entitlement) SetResourceId(v *model.Id) {
-	this.fields.SetModelId(EntitlementFieldResourceId, v)
+	this.GetFieldData().SetModelId(EntitlementFieldResourceId, v)
 }
 
 func (this Entitlement) GetScope() *ResourceScope {
-	s := this.fields.GetString(EntitlementFieldScope)
+	s := this.GetFieldData().GetString(EntitlementFieldScope)
 	if s == nil {
 		return nil
 	}
@@ -234,25 +226,25 @@ func (this Entitlement) GetScope() *ResourceScope {
 
 func (this *Entitlement) SetScope(v *ResourceScope) {
 	if v == nil {
-		this.fields.SetString(EntitlementFieldScope, nil)
+		this.GetFieldData().SetString(EntitlementFieldScope, nil)
 		return
 	}
 	s := string(*v)
-	this.fields.SetString(EntitlementFieldScope, &s)
+	this.GetFieldData().SetString(EntitlementFieldScope, &s)
 }
 
 func (this Entitlement) GetOrgId() *model.Id {
-	return this.fields.GetModelId(EntitlementFieldOrgId)
+	return this.GetFieldData().GetModelId(EntitlementFieldOrgId)
 }
 
 func (this *Entitlement) SetOrgId(v *model.Id) {
-	this.fields.SetModelId(EntitlementFieldOrgId, v)
+	this.GetFieldData().SetModelId(EntitlementFieldOrgId, v)
 }
 
 func (this Entitlement) GetOrgUnitId() *model.Id {
-	return this.fields.GetModelId(EntitlementFieldOrgUnitId)
+	return this.GetFieldData().GetModelId(EntitlementFieldOrgUnitId)
 }
 
 func (this *Entitlement) SetOrgUnitId(v *model.Id) {
-	this.fields.SetModelId(EntitlementFieldOrgUnitId, v)
+	this.GetFieldData().SetModelId(EntitlementFieldOrgUnitId, v)
 }

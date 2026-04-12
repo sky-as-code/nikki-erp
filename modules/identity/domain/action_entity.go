@@ -81,53 +81,45 @@ func DefineActionFieldCodeArr(fieldName ...string) *dmodel.FieldBuilder {
 }
 
 type Action struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewAction() *Action {
-	return &Action{fields: make(dmodel.DynamicFields)}
+	return &Action{basemodel.NewDynamicModel()}
 }
 
 func NewActionFrom(src dmodel.DynamicFields) *Action {
-	return &Action{fields: src}
-}
-
-func (this Action) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *Action) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &Action{basemodel.NewDynamicModel(src)}
 }
 
 func (this Action) GetId() *model.Id {
-	return this.fields.GetModelId(ActionFieldId)
+	return this.GetFieldData().GetModelId(ActionFieldId)
 }
 
 func (this *Action) SetId(v *model.Id) {
-	this.fields.SetModelId(ActionFieldId, v)
+	this.GetFieldData().SetModelId(ActionFieldId, v)
 }
 
 func (this Action) GetCode() *string {
-	return this.fields.GetString(ActionFieldCode)
+	return this.GetFieldData().GetString(ActionFieldCode)
 }
 
 func (this *Action) SetCode(v *string) {
-	this.fields.SetString(ActionFieldCode, v)
+	this.GetFieldData().SetString(ActionFieldCode, v)
 }
 
 func (this Action) GetResourceId() *model.Id {
-	return this.fields.GetModelId(ActionFieldResourceId)
+	return this.GetFieldData().GetModelId(ActionFieldResourceId)
 }
 
 func (this *Action) SetResourceId(v *model.Id) {
-	this.fields.SetModelId(ActionFieldResourceId, v)
+	this.GetFieldData().SetModelId(ActionFieldResourceId, v)
 }
 
 func (this Action) GetName() *string {
-	return this.fields.GetString(ActionFieldName)
+	return this.GetFieldData().GetString(ActionFieldName)
 }
 
 func (this *Action) SetName(v *string) {
-	this.fields.SetString(ActionFieldName, v)
+	this.GetFieldData().SetString(ActionFieldName, v)
 }

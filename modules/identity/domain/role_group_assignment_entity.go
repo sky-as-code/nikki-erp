@@ -27,7 +27,6 @@ func RoleGroupAssignmentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		ShouldBuildDb().
 		CompositeUnique(RoleGroupAssignFieldRoleId, RoleGroupAssignFieldReceiverGroupId).
 		Extend(basemodel.BaseModelSchemaBuilder()).
-		Extend(basemodel.AuditableReadonlyModelSchemaBuilder()).
 		Field(
 			basemodel.DefineFieldId(RoleGroupAssignFieldRoleId).
 				RequiredForCreate(),
@@ -50,6 +49,7 @@ func RoleGroupAssignmentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				DataType(dmodel.FieldDataTypeDateTime()).
 				Description(model.LangJson{"en-US": "The date and time when the entitlement grant expires."}),
 		).
+		Extend(basemodel.AuditableReadonlyModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(RoleGroupAssignEdgeRoleRequest).
 				Label(model.LangJson{"en-US": "Role Request"}).

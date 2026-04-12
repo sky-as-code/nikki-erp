@@ -122,7 +122,7 @@ func (this ActionRest) SearchActions(echoCtx echo.Context) (err error) {
 			return it.SearchActionsQuery(request)
 		},
 		func(data it.SearchActionsResultData) SearchActionsResponse {
-			return httpserver.NewSearchUsersResponseDyn(data)
+			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
 		true,

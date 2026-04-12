@@ -20,6 +20,32 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 )
 
+// FieldDataTypeName is the canonical string returned by FieldDataType.String() and used as a column / generic type id.
+const (
+	FieldDataTypeNameBoolean       = "boolean"
+	FieldDataTypeNameDecimal       = "decimal"
+	FieldDataTypeNameEmail         = "email"
+	FieldDataTypeNameEnumInt32     = "enumInt32"
+	FieldDataTypeNameEnumString    = "enumString"
+	FieldDataTypeNameInt32         = "int32"
+	FieldDataTypeNameInt64         = "int64"
+	FieldDataTypeNameJsonMap       = "jsonmap"
+	FieldDataTypeNameModel         = "model"
+	FieldDataTypeNameModelDate     = "nikkiDate"
+	FieldDataTypeNameModelDateTime = "nikkiDateTime"
+	FieldDataTypeNameEtag          = "nikkiEtag"
+	FieldDataTypeNameLangCode      = "nikkiLangCode"
+	FieldDataTypeNameLangJson      = "nikkiLangJson"
+	FieldDataTypeNameSlug          = "nikkiSlug"
+	FieldDataTypeNameModelTime     = "nikkiTime"
+	FieldDataTypeNamePhone         = "phone"
+	FieldDataTypeNameSecret        = "secret"
+	FieldDataTypeNameString        = "string"
+	FieldDataTypeNameUlid          = "ulid"
+	FieldDataTypeNameUrl           = "url"
+	FieldDataTypeNameUuid          = "uuid"
+)
+
 // FieldDataType defines the interface for dynamic field data types.
 // Validate returns (validatedValue, nil) on success or (nil, ValidationError) on failure.
 // Validate always runs TryConvert first to coerce the payload to the concrete storage type,
@@ -38,11 +64,11 @@ type FieldDataType interface {
 // Scalar types are created by default. Use .ArrayType() to get array variant.
 
 func FieldDataTypeEmail() FieldDataType {
-	return fieldDataTypeEmail{fieldDataTypeBase{name: "email", options: nil}}
+	return fieldDataTypeEmail{fieldDataTypeBase{name: FieldDataTypeNameEmail, options: nil}}
 }
 
 func FieldDataTypePhone() FieldDataType {
-	return fieldDataTypePhone{fieldDataTypeBase{name: "phone", options: nil}}
+	return fieldDataTypePhone{fieldDataTypeBase{name: FieldDataTypeNamePhone, options: nil}}
 }
 
 type FieldDataTypeStringOpts struct {
@@ -53,7 +79,7 @@ type FieldDataTypeStringOpts struct {
 func FieldDataTypeString(minLength int, maxLength int, stringOpts ...FieldDataTypeStringOpts) FieldDataType {
 	validateRangeOrPanic(minLength, maxLength, "FieldDataTypeString")
 	dtOpts := processStringOpts(minLength, maxLength, stringOpts...)
-	return fieldDataTypeString{fieldDataTypeBase{name: "string", options: dtOpts}}
+	return fieldDataTypeString{fieldDataTypeBase{name: FieldDataTypeNameString, options: dtOpts}}
 }
 
 func processStringOpts(minLength int, maxLength int, stringOpts ...FieldDataTypeStringOpts) FieldDataTypeOptions {
@@ -75,7 +101,7 @@ func processStringOpts(minLength int, maxLength int, stringOpts ...FieldDataType
 
 func FieldDataTypeSecret(minLength int, maxLength int) FieldDataType {
 	return fieldDataTypeString{fieldDataTypeBase{
-		name: "secret",
+		name: FieldDataTypeNameSecret,
 		options: FieldDataTypeOptions{
 			FieldDataTypeOptSanitizeType: SanitizeTypeNone,
 			FieldDataTypeOptLength:       []int{minLength, maxLength},
@@ -85,7 +111,7 @@ func FieldDataTypeSecret(minLength int, maxLength int) FieldDataType {
 
 func FieldDataTypeUrl() FieldDataType {
 	return fieldDataTypeUrl{fieldDataTypeBase{
-		name: "url",
+		name: FieldDataTypeNameUrl,
 		options: FieldDataTypeOptions{
 			FieldDataTypeOptLength: []int{model.MODEL_RULE_URL_LENGTH_MIN, model.MODEL_RULE_URL_LENGTH_MAX},
 		},
@@ -93,23 +119,23 @@ func FieldDataTypeUrl() FieldDataType {
 }
 
 func FieldDataTypeUlid() FieldDataType {
-	return fieldDataTypeUlid{fieldDataTypeBase{name: "ulid", options: nil}}
+	return fieldDataTypeUlid{fieldDataTypeBase{name: FieldDataTypeNameUlid, options: nil}}
 }
 
 func FieldDataTypeUuid() FieldDataType {
-	return fieldDataTypeUuid{fieldDataTypeBase{name: "uuid", options: nil}}
+	return fieldDataTypeUuid{fieldDataTypeBase{name: FieldDataTypeNameUuid, options: nil}}
 }
 
 func FieldDataTypeInt64(min int64, max int64) FieldDataType {
 	validateRangeOrPanic(min, max, "FieldDataTypeInt64")
 	opts := FieldDataTypeOptions{FieldDataTypeOptRange: []int64{min, max}}
-	return fieldDataTypeInt64{fieldDataTypeBase{name: "int64", options: opts}}
+	return fieldDataTypeInt64{fieldDataTypeBase{name: FieldDataTypeNameInt64, options: opts}}
 }
 
 func FieldDataTypeInt32(min int32, max int32) FieldDataType {
 	validateRangeOrPanic(min, max, "FieldDataTypeInt32")
 	opts := FieldDataTypeOptions{FieldDataTypeOptRange: []int32{min, max}}
-	return fieldDataTypeInt32{fieldDataTypeBase{name: "int32", options: opts}}
+	return fieldDataTypeInt32{fieldDataTypeBase{name: FieldDataTypeNameInt32, options: opts}}
 }
 
 func FieldDataTypeDecimal(min string, max string, scale uint) FieldDataType {
@@ -118,38 +144,38 @@ func FieldDataTypeDecimal(min string, max string, scale uint) FieldDataType {
 		FieldDataTypeOptRange: []string{min, max},
 		FieldDataTypeOptScale: scale,
 	}
-	return fieldDataTypeDecimal{fieldDataTypeBase{name: "decimal", options: opts}}
+	return fieldDataTypeDecimal{fieldDataTypeBase{name: FieldDataTypeNameDecimal, options: opts}}
 }
 
 func FieldDataTypeBoolean() FieldDataType {
-	return fieldDataTypeBoolean{fieldDataTypeBase{name: "boolean", options: nil}}
+	return fieldDataTypeBoolean{fieldDataTypeBase{name: FieldDataTypeNameBoolean, options: nil}}
 }
 
 func FieldDataTypeDate() FieldDataType {
-	return fieldDataTypeDate{fieldDataTypeBase{name: "nikkiDate", options: nil}}
+	return fieldDataTypeDate{fieldDataTypeBase{name: FieldDataTypeNameModelDate, options: nil}}
 }
 
 func FieldDataTypeTime() FieldDataType {
-	return fieldDataTypeTime{fieldDataTypeBase{name: "nikkiTime", options: nil}}
+	return fieldDataTypeTime{fieldDataTypeBase{name: FieldDataTypeNameModelTime, options: nil}}
 }
 
 func FieldDataTypeDateTime() FieldDataType {
-	return fieldDataTypeDateTime{fieldDataTypeBase{name: "nikkiDateTime", options: nil}}
+	return fieldDataTypeDateTime{fieldDataTypeBase{name: FieldDataTypeNameModelDateTime, options: nil}}
 }
 
 func FieldDataTypeEnumString(enumValues []string) FieldDataType {
 	opts := FieldDataTypeOptions{FieldDataTypeOptEnumValues: enumValues}
-	return fieldDataTypeEnumString{fieldDataTypeBase{name: "enumString", options: opts}}
+	return fieldDataTypeEnumString{fieldDataTypeBase{name: FieldDataTypeNameEnumString, options: opts}}
 }
 
-func FieldDataTypeEnumInt32(enumValues []int64) FieldDataType {
+func FieldDataTypeEnumInt32(enumValues []int32) FieldDataType {
 	opts := FieldDataTypeOptions{FieldDataTypeOptEnumValues: enumValues}
-	return fieldDataTypeEnumInt32{fieldDataTypeBase{name: "enumInt32", options: opts}}
+	return fieldDataTypeEnumInt32{fieldDataTypeBase{name: FieldDataTypeNameEnumInt32, options: opts}}
 }
 
 func FieldDataTypeEtag() FieldDataType {
 	return fieldDataTypeEtag{fieldDataTypeBase{
-		name: "nikkiEtag",
+		name: FieldDataTypeNameEtag,
 		options: FieldDataTypeOptions{
 			FieldDataTypeOptLength: []int{model.MODEL_RULE_ETAG_MIN_LENGTH, model.MODEL_RULE_ETAG_MAX_LENGTH},
 		},
@@ -162,16 +188,16 @@ func FieldDataTypeLangJson(minLength int, maxLength int, stringOpts ...FieldData
 	dtOpts[FieldDataTypeOptLangJsonWhitelist] = []model.LanguageCode{
 		model.DefaultLanguageCode,
 	}
-	return fieldDataTypeLangJson{fieldDataTypeBase{name: "nikkiLangJson", options: dtOpts}}
+	return fieldDataTypeLangJson{fieldDataTypeBase{name: FieldDataTypeNameLangJson, options: dtOpts}}
 }
 
 func FieldDataTypeLangCode() FieldDataType {
-	return fieldDataTypeLangCode{fieldDataTypeBase{name: "nikkiLangCode", options: nil}}
+	return fieldDataTypeLangCode{fieldDataTypeBase{name: FieldDataTypeNameLangCode, options: nil}}
 }
 
 func FieldDataTypeSlug() FieldDataType {
 	return fieldDataTypeSlug{fieldDataTypeBase{
-		name: "nikkiSlug",
+		name: FieldDataTypeNameSlug,
 		options: FieldDataTypeOptions{
 			FieldDataTypeOptLength: []int{model.MODEL_RULE_SLUG_LENGTH_MIN, model.MODEL_RULE_SLUG_LENGTH_MAX},
 		},
@@ -181,11 +207,11 @@ func FieldDataTypeSlug() FieldDataType {
 // FieldDataTypeModel represents a virtual/implicit field that holds a related model or slice of models.
 // It is not persisted as a DB column; it is used for graph traversal and API response expansion.
 func FieldDataTypeModel() FieldDataType {
-	return fieldDataTypeModel{fieldDataTypeBase{name: "model", options: nil}}
+	return fieldDataTypeModel{fieldDataTypeBase{name: FieldDataTypeNameModel, options: nil}}
 }
 
 func IsFieldDataTypeModel(dt FieldDataType) bool {
-	return dt.String() == "model"
+	return dt.String() == FieldDataTypeNameModel
 }
 
 // fieldDataTypeBase provides common behavior for simple string-based types.
@@ -1024,7 +1050,7 @@ func (this fieldDataTypeEnumInt32) validateScalar(value value) (value, *ft.Clien
 		allowedAny[i] = n
 	}
 	if value.Get() == nil {
-		return Value(nil), NewInvalidDataTypeErr("", "int64")
+		return Value(nil), NewInvalidDataTypeErr("", "int32")
 	}
 	if err := ValidateOneOf(*value.Get(), allowedAny); err != nil {
 		return Value(nil), err
@@ -1034,14 +1060,14 @@ func (this fieldDataTypeEnumInt32) validateScalar(value value) (value, *ft.Clien
 
 func (this fieldDataTypeEnumInt32) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
 	if this.isArray {
-		return tryConvertInt64ArrayValue(val)
+		return tryConvertInt32ArrayValue(val)
 	}
-	_, sameType := val.(int64)
-	_, ptrSameType := val.(*int64)
+	_, sameType := val.(int32)
+	_, ptrSameType := val.(*int32)
 	if sameType || ptrSameType {
 		return Value(val), nil
 	}
-	result, err := toInt64(val)
+	result, err := toInt32(val)
 	if err != nil {
 		return Value(nil), err
 	}
@@ -1202,7 +1228,7 @@ func (this fieldDataTypeLangJson) TryConvert(val any, _ FieldDataTypeOptions) (v
 
 // FieldDataTypeJsonMap stores arbitrary JSON objects in jsonb columns (map[string]any).
 func FieldDataTypeJsonMap() FieldDataType {
-	return fieldDataTypeJsonMap{fieldDataTypeBase{name: "jsonmap", options: nil}}
+	return fieldDataTypeJsonMap{fieldDataTypeBase{name: FieldDataTypeNameJsonMap, options: nil}}
 }
 
 type fieldDataTypeJsonMap struct{ fieldDataTypeBase }

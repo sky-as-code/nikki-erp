@@ -14,7 +14,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
@@ -23,15 +22,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
-type NewBaseRepositoryParam struct {
-	Client       orm.DbClient
-	ConfigSvc    config.ConfigService
-	Logger       logging.LoggerService
-	QueryBuilder orm.QueryBuilder
-	Schema       *dmodel.ModelSchema
-}
-
-func NewBaseDynamicRepository(param NewBaseRepositoryParam) dyn.BaseDynamicRepository {
+func NewBaseDynamicRepository(param dyn.NewBaseRepoParam) dyn.BaseDynamicRepository {
 	sqlDebugEnabled := param.ConfigSvc.GetBool(c.DbDebugEnabled)
 
 	return &BaseDynamicRepositoryImpl{
@@ -383,7 +374,11 @@ func (this *BaseDynamicRepositoryImpl) ExistsM2m(ctx corectx.Context, param dyn.
 		row = filter
 	} else {
 		destKeys := dmodel.DynamicFields{basemodel.FieldId: *param.DestId}
-		row = this.materializeM2mJunctionRow(link, dyn.RepoM2mAssociation{SrcKeys: srcKeys, DestKeys: destKeys})
+		row = this.materializeM2mJunctionRow(ctx, link, dyn.RepoM2mAssociation{SrcKeys: srcKeys, DestKeys: destKeys})
+	}
+	constraints := ctx.GetDomainConstraints()
+	if constraints != nil {
+		row.Merge(constraints)
 	}
 	graph := filterToAndGraph(row)
 	sqlPtr, qbClientErrs, err := this.queryBuilder.SqlExistsGraph(
@@ -414,6 +409,10 @@ func (this *BaseDynamicRepositoryImpl) CountM2m(
 	filter, filled := this.m2mThroughFilterForLink(srcKeys, link)
 	if !filled {
 		return &dyn.OpResult[int]{Data: 0, HasData: false}, nil
+	}
+	constraints := ctx.GetDomainConstraints()
+	if constraints != nil {
+		filter.Merge(constraints)
 	}
 	graph := filterToAndGraph(filter)
 	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph, nil)
@@ -591,7 +590,7 @@ func dynamicFieldsToIds(fields []dmodel.DynamicFields) []model.Id {
 func (this *BaseDynamicRepositoryImpl) deleteJunctionRows(ctx corectx.Context,
 	link *dmodel.M2mPeerLink, desociations []dyn.RepoM2mAssociation,
 ) (*dyn.OpResult[int], error) {
-	rows, clientErrs := this.assocToJuncRowArr(link, desociations)
+	rows, clientErrs := this.assocToJuncRowArr(ctx, link, desociations)
 	if len(clientErrs) > 0 {
 		return &dyn.OpResult[int]{ClientErrors: clientErrs}, nil
 	}
@@ -618,7 +617,7 @@ func (this *BaseDynamicRepositoryImpl) insertJunctionRows(ctx corectx.Context,
 	link *dmodel.M2mPeerLink, associations []dyn.RepoM2mAssociation,
 	beforeInsert dyn.RepoBeforeInsertM2mFn,
 ) (*dyn.OpResult[int], error) {
-	rows, clientErrs := this.assocToJuncRowArr(link, associations)
+	rows, clientErrs := this.assocToJuncRowArr(ctx, link, associations)
 	if len(clientErrs) > 0 {
 		return &dyn.OpResult[int]{ClientErrors: clientErrs}, nil
 	}
@@ -648,12 +647,12 @@ func (this *BaseDynamicRepositoryImpl) insertJunctionRows(ctx corectx.Context,
 }
 
 func (this *BaseDynamicRepositoryImpl) assocToJuncRowArr(
-	link *dmodel.M2mPeerLink, associations []dyn.RepoM2mAssociation,
+	ctx corectx.Context, link *dmodel.M2mPeerLink, associations []dyn.RepoM2mAssociation,
 ) ([]dmodel.DynamicFields, ft.ClientErrors) {
 	var errs ft.ClientErrors
 	out := make([]dmodel.DynamicFields, 0, len(associations))
 	for i := range associations {
-		row, rowErrs := this.assocToJuncRow(link, i, associations[i])
+		row, rowErrs := this.assocToJuncRow(ctx, link, i, associations[i])
 		if rowErrs.Count() > 0 {
 			for _, e := range rowErrs {
 				errs.Append(e)
@@ -669,7 +668,7 @@ func (this *BaseDynamicRepositoryImpl) assocToJuncRowArr(
 }
 
 func (this *BaseDynamicRepositoryImpl) assocToJuncRow(
-	link *dmodel.M2mPeerLink, idx int, assoc dyn.RepoM2mAssociation,
+	ctx corectx.Context, link *dmodel.M2mPeerLink, idx int, assoc dyn.RepoM2mAssociation,
 ) (dmodel.DynamicFields, ft.ClientErrors) {
 	var errs ft.ClientErrors
 	prefix := fmt.Sprintf("associations[%d]", idx)
@@ -686,18 +685,22 @@ func (this *BaseDynamicRepositoryImpl) assocToJuncRow(
 	if errs.Count() > 0 {
 		return nil, errs
 	}
-	return this.materializeM2mJunctionRow(link, assoc), nil
+	return this.materializeM2mJunctionRow(ctx, link, assoc), nil
 }
 
 func (this *BaseDynamicRepositoryImpl) materializeM2mJunctionRow(
-	link *dmodel.M2mPeerLink, assoc dyn.RepoM2mAssociation,
+	ctx corectx.Context, link *dmodel.M2mPeerLink, assoc dyn.RepoM2mAssociation,
 ) dmodel.DynamicFields {
 	row := make(dmodel.DynamicFields)
+	constraints := ctx.GetDomainConstraints()
+	if constraints != nil {
+		row.Merge(constraints)
+	}
 	for _, k := range this.schema.PrimaryKeys() {
 		row[dmodel.PrefixedThroughColumn(link.SrcFieldPrefix, k)] = assoc.SrcKeys[k]
 	}
 	if tk := this.schema.TenantKey(); tk != "" {
-		col := dmodel.PrefixedThroughColumn(link.SrcFieldPrefix, tk)
+		col := tk
 		row[col] = assoc.SrcKeys[tk]
 	}
 	for _, k := range link.DestSchema.PrimaryKeys() {
@@ -1085,7 +1088,7 @@ func (this *BaseDynamicRepositoryImpl) buildM2mThroughFilter(
 	srcTk := this.schema.TenantKey()
 	if srcTk != "" {
 		if val, ok := srcRow[srcTk]; ok && val != nil {
-			filter[dmodel.PrefixedThroughColumn(rel.M2mSrcFieldPrefix, srcTk)] = val
+			filter[srcTk] = val
 		}
 	}
 	return filter, true
@@ -1101,7 +1104,7 @@ func (this *BaseDynamicRepositoryImpl) selectDestKeyFiltersFromThrough(
 	}
 	destTk := destSchema.TenantKey()
 	if destTk != "" {
-		destPrefixedPks = append(destPrefixedPks, dmodel.PrefixedThroughColumn(rel.M2mDestFieldPrefix, destTk))
+		destPrefixedPks = append(destPrefixedPks, destTk)
 	}
 	throughRows, err := this.selectRowsByFilter(ctx, throughSchema, throughFilter, destPrefixedPks, 0)
 	if err != nil {
@@ -1115,7 +1118,7 @@ func (this *BaseDynamicRepositoryImpl) selectDestKeyFiltersFromThrough(
 			item[key] = v
 		}
 		if destTk != "" {
-			v, ok := row[dmodel.PrefixedThroughColumn(rel.M2mDestFieldPrefix, destTk)]
+			v, ok := row[destTk]
 			if ok && v != nil {
 				item[destTk] = v
 			}
@@ -1142,7 +1145,7 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByFilter(
 		return nil, err
 	}
 	if qbClientErrs != nil && qbClientErrs.Count() > 0 {
-		return nil, errors.Errorf("selectRowsByFilter: invalid query graph")
+		return nil, errors.Wrap(qbClientErrs.ToError(), "selectRowsByFilter: invalid query graph")
 	}
 	this.logQuery(*sqlQuery)
 	return this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(schema, columns))
@@ -1269,7 +1272,7 @@ func (this *BaseDynamicRepositoryImpl) m2mThroughFilterForLink(
 	srcTk := this.schema.TenantKey()
 	if srcTk != "" {
 		if val, ok := srcKeys[srcTk]; ok && val != nil {
-			filter[dmodel.PrefixedThroughColumn(link.SrcFieldPrefix, srcTk)] = val
+			filter[srcTk] = val
 		}
 	}
 	return filter, true
@@ -1666,6 +1669,9 @@ func (this *BaseDynamicRepositoryImpl) convertScanValue(
 	if index < len(modelFields) {
 		field := modelFields[index]
 		if field != nil {
+			if field.IsTenantKey() {
+				return nil, nil
+			}
 			converted, err := field.DataType().TryConvert(value, field.DataType().Options())
 			if err != nil {
 				return nil, errors.Wrapf(err, "convertScanValue: failed to convert column '%s'", columnName)

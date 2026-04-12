@@ -3,6 +3,9 @@ package context
 import (
 	"context"
 
+	"github.com/labstack/echo/v4"
+	"go.bryk.io/pkg/errors"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
@@ -17,11 +20,19 @@ type Context interface {
 	GetDbTranx() db.DbTransaction
 	SetDbTranx(trx db.DbTransaction)
 	GetDomainConstraints() dmodel.DynamicFields
+	SetDomainConstraints(constraints dmodel.DynamicFields)
 	GetModuleName() string
+	// Replace current inner context with a new one that has the given key and value.
 	WithValue(key, val any)
 }
 
-func NewRequestContext(ctx context.Context, moduleName string) Context {
+func NewRequestContext(ctx context.Context) Context {
+	return &RequestContext{
+		Context: ctx,
+	}
+}
+
+func NewRequestContextM(ctx context.Context, moduleName string) Context {
 	return &RequestContext{
 		Context:    ctx,
 		moduleName: moduleName,
@@ -46,6 +57,15 @@ func CloneRequestContext(ctx Context) Context {
 		logger:  ctx.GetLogger(),
 		repoTrx: ctx.GetDbTranx(),
 	}
+}
+
+// Returns pointer to an instance of RequestContext if it exists, otherwise returns an error.
+func AsRequestContext(echoCtx echo.Context) (Context, error) {
+	reqCtx, isReqCtx := echoCtx.Request().Context().(Context)
+	if !isReqCtx {
+		return nil, errors.New("Must have RequestContextMiddleware2 before calling this function")
+	}
+	return reqCtx, nil
 }
 
 type RequestContext struct {
@@ -81,6 +101,10 @@ func (this *RequestContext) SetDbTranx(trx db.DbTransaction) {
 
 func (this RequestContext) GetDomainConstraints() dmodel.DynamicFields {
 	return this.domainConstraints
+}
+
+func (this *RequestContext) SetDomainConstraints(constraints dmodel.DynamicFields) {
+	this.domainConstraints = constraints
 }
 
 func (this RequestContext) GetModuleName() string {

@@ -4,13 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-
-	// middleWare "github.com/sky-as-code/nikki-erp/common/middleware"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -31,146 +25,62 @@ type UserRest struct {
 	UserSvc it.UserService
 }
 
-func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create user"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequestDynamic(
+func (this UserRest) Create(echoCtx echo.Context) (err error) {
+	return httpserver.ServeCreate(
+		"create user",
 		echoCtx,
+		&it.CreateUserCommand{},
 		this.UserSvc.CreateUser,
-		func(requestFields dmodel.DynamicFields) it.CreateUserCommand {
-			cmd := it.CreateUserCommand{}
-			cmd.SetFieldData(requestFields)
-			return cmd
-		},
-		func(data domain.User) CreateUserResponse {
-			response := httpserver.NewRestCreateResponseDyn(data.GetFieldData())
-			return *response
-		},
-		httpserver.JsonCreated,
 	)
-	return err
 }
 
-func (this UserRest) DeleteUser(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete user"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest2(
+func (this UserRest) Delete(echoCtx echo.Context) (err error) {
+	return httpserver.ServeGeneralMutate(
+		"delete user",
 		echoCtx,
 		this.UserSvc.DeleteUser,
-		func(request DeleteUserRequest) it.DeleteUserCommand {
-			return it.DeleteUserCommand(request)
-		},
-		func(data dyn.MutateResultData) DeleteUserResponse {
-			response := httpserver.NewRestDeleteResponse2(data)
-			return response
-		},
-		httpserver.JsonOk,
 	)
-	return err
 }
 
-func (this UserRest) GetUser(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user"); e != nil {
-			err = e
-		}
-	}()
-
-	return httpserver.ServeRequest2(
+func (this UserRest) GetOne(echoCtx echo.Context) (err error) {
+	return httpserver.ServeGetOne(
+		"get user",
 		echoCtx,
 		this.UserSvc.GetUser,
-		func(request GetUserRequest) it.GetUserQuery {
-			return request
-		},
-		func(data domain.User) dmodel.DynamicFields {
-			return data.GetFieldData()
-		},
-		httpserver.JsonOk,
 	)
 }
 
-func (this UserRest) SearchUsers(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search users 2"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest2(
+func (this UserRest) Search(echoCtx echo.Context) (err error) {
+	return httpserver.ServeSearch(
+		"search users",
 		echoCtx,
 		this.UserSvc.SearchUsers,
-		func(request SearchUsers2Request) it.SearchUsersQuery {
-			return it.SearchUsersQuery(request)
-		},
-		func(data it.SearchUsersResultData) SearchUsersResponse2 {
-			return httpserver.NewSearchUsersResponseDyn(data)
-		},
-		httpserver.JsonOk,
 		true,
 	)
-	return err
 }
 
-func (this UserRest) SetUserIsArchived(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST set user is_archived"); e != nil {
-			err = e
-		}
-	}()
-
-	return httpserver.ServeRequest2(
+func (this UserRest) SetIsArchived(echoCtx echo.Context) (err error) {
+	return httpserver.ServeGeneralMutate(
+		"set user is_archived",
 		echoCtx,
 		this.UserSvc.SetUserIsArchived,
-		func(request SetUserIsArchivedRequest) it.SetUserIsArchivedCommand {
-			return request
-		},
-		httpserver.NewRestMutateResponse,
-		httpserver.JsonOk,
 	)
 }
 
-func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update user"); e != nil {
-			err = e
-		}
-	}()
-
-	err = httpserver.ServeRequestDynamic(
+func (this UserRest) Update(echoCtx echo.Context) (err error) {
+	return httpserver.ServeUpdate(
+		"update user",
 		echoCtx,
+		&it.UpdateUserCommand{},
 		this.UserSvc.UpdateUser,
-		func(requestFields dmodel.DynamicFields) it.UpdateUserCommand {
-			cmd := it.UpdateUserCommand{}
-			cmd.SetFieldData(requestFields)
-			return cmd
-		},
-		httpserver.NewRestMutateResponse,
-		httpserver.JsonOk,
 	)
-	return err
 }
 
-func (this UserRest) UserExists(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST user exists"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(
+func (this UserRest) Exists(echoCtx echo.Context) (err error) {
+	return httpserver.ServeExists(
+		"user exists",
 		echoCtx,
 		this.UserSvc.UserExists,
-		func(request UserExistsRequest) it.UserExistsQuery {
-			return it.UserExistsQuery(request)
-		},
-		func(data dyn.ExistsResultData) UserExistsResponse {
-			return UserExistsResponse(data)
-		},
-		httpserver.JsonOk,
 	)
 }
 

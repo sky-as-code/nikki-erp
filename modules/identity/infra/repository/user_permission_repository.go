@@ -10,7 +10,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itOrgUnit "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/orgunit"
@@ -20,16 +19,17 @@ import (
 type UserPermissionRepositoryParam struct {
 	dig.In
 
-	Client       orm.DbClient
-	ConfigSvc    config.ConfigService
-	QueryBuilder orm.QueryBuilder
-	Logger       logging.LoggerService
-	OrgUnitRepo  itOrgUnit.OrgUnitRepository
+	Client        orm.DbClient
+	ConfigSvc     config.ConfigService
+	QueryBuilder  orm.QueryBuilder
+	Logger        logging.LoggerService
+	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
+	OrgUnitRepo   itOrgUnit.OrgUnitRepository
 }
 
 func NewUserPermissionRepositoryImpl(param UserPermissionRepositoryParam) itPerm.UserPermissionRepository {
-	dynamicRepo := baserepo.NewBaseDynamicRepository(
-		baserepo.NewBaseRepositoryParam{
+	dynamicRepo := param.NewBaseRepoFn(
+		dyn.NewBaseRepoParam{
 			Client:       param.Client,
 			ConfigSvc:    param.ConfigSvc,
 			QueryBuilder: param.QueryBuilder,

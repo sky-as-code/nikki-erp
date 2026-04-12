@@ -1426,24 +1426,29 @@ func isBigNumber(value any) bool {
 
 func resolveGenericToPgType(genericType string) (string, error) {
 	switch genericType {
-	case "email", "phone", "string", "secret", "url", "enumString", "ulid",
-		"nikkiEtag", "nikkiLangCode", "nikkiModelId", "nikkiSlug":
+	case dmodel.FieldDataTypeNameEmail, dmodel.FieldDataTypeNamePhone, dmodel.FieldDataTypeNameString,
+		dmodel.FieldDataTypeNameSecret, dmodel.FieldDataTypeNameUrl, dmodel.FieldDataTypeNameEnumString,
+		dmodel.FieldDataTypeNameUlid, dmodel.FieldDataTypeNameEtag, dmodel.FieldDataTypeNameLangCode,
+		"nikkiModelId", dmodel.FieldDataTypeNameSlug:
 		return "character varying", nil
-	case "uuid":
+	case dmodel.FieldDataTypeNameUuid:
 		return "uuid", nil
-	case "int", "int64", "integer", "enumNumber", "enumInteger":
+	case dmodel.FieldDataTypeNameInt64:
+		return "bigint", nil
+	case "int", "int8", "int16", dmodel.FieldDataTypeNameInt32, "integer", "enumNumber", "enumInteger",
+		dmodel.FieldDataTypeNameEnumInt32:
 		return "integer", nil
-	case "decimal", "float":
+	case dmodel.FieldDataTypeNameDecimal, "float":
 		return "numeric", nil
-	case "boolean":
+	case dmodel.FieldDataTypeNameBoolean:
 		return "boolean", nil
-	case "date", "nikkiDate":
+	case "date", dmodel.FieldDataTypeNameModelDate:
 		return "date", nil
-	case "time", "nikkiTime":
+	case "time", dmodel.FieldDataTypeNameModelTime:
 		return "time without time zone", nil
-	case "dateTime", "nikkiDateTime":
+	case "dateTime", dmodel.FieldDataTypeNameModelDateTime:
 		return "timestamptz", nil
-	case "nikkiLangJson", "jsonmap":
+	case dmodel.FieldDataTypeNameLangJson, dmodel.FieldDataTypeNameJsonMap:
 		return "jsonb", nil
 	default:
 		return "", errors.Errorf("resolveGenericToPgType: unsupported generic type '%s'", genericType)

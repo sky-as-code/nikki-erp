@@ -123,7 +123,7 @@ func PermissionHistorySchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type PermissionHistory struct {
-	fields dmodel.DynamicFields
+	modelData basemodel.DynamicModelBase `json:"-"`
 
 	ApproverId              *model.Id                `json:"approverId,omitempty"`
 	ApproverEmail           *string                  `json:"approverEmail,omitempty"`
@@ -143,6 +143,22 @@ type PermissionHistory struct {
 	ScopeRef                *string                  `json:"scopeRef,omitempty"`
 	SubjectRef              *string                  `json:"subjectRef,omitempty"`
 	// SubjectType     *EntitlementSubjectType  `json:"subjectType,omitempty"`
+}
+
+func NewPermissionHistory() *PermissionHistory {
+	return &PermissionHistory{modelData: basemodel.NewDynamicModel()}
+}
+
+func NewPermissionHistoryFrom(src dmodel.DynamicFields) *PermissionHistory {
+	return &PermissionHistory{modelData: basemodel.NewDynamicModel(src)}
+}
+
+func (this PermissionHistory) GetFieldData() dmodel.DynamicFields {
+	return this.modelData.GetFieldData()
+}
+
+func (this *PermissionHistory) SetFieldData(data dmodel.DynamicFields) {
+	this.modelData.SetFieldData(data)
 }
 
 type PermissionHistoryEffect string

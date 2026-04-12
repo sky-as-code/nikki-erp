@@ -64,9 +64,9 @@ var getUserByIdQueryType = cqrs.RequestType{
 }
 
 type GetUserQuery struct {
-	Columns []string `json:"columns" query:"columns"`
-	Id      *string  `json:"id" param:"id"`
-	Email   *string  `json:"email"`
+	Columns []string  `json:"columns" query:"columns"`
+	Id      *model.Id `json:"id" param:"id"`
+	Email   *string   `json:"email" query:"email"`
 }
 
 func (GetUserQuery) CqrsRequestType() cqrs.RequestType {

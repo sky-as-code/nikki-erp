@@ -3,6 +3,8 @@ package model
 import (
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/sky-as-code/nikki-erp/common/model"
 )
 
@@ -16,6 +18,23 @@ func (this DynamicFields) GetBool(key string) *bool {
 }
 
 func (this DynamicFields) SetBool(key string, v *bool) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	this[key] = *v
+}
+
+func (this DynamicFields) GetDecimal(key string) *decimal.Decimal {
+	val, ok := this[key]
+	if !ok || val == nil {
+		return nil
+	}
+	d := val.(decimal.Decimal)
+	return &d
+}
+
+func (this DynamicFields) SetDecimal(key string, v *decimal.Decimal) {
 	if v == nil {
 		this[key] = nil
 		return
@@ -92,16 +111,16 @@ func (this DynamicFields) SetModelId(key string, v *model.Id) {
 	this[key] = string(*v)
 }
 
-func (this DynamicFields) GetInt(key string) *int {
+func (this DynamicFields) GetInt32(key string) *int32 {
 	val, ok := this[key]
 	if !ok || val == nil {
 		return nil
 	}
-	s := val.(int)
+	s := val.(int32)
 	return &s
 }
 
-func (this DynamicFields) SetInt(key string, v *int) {
+func (this DynamicFields) SetInt32(key string, v *int32) {
 	if v == nil {
 		this[key] = nil
 		return
@@ -226,4 +245,21 @@ func (this DynamicFields) SetModelTime(key string, v *model.ModelTime) {
 		return
 	}
 	this[key] = *v
+}
+
+func (this DynamicFields) GetSlug(key string) *model.Slug {
+	val, ok := this[key]
+	if !ok || val == nil {
+		return nil
+	}
+	slug := val.(model.Slug)
+	return &slug
+}
+
+func (this DynamicFields) SetSlug(key string, v *model.Slug) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	this[key] = string(*v)
 }

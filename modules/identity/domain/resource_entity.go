@@ -118,35 +118,27 @@ func DefineResourceFieldScope(fieldName string) *dmodel.FieldBuilder {
 }
 
 type Resource struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewResource() *Resource {
-	return &Resource{fields: make(dmodel.DynamicFields)}
+	return &Resource{basemodel.NewDynamicModel()}
 }
 
 func NewResourceFrom(src dmodel.DynamicFields) *Resource {
-	return &Resource{fields: src}
-}
-
-func (this Resource) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *Resource) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &Resource{basemodel.NewDynamicModel(src)}
 }
 
 func (this Resource) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
 }
 
 func (this *Resource) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	this.GetFieldData().SetModelId(basemodel.FieldId, v)
 }
 
 func (this Resource) GetMaxScope() *ResourceScope {
-	s := this.fields.GetString(ResourceFieldMaxScope)
+	s := this.GetFieldData().GetString(ResourceFieldMaxScope)
 	if s == nil {
 		return nil
 	}
@@ -156,15 +148,15 @@ func (this Resource) GetMaxScope() *ResourceScope {
 
 func (this *Resource) SetMaxScope(v *ResourceScope) {
 	if v == nil {
-		this.fields.SetString(ResourceFieldMaxScope, nil)
+		this.GetFieldData().SetString(ResourceFieldMaxScope, nil)
 		return
 	}
 	s := string(*v)
-	this.fields.SetString(ResourceFieldMaxScope, &s)
+	this.GetFieldData().SetString(ResourceFieldMaxScope, &s)
 }
 
 func (this Resource) GetMinScope() *ResourceScope {
-	s := this.fields.GetString(ResourceFieldMinScope)
+	s := this.GetFieldData().GetString(ResourceFieldMinScope)
 	if s == nil {
 		return nil
 	}
@@ -174,18 +166,18 @@ func (this Resource) GetMinScope() *ResourceScope {
 
 func (this *Resource) SetMinScope(v *ResourceScope) {
 	if v == nil {
-		this.fields.SetString(ResourceFieldMinScope, nil)
+		this.GetFieldData().SetString(ResourceFieldMinScope, nil)
 		return
 	}
 	s := string(*v)
-	this.fields.SetString(ResourceFieldMinScope, &s)
+	this.GetFieldData().SetString(ResourceFieldMinScope, &s)
 }
 
 func (this Resource) GetActions() []Action {
-	if this.fields[ResourceEdgeActions] == nil {
+	if this.GetFieldData()[ResourceEdgeActions] == nil {
 		return nil
 	}
-	rawActions := this.fields[ResourceEdgeActions].([]dmodel.DynamicFields)
+	rawActions := this.GetFieldData()[ResourceEdgeActions].([]dmodel.DynamicFields)
 	actions := array.Map(rawActions, func(rawAction dmodel.DynamicFields) Action {
 		return *NewActionFrom(rawAction)
 	})

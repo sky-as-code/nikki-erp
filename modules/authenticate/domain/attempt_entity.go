@@ -98,39 +98,31 @@ func LoginAttemptSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type LoginAttempt struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewLoginAttempt() *LoginAttempt {
-	return &LoginAttempt{fields: make(dmodel.DynamicFields)}
+	return &LoginAttempt{basemodel.NewDynamicModel()}
 }
 
 func NewLoginAttemptFrom(src dmodel.DynamicFields) *LoginAttempt {
-	return &LoginAttempt{fields: src}
-}
-
-func (this LoginAttempt) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *LoginAttempt) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &LoginAttempt{basemodel.NewDynamicModel(src)}
 }
 
 func (this LoginAttempt) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
 }
 
 func (this *LoginAttempt) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	this.GetFieldData().SetModelId(basemodel.FieldId, v)
 }
 
 func (this LoginAttempt) GetMethods() []string {
-	return this.fields.GetStrings(AttemptFieldMethods)
+	return this.GetFieldData().GetStrings(AttemptFieldMethods)
 }
 
 func (this LoginAttempt) MustGetMethods() []string {
-	m := this.fields.GetStrings(AttemptFieldMethods)
+	m := this.GetFieldData().GetStrings(AttemptFieldMethods)
 	if m == nil {
 		panic(errors.New("methods is nil"))
 	}
@@ -138,55 +130,55 @@ func (this LoginAttempt) MustGetMethods() []string {
 }
 
 func (this *LoginAttempt) SetMethods(v []string) {
-	this.fields.SetStrings(AttemptFieldMethods, v)
+	this.GetFieldData().SetStrings(AttemptFieldMethods, v)
 }
 
 func (this LoginAttempt) GetCurrentMethod() *string {
-	return this.fields.GetString(AttemptFieldCurrentMethod)
+	return this.GetFieldData().GetString(AttemptFieldCurrentMethod)
 }
 
 func (this *LoginAttempt) SetCurrentMethod(v *string) {
-	this.fields.SetString(AttemptFieldCurrentMethod, v)
+	this.GetFieldData().SetString(AttemptFieldCurrentMethod, v)
 }
 
 func (this LoginAttempt) GetDeviceIp() *string {
-	return this.fields.GetString(AttemptFieldDeviceIp)
+	return this.GetFieldData().GetString(AttemptFieldDeviceIp)
 }
 
 func (this *LoginAttempt) SetDeviceIp(v *string) {
-	this.fields.SetString(AttemptFieldDeviceIp, v)
+	this.GetFieldData().SetString(AttemptFieldDeviceIp, v)
 }
 
 func (this LoginAttempt) GetDeviceName() *string {
-	return this.fields.GetString(AttemptFieldDeviceName)
+	return this.GetFieldData().GetString(AttemptFieldDeviceName)
 }
 
 func (this *LoginAttempt) SetDeviceName(v *string) {
-	this.fields.SetString(AttemptFieldDeviceName, v)
+	this.GetFieldData().SetString(AttemptFieldDeviceName, v)
 }
 
 func (this LoginAttempt) GetDeviceLocation() *string {
-	return this.fields.GetString(AttemptFieldDeviceLocation)
+	return this.GetFieldData().GetString(AttemptFieldDeviceLocation)
 }
 
 func (this *LoginAttempt) SetDeviceLocation(v *string) {
-	this.fields.SetString(AttemptFieldDeviceLocation, v)
+	this.GetFieldData().SetString(AttemptFieldDeviceLocation, v)
 }
 
 func (this LoginAttempt) GetExpiresAt() *model.ModelDateTime {
-	return this.fields.GetModelDateTime(AttemptFieldExpiresAt)
+	return this.GetFieldData().GetModelDateTime(AttemptFieldExpiresAt)
 }
 
 func (this *LoginAttempt) SetExpiresAt(v *model.ModelDateTime) {
-	this.fields.SetModelDateTime(AttemptFieldExpiresAt, v)
+	this.GetFieldData().SetModelDateTime(AttemptFieldExpiresAt, v)
 }
 
 func (this LoginAttempt) GetCreatedAt() *model.ModelDateTime {
-	return this.fields.GetModelDateTime(basemodel.FieldCreatedAt)
+	return this.GetFieldData().GetModelDateTime(basemodel.FieldCreatedAt)
 }
 
 func (this LoginAttempt) GetUpdatedAt() *model.ModelDateTime {
-	return this.fields.GetModelDateTime(basemodel.FieldUpdatedAt)
+	return this.GetFieldData().GetModelDateTime(basemodel.FieldUpdatedAt)
 }
 
 func (this LoginAttempt) MustGetPrincipalType() PrincipalType {
@@ -198,7 +190,7 @@ func (this LoginAttempt) MustGetPrincipalType() PrincipalType {
 }
 
 func (this LoginAttempt) GetPrincipalType() *PrincipalType {
-	s := this.fields.GetString(AttemptFieldPrincipalType)
+	s := this.GetFieldData().GetString(AttemptFieldPrincipalType)
 	if s == nil {
 		return nil
 	}
@@ -208,23 +200,23 @@ func (this LoginAttempt) GetPrincipalType() *PrincipalType {
 
 func (this *LoginAttempt) SetPrincipalType(v *PrincipalType) {
 	if v == nil {
-		this.fields.SetString(AttemptFieldPrincipalType, nil)
+		this.GetFieldData().SetString(AttemptFieldPrincipalType, nil)
 		return
 	}
 	s := string(*v)
-	this.fields.SetString(AttemptFieldPrincipalType, &s)
+	this.GetFieldData().SetString(AttemptFieldPrincipalType, &s)
 }
 
 // func (this LoginAttempt) GetSubjectId() *model.Id {
-// 	return this.fields.GetModelId(AttemptFieldSubjectId)
+// 	return this.GetFieldData().GetModelId(AttemptFieldSubjectId)
 // }
 
 // func (this *LoginAttempt) SetSubjectId(v *model.Id) {
-// 	this.fields.SetModelId(AttemptFieldSubjectId, v)
+// 	this.GetFieldData().SetModelId(AttemptFieldSubjectId, v)
 // }
 
 func (this LoginAttempt) GetStatus() *AttemptStatus {
-	s := this.fields.GetString(AttemptFieldStatus)
+	s := this.GetFieldData().GetString(AttemptFieldStatus)
 	if s == nil {
 		return nil
 	}
@@ -234,15 +226,15 @@ func (this LoginAttempt) GetStatus() *AttemptStatus {
 
 func (this *LoginAttempt) SetStatus(v *AttemptStatus) {
 	if v == nil {
-		this.fields.SetString(AttemptFieldStatus, nil)
+		this.GetFieldData().SetString(AttemptFieldStatus, nil)
 		return
 	}
 	s := string(*v)
-	this.fields.SetString(AttemptFieldStatus, &s)
+	this.GetFieldData().SetString(AttemptFieldStatus, &s)
 }
 
 func (this LoginAttempt) MustGetUsername() string {
-	u := this.fields.GetString(AttemptFieldUsername)
+	u := this.GetFieldData().GetString(AttemptFieldUsername)
 	if u == nil {
 		panic("username is nil")
 	}
@@ -250,11 +242,11 @@ func (this LoginAttempt) MustGetUsername() string {
 }
 
 func (this LoginAttempt) GetUsername() *string {
-	return this.fields.GetString(AttemptFieldUsername)
+	return this.GetFieldData().GetString(AttemptFieldUsername)
 }
 
 func (this *LoginAttempt) SetUsername(v *string) {
-	this.fields.SetString(AttemptFieldUsername, v)
+	this.GetFieldData().SetString(AttemptFieldUsername, v)
 }
 
 func (this *LoginAttempt) NextMethod() *string {

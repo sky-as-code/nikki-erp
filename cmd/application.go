@@ -13,7 +13,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules"
-	"github.com/sky-as-code/nikki-erp/modules/core"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
@@ -46,16 +45,12 @@ func (this *Application) Logger() logging.LoggerService {
 }
 
 func (this *Application) Start() {
-	this.modules = []modules.InCodeModule{
-		core.ModuleSingleton,
-	}
-
 	modules, err := this.moduleLoader.LoadModules()
 	if err != nil {
 		this.logger.Errorf("failed to load modules: %v", err)
 	}
 
-	this.modules = append(this.modules, modules...)
+	this.modules = modules
 
 	err = this.initModules()
 	if err != nil {

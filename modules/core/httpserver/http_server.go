@@ -46,36 +46,18 @@ func initHttpServer(params httpServerParams) httpServerResult {
 
 	httpServer.Use(middleware.Logger())
 	httpServer.Use(middleware.Recover())
-	// httpServer.Use(middleware.CORSWithConfig(configCors(params.Config)))
-	httpServer.Use(m.CorsEchoMiddleware())
-	httpServer.Use(commonMiddleware.CaptureBearerToken(params.Config.GetStr(c.TokenSecretKey)))
-
 	httpServer.Use(m.RequestContextMiddleware)
+	httpServer.Use(m.RequestContextMiddleware3)
+	applyGlobalLazywares(&httpServer)
+	httpServer.UseLazy(m.Lazyware(m.CorsEchoMiddleware))
+
+	httpServer.Use(commonMiddleware.CaptureBearerToken(params.Config.GetStr(c.TokenSecretKey)))
 
 	return httpServerResult{
 		HttpServer: &httpServer,
 		RootRoute:  initRoutes(httpServer, params.Config),
 	}
 }
-
-// func configCors(config config.ConfigService) middleware.CORSConfig {
-// 	corsOrigins := config.GetStrArr(c.HttpCorsOrigins)
-// 	corsHeaders := config.GetStrArr(c.HttpCorsHeaders, "")
-// 	if len(corsHeaders) == 0 {
-// 		corsHeaders = []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization}
-// 	}
-// 	corsMethods := config.GetStrArr(c.HttpCorsMethods, "")
-// 	if len(corsMethods) == 0 {
-// 		corsMethods = []string{echo.GET, echo.HEAD, echo.PUT, echo.PATCH, echo.POST, echo.DELETE}
-// 	}
-
-// 	return middleware.CORSConfig{
-// 		// TODO: Allow config CORS from database
-// 		AllowOrigins: corsOrigins,
-// 		AllowHeaders: corsHeaders,
-// 		AllowMethods: corsMethods,
-// 	}
-// }
 
 func initRoutes(mainServer HttpServer, config config.ConfigService) *echo.Group {
 	basePath := config.GetStr(c.HttpBasePath) // or "/api"
@@ -88,21 +70,40 @@ func newEchoServer() *echo.Echo {
 	echoServer.HideBanner = true // Not logging startup banner on start
 	echoServer.HidePort = true   // Not logging port information on start
 	echoServer.HTTPErrorHandler = CustomHttpErrorHandler(echoServer.DefaultHTTPErrorHandler)
-	// echoServer.Validator = validator.TagBased
 	return echoServer
 }
 
-type HttpServer struct {
-	Name       string
-	EchoServer *echo.Echo
-	Logger     logging.LoggerService
-	Host       string
-	Port       int32
+type MiddlewareCreator func() echo.MiddlewareFunc
+
+var globalLazywares = []MiddlewareCreator{}
+
+func applyGlobalLazywares(server *HttpServer) {
+	for _, lazyware := range globalLazywares {
+		server.UseLazy(m.Lazyware(lazyware))
+	}
 }
 
-func (this HttpServer) Start() error {
+func AppendGlobalLazywares(middlewares ...MiddlewareCreator) {
+	globalLazywares = append(globalLazywares, middlewares...)
+}
+
+type HttpServer struct {
+	Name            string
+	EchoServer      *echo.Echo
+	Logger          logging.LoggerService
+	Host            string
+	Port            int32
+	LazyMiddlewares []*m.LazyMiddleware
+}
+
+func (this *HttpServer) Start() error {
 	address := fmt.Sprintf("%s:%d", this.Host, this.Port)
 	this.Logger.Infof("Starting HTTP server %s at %s", this.Name, address)
+
+	for _, lazyware := range this.LazyMiddlewares {
+		lazyware.Enable()
+	}
+
 	err := this.EchoServer.Start(address)
 
 	if err != nil && !stdErr.Is(err, http.ErrServerClosed) {
@@ -119,4 +120,11 @@ func (this HttpServer) Shutdown() {
 
 func (this HttpServer) Use(middlewares ...echo.MiddlewareFunc) {
 	this.EchoServer.Use(middlewares...)
+}
+
+func (this *HttpServer) UseLazy(lazywares ...*m.LazyMiddleware) {
+	for _, lazyware := range lazywares {
+		this.LazyMiddlewares = append(this.LazyMiddlewares, lazyware)
+		this.Use(lazyware.Middleware())
+	}
 }

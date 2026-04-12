@@ -75,71 +75,63 @@ func MethodSettingSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type MethodSetting struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewMethodSetting() *MethodSetting {
-	return &MethodSetting{fields: make(dmodel.DynamicFields)}
+	return &MethodSetting{basemodel.NewDynamicModel()}
 }
 
 func NewMethodSettingFrom(src dmodel.DynamicFields) *MethodSetting {
-	return &MethodSetting{fields: src}
-}
-
-func (this MethodSetting) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *MethodSetting) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &MethodSetting{basemodel.NewDynamicModel(src)}
 }
 
 func (this MethodSetting) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
 }
 
 func (this *MethodSetting) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	this.GetFieldData().SetModelId(basemodel.FieldId, v)
 }
 
 func (this MethodSetting) GetMethod() *string {
-	return this.fields.GetString(MethodSettingFieldMethod)
+	return this.GetFieldData().GetString(MethodSettingFieldMethod)
 }
 
 func (this *MethodSetting) SetMethod(v *string) {
-	this.fields.SetString(MethodSettingFieldMethod, v)
+	this.GetFieldData().SetString(MethodSettingFieldMethod, v)
 }
 
-func (this MethodSetting) GetOrder() *int {
-	return this.fields.GetInt(MethodSettingFieldOrder)
+func (this MethodSetting) GetOrder() *int32 {
+	return this.GetFieldData().GetInt32(MethodSettingFieldOrder)
 }
 
-func (this *MethodSetting) SetOrder(v *int) {
-	this.fields.SetInt(MethodSettingFieldOrder, v)
+func (this *MethodSetting) SetOrder(v *int32) {
+	this.GetFieldData().SetInt32(MethodSettingFieldOrder, v)
 }
 
-func (this MethodSetting) GetMaxFailures() *int {
-	return this.fields.GetInt(MethodSettingFieldMaxFailures)
+func (this MethodSetting) GetMaxFailures() *int32 {
+	return this.GetFieldData().GetInt32(MethodSettingFieldMaxFailures)
 }
 
-func (this *MethodSetting) SetMaxFailures(v *int) {
-	this.fields.SetInt(MethodSettingFieldMaxFailures, v)
+func (this *MethodSetting) SetMaxFailures(v *int32) {
+	this.GetFieldData().SetInt32(MethodSettingFieldMaxFailures, v)
 }
 
 func (this MethodSetting) GetLockDurationSecs() *int64 {
-	return this.fields.GetInt64(MethodSettingFieldLockDurationSecs)
+	return this.GetFieldData().GetInt64(MethodSettingFieldLockDurationSecs)
 }
 
 func (this *MethodSetting) SetLockDurationSecs(v *int64) {
 	if v == nil {
-		this.fields.SetAny(MethodSettingFieldLockDurationSecs, nil)
+		this.GetFieldData().SetAny(MethodSettingFieldLockDurationSecs, nil)
 		return
 	}
-	this.fields.SetInt64(MethodSettingFieldLockDurationSecs, v)
+	this.GetFieldData().SetInt64(MethodSettingFieldLockDurationSecs, v)
 }
 
 func (this MethodSetting) GetSettingSubjectType() *SettingSubjectType {
-	s := this.fields.GetString(MethodSettingFieldSubjectType)
+	s := this.GetFieldData().GetString(MethodSettingFieldSubjectType)
 	if s == nil {
 		return nil
 	}
@@ -149,26 +141,26 @@ func (this MethodSetting) GetSettingSubjectType() *SettingSubjectType {
 
 func (this *MethodSetting) SetSettingSubjectType(v *SettingSubjectType) {
 	if v == nil {
-		this.fields.SetString(MethodSettingFieldSubjectType, nil)
+		this.GetFieldData().SetString(MethodSettingFieldSubjectType, nil)
 		return
 	}
-	this.fields.SetString(MethodSettingFieldSubjectType, util.ToPtr(v.String()))
+	this.GetFieldData().SetString(MethodSettingFieldSubjectType, util.ToPtr(v.String()))
 }
 
 func (this MethodSetting) GetSubjectRef() *model.Id {
-	return this.fields.GetModelId(MethodSettingFieldSubjectRef)
+	return this.GetFieldData().GetModelId(MethodSettingFieldSubjectRef)
 }
 
 func (this *MethodSetting) SetSubjectRef(v *model.Id) {
-	this.fields.SetModelId(MethodSettingFieldSubjectRef, v)
+	this.GetFieldData().SetModelId(MethodSettingFieldSubjectRef, v)
 }
 
 func (this MethodSetting) GetSubjectSourceRef() *string {
-	return this.fields.GetString(MethodSettingFieldSubjectSourceRef)
+	return this.GetFieldData().GetString(MethodSettingFieldSubjectSourceRef)
 }
 
 func (this *MethodSetting) SetSubjectSourceRef(v *string) {
-	this.fields.SetString(MethodSettingFieldSubjectSourceRef, v)
+	this.GetFieldData().SetString(MethodSettingFieldSubjectSourceRef, v)
 }
 
 func (this *MethodSetting) SetDefaults() {

@@ -8,6 +8,7 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/util"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	ext "github.com/sky-as-code/nikki-erp/modules/core/httpserver/external"
 	"github.com/sky-as-code/nikki-erp/modules/core/requestguard"
 )
@@ -36,24 +37,26 @@ func AuthorizePermissionMiddleware(params AuthzPermMiddlewareParams) echo.Middle
 	})
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(echoCtx echo.Context) error {
-			reqFingerprint, err := guardSvc.CalcRequestFingerprint(echoCtx.Request())
+			reqCtx, err := corectx.AsRequestContext(echoCtx)
+			if err != nil {
+				return err
+			}
+
+			reqFingerprint, err := guardSvc.CalcRequestFingerprint(reqCtx, echoCtx.Request())
 			if err != nil {
 				return err
 			}
 			// TODO: Check cache
 			util.Unused(reqFingerprint)
 
-			result, err := guardSvc.VerifyJwt(echoCtx.Request())
+			result, err := guardSvc.VerifyJwt(reqCtx, echoCtx.Request())
 			if err != nil {
 				return err
 			}
 			if !result.IsOk {
 				return echo.NewHTTPError(result.HttpStatus, result.ClientError)
 			}
-			reqCtx, err := AsRequestContext(echoCtx)
-			if err != nil {
-				return err
-			}
+
 			reqCtx.WithValue(CtxKeyJwtClaims, result.JwtClaims)
 			userEmail, err := result.JwtClaims.GetSubject()
 			if err != nil {

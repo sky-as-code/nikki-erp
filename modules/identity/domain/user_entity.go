@@ -136,27 +136,19 @@ func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type User struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewUser() *User {
-	return &User{fields: make(dmodel.DynamicFields)}
+	return &User{basemodel.NewDynamicModel()}
 }
 
 func NewUserFrom(src dmodel.DynamicFields) *User {
-	return &User{fields: src}
-}
-
-func (this User) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *User) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
+	return &User{basemodel.NewDynamicModel(src)}
 }
 
 func (this User) MustGetId() model.Id {
-	v := this.fields.GetModelId(basemodel.FieldId)
+	v := this.GetFieldData().GetModelId(basemodel.FieldId)
 	if v == nil {
 		panic("id is nil")
 	}
@@ -164,11 +156,11 @@ func (this User) MustGetId() model.Id {
 }
 
 func (this User) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
+	return this.GetFieldData().GetModelId(basemodel.FieldId)
 }
 
 func (this *User) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	this.GetFieldData().SetModelId(basemodel.FieldId, v)
 }
 
 func (this User) IsActive() bool {
@@ -184,23 +176,23 @@ func (this User) MustIsArchived() bool {
 }
 
 func (this User) IsArchived() *bool {
-	return this.fields.GetBool(basemodel.FieldIsArchived)
+	return this.GetFieldData().GetBool(basemodel.FieldIsArchived)
 }
 
 func (this *User) SetIsArchived(v *bool) {
-	this.fields.SetBool(basemodel.FieldIsArchived, v)
+	this.GetFieldData().SetBool(basemodel.FieldIsArchived, v)
 }
 
 func (this User) GetAvatarUrl() *string {
-	return this.fields.GetString(UserFieldAvatarUrl)
+	return this.GetFieldData().GetString(UserFieldAvatarUrl)
 }
 
 func (this *User) SetAvatarUrl(v *string) {
-	this.fields.SetString(UserFieldAvatarUrl, v)
+	this.GetFieldData().SetString(UserFieldAvatarUrl, v)
 }
 
 func (this User) MustGetDisplayName() string {
-	v := this.fields.GetString(UserFieldDisplayName)
+	v := this.GetFieldData().GetString(UserFieldDisplayName)
 	if v == nil {
 		panic("display_name is nil")
 	}
@@ -208,15 +200,15 @@ func (this User) MustGetDisplayName() string {
 }
 
 func (this User) GetDisplayName() *string {
-	return this.fields.GetString(UserFieldDisplayName)
+	return this.GetFieldData().GetString(UserFieldDisplayName)
 }
 
 func (this *User) SetDisplayName(v *string) {
-	this.fields.SetString(UserFieldDisplayName, v)
+	this.GetFieldData().SetString(UserFieldDisplayName, v)
 }
 
 func (this User) MustGetEmail() string {
-	v := this.fields.GetString(UserFieldEmail)
+	v := this.GetFieldData().GetString(UserFieldEmail)
 	if v == nil {
 		panic("email is nil")
 	}
@@ -224,15 +216,15 @@ func (this User) MustGetEmail() string {
 }
 
 func (this User) GetEmail() *string {
-	return this.fields.GetString(UserFieldEmail)
+	return this.GetFieldData().GetString(UserFieldEmail)
 }
 
 func (this *User) SetEmail(v *string) {
-	this.fields.SetString(UserFieldEmail, v)
+	this.GetFieldData().SetString(UserFieldEmail, v)
 }
 
 func (this User) MustIsOwner() bool {
-	val := this.fields.GetBool(UserFieldIsOwner)
+	val := this.GetFieldData().GetBool(UserFieldIsOwner)
 	if val == nil {
 		panic("is_owner is nil")
 	}
@@ -240,11 +232,11 @@ func (this User) MustIsOwner() bool {
 }
 
 func (this User) IsOwner() *bool {
-	return this.fields.GetBool(UserFieldIsOwner)
+	return this.GetFieldData().GetBool(UserFieldIsOwner)
 }
 
 func (this *User) SetIsOwner(v *bool) {
-	this.fields.SetBool(UserFieldIsOwner, v)
+	this.GetFieldData().SetBool(UserFieldIsOwner, v)
 }
 
 func (this User) MustGetStatus() UserStatus {
@@ -256,7 +248,7 @@ func (this User) MustGetStatus() UserStatus {
 }
 
 func (this User) GetStatus() *UserStatus {
-	s := this.fields.GetString(UserFieldStatus)
+	s := this.GetFieldData().GetString(UserFieldStatus)
 	if s == nil {
 		return nil
 	}
@@ -266,17 +258,17 @@ func (this User) GetStatus() *UserStatus {
 
 func (this *User) SetStatus(v *UserStatus) {
 	if v == nil {
-		this.fields.SetString(UserFieldStatus, nil)
+		this.GetFieldData().SetString(UserFieldStatus, nil)
 		return
 	}
 	s := string(*v)
-	this.fields.SetString(UserFieldStatus, &s)
+	this.GetFieldData().SetString(UserFieldStatus, &s)
 }
 
 func (this User) GetOrgUnitId() *model.Id {
-	return this.fields.GetModelId(UserFieldOrgUnitId)
+	return this.GetFieldData().GetModelId(UserFieldOrgUnitId)
 }
 
 func (this *User) SetOrgUnitId(v *model.Id) {
-	this.fields.SetModelId(UserFieldOrgUnitId, v)
+	this.GetFieldData().SetModelId(UserFieldOrgUnitId, v)
 }
