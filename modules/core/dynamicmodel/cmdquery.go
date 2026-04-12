@@ -26,6 +26,14 @@ func (this DeleteOneCommand) GetSchema() *dmodel.ModelSchema {
 	)
 }
 
+// Helper type for generic type constraints.
+type DeleteOneCommandShape interface {
+	// MUST change this when `DeleteOneCommand` fields change.
+	~struct {
+		Id model.Id `json:"id" param:"id"`
+	}
+}
+
 type ExistsQuery struct {
 	Ids []model.Id `json:"ids" query:"ids"`
 }
@@ -39,9 +47,26 @@ func (this ExistsResultData) Exists(id model.Id) bool {
 	return array.Contains(this.Existing, id)
 }
 
+// Helper type for generic type constraints.
+type ExistsQueryShape interface {
+	// MUST change this when `ExistsQuery` fields change.
+	~struct {
+		Ids []model.Id `json:"ids" query:"ids"`
+	}
+}
+
 type GetOneQuery struct {
 	Id      model.Id `json:"id" param:"id"`
 	Columns []string `json:"columns" query:"columns"`
+}
+
+// Helper type for generic type constraints.
+type GetOneQueryShape interface {
+	// MUST change this when `GetOneQuery` fields change.
+	~struct {
+		Id      model.Id `json:"id" param:"id"`
+		Columns []string `json:"columns" query:"columns"`
+	}
 }
 
 type SearchQuery struct {

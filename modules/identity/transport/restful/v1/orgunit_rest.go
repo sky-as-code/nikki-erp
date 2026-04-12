@@ -29,7 +29,7 @@ type OrgUnitRest struct {
 	OrgUnitSvc it.OrgUnitService
 }
 
-func (this OrgUnitRest) CreateOrgUnit(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) Create(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create org unit"); e != nil {
 			err = e
@@ -51,7 +51,7 @@ func (this OrgUnitRest) CreateOrgUnit(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) DeleteOrgUnit(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) Delete(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete org unit"); e != nil {
 			err = e
@@ -70,7 +70,7 @@ func (this OrgUnitRest) DeleteOrgUnit(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) GetOrgUnit(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) GetOne(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get org unit"); e != nil {
 			err = e
@@ -89,7 +89,7 @@ func (this OrgUnitRest) GetOrgUnit(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) OrgUnitExists(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) Exists(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST org unit exists"); e != nil {
 			err = e
@@ -127,7 +127,7 @@ func (this OrgUnitRest) ManageOrgUnitUsers(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) SearchOrgUnits(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) Search(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search org units"); e != nil {
 			err = e
@@ -147,7 +147,7 @@ func (this OrgUnitRest) SearchOrgUnits(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) UpdateOrgUnit(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) Update(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update org unit"); e != nil {
 			err = e

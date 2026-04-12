@@ -86,7 +86,12 @@ type RepoCountM2mParam struct {
 	SrcId   model.Id `json:"src_id"`
 }
 
-type DynamicModelPtr[TDomain any] interface {
-	*TDomain
+type DynamicModelPtr[T any] interface {
+	*T
 	dmodel.DynamicModel
+}
+
+type DynamicModelSetterPtr[T any] interface {
+	*T
+	dmodel.DynamicModelSetter
 }

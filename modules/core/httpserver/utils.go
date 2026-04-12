@@ -3,6 +3,7 @@ package httpserver
 import (
 	"github.com/labstack/echo/v4"
 
+	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -211,4 +212,245 @@ func ServeRequest[THttpReq any, THttpResp any, TSvcCommand any, TSvcResult CmdRe
 
 	response := resultToResponseFn(*result)
 	return jsonSuccessFn(echoCtx, response)
+}
+
+func ServeCreate[
+	TSvcCommand any,
+	TSvcCommandPtr dyn.DynamicModelSetterPtr[TSvcCommand],
+	TSvcResultData dmodel.DynamicModelGetter,
+](
+	action string,
+	echoCtx echo.Context,
+	cmd TSvcCommandPtr,
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
+) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
+			err = e
+		}
+	}()
+	return ServeRequestDynamic(
+		echoCtx,
+		serviceFn,
+		func(requestFields dmodel.DynamicFields) TSvcCommand {
+			cmd.SetFieldData(requestFields)
+			return *cmd
+		},
+		func(data TSvcResultData) RestCreateResponse {
+			return *NewRestCreateResponseDyn(data.GetFieldData())
+		},
+		JsonCreated,
+	)
+}
+
+func ServeDelete[
+	THttpReq dyn.DeleteOneCommandShape,
+	TSvcCommand dyn.DeleteOneCommandShape,
+](
+	action string,
+	echoCtx echo.Context,
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[dyn.MutateResultData], error),
+) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
+			err = e
+		}
+	}()
+	err = ServeRequest2(
+		echoCtx,
+		serviceFn,
+		func(request THttpReq) TSvcCommand {
+			return TSvcCommand(request)
+		},
+		NewRestDeleteResponse2,
+		JsonOk,
+	)
+	return err
+}
+
+func ServeGetOne[
+	THttpReq dyn.GetOneQueryShape,
+	TSvcQuery dyn.GetOneQueryShape,
+	TDomain dmodel.DynamicModelGetter,
+](
+	action string,
+	echoCtx echo.Context,
+	serviceFn func(ctx corectx.Context, cmd TSvcQuery) (*dyn.OpResult[TDomain], error),
+) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
+			err = e
+		}
+	}()
+	err = ServeRequest2(
+		echoCtx,
+		serviceFn,
+		func(request THttpReq) TSvcQuery {
+			return TSvcQuery(request)
+		},
+		func(data TDomain) dmodel.DynamicFields {
+			return data.GetFieldData()
+		},
+		JsonOk,
+	)
+	return err
+}
+
+func ServeExists[
+	THttpReq dyn.ExistsQueryShape,
+	TSvcCommand dyn.ExistsQueryShape,
+](
+	action string,
+	echoCtx echo.Context,
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[dyn.ExistsResultData], error),
+) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
+			err = e
+		}
+	}()
+	err = ServeRequest2(
+		echoCtx,
+		serviceFn,
+		func(request THttpReq) TSvcCommand {
+			return TSvcCommand(request)
+		},
+		func(data dyn.ExistsResultData) dyn.ExistsResultData {
+			return data
+		},
+		JsonOk,
+	)
+	return err
+}
+
+func ServeManageM2m[
+	TSvcCommand any,
+](
+	action string,
+	echoCtx echo.Context,
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[dyn.MutateResultData], error),
+) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
+			err = e
+		}
+	}()
+	err = ServeRequest2(
+		echoCtx,
+		serviceFn,
+		func(request TSvcCommand) TSvcCommand {
+			return request
+		},
+		NewRestMutateResponse,
+		JsonOk,
+	)
+	return err
+}
+
+func ServeSearch[
+	TSvcQuery any,
+	TDomain dmodel.DynamicModelGetter,
+](
+	action string,
+	echoCtx echo.Context,
+	serviceFn func(ctx corectx.Context, cmd TSvcQuery) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error),
+) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
+			err = e
+		}
+	}()
+	err = ServeRequest2(
+		echoCtx,
+		serviceFn,
+		func(request TSvcQuery) TSvcQuery {
+			return request
+		},
+		NewSearchResponseDyn,
+		JsonOk,
+	)
+	return err
+}
+
+func ServeUpdate[
+	TSvcCommand any,
+	TSvcCommandPtr dyn.DynamicModelSetterPtr[TSvcCommand],
+](
+	action string,
+	echoCtx echo.Context,
+	cmd TSvcCommandPtr,
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[dyn.MutateResultData], error),
+) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
+			err = e
+		}
+	}()
+	return ServeRequestDynamic(
+		echoCtx,
+		serviceFn,
+		func(requestFields dmodel.DynamicFields) TSvcCommand {
+			cmd.SetFieldData(requestFields)
+			return *cmd
+		},
+		func(data dyn.MutateResultData) RestMutateResponse {
+			return NewRestMutateResponse(data)
+		},
+		JsonCreated,
+	)
+}
+
+type BasicCrudRest interface {
+	Create(echoCtx echo.Context) (err error)
+	Delete(echoCtx echo.Context) (err error)
+	Exists(echoCtx echo.Context) (err error)
+	GetOne(echoCtx echo.Context) (err error)
+	Search(echoCtx echo.Context) (err error)
+	Update(echoCtx echo.Context) (err error)
+}
+
+type ArchivableCrudRest interface {
+	BasicCrudRest
+	SetIsArchived(echoCtx echo.Context) (err error)
+}
+
+type RegisterRouteFn[TRestHandler BasicCrudRest] func(router *echo.Group, handler TRestHandler)
+
+func RegisterBasicCrudRest[TRestHandler BasicCrudRest](
+	pathPrefix string, router *echo.Group, register ...RegisterRouteFn[TRestHandler],
+) error {
+	return deps.Invoke(func(
+		handler TRestHandler,
+	) {
+		// Register custom routes first so that
+		// they can override the default routes if needed.
+		if len(register) > 0 {
+			register[0](router, handler)
+		}
+		router.DELETE(pathPrefix+"/:id", handler.Delete)
+		router.GET(pathPrefix+"/:id", handler.GetOne)
+		router.GET(pathPrefix, handler.Search)
+		router.POST(pathPrefix+"/exists", handler.Exists)
+		router.POST(pathPrefix, handler.Create)
+		router.PUT(pathPrefix+"/:id", handler.Update)
+	})
+}
+
+func RegisterArchivableCrudRest[TRestHandler ArchivableCrudRest](
+	pathPrefix string, router *echo.Group, register ...RegisterRouteFn[TRestHandler],
+) error {
+	return deps.Invoke(func(
+		handler TRestHandler,
+	) {
+		if len(register) > 0 {
+			register[0](router, handler)
+		}
+		router.DELETE(pathPrefix+"/:id", handler.Delete)
+		router.GET(pathPrefix+"/:id", handler.GetOne)
+		router.GET(pathPrefix, handler.Search)
+		router.POST(pathPrefix+"/exists", handler.Exists)
+		router.POST(pathPrefix+"/:id/archived", handler.SetIsArchived)
+		router.POST(pathPrefix, handler.Create)
+		router.PUT(pathPrefix+"/:id", handler.Update)
+	})
 }

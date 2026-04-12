@@ -31,51 +31,24 @@ type UserRest struct {
 	UserSvc it.UserService
 }
 
-func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create user"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequestDynamic(
+func (this UserRest) Create(echoCtx echo.Context) (err error) {
+	return httpserver.ServeCreate(
+		"create user",
 		echoCtx,
+		&it.CreateUserCommand{},
 		this.UserSvc.CreateUser,
-		func(requestFields dmodel.DynamicFields) it.CreateUserCommand {
-			cmd := it.CreateUserCommand{}
-			cmd.SetFieldData(requestFields)
-			return cmd
-		},
-		func(data domain.User) CreateUserResponse {
-			response := httpserver.NewRestCreateResponseDyn(data.GetFieldData())
-			return *response
-		},
-		httpserver.JsonCreated,
 	)
-	return err
 }
 
-func (this UserRest) DeleteUser(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete user"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest2(
+func (this UserRest) Delete(echoCtx echo.Context) (err error) {
+	return httpserver.ServeDelete[DeleteUserRequest](
+		"delete user",
 		echoCtx,
 		this.UserSvc.DeleteUser,
-		func(request DeleteUserRequest) it.DeleteUserCommand {
-			return it.DeleteUserCommand(request)
-		},
-		func(data dyn.MutateResultData) DeleteUserResponse {
-			response := httpserver.NewRestDeleteResponse2(data)
-			return response
-		},
-		httpserver.JsonOk,
 	)
-	return err
 }
 
-func (this UserRest) GetUser(echoCtx echo.Context) (err error) {
+func (this UserRest) GetOne(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user"); e != nil {
 			err = e
@@ -95,7 +68,7 @@ func (this UserRest) GetUser(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UserRest) SearchUsers(echoCtx echo.Context) (err error) {
+func (this UserRest) Search(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search users 2"); e != nil {
 			err = e
@@ -116,7 +89,7 @@ func (this UserRest) SearchUsers(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this UserRest) SetUserIsArchived(echoCtx echo.Context) (err error) {
+func (this UserRest) SetIsArchived(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST set user is_archived"); e != nil {
 			err = e
@@ -134,7 +107,7 @@ func (this UserRest) SetUserIsArchived(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
+func (this UserRest) Update(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update user"); e != nil {
 			err = e
@@ -155,7 +128,7 @@ func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this UserRest) UserExists(echoCtx echo.Context) (err error) {
+func (this UserRest) Exists(echoCtx echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST user exists"); e != nil {
 			err = e
