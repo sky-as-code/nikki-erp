@@ -68,9 +68,15 @@ func initIdentityV1() error {
 
 		err := stdErr.Join(
 			httpserver.RegisterArchivableCrudRest[*restv1.UserRest]("/users", routeV1),
-			httpserver.RegisterBasicCrudRest[*restv1.GroupRest]("/groups", routeV1),
-			httpserver.RegisterArchivableCrudRest[*restv1.OrganizationRest]("/organizations", routeV1),
-			httpserver.RegisterBasicCrudRest[*restv1.OrgUnitRest]("/orgunits", routeV1),
+			httpserver.RegisterBasicCrudRest("/groups", routeV1, func(ro *echo.Group, handler *restv1.GroupRest) {
+				ro.POST("/groups/:group_id/manage-users", groupRest.ManageGroupUsers)
+			}),
+			httpserver.RegisterArchivableCrudRest("/organizations", routeV1, func(ro *echo.Group, handler *restv1.OrganizationRest) {
+				ro.POST("/organizations/:org_id/manage-users", orgRest.ManageOrgUsers)
+			}),
+			httpserver.RegisterBasicCrudRest("/orgunits", routeV1, func(ro *echo.Group, handler *restv1.OrgUnitRest) {
+				ro.POST("/orgunits/:orgunit_id/manage-users", orgunitRest.ManageOrgUnitUsers)
+			}),
 		)
 		if err != nil {
 			return err
