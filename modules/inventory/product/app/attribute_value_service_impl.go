@@ -1,243 +1,320 @@
 package app
 
 import (
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
-	itAttributeValue "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributevalue"
+	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributevalue"
 )
 
 func NewAttributeValueServiceImpl(
-	attributeValueRepo itAttributeValue.AttributeValueRepository,
-	attributeService itAttribute.AttributeService,
-) itAttributeValue.AttributeValueService {
+	repo it.AttributeValueRepository,
+	attributeSvc itAttribute.AttributeService,
+	cqrsBus cqrs.CqrsBus,
+) it.AttributeValueService {
 	return &AttributeValueServiceImpl{
-		attributeValueRepo: attributeValueRepo,
-		attributeService:   attributeService,
+		repo:         repo,
+		attributeSvc: attributeSvc,
+		cqrsBus:      cqrsBus,
 	}
 }
 
 type AttributeValueServiceImpl struct {
-	attributeValueRepo itAttributeValue.AttributeValueRepository
-	attributeService   itAttribute.AttributeService
+	repo         it.AttributeValueRepository
+	attributeSvc itAttribute.AttributeService
+	cqrsBus      cqrs.CqrsBus
 }
 
-// Create
-
-func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx crud.Context, cmd itAttributeValue.CreateAttributeValueCommand) (result *itAttributeValue.CreateAttributeValueResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to add or remove users"); e != nil {
-			err = e
-		}
-	}()
-
-	value := cmd.ToDomainModel()
-	value.SetDefaults()
-
-	var attributeResult *itAttribute.GetAttributeByIdResult
-
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = cmd.Validate()
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			attributeResult, err = s.assertAttributeExists(ctx, value, vErrs)
-			return err
-		}).
-		End()
-
-	if vErrs.Count() > 0 {
-		return &itAttributeValue.CreateAttributeValueResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	dbAttributeValue, err := s.assertCreateAttributeValue(ctx, value, *attributeResult.Data.DataType)
-	ft.PanicOnErr(err)
-
-	if dbAttributeValue == nil {
-		dbAttributeValue, err = s.attributeValueRepo.CreateAndLinkVariant(ctx, value, cmd.VariantId)
-		ft.PanicOnErr(err)
-		return &itAttributeValue.CreateAttributeValueResult{
-			HasData: true,
-			Data:    dbAttributeValue,
-		}, nil
-	}
-
-	dbAttributeValue, _, err = s.attributeValueRepo.LinkVariant(ctx, *dbAttributeValue.Id, cmd.VariantId, *dbAttributeValue.Etag)
-	ft.PanicOnErr(err)
-
-	return &itAttributeValue.CreateAttributeValueResult{
-		HasData: true,
-		Data:    dbAttributeValue,
-	}, nil
-}
-
-// Update
-
-func (s *AttributeValueServiceImpl) UpdateAttributeValue(ctx crud.Context, cmd itAttributeValue.UpdateAttributeValueCommand) (*itAttributeValue.UpdateAttributeValueResult, error) {
-	result, err := crud.Update(ctx, crud.UpdateParam[*domain.AttributeValue, itAttributeValue.UpdateAttributeValueCommand, itAttributeValue.UpdateAttributeValueResult]{
-		Action:       "update attribute value",
-		Command:      cmd,
-		AssertExists: s.assertAttributeValueIdExists,
-		RepoUpdate:   s.attributeValueRepo.Update,
-		Sanitize:     s.sanitizeAttributeValue,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttributeValue.UpdateAttributeValueResult {
-			return &itAttributeValue.UpdateAttributeValueResult{
-				ClientError: vErrs.ToClientError(),
+func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx corectx.Context, cmd it.CreateAttributeValueCommand) (*it.CreateAttributeValueResult, error) {
+	return corecrud.Create(ctx, corecrud.CreateParam[domain.AttributeValue, *domain.AttributeValue]{
+		Action:         "create attribute value",
+		BaseRepoGetter: s.repo,
+		Data:           cmd,
+		ValidateExtra: func(ctx corectx.Context, attributeValue *domain.AttributeValue, vErrs *ft.ClientErrors) error {
+			// Check if attribute exists
+			attributeId := attributeValue.GetAttributeId()
+			if attributeId == nil {
+				return nil
 			}
-		},
-		ToSuccessResult: func(model *domain.AttributeValue) *itAttributeValue.UpdateAttributeValueResult {
-			return &itAttributeValue.UpdateAttributeValueResult{
-				HasData: true,
-				Data:    model,
-			}
-		},
-	})
-	return result, err
-}
 
-// Delete
-
-func (s *AttributeValueServiceImpl) DeleteAttributeValue(ctx crud.Context, cmd itAttributeValue.DeleteAttributeValueCommand) (*itAttributeValue.DeleteAttributeValueResult, error) {
-	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.AttributeValue, itAttributeValue.DeleteAttributeValueCommand, itAttributeValue.DeleteAttributeValueResult]{
-		Action:       "delete attribute value",
-		Command:      cmd,
-		AssertExists: s.assertAttributeValueIdExists,
-		RepoDelete: func(ctx crud.Context, model *domain.AttributeValue) (int, error) {
-			return s.attributeValueRepo.DeleteById(ctx, *model.Id)
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttributeValue.DeleteAttributeValueResult {
-			return &itAttributeValue.DeleteAttributeValueResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(_ *domain.AttributeValue, deletedCount int) *itAttributeValue.DeleteAttributeValueResult {
-			return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount)
-		},
-	})
-	return result, err
-}
-
-// Get by ID
-
-func (s *AttributeValueServiceImpl) GetAttributeValueById(ctx crud.Context, query itAttributeValue.GetAttributeValueByIdQuery) (*itAttributeValue.GetAttributeValueByIdResult, error) {
-	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.AttributeValue, itAttributeValue.GetAttributeValueByIdQuery, itAttributeValue.GetAttributeValueByIdResult]{
-		Action: "get attribute value by id",
-		Query:  query,
-		RepoFindOne: func(ctx crud.Context, q itAttributeValue.GetAttributeValueByIdQuery, vErrs *ft.ValidationErrors) (*domain.AttributeValue, error) {
-			dbAttributeValue, err := s.attributeValueRepo.FindById(ctx, q)
+			attributeIdStr := string(*attributeId)
+			attributeResult, err := s.attributeSvc.GetAttribute(ctx, itAttribute.GetAttributeQuery{Id: &attributeIdStr})
 			if err != nil {
-				return nil, err
+				return err
 			}
-			if dbAttributeValue == nil {
-				vErrs.AppendNotFound("id", "attribute value id")
+			if !attributeResult.HasData {
+				vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldAttributeId, "attribute.not_found", "attribute does not exist"))
+				return nil
 			}
-			return dbAttributeValue, nil
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttributeValue.GetAttributeValueByIdResult {
-			return &itAttributeValue.GetAttributeValueByIdResult{
-				ClientError: vErrs.ToClientError(),
+
+			// Validate data type compatibility
+			attribute := attributeResult.Data
+			dataType := attribute.GetDataType()
+			if dataType == nil {
+				return nil
 			}
-		},
-		ToSuccessResult: func(model *domain.AttributeValue) *itAttributeValue.GetAttributeValueByIdResult {
-			return &itAttributeValue.GetAttributeValueByIdResult{
-				HasData: true,
-				Data:    model,
+
+			valueText := attributeValue.GetValueText()
+			valueNumber := attributeValue.GetValueNumber()
+			valueBool := attributeValue.GetValueBool()
+			valueRef := attributeValue.GetValueRef()
+
+			switch *dataType {
+			case domain.AttributeDataTypeText:
+				if valueText == nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_required", "text value is required for text attribute"))
+				}
+				if valueNumber != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for text attribute"))
+				}
+				if valueBool != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for text attribute"))
+				}
+				if valueRef != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for text attribute"))
+				}
+
+			case domain.AttributeDataTypeNumber:
+				if valueNumber == nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_required", "number value is required for number attribute"))
+				}
+				if valueText != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for number attribute"))
+				}
+				if valueBool != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for number attribute"))
+				}
+				if valueRef != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for number attribute"))
+				}
+
+			case domain.AttributeDataTypeBoolean:
+				if valueBool == nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_required", "boolean value is required for boolean attribute"))
+				}
+				if valueText != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for boolean attribute"))
+				}
+				if valueNumber != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for boolean attribute"))
+				}
+				if valueRef != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for boolean attribute"))
+				}
+
+			case domain.AttributeDataTypeReference:
+				if valueRef == nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_required", "reference value is required for reference attribute"))
+				}
+				if valueText != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for reference attribute"))
+				}
+				if valueNumber != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for reference attribute"))
+				}
+				if valueBool != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for reference attribute"))
+				}
 			}
+
+			// Check for duplicate attribute value
+			existingValue, err := s.findByAttributeAndValue(ctx, attributeValue)
+			if err != nil {
+				return err
+			}
+			if existingValue != nil {
+				vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldAttributeId, "attribute_value.duplicate", "attribute value already exists"))
+			}
+
+			return nil
 		},
 	})
-	return result, err
 }
 
-// Search
+func (s *AttributeValueServiceImpl) UpdateAttributeValue(ctx corectx.Context, cmd it.UpdateAttributeValueCommand) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return corecrud.Update(ctx, corecrud.UpdateParam[domain.AttributeValue, *domain.AttributeValue]{
+		Action:       "update attribute value",
+		DbRepoGetter: s.repo,
+		Data:         cmd,
+		ValidateExtra: func(ctx corectx.Context, attributeValue *domain.AttributeValue, foundAttributeValue *domain.AttributeValue, vErrs *ft.ClientErrors) error {
+			// Check if attribute exists
+			attributeId := attributeValue.GetAttributeId()
+			if attributeId != nil {
+				attributeIdStr := string(*attributeId)
+				attributeResult, err := s.attributeSvc.GetAttribute(ctx, itAttribute.GetAttributeQuery{Id: &attributeIdStr})
+				if err != nil {
+					return err
+				}
+				if !attributeResult.HasData {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldAttributeId, "attribute.not_found", "attribute does not exist"))
+					return nil
+				}
 
-func (this *AttributeValueServiceImpl) SearchAttributeValues(ctx crud.Context, query itAttributeValue.SearchAttributeValuesQuery) (*itAttributeValue.SearchAttributeValuesResult, error) {
-	result, err := crud.Search(ctx, crud.SearchParam[domain.AttributeValue, itAttributeValue.SearchAttributeValuesQuery, itAttributeValue.SearchAttributeValuesResult]{
-		Action: "search attribute values",
-		Query:  query,
-		SetQueryDefaults: func(q *itAttributeValue.SearchAttributeValuesQuery) {
-			q.SetDefaults()
-		},
-		ParseSearchGraph: func(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-			return this.attributeValueRepo.ParseSearchGraph(criteria)
-		},
-		RepoSearch: func(ctx crud.Context, query itAttributeValue.SearchAttributeValuesQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.AttributeValue], error) {
-			return this.attributeValueRepo.Search(ctx, itAttributeValue.SearchParam{
-				AttributeId: query.AttributeId,
-				Predicate:   predicate,
-				Order:       order,
-				Page:        *query.Page,
-				Size:        *query.Size,
-			})
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttributeValue.SearchAttributeValuesResult {
-			return &itAttributeValue.SearchAttributeValuesResult{
-				ClientError: vErrs.ToClientError(),
+				// Validate data type compatibility
+				attribute := attributeResult.Data
+				dataType := attribute.GetDataType()
+				if dataType == nil {
+					return nil
+				}
+
+				valueText := attributeValue.GetValueText()
+				valueNumber := attributeValue.GetValueNumber()
+				valueBool := attributeValue.GetValueBool()
+				valueRef := attributeValue.GetValueRef()
+
+				switch *dataType {
+				case domain.AttributeDataTypeText:
+					if valueNumber != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for text attribute"))
+					}
+					if valueBool != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for text attribute"))
+					}
+					if valueRef != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for text attribute"))
+					}
+
+				case domain.AttributeDataTypeNumber:
+					if valueText != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for number attribute"))
+					}
+					if valueBool != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for number attribute"))
+					}
+					if valueRef != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for number attribute"))
+					}
+
+				case domain.AttributeDataTypeBoolean:
+					if valueText != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for boolean attribute"))
+					}
+					if valueNumber != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for boolean attribute"))
+					}
+					if valueRef != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for boolean attribute"))
+					}
+
+				case domain.AttributeDataTypeReference:
+					if valueText != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for reference attribute"))
+					}
+					if valueNumber != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for reference attribute"))
+					}
+					if valueBool != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for reference attribute"))
+					}
+				}
+
+				// Check for duplicate attribute value (excluding current one)
+				existingValue, err := s.findByAttributeAndValue(ctx, attributeValue)
+				if err != nil {
+					return err
+				}
+				if existingValue != nil {
+					currentId := attributeValue.GetId()
+					existingId := existingValue.GetId()
+					if currentId != nil && existingId != nil && *currentId != *existingId {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldAttributeId, "attribute_value.duplicate", "attribute value already exists"))
+					}
+				}
 			}
-		},
-		ToSuccessResult: func(paged *crud.PagedResult[domain.AttributeValue]) *itAttributeValue.SearchAttributeValuesResult {
-			return &itAttributeValue.SearchAttributeValuesResult{
-				Data:    paged,
-				HasData: paged.Items != nil,
-			}
+
+			return nil
 		},
 	})
-	return result, err
 }
 
-func (s *AttributeValueServiceImpl) UnlinkVariantAttributes(ctx crud.Context, variantId model.Id) error {
-	return s.attributeValueRepo.DeleteByVariantId(ctx, variantId)
-}
-
-// Helpers
-//---------------------------------------------------------------------------------------------------------------------------------------------//
-
-func (s *AttributeValueServiceImpl) sanitizeAttributeValue(_ *domain.AttributeValue) {
-	// Keep for future: trim/sanitize plain-text fields if any.
-}
-
-func (s *AttributeValueServiceImpl) assertAttributeValueIdExists(ctx crud.Context, attributeValue *domain.AttributeValue, vErrs *ft.ValidationErrors) (*domain.AttributeValue, error) {
-	dbAttributeValue, err := s.attributeValueRepo.FindById(ctx, itAttributeValue.FindByIdParam{
-		Id: *attributeValue.Id,
+func (s *AttributeValueServiceImpl) DeleteAttributeValue(ctx corectx.Context, cmd it.DeleteAttributeValueCommand) (*it.DeleteAttributeValueResult, error) {
+	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
+		Action:       "delete attribute value",
+		DbRepoGetter: s.repo,
+		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
+}
+
+func (s *AttributeValueServiceImpl) GetAttributeValue(ctx corectx.Context, query it.GetAttributeValueQuery) (*it.GetAttributeValueResult, error) {
+	var q dyn.GetOneQuery
+	if query.Id != nil {
+		q.Id = *query.Id
+	}
+	q.Columns = query.Columns
+	return corecrud.GetOne[domain.AttributeValue](ctx, corecrud.GetOneParam{
+		Action:       "get attribute value",
+		DbRepoGetter: s.repo,
+		Query:        q,
+	})
+}
+
+func (s *AttributeValueServiceImpl) SearchAttributeValues(ctx corectx.Context, query it.SearchAttributeValuesQuery) (*it.SearchAttributeValuesResult, error) {
+	return corecrud.Search[domain.AttributeValue](ctx, corecrud.SearchParam{
+		Action:       "search attribute values",
+		DbRepoGetter: s.repo,
+		Query:        dyn.SearchQuery(query),
+	})
+}
+
+func (s *AttributeValueServiceImpl) AttributeValueExists(ctx corectx.Context, query it.AttributeValueExistsQuery) (*it.AttributeValueExistsResult, error) {
+	return corecrud.Exists(ctx, corecrud.ExistsParam{
+		Action:       "attribute value exists",
+		DbRepoGetter: s.repo,
+		Query:        dyn.ExistsQuery(query),
+	})
+}
+
+// Helper methods
+// ---------------------------------------------------------------------------------------------------------------------------------------------
+
+// findByAttributeAndValue finds an attribute value by attribute ID and value
+func (s *AttributeValueServiceImpl) findByAttributeAndValue(ctx corectx.Context, attributeValue *domain.AttributeValue) (*domain.AttributeValue, error) {
+	attributeId := attributeValue.GetAttributeId()
+	if attributeId == nil {
+		return nil, nil
+	}
+
+	// Build search conditions based on attribute ID
+	graph := dmodel.NewSearchGraph().
+		NewCondition(domain.AttrValFieldAttributeId, dmodel.Equals, *attributeId)
+
+	// Add value-specific conditions based on which value field is set
+	valueText := attributeValue.GetValueText()
+	valueNumber := attributeValue.GetValueNumber()
+	valueBool := attributeValue.GetValueBool()
+	valueRef := attributeValue.GetValueRef()
+
+	if valueText != nil {
+		graph.NewCondition(domain.AttrValFieldValueText, dmodel.Equals, *valueText)
+	} else if valueNumber != nil {
+		graph.NewCondition(domain.AttrValFieldValueNumber, dmodel.Equals, *valueNumber)
+	} else if valueBool != nil {
+		graph.NewCondition(domain.AttrValFieldValueBool, dmodel.Equals, *valueBool)
+	} else if valueRef != nil {
+		graph.NewCondition(domain.AttrValFieldValueRef, dmodel.Equals, *valueRef)
+	} else {
+		// No value set, cannot search
+		return nil, nil
+	}
+
+	searchResult, err := s.repo.Search(ctx, dyn.RepoSearchParam{
+		Graph: graph,
+		Page:  0,
+		Size:  1,
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	if dbAttributeValue == nil {
-		vErrs.Append("id", "attribute value not found")
+	if !searchResult.HasData || len(searchResult.Data.Items) == 0 {
 		return nil, nil
 	}
 
-	return dbAttributeValue, nil
-}
-
-func (s *AttributeValueServiceImpl) assertCreateAttributeValue(ctx crud.Context, attributeValue *domain.AttributeValue, dataType string) (*domain.AttributeValue, error) {
-	value, err := s.attributeValueRepo.FindByValueRef(ctx, attributeValue, dataType)
-	ft.PanicOnErr(err)
-
-	if value != nil {
-		return nil, nil
-	}
-	return value, nil
-}
-
-func (s *AttributeValueServiceImpl) assertAttributeExists(ctx crud.Context, attributeValue *domain.AttributeValue, vErrs *ft.ValidationErrors) (result *itAttribute.GetAttributeByIdResult, err error) {
-	attribute, err := s.attributeService.GetAttributeById(ctx, itAttribute.FindByIdParam{
-		Id:        *attributeValue.AttributeId,
-		ProductId: *attributeValue.ProductId,
-	})
-	ft.PanicOnErr(err)
-	if attribute.Data == nil {
-		vErrs.Append("attributeId", "attribute not found")
-		return nil, nil
-	}
-	return attribute, nil
+	return &searchResult.Data.Items[0], nil
 }

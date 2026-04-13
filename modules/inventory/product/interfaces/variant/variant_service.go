@@ -1,13 +1,15 @@
 package variant
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 type VariantService interface {
-	CreateVariant(ctx crud.Context, cmd CreateVariantCommand) (*CreateVariantResult, error)
-	UpdateVariant(ctx crud.Context, cmd UpdateVariantCommand) (*UpdateVariantResult, error)
-	DeleteVariant(ctx crud.Context, cmd DeleteVariantCommand) (*DeleteVariantResult, error)
-	GetVariantById(ctx crud.Context, query GetVariantByIdQuery) (*GetVariantByIdResult, error)
-	SearchVariants(ctx crud.Context, query SearchVariantsQuery) (*SearchVariantsResult, error)
+	CreateVariant(ctx corectx.Context, cmd CreateVariantCommand) (*CreateVariantResult, error)
+	DeleteVariant(ctx corectx.Context, cmd DeleteVariantCommand) (*DeleteVariantResult, error)
+	VariantExists(ctx corectx.Context, query VariantExistsQuery) (*VariantExistsResult, error)
+	GetVariant(ctx corectx.Context, query GetVariantQuery) (*GetVariantResult, error)
+	SearchVariants(ctx corectx.Context, query SearchVariantsQuery) (*SearchVariantsResult, error)
+	UpdateVariant(ctx corectx.Context, cmd UpdateVariantCommand) (*dyn.OpResult[dyn.MutateResultData], error)
 }

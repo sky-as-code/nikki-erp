@@ -1,71 +1,22 @@
 package v1
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/array"
-	"github.com/sky-as-code/nikki-erp/common/model"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	domain "github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 	itVariant "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
 )
-
-type VariantDto struct {
-	Id        string `json:"id"`
-	CreatedAt int64  `json:"createdAt"`
-	UpdatedAt *int64 `json:"updatedAt,omitempty"`
-	Etag      string `json:"etag"`
-
-	Name          model.LangJson          `json:"name"`
-	ProductId     model.Id                `json:"productId"`
-	Sku           *string                 `json:"sku,omitempty"`
-	Barcode       *string                 `json:"barcode,omitempty"`
-	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
-	ImageURL      *string                 `json:"imageURL,omitempty"`
-	Status        string                  `json:"status"`
-	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
-
-	Product *GetVariantRespProduct `json:"product,omitempty" model:"-"`
-}
-type GetVariantRespProduct struct {
-	Id   model.Id       `json:"id"`
-	Name model.LangJson `json:"name"`
-}
-
-func (this *VariantDto) FromVariant(v domain.Variant) {
-	model.MustCopy(v.AuditableBase, this)
-	model.MustCopy(v.ModelBase, this)
-	model.MustCopy(v, this)
-
-	if v.Product != nil {
-		this.Product = &GetVariantRespProduct{
-			Id:   *v.Product.Id,
-			Name: *v.Product.Name,
-		}
-	}
-}
 
 type CreateVariantRequest = itVariant.CreateVariantCommand
 type CreateVariantResponse = httpserver.RestCreateResponse
 
 type UpdateVariantRequest = itVariant.UpdateVariantCommand
-type UpdateVariantResponse = httpserver.RestUpdateResponse
+type UpdateVariantResponse = httpserver.RestMutateResponse
 
 type DeleteVariantRequest = itVariant.DeleteVariantCommand
-type DeleteVariantResponse = httpserver.RestDeleteResponse
+type DeleteVariantResponse = httpserver.RestDeleteResponse2
 
-type GetVariantByIdRequest = itVariant.GetVariantByIdQuery
-type GetVariantByIdResponse = VariantDto
+type GetVariantRequest = itVariant.GetVariantQuery
+type GetVariantResponse = dmodel.DynamicFields
 
 type SearchVariantsRequest = itVariant.SearchVariantsQuery
-
-type SearchVariantsResponse httpserver.RestSearchResponse[VariantDto]
-
-func (this *SearchVariantsResponse) FromResult(result *itVariant.SearchVariantsResultData) {
-	this.Total = result.Total
-	this.Page = result.Page
-	this.Size = result.Size
-	this.Items = array.Map(result.Items, func(v domain.Variant) VariantDto {
-		item := VariantDto{}
-		item.FromVariant(v)
-		return item
-	})
-}
+type SearchVariantsResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]

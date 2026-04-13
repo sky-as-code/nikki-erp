@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{api_host}}/v1/{{org_id}}/inventory/unit-category
+  url: {{api_host}}/v1/{{org_id}}/inventory/unit-categories
   body: json
   auth: inherit
 }
@@ -17,6 +17,12 @@ body:json {
        "vi": "Chiều dài"
     }
   }
+}
+
+script:post-response {
+  const { id, etag } = res.getBody();
+  id && bru.setVar('unit_category_id', id);
+  etag && bru.setVar('etag', etag);
 }
 
 settings {

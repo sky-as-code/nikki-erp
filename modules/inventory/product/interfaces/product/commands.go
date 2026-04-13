@@ -1,15 +1,25 @@
 package product
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/shopspring/decimal"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 )
 
-// Create
+func init() {
+	var req cqrs.Request
+	req = (*CreateProductCommand)(nil)
+	req = (*DeleteProductCommand)(nil)
+	req = (*GetProductQuery)(nil)
+	req = (*SearchProductsQuery)(nil)
+	req = (*SetProductIsArchivedCommand)(nil)
+	req = (*UpdateProductCommand)(nil)
+	req = (*ProductExistsQuery)(nil)
+	util.Unused(req)
+}
 
 var createProductCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -18,31 +28,22 @@ var createProductCommandType = cqrs.RequestType{
 }
 
 type CreateProductCommand struct {
-	OrgId         model.Id        `param:"orgId" json:"orgId"`
-	BarCode       *string         `json:"barCode,omitempty"`
-	Name          model.LangJson  `json:"name"`
-	Description   *model.LangJson `json:"description,omitempty"`
-	UnitId        *model.Id       `json:"unitId,omitempty"`
-	Sku           *string         `json:"sku,omitempty"`
-	Status        *string         `json:"status,omitempty"`
-	ThumbnailURL  *string         `json:"thumbnailURL,omitempty"`
-	ProposedPrice *float64        `json:"proposedPrice,omitempty"`
+	domain.Product
+
+	Sku           string          `json:"sku"`
+	BarCode       string          `json:"barcode"`
+	ProposedPrice decimal.Decimal `json:"proposed_price"`
 }
 
 func (CreateProductCommand) CqrsRequestType() cqrs.RequestType {
 	return createProductCommandType
 }
 
-func (this CreateProductCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.OrgId, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (this CreateProductCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.ProductSchemaName)
 }
 
-type CreateProductResult = GetProductByIdResult
-
-// Update
+type CreateProductResult = dyn.OpResult[domain.Product]
 
 var updateProductCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -51,23 +52,18 @@ var updateProductCommandType = cqrs.RequestType{
 }
 
 type UpdateProductCommand struct {
-	Id               model.Id        `param:"id" json:"id"`
-	Etag             model.Etag      `json:"etag"`
-	Name             *model.LangJson `json:"name,omitempty"`
-	Description      *model.LangJson `json:"description,omitempty"`
-	UnitId           *model.Id       `json:"unitId,omitempty"`
-	Status           *string         `json:"status,omitempty"`
-	DefaultVariantId *model.Id       `json:"defaultVariantId,omitempty"`
-	ThumbnailURL     *string         `json:"thumbnailURL,omitempty"`
+	domain.Product
 }
 
 func (UpdateProductCommand) CqrsRequestType() cqrs.RequestType {
 	return updateProductCommandType
 }
 
-type UpdateProductResult = GetProductByIdResult
+func (this UpdateProductCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.ProductSchemaName)
+}
 
-// Delete
+type UpdateProductResult = dyn.OpResult[dyn.MutateResultData]
 
 var deleteProductCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -75,49 +71,30 @@ var deleteProductCommandType = cqrs.RequestType{
 	Action:    "delete",
 }
 
-type DeleteProductCommand struct {
-	Id model.Id `json:"id" param:"id"`
-}
-
-func (this DeleteProductCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
+type DeleteProductCommand dyn.DeleteOneCommand
 
 func (DeleteProductCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteProductCommandType
 }
 
-type DeleteProductResult = crud.DeletionResult
+type DeleteProductResult = dyn.OpResult[dyn.MutateResultData]
 
-// Get by ID
-
-var getProductByIdQueryType = cqrs.RequestType{
+var getProductQueryType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "product",
-	Action:    "getById",
+	Action:    "getProduct",
 }
 
-type GetProductByIdQuery struct {
-	Id             model.Id `param:"id" json:"id"`
-	WithVariants   bool     `query:"withVariants" json:"withVariants"`
-	WithAttributes bool     `query:"withAttributes" json:"withAttributes"`
+type GetProductQuery struct {
+	Columns []string `json:"columns" query:"columns"`
+	Id      *string  `json:"id" param:"id"`
 }
 
-func (this GetProductByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (GetProductQuery) CqrsRequestType() cqrs.RequestType {
+	return getProductQueryType
 }
 
-func (GetProductByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return getProductByIdQueryType
-}
-
-type GetProductByIdResult = crud.OpResult[*domain.Product]
+type GetProductResult = dyn.OpResult[domain.Product]
 
 var searchProductsQueryType = cqrs.RequestType{
 	Module:    "inventory",
@@ -125,22 +102,39 @@ var searchProductsQueryType = cqrs.RequestType{
 	Action:    "search",
 }
 
-// Search (advanced)
+type SearchProductsQuery dyn.SearchQuery
 
-type SearchProductsQuery struct {
-	// Filled by service from Graph
-	crud.SearchQuery
-}
-
-func (this SearchProductsQuery) CqrsRequestType() cqrs.RequestType {
+func (SearchProductsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchProductsQueryType
 }
 
-func (this SearchProductsQuery) Validate() ft.ValidationErrors {
-	rules := this.SearchQuery.ValidationRules()
+type SearchProductsResultData = dyn.PagedResultData[domain.Product]
+type SearchProductsResult = dyn.OpResult[SearchProductsResultData]
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+var setProductIsArchivedCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "product",
+	Action:    "setProductIsArchived",
 }
 
-type SearchProductsResultData = crud.PagedResult[domain.Product]
-type SearchProductsResult = crud.OpResult[*SearchProductsResultData]
+type SetProductIsArchivedCommand dyn.SetIsArchivedCommand
+
+func (SetProductIsArchivedCommand) CqrsRequestType() cqrs.RequestType {
+	return setProductIsArchivedCommandType
+}
+
+type SetProductIsArchivedResult = dyn.OpResult[dyn.MutateResultData]
+
+var productExistsQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "product",
+	Action:    "exists",
+}
+
+type ProductExistsQuery dyn.ExistsQuery
+
+func (ProductExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return productExistsQueryType
+}
+
+type ProductExistsResult = dyn.OpResult[dyn.ExistsResultData]

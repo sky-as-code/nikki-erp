@@ -26,6 +26,12 @@ body:json {
   }
 }
 
+script:post-response {
+  const body = res.getBody();
+  const { etag } = body;
+  etag && bru.setVar('etag', etag);
+}
+
 settings {
   encodeUrl: true
   timeout: 0

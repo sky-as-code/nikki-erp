@@ -1,15 +1,24 @@
 package unitcategory
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/unit/domain"
 )
 
-// Create Command
+func init() {
+	var req cqrs.Request
+	req = (*CreateUnitCategoryCommand)(nil)
+	req = (*DeleteUnitCategoryCommand)(nil)
+	req = (*GetUnitCategoryQuery)(nil)
+	req = (*SearchUnitCategoriesQuery)(nil)
+	req = (*UpdateUnitCategoryCommand)(nil)
+	req = (*UnitCategoryExistsQuery)(nil)
+	util.Unused(req)
+}
+
 var createUnitCategoryCommandType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "unit_category",
@@ -17,17 +26,19 @@ var createUnitCategoryCommandType = cqrs.RequestType{
 }
 
 type CreateUnitCategoryCommand struct {
-	OrgId model.Id       `json:"orgId" param:"orgId"`
-	Name  model.LangJson `json:"name"`
+	domain.UnitCategory
 }
 
 func (CreateUnitCategoryCommand) CqrsRequestType() cqrs.RequestType {
 	return createUnitCategoryCommandType
 }
 
-type CreateUnitCategoryResult = GetUnitCategoryByIdResult
+func (this CreateUnitCategoryCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.UnitCategorySchemaName)
+}
 
-// Update Command
+type CreateUnitCategoryResult = dyn.OpResult[domain.UnitCategory]
+
 var updateUnitCategoryCommandType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "unit_category",
@@ -35,90 +46,75 @@ var updateUnitCategoryCommandType = cqrs.RequestType{
 }
 
 type UpdateUnitCategoryCommand struct {
-	Id   model.Id        `json:"id" validate:"required" param:"id"`
-	Etag model.Etag      `json:"etag" validate:"required" header:"If-Match"`
-	Name *model.LangJson `json:"name,omitempty"`
+	domain.UnitCategory
 }
 
 func (UpdateUnitCategoryCommand) CqrsRequestType() cqrs.RequestType {
 	return updateUnitCategoryCommandType
 }
 
-type UpdateUnitCategoryResult = GetUnitCategoryByIdResult
+func (this UpdateUnitCategoryCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.UnitCategorySchemaName)
+}
 
-// Delete Command
+type UpdateUnitCategoryResult = dyn.OpResult[dyn.MutateResultData]
+
 var deleteUnitCategoryCommandType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "unit_category",
 	Action:    "delete",
 }
 
-type DeleteUnitCategoryCommand struct {
-	Id model.Id `json:"id" validate:"required" param:"id"`
-}
+type DeleteUnitCategoryCommand dyn.DeleteOneCommand
 
 func (DeleteUnitCategoryCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteUnitCategoryCommandType
 }
 
-func (this DeleteUnitCategoryCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
+type DeleteUnitCategoryResult = dyn.OpResult[dyn.MutateResultData]
 
-type DeleteUnitCategoryResult = crud.DeletionResult
-
-// Get by ID Quer
-var getUnitCategoryByIdQueryType = cqrs.RequestType{
+var getUnitCategoryQueryType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "unit_category",
-	Action:    "get_by_id",
+	Action:    "getUnitCategory",
 }
 
-type GetUnitCategoryByIdQuery struct {
-	Id model.Id `json:"id" validate:"required" param:"id"`
+type GetUnitCategoryQuery struct {
+	Columns []string `json:"columns" query:"columns"`
+	Id      *string  `json:"id" param:"id"`
 }
 
-func (this GetUnitCategoryByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (GetUnitCategoryQuery) CqrsRequestType() cqrs.RequestType {
+	return getUnitCategoryQueryType
 }
 
-func (GetUnitCategoryByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return getUnitCategoryByIdQueryType
-}
+type GetUnitCategoryResult = dyn.OpResult[domain.UnitCategory]
 
-type GetUnitCategoryByIdResult = crud.OpResult[*domain.UnitCategory]
-
-// Search Query
 var searchUnitCategoriesQueryType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "unit_category",
 	Action:    "search",
 }
 
-type SearchUnitCategoriesQuery struct {
-	crud.SearchQuery
-}
-
-func (this SearchUnitCategoriesQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		// Add validation rules if needed
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
+type SearchUnitCategoriesQuery dyn.SearchQuery
 
 func (SearchUnitCategoriesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchUnitCategoriesQueryType
 }
 
-func (this *SearchUnitCategoriesQuery) SetDefaults() {
-	this.SearchQuery.SetDefaults()
+type SearchUnitCategoriesResultData = dyn.PagedResultData[domain.UnitCategory]
+type SearchUnitCategoriesResult = dyn.OpResult[SearchUnitCategoriesResultData]
+
+var unitCategoryExistsQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "unit_category",
+	Action:    "exists",
 }
 
-type SearchUnitCategoriesResultData = crud.PagedResult[domain.UnitCategory]
-type SearchUnitCategoriesResult = crud.OpResult[*SearchUnitCategoriesResultData]
+type UnitCategoryExistsQuery dyn.ExistsQuery
+
+func (UnitCategoryExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return unitCategoryExistsQueryType
+}
+
+type UnitCategoryExistsResult = dyn.OpResult[dyn.ExistsResultData]

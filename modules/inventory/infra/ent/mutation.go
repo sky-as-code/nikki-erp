@@ -7454,6 +7454,7 @@ type VariantMutation struct {
 	_Image_url             *string
 	sku                    *string
 	status                 *string
+	org_id                 *string
 	updated_at             *time.Time
 	clearedFields          map[string]struct{}
 	product                *string
@@ -7967,6 +7968,42 @@ func (m *VariantMutation) ResetStatus() {
 	m.status = nil
 }
 
+// SetOrgID sets the "org_id" field.
+func (m *VariantMutation) SetOrgID(s string) {
+	m.org_id = &s
+}
+
+// OrgID returns the value of the "org_id" field in the mutation.
+func (m *VariantMutation) OrgID() (r string, exists bool) {
+	v := m.org_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrgID returns the old "org_id" field's value of the Variant entity.
+// If the Variant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *VariantMutation) OldOrgID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrgID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrgID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrgID: %w", err)
+	}
+	return oldValue.OrgID, nil
+}
+
+// ResetOrgID resets all changes to the "org_id" field.
+func (m *VariantMutation) ResetOrgID() {
+	m.org_id = nil
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (m *VariantMutation) SetUpdatedAt(t time.Time) {
 	m.updated_at = &t
@@ -8131,7 +8168,7 @@ func (m *VariantMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *VariantMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.barcode != nil {
 		fields = append(fields, variant.FieldBarcode)
 	}
@@ -8158,6 +8195,9 @@ func (m *VariantMutation) Fields() []string {
 	}
 	if m.status != nil {
 		fields = append(fields, variant.FieldStatus)
+	}
+	if m.org_id != nil {
+		fields = append(fields, variant.FieldOrgID)
 	}
 	if m.updated_at != nil {
 		fields = append(fields, variant.FieldUpdatedAt)
@@ -8188,6 +8228,8 @@ func (m *VariantMutation) Field(name string) (ent.Value, bool) {
 		return m.Sku()
 	case variant.FieldStatus:
 		return m.Status()
+	case variant.FieldOrgID:
+		return m.OrgID()
 	case variant.FieldUpdatedAt:
 		return m.UpdatedAt()
 	}
@@ -8217,6 +8259,8 @@ func (m *VariantMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldSku(ctx)
 	case variant.FieldStatus:
 		return m.OldStatus(ctx)
+	case variant.FieldOrgID:
+		return m.OldOrgID(ctx)
 	case variant.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
 	}
@@ -8290,6 +8334,13 @@ func (m *VariantMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetStatus(v)
+		return nil
+	case variant.FieldOrgID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrgID(v)
 		return nil
 	case variant.FieldUpdatedAt:
 		v, ok := value.(time.Time)
@@ -8421,6 +8472,9 @@ func (m *VariantMutation) ResetField(name string) error {
 		return nil
 	case variant.FieldStatus:
 		m.ResetStatus()
+		return nil
+	case variant.FieldOrgID:
+		m.ResetOrgID()
 		return nil
 	case variant.FieldUpdatedAt:
 		m.ResetUpdatedAt()

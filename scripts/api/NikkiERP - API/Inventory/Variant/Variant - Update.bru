@@ -27,6 +27,11 @@ body:json {
   }
 }
 
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('etag', etag);
+}
+
 vars:pre-request {
   variant_id: 01KJ87WNPCBRAP77BFR08WBN13
 }

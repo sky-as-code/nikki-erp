@@ -1,13 +1,15 @@
 package productcategory
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 type ProductCategoryService interface {
-	CreateProductCategory(ctx crud.Context, cmd CreateProductCategoryCommand) (*CreateProductCategoryResult, error)
-	UpdateProductCategory(ctx crud.Context, cmd UpdateProductCategoryCommand) (*UpdateProductCategoryResult, error)
-	DeleteProductCategory(ctx crud.Context, cmd DeleteProductCategoryCommand) (*DeleteProductCategoryResult, error)
-	GetProductCategoryById(ctx crud.Context, query GetProductCategoryByIdQuery) (*GetProductCategoryByIdResult, error)
-	SearchProductCategories(ctx crud.Context, query SearchProductCategoriesQuery) (*SearchProductCategoriesResult, error)
+	CreateProductCategory(ctx corectx.Context, cmd CreateProductCategoryCommand) (*CreateProductCategoryResult, error)
+	DeleteProductCategory(ctx corectx.Context, cmd DeleteProductCategoryCommand) (*DeleteProductCategoryResult, error)
+	ProductCategoryExists(ctx corectx.Context, query ProductCategoryExistsQuery) (*ProductCategoryExistsResult, error)
+	GetProductCategory(ctx corectx.Context, query GetProductCategoryQuery) (*GetProductCategoryResult, error)
+	SearchProductCategories(ctx corectx.Context, query SearchProductCategoriesQuery) (*SearchProductCategoriesResult, error)
+	UpdateProductCategory(ctx corectx.Context, cmd UpdateProductCategoryCommand) (*dyn.OpResult[dyn.MutateResultData], error)
 }

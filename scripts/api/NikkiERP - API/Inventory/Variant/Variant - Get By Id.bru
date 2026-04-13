@@ -10,6 +10,11 @@ get {
   auth: inherit
 }
 
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('etag', etag);
+}
+
 vars:pre-request {
   variant_id: 01KK11JNA5NZY5RCPZXG2B15EK
 }

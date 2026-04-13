@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{api_host}}/v1/{{org_id}}/inventory/products-category
+  url: {{api_host}}/v1/{{org_id}}/inventory/product-categories
   body: json
   auth: inherit
 }
@@ -17,6 +17,12 @@ body:json {
        "vi": "Bút viết"
     }
   }
+}
+
+script:post-response {
+  const { id, etag } = res.getBody();
+  id && bru.setVar('product_category_id', id);
+  etag && bru.setVar('etag', etag);
 }
 
 settings {

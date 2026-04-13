@@ -3,415 +3,295 @@ package app
 import (
 	"encoding/json"
 
+	"github.com/shopspring/decimal"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
 	itAttributeValue "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributevalue"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
-	itVariant "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
+	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
 )
 
 func NewVariantServiceImpl(
-	variantRepo itVariant.VariantRepository,
-	attributeValue itAttributeValue.AttributeValueService,
+	repo it.VariantRepository,
 	productSvc itProduct.ProductService,
-) itVariant.VariantService {
+	attributeValueSvc itAttributeValue.AttributeValueService,
+	cqrsBus cqrs.CqrsBus,
+) it.VariantService {
 	return &VariantServiceImpl{
-		variantRepo:    variantRepo,
-		attribute:      nil,
-		attributeValue: attributeValue,
-		productSvc:     productSvc,
+		repo:              repo,
+		productSvc:        productSvc,
+		attributeValueSvc: attributeValueSvc,
+		cqrsBus:           cqrsBus,
 	}
 }
 
 type VariantServiceImpl struct {
-	variantRepo    itVariant.VariantRepository
-	attribute      itAttribute.AttributeService
-	attributeValue itAttributeValue.AttributeValueService
-	productSvc     itProduct.ProductService
+	repo              it.VariantRepository
+	productSvc        itProduct.ProductService
+	attributeSvc      itAttribute.AttributeService
+	attributeValueSvc itAttributeValue.AttributeValueService
+	cqrsBus           cqrs.CqrsBus
 }
 
-func (this *VariantServiceImpl) SetAttributeService(attribute itAttribute.AttributeService) {
-	this.attribute = attribute
+// SetAttributeService wires AttributeService to break circular dependency
+func (s *VariantServiceImpl) SetAttributeService(attributeSvc itAttribute.AttributeService) {
+	s.attributeSvc = attributeSvc
 }
 
-// Create
-
-func (s *VariantServiceImpl) CreateVariant(ctx crud.Context, cmd itVariant.CreateVariantCommand) (result *itVariant.CreateVariantResult, err error) {
-	// entTx, err := s.variantRepo.BeginTransaction(ctx)
-	// ft.PanicOnErr(err)
-
-	// ctx.SetDbTranx(entTx)
-
-	// defer func() {
-	// 	if err != nil {
-	// 		entTx.Rollback()
-	// 		return
-	// 	}
-	// 	if result != nil && result.ClientError != nil {
-	// 		entTx.Rollback()
-	// 		return
-	// 	}
-
-	// 	entTx.Commit()
-	// }()
-
-	variant := cmd.ToDomainModel()
-	variant.SetDefaults()
-
-	var dbVariant *domain.Variant
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = variant.Validate(false)
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			dbVariant, err = s.variantRepo.Create(ctx, variant)
-			return err
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			return s.assertCreateVariant(ctx, variant, vErrs)
-		}).
-		End()
-
-	if vErrs.Count() > 0 {
-		return &itVariant.CreateVariantResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	return &itVariant.CreateVariantResult{
-		HasData: true,
-		Data:    dbVariant,
-	}, nil
-}
-
-// Update
-
-func (s *VariantServiceImpl) UpdateVariant(ctx crud.Context, cmd itVariant.UpdateVariantCommand) (result *itVariant.UpdateVariantResult, err error) {
-	// entTx, err := s.variantRepo.BeginTransaction(ctx)
-	// ft.PanicOnErr(err)
-
-	// ctx.SetDbTranx(entTx)
-
-	// defer func() {
-	// 	if err != nil {
-	// 		entTx.Rollback()
-	// 		return
-	// 	}
-	// 	if result != nil && result.ClientError != nil {
-	// 		entTx.Rollback()
-	// 		return
-	// 	}
-
-	// 	entTx.Commit()
-	// }()
-
-	result, err = crud.Update(ctx, crud.UpdateParam[*domain.Variant, itVariant.UpdateVariantCommand, itVariant.UpdateVariantResult]{
-		Action:       "update variant",
-		Command:      cmd,
-		AssertExists: s.assertVariantIdExists,
-		RepoUpdate:   s.variantRepo.Update,
-		Sanitize:     s.sanitizeVariant,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itVariant.UpdateVariantResult {
-			return &itVariant.UpdateVariantResult{
-				ClientError: vErrs.ToClientError(),
+func (s *VariantServiceImpl) CreateVariant(ctx corectx.Context, cmd it.CreateVariantCommand) (*it.CreateVariantResult, error) {
+	result, err := corecrud.Create(ctx, corecrud.CreateParam[domain.Variant, *domain.Variant]{
+		Action:         "create variant",
+		BaseRepoGetter: s.repo,
+		Data:           cmd,
+		ValidateExtra: func(ctx corectx.Context, variant *domain.Variant, vErrs *ft.ClientErrors) error {
+			// Check if product exists
+			productId := variant.GetProductId()
+			if productId != nil {
+				productIdStr := string(*productId)
+				productResult, err := s.productSvc.GetProduct(ctx, itProduct.GetProductQuery{Id: &productIdStr})
+				if err != nil {
+					return err
+				}
+				if !productResult.HasData {
+					vErrs.Append(*ft.NewBusinessViolation(domain.VarFieldProductId, "product.not_found", "product does not exist"))
+				}
 			}
-		},
-		ToSuccessResult: func(model *domain.Variant) *itVariant.UpdateVariantResult {
-			return &itVariant.UpdateVariantResult{
-				HasData: true,
-				Data:    model,
-			}
+
+			// Validate attributes if present
+			return s.validateAndProcessAttributes(ctx, variant, vErrs, true)
 		},
 	})
-	if err != nil || (result != nil && result.ClientError != nil) {
+	if err != nil || result == nil || result.ClientErrors != nil {
 		return result, err
 	}
-
-	if cmd.Attributes != nil {
-		variant := cmd.ToDomainModel()
-
-		err = s.attributeValue.UnlinkVariantAttributes(ctx, cmd.Id)
-		ft.PanicOnErr(err)
-
-		vErrs := ft.NewValidationErrors()
-		err = s.assertCreateVariant(ctx, variant, &vErrs)
-		ft.PanicOnErr(err)
-
-		if vErrs.Count() > 0 {
-			return &itVariant.UpdateVariantResult{
-				ClientError: vErrs.ToClientError(),
-			}, nil
-		}
-	}
-
 	return result, nil
 }
 
-// Delete
+func (s *VariantServiceImpl) UpdateVariant(ctx corectx.Context, cmd it.UpdateVariantCommand) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Variant, *domain.Variant]{
+		Action:       "update variant",
+		DbRepoGetter: s.repo,
+		Data:         cmd,
+		ValidateExtra: func(ctx corectx.Context, variant *domain.Variant, foundVariant *domain.Variant, vErrs *ft.ClientErrors) error {
+			// Check if product exists (if product ID is being changed)
+			productId := variant.GetProductId()
+			if productId != nil {
+				productIdStr := string(*productId)
+				productResult, err := s.productSvc.GetProduct(ctx, itProduct.GetProductQuery{Id: &productIdStr})
+				if err != nil {
+					return err
+				}
+				if !productResult.HasData {
+					vErrs.Append(*ft.NewBusinessViolation(domain.VarFieldProductId, "product.not_found", "product does not exist"))
+				}
+			}
 
-func (s *VariantServiceImpl) DeleteVariant(ctx crud.Context, cmd itVariant.DeleteVariantCommand) (*itVariant.DeleteVariantResult, error) {
-	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Variant, itVariant.DeleteVariantCommand, itVariant.DeleteVariantResult]{
+			// Validate attributes if present
+			return s.validateAndProcessAttributes(ctx, variant, vErrs, false)
+		},
+	})
+}
+
+func (s *VariantServiceImpl) DeleteVariant(ctx corectx.Context, cmd it.DeleteVariantCommand) (*it.DeleteVariantResult, error) {
+	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete variant",
-		Command:      cmd,
-		AssertExists: s.assertVariantIdExists,
-		RepoDelete: func(ctx crud.Context, model *domain.Variant) (int, error) {
-			return s.variantRepo.DeleteById(ctx, *model.Id)
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itVariant.DeleteVariantResult {
-			return &itVariant.DeleteVariantResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(_ *domain.Variant, deletedCount int) *itVariant.DeleteVariantResult {
-			return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount)
-		},
+		DbRepoGetter: s.repo,
+		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
-	return result, err
 }
 
-// Get by ID
-
-func (s *VariantServiceImpl) GetVariantById(ctx crud.Context, query itVariant.GetVariantByIdQuery) (result *itVariant.GetVariantByIdResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get variant by id"); e != nil {
-			err = e
-		}
-	}()
-
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = query.Validate()
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			return s.assertProductIdExists(ctx, &query.ProductId, vErrs)
-		}).
-		End()
-
-	if vErrs.Count() > 0 {
-		return &itVariant.GetVariantByIdResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
+func (s *VariantServiceImpl) GetVariant(ctx corectx.Context, query it.GetVariantQuery) (*it.GetVariantResult, error) {
+	var q dyn.GetOneQuery
+	if query.Id != nil {
+		q.Id = *query.Id
 	}
-
-	dbVariant, err := s.variantRepo.FindById(ctx, itVariant.FindByIdParam{
-		Id:        query.Id,
-		ProductId: query.ProductId,
+	q.Columns = query.Columns
+	return corecrud.GetOne[domain.Variant](ctx, corecrud.GetOneParam{
+		Action:       "get variant",
+		DbRepoGetter: s.repo,
+		Query:        q,
 	})
-	ft.PanicOnErr(err)
-
-	if dbVariant == nil {
-		return &itVariant.GetVariantByIdResult{
-			ClientError: &ft.ClientError{
-				Code:    "not_found",
-				Details: "variant not found",
-			},
-		}, nil
-	}
-
-	dbVariant.Attributes = &map[string]any{}
-	for _, attrVal := range dbVariant.AttributeValue {
-		attribute, err := s.attribute.GetAttributeById(ctx, itAttribute.GetAttributeByIdQuery{
-			Id:        *attrVal.AttributeId,
-			ProductId: query.ProductId,
-		})
-		ft.PanicOnErr(err)
-
-		if attribute == nil || attribute.Data == nil {
-			continue
-		}
-
-		value := attrVal.GetValue()
-		if value == nil {
-			continue
-		}
-
-		(*dbVariant.Attributes)[*attribute.Data.CodeName] = value
-	}
-
-	return &itVariant.GetVariantByIdResult{
-		HasData: true,
-		Data:    dbVariant,
-	}, nil
 }
 
-// Search
-
-func (this *VariantServiceImpl) SearchVariants(ctx crud.Context, query itVariant.SearchVariantsQuery) (result *itVariant.SearchVariantsResult, err error) {
-	defer func() {
-		if e := ft.RecoverPanic(recover(), "failed to get variant by id"); e != nil {
-			err = e
-		}
-	}()
-
-	query.SetDefaults()
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = query.Validate()
-			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			return this.assertProductIdExists(ctx, query.ProductId, vErrs)
-		}).
-		End()
-
-	if vErrs.Count() > 0 {
-		return &itVariant.SearchVariantsResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	var predicate *orm.Predicate
-	var order []orm.OrderOption
-
-	if graph := query.SearchQuery.GetGraph(); graph != nil {
-		predicate, order, vErrs = this.variantRepo.ParseSearchGraph(graph)
-		if vErrs.Count() > 0 {
-			return &itVariant.SearchVariantsResult{
-				ClientError: vErrs.ToClientError(),
-			}, nil
-		}
-	}
-
-	dbVariant, err := this.variantRepo.Search(ctx, itVariant.SearchParam{
-		ProductId: query.ProductId,
-		Page:      *query.Page,
-		Size:      *query.Size,
-		Predicate: predicate,
-		Order:     order,
+func (s *VariantServiceImpl) SearchVariants(ctx corectx.Context, query it.SearchVariantsQuery) (*it.SearchVariantsResult, error) {
+	return corecrud.Search[domain.Variant](ctx, corecrud.SearchParam{
+		Action:       "search variants",
+		DbRepoGetter: s.repo,
+		Query:        dyn.SearchQuery(query),
 	})
-	ft.PanicOnErr(err)
+}
 
-	for i, variant := range dbVariant.Items {
-		dbVariant.Items[i].Attributes = &map[string]any{}
-		for _, attrVal := range variant.AttributeValue {
-			attribute, err := this.attribute.GetAttributeById(ctx, itAttribute.GetAttributeByIdQuery{
-				Id:        *attrVal.AttributeId,
-				ProductId: *variant.ProductId,
-			})
-			ft.PanicOnErr(err)
-			if attribute == nil || attribute.Data == nil {
-				continue
-			}
-			value := attrVal.GetValue()
-			if value == nil {
-				continue
-			}
-			(*dbVariant.Items[i].Attributes)[*attribute.Data.CodeName] = value
-		}
+func (s *VariantServiceImpl) VariantExists(ctx corectx.Context, query it.VariantExistsQuery) (*it.VariantExistsResult, error) {
+	return corecrud.Exists(ctx, corecrud.ExistsParam{
+		Action:       "variant exists",
+		DbRepoGetter: s.repo,
+		Query:        dyn.ExistsQuery(query),
+	})
+}
+
+// Helper methods
+// ---------------------------------------------------------------------------------------------------------------------------------------------
+
+// validateAndProcessAttributes validates and processes the attributes map for a variant
+func (s *VariantServiceImpl) validateAndProcessAttributes(ctx corectx.Context, variant *domain.Variant, vErrs *ft.ClientErrors, isCreate bool) error {
+	// Check if there's an attributes field in the dynamic fields
+	attributes := variant.GetFieldData().GetAny("attributes")
+	if attributes == nil {
+		return nil
 	}
 
-	return &itVariant.SearchVariantsResult{
-		HasData: dbVariant.Items != nil,
-		Data:    dbVariant,
-	}, nil
-}
+	attrMap, ok := attributes.(map[string]any)
+	if !ok {
+		vErrs.Append(*ft.NewBusinessViolation("attributes", "invalid_format", "attributes must be a map"))
+		return nil
+	}
 
-// Helpers
-//---------------------------------------------------------------------------------------------------------------------------------------------//
+	productId := variant.GetProductId()
+	if productId == nil {
+		return nil
+	}
 
-func (s *VariantServiceImpl) sanitizeVariant(_ *domain.Variant) {
-}
+	variantId := variant.GetId()
 
-func (s *VariantServiceImpl) assertCreateVariant(ctx crud.Context, variant *domain.Variant, vErrs *ft.ValidationErrors) error {
-	for codename, value := range *variant.Attributes {
-		attribute, err := s.attribute.GetAttributeByCodeName(ctx, itAttribute.GetAttributeByCodeName{
-			ProductId: *variant.ProductId,
-			CodeName:  codename,
-		})
+	// Process each attribute in the map
+	for codeName, value := range attrMap {
+		// Find the attribute by code name
+		attribute, err := s.findAttributeByCodeName(ctx, *productId, codeName)
 		if err != nil {
 			return err
 		}
 
-		if attribute.Data == nil {
-			vErrs.Append("attributes", "codename "+codename+" not found")
-			return nil
+		if attribute == nil {
+			vErrs.Append(*ft.NewBusinessViolation("attributes."+codeName, "attribute.not_found", "attribute with code name "+codeName+" not found"))
+			continue
 		}
 
-		if *attribute.Data.DataType == "number" {
-			valueNumber, ok := value.(float64)
-			if !ok {
-				vErrs.Append("attributes."+codename, "invalid value type")
-				return nil
-			}
-
-			_, err := s.attributeValue.CreateAttributeValue(ctx, itAttributeValue.CreateAttributeValueCommand{
-				ProductId:   *variant.ProductId,
-				AttributeId: *attribute.Data.Id,
-				VariantId:   *variant.Id,
-				ValueNumber: &valueNumber,
-			})
-			if err != nil {
-				vErrs.Append("attributes."+codename, "failed to save attribute value")
-				return nil
-			}
-
-		} else {
-			bytes, err := json.Marshal(value)
-			if err != nil {
-				vErrs.Append("attributes."+codename, "invalid json value")
-				return nil
-			}
-
-			var langJson model.LangJson
-			err = json.Unmarshal(bytes, &langJson)
-			if err != nil {
-				vErrs.Append("attributes."+codename, "invalid language structure")
-				return nil
-			}
-
-			_, err = s.attributeValue.CreateAttributeValue(ctx, itAttributeValue.CreateAttributeValueCommand{
-				ProductId:   *variant.ProductId,
-				AttributeId: *attribute.Data.Id,
-				VariantId:   *variant.Id,
-				ValueText:   &langJson,
-			})
-			if err != nil {
-				vErrs.Append("attributes."+codename, "failed to save attribute value")
-				return nil
+		// If we're creating and have a variant ID, create the attribute value
+		if isCreate && variantId != nil {
+			if err := s.createAttributeValueForVariant(ctx, attribute, value, *productId, *variantId, codeName, vErrs); err != nil {
+				return err
 			}
 		}
 	}
+
 	return nil
 }
 
-func (s *VariantServiceImpl) assertVariantIdExists(ctx crud.Context, variant *domain.Variant, vErrs *ft.ValidationErrors) (*domain.Variant, error) {
-	dbVariant, err := s.variantRepo.FindById(ctx, itVariant.FindByIdParam{
-		Id:        *variant.Id,
-		ProductId: *variant.ProductId,
-	})
+// findAttributeByCodeName finds an attribute by code name and product ID
+func (s *VariantServiceImpl) findAttributeByCodeName(ctx corectx.Context, productId model.Id, codeName string) (*domain.Attribute, error) {
+	if s.attributeSvc == nil {
+		return nil, nil
+	}
+
+	graph := dmodel.NewSearchGraph().
+		NewCondition(domain.AttrFieldProductId, dmodel.Equals, productId).
+		NewCondition(domain.AttrFieldCodeName, dmodel.Equals, codeName)
+
+	searchResult, err := s.attributeSvc.SearchAttributes(ctx, itAttribute.SearchAttributesQuery(dyn.SearchQuery{
+		Graph: graph,
+		Page:  0,
+		Size:  1,
+	}))
+
 	if err != nil {
 		return nil, err
 	}
 
-	if dbVariant == nil {
-		vErrs.Append("id", "variant not found")
+	if !searchResult.HasData || len(searchResult.Data.Items) == 0 {
 		return nil, nil
 	}
 
-	return dbVariant, nil
+	return &searchResult.Data.Items[0], nil
 }
 
-func (s *VariantServiceImpl) assertProductIdExists(ctx crud.Context, productId *model.Id, vErrs *ft.ValidationErrors) error {
-	if productId != nil {
-		product, err := s.productSvc.GetProductById(ctx, itProduct.GetProductByIdQuery{
-			Id: *productId,
-		})
-		ft.PanicOnErr(err)
+// createAttributeValueForVariant creates an attribute value for a variant based on the attribute data type
+func (s *VariantServiceImpl) createAttributeValueForVariant(
+	ctx corectx.Context,
+	attribute *domain.Attribute,
+	value any,
+	productId model.Id,
+	variantId model.Id,
+	codeName string,
+	vErrs *ft.ClientErrors,
+) error {
+	dataType := attribute.GetDataType()
+	if dataType == nil {
+		return nil
+	}
 
-		if product.Data == nil {
-			vErrs.Append("productId", "product not found")
+	attributeId := attribute.GetId()
+	if attributeId == nil {
+		return nil
+	}
+
+	var attrValue domain.AttributeValue
+	attrValue.SetAttributeId(attributeId)
+
+	switch *dataType {
+	case domain.AttributeDataTypeNumber:
+		// Handle number type
+		valueNumber, ok := value.(float64)
+		if !ok {
+			vErrs.Append(*ft.NewBusinessViolation("attributes."+codeName, "invalid_value_type", "value must be a number"))
 			return nil
 		}
+
+		// Convert to decimal
+		dec := decimal.NewFromFloat(valueNumber)
+		attrValue.SetValueNumber(&dec)
+
+	case domain.AttributeDataTypeBoolean:
+		// Handle boolean type
+		valueBool, ok := value.(bool)
+		if !ok {
+			vErrs.Append(*ft.NewBusinessViolation("attributes."+codeName, "invalid_value_type", "value must be a boolean"))
+			return nil
+		}
+		attrValue.SetValueBool(&valueBool)
+
+	case domain.AttributeDataTypeText:
+		// Handle text type (LangJson)
+		bytes, err := json.Marshal(value)
+		if err != nil {
+			vErrs.Append(*ft.NewBusinessViolation("attributes."+codeName, "invalid_json_value", "value must be valid JSON"))
+			return nil
+		}
+
+		var langJson model.LangJson
+		err = json.Unmarshal(bytes, &langJson)
+		if err != nil {
+			vErrs.Append(*ft.NewBusinessViolation("attributes."+codeName, "invalid_language_structure", "value must be a valid language JSON structure"))
+			return nil
+		}
+		attrValue.SetValueText(&langJson)
+
+	case domain.AttributeDataTypeReference:
+		// Handle reference type
+		valueRef, ok := value.(string)
+		if !ok {
+			vErrs.Append(*ft.NewBusinessViolation("attributes."+codeName, "invalid_value_type", "value must be a string reference"))
+			return nil
+		}
+		attrValue.SetValueRef(&valueRef)
+
+	default:
+		vErrs.Append(*ft.NewBusinessViolation("attributes."+codeName, "unsupported_data_type", "unsupported attribute data type"))
+		return nil
+	}
+
+	// Create the attribute value
+	_, err := s.attributeValueSvc.CreateAttributeValue(ctx, itAttributeValue.CreateAttributeValueCommand{
+		AttributeValue: attrValue,
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil

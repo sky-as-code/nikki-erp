@@ -5,14 +5,13 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/attributes?countValues=true&countVariants=true
+  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/attributes
   body: none
   auth: inherit
 }
 
-params:query {
-  countValues: true
-  countVariants: true
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
 }
 
 settings {

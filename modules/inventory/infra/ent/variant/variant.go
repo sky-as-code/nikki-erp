@@ -32,6 +32,8 @@ const (
 	FieldSku = "sku"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
+	// FieldOrgID holds the string denoting the org_id field in the database.
+	FieldOrgID = "org_id"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
 	// EdgeProduct holds the string denoting the product edge name in mutations.
@@ -75,6 +77,7 @@ var Columns = []string{
 	FieldProductID,
 	FieldSku,
 	FieldStatus,
+	FieldOrgID,
 	FieldUpdatedAt,
 }
 
@@ -147,6 +150,11 @@ func BySku(opts ...sql.OrderTermOption) OrderOption {
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
+// ByOrgID orders the results by the org_id field.
+func ByOrgID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrgID, opts...).ToFunc()
 }
 
 // ByUpdatedAt orders the results by the updated_at field.

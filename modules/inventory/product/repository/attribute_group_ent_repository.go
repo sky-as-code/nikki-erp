@@ -1,132 +1,87 @@
 package repository
 
 import (
-	"time"
+	"go.uber.org/dig"
 
-	"entgo.io/ent/dialect/sql"
-
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
-	entAttributeGroup "github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attributegroup"
+	"github.com/sky-as-code/nikki-erp/common/array"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
-	itAttributeGroup "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributegroup"
+	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributegroup"
 )
 
-func NewAttributeGroupEntRepository(client *ent.Client) itAttributeGroup.AttributeGroupRepository {
-	return &AttributeGroupEntRepository{
-		client: client,
-	}
+type AttributeGroupDynamicRepositoryParam struct {
+	dig.In
+
+	Client        orm.DbClient
+	ConfigSvc     config.ConfigService
+	QueryBuilder  orm.QueryBuilder
+	Logger        logging.LoggerService
+	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
 }
 
-type AttributeGroupEntRepository struct {
-	client *ent.Client
-}
-
-func (r *AttributeGroupEntRepository) attributeGroupClient(ctx crud.Context) *ent.AttributeGroupClient {
-	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
-	if isOk {
-		return tx.AttributeGroup
-	}
-	return r.client.AttributeGroup
-}
-
-func (r *AttributeGroupEntRepository) GetNextIndex(ctx crud.Context, productId model.Id) (int, error) {
-	lastAttributeGroup, err := r.attributeGroupClient(ctx).Query().
-		Where(entAttributeGroup.ProductID(productId)).
-		Order(entAttributeGroup.ByIndex(sql.OrderDesc())).
-		First(ctx)
-
-	if err != nil && !ent.IsNotFound(err) {
-		return 0, err
-	}
-
-	if ent.IsNotFound(err) {
-		return 0, nil
-	}
-	return lastAttributeGroup.Index + 1, nil
-}
-
-// ✅ Create AttributeGroup
-func (r *AttributeGroupEntRepository) Create(ctx crud.Context, attributeGroup *domain.AttributeGroup) (*domain.AttributeGroup, error) {
-	creation := r.client.AttributeGroup.Create().
-		SetID(*attributeGroup.Id).
-		SetName(*attributeGroup.Name).
-		SetIndex(*attributeGroup.Index).
-		SetNillableProductID(attributeGroup.ProductId).
-		SetEtag(*attributeGroup.Etag)
-
-	return db.Mutate(ctx, creation, ent.IsNotFound, itAttributeGroup.EntToAttributeGroup)
-}
-
-// ✅ Update AttributeGroup
-func (r *AttributeGroupEntRepository) Update(ctx crud.Context, attributeGroup *domain.AttributeGroup, prevEtag model.Etag) (*domain.AttributeGroup, error) {
-	update := r.client.AttributeGroup.UpdateOneID(*attributeGroup.Id).
-		SetName(*attributeGroup.Name).
-		Where(entAttributeGroup.Etag(prevEtag))
-
-	if len(update.Mutation().Fields()) > 0 {
-		update.SetEtag(*attributeGroup.Etag)
-		update.SetUpdatedAt(time.Now())
-	}
-
-	return db.Mutate(ctx, update, ent.IsNotFound, itAttributeGroup.EntToAttributeGroup)
-}
-
-// ✅ Delete AttributeGroup by ID
-func (r *AttributeGroupEntRepository) DeleteById(ctx crud.Context, id model.Id) (int, error) {
-	return r.client.AttributeGroup.Delete().
-		Where(entAttributeGroup.ID(id)).
-		Exec(ctx)
-}
-
-// ✅ Find by ID
-func (r *AttributeGroupEntRepository) FindById(ctx crud.Context, query itAttributeGroup.FindByIdParam) (*domain.AttributeGroup, error) {
-	dbQuery := r.attributeGroupClient(ctx).Query().
-		Where(entAttributeGroup.ID(query.Id))
-
-	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itAttributeGroup.EntToAttributeGroup)
-}
-
-// ✅ Search (advanced)
-func (r *AttributeGroupEntRepository) Search(ctx crud.Context, param itAttributeGroup.SearchParam) (*crud.PagedResult[domain.AttributeGroup], error) {
-	query := r.client.AttributeGroup.Query()
-
-	// Add ProductId filter if provided
-	if param.ProductId != nil {
-		query = query.Where(entAttributeGroup.ProductID(*param.ProductId))
-	}
-
-	return db.Search(
-		ctx,
-		param.Predicate,
-		param.Order,
-		crud.PagingOptions{
-			Page: param.Page,
-			Size: param.Size,
+func NewAttributeGroupDynamicRepository(param AttributeGroupDynamicRepositoryParam) it.AttributeGroupRepository {
+	dynamicRepo := param.NewBaseRepoFn(
+		dyn.NewBaseRepoParam{
+			Client:       param.Client,
+			ConfigSvc:    param.ConfigSvc,
+			QueryBuilder: param.QueryBuilder,
+			Logger:       param.Logger,
+			Schema:       dmodel.MustGetSchema(domain.AttributeGroupSchemaName),
 		},
-		query,
-		itAttributeGroup.EntToAttributeGroups,
 	)
+	return &AttributeGroupDynamicRepository{dynamicRepo: dynamicRepo}
 }
 
-func (r *AttributeGroupEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return db.ParseSearchGraphStr[ent.AttributeGroup, domain.AttributeGroup](criteria, entAttributeGroup.Label)
+type AttributeGroupDynamicRepository struct {
+	dynamicRepo dyn.BaseDynamicRepository
 }
 
-func BuildAttributeGroupDescriptor() *orm.EntityDescriptor {
-	entity := ent.AttributeGroup{}
-	builder := orm.DescribeEntity(entAttributeGroup.Label).
-		Aliases("attributegroups", "attribute_groups").
-		Field(entAttributeGroup.FieldCreatedAt, entity.CreatedAt).
-		Field(entAttributeGroup.FieldID, entity.ID).
-		Field(entAttributeGroup.FieldName, entity.Name).
-		Field(entAttributeGroup.FieldIndex, entity.Index).
-		Field(entAttributeGroup.FieldProductID, entity.ProductID).
-		Field(entAttributeGroup.FieldUpdatedAt, entity.UpdatedAt)
+func (this *AttributeGroupDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository {
+	return this.dynamicRepo
+}
 
-	return builder.Descriptor()
+func (this *AttributeGroupDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
+	return this.dynamicRepo.BeginTransaction(ctx)
+}
+
+func (this *AttributeGroupDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.AttributeGroup) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
+}
+
+func (this *AttributeGroupDynamicRepository) Exists(ctx corectx.Context, keys []domain.AttributeGroup) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	dynamicKeys := array.Map(keys, func(key domain.AttributeGroup) dmodel.DynamicFields {
+		return key.GetFieldData()
+	})
+	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
+}
+
+func (this *AttributeGroupDynamicRepository) Insert(
+	ctx corectx.Context, attributeGroup domain.AttributeGroup,
+) (*dyn.OpResult[int], error) {
+	return baserepo.Insert(ctx, this.dynamicRepo, attributeGroup)
+}
+
+func (this *AttributeGroupDynamicRepository) GetOne(
+	ctx corectx.Context, param dyn.RepoGetOneParam,
+) (*dyn.OpResult[domain.AttributeGroup], error) {
+	return baserepo.GetOne[domain.AttributeGroup](ctx, this.dynamicRepo, param)
+}
+
+func (this *AttributeGroupDynamicRepository) Search(
+	ctx corectx.Context, param dyn.RepoSearchParam,
+) (*dyn.OpResult[dyn.PagedResultData[domain.AttributeGroup]], error) {
+	return baserepo.Search[domain.AttributeGroup](ctx, this.dynamicRepo, param)
+}
+
+func (this *AttributeGroupDynamicRepository) Update(
+	ctx corectx.Context, attributeGroup domain.AttributeGroup,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.Update(ctx, this.dynamicRepo, attributeGroup.GetFieldData())
 }

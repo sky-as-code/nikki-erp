@@ -1,13 +1,16 @@
 package product
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 type ProductService interface {
-	CreateProduct(ctx crud.Context, cmd CreateProductCommand) (*CreateProductResult, error)
-	UpdateProduct(ctx crud.Context, cmd UpdateProductCommand) (*UpdateProductResult, error)
-	DeleteProduct(ctx crud.Context, cmd DeleteProductCommand) (*DeleteProductResult, error)
-	GetProductById(ctx crud.Context, query GetProductByIdQuery) (*GetProductByIdResult, error)
-	SearchProducts(ctx crud.Context, query SearchProductsQuery) (*SearchProductsResult, error)
+	CreateProduct(ctx corectx.Context, cmd CreateProductCommand) (*CreateProductResult, error)
+	DeleteProduct(ctx corectx.Context, cmd DeleteProductCommand) (*DeleteProductResult, error)
+	GetProduct(ctx corectx.Context, query GetProductQuery) (*GetProductResult, error)
+	ProductExists(ctx corectx.Context, query ProductExistsQuery) (*ProductExistsResult, error)
+	SearchProducts(ctx corectx.Context, query SearchProductsQuery) (*SearchProductsResult, error)
+	SetProductIsArchived(ctx corectx.Context, cmd SetProductIsArchivedCommand) (*SetProductIsArchivedResult, error)
+	UpdateProduct(ctx corectx.Context, cmd UpdateProductCommand) (*dyn.OpResult[dyn.MutateResultData], error)
 }

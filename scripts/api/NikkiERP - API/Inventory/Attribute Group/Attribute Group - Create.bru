@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/attribute-group
+  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/attribute-groups
   body: json
   auth: inherit
 }
@@ -17,6 +17,12 @@ body:json {
        "vi": "Bộ phận máy móc"
     }
   }
+}
+
+script:post-response {
+  const { id, etag } = res.getBody();
+  id && bru.setVar('attribute_group_id', id);
+  etag && bru.setVar('etag', etag);
 }
 
 settings {

@@ -20,6 +20,12 @@ body:json {
   }
 }
 
+script:post-response {
+  const { id, etag } = res.getBody();
+  id && bru.setVar('unit_id', id);
+  etag && bru.setVar('etag', etag);
+}
+
 settings {
   encodeUrl: true
   timeout: 0

@@ -125,6 +125,12 @@ func (vc *VariantCreate) SetNillableStatus(s *string) *VariantCreate {
 	return vc
 }
 
+// SetOrgID sets the "org_id" field.
+func (vc *VariantCreate) SetOrgID(s string) *VariantCreate {
+	vc.mutation.SetOrgID(s)
+	return vc
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (vc *VariantCreate) SetUpdatedAt(t time.Time) *VariantCreate {
 	vc.mutation.SetUpdatedAt(t)
@@ -227,6 +233,9 @@ func (vc *VariantCreate) check() error {
 	if _, ok := vc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Variant.status"`)}
 	}
+	if _, ok := vc.mutation.OrgID(); !ok {
+		return &ValidationError{Name: "org_id", err: errors.New(`ent: missing required field "Variant.org_id"`)}
+	}
 	if len(vc.mutation.ProductIDs()) == 0 {
 		return &ValidationError{Name: "product", err: errors.New(`ent: missing required edge "Variant.product"`)}
 	}
@@ -296,6 +305,10 @@ func (vc *VariantCreate) createSpec() (*Variant, *sqlgraph.CreateSpec) {
 	if value, ok := vc.mutation.Status(); ok {
 		_spec.SetField(variant.FieldStatus, field.TypeString, value)
 		_node.Status = value
+	}
+	if value, ok := vc.mutation.OrgID(); ok {
+		_spec.SetField(variant.FieldOrgID, field.TypeString, value)
+		_node.OrgID = value
 	}
 	if value, ok := vc.mutation.UpdatedAt(); ok {
 		_spec.SetField(variant.FieldUpdatedAt, field.TypeTime, value)

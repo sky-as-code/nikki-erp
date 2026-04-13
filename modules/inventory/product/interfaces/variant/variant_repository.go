@@ -1,31 +1,17 @@
 package variant
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 )
 
 type VariantRepository interface {
-	Create(ctx crud.Context, variant *domain.Variant) (*domain.Variant, error)
-	Update(ctx crud.Context, variant *domain.Variant, prevEtag model.Etag) (*domain.Variant, error)
-	DeleteById(ctx crud.Context, id model.Id) (int, error)
-	FindById(ctx crud.Context, query FindByIdParam) (*domain.Variant, error)
-	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Variant], error)
-	BeginTransaction(ctx crud.Context) (*ent.Tx, error)
-}
-
-type DeleteParam = DeleteVariantCommand
-type FindByIdParam = GetVariantByIdQuery
-
-type SearchParam struct {
-	ProductId *model.Id
-	Predicate *orm.Predicate
-	Order     []orm.OrderOption
-	Page      int
-	Size      int
+	dyn.DynamicModelRepository
+	DeleteOne(ctx corectx.Context, keys domain.Variant) (*dyn.OpResult[dyn.MutateResultData], error)
+	Exists(ctx corectx.Context, keys []domain.Variant) (*dyn.OpResult[dyn.RepoExistsResult], error)
+	Insert(ctx corectx.Context, variant domain.Variant) (*dyn.OpResult[int], error)
+	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.Variant], error)
+	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.Variant]], error)
+	Update(ctx corectx.Context, variant domain.Variant) (*dyn.OpResult[dyn.MutateResultData], error)
 }

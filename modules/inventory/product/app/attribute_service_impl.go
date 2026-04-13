@@ -1,295 +1,276 @@
 package app
 
 import (
-	"encoding/json"
-
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
-	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
+	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 )
 
 func NewAttributeServiceImpl(
-	attributeRepo itAttribute.AttributeRepository,
+	repo it.AttributeRepository,
 	productSvc itProduct.ProductService,
-) itAttribute.AttributeService {
+	cqrsBus cqrs.CqrsBus,
+) it.AttributeService {
 	return &AttributeServiceImpl{
-		attributeRepo: attributeRepo,
-		productSvc:    productSvc,
+		repo:       repo,
+		productSvc: productSvc,
+		cqrsBus:    cqrsBus,
 	}
 }
 
 type AttributeServiceImpl struct {
-	attributeRepo itAttribute.AttributeRepository
-	productSvc    itProduct.ProductService
+	repo       it.AttributeRepository
+	productSvc itProduct.ProductService
+	cqrsBus    cqrs.CqrsBus
 }
 
-// Create
+func (s *AttributeServiceImpl) CreateAttribute(ctx corectx.Context, cmd it.CreateAttributeCommand) (*it.CreateAttributeResult, error) {
+	return corecrud.Create(ctx, corecrud.CreateParam[domain.Attribute, *domain.Attribute]{
+		Action:         "create attribute",
+		BaseRepoGetter: s.repo,
+		Data:           cmd,
+		BeforeValidation: func(ctx corectx.Context, attribute *domain.Attribute, _ *ft.ClientErrors) (*domain.Attribute, error) {
+			if attribute.GetSortIndex() == nil {
+				nextIndex, err := s.getNextSortIndex(ctx, attribute.GetProductId())
+				if err != nil {
+					return nil, err
+				}
+				nextIndexInt64 := int64(nextIndex)
+				attribute.SetSortIndex(&nextIndexInt64)
+			}
+			return attribute, nil
+		},
+		ValidateExtra: func(ctx corectx.Context, attribute *domain.Attribute, vErrs *ft.ClientErrors) error {
+			// Check if product exists
+			productId := attribute.GetProductId()
+			if productId != nil {
+				productIdStr := string(*productId)
+				productResult, err := s.productSvc.GetProduct(ctx, itProduct.GetProductQuery{Id: &productIdStr})
+				if err != nil {
+					return err
+				}
+				if !productResult.HasData {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldProductId, "product.not_found", "product does not exist"))
+				}
+			}
 
-func (this *AttributeServiceImpl) CreateAttribute(ctx crud.Context, cmd itAttribute.CreateAttributeCommand) (result *itAttribute.CreateAttributeResult, err error) {
+			// Check if codeName is unique for this product
+			codeName := attribute.GetCodeName()
+			if codeName != nil && productId != nil {
+				existingAttr, err := s.findByCodeName(ctx, *productId, *codeName)
+				if err != nil {
+					return err
+				}
+				if existingAttr != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldCodeName, "attribute.code_name_exists", "attribute code name already exists for this product"))
+				}
+			}
 
-	attribute := cmd.ToDomainModel()
-	this.setAttributeDefaults(ctx, attribute)
+			// Validate enum logic
+			isEnum := attribute.GetIsEnum()
+			enumValue := attribute.GetEnumValue()
+			dataType := attribute.GetDataType()
 
-	flow := val.StartValidationFlow()
-	vErrs, err := flow.
-		Step(func(vErrs *ft.ValidationErrors) error {
-			*vErrs = cmd.Validate()
+			if isEnum == nil || !*isEnum {
+				// If not enum, enumValue should be nil or empty
+				if len(enumValue) > 0 {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldEnumValue, "attribute.enum_value_not_allowed", "enum value should be empty when isEnum is false"))
+				}
+				return nil
+			}
+
+			// If isEnum is true, validate enumValue based on dataType
+			if dataType == nil {
+				return nil
+			}
+
+			if *dataType == domain.AttributeDataTypeText {
+				if len(enumValue) == 0 {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldEnumValue, "attribute.enum_value_required", "enum value is required when isEnum is true"))
+				}
+			} else if *dataType == domain.AttributeDataTypeNumber {
+				if len(enumValue) == 0 {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldEnumValue, "attribute.enum_value_required", "enum value is required when isEnum is true"))
+				}
+			} else if *dataType != domain.AttributeDataTypeBoolean && *dataType != domain.AttributeDataTypeReference {
+				vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldDataType, "attribute.invalid_enum_type", "only text and number data types are allowed for enum attribute"))
+			}
+
 			return nil
-		}).
-		Step(func(vErrs *ft.ValidationErrors) error {
-			this.assertCreateAttribute(ctx, attribute, vErrs)
-			return nil
-		}).
-		End()
-
-	if vErrs.Count() > 0 {
-		return &itAttribute.CreateAttributeResult{
-			ClientError: vErrs.ToClientError(),
-		}, nil
-	}
-
-	dbAttribute, err := this.attributeRepo.Create(ctx, attribute)
-	if err != nil {
-		return nil, err
-	}
-
-	return &itAttribute.CreateAttributeResult{
-		HasData: true,
-		Data:    dbAttribute,
-	}, nil
+		},
+	})
 }
 
-// Update
-
-func (s *AttributeServiceImpl) UpdateAttribute(ctx crud.Context, cmd itAttribute.UpdateAttributeCommand) (*itAttribute.UpdateAttributeResult, error) {
-	result, err := crud.Update(ctx, crud.UpdateParam[*domain.Attribute, itAttribute.UpdateAttributeCommand, itAttribute.UpdateAttributeResult]{
+func (s *AttributeServiceImpl) UpdateAttribute(ctx corectx.Context, cmd it.UpdateAttributeCommand) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Attribute, *domain.Attribute]{
 		Action:       "update attribute",
-		Command:      cmd,
-		AssertExists: s.assertAttributeIdExists,
-		RepoUpdate:   s.attributeRepo.Update,
-		Sanitize:     s.sanitizeAttribute,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttribute.UpdateAttributeResult {
-			return &itAttribute.UpdateAttributeResult{
-				ClientError: vErrs.ToClientError(),
+		DbRepoGetter: s.repo,
+		Data:         cmd,
+		ValidateExtra: func(ctx corectx.Context, attribute *domain.Attribute, foundAttribute *domain.Attribute, vErrs *ft.ClientErrors) error {
+			// Check if product exists (if product ID is being changed)
+			productId := attribute.GetProductId()
+			if productId != nil {
+				productIdStr := string(*productId)
+				productResult, err := s.productSvc.GetProduct(ctx, itProduct.GetProductQuery{Id: &productIdStr})
+				if err != nil {
+					return err
+				}
+				if !productResult.HasData {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldProductId, "product.not_found", "product does not exist"))
+				}
 			}
-		},
-		ToSuccessResult: func(model *domain.Attribute) *itAttribute.UpdateAttributeResult {
-			return &itAttribute.UpdateAttributeResult{
-				HasData: true,
-				Data:    model,
+
+			// Check if codeName is unique for this product (excluding current attribute)
+			codeName := attribute.GetCodeName()
+			attrId := attribute.GetId()
+			if codeName != nil && productId != nil {
+				existingAttr, err := s.findByCodeName(ctx, *productId, *codeName)
+				if err != nil {
+					return err
+				}
+				// If found, check if it's not the current attribute
+				if existingAttr != nil {
+					existingId := existingAttr.GetId()
+					if existingId != nil && attrId != nil && *existingId != *attrId {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldCodeName, "attribute.code_name_exists", "attribute code name already exists for this product"))
+					}
+				}
 			}
+
+			// Validate enum logic (same as create)
+			isEnum := attribute.GetIsEnum()
+			enumValue := attribute.GetEnumValue()
+			dataType := attribute.GetDataType()
+
+			if isEnum == nil || !*isEnum {
+				if len(enumValue) > 0 {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldEnumValue, "attribute.enum_value_not_allowed", "enum value should be empty when isEnum is false"))
+				}
+				return nil
+			}
+
+			if dataType == nil {
+				return nil
+			}
+
+			if *dataType == domain.AttributeDataTypeText {
+				if len(enumValue) == 0 {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldEnumValue, "attribute.enum_value_required", "enum value is required when isEnum is true"))
+				}
+			} else if *dataType == domain.AttributeDataTypeNumber {
+				if len(enumValue) == 0 {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldEnumValue, "attribute.enum_value_required", "enum value is required when isEnum is true"))
+				}
+			} else if *dataType != domain.AttributeDataTypeBoolean && *dataType != domain.AttributeDataTypeReference {
+				vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldDataType, "attribute.invalid_enum_type", "only text and number data types are allowed for enum attribute"))
+			}
+
+			return nil
 		},
 	})
-	return result, err
 }
 
-// Delete
-
-func (s *AttributeServiceImpl) DeleteAttribute(ctx crud.Context, cmd itAttribute.DeleteAttributeCommand) (*itAttribute.DeleteAttributeResult, error) {
-	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.Attribute, itAttribute.DeleteAttributeCommand, itAttribute.DeleteAttributeResult]{
+func (s *AttributeServiceImpl) DeleteAttribute(ctx corectx.Context, cmd it.DeleteAttributeCommand) (*it.DeleteAttributeResult, error) {
+	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete attribute",
-		Command:      cmd,
-		AssertExists: s.assertAttributeIdExists,
-		RepoDelete: func(ctx crud.Context, model *domain.Attribute) (int, error) {
-			return s.attributeRepo.DeleteById(ctx, *model.Id)
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttribute.DeleteAttributeResult {
-			return &itAttribute.DeleteAttributeResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(_ *domain.Attribute, deletedCount int) *itAttribute.DeleteAttributeResult {
-			return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount)
-		},
+		DbRepoGetter: s.repo,
+		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
-	return result, err
 }
 
-// Get by ID
-
-func (s *AttributeServiceImpl) GetAttributeById(ctx crud.Context, query itAttribute.GetAttributeByIdQuery) (*itAttribute.GetAttributeByIdResult, error) {
-	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.Attribute, itAttribute.GetAttributeByIdQuery, itAttribute.GetAttributeByIdResult]{
-		Action: "get attribute by id",
-		Query:  query,
-		RepoFindOne: func(ctx crud.Context, q itAttribute.GetAttributeByIdQuery, vErrs *ft.ValidationErrors) (*domain.Attribute, error) {
-			dbAttribute, err := s.attributeRepo.FindById(ctx, q)
-			if err != nil {
-				return nil, err
-			}
-			if dbAttribute == nil {
-				vErrs.AppendNotFound("id", "attribute id")
-			}
-			return dbAttribute, nil
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttribute.GetAttributeByIdResult {
-			return &itAttribute.GetAttributeByIdResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.Attribute) *itAttribute.GetAttributeByIdResult {
-			return &itAttribute.GetAttributeByIdResult{
-				HasData: true,
-				Data:    model,
-			}
-		},
+func (s *AttributeServiceImpl) GetAttribute(ctx corectx.Context, query it.GetAttributeQuery) (*it.GetAttributeResult, error) {
+	var q dyn.GetOneQuery
+	if query.Id != nil {
+		q.Id = *query.Id
+	}
+	q.Columns = query.Columns
+	return corecrud.GetOne[domain.Attribute](ctx, corecrud.GetOneParam{
+		Action:       "get attribute",
+		DbRepoGetter: s.repo,
+		Query:        q,
 	})
-	return result, err
 }
 
-func (s *AttributeServiceImpl) GetAttributeByCodeName(ctx crud.Context, query itAttribute.GetAttributeByCodeName) (*itAttribute.GetAttributeByCodeNameResult, error) {
-	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.Attribute, itAttribute.GetAttributeByCodeName, itAttribute.GetAttributeByCodeNameResult]{
-		Action: "get attribute by code name",
-		Query:  query,
-		RepoFindOne: func(ctx crud.Context, q itAttribute.GetAttributeByCodeName, vErrs *ft.ValidationErrors) (*domain.Attribute, error) {
-			dbAttribute, err := s.attributeRepo.FindByCodeName(ctx, q)
-			if err != nil {
-				return nil, err
-			}
-			if dbAttribute == nil {
-				vErrs.AppendNotFound("code_name", "attribute code name")
-			}
-			return dbAttribute, nil
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttribute.GetAttributeByCodeNameResult {
-			return &itAttribute.GetAttributeByCodeNameResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.Attribute) *itAttribute.GetAttributeByCodeNameResult {
-			return &itAttribute.GetAttributeByCodeNameResult{
-				HasData: true,
-				Data:    model,
-			}
-		},
+func (s *AttributeServiceImpl) SearchAttributes(ctx corectx.Context, query it.SearchAttributesQuery) (*it.SearchAttributesResult, error) {
+	return corecrud.Search[domain.Attribute](ctx, corecrud.SearchParam{
+		Action:       "search attributes",
+		DbRepoGetter: s.repo,
+		Query:        dyn.SearchQuery(query),
 	})
-	return result, err
 }
 
-// Search
-
-func (this *AttributeServiceImpl) SearchAttributes(ctx crud.Context, query itAttribute.SearchAttributesQuery) (*itAttribute.SearchAttributesResult, error) {
-	result, err := crud.Search(ctx, crud.SearchParam[domain.Attribute, itAttribute.SearchAttributesQuery, itAttribute.SearchAttributesResult]{
-		Action: "search attributes",
-		Query:  query,
-		SetQueryDefaults: func(q *itAttribute.SearchAttributesQuery) {
-			q.SetDefaults()
-		},
-		ParseSearchGraph: func(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-			return this.attributeRepo.ParseSearchGraph(criteria)
-		},
-		RepoSearch: func(ctx crud.Context, query itAttribute.SearchAttributesQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.Attribute], error) {
-			return this.attributeRepo.Search(ctx, itAttribute.SearchParam{
-				ProductId:     query.ProductId,
-				Predicate:     predicate,
-				Order:         order,
-				Page:          *query.Page,
-				Size:          *query.Size,
-				CountValues:   query.CountValues,
-				CountVariants: query.CountVariants,
-			})
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itAttribute.SearchAttributesResult {
-			return &itAttribute.SearchAttributesResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(paged *crud.PagedResult[domain.Attribute]) *itAttribute.SearchAttributesResult {
-			return &itAttribute.SearchAttributesResult{
-				Data:    paged,
-				HasData: paged.Items != nil,
-			}
-		},
+func (s *AttributeServiceImpl) AttributeExists(ctx corectx.Context, query it.AttributeExistsQuery) (*it.AttributeExistsResult, error) {
+	return corecrud.Exists(ctx, corecrud.ExistsParam{
+		Action:       "attribute exists",
+		DbRepoGetter: s.repo,
+		Query:        dyn.ExistsQuery(query),
 	})
-	return result, err
 }
 
-// assert methods
-// ---------------------------------------------------------------------------------------------------------------------------------------------//
-func (this *AttributeServiceImpl) assertCreateAttribute(ctx crud.Context, attribute *domain.Attribute, vErrs *ft.ValidationErrors) error {
-	product, err := this.productSvc.GetProductById(ctx, itProduct.GetProductByIdQuery{
-		Id: *attribute.ProductId,
-	})
-	ft.PanicOnErr(err)
+// Helper methods
+// ---------------------------------------------------------------------------------------------------------------------------------------------
 
-	if product.Data == nil {
-		vErrs.Append("id", "product does not exist")
-		return nil
+// getNextSortIndex returns the next available sort index for a product's attributes
+func (s *AttributeServiceImpl) getNextSortIndex(ctx corectx.Context, productId *model.Id) (int, error) {
+	if productId == nil {
+		return 0, nil
 	}
 
-	attributeWithSameCodeName, err := this.attributeRepo.FindByCodeName(ctx, itAttribute.GetAttributeByCodeName{
-		ProductId: *attribute.ProductId,
-		CodeName:  *attribute.CodeName,
+	// Search for all attributes with the given product ID to find max sort index
+	graph := dmodel.NewSearchGraph().NewCondition(domain.AttrFieldProductId, dmodel.Equals, *productId)
+	searchResult, err := s.repo.Search(ctx, dyn.RepoSearchParam{
+		Graph:   graph,
+		Columns: []string{domain.AttrFieldSortIndex},
+		Page:    0,
+		Size:    1000, // Get enough to find the max
 	})
-	ft.PanicOnErr(err)
 
-	if attributeWithSameCodeName != nil {
-		vErrs.Append("codeName", "attribute code name already exists for this product")
-	}
-
-	if attribute.IsEnum == nil || *attribute.IsEnum == false {
-		if attribute.EnumValue != nil && len(*attribute.EnumValue) > 0 {
-			vErrs.Append("enumValue", "enum value should be empty when isEnum is false")
-		}
-		return nil
-	}
-
-	if *attribute.DataType == "text" {
-		for _, v := range *attribute.EnumValue {
-			var enumValue model.LangJson
-			err := json.Unmarshal(v, &enumValue)
-			if err != nil {
-				vErrs.Append("enumValue", "invalid enum value, should be a valid lang json")
-				return nil
-			}
-		}
-	} else if *attribute.DataType == "number" {
-		for _, v := range *attribute.EnumValue {
-			var enumValue float64
-			err := json.Unmarshal(v, &enumValue)
-			if err != nil {
-				vErrs.Append("enumValue", "invalid enum value, should be a number")
-				return nil
-			}
-		}
-	} else {
-		vErrs.Append("dataType", "invalid data type, only text and number are allowed for enum attribute")
-	}
-
-	return nil
-}
-
-// ---------------------------------------------------------------------------------------------------------------------------------------------//
-func (s *AttributeServiceImpl) sanitizeAttribute(_ *domain.Attribute) {
-}
-
-func (s *AttributeServiceImpl) setAttributeDefaults(ctx crud.Context, attribute *domain.Attribute) {
-	attribute.SetDefaults()
-
-	nextSortIndex, err := s.attributeRepo.GetNextSortIndex(ctx, *attribute.ProductId)
 	if err != nil {
-		return
+		return 0, err
 	}
-	attribute.SortIndex = &nextSortIndex
+
+	if !searchResult.HasData || len(searchResult.Data.Items) == 0 {
+		return 0, nil
+	}
+
+	// Find the maximum sort index
+	maxSortIndex := int64(0)
+	for _, item := range searchResult.Data.Items {
+		sortIndex := item.GetSortIndex()
+		if sortIndex != nil && *sortIndex > maxSortIndex {
+			maxSortIndex = *sortIndex
+		}
+	}
+
+	return int(maxSortIndex + 1), nil
 }
 
-func (s *AttributeServiceImpl) assertAttributeIdExists(ctx crud.Context, attribute *domain.Attribute, vErrs *ft.ValidationErrors) (*domain.Attribute, error) {
-	dbAttribute, err := s.attributeRepo.FindById(ctx, itAttribute.FindByIdParam{
-		ProductId: *attribute.ProductId,
-		Id:        *attribute.Id,
+// findByCodeName finds an attribute by code name and product ID
+func (s *AttributeServiceImpl) findByCodeName(ctx corectx.Context, productId model.Id, codeName string) (*domain.Attribute, error) {
+	graph := dmodel.NewSearchGraph().
+		NewCondition(domain.AttrFieldProductId, dmodel.Equals, productId).
+		NewCondition(domain.AttrFieldCodeName, dmodel.Equals, codeName)
+	searchResult, err := s.repo.Search(ctx, dyn.RepoSearchParam{
+		Graph: graph,
+		Page:  0,
+		Size:  1,
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	if dbAttribute == nil {
-		vErrs.Append("id", "attribute not found")
+	if !searchResult.HasData || len(searchResult.Data.Items) == 0 {
 		return nil, nil
 	}
 
-	return dbAttribute, nil
+	attr := &searchResult.Data.Items[0]
+	return attr, nil
 }

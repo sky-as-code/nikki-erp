@@ -1,13 +1,15 @@
 package attributegroup
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 type AttributeGroupService interface {
-	CreateAttributeGroup(ctx crud.Context, cmd CreateAttributeGroupCommand) (*CreateAttributeGroupResult, error)
-	UpdateAttributeGroup(ctx crud.Context, cmd UpdateAttributeGroupCommand) (*UpdateAttributeGroupResult, error)
-	DeleteAttributeGroup(ctx crud.Context, cmd DeleteAttributeGroupCommand) (*DeleteAttributeGroupResult, error)
-	GetAttributeGroupById(ctx crud.Context, query GetAttributeGroupByIdQuery) (*GetAttributeGroupByIdResult, error)
-	SearchAttributeGroups(ctx crud.Context, query SearchAttributeGroupsQuery) (*SearchAttributeGroupsResult, error)
+	CreateAttributeGroup(ctx corectx.Context, cmd CreateAttributeGroupCommand) (*CreateAttributeGroupResult, error)
+	DeleteAttributeGroup(ctx corectx.Context, cmd DeleteAttributeGroupCommand) (*DeleteAttributeGroupResult, error)
+	AttributeGroupExists(ctx corectx.Context, query AttributeGroupExistsQuery) (*AttributeGroupExistsResult, error)
+	GetAttributeGroup(ctx corectx.Context, query GetAttributeGroupQuery) (*GetAttributeGroupResult, error)
+	SearchAttributeGroups(ctx corectx.Context, query SearchAttributeGroupsQuery) (*SearchAttributeGroupsResult, error)
+	UpdateAttributeGroup(ctx corectx.Context, cmd UpdateAttributeGroupCommand) (*dyn.OpResult[dyn.MutateResultData], error)
 }

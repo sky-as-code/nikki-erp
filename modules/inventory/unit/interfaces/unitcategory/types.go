@@ -1,35 +1,26 @@
 package unitcategory
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/unit/domain"
 )
 
 type UnitCategoryRepository interface {
-	Create(ctx crud.Context, unitCategory *domain.UnitCategory) (*domain.UnitCategory, error)
-	Update(ctx crud.Context, unitCategory *domain.UnitCategory, prevEtag model.Etag) (*domain.UnitCategory, error)
-	DeleteById(ctx crud.Context, id model.Id) (int, error)
-	FindById(ctx crud.Context, query FindByIdParam) (*domain.UnitCategory, error)
-	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.UnitCategory], error)
+	dyn.DynamicModelRepository
+	DeleteOne(ctx corectx.Context, keys domain.UnitCategory) (*dyn.OpResult[dyn.MutateResultData], error)
+	Exists(ctx corectx.Context, keys []domain.UnitCategory) (*dyn.OpResult[dyn.RepoExistsResult], error)
+	Insert(ctx corectx.Context, unitCategory domain.UnitCategory) (*dyn.OpResult[int], error)
+	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.UnitCategory], error)
+	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.UnitCategory]], error)
+	Update(ctx corectx.Context, unitCategory domain.UnitCategory) (*dyn.OpResult[dyn.MutateResultData], error)
 }
 
 type UnitCategoryService interface {
-	CreateUnitCategory(ctx crud.Context, cmd CreateUnitCategoryCommand) (*CreateUnitCategoryResult, error)
-	UpdateUnitCategory(ctx crud.Context, cmd UpdateUnitCategoryCommand) (*UpdateUnitCategoryResult, error)
-	DeleteUnitCategory(ctx crud.Context, cmd DeleteUnitCategoryCommand) (*DeleteUnitCategoryResult, error)
-	GetUnitCategoryById(ctx crud.Context, query GetUnitCategoryByIdQuery) (*GetUnitCategoryByIdResult, error)
-	SearchUnitCategories(ctx crud.Context, query SearchUnitCategoriesQuery) (*SearchUnitCategoriesResult, error)
-}
-
-type DeleteParam = DeleteUnitCategoryCommand
-type FindByIdParam = GetUnitCategoryByIdQuery
-type SearchParam struct {
-	Predicate *orm.Predicate
-	Order     []orm.OrderOption
-	Page      int
-	Size      int
+	CreateUnitCategory(ctx corectx.Context, cmd CreateUnitCategoryCommand) (*CreateUnitCategoryResult, error)
+	UpdateUnitCategory(ctx corectx.Context, cmd UpdateUnitCategoryCommand) (*UpdateUnitCategoryResult, error)
+	DeleteUnitCategory(ctx corectx.Context, cmd DeleteUnitCategoryCommand) (*DeleteUnitCategoryResult, error)
+	GetUnitCategory(ctx corectx.Context, query GetUnitCategoryQuery) (*GetUnitCategoryResult, error)
+	SearchUnitCategories(ctx corectx.Context, query SearchUnitCategoriesQuery) (*SearchUnitCategoriesResult, error)
+	UnitCategoryExists(ctx corectx.Context, query UnitCategoryExistsQuery) (*UnitCategoryExistsResult, error)
 }

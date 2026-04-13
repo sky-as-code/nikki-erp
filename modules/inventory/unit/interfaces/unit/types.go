@@ -1,35 +1,26 @@
 package unit
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/unit/domain"
 )
 
 type UnitRepository interface {
-	Create(ctx crud.Context, unit *domain.Unit) (*domain.Unit, error)
-	Update(ctx crud.Context, unit *domain.Unit, prevEtag model.Etag) (*domain.Unit, error)
-	DeleteById(ctx crud.Context, id model.Id) (int, error)
-	FindById(ctx crud.Context, query FindByIdParam) (*domain.Unit, error)
-	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Unit], error)
+	dyn.DynamicModelRepository
+	DeleteOne(ctx corectx.Context, keys domain.Unit) (*dyn.OpResult[dyn.MutateResultData], error)
+	Exists(ctx corectx.Context, keys []domain.Unit) (*dyn.OpResult[dyn.RepoExistsResult], error)
+	Insert(ctx corectx.Context, unit domain.Unit) (*dyn.OpResult[int], error)
+	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.Unit], error)
+	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.Unit]], error)
+	Update(ctx corectx.Context, unit domain.Unit) (*dyn.OpResult[dyn.MutateResultData], error)
 }
 
 type UnitService interface {
-	CreateUnit(ctx crud.Context, cmd CreateUnitCommand) (*CreateUnitResult, error)
-	UpdateUnit(ctx crud.Context, cmd UpdateUnitCommand) (*UpdateUnitResult, error)
-	DeleteUnit(ctx crud.Context, cmd DeleteUnitCommand) (*DeleteUnitResult, error)
-	GetUnitById(ctx crud.Context, query GetUnitByIdQuery) (*GetUnitByIdResult, error)
-	SearchUnits(ctx crud.Context, query SearchUnitsQuery) (*SearchUnitsResult, error)
-}
-
-type DeleteParam = DeleteUnitCommand
-type FindByIdParam = GetUnitByIdQuery
-type SearchParam struct {
-	Predicate *orm.Predicate
-	Order     []orm.OrderOption
-	Page      int
-	Size      int
+	CreateUnit(ctx corectx.Context, cmd CreateUnitCommand) (*CreateUnitResult, error)
+	UpdateUnit(ctx corectx.Context, cmd UpdateUnitCommand) (*UpdateUnitResult, error)
+	DeleteUnit(ctx corectx.Context, cmd DeleteUnitCommand) (*DeleteUnitResult, error)
+	GetUnit(ctx corectx.Context, query GetUnitQuery) (*GetUnitResult, error)
+	SearchUnits(ctx corectx.Context, query SearchUnitsQuery) (*SearchUnitsResult, error)
+	UnitExists(ctx corectx.Context, query UnitExistsQuery) (*UnitExistsResult, error)
 }

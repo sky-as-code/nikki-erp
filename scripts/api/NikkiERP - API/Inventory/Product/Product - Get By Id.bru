@@ -5,14 +5,18 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}?withVariants=true&withAttributes=true
+  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}
   body: none
   auth: inherit
 }
 
-params:query {
-  withVariants: true
-  withAttributes: true
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
+}
+
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('etag', etag);
 }
 
 settings {

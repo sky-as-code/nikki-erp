@@ -1,133 +1,87 @@
 package repository
 
 import (
-	"time"
+	"go.uber.org/dig"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
-	entVariant "github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/variant"
+	"github.com/sky-as-code/nikki-erp/common/array"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
-	itVariant "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
+	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
 )
 
-func NewVariantEntRepository(client *ent.Client) itVariant.VariantRepository {
-	return &VariantEntRepository{
-		client: client,
-	}
+type VariantDynamicRepositoryParam struct {
+	dig.In
+
+	Client        orm.DbClient
+	ConfigSvc     config.ConfigService
+	QueryBuilder  orm.QueryBuilder
+	Logger        logging.LoggerService
+	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
 }
 
-type VariantEntRepository struct {
-	client *ent.Client
-}
-
-func (r *VariantEntRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error) {
-	return r.client.Tx(ctx)
-}
-
-func (r *VariantEntRepository) variantClient(ctx crud.Context) *ent.VariantClient {
-	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
-	if isOk {
-		return tx.Variant
-	}
-	return r.client.Variant
-}
-
-// ✅ Create Variant
-func (r *VariantEntRepository) Create(ctx crud.Context, variant *domain.Variant) (*domain.Variant, error) {
-	creation := r.variantClient(ctx).Create().
-		SetID(*variant.Id).
-		SetName(*variant.Name).
-		SetProductID(*variant.ProductId).
-		SetNillableSku(variant.Sku).
-		SetNillableBarcode(variant.Barcode).
-		SetNillableProposedPrice(variant.ProposedPrice).
-		SetNillableImageURL(variant.ImageURL).
-		SetEtag(*variant.Etag)
-
-	if variant.Status != nil {
-		creation.SetStatus(*variant.Status)
-	}
-
-	return db.Mutate(ctx, creation, ent.IsNotFound, itVariant.EntToVariant)
-}
-
-// ✅ Update Variant
-func (r *VariantEntRepository) Update(ctx crud.Context, variant *domain.Variant, prevEtag model.Etag) (*domain.Variant, error) {
-	update := r.variantClient(ctx).UpdateOneID(*variant.Id).
-		SetNillableBarcode(variant.Barcode).
-		SetNillableSku(variant.Sku).
-		SetNillableProposedPrice(variant.ProposedPrice).
-		SetNillableStatus(variant.Status).
-		SetNillableImageURL(variant.ImageURL).
-		Where(entVariant.Etag(prevEtag))
-
-	if len(update.Mutation().Fields()) > 0 {
-		update.SetEtag(*variant.Etag)
-		update.SetUpdatedAt(time.Now())
-	}
-
-	return db.Mutate(ctx, update, ent.IsNotFound, itVariant.EntToVariant)
-}
-
-// ✅ Delete Variant by ID
-func (r *VariantEntRepository) DeleteById(ctx crud.Context, id model.Id) (int, error) {
-	return r.client.Variant.Delete().
-		Where(entVariant.ID(id)).
-		Exec(ctx)
-}
-
-// ✅ Find by ID
-func (r *VariantEntRepository) FindById(ctx crud.Context, query itVariant.FindByIdParam) (*domain.Variant, error) {
-	dbQuery := r.variantClient(ctx).Query().
-		Where(entVariant.ProductID(query.ProductId)).
-		Where(entVariant.ID(query.Id)).
-		WithProduct().
-		WithAttributeValue()
-
-	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itVariant.EntToVariant)
-}
-
-// ✅ Search (advanced)
-func (r *VariantEntRepository) Search(ctx crud.Context, param itVariant.SearchParam) (*crud.PagedResult[domain.Variant], error) {
-	query := r.client.Variant.Query().
-		WithAttributeValue().
-		WithProduct()
-
-	if param.ProductId != nil {
-		query.Where(entVariant.ProductID(*param.ProductId))
-	}
-
-	return db.Search(
-		ctx,
-		param.Predicate,
-		param.Order,
-		crud.PagingOptions{
-			Page: param.Page,
-			Size: param.Size,
+func NewVariantDynamicRepository(param VariantDynamicRepositoryParam) it.VariantRepository {
+	dynamicRepo := param.NewBaseRepoFn(
+		dyn.NewBaseRepoParam{
+			Client:       param.Client,
+			ConfigSvc:    param.ConfigSvc,
+			QueryBuilder: param.QueryBuilder,
+			Logger:       param.Logger,
+			Schema:       dmodel.MustGetSchema(domain.VariantSchemaName),
 		},
-		query,
-		itVariant.EntToVariants,
 	)
+	return &VariantDynamicRepository{dynamicRepo: dynamicRepo}
 }
 
-func (this *VariantEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return db.ParseSearchGraphStr[ent.Variant, domain.Variant](criteria, entVariant.Label)
+type VariantDynamicRepository struct {
+	dynamicRepo dyn.BaseDynamicRepository
 }
 
-func BuildVariantDescriptor() *orm.EntityDescriptor {
-	entity := ent.Variant{}
-	builder := orm.DescribeEntity(entVariant.Label).
-		Aliases("variants").
-		Field(entVariant.FieldCreatedAt, entity.CreatedAt).
-		Field(entVariant.FieldSku, entity.Sku).
-		Field(entVariant.FieldBarcode, entity.Barcode).
-		Field(entVariant.FieldID, entity.ID).
-		Field(entVariant.FieldStatus, entity.Status).
-		Field(entVariant.FieldUpdatedAt, entity.UpdatedAt)
+func (this *VariantDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository {
+	return this.dynamicRepo
+}
 
-	return builder.Descriptor()
+func (this *VariantDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
+	return this.dynamicRepo.BeginTransaction(ctx)
+}
+
+func (this *VariantDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.Variant) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
+}
+
+func (this *VariantDynamicRepository) Exists(ctx corectx.Context, keys []domain.Variant) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	dynamicKeys := array.Map(keys, func(key domain.Variant) dmodel.DynamicFields {
+		return key.GetFieldData()
+	})
+	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
+}
+
+func (this *VariantDynamicRepository) Insert(
+	ctx corectx.Context, variant domain.Variant,
+) (*dyn.OpResult[int], error) {
+	return baserepo.Insert(ctx, this.dynamicRepo, variant)
+}
+
+func (this *VariantDynamicRepository) GetOne(
+	ctx corectx.Context, param dyn.RepoGetOneParam,
+) (*dyn.OpResult[domain.Variant], error) {
+	return baserepo.GetOne[domain.Variant](ctx, this.dynamicRepo, param)
+}
+
+func (this *VariantDynamicRepository) Search(
+	ctx corectx.Context, param dyn.RepoSearchParam,
+) (*dyn.OpResult[dyn.PagedResultData[domain.Variant]], error) {
+	return baserepo.Search[domain.Variant](ctx, this.dynamicRepo, param)
+}
+
+func (this *VariantDynamicRepository) Update(
+	ctx corectx.Context, variant domain.Variant,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.Update(ctx, this.dynamicRepo, variant.GetFieldData())
 }

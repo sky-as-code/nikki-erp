@@ -1,153 +1,87 @@
 package repository
 
 import (
-	"time"
+	"go.uber.org/dig"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
-	entProduct "github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/product"
+	"github.com/sky-as-code/nikki-erp/common/array"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
-	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
+	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 )
 
-func NewProductEntRepository(client *ent.Client) itProduct.ProductRepository {
-	return &ProductEntRepository{
-		client: client,
-	}
+type ProductDynamicRepositoryParam struct {
+	dig.In
+
+	Client        orm.DbClient
+	ConfigSvc     config.ConfigService
+	QueryBuilder  orm.QueryBuilder
+	Logger        logging.LoggerService
+	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
 }
 
-type ProductEntRepository struct {
-	client *ent.Client
-}
-
-func (r *ProductEntRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error) {
-	return r.client.Tx(ctx)
-}
-
-func (r *ProductEntRepository) productClient(ctx crud.Context) *ent.ProductClient {
-	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
-	if isOk {
-		return tx.Product
-	}
-	return r.client.Product
-}
-
-// ✅ Create Product
-func (r *ProductEntRepository) Create(ctx crud.Context, product *domain.Product) (*domain.Product, error) {
-	creation := r.productClient(ctx).Create().
-		SetID(*product.Id).
-		SetOrgID(*product.OrgId).
-		SetName(*product.Name).
-		SetNillableUnitID(product.UnitId).
-		SetNillableStatus(product.Status).
-		SetNillableDefaultVariantID(product.DefaultVariantId).
-		SetNillableThumbnailURL(product.ThumbnailURL).
-		SetEtag(*product.Etag)
-		// SetNillableTagIDs(product.TagIds)
-
-	if product.Description != nil {
-		creation.SetDescription(*product.Description)
-	}
-
-	return db.Mutate(ctx, creation, ent.IsNotFound, itProduct.EntToProduct)
-	// return nil, nil
-}
-
-// ✅ Update Product
-func (r *ProductEntRepository) Update(ctx crud.Context, product *domain.Product, prevEtag model.Etag) (*domain.Product, error) {
-	update := r.productClient(ctx).UpdateOneID(*product.Id).
-		SetNillableDefaultVariantID(product.DefaultVariantId).
-		SetNillableThumbnailURL(product.ThumbnailURL).
-		// SetNillableTagIDs(product.TagIds).
-		Where(entProduct.Etag(prevEtag))
-
-	if product.Name != nil {
-		update.SetName(*product.Name)
-	}
-
-	if product.Description != nil {
-		update.SetDescription(*product.Description)
-	}
-
-	if product.Status != nil {
-		update.SetStatus(*product.Status)
-	}
-
-	if product.UnitId != nil {
-		update.SetUnitID(*product.UnitId)
-	}
-
-	if len(update.Mutation().Fields()) > 0 {
-		update.SetEtag(*product.Etag)
-		update.SetUpdatedAt(time.Now())
-	}
-
-	return db.Mutate(ctx, update, ent.IsNotFound, itProduct.EntToProduct)
-}
-
-// ✅ Delete Product by ID
-func (r *ProductEntRepository) DeleteById(ctx crud.Context, id model.Id) (int, error) {
-	return r.client.Product.Delete().
-		Where(entProduct.ID(id)).
-		Exec(ctx)
-}
-
-// ✅ Find by ID
-func (r *ProductEntRepository) FindById(ctx crud.Context, query itProduct.FindByIdParam) (*domain.Product, error) {
-	dbQuery := r.productClient(ctx).Query().
-		Where(entProduct.ID(query.Id))
-
-	if query.WithVariants {
-		dbQuery.WithVariant()
-	}
-
-	if query.WithAttributes {
-		dbQuery.WithAttribute()
-	}
-
-	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itProduct.EntToProduct)
-}
-
-// ✅ Search (advanced)
-func (r *ProductEntRepository) Search(ctx crud.Context, param itProduct.SearchParam) (*crud.PagedResult[domain.Product], error) {
-	query := r.client.Product.Query()
-
-	return db.Search(
-		ctx,
-		param.Predicate,
-		param.Order,
-		crud.PagingOptions{
-			Page: param.Page,
-			Size: param.Size,
+func NewProductDynamicRepository(param ProductDynamicRepositoryParam) it.ProductRepository {
+	dynamicRepo := param.NewBaseRepoFn(
+		dyn.NewBaseRepoParam{
+			Client:       param.Client,
+			ConfigSvc:    param.ConfigSvc,
+			QueryBuilder: param.QueryBuilder,
+			Logger:       param.Logger,
+			Schema:       dmodel.MustGetSchema(domain.ProductSchemaName),
 		},
-		query,
-		itProduct.EntToProducts,
 	)
+	return &ProductDynamicRepository{dynamicRepo: dynamicRepo}
 }
 
-func (this *ProductEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return db.ParseSearchGraphStr[ent.Product, domain.Product](criteria, entProduct.Label)
+type ProductDynamicRepository struct {
+	dynamicRepo dyn.BaseDynamicRepository
 }
 
-func BuildProductDescriptor() *orm.EntityDescriptor {
-	entity := ent.Product{}
-	builder := orm.DescribeEntity(entProduct.Label).
-		Aliases("products").
-		Field(entProduct.FieldCreatedAt, entity.CreatedAt).
-		Field(entProduct.FieldDescription, entity.Description).
-		Field(entProduct.FieldID, entity.ID).
-		Field(entProduct.FieldName, entity.Name).
-		Field(entProduct.FieldOrgID, entity.OrgID).
-		Field(entProduct.FieldUnitID, entity.UnitID).
-		Field(entProduct.FieldStatus, entity.Status).
-		Field(entProduct.FieldDefaultVariantID, entity.DefaultVariantID).
-		Field(entProduct.FieldThumbnailURL, entity.ThumbnailURL).
-		Field(entProduct.FieldUpdatedAt, entity.UpdatedAt).
-		Edge(entProduct.EdgeVariant, orm.ToEdgePredicate(entProduct.HasVariantWith))
+func (this *ProductDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository {
+	return this.dynamicRepo
+}
 
-	return builder.Descriptor()
+func (this *ProductDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
+	return this.dynamicRepo.BeginTransaction(ctx)
+}
+
+func (this *ProductDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.Product) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
+}
+
+func (this *ProductDynamicRepository) Exists(ctx corectx.Context, keys []domain.Product) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	dynamicKeys := array.Map(keys, func(key domain.Product) dmodel.DynamicFields {
+		return key.GetFieldData()
+	})
+	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
+}
+
+func (this *ProductDynamicRepository) Insert(
+	ctx corectx.Context, product domain.Product,
+) (*dyn.OpResult[int], error) {
+	return baserepo.Insert(ctx, this.dynamicRepo, product)
+}
+
+func (this *ProductDynamicRepository) GetOne(
+	ctx corectx.Context, param dyn.RepoGetOneParam,
+) (*dyn.OpResult[domain.Product], error) {
+	return baserepo.GetOne[domain.Product](ctx, this.dynamicRepo, param)
+}
+
+func (this *ProductDynamicRepository) Search(
+	ctx corectx.Context, param dyn.RepoSearchParam,
+) (*dyn.OpResult[dyn.PagedResultData[domain.Product]], error) {
+	return baserepo.Search[domain.Product](ctx, this.dynamicRepo, param)
+}
+
+func (this *ProductDynamicRepository) Update(
+	ctx corectx.Context, product domain.Product,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.Update(ctx, this.dynamicRepo, product.GetFieldData())
 }

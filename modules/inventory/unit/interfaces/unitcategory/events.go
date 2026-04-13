@@ -1,22 +1,19 @@
-package attribute
+package unitcategory
 
-type AttributeCreatedEvent struct {
+type UnitCategoryCreatedEvent struct {
 	Id        string `json:"id"`
-	ProductId string `json:"product_id,omitempty"`
 	CreatedBy string `json:"created_by,omitempty"`
 	EventID   string `json:"event_id"`
 }
 
-type AttributeUpdatedEvent struct {
+type UnitCategoryUpdatedEvent struct {
 	Id        string `json:"id"`
-	ProductId string `json:"product_id,omitempty"`
 	UpdatedBy string `json:"updated_by,omitempty"`
 	EventID   string `json:"event_id"`
 }
 
-type AttributeDeletedEvent struct {
+type UnitCategoryDeletedEvent struct {
 	Id        string `json:"id"`
-	ProductId string `json:"product_id,omitempty"`
 	DeletedBy string `json:"deleted_by,omitempty"`
 	EventID   string `json:"event_id"`
 }

@@ -5,9 +5,14 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/{{org_id}}/inventory/unit-category/{{unit_category_id}}
+  url: {{api_host}}/v1/{{org_id}}/inventory/unit-categories/{{unit_category_id}}
   body: none
   auth: inherit
+}
+
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('etag', etag);
 }
 
 vars:pre-request {

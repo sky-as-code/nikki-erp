@@ -1,183 +1,78 @@
 package app
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
-	itProductCategory "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/productcategory"
+	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/productcategory"
 )
 
 func NewProductCategoryServiceImpl(
-	productCategoryRepo itProductCategory.ProductCategoryRepository,
-) itProductCategory.ProductCategoryService {
+	repo it.ProductCategoryRepository,
+	cqrsBus cqrs.CqrsBus,
+) it.ProductCategoryService {
 	return &ProductCategoryServiceImpl{
-		productCategoryRepo: productCategoryRepo,
+		repo:    repo,
+		cqrsBus: cqrsBus,
 	}
 }
 
 type ProductCategoryServiceImpl struct {
-	productCategoryRepo itProductCategory.ProductCategoryRepository
+	repo    it.ProductCategoryRepository
+	cqrsBus cqrs.CqrsBus
 }
 
-// Create
-
-func (s *ProductCategoryServiceImpl) CreateProductCategory(ctx crud.Context, cmd itProductCategory.CreateProductCategoryCommand) (*itProductCategory.CreateProductCategoryResult, error) {
-	result, err := crud.Create(ctx, crud.CreateParam[*domain.ProductCategory, itProductCategory.CreateProductCategoryCommand, itProductCategory.CreateProductCategoryResult]{
-		Action:     "create product category",
-		Command:    cmd,
-		RepoCreate: s.productCategoryRepo.Create,
-		SetDefault: s.SetDefaults,
-		Sanitize:   s.sanitizeProductCategory,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itProductCategory.CreateProductCategoryResult {
-			return &itProductCategory.CreateProductCategoryResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.ProductCategory) *itProductCategory.CreateProductCategoryResult {
-			return &itProductCategory.CreateProductCategoryResult{
-				HasData: true,
-				Data:    model,
-			}
-		},
+func (s *ProductCategoryServiceImpl) CreateProductCategory(ctx corectx.Context, cmd it.CreateProductCategoryCommand) (*it.CreateProductCategoryResult, error) {
+	return corecrud.Create(ctx, corecrud.CreateParam[domain.ProductCategory, *domain.ProductCategory]{
+		Action:         "create product category",
+		BaseRepoGetter: s.repo,
+		Data:           cmd,
 	})
-	return result, err
 }
 
-// Update
-
-func (s *ProductCategoryServiceImpl) UpdateProductCategory(ctx crud.Context, cmd itProductCategory.UpdateProductCategoryCommand) (*itProductCategory.UpdateProductCategoryResult, error) {
-	result, err := crud.Update(ctx, crud.UpdateParam[*domain.ProductCategory, itProductCategory.UpdateProductCategoryCommand, itProductCategory.UpdateProductCategoryResult]{
+func (s *ProductCategoryServiceImpl) UpdateProductCategory(ctx corectx.Context, cmd it.UpdateProductCategoryCommand) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return corecrud.Update(ctx, corecrud.UpdateParam[domain.ProductCategory, *domain.ProductCategory]{
 		Action:       "update product category",
-		Command:      cmd,
-		AssertExists: s.assertProductCategoryId,
-		RepoUpdate:   s.productCategoryRepo.Update,
-		Sanitize:     s.sanitizeProductCategory,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itProductCategory.UpdateProductCategoryResult {
-			return &itProductCategory.UpdateProductCategoryResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.ProductCategory) *itProductCategory.UpdateProductCategoryResult {
-			return &itProductCategory.UpdateProductCategoryResult{
-				HasData: true,
-				Data:    model,
-			}
-		},
+		DbRepoGetter: s.repo,
+		Data:         cmd,
 	})
-	return result, err
 }
 
-// Delete
-
-func (s *ProductCategoryServiceImpl) DeleteProductCategory(ctx crud.Context, cmd itProductCategory.DeleteProductCategoryCommand) (*itProductCategory.DeleteProductCategoryResult, error) {
-	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.ProductCategory, itProductCategory.DeleteProductCategoryCommand, itProductCategory.DeleteProductCategoryResult]{
+func (s *ProductCategoryServiceImpl) DeleteProductCategory(ctx corectx.Context, cmd it.DeleteProductCategoryCommand) (*it.DeleteProductCategoryResult, error) {
+	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete product category",
-		Command:      cmd,
-		AssertExists: s.assertProductCategoryId,
-		RepoDelete: func(ctx crud.Context, model *domain.ProductCategory) (int, error) {
-			return s.productCategoryRepo.DeleteById(ctx, *model.Id)
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itProductCategory.DeleteProductCategoryResult {
-			return &itProductCategory.DeleteProductCategoryResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(_ *domain.ProductCategory, deletedCount int) *itProductCategory.DeleteProductCategoryResult {
-			return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount)
-		},
+		DbRepoGetter: s.repo,
+		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
-	return result, err
 }
 
-// Get by ID
-
-func (s *ProductCategoryServiceImpl) GetProductCategoryById(ctx crud.Context, query itProductCategory.GetProductCategoryByIdQuery) (*itProductCategory.GetProductCategoryByIdResult, error) {
-	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.ProductCategory, itProductCategory.GetProductCategoryByIdQuery, itProductCategory.GetProductCategoryByIdResult]{
-		Action: "get product category by id",
-		Query:  query,
-		RepoFindOne: func(ctx crud.Context, q itProductCategory.GetProductCategoryByIdQuery, vErrs *ft.ValidationErrors) (*domain.ProductCategory, error) {
-			dbProductCategory, err := s.productCategoryRepo.FindById(ctx, q)
-			if err != nil {
-				return nil, err
-			}
-			if dbProductCategory == nil {
-				vErrs.AppendNotFound("id", "product category id")
-			}
-			return dbProductCategory, nil
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itProductCategory.GetProductCategoryByIdResult {
-			return &itProductCategory.GetProductCategoryByIdResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.ProductCategory) *itProductCategory.GetProductCategoryByIdResult {
-			return &itProductCategory.GetProductCategoryByIdResult{
-				HasData: true,
-				Data:    model,
-			}
-		},
-	})
-	return result, err
-}
-
-// Search
-
-func (s *ProductCategoryServiceImpl) SearchProductCategories(ctx crud.Context, query itProductCategory.SearchProductCategoriesQuery) (*itProductCategory.SearchProductCategoriesResult, error) {
-	result, err := crud.Search(ctx, crud.SearchParam[domain.ProductCategory, itProductCategory.SearchProductCategoriesQuery, itProductCategory.SearchProductCategoriesResult]{
-		Action: "search product categories",
-		Query:  query,
-		SetQueryDefaults: func(q *itProductCategory.SearchProductCategoriesQuery) {
-			q.SetDefaults()
-		},
-		ParseSearchGraph: func(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-			return s.productCategoryRepo.ParseSearchGraph(criteria)
-		},
-		RepoSearch: func(ctx crud.Context, query itProductCategory.SearchProductCategoriesQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.ProductCategory], error) {
-			return s.productCategoryRepo.Search(ctx, itProductCategory.SearchParam{
-				Predicate: predicate,
-				Order:     order,
-				Page:      *query.Page,
-				Size:      *query.Size,
-			})
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *itProductCategory.SearchProductCategoriesResult {
-			return &itProductCategory.SearchProductCategoriesResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(paged *crud.PagedResult[domain.ProductCategory]) *itProductCategory.SearchProductCategoriesResult {
-			return &itProductCategory.SearchProductCategoriesResult{
-				Data:    paged,
-				HasData: paged.Items != nil,
-			}
-		},
-	})
-	return result, err
-}
-
-// Helpers
-//---------------------------------------------------------------------------------------------------------------------------------------------//
-
-func (s *ProductCategoryServiceImpl) SetDefaults(productCategory *domain.ProductCategory) {
-	productCategory.SetDefaults()
-}
-
-func (s *ProductCategoryServiceImpl) sanitizeProductCategory(_ *domain.ProductCategory) {
-}
-
-func (s *ProductCategoryServiceImpl) assertProductCategoryId(ctx crud.Context, productCategory *domain.ProductCategory, vErrs *ft.ValidationErrors) (*domain.ProductCategory, error) {
-	dbProductCategory, err := s.productCategoryRepo.FindById(ctx, itProductCategory.FindByIdParam{
-		Id: *productCategory.Id,
-	})
-	if err != nil {
-		return nil, err
+func (s *ProductCategoryServiceImpl) GetProductCategory(ctx corectx.Context, query it.GetProductCategoryQuery) (*it.GetProductCategoryResult, error) {
+	var id dyn.GetOneQuery
+	if query.Id != nil {
+		id.Id = *query.Id
 	}
+	id.Columns = query.Columns
+	return corecrud.GetOne[domain.ProductCategory](ctx, corecrud.GetOneParam{
+		Action:       "get product category",
+		DbRepoGetter: s.repo,
+		Query:        id,
+	})
+}
 
-	if dbProductCategory == nil {
-		vErrs.Append("id", "product category not found")
-		return nil, nil
-	}
+func (s *ProductCategoryServiceImpl) SearchProductCategories(ctx corectx.Context, query it.SearchProductCategoriesQuery) (*it.SearchProductCategoriesResult, error) {
+	return corecrud.Search[domain.ProductCategory](ctx, corecrud.SearchParam{
+		Action:       "search product categories",
+		DbRepoGetter: s.repo,
+		Query:        dyn.SearchQuery(query),
+	})
+}
 
-	return dbProductCategory, nil
+func (s *ProductCategoryServiceImpl) ProductCategoryExists(ctx corectx.Context, query it.ProductCategoryExistsQuery) (*it.ProductCategoryExistsResult, error) {
+	return corecrud.Exists(ctx, corecrud.ExistsParam{
+		Action:       "product category exists",
+		DbRepoGetter: s.repo,
+		Query:        dyn.ExistsQuery(query),
+	})
 }

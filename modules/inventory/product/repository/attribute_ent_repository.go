@@ -1,186 +1,87 @@
 package repository
 
 import (
-	"time"
+	"go.uber.org/dig"
 
-	"entgo.io/ent/dialect/sql"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
-	entAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/attribute"
+	"github.com/sky-as-code/nikki-erp/common/array"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
-	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
+	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
 )
 
-func NewAttributeEntRepository(client *ent.Client) itAttribute.AttributeRepository {
-	return &AttributeEntRepository{
-		client: client,
-	}
+type AttributeDynamicRepositoryParam struct {
+	dig.In
+
+	Client        orm.DbClient
+	ConfigSvc     config.ConfigService
+	QueryBuilder  orm.QueryBuilder
+	Logger        logging.LoggerService
+	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
 }
 
-type AttributeEntRepository struct {
-	client *ent.Client
-}
-
-func (r *AttributeEntRepository) attributeClient(ctx crud.Context) *ent.AttributeClient {
-	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
-	if isOk {
-		return tx.Attribute
-	}
-	return r.client.Attribute
-}
-
-// ✅ Get next sort index for product
-func (r *AttributeEntRepository) GetNextSortIndex(ctx crud.Context, productId model.Id) (int, error) {
-	lastAttribute, err := r.attributeClient(ctx).Query().
-		Where(entAttribute.ProductID(productId)).
-		Order(entAttribute.BySortIndex(sql.OrderDesc())).
-		First(ctx)
-	if err != nil && !ent.IsNotFound(err) {
-		return 0, err
-	}
-	if ent.IsNotFound(err) {
-		return 0, nil
-	}
-	return lastAttribute.SortIndex + 1, nil
-}
-
-// ✅ Create Attribute
-func (r *AttributeEntRepository) Create(ctx crud.Context, attribute *domain.Attribute) (*domain.Attribute, error) {
-	creation := r.attributeClient(ctx).Create().
-		SetID(*attribute.Id).
-		SetProductID(*attribute.ProductId).
-		SetCodeName(*attribute.CodeName).
-		SetDataType(*attribute.DataType).
-		SetNillableIsRequired(attribute.IsRequired).
-		SetNillableIsEnum(attribute.IsEnum).
-		SetNillableEnumValueSort(attribute.EnumValueSort).
-		SetNillableSortIndex(attribute.SortIndex).
-		SetNillableAttributeGroupID(attribute.GroupId).
-		SetEtag(*attribute.Etag)
-
-	if attribute.DisplayName != nil {
-		creation.SetDisplayName(*attribute.DisplayName)
-	}
-
-	if attribute.EnumValue != nil {
-		creation.SetEnumValue(*attribute.EnumValue)
-	}
-
-	return db.Mutate(ctx, creation, ent.IsNotFound, itAttribute.EntToAttribute)
-}
-
-// ✅ Update Attribute
-func (r *AttributeEntRepository) Update(ctx crud.Context, attribute *domain.Attribute, prevEtag model.Etag) (*domain.Attribute, error) {
-	update := r.attributeClient(ctx).UpdateOneID(*attribute.Id).
-		SetNillableCodeName(attribute.CodeName).
-		SetNillableIsEnum(attribute.IsEnum).
-		SetNillableIsRequired(attribute.IsRequired).
-		SetNillableDataType(attribute.DataType).
-		SetNillableEnumValueSort(attribute.EnumValueSort).
-		SetNillableAttributeGroupID(attribute.GroupId).
-		SetNillableProductID(attribute.ProductId).
-		Where(entAttribute.Etag(prevEtag))
-
-	// CodeName is immutable, cannot be updated
-	if attribute.DisplayName != nil {
-		update.SetDisplayName(*attribute.DisplayName)
-	}
-
-	if attribute.EnumValue != nil {
-		update.SetEnumValue(*attribute.EnumValue)
-	}
-
-	if len(update.Mutation().Fields()) > 0 {
-		update.SetEtag(*attribute.Etag)
-		update.SetUpdatedAt(time.Now())
-	}
-
-	return db.Mutate(ctx, update, ent.IsNotFound, itAttribute.EntToAttribute)
-}
-
-// ✅ Delete Attribute by ID
-func (r *AttributeEntRepository) DeleteById(ctx crud.Context, id model.Id) (int, error) {
-	return r.attributeClient(ctx).Delete().
-		Where(entAttribute.ID(id)).
-		Exec(ctx)
-}
-
-// ✅ Find by ID
-func (r *AttributeEntRepository) FindById(ctx crud.Context, query itAttribute.FindByIdParam) (*domain.Attribute, error) {
-	dbQuery := r.attributeClient(ctx).Query().
-		Where(entAttribute.ProductID(query.ProductId)).
-		Where(entAttribute.ID(query.Id)).
-		WithAttributeValues().
-		WithAttributeValues(func(q *ent.AttributeValueQuery) {
-			q.WithVariant()
-		})
-
-	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itAttribute.EntToAttribute)
-}
-
-func (r *AttributeEntRepository) FindByCodeName(ctx crud.Context, query itAttribute.FindByCodeNameParam) (*domain.Attribute, error) {
-	dbQuery := r.attributeClient(ctx).Query().
-		Where(entAttribute.ProductID(query.ProductId)).
-		Where(entAttribute.CodeName(query.CodeName)).
-		WithAttributeValues()
-
-	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itAttribute.EntToAttribute)
-}
-
-// ✅ Search (advanced)
-func (r *AttributeEntRepository) Search(ctx crud.Context, param itAttribute.SearchParam) (*crud.PagedResult[domain.Attribute], error) {
-	query := r.attributeClient(ctx).Query().
-		Where(entAttribute.ProductID(param.ProductId))
-
-	if param.CountValues {
-		query.WithAttributeValues()
-	}
-
-	if param.CountVariants {
-		query.WithAttributeValues(func(q *ent.AttributeValueQuery) {
-			q.WithVariant()
-		})
-	}
-
-	return db.Search(
-		ctx,
-		param.Predicate,
-		param.Order,
-		crud.PagingOptions{
-			Page: param.Page,
-			Size: param.Size,
+func NewAttributeDynamicRepository(param AttributeDynamicRepositoryParam) it.AttributeRepository {
+	dynamicRepo := param.NewBaseRepoFn(
+		dyn.NewBaseRepoParam{
+			Client:       param.Client,
+			ConfigSvc:    param.ConfigSvc,
+			QueryBuilder: param.QueryBuilder,
+			Logger:       param.Logger,
+			Schema:       dmodel.MustGetSchema(domain.AttributeSchemaName),
 		},
-		query,
-		itAttribute.EntToAttributes,
 	)
+	return &AttributeDynamicRepository{dynamicRepo: dynamicRepo}
 }
 
-func (this *AttributeEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return db.ParseSearchGraphStr[ent.Attribute, domain.Attribute](criteria, entAttribute.Label)
+type AttributeDynamicRepository struct {
+	dynamicRepo dyn.BaseDynamicRepository
 }
 
-func BuildAttributeDescriptor() *orm.EntityDescriptor {
-	entity := ent.Attribute{}
-	builder := orm.DescribeEntity(entAttribute.Label).
-		Aliases("attributes").
-		Field(entAttribute.FieldCreatedAt, entity.CreatedAt).
-		Field(entAttribute.FieldCodeName, entity.CodeName).
-		// Field(entAttribute.FieldDisplayName, entity.DisplayName).
-		Field(entAttribute.FieldID, entity.ID).
-		Field(entAttribute.FieldDataType, entity.DataType).
-		Field(entAttribute.FieldUpdatedAt, entity.UpdatedAt).
-		Field(entAttribute.FieldEnumValueSort, entity.EnumValueSort).
-		Field(entAttribute.FieldEnumValue, entity.EnumValue).
-		Field(entAttribute.FieldIsEnum, entity.IsEnum).
-		Field(entAttribute.FieldIsRequired, entity.IsRequired).
-		Field(entAttribute.FieldProductID, entity.ProductID).
-		Field(entAttribute.FieldAttributeGroupID, entity.AttributeGroupID).
-		Field(entAttribute.EdgeAttributeGroup, ent.AttributeGroup{}).
-		Field(entAttribute.EdgeAttributeValues, ent.AttributeValue{})
+func (this *AttributeDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository {
+	return this.dynamicRepo
+}
 
-	return builder.Descriptor()
+func (this *AttributeDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
+	return this.dynamicRepo.BeginTransaction(ctx)
+}
+
+func (this *AttributeDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.Attribute) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
+}
+
+func (this *AttributeDynamicRepository) Exists(ctx corectx.Context, keys []domain.Attribute) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	dynamicKeys := array.Map(keys, func(key domain.Attribute) dmodel.DynamicFields {
+		return key.GetFieldData()
+	})
+	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
+}
+
+func (this *AttributeDynamicRepository) Insert(
+	ctx corectx.Context, attribute domain.Attribute,
+) (*dyn.OpResult[int], error) {
+	return baserepo.Insert(ctx, this.dynamicRepo, attribute)
+}
+
+func (this *AttributeDynamicRepository) GetOne(
+	ctx corectx.Context, param dyn.RepoGetOneParam,
+) (*dyn.OpResult[domain.Attribute], error) {
+	return baserepo.GetOne[domain.Attribute](ctx, this.dynamicRepo, param)
+}
+
+func (this *AttributeDynamicRepository) Search(
+	ctx corectx.Context, param dyn.RepoSearchParam,
+) (*dyn.OpResult[dyn.PagedResultData[domain.Attribute]], error) {
+	return baserepo.Search[domain.Attribute](ctx, this.dynamicRepo, param)
+}
+
+func (this *AttributeDynamicRepository) Update(
+	ctx corectx.Context, attribute domain.Attribute,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.Update(ctx, this.dynamicRepo, attribute.GetFieldData())
 }

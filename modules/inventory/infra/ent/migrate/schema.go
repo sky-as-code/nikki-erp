@@ -220,6 +220,7 @@ var (
 		{Name: "image_url", Type: field.TypeString, Nullable: true},
 		{Name: "sku", Type: field.TypeString, Nullable: true},
 		{Name: "status", Type: field.TypeString, Default: "active"},
+		{Name: "org_id", Type: field.TypeString},
 		{Name: "updated_at", Type: field.TypeTime, Nullable: true},
 		{Name: "product_id", Type: field.TypeString},
 	}
@@ -231,7 +232,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "inventory_variant_inventory_product_product",
-				Columns:    []*schema.Column{InventoryVariantColumns[10]},
+				Columns:    []*schema.Column{InventoryVariantColumns[11]},
 				RefColumns: []*schema.Column{InventoryProductColumns[0]},
 				OnDelete:   schema.Cascade,
 			},

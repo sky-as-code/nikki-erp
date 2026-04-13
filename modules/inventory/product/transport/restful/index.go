@@ -1,14 +1,19 @@
 package restful
 
 import (
+	stdErr "errors"
+
 	"github.com/labstack/echo/v4"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
+	"github.com/sky-as-code/nikki-erp/modules/inventory/constants"
 	v1 "github.com/sky-as-code/nikki-erp/modules/inventory/product/transport/restful/v1"
 )
 
 func InitRestfulHandlers() error {
-	deps.Register(
+	err := deps.Register(
 		v1.NewAttributeRest,
 		v1.NewAttributeGroupRest,
 		v1.NewAttributeValueRest,
@@ -16,66 +21,61 @@ func InitRestfulHandlers() error {
 		v1.NewVariantRest,
 		v1.NewProductCategoryRest,
 	)
+	return stdErr.Join(err, initProductV1())
+}
+
+func initProductV1() error {
 	return deps.Invoke(func(
 		route *echo.Group,
 		attributeRest *v1.AttributeRest,
 		attributeGroupRest *v1.AttributeGroupRest,
 		attributeValueRest *v1.AttributeValueRest,
-		productRest *v1.ProductRest,
 		variantRest *v1.VariantRest,
-		productCategoryRest *v1.ProductCategoryRest,
-	) {
-		v1 := route.Group("/v1/:orgId/inventory")
-		initV1(v1, attributeRest, attributeGroupRest, attributeValueRest, productRest, variantRest, productCategoryRest)
+	) error {
+		routeV1 := route.Group("/v1/:org_id/inventory")
+		routeV1.Use(middlewares.RequestContextMiddleware2(constants.InventoryModuleName))
+
+		// Register standard CRUD resources using helpers
+		err := stdErr.Join(
+			httpserver.RegisterArchivableCrudRest[*v1.ProductRest]("/products", routeV1),
+			httpserver.RegisterBasicCrudRest[*v1.ProductCategoryRest]("/product-categories", routeV1),
+		)
+		if err != nil {
+			return err
+		}
+
+		// Register nested resource routes manually
+		// Attributes (nested under products)
+		routeV1.POST("/products/:product_id/attributes", attributeRest.Create)
+		routeV1.PUT("/products/:product_id/attributes/:id", attributeRest.Update)
+		routeV1.DELETE("/products/:product_id/attributes/:id", attributeRest.Delete)
+		routeV1.GET("/products/:product_id/attributes/:id", attributeRest.GetOne)
+		routeV1.GET("/products/:product_id/attributes", attributeRest.Search)
+		routeV1.POST("/products/:product_id/attributes/exists", attributeRest.Exists)
+
+		// Attribute Groups (nested under products)
+		routeV1.POST("/products/:product_id/attribute-groups", attributeGroupRest.Create)
+		routeV1.PUT("/products/:product_id/attribute-groups/:id", attributeGroupRest.Update)
+		routeV1.DELETE("/products/:product_id/attribute-groups/:id", attributeGroupRest.Delete)
+		routeV1.GET("/products/:product_id/attribute-groups/:id", attributeGroupRest.GetOne)
+		routeV1.GET("/products/:product_id/attribute-groups", attributeGroupRest.Search)
+		routeV1.POST("/products/:product_id/attribute-groups/exists", attributeGroupRest.Exists)
+
+		// Attribute Values (nested under products and attributes)
+		routeV1.DELETE("/products/:product_id/attributes/:attribute_id/values/:id", attributeValueRest.Delete)
+		routeV1.GET("/products/:product_id/attributes/:attribute_id/values", attributeValueRest.Search)
+
+		// Variants (nested under products, plus standalone search)
+		routeV1.POST("/products/:product_id/variants", variantRest.Create)
+		routeV1.PUT("/products/:product_id/variants/:id", variantRest.Update)
+		routeV1.DELETE("/products/:product_id/variants/:id", variantRest.Delete)
+		routeV1.GET("/products/:product_id/variants/:id", variantRest.GetOne)
+		routeV1.GET("/products/:product_id/variants", variantRest.Search)
+		routeV1.POST("/products/:product_id/variants/exists", variantRest.Exists)
+
+		// Standalone variant search
+		routeV1.GET("/variants", variantRest.Search)
+
+		return nil
 	})
-}
-
-func initV1(
-	route *echo.Group,
-	attributeRest *v1.AttributeRest,
-	attributeGroupRest *v1.AttributeGroupRest,
-	attributeValueRest *v1.AttributeValueRest,
-	productRest *v1.ProductRest,
-	variantRest *v1.VariantRest,
-	productCategoryRest *v1.ProductCategoryRest,
-) {
-	route.POST("/products/:productId/attributes", attributeRest.CreateAttribute)
-	route.PUT("/products/:productId/attributes/:id", attributeRest.UpdateAttribute)
-	route.DELETE("/products/:productId/attributes/:id", attributeRest.DeleteAttribute)
-	route.GET("/products/:productId/attributes/:id", attributeRest.GetAttributeById)
-	route.GET("/products/:productId/attributes", attributeRest.SearchAttributes)
-
-	route.POST("/products/:productId/attribute-group", attributeGroupRest.CreateAttributeGroup)
-	route.PUT("/products/:productId/attribute-group/:id", attributeGroupRest.UpdateAttributeGroup)
-	route.DELETE("/products/:productId/attribute-group/:id", attributeGroupRest.DeleteAttributeGroup)
-	route.GET("/products/:productId/attribute-group/:id", attributeGroupRest.GetAttributeGroupById)
-	route.GET("/products/:productId/attribute-group", attributeGroupRest.SearchAttributeGroups)
-
-	// AttributeValue routes
-	// route.POST("/attribute-values", attributeValueRest.CreateAttributeValue)
-	// route.PUT("/attribute-values/:id", attributeValueRest.UpdateAttributeValue)
-	route.DELETE("/products/:productId/attributes/:attributeId/values/:id", attributeValueRest.DeleteAttributeValue)
-	// route.GET("/attribute-values/:id", attributeValueRest.GetAttributeValueById)
-	route.GET("/products/:productId/attributes/:attributeId/values", attributeValueRest.SearchAttributeValues)
-
-	// Product routes
-	route.POST("/products", productRest.CreateProduct)
-	route.PUT("/products/:id", productRest.UpdateProduct)
-	route.DELETE("/products/:id", productRest.DeleteProduct)
-	route.GET("/products/:id", productRest.GetProductById)
-	route.GET("/products", productRest.SearchProducts)
-
-	route.POST("/products-category", productCategoryRest.CreateProductCategory)
-	route.PUT("/products-category/:id", productCategoryRest.UpdateProductCategory)
-	route.DELETE("/products-category/:id", productCategoryRest.DeleteProductCategory)
-	route.GET("/products-category/:id", productCategoryRest.GetProductCategoryById)
-	route.GET("/products-category", productCategoryRest.SearchProductCategories)
-
-	// Variant routes
-	route.POST("/products/:productId/variants", variantRest.CreateVariant)
-	route.PUT("/products/:productId/variants/:id", variantRest.UpdateVariant)
-	route.DELETE("/products/:productId/variants/:id", variantRest.DeleteVariant)
-	route.GET("/products/:productId/variants/:id", variantRest.GetVariantById)
-	route.GET("/products/:productId/variants", variantRest.SearchVariants)
-	route.GET("/variants", variantRest.SearchVariants)
 }

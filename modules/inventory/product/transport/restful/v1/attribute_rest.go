@@ -4,7 +4,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
 )
@@ -26,107 +25,53 @@ type AttributeRest struct {
 	AttributeSvc itAttribute.AttributeService
 }
 
-func (this AttributeRest) CreateAttribute(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create attribute"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.AttributeSvc.CreateAttribute,
-		func(request CreateAttributeRequest) itAttribute.CreateAttributeCommand {
-			return itAttribute.CreateAttributeCommand(request)
-		},
-		func(result itAttribute.CreateAttributeResult) CreateAttributeResponse {
-			response := CreateAttributeResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonCreated,
+func (this AttributeRest) Create(echoCtx echo.Context) (err error) {
+	return httpserver.ServeCreate(
+		"create attribute",
+		echoCtx,
+		&itAttribute.CreateAttributeCommand{},
+		this.AttributeSvc.CreateAttribute,
 	)
-	return err
 }
 
-func (this AttributeRest) UpdateAttribute(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update attribute"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.AttributeSvc.UpdateAttribute,
-		func(request UpdateAttributeRequest) itAttribute.UpdateAttributeCommand {
-			return itAttribute.UpdateAttributeCommand(request)
-		},
-		func(result itAttribute.UpdateAttributeResult) UpdateAttributeResponse {
-			response := UpdateAttributeResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this AttributeRest) Update(echoCtx echo.Context) (err error) {
+	return httpserver.ServeUpdate(
+		"update attribute",
+		echoCtx,
+		&itAttribute.UpdateAttributeCommand{},
+		this.AttributeSvc.UpdateAttribute,
 	)
-	return err
 }
 
-func (this AttributeRest) DeleteAttribute(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete attribute"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.AttributeSvc.DeleteAttribute,
-		func(request DeleteAttributeRequest) itAttribute.DeleteAttributeCommand {
-			return itAttribute.DeleteAttributeCommand(request)
-		},
-		func(result itAttribute.DeleteAttributeResult) DeleteAttributeResponse {
-			response := DeleteAttributeResponse{}
-			response.FromNonEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this AttributeRest) Delete(echoCtx echo.Context) (err error) {
+	return httpserver.ServeGeneralMutate(
+		"delete attribute",
+		echoCtx,
+		this.AttributeSvc.DeleteAttribute,
 	)
-	return err
 }
 
-func (this AttributeRest) GetAttributeById(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get attribute by id"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.AttributeSvc.GetAttributeById,
-		func(request GetAttributeByIdRequest) itAttribute.GetAttributeByIdQuery {
-			return itAttribute.GetAttributeByIdQuery(request)
-		},
-		func(result itAttribute.GetAttributeByIdResult) GetAttributeByIdResponse {
-			response := GetAttributeByIdResponse{}
-			response.FromResult(*result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this AttributeRest) GetOne(echoCtx echo.Context) (err error) {
+	return httpserver.ServeGetOne(
+		"get attribute",
+		echoCtx,
+		this.AttributeSvc.GetAttribute,
 	)
-	return err
 }
 
-func (this AttributeRest) SearchAttributes(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search attributes"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.AttributeSvc.SearchAttributes,
-		func(request SearchAttributesRequest) itAttribute.SearchAttributesQuery {
-			return itAttribute.SearchAttributesQuery(request)
-		},
-		func(result itAttribute.SearchAttributesResult) SearchAttributesResponse {
-			response := SearchAttributesResponse{}
-			response.FromResults(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this AttributeRest) Search(echoCtx echo.Context) (err error) {
+	return httpserver.ServeSearch(
+		"search attributes",
+		echoCtx,
+		this.AttributeSvc.SearchAttributes,
+		true,
 	)
-	return err
+}
+
+func (this AttributeRest) Exists(echoCtx echo.Context) (err error) {
+	return httpserver.ServeExists(
+		"attribute exists",
+		echoCtx,
+		this.AttributeSvc.AttributeExists,
+	)
 }

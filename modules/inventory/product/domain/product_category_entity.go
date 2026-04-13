@@ -1,32 +1,131 @@
 package domain
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-type ProductCategory struct {
-	model.ModelBase
-	model.AuditableBase
+const (
+	ProductCategorySchemaName = "inventory.product_category"
 
-	OrgId *model.Id       `json:"orgId"`
-	Name  *model.LangJson `json:"name,omitempty"`
+	ProductCategoryFieldId = basemodel.FieldId
+	ProdCatFieldName       = "name"
+	ProdCatFieldOrgId      = "org_id"
+
+	ProdCatEdgeProducts = "products"
+
+	ProdCatRelSchemaName             = "inventory.product_category_rel"
+	ProdCatRelFieldProductId         = "product_id"
+	ProdCatRelFieldProductCategoryId = "product_category_id"
+)
+
+func ProductCategoryRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(ProdCatRelSchemaName).
+		TableName("invent_product_category_rel").
+		ShouldBuildDb().
+		Field(
+			dmodel.DefineField().
+				Name(ProdCatRelFieldProductId).
+				DataType(dmodel.FieldDataTypeUlid()).
+				PrimaryKey(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(ProdCatRelFieldProductCategoryId).
+				DataType(dmodel.FieldDataTypeUlid()).
+				PrimaryKey(),
+		)
 }
 
-func (this *ProductCategory) Validate(forEdit bool) ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.Name,
-			val.NotNilWhen(!forEdit),
-			val.When(this.Name != nil,
-				val.NotEmpty,
-				val.Length(1, model.MODEL_RULE_LONG_NAME_LENGTH),
-			),
-		),
+func ProductCategorySchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(ProductCategorySchemaName).
+		Label(model.LangJson{model.LanguageCodeEnUs: "Product Category"}).
+		TableName("invent_product_categories").
+		CompositeUnique(ProdCatFieldName, ProdCatFieldOrgId).
+		ShouldBuildDb().
+		Extend(basemodel.BaseModelSchemaBuilder()).
+		Field(
+			dmodel.DefineField().
+				Name(ProdCatFieldName).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
+				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
+				RequiredForCreate(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(ProdCatFieldOrgId).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Organization"}).
+				DataType(dmodel.FieldDataTypeUlid()).
+				RequiredForCreate(),
+		).
+		Extend(basemodel.VersionedModelSchemaBuilder()).
+		Extend(basemodel.AuditableModelSchemaBuilder()).
+		EdgeTo(
+			dmodel.Edge(ProdCatEdgeProducts).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Products"}).
+				ManyToMany(ProductSchemaName, ProdCatRelSchemaName, "product_category").
+				OnDelete(dmodel.RelationCascadeCascade),
+		)
+}
+
+type ProductCategory struct {
+	fields dmodel.DynamicFields
+}
+
+func NewProductCategory() *ProductCategory {
+	return &ProductCategory{fields: make(dmodel.DynamicFields)}
+}
+
+func NewProductCategoryFrom(src dmodel.DynamicFields) *ProductCategory {
+	return &ProductCategory{fields: src}
+}
+
+func (this ProductCategory) GetFieldData() dmodel.DynamicFields {
+	return this.fields
+}
+
+func (this *ProductCategory) SetFieldData(data dmodel.DynamicFields) {
+	this.fields = data
+}
+
+func (this ProductCategory) GetId() *model.Id {
+	return this.fields.GetModelId(basemodel.FieldId)
+}
+
+func (this *ProductCategory) SetId(v *model.Id) {
+	this.fields.SetModelId(basemodel.FieldId, v)
+}
+
+func (this ProductCategory) GetName() *model.LangJson {
+	v := this.fields.GetAny(ProdCatFieldName)
+	if v == nil {
+		return nil
 	}
+	lj := v.(model.LangJson)
+	return &lj
+}
 
-	rules = append(rules, this.ModelBase.ValidateRules(forEdit)...)
-	rules = append(rules, this.AuditableBase.ValidateRules(forEdit)...)
+func (this *ProductCategory) SetName(v *model.LangJson) {
+	if v == nil {
+		this.fields.SetAny(ProdCatFieldName, nil)
+		return
+	}
+	this.fields.SetAny(ProdCatFieldName, *v)
+}
 
-	return val.ApiBased.ValidateStruct(this, rules...)
+func (this ProductCategory) GetOrgId() *model.Id {
+	return this.fields.GetModelId(ProdCatFieldOrgId)
+}
+
+func (this *ProductCategory) SetOrgId(v *model.Id) {
+	this.fields.SetModelId(ProdCatFieldOrgId, v)
+}
+
+func (this ProductCategory) GetEtag() *model.Etag {
+	return this.fields.GetEtag(basemodel.FieldEtag)
+}
+
+func (this *ProductCategory) SetEtag(v *model.Etag) {
+	this.fields.SetEtag(basemodel.FieldEtag, v)
 }

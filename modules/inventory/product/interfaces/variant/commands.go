@@ -1,15 +1,23 @@
 package variant
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 )
 
-// Create
+func init() {
+	var req cqrs.Request
+	req = (*CreateVariantCommand)(nil)
+	req = (*DeleteVariantCommand)(nil)
+	req = (*VariantExistsQuery)(nil)
+	req = (*GetVariantQuery)(nil)
+	req = (*SearchVariantsQuery)(nil)
+	req = (*UpdateVariantCommand)(nil)
+	util.Unused(req)
+}
 
 var createVariantCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -18,30 +26,18 @@ var createVariantCommandType = cqrs.RequestType{
 }
 
 type CreateVariantCommand struct {
-	ProductId     model.Id                `param:"productId" json:"productId"`
-	Name          model.LangJson          `json:"name"`
-	Sku           *string                 `json:"sku"`
-	Barcode       *string                 `json:"barcode,omitempty"`
-	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
-	Status        *string                 `json:"status,omitempty"`
-	ImageUrl      *string                 `json:"imageUrl,omitempty"`
-	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
+	domain.Variant
 }
 
 func (CreateVariantCommand) CqrsRequestType() cqrs.RequestType {
 	return createVariantCommandType
 }
 
-func (this CreateVariantCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.ProductId, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (this CreateVariantCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.VariantSchemaName)
 }
 
-type CreateVariantResult = GetVariantByIdResult
-
-// Update
+type CreateVariantResult = dyn.OpResult[domain.Variant]
 
 var updateVariantCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -50,23 +46,18 @@ var updateVariantCommandType = cqrs.RequestType{
 }
 
 type UpdateVariantCommand struct {
-	Id            model.Id                `param:"id" json:"id"`
-	ProductId     model.Id                `param:"productId" json:"productId"`
-	Etag          model.Etag              `json:"etag"`
-	Sku           *string                 `json:"sku,omitempty"`
-	Barcode       *string                 `json:"barcode,omitempty"`
-	ProposedPrice *float64                `json:"proposedPrice,omitempty"`
-	Status        *string                 `json:"status,omitempty"`
-	Attributes    *map[string]interface{} `json:"attributes,omitempty"`
+	domain.Variant
 }
 
 func (UpdateVariantCommand) CqrsRequestType() cqrs.RequestType {
 	return updateVariantCommandType
 }
 
-type UpdateVariantResult = GetVariantByIdResult
+func (this UpdateVariantCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.VariantSchemaName)
+}
 
-// Delete
+type UpdateVariantResult = dyn.OpResult[dyn.MutateResultData]
 
 var deleteVariantCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -74,51 +65,44 @@ var deleteVariantCommandType = cqrs.RequestType{
 	Action:    "delete",
 }
 
-type DeleteVariantCommand struct {
-	Id        model.Id `json:"id" param:"id"`
-	ProductId model.Id `json:"productId" param:"productId"`
-}
-
-func (this DeleteVariantCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-		model.IdValidateRule(&this.ProductId, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
+type DeleteVariantCommand dyn.DeleteOneCommand
 
 func (DeleteVariantCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteVariantCommandType
 }
 
-type DeleteVariantResult = crud.DeletionResult
+type DeleteVariantResult = dyn.OpResult[dyn.MutateResultData]
 
-// Get by ID
-
-var getVariantByIdQueryType = cqrs.RequestType{
+var getVariantQueryType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "variant",
-	Action:    "getById",
+	Action:    "getVariant",
 }
 
-type GetVariantByIdQuery struct {
-	Id        model.Id `param:"id" json:"id"`
-	ProductId model.Id `param:"productId" json:"productId"`
+type GetVariantQuery struct {
+	Columns []string `json:"columns" query:"columns"`
+	Id      *string  `json:"id" param:"id"`
 }
 
-func (this GetVariantByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-		model.IdValidateRule(&this.ProductId, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (GetVariantQuery) CqrsRequestType() cqrs.RequestType {
+	return getVariantQueryType
 }
 
-func (GetVariantByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return getVariantByIdQueryType
+type GetVariantResult = dyn.OpResult[domain.Variant]
+
+var variantExistsQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "variant",
+	Action:    "variantExists",
 }
 
-type GetVariantByIdResult = crud.OpResult[*domain.Variant]
+type VariantExistsQuery dyn.ExistsQuery
+
+func (VariantExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return variantExistsQueryType
+}
+
+type VariantExistsResult = dyn.OpResult[dyn.ExistsResultData]
 
 var searchVariantsQueryType = cqrs.RequestType{
 	Module:    "inventory",
@@ -126,24 +110,11 @@ var searchVariantsQueryType = cqrs.RequestType{
 	Action:    "search",
 }
 
-// Search (advanced)
+type SearchVariantsQuery dyn.SearchQuery
 
-type SearchVariantsQuery struct {
-	// Filled by service from Graph
-	crud.SearchQuery
-
-	ProductId *model.Id `param:"productId" json:"productId"`
-}
-
-func (this SearchVariantsQuery) CqrsRequestType() cqrs.RequestType {
+func (SearchVariantsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchVariantsQueryType
 }
 
-func (this SearchVariantsQuery) Validate() ft.ValidationErrors {
-	rules := this.SearchQuery.ValidationRules()
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type SearchVariantsResultData = crud.PagedResult[domain.Variant]
-type SearchVariantsResult = crud.OpResult[*SearchVariantsResultData]
+type SearchVariantsResultData = dyn.PagedResultData[domain.Variant]
+type SearchVariantsResult = dyn.OpResult[SearchVariantsResultData]

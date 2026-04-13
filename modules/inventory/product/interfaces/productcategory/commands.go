@@ -1,15 +1,23 @@
 package productcategory
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 )
 
-// Create
+func init() {
+	var req cqrs.Request
+	req = (*CreateProductCategoryCommand)(nil)
+	req = (*DeleteProductCategoryCommand)(nil)
+	req = (*ProductCategoryExistsQuery)(nil)
+	req = (*GetProductCategoryQuery)(nil)
+	req = (*SearchProductCategoriesQuery)(nil)
+	req = (*UpdateProductCategoryCommand)(nil)
+	util.Unused(req)
+}
 
 var createProductCategoryCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -18,17 +26,18 @@ var createProductCategoryCommandType = cqrs.RequestType{
 }
 
 type CreateProductCategoryCommand struct {
-	Name  model.LangJson `json:"name"`
-	OrgId model.Id       `json:"orgId" param:"orgId"`
+	domain.ProductCategory
 }
 
 func (CreateProductCategoryCommand) CqrsRequestType() cqrs.RequestType {
 	return createProductCategoryCommandType
 }
 
-type CreateProductCategoryResult = GetProductCategoryByIdResult
+func (this CreateProductCategoryCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.ProductCategorySchemaName)
+}
 
-// Update
+type CreateProductCategoryResult = dyn.OpResult[domain.ProductCategory]
 
 var updateProductCategoryCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -37,18 +46,18 @@ var updateProductCategoryCommandType = cqrs.RequestType{
 }
 
 type UpdateProductCategoryCommand struct {
-	Id   model.Id        `param:"id" json:"id"`
-	Etag model.Etag      `json:"etag"`
-	Name *model.LangJson `json:"name,omitempty"`
+	domain.ProductCategory
 }
 
 func (UpdateProductCategoryCommand) CqrsRequestType() cqrs.RequestType {
 	return updateProductCategoryCommandType
 }
 
-type UpdateProductCategoryResult = GetProductCategoryByIdResult
+func (this UpdateProductCategoryCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.ProductCategorySchemaName)
+}
 
-// Delete
+type UpdateProductCategoryResult = dyn.OpResult[dyn.MutateResultData]
 
 var deleteProductCategoryCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -56,47 +65,44 @@ var deleteProductCategoryCommandType = cqrs.RequestType{
 	Action:    "delete",
 }
 
-type DeleteProductCategoryCommand struct {
-	Id model.Id `json:"id" param:"id"`
-}
-
-func (this DeleteProductCategoryCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
+type DeleteProductCategoryCommand dyn.DeleteOneCommand
 
 func (DeleteProductCategoryCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteProductCategoryCommandType
 }
 
-type DeleteProductCategoryResult = crud.DeletionResult
+type DeleteProductCategoryResult = dyn.OpResult[dyn.MutateResultData]
 
-// Get by ID
-
-var getProductCategoryByIdQueryType = cqrs.RequestType{
+var getProductCategoryQueryType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "product_category",
-	Action:    "getById",
+	Action:    "getProductCategory",
 }
 
-type GetProductCategoryByIdQuery struct {
-	Id model.Id `param:"id" json:"id"`
+type GetProductCategoryQuery struct {
+	Columns []string `json:"columns" query:"columns"`
+	Id      *string  `json:"id" param:"id"`
 }
 
-func (this GetProductCategoryByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (GetProductCategoryQuery) CqrsRequestType() cqrs.RequestType {
+	return getProductCategoryQueryType
 }
 
-func (GetProductCategoryByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return getProductCategoryByIdQueryType
+type GetProductCategoryResult = dyn.OpResult[domain.ProductCategory]
+
+var productCategoryExistsQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "product_category",
+	Action:    "productCategoryExists",
 }
 
-type GetProductCategoryByIdResult = crud.OpResult[*domain.ProductCategory]
+type ProductCategoryExistsQuery dyn.ExistsQuery
+
+func (ProductCategoryExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return productCategoryExistsQueryType
+}
+
+type ProductCategoryExistsResult = dyn.OpResult[dyn.ExistsResultData]
 
 var searchProductCategoriesQueryType = cqrs.RequestType{
 	Module:    "inventory",
@@ -104,22 +110,11 @@ var searchProductCategoriesQueryType = cqrs.RequestType{
 	Action:    "search",
 }
 
-// Search (advanced)
+type SearchProductCategoriesQuery dyn.SearchQuery
 
-type SearchProductCategoriesQuery struct {
-	// Filled by service from Graph
-	crud.SearchQuery
-}
-
-func (this SearchProductCategoriesQuery) CqrsRequestType() cqrs.RequestType {
+func (SearchProductCategoriesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchProductCategoriesQueryType
 }
 
-func (this SearchProductCategoriesQuery) Validate() ft.ValidationErrors {
-	rules := this.SearchQuery.ValidationRules()
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type SearchProductCategoriesResultData = crud.PagedResult[domain.ProductCategory]
-type SearchProductCategoriesResult = crud.OpResult[*SearchProductCategoriesResultData]
+type SearchProductCategoriesResultData = dyn.PagedResultData[domain.ProductCategory]
+type SearchProductCategoriesResult = dyn.OpResult[SearchProductCategoriesResultData]

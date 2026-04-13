@@ -38,6 +38,8 @@ type Variant struct {
 	Sku *string `json:"sku,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
+	// OrgID holds the value of the "org_id" field.
+	OrgID string `json:"org_id,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -97,7 +99,7 @@ func (*Variant) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case variant.FieldProposedPrice:
 			values[i] = new(sql.NullFloat64)
-		case variant.FieldID, variant.FieldBarcode, variant.FieldEtag, variant.FieldImageURL, variant.FieldProductID, variant.FieldSku, variant.FieldStatus:
+		case variant.FieldID, variant.FieldBarcode, variant.FieldEtag, variant.FieldImageURL, variant.FieldProductID, variant.FieldSku, variant.FieldStatus, variant.FieldOrgID:
 			values[i] = new(sql.NullString)
 		case variant.FieldCreatedAt, variant.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -181,6 +183,12 @@ func (v *Variant) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
 			} else if value.Valid {
 				v.Status = value.String
+			}
+		case variant.FieldOrgID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field org_id", values[i])
+			} else if value.Valid {
+				v.OrgID = value.String
 			}
 		case variant.FieldUpdatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -274,6 +282,9 @@ func (v *Variant) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(v.Status)
+	builder.WriteString(", ")
+	builder.WriteString("org_id=")
+	builder.WriteString(v.OrgID)
 	builder.WriteString(", ")
 	if v := v.UpdatedAt; v != nil {
 		builder.WriteString("updated_at=")

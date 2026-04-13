@@ -1,34 +1,17 @@
 package attribute
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 )
 
 type AttributeRepository interface {
-	GetNextSortIndex(ctx crud.Context, productId model.Id) (int, error)
-	Create(ctx crud.Context, attribute *domain.Attribute) (*domain.Attribute, error)
-	Update(ctx crud.Context, attribute *domain.Attribute, prevEtag model.Etag) (*domain.Attribute, error)
-	DeleteById(ctx crud.Context, id model.Id) (int, error)
-	FindById(ctx crud.Context, query FindByIdParam) (*domain.Attribute, error)
-	FindByCodeName(ctx crud.Context, query FindByCodeNameParam) (*domain.Attribute, error)
-	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.Attribute], error)
-}
-
-type DeleteParam = DeleteAttributeCommand
-type FindByIdParam = GetAttributeByIdQuery
-type FindByCodeNameParam = GetAttributeByCodeName
-
-type SearchParam struct {
-	ProductId     model.Id
-	Predicate     *orm.Predicate
-	Order         []orm.OrderOption
-	Page          int
-	Size          int
-	CountValues   bool
-	CountVariants bool
+	dyn.DynamicModelRepository
+	DeleteOne(ctx corectx.Context, keys domain.Attribute) (*dyn.OpResult[dyn.MutateResultData], error)
+	Exists(ctx corectx.Context, keys []domain.Attribute) (*dyn.OpResult[dyn.RepoExistsResult], error)
+	Insert(ctx corectx.Context, attribute domain.Attribute) (*dyn.OpResult[int], error)
+	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.Attribute], error)
+	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.Attribute]], error)
+	Update(ctx corectx.Context, attribute domain.Attribute) (*dyn.OpResult[dyn.MutateResultData], error)
 }

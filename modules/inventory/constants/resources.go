@@ -1,5 +1,7 @@
 package constants
 
+const InventoryModuleName = "inventory"
+
 const (
 	ResourceAttribute       = "InventoryAttribute"
 	ResourceAttributeGroup  = "InventoryAttributeGroup"

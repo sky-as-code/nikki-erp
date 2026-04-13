@@ -164,6 +164,7 @@ var translationKeyRules val.Rule = val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9_\.
 
 const (
 	LanguageCodeEnUs    = LanguageCode("en-US")
+	LanguageCodeViVn    = LanguageCode("vi-VN")
 	DefaultLanguageCode = LanguageCodeEnUs
 	// When this Label Reference is specified in a LangJson, all other keys are ignored.
 	//
@@ -205,7 +206,7 @@ func (this LangJson) SanitizeClone(whitelistLangs []LanguageCode, isRichText boo
 		if err != nil {
 			return nil, 0, err
 		}
-		if len(labelStr) == 0 || (stdLabelCode != LabelRefLanguageCode && !array.Contains(whitelistLangs, stdLabelCode)) {
+		if len(labelStr) == 0 || (len(whitelistLangs) > 0 && stdLabelCode != LabelRefLanguageCode && !array.Contains(whitelistLangs, stdLabelCode)) {
 			continue
 		}
 		if isRichText {

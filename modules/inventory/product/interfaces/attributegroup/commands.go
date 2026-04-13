@@ -1,133 +1,120 @@
 package attributegroup
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 )
 
-var CreateAttributeGroupTypes = cqrs.RequestType{
+func init() {
+	var req cqrs.Request
+	req = (*CreateAttributeGroupCommand)(nil)
+	req = (*DeleteAttributeGroupCommand)(nil)
+	req = (*AttributeGroupExistsQuery)(nil)
+	req = (*GetAttributeGroupQuery)(nil)
+	req = (*SearchAttributeGroupsQuery)(nil)
+	req = (*UpdateAttributeGroupCommand)(nil)
+	util.Unused(req)
+}
+
+var createAttributeGroupCommandType = cqrs.RequestType{
 	Module:    "inventory",
-	Submodule: "attribute",
+	Submodule: "attribute_group",
 	Action:    "create",
 }
 
-// Create Command
 type CreateAttributeGroupCommand struct {
-	ProductId model.Id       `json:"productId" param:"productId"`
-	Name      model.LangJson `json:"name"`
+	domain.AttributeGroup
 }
 
 func (CreateAttributeGroupCommand) CqrsRequestType() cqrs.RequestType {
-	return CreateAttributeGroupTypes
+	return createAttributeGroupCommandType
 }
 
-func (this CreateAttributeGroupCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.ProductId, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (this CreateAttributeGroupCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.AttributeGroupSchemaName)
 }
 
-type CreateAttributeGroupResult = GetAttributeGroupByIdResult
+type CreateAttributeGroupResult = dyn.OpResult[domain.AttributeGroup]
 
-// Update Command
-
-var UpdateAttributeGroupCommandType = cqrs.RequestType{
+var updateAttributeGroupCommandType = cqrs.RequestType{
 	Module:    "inventory",
-	Submodule: "attribute",
+	Submodule: "attribute_group",
 	Action:    "update",
 }
 
 type UpdateAttributeGroupCommand struct {
-	Id        model.Id       `json:"id" param:"id"`
-	Etag      model.Etag     `json:"etag"`
-	ProductId model.Id       `json:"productId" param:"productId"`
-	Name      model.LangJson `json:"name"`
+	domain.AttributeGroup
 }
 
 func (UpdateAttributeGroupCommand) CqrsRequestType() cqrs.RequestType {
-	return UpdateAttributeGroupCommandType
+	return updateAttributeGroupCommandType
 }
 
-type UpdateAttributeGroupResult = GetAttributeGroupByIdResult
+func (this UpdateAttributeGroupCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.AttributeGroupSchemaName)
+}
 
-// Delete Command
-var DeleteAttributeGroupCommandType = cqrs.RequestType{
+type UpdateAttributeGroupResult = dyn.OpResult[dyn.MutateResultData]
+
+var deleteAttributeGroupCommandType = cqrs.RequestType{
 	Module:    "inventory",
-	Submodule: "attribute",
+	Submodule: "attribute_group",
 	Action:    "delete",
 }
 
-type DeleteAttributeGroupCommand struct {
-	Id model.Id `json:"id" param:"id"`
-}
+type DeleteAttributeGroupCommand dyn.DeleteOneCommand
 
 func (DeleteAttributeGroupCommand) CqrsRequestType() cqrs.RequestType {
-	return DeleteAttributeGroupCommandType
+	return deleteAttributeGroupCommandType
 }
 
-func (this DeleteAttributeGroupCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
+type DeleteAttributeGroupResult = dyn.OpResult[dyn.MutateResultData]
 
-type DeleteAttributeGroupResult = crud.DeletionResult
-
-// Get by ID Query
-var GetAttributeGroupByIdQueryType = cqrs.RequestType{
+var getAttributeGroupQueryType = cqrs.RequestType{
 	Module:    "inventory",
-	Submodule: "attribute",
-	Action:    "getById",
+	Submodule: "attribute_group",
+	Action:    "getAttributeGroup",
 }
 
-type GetAttributeGroupByIdQuery struct {
-	Id model.Id `json:"id" param:"id"`
+type GetAttributeGroupQuery struct {
+	Columns []string `json:"columns" query:"columns"`
+	Id      *string  `json:"id" param:"id"`
 }
 
-func (GetAttributeGroupByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return GetAttributeGroupByIdQueryType
+func (GetAttributeGroupQuery) CqrsRequestType() cqrs.RequestType {
+	return getAttributeGroupQueryType
 }
 
-func (this GetAttributeGroupByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
+type GetAttributeGroupResult = dyn.OpResult[domain.AttributeGroup]
 
-type GetAttributeGroupByIdResult = crud.OpResult[*domain.AttributeGroup]
-
-// Search Query
-var SearchAttributeGroupsQueryType = cqrs.RequestType{
+var attributeGroupExistsQueryType = cqrs.RequestType{
 	Module:    "inventory",
-	Submodule: "attribute",
+	Submodule: "attribute_group",
+	Action:    "attributeGroupExists",
+}
+
+type AttributeGroupExistsQuery dyn.ExistsQuery
+
+func (AttributeGroupExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return attributeGroupExistsQueryType
+}
+
+type AttributeGroupExistsResult = dyn.OpResult[dyn.ExistsResultData]
+
+var searchAttributeGroupsQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "attribute_group",
 	Action:    "search",
 }
 
-type SearchAttributeGroupsQuery struct {
-	crud.SearchQuery
-	ProductId *model.Id `json:"productId,omitempty" query:"productId"`
-}
-
-func (this SearchAttributeGroupsQuery) Validate() ft.ValidationErrors {
-	rules := this.SearchQuery.ValidationRules()
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
+type SearchAttributeGroupsQuery dyn.SearchQuery
 
 func (SearchAttributeGroupsQuery) CqrsRequestType() cqrs.RequestType {
-	return SearchAttributeGroupsQueryType
+	return searchAttributeGroupsQueryType
 }
 
-func (this *SearchAttributeGroupsQuery) SetDefaults() {
-	this.SearchQuery.SetDefaults()
-}
-
-type SearchAttributeGroupsResultData = crud.PagedResult[domain.AttributeGroup]
-type SearchAttributeGroupsResult = crud.OpResult[*SearchAttributeGroupsResultData]
+type SearchAttributeGroupsResultData = dyn.PagedResultData[domain.AttributeGroup]
+type SearchAttributeGroupsResult = dyn.OpResult[SearchAttributeGroupsResultData]

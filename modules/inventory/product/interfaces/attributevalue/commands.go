@@ -1,15 +1,23 @@
 package attributevalue
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 )
 
-// Create
+func init() {
+	var req cqrs.Request
+	req = (*CreateAttributeValueCommand)(nil)
+	req = (*DeleteAttributeValueCommand)(nil)
+	req = (*AttributeValueExistsQuery)(nil)
+	req = (*GetAttributeValueQuery)(nil)
+	req = (*SearchAttributeValuesQuery)(nil)
+	req = (*UpdateAttributeValueCommand)(nil)
+	util.Unused(req)
+}
 
 var createAttributeValueCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -18,30 +26,18 @@ var createAttributeValueCommandType = cqrs.RequestType{
 }
 
 type CreateAttributeValueCommand struct {
-	ProductId    model.Id        `json:"productId,omitempty"`
-	VariantId    model.Id        `json:"variantId,omitempty"`
-	AttributeId  model.Id        `param:"attribute_id" json:"attributeId"`
-	ValueText    *model.LangJson `json:"valueText,omitempty"`
-	ValueNumber  *float64        `json:"valueNumber,omitempty"`
-	ValueBool    *bool           `json:"valueBool,omitempty"`
-	ValueRef     *string         `json:"valueRef,omitempty"`
-	VariantCount *int            `json:"variantCount,omitempty"`
+	domain.AttributeValue
 }
 
 func (CreateAttributeValueCommand) CqrsRequestType() cqrs.RequestType {
 	return createAttributeValueCommandType
 }
 
-func (this CreateAttributeValueCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.AttributeId, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (this CreateAttributeValueCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.AttributeValueSchemaName)
 }
 
-type CreateAttributeValueResult = GetAttributeValueByIdResult
-
-// Update
+type CreateAttributeValueResult = dyn.OpResult[domain.AttributeValue]
 
 var updateAttributeValueCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -50,23 +46,18 @@ var updateAttributeValueCommandType = cqrs.RequestType{
 }
 
 type UpdateAttributeValueCommand struct {
-	Id           model.Id        `param:"id" json:"id"`
-	VariantId    model.Id        `json:"variantId,omitempty"`
-	Etag         model.Etag      `json:"etag"`
-	ValueText    *model.LangJson `json:"valueText,omitempty"`
-	ValueNumber  *float64        `json:"valueNumber,omitempty"`
-	ValueBool    *bool           `json:"valueBool,omitempty"`
-	ValueRef     *string         `json:"valueRef,omitempty"`
-	VariantCount *int            `json:"variantCount,omitempty"`
+	domain.AttributeValue
 }
 
 func (UpdateAttributeValueCommand) CqrsRequestType() cqrs.RequestType {
 	return updateAttributeValueCommandType
 }
 
-type UpdateAttributeValueResult = GetAttributeValueByIdResult
+func (this UpdateAttributeValueCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.AttributeValueSchemaName)
+}
 
-// Delete
+type UpdateAttributeValueResult = dyn.OpResult[dyn.MutateResultData]
 
 var deleteAttributeValueCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -74,49 +65,44 @@ var deleteAttributeValueCommandType = cqrs.RequestType{
 	Action:    "delete",
 }
 
-type DeleteAttributeValueCommand struct {
-	Id          model.Id `json:"id" param:"id"`
-	AttributeId model.Id `json:"attributeId" param:"attributeId"`
-}
-
-func (this DeleteAttributeValueCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-		model.IdValidateRule(&this.AttributeId, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
+type DeleteAttributeValueCommand dyn.DeleteOneCommand
 
 func (DeleteAttributeValueCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteAttributeValueCommandType
 }
 
-type DeleteAttributeValueResult = crud.DeletionResult
+type DeleteAttributeValueResult = dyn.OpResult[dyn.MutateResultData]
 
-// Get by ID
-
-var getAttributeValueByIdQueryType = cqrs.RequestType{
+var getAttributeValueQueryType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "attribute_value",
-	Action:    "getById",
+	Action:    "getAttributeValue",
 }
 
-type GetAttributeValueByIdQuery struct {
-	Id model.Id `param:"id" json:"id"`
+type GetAttributeValueQuery struct {
+	Columns []string `json:"columns" query:"columns"`
+	Id      *string  `json:"id" param:"id"`
 }
 
-func (this GetAttributeValueByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (GetAttributeValueQuery) CqrsRequestType() cqrs.RequestType {
+	return getAttributeValueQueryType
 }
 
-func (GetAttributeValueByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return getAttributeValueByIdQueryType
+type GetAttributeValueResult = dyn.OpResult[domain.AttributeValue]
+
+var attributeValueExistsQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "attribute_value",
+	Action:    "attributeValueExists",
 }
 
-type GetAttributeValueByIdResult = crud.OpResult[*domain.AttributeValue]
+type AttributeValueExistsQuery dyn.ExistsQuery
+
+func (AttributeValueExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return attributeValueExistsQueryType
+}
+
+type AttributeValueExistsResult = dyn.OpResult[dyn.ExistsResultData]
 
 var searchAttributeValuesQueryType = cqrs.RequestType{
 	Module:    "inventory",
@@ -124,24 +110,11 @@ var searchAttributeValuesQueryType = cqrs.RequestType{
 	Action:    "search",
 }
 
-// Search (advanced)
+type SearchAttributeValuesQuery dyn.SearchQuery
 
-type SearchAttributeValuesQuery struct {
-	// Filled by service from Graph
-	crud.SearchQuery
-
-	AttributeId *model.Id `param:"attributeId" json:"attributeId"`
-}
-
-func (this SearchAttributeValuesQuery) CqrsRequestType() cqrs.RequestType {
+func (SearchAttributeValuesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchAttributeValuesQueryType
 }
 
-func (this SearchAttributeValuesQuery) Validate() ft.ValidationErrors {
-	rules := this.SearchQuery.ValidationRules()
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type SearchAttributeValuesResultData = crud.PagedResult[domain.AttributeValue]
-type SearchAttributeValuesResult = crud.OpResult[*SearchAttributeValuesResultData]
+type SearchAttributeValuesResultData = dyn.PagedResultData[domain.AttributeValue]
+type SearchAttributeValuesResult = dyn.OpResult[SearchAttributeValuesResultData]

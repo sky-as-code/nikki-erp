@@ -1,15 +1,23 @@
 package unit
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/unit/domain"
 )
 
-// Create
+func init() {
+	var req cqrs.Request
+	req = (*CreateUnitCommand)(nil)
+	req = (*DeleteUnitCommand)(nil)
+	req = (*GetUnitQuery)(nil)
+	req = (*SearchUnitsQuery)(nil)
+	req = (*UpdateUnitCommand)(nil)
+	req = (*UnitExistsQuery)(nil)
+	util.Unused(req)
+}
 
 var createUnitCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -18,22 +26,18 @@ var createUnitCommandType = cqrs.RequestType{
 }
 
 type CreateUnitCommand struct {
-	BaseUnit   *string        `json:"baseUnit,omitempty"`
-	CategoryId *model.Id      `json:"categoryId,omitempty"`
-	Multiplier *int           `json:"multiplier,omitempty"`
-	Name       model.LangJson `json:"name"`
-	OrgId      *model.Id      `param:"orgId" json:"orgId"`
-	Status     *string        `json:"status,omitempty"`
-	Symbol     string         `json:"symbol"`
+	domain.Unit
 }
 
 func (CreateUnitCommand) CqrsRequestType() cqrs.RequestType {
 	return createUnitCommandType
 }
 
-type CreateUnitResult = GetUnitByIdResult
+func (this CreateUnitCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.UnitSchemaName)
+}
 
-// Update
+type CreateUnitResult = dyn.OpResult[domain.Unit]
 
 var updateUnitCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -42,24 +46,18 @@ var updateUnitCommandType = cqrs.RequestType{
 }
 
 type UpdateUnitCommand struct {
-	Id         model.Id        `param:"id" json:"id"`
-	BaseUnit   *string         `json:"baseUnit,omitempty"`
-	CategoryId *model.Id       `json:"categoryId,omitempty"`
-	Etag       model.Etag      `json:"etag"`
-	Multiplier *int            `json:"multiplier,omitempty"`
-	Name       *model.LangJson `json:"name,omitempty"`
-	OrgId      *model.Id       `json:"orgId,omitempty"`
-	Status     *string         `json:"status,omitempty"`
-	Symbol     *string         `json:"symbol,omitempty"`
+	domain.Unit
 }
 
 func (UpdateUnitCommand) CqrsRequestType() cqrs.RequestType {
 	return updateUnitCommandType
 }
 
-type UpdateUnitResult = GetUnitByIdResult
+func (this UpdateUnitCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.UnitSchemaName)
+}
 
-// Delete
+type UpdateUnitResult = dyn.OpResult[dyn.MutateResultData]
 
 var deleteUnitCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -67,48 +65,30 @@ var deleteUnitCommandType = cqrs.RequestType{
 	Action:    "delete",
 }
 
-type DeleteUnitCommand struct {
-	Id    model.Id `json:"id" param:"id"`
-	OrgId model.Id `json:"orgId"`
-}
-
-func (this DeleteUnitCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
+type DeleteUnitCommand dyn.DeleteOneCommand
 
 func (DeleteUnitCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteUnitCommandType
 }
 
-type DeleteUnitResult = crud.DeletionResult
+type DeleteUnitResult = dyn.OpResult[dyn.MutateResultData]
 
-// Get by ID
-
-var getUnitByIdQueryType = cqrs.RequestType{
+var getUnitQueryType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "unit",
-	Action:    "getById",
+	Action:    "getUnit",
 }
 
-type GetUnitByIdQuery struct {
-	Id model.Id `param:"id" json:"id"`
+type GetUnitQuery struct {
+	Columns []string `json:"columns" query:"columns"`
+	Id      *string  `json:"id" param:"id"`
 }
 
-func (this GetUnitByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (GetUnitQuery) CqrsRequestType() cqrs.RequestType {
+	return getUnitQueryType
 }
 
-func (GetUnitByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return getUnitByIdQueryType
-}
-
-type GetUnitByIdResult = crud.OpResult[*domain.Unit]
+type GetUnitResult = dyn.OpResult[domain.Unit]
 
 var searchUnitsQueryType = cqrs.RequestType{
 	Module:    "inventory",
@@ -116,22 +96,25 @@ var searchUnitsQueryType = cqrs.RequestType{
 	Action:    "search",
 }
 
-// Search (advanced)
+type SearchUnitsQuery dyn.SearchQuery
 
-type SearchUnitsQuery struct {
-	// Filled by service from Graph
-	crud.SearchQuery
-}
-
-func (this SearchUnitsQuery) CqrsRequestType() cqrs.RequestType {
+func (SearchUnitsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchUnitsQueryType
 }
 
-func (this SearchUnitsQuery) Validate() ft.ValidationErrors {
-	rules := this.SearchQuery.ValidationRules()
+type SearchUnitsResultData = dyn.PagedResultData[domain.Unit]
+type SearchUnitsResult = dyn.OpResult[SearchUnitsResultData]
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+var unitExistsQueryType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "unit",
+	Action:    "exists",
 }
 
-type SearchUnitsResultData = crud.PagedResult[domain.Unit]
-type SearchUnitsResult = crud.OpResult[*SearchUnitsResultData]
+type UnitExistsQuery dyn.ExistsQuery
+
+func (UnitExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return unitExistsQueryType
+}
+
+type UnitExistsResult = dyn.OpResult[dyn.ExistsResultData]

@@ -1,114 +1,87 @@
 package repository
 
 import (
-	"time"
+	"go.uber.org/dig"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
-	entProductCategory "github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/productcategory"
+	"github.com/sky-as-code/nikki-erp/common/array"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
-	itProductCategory "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/productcategory"
+	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/productcategory"
 )
 
-func NewProductCategoryEntRepository(client *ent.Client) itProductCategory.ProductCategoryRepository {
-	return &ProductCategoryEntRepository{
-		client: client,
-	}
+type ProductCategoryDynamicRepositoryParam struct {
+	dig.In
+
+	Client        orm.DbClient
+	ConfigSvc     config.ConfigService
+	QueryBuilder  orm.QueryBuilder
+	Logger        logging.LoggerService
+	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
 }
 
-type ProductCategoryEntRepository struct {
-	client *ent.Client
-}
-
-func (r *ProductCategoryEntRepository) BeginTransaction(ctx crud.Context) (*ent.Tx, error) {
-	return r.client.Tx(ctx)
-}
-
-func (r *ProductCategoryEntRepository) productCategoryClient(ctx crud.Context) *ent.ProductCategoryClient {
-	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
-	if isOk {
-		return tx.ProductCategory
-	}
-	return r.client.ProductCategory
-}
-
-// ✅ Create ProductCategory
-func (r *ProductCategoryEntRepository) Create(ctx crud.Context, productCategory *domain.ProductCategory) (*domain.ProductCategory, error) {
-	creation := r.productCategoryClient(ctx).Create().
-		SetID(*productCategory.Id).
-		SetOrgID(*productCategory.OrgId).
-		SetName(*productCategory.Name).
-		SetEtag(*productCategory.Etag)
-
-	return db.Mutate(ctx, creation, ent.IsNotFound, itProductCategory.EntToProductCategory)
-}
-
-// ✅ Update ProductCategory
-func (r *ProductCategoryEntRepository) Update(ctx crud.Context, productCategory *domain.ProductCategory, prevEtag model.Etag) (*domain.ProductCategory, error) {
-	update := r.productCategoryClient(ctx).UpdateOneID(*productCategory.Id).
-		Where(entProductCategory.Etag(prevEtag))
-
-	if productCategory.Name != nil {
-		update.SetName(*productCategory.Name)
-	}
-
-	if len(update.Mutation().Fields()) > 0 {
-		update.SetEtag(*productCategory.Etag)
-		update.SetUpdatedAt(time.Now())
-	}
-
-	return db.Mutate(ctx, update, ent.IsNotFound, itProductCategory.EntToProductCategory)
-}
-
-// ✅ Delete ProductCategory by ID
-func (r *ProductCategoryEntRepository) DeleteById(ctx crud.Context, id model.Id) (int, error) {
-	return r.client.ProductCategory.Delete().
-		Where(entProductCategory.ID(id)).
-		Exec(ctx)
-}
-
-// ✅ Find by ID
-func (r *ProductCategoryEntRepository) FindById(ctx crud.Context, query itProductCategory.FindByIdParam) (*domain.ProductCategory, error) {
-	dbQuery := r.productCategoryClient(ctx).Query().
-		Where(entProductCategory.ID(query.Id))
-
-	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itProductCategory.EntToProductCategory)
-}
-
-// ✅ Search (advanced)
-func (r *ProductCategoryEntRepository) Search(ctx crud.Context, param itProductCategory.SearchParam) (*crud.PagedResult[domain.ProductCategory], error) {
-	query := r.client.ProductCategory.Query()
-
-	return db.Search(
-		ctx,
-		param.Predicate,
-		param.Order,
-		crud.PagingOptions{
-			Page: param.Page,
-			Size: param.Size,
+func NewProductCategoryDynamicRepository(param ProductCategoryDynamicRepositoryParam) it.ProductCategoryRepository {
+	dynamicRepo := param.NewBaseRepoFn(
+		dyn.NewBaseRepoParam{
+			Client:       param.Client,
+			ConfigSvc:    param.ConfigSvc,
+			QueryBuilder: param.QueryBuilder,
+			Logger:       param.Logger,
+			Schema:       dmodel.MustGetSchema(domain.ProductCategorySchemaName),
 		},
-		query,
-		itProductCategory.EntToProductCategories,
 	)
+	return &ProductCategoryDynamicRepository{dynamicRepo: dynamicRepo}
 }
 
-func (r *ProductCategoryEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return db.ParseSearchGraphStr[ent.ProductCategory, domain.ProductCategory](criteria, entProductCategory.Label)
+type ProductCategoryDynamicRepository struct {
+	dynamicRepo dyn.BaseDynamicRepository
 }
 
-func BuildProductCategoryDescriptor() *orm.EntityDescriptor {
-	entity := ent.ProductCategory{}
-	builder := orm.DescribeEntity(entProductCategory.Label).
-		Aliases("product_categories", "productCategories").
-		Field(entProductCategory.FieldCreatedAt, entity.CreatedAt).
-		Field(entProductCategory.FieldID, entity.ID).
-		Field(entProductCategory.FieldName, entity.Name).
-		Field(entProductCategory.FieldUpdatedAt, entity.UpdatedAt).
-		Edge(entProductCategory.EdgeProduct, orm.ToEdgePredicate(entProductCategory.HasProductWith))
+func (this *ProductCategoryDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository {
+	return this.dynamicRepo
+}
 
-	return builder.Descriptor()
+func (this *ProductCategoryDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
+	return this.dynamicRepo.BeginTransaction(ctx)
+}
+
+func (this *ProductCategoryDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.ProductCategory) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
+}
+
+func (this *ProductCategoryDynamicRepository) Exists(ctx corectx.Context, keys []domain.ProductCategory) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	dynamicKeys := array.Map(keys, func(key domain.ProductCategory) dmodel.DynamicFields {
+		return key.GetFieldData()
+	})
+	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
+}
+
+func (this *ProductCategoryDynamicRepository) Insert(
+	ctx corectx.Context, productCategory domain.ProductCategory,
+) (*dyn.OpResult[int], error) {
+	return baserepo.Insert(ctx, this.dynamicRepo, productCategory)
+}
+
+func (this *ProductCategoryDynamicRepository) GetOne(
+	ctx corectx.Context, param dyn.RepoGetOneParam,
+) (*dyn.OpResult[domain.ProductCategory], error) {
+	return baserepo.GetOne[domain.ProductCategory](ctx, this.dynamicRepo, param)
+}
+
+func (this *ProductCategoryDynamicRepository) Search(
+	ctx corectx.Context, param dyn.RepoSearchParam,
+) (*dyn.OpResult[dyn.PagedResultData[domain.ProductCategory]], error) {
+	return baserepo.Search[domain.ProductCategory](ctx, this.dynamicRepo, param)
+}
+
+func (this *ProductCategoryDynamicRepository) Update(
+	ctx corectx.Context, productCategory domain.ProductCategory,
+) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.Update(ctx, this.dynamicRepo, productCategory.GetFieldData())
 }

@@ -26,7 +26,7 @@ func initUnitHandler() error {
 			cqrs.NewHandler(handler.CreateUnit),
 			cqrs.NewHandler(handler.DeleteUnit),
 			cqrs.NewHandler(handler.UpdateUnit),
-			cqrs.NewHandler(handler.GetUnitById),
+			cqrs.NewHandler(handler.GetUnit),
 			cqrs.NewHandler(handler.SearchUnits),
 		)
 	})
@@ -42,7 +42,7 @@ func initUnitCategoryHandler() error {
 			cqrs.NewHandler(handler.CreateUnitCategory),
 			cqrs.NewHandler(handler.DeleteUnitCategory),
 			cqrs.NewHandler(handler.UpdateUnitCategory),
-			cqrs.NewHandler(handler.GetUnitCategoryById),
+			cqrs.NewHandler(handler.GetUnitCategory),
 			cqrs.NewHandler(handler.SearchUnitCategories),
 		)
 	})

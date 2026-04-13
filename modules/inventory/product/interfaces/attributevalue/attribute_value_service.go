@@ -1,15 +1,15 @@
 package attributevalue
 
 import (
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 type AttributeValueService interface {
-	CreateAttributeValue(ctx crud.Context, cmd CreateAttributeValueCommand) (*CreateAttributeValueResult, error)
-	UpdateAttributeValue(ctx crud.Context, cmd UpdateAttributeValueCommand) (*UpdateAttributeValueResult, error)
-	DeleteAttributeValue(ctx crud.Context, cmd DeleteAttributeValueCommand) (*DeleteAttributeValueResult, error)
-	GetAttributeValueById(ctx crud.Context, query GetAttributeValueByIdQuery) (*GetAttributeValueByIdResult, error)
-	SearchAttributeValues(ctx crud.Context, query SearchAttributeValuesQuery) (*SearchAttributeValuesResult, error)
-	UnlinkVariantAttributes(ctx crud.Context, variantId model.Id) error
+	CreateAttributeValue(ctx corectx.Context, cmd CreateAttributeValueCommand) (*CreateAttributeValueResult, error)
+	DeleteAttributeValue(ctx corectx.Context, cmd DeleteAttributeValueCommand) (*DeleteAttributeValueResult, error)
+	AttributeValueExists(ctx corectx.Context, query AttributeValueExistsQuery) (*AttributeValueExistsResult, error)
+	GetAttributeValue(ctx corectx.Context, query GetAttributeValueQuery) (*GetAttributeValueResult, error)
+	SearchAttributeValues(ctx corectx.Context, query SearchAttributeValuesQuery) (*SearchAttributeValuesResult, error)
+	UpdateAttributeValue(ctx corectx.Context, cmd UpdateAttributeValueCommand) (*dyn.OpResult[dyn.MutateResultData], error)
 }

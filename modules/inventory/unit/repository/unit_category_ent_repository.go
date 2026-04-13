@@ -1,106 +1,87 @@
-package repository
+﻿package repository
 
 import (
-	"time"
+	"go.uber.org/dig"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
-	entUnitCategory "github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent/unitcategory"
+	"github.com/sky-as-code/nikki-erp/common/array"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	"github.com/sky-as-code/nikki-erp/modules/core/database"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/unit/domain"
-	itUnitCategory "github.com/sky-as-code/nikki-erp/modules/inventory/unit/interfaces/unitcategory"
+	it "github.com/sky-as-code/nikki-erp/modules/inventory/unit/interfaces/unitcategory"
 )
 
-func NewUnitCategoryEntRepository(client *ent.Client) itUnitCategory.UnitCategoryRepository {
-	return &UnitCategoryEntRepository{
-		client: client,
-	}
+type UnitCategoryDynamicRepositoryParam struct {
+	dig.In
+
+	Client        orm.DbClient
+	ConfigSvc     config.ConfigService
+	QueryBuilder  orm.QueryBuilder
+	Logger        logging.LoggerService
+	NewBaseRepoFn dyn.NewBaseDynamicRepositoryFn
 }
 
-type UnitCategoryEntRepository struct {
-	client *ent.Client
-}
-
-func (r *UnitCategoryEntRepository) unitCategoryClient(ctx crud.Context) *ent.UnitCategoryClient {
-	tx, isOk := ctx.GetDbTranx().(*ent.Tx)
-	if isOk {
-		return tx.UnitCategory
-	}
-	return r.client.UnitCategory
-}
-
-// ✅ Create UnitCategory
-func (r *UnitCategoryEntRepository) Create(ctx crud.Context, unitCategory *domain.UnitCategory) (*domain.UnitCategory, error) {
-	creation := r.client.UnitCategory.Create().
-		SetID(*unitCategory.Id).
-		SetOrgID(*unitCategory.OrgId).
-		SetName(*unitCategory.Name).
-		SetEtag(*unitCategory.Etag)
-
-	return db.Mutate(ctx, creation, ent.IsNotFound, itUnitCategory.EntToUnitCategory)
-}
-
-// ✅ Update UnitCategory
-func (r *UnitCategoryEntRepository) Update(ctx crud.Context, unitCategory *domain.UnitCategory, prevEtag model.Etag) (*domain.UnitCategory, error) {
-	update := r.client.UnitCategory.UpdateOneID(*unitCategory.Id).
-		SetName(*unitCategory.Name).
-		Where(entUnitCategory.Etag(prevEtag))
-
-	if len(update.Mutation().Fields()) > 0 {
-		update.SetEtag(*unitCategory.Etag)
-		update.SetUpdatedAt(time.Now())
-	}
-
-	return db.Mutate(ctx, update, ent.IsNotFound, itUnitCategory.EntToUnitCategory)
-}
-
-// ✅ Delete UnitCategory by ID
-func (r *UnitCategoryEntRepository) DeleteById(ctx crud.Context, id model.Id) (int, error) {
-	return r.client.UnitCategory.Delete().
-		Where(entUnitCategory.ID(id)).
-		Exec(ctx)
-}
-
-// ✅ Find by ID
-func (r *UnitCategoryEntRepository) FindById(ctx crud.Context, query itUnitCategory.FindByIdParam) (*domain.UnitCategory, error) {
-	dbQuery := r.unitCategoryClient(ctx).Query().
-		Where(entUnitCategory.ID(query.Id))
-
-	return db.FindOne(ctx, dbQuery, ent.IsNotFound, itUnitCategory.EntToUnitCategory)
-}
-
-// ✅ Search (advanced)
-func (r *UnitCategoryEntRepository) Search(ctx crud.Context, param itUnitCategory.SearchParam) (*crud.PagedResult[domain.UnitCategory], error) {
-	query := r.client.UnitCategory.Query()
-
-	return db.Search(
-		ctx,
-		param.Predicate,
-		param.Order,
-		crud.PagingOptions{
-			Page: param.Page,
-			Size: param.Size,
+func NewUnitCategoryDynamicRepository(param UnitCategoryDynamicRepositoryParam) it.UnitCategoryRepository {
+	dynamicRepo := param.NewBaseRepoFn(
+		dyn.NewBaseRepoParam{
+			Client:       param.Client,
+			ConfigSvc:    param.ConfigSvc,
+			QueryBuilder: param.QueryBuilder,
+			Logger:       param.Logger,
+			Schema:       dmodel.MustGetSchema(domain.UnitCategorySchemaName),
 		},
-		query,
-		itUnitCategory.EntToUnitCategories,
 	)
+	return &UnitCategoryDynamicRepository{dynamicRepo: dynamicRepo}
 }
 
-func (r *UnitCategoryEntRepository) ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors) {
-	return db.ParseSearchGraphStr[ent.UnitCategory, domain.UnitCategory](criteria, entUnitCategory.Label)
+type UnitCategoryDynamicRepository struct {
+	dynamicRepo dyn.BaseDynamicRepository
 }
 
-func BuildUnitCategoryDescriptor() *orm.EntityDescriptor {
-	entity := ent.UnitCategory{}
-	builder := orm.DescribeEntity(entUnitCategory.Label).
-		Aliases("unitcategories", "unit_categories").
-		Field(entUnitCategory.FieldCreatedAt, entity.CreatedAt).
-		Field(entUnitCategory.FieldID, entity.ID).
-		Field(entUnitCategory.FieldName, entity.Name).
-		Field(entUnitCategory.FieldUpdatedAt, entity.UpdatedAt)
+func (this *UnitCategoryDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository {
+	return this.dynamicRepo
+}
 
-	return builder.Descriptor()
+func (this *UnitCategoryDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
+	return this.dynamicRepo.BeginTransaction(ctx)
+}
+
+func (this *UnitCategoryDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.UnitCategory) (*dyn.OpResult[dyn.MutateResultData], error) {
+	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
+}
+
+func (this *UnitCategoryDynamicRepository) Exists(ctx corectx.Context, keys []domain.UnitCategory) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	dynamicKeys := array.Map(keys, func(key domain.UnitCategory) dmodel.DynamicFields {
+		return key.GetFieldData()
+	})
+	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
+}
+
+func (this *UnitCategoryDynamicRepository) Insert(
+	ctx corectx.Context, unitCategory domain.UnitCategory,
+) (*dyn.OpResult[int], error) {
+	return baserepo.Insert(ctx, this.dynamicRepo, unitCategory)
+}
+
+func (this *UnitCategoryDynamicRepository) GetOne(
+	ctx corectx.Context, param dyn.RepoGetOneParam,
+) (*dyn.OpResult[domain.UnitCategory], error) {
+	return baserepo.GetOne[domain.UnitCategory](ctx, this.dynamicRepo, param)
+}
+
+func (this *UnitCategoryDynamicRepository) Search(
+	ctx corectx.Context, param dyn.RepoSearchParam,
+) (*dyn.OpResult[dyn.PagedResultData[domain.UnitCategory]], error) {
+	return baserepo.Search[domain.UnitCategory](ctx, this.dynamicRepo, param)
+}
+
+func (this *UnitCategoryDynamicRepository) Update(ctx corectx.Context, unitCategory domain.UnitCategory) (
+	*dyn.OpResult[dyn.MutateResultData], error,
+) {
+	return baserepo.Update(ctx, this.dynamicRepo, unitCategory.GetFieldData())
 }

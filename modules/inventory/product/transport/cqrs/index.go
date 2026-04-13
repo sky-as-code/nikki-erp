@@ -30,7 +30,7 @@ func initAttributeHandler() error {
 			cqrs.NewHandler(handler.CreateAttribute),
 			cqrs.NewHandler(handler.UpdateAttribute),
 			cqrs.NewHandler(handler.DeleteAttribute),
-			cqrs.NewHandler(handler.GetAttributeById),
+			cqrs.NewHandler(handler.GetAttribute),
 			cqrs.NewHandler(handler.SearchAttributes),
 		)
 	})
@@ -46,7 +46,7 @@ func initAttributeGroupHandler() error {
 			cqrs.NewHandler(handler.CreateAttributeGroup),
 			cqrs.NewHandler(handler.UpdateAttributeGroup),
 			cqrs.NewHandler(handler.DeleteAttributeGroup),
-			cqrs.NewHandler(handler.GetAttributeGroupById),
+			cqrs.NewHandler(handler.GetAttributeGroup),
 			cqrs.NewHandler(handler.SearchAttributeGroups),
 		)
 	})
@@ -62,7 +62,7 @@ func initAttributeValueHandler() error {
 			cqrs.NewHandler(handler.CreateAttributeValue),
 			cqrs.NewHandler(handler.UpdateAttributeValue),
 			cqrs.NewHandler(handler.DeleteAttributeValue),
-			cqrs.NewHandler(handler.GetAttributeValueById),
+			cqrs.NewHandler(handler.GetAttributeValue),
 			cqrs.NewHandler(handler.SearchAttributeValues),
 		)
 	})
@@ -78,7 +78,9 @@ func initProductHandler() error {
 			cqrs.NewHandler(handler.CreateProduct),
 			cqrs.NewHandler(handler.UpdateProduct),
 			cqrs.NewHandler(handler.DeleteProduct),
-			cqrs.NewHandler(handler.GetProductById),
+			cqrs.NewHandler(handler.GetProduct),
+			cqrs.NewHandler(handler.ProductExists),
+			cqrs.NewHandler(handler.SetProductIsArchived),
 			cqrs.NewHandler(handler.SearchProducts),
 		)
 	})
@@ -94,7 +96,7 @@ func initVariantHandler() error {
 			cqrs.NewHandler(handler.CreateVariant),
 			cqrs.NewHandler(handler.UpdateVariant),
 			cqrs.NewHandler(handler.DeleteVariant),
-			cqrs.NewHandler(handler.GetVariantById),
+			cqrs.NewHandler(handler.GetVariant),
 			cqrs.NewHandler(handler.SearchVariants),
 		)
 	})
@@ -110,7 +112,7 @@ func initProductCategoryHandler() error {
 			cqrs.NewHandler(handler.CreateProductCategory),
 			cqrs.NewHandler(handler.UpdateProductCategory),
 			cqrs.NewHandler(handler.DeleteProductCategory),
-			cqrs.NewHandler(handler.GetProductCategoryById),
+			cqrs.NewHandler(handler.GetProductCategory),
 			cqrs.NewHandler(handler.SearchProductCategories),
 		)
 	})
