@@ -1,0 +1,28 @@
+meta {
+  name: Product - Archive
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{api_host}}/v1/{{org_id}}/inventory/products/{{product_id}}/archived
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "is_archived": true
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const { etag } = body;
+  etag && bru.setVar('etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

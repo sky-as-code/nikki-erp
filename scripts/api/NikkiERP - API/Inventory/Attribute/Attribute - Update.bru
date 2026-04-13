@@ -12,14 +12,24 @@ put {
 
 body:json {
   {
-    "codeName": "CrimsonWolf",
+    "codeName": "size",
     "displayName": {
-      "district": "Quan 5",
-      "country" : "Ho Chi Minh",
-      "note": "Gan Truong Hoc Su Pham"
+      "vi": "Độ rộng",
+      "en": "Size"
     },
-    "etag": "1762227957926084300"
+    "dataType": "number",
+    "isRequired": true,
+    "isEnum": true,
+    "enumValue": [19,20,21,22],
+    "enumValueSort": true,
+    "etag": "1771950445033400800"
   }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const { etag } = body;
+  etag && bru.setVar('etag', etag);
 }
 
 settings {

@@ -13,14 +13,17 @@ put {
 body:json {
   {
     "name": {
-      "en": "Kilogram",
-      "vi": "Kilogram"
+      "en": "gram",
+      "vi": "gram"
     },
-    "symbol": "kg",
-    "baseUnit": "01K8HS6H3WR25T7XHGT2XMGQF7",
-    "etag": "1762226207003109400",
-    "multiplier": 1000 
+    "symbol": "g",
+    "etag": "1771949691822507600"
   }
+}
+
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('etag', etag);
 }
 
 settings {

@@ -1,0 +1,20 @@
+meta {
+  name: Unit Category - Delete
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{api_host}}/v1/{{org_id}}/inventory/unit-categories/{{unit_category_id}}
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  unit_category_id: 01KJCP7ZGKB8M31Q3ZA52V8PD6
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
