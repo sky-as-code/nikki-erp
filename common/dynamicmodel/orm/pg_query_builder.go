@@ -1322,10 +1322,12 @@ func pgArrayElementSQL(cat columnCategory, elem reflect.Value) (string, error) {
 		}
 		return "'" + t.UTC().Format("2006-01-02 15:04:05.999999 MST") + "'", nil
 	case columnJSON:
-		if ev.Kind() != reflect.Map {
-			return "", errors.New("pgArrayElementSQL: json element must be a map")
+		raw, jsonErr := json.Marshal(ev.Interface())
+		if jsonErr != nil {
+			return "", errors.Errorf("pgArrayElementSQL: cannot marshal json element: %v", jsonErr)
 		}
-		return "", errors.New("pgArrayElementSQL: jsonb array literals are not supported yet")
+		escaped := strings.ReplaceAll(string(raw), "'", "''")
+		return "'" + escaped + "'::jsonb", nil
 	default:
 		return "", errors.Errorf("pgArrayElementSQL: unsupported column category %v", cat)
 	}

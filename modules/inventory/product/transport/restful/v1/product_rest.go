@@ -4,15 +4,14 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 )
 
 type productRestParams struct {
 	dig.In
 
-	ProductSvc it.ProductService
+	ProductSvc itProduct.ProductService
 }
 
 func NewProductRest(params productRestParams) *ProductRest {
@@ -23,110 +22,64 @@ func NewProductRest(params productRestParams) *ProductRest {
 
 type ProductRest struct {
 	httpserver.RestBase
-	ProductSvc it.ProductService
+	ProductSvc itProduct.ProductService
 }
 
-func (this ProductRest) CreateProduct(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create product"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.ProductSvc.CreateProduct,
-		func(request CreateProductRequest) it.CreateProductCommand {
-			return it.CreateProductCommand(request)
-		},
-		func(result it.CreateProductResult) CreateProductResponse {
-			response := CreateProductResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonCreated,
+func (this ProductRest) Create(echoCtx echo.Context) (err error) {
+	return httpserver.ServeCreate(
+		"create product",
+		echoCtx,
+		&itProduct.CreateProductCommand{},
+		this.ProductSvc.CreateProduct,
 	)
-	return err
 }
 
-func (this ProductRest) UpdateProduct(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update product"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.ProductSvc.UpdateProduct,
-		func(request UpdateProductRequest) it.UpdateProductCommand {
-			return it.UpdateProductCommand(request)
-		},
-		func(result it.UpdateProductResult) UpdateProductResponse {
-			response := UpdateProductResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this ProductRest) Delete(echoCtx echo.Context) (err error) {
+	return httpserver.ServeGeneralMutate(
+		"delete product",
+		echoCtx,
+		this.ProductSvc.DeleteProduct,
 	)
-	return err
 }
 
-func (this ProductRest) DeleteProduct(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete product"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.ProductSvc.DeleteProduct,
-		func(request DeleteProductRequest) it.DeleteProductCommand {
-			return it.DeleteProductCommand(request)
-		},
-		func(result it.DeleteProductResult) DeleteProductResponse {
-			response := DeleteProductResponse{}
-			response.FromNonEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this ProductRest) GetOne(echoCtx echo.Context) (err error) {
+	return httpserver.ServeGetOne(
+		"get product",
+		echoCtx,
+		this.ProductSvc.GetProduct,
 	)
-	return err
 }
 
-func (this ProductRest) GetProductById(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get product by id"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.ProductSvc.GetProductById,
-		func(request GetProductByIdRequest) it.GetProductByIdQuery {
-			return it.GetProductByIdQuery(request)
-		},
-		func(result it.GetProductByIdResult) GetProductByIdResponse {
-			response := GetProductByIdResponse{}
-			response.FromProduct(*result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this ProductRest) Exists(echoCtx echo.Context) (err error) {
+	return httpserver.ServeExists(
+		"product exists",
+		echoCtx,
+		this.ProductSvc.ProductExists,
 	)
-	return err
 }
 
-func (this ProductRest) SearchProducts(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search products"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.ProductSvc.SearchProducts,
-		func(request SearchProductsRequest) it.SearchProductsQuery {
-			return it.SearchProductsQuery(request)
-		},
-		func(result it.SearchProductsResult) SearchProductsResponse {
-			response := SearchProductsResponse{}
-			response.FromResult(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this ProductRest) SetIsArchived(echoCtx echo.Context) (err error) {
+	return httpserver.ServeGeneralMutate(
+		"set product is_archived",
+		echoCtx,
+		this.ProductSvc.SetProductIsArchived,
 	)
-	return err
+}
+
+func (this ProductRest) Search(echoCtx echo.Context) (err error) {
+	return httpserver.ServeSearch(
+		"search products",
+		echoCtx,
+		this.ProductSvc.SearchProducts,
+		true,
+	)
+}
+
+func (this ProductRest) Update(echoCtx echo.Context) (err error) {
+	return httpserver.ServeUpdate(
+		"update product",
+		echoCtx,
+		&itProduct.UpdateProductCommand{},
+		this.ProductSvc.UpdateProduct,
+	)
 }

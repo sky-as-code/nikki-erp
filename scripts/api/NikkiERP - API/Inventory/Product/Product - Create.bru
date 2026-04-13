@@ -13,15 +13,127 @@ post {
 body:json {
   {
     "name": {
-      "en": "orange juice",
-      "vi": "nước Cam"
+      "en-US": "{{product_name_en}}",
+      "vi-VN": "{{product_name_vi}}"
     },
     "description": {
-      "en": "Orange juice can be used as a refreshing drink every day, especially in the morning to replenish energy. Depending on the preparation method, orange juice can be pure fresh orange juice, orange juice with segments, or orange juice mixed with honey, sugar, salt... to suit the taste.",
-      "vi": "Nước cam có thể được dùng làm thức uống giải khát mỗi ngày, đặc biệt vào buổi sáng để bổ sung năng lượng. Tùy theo cách chế biến, nước cam có thể là nước cam tươi nguyên chất, nước cam có tép, hoặc nước cam pha thêm mật ong, đường, muối... để phù hợp khẩu vị."
-    },
-    "unit": "{{unit_id}}"
+      "en-US": "{{product_desc_en}}",
+      "vi-VN": "{{product_desc_vi}}"
+    }
   }
+}
+
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
+  product_name_en: Orange
+  product_name_vi: Cam
+  product_desc_en: Orange juice can be used as a refreshing drink every day, especially in the morning to replenish energy. Depending on the preparation method, orange juice can be pure fresh orange juice, orange juice with segments, or orange juice mixed with honey, sugar, salt to suit the taste.
+  product_desc_vi: Nước cam có thể được dùng làm thức uống giải khát mỗi ngày, đặc biệt vào buổi sáng để bổ sung năng lượng. Tùy theo cách chế biến, nước cam có thể là nước cam tươi nguyên chất, nước cam có tép, hoặc nước cam pha thêm mật ong, đường, muối để phù hợp khẩu vị.
+}
+
+script:pre-request {
+  // Danh sách sản phẩm với cặp ngôn ngữ en-US và vi-VN
+  const products = [
+    {
+      name: { en: "Orange", vi: "Cam" },
+      desc: { 
+        en: "Orange juice can be used as a refreshing drink every day, especially in the morning to replenish energy. Depending on the preparation method, orange juice can be pure fresh orange juice, orange juice with segments, or orange juice mixed with honey, sugar, salt to suit the taste.",
+        vi: "Nước cam có thể được dùng làm thức uống giải khát mỗi ngày, đặc biệt vào buổi sáng để bổ sung năng lượng. Tùy theo cách chế biến, nước cam có thể là nước cam tươi nguyên chất, nước cam có tép, hoặc nước cam pha thêm mật ong, đường, muối để phù hợp khẩu vị."
+      }
+    },
+    {
+      name: { en: "Apple", vi: "Táo" },
+      desc: { 
+        en: "Apple is a nutritious fruit rich in vitamins and fiber. Can be eaten fresh, made into juice, or used in cooking. Apples help improve digestion, support heart health and strengthen the immune system.",
+        vi: "Táo là loại trái cây bổ dưỡng, giàu vitamin và chất xơ. Có thể ăn tươi, làm nước ép hoặc sử dụng trong nấu ăn. Táo giúp cải thiện tiêu hóa, hỗ trợ sức khỏe tim mạch và tăng cường hệ miễn dịch."
+      }
+    },
+    {
+      name: { en: "Banana", vi: "Chuối" },
+      desc: { 
+        en: "Banana is a fruit rich in potassium and natural energy. Helps provide instant energy, supports muscle function and aids digestion. Can be eaten fresh, dried or used in baking.",
+        vi: "Chuối là loại quả giàu kali và năng lượng tự nhiên. Giúp cung cấp năng lượng tức thì, hỗ trợ chức năng cơ bắp và hỗ trợ tiêu hóa. Có thể ăn tươi, sấy khô hoặc sử dụng trong làm bánh."
+      }
+    },
+    {
+      name: { en: "Mango", vi: "Xoài" },
+      desc: { 
+        en: "Mango is a tropical fruit with sweet taste and attractive aroma. Rich in vitamin C, vitamin A and antioxidants. Can be eaten fresh, made into smoothies, or used in desserts and savory dishes.",
+        vi: "Xoài là trái cây nhiệt đới có vị ngọt và hương thơm hấp dẫn. Giàu vitamin C, vitamin A và chất chống oxy hóa. Có thể ăn tươi, làm sinh tố, hoặc sử dụng trong món tráng miệng và món mặn."
+      }
+    },
+    {
+      name: { en: "Watermelon", vi: "Dưa hấu" },
+      desc: { 
+        en: "Watermelon is a juicy fruit with high water content, perfect for hot summer days. Rich in vitamins, minerals and lycopene. Helps hydrate the body, supports heart health and improves skin.",
+        vi: "Dưa hấu là loại quả mọng nước với hàm lượng nước cao, hoàn hảo cho những ngày hè nóng bức. Giàu vitamin, khoáng chất và lycopene. Giúp cung cấp nước cho cơ thể, hỗ trợ sức khỏe tim mạch và cải thiện làn da."
+      }
+    },
+    {
+      name: { en: "Strawberry", vi: "Dâu tây" },
+      desc: { 
+        en: "Strawberry is a sweet berry with attractive red color and distinctive aroma. Rich in vitamin C, manganese and antioxidants. Supports immune system, heart health and helps beautify skin.",
+        vi: "Dâu tây là loại quả mọng ngọt với màu đỏ bắt mắt và hương thơm đặc trưng. Giàu vitamin C, mangan và chất chống oxy hóa. Hỗ trợ hệ miễn dịch, sức khỏe tim mạch và giúp làm đẹp da."
+      }
+    },
+    {
+      name: { en: "Grape", vi: "Nho" },
+      desc: { 
+        en: "Grape is a small berry growing in clusters, available in many colors. Rich in antioxidants, vitamins and minerals. Helps protect heart, improve memory and has anti-aging effects.",
+        vi: "Nho là loại quả mọng nhỏ mọc thành chùm, có nhiều màu sắc khác nhau. Giàu chất chống oxy hóa, vitamin và khoáng chất. Giúp bảo vệ tim, cải thiện trí nhớ và có tác dụng chống lão hóa."
+      }
+    },
+    {
+      name: { en: "Lemon", vi: "Chanh" },
+      desc: { 
+        en: "Lemon is a citrus fruit with sour taste and refreshing aroma. Extremely rich in vitamin C and antioxidants. Used in cooking, making drinks, supports digestion and boosts immune system.",
+        vi: "Chanh là loại quả họ cam có vị chua và hương thơm sảng khoái. Cực kỳ giàu vitamin C và chất chống oxy hóa. Dùng trong nấu ăn, pha chế đồ uống, hỗ trợ tiêu hóa và tăng cường hệ miễn dịch."
+      }
+    },
+    {
+      name: { en: "Avocado", vi: "Bơ" },
+      desc: { 
+        en: "Avocado is a nutritious fruit rich in healthy fats, fiber and vitamins. Supports heart health, helps absorb nutrients and provides long-lasting energy. Can be used in salads, smoothies or eaten directly.",
+        vi: "Bơ là loại trái cây bổ dưỡng giàu chất béo lành mạnh, chất xơ và vitamin. Hỗ trợ sức khỏe tim mạch, giúp hấp thụ chất dinh dưỡng và cung cấp năng lượng bền bỉ. Có thể dùng trong salad, sinh tố hoặc ăn trực tiếp."
+      }
+    },
+    {
+      name: { en: "Coconut", vi: "Dừa" },
+      desc: { 
+        en: "Coconut is a versatile tropical fruit with sweet water and nutritious flesh. Rich in minerals, healthy fats and fiber. Coconut water helps hydrate, coconut meat provides energy and nutrients for the body.",
+        vi: "Dừa là loại trái cây nhiệt đới đa năng với nước ngọt và cơm bổ dưỡng. Giàu khoáng chất, chất béo lành mạnh và chất xơ. Nước dừa giúp cung cấp nước, cơm dừa cung cấp năng lượng và chất dinh dưỡng cho cơ thể."
+      }
+    },
+    {
+      name: { en: "Pineapple", vi: "Dứa (Thơm)" },
+      desc: { 
+        en: "Pineapple is a tropical fruit with sweet and sour taste and distinctive aroma. Rich in vitamin C, manganese and bromelain enzyme. Supports digestion, reduces inflammation and strengthens immune system.",
+        vi: "Dứa là trái cây nhiệt đới có vị ngọt chua và hương thơm đặc trưng. Giàu vitamin C, mangan và enzyme bromelain. Hỗ trợ tiêu hóa, giảm viêm nhiễm và tăng cường hệ miễn dịch."
+      }
+    },
+    {
+      name: { en: "Dragon Fruit", vi: "Thanh long" },
+      desc: { 
+        en: "Dragon fruit is an exotic fruit with distinctive appearance and mild sweet taste. Rich in fiber, vitamins and antioxidants. Supports digestive health, strengthens immune system and beautifies skin.",
+        vi: "Thanh long là loại trái cây kỳ lạ với hình dáng đặc biệt và vị ngọt nhẹ. Giàu chất xơ, vitamin và chất chống oxy hóa. Hỗ trợ sức khỏe tiêu hóa, tăng cường hệ miễn dịch và làm đẹp da."
+      }
+    }
+  ];
+  
+  // Random chọn một sản phẩm
+  const randomProduct = products[Math.floor(Math.random() * products.length)];
+  
+  // Set variables với giá trị mặc định
+  bru.setVar('product_name_en', randomProduct.name.en || "Orange");
+  bru.setVar('product_name_vi', randomProduct.name.vi || "Cam");
+  bru.setVar('product_desc_en', randomProduct.desc.en || "Orange juice can be used as a refreshing drink every day, especially in the morning to replenish energy. Depending on the preparation method, orange juice can be pure fresh orange juice, orange juice with segments, or orange juice mixed with honey, sugar, salt to suit the taste.");
+  bru.setVar('product_desc_vi', randomProduct.desc.vi || "Nước cam có thể được dùng làm thức uống giải khát mỗi ngày, đặc biệt vào buổi sáng để bổ sung năng lượng. Tùy theo cách chế biến, nước cam có thể là nước cam tươi nguyên chất, nước cam có tép, hoặc nước cam pha thêm mật ong, đường, muối để phù hợp khẩu vị.");
+}
+
+script:post-response {
+  const { id, etag } = res.getBody();
+  id && bru.setVar('product_id', id);
+  etag && bru.setVar('etag', etag);
 }
 
 settings {

@@ -12,14 +12,41 @@ post {
 
 body:json {
   {
-    "codeName": "size_option",
-    "displayName": {
-      "en_US": "Size",
-      "vi_VN": "Kích cỡ"
+    "code_name": "color",
+    "display_name": {
+      "vi-VN": "Màu sắc",
+      "en-US": "Color"
     },
-    "dataType": "text",
-    "IsRequired" : true
+    "data_type": "text",
+    "is_required": true,
+    "is_enum": true,
+    "enum_value": [
+      {
+        "en-US": "Red",
+        "vi-VN": "Đỏ"
+      },
+      {
+        "en-US": "Yellow",
+        "vi-VN": "Vàng"
+      },
+      {
+        "en-US": "Blue",
+        "vi-VN": "Xanh"
+      }
+    ],
+    "enum_value_sort": true
   }
+}
+
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
+}
+
+script:post-response {
+  const body = res.getBody();
+  const { id, etag } = body;
+  id && bru.setVar('attribute_id', id);
+  etag && bru.setVar('etag', etag);
 }
 
 settings {

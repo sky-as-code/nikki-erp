@@ -3,19 +3,15 @@ package inventory
 import (
 	"errors"
 
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
-	db "github.com/sky-as-code/nikki-erp/modules/core/database"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/attribute"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/attributegroup"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/infra/ent"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product"
+	productDomain "github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/unit"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/variant"
+	unitDomain "github.com/sky-as-code/nikki-erp/modules/inventory/unit/domain"
 )
 
-// ModuleSingleton is the exported symbol that will be looked up by the plugin loader
 var ModuleSingleton modules.InCodeModule = &InventoryModule{}
 
 type InventoryModule struct {
@@ -33,7 +29,7 @@ func (*InventoryModule) Name() string {
 
 // Deps implements NikkiModule.
 func (*InventoryModule) Deps() []string {
-	return nil
+	return []string{}
 }
 
 // Version implements NikkiModule.
@@ -44,32 +40,27 @@ func (*InventoryModule) Version() semver.SemVer {
 // Init implements NikkiModule.
 func (*InventoryModule) Init() error {
 	err := errors.Join(
-		deps.Register(newInventoryClient),
-		deps.Invoke(unit.InitSubModule),
-		deps.Invoke(variant.InitSubModule),
-		deps.Invoke(product.InitSubModule),
-		deps.Invoke(attribute.InitSubModule),
-		deps.Invoke(attributegroup.InitSubModule),
-		deps.Invoke(attribute.InitSubModule),
-		// deps.Invoke(attributevalue.InitSubModule),
-		// deps.Invoke(unit.InitSubModule),
-		// deps.Invoke(unitcategory.InitSubModule),
+		unit.Init(),
+		product.Init(),
 	)
 
 	return err
 }
 
-func newInventoryClient(clientOpts *db.EntClientOptions) *ent.Client {
-	var client *ent.Client
-	if clientOpts.DebugEnabled {
-		client = ent.NewClient(ent.Driver(clientOpts.Driver), ent.Debug())
-	}
-	client = ent.NewClient(ent.Driver(clientOpts.Driver))
-
-	err := client.DB().Ping()
-	if err != nil {
-		panic(err)
-	}
-
-	return client
+// RegisterModels implements DynamicModule.
+func (*InventoryModule) RegisterModels() error {
+	return errors.Join(
+		// Product schemas
+		dmodel.RegisterSchemaB(productDomain.ProductCategoryRelSchemaBuilder()),
+		dmodel.RegisterSchemaB(productDomain.ProductCategorySchemaBuilder()),
+		dmodel.RegisterSchemaB(productDomain.ProductSchemaBuilder()),
+		dmodel.RegisterSchemaB(productDomain.AttributeGroupSchemaBuilder()),
+		dmodel.RegisterSchemaB(productDomain.AttributeSchemaBuilder()),
+		dmodel.RegisterSchemaB(productDomain.AttributeValueSchemaBuilder()),
+		dmodel.RegisterSchemaB(productDomain.VariantSchemaBuilder()),
+		dmodel.RegisterSchemaB(productDomain.VariantAttrValRelSchemaBuilder()),
+		// Unit schemas
+		dmodel.RegisterSchemaB(unitDomain.UnitCategorySchemaBuilder()),
+		dmodel.RegisterSchemaB(unitDomain.UnitSchemaBuilder()),
+	)
 }

@@ -1,6 +1,8 @@
 package restful
 
 import (
+	stdErr "errors"
+
 	"github.com/labstack/echo/v4"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
@@ -8,19 +10,31 @@ import (
 )
 
 func InitRestfulHandlers() error {
-	deps.Register(
+	err := deps.Register(
 		v1.NewUnitRest,
+		v1.NewUnitCategoryRest,
 	)
-	return deps.Invoke(func(route *echo.Group, unitRest *v1.UnitRest) {
-		v1 := route.Group("/v1/:orgId/inventory")
-		initV1(v1, unitRest)
-	})
+	return stdErr.Join(err, initUnitV1())
 }
 
-func initV1(route *echo.Group, unitRest *v1.UnitRest) {
-	route.POST("/units", unitRest.CreateUnit)
-	route.DELETE("/units/:id", unitRest.DeleteUnit)
-	route.GET("/units/:id", unitRest.GetUnitById)
-	route.GET("/units", unitRest.SearchUnits)
-	route.PUT("/units/:id", unitRest.UpdateUnit)
+func initUnitV1() error {
+	return deps.Invoke(func(
+		route *echo.Group,
+		unitRest *v1.UnitRest,
+		unitCategoryRest *v1.UnitCategoryRest,
+	) {
+		routeV1 := route.Group("/v1/:org_id/inventory")
+
+		routeV1.DELETE("/units/:id", unitRest.Delete)
+		routeV1.GET("/units/:id", unitRest.GetOne)
+		routeV1.POST("/units/:id/exists", unitRest.Exists)
+		routeV1.POST("/units/:id", unitRest.Create)
+		routeV1.PUT("/units/:id", unitRest.Update)
+
+		routeV1.DELETE("/units-categories/:id", unitCategoryRest.Delete)
+		routeV1.GET("/units-categories/:id", unitCategoryRest.GetOne)
+		routeV1.POST("/units-categories/:id/exists", unitCategoryRest.Exists)
+		routeV1.POST("/units-categories/:id", unitCategoryRest.Create)
+		routeV1.PUT("/units-categories/:id", unitCategoryRest.Update)
+	})
 }

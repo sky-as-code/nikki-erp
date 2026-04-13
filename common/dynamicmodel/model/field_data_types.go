@@ -187,6 +187,7 @@ func FieldDataTypeLangJson(minLength int, maxLength int, stringOpts ...FieldData
 	dtOpts := processStringOpts(minLength, maxLength, stringOpts...)
 	dtOpts[FieldDataTypeOptLangJsonWhitelist] = []model.LanguageCode{
 		model.DefaultLanguageCode,
+		model.LanguageCodeViVn,
 	}
 	return fieldDataTypeLangJson{fieldDataTypeBase{name: FieldDataTypeNameLangJson, options: dtOpts}}
 }
@@ -1123,7 +1124,8 @@ type fieldDataTypeLangJson struct {
 }
 
 func (this fieldDataTypeLangJson) ArrayType() FieldDataType {
-	panic(errors.New("this field data type does not support array type"))
+	this.isArray = true
+	return this
 }
 
 func (this fieldDataTypeLangJson) DefaultValue() value {
@@ -1195,6 +1197,9 @@ func toLangJson(value any) (model.LangJson, *ft.ClientErrorItem) {
 }
 
 func (this fieldDataTypeLangJson) TryConvert(val any, _ FieldDataTypeOptions) (value, error) {
+	if this.isArray {
+		return tryConvertLangJsonArrayValue(val)
+	}
 	switch v := val.(type) {
 	case model.LangJson:
 		return Value(v), nil
@@ -1911,6 +1916,39 @@ func scanPostgresDecimalArrayBytes(raw []byte) (value, error) {
 			return Value(nil), convErr
 		}
 		out[i] = item
+	}
+	return Value(out), nil
+}
+
+func tryConvertLangJsonArrayValue(val any) (value, error) {
+	switch typed := val.(type) {
+	case []byte:
+		return scanPostgresLangJsonArrayBytes(typed)
+	case []any:
+		return Value(typed), nil
+	default:
+		return Value(nil), errors.Errorf(
+			"tryConvertLangJsonArrayValue: cannot convert %T to []LangJson", val,
+		)
+	}
+}
+
+func scanPostgresLangJsonArrayBytes(raw []byte) (value, error) {
+	var arr pq.StringArray
+	if err := arr.Scan(raw); err != nil {
+		return Value(nil), err
+	}
+	out := make([]any, len(arr))
+	for i, s := range arr {
+		v, err := tryConvertLangJsonBytes([]byte(s))
+		if err != nil {
+			return Value(nil), err
+		}
+		if v.Get() == nil {
+			out[i] = model.LangJson{}
+		} else {
+			out[i] = (*v.Get()).(model.LangJson)
+		}
 	}
 	return Value(out), nil
 }
