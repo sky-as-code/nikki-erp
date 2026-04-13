@@ -130,12 +130,10 @@ func (this *BaseDynamicRepositoryImpl) CheckUniqueCollisions(ctx corectx.Context
 func (this *BaseDynamicRepositoryImpl) DeleteOne(
 	ctx corectx.Context, keys dmodel.DynamicFields,
 ) (*dyn.OpResult[int], error) {
+	keys = injectTenantFilter(ctx, this.schema, keys)
 	if err := this.validateKeyMap(keys); err != nil {
 		return nil, err
 	}
-	// if err := this.ensureTenantKeyIn(keys); err != nil {
-	// 	return nil, err
-	// }
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlDeleteEqual(this.schema, keys)
 	if err != nil {
 		return nil, err
@@ -171,6 +169,7 @@ func (this *BaseDynamicRepositoryImpl) Exists(
 func (this *BaseDynamicRepositoryImpl) existsOnSchema(
 	ctx corectx.Context, schema *dmodel.ModelSchema, keys []dmodel.DynamicFields,
 ) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	keys = injectTenantFilters(ctx, schema, keys)
 	sqlRes, qbClientErrs, err := this.queryBuilder.SqlExistsMany(schema, keys)
 	if err != nil {
 		return nil, err
@@ -263,13 +262,11 @@ func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.Rep
 	if this.hasNestedOrEdgeColumns(param.Columns) {
 		return this.getOneWithNestedColumns(ctx, param)
 	}
-	// if err := this.ensureTenantKeyIn(param.Filter); err != nil {
-	// 	return nil, err
-	// }
 	graph, err := this.buildFindOneGraph(param.Filter)
 	if err != nil {
 		return nil, err
 	}
+	graph = this.injectTenantIntoGraph(ctx, graph)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(
 		this.schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
 			Columns: orm.ToSelectColumns(this.ensurePrimaryKeyColumns(param.Columns)),
@@ -300,6 +297,7 @@ func (this *BaseDynamicRepositoryImpl) getOneWithNestedColumns(
 	if err != nil {
 		return nil, err
 	}
+	graph = this.injectTenantIntoGraph(ctx, graph)
 	plan, cErrs := this.buildNestedSelectPlan(param.Columns)
 	if cErrs.Count() > 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: cErrs}, nil
@@ -680,8 +678,8 @@ func (this *BaseDynamicRepositoryImpl) assocToJuncRow(
 		))
 		return nil, errs
 	}
-	appendMissingKeyErrors(&errs, prefix+".srcKeys", assoc.SrcKeys, this.schema.KeyColumns())
-	appendMissingKeyErrors(&errs, prefix+".destKeys", assoc.DestKeys, link.DestSchema.KeyColumns())
+	appendMissingKeyErrors(&errs, prefix+".srcKeys", assoc.SrcKeys, this.schema.PrimaryKeys())
+	appendMissingKeyErrors(&errs, prefix+".destKeys", assoc.DestKeys, link.DestSchema.PrimaryKeys())
 	if errs.Count() > 0 {
 		return nil, errs
 	}
@@ -699,10 +697,6 @@ func (this *BaseDynamicRepositoryImpl) materializeM2mJunctionRow(
 	for _, k := range this.schema.PrimaryKeys() {
 		row[dmodel.PrefixedThroughColumn(link.SrcFieldPrefix, k)] = assoc.SrcKeys[k]
 	}
-	if tk := this.schema.TenantKey(); tk != "" {
-		col := tk
-		row[col] = assoc.SrcKeys[tk]
-	}
 	for _, k := range link.DestSchema.PrimaryKeys() {
 		row[dmodel.PrefixedThroughColumn(link.DestFieldPrefix, k)] = assoc.DestKeys[k]
 	}
@@ -718,7 +712,7 @@ func appendMissingKeyErrors(errs *ft.ClientErrors, fieldPrefix string, keys dmod
 }
 
 // Search fetches records matching the SearchGraph criteria.
-// When the schema is tenant-scoped, filter must be provided and contain the tenant key.
+// When the schema is tenant-scoped, the tenant key is automatically injected from ctx domain constraints.
 // Data uses PagedResult: Total is from COUNT when Size > 0, otherwise len(Items).
 func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.RepoSearchParam) (
 	*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error,
@@ -726,11 +720,7 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 	if this.hasNestedOrEdgeColumns(param.Columns) {
 		return this.searchWithNestedColumns(ctx, param)
 	}
-	// merged, err := this.mergeFilterIntoGraph(param.Graph, param.Filter)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	merged := param.Graph
+	merged := this.injectTenantIntoGraph(ctx, param.Graph)
 	page := param.Page
 	size := param.Size
 	var total int
@@ -779,7 +769,7 @@ func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 	if cErrs.Count() > 0 {
 		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
 	}
-	merged := param.Graph
+	merged := this.injectTenantIntoGraph(ctx, param.Graph)
 	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language)
 	if err != nil {
 		return nil, err
@@ -1085,12 +1075,6 @@ func (this *BaseDynamicRepositoryImpl) buildM2mThroughFilter(
 		}
 		filter[dmodel.PrefixedThroughColumn(rel.M2mSrcFieldPrefix, srcPk)] = val
 	}
-	srcTk := this.schema.TenantKey()
-	if srcTk != "" {
-		if val, ok := srcRow[srcTk]; ok && val != nil {
-			filter[srcTk] = val
-		}
-	}
 	return filter, true
 }
 
@@ -1137,6 +1121,7 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByFilter(
 		nodes = append(nodes, *dmodel.NewSearchNode().NewCondition(field, dmodel.Equals, value))
 	}
 	graph.And(nodes...)
+	graph = injectTenantIntoGraphForSchema(ctx, schema, graph)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
 		Columns: orm.ToSelectColumns(columns),
 		Size:    size,
@@ -1166,6 +1151,7 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByAnyFilter(
 		ors = append(ors, *node)
 	}
 	graph.Or(ors...)
+	graph = injectTenantIntoGraphForSchema(ctx, schema, graph)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
 		Columns: orm.ToSelectColumns(columns),
 	})
@@ -1278,16 +1264,13 @@ func (this *BaseDynamicRepositoryImpl) m2mThroughFilterForLink(
 	return filter, true
 }
 
-// Update updates a record. The data map must contain primary keys and tenant key.
+// Update updates a record. The data map must contain primary keys; tenant key is injected from ctx when absent.
 // If the schema defines "updated_at", sets current UTC timestamp.
 func (this *BaseDynamicRepositoryImpl) Update(ctx corectx.Context, data dmodel.DynamicFields) (
 	*dyn.OpResult[dmodel.DynamicFields], error,
 ) {
-	// TODO: Extract later
-	// if err := this.ensureTenantKeyIn(data); err != nil {
-	// 	return nil, err
-	// }
 	filters := this.extractKeyMap(data)
+	filters = injectTenantFilter(ctx, this.schema, filters)
 	this.trySetUpdatedAt(data)
 	prevEtag := this.trySetEtag(data)
 	if len(prevEtag) > 0 {
@@ -1733,4 +1716,78 @@ func convertUnknownDbValue(value any) any {
 	default:
 		return value
 	}
+}
+
+// injectTenantFilter returns a new DynamicFields with the tenant key added from ctx domain
+// constraints when the schema is tenant-scoped and the filter does not already contain it.
+// Returns filter unchanged when the schema has no tenant key or the value is unavailable.
+func injectTenantFilter(ctx corectx.Context, schema *dmodel.ModelSchema, filter dmodel.DynamicFields) dmodel.DynamicFields {
+	tk := schema.TenantKey()
+	if tk == "" {
+		return filter
+	}
+	if _, ok := filter[tk]; ok {
+		return filter
+	}
+	constraints := ctx.GetDomainConstraints()
+	if constraints == nil {
+		return filter
+	}
+	val, ok := constraints[tk]
+	if !ok || val == nil {
+		return filter
+	}
+	merged := make(dmodel.DynamicFields, len(filter)+1)
+	for k, v := range filter {
+		merged[k] = v
+	}
+	merged[tk] = val
+	return merged
+}
+
+// injectTenantFilters applies injectTenantFilter to each element of a slice,
+// returning a new slice. The input slice is never mutated.
+func injectTenantFilters(
+	ctx corectx.Context, schema *dmodel.ModelSchema, filters []dmodel.DynamicFields,
+) []dmodel.DynamicFields {
+	if schema.TenantKey() == "" {
+		return filters
+	}
+	result := make([]dmodel.DynamicFields, len(filters))
+	for i, f := range filters {
+		result[i] = injectTenantFilter(ctx, schema, f)
+	}
+	return result
+}
+
+func (this *BaseDynamicRepositoryImpl) injectTenantIntoGraph(
+	ctx corectx.Context, graph *dmodel.SearchGraph,
+) *dmodel.SearchGraph {
+	return injectTenantIntoGraphForSchema(ctx, this.schema, graph)
+}
+
+func injectTenantIntoGraphForSchema(
+	ctx corectx.Context, schema *dmodel.ModelSchema, graph *dmodel.SearchGraph,
+) *dmodel.SearchGraph {
+	tk := schema.TenantKey()
+	if tk == "" {
+		return graph
+	}
+	constraints := ctx.GetDomainConstraints()
+	if constraints == nil {
+		return graph
+	}
+	val, ok := constraints[tk]
+	if !ok || val == nil {
+		return graph
+	}
+	tenantNode := *dmodel.NewSearchNode().NewCondition(tk, dmodel.Equals, val)
+	out := dmodel.NewSearchGraph()
+	if graph == nil {
+		out.And(tenantNode)
+		return out
+	}
+	out.And(tenantNode, *graph.ToSearchNode())
+	out.Order(graph.GetOrder())
+	return out
 }
