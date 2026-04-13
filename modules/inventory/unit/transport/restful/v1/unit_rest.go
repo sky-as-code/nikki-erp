@@ -34,20 +34,19 @@ func (this UnitRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitRest) Update(echoCtx echo.Context) (err error) {
-	return httpserver.ServeUpdate(
-		"update unit",
-		echoCtx,
-		&itUnit.UpdateUnitCommand{},
-		this.UnitSvc.UpdateUnit,
-	)
-}
-
 func (this UnitRest) Delete(echoCtx echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete unit",
 		echoCtx,
 		this.UnitSvc.DeleteUnit,
+	)
+}
+
+func (this UnitRest) Exists(echoCtx echo.Context) (err error) {
+	return httpserver.ServeExists(
+		"unit exists",
+		echoCtx,
+		this.UnitSvc.UnitExists,
 	)
 }
 
@@ -68,10 +67,11 @@ func (this UnitRest) Search(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitRest) Exists(echoCtx echo.Context) (err error) {
-	return httpserver.ServeExists(
-		"unit exists",
+func (this UnitRest) Update(echoCtx echo.Context) (err error) {
+	return httpserver.ServeUpdate(
+		"update unit",
 		echoCtx,
-		this.UnitSvc.UnitExists,
+		&itUnit.UpdateUnitCommand{},
+		this.UnitSvc.UpdateUnit,
 	)
 }

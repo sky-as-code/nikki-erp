@@ -34,15 +34,6 @@ func (this ProductRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ProductRest) Update(echoCtx echo.Context) (err error) {
-	return httpserver.ServeUpdate(
-		"update product",
-		echoCtx,
-		&itProduct.UpdateProductCommand{},
-		this.ProductSvc.UpdateProduct,
-	)
-}
-
 func (this ProductRest) Delete(echoCtx echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete product",
@@ -81,5 +72,14 @@ func (this ProductRest) Search(echoCtx echo.Context) (err error) {
 		echoCtx,
 		this.ProductSvc.SearchProducts,
 		true,
+	)
+}
+
+func (this ProductRest) Update(echoCtx echo.Context) (err error) {
+	return httpserver.ServeUpdate(
+		"update product",
+		echoCtx,
+		&itProduct.UpdateProductCommand{},
+		this.ProductSvc.UpdateProduct,
 	)
 }

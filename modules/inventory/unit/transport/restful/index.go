@@ -6,9 +6,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/constants"
 	v1 "github.com/sky-as-code/nikki-erp/modules/inventory/unit/transport/restful/v1"
 )
 
@@ -23,14 +20,21 @@ func InitRestfulHandlers() error {
 func initUnitV1() error {
 	return deps.Invoke(func(
 		route *echo.Group,
-	) error {
+		unitRest *v1.UnitRest,
+		unitCategoryRest *v1.UnitCategoryRest,
+	) {
 		routeV1 := route.Group("/v1/:org_id/inventory")
-		routeV1.Use(middlewares.RequestContextMiddleware2(constants.InventoryModuleName))
 
-		err := stdErr.Join(
-			httpserver.RegisterBasicCrudRest[*v1.UnitRest]("/units", routeV1),
-			httpserver.RegisterBasicCrudRest[*v1.UnitCategoryRest]("/unit-categories", routeV1),
-		)
-		return err
+		routeV1.DELETE("/units/:id", unitRest.Delete)
+		routeV1.GET("/units/:id", unitRest.GetOne)
+		routeV1.POST("/units/:id/exists", unitRest.Exists)
+		routeV1.POST("/units/:id", unitRest.Create)
+		routeV1.PUT("/units/:id", unitRest.Update)
+
+		routeV1.DELETE("/units-categories/:id", unitCategoryRest.Delete)
+		routeV1.GET("/units-categories/:id", unitCategoryRest.GetOne)
+		routeV1.POST("/units-categories/:id/exists", unitCategoryRest.Exists)
+		routeV1.POST("/units-categories/:id", unitCategoryRest.Create)
+		routeV1.PUT("/units-categories/:id", unitCategoryRest.Update)
 	})
 }

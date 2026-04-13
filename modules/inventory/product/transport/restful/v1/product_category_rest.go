@@ -34,20 +34,19 @@ func (this ProductCategoryRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ProductCategoryRest) Update(echoCtx echo.Context) (err error) {
-	return httpserver.ServeUpdate(
-		"update product category",
-		echoCtx,
-		&itProductCategory.UpdateProductCategoryCommand{},
-		this.ProductCategorySvc.UpdateProductCategory,
-	)
-}
-
 func (this ProductCategoryRest) Delete(echoCtx echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete product category",
 		echoCtx,
 		this.ProductCategorySvc.DeleteProductCategory,
+	)
+}
+
+func (this ProductCategoryRest) Exists(echoCtx echo.Context) (err error) {
+	return httpserver.ServeExists(
+		"product category exists",
+		echoCtx,
+		this.ProductCategorySvc.ProductCategoryExists,
 	)
 }
 
@@ -68,10 +67,11 @@ func (this ProductCategoryRest) Search(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ProductCategoryRest) Exists(echoCtx echo.Context) (err error) {
-	return httpserver.ServeExists(
-		"product category exists",
+func (this ProductCategoryRest) Update(echoCtx echo.Context) (err error) {
+	return httpserver.ServeUpdate(
+		"update product category",
 		echoCtx,
-		this.ProductCategorySvc.ProductCategoryExists,
+		&itProductCategory.UpdateProductCategoryCommand{},
+		this.ProductCategorySvc.UpdateProductCategory,
 	)
 }
