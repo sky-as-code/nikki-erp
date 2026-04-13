@@ -19,6 +19,17 @@ const (
 )
 
 const (
+	UserResourceCode = "identity_user"
+	UserAuthScope    = "org"
+
+	UserActionCreate      = "create"
+	UserActionDelete      = "delete"
+	UserActionUpdate      = "update"
+	UserActionView        = "view"
+	UserActionSetArchived = "set_archived"
+)
+
+const (
 	UserSchemaName = "identity.user"
 
 	UserFieldId          = basemodel.FieldId
@@ -223,16 +234,9 @@ func (this *User) SetEmail(v *string) {
 	this.GetFieldData().SetString(UserFieldEmail, v)
 }
 
-func (this User) MustIsOwner() bool {
+func (this User) IsOwner() bool {
 	val := this.GetFieldData().GetBool(UserFieldIsOwner)
-	if val == nil {
-		panic("is_owner is nil")
-	}
-	return *val
-}
-
-func (this User) IsOwner() *bool {
-	return this.GetFieldData().GetBool(UserFieldIsOwner)
+	return val != nil && *val
 }
 
 func (this *User) SetIsOwner(v *bool) {

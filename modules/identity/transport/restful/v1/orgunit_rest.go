@@ -25,7 +25,7 @@ type OrgUnitRest struct {
 	OrgUnitSvc it.OrgUnitService
 }
 
-func (this OrgUnitRest) Create(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) CreateOrgUnit(echoCtx echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create org unit",
 		echoCtx,
@@ -34,7 +34,7 @@ func (this OrgUnitRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) Delete(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) DeleteOrgUnit(echoCtx echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete org unit",
 		echoCtx,
@@ -42,7 +42,7 @@ func (this OrgUnitRest) Delete(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) GetOne(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) GetOrgUnit(echoCtx echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get org unit",
 		echoCtx,
@@ -50,7 +50,7 @@ func (this OrgUnitRest) GetOne(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) Exists(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) OrgUnitExists(echoCtx echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"org unit exists",
 		echoCtx,
@@ -66,7 +66,7 @@ func (this OrgUnitRest) ManageOrgUnitUsers(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) Search(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) SearchOrgUnits(echoCtx echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search org units",
 		echoCtx,
@@ -75,7 +75,7 @@ func (this OrgUnitRest) Search(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) Update(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) UpdateOrgUnit(echoCtx echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update org unit",
 		echoCtx,

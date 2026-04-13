@@ -19,5 +19,5 @@ type PermissionHandler struct {
 }
 
 func (this *PermissionHandler) IsAuthorized(ctx context.Context, packet *cqrs.RequestPacket[it.IsAuthorizedQuery]) (*cqrs.Reply[it.IsAuthorizedResult], error) {
-	return cqrs.HandlePacket2(ctx, string(c.IdentityModuleName), packet, this.PermissionSvc.IsAuthorized)
+	return cqrs.ServePacket(ctx, string(c.IdentityModuleName), packet, this.PermissionSvc.IsAuthorized)
 }

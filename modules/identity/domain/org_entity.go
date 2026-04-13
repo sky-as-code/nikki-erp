@@ -9,6 +9,18 @@ import (
 )
 
 const (
+	OrgResourceCode = "identity_org"
+	OrgAuthScope    = "domain"
+
+	OrgActionCreate      = "create"
+	OrgActionDelete      = "delete"
+	OrgActionUpdate      = "update"
+	OrgActionView        = "view"
+	OrgActionManageUsers = "manage_users"
+	OrgActionSetArchived = "set_archived"
+)
+
+const (
 	OrganizationSchemaName = "identity.organization"
 
 	OrgFieldId          = basemodel.FieldId

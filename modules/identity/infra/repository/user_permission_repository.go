@@ -131,5 +131,7 @@ func (this *UserPermissionRepositoryImpl) MatchPermisions(ctx corectx.Context, p
 		})
 		return result, nil
 	}
-	return nil, nil
+	return &dyn.OpResult[[]domain.UserPermission]{
+		HasData: false,
+	}, nil
 }

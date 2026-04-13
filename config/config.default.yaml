@@ -49,7 +49,7 @@ CORE:
     # Allowed headers for Cross-Origin Resource Sharing
     CORS_HEADERS: "Accept,Authorization,Content-Type,Origin"
     # Allowed methods for Cross-Origin Resource Sharing
-    CORS_METHODS: "OPTIONS,HEAD,GET,POST,PUT,PATCH,DELETE"
+    CORS_METHODS: "OPTIONS,HEAD,GET,POST,PUT,DELETE"
   TOKEN:
     # Secret key for JWT token signing and verification
     # IMPORTANT: Override this in local.env or production environment

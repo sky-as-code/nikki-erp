@@ -22,6 +22,17 @@ const (
 )
 
 const (
+	GroupResourceCode = "identity_group"
+	GroupAuthScope    = "org"
+
+	GroupActionCreate      = "create"
+	GroupActionDelete      = "delete"
+	GroupActionUpdate      = "update"
+	GroupActionView        = "view"
+	GroupActionManageUsers = "manage_users"
+)
+
+const (
 	GrpUsrRelSchemaName = "identity.group_user_rel"
 
 	GrpUsrRelFieldId      = basemodel.FieldId

@@ -1,0 +1,37 @@
+meta {
+  name: User Search - CORS - Rejected
+  type: http
+  seq: 15
+}
+
+options {
+  url: {{api_host}}/v1/identity/groups
+  body: none
+  auth: inherit
+}
+
+headers {
+  Access-Control-Request-Method: PATCH
+  Access-Control-Request-Headers: X-Custom-Header
+}
+
+script:post-response {
+  const unExpectedHeaders = [
+    'access-control-allow-origin',
+    'access-control-allow-methods',
+    'access-control-allow-headers',
+  ];
+  
+  for (header of unExpectedHeaders) {  
+    test(`Response without CORS header '${header}'`, () => {
+      const actual = res.getHeaders();
+      expect(actual[header]).to.be.undefined;
+    });
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

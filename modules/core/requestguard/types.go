@@ -20,8 +20,8 @@ type RequestGuardService interface {
 }
 
 type VerifyRequestResult struct {
-	IsOk        bool
-	JwtClaims   jwt.Claims
-	HttpStatus  int
+	IsOk      bool
+	JwtClaims jwt.Claims
+	// HttpStatus  int
 	ClientError *ft.ClientErrorItem
 }

@@ -25,7 +25,7 @@ type OrganizationRest struct {
 	OrgSvc it.OrganizationService
 }
 
-func (this OrganizationRest) Create(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) CreateOrg(echoCtx echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create organization",
 		echoCtx,
@@ -34,7 +34,7 @@ func (this OrganizationRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrganizationRest) Delete(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) DeleteOrg(echoCtx echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete organization",
 		echoCtx,
@@ -42,7 +42,7 @@ func (this OrganizationRest) Delete(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrganizationRest) GetOne(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) GetOrg(echoCtx echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get organization",
 		echoCtx,
@@ -58,7 +58,7 @@ func (this OrganizationRest) ManageOrgUsers(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrganizationRest) Exists(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) OrgExists(echoCtx echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"organization exists",
 		echoCtx,
@@ -66,7 +66,7 @@ func (this OrganizationRest) Exists(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrganizationRest) Search(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) SearchOrgs(echoCtx echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search organizations",
 		echoCtx,
@@ -75,7 +75,7 @@ func (this OrganizationRest) Search(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrganizationRest) SetIsArchived(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) SetOrgIsArchived(echoCtx echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"set organization is_archived",
 		echoCtx,
@@ -83,7 +83,7 @@ func (this OrganizationRest) SetIsArchived(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrganizationRest) Update(echoCtx echo.Context) (err error) {
+func (this OrganizationRest) UpdateOrg(echoCtx echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update organization",
 		echoCtx,

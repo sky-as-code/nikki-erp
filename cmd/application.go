@@ -181,8 +181,8 @@ func (this *Application) initializeInOrder(moduleMap map[string]modules.InCodeMo
 			if err := modWithAppStarted.OnAppStarted(); err != nil {
 				return err
 			}
+			this.logger.Debugf("Invoked OnAppStarted() on module %s", mod.Name())
 		}
-		this.logger.Debugf("Invoked OnAppStarted() on module %s", mod.Name())
 	}
 
 	return nil

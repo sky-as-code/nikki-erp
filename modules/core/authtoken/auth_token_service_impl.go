@@ -185,7 +185,10 @@ func (this *AuthTokenServiceImpl) VerifyJwt(ctx corectx.Context, param VerifyJwt
 	})
 
 	if err != nil {
-		return nil, err
+		if strings.Contains(err.Error(), "malformed") {
+			return nil, err
+		}
+		return &VerifyJwtResult{IsOk: false}, nil
 	}
 
 	claims := jwtToken.Claims.(jwt.MapClaims)
