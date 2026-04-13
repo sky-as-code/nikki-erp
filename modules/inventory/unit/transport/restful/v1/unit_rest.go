@@ -1,18 +1,17 @@
-package v1
+﻿package v1
 
 import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	it "github.com/sky-as-code/nikki-erp/modules/inventory/unit/interfaces"
+	itUnit "github.com/sky-as-code/nikki-erp/modules/inventory/unit/interfaces/unit"
 )
 
 type unitRestParams struct {
 	dig.In
 
-	UnitSvc it.UnitService
+	UnitSvc itUnit.UnitService
 }
 
 func NewUnitRest(params unitRestParams) *UnitRest {
@@ -23,110 +22,56 @@ func NewUnitRest(params unitRestParams) *UnitRest {
 
 type UnitRest struct {
 	httpserver.RestBase
-	UnitSvc it.UnitService
+	UnitSvc itUnit.UnitService
 }
 
-func (this UnitRest) CreateUnit(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create unit"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UnitSvc.CreateUnit,
-		func(request CreateUnitRequest) it.CreateUnitCommand {
-			return it.CreateUnitCommand(request)
-		},
-		func(result it.CreateUnitResult) CreateUnitResponse {
-			response := CreateUnitResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonCreated,
+func (this UnitRest) Create(echoCtx echo.Context) (err error) {
+	return httpserver.ServeCreate(
+		"create unit",
+		echoCtx,
+		&itUnit.CreateUnitCommand{},
+		this.UnitSvc.CreateUnit,
 	)
-	return err
 }
 
-func (this UnitRest) UpdateUnit(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update unit"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UnitSvc.UpdateUnit,
-		func(request UpdateUnitRequest) it.UpdateUnitCommand {
-			return it.UpdateUnitCommand(request)
-		},
-		func(result it.UpdateUnitResult) UpdateUnitResponse {
-			response := UpdateUnitResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this UnitRest) Update(echoCtx echo.Context) (err error) {
+	return httpserver.ServeUpdate(
+		"update unit",
+		echoCtx,
+		&itUnit.UpdateUnitCommand{},
+		this.UnitSvc.UpdateUnit,
 	)
-	return err
 }
 
-func (this UnitRest) DeleteUnit(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete unit"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UnitSvc.DeleteUnit,
-		func(request DeleteUnitRequest) it.DeleteUnitCommand {
-			return it.DeleteUnitCommand(request)
-		},
-		func(result it.DeleteUnitResult) DeleteUnitResponse {
-			response := DeleteUnitResponse{}
-			response.FromNonEntity(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this UnitRest) Delete(echoCtx echo.Context) (err error) {
+	return httpserver.ServeGeneralMutate(
+		"delete unit",
+		echoCtx,
+		this.UnitSvc.DeleteUnit,
 	)
-	return err
 }
 
-func (this UnitRest) GetUnitById(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get unit by id"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UnitSvc.GetUnitById,
-		func(request GetUnitByIdRequest) it.GetUnitByIdQuery {
-			return it.GetUnitByIdQuery(request)
-		},
-		func(result it.GetUnitByIdResult) GetUnitByIdResponse {
-			response := GetUnitByIdResponse{}
-			response.FromUnit(*result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this UnitRest) GetOne(echoCtx echo.Context) (err error) {
+	return httpserver.ServeGetOne(
+		"get unit",
+		echoCtx,
+		this.UnitSvc.GetUnit,
 	)
-	return err
 }
 
-func (this UnitRest) SearchUnits(echoCtx echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search units"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.UnitSvc.SearchUnits,
-		func(request SearchUnitsRequest) it.SearchUnitsQuery {
-			return it.SearchUnitsQuery(request)
-		},
-		func(result it.SearchUnitsResult) SearchUnitsResponse {
-			response := SearchUnitsResponse{}
-			response.FromResult(result.Data)
-			return response
-		},
-		httpserver.JsonOk,
+func (this UnitRest) Search(echoCtx echo.Context) (err error) {
+	return httpserver.ServeSearch(
+		"search units",
+		echoCtx,
+		this.UnitSvc.SearchUnits,
+		true,
 	)
-	return err
+}
+
+func (this UnitRest) Exists(echoCtx echo.Context) (err error) {
+	return httpserver.ServeExists(
+		"unit exists",
+		echoCtx,
+		this.UnitSvc.UnitExists,
+	)
 }
