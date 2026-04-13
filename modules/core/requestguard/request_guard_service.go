@@ -40,6 +40,9 @@ func (this *StaticRequestGuardServiceImpl) CalcRequestFingerprint(_ corectx.Cont
 	if this.configSvc.GetBool(c.RequestGuardAccessTokenEnabled) {
 		rawToken := this.bearerAccessToken(request)
 		parts := strings.Split(rawToken, ".")
+		if rawToken == "" || len(parts) != 3 {
+			return "", nil
+		}
 		return parts[0] + "." + parts[1], nil
 	}
 	return "", errors.New("not implemented")
@@ -77,8 +80,8 @@ func (this *StaticRequestGuardServiceImpl) configCors() middleware.CORSConfig {
 
 func (this *StaticRequestGuardServiceImpl) VerifyTrustedConnection(ctx corectx.Context, request *http.Request) (result *VerifyRequestResult, err error) {
 	return &VerifyRequestResult{
-		IsOk:       true,
-		HttpStatus: http.StatusOK,
+		IsOk: true,
+		// HttpStatus: http.StatusOK,
 	}, nil
 }
 
@@ -86,24 +89,24 @@ func (this *StaticRequestGuardServiceImpl) VerifyJwt(ctx corectx.Context, reques
 	cfg := this.configSvc
 	if !cfg.GetBool(c.RequestGuardAccessTokenEnabled) {
 		return &VerifyRequestResult{
-			IsOk:       true,
-			HttpStatus: http.StatusOK,
+			IsOk: true,
+			// HttpStatus: http.StatusOK,
 		}, nil
 	}
 
 	rawToken := this.bearerAccessToken(request)
 	if rawToken == "" {
-		return jwtVerifyFailure(), nil
+		return jwtInvalidFailure(), nil
 	}
 
 	verifyResult, err := this.tokenSvc.VerifyJwt(ctx, coretoken.VerifyJwtParam{
 		Token: rawToken,
 	})
 	if err != nil {
-		return nil, err
+		return jwtMalformedFailure(), nil
 	}
 	if !verifyResult.IsOk {
-		return jwtVerifyFailure(), nil
+		return jwtInvalidFailure(), nil
 	}
 
 	if this.configSvc.GetBool(c.RequestGuardAccessTokenDpopEnabled) {
@@ -113,9 +116,9 @@ func (this *StaticRequestGuardServiceImpl) VerifyJwt(ctx corectx.Context, reques
 		}
 	}
 	return &VerifyRequestResult{
-		IsOk:       true,
-		HttpStatus: http.StatusOK,
-		JwtClaims:  verifyResult.Claims,
+		IsOk: true,
+		// HttpStatus: http.StatusOK,
+		JwtClaims: verifyResult.Claims,
 	}, nil
 }
 
@@ -137,14 +140,25 @@ func (this *StaticRequestGuardServiceImpl) bearerAccessToken(request *http.Reque
 	return raw
 }
 
-func jwtVerifyFailure() *VerifyRequestResult {
+func jwtInvalidFailure() *VerifyRequestResult {
 	return &VerifyRequestResult{
-		IsOk:       false,
-		HttpStatus: http.StatusUnauthorized,
-		ClientError: &ft.ClientErrorItem{
-			Key:     ft.ErrorKey("err_invalid_access_token", "authorize"),
-			Message: "invalid or expired access token",
-		},
+		IsOk: false,
+		// HttpStatus: http.StatusUnauthorized,
+		ClientError: ft.NewAuthorizationError(
+			ft.ErrorKey("err_invalid_access_token", "authorize"),
+			"Invalid or expired access token.",
+		),
+	}
+}
+
+func jwtMalformedFailure() *VerifyRequestResult {
+	return &VerifyRequestResult{
+		IsOk: false,
+		// HttpStatus: http.StatusUnauthorized,
+		ClientError: ft.NewAuthorizationError(
+			ft.ErrorKey("err_malformed_access_token", "authorize"),
+			"Malformed access token.",
+		),
 	}
 }
 

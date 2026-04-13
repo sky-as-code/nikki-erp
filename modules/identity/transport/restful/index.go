@@ -7,8 +7,8 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	restv1 "github.com/sky-as-code/nikki-erp/modules/identity/transport/restful/v1"
+	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
+	d "github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	v1 "github.com/sky-as-code/nikki-erp/modules/identity/transport/restful/v1"
 )
 
@@ -42,90 +42,39 @@ func initIdentityV1() error {
 		orgunitRest *v1.OrgUnitRest,
 	) error {
 		routeV1 := route.Group("/v1/identity")
-		// protected := route.Group("", commonMiddleware.RequireAuthMiddleware())
-		// checker := commonMiddleware.NewCqrsPermissionChecker(cqrsBus)
 
-		// mwUserView := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionView, nil)
-		// mwUserCreate := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionCreate, nil)
-		// mwUserUpdate := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionUpdate, nil)
-		// mwUserDelete := commonMiddleware.RequirePermission(checker, constants.ResourceUser, constants.ActionDelete, nil)
+		routeV1.DELETE("/users/:id", userRest.DeleteUser, m.Authorized(d.UserActionDelete, d.UserResourceCode, d.UserAuthScope))
+		routeV1.GET("/users/:id", userRest.GetUser, m.Authorized(d.UserActionView, d.UserResourceCode, d.UserAuthScope))
+		routeV1.GET("/users", userRest.SearchUsers, m.Authorized(d.UserActionView, d.UserResourceCode, d.UserAuthScope))
+		routeV1.POST("/users/exists", userRest.UserExists, m.Authorized(d.UserActionView, d.UserResourceCode, d.UserAuthScope))
+		routeV1.POST("/users/:id/archived", userRest.SetUserIsArchived, m.Authorized(d.UserActionSetArchived, d.UserResourceCode, d.UserAuthScope))
+		routeV1.POST("/users", userRest.CreateUser, m.Authorized(d.UserActionCreate, d.UserResourceCode, d.UserAuthScope))
+		routeV1.PUT("/users/:id", userRest.UpdateUser, m.Authorized(d.UserActionUpdate, d.UserResourceCode, d.UserAuthScope))
 
-		// mwGroupView := commonMiddleware.RequirePermission(checker, constants.ResourceGroup, constants.ActionView, nil)
-		// mwGroupCreate := commonMiddleware.RequirePermission(checker, constants.ResourceGroup, constants.ActionCreate, nil)
-		// mwGroupUpdate := commonMiddleware.RequirePermission(checker, constants.ResourceGroup, constants.ActionUpdate, nil)
-		// mwGroupDelete := commonMiddleware.RequirePermission(checker, constants.ResourceGroup, constants.ActionDelete, nil)
+		routeV1.DELETE("/groups/:id", groupRest.DeleteGroup, m.Authorized(d.GroupActionDelete, d.GroupResourceCode, d.GroupAuthScope))
+		routeV1.GET("/groups/:id", groupRest.GetGroup, m.Authorized(d.GroupActionView, d.GroupResourceCode, d.GroupAuthScope))
+		routeV1.GET("/groups", groupRest.SearchGroups, m.Authorized(d.GroupActionView, d.GroupResourceCode, d.GroupAuthScope))
+		routeV1.POST("/groups/exists", groupRest.GroupExists, m.Authorized(d.GroupActionView, d.GroupResourceCode, d.GroupAuthScope))
+		routeV1.POST("/groups/:group_id/manage-users", groupRest.ManageGroupUsers, m.Authorized(d.GroupActionManageUsers, d.GroupResourceCode, d.GroupAuthScope))
+		routeV1.POST("/groups", groupRest.CreateGroup, m.Authorized(d.GroupActionCreate, d.GroupResourceCode, d.GroupAuthScope))
+		routeV1.PUT("/groups/:id", groupRest.UpdateGroup, m.Authorized(d.GroupActionUpdate, d.GroupResourceCode, d.GroupAuthScope))
 
-		// mwOrgView := commonMiddleware.RequirePermission(checker, constants.ResourceOrganization, constants.ActionView, nil)
-		// mwOrgCreate := commonMiddleware.RequirePermission(checker, constants.ResourceOrganization, constants.ActionCreate, nil)
-		// mwOrgUpdate := commonMiddleware.RequirePermission(checker, constants.ResourceOrganization, constants.ActionUpdate, nil)
-		// mwOrgDelete := commonMiddleware.RequirePermission(checker, constants.ResourceOrganization, constants.ActionDelete, nil)
+		routeV1.DELETE("/organizations/:id", orgRest.DeleteOrg, m.Authorized(d.OrgActionDelete, d.OrgResourceCode, d.OrgAuthScope))
+		routeV1.GET("/organizations/:id", orgRest.GetOrg, m.Authorized(d.OrgActionView, d.OrgResourceCode, d.OrgAuthScope))
+		routeV1.GET("/organizations", orgRest.SearchOrgs, m.Authorized(d.OrgActionView, d.OrgResourceCode, d.OrgAuthScope))
+		routeV1.POST("/organizations/exists", orgRest.OrgExists, m.Authorized(d.OrgActionView, d.OrgResourceCode, d.OrgAuthScope))
+		routeV1.POST("/organizations/:id/archived", orgRest.SetOrgIsArchived, m.Authorized(d.OrgActionSetArchived, d.OrgResourceCode, d.OrgAuthScope))
+		routeV1.POST("/organizations/:org_id/manage-users", orgRest.ManageOrgUsers, m.Authorized(d.OrgActionManageUsers, d.OrgResourceCode, d.OrgAuthScope))
+		routeV1.POST("/organizations", orgRest.CreateOrg, m.Authorized(d.OrgActionCreate, d.OrgResourceCode, d.OrgAuthScope))
+		routeV1.PUT("/organizations/:id", orgRest.UpdateOrg, m.Authorized(d.OrgActionUpdate, d.OrgResourceCode, d.OrgAuthScope))
 
-		// mwOrgUnitView := commonMiddleware.RequirePermission(checker, constants.ResourceOrganizationUnit, constants.ActionView, nil)
-		// mwOrgUnitCreate := commonMiddleware.RequirePermission(checker, constants.ResourceOrganizationUnit, constants.ActionCreate, nil)
-		// mwOrgUnitUpdate := commonMiddleware.RequirePermission(checker, constants.ResourceOrganizationUnit, constants.ActionUpdate, nil)
-		// mwOrgUnitDelete := commonMiddleware.RequirePermission(checker, constants.ResourceOrganizationUnit, constants.ActionDelete, nil)
-		// mwOrgUnitManageUsers := commonMiddleware.RequirePermission(checker, constants.ResourceOrganizationUnit, constants.ActionManageUsers, nil)
-
-		err := stdErr.Join(
-			httpserver.RegisterArchivableCrudRest[*restv1.UserRest]("/users", routeV1),
-			httpserver.RegisterBasicCrudRest("/groups", routeV1, func(ro *echo.Group, handler *restv1.GroupRest) {
-				ro.POST("/groups/:group_id/manage-users", groupRest.ManageGroupUsers)
-			}),
-			httpserver.RegisterArchivableCrudRest("/organizations", routeV1, func(ro *echo.Group, handler *restv1.OrganizationRest) {
-				ro.POST("/organizations/:org_id/manage-users", orgRest.ManageOrgUsers)
-			}),
-			httpserver.RegisterBasicCrudRest("/orgunits", routeV1, func(ro *echo.Group, handler *restv1.OrgUnitRest) {
-				ro.POST("/orgunits/:orgunit_id/manage-users", orgunitRest.ManageOrgUnitUsers)
-			}),
-		)
-		if err != nil {
-			return err
-		}
-
-		// v1.DELETE("/users/:id", userRest.DeleteUser)
-		// v1.GET("/users/:id", userRest.GetUser)
-		// v1.GET("/users", userRest.SearchUsers)
-		// v1.POST("/users/exists", userRest.UserExists)
-		// v1.POST("/users/:id/archived", userRest.SetUserIsArchived)
-		// v1.POST("/users", userRest.CreateUser)
-		// v1.PUT("/users/:id", userRest.UpdateUser)
-
-		// protected.POST("/users", userRest.CreateUser, middlewares.RequestContextMiddleware2, mwUserCreate)
-		// protected.DELETE("/users/:id", userRest.DeleteUser, mwUserDelete)
-		// protected.GET("/users/:id", userRest.GetUserById, mwUserView)
-		// protected.GET("/users", userRest.SearchUsers, mwUserView)
-		// protected.PUT("/users/:id", userRest.UpdateUser, mwUserUpdate)
-		// route.GET("/users/context", userRest.GetUserContext)
-
-		// protected.PUT("/users2/:id", userRest.UpdateUser2, mwUserUpdate, middlewares.RequestContextMiddleware2)
-		// protected.GET("/users2/:id", userRest.GetUserById2, mwUserView, middlewares.RequestContextMiddleware2)
-		// protected.POST("/users2/search", userRest.SearchUsers2, mwUserView, middlewares.RequestContextMiddleware2)
-		// protected.POST("/users2/:id/archive", userRest.ArchiveUser2, mwUserUpdate, middlewares.RequestContextMiddleware2)
-
-		// routeV1.DELETE("/groups/:id", groupRest.DeleteGroup)
-		// routeV1.GET("/groups/:id", groupRest.GetGroup)
-		// routeV1.GET("/groups", groupRest.SearchGroups)
-		// routeV1.POST("/groups/exists", groupRest.GroupExists)
-		// routeV1.POST("/groups/:group_id/manage-users", groupRest.ManageGroupUsers)
-		// routeV1.POST("/groups", groupRest.CreateGroup)
-		// routeV1.PUT("/groups/:id", groupRest.UpdateGroup)
-
-		// routeV1.DELETE("/organizations/:id", orgRest.DeleteOrg)
-		// routeV1.GET("/organizations/:id", orgRest.GetOrg)
-		// routeV1.GET("/organizations", orgRest.SearchOrgs)
-		// routeV1.POST("/organizations/:id/archived", orgRest.SetOrgIsArchived)
-		// routeV1.POST("/organizations/:org_id/manage-users", orgRest.ManageOrgUsers)
-		// routeV1.POST("/organizations/exists", orgRest.OrgExists)
-		// routeV1.POST("/organizations", orgRest.CreateOrg)
-		// routeV1.PUT("/organizations/:id", orgRest.UpdateOrg)
-
-		// routeV1.DELETE("/orgunits/:id", orgunitRest.DeleteOrgUnit)
-		// routeV1.GET("/orgunits/:id", orgunitRest.GetOrgUnit)
-		// routeV1.GET("/orgunits", orgunitRest.SearchOrgUnits)
-		// routeV1.POST("/orgunits/:id/exists", orgunitRest.OrgUnitExists)
-		// routeV1.POST("/orgunits/:orgunit_id/manage-users", orgunitRest.ManageOrgUnitUsers)
-		// routeV1.POST("/orgunits", orgunitRest.CreateOrgUnit)
-		// routeV1.PUT("/orgunits/:id", orgunitRest.UpdateOrgUnit)
+		routeV1.DELETE("/orgunits/:id", orgunitRest.DeleteOrgUnit, m.Authorized(d.OrgUnitActionDelete, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
+		routeV1.GET("/orgunits/:id", orgunitRest.GetOrgUnit, m.Authorized(d.OrgUnitActionView, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
+		routeV1.GET("/orgunits", orgunitRest.SearchOrgUnits, m.Authorized(d.OrgUnitActionView, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
+		routeV1.POST("/orgunits/:id/exists", orgunitRest.OrgUnitExists, m.Authorized(d.OrgUnitActionView, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
+		routeV1.POST("/orgunits/:orgunit_id/manage-users", orgunitRest.ManageOrgUnitUsers, m.Authorized(d.OrgUnitActionManageUsers, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
+		routeV1.POST("/orgunits", orgunitRest.CreateOrgUnit, m.Authorized(d.OrgUnitActionCreate, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
+		routeV1.PUT("/orgunits/:id", orgunitRest.UpdateOrgUnit, m.Authorized(d.OrgUnitActionUpdate, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
 
 		return nil
 	})

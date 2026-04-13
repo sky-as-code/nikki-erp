@@ -3,7 +3,6 @@ package httpserver
 import (
 	"github.com/labstack/echo/v4"
 
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -369,59 +368,4 @@ func ServeUpdate[
 		},
 		JsonOk,
 	)
-}
-
-type BasicCrudRest interface {
-	Create(echoCtx echo.Context) (err error)
-	Delete(echoCtx echo.Context) (err error)
-	Exists(echoCtx echo.Context) (err error)
-	GetOne(echoCtx echo.Context) (err error)
-	Search(echoCtx echo.Context) (err error)
-	Update(echoCtx echo.Context) (err error)
-}
-
-type ArchivableCrudRest interface {
-	BasicCrudRest
-	SetIsArchived(echoCtx echo.Context) (err error)
-}
-
-type RegisterRouteFn[TRestHandler BasicCrudRest] func(router *echo.Group, handler TRestHandler)
-
-func RegisterBasicCrudRest[TRestHandler BasicCrudRest](
-	pathPrefix string, router *echo.Group, register ...RegisterRouteFn[TRestHandler],
-) error {
-	return deps.Invoke(func(
-		handler TRestHandler,
-	) {
-		// Register custom routes first so that
-		// they can override the default routes if needed.
-		if len(register) > 0 {
-			register[0](router, handler)
-		}
-		router.DELETE(pathPrefix+"/:id", handler.Delete)
-		router.GET(pathPrefix+"/:id", handler.GetOne)
-		router.GET(pathPrefix, handler.Search)
-		router.POST(pathPrefix+"/exists", handler.Exists)
-		router.POST(pathPrefix, handler.Create)
-		router.PUT(pathPrefix+"/:id", handler.Update)
-	})
-}
-
-func RegisterArchivableCrudRest[TRestHandler ArchivableCrudRest](
-	pathPrefix string, router *echo.Group, register ...RegisterRouteFn[TRestHandler],
-) error {
-	return deps.Invoke(func(
-		handler TRestHandler,
-	) {
-		if len(register) > 0 {
-			register[0](router, handler)
-		}
-		router.DELETE(pathPrefix+"/:id", handler.Delete)
-		router.GET(pathPrefix+"/:id", handler.GetOne)
-		router.GET(pathPrefix, handler.Search)
-		router.POST(pathPrefix+"/exists", handler.Exists)
-		router.POST(pathPrefix+"/:id/archived", handler.SetIsArchived)
-		router.POST(pathPrefix, handler.Create)
-		router.PUT(pathPrefix+"/:id", handler.Update)
-	})
 }

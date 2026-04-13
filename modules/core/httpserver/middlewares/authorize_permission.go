@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 
@@ -54,15 +55,16 @@ func AuthorizePermissionMiddleware(params AuthzPermMiddlewareParams) echo.Middle
 				return err
 			}
 			if !result.IsOk {
-				return echo.NewHTTPError(result.HttpStatus, result.ClientError)
+				return echoCtx.JSON(http.StatusUnauthorized, result.ClientError)
 			}
 
 			reqCtx.WithValue(CtxKeyJwtClaims, result.JwtClaims)
-			userEmail, err := result.JwtClaims.GetSubject()
+			userInfo, err := result.JwtClaims.GetSubject()
 			if err != nil {
 				return err
 			}
 
+			userEmail := strings.Split(userInfo, ":")[0]
 			isAuthorized, err := permissionSvc.IsAuthorized(reqCtx, ext.IsAuthorizedQuery{
 				UserEmail:    &userEmail,
 				ActionCode:   params.ActionCode,
@@ -73,10 +75,10 @@ func AuthorizePermissionMiddleware(params AuthzPermMiddlewareParams) echo.Middle
 				return err
 			}
 			if !isAuthorized {
-				return echo.NewHTTPError(http.StatusForbidden, ft.ClientErrorItem{
-					Key:     ft.ErrorKey("not_authorized", "authorize"),
-					Message: "not authorized",
-				})
+				return echoCtx.JSON(http.StatusForbidden, ft.NewAuthorizationError(
+					ft.ErrorKey("err_insufficient_permissions", "authorize"),
+					"Insufficient permissions.",
+				))
 			}
 
 			return next(echoCtx)

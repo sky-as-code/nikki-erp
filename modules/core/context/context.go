@@ -68,6 +68,12 @@ func AsRequestContext(echoCtx echo.Context) (Context, error) {
 	return reqCtx, nil
 }
 
+type contextKey struct {
+	name string
+}
+
+var CtxKeyDomainConstraints = contextKey{"domain_constraints"}
+
 type RequestContext struct {
 	context.Context
 
@@ -100,11 +106,15 @@ func (this *RequestContext) SetDbTranx(trx db.DbTransaction) {
 }
 
 func (this RequestContext) GetDomainConstraints() dmodel.DynamicFields {
-	return this.domainConstraints
+	val := this.Context.Value(CtxKeyDomainConstraints)
+	if val == nil {
+		return nil
+	}
+	return val.(dmodel.DynamicFields)
 }
 
 func (this *RequestContext) SetDomainConstraints(constraints dmodel.DynamicFields) {
-	this.domainConstraints = constraints
+	this.Context = context.WithValue(this.Context, CtxKeyDomainConstraints, constraints)
 }
 
 func (this RequestContext) GetModuleName() string {

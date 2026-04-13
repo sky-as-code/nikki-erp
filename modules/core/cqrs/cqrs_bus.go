@@ -17,15 +17,18 @@ import (
 	"go.bryk.io/pkg/ulid"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/json"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
 const MetaCorrelationId = "correlation_id"
+const MetaDomainConstraints = "domain_constraints"
 const MetaRequestTopic = "request_topic"
 const MetaReplyTopic = "reply_topic"
 const MetaNoReply = "no_reply"
@@ -137,25 +140,27 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 					continue
 				}
 				c, _ := context.WithTimeout(context.Background(), this.maxTimeout)
-				reqCtx := crud.NewRequestContext(c)
-				r, err := handler.Handle(reqCtx, reqPacket)
-				if err != nil {
-					this.logger.Error(
-						fmt.Sprintf("error occured from topic %s", topicName),
-						err,
-					)
-					reply.Error = util.ToPtr(err.Error())
-				} else {
-					reply = *r
-				}
-				replyPacket := newReplyPacket(reqPacket.correlationId, &reply, this.marshaler)
-				err = this.publisher.Publish(reqPacket.replyTopic, replyPacket.message)
-				if err != nil {
-					this.logger.Error(
-						fmt.Sprintf("failed to publish reply to topic %s", reqPacket.replyTopic),
-						err,
-					)
-				}
+				reqCtx := this.createIncomingContext(c, msg)
+				reply, err = this.handleRequest(reqCtx, handler, reqPacket, topicName)
+				this.sendResponse(reqPacket, &reply)
+				// r, err := handler.Handle(reqCtx, reqPacket)
+				// if err != nil {
+				// 	this.logger.Error(
+				// 		fmt.Sprintf("error occured from topic %s", topicName),
+				// 		err,
+				// 	)
+				// 	reply.Error = util.ToPtr(err.Error())
+				// } else {
+				// 	reply = *r
+				// }
+				// replyPacket := newReplyPacket(reqPacket.correlationId, &reply, this.marshaler)
+				// err = this.publisher.Publish(reqPacket.replyTopic, replyPacket.message)
+				// if err != nil {
+				// 	this.logger.Error(
+				// 		fmt.Sprintf("failed to publish reply to topic %s", reqPacket.replyTopic),
+				// 		err,
+				// 	)
+				// }
 			case <-ctx.Done():
 				err = ctx.Err()
 				return
@@ -164,6 +169,46 @@ func (this *WatermillCqrsBus) subscribeReq(ctx context.Context, handler RequestH
 	}()
 
 	return nil
+}
+
+func (this *WatermillCqrsBus) createIncomingContext(ctx context.Context, msg *message.Message) context.Context {
+	reqCtx := corectx.NewRequestContext(ctx)
+	domConstrStr := msg.Metadata.Get(MetaDomainConstraints)
+	if domConstrStr != "" {
+		domConstr := dmodel.DynamicFields{}
+		err := json.Unmarshal([]byte(domConstrStr), &domConstr)
+		ft.PanicOnErr(err)
+		reqCtx.SetDomainConstraints(domConstr)
+	}
+	return reqCtx
+}
+
+func (this *WatermillCqrsBus) handleRequest(
+	reqCtx context.Context, handler RequestHandler, reqPacket *RequestPacket[Request], topicName string,
+) (reply Reply[any], err error) {
+	r, err := handler.Handle(reqCtx, reqPacket)
+	if err != nil {
+		this.logger.Error(
+			fmt.Sprintf("error occured from topic %s", topicName),
+			err,
+		)
+		reply.Error = util.ToPtr(err.Error())
+	} else {
+		reply = *r
+	}
+	return
+}
+
+func (this *WatermillCqrsBus) sendResponse(reqPacket *RequestPacket[Request], reply *Reply[any]) {
+	replyPacket := newReplyPacket(reqPacket.correlationId, reply, this.marshaler)
+	err := this.publisher.Publish(reqPacket.replyTopic, replyPacket.message)
+	if err != nil {
+		this.logger.Error(
+			fmt.Sprintf("failed to publish reply to topic %s", reqPacket.replyTopic),
+			err,
+		)
+	}
+
 }
 
 func (this *WatermillCqrsBus) RequestNoReply(ctx context.Context, request Request) (err error) {
@@ -182,7 +227,7 @@ func (this *WatermillCqrsBus) RequestNoReply(ctx context.Context, request Reques
 }
 
 func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, result any) (err error) {
-	ctx, cancelSubscription := context.WithCancel(ctx)
+	cancellableCtx, cancelSubscription := context.WithCancel(ctx)
 
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "send request of type "+request.CqrsRequestType().String()); e != nil {
@@ -191,10 +236,10 @@ func (this *WatermillCqrsBus) Request(ctx context.Context, request Request, resu
 		}
 	}()
 
-	packet, err := this.newRequestPacket(ctx, request)
+	packet, err := this.newRequestPacket(cancellableCtx, request)
 	ft.PanicOnErr(err)
 
-	replyChan, errChan := this.subscribeReply(ctx, packet, result, cancelSubscription)
+	replyChan, errChan := this.subscribeReply(cancellableCtx, packet, result, cancelSubscription)
 	ft.PanicOnErr(err)
 
 	err = this.publisher.Publish(packet.requestTopic, packet.message)
@@ -265,12 +310,12 @@ func (this *WatermillCqrsBus) subscribeReply(ctx context.Context, packet *Reques
 	return replyChan, errChan
 }
 
-func (this *WatermillCqrsBus) newRequestPacket(ctx context.Context, request Request) (packet *RequestPacket[Request], err error) {
+func (this *WatermillCqrsBus) newRequestPacket(cancellableCtx context.Context, request Request) (packet *RequestPacket[Request], err error) {
 	defer func() {
 		err = ft.RecoverPanicFailedTo(recover(), "create request packet for "+request.CqrsRequestType().String())
 	}()
-	packet = newOutgoingRequestPacket(request, this.marshaler)
-	packet.message.SetContext(ctx)
+	packet = newOutgoingRequestPacket(cancellableCtx, request, this.marshaler)
+	packet.message.SetContext(cancellableCtx)
 
 	return packet, nil
 }
@@ -283,7 +328,7 @@ func genReplyTopic(requestTopic string, correlationId string) string {
 	return fmt.Sprintf("%s:reply:%s", requestTopic, correlationId)
 }
 
-func newOutgoingRequestPacket(request Request, marshaler cqrs.CommandEventMarshaler) *RequestPacket[Request] {
+func newOutgoingRequestPacket(cancellableCtx context.Context, request Request, marshaler cqrs.CommandEventMarshaler) *RequestPacket[Request] {
 	msg, err := marshaler.Marshal(&request)
 	ft.PanicOnErr(err)
 
@@ -298,6 +343,16 @@ func newOutgoingRequestPacket(request Request, marshaler cqrs.CommandEventMarsha
 	requestType := request.CqrsRequestType().String()
 	packet.requestTopic = genRequestTopic(requestType)
 	packet.replyTopic = genReplyTopic(packet.requestTopic, packet.correlationId)
+
+	// reqCtx, isReqCtx := cancellableCtx.(corectx.Context)
+	domConstAny := cancellableCtx.Value(corectx.CtxKeyDomainConstraints)
+	if domConstAny != nil {
+		domConst := domConstAny.(dmodel.DynamicFields)
+		domConstrJson, err := json.Marshal(domConst)
+		ft.PanicOnErr(err)
+		msg.Metadata.Set(MetaDomainConstraints, string(domConstrJson))
+	}
+
 	msg.Metadata.Set(MetaCorrelationId, packet.correlationId)
 	msg.Metadata.Set(MetaRequestTopic, packet.requestTopic)
 	msg.Metadata.Set(MetaReplyTopic, packet.replyTopic)

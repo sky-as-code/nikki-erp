@@ -49,7 +49,7 @@ func (IsAuthorizedQuery) GetSchema() *dmodel.ModelSchema {
 				Field(domain.DefineResourceFieldCode("resource_code").Required()).
 				Field(domain.DefineActionFieldCode("action_code").Required()).
 				Field(domain.DefineResourceFieldScope("scope").Required()).
-				Field(basemodel.DefineFieldId("scope_id").Required())
+				Field(basemodel.DefineFieldId("scope_id"))
 		},
 	)
 }
@@ -73,9 +73,10 @@ func (CheckPermissionsQuery) GetSchema() *dmodel.ModelSchema {
 }
 
 type CheckPermissionsResultData struct {
-	IsAuthorized bool                    `json:"is_authorized"`
-	RejectReason string                  `json:"reject_reason"`
-	Permissions  []domain.UserPermission `json:"permissions"`
+	IsAuthorized      bool                    `json:"is_authorized"`
+	RejectReason      string                  `json:"reject_reason"`
+	Permissions       []domain.UserPermission `json:"permissions"`
+	IsOwnerPrivileged bool                    `json:"is_owner_privileged"`
 }
 
 type CheckPermissionsResult = dyn.OpResult[CheckPermissionsResultData]

@@ -7,6 +7,18 @@ import (
 )
 
 const (
+	OrgUnitResourceCode = "identity_orgunit"
+	OrgUnitAuthScope    = "domain"
+
+	OrgUnitActionCreate      = "create"
+	OrgUnitActionDelete      = "delete"
+	OrgUnitActionUpdate      = "update"
+	OrgUnitActionView        = "view"
+	OrgUnitActionMove        = "move"
+	OrgUnitActionManageUsers = "manage_users"
+)
+
+const (
 	OrganizationalUnitSchemaName = "identity.org_unit"
 
 	OrgUnitFieldId          = basemodel.FieldId

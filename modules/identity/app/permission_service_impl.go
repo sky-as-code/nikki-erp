@@ -8,6 +8,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 	itOrgUnit "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/orgunit"
@@ -59,22 +60,34 @@ func (this *PermissionServiceImpl) IsAuthorized(
 		filter[domain.UserFieldEmail] = *query.UserEmail
 	}
 
-	resActor, err := this.userRepo.GetOne(ctx, dyn.RepoGetOneParam{Filter: filter})
+	resUser, err := this.userRepo.GetOne(ctx, dyn.RepoGetOneParam{
+		Filter:  filter,
+		Columns: []string{domain.UserFieldId, domain.UserFieldIsOwner, domain.UserFieldStatus, basemodel.FieldIsArchived},
+	})
 	if err != nil {
 		return nil, err
 	}
-	if resActor.ClientErrors.Count() > 0 {
-		return nil, errors.Wrap(resActor.ClientErrors.ToError(), "IsAuthorized")
+	if resUser.ClientErrors.Count() > 0 {
+		return nil, errors.Wrap(resUser.ClientErrors.ToError(), "IsAuthorized")
 	}
-	if !resActor.HasData || !resActor.Data.IsActive() {
+	if !resUser.HasData || !resUser.Data.IsActive() {
 		return &itPerm.IsAuthorizedResult{
 			Data:    false,
 			HasData: true,
 		}, nil
 	}
 
+	foundUser := resUser.Data
+
+	if foundUser.IsOwner() {
+		return &itPerm.IsAuthorizedResult{
+			Data:    true,
+			HasData: true,
+		}, nil
+	}
+
 	resMat, err := this.userPermissionRepo.MatchPermisions(ctx, itPerm.RepoMatchUserPermParam{
-		UserId:       *resActor.Data.GetId(),
+		UserId:       *foundUser.GetId(),
 		ResourceCode: query.ResourceCode,
 		ActionCode:   query.ActionCode,
 		Scope:        query.Scope,
@@ -112,7 +125,8 @@ func (this *PermissionServiceImpl) CheckPermissions(
 	}
 
 	resUser, err := this.userRepo.GetOne(ctx, dyn.RepoGetOneParam{
-		Filter: filter,
+		Filter:  filter,
+		Columns: []string{domain.UserFieldId, domain.UserFieldIsOwner, domain.UserFieldStatus, basemodel.FieldIsArchived},
 	})
 	if err != nil {
 		return nil, err
@@ -130,8 +144,19 @@ func (this *PermissionServiceImpl) CheckPermissions(
 			HasData: false,
 		}, nil
 	}
+	foundUser := resUser.Data
 
-	if resUser.Data.MustGetStatus() == domain.UserStatusActive {
+	if foundUser.IsOwner() {
+		return &itPerm.CheckPermissionsResult{
+			Data: itPerm.CheckPermissionsResultData{
+				IsAuthorized:      true,
+				IsOwnerPrivileged: true,
+			},
+			HasData: true,
+		}, nil
+	}
+
+	if foundUser.MustGetStatus() == domain.UserStatusActive {
 		return &itPerm.CheckPermissionsResult{
 			Data: itPerm.CheckPermissionsResultData{
 				IsAuthorized: false,
@@ -142,7 +167,7 @@ func (this *PermissionServiceImpl) CheckPermissions(
 	}
 
 	resMat, err := this.userPermissionRepo.MatchPermisions(ctx, itPerm.RepoMatchUserPermParam{
-		UserId:       *resUser.Data.GetId(),
+		UserId:       *foundUser.GetId(),
 		ResourceCode: query.ResourceCode,
 		ActionCode:   query.ActionCode,
 		Scope:        query.Scope,

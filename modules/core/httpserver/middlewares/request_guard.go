@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	// "net/http"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
 
@@ -44,7 +44,7 @@ func TrustedConnectionMiddleware() echo.MiddlewareFunc {
 			return err
 		}
 		if !result.IsOk {
-			return echo.NewHTTPError(result.HttpStatus, result.ClientError)
+			return echoCtx.JSON(http.StatusForbidden, result.ClientError)
 		}
 		return next(echoCtx)
 	})

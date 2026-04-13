@@ -22,10 +22,10 @@ func HandlePacket[TRequest Request, TResult any](ctx context.Context, packet *Re
 	}, nil
 }
 
-func HandlePacket2[TRequest Request, TResult any](ctx context.Context, moduleName string, packet *RequestPacket[TRequest], handleFn ServiceHandleFn2[TRequest, TResult]) (*Reply[TResult], error) {
+func ServePacket[TRequest Request, TResult any](ctx context.Context, moduleName string, packet *RequestPacket[TRequest], serviceFn ServiceHandleFn2[TRequest, TResult]) (*Reply[TResult], error) {
 	cmd := packet.Request()
-	reqCtx := corectx.NewRequestContextF(ctx, moduleName, nil)
-	result, err := handleFn(reqCtx, *cmd)
+	reqCtx := ctx.(corectx.Context)
+	result, err := serviceFn(reqCtx, *cmd)
 	ft.PanicOnErr(err)
 
 	return &Reply[TResult]{

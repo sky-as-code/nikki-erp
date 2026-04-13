@@ -109,7 +109,23 @@ const (
 
 	// Error caused by business logic, aka business invariant, violations, e.g: insufficient balance, resource not found, etc.
 	ClientErrorTypeBusiness ClientErrorType = "business"
+
+	// Error caused by authorization, e.g: insufficient permissions, unauthorized, etc.
+	ClientErrorTypeAuthorization ClientErrorType = "authorization"
 )
+
+func NewAuthorizationError(key string, message string) *ClientErrorItem {
+	return &ClientErrorItem{
+		Key:     key,
+		Message: message,
+		Vars:    nil,
+		Type:    ClientErrorTypeAuthorization,
+	}
+}
+
+func IsAuthorizationError(cErr ClientErrorItem) bool {
+	return (cErr.Type == ClientErrorTypeAuthorization)
+}
 
 func NewBusinessViolation(field string, key string, message string, vars ...map[string]any) *ClientErrorItem {
 	var msgVars map[string]any = nil

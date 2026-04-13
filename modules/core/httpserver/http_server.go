@@ -10,7 +10,6 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"go.uber.org/dig"
 
-	commonMiddleware "github.com/sky-as-code/nikki-erp/common/middleware"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
@@ -50,8 +49,6 @@ func initHttpServer(params httpServerParams) httpServerResult {
 	httpServer.Use(m.RequestContextMiddleware3)
 	applyGlobalLazywares(&httpServer)
 	httpServer.UseLazy(m.Lazyware(m.CorsEchoMiddleware))
-
-	httpServer.Use(commonMiddleware.CaptureBearerToken(params.Config.GetStr(c.TokenSecretKey)))
 
 	return httpServerResult{
 		HttpServer: &httpServer,

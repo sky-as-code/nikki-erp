@@ -1,0 +1,44 @@
+meta {
+  name: User Search - CORS - Accepted
+  type: http
+  seq: 14
+}
+
+options {
+  url: {{api_host}}/v1/identity/groups
+  body: none
+  auth: inherit
+}
+
+headers {
+  Access-Control-Request-Method: GET
+  Access-Control-Request-Headers: Authorization, Content-Type
+  Origin: {{api_host}}
+}
+
+script:post-response {
+  test(`Response with CORS header 'Access-Control-Allow-Origin'`, () => {
+    const actual = res.getHeader('access-control-allow-origin');
+    const matched = (actual === bru.interpolate('{{api_host}}')) || (actual === '*');
+    expect(matched).to.be.true;
+  });
+  
+  const expectedHeaders = {
+    'access-control-allow-methods': 'OPTIONS,HEAD,GET,POST,PUT,DELETE',
+    'access-control-allow-headers': 'Accept,Authorization,Content-Type,Origin',
+  };
+  
+  for (header in expectedHeaders) {  
+    test(`Response with CORS header '${header}'`, () => {
+      const expected = expectedHeaders[header];
+      const actual = res.getHeader(header);
+      expect(actual).to.equal(expected);
+    });
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
