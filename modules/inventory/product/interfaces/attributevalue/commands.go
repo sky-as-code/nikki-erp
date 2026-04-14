@@ -39,26 +39,6 @@ func (this CreateAttributeValueCommand) GetSchema() *dmodel.ModelSchema {
 
 type CreateAttributeValueResult = dyn.OpResult[domain.AttributeValue]
 
-var updateAttributeValueCommandType = cqrs.RequestType{
-	Module:    "inventory",
-	Submodule: "attribute_value",
-	Action:    "update",
-}
-
-type UpdateAttributeValueCommand struct {
-	domain.AttributeValue
-}
-
-func (UpdateAttributeValueCommand) CqrsRequestType() cqrs.RequestType {
-	return updateAttributeValueCommandType
-}
-
-func (this UpdateAttributeValueCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.AttributeValueSchemaName)
-}
-
-type UpdateAttributeValueResult = dyn.OpResult[dyn.MutateResultData]
-
 var deleteAttributeValueCommandType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "attribute_value",
@@ -79,10 +59,7 @@ var getAttributeValueQueryType = cqrs.RequestType{
 	Action:    "getAttributeValue",
 }
 
-type GetAttributeValueQuery struct {
-	Columns []string `json:"columns" query:"columns"`
-	Id      *string  `json:"id" param:"id"`
-}
+type GetAttributeValueQuery dyn.GetOneQuery
 
 func (GetAttributeValueQuery) CqrsRequestType() cqrs.RequestType {
 	return getAttributeValueQueryType
@@ -118,3 +95,23 @@ func (SearchAttributeValuesQuery) CqrsRequestType() cqrs.RequestType {
 
 type SearchAttributeValuesResultData = dyn.PagedResultData[domain.AttributeValue]
 type SearchAttributeValuesResult = dyn.OpResult[SearchAttributeValuesResultData]
+
+var updateAttributeValueCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "attribute_value",
+	Action:    "update",
+}
+
+type UpdateAttributeValueCommand struct {
+	domain.AttributeValue
+}
+
+func (UpdateAttributeValueCommand) CqrsRequestType() cqrs.RequestType {
+	return updateAttributeValueCommandType
+}
+
+func (this UpdateAttributeValueCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.AttributeValueSchemaName)
+}
+
+type UpdateAttributeValueResult = dyn.OpResult[dyn.MutateResultData]

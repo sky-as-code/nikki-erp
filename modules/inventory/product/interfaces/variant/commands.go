@@ -39,26 +39,6 @@ func (this CreateVariantCommand) GetSchema() *dmodel.ModelSchema {
 
 type CreateVariantResult = dyn.OpResult[domain.Variant]
 
-var updateVariantCommandType = cqrs.RequestType{
-	Module:    "inventory",
-	Submodule: "variant",
-	Action:    "update",
-}
-
-type UpdateVariantCommand struct {
-	domain.Variant
-}
-
-func (UpdateVariantCommand) CqrsRequestType() cqrs.RequestType {
-	return updateVariantCommandType
-}
-
-func (this UpdateVariantCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.VariantSchemaName)
-}
-
-type UpdateVariantResult = dyn.OpResult[dyn.MutateResultData]
-
 var deleteVariantCommandType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "variant",
@@ -79,10 +59,7 @@ var getVariantQueryType = cqrs.RequestType{
 	Action:    "getVariant",
 }
 
-type GetVariantQuery struct {
-	Columns []string `json:"columns" query:"columns"`
-	Id      *string  `json:"id" param:"id"`
-}
+type GetVariantQuery dyn.GetOneQuery
 
 func (GetVariantQuery) CqrsRequestType() cqrs.RequestType {
 	return getVariantQueryType
@@ -118,3 +95,23 @@ func (SearchVariantsQuery) CqrsRequestType() cqrs.RequestType {
 
 type SearchVariantsResultData = dyn.PagedResultData[domain.Variant]
 type SearchVariantsResult = dyn.OpResult[SearchVariantsResultData]
+
+var updateVariantCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "variant",
+	Action:    "update",
+}
+
+type UpdateVariantCommand struct {
+	domain.Variant
+}
+
+func (UpdateVariantCommand) CqrsRequestType() cqrs.RequestType {
+	return updateVariantCommandType
+}
+
+func (this UpdateVariantCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.VariantSchemaName)
+}
+
+type UpdateVariantResult = dyn.OpResult[dyn.MutateResultData]

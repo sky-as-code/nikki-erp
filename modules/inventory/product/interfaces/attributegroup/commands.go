@@ -39,26 +39,6 @@ func (this CreateAttributeGroupCommand) GetSchema() *dmodel.ModelSchema {
 
 type CreateAttributeGroupResult = dyn.OpResult[domain.AttributeGroup]
 
-var updateAttributeGroupCommandType = cqrs.RequestType{
-	Module:    "inventory",
-	Submodule: "attribute_group",
-	Action:    "update",
-}
-
-type UpdateAttributeGroupCommand struct {
-	domain.AttributeGroup
-}
-
-func (UpdateAttributeGroupCommand) CqrsRequestType() cqrs.RequestType {
-	return updateAttributeGroupCommandType
-}
-
-func (this UpdateAttributeGroupCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.AttributeGroupSchemaName)
-}
-
-type UpdateAttributeGroupResult = dyn.OpResult[dyn.MutateResultData]
-
 var deleteAttributeGroupCommandType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "attribute_group",
@@ -79,10 +59,7 @@ var getAttributeGroupQueryType = cqrs.RequestType{
 	Action:    "getAttributeGroup",
 }
 
-type GetAttributeGroupQuery struct {
-	Columns []string `json:"columns" query:"columns"`
-	Id      *string  `json:"id" param:"id"`
-}
+type GetAttributeGroupQuery dyn.GetOneQuery
 
 func (GetAttributeGroupQuery) CqrsRequestType() cqrs.RequestType {
 	return getAttributeGroupQueryType
@@ -118,3 +95,23 @@ func (SearchAttributeGroupsQuery) CqrsRequestType() cqrs.RequestType {
 
 type SearchAttributeGroupsResultData = dyn.PagedResultData[domain.AttributeGroup]
 type SearchAttributeGroupsResult = dyn.OpResult[SearchAttributeGroupsResultData]
+
+var updateAttributeGroupCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "attribute_group",
+	Action:    "update",
+}
+
+type UpdateAttributeGroupCommand struct {
+	domain.AttributeGroup
+}
+
+func (UpdateAttributeGroupCommand) CqrsRequestType() cqrs.RequestType {
+	return updateAttributeGroupCommandType
+}
+
+func (this UpdateAttributeGroupCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.AttributeGroupSchemaName)
+}
+
+type UpdateAttributeGroupResult = dyn.OpResult[dyn.MutateResultData]

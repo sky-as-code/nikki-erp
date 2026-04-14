@@ -1,19 +1,18 @@
 package app
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/sky-as-code/nikki-erp/common/array"
-	"github.com/sky-as-code/nikki-erp/common/defense"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
+	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/common/util"
+	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/event"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	i18n "github.com/sky-as-code/nikki-erp/modules/core/i18n/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
@@ -22,13 +21,11 @@ import (
 
 func NewModuleServiceImpl(
 	cqrsBus cqrs.CqrsBus,
-	eventBus event.EventBus,
 	logger logging.LoggerService,
 	moduleRepo it.ModuleRepository,
 ) it.ModuleService {
 	return &ModuleServiceImpl{
 		cqrsBus:    cqrsBus,
-		eventBus:   eventBus,
 		logger:     logger,
 		moduleRepo: moduleRepo,
 	}
@@ -36,398 +33,333 @@ func NewModuleServiceImpl(
 
 type ModuleServiceImpl struct {
 	cqrsBus    cqrs.CqrsBus
-	eventBus   event.EventBus
 	logger     logging.LoggerService
 	moduleRepo it.ModuleRepository
 }
 
-func (this *ModuleServiceImpl) CreateModule(ctx crud.Context, cmd it.CreateModuleCommand) (*it.CreateModuleResult, error) {
-	result, err := crud.Create(ctx, crud.CreateParam[*domain.ModuleMetadata, it.CreateModuleCommand, it.CreateModuleResult]{
-		Action:              "create module",
-		Command:             cmd,
-		AssertBusinessRules: this.assertModuleUnique,
-		RepoCreate:          this.moduleRepo.Create,
-		SetDefault:          this.setModuleDefaults,
-		Sanitize:            this.sanitizeModule,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.CreateModuleResult {
-			return &it.CreateModuleResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.ModuleMetadata) *it.CreateModuleResult {
-			return &it.CreateModuleResult{
-				Data:    model,
-				HasData: model != nil,
-			}
-		},
+func (this *ModuleServiceImpl) CreateModule(
+	ctx corectx.Context, cmd it.CreateModuleCommand,
+) (*it.CreateModuleResult, error) {
+	return corecrud.Create(ctx, corecrud.CreateParam[domain.ModuleMetadata, *domain.ModuleMetadata]{
+		Action:         "create module metadata",
+		BaseRepoGetter: this.moduleRepo,
+		Data:           cmd,
+		ValidateExtra:  this.validateModuleCreate,
 	})
-
-	return result, err
 }
 
-func (this *ModuleServiceImpl) CreateBulkModules(ctx crud.Context, cmd it.CreateBulkModulesCommand) (*it.CreateBulkModulesResult, error) {
-	result, err := crud.CreateBulk(ctx, crud.CreateBulkParam[*domain.ModuleMetadata, it.CreateBulkModulesCommand, it.CreateBulkModulesResult]{
-		Action:              "create bulk modules",
-		Command:             cmd,
-		AssertBusinessRules: this.assertModuleUnique,
-		RepoCreateBulk:      this.moduleRepo.CreateBulk,
-		SetDefault:          this.setModuleDefaults,
-		Sanitize:            this.sanitizeModule,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.CreateBulkModulesResult {
-			return &it.CreateBulkModulesResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model []*domain.ModuleMetadata) *it.CreateBulkModulesResult {
-			return &it.CreateBulkModulesResult{
-				Data:    model,
-				HasData: model != nil,
-			}
-		},
+func (this *ModuleServiceImpl) DeleteModule(
+	ctx corectx.Context, cmd it.DeleteModuleCommand,
+) (*it.DeleteModuleResult, error) {
+	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
+		Action:       "delete module metadata",
+		DbRepoGetter: this.moduleRepo,
+		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
-
-	return result, err
 }
 
-func (this *ModuleServiceImpl) UpdateModule(ctx crud.Context, cmd it.UpdateModuleCommand) (*it.UpdateModuleResult, error) {
-	result, err := crud.Update(ctx, crud.UpdateParam[*domain.ModuleMetadata, it.UpdateModuleCommand, it.UpdateModuleResult]{
-		Action:              "update module",
-		Command:             cmd,
-		AssertBusinessRules: this.assertUpdateRules,
-		AssertExists:        this.assertModuleIdExists,
-		RepoUpdate:          this.moduleRepo.Update,
-		Sanitize:            this.sanitizeModule,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.UpdateModuleResult {
-			return &it.UpdateModuleResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.ModuleMetadata) *it.UpdateModuleResult {
-			return &it.UpdateModuleResult{
-				Data:    model,
-				HasData: model != nil,
-			}
-		},
+func (this *ModuleServiceImpl) GetModule(
+	ctx corectx.Context, query it.GetModuleQuery,
+) (*it.GetModuleResult, error) {
+	return corecrud.GetOne[domain.ModuleMetadata](ctx, corecrud.GetOneParam{
+		Action:       "get module metadata",
+		DbRepoGetter: this.moduleRepo,
+		Query:        dyn.GetOneQuery(query),
 	})
-
-	return result, err
 }
 
-func (this *ModuleServiceImpl) UpdateBulkModules(ctx crud.Context, cmd it.UpdateBulkModulesCommand) (*it.UpdateBulkModulesResult, error) {
-	result, err := crud.UpdateBulk(ctx, crud.UpdateBulkParam[*domain.ModuleMetadata, it.UpdateBulkModulesCommand, it.UpdateBulkModulesResult]{
-		Action:              "update bulk modules",
-		Command:             cmd,
-		AssertBusinessRules: this.assertUpdateRules,
-		AssertExists:        this.assertModuleIdExists,
-		RepoUpdate:          this.moduleRepo.Update,
-		Sanitize:            this.sanitizeModule,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.UpdateBulkModulesResult {
-			return &it.UpdateBulkModulesResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model []*domain.ModuleMetadata) *it.UpdateBulkModulesResult {
-			return &it.UpdateBulkModulesResult{
-				Data:    model,
-				HasData: model != nil,
-			}
-		},
+func (this *ModuleServiceImpl) SearchModules(
+	ctx corectx.Context, query it.SearchModulesQuery,
+) (*it.SearchModulesResult, error) {
+	return corecrud.Search[domain.ModuleMetadata](ctx, corecrud.SearchParam{
+		Action:       "search module metadata",
+		DbRepoGetter: this.moduleRepo,
+		Query:        dyn.SearchQuery(query),
 	})
-
-	return result, err
 }
 
-// func (this *ModuleServiceImpl) sanitizeModule(module *it.Module, vErrs *ft.ValidationErrors) {
-func (this *ModuleServiceImpl) sanitizeModule(module *domain.ModuleMetadata) {
-	// TODO: Should pass ctx from outside
-	ctx := crud.NewRequestContext(context.Background())
-	whitelistLangs, err := this.getEnabledLanguages(ctx)
-	ft.PanicOnErr(err)
-
-	newLabel, _, err := module.Label.SanitizeClone(whitelistLangs, false)
-	ft.PanicOnErr(err)
-
-	// TODO: Should pass vErrs from outside
-	// if fieldCount == 0 {
-	// 	vErrs.Append("label", "no enabled language")
-	// }
-	module.Label = newLabel
-
-	if module.Name != nil {
-		module.Name = defense.SanitizePlainTextPtr(module.Name, true)
-	}
-}
-
-func (this *ModuleServiceImpl) assertUpdateRules(ctx crud.Context, updatedMod *domain.ModuleMetadata, _ *domain.ModuleMetadata, vErrs *ft.ValidationErrors) error {
-	return this.assertModuleUnique(ctx, updatedMod, vErrs)
-}
-
-func (this *ModuleServiceImpl) setModuleDefaults(module *domain.ModuleMetadata) {
-	module.SetDefaults()
-	module.IsOrphaned = util.ToPtr(false)
-}
-
-func (this *ModuleServiceImpl) assertModuleUnique(ctx crud.Context, module *domain.ModuleMetadata, vErrs *ft.ValidationErrors) error {
-	dbMod, err := this.moduleRepo.FindByName(ctx, it.FindByNameParam{Name: *module.Name})
-	if err != nil {
-		return err
-	}
-
-	if dbMod != nil {
-		vErrs.AppendAlreadyExists("name", "module name")
-	}
-	return nil
-}
-
-func (this *ModuleServiceImpl) assertModuleIdExists(ctx crud.Context, module *domain.ModuleMetadata, vErrs *ft.ValidationErrors) (dbModule *domain.ModuleMetadata, err error) {
-	dbModule, err = this.moduleRepo.FindById(ctx, it.FindByIdParam{Id: *module.Id})
-	if dbModule == nil {
-		vErrs.AppendNotFound("id", "module ID")
-	}
-	return
-}
-
-func (this *ModuleServiceImpl) getEnabledLanguages(ctx crud.Context) ([]model.LanguageCode, error) {
-	query := i18n.ListEnabledLangCodesQuery{}
-	result := i18n.ListEnabledLangCodesResult{}
-	err := this.cqrsBus.Request(ctx, query, &result)
-	ft.PanicOnErr(err)
-
-	return result.Data, nil
-}
-
-func (this *ModuleServiceImpl) DeleteModule(ctx crud.Context, cmd it.DeleteModuleCommand) (*it.DeleteModuleResult, error) {
-	result, err := crud.DeleteHard(ctx, crud.DeleteHardParam[*domain.ModuleMetadata, it.DeleteModuleCommand, it.DeleteModuleResult]{
-		Action:       "delete module",
-		Command:      cmd,
-		AssertExists: this.assertModuleIdExists,
-		RepoDelete: func(ctx crud.Context, model *domain.ModuleMetadata) (int, error) {
-			return this.moduleRepo.DeleteById(ctx, it.DeleteByIdParam{Id: *model.Id})
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.DeleteModuleResult {
-			return &it.DeleteModuleResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.ModuleMetadata, deletedCount int) *it.DeleteModuleResult {
-			return crud.NewSuccessDeletionResult(cmd.Id, &deletedCount)
-		},
+func (this *ModuleServiceImpl) ModuleExists(
+	ctx corectx.Context, query it.ModuleExistsQuery,
+) (*it.ModuleExistsResult, error) {
+	return corecrud.Exists(ctx, corecrud.ExistsParam{
+		Action:       "check if module metadata exists",
+		DbRepoGetter: this.moduleRepo,
+		Query:        dyn.ExistsQuery(query),
 	})
-
-	return result, err
 }
 
-func (this *ModuleServiceImpl) ModuleExists(ctx crud.Context, query it.ModuleExistsQuery) (*it.ModuleExistsResult, error) {
-	result, err := crud.ExistsOne(ctx, crud.ExistsOneParam[*domain.ModuleMetadata, it.ModuleExistsQuery, it.ModuleExistsResult]{
-		Action: "check if module exists",
-		Query:  query,
-		RepoExistsOne: func(ctx crud.Context, query it.ModuleExistsQuery, vErrs *ft.ValidationErrors) (bool, error) {
-			return this.moduleRepo.Exists(ctx, it.ExistsParam{Id: query.Id})
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.ModuleExistsResult {
-			return &it.ModuleExistsResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: crud.NewSuccessExistsResult,
-	})
-
-	return result, err
-}
-
-func (this *ModuleServiceImpl) GetModule(ctx crud.Context, query it.GetModuleByIdQuery) (*it.GetModuleResult, error) {
-	result, err := crud.GetOne(ctx, crud.GetOneParam[*domain.ModuleMetadata, it.GetModuleByIdQuery, it.GetModuleResult]{
-		Action:      "get module by ID",
-		Query:       query,
-		RepoFindOne: this.getModuleByIdFull,
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.GetModuleResult {
-			return &it.GetModuleResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(model *domain.ModuleMetadata) *it.GetModuleResult {
-			return &it.GetModuleResult{
-				Data:    model,
-				HasData: model != nil,
-			}
-		},
-	})
-
-	return result, err
-}
-
-func (this *ModuleServiceImpl) getModuleByIdFull(ctx crud.Context, query it.GetModuleByIdQuery, vErrs *ft.ValidationErrors) (dbModule *domain.ModuleMetadata, err error) {
-	dbModule, err = this.moduleRepo.FindById(ctx, query)
-	if dbModule == nil {
-		vErrs.AppendNotFound("id", "module ID")
-	}
-	return
-}
-
-func (this *ModuleServiceImpl) ListModules(ctx crud.Context, query it.ListModulesQuery) (*it.ListModulesResult, error) {
-	result, err := crud.ListAll(ctx, crud.ListAllParam[domain.ModuleMetadata, it.ListModulesQuery, it.ListModulesResult]{
-		Action: "get module by ID",
-		Query:  query,
-		RepoListAll: func(ctx crud.Context, query it.ListModulesQuery, vErrs *ft.ValidationErrors) ([]domain.ModuleMetadata, error) {
-			return this.moduleRepo.List(ctx, it.ListParam{})
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.ListModulesResult {
-			return &it.ListModulesResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(models []domain.ModuleMetadata) *it.ListModulesResult {
-			return &it.ListModulesResult{
-				Data:    models,
-				HasData: models != nil,
-			}
-		},
-	})
-
-	return result, err
-}
-
-func (this *ModuleServiceImpl) SearchModules(ctx crud.Context, query it.SearchModulesQuery) (*it.SearchModulesResult, error) {
-	result, err := crud.Search(ctx, crud.SearchParam[domain.ModuleMetadata, it.SearchModulesQuery, it.SearchModulesResult]{
-		Action: "search modules",
-		Query:  query,
-		SetQueryDefaults: func(query *it.SearchModulesQuery) {
-			query.SetDefaults()
-		},
-		ParseSearchGraph: this.moduleRepo.ParseSearchGraph,
-		RepoSearch: func(ctx crud.Context, query it.SearchModulesQuery, predicate *orm.Predicate, order []orm.OrderOption) (*crud.PagedResult[domain.ModuleMetadata], error) {
-			return this.moduleRepo.Search(ctx, it.SearchParam{
-				Predicate: predicate,
-				Order:     order,
-				Page:      *query.Page,
-				Size:      *query.Size,
-			})
-		},
-		ToFailureResult: func(vErrs *ft.ValidationErrors) *it.SearchModulesResult {
-			return &it.SearchModulesResult{
-				ClientError: vErrs.ToClientError(),
-			}
-		},
-		ToSuccessResult: func(pagedResult *crud.PagedResult[domain.ModuleMetadata]) *it.SearchModulesResult {
-			return &it.SearchModulesResult{
-				Data:    pagedResult,
-				HasData: pagedResult.Items != nil,
-			}
-		},
-	})
-
-	return result, err
-}
-
-func (this *ModuleServiceImpl) SyncModuleMetadata(ctx crud.Context, installedModules []modules.InCodeModule) (isSuccess bool, err error) {
+func (this *ModuleServiceImpl) SyncModuleMetadata(
+	ctx corectx.Context, installedModules []modules.InCodeModule,
+) (isSuccess bool, err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "sync module metadata"); e != nil {
 			err = e
 		}
 	}()
 
-	// Prevent other replicas to run this method.
-	accquired, err := this.moduleRepo.AcquireLock(ctx)
-	ft.PanicOnErr(err)
-	if !accquired {
-		this.logger.Debugf("Could not acquired lock to sync module metadata. Another instance has acquired it")
+	acquired, err := this.moduleRepo.AcquireLock(ctx)
+	if err != nil {
+		return false, err
+	}
+	if !acquired {
+		this.logger.Debugf("Could not acquire lock to sync module metadata. Another instance has acquired it")
 		return false, nil
 	}
-	this.logger.Debugf("Acquired lock successfully to sync module metadata")
 
 	defer func() {
 		this.logger.Debugf("Releasing lock for module metadata sync")
-		this.moduleRepo.ReleaseLock(ctx)
+		releaseErr := this.moduleRepo.ReleaseLock(ctx)
+		if releaseErr != nil {
+			if err != nil {
+				err = fmt.Errorf("%w; release module metadata lock: %w", err, releaseErr)
+				return
+			}
+			err = fmt.Errorf("release module metadata lock: %w", releaseErr)
+		}
 	}()
 
-	trxCtx, err := this.moduleRepo.IncludeTransaction(ctx)
-	ft.PanicOnErr(err)
-	defer trxCtx.GetDbTranx().Commit()
+	result, err := corecrud.ExecInTranx(ctx, this.moduleRepo, func(trxCtx corectx.Context) (*bool, error) {
+		dbModules, err := this.listAllModules(trxCtx)
+		if err != nil {
+			return nil, err
+		}
 
-	dbModules, err := this.moduleRepo.List(trxCtx, it.ListParam{})
-	ft.PanicOnErr(err)
-
-	// Build maps for quick lookup
-	dbMap := make(map[string]domain.ModuleMetadata)
-	for _, m := range dbModules {
-		dbMap[*m.Name] = m
-	}
-
-	installedMap := make(map[string]modules.InCodeModule)
-	for _, m := range installedModules {
-		installedMap[m.Name()] = m
-	}
-
-	var orphanedMods []domain.ModuleMetadata
-	var modifiedMods []domain.ModuleMetadata
-	var newMods []modules.InCodeModule
-
-	for name, dbMod := range dbMap {
-		if installedMod, ok := installedMap[name]; ok {
-			modified := dbMod.ModifiedFields(installedMod)
-			if modified != nil {
-				modified.Id = dbMod.Id
-				modifiedMods = append(modifiedMods, *modified)
+		dbMap := make(map[string]domain.ModuleMetadata)
+		for _, item := range dbModules {
+			if item.GetName() != nil {
+				dbMap[*item.GetName()] = item
 			}
-			// if installedMod.Version() != *dbMod.Version {
-			// 	modifiedMods = append(modifiedMods, dbMod)
-			// }
+		}
+
+		installedMap := make(map[string]modules.InCodeModule)
+		for _, item := range installedModules {
+			installedMap[item.Name()] = item
+		}
+
+		newCount := 0
+		modifiedCount := 0
+		orphanedCount := 0
+
+		for name, installedModule := range installedMap {
+			dbModule, exists := dbMap[name]
+			if !exists {
+				if err := this.syncCreateModule(trxCtx, installedModule); err != nil {
+					return nil, err
+				}
+				newCount++
+				continue
+			}
+
+			modified := dbModule.ModifiedFields(installedModule)
+			if modified == nil {
+				continue
+			}
+			if err := this.syncUpdateModule(trxCtx, dbModule, modified); err != nil {
+				return nil, err
+			}
+			modifiedCount++
+		}
+
+		for name, dbModule := range dbMap {
+			if _, exists := installedMap[name]; exists {
+				continue
+			}
+			if dbModule.GetIsOrphaned() != nil && *dbModule.GetIsOrphaned() {
+				continue
+			}
+
+			changes := domain.NewModuleMetadata()
+			changes.SetIsOrphaned(util.ToPtr(true))
+			if err := this.syncUpdateModule(trxCtx, dbModule, changes); err != nil {
+				return nil, err
+			}
+			orphanedCount++
+		}
+
+		this.logger.Info("Sync module status", logging.Attr{
+			"installed_modules": len(installedModules),
+			"new_modules":       newCount,
+			"modified_modules":  modifiedCount,
+			"orphaned_modules":  orphanedCount,
+		})
+
+		return util.ToPtr(true), nil
+	})
+	if err != nil {
+		return false, err
+	}
+	if result == nil {
+		return false, nil
+	}
+	return *result, nil
+}
+
+func (this *ModuleServiceImpl) validateModuleCreate(
+	ctx corectx.Context,
+	module *domain.ModuleMetadata,
+	vErrs *ft.ClientErrors,
+) error {
+	err := this.validateAndNormalizeModuleFields(ctx, module, vErrs)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *ModuleServiceImpl) validateModuleUpdate(
+	ctx corectx.Context,
+	module *domain.ModuleMetadata,
+	_ *domain.ModuleMetadata,
+	vErrs *ft.ClientErrors,
+) error {
+	err := this.validateAndNormalizeModuleFields(ctx, module, vErrs)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *ModuleServiceImpl) validateAndNormalizeModuleFields(
+	ctx corectx.Context,
+	module *domain.ModuleMetadata,
+	vErrs *ft.ClientErrors,
+) error {
+	if module.GetName() != nil {
+		if err := val.ApiBased.ValidateRaw(*module.GetName(), model.ModelRuleCodeName); err != nil {
+			vErrs.Append(*ft.NewValidationError(
+				domain.ModuleMetadataFieldName,
+				"module.invalid_name",
+				"name must contain only letters, numbers, and underscores",
+			))
+		}
+	}
+
+	rawVersion := module.GetFieldData().GetString(domain.ModuleMetadataFieldVersion)
+	if rawVersion != nil {
+		if _, err := semver.ParseSemVer(*rawVersion); err != nil {
+			vErrs.Append(*ft.NewValidationError(
+				domain.ModuleMetadataFieldVersion,
+				"module.invalid_version",
+				"version must use valid semantic version format",
+			))
+		}
+	}
+
+	if module.GetLabel() != nil {
+		whitelistLangs, err := this.getEnabledLanguages(ctx)
+		if err != nil {
+			return err
+		}
+
+		newLabel, fieldCount, err := module.GetLabel().SanitizeClone(whitelistLangs, false)
+		if err != nil {
+			return err
+		}
+		if fieldCount == 0 {
+			vErrs.Append(*ft.NewValidationError(
+				domain.ModuleMetadataFieldLabel,
+				"module.label_requires_enabled_language",
+				"label must contain at least one enabled language",
+			))
 		} else {
-			orphanedMods = append(orphanedMods, dbMod)
+			module.SetLabel(newLabel)
 		}
 	}
+	return nil
+}
 
-	for name, im := range installedMap {
-		if _, ok := dbMap[name]; !ok {
-			newMods = append(newMods, im)
+func (this *ModuleServiceImpl) getEnabledLanguages(ctx corectx.Context) ([]model.LanguageCode, error) {
+	query := i18n.ListEnabledLangCodesQuery{}
+	result := i18n.ListEnabledLangCodesResult{}
+	err := this.cqrsBus.Request(ctx, query, &result)
+	if err != nil {
+		return nil, err
+	}
+	return result.Data, nil
+}
+
+func (this *ModuleServiceImpl) listAllModules(ctx corectx.Context) ([]domain.ModuleMetadata, error) {
+	modulesOut := make([]domain.ModuleMetadata, 0)
+	page := 0
+
+	for {
+		result, err := this.moduleRepo.Search(ctx, dyn.RepoSearchParam{
+			Page: page,
+			Size: model.MODEL_RULE_PAGE_MAX_SIZE,
+		})
+		if err != nil {
+			return nil, err
 		}
+		if result.ClientErrors.Count() > 0 {
+			return nil, fmt.Errorf("search module metadata: %v", result.ClientErrors)
+		}
+		if !result.HasData || len(result.Data.Items) == 0 {
+			break
+		}
+
+		modulesOut = append(modulesOut, result.Data.Items...)
+		if len(modulesOut) >= result.Data.Total {
+			break
+		}
+		page++
 	}
 
-	this.logger.Info("Sync module status", logging.Attr{
-		"installed_modules": len(installedModules),
-		"new_modules":       len(newMods),
-		"modified_modules":  len(modifiedMods),
-		"orphaned_modules":  len(orphanedMods),
-	})
+	return modulesOut, nil
+}
 
-	createCmds := array.Map(newMods, func(mod modules.InCodeModule) it.CreateModuleCommand {
-		label := make(model.LangJson)
-		label[model.LabelRefLanguageCode] = mod.LabelKey()
-		return it.CreateModuleCommand{
-			Label:   label,
-			Name:    mod.Name(),
-			Version: util.ToPtr(mod.Version()).String(),
-		}
-	})
-	result, err := this.CreateBulkModules(trxCtx, it.CreateBulkModulesCommand{
-		Modules: createCmds,
-	})
-	ft.PanicOnErr(err)
+func (this *ModuleServiceImpl) syncCreateModule(
+	ctx corectx.Context,
+	installedModule modules.InCodeModule,
+) error {
+	label := make(model.LangJson)
+	label[model.LabelRefLanguageCode] = installedModule.LabelKey()
 
-	if result.ClientError != nil {
-		return false, fmt.Errorf("failed to create new modules: %v", result.ClientError)
+	cmd := it.CreateModuleCommand{*domain.NewModuleMetadata()}
+	cmd.SetLabel(&label)
+	cmd.SetName(util.ToPtr(installedModule.Name()))
+	cmd.SetVersion(util.ToPtr(installedModule.Version()))
+
+	result, err := this.CreateModule(ctx, cmd)
+	if err != nil {
+		return err
 	}
+	if result.ClientErrors.Count() > 0 {
+		return fmt.Errorf("create module %s: %v", installedModule.Name(), result.ClientErrors)
+	}
+	return nil
+}
 
-	updatedCmds := array.Map(modifiedMods, func(mod domain.ModuleMetadata) it.UpdateModuleCommand {
-		cmd := it.UpdateModuleCommand{
-			Id: *mod.Id,
+func (this *ModuleServiceImpl) syncUpdateModule(
+	ctx corectx.Context,
+	dbModule domain.ModuleMetadata,
+	changes *domain.ModuleMetadata,
+) error {
+	cmd := it.UpdateModuleCommand{}
+	cmd.SetFieldData(changes.GetFieldData())
+	cmd.SetId(dbModule.GetId())
+	cmd.SetEtag(model.NewEtag())
+
+	result, err := this.UpdateModule(ctx, cmd)
+	if err != nil {
+		return err
+	}
+	if result.ClientErrors.Count() > 0 {
+		moduleName := "unknown"
+		if dbModule.GetName() != nil {
+			moduleName = *dbModule.GetName()
 		}
-		if mod.Label != nil {
-			cmd.Label = mod.Label
-		}
-		if mod.Version != nil {
-			cmd.Version = util.ToPtr(mod.Version.String())
-		}
-		return cmd
+		return fmt.Errorf("update module %s: %v", moduleName, result.ClientErrors.ToError())
+	}
+	return nil
+}
+
+func (this *ModuleServiceImpl) UpdateModule(
+	ctx corectx.Context, cmd it.UpdateModuleCommand,
+) (*it.UpdateModuleResult, error) {
+	return corecrud.Update(ctx, corecrud.UpdateParam[domain.ModuleMetadata, *domain.ModuleMetadata]{
+		Action:        "update module metadata",
+		DbRepoGetter:  this.moduleRepo,
+		Data:          cmd,
+		ValidateExtra: this.validateModuleUpdate,
 	})
-	orphanedCmds := array.Map(orphanedMods, func(mod domain.ModuleMetadata) it.UpdateModuleCommand {
-		return it.UpdateModuleCommand{
-			Id:         *mod.Id,
-			IsOrphaned: util.ToPtr(true),
-		}
-	})
-
-	updatedCmds = append(updatedCmds, orphanedCmds...)
-
-	return true, nil
 }

@@ -39,26 +39,6 @@ func (this CreateProductCategoryCommand) GetSchema() *dmodel.ModelSchema {
 
 type CreateProductCategoryResult = dyn.OpResult[domain.ProductCategory]
 
-var updateProductCategoryCommandType = cqrs.RequestType{
-	Module:    "inventory",
-	Submodule: "product_category",
-	Action:    "update",
-}
-
-type UpdateProductCategoryCommand struct {
-	domain.ProductCategory
-}
-
-func (UpdateProductCategoryCommand) CqrsRequestType() cqrs.RequestType {
-	return updateProductCategoryCommandType
-}
-
-func (this UpdateProductCategoryCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.ProductCategorySchemaName)
-}
-
-type UpdateProductCategoryResult = dyn.OpResult[dyn.MutateResultData]
-
 var deleteProductCategoryCommandType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "product_category",
@@ -79,10 +59,7 @@ var getProductCategoryQueryType = cqrs.RequestType{
 	Action:    "getProductCategory",
 }
 
-type GetProductCategoryQuery struct {
-	Columns []string `json:"columns" query:"columns"`
-	Id      *string  `json:"id" param:"id"`
-}
+type GetProductCategoryQuery dyn.GetOneQuery
 
 func (GetProductCategoryQuery) CqrsRequestType() cqrs.RequestType {
 	return getProductCategoryQueryType
@@ -118,3 +95,23 @@ func (SearchProductCategoriesQuery) CqrsRequestType() cqrs.RequestType {
 
 type SearchProductCategoriesResultData = dyn.PagedResultData[domain.ProductCategory]
 type SearchProductCategoriesResult = dyn.OpResult[SearchProductCategoriesResultData]
+
+var updateProductCategoryCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "product_category",
+	Action:    "update",
+}
+
+type UpdateProductCategoryCommand struct {
+	domain.ProductCategory
+}
+
+func (UpdateProductCategoryCommand) CqrsRequestType() cqrs.RequestType {
+	return updateProductCategoryCommandType
+}
+
+func (this UpdateProductCategoryCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.ProductCategorySchemaName)
+}
+
+type UpdateProductCategoryResult = dyn.OpResult[dyn.MutateResultData]

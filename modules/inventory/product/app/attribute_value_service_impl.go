@@ -4,36 +4,22 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
-	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
-	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributevalue"
+	itAttr "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
+	itAttrVal "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributevalue"
+	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 )
 
-func NewAttributeValueServiceImpl(
-	repo it.AttributeValueRepository,
-	attributeSvc itAttribute.AttributeService,
-	cqrsBus cqrs.CqrsBus,
-) it.AttributeValueService {
-	return &AttributeValueServiceImpl{
-		repo:         repo,
-		attributeSvc: attributeSvc,
-		cqrsBus:      cqrsBus,
-	}
+func NewAttributeValueService(prodSvc itProduct.ProductService) itAttrVal.AttributeValueService {
+	return prodSvc.(itAttrVal.AttributeValueService)
 }
 
-type AttributeValueServiceImpl struct {
-	repo         it.AttributeValueRepository
-	attributeSvc itAttribute.AttributeService
-	cqrsBus      cqrs.CqrsBus
-}
-
-func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx corectx.Context, cmd it.CreateAttributeValueCommand) (*it.CreateAttributeValueResult, error) {
+func (this *ProductServiceImpl) CreateAttributeValue(ctx corectx.Context, cmd itAttrVal.CreateAttributeValueCommand) (*itAttrVal.CreateAttributeValueResult, error) {
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.AttributeValue, *domain.AttributeValue]{
 		Action:         "create attribute value",
-		BaseRepoGetter: s.repo,
+		BaseRepoGetter: this.attrValueRepo,
 		Data:           cmd,
 		ValidateExtra: func(ctx corectx.Context, attributeValue *domain.AttributeValue, vErrs *ft.ClientErrors) error {
 			// Check if attribute exists
@@ -42,8 +28,7 @@ func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx corectx.Context, cm
 				return nil
 			}
 
-			attributeIdStr := string(*attributeId)
-			attributeResult, err := s.attributeSvc.GetAttribute(ctx, itAttribute.GetAttributeQuery{Id: &attributeIdStr})
+			attributeResult, err := this.GetAttribute(ctx, itAttr.GetAttributeQuery{Id: *attributeId})
 			if err != nil {
 				return err
 			}
@@ -60,7 +45,8 @@ func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx corectx.Context, cm
 			}
 
 			valueText := attributeValue.GetValueText()
-			valueNumber := attributeValue.GetValueNumber()
+			valueDecimal := attributeValue.GetValueDecimal()
+			valueInteger := attributeValue.GetValueInteger()
 			valueBool := attributeValue.GetValueBool()
 			valueRef := attributeValue.GetValueRef()
 
@@ -69,8 +55,11 @@ func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx corectx.Context, cm
 				if valueText == nil {
 					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_required", "text value is required for text attribute"))
 				}
-				if valueNumber != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for text attribute"))
+				if valueDecimal != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
+				}
+				if valueInteger != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
 				}
 				if valueBool != nil {
 					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for text attribute"))
@@ -79,9 +68,12 @@ func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx corectx.Context, cm
 					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for text attribute"))
 				}
 
-			case domain.AttributeDataTypeNumber:
-				if valueNumber == nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_required", "number value is required for number attribute"))
+			case domain.AttributeDataTypeDecimal:
+				if valueDecimal != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
+				}
+				if valueInteger != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
 				}
 				if valueText != nil {
 					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for number attribute"))
@@ -100,8 +92,11 @@ func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx corectx.Context, cm
 				if valueText != nil {
 					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for boolean attribute"))
 				}
-				if valueNumber != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for boolean attribute"))
+				if valueDecimal != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
+				}
+				if valueInteger != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
 				}
 				if valueRef != nil {
 					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for boolean attribute"))
@@ -114,8 +109,11 @@ func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx corectx.Context, cm
 				if valueText != nil {
 					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for reference attribute"))
 				}
-				if valueNumber != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for reference attribute"))
+				if valueDecimal != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
+				}
+				if valueInteger != nil {
+					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
 				}
 				if valueBool != nil {
 					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for reference attribute"))
@@ -123,7 +121,7 @@ func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx corectx.Context, cm
 			}
 
 			// Check for duplicate attribute value
-			existingValue, err := s.findByAttributeAndValue(ctx, attributeValue)
+			existingValue, err := this.findByAttributeAndValue(ctx, attributeValue)
 			if err != nil {
 				return err
 			}
@@ -136,17 +134,16 @@ func (s *AttributeValueServiceImpl) CreateAttributeValue(ctx corectx.Context, cm
 	})
 }
 
-func (s *AttributeValueServiceImpl) UpdateAttributeValue(ctx corectx.Context, cmd it.UpdateAttributeValueCommand) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *ProductServiceImpl) UpdateAttributeValue(ctx corectx.Context, cmd itAttrVal.UpdateAttributeValueCommand) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.AttributeValue, *domain.AttributeValue]{
 		Action:       "update attribute value",
-		DbRepoGetter: s.repo,
+		DbRepoGetter: this.attrValueRepo,
 		Data:         cmd,
 		ValidateExtra: func(ctx corectx.Context, attributeValue *domain.AttributeValue, foundAttributeValue *domain.AttributeValue, vErrs *ft.ClientErrors) error {
 			// Check if attribute exists
 			attributeId := attributeValue.GetAttributeId()
 			if attributeId != nil {
-				attributeIdStr := string(*attributeId)
-				attributeResult, err := s.attributeSvc.GetAttribute(ctx, itAttribute.GetAttributeQuery{Id: &attributeIdStr})
+				attributeResult, err := this.GetAttribute(ctx, itAttr.GetAttributeQuery{Id: *attributeId})
 				if err != nil {
 					return err
 				}
@@ -163,14 +160,18 @@ func (s *AttributeValueServiceImpl) UpdateAttributeValue(ctx corectx.Context, cm
 				}
 
 				valueText := attributeValue.GetValueText()
-				valueNumber := attributeValue.GetValueNumber()
+				valueDecimal := attributeValue.GetValueDecimal()
+				valueInteger := attributeValue.GetValueInteger()
 				valueBool := attributeValue.GetValueBool()
 				valueRef := attributeValue.GetValueRef()
 
 				switch *dataType {
 				case domain.AttributeDataTypeText:
-					if valueNumber != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for text attribute"))
+					if valueDecimal != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
+					}
+					if valueInteger != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
 					}
 					if valueBool != nil {
 						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for text attribute"))
@@ -179,7 +180,18 @@ func (s *AttributeValueServiceImpl) UpdateAttributeValue(ctx corectx.Context, cm
 						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for text attribute"))
 					}
 
-				case domain.AttributeDataTypeNumber:
+				case domain.AttributeDataTypeDecimal:
+					if valueText != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for number attribute"))
+					}
+					if valueBool != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for number attribute"))
+					}
+					if valueRef != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for number attribute"))
+					}
+
+				case domain.AttributeDataTypeInteger:
 					if valueText != nil {
 						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for number attribute"))
 					}
@@ -194,8 +206,11 @@ func (s *AttributeValueServiceImpl) UpdateAttributeValue(ctx corectx.Context, cm
 					if valueText != nil {
 						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for boolean attribute"))
 					}
-					if valueNumber != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for boolean attribute"))
+					if valueDecimal != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
+					}
+					if valueInteger != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
 					}
 					if valueRef != nil {
 						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for boolean attribute"))
@@ -205,8 +220,11 @@ func (s *AttributeValueServiceImpl) UpdateAttributeValue(ctx corectx.Context, cm
 					if valueText != nil {
 						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for reference attribute"))
 					}
-					if valueNumber != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueNumber, "attribute_value.value_mismatch", "number value should be empty for reference attribute"))
+					if valueDecimal != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
+					}
+					if valueInteger != nil {
+						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
 					}
 					if valueBool != nil {
 						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for reference attribute"))
@@ -214,7 +232,7 @@ func (s *AttributeValueServiceImpl) UpdateAttributeValue(ctx corectx.Context, cm
 				}
 
 				// Check for duplicate attribute value (excluding current one)
-				existingValue, err := s.findByAttributeAndValue(ctx, attributeValue)
+				existingValue, err := this.findByAttributeAndValue(ctx, attributeValue)
 				if err != nil {
 					return err
 				}
@@ -232,48 +250,40 @@ func (s *AttributeValueServiceImpl) UpdateAttributeValue(ctx corectx.Context, cm
 	})
 }
 
-func (s *AttributeValueServiceImpl) DeleteAttributeValue(ctx corectx.Context, cmd it.DeleteAttributeValueCommand) (*it.DeleteAttributeValueResult, error) {
+func (this *ProductServiceImpl) DeleteAttributeValue(ctx corectx.Context, cmd itAttrVal.DeleteAttributeValueCommand) (*itAttrVal.DeleteAttributeValueResult, error) {
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete attribute value",
-		DbRepoGetter: s.repo,
+		DbRepoGetter: this.attrValueRepo,
 		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
 }
 
-func (s *AttributeValueServiceImpl) GetAttributeValue(ctx corectx.Context, query it.GetAttributeValueQuery) (*it.GetAttributeValueResult, error) {
-	var q dyn.GetOneQuery
-	if query.Id != nil {
-		q.Id = *query.Id
-	}
-	q.Columns = query.Columns
+func (this *ProductServiceImpl) GetAttributeValue(ctx corectx.Context, query itAttrVal.GetAttributeValueQuery) (*itAttrVal.GetAttributeValueResult, error) {
 	return corecrud.GetOne[domain.AttributeValue](ctx, corecrud.GetOneParam{
 		Action:       "get attribute value",
-		DbRepoGetter: s.repo,
-		Query:        q,
+		DbRepoGetter: this.attrValueRepo,
+		Query:        dyn.GetOneQuery(query),
 	})
 }
 
-func (s *AttributeValueServiceImpl) SearchAttributeValues(ctx corectx.Context, query it.SearchAttributeValuesQuery) (*it.SearchAttributeValuesResult, error) {
+func (this *ProductServiceImpl) SearchAttributeValues(ctx corectx.Context, query itAttrVal.SearchAttributeValuesQuery) (*itAttrVal.SearchAttributeValuesResult, error) {
 	return corecrud.Search[domain.AttributeValue](ctx, corecrud.SearchParam{
 		Action:       "search attribute values",
-		DbRepoGetter: s.repo,
+		DbRepoGetter: this.attrValueRepo,
 		Query:        dyn.SearchQuery(query),
 	})
 }
 
-func (s *AttributeValueServiceImpl) AttributeValueExists(ctx corectx.Context, query it.AttributeValueExistsQuery) (*it.AttributeValueExistsResult, error) {
+func (this *ProductServiceImpl) AttributeValueExists(ctx corectx.Context, query itAttrVal.AttributeValueExistsQuery) (*itAttrVal.AttributeValueExistsResult, error) {
 	return corecrud.Exists(ctx, corecrud.ExistsParam{
 		Action:       "attribute value exists",
-		DbRepoGetter: s.repo,
+		DbRepoGetter: this.attrValueRepo,
 		Query:        dyn.ExistsQuery(query),
 	})
 }
 
-// Helper methods
-// ---------------------------------------------------------------------------------------------------------------------------------------------
-
 // findByAttributeAndValue finds an attribute value by attribute ID and value
-func (s *AttributeValueServiceImpl) findByAttributeAndValue(ctx corectx.Context, attributeValue *domain.AttributeValue) (*domain.AttributeValue, error) {
+func (this *ProductServiceImpl) findByAttributeAndValue(ctx corectx.Context, attributeValue *domain.AttributeValue) (*domain.AttributeValue, error) {
 	attributeId := attributeValue.GetAttributeId()
 	if attributeId == nil {
 		return nil, nil
@@ -285,14 +295,17 @@ func (s *AttributeValueServiceImpl) findByAttributeAndValue(ctx corectx.Context,
 
 	// Add value-specific conditions based on which value field is set
 	valueText := attributeValue.GetValueText()
-	valueNumber := attributeValue.GetValueNumber()
+	valueDecimal := attributeValue.GetValueDecimal()
+	valueInteger := attributeValue.GetValueInteger()
 	valueBool := attributeValue.GetValueBool()
 	valueRef := attributeValue.GetValueRef()
 
 	if valueText != nil {
 		graph.NewCondition(domain.AttrValFieldValueText, dmodel.Equals, *valueText)
-	} else if valueNumber != nil {
-		graph.NewCondition(domain.AttrValFieldValueNumber, dmodel.Equals, *valueNumber)
+	} else if valueDecimal != nil {
+		graph.NewCondition(domain.AttrValFieldValueDecimal, dmodel.Equals, *valueDecimal)
+	} else if valueInteger != nil {
+		graph.NewCondition(domain.AttrValFieldValueInteger, dmodel.Equals, *valueInteger)
 	} else if valueBool != nil {
 		graph.NewCondition(domain.AttrValFieldValueBool, dmodel.Equals, *valueBool)
 	} else if valueRef != nil {
@@ -302,7 +315,7 @@ func (s *AttributeValueServiceImpl) findByAttributeAndValue(ctx corectx.Context,
 		return nil, nil
 	}
 
-	searchResult, err := s.repo.Search(ctx, dyn.RepoSearchParam{
+	searchResult, err := this.attrValueRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
 		Page:  0,
 		Size:  1,

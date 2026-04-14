@@ -45,26 +45,6 @@ func (this CreateProductCommand) GetSchema() *dmodel.ModelSchema {
 
 type CreateProductResult = dyn.OpResult[domain.Product]
 
-var updateProductCommandType = cqrs.RequestType{
-	Module:    "inventory",
-	Submodule: "product",
-	Action:    "update",
-}
-
-type UpdateProductCommand struct {
-	domain.Product
-}
-
-func (UpdateProductCommand) CqrsRequestType() cqrs.RequestType {
-	return updateProductCommandType
-}
-
-func (this UpdateProductCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.ProductSchemaName)
-}
-
-type UpdateProductResult = dyn.OpResult[dyn.MutateResultData]
-
 var deleteProductCommandType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "product",
@@ -85,10 +65,7 @@ var getProductQueryType = cqrs.RequestType{
 	Action:    "getProduct",
 }
 
-type GetProductQuery struct {
-	Columns []string `json:"columns" query:"columns"`
-	Id      *string  `json:"id" param:"id"`
-}
+type GetProductQuery dyn.GetOneQuery
 
 func (GetProductQuery) CqrsRequestType() cqrs.RequestType {
 	return getProductQueryType
@@ -138,3 +115,23 @@ func (ProductExistsQuery) CqrsRequestType() cqrs.RequestType {
 }
 
 type ProductExistsResult = dyn.OpResult[dyn.ExistsResultData]
+
+var updateProductCommandType = cqrs.RequestType{
+	Module:    "inventory",
+	Submodule: "product",
+	Action:    "update",
+}
+
+type UpdateProductCommand struct {
+	domain.Product
+}
+
+func (UpdateProductCommand) CqrsRequestType() cqrs.RequestType {
+	return updateProductCommandType
+}
+
+func (this UpdateProductCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.ProductSchemaName)
+}
+
+type UpdateProductResult = dyn.OpResult[dyn.MutateResultData]

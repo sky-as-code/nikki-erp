@@ -11,7 +11,6 @@ const (
 
 	ProductCategoryFieldId = basemodel.FieldId
 	ProdCatFieldName       = "name"
-	ProdCatFieldOrgId      = "org_id"
 
 	ProdCatEdgeProducts = "products"
 
@@ -22,18 +21,15 @@ const (
 
 func ProductCategoryRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ProdCatRelSchemaName).
-		TableName("invent_product_category_rel").
+		TableName("inventory_product_category_rel").
 		ShouldBuildDb().
+		ExtendBase().
 		Field(
-			dmodel.DefineField().
-				Name(ProdCatRelFieldProductId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(ProdCatRelFieldProductId).
 				PrimaryKey(),
 		).
 		Field(
-			dmodel.DefineField().
-				Name(ProdCatRelFieldProductCategoryId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(ProdCatRelFieldProductCategoryId).
 				PrimaryKey(),
 		)
 }
@@ -41,22 +37,16 @@ func ProductCategoryRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 func ProductCategorySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ProductCategorySchemaName).
 		Label(model.LangJson{model.LanguageCodeEnUs: "Product Category"}).
-		TableName("invent_product_categories").
-		CompositeUnique(ProdCatFieldName, ProdCatFieldOrgId).
+		TableName("inventory_product_categories").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
+		Extend(basemodel.OrgIdModelSchemaBuilder()).
+		CompositeUnique(ProdCatFieldName, basemodel.FieldOrgId).
 		Field(
 			dmodel.DefineField().
 				Name(ProdCatFieldName).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(ProdCatFieldOrgId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Organization"}).
-				DataType(dmodel.FieldDataTypeUlid()).
 				RequiredForCreate(),
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
@@ -70,35 +60,19 @@ func ProductCategorySchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type ProductCategory struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewProductCategory() *ProductCategory {
-	return &ProductCategory{fields: make(dmodel.DynamicFields)}
+	return &ProductCategory{basemodel.NewDynamicModel()}
 }
 
 func NewProductCategoryFrom(src dmodel.DynamicFields) *ProductCategory {
-	return &ProductCategory{fields: src}
-}
-
-func (this ProductCategory) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *ProductCategory) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
-}
-
-func (this ProductCategory) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
-}
-
-func (this *ProductCategory) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	return &ProductCategory{basemodel.NewDynamicModel(src)}
 }
 
 func (this ProductCategory) GetName() *model.LangJson {
-	v := this.fields.GetAny(ProdCatFieldName)
+	v := this.GetFieldData().GetAny(ProdCatFieldName)
 	if v == nil {
 		return nil
 	}
@@ -108,24 +82,8 @@ func (this ProductCategory) GetName() *model.LangJson {
 
 func (this *ProductCategory) SetName(v *model.LangJson) {
 	if v == nil {
-		this.fields.SetAny(ProdCatFieldName, nil)
+		this.GetFieldData().SetAny(ProdCatFieldName, nil)
 		return
 	}
-	this.fields.SetAny(ProdCatFieldName, *v)
-}
-
-func (this ProductCategory) GetOrgId() *model.Id {
-	return this.fields.GetModelId(ProdCatFieldOrgId)
-}
-
-func (this *ProductCategory) SetOrgId(v *model.Id) {
-	this.fields.SetModelId(ProdCatFieldOrgId, v)
-}
-
-func (this ProductCategory) GetEtag() *model.Etag {
-	return this.fields.GetEtag(basemodel.FieldEtag)
-}
-
-func (this *ProductCategory) SetEtag(v *model.Etag) {
-	this.fields.SetEtag(basemodel.FieldEtag, v)
+	this.GetFieldData().SetAny(ProdCatFieldName, *v)
 }

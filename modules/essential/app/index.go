@@ -9,6 +9,8 @@ import (
 func InitServices() error {
 	err := errors.Join(
 		deps.Register(NewModuleServiceImpl),
+		deps.Register(NewUnitServiceImpl),
+		deps.Register(NewUnitCategoryServiceImpl),
 	)
 	return err
 }
