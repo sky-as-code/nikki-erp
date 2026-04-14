@@ -1,20 +1,16 @@
 package essential
 
 import (
-	"context"
 	"errors"
 	"reflect"
 
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/go-model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
-	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
 	repo "github.com/sky-as-code/nikki-erp/modules/essential/infra/repository"
-	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 	"github.com/sky-as-code/nikki-erp/modules/essential/transport"
 )
 
@@ -66,11 +62,12 @@ func (*EssentialModule) RegisterModels() error {
 
 // OnAppStarted implements NikkiModuleAppStarted.
 func (*EssentialModule) OnAppStarted() error {
-	return deps.Invoke(func(modules []modules.InCodeModule, moduleSvc it.ModuleService) error {
-		ctx := corectx.NewRequestContext(context.Background())
-		_, err := moduleSvc.SyncModuleMetadata(ctx, modules)
-		return err
-	})
+	// return deps.Invoke(func(modules []modules.InCodeModule, moduleSvc it.ModuleService) error {
+	// 	ctx := corectx.NewRequestContext(context.Background())
+	// 	_, err := moduleSvc.SyncModuleMetadata(ctx, modules)
+	// 	return err
+	// })
+	return nil
 }
 
 func init() {
