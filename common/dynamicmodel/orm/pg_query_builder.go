@@ -809,7 +809,9 @@ func (this *PgQueryBuilder) buildIgnoreCurrentRowCond(schema *dmodel.ModelSchema
 		if !ok || v == nil {
 			return ""
 		}
-		conds = append(conds, fmt.Sprintf("%s <> %v", pgQuote(key), v))
+		// Avoid %v: unquoted strings (e.g. ULIDs starting with digits) are parsed as numbers by PostgreSQL.
+		lit := strings.ReplaceAll(fmt.Sprint(v), "'", "''")
+		conds = append(conds, fmt.Sprintf("%s <> '%s'", pgQuote(key), lit))
 	}
 
 	return strings.Join(conds, " OR ")
