@@ -12,15 +12,12 @@ import (
 type AttributeDataType string
 
 const (
-	AttributeDataTypeText      = AttributeDataType("text")
-	AttributeDataTypeNumber    = AttributeDataType("number")
 	AttributeDataTypeBoolean   = AttributeDataType("boolean")
+	AttributeDataTypeDecimal   = AttributeDataType("decimal")
+	AttributeDataTypeInteger   = AttributeDataType("integer")
+	AttributeDataTypeText      = AttributeDataType("text")
 	AttributeDataTypeReference = AttributeDataType("reference")
 )
-
-func (this AttributeDataType) String() string {
-	return string(this)
-}
 
 const (
 	AttributeSchemaName = "inventory.attribute"
@@ -45,7 +42,7 @@ const (
 func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(AttributeSchemaName).
 		Label(model.LangJson{model.LanguageCodeEnUs: "Attribute"}).
-		TableName("invent_attributes").
+		TableName("inventory_attributes").
 		CompositeUnique(AttrFieldCodeName, AttrFieldProductId).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -74,13 +71,13 @@ func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Name(AttrFieldDataType).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Data Type"}).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(AttributeDataTypeText),
-					string(AttributeDataTypeNumber),
 					string(AttributeDataTypeBoolean),
+					string(AttributeDataTypeDecimal),
+					string(AttributeDataTypeInteger),
+					string(AttributeDataTypeText),
 					string(AttributeDataTypeReference),
 				})).
-				RequiredForCreate().
-				Default(string(AttributeDataTypeText)),
+				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
@@ -122,8 +119,6 @@ func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				DataType(dmodel.FieldDataTypeUlid()).
 				RequiredForCreate(),
 		).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(AttrEdgeProduct).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Product"}).
@@ -148,43 +143,27 @@ func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type Attribute struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewAttribute() *Attribute {
-	return &Attribute{fields: make(dmodel.DynamicFields)}
+	return &Attribute{basemodel.NewDynamicModel()}
 }
 
 func NewAttributeFrom(src dmodel.DynamicFields) *Attribute {
-	return &Attribute{fields: src}
-}
-
-func (this Attribute) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *Attribute) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
-}
-
-func (this Attribute) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
-}
-
-func (this *Attribute) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	return &Attribute{basemodel.NewDynamicModel(src)}
 }
 
 func (this Attribute) GetCodeName() *string {
-	return this.fields.GetString(AttrFieldCodeName)
+	return this.GetFieldData().GetString(AttrFieldCodeName)
 }
 
 func (this *Attribute) SetCodeName(v *string) {
-	this.fields.SetString(AttrFieldCodeName, v)
+	this.GetFieldData().SetString(AttrFieldCodeName, v)
 }
 
 func (this Attribute) GetDisplayName() *model.LangJson {
-	v := this.fields.GetAny(AttrFieldDisplayName)
+	v := this.GetFieldData().GetAny(AttrFieldDisplayName)
 	if v == nil {
 		return nil
 	}
@@ -200,22 +179,22 @@ func (this Attribute) GetDisplayName() *model.LangJson {
 
 func (this *Attribute) SetDisplayName(v *model.LangJson) {
 	if v == nil {
-		this.fields.SetAny(AttrFieldDisplayName, nil)
+		this.GetFieldData().SetAny(AttrFieldDisplayName, nil)
 		return
 	}
-	this.fields.SetAny(AttrFieldDisplayName, *v)
+	this.GetFieldData().SetAny(AttrFieldDisplayName, *v)
 }
 
 func (this Attribute) GetSortIndex() *int64 {
-	return this.fields.GetInt64(AttrFieldSortIndex)
+	return this.GetFieldData().GetInt64(AttrFieldSortIndex)
 }
 
 func (this *Attribute) SetSortIndex(v *int64) {
-	this.fields.SetInt64(AttrFieldSortIndex, v)
+	this.GetFieldData().SetInt64(AttrFieldSortIndex, v)
 }
 
 func (this Attribute) GetDataType() *AttributeDataType {
-	s := this.fields.GetString(AttrFieldDataType)
+	s := this.GetFieldData().GetString(AttrFieldDataType)
 	if s == nil {
 		return nil
 	}
@@ -225,39 +204,39 @@ func (this Attribute) GetDataType() *AttributeDataType {
 
 func (this *Attribute) SetDataType(v *AttributeDataType) {
 	if v == nil {
-		this.fields.SetString(AttrFieldDataType, nil)
+		this.GetFieldData().SetString(AttrFieldDataType, nil)
 		return
 	}
 	s := string(*v)
-	this.fields.SetString(AttrFieldDataType, &s)
+	this.GetFieldData().SetString(AttrFieldDataType, &s)
 }
 
 func (this Attribute) GetIsRequired() *bool {
-	return this.fields.GetBool(AttrFieldIsRequired)
+	return this.GetFieldData().GetBool(AttrFieldIsRequired)
 }
 
 func (this *Attribute) SetIsRequired(v *bool) {
-	this.fields.SetBool(AttrFieldIsRequired, v)
+	this.GetFieldData().SetBool(AttrFieldIsRequired, v)
 }
 
 func (this Attribute) GetIsEnum() *bool {
-	return this.fields.GetBool(AttrFieldIsEnum)
+	return this.GetFieldData().GetBool(AttrFieldIsEnum)
 }
 
 func (this *Attribute) SetIsEnum(v *bool) {
-	this.fields.SetBool(AttrFieldIsEnum, v)
+	this.GetFieldData().SetBool(AttrFieldIsEnum, v)
 }
 
 func (this Attribute) GetEnumValueSort() *bool {
-	return this.fields.GetBool(AttrFieldEnumValueSort)
+	return this.GetFieldData().GetBool(AttrFieldEnumValueSort)
 }
 
 func (this *Attribute) SetEnumValueSort(v *bool) {
-	this.fields.SetBool(AttrFieldEnumValueSort, v)
+	this.GetFieldData().SetBool(AttrFieldEnumValueSort, v)
 }
 
 func (this Attribute) GetEnumValue() []model.LangJson {
-	v := this.fields.GetAny(AttrFieldEnumValue)
+	v := this.GetFieldData().GetAny(AttrFieldEnumValue)
 	if v == nil {
 		return nil
 	}
@@ -301,36 +280,28 @@ func (this Attribute) GetEnumValue() []model.LangJson {
 
 func (this *Attribute) SetEnumValue(v []model.LangJson) {
 	if v == nil {
-		this.fields.SetAny(AttrFieldEnumValue, nil)
+		this.GetFieldData().SetAny(AttrFieldEnumValue, nil)
 		return
 	}
 	anySlice := make([]any, len(v))
 	for i, lj := range v {
 		anySlice[i] = lj
 	}
-	this.fields.SetAny(AttrFieldEnumValue, anySlice)
+	this.GetFieldData().SetAny(AttrFieldEnumValue, anySlice)
 }
 
 func (this Attribute) GetAttributeGroupId() *model.Id {
-	return this.fields.GetModelId(AttrFieldAttributeGroupId)
+	return this.GetFieldData().GetModelId(AttrFieldAttributeGroupId)
 }
 
 func (this *Attribute) SetAttributeGroupId(v *model.Id) {
-	this.fields.SetModelId(AttrFieldAttributeGroupId, v)
+	this.GetFieldData().SetModelId(AttrFieldAttributeGroupId, v)
 }
 
 func (this Attribute) GetProductId() *model.Id {
-	return this.fields.GetModelId(AttrFieldProductId)
+	return this.GetFieldData().GetModelId(AttrFieldProductId)
 }
 
 func (this *Attribute) SetProductId(v *model.Id) {
-	this.fields.SetModelId(AttrFieldProductId, v)
-}
-
-func (this Attribute) GetEtag() *model.Etag {
-	return this.fields.GetEtag(basemodel.FieldEtag)
-}
-
-func (this *Attribute) SetEtag(v *model.Etag) {
-	this.fields.SetEtag(basemodel.FieldEtag, v)
+	this.GetFieldData().SetModelId(AttrFieldProductId, v)
 }

@@ -2,15 +2,15 @@ package module
 
 import (
 	"github.com/sky-as-code/nikki-erp/modules"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 type ModuleService interface {
-	CreateModule(ctx crud.Context, cmd CreateModuleCommand) (*CreateModuleResult, error)
-	DeleteModule(ctx crud.Context, cmd DeleteModuleCommand) (*DeleteModuleResult, error)
-	ModuleExists(ctx crud.Context, cmd ModuleExistsQuery) (*ModuleExistsResult, error)
-	GetModule(ctx crud.Context, query GetModuleByIdQuery) (result *GetModuleResult, err error)
-	ListModules(ctx crud.Context, query ListModulesQuery) (result *ListModulesResult, err error)
-	UpdateModule(ctx crud.Context, cmd UpdateModuleCommand) (*UpdateModuleResult, error)
-	SyncModuleMetadata(ctx crud.Context, installedModules []modules.InCodeModule) (bool, error)
+	CreateModule(ctx corectx.Context, cmd CreateModuleCommand) (*CreateModuleResult, error)
+	DeleteModule(ctx corectx.Context, cmd DeleteModuleCommand) (*DeleteModuleResult, error)
+	ModuleExists(ctx corectx.Context, query ModuleExistsQuery) (*ModuleExistsResult, error)
+	GetModule(ctx corectx.Context, query GetModuleQuery) (*GetModuleResult, error)
+	SearchModules(ctx corectx.Context, query SearchModulesQuery) (*SearchModulesResult, error)
+	UpdateModule(ctx corectx.Context, cmd UpdateModuleCommand) (*UpdateModuleResult, error)
+	SyncModuleMetadata(ctx corectx.Context, installedModules []modules.InCodeModule) (bool, error)
 }

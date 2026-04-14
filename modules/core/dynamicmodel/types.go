@@ -1,6 +1,8 @@
 package dynamicmodel
 
 import (
+	"database/sql"
+
 	"github.com/sky-as-code/nikki-erp/common/datastructure"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
@@ -31,6 +33,7 @@ type BaseDynamicRepository interface {
 	BeginTransaction(ctx corectx.Context) (database.DbTransaction, error)
 	ExtractClient(ctx corectx.Context) orm.DbClient
 	ExecFunc(ctx corectx.Context, sqlFuncName string, sqlFuncArgs ...any) error
+	QueryFunc(ctx corectx.Context, sqlFuncName string, sqlFuncArgs ...any) (*sql.Rows, error)
 
 	CheckUniqueCollisions(ctx corectx.Context, data dmodel.DynamicFields) (*OpResult[[][]string], error)
 	CountM2m(ctx corectx.Context, param RepoCountM2mParam) (*OpResult[int], error)

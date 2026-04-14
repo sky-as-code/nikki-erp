@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
+	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/model"
 )
@@ -32,6 +33,18 @@ func (this DynamicFields) GetDecimal(key string) *decimal.Decimal {
 	}
 	d := val.(decimal.Decimal)
 	return &d
+}
+
+func (this DynamicFields) SetDecimalStr(key string, v *string) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	dec, err := decimal.NewFromString(*v)
+	if err != nil {
+		panic(errors.Wrap(err, "SetDecimalStr"))
+	}
+	this[key] = dec
 }
 
 func (this DynamicFields) SetDecimal(key string, v *decimal.Decimal) {

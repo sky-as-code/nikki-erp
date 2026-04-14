@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"fmt"
+
 	"github.com/shopspring/decimal"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -15,15 +17,6 @@ const (
 	VariantStatusDiscontinued = VariantStatus("discontinued")
 )
 
-func (this VariantStatus) String() string {
-	return string(this)
-}
-
-func WrapVariantStatus(s string) *VariantStatus {
-	st := VariantStatus(s)
-	return &st
-}
-
 const (
 	VarAttrValRelSchemaName       = "inventory.variant_attr_val_rel"
 	VarAttrValRelFieldVariantId   = "variant_id"
@@ -32,18 +25,15 @@ const (
 
 func VariantAttrValRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(VarAttrValRelSchemaName).
-		TableName("invent_variant_attr_val_rel").
+		TableName("inventory_variant_attr_val_rel").
 		ShouldBuildDb().
+		ExtendBase().
 		Field(
-			dmodel.DefineField().
-				Name(VarAttrValRelFieldVariantId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(VarAttrValRelFieldVariantId).
 				PrimaryKey(),
 		).
 		Field(
-			dmodel.DefineField().
-				Name(VarAttrValRelFieldAttrValueId).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(VarAttrValRelFieldAttrValueId).
 				PrimaryKey(),
 		)
 }
@@ -53,7 +43,6 @@ const (
 
 	VarFieldId            = basemodel.FieldId
 	VarFieldProductId     = "product_id"
-	VarFieldOrgId         = "org_id"
 	VarFieldName          = "name"
 	VarFieldSku           = "sku"
 	VarFieldBarcode       = "barcode"
@@ -68,21 +57,13 @@ const (
 func VariantSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(VariantSchemaName).
 		Label(model.LangJson{model.LanguageCodeEnUs: "Variant"}).
-		TableName("invent_variants").
+		TableName("inventory_variants").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
+		Extend(basemodel.OrgIdModelSchemaBuilder()).
 		Field(
-			dmodel.DefineField().
-				Name(VarFieldProductId).
+			basemodel.DefineFieldId(VarFieldProductId).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Product"}).
-				DataType(dmodel.FieldDataTypeUlid()).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(VarFieldOrgId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Organization"}).
-				DataType(dmodel.FieldDataTypeUlid()).
 				RequiredForCreate(),
 		).
 		Field(
@@ -109,7 +90,7 @@ func VariantSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			dmodel.DefineField().
 				Name(VarFieldProposedPrice).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Proposed Price"}).
-				DataType(dmodel.FieldDataTypeDecimal("0", "9999999999.9999", 4)),
+				DataType(dmodel.FieldDataTypeDecimal("0", fmt.Sprint(model.MODEL_RULE_CURRENCY_MAX), model.MODEL_RULE_CURRENCY_SCALE)),
 		).
 		Field(
 			dmodel.DefineField().
@@ -147,43 +128,27 @@ func VariantSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type Variant struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewVariant() *Variant {
-	return &Variant{fields: make(dmodel.DynamicFields)}
+	return &Variant{basemodel.NewDynamicModel()}
 }
 
 func NewVariantFrom(src dmodel.DynamicFields) *Variant {
-	return &Variant{fields: src}
-}
-
-func (this Variant) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *Variant) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
-}
-
-func (this Variant) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
-}
-
-func (this *Variant) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	return &Variant{basemodel.NewDynamicModel(src)}
 }
 
 func (this Variant) GetProductId() *model.Id {
-	return this.fields.GetModelId(VarFieldProductId)
+	return this.GetFieldData().GetModelId(VarFieldProductId)
 }
 
 func (this *Variant) SetProductId(v *model.Id) {
-	this.fields.SetModelId(VarFieldProductId, v)
+	this.GetFieldData().SetModelId(VarFieldProductId, v)
 }
 
 func (this Variant) GetName() *model.LangJson {
-	v := this.fields.GetAny(VarFieldName)
+	v := this.GetFieldData().GetAny(VarFieldName)
 	if v == nil {
 		return nil
 	}
@@ -195,30 +160,30 @@ func (this Variant) GetName() *model.LangJson {
 
 func (this *Variant) SetName(v *model.LangJson) {
 	if v == nil {
-		this.fields.SetAny(VarFieldName, nil)
+		this.GetFieldData().SetAny(VarFieldName, nil)
 		return
 	}
-	this.fields.SetAny(VarFieldName, *v)
+	this.GetFieldData().SetAny(VarFieldName, *v)
 }
 
 func (this Variant) GetSku() *string {
-	return this.fields.GetString(VarFieldSku)
+	return this.GetFieldData().GetString(VarFieldSku)
 }
 
 func (this *Variant) SetSku(v *string) {
-	this.fields.SetString(VarFieldSku, v)
+	this.GetFieldData().SetString(VarFieldSku, v)
 }
 
 func (this Variant) GetBarcode() *string {
-	return this.fields.GetString(VarFieldBarcode)
+	return this.GetFieldData().GetString(VarFieldBarcode)
 }
 
 func (this *Variant) SetBarcode(v *string) {
-	this.fields.SetString(VarFieldBarcode, v)
+	this.GetFieldData().SetString(VarFieldBarcode, v)
 }
 
 func (this Variant) GetProposedPrice() *decimal.Decimal {
-	v := this.fields.GetAny(VarFieldProposedPrice)
+	v := this.GetFieldData().GetAny(VarFieldProposedPrice)
 	if v == nil {
 		return nil
 	}
@@ -228,14 +193,14 @@ func (this Variant) GetProposedPrice() *decimal.Decimal {
 
 func (this *Variant) SetProposedPrice(v *decimal.Decimal) {
 	if v == nil {
-		this.fields.SetAny(VarFieldProposedPrice, nil)
+		this.GetFieldData().SetAny(VarFieldProposedPrice, nil)
 		return
 	}
-	this.fields.SetAny(VarFieldProposedPrice, *v)
+	this.GetFieldData().SetAny(VarFieldProposedPrice, *v)
 }
 
 func (this Variant) GetStatus() *VariantStatus {
-	s := this.fields.GetString(VarFieldStatus)
+	s := this.GetFieldData().GetString(VarFieldStatus)
 	if s == nil {
 		return nil
 	}
@@ -245,33 +210,17 @@ func (this Variant) GetStatus() *VariantStatus {
 
 func (this *Variant) SetStatus(v *VariantStatus) {
 	if v == nil {
-		this.fields.SetString(VarFieldStatus, nil)
+		this.GetFieldData().SetString(VarFieldStatus, nil)
 		return
 	}
 	s := string(*v)
-	this.fields.SetString(VarFieldStatus, &s)
+	this.GetFieldData().SetString(VarFieldStatus, &s)
 }
 
 func (this Variant) GetImageUrl() *string {
-	return this.fields.GetString(VarFieldImageUrl)
+	return this.GetFieldData().GetString(VarFieldImageUrl)
 }
 
 func (this *Variant) SetImageUrl(v *string) {
-	this.fields.SetString(VarFieldImageUrl, v)
-}
-
-func (this Variant) GetOrgId() *model.Id {
-	return this.fields.GetModelId(VarFieldOrgId)
-}
-
-func (this *Variant) SetOrgId(v *model.Id) {
-	this.fields.SetModelId(VarFieldOrgId, v)
-}
-
-func (this Variant) GetEtag() *model.Etag {
-	return this.fields.GetEtag(basemodel.FieldEtag)
-}
-
-func (this *Variant) SetEtag(v *model.Etag) {
-	this.fields.SetEtag(basemodel.FieldEtag, v)
+	this.GetFieldData().SetString(VarFieldImageUrl, v)
 }

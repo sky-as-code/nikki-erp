@@ -249,6 +249,7 @@ func ExecInTranx[TResult any](ctx corectx.Context, repo dyn.DynamicModelReposito
 		if e := ft.RecoverPanic(recover(), "ExecInTranx"); e != nil {
 			err = e
 		}
+		clearDbTranx(ctx)
 		if err != nil {
 			rbErr := tranx.Rollback()
 			if rbErr != nil {
@@ -275,6 +276,10 @@ func setNewDbTranx(ctx corectx.Context, repo dyn.DynamicModelRepository) (databa
 
 	ctx.SetDbTranx(trx)
 	return trx, nil
+}
+
+func clearDbTranx(ctx corectx.Context) {
+	ctx.SetDbTranx(nil)
 }
 
 type GetOneParam struct {

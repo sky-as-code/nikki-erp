@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/shopspring/decimal"
@@ -16,7 +17,8 @@ const (
 	AttrValFieldId           = basemodel.FieldId
 	AttrValFieldAttributeId  = "attribute_id"
 	AttrValFieldValueText    = "value_text"
-	AttrValFieldValueNumber  = "value_number"
+	AttrValFieldValueInteger = "value_integer"
+	AttrValFieldValueDecimal = "value_decimal"
 	AttrValFieldValueBool    = "value_bool"
 	AttrValFieldValueRef     = "value_ref"
 	AttrValFieldVariantCount = "variant_count"
@@ -28,16 +30,14 @@ const (
 func AttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(AttributeValueSchemaName).
 		Label(model.LangJson{model.LanguageCodeEnUs: "Attribute Value"}).
-		TableName("invent_attribute_values").
+		TableName("inventory_attribute_values").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
-			dmodel.DefineField().
-				Name(AttrValFieldAttributeId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Attribute"}).
-				DataType(dmodel.FieldDataTypeUlid()).
+			basemodel.DefineFieldId(AttrValFieldAttributeId).
 				RequiredForCreate(),
 		).
+		ExclusiveFields(AttrValFieldValueText, AttrValFieldValueDecimal, AttrValFieldValueInteger, AttrValFieldValueBool, AttrValFieldValueRef).
 		Field(
 			dmodel.DefineField().
 				Name(AttrValFieldValueText).
@@ -46,9 +46,15 @@ func AttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		Field(
 			dmodel.DefineField().
-				Name(AttrValFieldValueNumber).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Number Value"}).
-				DataType(dmodel.FieldDataTypeDecimal("0", "9999999999.9999", 4)),
+				Name(AttrValFieldValueDecimal).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Decimal Value"}).
+				DataType(dmodel.FieldDataTypeDecimal("0", fmt.Sprint(model.MODEL_RULE_CURRENCY_MAX), model.MODEL_RULE_CURRENCY_SCALE)),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(AttrValFieldValueInteger).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Decimal Value"}).
+				DataType(dmodel.FieldDataTypeInt64(0, math.MaxInt64)),
 		).
 		Field(
 			dmodel.DefineField().
@@ -69,8 +75,6 @@ func AttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				DataType(dmodel.FieldDataTypeInt64(0, math.MaxInt16)).
 				Default(0),
 		).
-		Extend(basemodel.VersionedModelSchemaBuilder()).
-		Extend(basemodel.AuditableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(AttrValEdgeAttribute).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Attribute"}).
@@ -88,43 +92,27 @@ func AttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type AttributeValue struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewAttributeValue() *AttributeValue {
-	return &AttributeValue{fields: make(dmodel.DynamicFields)}
+	return &AttributeValue{basemodel.NewDynamicModel()}
 }
 
 func NewAttributeValueFrom(src dmodel.DynamicFields) *AttributeValue {
-	return &AttributeValue{fields: src}
-}
-
-func (this AttributeValue) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *AttributeValue) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
-}
-
-func (this AttributeValue) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
-}
-
-func (this *AttributeValue) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	return &AttributeValue{basemodel.NewDynamicModel(src)}
 }
 
 func (this AttributeValue) GetAttributeId() *model.Id {
-	return this.fields.GetModelId(AttrValFieldAttributeId)
+	return this.GetFieldData().GetModelId(AttrValFieldAttributeId)
 }
 
 func (this *AttributeValue) SetAttributeId(v *model.Id) {
-	this.fields.SetModelId(AttrValFieldAttributeId, v)
+	this.GetFieldData().SetModelId(AttrValFieldAttributeId, v)
 }
 
 func (this AttributeValue) GetValueText() *model.LangJson {
-	v := this.fields.GetAny(AttrValFieldValueText)
+	v := this.GetFieldData().GetAny(AttrValFieldValueText)
 	if v == nil {
 		return nil
 	}
@@ -134,57 +122,48 @@ func (this AttributeValue) GetValueText() *model.LangJson {
 
 func (this *AttributeValue) SetValueText(v *model.LangJson) {
 	if v == nil {
-		this.fields.SetAny(AttrValFieldValueText, nil)
+		this.GetFieldData().SetAny(AttrValFieldValueText, nil)
 		return
 	}
-	this.fields.SetAny(AttrValFieldValueText, *v)
+	this.GetFieldData().SetAny(AttrValFieldValueText, *v)
 }
 
-func (this AttributeValue) GetValueNumber() *decimal.Decimal {
-	v := this.fields.GetAny(AttrValFieldValueNumber)
-	if v == nil {
-		return nil
-	}
-	d := v.(decimal.Decimal)
-	return &d
+func (this AttributeValue) GetValueDecimal() *decimal.Decimal {
+	return this.GetFieldData().GetDecimal(AttrValFieldValueDecimal)
 }
 
-func (this *AttributeValue) SetValueNumber(v *decimal.Decimal) {
-	if v == nil {
-		this.fields.SetAny(AttrValFieldValueNumber, nil)
-		return
-	}
-	this.fields.SetAny(AttrValFieldValueNumber, *v)
+func (this *AttributeValue) SetValueDecimal(v *string) {
+	this.GetFieldData().SetDecimalStr(AttrValFieldValueDecimal, v)
+}
+
+func (this AttributeValue) GetValueInteger() *int64 {
+	return this.GetFieldData().GetInt64(AttrValFieldValueInteger)
+}
+
+func (this *AttributeValue) SetValueInteger(v *int64) {
+	this.GetFieldData().SetInt64(AttrValFieldValueInteger, v)
 }
 
 func (this AttributeValue) GetValueBool() *bool {
-	return this.fields.GetBool(AttrValFieldValueBool)
+	return this.GetFieldData().GetBool(AttrValFieldValueBool)
 }
 
 func (this *AttributeValue) SetValueBool(v *bool) {
-	this.fields.SetBool(AttrValFieldValueBool, v)
+	this.GetFieldData().SetBool(AttrValFieldValueBool, v)
 }
 
 func (this AttributeValue) GetValueRef() *string {
-	return this.fields.GetString(AttrValFieldValueRef)
+	return this.GetFieldData().GetString(AttrValFieldValueRef)
 }
 
 func (this *AttributeValue) SetValueRef(v *string) {
-	this.fields.SetString(AttrValFieldValueRef, v)
+	this.GetFieldData().SetString(AttrValFieldValueRef, v)
 }
 
 func (this AttributeValue) GetVariantCount() *int64 {
-	return this.fields.GetInt64(AttrValFieldVariantCount)
+	return this.GetFieldData().GetInt64(AttrValFieldVariantCount)
 }
 
 func (this *AttributeValue) SetVariantCount(v *int64) {
-	this.fields.SetInt64(AttrValFieldVariantCount, v)
-}
-
-func (this AttributeValue) GetEtag() *model.Etag {
-	return this.fields.GetEtag(basemodel.FieldEtag)
-}
-
-func (this *AttributeValue) SetEtag(v *model.Etag) {
-	this.fields.SetEtag(basemodel.FieldEtag, v)
+	this.GetFieldData().SetInt64(AttrValFieldVariantCount, v)
 }

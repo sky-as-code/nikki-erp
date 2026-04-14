@@ -8,8 +8,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product"
 	productDomain "github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
-	"github.com/sky-as-code/nikki-erp/modules/inventory/unit"
-	unitDomain "github.com/sky-as-code/nikki-erp/modules/inventory/unit/domain"
 )
 
 var ModuleSingleton modules.InCodeModule = &InventoryModule{}
@@ -29,7 +27,9 @@ func (*InventoryModule) Name() string {
 
 // Deps implements NikkiModule.
 func (*InventoryModule) Deps() []string {
-	return []string{}
+	return []string{
+		"essential",
+	}
 }
 
 // Version implements NikkiModule.
@@ -40,7 +40,6 @@ func (*InventoryModule) Version() semver.SemVer {
 // Init implements NikkiModule.
 func (*InventoryModule) Init() error {
 	err := errors.Join(
-		unit.Init(),
 		product.Init(),
 	)
 
@@ -59,8 +58,5 @@ func (*InventoryModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(productDomain.AttributeValueSchemaBuilder()),
 		dmodel.RegisterSchemaB(productDomain.VariantSchemaBuilder()),
 		dmodel.RegisterSchemaB(productDomain.VariantAttrValRelSchemaBuilder()),
-		// Unit schemas
-		dmodel.RegisterSchemaB(unitDomain.UnitCategorySchemaBuilder()),
-		dmodel.RegisterSchemaB(unitDomain.UnitSchemaBuilder()),
 	)
 }

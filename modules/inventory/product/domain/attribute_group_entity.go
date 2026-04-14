@@ -23,7 +23,7 @@ const (
 func AttributeGroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(AttributeGroupSchemaName).
 		Label(model.LangJson{model.LanguageCodeEnUs: "Attribute Group"}).
-		TableName("invent_attribute_groups").
+		TableName("inventory_attribute_groups").
 		CompositeUnique(AttrGrpFieldName, AttrGrpFieldProductId).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -66,61 +66,37 @@ func AttributeGroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type AttributeGroup struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewAttributeGroup() *AttributeGroup {
-	return &AttributeGroup{fields: make(dmodel.DynamicFields)}
+	return &AttributeGroup{basemodel.NewDynamicModel()}
 }
 
 func NewAttributeGroupFrom(src dmodel.DynamicFields) *AttributeGroup {
-	return &AttributeGroup{fields: src}
-}
-
-func (this AttributeGroup) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *AttributeGroup) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
-}
-
-func (this AttributeGroup) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
-}
-
-func (this *AttributeGroup) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
+	return &AttributeGroup{basemodel.NewDynamicModel(src)}
 }
 
 func (this AttributeGroup) GetName() *string {
-	return this.fields.GetString(AttrGrpFieldName)
+	return this.GetFieldData().GetString(AttrGrpFieldName)
 }
 
 func (this *AttributeGroup) SetName(v *string) {
-	this.fields.SetString(AttrGrpFieldName, v)
+	this.GetFieldData().SetString(AttrGrpFieldName, v)
 }
 
 func (this AttributeGroup) GetIndex() *int64 {
-	return this.fields.GetInt64(AttrGrpFieldIndex)
+	return this.GetFieldData().GetInt64(AttrGrpFieldIndex)
 }
 
 func (this *AttributeGroup) SetIndex(v *int64) {
-	this.fields.SetInt64(AttrGrpFieldIndex, v)
+	this.GetFieldData().SetInt64(AttrGrpFieldIndex, v)
 }
 
 func (this AttributeGroup) GetProductId() *model.Id {
-	return this.fields.GetModelId(AttrGrpFieldProductId)
+	return this.GetFieldData().GetModelId(AttrGrpFieldProductId)
 }
 
 func (this *AttributeGroup) SetProductId(v *model.Id) {
-	this.fields.SetModelId(AttrGrpFieldProductId, v)
-}
-
-func (this AttributeGroup) GetEtag() *model.Etag {
-	return this.fields.GetEtag(basemodel.FieldEtag)
-}
-
-func (this *AttributeGroup) SetEtag(v *model.Etag) {
-	this.fields.SetEtag(basemodel.FieldEtag, v)
+	this.GetFieldData().SetModelId(AttrGrpFieldProductId, v)
 }

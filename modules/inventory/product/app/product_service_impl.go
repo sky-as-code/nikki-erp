@@ -1,52 +1,71 @@
 package app
 
 import (
+	"go.uber.org/dig"
+
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
+	itAttr "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
+	itAttrGrp "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributegroup"
+	itAttrVal "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributevalue"
+	ext "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/external"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 	itVariant "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
-	itUnit "github.com/sky-as-code/nikki-erp/modules/inventory/unit/interfaces/unit"
 )
 
-func NewProductServiceImpl(
-	repo itProduct.ProductRepository,
-	unitSvc itUnit.UnitService,
-	cqrsBus cqrs.CqrsBus,
-) itProduct.ProductService {
+type ProductServiceParam struct {
+	dig.In
+
+	CqrsBus     cqrs.CqrsBus
+	AttrRepo    itAttr.AttributeRepository
+	AttrGrpRepo itAttrGrp.AttributeGroupRepository
+	AttrValRepo itAttrVal.AttributeValueRepository
+	ProductRepo itProduct.ProductRepository
+	VariantRepo itVariant.VariantRepository
+	UnitSvc     ext.UnitExtService
+}
+
+func NewProductService(param ProductServiceParam) itProduct.ProductService {
+	return newProductServiceImpl(param)
+}
+
+func newProductServiceImpl(param ProductServiceParam) *ProductServiceImpl {
 	return &ProductServiceImpl{
-		repo:    repo,
-		unitSvc: unitSvc,
-		cqrsBus: cqrsBus,
+		cqrsBus:       param.CqrsBus,
+		attrRepo:      param.AttrRepo,
+		attrGrpRepo:   param.AttrGrpRepo,
+		attrValueRepo: param.AttrValRepo,
+		productRepo:   param.ProductRepo,
+		variantRepo:   param.VariantRepo,
+		unitSvc:       param.UnitSvc,
 	}
 }
 
 type ProductServiceImpl struct {
-	repo       itProduct.ProductRepository
-	unitSvc    itUnit.UnitService
-	variantSvc itVariant.VariantService
-	cqrsBus    cqrs.CqrsBus
+	cqrsBus       cqrs.CqrsBus
+	attrRepo      itAttr.AttributeRepository
+	attrGrpRepo   itAttrGrp.AttributeGroupRepository
+	attrValueRepo itAttrVal.AttributeValueRepository
+	productRepo   itProduct.ProductRepository
+	variantRepo   itVariant.VariantRepository
+	unitSvc       ext.UnitExtService
 }
 
-func (s *ProductServiceImpl) SetVariantService(variantSvc itVariant.VariantService) {
-	s.variantSvc = variantSvc
-}
-
-func (s *ProductServiceImpl) CreateProduct(ctx corectx.Context, cmd itProduct.CreateProductCommand) (*itProduct.CreateProductResult, error) {
+func (this *ProductServiceImpl) CreateProduct(ctx corectx.Context, cmd itProduct.CreateProductCommand) (*itProduct.CreateProductResult, error) {
 	result, err := corecrud.Create(ctx, corecrud.CreateParam[domain.Product, *domain.Product]{
 		Action:         "create product",
-		BaseRepoGetter: s.repo,
+		BaseRepoGetter: this.productRepo,
 		Data:           cmd,
 		ValidateExtra: func(ctx corectx.Context, product *domain.Product, vErrs *ft.ClientErrors) error {
 			unitId := product.GetUnitId()
 			if unitId == nil {
 				return nil
 			}
-			unitIdStr := string(*unitId)
-			unitResult, err := s.unitSvc.GetUnit(ctx, itUnit.GetUnitQuery{Id: &unitIdStr})
+			unitResult, err := this.unitSvc.GetUnit(ctx, ext.GetUnitQuery{Id: *unitId})
 			if err != nil {
 				return err
 			}
@@ -61,7 +80,7 @@ func (s *ProductServiceImpl) CreateProduct(ctx corectx.Context, cmd itProduct.Cr
 	}
 
 	productId := result.Data.GetId()
-	if productId != nil && s.variantSvc != nil {
+	if productId != nil {
 		variantCmd := itVariant.CreateVariantCommand{Variant: *domain.NewVariant()}
 		variantCmd.SetProductId(productId)
 		variantCmd.SetOrgId(result.Data.GetOrgId())
@@ -69,22 +88,21 @@ func (s *ProductServiceImpl) CreateProduct(ctx corectx.Context, cmd itProduct.Cr
 		variantCmd.SetBarcode(&cmd.BarCode)
 		variantCmd.SetSku(&cmd.Sku)
 		variantCmd.SetProposedPrice(&cmd.ProposedPrice)
-		s.variantSvc.CreateVariant(ctx, variantCmd)
+		this.CreateVariant(ctx, variantCmd)
 	}
 
 	return result, nil
 }
 
-func (s *ProductServiceImpl) UpdateProduct(ctx corectx.Context, cmd itProduct.UpdateProductCommand) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *ProductServiceImpl) UpdateProduct(ctx corectx.Context, cmd itProduct.UpdateProductCommand) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Product, *domain.Product]{
 		Action:       "update product",
-		DbRepoGetter: s.repo,
+		DbRepoGetter: this.productRepo,
 		Data:         cmd,
 		ValidateExtra: func(ctx corectx.Context, product *domain.Product, foundProduct *domain.Product, vErrs *ft.ClientErrors) error {
 			unitId := product.GetUnitId()
 			if unitId != nil {
-				unitIdStr := string(*unitId)
-				unitResult, err := s.unitSvc.GetUnit(ctx, itUnit.GetUnitQuery{Id: &unitIdStr})
+				unitResult, err := this.unitSvc.GetUnit(ctx, ext.GetUnitQuery{Id: *unitId})
 				if err != nil {
 					return err
 				}
@@ -95,10 +113,9 @@ func (s *ProductServiceImpl) UpdateProduct(ctx corectx.Context, cmd itProduct.Up
 
 			defaultVariantId := product.GetDefaultVariantId()
 			productId := product.GetId()
-			if defaultVariantId != nil && productId != nil && s.variantSvc != nil {
-				defaultVariantIdStr := string(*defaultVariantId)
-				variantResult, err := s.variantSvc.GetVariant(ctx, itVariant.GetVariantQuery{
-					Id: &defaultVariantIdStr,
+			if defaultVariantId != nil && productId != nil {
+				variantResult, err := this.GetVariant(ctx, itVariant.GetVariantQuery{
+					Id: *defaultVariantId,
 				})
 				if err != nil {
 					return err
@@ -113,43 +130,38 @@ func (s *ProductServiceImpl) UpdateProduct(ctx corectx.Context, cmd itProduct.Up
 	})
 }
 
-func (s *ProductServiceImpl) DeleteProduct(ctx corectx.Context, cmd itProduct.DeleteProductCommand) (*itProduct.DeleteProductResult, error) {
+func (this *ProductServiceImpl) DeleteProduct(ctx corectx.Context, cmd itProduct.DeleteProductCommand) (*itProduct.DeleteProductResult, error) {
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
 		Action:       "delete product",
-		DbRepoGetter: s.repo,
+		DbRepoGetter: this.productRepo,
 		Cmd:          dyn.DeleteOneCommand(cmd),
 	})
 }
 
-func (s *ProductServiceImpl) GetProduct(ctx corectx.Context, query itProduct.GetProductQuery) (*itProduct.GetProductResult, error) {
-	var q dyn.GetOneQuery
-	if query.Id != nil {
-		q.Id = *query.Id
-	}
-	q.Columns = query.Columns
+func (this *ProductServiceImpl) GetProduct(ctx corectx.Context, query itProduct.GetProductQuery) (*itProduct.GetProductResult, error) {
 	return corecrud.GetOne[domain.Product](ctx, corecrud.GetOneParam{
 		Action:       "get product",
-		DbRepoGetter: s.repo,
-		Query:        q,
+		DbRepoGetter: this.productRepo,
+		Query:        dyn.GetOneQuery(query),
 	})
 }
 
-func (s *ProductServiceImpl) ProductExists(ctx corectx.Context, query itProduct.ProductExistsQuery) (*itProduct.ProductExistsResult, error) {
+func (this *ProductServiceImpl) ProductExists(ctx corectx.Context, query itProduct.ProductExistsQuery) (*itProduct.ProductExistsResult, error) {
 	return corecrud.Exists(ctx, corecrud.ExistsParam{
 		Action:       "product exists",
-		DbRepoGetter: s.repo,
+		DbRepoGetter: this.productRepo,
 		Query:        dyn.ExistsQuery(query),
 	})
 }
 
-func (s *ProductServiceImpl) SearchProducts(ctx corectx.Context, query itProduct.SearchProductsQuery) (*itProduct.SearchProductsResult, error) {
+func (this *ProductServiceImpl) SearchProducts(ctx corectx.Context, query itProduct.SearchProductsQuery) (*itProduct.SearchProductsResult, error) {
 	return corecrud.Search[domain.Product](ctx, corecrud.SearchParam{
 		Action:       "search products",
-		DbRepoGetter: s.repo,
+		DbRepoGetter: this.productRepo,
 		Query:        dyn.SearchQuery(query),
 	})
 }
 
-func (s *ProductServiceImpl) SetProductIsArchived(ctx corectx.Context, cmd itProduct.SetProductIsArchivedCommand) (*itProduct.SetProductIsArchivedResult, error) {
-	return corecrud.SetIsArchived(ctx, s.repo, dyn.SetIsArchivedCommand(cmd))
+func (this *ProductServiceImpl) SetProductIsArchived(ctx corectx.Context, cmd itProduct.SetProductIsArchivedCommand) (*itProduct.SetProductIsArchivedResult, error) {
+	return corecrud.SetIsArchived(ctx, this.productRepo, dyn.SetIsArchivedCommand(cmd))
 }

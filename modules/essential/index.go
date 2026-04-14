@@ -6,11 +6,13 @@ import (
 	"reflect"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/go-model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
 	repo "github.com/sky-as-code/nikki-erp/modules/essential/infra/repository"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 	"github.com/sky-as-code/nikki-erp/modules/essential/transport"
@@ -52,10 +54,20 @@ func (*EssentialModule) Init() error {
 	return err
 }
 
+// RegisterModels implements DynamicModule.
+func (*EssentialModule) RegisterModels() error {
+	return errors.Join(
+		dmodel.RegisterSchemaB(domain.ModuleMetadataSchemaBuilder()),
+		// Unit schemas
+		dmodel.RegisterSchemaB(domain.UnitCategorySchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.UnitSchemaBuilder()),
+	)
+}
+
 // OnAppStarted implements NikkiModuleAppStarted.
 func (*EssentialModule) OnAppStarted() error {
 	return deps.Invoke(func(modules []modules.InCodeModule, moduleSvc it.ModuleService) error {
-		ctx := crud.NewRequestContext(context.Background())
+		ctx := corectx.NewRequestContext(context.Background())
 		_, err := moduleSvc.SyncModuleMetadata(ctx, modules)
 		return err
 	})

@@ -17,6 +17,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
+// Deprecated: No longer used.
 type RestBase struct {
 	ConfigSvc config.ConfigService
 	Logger    logging.LoggerService

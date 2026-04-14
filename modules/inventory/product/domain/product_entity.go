@@ -7,34 +7,16 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-type ProductStatus string
-
-const (
-	ProductStatusActive   = ProductStatus("active")
-	ProductStatusArchived = ProductStatus("archived")
-)
-
-func (this ProductStatus) String() string {
-	return string(this)
-}
-
-func WrapProductStatus(s string) *ProductStatus {
-	st := ProductStatus(s)
-	return &st
-}
-
 const (
 	ProductSchemaName = "inventory.product"
 
 	ProdFieldId               = basemodel.FieldId
 	ProdFieldName             = "name"
 	ProdFieldDescription      = "description"
-	ProdFieldStatus           = "status"
 	ProdFieldThumbnailUrl     = "thumbnail_url"
 	ProdFieldUnitId           = "unit_id"
 	ProdFieldDefaultVariantId = "default_variant_id"
 	ProdFieldTagIds           = "tag_ids"
-	ProdFieldOrgId            = "org_id"
 
 	ProdEdgeCategories      = "categories"
 	ProdEdgeVariants        = "variants"
@@ -45,9 +27,10 @@ const (
 func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ProductSchemaName).
 		Label(model.LangJson{model.LanguageCodeEnUs: "Product"}).
-		TableName("invent_products").
+		TableName("inventory_products").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
+		Extend(basemodel.OrgIdModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().
 				Name(ProdFieldName).
@@ -64,38 +47,17 @@ func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		Field(
 			dmodel.DefineField().
-				Name(ProdFieldOrgId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Organization"}).
-				DataType(dmodel.FieldDataTypeUlid()).
-				RequiredForCreate(),
-		).
-		Field(
-			dmodel.DefineField().
-				Name(ProdFieldStatus).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Status"}).
-				DataType(dmodel.FieldDataTypeEnumString([]string{
-					string(ProductStatusActive),
-					string(ProductStatusArchived),
-				})).
-				Default(string(ProductStatusArchived)),
-		).
-		Field(
-			dmodel.DefineField().
 				Name(ProdFieldThumbnailUrl).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Thumbnail URL"}).
 				DataType(dmodel.FieldDataTypeUrl()),
 		).
 		Field(
-			dmodel.DefineField().
-				Name(ProdFieldUnitId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Unit"}).
-				DataType(dmodel.FieldDataTypeUlid()),
+			basemodel.DefineFieldId(ProdFieldUnitId).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Unit"}),
 		).
 		Field(
-			dmodel.DefineField().
-				Name(ProdFieldDefaultVariantId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Default Variant"}).
-				DataType(dmodel.FieldDataTypeUlid()),
+			basemodel.DefineFieldId(ProdFieldDefaultVariantId).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Default Variant"}),
 		).
 		Field(
 			dmodel.DefineField().
@@ -130,47 +92,19 @@ func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 type Product struct {
-	fields dmodel.DynamicFields
+	basemodel.DynamicModelBase
 }
 
 func NewProduct() *Product {
-	return &Product{fields: make(dmodel.DynamicFields)}
+	return &Product{basemodel.NewDynamicModel()}
 }
 
 func NewProductFrom(src dmodel.DynamicFields) *Product {
-	return &Product{fields: src}
-}
-
-func (this Product) GetFieldData() dmodel.DynamicFields {
-	return this.fields
-}
-
-func (this *Product) SetFieldData(data dmodel.DynamicFields) {
-	this.fields = data
-}
-
-func (this Product) GetId() *model.Id {
-	return this.fields.GetModelId(basemodel.FieldId)
-}
-
-func (this *Product) SetId(v *model.Id) {
-	this.fields.SetModelId(basemodel.FieldId, v)
-}
-
-func (this Product) IsArchived() bool {
-	val := this.fields.GetBool(basemodel.FieldIsArchived)
-	if val == nil {
-		return false
-	}
-	return *val
-}
-
-func (this *Product) SetIsArchived(v *bool) {
-	this.fields.SetBool(basemodel.FieldIsArchived, v)
+	return &Product{basemodel.NewDynamicModel(src)}
 }
 
 func (this Product) GetName() *model.LangJson {
-	v := this.fields.GetAny(ProdFieldName)
+	v := this.GetFieldData().GetAny(ProdFieldName)
 	if v == nil {
 		return nil
 	}
@@ -185,14 +119,14 @@ func (this Product) GetName() *model.LangJson {
 
 func (this *Product) SetName(v *model.LangJson) {
 	if v == nil {
-		this.fields.SetAny(ProdFieldName, nil)
+		this.GetFieldData().SetAny(ProdFieldName, nil)
 		return
 	}
-	this.fields.SetAny(ProdFieldName, *v)
+	this.GetFieldData().SetAny(ProdFieldName, *v)
 }
 
 func (this Product) GetDescription() *model.LangJson {
-	val := this.fields.GetAny(ProdFieldDescription)
+	val := this.GetFieldData().GetAny(ProdFieldDescription)
 	if val == nil {
 		return nil
 	}
@@ -208,74 +142,40 @@ func (this Product) GetDescription() *model.LangJson {
 
 func (this *Product) SetDescription(v *model.LangJson) {
 	if v == nil {
-		this.fields.SetAny(ProdFieldDescription, nil)
+		this.GetFieldData().SetAny(ProdFieldDescription, nil)
 		return
 	}
-	this.fields.SetAny(ProdFieldDescription, *v)
-}
-
-func (this Product) GetStatus() *ProductStatus {
-	s := this.fields.GetString(ProdFieldStatus)
-	if s == nil {
-		return nil
-	}
-	st := ProductStatus(*s)
-	return &st
-}
-
-func (this *Product) SetStatus(v *ProductStatus) {
-	if v == nil {
-		this.fields.SetString(ProdFieldStatus, nil)
-		return
-	}
-	s := string(*v)
-	this.fields.SetString(ProdFieldStatus, &s)
+	this.GetFieldData().SetAny(ProdFieldDescription, *v)
 }
 
 func (this Product) GetThumbnailUrl() *string {
-	return this.fields.GetString(ProdFieldThumbnailUrl)
+	return this.GetFieldData().GetString(ProdFieldThumbnailUrl)
 }
 
 func (this *Product) SetThumbnailUrl(v *string) {
-	this.fields.SetString(ProdFieldThumbnailUrl, v)
+	this.GetFieldData().SetString(ProdFieldThumbnailUrl, v)
 }
 
 func (this Product) GetUnitId() *model.Id {
-	return this.fields.GetModelId(ProdFieldUnitId)
+	return this.GetFieldData().GetModelId(ProdFieldUnitId)
 }
 
 func (this *Product) SetUnitId(v *model.Id) {
-	this.fields.SetModelId(ProdFieldUnitId, v)
+	this.GetFieldData().SetModelId(ProdFieldUnitId, v)
 }
 
 func (this Product) GetDefaultVariantId() *model.Id {
-	return this.fields.GetModelId(ProdFieldDefaultVariantId)
+	return this.GetFieldData().GetModelId(ProdFieldDefaultVariantId)
 }
 
 func (this *Product) SetDefaultVariantId(v *model.Id) {
-	this.fields.SetModelId(ProdFieldDefaultVariantId, v)
+	this.GetFieldData().SetModelId(ProdFieldDefaultVariantId, v)
 }
 
 func (this Product) GetTagIds() *string {
-	return this.fields.GetString(ProdFieldTagIds)
+	return this.GetFieldData().GetString(ProdFieldTagIds)
 }
 
 func (this *Product) SetTagIds(v *string) {
-	this.fields.SetString(ProdFieldTagIds, v)
-}
-
-func (this Product) GetOrgId() *model.Id {
-	return this.fields.GetModelId(ProdFieldOrgId)
-}
-
-func (this *Product) SetOrgId(v *model.Id) {
-	this.fields.SetModelId(ProdFieldOrgId, v)
-}
-
-func (this Product) GetEtag() *model.Etag {
-	return this.fields.GetEtag(basemodel.FieldEtag)
-}
-
-func (this *Product) SetEtag(v *model.Etag) {
-	this.fields.SetEtag(basemodel.FieldEtag, v)
+	this.GetFieldData().SetString(ProdFieldTagIds, v)
 }

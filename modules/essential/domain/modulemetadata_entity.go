@@ -1,66 +1,151 @@
 package domain
 
 import (
-	stdErr "errors"
-
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
+const (
+	ModuleMetadataSchemaName = "essential.module_metadata"
+
+	ModuleMetadataFieldId         = basemodel.FieldId
+	ModuleMetadataFieldName       = "name"
+	ModuleMetadataFieldLabel      = "label"
+	ModuleMetadataFieldIsOrphaned = "is_orphaned"
+	ModuleMetadataFieldVersion    = "version"
+)
+
+func ModuleMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
+	return dmodel.DefineModel(ModuleMetadataSchemaName).
+		Label(model.LangJson{model.LanguageCodeEnUs: "Module Metadata"}).
+		TableName("essential_modules").
+		CompositeUnique(ModuleMetadataFieldName).
+		ShouldBuildDb().
+		Field(
+			basemodel.DefineFieldId(ModuleMetadataFieldId).
+				Label(model.LangJson{model.LanguageCodeEnUs: "ID"}).
+				UseTypeDefault().
+				PrimaryKey(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(ModuleMetadataFieldName).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
+				RequiredForCreate(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(ModuleMetadataFieldLabel).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Label"}).
+				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
+				RequiredForCreate(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(ModuleMetadataFieldIsOrphaned).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Is Orphaned"}).
+				DataType(dmodel.FieldDataTypeBoolean()).
+				RequiredForCreate().
+				Default(false),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(ModuleMetadataFieldVersion).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Version"}).
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
+				RequiredForCreate(),
+		).
+		Extend(basemodel.VersionedModelSchemaBuilder()).
+		Extend(basemodel.AuditableModelSchemaBuilder())
+}
+
 type ModuleMetadata struct {
-	model.ModelBase
-
-	Deps       []string        `json:"deps,omitempty"`
-	Label      *model.LangJson `json:"label,omitempty"`
-	Name       *string         `json:"name,omitempty"`
-	IsOrphaned *bool           `json:"isOrphaned,omitempty"`
-	Version    *semver.SemVer  `json:"version,omitempty"`
+	basemodel.DynamicModelBase
 }
 
-func (this *ModuleMetadata) Validate(forEdit bool) ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.LangJsonPtrValidateRule(&this.Label, true, 1, model.MODEL_RULE_TINY_NAME_LENGTH),
-		model.IdPtrValidateRule(&this.Id, forEdit),
-		val.Field(&this.Name,
-			val.NotNilWhen(!forEdit),
-			val.When(this.Name != nil,
-				val.NotEmpty,
-				model.ModelRuleCodeName,
-			),
-		),
-		val.Field(&this.Version,
-			val.NotNilWhen(!forEdit),
-			val.When(this.Version != nil,
-				val.NotEmpty,
-				val.By(func(value any) error {
-					s := value.(*semver.SemVer)
-					if !s.IsValid() {
-						return stdErr.New("invalid semver format")
-					}
-					return nil
-				}),
-			),
-		),
+func NewModuleMetadata() *ModuleMetadata {
+	return &ModuleMetadata{basemodel.NewDynamicModel()}
+}
+
+func NewModuleMetadataFrom(src dmodel.DynamicFields) *ModuleMetadata {
+	return &ModuleMetadata{basemodel.NewDynamicModel(src)}
+}
+
+func (this ModuleMetadata) GetLabel() *model.LangJson {
+	v := this.GetFieldData().GetAny(ModuleMetadataFieldLabel)
+	if v == nil {
+		return nil
 	}
-	return val.ApiBased.ValidateStruct(this, rules...)
+	lj := v.(model.LangJson)
+	return &lj
 }
 
-func (this *ModuleMetadata) ModifiedFields(other modules.InCodeModule) *ModuleMetadata {
+func (this *ModuleMetadata) SetLabel(v *model.LangJson) {
+	if v == nil {
+		this.GetFieldData().SetAny(ModuleMetadataFieldLabel, nil)
+		return
+	}
+	this.GetFieldData().SetAny(ModuleMetadataFieldLabel, *v)
+}
+
+func (this ModuleMetadata) GetName() *string {
+	return this.GetFieldData().GetString(ModuleMetadataFieldName)
+}
+
+func (this *ModuleMetadata) SetName(v *string) {
+	this.GetFieldData().SetString(ModuleMetadataFieldName, v)
+}
+
+func (this ModuleMetadata) GetIsOrphaned() *bool {
+	return this.GetFieldData().GetBool(ModuleMetadataFieldIsOrphaned)
+}
+
+func (this *ModuleMetadata) SetIsOrphaned(v *bool) {
+	this.GetFieldData().SetBool(ModuleMetadataFieldIsOrphaned, v)
+}
+
+func (this ModuleMetadata) GetVersion() *semver.SemVer {
+	version := this.GetFieldData().GetString(ModuleMetadataFieldVersion)
+	if version == nil {
+		return nil
+	}
+	parsed, err := semver.ParseSemVer(*version)
+	if err != nil {
+		return nil
+	}
+	return parsed
+}
+
+func (this *ModuleMetadata) SetVersion(v *semver.SemVer) {
+	if v == nil {
+		this.GetFieldData().SetString(ModuleMetadataFieldVersion, nil)
+		return
+	}
+	version := v.String()
+	this.GetFieldData().SetString(ModuleMetadataFieldVersion, &version)
+}
+
+func (this ModuleMetadata) ModifiedFields(other modules.InCodeModule) *ModuleMetadata {
+	modified := NewModuleMetadata()
 	count := 0
-	modified := &ModuleMetadata{}
-	if this.Label != nil && this.Label.TranslationKey() != other.LabelKey() {
-		modified.Label = util.ToPtr(make(model.LangJson))
-		modified.Label.SetTranslationKey(other.LabelKey())
+
+	if this.GetLabel() != nil && this.GetLabel().TranslationKey() != other.LabelKey() {
+		label := make(model.LangJson)
+		label.SetTranslationKey(other.LabelKey())
+		modified.SetLabel(util.ToPtr(label))
 		count++
 	}
-	if this.Version != nil && *this.Version != other.Version() {
-		modified.Version = util.ToPtr(other.Version())
+
+	if this.GetVersion() != nil && *this.GetVersion() != other.Version() {
+		modified.SetVersion(util.ToPtr(other.Version()))
 		count++
 	}
+
 	if count == 0 {
 		return nil
 	}

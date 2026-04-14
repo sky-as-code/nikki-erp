@@ -1,107 +1,117 @@
 package module
 
 import (
-	"time"
-
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
+	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
 )
 
+func init() {
+	var req cqrs.Request
+	req = (*CreateModuleCommand)(nil)
+	req = (*DeleteModuleCommand)(nil)
+	req = (*GetModuleQuery)(nil)
+	req = (*SearchModulesQuery)(nil)
+	req = (*UpdateModuleCommand)(nil)
+	req = (*ModuleExistsQuery)(nil)
+	util.Unused(req)
+}
+
+var createModuleCommandType = cqrs.RequestType{
+	Module:    "essential",
+	Submodule: "module_metadata",
+	Action:    "create",
+}
+
 type CreateModuleCommand struct {
-	Label   model.LangJson `json:"label"`
-	Name    string         `json:"name"`
-	Version string         `json:"version"`
+	domain.ModuleMetadata
 }
 
-type CreateModuleResult = GetModuleResult
-
-type CreateBulkModulesCommand struct {
-	Modules []CreateModuleCommand `json:"modules"`
+func (CreateModuleCommand) CqrsRequestType() cqrs.RequestType {
+	return createModuleCommandType
 }
 
-type CreateBulkModulesResult = crud.OpResult[[]*domain.ModuleMetadata]
+func (CreateModuleCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.ModuleMetadataSchemaName)
+}
+
+type CreateModuleResult = dyn.OpResult[domain.ModuleMetadata]
+
+var updateModuleCommandType = cqrs.RequestType{
+	Module:    "essential",
+	Submodule: "module_metadata",
+	Action:    "update",
+}
 
 type UpdateModuleCommand struct {
-	Id         model.Id        `param:"id" json:"id"`
-	Name       *string         `json:"name"`
-	Label      *model.LangJson `json:"label"`
-	IsOrphaned *bool           `json:"isOrphaned"`
-	Version    *string         `json:"version"`
+	domain.ModuleMetadata
 }
 
-type UpdateModuleResult = GetModuleResult
-
-type UpdateBulkModulesCommand struct {
-	Modules []UpdateModuleCommand `json:"modules"`
+func (UpdateModuleCommand) CqrsRequestType() cqrs.RequestType {
+	return updateModuleCommandType
 }
 
-type UpdateBulkModulesResult = crud.OpResult[[]*domain.ModuleMetadata]
-
-type DeleteModuleCommand = GetModuleByIdQuery
-
-type DeleteModuleResultData struct {
-	Id           *model.Id `json:"id"`
-	DeletedAt    time.Time `json:"deletedAt"`
-	DeletedCount int       `json:"deletedCount"`
+func (UpdateModuleCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.ModuleMetadataSchemaName)
 }
 
-type DeleteModuleResult = crud.DeletionResult
+type UpdateModuleResult = dyn.OpResult[dyn.MutateResultData]
 
-type ModuleExistsQuery = GetModuleByIdQuery
-type ModuleExistsByNameQuery = GetModuleByNameQuery
-
-type ModuleExistsResult = crud.ExistsResult
-
-type GetModuleByIdQuery struct {
-	Id model.Id `param:"id" json:"id"`
+var deleteModuleCommandType = cqrs.RequestType{
+	Module:    "essential",
+	Submodule: "module_metadata",
+	Action:    "delete",
 }
 
-func (this GetModuleByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
+type DeleteModuleCommand dyn.DeleteOneCommand
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (DeleteModuleCommand) CqrsRequestType() cqrs.RequestType {
+	return deleteModuleCommandType
 }
 
-type GetModuleByNameQuery struct {
-	Name string `json:"name"`
+type DeleteModuleResult = dyn.OpResult[dyn.MutateResultData]
+
+var getModuleQueryType = cqrs.RequestType{
+	Module:    "essential",
+	Submodule: "module_metadata",
+	Action:    "get",
 }
 
-func (this ModuleExistsByNameQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.Name,
-			val.NotEmpty,
-			val.Length(1, model.MODEL_RULE_TINY_NAME_LENGTH),
-		),
-	}
+type GetModuleQuery dyn.GetOneQuery
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (GetModuleQuery) CqrsRequestType() cqrs.RequestType {
+	return getModuleQueryType
 }
 
-type GetModuleResult = crud.OpResult[*domain.ModuleMetadata]
+type GetModuleResult = dyn.OpResult[domain.ModuleMetadata]
 
-type ListModulesQuery struct {
+var searchModulesQueryType = cqrs.RequestType{
+	Module:    "essential",
+	Submodule: "module_metadata",
+	Action:    "search",
 }
 
-func (this ListModulesQuery) Validate() ft.ValidationErrors {
-	return nil
+type SearchModulesQuery dyn.SearchQuery
+
+func (SearchModulesQuery) CqrsRequestType() cqrs.RequestType {
+	return searchModulesQueryType
 }
 
-type ListModulesResult = crud.OpResult[[]domain.ModuleMetadata]
+type SearchModulesResultData = dyn.PagedResultData[domain.ModuleMetadata]
+type SearchModulesResult = dyn.OpResult[SearchModulesResultData]
 
-type SearchModulesQuery struct {
-	crud.SearchQuery
+var moduleExistsQueryType = cqrs.RequestType{
+	Module:    "essential",
+	Submodule: "module_metadata",
+	Action:    "exists",
 }
 
-func (this SearchModulesQuery) Validate() ft.ValidationErrors {
-	rules := this.SearchQuery.ValidationRules()
+type ModuleExistsQuery dyn.ExistsQuery
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (ModuleExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return moduleExistsQueryType
 }
 
-type SearchModulesResultData = crud.PagedResult[domain.ModuleMetadata]
-type SearchModulesResult = crud.OpResult[*SearchModulesResultData]
+type ModuleExistsResult = dyn.OpResult[dyn.ExistsResultData]

@@ -62,9 +62,29 @@ func (this *BaseDynamicRepositoryImpl) BeginTransaction(ctx corectx.Context) (da
 }
 
 func (this *BaseDynamicRepositoryImpl) ExecFunc(ctx corectx.Context, sqlFuncName string, sqlFuncArgs ...any) error {
+	sqlQuery, err := this.prepareFunc(sqlFuncName, sqlFuncArgs...)
+	if err != nil {
+		return err
+	}
+	this.logQuery(sqlQuery)
+	_, err = this.ExtractClient(ctx).Exec(ctx.InnerContext(), sqlQuery, sqlFuncArgs...)
+	return err
+}
+
+func (this *BaseDynamicRepositoryImpl) QueryFunc(ctx corectx.Context, sqlFuncName string, sqlFuncArgs ...any) (*sql.Rows, error) {
+	sqlQuery, err := this.prepareFunc(sqlFuncName, sqlFuncArgs...)
+	if err != nil {
+		return nil, err
+	}
+	this.logQuery(sqlQuery)
+	rows, err := this.ExtractClient(ctx).Query(ctx.InnerContext(), sqlQuery, sqlFuncArgs...)
+	return rows, err
+}
+
+func (this *BaseDynamicRepositoryImpl) prepareFunc(sqlFuncName string, sqlFuncArgs ...any) (string, error) {
 	sqlFuncName = strings.TrimSpace(sqlFuncName)
 	if sqlFuncName == "" {
-		return errors.New("sql function name is required")
+		return "", errors.New("sql function name is required")
 	}
 
 	sqlBuilder := strings.Builder{}
@@ -75,14 +95,13 @@ func (this *BaseDynamicRepositoryImpl) ExecFunc(ctx corectx.Context, sqlFuncName
 		if i > 0 {
 			sqlBuilder.WriteString(", ")
 		}
-		sqlBuilder.WriteString(fmt.Sprintf("$p%d", i+1))
+		sqlBuilder.WriteString(fmt.Sprintf("$%d", i+1))
 	}
 	sqlBuilder.WriteString(")")
 
 	sqlQuery := sqlBuilder.String()
 	this.logQuery(sqlQuery)
-	_, err := this.ExtractClient(ctx).Exec(ctx.InnerContext(), sqlQuery, sqlFuncArgs...)
-	return err
+	return sqlQuery, nil
 }
 
 // CheckUniqueCollisions returns unique key groups that have collisions. Empty slice means no collisions.
@@ -1605,7 +1624,7 @@ func (this *BaseDynamicRepositoryImpl) buildFindOneGraph(filter dmodel.DynamicFi
 }
 
 func (this *BaseDynamicRepositoryImpl) queryAndScan(
-	ctx corectx.Context, query string, modelFields []*dmodel.ModelField,
+	ctx corectx.Context, query string, modelFields map[string]*dmodel.ModelField,
 ) ([]dmodel.DynamicFields, error) {
 	rows, err := this.ExtractClient(ctx).Query(ctx, query)
 	if err != nil {
@@ -1619,9 +1638,10 @@ func (this *BaseDynamicRepositoryImpl) queryAndScan(
 	}
 
 	var result []dmodel.DynamicFields
+	columnCount := len(columns)
 	for rows.Next() {
-		values := make([]any, len(columns))
-		valuePtrs := make([]any, len(columns))
+		values := make([]any, columnCount)
+		valuePtrs := make([]any, columnCount)
 		for i := range values {
 			valuePtrs[i] = &values[i]
 		}
@@ -1630,7 +1650,7 @@ func (this *BaseDynamicRepositoryImpl) queryAndScan(
 		}
 		row := make(dmodel.DynamicFields)
 		for i, col := range columns {
-			val, convErr := this.convertScanValue(col, values[i], modelFields, i)
+			val, convErr := this.convertScanValue(col, values[i], modelFields)
 			if convErr != nil {
 				return nil, convErr
 			}
@@ -1644,47 +1664,49 @@ func (this *BaseDynamicRepositoryImpl) queryAndScan(
 }
 
 func (this *BaseDynamicRepositoryImpl) convertScanValue(
-	columnName string, value any, modelFields []*dmodel.ModelField, index int,
+	columnName string, value any, modelFields map[string]*dmodel.ModelField,
 ) (any, error) {
 	if value == nil {
 		return nil, nil
 	}
-	if index < len(modelFields) {
-		field := modelFields[index]
-		if field != nil {
-			if field.IsTenantKey() {
-				return nil, nil
-			}
-			converted, err := field.DataType().TryConvert(value, field.DataType().Options())
-			if err != nil {
-				return nil, errors.Wrapf(err, "convertScanValue: failed to convert column '%s'", columnName)
-			}
-			if converted.Get() == nil {
-				return nil, nil
-			}
-			return *converted.Get(), nil
+	field := modelFields[columnName]
+	if field != nil {
+		if field.IsTenantKey() {
+			return nil, nil
 		}
+		converted, err := field.DataType().TryConvert(value, field.DataType().Options())
+		if err != nil {
+			return nil, errors.Wrapf(err, "convertScanValue: failed to convert column '%s'", columnName)
+		}
+		if converted.Get() == nil {
+			return nil, nil
+		}
+		return *converted.Get(), nil
 	}
 	return convertUnknownDbValue(value), nil
 }
 
 func (this *BaseDynamicRepositoryImpl) selectFieldsForSchema(
 	schema *dmodel.ModelSchema, columns []string,
-) []*dmodel.ModelField {
+) map[string]*dmodel.ModelField {
 	if schema == nil {
 		return nil
 	}
 	cols := columns
-	if len(cols) == 0 {
+	colLen := len(cols)
+	if colLen == 0 {
 		physical := schema.Columns()
 		cols = make([]string, 0, len(physical))
 		for _, field := range physical {
 			cols = append(cols, field.Name())
 		}
 	}
-	out := make([]*dmodel.ModelField, 0, len(cols))
+	out := make(map[string]*dmodel.ModelField, colLen)
 	for _, col := range cols {
-		out = append(out, resolveSchemaFieldByColumn(schema, col))
+		field := resolveSchemaFieldByColumn(schema, col)
+		if field != nil {
+			out[field.Name()] = field
+		}
 	}
 	return out
 }
