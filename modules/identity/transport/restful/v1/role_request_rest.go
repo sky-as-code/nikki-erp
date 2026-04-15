@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -23,7 +23,7 @@ type RoleRequestRest struct {
 	RoleRequestSvc it.RoleRequestService
 }
 
-func (this RoleRequestRest) CreateRoleRequest(echoCtx echo.Context) (err error) {
+func (this RoleRequestRest) CreateRoleRequest(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create grant request",
 		echoCtx,
@@ -32,7 +32,7 @@ func (this RoleRequestRest) CreateRoleRequest(echoCtx echo.Context) (err error) 
 	)
 }
 
-func (this RoleRequestRest) DeleteRoleRequest(echoCtx echo.Context) (err error) {
+func (this RoleRequestRest) DeleteRoleRequest(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete grant request",
 		echoCtx,
@@ -40,7 +40,7 @@ func (this RoleRequestRest) DeleteRoleRequest(echoCtx echo.Context) (err error) 
 	)
 }
 
-func (this RoleRequestRest) GetRoleRequest(echoCtx echo.Context) (err error) {
+func (this RoleRequestRest) GetRoleRequest(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get grant request",
 		echoCtx,
@@ -48,7 +48,7 @@ func (this RoleRequestRest) GetRoleRequest(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this RoleRequestRest) RoleRequestExists(echoCtx echo.Context) (err error) {
+func (this RoleRequestRest) RoleRequestExists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"grant request exists",
 		echoCtx,
@@ -56,7 +56,7 @@ func (this RoleRequestRest) RoleRequestExists(echoCtx echo.Context) (err error) 
 	)
 }
 
-func (this RoleRequestRest) SearchRoleRequests(echoCtx echo.Context) (err error) {
+func (this RoleRequestRest) SearchRoleRequests(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search grant requests",
 		echoCtx,
@@ -65,7 +65,7 @@ func (this RoleRequestRest) SearchRoleRequests(echoCtx echo.Context) (err error)
 	)
 }
 
-func (this RoleRequestRest) UpdateRoleRequest(echoCtx echo.Context) (err error) {
+func (this RoleRequestRest) UpdateRoleRequest(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update grant request",
 		echoCtx,

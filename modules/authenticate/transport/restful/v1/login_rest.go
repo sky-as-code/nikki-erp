@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -30,7 +30,7 @@ type LoginRest struct {
 	loginSvc   it.LoginService
 }
 
-func (this LoginRest) StartLoginFlow(echoCtx echo.Context) (err error) {
+func (this LoginRest) StartLoginFlow(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST start login flow"); e != nil {
 			err = e
@@ -59,7 +59,7 @@ func (this LoginRest) StartLoginFlow(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this LoginRest) Authenticate(echoCtx echo.Context) (err error) {
+func (this LoginRest) Authenticate(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST authenticate"); e != nil {
 			err = e
@@ -78,7 +78,7 @@ func (this LoginRest) Authenticate(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this LoginRest) RefreshToken(echoCtx echo.Context) (err error) {
+func (this LoginRest) RefreshToken(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST refresh token"); e != nil {
 			err = e

@@ -99,6 +99,7 @@ func (this *PermissionServiceImpl) IsAuthorized(
 	if resMat.ClientErrors.Count() > 0 {
 		return nil, errors.Wrap(resMat.ClientErrors.ToError(), "IsAuthorized")
 	}
+	// TODO: Return `foundUser`
 	return &itPerm.IsAuthorizedResult{
 		Data:    resMat.HasData,
 		HasData: true,

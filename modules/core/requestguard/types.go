@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -20,8 +20,7 @@ type RequestGuardService interface {
 }
 
 type VerifyRequestResult struct {
-	IsOk      bool
-	JwtClaims jwt.Claims
-	// HttpStatus  int
+	IsOk        bool
+	JwtClaims   jwt.Claims
 	ClientError *ft.ClientErrorItem
 }

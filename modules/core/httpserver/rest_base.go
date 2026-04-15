@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -24,15 +24,15 @@ type RestBase struct {
 	CqrsBus   cqrs.CqrsBus
 }
 
-func JsonCreated(echoCtx echo.Context, data any) error {
+func JsonCreated(echoCtx *echo.Context, data any) error {
 	return echoCtx.JSON(http.StatusCreated, data)
 }
 
-func JsonOk(echoCtx echo.Context, data any) error {
+func JsonOk(echoCtx *echo.Context, data any) error {
 	return echoCtx.JSON(http.StatusOK, data)
 }
 
-func JsonBadRequest(echoCtx echo.Context, err any) error {
+func JsonBadRequest(echoCtx *echo.Context, err any) error {
 	return echoCtx.JSON(http.StatusBadRequest, err)
 }
 

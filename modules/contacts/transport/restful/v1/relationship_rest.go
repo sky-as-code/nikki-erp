@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -32,7 +32,7 @@ func (this *RelationshipRest) RegisterRoutes(apiGroup *echo.Group) {
 	group.POST("", this.CreateRelationship)
 }
 
-func (this RelationshipRest) CreateRelationship(echoCtx echo.Context) (err error) {
+func (this RelationshipRest) CreateRelationship(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create relationship"); e != nil {
 			err = e

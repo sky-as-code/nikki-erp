@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -25,7 +25,7 @@ type AttributeRest struct {
 	AttributeSvc itAttribute.AttributeService
 }
 
-func (this AttributeRest) Create(echoCtx echo.Context) (err error) {
+func (this AttributeRest) Create(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create attribute",
 		echoCtx,
@@ -34,7 +34,7 @@ func (this AttributeRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeRest) Update(echoCtx echo.Context) (err error) {
+func (this AttributeRest) Update(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update attribute",
 		echoCtx,
@@ -43,7 +43,7 @@ func (this AttributeRest) Update(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeRest) Delete(echoCtx echo.Context) (err error) {
+func (this AttributeRest) Delete(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete attribute",
 		echoCtx,
@@ -51,7 +51,7 @@ func (this AttributeRest) Delete(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeRest) GetOne(echoCtx echo.Context) (err error) {
+func (this AttributeRest) GetOne(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get attribute",
 		echoCtx,
@@ -59,7 +59,7 @@ func (this AttributeRest) GetOne(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeRest) Search(echoCtx echo.Context) (err error) {
+func (this AttributeRest) Search(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search attributes",
 		echoCtx,
@@ -68,7 +68,7 @@ func (this AttributeRest) Search(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeRest) Exists(echoCtx echo.Context) (err error) {
+func (this AttributeRest) Exists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"attribute exists",
 		echoCtx,

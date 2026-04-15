@@ -3,7 +3,7 @@ package context
 import (
 	"context"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.bryk.io/pkg/errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -60,7 +60,7 @@ func CloneRequestContext(ctx Context) Context {
 }
 
 // Returns pointer to an instance of RequestContext if it exists, otherwise returns an error.
-func AsRequestContext(echoCtx echo.Context) (Context, error) {
+func AsRequestContext(echoCtx *echo.Context) (Context, error) {
 	reqCtx, isReqCtx := echoCtx.Request().Context().(Context)
 	if !isReqCtx {
 		return nil, errors.New("Must have RequestContextMiddleware2 before calling this function")

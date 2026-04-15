@@ -27,7 +27,7 @@ package v1
 // 	RevokeRequestSvc it.RevokeRequestService
 // }
 
-// func (this RevokeRequestRest) Create(echoCtx echo.Context) (err error) {
+// func (this RevokeRequestRest) Create(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create revoke request"); e != nil {
 // 			err = e
@@ -50,7 +50,7 @@ package v1
 // 	return err
 // }
 
-// func (this RevokeRequestRest) CreateBulk(echoCtx echo.Context) (err error) {
+// func (this RevokeRequestRest) CreateBulk(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create bulk revoke requests"); e != nil {
 // 			err = e
@@ -81,7 +81,7 @@ package v1
 // 	return err
 // }
 
-// func (this RevokeRequestRest) GetById(echoCtx echo.Context) (err error) {
+// func (this RevokeRequestRest) GetById(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get revoke request by id"); e != nil {
 // 			err = e
@@ -104,7 +104,7 @@ package v1
 // 	return err
 // }
 
-// func (this RevokeRequestRest) Search(echoCtx echo.Context) (err error) {
+// func (this RevokeRequestRest) Search(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search revoke requests"); e != nil {
 // 			err = e
@@ -127,7 +127,7 @@ package v1
 // 	return err
 // }
 
-// func (this RevokeRequestRest) Delete(echoCtx echo.Context) (err error) {
+// func (this RevokeRequestRest) Delete(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete revoke request"); e != nil {
 // 			err = e

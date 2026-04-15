@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -23,7 +23,7 @@ type EntitlementRest struct {
 	EntitlementSvc it.EntitlementService
 }
 
-func (this EntitlementRest) CreateEntitlement(echoCtx echo.Context) (err error) {
+func (this EntitlementRest) CreateEntitlement(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create entitlement",
 		echoCtx,
@@ -32,7 +32,7 @@ func (this EntitlementRest) CreateEntitlement(echoCtx echo.Context) (err error) 
 	)
 }
 
-func (this EntitlementRest) DeleteEntitlement(echoCtx echo.Context) (err error) {
+func (this EntitlementRest) DeleteEntitlement(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete entitlement",
 		echoCtx,
@@ -40,7 +40,7 @@ func (this EntitlementRest) DeleteEntitlement(echoCtx echo.Context) (err error) 
 	)
 }
 
-func (this EntitlementRest) GetEntitlement(echoCtx echo.Context) (err error) {
+func (this EntitlementRest) GetEntitlement(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get entitlement",
 		echoCtx,
@@ -48,7 +48,7 @@ func (this EntitlementRest) GetEntitlement(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this EntitlementRest) EntitlementExists(echoCtx echo.Context) (err error) {
+func (this EntitlementRest) EntitlementExists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"entitlement exists",
 		echoCtx,
@@ -56,7 +56,7 @@ func (this EntitlementRest) EntitlementExists(echoCtx echo.Context) (err error) 
 	)
 }
 
-func (this EntitlementRest) ManageEntitlementRoles(echoCtx echo.Context) (err error) {
+func (this EntitlementRest) ManageEntitlementRoles(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"manage entitlement roles",
 		echoCtx,
@@ -64,7 +64,7 @@ func (this EntitlementRest) ManageEntitlementRoles(echoCtx echo.Context) (err er
 	)
 }
 
-func (this EntitlementRest) SearchEntitlements(echoCtx echo.Context) (err error) {
+func (this EntitlementRest) SearchEntitlements(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search entitlements",
 		echoCtx,
@@ -73,7 +73,7 @@ func (this EntitlementRest) SearchEntitlements(echoCtx echo.Context) (err error)
 	)
 }
 
-func (this EntitlementRest) SetEntitlementIsArchived(echoCtx echo.Context) (err error) {
+func (this EntitlementRest) SetEntitlementIsArchived(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"set entitlement is_archived",
 		echoCtx,
@@ -81,7 +81,7 @@ func (this EntitlementRest) SetEntitlementIsArchived(echoCtx echo.Context) (err 
 	)
 }
 
-func (this EntitlementRest) UpdateEntitlement(echoCtx echo.Context) (err error) {
+func (this EntitlementRest) UpdateEntitlement(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update entitlement",
 		echoCtx,

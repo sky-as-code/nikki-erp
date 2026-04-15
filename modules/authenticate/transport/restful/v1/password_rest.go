@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -26,7 +26,7 @@ type PasswordRest struct {
 	passwordSvc it.PasswordService
 }
 
-func (this PasswordRest) CreatePasswordOtp(echoCtx echo.Context) (err error) {
+func (this PasswordRest) CreatePasswordOtp(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create password OTP"); e != nil {
 			err = e
@@ -43,7 +43,7 @@ func (this PasswordRest) CreatePasswordOtp(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this PasswordRest) ConfirmPasswordOtp(echoCtx echo.Context) (err error) {
+func (this PasswordRest) ConfirmPasswordOtp(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST confirm password OTP"); e != nil {
 			err = e
@@ -60,7 +60,7 @@ func (this PasswordRest) ConfirmPasswordOtp(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this PasswordRest) CreatePasswordTemp(echoCtx echo.Context) (err error) {
+func (this PasswordRest) CreatePasswordTemp(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create password temp"); e != nil {
 			err = e
@@ -77,7 +77,7 @@ func (this PasswordRest) CreatePasswordTemp(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this PasswordRest) SetPassword(echoCtx echo.Context) (err error) {
+func (this PasswordRest) SetPassword(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST set password"); e != nil {
 			err = e

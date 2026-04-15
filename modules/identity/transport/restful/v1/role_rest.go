@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -23,7 +23,7 @@ type RoleRest struct {
 	RoleSvc it.RoleService
 }
 
-func (this RoleRest) CreateRole(echoCtx echo.Context) (err error) {
+func (this RoleRest) CreateRole(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create role",
 		echoCtx,
@@ -32,7 +32,7 @@ func (this RoleRest) CreateRole(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this RoleRest) DeleteRole(echoCtx echo.Context) (err error) {
+func (this RoleRest) DeleteRole(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete role",
 		echoCtx,
@@ -40,7 +40,7 @@ func (this RoleRest) DeleteRole(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this RoleRest) GetRole(echoCtx echo.Context) (err error) {
+func (this RoleRest) GetRole(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get role",
 		echoCtx,
@@ -48,7 +48,7 @@ func (this RoleRest) GetRole(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this RoleRest) ManageRoleEntitlements(echoCtx echo.Context) (err error) {
+func (this RoleRest) ManageRoleEntitlements(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"manage role entitlements",
 		echoCtx,
@@ -56,7 +56,7 @@ func (this RoleRest) ManageRoleEntitlements(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this RoleRest) RoleExists(echoCtx echo.Context) (err error) {
+func (this RoleRest) RoleExists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"role exists",
 		echoCtx,
@@ -64,7 +64,7 @@ func (this RoleRest) RoleExists(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this RoleRest) SearchRoles(echoCtx echo.Context) (err error) {
+func (this RoleRest) SearchRoles(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search roles",
 		echoCtx,
@@ -73,7 +73,7 @@ func (this RoleRest) SearchRoles(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this RoleRest) SetRoleIsArchived(echoCtx echo.Context) (err error) {
+func (this RoleRest) SetRoleIsArchived(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"set role is_archived",
 		echoCtx,
@@ -81,7 +81,7 @@ func (this RoleRest) SetRoleIsArchived(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this RoleRest) UpdateRole(echoCtx echo.Context) (err error) {
+func (this RoleRest) UpdateRole(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update role",
 		echoCtx,

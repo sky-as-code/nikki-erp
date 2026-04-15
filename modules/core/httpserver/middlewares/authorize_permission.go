@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -37,7 +37,7 @@ func AuthorizePermissionMiddleware(params AuthzPermMiddlewareParams) echo.Middle
 		guardSvc = guard
 	})
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(echoCtx echo.Context) error {
+		return func(echoCtx *echo.Context) error {
 			reqCtx, err := corectx.AsRequestContext(echoCtx)
 			if err != nil {
 				return err

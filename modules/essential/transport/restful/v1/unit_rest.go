@@ -1,7 +1,7 @@
 ﻿package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -24,7 +24,7 @@ type UnitRest struct {
 	unitSvc it.UnitService
 }
 
-func (this UnitRest) Create(echoCtx echo.Context) (err error) {
+func (this UnitRest) Create(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create unit",
 		echoCtx,
@@ -33,7 +33,7 @@ func (this UnitRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitRest) Delete(echoCtx echo.Context) (err error) {
+func (this UnitRest) Delete(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete unit",
 		echoCtx,
@@ -41,7 +41,7 @@ func (this UnitRest) Delete(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitRest) Exists(echoCtx echo.Context) (err error) {
+func (this UnitRest) Exists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"unit exists",
 		echoCtx,
@@ -49,7 +49,7 @@ func (this UnitRest) Exists(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitRest) GetOne(echoCtx echo.Context) (err error) {
+func (this UnitRest) GetOne(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get unit",
 		echoCtx,
@@ -57,7 +57,7 @@ func (this UnitRest) GetOne(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitRest) Search(echoCtx echo.Context) (err error) {
+func (this UnitRest) Search(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search units",
 		echoCtx,
@@ -66,7 +66,7 @@ func (this UnitRest) Search(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitRest) Update(echoCtx echo.Context) (err error) {
+func (this UnitRest) Update(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update unit",
 		echoCtx,

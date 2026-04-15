@@ -3,13 +3,13 @@ package middleware
 // "errors"
 // "net/http"
 
-// "github.com/labstack/echo/v4"
+// "github.com/labstack/echo/v5"
 
 // "github.com/sky-as-code/nikki-erp/common/env"
 // "github.com/sky-as-code/nikki-erp/common/fault"
 
 // func CustomHttpErrorHandler(defaultHandler echo.HTTPErrorHandler) echo.HTTPErrorHandler {
-// 	return func(err error, ctx echo.Context) {
+// 	return func(err error, ctx *echo.Context) {
 // 		if ctx.Response().Committed {
 // 			// Response already sent
 // 			return
@@ -33,7 +33,7 @@ func transformError(err error) error {
 	return err
 }
 
-func handleHttpError(err error, ctx echo.Context) {
+func handleHttpError(err error, ctx *echo.Context) {
 	httpErr, isHttpErr := err.(fault.HttpError)
 	logger := ctx.Logger()
 
@@ -50,7 +50,7 @@ func handleHttpError(err error, ctx echo.Context) {
 }
 */
 
-// func handleerror(err error, ctx echo.Context) bool {
+// func handleerror(err error, ctx *echo.Context) bool {
 // 	var bizErr fault.BusinessError
 // 	var techErr fault.TechnicalError
 // 	var valErr fault.ClientError

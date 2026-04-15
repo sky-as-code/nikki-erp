@@ -173,7 +173,7 @@ install-tools:
 	go install go.uber.org/mock/mockgen@latest
 # curl -sSf https://atlasgo.sh | sh
 
-gensql:
+gen-sql:
 	@[ -f config/local.env ] || cp config/local.env.sample config/local.env
 	@[ -f config/config.yaml ] || cp config/config.default.yaml config/config.yaml
 	go run -tags=staticmods *.go -createsql -dialect=postgres -module=$(module)
@@ -184,3 +184,30 @@ nikki:
 	APP_ENV=$(env) WORKING_DIR="$(cwd)" GENERAL_LOG_LEVEL="info" go run -tags=staticmods *.go
 
 # END: Local development
+
+# START: Certificate
+
+gen-certs:
+	@set -euo pipefail; \
+	echo "==> Root CA"; \
+	./scripts/cert/gen-root-ca.sh
+
+	@set -euo pipefail; \
+	echo "==> Client CA"; \
+	./scripts/cert/gen-intermediate-ca.sh client-ca
+
+	@set -euo pipefail; \
+	echo "==> Server CA"; \
+	./scripts/cert/gen-intermediate-ca.sh server-ca
+
+gen-client-cert:
+	@set -euo pipefail; \
+	echo "==> Client cert"; \
+	./scripts/cert/gen-client-cert.sh
+
+gen-server-cert:
+	@set -euo pipefail; \
+	echo "==> Server cert"; \
+	./scripts/cert/gen-server-cert.sh
+
+# END: Certificate

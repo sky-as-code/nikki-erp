@@ -28,7 +28,7 @@ package v1
 // 	EntitlementSvc it.EntitlementService
 // }
 
-// func (this EntitlementRest) CreateEntitlement(echoCtx echo.Context) (err error) {
+// func (this EntitlementRest) CreateEntitlement(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create entitlement"); e != nil {
 // 			err = e
@@ -52,7 +52,7 @@ package v1
 // 	return err
 // }
 
-// func (this EntitlementRest) UpdateEntitlement(echoCtx echo.Context) (err error) {
+// func (this EntitlementRest) UpdateEntitlement(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update entitlement"); e != nil {
 // 			err = e
@@ -76,7 +76,7 @@ package v1
 // 	return err
 // }
 
-// func (this EntitlementRest) DeleteEntitlementHard(echoCtx echo.Context) (err error) {
+// func (this EntitlementRest) DeleteEntitlementHard(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete entitlement hard"); e != nil {
 // 			err = e
@@ -100,7 +100,7 @@ package v1
 // 	return err
 // }
 
-// func (this EntitlementRest) GetEntitlementById(echoCtx echo.Context) (err error) {
+// func (this EntitlementRest) GetEntitlementById(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get entitlement by id"); e != nil {
 // 			err = e
@@ -124,7 +124,7 @@ package v1
 // 	return err
 // }
 
-// func (this EntitlementRest) GetAllEntitlementByIds(echoCtx echo.Context) (err error) {
+// func (this EntitlementRest) GetAllEntitlementByIds(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get all entitlement by ids"); e != nil {
 // 			err = e
@@ -150,7 +150,7 @@ package v1
 // 	return err
 // }
 
-// func (this EntitlementRest) SearchEntitlements(echoCtx echo.Context) (err error) {
+// func (this EntitlementRest) SearchEntitlements(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search entitlements"); e != nil {
 // 			err = e

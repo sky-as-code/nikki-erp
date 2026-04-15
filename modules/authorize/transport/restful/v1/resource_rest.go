@@ -26,7 +26,7 @@ package v1
 // 	ResourceSvc it.ResourceService
 // }
 
-// func (this ResourceRest) CreateResource(echoCtx echo.Context) (err error) {
+// func (this ResourceRest) CreateResource(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create resource"); e != nil {
 // 			err = e
@@ -49,7 +49,7 @@ package v1
 // 	return err
 // }
 
-// func (this ResourceRest) UpdateResource(echoCtx echo.Context) (err error) {
+// func (this ResourceRest) UpdateResource(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update resource"); e != nil {
 // 			err = e
@@ -72,7 +72,7 @@ package v1
 // 	return err
 // }
 
-// func (this ResourceRest) DeleteResourceHard(echoCtx echo.Context) (err error) {
+// func (this ResourceRest) DeleteResourceHard(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete resource hard"); e != nil {
 // 			err = e
@@ -94,7 +94,7 @@ package v1
 // 	return err
 // }
 
-// func (this ResourceRest) GetResourceByName(echoCtx echo.Context) (err error) {
+// func (this ResourceRest) GetResourceByName(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get resource by name"); e != nil {
 // 			err = e
@@ -117,7 +117,7 @@ package v1
 // 	return err
 // }
 
-// func (this ResourceRest) SearchResources(echoCtx echo.Context) (err error) {
+// func (this ResourceRest) SearchResources(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search resources"); e != nil {
 // 			err = e

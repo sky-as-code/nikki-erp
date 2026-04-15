@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"go.bryk.io/pkg/errors"
 	"go.uber.org/dig"
 
@@ -61,17 +61,10 @@ func (this *StaticRequestGuardServiceImpl) GetCorsMiddleware(_ corectx.Context) 
 
 func (this *StaticRequestGuardServiceImpl) configCors() middleware.CORSConfig {
 	corsOrigins := this.configSvc.GetStrArr(c.HttpCorsOrigins)
-	corsHeaders := this.configSvc.GetStrArr(c.HttpCorsHeaders, "")
-	if len(corsHeaders) == 0 {
-		corsHeaders = []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization}
-	}
-	corsMethods := this.configSvc.GetStrArr(c.HttpCorsMethods, "")
-	if len(corsMethods) == 0 {
-		corsMethods = []string{echo.GET, echo.HEAD, echo.PUT, echo.PATCH, echo.POST, echo.DELETE}
-	}
+	corsHeaders := this.configSvc.GetStrArr(c.HttpCorsHeaders)
+	corsMethods := this.configSvc.GetStrArr(c.HttpCorsMethods)
 
 	return middleware.CORSConfig{
-		// TODO: Allow config CORS from database
 		AllowOrigins: corsOrigins,
 		AllowHeaders: corsHeaders,
 		AllowMethods: corsMethods,
@@ -81,7 +74,6 @@ func (this *StaticRequestGuardServiceImpl) configCors() middleware.CORSConfig {
 func (this *StaticRequestGuardServiceImpl) VerifyTrustedConnection(ctx corectx.Context, request *http.Request) (result *VerifyRequestResult, err error) {
 	return &VerifyRequestResult{
 		IsOk: true,
-		// HttpStatus: http.StatusOK,
 	}, nil
 }
 
@@ -90,7 +82,6 @@ func (this *StaticRequestGuardServiceImpl) VerifyJwt(ctx corectx.Context, reques
 	if !cfg.GetBool(c.RequestGuardAccessTokenEnabled) {
 		return &VerifyRequestResult{
 			IsOk: true,
-			// HttpStatus: http.StatusOK,
 		}, nil
 	}
 
@@ -116,8 +107,7 @@ func (this *StaticRequestGuardServiceImpl) VerifyJwt(ctx corectx.Context, reques
 		}
 	}
 	return &VerifyRequestResult{
-		IsOk: true,
-		// HttpStatus: http.StatusOK,
+		IsOk:      true,
 		JwtClaims: verifyResult.Claims,
 	}, nil
 }
@@ -143,7 +133,6 @@ func (this *StaticRequestGuardServiceImpl) bearerAccessToken(request *http.Reque
 func jwtInvalidFailure() *VerifyRequestResult {
 	return &VerifyRequestResult{
 		IsOk: false,
-		// HttpStatus: http.StatusUnauthorized,
 		ClientError: ft.NewAuthorizationError(
 			ft.ErrorKey("err_invalid_access_token", "authorize"),
 			"Invalid or expired access token.",
@@ -154,7 +143,6 @@ func jwtInvalidFailure() *VerifyRequestResult {
 func jwtMalformedFailure() *VerifyRequestResult {
 	return &VerifyRequestResult{
 		IsOk: false,
-		// HttpStatus: http.StatusUnauthorized,
 		ClientError: ft.NewAuthorizationError(
 			ft.ErrorKey("err_malformed_access_token", "authorize"),
 			"Malformed access token.",

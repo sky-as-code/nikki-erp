@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/sky-as-code/nikki-erp/common/util"
 )
 
@@ -22,7 +22,7 @@ var rolesCtxKey = &contextKey{"Roles"}
 // CaptureBearerToken captures and parses JWT token, sets user info to context
 func CaptureBearerToken(secretKey string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			authHeader := c.Request().Header.Get("Authorization")
 			if authHeader == "" {
 				return next(c)

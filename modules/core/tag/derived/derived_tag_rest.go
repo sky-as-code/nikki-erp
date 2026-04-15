@@ -1,7 +1,7 @@
 package derived
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -27,7 +27,7 @@ type DerivedRest struct {
 	TagSvc it.TagService
 }
 
-func (this DerivedRest) CreateDerivedTag(echoCtx echo.Context) (err error) {
+func (this DerivedRest) CreateDerivedTag(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create derived tag"); e != nil {
 			err = e
@@ -46,7 +46,7 @@ func (this DerivedRest) CreateDerivedTag(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this DerivedRest) UpdateDerivedTag(echoCtx echo.Context) (err error) {
+func (this DerivedRest) UpdateDerivedTag(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update derived tag"); e != nil {
 			err = e
@@ -65,7 +65,7 @@ func (this DerivedRest) UpdateDerivedTag(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this DerivedRest) DeleteDerivedTag(echoCtx echo.Context) (err error) {
+func (this DerivedRest) DeleteDerivedTag(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete derived tag"); e != nil {
 			err = e
@@ -84,7 +84,7 @@ func (this DerivedRest) DeleteDerivedTag(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this DerivedRest) GetDerivedTagById(echoCtx echo.Context) (err error) {
+func (this DerivedRest) GetDerivedTagById(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get derived tag by id"); e != nil {
 			err = e
@@ -103,7 +103,7 @@ func (this DerivedRest) GetDerivedTagById(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this DerivedRest) ListDerivedTags(echoCtx echo.Context) (err error) {
+func (this DerivedRest) ListDerivedTags(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST list derived tags"); e != nil {
 			err = e

@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -23,7 +23,7 @@ type ResourceRest struct {
 	ResourceSvc it.ResourceService
 }
 
-func (this ResourceRest) CreateResource(echoCtx echo.Context) (err error) {
+func (this ResourceRest) CreateResource(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create resource",
 		echoCtx,
@@ -32,7 +32,7 @@ func (this ResourceRest) CreateResource(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ResourceRest) DeleteResource(echoCtx echo.Context) (err error) {
+func (this ResourceRest) DeleteResource(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete resource",
 		echoCtx,
@@ -40,7 +40,7 @@ func (this ResourceRest) DeleteResource(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ResourceRest) GetResource(echoCtx echo.Context) (err error) {
+func (this ResourceRest) GetResource(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get resource",
 		echoCtx,
@@ -48,7 +48,7 @@ func (this ResourceRest) GetResource(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ResourceRest) ResourceExists(echoCtx echo.Context) (err error) {
+func (this ResourceRest) ResourceExists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"resource exists",
 		echoCtx,
@@ -56,7 +56,7 @@ func (this ResourceRest) ResourceExists(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ResourceRest) SearchResources(echoCtx echo.Context) (err error) {
+func (this ResourceRest) SearchResources(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search resources",
 		echoCtx,
@@ -65,7 +65,7 @@ func (this ResourceRest) SearchResources(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ResourceRest) UpdateResource(echoCtx echo.Context) (err error) {
+func (this ResourceRest) UpdateResource(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update resource",
 		echoCtx,

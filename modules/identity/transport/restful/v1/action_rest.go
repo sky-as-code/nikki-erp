@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -28,7 +28,7 @@ type ActionRest struct {
 	ActionSvc it.ActionService
 }
 
-func (this ActionRest) CreateAction(echoCtx echo.Context) (err error) {
+func (this ActionRest) CreateAction(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create action"); e != nil {
 			err = e
@@ -52,7 +52,7 @@ func (this ActionRest) CreateAction(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ActionRest) DeleteAction(echoCtx echo.Context) (err error) {
+func (this ActionRest) DeleteAction(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete action"); e != nil {
 			err = e
@@ -71,7 +71,7 @@ func (this ActionRest) DeleteAction(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ActionRest) GetAction(echoCtx echo.Context) (err error) {
+func (this ActionRest) GetAction(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get action"); e != nil {
 			err = e
@@ -90,7 +90,7 @@ func (this ActionRest) GetAction(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ActionRest) ActionExists(echoCtx echo.Context) (err error) {
+func (this ActionRest) ActionExists(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST action exists"); e != nil {
 			err = e
@@ -109,7 +109,7 @@ func (this ActionRest) ActionExists(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ActionRest) SearchActions(echoCtx echo.Context) (err error) {
+func (this ActionRest) SearchActions(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search actions"); e != nil {
 			err = e
@@ -129,7 +129,7 @@ func (this ActionRest) SearchActions(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ActionRest) UpdateAction(echoCtx echo.Context) (err error) {
+func (this ActionRest) UpdateAction(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update action"); e != nil {
 			err = e

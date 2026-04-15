@@ -27,7 +27,7 @@ package v1
 // 	AuthorizeSvc it.AuthorizeService
 // }
 
-// func (this AuthorizeRest) IsAuthorized(echoCtx echo.Context) (err error) {
+// func (this AuthorizeRest) IsAuthorized(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST is authorized"); e != nil {
 // 			err = e
