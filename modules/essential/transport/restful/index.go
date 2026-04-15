@@ -11,15 +11,33 @@ import (
 
 func InitRestfulHandlers() error {
 	err := deps.Register(
+		v1.NewContactRest,
 		v1.NewModuleRest,
 		v1.NewUnitRest,
 		v1.NewUnitCategoryRest,
 	)
 	return stdErr.Join(
 		err,
+		initContactV1(),
 		initEssentialV1(),
 		initUnitV1(),
 	)
+}
+
+func initContactV1() error {
+	return deps.Invoke(func(
+		route *echo.Group,
+		contactRest *v1.ContactRest,
+	) {
+		routeV1 := route.Group("/v1/essential")
+
+		routeV1.DELETE("/contacts/:id", contactRest.DeleteContact)
+		routeV1.GET("/contacts/:id", contactRest.GetContact)
+		routeV1.GET("/contacts", contactRest.SearchContacts)
+		routeV1.POST("/contacts/exists", contactRest.ContactExists)
+		routeV1.POST("/contacts", contactRest.CreateContact)
+		routeV1.PUT("/contacts/:id", contactRest.UpdateContact)
+	})
 }
 
 func initEssentialV1() error {
