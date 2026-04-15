@@ -58,6 +58,9 @@ func (*EssentialModule) Init() error {
 func (*EssentialModule) RegisterModels() error {
 	return errors.Join(
 		dmodel.RegisterSchemaB(domain.ModuleMetadataSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.ContactSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.ContactChannelSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.ContactRelationshipSchemaBuilder()),
 		// Unit schemas
 		dmodel.RegisterSchemaB(domain.UnitCategorySchemaBuilder()),
 		dmodel.RegisterSchemaB(domain.UnitSchemaBuilder()),
