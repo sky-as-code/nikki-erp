@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -25,7 +25,7 @@ type OrgUnitRest struct {
 	OrgUnitSvc it.OrgUnitService
 }
 
-func (this OrgUnitRest) CreateOrgUnit(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) CreateOrgUnit(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create org unit",
 		echoCtx,
@@ -34,7 +34,7 @@ func (this OrgUnitRest) CreateOrgUnit(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) DeleteOrgUnit(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) DeleteOrgUnit(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete org unit",
 		echoCtx,
@@ -42,7 +42,7 @@ func (this OrgUnitRest) DeleteOrgUnit(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) GetOrgUnit(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) GetOrgUnit(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get org unit",
 		echoCtx,
@@ -50,7 +50,7 @@ func (this OrgUnitRest) GetOrgUnit(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) OrgUnitExists(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) OrgUnitExists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"org unit exists",
 		echoCtx,
@@ -58,7 +58,7 @@ func (this OrgUnitRest) OrgUnitExists(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) ManageOrgUnitUsers(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) ManageOrgUnitUsers(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"manage org unit users",
 		echoCtx,
@@ -66,7 +66,7 @@ func (this OrgUnitRest) ManageOrgUnitUsers(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) SearchOrgUnits(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) SearchOrgUnits(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search org units",
 		echoCtx,
@@ -75,7 +75,7 @@ func (this OrgUnitRest) SearchOrgUnits(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this OrgUnitRest) UpdateOrgUnit(echoCtx echo.Context) (err error) {
+func (this OrgUnitRest) UpdateOrgUnit(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update org unit",
 		echoCtx,

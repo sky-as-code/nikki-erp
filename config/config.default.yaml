@@ -44,12 +44,18 @@ CORE:
     HOST: "127.0.0.1"
     # Port number for HTTP Server to listen
     PORT: 8080
+    # Port number for HTTPS Server to listen
+    HTTPS_PORT: 4433
+    HTTPS_RSA_PUBLIC_KEY_FILE: "./scripts/cert/pki/server-cert/api.nikkierp.com.crt"
+    HTTPS_RSA_PRIVATE_KEY_FILE: "./scripts/cert/pki/server-cert/api.nikkierp.com.key"
     # Allowed origins for Cross-Origin Resource Sharing
     CORS_ORIGINS: "*"
     # Allowed headers for Cross-Origin Resource Sharing
     CORS_HEADERS: "Accept,Authorization,Content-Type,Origin"
     # Allowed methods for Cross-Origin Resource Sharing
     CORS_METHODS: "OPTIONS,HEAD,GET,POST,PUT,DELETE"
+    MTLS_ENABLED: false
+    MTLS_CLIENT_CA_CERT_FILE: "scripts/cert/pki/client-ca/nikkierp-client-ca.crt"
   TOKEN:
     # Secret key for JWT token signing and verification
     # IMPORTANT: Override this in local.env or production environment
@@ -77,7 +83,6 @@ CORE:
     # Refresh token expiry time in minutes.
     REFRESH_TOKEN_EXPIRY_MINUTES: 30
     CORS_ENABLED: true
-    MTLS_ENABLED: false
     SESSION_BLACKLIST_ENABLED: false
 
 AUTHENTICATE:

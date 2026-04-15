@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -26,7 +26,7 @@ type PartyRest struct {
 	PartySvc party.PartyService
 }
 
-func (this PartyRest) CreateParty(echoCtx echo.Context) (err error) {
+func (this PartyRest) CreateParty(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create party"); e != nil {
 			err = e
@@ -47,7 +47,7 @@ func (this PartyRest) CreateParty(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this PartyRest) UpdateParty(echoCtx echo.Context) (err error) {
+func (this PartyRest) UpdateParty(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update party"); e != nil {
 			err = e
@@ -68,7 +68,7 @@ func (this PartyRest) UpdateParty(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this PartyRest) DeleteParty(echoCtx echo.Context) (err error) {
+func (this PartyRest) DeleteParty(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete party"); e != nil {
 			err = e
@@ -89,7 +89,7 @@ func (this PartyRest) DeleteParty(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this PartyRest) GetPartyById(echoCtx echo.Context) (err error) {
+func (this PartyRest) GetPartyById(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get party by id"); e != nil {
 			err = e
@@ -110,7 +110,7 @@ func (this PartyRest) GetPartyById(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this PartyRest) SearchParties(echoCtx echo.Context) (err error) {
+func (this PartyRest) SearchParties(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search parties"); e != nil {
 			err = e

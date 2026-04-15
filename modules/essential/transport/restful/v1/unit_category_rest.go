@@ -1,7 +1,7 @@
 ﻿package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -24,7 +24,7 @@ type UnitCategoryRest struct {
 	unitCatSvc it.UnitCategoryService
 }
 
-func (this UnitCategoryRest) Create(echoCtx echo.Context) (err error) {
+func (this UnitCategoryRest) Create(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create unit category",
 		echoCtx,
@@ -33,7 +33,7 @@ func (this UnitCategoryRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitCategoryRest) Update(echoCtx echo.Context) (err error) {
+func (this UnitCategoryRest) Update(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update unit category",
 		echoCtx,
@@ -42,7 +42,7 @@ func (this UnitCategoryRest) Update(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitCategoryRest) Delete(echoCtx echo.Context) (err error) {
+func (this UnitCategoryRest) Delete(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete unit category",
 		echoCtx,
@@ -50,7 +50,7 @@ func (this UnitCategoryRest) Delete(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitCategoryRest) GetOne(echoCtx echo.Context) (err error) {
+func (this UnitCategoryRest) GetOne(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get unit category",
 		echoCtx,
@@ -58,7 +58,7 @@ func (this UnitCategoryRest) GetOne(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitCategoryRest) Search(echoCtx echo.Context) (err error) {
+func (this UnitCategoryRest) Search(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search unit categories",
 		echoCtx,
@@ -67,7 +67,7 @@ func (this UnitCategoryRest) Search(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UnitCategoryRest) Exists(echoCtx echo.Context) (err error) {
+func (this UnitCategoryRest) Exists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"unit category exists",
 		echoCtx,

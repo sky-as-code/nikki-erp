@@ -34,12 +34,17 @@ const (
 	EventBusRedisDB       ConfigName = "CORE.EVENT.REDIS_DB"
 
 	// HTTP Server
-	HttpBasePath    ConfigName = "CORE.HTTP.BASE_PATH"
-	HttpHost        ConfigName = "CORE.HTTP.HOST"
-	HttpPort        ConfigName = "CORE.HTTP.PORT"
-	HttpCorsOrigins ConfigName = "CORE.HTTP.CORS_ORIGINS"
-	HttpCorsHeaders ConfigName = "CORE.HTTP.CORS_HEADERS"
-	HttpCorsMethods ConfigName = "CORE.HTTP.CORS_METHODS"
+	HttpBasePath       ConfigName = "CORE.HTTP.BASE_PATH"
+	HttpHost           ConfigName = "CORE.HTTP.HOST"
+	HttpPort           ConfigName = "CORE.HTTP.PORT"
+	HttpsPort          ConfigName = "CORE.HTTP.HTTPS_PORT"
+	HttpsRsaPublicKey  ConfigName = "CORE.HTTP.HTTPS_RSA_PUBLIC_KEY"
+	HttpsRsaPrivateKey ConfigName = "CORE.HTTP.HTTPS_RSA_PRIVATE_KEY"
+	MtlsEnabled        ConfigName = "CORE.HTTP.MTLS_ENABLED"
+	MtlsClientCaCert   ConfigName = "CORE.HTTP.MTLS_CLIENT_CA_CERT"
+	HttpCorsOrigins    ConfigName = "CORE.HTTP.CORS_ORIGINS"
+	HttpCorsHeaders    ConfigName = "CORE.HTTP.CORS_HEADERS"
+	HttpCorsMethods    ConfigName = "CORE.HTTP.CORS_METHODS"
 
 	// Request Guard
 	RequestGuardAccessTokenEnabled          ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_ENABLED"

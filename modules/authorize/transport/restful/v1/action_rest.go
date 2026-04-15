@@ -27,7 +27,7 @@ package v1
 // 	ActionSvc it.ActionService
 // }
 
-// func (this ActionRest) CreateAction(echoCtx echo.Context) (err error) {
+// func (this ActionRest) CreateAction(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create action"); e != nil {
 // 			err = e
@@ -50,7 +50,7 @@ package v1
 // 	return err
 // }
 
-// func (this ActionRest) UpdateAction(echoCtx echo.Context) (err error) {
+// func (this ActionRest) UpdateAction(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update action"); e != nil {
 // 			err = e
@@ -73,7 +73,7 @@ package v1
 // 	return err
 // }
 
-// func (this ActionRest) DeleteActionHard(echoCtx echo.Context) (err error) {
+// func (this ActionRest) DeleteActionHard(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete action hard"); e != nil {
 // 			err = e
@@ -96,7 +96,7 @@ package v1
 // 	return err
 // }
 
-// func (this ActionRest) GetActionById(echoCtx echo.Context) (err error) {
+// func (this ActionRest) GetActionById(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get action by id"); e != nil {
 // 			err = e
@@ -119,7 +119,7 @@ package v1
 // 	return err
 // }
 
-// func (this ActionRest) SearchActions(echoCtx echo.Context) (err error) {
+// func (this ActionRest) SearchActions(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search actions"); e != nil {
 // 			err = e

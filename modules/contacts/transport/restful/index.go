@@ -1,7 +1,7 @@
 package restful
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	v1 "github.com/sky-as-code/nikki-erp/modules/contacts/transport/restful/v1"

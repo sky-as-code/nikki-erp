@@ -1,0 +1,14 @@
+[ req ]
+default_bits        = 4096
+prompt              = no
+default_md          = sha256
+distinguished_name  = dn
+
+[ v3_root_ca ]
+basicConstraints = critical, CA:TRUE
+keyUsage = critical, keyCertSign, cRLSign
+
+[ dn ]
+O  = $ENV::O
+OU = $ENV::OU
+CN = $ENV::CN

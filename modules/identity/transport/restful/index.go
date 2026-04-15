@@ -3,7 +3,7 @@ package restful
 import (
 	stdErr "errors"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"

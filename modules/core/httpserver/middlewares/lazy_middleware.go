@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/pkg/errors"
 )
 
@@ -23,7 +23,7 @@ func (this *LazyMiddleware) Enable() {
 
 func (this *LazyMiddleware) Middleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(echoCtx echo.Context) error {
+		return func(echoCtx *echo.Context) error {
 			if this.middlewareFn == nil {
 				return errors.Errorf("middleware is not enabled for creator: %T", this.middlewareCreator)
 			}

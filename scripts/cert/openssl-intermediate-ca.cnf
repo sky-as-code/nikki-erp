@@ -1,0 +1,30 @@
+[ ca ]
+default_ca = root_ca
+
+[ root_ca ]
+dir               = $ENV::CWD/pki
+database          = $dir/root-ca/index.txt
+serial            = $dir/root-ca/serial.txt
+new_certs_dir     = $dir/root-ca/signed-certs
+certificate       = $dir/root-ca/$ENV::CA_CN.crt
+private_key       = $dir/root-ca/$ENV::CA_CN.key
+default_md        = sha256
+policy            = policy_any
+
+[ policy_any ]
+commonName        = supplied
+
+[ req ]
+default_bits        = 4096
+prompt              = no
+default_md          = sha256
+distinguished_name  = dn
+
+[ v3_intermediate_ca ]
+basicConstraints = critical, CA:TRUE, pathlen:0
+keyUsage = critical, keyCertSign, cRLSign
+
+[ dn ]
+O  = $ENV::O
+OU = $ENV::OU
+CN = $ENV::CN

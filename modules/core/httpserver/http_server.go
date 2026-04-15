@@ -2,12 +2,14 @@ package httpserver
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	stdErr "errors"
 	"fmt"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
@@ -33,17 +35,13 @@ type httpServerResult struct {
 func initHttpServer(params httpServerParams) httpServerResult {
 	echoServer := newEchoServer()
 
-	httpHost := params.Config.GetStr(c.HttpHost)
-	httpPort := params.Config.GetInt32(c.HttpPort)
 	httpServer := HttpServer{
-		Name:       params.Config.GetStr(c.AppName),
-		EchoServer: echoServer,
-		Logger:     params.Logger,
-		Host:       httpHost,
-		Port:       httpPort,
+		echoServer: echoServer,
+		logger:     params.Logger,
+		config:     params.Config,
 	}
 
-	httpServer.Use(middleware.Logger())
+	httpServer.Use(middleware.RequestLogger())
 	httpServer.Use(middleware.Recover())
 	httpServer.Use(m.RequestContextMiddleware)
 	httpServer.Use(m.RequestContextMiddleware3)
@@ -58,16 +56,14 @@ func initHttpServer(params httpServerParams) httpServerResult {
 
 func initRoutes(mainServer HttpServer, config config.ConfigService) *echo.Group {
 	basePath := config.GetStr(c.HttpBasePath) // or "/api"
-	routeGroup := mainServer.EchoServer.Group(basePath)
+	routeGroup := mainServer.echoServer.Group(basePath)
 	return routeGroup
 }
 
 func newEchoServer() *echo.Echo {
-	echoServer := echo.New()
-	echoServer.HideBanner = true // Not logging startup banner on start
-	echoServer.HidePort = true   // Not logging port information on start
-	echoServer.HTTPErrorHandler = CustomHttpErrorHandler(echoServer.DefaultHTTPErrorHandler)
-	return echoServer
+	return echo.NewWithConfig(echo.Config{
+		HTTPErrorHandler: CustomHttpErrorHandler(echo.DefaultHTTPErrorHandler(false)),
+	})
 }
 
 type MiddlewareCreator func() echo.MiddlewareFunc
@@ -86,22 +82,80 @@ func AppendGlobalLazywares(middlewares ...MiddlewareCreator) {
 
 type HttpServer struct {
 	Name            string
-	EchoServer      *echo.Echo
-	Logger          logging.LoggerService
-	Host            string
-	Port            int32
+	echoServer      *echo.Echo
+	httpServer      *http.Server
+	logger          logging.LoggerService
 	LazyMiddlewares []*m.LazyMiddleware
+	config          config.ConfigService
 }
 
 func (this *HttpServer) Start() error {
-	address := fmt.Sprintf("%s:%d", this.Host, this.Port)
-	this.Logger.Infof("Starting HTTP server %s at %s", this.Name, address)
+	this.Name = this.config.GetStr(c.AppName)
+	mtlsEnabled := this.config.GetBool(c.MtlsEnabled)
+	if mtlsEnabled {
+		return this.startHttps()
+	}
+	return this.startHttp()
+}
+
+func (this *HttpServer) startHttp() error {
+	httpHost := this.config.GetStr(c.HttpHost)
+	httpPort := this.config.GetInt32(c.HttpPort)
+	address := fmt.Sprintf("%s:%d", httpHost, httpPort)
+
+	this.logger.Infof("Starting HTTP server %s at %s", this.Name, address)
+
+	for _, lazyware := range this.LazyMiddlewares {
+		lazyware.Enable()
+	}
+	return this.echoServer.Start(address)
+}
+
+func (this *HttpServer) startHttps() error {
+	httpHost := this.config.GetStr(c.HttpHost)
+	httpsPort := this.config.GetInt32(c.HttpsPort)
+	httpsRsaPublicKey := this.config.GetStr(c.HttpsRsaPublicKey)
+	httpsRsaPrivateKey := this.config.GetStr(c.HttpsRsaPrivateKey)
+	mtlsClientCaCert := this.config.GetStr(c.MtlsClientCaCert)
+	address := fmt.Sprintf("%s:%d", httpHost, httpsPort)
+
+	this.logger.Infof("Starting HTTPS server %s at %s", this.Name, address)
 
 	for _, lazyware := range this.LazyMiddlewares {
 		lazyware.Enable()
 	}
 
-	err := this.EchoServer.Start(address)
+	cert, err := tls.X509KeyPair([]byte(httpsRsaPublicKey), []byte(httpsRsaPrivateKey))
+	if err != nil {
+		return fmt.Errorf("load server certificate and key from config: %w", err)
+	}
+
+	caPool := x509.NewCertPool()
+	if !caPool.AppendCertsFromPEM([]byte(mtlsClientCaCert)) {
+		return fmt.Errorf("append client CA certificate from config to pool")
+	}
+
+	tlsConfig := &tls.Config{
+		GetConfigForClient: func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
+			// TODO: Dynamically load certificate and key from config based on client hostname
+
+			return &tls.Config{
+				Certificates: []tls.Certificate{cert},
+				ClientAuth:   tls.RequireAndVerifyClientCert,
+				ClientCAs:    caPool,
+				MinVersion:   tls.VersionTLS13,
+			}, nil
+		},
+	}
+
+	tlsServer := &http.Server{
+		Addr:      address,
+		Handler:   this.echoServer,
+		TLSConfig: tlsConfig,
+	}
+
+	this.httpServer = tlsServer
+	err = tlsServer.ListenAndServeTLS("", "")
 
 	if err != nil && !stdErr.Is(err, http.ErrServerClosed) {
 		return err
@@ -110,13 +164,15 @@ func (this *HttpServer) Start() error {
 }
 
 func (this HttpServer) Shutdown() {
-	this.Logger.Infof("Stopping HTTP server %s ...", this.Name)
-	_ = this.EchoServer.Shutdown(context.Background()) //nolint:errcheck
-	this.Logger.Infof("HTTP server %s exited", this.Name)
+	this.logger.Infof("Stopping HTTP server %s ...", this.Name)
+	if this.httpServer != nil {
+		_ = this.httpServer.Shutdown(context.Background()) //nolint:errcheck
+	}
+	this.logger.Infof("HTTP server %s exited", this.Name)
 }
 
 func (this HttpServer) Use(middlewares ...echo.MiddlewareFunc) {
-	this.EchoServer.Use(middlewares...)
+	this.echoServer.Use(middlewares...)
 }
 
 func (this *HttpServer) UseLazy(lazywares ...*m.LazyMiddleware) {

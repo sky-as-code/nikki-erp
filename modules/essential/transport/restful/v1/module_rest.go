@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -27,7 +27,7 @@ type ModuleRest struct {
 	moduleSvc it.ModuleService
 }
 
-func (this ModuleRest) CreateModule(echoCtx echo.Context) (err error) {
+func (this ModuleRest) CreateModule(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create module metadata"); e != nil {
 			err = e
@@ -49,7 +49,7 @@ func (this ModuleRest) CreateModule(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ModuleRest) DeleteModule(echoCtx echo.Context) (err error) {
+func (this ModuleRest) DeleteModule(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete module metadata"); e != nil {
 			err = e
@@ -69,7 +69,7 @@ func (this ModuleRest) DeleteModule(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ModuleRest) GetModule(echoCtx echo.Context) (err error) {
+func (this ModuleRest) GetModule(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get module metadata"); e != nil {
 			err = e
@@ -89,7 +89,7 @@ func (this ModuleRest) GetModule(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ModuleRest) ModuleExists(echoCtx echo.Context) (err error) {
+func (this ModuleRest) ModuleExists(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST module metadata exists"); e != nil {
 			err = e
@@ -109,7 +109,7 @@ func (this ModuleRest) ModuleExists(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ModuleRest) SearchModules(echoCtx echo.Context) (err error) {
+func (this ModuleRest) SearchModules(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search module metadata"); e != nil {
 			err = e
@@ -130,7 +130,7 @@ func (this ModuleRest) SearchModules(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ModuleRest) UpdateModule(echoCtx echo.Context) (err error) {
+func (this ModuleRest) UpdateModule(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update module metadata"); e != nil {
 			err = e

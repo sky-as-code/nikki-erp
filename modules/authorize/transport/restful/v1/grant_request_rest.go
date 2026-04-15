@@ -27,7 +27,7 @@ package v1
 // 	GrantRequestSvc it.GrantRequestService
 // }
 
-// func (this GrantRequestRest) CreateGrantRequest(echoCtx echo.Context) (err error) {
+// func (this GrantRequestRest) CreateGrantRequest(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create grant request"); e != nil {
 // 			err = e
@@ -50,7 +50,7 @@ package v1
 // 	return err
 // }
 
-// func (this GrantRequestRest) CancelGrantRequest(echoCtx echo.Context) (err error) {
+// func (this GrantRequestRest) CancelGrantRequest(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST cancel grant request"); e != nil {
 // 			err = e
@@ -73,7 +73,7 @@ package v1
 // 	return err
 // }
 
-// func (this GrantRequestRest) DeleteGrantRequest(echoCtx echo.Context) (err error) {
+// func (this GrantRequestRest) DeleteGrantRequest(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete grant request"); e != nil {
 // 			err = e
@@ -96,7 +96,7 @@ package v1
 // 	return err
 // }
 
-// func (this GrantRequestRest) GetGrantRequestById(echoCtx echo.Context) (err error) {
+// func (this GrantRequestRest) GetGrantRequestById(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get grant request by id"); e != nil {
 // 			err = e
@@ -122,7 +122,7 @@ package v1
 // 	return err
 // }
 
-// func (this GrantRequestRest) SearchGrantRequests(echoCtx echo.Context) (err error) {
+// func (this GrantRequestRest) SearchGrantRequests(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search grant requests"); e != nil {
 // 			err = e
@@ -145,7 +145,7 @@ package v1
 // 	return err
 // }
 
-// func (this GrantRequestRest) RespondToGrantRequest(echoCtx echo.Context) (err error) {
+// func (this GrantRequestRest) RespondToGrantRequest(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST respond to grant request"); e != nil {
 // 			err = e

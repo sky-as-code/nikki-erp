@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -25,7 +25,7 @@ type GroupRest struct {
 	GroupSvc it.GroupService
 }
 
-func (this GroupRest) CreateGroup(echoCtx echo.Context) (err error) {
+func (this GroupRest) CreateGroup(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create group",
 		echoCtx,
@@ -34,7 +34,7 @@ func (this GroupRest) CreateGroup(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this GroupRest) DeleteGroup(echoCtx echo.Context) (err error) {
+func (this GroupRest) DeleteGroup(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete group",
 		echoCtx,
@@ -42,7 +42,7 @@ func (this GroupRest) DeleteGroup(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this GroupRest) GetGroup(echoCtx echo.Context) (err error) {
+func (this GroupRest) GetGroup(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get group by id",
 		echoCtx,
@@ -50,7 +50,7 @@ func (this GroupRest) GetGroup(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this GroupRest) GroupExists(echoCtx echo.Context) (err error) {
+func (this GroupRest) GroupExists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"group exists",
 		echoCtx,
@@ -58,7 +58,7 @@ func (this GroupRest) GroupExists(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this GroupRest) ManageGroupUsers(echoCtx echo.Context) (err error) {
+func (this GroupRest) ManageGroupUsers(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"manage group users",
 		echoCtx,
@@ -66,7 +66,7 @@ func (this GroupRest) ManageGroupUsers(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this GroupRest) SearchGroups(echoCtx echo.Context) (err error) {
+func (this GroupRest) SearchGroups(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search groups",
 		echoCtx,
@@ -74,7 +74,7 @@ func (this GroupRest) SearchGroups(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this GroupRest) UpdateGroup(echoCtx echo.Context) (err error) {
+func (this GroupRest) UpdateGroup(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update group",
 		echoCtx,

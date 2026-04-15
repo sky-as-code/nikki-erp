@@ -1,7 +1,7 @@
 package httpserver
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -14,7 +14,7 @@ import (
 // containing only the fields defined in the given ModelSchema.
 // Minimal type correction is applied via each field's TryConvert; on conversion
 // failure the raw parsed value is kept as-is. No validation is performed.
-func BindToDynamicEntity(echoCtx echo.Context, entitySchema *dmodel.ModelSchema) (dmodel.DynamicFields, error) {
+func BindToDynamicEntity(echoCtx *echo.Context, entitySchema *dmodel.ModelSchema) (dmodel.DynamicFields, error) {
 	var rawBody map[string]any
 	if err := echoCtx.Bind(&rawBody); err != nil {
 		return nil, err
@@ -51,11 +51,11 @@ type CmdResult interface {
 // 	TSvcCommand any,
 // 	TSvcResultData dmodel.DynamicModelGetter,
 // ](
-// 	echoCtx echo.Context,
+// 	echoCtx *echo.Context,
 // 	action string,
 // 	createRequestFn func() dmodel.DynamicModelSetter,
 // 	serviceFn func(ctx dEnt.Context, cmd TSvcCommand) (*dEnt.OpResult[TSvcResultData], error),
-// 	jsonSuccessFn func(echo.Context, any) error,
+// 	jsonSuccessFn func(*echo.Context, any) error,
 // ) error {
 // 	// TODO: Use `action` for entry and exit logging.
 // 	reqCtx := echoCtx.Request().Context().(dEnt.Context)
@@ -103,11 +103,11 @@ type CmdResult interface {
 // }
 
 func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
-	echoCtx echo.Context,
+	echoCtx *echo.Context,
 	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
 	requestToCommandFn func(requestFields dmodel.DynamicFields) TSvcCommand,
 	resultToResponseFn func(data TSvcResultData) THttpResp,
-	jsonSuccessFn func(echo.Context, any) error,
+	jsonSuccessFn func(*echo.Context, any) error,
 ) error {
 	reqCtx := echoCtx.Request().Context().(corectx.Context)
 
@@ -144,11 +144,11 @@ func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
 }
 
 func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData any](
-	echoCtx echo.Context,
+	echoCtx *echo.Context,
 	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
 	requestToCommandFn func(request THttpReq) TSvcCommand,
 	resultToResponseFn func(resultData TSvcResultData) THttpResp,
-	jsonSuccessFn func(echo.Context, any) error,
+	jsonSuccessFn func(*echo.Context, any) error,
 	skipNotFoundError ...bool,
 ) error {
 	var request THttpReq
@@ -178,11 +178,11 @@ func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData 
 }
 
 func ServeRequest[THttpReq any, THttpResp any, TSvcCommand any, TSvcResult CmdResult](
-	echoCtx echo.Context,
+	echoCtx *echo.Context,
 	serviceFn func(ctx corecrud.Context, cmd TSvcCommand) (*TSvcResult, error),
 	requestToCommandFn func(request THttpReq) TSvcCommand,
 	resultToResponseFn func(result TSvcResult) THttpResp,
-	jsonSuccessFn func(echo.Context, any) error,
+	jsonSuccessFn func(*echo.Context, any) error,
 ) error {
 	var request THttpReq
 	if err := echoCtx.Bind(&request); err != nil {
@@ -223,7 +223,7 @@ func ServeCreate[
 	TSvcResultData dmodel.DynamicModelGetter,
 ](
 	action string,
-	echoCtx echo.Context,
+	echoCtx *echo.Context,
 	cmd TSvcCommandPtr,
 	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
 ) (err error) {
@@ -250,7 +250,7 @@ func ServeExists[
 	TSvcCommand dyn.ExistsQueryShape,
 ](
 	action string,
-	echoCtx echo.Context,
+	echoCtx *echo.Context,
 	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[dyn.ExistsResultData], error),
 ) (err error) {
 	defer func() {
@@ -273,7 +273,7 @@ func ServeGetOne[
 	TDomain dmodel.DynamicModelGetter,
 ](
 	action string,
-	echoCtx echo.Context,
+	echoCtx *echo.Context,
 	serviceFn func(ctx corectx.Context, cmd TSvcQuery) (*dyn.OpResult[TDomain], error),
 ) (err error) {
 	defer func() {
@@ -299,7 +299,7 @@ func ServeGeneralMutate[
 	TSvcCommand any,
 ](
 	action string,
-	echoCtx echo.Context,
+	echoCtx *echo.Context,
 	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[dyn.MutateResultData], error),
 ) (err error) {
 	defer func() {
@@ -322,7 +322,7 @@ func ServeSearch[
 	TDomain dmodel.DynamicModelGetter,
 ](
 	action string,
-	echoCtx echo.Context,
+	echoCtx *echo.Context,
 	serviceFn func(ctx corectx.Context, cmd TSvcQuery) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error),
 	skipNotFoundError ...bool,
 ) (err error) {
@@ -347,7 +347,7 @@ func ServeUpdate[
 	TSvcCommandPtr dyn.DynamicModelSetterPtr[TSvcCommand],
 ](
 	action string,
-	echoCtx echo.Context,
+	echoCtx *echo.Context,
 	cmd TSvcCommandPtr,
 	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[dyn.MutateResultData], error),
 ) (err error) {

@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -25,7 +25,7 @@ type ProductCategoryRest struct {
 	ProductCategorySvc itProductCategory.ProductCategoryService
 }
 
-func (this ProductCategoryRest) Create(echoCtx echo.Context) (err error) {
+func (this ProductCategoryRest) Create(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create product category",
 		echoCtx,
@@ -34,7 +34,7 @@ func (this ProductCategoryRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ProductCategoryRest) Delete(echoCtx echo.Context) (err error) {
+func (this ProductCategoryRest) Delete(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete product category",
 		echoCtx,
@@ -42,7 +42,7 @@ func (this ProductCategoryRest) Delete(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ProductCategoryRest) Exists(echoCtx echo.Context) (err error) {
+func (this ProductCategoryRest) Exists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"product category exists",
 		echoCtx,
@@ -50,7 +50,7 @@ func (this ProductCategoryRest) Exists(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ProductCategoryRest) GetOne(echoCtx echo.Context) (err error) {
+func (this ProductCategoryRest) GetOne(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get product category",
 		echoCtx,
@@ -58,7 +58,7 @@ func (this ProductCategoryRest) GetOne(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ProductCategoryRest) Search(echoCtx echo.Context) (err error) {
+func (this ProductCategoryRest) Search(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search product categories",
 		echoCtx,
@@ -67,7 +67,7 @@ func (this ProductCategoryRest) Search(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this ProductCategoryRest) Update(echoCtx echo.Context) (err error) {
+func (this ProductCategoryRest) Update(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update product category",
 		echoCtx,

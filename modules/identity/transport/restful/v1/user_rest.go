@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -25,7 +25,7 @@ type UserRest struct {
 	UserSvc it.UserService
 }
 
-func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
+func (this UserRest) CreateUser(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create user",
 		echoCtx,
@@ -34,7 +34,7 @@ func (this UserRest) CreateUser(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UserRest) DeleteUser(echoCtx echo.Context) (err error) {
+func (this UserRest) DeleteUser(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete user",
 		echoCtx,
@@ -42,7 +42,7 @@ func (this UserRest) DeleteUser(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UserRest) GetUser(echoCtx echo.Context) (err error) {
+func (this UserRest) GetUser(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get user",
 		echoCtx,
@@ -50,7 +50,7 @@ func (this UserRest) GetUser(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UserRest) SearchUsers(echoCtx echo.Context) (err error) {
+func (this UserRest) SearchUsers(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search users",
 		echoCtx,
@@ -59,7 +59,7 @@ func (this UserRest) SearchUsers(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UserRest) SetUserIsArchived(echoCtx echo.Context) (err error) {
+func (this UserRest) SetUserIsArchived(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"set user is_archived",
 		echoCtx,
@@ -67,7 +67,7 @@ func (this UserRest) SetUserIsArchived(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
+func (this UserRest) UpdateUser(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update user",
 		echoCtx,
@@ -76,7 +76,7 @@ func (this UserRest) UpdateUser(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this UserRest) UserExists(echoCtx echo.Context) (err error) {
+func (this UserRest) UserExists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"user exists",
 		echoCtx,
@@ -84,7 +84,7 @@ func (this UserRest) UserExists(echoCtx echo.Context) (err error) {
 	)
 }
 
-// func (this UserRest) GetUserContextUser(echoCtx echo.Context) (err error) {
+// func (this UserRest) GetUserContextUser(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get user context"); e != nil {
 // 			err = e

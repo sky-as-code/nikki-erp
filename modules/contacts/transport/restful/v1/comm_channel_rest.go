@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -26,7 +26,7 @@ type CommChannelRest struct {
 	CommChannelSvc itCommChannel.CommChannelService
 }
 
-func (this CommChannelRest) CreateCommChannel(echoCtx echo.Context) (err error) {
+func (this CommChannelRest) CreateCommChannel(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create comm channel"); e != nil {
 			err = e
@@ -47,7 +47,7 @@ func (this CommChannelRest) CreateCommChannel(echoCtx echo.Context) (err error) 
 	return err
 }
 
-func (this CommChannelRest) UpdateCommChannel(echoCtx echo.Context) (err error) {
+func (this CommChannelRest) UpdateCommChannel(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST update comm channel"); e != nil {
 			err = e
@@ -68,7 +68,7 @@ func (this CommChannelRest) UpdateCommChannel(echoCtx echo.Context) (err error) 
 	return err
 }
 
-func (this CommChannelRest) DeleteCommChannel(echoCtx echo.Context) (err error) {
+func (this CommChannelRest) DeleteCommChannel(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete comm channel"); e != nil {
 			err = e
@@ -89,7 +89,7 @@ func (this CommChannelRest) DeleteCommChannel(echoCtx echo.Context) (err error) 
 	return err
 }
 
-func (this CommChannelRest) GetCommChannelById(echoCtx echo.Context) (err error) {
+func (this CommChannelRest) GetCommChannelById(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get comm channel by id"); e != nil {
 			err = e
@@ -110,7 +110,7 @@ func (this CommChannelRest) GetCommChannelById(echoCtx echo.Context) (err error)
 	return err
 }
 
-func (this CommChannelRest) SearchCommChannels(echoCtx echo.Context) (err error) {
+func (this CommChannelRest) SearchCommChannels(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search comm channels"); e != nil {
 			err = e

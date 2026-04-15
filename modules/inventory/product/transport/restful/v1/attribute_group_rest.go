@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -25,7 +25,7 @@ type AttributeGroupRest struct {
 	AttributeGroupSvc itAttributeGroup.AttributeGroupService
 }
 
-func (this AttributeGroupRest) Create(echoCtx echo.Context) (err error) {
+func (this AttributeGroupRest) Create(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create attribute group",
 		echoCtx,
@@ -34,7 +34,7 @@ func (this AttributeGroupRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeGroupRest) Update(echoCtx echo.Context) (err error) {
+func (this AttributeGroupRest) Update(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update attribute group",
 		echoCtx,
@@ -43,7 +43,7 @@ func (this AttributeGroupRest) Update(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeGroupRest) Delete(echoCtx echo.Context) (err error) {
+func (this AttributeGroupRest) Delete(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete attribute group",
 		echoCtx,
@@ -51,7 +51,7 @@ func (this AttributeGroupRest) Delete(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeGroupRest) GetOne(echoCtx echo.Context) (err error) {
+func (this AttributeGroupRest) GetOne(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get attribute group",
 		echoCtx,
@@ -59,7 +59,7 @@ func (this AttributeGroupRest) GetOne(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeGroupRest) Search(echoCtx echo.Context) (err error) {
+func (this AttributeGroupRest) Search(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search attribute groups",
 		echoCtx,
@@ -68,7 +68,7 @@ func (this AttributeGroupRest) Search(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeGroupRest) Exists(echoCtx echo.Context) (err error) {
+func (this AttributeGroupRest) Exists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"attribute group exists",
 		echoCtx,

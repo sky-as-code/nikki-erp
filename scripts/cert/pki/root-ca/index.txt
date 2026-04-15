@@ -1,0 +1,2 @@
+V	310413173502Z		1000	unknown	/CN=nikkierp-client-ca
+V	310413173502Z		1001	unknown	/CN=nikkierp-server-ca

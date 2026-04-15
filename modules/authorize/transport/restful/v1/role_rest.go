@@ -26,7 +26,7 @@ package v1
 // 	roleService it.RoleService
 // }
 
-// func (this RoleRest) CreateRole(echoCtx echo.Context) (err error) {
+// func (this RoleRest) CreateRole(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create action"); e != nil {
 // 			err = e
@@ -49,7 +49,7 @@ package v1
 // 	return err
 // }
 
-// func (this RoleRest) UpdateRole(echoCtx echo.Context) (err error) {
+// func (this RoleRest) UpdateRole(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update role"); e != nil {
 // 			err = e
@@ -72,7 +72,7 @@ package v1
 // 	return err
 // }
 
-// func (this RoleRest) DeleteRoleHard(echoCtx echo.Context) (err error) {
+// func (this RoleRest) DeleteRoleHard(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete role hard"); e != nil {
 // 			err = e
@@ -95,7 +95,7 @@ package v1
 // 	return err
 // }
 
-// func (this RoleRest) GetRoleById(echoCtx echo.Context) (err error) {
+// func (this RoleRest) GetRoleById(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get role by id"); e != nil {
 // 			err = e
@@ -118,7 +118,7 @@ package v1
 // 	return err
 // }
 
-// func (this RoleRest) SearchRoles(echoCtx echo.Context) (err error) {
+// func (this RoleRest) SearchRoles(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search roles"); e != nil {
 // 			err = e
@@ -141,7 +141,7 @@ package v1
 // 	return err
 // }
 
-// func (this RoleRest) AddEntitlements(echoCtx echo.Context) (err error) {
+// func (this RoleRest) AddEntitlements(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST add entitlements"); e != nil {
 // 			err = e
@@ -164,7 +164,7 @@ package v1
 // 	return err
 // }
 
-// func (this RoleRest) RemoveEntitlements(echoCtx echo.Context) (err error) {
+// func (this RoleRest) RemoveEntitlements(echoCtx *echo.Context) (err error) {
 // 	defer func() {
 // 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST remove entitlements"); e != nil {
 // 			err = e

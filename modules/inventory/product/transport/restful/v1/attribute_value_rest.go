@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -25,7 +25,7 @@ type AttributeValueRest struct {
 	AttributeValueSvc itAttributeValue.AttributeValueService
 }
 
-func (this AttributeValueRest) Create(echoCtx echo.Context) (err error) {
+func (this AttributeValueRest) Create(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create attribute value",
 		echoCtx,
@@ -34,7 +34,7 @@ func (this AttributeValueRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeValueRest) Update(echoCtx echo.Context) (err error) {
+func (this AttributeValueRest) Update(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update attribute value",
 		echoCtx,
@@ -43,7 +43,7 @@ func (this AttributeValueRest) Update(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeValueRest) Delete(echoCtx echo.Context) (err error) {
+func (this AttributeValueRest) Delete(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete attribute value",
 		echoCtx,
@@ -51,7 +51,7 @@ func (this AttributeValueRest) Delete(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeValueRest) GetOne(echoCtx echo.Context) (err error) {
+func (this AttributeValueRest) GetOne(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get attribute value",
 		echoCtx,
@@ -59,7 +59,7 @@ func (this AttributeValueRest) GetOne(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeValueRest) Search(echoCtx echo.Context) (err error) {
+func (this AttributeValueRest) Search(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search attribute values",
 		echoCtx,
@@ -68,7 +68,7 @@ func (this AttributeValueRest) Search(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this AttributeValueRest) Exists(echoCtx echo.Context) (err error) {
+func (this AttributeValueRest) Exists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"attribute value exists",
 		echoCtx,

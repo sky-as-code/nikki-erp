@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -25,7 +25,7 @@ type VariantRest struct {
 	VariantSvc itVariant.VariantService
 }
 
-func (this VariantRest) Create(echoCtx echo.Context) (err error) {
+func (this VariantRest) Create(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeCreate(
 		"create variant",
 		echoCtx,
@@ -34,7 +34,7 @@ func (this VariantRest) Create(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this VariantRest) Update(echoCtx echo.Context) (err error) {
+func (this VariantRest) Update(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate(
 		"update variant",
 		echoCtx,
@@ -43,7 +43,7 @@ func (this VariantRest) Update(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this VariantRest) Delete(echoCtx echo.Context) (err error) {
+func (this VariantRest) Delete(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate(
 		"delete variant",
 		echoCtx,
@@ -51,7 +51,7 @@ func (this VariantRest) Delete(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this VariantRest) GetOne(echoCtx echo.Context) (err error) {
+func (this VariantRest) GetOne(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGetOne(
 		"get variant",
 		echoCtx,
@@ -59,7 +59,7 @@ func (this VariantRest) GetOne(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this VariantRest) Search(echoCtx echo.Context) (err error) {
+func (this VariantRest) Search(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch(
 		"search variants",
 		echoCtx,
@@ -68,7 +68,7 @@ func (this VariantRest) Search(echoCtx echo.Context) (err error) {
 	)
 }
 
-func (this VariantRest) Exists(echoCtx echo.Context) (err error) {
+func (this VariantRest) Exists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists(
 		"variant exists",
 		echoCtx,

@@ -40,7 +40,7 @@ func (fileLoader *SecretFileConfigLoader) Get(name string) (string, error) {
 	}
 
 	var fullPath string
-	isRelativePath := strings.HasPrefix(secretFilePath, ".")
+	isRelativePath := strings.HasPrefix(secretFilePath, ".") || !strings.HasPrefix(secretFilePath, "/")
 	if isRelativePath {
 		workDir := env.Cwd()
 		fullPath = filepath.Join(workDir, secretFilePath)
