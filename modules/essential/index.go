@@ -61,6 +61,9 @@ func (*EssentialModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(domain.ContactSchemaBuilder()),
 		dmodel.RegisterSchemaB(domain.ContactChannelSchemaBuilder()),
 		dmodel.RegisterSchemaB(domain.ContactRelationshipSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.ModelMetadataSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.FieldMetadataSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.LanguageSchemaBuilder()),
 		// Unit schemas
 		dmodel.RegisterSchemaB(domain.UnitCategorySchemaBuilder()),
 		dmodel.RegisterSchemaB(domain.UnitSchemaBuilder()),
