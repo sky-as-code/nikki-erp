@@ -325,6 +325,18 @@ func UpdateBulk[
 	var lastAt model.ModelDateTime
 	var lastEtag model.Etag
 
+	var tx database.DbTransaction
+	if ctx.GetDbTranx() == nil {
+		var err error
+		tx, err = param.BaseRepoGetter.GetBaseRepo().BeginTransaction(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		ctx.SetDbTranx(tx)
+		defer tx.Rollback()
+	}
+
 	for _, m := range allModels {
 		updRes, err := baserepo.Update(ctx, dynamicRepo, m.GetFieldData())
 		if err != nil {
@@ -338,6 +350,15 @@ func UpdateBulk[
 			lastAt = updRes.Data.AffectedAt
 			lastEtag = updRes.Data.Etag
 		}
+	}
+
+	if tx != nil {
+		err := tx.Commit()
+		if err != nil {
+			return nil, err
+		}
+
+		ctx.SetDbTranx(nil)
 	}
 
 	return &dyn.OpResult[dyn.MutateResultData]{
