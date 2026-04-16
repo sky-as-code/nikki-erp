@@ -337,7 +337,7 @@ func (this *ModuleServiceImpl) syncUpdateModule(
 	cmd := it.UpdateModuleCommand{}
 	cmd.SetFieldData(changes.GetFieldData())
 	cmd.SetId(dbModule.GetId())
-	cmd.SetEtag(model.NewEtag())
+	cmd.SetEtag(dbModule.GetEtag())
 
 	result, err := this.UpdateModule(ctx, cmd)
 	if err != nil {
