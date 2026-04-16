@@ -9,6 +9,9 @@ import (
 func InitRepositories() error {
 	return stdErr.Join(
 		deps.Register(NewContactDynamicRepository),
+		deps.Register(NewFieldMetadataDynamicRepository),
+		deps.Register(NewLanguageDynamicRepository),
+		deps.Register(NewModelMetadataDynamicRepository),
 		deps.Register(NewModuleDynamicRepository),
 		deps.Register(NewUnitDynamicRepository),
 		deps.Register(NewUnitCategoryDynamicRepository),

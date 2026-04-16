@@ -17,7 +17,6 @@ require (
 	github.com/invopop/validation v0.8.0
 	github.com/joho/godotenv v1.5.1
 	github.com/json-iterator/go v1.1.12
-	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/echo/v5 v5.1.0
 	github.com/labstack/gommon v0.4.2
 	github.com/lib/pq v1.10.9
