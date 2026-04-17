@@ -1,0 +1,39 @@
+meta {
+  name: Login - Authenticate
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/authn/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "attempt_id": "{{attempt_id}}",
+      "passwords": {
+        "password": "Passwo0rd123"
+      }
+  }
+}
+
+vars:pre-request {
+  email: owj@nikki.com
+}
+
+script:post-response {
+  const { done, data } = res.getBody();;
+  
+  if (done) {
+    bru.setVar('access_token', data.access_token);
+    bru.setVar('refresh_token', data.refresh_token);
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

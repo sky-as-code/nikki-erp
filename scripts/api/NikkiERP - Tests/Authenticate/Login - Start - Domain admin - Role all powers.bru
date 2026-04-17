@@ -1,0 +1,33 @@
+meta {
+  name: Login - Start - Domain admin - Role all powers
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/authn/login/start
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "username": "nguyen.van.an@nikki.com"
+  }
+}
+
+vars:pre-request {
+  email: jaycee_hermiston@yahoo.com
+}
+
+script:post-response {
+  const payload = res.getBody();
+  const { attempt_id } = payload;
+  attempt_id && bru.setVar('attempt_id', attempt_id);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

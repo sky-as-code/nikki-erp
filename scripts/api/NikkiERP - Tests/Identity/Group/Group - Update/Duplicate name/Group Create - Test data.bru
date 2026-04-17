@@ -1,0 +1,35 @@
+meta {
+  name: Group Create - Test data
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/groups
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": {
+      "en-US": "{{$randomJobArea}} {{$randomCatchPhraseAdjective}} {{$randomHexColor}}"
+    },
+    "owner_id": "{{user_id}}"
+  }
+}
+
+script:post-response {
+  const { testCreate } = require('./scripts/create-success');
+  
+  testCreate('duplicate_id', false);
+  
+  const { name } = req.getBody();
+  bru.setVar('duplicate_name', name);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
