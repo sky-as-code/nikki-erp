@@ -778,6 +778,7 @@ func (this *PgQueryBuilder) buildUniqueCheckPart(
 	}
 	columns := prependTenantKey(tenantKey, uniqueFields)
 	values, hasAll, cErrs, err := this.resolveColumnValues(schema, columns, data)
+
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -787,7 +788,33 @@ func (this *PgQueryBuilder) buildUniqueCheckPart(
 	if !hasAll {
 		return "SELECT 0", nil, nil, nil
 	}
+
+	ignoreCurrentRowCond := this.buildIgnoreCurrentRowCond(schema, data)
+	if ignoreCurrentRowCond != "" {
+		return buildExistsCaseSqlWithOptCond(tableRef, columns, argIdx, ignoreCurrentRowCond), values, nil, nil
+	}
+
 	return buildExistsCaseSql(tableRef, columns, argIdx), values, nil, nil
+}
+
+func (this *PgQueryBuilder) buildIgnoreCurrentRowCond(schema *dmodel.ModelSchema, data dmodel.DynamicFields) string {
+	primaryKeys := schema.PrimaryKeys()
+	if len(primaryKeys) == 0 {
+		return ""
+	}
+
+	conds := make([]string, 0, len(primaryKeys))
+	for _, key := range primaryKeys {
+		v, ok := data[key]
+		if !ok || v == nil {
+			return ""
+		}
+		// Avoid %v: unquoted strings (e.g. ULIDs starting with digits) are parsed as numbers by PostgreSQL.
+		lit := strings.ReplaceAll(fmt.Sprint(v), "'", "''")
+		conds = append(conds, fmt.Sprintf("%s <> '%s'", pgQuote(key), lit))
+	}
+
+	return strings.Join(conds, " OR ")
 }
 
 func (this *PgQueryBuilder) resolveColumnValues(
@@ -1504,6 +1531,22 @@ func buildExistsCaseSql(tableRef string, columns []string, argIdx int) string {
 		tableRef, whereClause)
 }
 
+func buildExistsCaseSqlWithOptCond(tableRef string, columns []string, argIdx int, optCond string) string {
+	conds := make([]string, len(columns))
+	for i, col := range columns {
+		conds[i] = fmt.Sprintf("%s = $%d", pgQuote(col), argIdx+i)
+	}
+
+	whereClause := strings.Join(conds, " AND ")
+	if optCond != "" {
+		whereClause = fmt.Sprintf("%s AND %s", whereClause, optCond)
+	}
+
+	return fmt.Sprintf(
+		"SELECT CASE WHEN EXISTS (SELECT 1 FROM %s WHERE %s) THEN 1 ELSE 0 END",
+		tableRef, whereClause)
+}
+
 func interpolate(sql string, args []interface{}) (string, error) {
 	if len(args) == 0 {
 		return sql, nil
@@ -1623,7 +1666,8 @@ func valueAllowed(cat columnCategory, v reflect.Value) bool {
 			v.Type() == modelDateTimeType ||
 			v.Type() == modelTimeType
 	case columnJSON:
-		return v.Kind() == reflect.Map
+		k := v.Kind()
+		return k == reflect.Map || k == reflect.Slice || k == reflect.Array
 	default:
 		return true
 	}

@@ -40,6 +40,7 @@ func (this *PgClient) BeginTx(ctx context.Context, opts *sql.TxOptions) (DbTxCli
 	if err != nil {
 		return nil, err
 	}
+
 	return &pgTxClient{db: this.db, tx: tx}, nil
 }
 

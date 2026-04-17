@@ -822,6 +822,16 @@ func (this fieldDataTypeDecimal) TryConvert(val any, _ FieldDataTypeOptions) (va
 		}
 		scaled := applyDecimalScale(result, this.options)
 		return Value(scaled), nil
+	case []byte:
+		if len(typed) == 0 {
+			return Value(nil), errors.New("fieldDataTypeDecimal.TryConvert: empty bytes")
+		}
+		result, err := decimal.NewFromString(string(typed))
+		if err != nil {
+			return Value(nil), err
+		}
+		scaled := applyDecimalScale(result, this.options)
+		return Value(scaled), nil
 	default:
 		return Value(nil), errors.New("fieldDataTypeDecimal.TryConvert: value must be decimal or string")
 	}
@@ -1231,7 +1241,8 @@ func (this fieldDataTypeLangJson) TryConvert(val any, _ FieldDataTypeOptions) (v
 	}
 }
 
-// FieldDataTypeJsonMap stores arbitrary JSON objects in jsonb columns (map[string]any).
+// FieldDataTypeJsonMap stores JSON in jsonb: one object (map[string]any) or one JSON array ([]any), e.g. [{...}].
+// Root JSON primitives are rejected.
 func FieldDataTypeJsonMap() FieldDataType {
 	return fieldDataTypeJsonMap{fieldDataTypeBase{name: FieldDataTypeNameJsonMap, options: nil}}
 }
@@ -1257,10 +1268,14 @@ func (this fieldDataTypeJsonMap) validateScalar(value value) (value, *ft.ClientE
 	if value.Get() == nil {
 		return Value(nil), nil
 	}
-	if _, ok := jsonMapFromAny(*value.Get()); !ok {
-		return Value(nil), NewInvalidDataTypeErr("", "JSON Map")
+	raw := *value.Get()
+	if _, ok := jsonMapFromAny(raw); ok {
+		return value, nil
 	}
-	return value, nil
+	if _, ok := raw.([]any); ok {
+		return value, nil
+	}
+	return Value(nil), NewInvalidDataTypeErr("", "JSON object or array")
 }
 
 // // fieldDataTypeJsonMap implements MarshallText interface
@@ -1310,11 +1325,15 @@ func (this fieldDataTypeJsonMap) TryConvert(val any, _ FieldDataTypeOptions) (va
 		}
 		val = rv.Elem().Interface()
 	}
-	m, ok := jsonMapFromAny(val)
-	if !ok {
-		return Value(nil), errors.Errorf("fieldDataTypeJsonMap.TryConvert: cannot convert %T to map", val)
+	if m, ok := jsonMapFromAny(val); ok {
+		return Value(m), nil
 	}
-	return Value(m), nil
+	if arr, ok := val.([]any); ok {
+		return Value(arr), nil
+	}
+	return Value(nil), errors.Errorf(
+		"fieldDataTypeJsonMap.TryConvert: cannot convert %T to JSON object or array", val,
+	)
 }
 
 type fieldDataTypeLangCode struct{ fieldDataTypeBase }
@@ -1968,11 +1987,20 @@ func tryConvertJsonMapBytes(raw []byte) (value, error) {
 	if len(raw) == 0 {
 		return Value(nil), nil
 	}
-	var mapped map[string]any
-	if err := erpjson.Unmarshal(raw, &mapped); err != nil {
+	var root any
+	if err := erpjson.Unmarshal(raw, &root); err != nil {
 		return Value(nil), err
 	}
-	return Value(mapped), nil
+	switch typed := root.(type) {
+	case nil:
+		return Value(nil), nil
+	case map[string]any:
+		return Value(typed), nil
+	case []any:
+		return Value(typed), nil
+	default:
+		return Value(nil), errors.Errorf("tryConvertJsonMapBytes: unsupported JSON root type %T", root)
+	}
 }
 
 func getInt64Range(options FieldDataTypeOptions) []int64 {

@@ -73,7 +73,7 @@ func (this *DynamicModelBase) SetOrgId(v *model.Id) {
 
 func (this DynamicModelBase) MarshalJSON() ([]byte, error) {
 	if this.fields == nil {
-		return nil, nil
+		return []byte("{}"), nil
 	}
 	return json.Marshal(this.fields)
 }

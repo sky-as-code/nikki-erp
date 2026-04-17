@@ -12,7 +12,6 @@ const (
 	ModelMetadataSchemaName = "essential.model_metadata"
 
 	ModelMetadataFieldId          = basemodel.FieldId
-	ModelMetadataFieldTenantId    = "tenant_id"
 	ModelMetadataFieldName        = "name"
 	ModelMetadataFieldCode        = "code"
 	ModelMetadataFieldCodePrefix  = "code_prefix"
@@ -28,11 +27,6 @@ func ModelMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		TableName("essential_model_metadata").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
-		Field(
-			basemodel.DefineFieldId(ModelMetadataFieldTenantId).
-				RequiredForCreate().
-				TenantKey(),
-		).
 		Field(
 			dmodel.DefineField().
 				Name(ModelMetadataFieldName).
@@ -67,7 +61,6 @@ func ModelMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Default(int32(8)).
 				RequiredForCreate(),
 		).
-		CompositeUnique(ModelMetadataFieldTenantId, ModelMetadataFieldCode).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).

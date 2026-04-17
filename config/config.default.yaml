@@ -46,16 +46,20 @@ CORE:
     PORT: 8080
     # Port number for HTTPS Server to listen
     HTTPS_PORT: 4433
+    HTTPS_ENABLED: true
     HTTPS_RSA_PUBLIC_KEY_FILE: "./scripts/cert/pki/server-cert/api.nikkierp.com.crt"
     HTTPS_RSA_PRIVATE_KEY_FILE: "./scripts/cert/pki/server-cert/api.nikkierp.com.key"
+    CORS_ENABLED: true
     # Allowed origins for Cross-Origin Resource Sharing
     CORS_ORIGINS: "*"
     # Allowed headers for Cross-Origin Resource Sharing
     CORS_HEADERS: "Accept,Authorization,Content-Type,Origin"
     # Allowed methods for Cross-Origin Resource Sharing
     CORS_METHODS: "OPTIONS,HEAD,GET,POST,PUT,DELETE"
-    MTLS_ENABLED: false
+    MTLS_ENABLED: true
     MTLS_CLIENT_CA_CERT_FILE: "scripts/cert/pki/client-ca/nikkierp-client-ca.crt"
+    MTLS_CLIENT_CERT_FILE: "scripts/cert/pki/client-cert/nikkierp-client-cert.crt"
+    MTLS_CLIENT_KEY_FILE: "scripts/cert/pki/client-cert/nikkierp-client-cert.key"
   TOKEN:
     # Secret key for JWT token signing and verification
     # IMPORTANT: Override this in local.env or production environment
@@ -69,7 +73,7 @@ CORE:
     # Supported algorithms: HS256 | RS256
     # If using HS256, ACCESS_TOKEN_SHA256_SECRET must be specified.
     # If using RS256, ACCESS_TOKEN_RSA_PUBLIC_KEY and ACCESS_TOKEN_RSA_PRIVATE_KEY must be specified.
-    ACCESS_TOKEN_ALGORITHM: "HS256"
+    ACCESS_TOKEN_ALGORITHM: "EdDSA"
     ACCESS_TOKEN_EXPIRY_MINUTES: 3
     ACCESS_TOKEN_ISSUER: "nikki-erp"
     ACCESS_TOKEN_HTTP_HEADER_NAME: "Authorization"
@@ -77,12 +81,11 @@ CORE:
     # before prepending it to the access token value.
     # The result header: "{Prefix} {AccessToken}"
     ACCESS_TOKEN_HTTP_HEADER_PREFIX: "Bearer"
-    ACCESS_TOKEN_SHA256_SECRET: "your-secret-key-here-change-in-production"
-    ACCESS_TOKEN_RSA_PUBLIC_KEY: "path-to-rsa-public-key-change-in-production"
-    ACCESS_TOKEN_RSA_PRIVATE_KEY: "path-to-rsa-private-key-change-in-production"
+    ACCESS_TOKEN_SECRET: "your-secret-key-here-change-in-production"
+    ACCESS_TOKEN_PUBLIC_KEY_FILE: "scripts/cert/pki/jwt-keypair/ed25519.pub"
+    ACCESS_TOKEN_PRIVATE_KEY_FILE: "scripts/cert/pki/jwt-keypair/ed25519.key"
     # Refresh token expiry time in minutes.
     REFRESH_TOKEN_EXPIRY_MINUTES: 30
-    CORS_ENABLED: true
     SESSION_BLACKLIST_ENABLED: false
 
 AUTHENTICATE:
