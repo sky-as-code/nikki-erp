@@ -324,7 +324,6 @@ func ServeSearch[
 	action string,
 	echoCtx *echo.Context,
 	serviceFn func(ctx corectx.Context, cmd TSvcQuery) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error),
-	skipNotFoundError ...bool,
 ) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
@@ -337,7 +336,7 @@ func ServeSearch[
 		ItsMeMario,
 		NewSearchResponseDyn,
 		JsonOk,
-		skipNotFoundError...,
+		true,
 	)
 	return err
 }

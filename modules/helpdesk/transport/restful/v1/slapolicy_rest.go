@@ -35,7 +35,7 @@ func (this SlaPolicyRest) SlaPolicyExists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists("slaPolicy exists", echoCtx, this.Service.SlaPolicyExists)
 }
 func (this SlaPolicyRest) SearchSlaPolicies(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch("search slaPolicys", echoCtx, this.Service.SearchSlaPolicies, true)
+	return httpserver.ServeSearch("search slaPolicys", echoCtx, this.Service.SearchSlaPolicies)
 }
 func (this SlaPolicyRest) UpdateSlaPolicy(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate("update slaPolicy", echoCtx, &it.UpdateSlaPolicyCommand{}, this.Service.UpdateSlaPolicy)

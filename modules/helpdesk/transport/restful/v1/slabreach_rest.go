@@ -35,7 +35,7 @@ func (this SlaBreachRest) SlaBreachExists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists("slaBreach exists", echoCtx, this.Service.SlaBreachExists)
 }
 func (this SlaBreachRest) SearchSlaBreaches(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch("search slaBreachs", echoCtx, this.Service.SearchSlaBreaches, true)
+	return httpserver.ServeSearch("search slaBreachs", echoCtx, this.Service.SearchSlaBreaches)
 }
 func (this SlaBreachRest) UpdateSlaBreach(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate("update slaBreach", echoCtx, &it.UpdateSlaBreachCommand{}, this.Service.UpdateSlaBreach)

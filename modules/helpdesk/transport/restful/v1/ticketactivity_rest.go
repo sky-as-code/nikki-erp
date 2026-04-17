@@ -35,7 +35,7 @@ func (this TicketActivityRest) TicketActivityExists(echoCtx *echo.Context) (err 
 	return httpserver.ServeExists("ticketActivity exists", echoCtx, this.Service.TicketActivityExists)
 }
 func (this TicketActivityRest) SearchTicketActivities(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch("search ticketActivitys", echoCtx, this.Service.SearchTicketActivities, true)
+	return httpserver.ServeSearch("search ticketActivitys", echoCtx, this.Service.SearchTicketActivities)
 }
 func (this TicketActivityRest) UpdateTicketActivity(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate("update ticketActivity", echoCtx, &it.UpdateTicketActivityCommand{}, this.Service.UpdateTicketActivity)

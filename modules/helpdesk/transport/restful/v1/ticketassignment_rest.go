@@ -35,7 +35,7 @@ func (this TicketAssignmentRest) TicketAssignmentExists(echoCtx *echo.Context) (
 	return httpserver.ServeExists("ticketAssignment exists", echoCtx, this.Service.TicketAssignmentExists)
 }
 func (this TicketAssignmentRest) SearchTicketAssignments(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch("search ticketAssignments", echoCtx, this.Service.SearchTicketAssignments, true)
+	return httpserver.ServeSearch("search ticketAssignments", echoCtx, this.Service.SearchTicketAssignments)
 }
 func (this TicketAssignmentRest) UpdateTicketAssignment(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate("update ticketAssignment", echoCtx, &it.UpdateTicketAssignmentCommand{}, this.Service.UpdateTicketAssignment)

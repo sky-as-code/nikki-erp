@@ -71,7 +71,6 @@ func (this ProductRest) Search(echoCtx *echo.Context) (err error) {
 		"search products",
 		echoCtx,
 		this.ProductSvc.SearchProducts,
-		true,
 	)
 }
 

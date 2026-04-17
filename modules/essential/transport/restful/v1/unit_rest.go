@@ -62,7 +62,6 @@ func (this UnitRest) Search(echoCtx *echo.Context) (err error) {
 		"search units",
 		echoCtx,
 		this.unitSvc.SearchUnits,
-		true,
 	)
 }
 

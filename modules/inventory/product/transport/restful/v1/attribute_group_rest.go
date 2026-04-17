@@ -64,7 +64,6 @@ func (this AttributeGroupRest) Search(echoCtx *echo.Context) (err error) {
 		"search attribute groups",
 		echoCtx,
 		this.AttributeGroupSvc.SearchAttributeGroups,
-		true,
 	)
 }
 

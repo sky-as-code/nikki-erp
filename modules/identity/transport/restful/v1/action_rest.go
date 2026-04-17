@@ -1,9 +1,12 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
@@ -125,7 +128,6 @@ func (this ActionRest) SearchActions(echoCtx *echo.Context) (err error) {
 			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
-		true,
 	)
 }
 
@@ -148,4 +150,14 @@ func (this ActionRest) UpdateAction(echoCtx *echo.Context) (err error) {
 		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
+}
+
+/*
+ * Non-CRUD APIs
+ */
+
+func (this ActionRest) GetModelSchema(echoCtx *echo.Context) (err error) {
+	schema := dmodel.MustGetSchema(domain.ActionSchemaName)
+	echoCtx.JSON(http.StatusOK, schema.ToSimplized())
+	return nil
 }

@@ -1,10 +1,14 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
@@ -55,7 +59,6 @@ func (this UserRest) SearchUsers(echoCtx *echo.Context) (err error) {
 		"search users",
 		echoCtx,
 		this.UserSvc.SearchUsers,
-		true,
 	)
 }
 
@@ -82,6 +85,16 @@ func (this UserRest) UserExists(echoCtx *echo.Context) (err error) {
 		echoCtx,
 		this.UserSvc.UserExists,
 	)
+}
+
+/*
+ * Non-CRUD APIs
+ */
+
+func (this UserRest) GetModelSchema(echoCtx *echo.Context) (err error) {
+	schema := dmodel.MustGetSchema(domain.UserSchemaName)
+	echoCtx.JSON(http.StatusOK, schema.ToSimplized())
+	return nil
 }
 
 // func (this UserRest) GetUserContextUser(echoCtx *echo.Context) (err error) {

@@ -126,7 +126,6 @@ func (this ModuleRest) SearchModules(echoCtx *echo.Context) (err error) {
 			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
-		true,
 	)
 }
 

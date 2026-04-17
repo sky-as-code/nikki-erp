@@ -1,10 +1,14 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/entitlement"
 )
 
@@ -69,7 +73,6 @@ func (this EntitlementRest) SearchEntitlements(echoCtx *echo.Context) (err error
 		"search entitlements",
 		echoCtx,
 		this.EntitlementSvc.SearchEntitlements,
-		true,
 	)
 }
 
@@ -88,4 +91,14 @@ func (this EntitlementRest) UpdateEntitlement(echoCtx *echo.Context) (err error)
 		&it.UpdateEntitlementCommand{},
 		this.EntitlementSvc.UpdateEntitlement,
 	)
+}
+
+/*
+ * Non-CRUD APIs
+ */
+
+func (this EntitlementRest) GetModelSchema(echoCtx *echo.Context) (err error) {
+	schema := dmodel.MustGetSchema(domain.EntitlementSchemaName)
+	echoCtx.JSON(http.StatusOK, schema.ToSimplized())
+	return nil
 }

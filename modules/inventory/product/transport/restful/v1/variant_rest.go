@@ -64,7 +64,6 @@ func (this VariantRest) Search(echoCtx *echo.Context) (err error) {
 		"search variants",
 		echoCtx,
 		this.VariantSvc.SearchVariants,
-		true,
 	)
 }
 
