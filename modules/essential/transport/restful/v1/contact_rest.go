@@ -126,7 +126,6 @@ func (this ContactRest) SearchContacts(echoCtx *echo.Context) (err error) {
 			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
-		true,
 	)
 }
 

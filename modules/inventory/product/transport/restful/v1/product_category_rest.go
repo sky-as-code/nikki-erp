@@ -63,7 +63,6 @@ func (this ProductCategoryRest) Search(echoCtx *echo.Context) (err error) {
 		"search product categories",
 		echoCtx,
 		this.ProductCategorySvc.SearchProductCategories,
-		true,
 	)
 }
 

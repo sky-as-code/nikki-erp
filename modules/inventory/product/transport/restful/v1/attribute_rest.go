@@ -64,7 +64,6 @@ func (this AttributeRest) Search(echoCtx *echo.Context) (err error) {
 		"search attributes",
 		echoCtx,
 		this.AttributeSvc.SearchAttributes,
-		true,
 	)
 }
 

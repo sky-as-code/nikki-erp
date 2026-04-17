@@ -35,7 +35,7 @@ func (this EscalationRuleRest) EscalationRuleExists(echoCtx *echo.Context) (err 
 	return httpserver.ServeExists("escalationRule exists", echoCtx, this.Service.EscalationRuleExists)
 }
 func (this EscalationRuleRest) SearchEscalationRules(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch("search escalationRules", echoCtx, this.Service.SearchEscalationRules, true)
+	return httpserver.ServeSearch("search escalationRules", echoCtx, this.Service.SearchEscalationRules)
 }
 func (this EscalationRuleRest) UpdateEscalationRule(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate("update escalationRule", echoCtx, &it.UpdateEscalationRuleCommand{}, this.Service.UpdateEscalationRule)

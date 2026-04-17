@@ -1,10 +1,14 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 )
 
@@ -71,7 +75,6 @@ func (this OrganizationRest) SearchOrgs(echoCtx *echo.Context) (err error) {
 		"search organizations",
 		echoCtx,
 		this.OrgSvc.SearchOrgs,
-		true,
 	)
 }
 
@@ -90,4 +93,14 @@ func (this OrganizationRest) UpdateOrg(echoCtx *echo.Context) (err error) {
 		&it.UpdateOrgCommand{},
 		this.OrgSvc.UpdateOrg,
 	)
+}
+
+/*
+ * Non-CRUD APIs
+ */
+
+func (this OrganizationRest) GetModelSchema(echoCtx *echo.Context) (err error) {
+	schema := dmodel.MustGetSchema(domain.OrganizationSchemaName)
+	echoCtx.JSON(http.StatusOK, schema.ToSimplized())
+	return nil
 }

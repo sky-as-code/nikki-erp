@@ -111,7 +111,6 @@ func (this PurchaseRequestRest) SearchPurchaseRequests(echoCtx *echo.Context) (e
 			return httpserver.NewSearchResponseDyn(data)
 		},
 		httpserver.JsonOk,
-		true,
 	)
 }
 

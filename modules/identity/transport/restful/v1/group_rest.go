@@ -1,10 +1,14 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
 )
 
@@ -81,4 +85,14 @@ func (this GroupRest) UpdateGroup(echoCtx *echo.Context) (err error) {
 		&it.UpdateGroupCommand{},
 		this.GroupSvc.UpdateGroup,
 	)
+}
+
+/*
+ * Non-CRUD APIs
+ */
+
+func (this GroupRest) GetModelSchema(echoCtx *echo.Context) (err error) {
+	schema := dmodel.MustGetSchema(domain.GroupSchemaName)
+	echoCtx.JSON(http.StatusOK, schema.ToSimplized())
+	return nil
 }

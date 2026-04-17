@@ -1,10 +1,14 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/resource"
 )
 
@@ -61,7 +65,6 @@ func (this ResourceRest) SearchResources(echoCtx *echo.Context) (err error) {
 		"search resources",
 		echoCtx,
 		this.ResourceSvc.SearchResources,
-		true,
 	)
 }
 
@@ -72,4 +75,14 @@ func (this ResourceRest) UpdateResource(echoCtx *echo.Context) (err error) {
 		&it.UpdateResourceCommand{},
 		this.ResourceSvc.UpdateResource,
 	)
+}
+
+/*
+ * Non-CRUD APIs
+ */
+
+func (this ResourceRest) GetModelSchema(echoCtx *echo.Context) (err error) {
+	schema := dmodel.MustGetSchema(domain.ResourceSchemaName)
+	echoCtx.JSON(http.StatusOK, schema.ToSimplized())
+	return nil
 }

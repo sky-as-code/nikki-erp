@@ -35,7 +35,7 @@ func (this TicketFeedbackRest) TicketFeedbackExists(echoCtx *echo.Context) (err 
 	return httpserver.ServeExists("ticketFeedback exists", echoCtx, this.Service.TicketFeedbackExists)
 }
 func (this TicketFeedbackRest) SearchTicketFeedbacks(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch("search ticketFeedbacks", echoCtx, this.Service.SearchTicketFeedbacks, true)
+	return httpserver.ServeSearch("search ticketFeedbacks", echoCtx, this.Service.SearchTicketFeedbacks)
 }
 func (this TicketFeedbackRest) UpdateTicketFeedback(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate("update ticketFeedback", echoCtx, &it.UpdateTicketFeedbackCommand{}, this.Service.UpdateTicketFeedback)

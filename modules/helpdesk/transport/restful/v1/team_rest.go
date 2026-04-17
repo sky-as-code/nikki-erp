@@ -33,7 +33,7 @@ func (this TeamRest) TeamExists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists("team exists", echoCtx, this.Service.TeamExists)
 }
 func (this TeamRest) SearchTeams(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch("search teams", echoCtx, this.Service.SearchTeams, true)
+	return httpserver.ServeSearch("search teams", echoCtx, this.Service.SearchTeams)
 }
 func (this TeamRest) UpdateTeam(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate("update team", echoCtx, &it.UpdateTeamCommand{}, this.Service.UpdateTeam)

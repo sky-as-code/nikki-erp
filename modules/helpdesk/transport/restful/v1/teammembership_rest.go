@@ -35,7 +35,7 @@ func (this TeamMembershipRest) TeamMembershipExists(echoCtx *echo.Context) (err 
 	return httpserver.ServeExists("teamMembership exists", echoCtx, this.Service.TeamMembershipExists)
 }
 func (this TeamMembershipRest) SearchTeamMemberships(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch("search teamMemberships", echoCtx, this.Service.SearchTeamMemberships, true)
+	return httpserver.ServeSearch("search teamMemberships", echoCtx, this.Service.SearchTeamMemberships)
 }
 func (this TeamMembershipRest) UpdateTeamMembership(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate("update teamMembership", echoCtx, &it.UpdateTeamMembershipCommand{}, this.Service.UpdateTeamMembership)

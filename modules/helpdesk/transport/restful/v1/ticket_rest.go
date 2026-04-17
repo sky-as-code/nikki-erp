@@ -33,7 +33,7 @@ func (this TicketRest) TicketExists(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeExists("ticket exists", echoCtx, this.Service.TicketExists)
 }
 func (this TicketRest) SearchTickets(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch("search tickets", echoCtx, this.Service.SearchTickets, true)
+	return httpserver.ServeSearch("search tickets", echoCtx, this.Service.SearchTickets)
 }
 func (this TicketRest) UpdateTicket(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeUpdate("update ticket", echoCtx, &it.UpdateTicketCommand{}, this.Service.UpdateTicket)

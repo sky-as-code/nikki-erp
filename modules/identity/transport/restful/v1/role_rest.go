@@ -1,10 +1,14 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/role"
 )
 
@@ -69,7 +73,6 @@ func (this RoleRest) SearchRoles(echoCtx *echo.Context) (err error) {
 		"search roles",
 		echoCtx,
 		this.RoleSvc.SearchRoles,
-		true,
 	)
 }
 
@@ -88,4 +91,14 @@ func (this RoleRest) UpdateRole(echoCtx *echo.Context) (err error) {
 		&it.UpdateRoleCommand{},
 		this.RoleSvc.UpdateRole,
 	)
+}
+
+/*
+ * Non-CRUD APIs
+ */
+
+func (this RoleRest) GetModelSchema(echoCtx *echo.Context) (err error) {
+	schema := dmodel.MustGetSchema(domain.RoleSchemaName)
+	echoCtx.JSON(http.StatusOK, schema.ToSimplized())
+	return nil
 }
