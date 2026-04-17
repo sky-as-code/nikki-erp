@@ -20,10 +20,10 @@ const schema = {
     additionalProperties: false
 };
 
-module.exports.testCreate = function (idVarName) {
+module.exports.testCreate = function (idVarName, autoSetEtag=true) {
   testHttpResponse(schema, 201);
 
   const { id, etag } = res.getBody();
-  etag && bru.setVar('etag', etag);
+  etag && autoSetEtag && bru.setVar('etag', etag);
   id && bru.setVar(idVarName, id);
 };

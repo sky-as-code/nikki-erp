@@ -1,0 +1,33 @@
+meta {
+  name: User Create - Test data
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/identity/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "display_name": "{{$randomFullName}}",
+    "email": "{{$randomNanoId}}-{{$randomEmail}}"
+  }
+}
+
+script:post-response {
+  const { testCreate } = require('./scripts/create-success');
+  
+  testCreate('duplicate_id', false);
+  
+  const { email } = req.getBody();
+  bru.setVar('duplicate_email', email);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

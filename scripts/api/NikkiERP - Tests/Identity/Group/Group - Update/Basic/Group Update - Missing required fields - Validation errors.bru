@@ -1,11 +1,11 @@
 meta {
-  name: User Update - Missing required fields - Validation errors
+  name: Group Update - Missing required fields - Validation errors
   type: http
   seq: 4
 }
 
 put {
-  url: {{api_host}}/v1/identity/users/{{user_id}}
+  url: {{api_host}}/v1/identity/groups/{{group_id}}
   body: json
   auth: inherit
 }

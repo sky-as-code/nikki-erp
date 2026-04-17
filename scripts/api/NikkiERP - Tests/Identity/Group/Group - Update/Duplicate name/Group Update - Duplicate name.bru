@@ -1,18 +1,18 @@
 meta {
-  name: User Update - Duplicate email - Validation errors
+  name: Group Update - Duplicate name
   type: http
-  seq: 8
+  seq: 2
 }
 
 put {
-  url: {{api_host}}/v1/identity/users/{{user_id}}
+  url: {{api_host}}/v1/identity/groups/{{group_id}}
   body: json
   auth: inherit
 }
 
 body:json {
   {
-      "email": "{{email}}",
+      "name": {{duplicate_name}},
       "etag": "{{etag}}"
   }
 }
@@ -20,7 +20,7 @@ body:json {
 script:post-response {
   const pkg = require('./scripts/error-400-duplicate-value');
   
-  pkg.testDuplicateValues(['email']);
+  pkg.testDuplicateValues(['name']);
   
 }
 
