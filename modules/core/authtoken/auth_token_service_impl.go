@@ -1,6 +1,7 @@
 package authtoken
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -23,6 +24,7 @@ import (
 const (
 	JwtAlgoHs256             = "HS256"
 	JwtAlgoRs256             = "RS256"
+	JwtEdDsa                 = "EdDSA"
 	JwtTimeToleranceMins     = 3
 	JwtAccessTokenExpiryMax  = 60 * 24     // 1 day
 	JwtRefreshTokenExpiryMax = 60 * 24 * 7 // 7 days
@@ -202,16 +204,22 @@ func (this *AuthTokenServiceImpl) VerifyJwt(ctx corectx.Context, param VerifyJwt
 
 func (this *AuthTokenServiceImpl) signingKey(algorithm string) (any, error) {
 	if algorithm == JwtAlgoRs256 {
-		return rsaPrivateKeyFromPem(this.configSvc.GetStr(c.RequestGuardAccessTokenRsaPrivateKey))
+		return rsaPrivateKeyFromPem(this.configSvc.GetStr(c.RequestGuardAccessTokenPrivateKey))
 	}
-	return []byte(this.configSvc.GetStr(c.RequestGuardAccessTokenSha256Secret)), nil
+	if algorithm == JwtEdDsa {
+		return edDsaPrivateKeyFromPem(this.configSvc.GetStr(c.RequestGuardAccessTokenPrivateKey))
+	}
+	return []byte(this.configSvc.GetStr(c.RequestGuardAccessTokenSecret)), nil
 }
 
 func (this *AuthTokenServiceImpl) verificationKey(algorithm string) (any, error) {
 	if algorithm == JwtAlgoRs256 {
-		return rsaPublicKeyFromPem(this.configSvc.GetStr(c.RequestGuardAccessTokenRsaPublicKey))
+		return rsaPublicKeyFromPem(this.configSvc.GetStr(c.RequestGuardAccessTokenPublicKey))
 	}
-	return []byte(this.configSvc.GetStr(c.RequestGuardAccessTokenSha256Secret)), nil
+	if algorithm == JwtEdDsa {
+		return edDsaPublicKeyFromPem(this.configSvc.GetStr(c.RequestGuardAccessTokenPublicKey))
+	}
+	return []byte(this.configSvc.GetStr(c.RequestGuardAccessTokenSecret)), nil
 }
 
 func (this *AuthTokenServiceImpl) validateConfig() {
@@ -227,25 +235,25 @@ func (this *AuthTokenServiceImpl) validateConfig() {
 	}
 
 	algo := cfg.GetStr(c.RequestGuardAccessTokenAlgorithm)
-	if algo != JwtAlgoHs256 && algo != JwtAlgoRs256 {
-		panic(errors.Errorf("config '%s' must be either '%s' or '%s'", c.RequestGuardAccessTokenAlgorithm, JwtAlgoHs256, JwtAlgoRs256))
-	}
 
 	switch algo {
 	case JwtAlgoHs256:
-		secret := cfg.GetStr(c.RequestGuardAccessTokenSha256Secret)
+		secret := cfg.GetStr(c.RequestGuardAccessTokenSecret)
 		if secret == "" {
-			panic(errors.Errorf("config '%s' is required when '%s' is '%s'", c.RequestGuardAccessTokenSha256Secret, c.RequestGuardAccessTokenAlgorithm, JwtAlgoHs256))
+			panic(errors.Errorf("config '%s' is required when '%s' is '%s'", c.RequestGuardAccessTokenSecret, c.RequestGuardAccessTokenAlgorithm, JwtAlgoHs256))
 		}
 	case JwtAlgoRs256:
-		publicKey := cfg.GetStr(c.RequestGuardAccessTokenRsaPublicKey)
-		privateKey := cfg.GetStr(c.RequestGuardAccessTokenRsaPrivateKey)
+	case JwtEdDsa:
+		publicKey := cfg.GetStr(c.RequestGuardAccessTokenPublicKey)
+		privateKey := cfg.GetStr(c.RequestGuardAccessTokenPrivateKey)
 		if publicKey == "" || privateKey == "" {
 			panic(errors.Errorf(
-				"config '%s' and '%s' are required when '%s' is '%s'",
-				c.RequestGuardAccessTokenRsaPublicKey, c.RequestGuardAccessTokenRsaPrivateKey, c.RequestGuardAccessTokenAlgorithm, JwtAlgoRs256,
+				"config '%s' and '%s' are required when '%s' is '%s' or '%s'",
+				c.RequestGuardAccessTokenPublicKey, c.RequestGuardAccessTokenPrivateKey, c.RequestGuardAccessTokenAlgorithm, JwtAlgoRs256, JwtEdDsa,
 			))
 		}
+	default:
+		panic(errors.Errorf("config '%s' must be one of: '%s', '%s' or '%s'", c.RequestGuardAccessTokenAlgorithm, JwtAlgoHs256, JwtAlgoRs256, JwtEdDsa))
 	}
 
 	expiryMinsAccess := cfg.GetUint(c.RequestGuardAccessTokenExpiryMinutes)
@@ -331,6 +339,38 @@ func rsaPrivateKeyFromPem(pemStr string) (*rsa.PrivateKey, error) {
 	privateKey, ok := privateKeyAny.(*rsa.PrivateKey)
 	if !ok {
 		return nil, errors.New("private key is not RSA")
+	}
+	return privateKey, nil
+}
+
+func edDsaPublicKeyFromPem(pemStr string) (ed25519.PublicKey, error) {
+	block, _ := pem.Decode([]byte(pemStr))
+	if block == nil {
+		return nil, errors.New("EdDSA public key PEM decode failed")
+	}
+	publicKeyAny, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "EdDSA PKIX public key parse failed")
+	}
+	publicKey, ok := publicKeyAny.(ed25519.PublicKey)
+	if !ok {
+		return nil, errors.New("public key is not Ed25519")
+	}
+	return publicKey, nil
+}
+
+func edDsaPrivateKeyFromPem(pemStr string) (ed25519.PrivateKey, error) {
+	block, _ := pem.Decode([]byte(pemStr))
+	if block == nil {
+		return nil, errors.New("EdDSA private key PEM decode failed")
+	}
+	privateKeyAny, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "EdDSA PKCS8 private key parse failed")
+	}
+	privateKey, ok := privateKeyAny.(ed25519.PrivateKey)
+	if !ok {
+		return nil, errors.New("private key is not Ed25519")
 	}
 	return privateKey, nil
 }

@@ -49,7 +49,7 @@ func (this *StaticRequestGuardServiceImpl) CalcRequestFingerprint(_ corectx.Cont
 }
 
 func (this *StaticRequestGuardServiceImpl) GetCorsMiddleware(_ corectx.Context) (echo.MiddlewareFunc, error) {
-	if !this.configSvc.GetBool(c.RequestGuardCorsEnabled) {
+	if !this.configSvc.GetBool(c.HttpCorsEnabled) {
 		return nil, nil
 	}
 

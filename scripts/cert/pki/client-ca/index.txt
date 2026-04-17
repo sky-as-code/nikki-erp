@@ -1,2 +1,0 @@
-V	270414173510Z		1000	unknown	/CN=active@nikki-erp.com
-V	260415173531Z		1001	unknown	/CN=expired@nikki-erp.com

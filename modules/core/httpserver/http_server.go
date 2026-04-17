@@ -91,8 +91,8 @@ type HttpServer struct {
 
 func (this *HttpServer) Start() error {
 	this.Name = this.config.GetStr(c.AppName)
-	mtlsEnabled := this.config.GetBool(c.MtlsEnabled)
-	if mtlsEnabled {
+	httpsEnabled := this.config.GetBool(c.HttpsEnabled)
+	if httpsEnabled {
 		return this.startHttps()
 	}
 	return this.startHttp()
@@ -108,7 +108,18 @@ func (this *HttpServer) startHttp() error {
 	for _, lazyware := range this.LazyMiddlewares {
 		lazyware.Enable()
 	}
-	return this.echoServer.Start(address)
+
+	httpServer := &http.Server{
+		Addr:    address,
+		Handler: this.echoServer,
+	}
+
+	this.httpServer = httpServer
+	err := httpServer.ListenAndServe()
+	if err != nil && !stdErr.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
 }
 
 func (this *HttpServer) startHttps() error {
@@ -116,7 +127,7 @@ func (this *HttpServer) startHttps() error {
 	httpsPort := this.config.GetInt32(c.HttpsPort)
 	httpsRsaPublicKey := this.config.GetStr(c.HttpsRsaPublicKey)
 	httpsRsaPrivateKey := this.config.GetStr(c.HttpsRsaPrivateKey)
-	mtlsClientCaCert := this.config.GetStr(c.MtlsClientCaCert)
+	mtlsEnabled := this.config.GetBool(c.MtlsEnabled)
 	address := fmt.Sprintf("%s:%d", httpHost, httpsPort)
 
 	this.logger.Infof("Starting HTTPS server %s at %s", this.Name, address)
@@ -130,9 +141,17 @@ func (this *HttpServer) startHttps() error {
 		return fmt.Errorf("load server certificate and key from config: %w", err)
 	}
 
-	caPool := x509.NewCertPool()
-	if !caPool.AppendCertsFromPEM([]byte(mtlsClientCaCert)) {
-		return fmt.Errorf("append client CA certificate from config to pool")
+	var caPool *x509.CertPool
+	// clientAuthType := tls.NoClientCert
+	clientAuthType := tls.RequireAnyClientCert
+	if mtlsEnabled {
+		clientAuthType = tls.RequireAndVerifyClientCert
+
+		mtlsClientCaCert := this.config.GetStr(c.MtlsClientCaCert)
+		caPool = x509.NewCertPool()
+		if !caPool.AppendCertsFromPEM([]byte(mtlsClientCaCert)) {
+			return fmt.Errorf("append client CA certificate from config to pool")
+		}
 	}
 
 	tlsConfig := &tls.Config{
@@ -141,7 +160,7 @@ func (this *HttpServer) startHttps() error {
 
 			return &tls.Config{
 				Certificates: []tls.Certificate{cert},
-				ClientAuth:   tls.RequireAndVerifyClientCert,
+				ClientAuth:   clientAuthType,
 				ClientCAs:    caPool,
 				MinVersion:   tls.VersionTLS13,
 			}, nil
@@ -164,11 +183,11 @@ func (this *HttpServer) startHttps() error {
 }
 
 func (this HttpServer) Shutdown() {
-	this.logger.Infof("Stopping HTTP server %s ...", this.Name)
+	this.logger.Infof("Stopping HTTP(S) server %s ...", this.Name)
 	if this.httpServer != nil {
 		_ = this.httpServer.Shutdown(context.Background()) //nolint:errcheck
 	}
-	this.logger.Infof("HTTP server %s exited", this.Name)
+	this.logger.Infof("HTTP(S) server %s exited", this.Name)
 }
 
 func (this HttpServer) Use(middlewares ...echo.MiddlewareFunc) {

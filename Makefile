@@ -3,6 +3,8 @@ goarch ?= amd64
 goos ?= windows
 outfile ?= nikki-erp.exe
 
+cwdnikki := $(dir $(lastword $(MAKEFILE_LIST)))
+
 ifndef cwd
 cwd := $(dir $(lastword $(MAKEFILE_LIST)))
 endif
@@ -187,27 +189,32 @@ nikki:
 
 # START: Certificate
 
-gen-certs:
+cert-ca:
 	@set -euo pipefail; \
 	echo "==> Root CA"; \
-	./scripts/cert/gen-root-ca.sh
+	CWD="${cwd}scripts/cert" SDIR="${cwdnikki}scripts/cert" ${cwdnikki}scripts/cert/gen-root-ca.sh
 
 	@set -euo pipefail; \
 	echo "==> Client CA"; \
-	./scripts/cert/gen-intermediate-ca.sh client-ca
+	CWD="${cwd}scripts/cert" SDIR="${cwdnikki}scripts/cert" ${cwdnikki}scripts/cert/gen-intermediate-ca.sh client-ca
 
 	@set -euo pipefail; \
 	echo "==> Server CA"; \
-	./scripts/cert/gen-intermediate-ca.sh server-ca
+	CWD="${cwd}scripts/cert" SDIR="${cwdnikki}scripts/cert" ${cwdnikki}scripts/cert/gen-intermediate-ca.sh server-ca
 
-gen-client-cert:
+cert-client:
 	@set -euo pipefail; \
 	echo "==> Client cert"; \
-	./scripts/cert/gen-client-cert.sh
+	CWD="${cwd}scripts/cert" SDIR="${cwdnikki}scripts/cert" ${cwdnikki}scripts/cert/gen-client-cert.sh
 
-gen-server-cert:
+cert-server-nikki:
 	@set -euo pipefail; \
 	echo "==> Server cert"; \
-	./scripts/cert/gen-server-cert.sh
+	CWD="${cwd}scripts/cert" SDIR="${cwdnikki}scripts/cert" ./scripts/cert/gen-server-cert.sh
+
+keypair-jwt-nikki:
+	@set -euo pipefail; \
+	echo "==> JWT keypair"; \
+	CWD="${cwd}scripts/cert" ./scripts/cert/gen-keypair-ed25519.sh
 
 # END: Certificate
