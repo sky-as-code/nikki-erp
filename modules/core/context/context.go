@@ -125,3 +125,7 @@ func (this RequestContext) GetModuleName() string {
 func (this *RequestContext) WithValue(key, val any) {
 	this.Context = context.WithValue(this.Context, key, val)
 }
+
+func (this *RequestContext) Value(key any) any {
+	return this.Context.Value(key)
+}

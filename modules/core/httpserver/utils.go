@@ -1,6 +1,9 @@
 package httpserver
 
 import (
+	"strings"
+
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -8,6 +11,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/crud"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 )
 
 // BindToDynamicEntity parses the echo request body and returns a DynamicEntity
@@ -367,4 +371,14 @@ func ServeUpdate[
 		},
 		JsonOk,
 	)
+}
+
+func GetUserEmailFromContext(ctx corectx.Context) (string, error) {
+	claims := ctx.Value(middlewares.CtxKeyJwtClaims).(jwt.Claims)
+	userInfo, err := claims.GetSubject()
+	if err != nil {
+		return "", err
+	}
+	userEmail := strings.Split(userInfo, ":")[0]
+	return userEmail, nil
 }
