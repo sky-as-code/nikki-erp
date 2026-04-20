@@ -36,14 +36,16 @@ func initProductV1() error {
 		routeV1.DELETE("/products-categories/:id", productCategoryRest.Delete)
 		routeV1.GET("/products-categories/:id", productCategoryRest.GetOne)
 		routeV1.POST("/products-categories/:id/exists", productCategoryRest.Exists)
-		routeV1.POST("/products-categories/:id", productCategoryRest.Create)
+		routeV1.POST("/products-categories", productCategoryRest.Create)
 		routeV1.PUT("/products-categories/:id", productCategoryRest.Update)
+		routeV1.GET("/products-categories", productCategoryRest.Search)
 
 		routeV1.DELETE("/products/:id", productRest.Delete)
 		routeV1.GET("/products/:id", productRest.GetOne)
+		routeV1.GET("/products", productRest.Search)
 		routeV1.POST("/products/:id/exists", productRest.Exists)
 		routeV1.POST("/products/:id/archived", productRest.SetIsArchived)
-		routeV1.POST("/products/:id", productRest.Create)
+		routeV1.POST("/products", productRest.Create)
 		routeV1.PUT("/products/:id", productRest.Update)
 
 		// Register nested resource routes manually
