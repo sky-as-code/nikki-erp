@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -374,7 +375,11 @@ func ServeUpdate[
 }
 
 func GetUserEmailFromContext(ctx corectx.Context) (string, error) {
-	claims := ctx.Value(middlewares.CtxKeyJwtClaims).(jwt.Claims)
+	claims, ok := ctx.Value(middlewares.CtxKeyJwtClaims).(jwt.Claims)
+	if !ok {
+		return "", errors.New("User not login")
+	}
+
 	userInfo, err := claims.GetSubject()
 	if err != nil {
 		return "", err
