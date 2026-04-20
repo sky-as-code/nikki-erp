@@ -112,3 +112,12 @@ func ImplementsInterface(target reflect.Type, theInterface reflect.Type) bool {
 func ToPtr[T interface{}](source T) *T {
 	return &source
 }
+
+func ValueOrZeroOf[T interface{}](ptr *T) T {
+	if ptr == nil {
+		var zero T
+		return zero
+	}
+
+	return *ptr
+}
