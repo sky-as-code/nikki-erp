@@ -846,7 +846,7 @@ func (this fieldDataTypeDecimal) TryConvert(val any, _ FieldDataTypeOptions) (va
 		scaled := applyDecimalScale(result, this.options)
 		return Value(scaled), nil
 	default:
-		return Value(nil), errors.New("fieldDataTypeDecimal.TryConvert: value must be decimal or string")
+		return Value(nil), errors.New("fieldDataTypeDecimal.TryConvert: value must be decimal, string, or []byte")
 	}
 }
 
@@ -1174,15 +1174,15 @@ func (this fieldDataTypeLangJson) validateScalar(value value) (value, *ft.Client
 		getLangJsonWhitelist(this.options),
 		this.options[FieldDataTypeOptSanitizeType] == SanitizeTypeHtml,
 	)
+	if err != nil {
+		return Value(nil), &ft.ClientErrorItem{
+			Key: "lang_json_sanitize_failed", Message: err.Error(), Vars: nil,
+		}
+	}
 	for key, val := range *sanitized {
 		if cErr := validateStringLength(val, this.options); cErr != nil {
 			cErr.Field = "." + key
 			return Value(nil), cErr
-		}
-	}
-	if err != nil {
-		return Value(nil), &ft.ClientErrorItem{
-			Key: "lang_json_sanitize_failed", Message: err.Error(), Vars: nil,
 		}
 	}
 	return Value(*sanitized), nil
@@ -1210,6 +1210,23 @@ func toLangJson(value any) (model.LangJson, *ft.ClientErrorItem) {
 			return model.LangJson{}, err
 		}
 		return model.LangJson(x), nil
+	case map[string]any:
+		langJson := model.LangJson{}
+		for k, v := range x {
+			str, err := toString(v)
+			if err != nil {
+				return model.LangJson{}, &ft.ClientErrorItem{
+					Key:     "incompatible_data_type",
+					Message: fmt.Sprintf("langJson value for key '%s' cannot be converted to string", k),
+					Vars:    nil,
+				}
+			}
+			langJson[model.LanguageCode(k)] = str
+		}
+		if err := ValidateNotEmpty(langJson); err != nil {
+			return model.LangJson{}, err
+		}
+		return langJson, nil
 	default:
 		return model.LangJson{}, &ft.ClientErrorItem{
 			Key:     "incompatible_data_type",
@@ -1794,6 +1811,17 @@ func tryConvertStringArrayValue(value any) (value, error) {
 			return Value(nil), errors.New("tryConvertStringArrayValue: value cannot be nil")
 		}
 		return Value(*typed), nil
+	case []any:
+		// Handle JSON unmarshaled data
+		result := make([]string, 0, len(typed))
+		for _, item := range typed {
+			str, ok := item.(string)
+			if !ok {
+				return Value(nil), errors.Errorf("tryConvertStringArrayValue: array element is not string, got %T", item)
+			}
+			result = append(result, str)
+		}
+		return Value(result), nil
 	default:
 		return Value(nil), errors.Errorf("tryConvertStringArrayValue: cannot convert %T to []string", value)
 	}
@@ -1810,6 +1838,17 @@ func tryConvertInt64ArrayValue(value any) (value, error) {
 			return Value(nil), errors.New("tryConvertInt64ArrayValue: value cannot be nil")
 		}
 		return Value(*typed), nil
+	case []any:
+		// Handle JSON unmarshaled data
+		result := make([]int64, 0, len(typed))
+		for _, item := range typed {
+			converted, err := toInt64(item)
+			if err != nil {
+				return Value(nil), err
+			}
+			result = append(result, converted)
+		}
+		return Value(result), nil
 	default:
 		return Value(nil), errors.Errorf("tryConvertInt64ArrayValue: cannot convert %T to []int64", value)
 	}

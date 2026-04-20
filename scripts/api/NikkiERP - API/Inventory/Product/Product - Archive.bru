@@ -12,8 +12,13 @@ post {
 
 body:json {
   {
-    "is_archived": true
+    "is_archived": true,
+    "etag": "{{etag}}"
   }
+}
+
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
 }
 
 script:post-response {

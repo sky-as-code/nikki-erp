@@ -49,6 +49,7 @@ const (
 	VarFieldProposedPrice = "proposed_price"
 	VarFieldStatus        = "status"
 	VarFieldImageUrl      = "image_url"
+	VarFieldAttributes    = "attributes"
 
 	VarEdgeProduct         = "product"
 	VarEdgeAttributeValues = "attribute_values"
@@ -223,4 +224,19 @@ func (this Variant) GetImageUrl() *string {
 
 func (this *Variant) SetImageUrl(v *string) {
 	this.GetFieldData().SetString(VarFieldImageUrl, v)
+}
+
+func (this Variant) GetAttributes() map[string]any {
+	v := this.GetFieldData().GetAny(VarFieldAttributes)
+	if v == nil {
+		return nil
+	}
+	if attrMap, ok := v.(map[string]any); ok {
+		return attrMap
+	}
+	return nil
+}
+
+func (this *Variant) SetAttributes(v map[string]any) {
+	this.GetFieldData().SetAny(VarFieldAttributes, v)
 }

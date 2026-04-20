@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/{{org_id}}/inventory/product-categories
+  url: {{api_host}}/v1/{{org_id}}/inventory/products-categories
   body: none
   auth: inherit
+}
+
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
 }
 
 settings {

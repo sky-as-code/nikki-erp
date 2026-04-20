@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 
@@ -53,7 +54,7 @@ func AttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(AttrValFieldValueInteger).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Decimal Value"}).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Integer Value"}).
 				DataType(dmodel.FieldDataTypeInt64(0, math.MaxInt64)),
 		).
 		Field(
@@ -166,4 +167,109 @@ func (this AttributeValue) GetVariantCount() *int64 {
 
 func (this *AttributeValue) SetVariantCount(v *int64) {
 	this.GetFieldData().SetInt64(AttrValFieldVariantCount, v)
+}
+
+// ExpectedValueFieldForDataType returns the field name that should be set for the given data type.
+func ExpectedValueFieldForDataType(dataType AttributeDataType) string {
+	switch dataType {
+	case AttributeDataTypeText:
+		return AttrValFieldValueText
+	case AttributeDataTypeNumber:
+		return AttrValFieldValueDecimal
+	case AttributeDataTypeBoolean:
+		return AttrValFieldValueBool
+	case AttributeDataTypeUnit:
+		return AttrValFieldValueRef
+	case AttributeDataTypeUrl:
+		return AttrValFieldValueInteger
+	default:
+		return ""
+	}
+}
+
+// GetValue returns the field name and concrete value of whichever value field is set.
+// Returns ("", nil) if no value field is set.
+func (this AttributeValue) GetValue() (string, any) {
+	if v := this.GetValueText(); v != nil {
+		return AttrValFieldValueText, *v
+	}
+	if v := this.GetValueDecimal(); v != nil {
+		return AttrValFieldValueDecimal, *v
+	}
+	if v := this.GetValueInteger(); v != nil {
+		return AttrValFieldValueInteger, *v
+	}
+	if v := this.GetValueBool(); v != nil {
+		return AttrValFieldValueBool, *v
+	}
+	if v := this.GetValueRef(); v != nil {
+		return AttrValFieldValueRef, *v
+	}
+	return "", nil
+}
+
+// SetValueFromRaw converts the raw input and sets the appropriate value field for the given data type.
+// Returns an error if the raw value cannot be converted to the expected Go type.
+func (this *AttributeValue) SetValueFromRaw(dataType AttributeDataType, value any) error {
+	switch dataType {
+	case AttributeDataTypeNumber:
+		switch v := value.(type) {
+		case string:
+			this.SetValueDecimal(&v)
+		case float64:
+			strVal := fmt.Sprintf("%g", v)
+			this.SetValueDecimal(&strVal)
+		case int:
+			strVal := fmt.Sprintf("%d", v)
+			this.SetValueDecimal(&strVal)
+		case int64:
+			strVal := fmt.Sprintf("%d", v)
+			this.SetValueDecimal(&strVal)
+		default:
+			return fmt.Errorf("value must be a number")
+		}
+
+	case AttributeDataTypeUrl:
+		switch v := value.(type) {
+		case int64:
+			this.SetValueInteger(&v)
+		case float64:
+			valueInt := int64(v)
+			this.SetValueInteger(&valueInt)
+		case int:
+			valueInt := int64(v)
+			this.SetValueInteger(&valueInt)
+		default:
+			return fmt.Errorf("value must be an integer")
+		}
+
+	case AttributeDataTypeBoolean:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("value must be a boolean")
+		}
+		this.SetValueBool(&v)
+
+	case AttributeDataTypeText:
+		bytes, err := json.Marshal(value)
+		if err != nil {
+			return fmt.Errorf("value must be valid JSON")
+		}
+		var langJson model.LangJson
+		if err := json.Unmarshal(bytes, &langJson); err != nil {
+			return fmt.Errorf("value must be a valid language JSON structure")
+		}
+		this.SetValueText(&langJson)
+
+	case AttributeDataTypeUnit:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("value must be a string reference")
+		}
+		this.SetValueRef(&v)
+
+	default:
+		return fmt.Errorf("unsupported attribute data type: %s", dataType)
+	}
+	return nil
 }
