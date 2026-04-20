@@ -78,7 +78,7 @@ func DefineFieldSearchColumns() *dmodel.FieldBuilder {
 	return dmodel.DefineField().
 		Name(basemodel.FieldFields).
 		DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_FIELDS_LENGTH_MIN, model.MODEL_RULE_FIELDS_LENGTH_MAX).ArrayType()).
-		Rule(dmodel.FieldRuleArrayLength(0, 20))
+		Rule(dmodel.FieldRuleArrayLength(0, 50))
 }
 
 func DefineFieldSearchPage() *dmodel.FieldBuilder {
