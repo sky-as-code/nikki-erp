@@ -6,6 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/database"
@@ -84,4 +85,30 @@ func (this *AttributeValueDynamicRepository) Update(
 	ctx corectx.Context, attributeValue domain.AttributeValue,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, attributeValue.GetFieldData())
+}
+
+func (this *AttributeValueDynamicRepository) GetIdsByVariantId(
+	ctx corectx.Context, variantId model.Id,
+) ([]model.Id, error) {
+	client := this.dynamicRepo.ExtractClient(ctx)
+
+	q := `SELECT ` + domain.VarAttrValRelFieldAttrValueId + `
+	      FROM ` + dmodel.MustGetSchema(domain.VarAttrValRelSchemaName).TableName() + `
+	      WHERE ` + domain.VarAttrValRelFieldVariantId + ` = $1`
+
+	rows, err := client.Query(ctx.InnerContext(), q, variantId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []model.Id
+	for rows.Next() {
+		var id model.Id
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }

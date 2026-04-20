@@ -27,6 +27,7 @@ var createVariantCommandType = cqrs.RequestType{
 
 type CreateVariantCommand struct {
 	domain.Variant
+	Attributes map[string]any `json:"attributes,omitempty"`
 }
 
 func (CreateVariantCommand) CqrsRequestType() cqrs.RequestType {
@@ -104,6 +105,7 @@ var updateVariantCommandType = cqrs.RequestType{
 
 type UpdateVariantCommand struct {
 	domain.Variant
+	Attributes map[string]any `json:"attributes,omitempty"`
 }
 
 func (UpdateVariantCommand) CqrsRequestType() cqrs.RequestType {
