@@ -13,24 +13,209 @@ post {
 body:json {
   {
     "name": {
-      "vi" : "Áo thun màu đỏ M",
-      "en" : "Red T-shirt size M"
+      "vi-VN" : "{{variant_name_vi}}",
+      "en-US" : "{{variant_name_en}}"
     },
-    "sku": "TSHIRT-RED-M",
-    "barcode": "8938501234567",
-    "proposedPrice": 199000,
-    "attributes": {
-      "color": {
-        "vi_VN": "Đỏ",
-        "en_US": "Red"
-      },
-      "size": 19
-    }
+    "sku": "{{variant_sku}}",
+    "barcode": "{{variant_barcode}}",
+    "proposedPrice": {{variant_price}},
+    "status": "{{variant_status}}",
+    "attributes": {{variant_attributes}}
   }
 }
 
 vars:pre-request {
   org_id: 01JWNY20G23KD4RV5VWYABQYHD
+  variant_name_vi: Áo thun màu đỏ M
+  variant_name_en: Red T-shirt size M
+  variant_sku: TSHIRT-RED-M
+  variant_barcode: 8938501234567
+  variant_price: 199000
+  variant_status: active
+  variant_attributes: {"color":{"vi-VN":"Đỏ","en-US":"Red"},"size":19}
+}
+
+script:pre-request {
+  // Danh sách variant với các biến thể khác nhau
+  const variants = [
+    {
+      name: { vi: "Áo thun màu đỏ M", en: "Red T-shirt size M" },
+      sku: "TSHIRT-RED-M",
+      barcode: "8938501234567",
+      price: 199000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Đỏ", "en-US": "Red" },
+        size: 19
+      }
+    },
+    {
+      name: { vi: "Áo thun màu xanh L", en: "Blue T-shirt size L" },
+      sku: "TSHIRT-BLUE-L",
+      barcode: "8938501234568",
+      price: 219000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Xanh", "en-US": "Blue" },
+        size: 20
+      }
+    },
+    {
+      name: { vi: "Áo thun màu đen XL", en: "Black T-shirt size XL" },
+      sku: "TSHIRT-BLACK-XL",
+      barcode: "8938501234569",
+      price: 239000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Đen", "en-US": "Black" },
+        size: 21
+      }
+    },
+    {
+      name: { vi: "Quần jean xanh nhạt 30", en: "Light Blue Jeans size 30" },
+      sku: "JEANS-LTBLUE-30",
+      barcode: "8938501234570",
+      price: 459000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Xanh nhạt", "en-US": "Light Blue" },
+        size: 30
+      }
+    },
+    {
+      name: { vi: "Quần jean đen 32", en: "Black Jeans size 32" },
+      sku: "JEANS-BLACK-32",
+      barcode: "8938501234571",
+      price: 479000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Đen", "en-US": "Black" },
+        size: 32
+      }
+    },
+    {
+      name: { vi: "Áo sơ mi trắng M", en: "White Shirt size M" },
+      sku: "SHIRT-WHITE-M",
+      barcode: "8938501234572",
+      price: 349000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Trắng", "en-US": "White" },
+        size: 19
+      }
+    },
+    {
+      name: { vi: "Áo sơ mi xanh navy L", en: "Navy Shirt size L" },
+      sku: "SHIRT-NAVY-L",
+      barcode: "8938501234573",
+      price: 369000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Xanh navy", "en-US": "Navy" },
+        size: 20
+      }
+    },
+    {
+      name: { vi: "Váy đen S", en: "Black Dress size S" },
+      sku: "DRESS-BLACK-S",
+      barcode: "8938501234574",
+      price: 549000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Đen", "en-US": "Black" },
+        size: 18
+      }
+    },
+    {
+      name: { vi: "Váy hoa M", en: "Floral Dress size M" },
+      sku: "DRESS-FLORAL-M",
+      barcode: "8938501234575",
+      price: 569000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Hoa", "en-US": "Floral" },
+        size: 19
+      }
+    },
+    {
+      name: { vi: "Áo khoác da đen L", en: "Black Leather Jacket size L" },
+      sku: "JACKET-LEATHER-L",
+      barcode: "8938501234576",
+      price: 1299000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Đen", "en-US": "Black" },
+        size: 20,
+        material: { "vi-VN": "Da", "en-US": "Leather" }
+      }
+    },
+    {
+      name: { vi: "Áo khoác jeans xanh M", en: "Blue Denim Jacket size M" },
+      sku: "JACKET-DENIM-M",
+      barcode: "8938501234577",
+      price: 799000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Xanh", "en-US": "Blue" },
+        size: 19,
+        material: { "vi-VN": "Jeans", "en-US": "Denim" }
+      }
+    },
+    {
+      name: { vi: "Giày thể thao trắng 42", en: "White Sneakers size 42" },
+      sku: "SHOES-WHITE-42",
+      barcode: "8938501234578",
+      price: 899000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Trắng", "en-US": "White" },
+        size: 42
+      }
+    },
+    {
+      name: { vi: "Giày thể thao đen 43", en: "Black Sneakers size 43" },
+      sku: "SHOES-BLACK-43",
+      barcode: "8938501234579",
+      price: 899000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Đen", "en-US": "Black" },
+        size: 43
+      }
+    },
+    {
+      name: { vi: "Mũ lưỡi trai đỏ", en: "Red Baseball Cap" },
+      sku: "CAP-RED-OS",
+      barcode: "8938501234580",
+      price: 129000,
+      status: "active",
+      attributes: {
+        color: { "vi-VN": "Đỏ", "en-US": "Red" }
+      }
+    },
+    {
+      name: { vi: "Mũ lưỡi trai đen", en: "Black Baseball Cap" },
+      sku: "CAP-BLACK-OS",
+      barcode: "8938501234581",
+      price: 129000,
+      status: "draft",
+      attributes: {
+        color: { "vi-VN": "Đen", "en-US": "Black" }
+      }
+    }
+  ];
+  
+  // Random chọn một variant
+  const randomVariant = variants[Math.floor(Math.random() * variants.length)];
+  
+  // Set variables với giá trị mặc định
+  bru.setVar('variant_name_vi', randomVariant.name.vi || "Áo thun màu đỏ M");
+  bru.setVar('variant_name_en', randomVariant.name.en || "Red T-shirt size M");
+  bru.setVar('variant_sku', randomVariant.sku || "TSHIRT-RED-M");
+  bru.setVar('variant_barcode', randomVariant.barcode || "8938501234567");
+  bru.setVar('variant_price', randomVariant.price || 199000);
+  bru.setVar('variant_status', randomVariant.status || "active");
+  bru.setVar('variant_attributes', JSON.stringify(randomVariant.attributes || {}));
 }
 
 script:post-response {

@@ -3,6 +3,7 @@ package app
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
@@ -44,80 +45,12 @@ func (this *ProductServiceImpl) CreateAttributeValue(ctx corectx.Context, cmd it
 				return nil
 			}
 
-			valueText := attributeValue.GetValueText()
-			valueDecimal := attributeValue.GetValueDecimal()
-			valueInteger := attributeValue.GetValueInteger()
-			valueBool := attributeValue.GetValueBool()
-			valueRef := attributeValue.GetValueRef()
-
-			switch *dataType {
-			case domain.AttributeDataTypeText:
-				if valueText == nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_required", "text value is required for text attribute"))
-				}
-				if valueDecimal != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
-				}
-				if valueInteger != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
-				}
-				if valueBool != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for text attribute"))
-				}
-				if valueRef != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for text attribute"))
-				}
-
-			case domain.AttributeDataTypeDecimal:
-				if valueDecimal != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
-				}
-				if valueInteger != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
-				}
-				if valueText != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for number attribute"))
-				}
-				if valueBool != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for number attribute"))
-				}
-				if valueRef != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for number attribute"))
-				}
-
-			case domain.AttributeDataTypeBoolean:
-				if valueBool == nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_required", "boolean value is required for boolean attribute"))
-				}
-				if valueText != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for boolean attribute"))
-				}
-				if valueDecimal != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
-				}
-				if valueInteger != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
-				}
-				if valueRef != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for boolean attribute"))
-				}
-
-			case domain.AttributeDataTypeReference:
-				if valueRef == nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_required", "reference value is required for reference attribute"))
-				}
-				if valueText != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for reference attribute"))
-				}
-				if valueDecimal != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
-				}
-				if valueInteger != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
-				}
-				if valueBool != nil {
-					vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for reference attribute"))
-				}
+			fieldName, _ := attributeValue.GetValue()
+			expectedField := domain.ExpectedValueFieldForDataType(*dataType)
+			if fieldName == "" {
+				vErrs.Append(*ft.NewBusinessViolation(expectedField, "attribute_value.value_required", "value is required for this attribute type"))
+			} else if fieldName != expectedField {
+				vErrs.Append(*ft.NewBusinessViolation(fieldName, "attribute_value.value_mismatch", "value type does not match attribute data type"))
 			}
 
 			// Check for duplicate attribute value
@@ -159,75 +92,11 @@ func (this *ProductServiceImpl) UpdateAttributeValue(ctx corectx.Context, cmd it
 					return nil
 				}
 
-				valueText := attributeValue.GetValueText()
-				valueDecimal := attributeValue.GetValueDecimal()
-				valueInteger := attributeValue.GetValueInteger()
-				valueBool := attributeValue.GetValueBool()
-				valueRef := attributeValue.GetValueRef()
-
-				switch *dataType {
-				case domain.AttributeDataTypeText:
-					if valueDecimal != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
-					}
-					if valueInteger != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
-					}
-					if valueBool != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for text attribute"))
-					}
-					if valueRef != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for text attribute"))
-					}
-
-				case domain.AttributeDataTypeDecimal:
-					if valueText != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for number attribute"))
-					}
-					if valueBool != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for number attribute"))
-					}
-					if valueRef != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for number attribute"))
-					}
-
-				case domain.AttributeDataTypeInteger:
-					if valueText != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for number attribute"))
-					}
-					if valueBool != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for number attribute"))
-					}
-					if valueRef != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for number attribute"))
-					}
-
-				case domain.AttributeDataTypeBoolean:
-					if valueText != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for boolean attribute"))
-					}
-					if valueDecimal != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
-					}
-					if valueInteger != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
-					}
-					if valueRef != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueRef, "attribute_value.value_mismatch", "reference value should be empty for boolean attribute"))
-					}
-
-				case domain.AttributeDataTypeReference:
-					if valueText != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueText, "attribute_value.value_mismatch", "text value should be empty for reference attribute"))
-					}
-					if valueDecimal != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueDecimal, "attribute_value.value_mismatch", "decimal value should be empty for text attribute"))
-					}
-					if valueInteger != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueInteger, "attribute_value.value_mismatch", "integer value should be empty for text attribute"))
-					}
-					if valueBool != nil {
-						vErrs.Append(*ft.NewBusinessViolation(domain.AttrValFieldValueBool, "attribute_value.value_mismatch", "boolean value should be empty for reference attribute"))
+				fieldName, _ := attributeValue.GetValue()
+				if fieldName != "" {
+					expectedField := domain.ExpectedValueFieldForDataType(*dataType)
+					if fieldName != expectedField {
+						vErrs.Append(*ft.NewBusinessViolation(fieldName, "attribute_value.value_mismatch", "value type does not match attribute data type"))
 					}
 				}
 
@@ -289,31 +158,14 @@ func (this *ProductServiceImpl) findByAttributeAndValue(ctx corectx.Context, att
 		return nil, nil
 	}
 
-	// Build search conditions based on attribute ID
-	graph := dmodel.NewSearchGraph().
-		NewCondition(domain.AttrValFieldAttributeId, dmodel.Equals, *attributeId)
-
-	// Add value-specific conditions based on which value field is set
-	valueText := attributeValue.GetValueText()
-	valueDecimal := attributeValue.GetValueDecimal()
-	valueInteger := attributeValue.GetValueInteger()
-	valueBool := attributeValue.GetValueBool()
-	valueRef := attributeValue.GetValueRef()
-
-	if valueText != nil {
-		graph.NewCondition(domain.AttrValFieldValueText, dmodel.Equals, *valueText)
-	} else if valueDecimal != nil {
-		graph.NewCondition(domain.AttrValFieldValueDecimal, dmodel.Equals, *valueDecimal)
-	} else if valueInteger != nil {
-		graph.NewCondition(domain.AttrValFieldValueInteger, dmodel.Equals, *valueInteger)
-	} else if valueBool != nil {
-		graph.NewCondition(domain.AttrValFieldValueBool, dmodel.Equals, *valueBool)
-	} else if valueRef != nil {
-		graph.NewCondition(domain.AttrValFieldValueRef, dmodel.Equals, *valueRef)
-	} else {
-		// No value set, cannot search
+	fieldName, value := attributeValue.GetValue()
+	if fieldName == "" {
 		return nil, nil
 	}
+
+	graph := dmodel.NewSearchGraph().
+		NewCondition(domain.AttrValFieldAttributeId, dmodel.Equals, *attributeId).
+		NewCondition(fieldName, dmodel.Equals, value)
 
 	searchResult, err := this.attrValueRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
@@ -330,4 +182,80 @@ func (this *ProductServiceImpl) findByAttributeAndValue(ctx corectx.Context, att
 	}
 
 	return &searchResult.Data.Items[0], nil
+}
+
+// BuildAttributeValue builds an AttributeValue domain object from the raw value and data type
+func (this *ProductServiceImpl) BuildAttributeValue(
+	attributeId model.Id,
+	dataType domain.AttributeDataType,
+	value any,
+	codeName string,
+	vErrs *ft.ClientErrors,
+) *domain.AttributeValue {
+	attrValue := domain.NewAttributeValue()
+	attrValue.SetAttributeId(&attributeId)
+
+	if err := attrValue.SetValueFromRaw(dataType, value); err != nil {
+		vErrs.Append(*ft.NewValidationError("attributes."+codeName, "invalid_value_type", err.Error()))
+		return nil
+	}
+
+	return attrValue
+}
+
+// FindOrCreateAttributeValue finds an existing attribute value or creates a new one
+// Returns the AttributeValue ID
+func (this *ProductServiceImpl) FindOrCreateAttributeValue(
+	ctx corectx.Context,
+	attribute *domain.Attribute,
+	value any,
+	codeName string,
+	vErrs *ft.ClientErrors,
+) (*model.Id, error) {
+	dataType := attribute.GetDataType()
+	if dataType == nil {
+		return nil, nil
+	}
+
+	attributeId := attribute.GetId()
+	if attributeId == nil {
+		return nil, nil
+	}
+
+	// Build the attribute value based on data type
+	attrValue := this.BuildAttributeValue(*attributeId, *dataType, value, codeName, vErrs)
+	if attrValue == nil {
+		return nil, nil
+	}
+
+	// Try to find existing attribute value
+	existingValue, err := this.findByAttributeAndValue(ctx, attrValue)
+	if err != nil {
+		return nil, err
+	}
+
+	// If found, return existing ID
+	if existingValue != nil {
+		return existingValue.GetId(), nil
+	}
+
+	// Create new attribute value
+	createResult, err := this.CreateAttributeValue(ctx, itAttrVal.CreateAttributeValueCommand{
+		AttributeValue: *attrValue,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if createResult.ClientErrors != nil && createResult.ClientErrors.Count() > 0 {
+		vErrs.Append(createResult.ClientErrors...)
+		return nil, nil
+	}
+
+	return createResult.Data.GetId(), nil
+}
+
+// GetAttributeValueIdsByVariantId returns all AttributeValue IDs linked to the given variant
+func (this *ProductServiceImpl) GetAttributeValueIdsByVariantId(ctx corectx.Context, variantId model.Id) ([]model.Id, error) {
+	return this.attrValueRepo.GetIdsByVariantId(ctx, variantId)
 }

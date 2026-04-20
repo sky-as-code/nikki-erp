@@ -5,18 +5,52 @@ meta {
 }
 
 put {
-  url: {{api_host}}/v1/{{org_id}}/inventory/product-categories/{{product_category_id}}
+  url: {{api_host}}/v1/{{org_id}}/inventory/products-categories/{{product_category_id}}
   body: json
   auth: inherit
+}
+
+body:json {
+  {
+    "name": {
+      "en-US": "{{product_category_name_en}}",
+      "vi-VN": "{{product_category_name_vi}}"
+    },
+    "etag": "{{etag}}"
+  }
+}
+
+vars:pre-request {
+  product_category_name_en: Electronics
+  product_category_name_vi: Điện tử
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
+}
+
+script:pre-request {
+  const categories = [
+    { name: { en: "Electronics", vi: "Điện tử" } },
+    { name: { en: "Clothing & Apparel", vi: "Quần áo & May mặc" } },
+    { name: { en: "Food & Beverages", vi: "Thực phẩm & Đồ uống" } },
+    { name: { en: "Home & Living", vi: "Nhà cửa & Đời sống" } },
+    { name: { en: "Sports & Outdoors", vi: "Thể thao & Ngoài trời" } },
+    { name: { en: "Books & Stationery", vi: "Sách & Văn phòng phẩm" } },
+    { name: { en: "Health & Beauty", vi: "Sức khỏe & Làm đẹp" } },
+    { name: { en: "Toys & Games", vi: "Đồ chơi & Trò chơi" } },
+    { name: { en: "Automotive", vi: "Ô tô & Xe máy" } },
+    { name: { en: "Furniture", vi: "Nội thất" } },
+    { name: { en: "Kitchen & Dining", vi: "Nhà bếp & Ăn uống" } },
+    { name: { en: "Garden & Tools", vi: "Vườn & Công cụ" } },
+  ];
+  
+  const random = categories[Math.floor(Math.random() * categories.length)];
+  
+  bru.setVar('product_category_name_en', random.name.en || "Electronics");
+  bru.setVar('product_category_name_vi', random.name.vi || "Điện tử");
 }
 
 script:post-response {
   const { etag } = res.getBody();
   etag && bru.setVar('etag', etag);
-}
-
-vars:pre-request {
-  product_category_id: 01KJCQCFQYFV1NC8DTW34DQA1V
 }
 
 settings {

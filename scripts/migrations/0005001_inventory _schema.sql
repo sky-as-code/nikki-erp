@@ -38,11 +38,17 @@ CREATE TABLE "inventory_attributes" (
   "is_required" boolean NULL,
   "is_enum" boolean NULL,
   "enum_value_sort" boolean NULL,
-  "enum_value" jsonb[] NULL,
+  "enum_value_text" jsonb[] NULL,
+  "enum_value_number" bigint[] NULL,
   "attribute_group_id" character varying NULL,
   "product_id" character varying NOT NULL,
+  "is_archived" boolean NOT NULL,
+  "etag" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "inventory_attributes_code_name_product_id_ukey" UNIQUE ("code_name", "product_id"),
+  CONSTRAINT "inventory_attributes_code_name_ukey" UNIQUE ("code_name"),
   CONSTRAINT "inventory_attributes_attribute_group_id_fkey" FOREIGN KEY ("attribute_group_id") REFERENCES "inventory_attribute_groups" ("id") ON UPDATE NO ACTION ON DELETE SET NULL,
   CONSTRAINT "inventory_attributes_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "inventory_products" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );

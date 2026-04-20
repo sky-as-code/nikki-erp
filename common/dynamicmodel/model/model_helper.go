@@ -276,3 +276,45 @@ func (this DynamicFields) SetSlug(key string, v *model.Slug) {
 	}
 	this[key] = string(*v)
 }
+
+// GetLangJson safely extracts a LangJson from DynamicFields.
+// Returns nil if key is missing, value is nil, or type assertion fails.
+// This method validates each entry to ensure type safety.
+func (this DynamicFields) GetLangJson(key string) *model.LangJson {
+	val, ok := this[key]
+	if !ok || val == nil {
+		return nil
+	}
+
+	// Try direct type assertion first (when already LangJson)
+	if lj, ok := val.(model.LangJson); ok {
+		return &lj
+	}
+
+	// Handle map[string]interface{} case (from JSON unmarshaling)
+	rawMap, ok := val.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	lang := make(model.LangJson)
+	for k, v := range rawMap {
+		strVal, ok := v.(string)
+		if !ok {
+			continue
+		}
+		lang[model.LanguageCode(k)] = strVal
+	}
+
+	return &lang
+}
+
+// SetLangJson stores a LangJson value in DynamicFields.
+// Sets nil if the input value is nil.
+func (this DynamicFields) SetLangJson(key string, v *model.LangJson) {
+	if v == nil {
+		this[key] = nil
+		return
+	}
+	this[key] = *v
+}
