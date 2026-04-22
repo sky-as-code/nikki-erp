@@ -31,7 +31,7 @@ type RedisDistributedLock struct {
 	redisClient *redis.Client
 }
 
-func NewRedisDistributedLock(logger logging.LoggerService, redisClient *redis.Client) *RedisDistributedLock {
+func NewRedisDistributedLock(logger logging.LoggerService, redisClient *redis.Client) DistributedLock {
 	return &RedisDistributedLock{
 		logger:      logger,
 		redisClient: redisClient,
