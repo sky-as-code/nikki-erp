@@ -5,5 +5,13 @@ import (
 )
 
 func InitSubModule() error {
-	return deps.Register(NewRedisPubSub)
+	return deps.Register(
+		NewRedisPubSub,
+		func(r *RedisPubSub) Publisher {
+			return r
+		},
+		func(r *RedisPubSub) Subcriber {
+			return r
+		},
+	)
 }
