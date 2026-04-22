@@ -1,14 +1,14 @@
 package pubsub
 
 import (
+	"context"
+
 	"github.com/redis/go-redis/v9"
-	"github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
-
 type RedisPubSub struct {
-	logger logging.LoggerService
+	logger      logging.LoggerService
 	redisClient *redis.Client
 }
 
@@ -48,3 +48,4 @@ func (this *RedisPubSub) Subscribe(ctx context.Context, topic string) (<-chan []
 func (this *RedisPubSub) Close() error {
 	return this.redisClient.Close()
 }
+
