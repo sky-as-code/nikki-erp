@@ -13,11 +13,13 @@ import (
 	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/enum"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpclient"
 	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/core/i18n"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent"
 	"github.com/sky-as-code/nikki-erp/modules/core/lock"
 	"github.com/sky-as-code/nikki-erp/modules/core/pubsub"
+	"github.com/sky-as-code/nikki-erp/modules/core/redisclient"
 	"github.com/sky-as-code/nikki-erp/modules/core/tag"
 )
 
@@ -59,6 +61,7 @@ func (*CoreModule) Init() error {
 		deps.Invoke(db.InitSubModule),
 		deps.Invoke(coredyn.InitSubModule),
 		deps.Invoke(http.InitSubModule),
+		deps.Invoke(httpclient.InitSubModule),
 		deps.Register(newCoreClient),
 		deps.Invoke(enum.InitSubModule),
 		deps.Invoke(tag.InitSubModule),
