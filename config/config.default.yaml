@@ -67,6 +67,12 @@ CORE:
     SECRET_KEY: "your-secret-key-here-change-in-production"
     # Token expiry time in hours
     EXPIRY_HOURS: 24
+
+  REDIS:
+    HOST: "localhost"
+    PORT: 6379
+    DB: 1
+    PASSWORD: ""
   REQUEST_GUARD:
     ACCESS_TOKEN_ENABLED: true
     ACCESS_TOKEN_DPOP_ENABLED: false

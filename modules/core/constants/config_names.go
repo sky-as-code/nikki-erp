@@ -18,6 +18,12 @@ const (
 	DbMaxOpenConns        ConfigName = "CORE.DB.MAX_OPEN_CONNS"
 	DbConnMaxLifetimeSecs ConfigName = "CORE.DB.CONN_MAX_LIFETIME_SECS"
 
+	// Redis core
+	RedisHost     ConfigName = "CORE.REDIS.HOST"
+	RedisPort     ConfigName = "CORE.REDIS.PORT"
+	RedisPassword ConfigName = "CORE.REDIS.PASSWORD"
+	RedisDB       ConfigName = "CORE.REDIS.DB"
+
 	// Database Postgres-specific
 	// DbPgSslMode ConfigName = "DB_PG_SSL_MODE"
 

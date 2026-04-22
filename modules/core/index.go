@@ -64,6 +64,7 @@ func (*CoreModule) Init() error {
 		deps.Invoke(tag.InitSubModule),
 		deps.Invoke(pubsub.InitSubModule),
 		deps.Invoke(lock.InitSubModule),
+		deps.Invoke(redisclient.InitSubModule),
 		// These submodules expose network APIs
 		deps.Invoke(i18n.InitSubModule),
 	)
