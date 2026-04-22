@@ -57,6 +57,10 @@ func (this *configServiceImpl) GetStr(name c.ConfigName, defaultVal ...any) stri
 
 func (this *configServiceImpl) GetStrArr(name c.ConfigName, defaultVal ...any) []string {
 	str := this.GetStr(name, defaultVal...)
+	if str == "" {
+		return []string{}
+	}
+
 	strArr := strings.Split(str, ",")
 	return strArr
 }

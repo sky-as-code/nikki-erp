@@ -8,68 +8,58 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
+	"github.com/sky-as-code/nikki-erp/modules/core/httpclient/client"
+	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"go.bryk.io/pkg/errors"
 )
 
 const (
-	defaultHTTPTimeout      = 30 * time.Second
 	defaultMaxResponseBytes = 10 << 20
 	errBodySnippetMax       = 2048
 )
 
-type HTTPClient struct {
-	client  *http.Client
+type HTTPCaller struct {
 	baseURL string
+	client  *client.HTTPClient
+	logger  logging.LoggerService
 }
 
 type Request struct {
-	Method  string
-	Path    string
-	Headers http.Header
-	Query   url.Values
-	Body    any
+	Method  string      `json:"method"`
+	Path    string      `json:"path"`
+	Headers http.Header `json:"header"`
+	Query   url.Values  `json:"query"`
+	Body    any         `json:"body"`
 }
 
-type Response[T any] struct {
-	StatusCode int
-	Headers    http.Header
-	Body       []byte
-	Data       T
+type Response struct {
+	StatusCode int         `json:"status_code"`
+	Headers    http.Header `json:"headers"`
+	Body       []byte      `json:"body"`
 }
 
-type RawResponse struct {
-	StatusCode int
-	Headers    http.Header
-	Body       []byte
-}
-
-func NewHTTPClient(baseURL string, hc *http.Client) (*HTTPClient, error) {
+func NewHTTPCaller(baseURL string, client *client.HTTPClient, logger logging.LoggerService) *HTTPCaller {
 	trimmed := strings.TrimSpace(baseURL)
 	if trimmed == "" {
-		return nil, errors.New("base url is required")
+		panic("base url is required")
 	}
 
 	u, err := url.Parse(trimmed)
 	if err != nil {
-		return nil, errors.Wrap(err, "parse base url")
+		panic(err)
 	}
 
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return nil, errors.New("base url scheme must be http or https")
+		panic("base url scheme must be http or https")
 	}
 
 	if u.Host == "" {
-		return nil, errors.New("base url must include host")
-	}
-
-	if hc == nil {
-		hc = &http.Client{Timeout: defaultHTTPTimeout}
+		panic("base url must include host")
 	}
 
 	normalized := strings.TrimRight(u.String(), "/")
-	return &HTTPClient{client: hc, baseURL: normalized}, nil
+	return &HTTPCaller{client: client, baseURL: normalized, logger: logger}
 }
 
 func joinBasePathQuery(baseURL, path string, query url.Values) (string, error) {
@@ -112,7 +102,7 @@ func errBodySnippet(b []byte) string {
 	return string(b[:errBodySnippetMax]) + "..."
 }
 
-func (this *HTTPClient) exec(ctx context.Context, req *Request, acceptJSON bool) (int, http.Header, []byte, error) {
+func (this *HTTPCaller) exec(ctx context.Context, req *Request, acceptJSON bool) (int, http.Header, []byte, error) {
 	fullURL, err := joinBasePathQuery(this.baseURL, req.Path, req.Query)
 	if err != nil {
 		return 0, nil, nil, err
@@ -164,38 +154,31 @@ func (this *HTTPClient) exec(ctx context.Context, req *Request, acceptJSON bool)
 	return httpResp.StatusCode, httpResp.Header, respBody, nil
 }
 
-func (this *HTTPClient) DoRaw(ctx context.Context, req *Request) (*RawResponse, error) {
-	status, hdr, body, err := this.exec(ctx, req, false)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &RawResponse{StatusCode: status, Headers: hdr, Body: body}
-	if status < 200 || status > 299 {
-		return out, errors.Errorf("http error: status %d, body: %s", status, errBodySnippet(body))
-	}
-
-	return out, nil
-}
-
-func Do[T any](this *HTTPClient, ctx context.Context, req *Request) (*Response[T], error) {
+func (this *HTTPCaller) Do(ctx context.Context, req *Request) (*Response, error) {
 	status, hdr, respBody, err := this.exec(ctx, req, true)
 	if err != nil {
 		return nil, err
 	}
 
-	out := &Response[T]{StatusCode: status, Headers: hdr, Body: respBody}
+	out := &Response{StatusCode: status, Headers: hdr, Body: respBody}
+
+	this.LogRequest(req, out)
+
 	if status < 200 || status > 299 {
 		return out, errors.Errorf("http error: status %d, body: %s", status, errBodySnippet(respBody))
 	}
 
-	var data T
-	if len(respBody) > 0 {
-		if err := json.Unmarshal(respBody, &data); err != nil {
-			return out, errors.Wrap(err, "decode json response")
-		}
-	}
-
-	out.Data = data
 	return out, nil
+}
+
+func (this *HTTPCaller) LogRequest(req *Request, res *Response) {
+	this.logger.Info("[HTTP Caller] Send request", logging.Attr{
+		"method":          req.Method,
+		"path":            req.Path,
+		"request_headers": req.Headers,
+		"request_query":   req.Query,
+		"status_code":     res.StatusCode,
+		"res_headers":     res.Headers,
+		"res_body":        string(res.Body),
+	})
 }
