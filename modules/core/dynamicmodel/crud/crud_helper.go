@@ -155,9 +155,10 @@ type CreateBulkParam[
 func CreateBulk[
 	TDomain any,
 	TDomainPtr dyn.DynamicModelPtr[TDomain],
+	TDomainGetter dmodel.DynamicModelGetter,
 ](
 	ctx corectx.Context,
-	param CreateBulkParam[TDomain, TDomainPtr, TDomainPtr],
+	param CreateBulkParam[TDomain, TDomainPtr, TDomainGetter],
 ) (*dyn.OpResult[[]TDomain], error) {
 
 	dynamicRepo := param.BaseRepoGetter.GetBaseRepo()
