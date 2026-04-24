@@ -2,7 +2,9 @@ package httpserver
 
 import (
 	"errors"
+	"fmt"
 	"mime/multipart"
+	"net/http"
 	"reflect"
 	"strings"
 
@@ -237,6 +239,80 @@ func ServeRequestFormData[TBinding any, THttpResp any, TSvcCommand, TSvcResultDa
 
 	response := resultToResponseFn(result.Data)
 	return jsonSuccessFn(echoCtx, response)
+}
+
+func ServeStreamFile[THttpReq FileStreamRequest, TSvcCommand any, TSvcResultData any](
+	echoCtx *echo.Context,
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
+	requestToCommandFn func(req THttpReq) TSvcCommand,
+	buildFileStreamResponse func(data TSvcResultData) GetFileStreamResponse,
+	fallbackNameHeader string,
+	skipNotFoundError ...bool,
+) error {
+	var request THttpReq
+	if err := echoCtx.Bind(&request); err != nil {
+		return JsonBadRequest(echoCtx, []any{ft.NewAnonymousValidationError(ft.ErrorKey("err_malformed_request"), "malformed request")})
+	}
+
+	cmd := requestToCommandFn(request)
+	reqCtx := echoCtx.Request().Context().(corectx.Context)
+	result, err := serviceFn(reqCtx, cmd)
+	if err != nil {
+		return err
+	}
+
+	if result == nil {
+		return errors.New("service result is nil")
+	}
+
+	if result.ClientErrors != nil && result.ClientErrors.Count() > 0 {
+		return JsonBadRequest(echoCtx, result.ClientErrors)
+	}
+
+	if !result.HasData && (len(skipNotFoundError) == 0 || !skipNotFoundError[0]) {
+		cErrs := ft.ClientErrors{*ft.NewAnonymousNotFoundError()}
+		return JsonBadRequest(echoCtx, cErrs)
+	}
+
+	streamInfo := buildFileStreamResponse(result.Data)
+
+	defer streamInfo.Body.Close()
+
+	disposition := "inline"
+	if request.IsDownloadRequest() {
+		disposition = "attachment"
+	}
+
+	name := streamInfo.Name
+	if streamInfo.Name == "" {
+		name = fallbackNameHeader
+	}
+
+	mimeType := "application/octet-stream"
+	if streamInfo.MimeType != "" {
+		mimeType = streamInfo.MimeType
+	}
+
+	resp := echoCtx.Response()
+	resp.Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("%s; filename=%q", disposition, name))
+	resp.Header().Set("Accept-Ranges", "bytes")
+	resp.Header().Set(echo.HeaderContentType, mimeType)
+
+	httpStatus := http.StatusOK
+
+	if request.GetRangeHeader() != "" {
+		if streamInfo.ContentRange != nil {
+			resp.Header().Set("Content-Range", *streamInfo.ContentRange)
+		}
+
+		httpStatus = http.StatusPartialContent
+	}
+
+	if streamInfo.ContentLength != nil {
+		resp.Header().Set(echo.HeaderContentLength, fmt.Sprintf("%d", *streamInfo.ContentLength))
+	}
+
+	return echoCtx.Stream(httpStatus, mimeType, streamInfo.Body)
 }
 
 func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData any](
