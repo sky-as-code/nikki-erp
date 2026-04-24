@@ -148,7 +148,11 @@ func (this DynamicFields) GetInt64(key string) *int64 {
 	if !ok || val == nil {
 		return nil
 	}
-	s := val.(int64)
+	s, ok := val.(int64)
+	if !ok {
+		s = int64(val.(float64))
+	}
+
 	return &s
 }
 
