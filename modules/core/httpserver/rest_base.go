@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"io"
 	"net/http"
 	"time"
 
@@ -179,4 +180,30 @@ func NewRestMutateResponse(src dyn.MutateResultData) RestMutateResponse {
 		AffectedAt:    src.AffectedAt.String(),
 		Etag:          src.Etag,
 	}
+}
+
+type GetFileStreamResponse struct {
+	Name          string
+	MimeType      string
+	Body          io.ReadCloser
+	ContentLength *int64
+	ContentRange  *string
+}
+
+type FileStreamRequest interface {
+	IsDownloadRequest() bool
+	GetRangeHeader() string
+}
+
+type FileStreamRequestBase struct {
+	isDownload  bool   `query:"download"`
+	rangeHeader string `header:"Range"`
+}
+
+func (this FileStreamRequestBase) IsDownloadRequest() bool {
+	return this.isDownload
+}
+
+func (this FileStreamRequestBase) GetRangeHeader() string {
+	return this.rangeHeader
 }

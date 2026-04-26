@@ -1,6 +1,14 @@
 package httpserver
 
 import (
+	"errors"
+	"fmt"
+	"mime/multipart"
+	"net/http"
+	"reflect"
+	"strings"
+
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
@@ -8,6 +16,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/crud"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 )
 
 // BindToDynamicEntity parses the echo request body and returns a DynamicEntity
@@ -37,6 +46,49 @@ func applySchemaFilter(rawBody map[string]any, entitySchema *dmodel.ModelSchema)
 		}
 	}
 	return result
+}
+
+func BindFormFile(echoCtx *echo.Context, cmd any) error {
+	requestType := reflect.TypeOf(cmd).Elem()
+	requestValue := reflect.ValueOf(cmd).Elem()
+	form, err := echoCtx.MultipartForm()
+	if err != nil {
+		return err
+	}
+
+	sliceFileType := reflect.TypeFor[[]*multipart.FileHeader]()
+	fileType := reflect.TypeFor[*multipart.FileHeader]()
+
+	for i := range requestType.NumField() {
+		fieldType := requestType.Field(i)
+		fieldValue := requestValue.Field(i)
+		fileTagVal := fieldType.Tag.Get("form-file")
+
+		if !fieldValue.CanSet() || fileTagVal == "" {
+			continue
+		}
+
+		if fieldType.Type.Kind() == reflect.Slice {
+			files := form.File[fileTagVal]
+			if len(files) > 0 {
+				if sliceFileType.AssignableTo(fieldType.Type) {
+					fieldValue.Set(reflect.ValueOf(files))
+				}
+			}
+
+		} else {
+			file, err := echoCtx.FormFile(fileTagVal)
+			if err != nil {
+				continue
+			}
+
+			if fileType.AssignableTo(fieldType.Type) {
+				fieldValue.Set(reflect.ValueOf(file))
+			}
+		}
+	}
+
+	return nil
 }
 
 type CmdResult interface {
@@ -141,6 +193,126 @@ func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
 
 	response := resultToResponseFn(result.Data)
 	return jsonSuccessFn(echoCtx, response)
+}
+
+func ServeRequestFormData[TBinding any, THttpResp any, TSvcCommand, TSvcResultData any](
+	echoCtx *echo.Context,
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
+	requestToCommandFn func(request TBinding) TSvcCommand,
+	resultToResponseFn func(resultData TSvcResultData) THttpResp,
+	jsonSuccessFn func(*echo.Context, any) error,
+	skipNotFoundError ...bool,
+) error {
+	var request TBinding
+
+	requestType := reflect.TypeOf(request)
+	if requestType.Kind() != reflect.Struct {
+		panic("TBinding must be a struct")
+	}
+
+	err := echoCtx.Bind(&request)
+	if err != nil {
+		return err
+	}
+
+	err = BindFormFile(echoCtx, &request)
+	if err != nil {
+		return err
+	}
+
+	cmd := requestToCommandFn(request)
+	reqCtx := echoCtx.Request().Context().(corectx.Context)
+	result, err := serviceFn(reqCtx, cmd)
+
+	if err != nil {
+		return err
+	}
+
+	if result.ClientErrors != nil && result.ClientErrors.Count() > 0 {
+		return JsonBadRequest(echoCtx, result.ClientErrors)
+	}
+
+	if !result.HasData && (len(skipNotFoundError) == 0 || !skipNotFoundError[0]) {
+		cErrs := ft.ClientErrors{*ft.NewAnonymousNotFoundError()}
+		return JsonBadRequest(echoCtx, cErrs)
+	}
+
+	response := resultToResponseFn(result.Data)
+	return jsonSuccessFn(echoCtx, response)
+}
+
+func ServeStreamFile[THttpReq FileStreamRequest, TSvcCommand any, TSvcResultData any](
+	echoCtx *echo.Context,
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
+	requestToCommandFn func(req THttpReq) TSvcCommand,
+	buildFileStreamResponse func(data TSvcResultData) GetFileStreamResponse,
+	fallbackNameHeader string,
+	skipNotFoundError ...bool,
+) error {
+	var request THttpReq
+	if err := echoCtx.Bind(&request); err != nil {
+		return JsonBadRequest(echoCtx, []any{ft.NewAnonymousValidationError(ft.ErrorKey("err_malformed_request"), "malformed request")})
+	}
+
+	cmd := requestToCommandFn(request)
+	reqCtx := echoCtx.Request().Context().(corectx.Context)
+	result, err := serviceFn(reqCtx, cmd)
+	if err != nil {
+		return err
+	}
+
+	if result == nil {
+		return errors.New("service result is nil")
+	}
+
+	if result.ClientErrors != nil && result.ClientErrors.Count() > 0 {
+		return JsonBadRequest(echoCtx, result.ClientErrors)
+	}
+
+	if !result.HasData && (len(skipNotFoundError) == 0 || !skipNotFoundError[0]) {
+		cErrs := ft.ClientErrors{*ft.NewAnonymousNotFoundError()}
+		return JsonBadRequest(echoCtx, cErrs)
+	}
+
+	streamInfo := buildFileStreamResponse(result.Data)
+
+	defer streamInfo.Body.Close()
+
+	disposition := "inline"
+	if request.IsDownloadRequest() {
+		disposition = "attachment"
+	}
+
+	name := streamInfo.Name
+	if streamInfo.Name == "" {
+		name = fallbackNameHeader
+	}
+
+	mimeType := "application/octet-stream"
+	if streamInfo.MimeType != "" {
+		mimeType = streamInfo.MimeType
+	}
+
+	resp := echoCtx.Response()
+	resp.Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("%s; filename=%q", disposition, name))
+	resp.Header().Set("Accept-Ranges", "bytes")
+	resp.Header().Set(echo.HeaderContentType, mimeType)
+
+	httpStatus := http.StatusOK
+
+	if request.GetRangeHeader() != "" {
+		if streamInfo.ContentRange != nil {
+			resp.Header().Set("Content-Range", *streamInfo.ContentRange)
+		}
+
+		httpStatus = http.StatusPartialContent
+	}
+
+	if streamInfo.ContentLength != nil {
+		resp.Header().Set(echo.HeaderContentLength, fmt.Sprintf("%d", *streamInfo.ContentLength))
+	}
+
+	return echoCtx.Stream(httpStatus, mimeType, streamInfo.Body)
 }
 
 func ServeRequest2[THttpReq any, THttpResp any, TSvcCommand any, TSvcResultData any](
@@ -367,4 +539,18 @@ func ServeUpdate[
 		},
 		JsonOk,
 	)
+}
+
+func GetUserEmailFromContext(ctx corectx.Context) (string, error) {
+	claims, ok := ctx.Value(middlewares.CtxKeyJwtClaims).(jwt.Claims)
+	if !ok {
+		return "", errors.New("User not login")
+	}
+
+	userInfo, err := claims.GetSubject()
+	if err != nil {
+		return "", err
+	}
+	userEmail := strings.Split(userInfo, ":")[0]
+	return userEmail, nil
 }

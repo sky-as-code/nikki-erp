@@ -60,6 +60,24 @@ CORE:
     MTLS_CLIENT_CA_CERT_FILE: "scripts/cert/pki/client-ca/nikkierp-client-ca.crt"
     MTLS_CLIENT_CERT_FILE: "scripts/cert/pki/client-cert/nikkierp-client-cert.crt"
     MTLS_CLIENT_KEY_FILE: "scripts/cert/pki/client-cert/nikkierp-client-cert.key"
+  HTTP_CLIENT:
+    # Milisecond
+    REQUEST_TIMEOUT: 30000
+
+    # Skip verify third server cert
+    INSECURE_SKIP_VERIFY: false
+    INCLUDE_SYSTEM_TRUSTED_CA: true
+    TRUSTED_CA_CERTS_FILE:
+
+    CLIENT_CERT_ENABLED: false
+    # Client cert file config is either Key-pair or P12
+    # Key-pair
+    CLIENT_CERT_FILE: ""
+    CLIENT_KEY_FILE: ""
+
+    # P12 and password
+    CLIENT_P12_FILE: ""
+    CLIENT_P12_PASSWORD: ""
   TOKEN:
     # Secret key for JWT token signing and verification
     # IMPORTANT: Override this in local.env or production environment
@@ -67,6 +85,12 @@ CORE:
     SECRET_KEY: "your-secret-key-here-change-in-production"
     # Token expiry time in hours
     EXPIRY_HOURS: 24
+
+  REDIS:
+    HOST: "localhost"
+    PORT: 6379
+    DB: 1
+    PASSWORD: ""
   REQUEST_GUARD:
     ACCESS_TOKEN_ENABLED: true
     ACCESS_TOKEN_DPOP_ENABLED: false

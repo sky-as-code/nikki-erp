@@ -18,6 +18,12 @@ const (
 	DbMaxOpenConns        ConfigName = "CORE.DB.MAX_OPEN_CONNS"
 	DbConnMaxLifetimeSecs ConfigName = "CORE.DB.CONN_MAX_LIFETIME_SECS"
 
+	// Redis core
+	RedisHost     ConfigName = "CORE.REDIS.HOST"
+	RedisPort     ConfigName = "CORE.REDIS.PORT"
+	RedisPassword ConfigName = "CORE.REDIS.PASSWORD"
+	RedisDB       ConfigName = "CORE.REDIS.DB"
+
 	// Database Postgres-specific
 	// DbPgSslMode ConfigName = "DB_PG_SSL_MODE"
 
@@ -32,6 +38,17 @@ const (
 	EventBusRedisPort     ConfigName = "CORE.EVENT.REDIS_PORT"
 	EventBusRedisPassword ConfigName = "CORE.EVENT.REDIS_PASSWORD"
 	EventBusRedisDB       ConfigName = "CORE.EVENT.REDIS_DB"
+
+	// HTTP Client
+	HttpClientTimeout                  ConfigName = "CORE.HTTP_CLIENT.REQUEST_TIMEOUT"
+	HttpClientSkipVerifyServer         ConfigName = "CORE.HTTP_CLIENT.INSECURE_SKIP_VERIFY"
+	HttpClientCustomTrustedCACertPaths ConfigName = "CORE.HTTP_CLIENT.TRUSTED_CA_CERT_PATHS"
+	HttpClientIncludeSystemTrustedCA   ConfigName = "CORE.HTTP_CLIENT.INCLUDE_SYSTEM_TRUSTED_CA"
+	HttpClientClientCertEnabled        ConfigName = "CORE.HTTP_CLIENT.CLIENT_CERT_ENABLED"
+	HttpClientClientCert               ConfigName = "CORE.HTTP_CLIENT.CLIENT_CERT"
+	HttpClientClientCertKey            ConfigName = "CORE.HTTP_CLIENT.CLIENT_CERT_KEY"
+	HttpClientClientP12                ConfigName = "CORE.HTTP_CLIENT.CLIENT_P12"
+	HttpClientClientP12Password        ConfigName = "CORE.HTTP_CLIENT.CLIENT_P12_PASSWORD"
 
 	// HTTP Server
 	HttpBasePath       ConfigName = "CORE.HTTP.BASE_PATH"
