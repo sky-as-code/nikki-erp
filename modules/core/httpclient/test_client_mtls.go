@@ -31,10 +31,10 @@ package httpclient
 // 		fmt.Println(err.Error())
 // 	}
 //
-// 	caller := NewHTTPCaller("https://cityboi.extapi-local.coremart.local:4433", client, logger)
+// 	caller := NewHTTPCaller("https://localhost:4433", client, logger)
 // 	_, err = caller.Do(context.Background(), &Request{
 // 		Method: http.MethodGet,
-// 		Path:   "/v1/vending-machine/desktop/ping",
+// 		Path:   "/ping",
 // 	})
 // 	if err != nil {
 // 		logger.Error("Test HTTP client mTLS", err)
