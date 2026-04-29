@@ -13,17 +13,17 @@ package v1
 // type roleRestParams struct {
 // 	dig.In
 
-// 	RoleService it.RoleService
+// 	RoleDomainService it.RoleDomainService
 // }
 
 // func NewRoleRest(params roleRestParams) *RoleRest {
 // 	return &RoleRest{
-// 		roleService: params.RoleService,
+// 		roleService: params.RoleDomainService,
 // 	}
 // }
 
 // type RoleRest struct {
-// 	roleService it.RoleService
+// 	roleService it.RoleDomainService
 // }
 
 // func (this RoleRest) CreateRole(echoCtx *echo.Context) (err error) {

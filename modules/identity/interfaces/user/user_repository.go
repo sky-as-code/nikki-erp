@@ -3,7 +3,7 @@ package user
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 )
 
 // type UserRepository interface {
@@ -22,12 +22,12 @@ import (
 
 type UserRepository interface {
 	dyn.DynamicModelRepository
-	DeleteOne(ctx corectx.Context, keys domain.User) (*dyn.OpResult[dyn.MutateResultData], error)
-	Exists(ctx corectx.Context, keys []domain.User) (*dyn.OpResult[dyn.RepoExistsResult], error)
-	Insert(ctx corectx.Context, user domain.User) (*dyn.OpResult[int], error)
-	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.User], error)
-	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.User]], error)
-	Update(ctx corectx.Context, user domain.User) (*dyn.OpResult[dyn.MutateResultData], error)
+	DeleteOne(ctx corectx.Context, keys models.User) (*dyn.OpResult[dyn.MutateResultData], error)
+	Exists(ctx corectx.Context, keys []models.User) (*dyn.OpResult[dyn.RepoExistsResult], error)
+	Insert(ctx corectx.Context, user models.User) (*dyn.OpResult[int], error)
+	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[models.User], error)
+	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[models.User]], error)
+	Update(ctx corectx.Context, user models.User) (*dyn.OpResult[dyn.MutateResultData], error)
 }
 
 // type DeleteParam = DeleteUserCommand

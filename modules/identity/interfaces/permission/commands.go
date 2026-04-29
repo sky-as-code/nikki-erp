@@ -7,7 +7,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	c "github.com/sky-as-code/nikki-erp/modules/identity/constants"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 )
 
 func init() {
@@ -24,12 +25,12 @@ var isAuthorizedQueryType = cqrs.RequestType{
 }
 
 type IsAuthorizedQuery struct {
-	UserEmail    *string              `json:"user_email"`
-	UserId       *model.Id            `json:"user_id"`
-	ActionCode   string               `json:"action_code"`
-	ResourceCode string               `json:"resource_code"`
-	Scope        domain.ResourceScope `json:"scope"`
-	ScopeId      *model.Id            `json:"scope_id"`
+	UserEmail    *string         `json:"user_email"`
+	UserId       *model.Id       `json:"user_id"`
+	ActionCode   string          `json:"action_code"`
+	ResourceCode string          `json:"resource_code"`
+	Scope        c.ResourceScope `json:"scope"`
+	ScopeId      *model.Id       `json:"scope_id"`
 }
 
 func (IsAuthorizedQuery) CqrsRequestType() cqrs.RequestType {
@@ -45,10 +46,10 @@ func (IsAuthorizedQuery) GetSchema() *dmodel.ModelSchema {
 				Field(dmodel.DefineField().Name("user_email").
 					DataType(dmodel.FieldDataTypeEmail()),
 				).
-				ExclusiveFields("user_id", "user_email").
-				Field(domain.DefineResourceFieldCode("resource_code").Required()).
-				Field(domain.DefineActionFieldCode("action_code").Required()).
-				Field(domain.DefineResourceFieldScope("scope").Required()).
+				ExclusiveRequiredFields("user_id", "user_email").
+				Field(domain.DefineResourceFieldCode("resource_code").RequiredAlways()).
+				Field(domain.DefineActionFieldCode("action_code").RequiredAlways()).
+				Field(domain.DefineResourceFieldScope("scope").RequiredAlways()).
 				Field(basemodel.DefineFieldId("scope_id"))
 		},
 	)
@@ -56,27 +57,74 @@ func (IsAuthorizedQuery) GetSchema() *dmodel.ModelSchema {
 
 type IsAuthorizedResult = dyn.OpResult[bool]
 
-var checkPermissionsQueryType = cqrs.RequestType{
+var listAllUserPermQueryType = cqrs.RequestType{
 	Module:    "authorize",
 	Submodule: "permission",
-	Action:    "checkPermissions",
+	Action:    "listAllUserPermissions",
 }
 
-type CheckPermissionsQuery IsAuthorizedQuery
-
-func (CheckPermissionsQuery) CqrsRequestType() cqrs.RequestType {
-	return checkPermissionsQueryType
+type ListAllUserPermissionsQuery struct {
+	UserId    *model.Id `json:"user_id"`
+	UserEmail *string   `json:"user_email"`
 }
 
-func (CheckPermissionsQuery) GetSchema() *dmodel.ModelSchema {
-	return IsAuthorizedQuery{}.GetSchema()
+func (ListAllUserPermissionsQuery) CqrsRequestType() cqrs.RequestType {
+	return listAllUserPermQueryType
 }
 
-type CheckPermissionsResultData struct {
-	IsAuthorized      bool                    `json:"is_authorized"`
-	RejectReason      string                  `json:"reject_reason"`
-	Permissions       []domain.UserPermission `json:"permissions"`
-	IsOwnerPrivileged bool                    `json:"is_owner_privileged"`
+func (ListAllUserPermissionsQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"authorize.get_ent_expressions_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(basemodel.DefineFieldId("user_id")).
+				Field(dmodel.DefineField().Name("user_email").
+					DataType(dmodel.FieldDataTypeEmail()),
+				).
+				ExclusiveRequiredFields("user_id", "user_email")
+		},
+	)
 }
 
-type CheckPermissionsResult = dyn.OpResult[CheckPermissionsResultData]
+type ListAllUserPermissionsResult = dyn.OpResult[[]domain.UserPermission]
+
+var getUserEntQueryType = cqrs.RequestType{
+	Module:    "authorize",
+	Submodule: "permission",
+	Action:    "getUserEntitlements",
+}
+
+type GetUserEntitlementsQuery ListAllUserPermissionsQuery
+
+func (GetUserEntitlementsQuery) CqrsRequestType() cqrs.RequestType {
+	return getUserEntQueryType
+}
+
+func (GetUserEntitlementsQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"authorize.get_ent_expressions_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(basemodel.DefineFieldId("user_id")).
+				Field(dmodel.DefineField().Name("user_email").
+					DataType(dmodel.FieldDataTypeEmail()),
+				).
+				ExclusiveRequiredFields("user_id", "user_email")
+		},
+	)
+}
+
+type GetUserEntitlementsResultData struct {
+	IsOwner      bool     `json:"is_owner"`
+	Entitlements []string `json:"entitlements"`
+	// The org unit that user belongs to (if any)
+	OrgUnitId *model.Id `json:"org_unit_id"`
+	// The org that the org unit belongs to (if user belongs to an org unit)
+	OrgUnitOrgId *model.Id `json:"org_unit_org_id"`
+	UserId       model.Id  `json:"user_id"`
+	// The orgs that user belongs to (if any)
+	UserOrgIds []model.Id           `json:"user_org_ids"`
+	User       dmodel.DynamicFields `json:"user"`
+}
+
+type GetUserEntitlementsResult = dyn.OpResult[GetUserEntitlementsResultData]

@@ -1,8 +1,6 @@
 package apptrait
 
 import (
-	stdErr "errors"
-
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/config"
@@ -43,13 +41,13 @@ func (*AppTraitModule) Version() semver.SemVer {
 
 // Init implements NikkiModule.
 func (*AppTraitModule) Init() error {
-	err := stdErr.Join(
-		deps.Register(httpserverExt.NewPermissionExtServiceImpl),
-		deps.Register(requestguard.NewStaticRequestGuardServiceImpl),
-		deps.Register(config.GetDefaultConfigYaml),
-		deps.Register(func() dyn.NewBaseDynamicRepositoryFn {
+	err := deps.Register(
+		config.GetDefaultConfigYaml,
+		httpserverExt.NewPermissionExtServiceImpl,
+		requestguard.NewStaticRequestGuardServiceImpl,
+		func() dyn.NewBaseDynamicRepositoryFn {
 			return baserepo.NewBaseDynamicRepository
-		}),
+		},
 	)
 
 	return err

@@ -7,6 +7,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	v1 "github.com/sky-as-code/nikki-erp/modules/authenticate/transport/restful/v1"
+	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 )
 
 func InitRestfulHandlers() error {
@@ -29,13 +30,13 @@ func initAuthnV1() error {
 	) {
 		v1 := route.Group("/v1/authn")
 
-		v1.POST("/login/start", loginRest.StartLoginFlow)
-		v1.POST("/login", loginRest.Authenticate)
-		v1.POST("/refresh", loginRest.RefreshToken)
+		v1.POST("/login/start", loginRest.StartLoginFlow, m.PublicUnauthorized)
+		v1.POST("/login", loginRest.Authenticate, m.PublicUnauthorized)
+		v1.POST("/refresh", loginRest.RefreshToken, m.PublicUnauthorized)
 
-		v1.POST("/passwords/password", passwordRest.SetPassword)
-		v1.POST("/passwords/passwordtmp", passwordRest.CreatePasswordTemp)
-		v1.POST("/passwords/passwordotp", passwordRest.CreatePasswordOtp)
-		v1.POST("/passwords/passwordotp/confirm", passwordRest.ConfirmPasswordOtp)
+		v1.POST("/passwords/password", passwordRest.SetPassword, m.SmokeAuthz())
+		v1.POST("/passwords/passwordtmp", passwordRest.CreatePasswordTemp, m.SmokeAuthz())
+		v1.POST("/passwords/passwordotp", passwordRest.CreatePasswordOtp, m.SmokeAuthz())
+		v1.POST("/passwords/passwordotp/confirm", passwordRest.ConfirmPasswordOtp, m.SmokeAuthz())
 	})
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 )
 
 func init() {
@@ -67,7 +67,7 @@ func (GetGroupQuery) CqrsRequestType() cqrs.RequestType {
 	return getGroupByIdQueryType
 }
 
-type GetGroupResult = dyn.OpResult[domain.Group]
+type GetGroupResult = dyn.OpResult[dyn.SingleResultData[domain.Group]]
 
 var existsCommandType = cqrs.RequestType{
 	Module:    "identity",

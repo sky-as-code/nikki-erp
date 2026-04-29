@@ -102,6 +102,22 @@ func (this *RestDeleteResponse) FromNonEntity(src any) {
 	model.MustCopy(src, this)
 }
 
+type RestGetOneResponse[TItem any] struct {
+	Item TItem              `json:"item"`
+	Meta dyn.SingleMetaData `json:"meta"`
+}
+
+func NewGetOneResponseDyn[TItem dmodel.DynamicModelGetter](
+	data dyn.SingleResultData[TItem],
+) RestGetOneResponse[dmodel.DynamicFields] {
+
+	item := data.Item.GetFieldData()
+	return RestGetOneResponse[dmodel.DynamicFields]{
+		Item: item,
+		Meta: data.Meta,
+	}
+}
+
 type RestSearchResponse[TItem any] struct {
 	Items []TItem `json:"items"`
 	Total int     `json:"total"`
@@ -139,6 +155,7 @@ type deletedEntity interface {
 	GetDeletedAt() *time.Time
 }
 
+// Deprecated: Use RestMutateResponse instead.
 type RestDeleteResponse2 struct {
 	AffectedCount int    `json:"affected_count"`
 	AffectedAt    string `json:"affected_at"`

@@ -8,14 +8,14 @@ package cqrs
 // 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/entitlement"
 // )
 
-// func NewEntitlementHandler(entitlementSvc it.EntitlementService) *EntitlementHandler {
+// func NewEntitlementHandler(entitlementSvc it.EntitlementDomainService) *EntitlementHandler {
 // 	return &EntitlementHandler{
 // 		EntitlementSvc: entitlementSvc,
 // 	}
 // }
 
 // type EntitlementHandler struct {
-// 	EntitlementSvc it.EntitlementService
+// 	EntitlementSvc it.EntitlementDomainService
 // }
 
 // func (this *EntitlementHandler) CreateEntitlement(ctx context.Context, packet *cqrs.RequestPacket[it.CreateEntitlementCommand]) (*cqrs.Reply[it.CreateEntitlementResult], error) {

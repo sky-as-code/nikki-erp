@@ -8,14 +8,14 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/role"
 )
 
 type roleRestParams struct {
 	dig.In
 
-	RoleSvc it.RoleService
+	RoleSvc it.RoleAppService
 }
 
 func NewRoleRest(params roleRestParams) *RoleRest {
@@ -24,11 +24,11 @@ func NewRoleRest(params roleRestParams) *RoleRest {
 
 type RoleRest struct {
 	httpserver.RestBase
-	RoleSvc it.RoleService
+	RoleSvc it.RoleAppService
 }
 
 func (this RoleRest) CreateRole(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeCreate(
+	return httpserver.ServeCreate[CreateRoleRequest, CreateRoleResponse, domain.Role](
 		"create role",
 		echoCtx,
 		&it.CreateRoleCommand{},
@@ -37,7 +37,7 @@ func (this RoleRest) CreateRole(echoCtx *echo.Context) (err error) {
 }
 
 func (this RoleRest) DeleteRole(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[DeleteRoleRequest, DeleteRoleResponse](
 		"delete role",
 		echoCtx,
 		this.RoleSvc.DeleteRole,
@@ -45,7 +45,7 @@ func (this RoleRest) DeleteRole(echoCtx *echo.Context) (err error) {
 }
 
 func (this RoleRest) GetRole(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGetOne(
+	return httpserver.ServeGetOne2[GetRoleRequest, GetRoleResponse, domain.Role](
 		"get role",
 		echoCtx,
 		this.RoleSvc.GetRole,
@@ -53,7 +53,7 @@ func (this RoleRest) GetRole(echoCtx *echo.Context) (err error) {
 }
 
 func (this RoleRest) ManageRoleEntitlements(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[ManageRoleEntitlementsRequest, ManageRoleEntitlementsResponse](
 		"manage role entitlements",
 		echoCtx,
 		this.RoleSvc.ManageRoleEntitlements,
@@ -61,7 +61,7 @@ func (this RoleRest) ManageRoleEntitlements(echoCtx *echo.Context) (err error) {
 }
 
 func (this RoleRest) RoleExists(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeExists(
+	return httpserver.ServeExists[RoleExistsRequest, RoleExistsResponse](
 		"role exists",
 		echoCtx,
 		this.RoleSvc.RoleExists,
@@ -69,7 +69,7 @@ func (this RoleRest) RoleExists(echoCtx *echo.Context) (err error) {
 }
 
 func (this RoleRest) SearchRoles(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch(
+	return httpserver.ServeSearch[SearchRolesRequest, SearchRolesResponse, domain.Role](
 		"search roles",
 		echoCtx,
 		this.RoleSvc.SearchRoles,
@@ -77,7 +77,7 @@ func (this RoleRest) SearchRoles(echoCtx *echo.Context) (err error) {
 }
 
 func (this RoleRest) SetRoleIsArchived(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[SetRoleIsArchivedRequest, SetRoleIsArchivedResponse](
 		"set role is_archived",
 		echoCtx,
 		this.RoleSvc.SetRoleIsArchived,
@@ -85,7 +85,7 @@ func (this RoleRest) SetRoleIsArchived(echoCtx *echo.Context) (err error) {
 }
 
 func (this RoleRest) UpdateRole(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeUpdate(
+	return httpserver.ServeUpdate[UpdateRoleRequest, UpdateRoleResponse](
 		"update role",
 		echoCtx,
 		&it.UpdateRoleCommand{},

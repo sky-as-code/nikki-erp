@@ -7,7 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 )
 
 func init() {
@@ -68,7 +68,7 @@ func (GetOrgUnitQuery) CqrsRequestType() cqrs.RequestType {
 	return getOrgUnitByIdQueryType
 }
 
-type GetOrgUnitResult = dyn.OpResult[domain.OrganizationalUnit]
+type GetOrgUnitResult = dyn.OpResult[dyn.SingleResultData[domain.OrganizationalUnit]]
 
 var searchOrgUnitsQueryType = cqrs.RequestType{
 	Module:    "identity",

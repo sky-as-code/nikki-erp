@@ -37,7 +37,7 @@ func AttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			basemodel.DefineFieldId(AttrValFieldAttributeId).
 				RequiredForCreate(),
 		).
-		ExclusiveFields(AttrValFieldValueText, AttrValFieldValueDecimal, AttrValFieldValueInteger, AttrValFieldValueBool, AttrValFieldValueRef).
+		ExclusiveRequiredFields(AttrValFieldValueText, AttrValFieldValueDecimal, AttrValFieldValueInteger, AttrValFieldValueBool, AttrValFieldValueRef).
 		Field(
 			dmodel.DefineField().
 				Name(AttrValFieldValueText).

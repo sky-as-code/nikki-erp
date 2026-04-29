@@ -8,14 +8,14 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/orgunit"
 )
 
 type orgunitRestParams struct {
 	dig.In
 
-	OrgUnitSvc it.OrgUnitService
+	OrgUnitSvc it.OrgUnitAppService
 }
 
 func NewOrgUnitRest(params orgunitRestParams) *OrgUnitRest {
@@ -26,11 +26,11 @@ func NewOrgUnitRest(params orgunitRestParams) *OrgUnitRest {
 
 type OrgUnitRest struct {
 	httpserver.RestBase
-	OrgUnitSvc it.OrgUnitService
+	OrgUnitSvc it.OrgUnitAppService
 }
 
 func (this OrgUnitRest) CreateOrgUnit(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeCreate(
+	return httpserver.ServeCreate[CreateOrgUnitRequest, CreateOrgUnitResponse, domain.OrganizationalUnit](
 		"create org unit",
 		echoCtx,
 		&it.CreateOrgUnitCommand{},
@@ -39,7 +39,7 @@ func (this OrgUnitRest) CreateOrgUnit(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrgUnitRest) DeleteOrgUnit(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[DeleteOrgUnitRequest, DeleteOrgUnitResponse](
 		"delete org unit",
 		echoCtx,
 		this.OrgUnitSvc.DeleteOrgUnit,
@@ -47,7 +47,7 @@ func (this OrgUnitRest) DeleteOrgUnit(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrgUnitRest) GetOrgUnit(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGetOne(
+	return httpserver.ServeGetOne2[GetOrgUnitRequest, GetOrgUnitResponse, domain.OrganizationalUnit](
 		"get org unit",
 		echoCtx,
 		this.OrgUnitSvc.GetOrgUnit,
@@ -55,7 +55,7 @@ func (this OrgUnitRest) GetOrgUnit(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrgUnitRest) OrgUnitExists(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeExists(
+	return httpserver.ServeExists[OrgUnitExistsRequest, OrgUnitExistsResponse](
 		"org unit exists",
 		echoCtx,
 		this.OrgUnitSvc.OrgUnitExists,
@@ -63,7 +63,7 @@ func (this OrgUnitRest) OrgUnitExists(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrgUnitRest) ManageOrgUnitUsers(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[ManageOrgUnitUsersRequest, ManageOrgUnitUsersResponse](
 		"manage org unit users",
 		echoCtx,
 		this.OrgUnitSvc.ManageOrgUnitUsers,
@@ -71,7 +71,7 @@ func (this OrgUnitRest) ManageOrgUnitUsers(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrgUnitRest) SearchOrgUnits(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch(
+	return httpserver.ServeSearch[SearchOrgUnitsRequest, SearchOrgUnitsResponse, domain.OrganizationalUnit](
 		"search org units",
 		echoCtx,
 		this.OrgUnitSvc.SearchOrgUnits,
@@ -79,7 +79,7 @@ func (this OrgUnitRest) SearchOrgUnits(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrgUnitRest) UpdateOrgUnit(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeUpdate(
+	return httpserver.ServeUpdate[UpdateOrgUnitRequest, UpdateOrgUnitResponse](
 		"update org unit",
 		echoCtx,
 		&it.UpdateOrgUnitCommand{},

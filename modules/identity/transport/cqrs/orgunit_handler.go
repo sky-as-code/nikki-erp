@@ -9,7 +9,7 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/orgunit"
 )
 
-func NewOrgUnitHandler(orgunitSvc it.OrgUnitService, logger logging.LoggerService) *OrgUnitHandler {
+func NewOrgUnitHandler(orgunitSvc it.OrgUnitDomainService, logger logging.LoggerService) *OrgUnitHandler {
 	return &OrgUnitHandler{
 		Logger:     logger,
 		OrgUnitSvc: orgunitSvc,
@@ -18,7 +18,7 @@ func NewOrgUnitHandler(orgunitSvc it.OrgUnitService, logger logging.LoggerServic
 
 type OrgUnitHandler struct {
 	Logger     logging.LoggerService
-	OrgUnitSvc it.OrgUnitService
+	OrgUnitSvc it.OrgUnitDomainService
 }
 
 // func (this *OrgUnitHandler) CreateOrgUnit(ctx context.Context, packet *cqrs.RequestPacket[it.CreateOrgUnitCommand]) (

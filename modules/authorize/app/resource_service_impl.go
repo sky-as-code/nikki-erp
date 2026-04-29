@@ -14,7 +14,7 @@ package app
 // 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
 // )
 
-// func NewResourceServiceImpl(resourceRepo it.ResourceRepository, authorizeService itAuthorize.AuthorizeService) it.ResourceService {
+// func NewResourceServiceImpl(resourceRepo it.ResourceRepository, authorizeService itAuthorize.AuthorizeService) it.ResourceDomainService {
 // 	return &ResourceServiceImpl{
 // 		resourceRepo:     resourceRepo,
 // 		authorizeService: authorizeService,

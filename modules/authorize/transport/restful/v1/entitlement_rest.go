@@ -15,7 +15,7 @@ package v1
 // type entitlementRestParams struct {
 // 	dig.In
 
-// 	EntitlementSvc it.EntitlementService
+// 	EntitlementSvc it.EntitlementDomainService
 // }
 
 // func NewEntitlementRest(params entitlementRestParams) *EntitlementRest {
@@ -25,7 +25,7 @@ package v1
 // }
 
 // type EntitlementRest struct {
-// 	EntitlementSvc it.EntitlementService
+// 	EntitlementSvc it.EntitlementDomainService
 // }
 
 // func (this EntitlementRest) CreateEntitlement(echoCtx *echo.Context) (err error) {

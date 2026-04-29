@@ -8,14 +8,14 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/entitlement"
 )
 
 type entitlementRestParams struct {
 	dig.In
 
-	EntitlementSvc it.EntitlementService
+	EntitlementSvc it.EntitlementAppService
 }
 
 func NewEntitlementRest(params entitlementRestParams) *EntitlementRest {
@@ -24,11 +24,11 @@ func NewEntitlementRest(params entitlementRestParams) *EntitlementRest {
 
 type EntitlementRest struct {
 	httpserver.RestBase
-	EntitlementSvc it.EntitlementService
+	EntitlementSvc it.EntitlementAppService
 }
 
 func (this EntitlementRest) CreateEntitlement(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeCreate(
+	return httpserver.ServeCreate[CreateEntitlementRequest, CreateEntitlementResponse, domain.Entitlement](
 		"create entitlement",
 		echoCtx,
 		&it.CreateEntitlementCommand{},
@@ -37,7 +37,7 @@ func (this EntitlementRest) CreateEntitlement(echoCtx *echo.Context) (err error)
 }
 
 func (this EntitlementRest) DeleteEntitlement(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[DeleteEntitlementRequest, DeleteEntitlementResponse](
 		"delete entitlement",
 		echoCtx,
 		this.EntitlementSvc.DeleteEntitlement,
@@ -45,7 +45,7 @@ func (this EntitlementRest) DeleteEntitlement(echoCtx *echo.Context) (err error)
 }
 
 func (this EntitlementRest) GetEntitlement(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGetOne(
+	return httpserver.ServeGetOne2[GetEntitlementRequest, GetEntitlementResponse, domain.Entitlement](
 		"get entitlement",
 		echoCtx,
 		this.EntitlementSvc.GetEntitlement,
@@ -53,7 +53,7 @@ func (this EntitlementRest) GetEntitlement(echoCtx *echo.Context) (err error) {
 }
 
 func (this EntitlementRest) EntitlementExists(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeExists(
+	return httpserver.ServeExists[EntitlementExistsRequest, EntitlementExistsResponse](
 		"entitlement exists",
 		echoCtx,
 		this.EntitlementSvc.EntitlementExists,
@@ -61,7 +61,7 @@ func (this EntitlementRest) EntitlementExists(echoCtx *echo.Context) (err error)
 }
 
 func (this EntitlementRest) ManageEntitlementRoles(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[ManageEntitlementRolesRequest, ManageEntitlementRolesResponse](
 		"manage entitlement roles",
 		echoCtx,
 		this.EntitlementSvc.ManageEntitlementRoles,
@@ -69,7 +69,7 @@ func (this EntitlementRest) ManageEntitlementRoles(echoCtx *echo.Context) (err e
 }
 
 func (this EntitlementRest) SearchEntitlements(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch(
+	return httpserver.ServeSearch[SearchEntitlementsRequest, SearchEntitlementsResponse, domain.Entitlement](
 		"search entitlements",
 		echoCtx,
 		this.EntitlementSvc.SearchEntitlements,
@@ -77,7 +77,7 @@ func (this EntitlementRest) SearchEntitlements(echoCtx *echo.Context) (err error
 }
 
 func (this EntitlementRest) SetEntitlementIsArchived(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[SetEntitlementIsArchivedRequest, SetEntitlementIsArchivedResponse](
 		"set entitlement is_archived",
 		echoCtx,
 		this.EntitlementSvc.SetEntitlementIsArchived,
@@ -85,7 +85,7 @@ func (this EntitlementRest) SetEntitlementIsArchived(echoCtx *echo.Context) (err
 }
 
 func (this EntitlementRest) UpdateEntitlement(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeUpdate(
+	return httpserver.ServeUpdate[UpdateEntitlementRequest, UpdateEntitlementResponse](
 		"update entitlement",
 		echoCtx,
 		&it.UpdateEntitlementCommand{},

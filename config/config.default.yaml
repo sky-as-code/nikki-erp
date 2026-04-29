@@ -55,7 +55,7 @@ CORE:
     # Allowed headers for Cross-Origin Resource Sharing
     CORS_HEADERS: "Accept,Authorization,Content-Type,Origin"
     # Allowed methods for Cross-Origin Resource Sharing
-    CORS_METHODS: "OPTIONS,HEAD,GET,POST,PUT,DELETE"
+    CORS_METHODS: "OPTIONS,HEAD,GET,POST,PATCH,DELETE"
     MTLS_ENABLED: true
     MTLS_CLIENT_CA_CERT_FILE: "scripts/cert/pki/client-ca/nikkierp-client-ca.crt"
     MTLS_CLIENT_CERT_FILE: "scripts/cert/pki/client-cert/nikkierp-client-cert.crt"

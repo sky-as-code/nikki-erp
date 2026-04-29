@@ -9,14 +9,14 @@ package cqrs
 // 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/resource"
 // )
 
-// func NewResourceHandler(resourceSvc it.ResourceService, logger logging.LoggerService) *ResourceHandler {
+// func NewResourceHandler(resourceSvc it.ResourceDomainService, logger logging.LoggerService) *ResourceHandler {
 // 	return &ResourceHandler{
 // 		ResourceSvc: resourceSvc,
 // 	}
 // }
 
 // type ResourceHandler struct {
-// 	ResourceSvc it.ResourceService
+// 	ResourceSvc it.ResourceDomainService
 // }
 
 // func (this *ResourceHandler) CreateResource(ctx context.Context, packet *cqrs.RequestPacket[it.CreateResourceCommand]) (*cqrs.Reply[it.CreateResourceResult], error) {

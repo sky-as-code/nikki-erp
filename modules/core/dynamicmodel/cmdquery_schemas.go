@@ -19,7 +19,7 @@ func ExistsQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 			Name("ids").
 			DataType(dmodel.FieldDataTypeUlid().ArrayType()).
 			Rule(dmodel.FieldRuleArrayLength(1, 50)).
-			Required())
+			RequiredAlways())
 }
 
 func GetOneQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -27,7 +27,7 @@ func GetOneQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldId).
 			DataType(dmodel.FieldDataTypeUlid()).
-			Required()).
+			RequiredAlways()).
 		Field(DefineFieldSearchColumns())
 }
 
@@ -36,7 +36,7 @@ func ManageAssocsSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldId).
 			DataType(dmodel.FieldDataTypeUlid()).
-			Required()).
+			RequiredAlways()).
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldAssociations).
 			DataType(dmodel.FieldDataTypeUlid().ArrayType()).
@@ -60,7 +60,7 @@ func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldId).
 			DataType(dmodel.FieldDataTypeUlid()).
-			Required()).
+			RequiredAlways()).
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldEtag).
 			DataType(dmodel.FieldDataTypeEtag()).
@@ -68,7 +68,7 @@ func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldIsArchived).
 			DataType(dmodel.FieldDataTypeBoolean()).
-			Required())
+			RequiredAlways())
 }
 
 func DefineFieldSearchColumns() *dmodel.FieldBuilder {

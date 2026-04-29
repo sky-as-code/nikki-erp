@@ -9,9 +9,9 @@ package external
 // )
 
 // type UserExtService = itUsr.UserService
-// type OrganizationExtService = itOrg.OrganizationService
+// type OrganizationExtService = itOrg.OrganizationDomainService
 // type HierarchyExtService = itHier.HierarchyService
-// type GroupExtService = itGrp.GroupService
+// type GroupExtService = itGrp.GroupDomainService
 
 // type GetOrgQuery = itOrg.GetOrgQuery
 // type GetUserQuery = itUsr.GetUserQuery

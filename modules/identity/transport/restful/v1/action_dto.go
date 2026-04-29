@@ -14,15 +14,12 @@ type CreateActionRequest struct {
 type CreateActionResponse = httpserver.RestCreateResponse
 
 type DeleteActionRequest = it.DeleteActionCommand
-type DeleteActionResponse = httpserver.RestDeleteResponse2
+type DeleteActionResponse = httpserver.RestMutateResponse
 
 type GetActionRequest = it.GetActionQuery
-type GetActionResponse = dmodel.DynamicFields
+type GetActionResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
 
-type ActionExistsRequest struct {
-	ActionIds  []string `json:"action_ids"`
-	ResourceId string   `param:"resource_id"`
-}
+type ActionExistsRequest = it.ActionExistsQuery
 type ActionExistsResponse = dyn.ExistsResultData
 
 type SearchActionsRequest = it.SearchActionsQuery

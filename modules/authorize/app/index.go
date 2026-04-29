@@ -15,7 +15,7 @@ package app
 
 // func InitServices() error {
 // 	var (
-// 		ent itEntitlement.EntitlementService
+// 		ent itEntitlement.EntitlementDomainService
 // 		asg itAssignment.EntitlementAssignmentService
 // 	)
 
@@ -31,12 +31,12 @@ package app
 
 // 	err = errors.Join(err,
 // 		deps.Register(func(
-// 			actionSvc itAction.ActionService,
+// 			actionSvc itAction.ActionDomainService,
 // 			cqrsBus cqrs.CqrsBus,
 // 			entRepo itEntitlement.EntitlementRepository,
 // 			permHistRepo itPermissionHistory.PermissionHistoryRepository,
-// 			resourceSvc itResource.ResourceService,
-// 		) itEntitlement.EntitlementService {
+// 			resourceSvc itResource.ResourceDomainService,
+// 		) itEntitlement.EntitlementDomainService {
 // 			ent = &EntitlementServiceImpl{
 // 				actionService:         actionSvc,
 // 				cqrsBus:               cqrsBus,
@@ -51,7 +51,7 @@ package app
 // 			entAsgRepo itAssignment.EntitlementAssignmentRepository,
 // 			permHistRepo itPermissionHistory.PermissionHistoryRepository,
 // 			cqrsBus cqrs.CqrsBus,
-// 			resourceSvc itResource.ResourceService,
+// 			resourceSvc itResource.ResourceDomainService,
 // 		) itAssignment.EntitlementAssignmentService {
 // 			asg = &EntitlementAssignmentServiceImpl{
 // 				cqrsBus:                   cqrsBus,
@@ -66,7 +66,7 @@ package app
 // 	fault.PanicOnErr(err)
 
 // 	err = errors.Join(
-// 		deps.Invoke(func(svc itEntitlement.EntitlementService) {}),
+// 		deps.Invoke(func(svc itEntitlement.EntitlementDomainService) {}),
 // 		deps.Invoke(func(svc itAssignment.EntitlementAssignmentService) {}),
 // 	)
 // 	fault.PanicOnErr(err)

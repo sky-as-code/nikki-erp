@@ -13,7 +13,7 @@ package v1
 // type actionRestParams struct {
 // 	dig.In
 
-// 	ActionSvc it.ActionService
+// 	ActionSvc it.ActionDomainService
 // }
 
 // func NewActionRest(params actionRestParams) *ActionRest {
@@ -24,7 +24,7 @@ package v1
 
 // type ActionRest struct {
 // 	httpserver.RestBase
-// 	ActionSvc it.ActionService
+// 	ActionSvc it.ActionDomainService
 // }
 
 // func (this ActionRest) CreateAction(echoCtx *echo.Context) (err error) {

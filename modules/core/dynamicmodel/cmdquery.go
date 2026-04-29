@@ -56,18 +56,23 @@ type ExistsQueryShape interface {
 }
 
 type GetOneQuery struct {
-	Id      model.Id `json:"id" param:"id"`
-	Columns []string `json:"columns" query:"columns"`
+	Id     model.Id `json:"id" param:"id"`
+	Fields []string `json:"fields" query:"fields"`
 }
 
 type SearchQuery struct {
-	Columns []string `json:"columns" query:"columns"`
-	Page    int      `json:"page" query:"page"`
-	Size    int      `json:"size" query:"size"`
+	Fields []string `json:"fields" query:"fields"`
+	Page   int      `json:"page" query:"page"`
+	Size   int      `json:"size" query:"size"`
 	// Optional search graph for advanced search
 	Graph *dmodel.SearchGraph `json:"graph" query:"graph"`
 	// Optional language code to filter fields with LangJson type
 	Language *model.LanguageCode `json:"language" query:"language"`
+
+	// Determines the fields to be returned in the response.
+	// If not specified, the view "auto" will be used,
+	// which will return all fields that user has permission on.
+	View string `json:"view" query:"view"`
 }
 
 type OpResult[TData any] struct {
@@ -102,4 +107,47 @@ type PagedResultData[T any] struct {
 	Total int `json:"total"`
 	Page  int `json:"page"`
 	Size  int `json:"size"`
+
+	// Determines the fields to be returned in the response.
+	// If the request does not specify the fields, the view "auto" will be used,
+	// which will return all fields that user has permission to view.
+	// View string `json:"view"`
+
+	// List of fields determined by `View` which are requested to read.
+	DesiredFields []string `json:"desired_fields"`
+
+	// Subset of `DesiredFields` that user doesn't have permission to read.
+	// These fields will be returned as `nil` values. User can be aware of their existence
+	// and ask for permission to read them.
+	MaskedFields []string `json:"masked_fields"`
+
+	// The etag of the schema used to generate the response.
+	// This is used to check if the schema has changed since the last request.
+	// If the schema has changed, the client should fetch the new schema and update its cache.
+	SchemaEtag string `json:"schema_etag"`
+}
+
+type SingleResultData[T any] struct {
+	Item T              `json:"item"`
+	Meta SingleMetaData `json:"meta"`
+}
+
+type SingleMetaData struct {
+	// Determines the fields to be returned in the response.
+	// If the request does not specify the fields, the view "auto" will be used,
+	// which will return all fields that user has permission on.
+	// View string `json:"view"`
+
+	// List of fields determined by `View` which are requested to read.
+	DesiredFields []string `json:"desired_fields"`
+
+	// Subset of `DesiredFields` that user doesn't have permission to read.
+	// These fields will be returned as `nil` values. User can be aware of their existence
+	// and ask for permission to read them.
+	MaskedFields []string `json:"masked_fields"`
+
+	// The etag of the schema used to generate the response.
+	// This is used to check if the schema has changed since the last request.
+	// If the schema has changed, the client should fetch the new schema and update its cache.
+	SchemaEtag string `json:"schema_etag"`
 }

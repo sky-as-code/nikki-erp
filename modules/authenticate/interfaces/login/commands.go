@@ -29,12 +29,12 @@ func (this AuthenticateCommand) GetSchema() *dmodel.ModelSchema {
 		"authenticate.authenticate_command",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(basemodel.DefineFieldId("attempt_id").Required()).
+				Field(basemodel.DefineFieldId("attempt_id").RequiredAlways()).
 				Field(
 					dmodel.DefineField().
 						Name("passwords").
 						DataType(dmodel.FieldDataTypeModel()).
-						Required(),
+						RequiredAlways(),
 				)
 		},
 	)
@@ -128,7 +128,7 @@ func (this StartLoginFlowCommand) GetSchema() *dmodel.ModelSchema {
 			return dmodel.DefineModel("_").
 				Field(domain.DefinePrincipalDeviceNameField()).
 				Field(domain.DefinePrincipalTypeField("principal_type").Default(domain.PrincipalTypeNikkiUser)).
-				Field(domain.DefinePrincipalUsernameField("username").Required())
+				Field(domain.DefinePrincipalUsernameField("username").RequiredAlways())
 		},
 	)
 }
@@ -170,7 +170,7 @@ func (this RefreshTokenCommand) GetSchema() *dmodel.ModelSchema {
 					dmodel.DefineField().
 						Name("refresh_token").
 						DataType(dmodel.FieldDataTypeString(1, 1000)).
-						Required(),
+						RequiredAlways(),
 				)
 		},
 	)

@@ -57,6 +57,7 @@ type FieldDataType interface {
 	Options() FieldDataTypeOptions
 	String() string
 	TryConvert(val any, options FieldDataTypeOptions) (value, error)
+	ToSimplized() any
 	Validate(val value) (value, *ft.ClientErrorItem)
 }
 
@@ -222,8 +223,8 @@ type fieldDataTypeBase struct {
 	options FieldDataTypeOptions
 }
 
-func (this fieldDataTypeBase) String() string {
-	return this.name
+func (this fieldDataTypeBase) DefaultValue() value {
+	return Value(nil)
 }
 
 func (this fieldDataTypeBase) IsArray() bool {
@@ -234,8 +235,20 @@ func (this fieldDataTypeBase) Options() FieldDataTypeOptions {
 	return this.options
 }
 
-func (this fieldDataTypeBase) DefaultValue() value {
-	return Value(nil)
+func (this fieldDataTypeBase) String() string {
+	return this.name
+}
+
+func (this fieldDataTypeBase) ToSimplized() any {
+	return struct {
+		Name    string               `json:"name,omitempty"`
+		IsArray bool                 `json:"is_array,omitempty"`
+		Options FieldDataTypeOptions `json:"options,omitempty"`
+	}{
+		Name:    this.name,
+		IsArray: this.isArray,
+		Options: this.options,
+	}
 }
 
 type fieldDataTypeModel struct{ fieldDataTypeBase }

@@ -62,3 +62,13 @@ func NewOverlappedFieldsError(overlappedFields []string) *ClientErrorItem {
 		},
 	)
 }
+
+func NewInsufficientPermissionsError(requiredEntitlements []string) *ClientErrorItem {
+	return NewAuthorizationError(
+		ErrorKey("err_insufficient_permissions", "authorize"),
+		"Insufficient permissions. Request following entitlement(s) to perform this action: {.entitlements}",
+		map[string]any{
+			"entitlements": requiredEntitlements,
+		},
+	)
+}

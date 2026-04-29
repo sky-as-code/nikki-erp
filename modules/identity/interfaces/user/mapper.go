@@ -2,7 +2,7 @@ package user
 
 import (
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 )
 
 func (this CreateUserCommand) ToDomainModel() *domain.User {

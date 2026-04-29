@@ -8,14 +8,14 @@ package cqrs
 // 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/role"
 // )
 
-// func NewRoleHandler(roleSvc it.RoleService) *RoleHandler {
+// func NewRoleHandler(roleSvc it.RoleDomainService) *RoleHandler {
 // 	return &RoleHandler{
 // 		RoleSvc: roleSvc,
 // 	}
 // }
 
 // type RoleHandler struct {
-// 	RoleSvc it.RoleService
+// 	RoleSvc it.RoleDomainService
 // }
 
 // func (this *RoleHandler) CreateRole(ctx context.Context, packet *cqrs.RequestPacket[it.CreateRoleCommand]) (*cqrs.Reply[it.CreateRoleResult], error) {

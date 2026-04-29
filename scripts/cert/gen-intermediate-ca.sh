@@ -35,3 +35,7 @@ openssl x509 -req \
   -days $DAYS \
   -extfile $SDIR/openssl-intermediate-ca.cnf \
   -extensions v3_intermediate_ca
+
+  cat $PKI_DIR/$CN.crt $CWD/pki/root-ca/$CA_CN.crt > $PKI_DIR/$CN-chain.crt && \
+  rm $PKI_DIR/$CN.crt && \
+  mv $PKI_DIR/$CN-chain.crt $PKI_DIR/$CN.crt
