@@ -2,7 +2,7 @@ package entitlement
 
 // import "github.com/sky-as-code/nikki-erp/modules/core/crud"
 
-// type EntitlementService interface {
+// type EntitlementDomainService interface {
 // 	CreateEntitlement(ctx crud.Context, cmd CreateEntitlementCommand) (*CreateEntitlementResult, error)
 // 	EntitlementExists(ctx crud.Context, cmd EntitlementExistsQuery) (*EntitlementExistsResult, error)
 // 	UpdateEntitlement(ctx crud.Context, cmd UpdateEntitlementCommand) (*UpdateEntitlementResult, error)

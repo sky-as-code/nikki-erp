@@ -7,9 +7,6 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )
 
-type SetUserIsArchivedRequest = it.SetUserIsArchivedCommand
-type SetUserIsArchivedResponse = httpserver.RestMutateResponse
-
 type CreateUserRequest = it.CreateUserCommand
 type CreateUserResponse = httpserver.RestCreateResponse
 
@@ -17,16 +14,25 @@ type UpdateUserRequest = it.UpdateUserCommand
 type UpdateUserResponse = httpserver.RestMutateResponse
 
 type DeleteUserRequest = it.DeleteUserCommand
-type DeleteUserResponse = httpserver.RestDeleteResponse2
+type DeleteUserResponse = httpserver.RestMutateResponse
 
 type GetUserRequest = it.GetUserQuery
-type GetUserResponse = dmodel.DynamicFields
+type GetUserResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
 
-// type GetUserContextRequest = it.GetUserContextQuery
-// type GetUserContextResponse = it.GetUserContextResult
+type GetUserContextResponse struct {
+	Id           string   `json:"id"`
+	AvatarUrl    string   `json:"avatar_url"`
+	DisplayName  string   `json:"display_name"`
+	Email        string   `json:"email"`
+	Entitlements []string `json:"entitlements"`
+	OrgIds       []string `json:"org_ids"`
+}
 
 type UserExistsRequest = it.UserExistsQuery
 type UserExistsResponse = dyn.ExistsResultData
 
-type SearchUsers2Request = it.SearchUsersQuery
-type SearchUsersResponse2 = httpserver.RestSearchResponse[dmodel.DynamicFields]
+type SearchUsersRequest = it.SearchUsersQuery
+type SearchUsersResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
+
+type SetUserIsArchivedRequest = it.SetUserIsArchivedCommand
+type SetUserIsArchivedResponse = httpserver.RestMutateResponse

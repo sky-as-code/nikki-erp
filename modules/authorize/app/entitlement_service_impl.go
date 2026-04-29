@@ -20,13 +20,13 @@ package app
 // )
 
 // func NewEntitlementServiceImpl(
-// 	actionService itAction.ActionService,
+// 	actionService itAction.ActionDomainService,
 // 	assignmentService itAssignment.EntitlementAssignmentService,
 // 	cqrsBus cqrs.CqrsBus,
 // 	entitlementRepo it.EntitlementRepository,
 // 	permissionHistoryRepo itPermissionHistory.PermissionHistoryRepository,
-// 	resourceService itResource.ResourceService,
-// ) it.EntitlementService {
+// 	resourceService itResource.ResourceDomainService,
+// ) it.EntitlementDomainService {
 // 	return &EntitlementServiceImpl{
 // 		actionService:         actionService,
 // 		assignmentService:     assignmentService,
@@ -38,12 +38,12 @@ package app
 // }
 
 // type EntitlementServiceImpl struct {
-// 	actionService         itAction.ActionService
+// 	actionService         itAction.ActionDomainService
 // 	assignmentService     itAssignment.EntitlementAssignmentService
 // 	cqrsBus               cqrs.CqrsBus
 // 	entitlementRepo       it.EntitlementRepository
 // 	permissionHistoryRepo itPermissionHistory.PermissionHistoryRepository
-// 	resourceService       itResource.ResourceService
+// 	resourceService       itResource.ResourceDomainService
 // }
 
 // func (this *EntitlementServiceImpl) CreateEntitlement(ctx crud.Context, cmd it.CreateEntitlementCommand) (*it.CreateEntitlementResult, error) {

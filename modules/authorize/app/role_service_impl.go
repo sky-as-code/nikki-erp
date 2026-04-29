@@ -29,12 +29,12 @@ package app
 // func NewRoleServiceImpl(
 // 	assignmentService itAssign.EntitlementAssignmentService,
 // 	cqrsBus cqrs.CqrsBus,
-// 	entitlementService itEntitlement.EntitlementService,
+// 	entitlementService itEntitlement.EntitlementDomainService,
 // 	grantRequestService itGrantRequest.GrantRequestService,
 // 	revokeRequestService itRevokeRequest.RevokeRequestService,
 // 	orgExtSvc external.OrganizationExtService,
 // 	roleRepo itRole.RoleRepository,
-// ) itRole.RoleService {
+// ) itRole.RoleDomainService {
 // 	return &RoleServiceImpl{
 // 		assignmentService:    assignmentService,
 // 		cqrsBus:              cqrsBus,
@@ -49,7 +49,7 @@ package app
 // type RoleServiceImpl struct {
 // 	assignmentService    itAssign.EntitlementAssignmentService
 // 	cqrsBus              cqrs.CqrsBus
-// 	entitlementService   itEntitlement.EntitlementService
+// 	entitlementService   itEntitlement.EntitlementDomainService
 // 	grantRequestService  itGrantRequest.GrantRequestService
 // 	revokeRequestService itRevokeRequest.RevokeRequestService
 // 	roleRepo             itRole.RoleRepository

@@ -47,7 +47,7 @@ func (s *UnitCategoryServiceImpl) GetUnitCategory(ctx corectx.Context, query itU
 	if query.Id != nil {
 		q.Id = *query.Id
 	}
-	q.Columns = query.Columns
+	q.Fields = query.Columns
 	return corecrud.GetOne[domain.UnitCategory](ctx, corecrud.GetOneParam{
 		Action:       "get unit category",
 		DbRepoGetter: s.repo,

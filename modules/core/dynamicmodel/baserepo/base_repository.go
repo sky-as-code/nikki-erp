@@ -300,14 +300,13 @@ func (this *BaseDynamicRepositoryImpl) InsertBulk(ctx corectx.Context, data []dm
 	return &dyn.OpResult[int]{Data: int(n), HasData: n != 0}, nil
 }
 
-// Implements BaseRepository interface
 func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (
 	*dyn.OpResult[dmodel.DynamicFields], error,
 ) {
-	if vErr := this.validateGetOneColumnsAndFilter(param.Columns, param.Filter); vErr != nil {
+	if vErr := this.validateGetOneColumnsAndFilter(param.Fields, param.Filter); vErr != nil {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: ft.ClientErrors{*vErr}}, nil
 	}
-	if this.hasNestedOrEdgeColumns(param.Columns) {
+	if this.hasNestedOrEdgeColumns(param.Fields) {
 		return this.getOneWithNestedColumns(ctx, param)
 	}
 	graph, err := this.buildFindOneGraph(param.Filter)
@@ -317,7 +316,7 @@ func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.Rep
 	graph = this.injectTenantIntoGraph(ctx, graph)
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(
 		this.schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-			Columns: orm.ToSelectColumns(this.ensurePrimaryKeyColumns(param.Columns)),
+			Columns: orm.ToSelectColumns(this.ensurePrimaryKeyColumns(param.Fields)),
 		})
 	if err != nil {
 		return nil, err
@@ -327,7 +326,7 @@ func (this *BaseDynamicRepositoryImpl) GetOne(ctx corectx.Context, param dyn.Rep
 	}
 
 	this.logQuery(*sqlQuery)
-	mainColumns := this.ensurePrimaryKeyColumns(param.Columns)
+	mainColumns := this.ensurePrimaryKeyColumns(param.Fields)
 	rows, err := this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(this.schema, mainColumns))
 	if err != nil {
 		return nil, err
@@ -346,14 +345,14 @@ func (this *BaseDynamicRepositoryImpl) getOneWithNestedColumns(
 		return nil, err
 	}
 	graph = this.injectTenantIntoGraph(ctx, graph)
-	plan, cErrs := this.buildNestedSelectPlan(param.Columns)
+	plan, cErrs := this.buildNestedSelectPlan(param.Fields)
 	if cErrs.Count() > 0 {
 		return &dyn.OpResult[dmodel.DynamicFields]{ClientErrors: cErrs}, nil
 	}
 	rows, scanErrs, err := this.runSelectGraphScan(ctx, graph, dyn.RepoSearchParam{
-		Columns: plan.MainColumns,
-		Page:    0,
-		Size:    1,
+		Fields: plan.MainColumns,
+		Page:   0,
+		Size:   1,
 	})
 	if err != nil {
 		return nil, err
@@ -765,7 +764,7 @@ func appendMissingKeyErrors(errs *ft.ClientErrors, fieldPrefix string, keys dmod
 func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.RepoSearchParam) (
 	*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error,
 ) {
-	if this.hasNestedOrEdgeColumns(param.Columns) {
+	if this.hasNestedOrEdgeColumns(param.Fields) {
 		return this.searchWithNestedColumns(ctx, param)
 	}
 	merged := this.injectTenantIntoGraph(ctx, param.Graph)
@@ -782,7 +781,7 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 		}, nil
 	}
 	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, dyn.RepoSearchParam{
-		Columns:  this.ensurePrimaryKeyColumns(param.Columns),
+		Fields:   this.ensurePrimaryKeyColumns(param.Fields),
 		Page:     param.Page,
 		Size:     param.Size,
 		Language: param.Language,
@@ -813,7 +812,7 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 	ctx corectx.Context, param dyn.RepoSearchParam,
 ) (*dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]], error) {
-	plan, cErrs := this.buildNestedSelectPlan(param.Columns)
+	plan, cErrs := this.buildNestedSelectPlan(param.Fields)
 	if cErrs.Count() > 0 {
 		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
 	}
@@ -828,7 +827,7 @@ func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 		}, nil
 	}
 	rows, scanClientErrs, err := this.runSelectGraphScan(ctx, merged, dyn.RepoSearchParam{
-		Columns:  plan.MainColumns,
+		Fields:   plan.MainColumns,
 		Page:     param.Page,
 		Size:     param.Size,
 		Language: param.Language,
@@ -1241,7 +1240,7 @@ func (this *BaseDynamicRepositoryImpl) runSelectGraphScan(
 ) ([]dmodel.DynamicFields, ft.ClientErrors, error) {
 	sqlQuery, qbClientErrs, err := this.queryBuilder.SqlSelectGraph(
 		this.schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{
-			Columns:  orm.ToSelectColumns(param.Columns),
+			Columns:  orm.ToSelectColumns(param.Fields),
 			Page:     param.Page,
 			Size:     param.Size,
 			Language: param.Language,
@@ -1254,7 +1253,7 @@ func (this *BaseDynamicRepositoryImpl) runSelectGraphScan(
 	}
 
 	this.logQuery(*sqlQuery)
-	rows, err := this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(this.schema, param.Columns))
+	rows, err := this.queryAndScan(ctx, *sqlQuery, this.selectFieldsForSchema(this.schema, param.Fields))
 	if err != nil {
 		return nil, nil, err
 	}

@@ -2,7 +2,7 @@ package resource
 
 // import "github.com/sky-as-code/nikki-erp/modules/core/crud"
 
-// type ResourceService interface {
+// type ResourceDomainService interface {
 // 	CreateResource(ctx crud.Context, cmd CreateResourceCommand) (*CreateResourceResult, error)
 // 	UpdateResource(ctx crud.Context, cmd UpdateResourceCommand) (*UpdateResourceResult, error)
 // 	DeleteResourceHard(ctx crud.Context, cmd DeleteResourceHardByNameQuery) (*DeleteResourceHardByNameResult, error)

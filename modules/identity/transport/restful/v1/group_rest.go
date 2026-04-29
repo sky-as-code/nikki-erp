@@ -8,14 +8,14 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
 )
 
 type groupRestParams struct {
 	dig.In
 
-	GroupSvc it.GroupService
+	GroupSvc it.GroupAppService
 }
 
 func NewGroupRest(params groupRestParams) *GroupRest {
@@ -26,11 +26,11 @@ func NewGroupRest(params groupRestParams) *GroupRest {
 
 type GroupRest struct {
 	httpserver.RestBase
-	GroupSvc it.GroupService
+	GroupSvc it.GroupAppService
 }
 
 func (this GroupRest) CreateGroup(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeCreate(
+	return httpserver.ServeCreate[CreateGroupRequest, CreateGroupResponse, domain.Group](
 		"create group",
 		echoCtx,
 		&it.CreateGroupCommand{},
@@ -39,7 +39,7 @@ func (this GroupRest) CreateGroup(echoCtx *echo.Context) (err error) {
 }
 
 func (this GroupRest) DeleteGroup(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[DeleteGroupRequest, DeleteGroupResponse](
 		"delete group",
 		echoCtx,
 		this.GroupSvc.DeleteGroup,
@@ -47,7 +47,7 @@ func (this GroupRest) DeleteGroup(echoCtx *echo.Context) (err error) {
 }
 
 func (this GroupRest) GetGroup(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGetOne(
+	return httpserver.ServeGetOne2[GetGroupRequest, GetGroupResponse, domain.Group](
 		"get group by id",
 		echoCtx,
 		this.GroupSvc.GetGroup,
@@ -55,7 +55,7 @@ func (this GroupRest) GetGroup(echoCtx *echo.Context) (err error) {
 }
 
 func (this GroupRest) GroupExists(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeExists(
+	return httpserver.ServeExists[GroupExistsRequest, GroupExistsResponse](
 		"group exists",
 		echoCtx,
 		this.GroupSvc.GroupExists,
@@ -63,7 +63,7 @@ func (this GroupRest) GroupExists(echoCtx *echo.Context) (err error) {
 }
 
 func (this GroupRest) ManageGroupUsers(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[ManageGroupUsersRequest, ManageGroupUsersResponse](
 		"manage group users",
 		echoCtx,
 		this.GroupSvc.ManageGroupUsers,
@@ -71,7 +71,7 @@ func (this GroupRest) ManageGroupUsers(echoCtx *echo.Context) (err error) {
 }
 
 func (this GroupRest) SearchGroups(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch(
+	return httpserver.ServeSearch[SearchGroupsRequest, SearchGroupsResponse, domain.Group](
 		"search groups",
 		echoCtx,
 		this.GroupSvc.SearchGroups,
@@ -79,7 +79,7 @@ func (this GroupRest) SearchGroups(echoCtx *echo.Context) (err error) {
 }
 
 func (this GroupRest) UpdateGroup(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeUpdate(
+	return httpserver.ServeUpdate[UpdateGroupRequest, UpdateGroupResponse](
 		"update group",
 		echoCtx,
 		&it.UpdateGroupCommand{},

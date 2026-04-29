@@ -201,10 +201,10 @@ func (this *ProductServiceImpl) getNextSortIndex(ctx corectx.Context, productId 
 	// Search for all attributes with the given product ID to find max sort index
 	graph := dmodel.NewSearchGraph().NewCondition(domain.AttrFieldProductId, dmodel.Equals, *productId)
 	searchResult, err := this.attrRepo.Search(ctx, dyn.RepoSearchParam{
-		Graph:   graph,
-		Columns: []string{domain.AttrFieldSortIndex},
-		Page:    0,
-		Size:    1000, // Get enough to find the max
+		Graph:  graph,
+		Fields: []string{domain.AttrFieldSortIndex},
+		Page:   0,
+		Size:   1000, // Get enough to find the max
 	})
 
 	if err != nil {

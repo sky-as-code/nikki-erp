@@ -21,13 +21,13 @@ package external
 
 // func InitExternal() error {
 // 	err := stdErr.Join(
-// 		deps.Register(func(orgSvc itOrg.OrganizationService) itExt.OrganizationExtService {
+// 		deps.Register(func(orgSvc itOrg.OrganizationDomainService) itExt.OrganizationExtService {
 // 			return orgSvc
 // 		}),
 // 		deps.Register(func(hierSvc itHier.HierarchyService) itExt.HierarchyExtService {
 // 			return hierSvc
 // 		}),
-// 		deps.Register(func(groupSvc itGrp.GroupService) itExt.GroupExtService {
+// 		deps.Register(func(groupSvc itGrp.GroupDomainService) itExt.GroupExtService {
 // 			return groupSvc
 // 		}),
 // 		deps.Register(func(userSvc itUsr.UserService) itExt.UserExtService {

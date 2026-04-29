@@ -20,7 +20,6 @@ import (
 
 type BeforeValidationFn[T any] func(ctx corectx.Context, model T, vErrs *ft.ClientErrors) (T, error)
 type AfterValidationSuccessFn[T any] func(ctx corectx.Context, model T) (T, error)
-type AfterDeleteValidationSuccessFn func(ctx corectx.Context) error
 type CreateValidateExtraFn[T any] func(ctx corectx.Context, inputModel T, vErrs *ft.ClientErrors) error
 type UpdateValidateExtraFn[T any] func(ctx corectx.Context, inputModel T, foundModel T, vErrs *ft.ClientErrors) error
 type DeleteValidateExtraFn func(ctx corectx.Context, keyFields dmodel.DynamicFields, vErrs *ft.ClientErrors) error
@@ -376,7 +375,7 @@ type DeleteOneParam struct {
 	DbRepoGetter           dyn.DynamicModelRepository
 	Cmd                    dyn.DeleteOneCommand
 	ValidateExtra          DeleteValidateExtraFn
-	AfterValidationSuccess AfterDeleteValidationSuccessFn
+	AfterValidationSuccess AfterValidationSuccessFn[dyn.DeleteOneCommand]
 }
 
 func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *dyn.OpResult[dyn.MutateResultData], err error) {
@@ -403,10 +402,11 @@ func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *dyn.OpResult[
 		}
 	}
 	if param.AfterValidationSuccess != nil {
-		err := param.AfterValidationSuccess(ctx)
+		newCmd, err := param.AfterValidationSuccess(ctx, cmd)
 		if err != nil {
 			return nil, errors.Wrap(err, "DeleteOne.AfterValidationSuccess")
 		}
+		cmd = newCmd
 	}
 
 	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
@@ -574,8 +574,8 @@ func getOneWithArchived[
 	}
 	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
 	result, err := baserepo.GetOne[TDomain, TDomainPtr](ctx, dynamicRepo, dyn.RepoGetOneParam{
-		Filter:  filter,
-		Columns: sanitizedQuery.Columns,
+		Filter: filter,
+		Fields: sanitizedQuery.Fields,
 	})
 	return result, err
 }
@@ -590,9 +590,10 @@ func getOneSchema() *dmodel.ModelSchema {
 }
 
 type SearchParam struct {
-	Action       string
-	DbRepoGetter dyn.DynamicModelRepository
-	Query        dyn.SearchQuery
+	Action                 string
+	DbRepoGetter           dyn.DynamicModelRepository
+	Query                  dyn.SearchQuery
+	AfterValidationSuccess AfterValidationSuccessFn[dyn.SearchQuery]
 }
 
 func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
@@ -612,9 +613,18 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 	}
 
 	sanitizedQuery := *(sanitized.(*dyn.SearchQuery))
+
+	if param.AfterValidationSuccess != nil {
+		newQuery, err := param.AfterValidationSuccess(ctx, sanitizedQuery)
+		if err != nil {
+			return nil, errors.Wrap(err, "Search.AfterValidationSuccess")
+		}
+		sanitizedQuery = newQuery
+	}
+
 	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
 	result, err := baserepo.Search[TDomain, TDomainPtr](ctx, dynamicRepo, dyn.RepoSearchParam{
-		Columns:  sanitizedQuery.Columns,
+		Fields:   sanitizedQuery.Fields,
 		Page:     sanitizedQuery.Page,
 		Size:     sanitizedQuery.Size,
 		Graph:    sanitizedQuery.Graph,

@@ -132,6 +132,9 @@ func (this *Application) buildDependencyGraph(moduleMap map[string]modules.InCod
 	for _, mod := range this.modules {
 		modName := mod.Name()
 		deps := mod.Deps()
+		if modName != "apptrait" && modName != "core" && modName != "essential" {
+			deps = append(deps, "essential")
+		}
 		if modName != "apptrait" && modName != "core" {
 			deps = append(deps, "core")
 		}

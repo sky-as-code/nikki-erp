@@ -8,7 +8,7 @@ package repository
 // 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 // 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 // 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-// 	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+// 	"github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 // )
 
 // func registerIdentitySearchPredicates(queryBuilder orm.QueryBuilder) error {

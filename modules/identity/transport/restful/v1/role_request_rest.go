@@ -8,14 +8,14 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/rolerequest"
 )
 
 type roleRequestRestParams struct {
 	dig.In
 
-	RoleRequestSvc it.RoleRequestService
+	RoleRequestSvc it.RoleRequestAppService
 }
 
 func NewRoleRequestRest(params roleRequestRestParams) *RoleRequestRest {
@@ -24,11 +24,11 @@ func NewRoleRequestRest(params roleRequestRestParams) *RoleRequestRest {
 
 type RoleRequestRest struct {
 	httpserver.RestBase
-	RoleRequestSvc it.RoleRequestService
+	RoleRequestSvc it.RoleRequestAppService
 }
 
 func (this RoleRequestRest) CreateRoleRequest(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeCreate(
+	return httpserver.ServeCreate[CreateRoleRequestRequest, CreateRoleRequestResponse, domain.RoleRequest](
 		"create grant request",
 		echoCtx,
 		&it.CreateRoleRequestCommand{},
@@ -37,7 +37,7 @@ func (this RoleRequestRest) CreateRoleRequest(echoCtx *echo.Context) (err error)
 }
 
 func (this RoleRequestRest) DeleteRoleRequest(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[DeleteRoleRequestRequest, DeleteRoleRequestResponse](
 		"delete grant request",
 		echoCtx,
 		this.RoleRequestSvc.DeleteRoleRequest,
@@ -45,7 +45,7 @@ func (this RoleRequestRest) DeleteRoleRequest(echoCtx *echo.Context) (err error)
 }
 
 func (this RoleRequestRest) GetRoleRequest(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGetOne(
+	return httpserver.ServeGetOne2[GetRoleRequestRequest, GetRoleRequestResponse, domain.RoleRequest](
 		"get grant request",
 		echoCtx,
 		this.RoleRequestSvc.GetRoleRequest,
@@ -53,7 +53,7 @@ func (this RoleRequestRest) GetRoleRequest(echoCtx *echo.Context) (err error) {
 }
 
 func (this RoleRequestRest) RoleRequestExists(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeExists(
+	return httpserver.ServeExists[RoleRequestExistsRequest, RoleRequestExistsResponse](
 		"grant request exists",
 		echoCtx,
 		this.RoleRequestSvc.RoleRequestExists,
@@ -61,7 +61,7 @@ func (this RoleRequestRest) RoleRequestExists(echoCtx *echo.Context) (err error)
 }
 
 func (this RoleRequestRest) SearchRoleRequests(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch(
+	return httpserver.ServeSearch[SearchRoleRequestsRequest, SearchRoleRequestsResponse, domain.RoleRequest](
 		"search grant requests",
 		echoCtx,
 		this.RoleRequestSvc.SearchRoleRequests,
@@ -69,7 +69,7 @@ func (this RoleRequestRest) SearchRoleRequests(echoCtx *echo.Context) (err error
 }
 
 func (this RoleRequestRest) UpdateRoleRequest(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeUpdate(
+	return httpserver.ServeUpdate[UpdateRoleRequestRequest, UpdateRoleRequestResponse](
 		"update grant request",
 		echoCtx,
 		&it.UpdateRoleRequestCommand{},

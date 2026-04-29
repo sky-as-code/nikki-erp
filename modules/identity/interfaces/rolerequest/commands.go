@@ -4,7 +4,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
@@ -58,7 +58,7 @@ type GetRoleRequestQuery dyn.GetOneQuery
 
 func (GetRoleRequestQuery) CqrsRequestType() cqrs.RequestType { return getRoleRequestQueryType }
 
-type GetRoleRequestResult = dyn.OpResult[domain.RoleRequest]
+type GetRoleRequestResult = dyn.OpResult[dyn.SingleResultData[domain.RoleRequest]]
 
 var roleRequestExistsQueryType = cqrs.RequestType{
 	Module: "identity", Submodule: "role_request", Action: "roleRequestExists",

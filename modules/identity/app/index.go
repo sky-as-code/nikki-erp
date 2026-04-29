@@ -6,18 +6,18 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 )
 
-func InitServices() error {
+func InitApplicationServices() error {
 	err := errors.Join(
-		deps.Register(NewActionServiceImpl),
-		deps.Register(NewEntitlementServiceImpl),
-		deps.Register(NewGroupServiceImpl),
-		deps.Register(NewOrganizationServiceImpl),
-		deps.Register(NewOrgUnitServiceImpl),
-		deps.Register(NewPermissionServiceImpl),
-		deps.Register(NewResourceServiceImpl),
-		deps.Register(NewRoleServiceImpl),
-		deps.Register(NewRoleRequestServiceImpl),
-		deps.Register(NewUserServiceImpl),
+		deps.Register(NewEntitlementApplicationServiceImpl),
+		deps.Register(NewGroupApplicationServiceImpl),
+		deps.Register(NewOrganizationApplicationServiceImpl),
+		deps.Register(NewOrgUnitApplicationServiceImpl),
+		deps.Register(NewResourceApplicationServiceImpl),
+		deps.Register(NewActionApplicationService),
+		deps.Register(NewRoleApplicationServiceImpl),
+		deps.Register(NewRoleRequestApplicationServiceImpl),
+		deps.Register(NewPermissionApplicationServiceImpl),
+		deps.Register(NewUserApplicationServiceImpl),
 	)
 	return err
 }

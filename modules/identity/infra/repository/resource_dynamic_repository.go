@@ -12,7 +12,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/resource"
 )
 
@@ -84,8 +84,8 @@ func (this *ResourceDynamicRepository) GetByAction(ctx corectx.Context, param it
 	path := domain.ResourceEdgeActions + "." + domain.ActionFieldCode
 	graph := dmodel.NewSearchGraph().NewCondition(path, dmodel.Equals, param.ActionCode)
 	result, err := baserepo.Search[domain.Resource](ctx, this.dynamicRepo, dyn.RepoSearchParam{
-		Graph:   graph,
-		Columns: param.Columns,
+		Graph:  graph,
+		Fields: param.Columns,
 	})
 	if err != nil {
 		return nil, err

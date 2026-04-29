@@ -14,8 +14,8 @@ package app
 
 // func NewActionServiceImpl(
 // 	actionRepo it.ActionRepository,
-// 	resourceService itResource.ResourceService,
-// ) it.ActionService {
+// 	resourceService itResource.ResourceDomainService,
+// ) it.ActionDomainService {
 // 	return &ActionServiceImpl{
 // 		actionRepo:      actionRepo,
 // 		resourceService: resourceService,
@@ -24,7 +24,7 @@ package app
 
 // type ActionServiceImpl struct {
 // 	actionRepo      it.ActionRepository
-// 	resourceService itResource.ResourceService
+// 	resourceService itResource.ResourceDomainService
 // }
 
 // func (this *ActionServiceImpl) CreateAction(ctx crud.Context, cmd it.CreateActionCommand) (*it.CreateActionResult, error) {

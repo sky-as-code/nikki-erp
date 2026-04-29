@@ -13,7 +13,7 @@ package v1
 // type resourceRestParams struct {
 // 	dig.In
 
-// 	ResourceSvc it.ResourceService
+// 	ResourceSvc it.ResourceDomainService
 // }
 
 // func NewResourceRest(params resourceRestParams) *ResourceRest {
@@ -23,7 +23,7 @@ package v1
 // }
 
 // type ResourceRest struct {
-// 	ResourceSvc it.ResourceService
+// 	ResourceSvc it.ResourceDomainService
 // }
 
 // func (this ResourceRest) CreateResource(echoCtx *echo.Context) (err error) {

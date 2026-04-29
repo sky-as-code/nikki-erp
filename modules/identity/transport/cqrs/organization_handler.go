@@ -9,7 +9,7 @@ import (
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 )
 
-func NewOrganizationHandler(orgSvc itOrg.OrganizationService, logger logging.LoggerService) *OrganizationHandler {
+func NewOrganizationHandler(orgSvc itOrg.OrganizationDomainService, logger logging.LoggerService) *OrganizationHandler {
 	return &OrganizationHandler{
 		Logger: logger,
 		OrgSvc: orgSvc,
@@ -18,7 +18,7 @@ func NewOrganizationHandler(orgSvc itOrg.OrganizationService, logger logging.Log
 
 type OrganizationHandler struct {
 	Logger logging.LoggerService
-	OrgSvc itOrg.OrganizationService
+	OrgSvc itOrg.OrganizationDomainService
 }
 
 // func (this *OrganizationHandler) CreateOrg(ctx context.Context, packet *cqrs.RequestPacket[itOrg.CreateOrgCommand]) (

@@ -8,7 +8,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/identity/app"
 	c "github.com/sky-as-code/nikki-erp/modules/identity/constants"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain/services"
+	"github.com/sky-as-code/nikki-erp/modules/identity/infra/external"
 	repo "github.com/sky-as-code/nikki-erp/modules/identity/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/identity/transport"
 )
@@ -31,7 +33,9 @@ func (*IdentityModule) Name() string {
 
 // Deps implements InCodeModule.
 func (*IdentityModule) Deps() []string {
-	return []string{}
+	return []string{
+		"settings",
+	}
 }
 
 // Version implements InCodeModule.
@@ -42,8 +46,10 @@ func (*IdentityModule) Version() semver.SemVer {
 // Init implements InCodeModule.
 func (*IdentityModule) Init() error {
 	err := errors.Join(
+		external.InitExternalServices(),
 		repo.InitRepositories(),
-		app.InitServices(),
+		services.InitDomainServices(),
+		app.InitApplicationServices(),
 		transport.InitTransport(),
 	)
 
@@ -54,21 +60,21 @@ func (*IdentityModule) Init() error {
 func (this *IdentityModule) RegisterModels() error {
 	return errors.Join(
 		// Identity
-		dmodel.RegisterSchemaB(domain.OrgUserRelSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.OrganizationSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.OrganizationalUnitSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.GroupUserRelSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.GroupSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.UserSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.OrgUserRelSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.OrganizationSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.OrganizationalUnitSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.GroupUserRelSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.GroupSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.UserSchemaBuilder()),
 
 		// Authorize
-		dmodel.RegisterSchemaB(domain.ActionSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.ResourceSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.EntitlementSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.RoleSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.RoleRequestSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.RoleGroupAssignmentSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.RoleUserAssignmentSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.UserPermissionSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ActionSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ResourceSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.EntitlementSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.RoleSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.RoleRequestSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.RoleGroupAssignmentSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.RoleUserAssignmentSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.UserPermissionSchemaBuilder()),
 	)
 }

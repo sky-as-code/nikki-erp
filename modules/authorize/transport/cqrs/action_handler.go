@@ -9,14 +9,14 @@ package cqrs
 // 	it "github.com/sky-as-code/nikki-erp/modules/authorize/interfaces/action"
 // )
 
-// func NewActionHandler(actionSvc it.ActionService, logger logging.LoggerService) *ActionHandler {
+// func NewActionHandler(actionSvc it.ActionDomainService, logger logging.LoggerService) *ActionHandler {
 // 	return &ActionHandler{
 // 		ActionSvc: actionSvc,
 // 	}
 // }
 
 // type ActionHandler struct {
-// 	ActionSvc it.ActionService
+// 	ActionSvc it.ActionDomainService
 // }
 
 // func (this *ActionHandler) CreateAction(ctx context.Context, packet *cqrs.RequestPacket[it.CreateActionCommand]) (*cqrs.Reply[it.CreateActionResult], error) {

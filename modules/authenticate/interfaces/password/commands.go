@@ -30,8 +30,8 @@ func (CreatePasswordOtpCommand) GetSchema() *dmodel.ModelSchema {
 		"authenticate.create_password_otp_command",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(basemodel.DefineFieldId("principal_id").Required())
+				Field(domain.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(basemodel.DefineFieldId("principal_id").RequiredAlways())
 		},
 	)
 }
@@ -64,9 +64,9 @@ func (ConfirmPasswordOtpCommand) GetSchema() *dmodel.ModelSchema {
 		"authenticate.confirm_password_otp_command",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(basemodel.DefineFieldId("principal_id").Required()).
-				Field(domain.DefinePasswordOtpField("otp_code").Required())
+				Field(domain.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(basemodel.DefineFieldId("principal_id").RequiredAlways()).
+				Field(domain.DefinePasswordOtpField("otp_code").RequiredAlways())
 		},
 	)
 }
@@ -98,9 +98,9 @@ func (CreatePasswordTempCommand) GetSchema() *dmodel.ModelSchema {
 		"authenticate.create_password_temp_command",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(domain.DefinePasswordSendChannelField("principal_id").Required()).
-				Field(domain.DefinePasswordOtpField("otp_code").Required())
+				Field(domain.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(domain.DefinePasswordSendChannelField("principal_id").RequiredAlways()).
+				Field(domain.DefinePasswordOtpField("otp_code").RequiredAlways())
 		},
 	)
 }
@@ -133,10 +133,10 @@ func (SetPasswordCommand) GetSchema() *dmodel.ModelSchema {
 		"authenticate.set_password_command",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(basemodel.DefineFieldId("principal_id").Required()).
+				Field(domain.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(basemodel.DefineFieldId("principal_id").RequiredAlways()).
 				Field(domain.DefinePasswordTextField("current_password")).
-				Field(domain.DefinePasswordTextField("new_password").Required())
+				Field(domain.DefinePasswordTextField("new_password").RequiredAlways())
 		},
 	)
 }
@@ -164,9 +164,9 @@ func (VerifyPasswordQuery) GetSchema() *dmodel.ModelSchema {
 		"authenticate.verify_password_query",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(domain.DefinePrincipalUsernameField("username").Required()).
-				Field(domain.DefinePasswordTextField("password").Required())
+				Field(domain.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(domain.DefinePrincipalUsernameField("username").RequiredAlways()).
+				Field(domain.DefinePasswordTextField("password").RequiredAlways())
 		},
 	)
 }
@@ -198,9 +198,9 @@ func (VerifyPasswordOtpQuery) GetSchema() *dmodel.ModelSchema {
 		"authenticate.verify_password_otp_query",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(domain.DefinePrincipalUsernameField("username").Required()).
-				Field(domain.DefinePasswordOtpField("otp_code").Required())
+				Field(domain.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(domain.DefinePrincipalUsernameField("username").RequiredAlways()).
+				Field(domain.DefinePasswordOtpField("otp_code").RequiredAlways())
 		},
 	)
 }

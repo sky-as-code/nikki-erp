@@ -218,14 +218,15 @@ func ItsMeMario[T any](me T) T {
 }
 
 func ServeCreate[
-	TSvcCommand any,
-	TSvcCommandPtr dyn.DynamicModelSetterPtr[TSvcCommand],
+	THttpRequest any,
+	THttpResponse RestCreateResponse,
 	TSvcResultData dmodel.DynamicModelGetter,
+	THttpRequestPtr dyn.DynamicModelSetterPtr[THttpRequest],
 ](
 	action string,
 	echoCtx *echo.Context,
-	cmd TSvcCommandPtr,
-	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
+	cmd THttpRequestPtr,
+	serviceFn func(ctx corectx.Context, cmd THttpRequest) (*dyn.OpResult[TSvcResultData], error),
 ) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
@@ -235,7 +236,7 @@ func ServeCreate[
 	return ServeRequestDynamic(
 		echoCtx,
 		serviceFn,
-		func(requestFields dmodel.DynamicFields) TSvcCommand {
+		func(requestFields dmodel.DynamicFields) THttpRequest {
 			cmd.SetFieldData(requestFields)
 			return *cmd
 		},
@@ -247,11 +248,12 @@ func ServeCreate[
 }
 
 func ServeExists[
-	TSvcCommand dyn.ExistsQueryShape,
+	THttpRequest dyn.ExistsQueryShape,
+	THttpResponse dyn.ExistsResultData,
 ](
 	action string,
 	echoCtx *echo.Context,
-	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[dyn.ExistsResultData], error),
+	serviceFn func(ctx corectx.Context, cmd THttpRequest) (*dyn.OpResult[dyn.ExistsResultData], error),
 ) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
@@ -263,6 +265,30 @@ func ServeExists[
 		serviceFn,
 		ItsMeMario,
 		ItsMeMario,
+		JsonOk,
+	)
+	return err
+}
+
+func ServeGetOne2[
+	THttpRequest any,
+	THttpResponse RestGetOneResponse[dmodel.DynamicFields],
+	TDomain dmodel.DynamicModelGetter,
+](
+	action string,
+	echoCtx *echo.Context,
+	serviceFn func(ctx corectx.Context, cmd THttpRequest) (*dyn.OpResult[dyn.SingleResultData[TDomain]], error),
+) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
+			err = e
+		}
+	}()
+	err = ServeRequest2(
+		echoCtx,
+		serviceFn,
+		ItsMeMario,
+		NewGetOneResponseDyn,
 		JsonOk,
 	)
 	return err
@@ -296,11 +322,12 @@ func ServeGetOne[
 // Use this function for mutation operations (delete, manageM2m, setIsArchived, etc.),
 // but not for update.
 func ServeGeneralMutate[
-	TSvcCommand any,
+	THttpRequest any,
+	THttpResponse RestMutateResponse,
 ](
 	action string,
 	echoCtx *echo.Context,
-	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[dyn.MutateResultData], error),
+	serviceFn func(ctx corectx.Context, cmd THttpRequest) (*dyn.OpResult[dyn.MutateResultData], error),
 ) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
@@ -318,12 +345,13 @@ func ServeGeneralMutate[
 }
 
 func ServeSearch[
-	TSvcQuery any,
+	THttpRequest any,
+	THttpResponse RestSearchResponse[dmodel.DynamicFields],
 	TDomain dmodel.DynamicModelGetter,
 ](
 	action string,
 	echoCtx *echo.Context,
-	serviceFn func(ctx corectx.Context, cmd TSvcQuery) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error),
+	serviceFn func(ctx corectx.Context, cmd THttpRequest) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error),
 ) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
@@ -342,13 +370,14 @@ func ServeSearch[
 }
 
 func ServeUpdate[
-	TSvcCommand any,
-	TSvcCommandPtr dyn.DynamicModelSetterPtr[TSvcCommand],
+	THttpRequest any,
+	THttpResponse RestMutateResponse,
+	THttpRequestPtr dyn.DynamicModelSetterPtr[THttpRequest],
 ](
 	action string,
 	echoCtx *echo.Context,
-	cmd TSvcCommandPtr,
-	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[dyn.MutateResultData], error),
+	cmd THttpRequestPtr,
+	serviceFn func(ctx corectx.Context, cmd THttpRequest) (*dyn.OpResult[dyn.MutateResultData], error),
 ) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST "+action); e != nil {
@@ -358,7 +387,7 @@ func ServeUpdate[
 	return ServeRequestDynamic(
 		echoCtx,
 		serviceFn,
-		func(requestFields dmodel.DynamicFields) TSvcCommand {
+		func(requestFields dmodel.DynamicFields) THttpRequest {
 			cmd.SetFieldData(requestFields)
 			return *cmd
 		},

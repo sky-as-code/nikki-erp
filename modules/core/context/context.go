@@ -6,7 +6,9 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.bryk.io/pkg/errors"
 
+	ds "github.com/sky-as-code/nikki-erp/common/datastructure"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
@@ -22,8 +24,24 @@ type Context interface {
 	GetDomainConstraints() dmodel.DynamicFields
 	SetDomainConstraints(constraints dmodel.DynamicFields)
 	GetModuleName() string
+	GetPermissions() ContextPermissions
+	SetPermissions(permissions ContextPermissions)
+	GetUser() dmodel.DynamicFields
+	SetUser(user dmodel.DynamicFields)
 	// Replace current inner context with a new one that has the given key and value.
 	WithValue(key, val any)
+}
+
+type ContextPermissions struct {
+	IsOwner      bool
+	Entitlements ds.Set[string]
+	UserId       model.Id `json:"user_id"`
+	// The orgs that user belongs to (if any)
+	UserOrgIds ds.Set[model.Id] `json:"user_org_ids"`
+	// The org unit that user belongs to (if any)
+	OrgUnitId *model.Id `json:"org_unit_id"`
+	// The org that the org unit belongs to (if user belongs to an org unit)
+	OrgUnitOrgId *model.Id `json:"org_unit_org_id"`
 }
 
 func NewRequestContext(ctx context.Context) Context {
@@ -83,6 +101,9 @@ type RequestContext struct {
 	repoTrx           db.DbTransaction
 	domainConstraints dmodel.DynamicFields
 	moduleName        string
+	permissions       ContextPermissions
+	userId            model.Id
+	user              dmodel.DynamicFields
 }
 
 func (this RequestContext) InnerContext() context.Context {
@@ -115,6 +136,22 @@ func (this RequestContext) GetDomainConstraints() dmodel.DynamicFields {
 
 func (this *RequestContext) SetDomainConstraints(constraints dmodel.DynamicFields) {
 	this.Context = context.WithValue(this.Context, CtxKeyDomainConstraints, constraints)
+}
+
+func (this RequestContext) GetPermissions() ContextPermissions {
+	return this.permissions
+}
+
+func (this *RequestContext) SetPermissions(permissions ContextPermissions) {
+	this.permissions = permissions
+}
+
+func (this RequestContext) GetUser() dmodel.DynamicFields {
+	return this.user
+}
+
+func (this *RequestContext) SetUser(user dmodel.DynamicFields) {
+	this.user = user
 }
 
 func (this RequestContext) GetModuleName() string {

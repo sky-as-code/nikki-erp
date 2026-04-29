@@ -8,7 +8,7 @@ import (
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 )
 
 func init() {
@@ -64,16 +64,16 @@ var getUserByIdQueryType = cqrs.RequestType{
 }
 
 type GetUserQuery struct {
-	Columns []string  `json:"columns" query:"columns"`
-	Id      *model.Id `json:"id" param:"id"`
-	Email   *string   `json:"email" query:"email"`
+	Fields []string  `json:"fields" query:"fields"`
+	Id     *model.Id `json:"id" param:"id"`
+	Email  *string   `json:"email" query:"email"`
 }
 
 func (GetUserQuery) CqrsRequestType() cqrs.RequestType {
 	return getUserByIdQueryType
 }
 
-type GetUserResult = dyn.OpResult[domain.User]
+type GetUserResult = dyn.OpResult[dyn.SingleResultData[domain.User]]
 
 var getUserContextQueryType = cqrs.RequestType{
 	Module:    "identity",

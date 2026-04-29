@@ -114,11 +114,16 @@ const (
 	ClientErrorTypeAuthorization ClientErrorType = "authorization"
 )
 
-func NewAuthorizationError(key string, message string) *ClientErrorItem {
+func NewAuthorizationError(key string, message string, vars ...map[string]any) *ClientErrorItem {
+	var msgVars map[string]any = nil
+	if len(vars) > 0 {
+		msgVars = vars[0]
+	}
+
 	return &ClientErrorItem{
 		Key:     key,
 		Message: message,
-		Vars:    nil,
+		Vars:    msgVars,
 		Type:    ClientErrorTypeAuthorization,
 	}
 }

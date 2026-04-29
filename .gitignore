@@ -33,3 +33,4 @@ scripts/cert/pki/*/signed-certs/*.pem
 scripts/cert/pki/*/index.txt.*
 scripts/cert/pki/*/serial.txt.*
 scripts/cert/pki/**/*.csr
+scripts/cert/pki/**/*.srl

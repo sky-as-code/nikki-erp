@@ -28,3 +28,13 @@ openssl x509 -req \
   -days $DAYS \
   -extfile $SDIR/openssl-client-cert.cnf \
   -extensions v3_client
+
+cat $PKI_DIR/$CN.crt $CWD/pki/client-ca/$CA_CN.crt > $PKI_DIR/$CN-chain.crt && \
+rm $PKI_DIR/$CN.crt && \
+mv $PKI_DIR/$CN-chain.crt $PKI_DIR/$CN.crt
+
+# Don't need param `-certfile ca.crt` because client.crt already contains the CA chain
+openssl pkcs12 -export \
+  -inkey $PKI_DIR/$CN.key \
+  -in $PKI_DIR/$CN.crt \
+  -out $PKI_DIR/$CN.p12
