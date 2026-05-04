@@ -2,9 +2,12 @@ package distributedlock
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -13,10 +16,14 @@ type RedisDistributedLock struct {
 	redisClient *redis.Client
 }
 
-func NewRedisDistributedLock(logger logging.LoggerService, redisClient *redis.Client) DistributedLock {
+func NewRedisDistributedLock(logger logging.LoggerService, cfg config.ConfigService) DistributedLock {
 	return &RedisDistributedLock{
-		logger:      logger,
-		redisClient: redisClient,
+		logger: logger,
+		redisClient: redis.NewClient(&redis.Options{
+			Addr:     fmt.Sprintf("%s:%s", cfg.GetStr(c.DistributedLockRedisHost), cfg.GetStr(c.DistributedLockRedisPort)),
+			Password: cfg.GetStr(c.DistributedLockRedisPassword),
+			DB:       cfg.GetInt(c.DistributedLockRedisDB),
+		}),
 	}
 }
 
