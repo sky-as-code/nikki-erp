@@ -1,6 +1,5 @@
 package httpclient
 
-//
 // import (
 // 	"context"
 // 	"fmt"
@@ -12,12 +11,12 @@ package httpclient
 // )
 //
 // func NewTestClient(cfg config.ConfigService, logger logging.LoggerService) {
-// 	testConfig := &client.HTTPClientConfig{
+// 	testConfig := &client.HttpClientConfig{
 // 		Timeout: 10_000,
-// 		TLSConfig: client.TLSConfig{
+// 		TlsConfig: client.TlsConfig{
 // 			InsecureSkipVerify:     false,
-// 			IncludeSystemTrustedCA: true,
-// 			CustomTrustedCAs:       []string{},
+// 			IncludeSystemTrustedCa: true,
+// 			CustomTrustedCas:       []string{},
 // 		},
 // 		ClientCertConfig: client.ClientCertConfig{
 // 			Enabled:    true,
@@ -26,12 +25,12 @@ package httpclient
 // 		},
 // 	}
 //
-// 	client, err := client.NewHTTPClient(testConfig)
+// 	client, err := client.NewHttpClient(testConfig)
 // 	if err != nil {
 // 		fmt.Println(err.Error())
 // 	}
 //
-// 	caller := NewHTTPCaller("https://localhost:4433", client, logger)
+// 	caller := NewHttpCaller("https://localhost:4433", client, logger)
 // 	_, err = caller.Do(context.Background(), &Request{
 // 		Method: http.MethodGet,
 // 		Path:   "/ping",
