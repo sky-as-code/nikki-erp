@@ -8,9 +8,11 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v5"
-	stdErr "errors"
 	"net/http"
+
+	"github.com/labstack/echo/v5"
+
+	stdErr "errors"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
@@ -361,6 +363,7 @@ func HandleBindError(echoCtx *echo.Context, err error) error {
 // HandleServiceError maps a service-layer error to a JSON response.
 // ClientError is returned with the appropriate HTTP status.
 // Any other error returns a generic 500 to avoid leaking internal details.
+
 func HandleServiceError(echoCtx *echo.Context, err error) error {
 	var clientErr *ft.ClientError
 	if stdErr.As(err, &clientErr) {
@@ -375,8 +378,6 @@ func HandleServiceError(echoCtx *echo.Context, err error) error {
 	})
 }
 
-// HandleResultError inspects a CmdResult and returns the appropriate JSON error.
-// Returns nil when the result is successful so the caller can build the response.
 func HandleResultError(echoCtx *echo.Context, result CmdResult) error {
 	if (result).GetClientError() != nil {
 		ce := (result).GetClientError()
@@ -427,7 +428,7 @@ func ServeRequest[THttpReq any, THttpResp any, TSvcCommand any, TSvcResult CmdRe
 
 	if (*result).GetClientError() != nil {
 		ce := (*result).GetClientError()
-		return echoCtx.JSON(mapClientErrorStatus(ce.Code), ce)
+		return echoCtx.JSON(http.StatusBadRequest, ce)
 	}
 
 	if !(*result).GetHasData() {

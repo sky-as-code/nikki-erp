@@ -36,6 +36,15 @@ CORE:
     # Redis password can be specified in env var CORE_EVENT_REDIS_PASSWORD or
     # in config item CORE.EVENT.REDIS_PASSWORD_FILE which contains a secret file path.
     #REDIS_PASSWORD: "Do not specify here"
+
+  S3_STORAGE:
+    REGION_NAME: "hcm"
+    ACCESS_TOKEN: "access-token"
+    SECRET_KEY: "secret-key"
+    ENDPOINT: "https://hcm.ss.bfcplatform.vn"
+    BUCKET: "drive"
+    BUCKET_DRIVE: "drive"
+
   HTTP:
     # Base path to access REST API, default is "/" which means API URL is http://example.com/,
     # Example: BASE_PATH="/api", the API URL would be http://example.com/api.
@@ -58,8 +67,6 @@ CORE:
     CORS_METHODS: "OPTIONS,HEAD,GET,POST,PUT,DELETE"
     MTLS_ENABLED: true
     MTLS_CLIENT_CA_CERT_FILE: "scripts/cert/pki/client-ca/nikkierp-client-ca.crt"
-    MTLS_CLIENT_CERT_FILE: "scripts/cert/pki/client-cert/nikkierp-client-cert.crt"
-    MTLS_CLIENT_KEY_FILE: "scripts/cert/pki/client-cert/nikkierp-client-cert.key"
   HTTP_CLIENT:
     # Milisecond
     REQUEST_TIMEOUT: 30000
@@ -117,14 +124,6 @@ AUTHENTICATE:
   LOGIN_ATTEMPT_DURATION_SECS: 300
 
 DRIVE:
-  S3_STORAGE:
-    REGION_NAME: "hcm"
-    ACCESS_TOKEN: "access-token"
-    SECRET_KEY: "secret-key"
-    ENDPOINT: "https://hcm.ss.bfcplatform.vn"
-    BUCKET_DEFAULT: "drive"
-    BUCKET_DRIVE: "drive"
-
   CRONTAB:
     # At 00:00 every day
     DELETE_TRASHED_FILE: "0 0 * * *"

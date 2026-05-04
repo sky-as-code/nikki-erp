@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/common/array"
@@ -34,7 +34,7 @@ type DriveFileRest struct {
 	DriveFileSvc it.DriveFileService
 }
 
-func (this DriveFileRest) CreateDriveFile(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) CreateDriveFile(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create drive file"); e != nil {
 			err = e
@@ -43,7 +43,10 @@ func (this DriveFileRest) CreateDriveFile(echoCtx echo.Context) (err error) {
 
 	var cmd it.CreateDriveFileCommand
 	if err = echoCtx.Bind(&cmd); err != nil {
-		return httpserver.HandleBindError(echoCtx, err)
+		return httpserver.JsonBadRequest(
+			echoCtx,
+			[]any{fault.NewAnonymousValidationError(fault.ErrorKey("err_malformed_request"), "malformed request")},
+		)
 	}
 
 	cmd.OwnerRef = model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
@@ -71,7 +74,10 @@ func (this DriveFileRest) CreateDriveFile(echoCtx echo.Context) (err error) {
 	reqCtx := echoCtx.Request().Context().(crud.Context)
 	result, err := this.DriveFileSvc.CreateDriveFile(reqCtx, cmd)
 	if err != nil {
-		return httpserver.HandleServiceError(echoCtx, err)
+		return httpserver.JsonBadRequest(
+			echoCtx,
+			[]any{fault.NewAnonymousValidationError(fault.ErrorKey("err_malformed_request"), "malformed request")},
+		)
 	}
 
 	if errResp := httpserver.HandleResultError(echoCtx, *result); errResp != nil {
@@ -83,7 +89,7 @@ func (this DriveFileRest) CreateDriveFile(echoCtx echo.Context) (err error) {
 	return httpserver.JsonCreated(echoCtx, response)
 }
 
-func (this DriveFileRest) UpdateDriveFileMetadata(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) UpdateDriveFileMetadata(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update drive file metadata"); e != nil {
 			err = e
@@ -106,7 +112,7 @@ func (this DriveFileRest) UpdateDriveFileMetadata(echoCtx echo.Context) (err err
 	return err
 }
 
-func (this DriveFileRest) UpdateDriveFileContent(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) UpdateDriveFileContent(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update drive file content"); e != nil {
 			err = e
@@ -115,7 +121,10 @@ func (this DriveFileRest) UpdateDriveFileContent(echoCtx echo.Context) (err erro
 
 	var cmd it.UpdateDriveFileContentCommand
 	if err = echoCtx.Bind(&cmd); err != nil {
-		return httpserver.HandleBindError(echoCtx, err)
+		return httpserver.JsonBadRequest(
+			echoCtx,
+			[]any{fault.NewAnonymousValidationError(fault.ErrorKey("err_malformed_request"), "malformed request")},
+		)
 	}
 
 	fileHeader, formErr := echoCtx.FormFile("file")
@@ -152,7 +161,7 @@ func (this DriveFileRest) UpdateDriveFileContent(echoCtx echo.Context) (err erro
 	return httpserver.JsonOk(echoCtx, response)
 }
 
-func (this DriveFileRest) DeleteDriveFile(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) DeleteDriveFile(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete drive file"); e != nil {
 			err = e
@@ -179,7 +188,7 @@ func (this DriveFileRest) DeleteDriveFile(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this DriveFileRest) MoveDriveFileToTrash(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) MoveDriveFileToTrash(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST move drive file to trash"); e != nil {
 			err = e
@@ -203,7 +212,7 @@ func (this DriveFileRest) MoveDriveFileToTrash(echoCtx echo.Context) (err error)
 	return err
 }
 
-func (this DriveFileRest) RestoreDriveFile(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) RestoreDriveFile(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST restore drive file"); e != nil {
 			err = e
@@ -227,13 +236,13 @@ func (this DriveFileRest) RestoreDriveFile(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this DriveFileRest) MoveDriveFile(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) MoveDriveFile(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST move drive file"); e != nil {
 			err = e
 		}
 	}()
-	
+
 	err = httpserver.ServeRequest(
 		echoCtx, this.DriveFileSvc.MoveDriveFile,
 		func(request MoveDriveFileRequest) it.MoveDriveFileCommand {
@@ -251,7 +260,7 @@ func (this DriveFileRest) MoveDriveFile(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this DriveFileRest) GetDriveFileAncestors(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) GetDriveFileAncestors(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get drive file ancestors"); e != nil {
 			err = e
@@ -280,7 +289,7 @@ func (this DriveFileRest) GetDriveFileAncestors(echoCtx echo.Context) (err error
 	return err
 }
 
-func (this DriveFileRest) GetDriveFileById(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) GetDriveFileById(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get drive file by id"); e != nil {
 			err = e
@@ -304,7 +313,7 @@ func (this DriveFileRest) GetDriveFileById(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this DriveFileRest) StreamDriveFile(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) StreamDriveFile(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST download drive file"); e != nil {
 			err = e
@@ -313,7 +322,10 @@ func (this DriveFileRest) StreamDriveFile(echoCtx echo.Context) (err error) {
 
 	var query it.GetDriveFileByIdQuery
 	if err = echoCtx.Bind(&query); err != nil {
-		return httpserver.HandleBindError(echoCtx, err)
+		return httpserver.JsonBadRequest(
+			echoCtx,
+			[]any{fault.NewAnonymousValidationError(fault.ErrorKey("err_malformed_request"), "malformed request")},
+		)
 	}
 	if query.DriveFileId == "" {
 		query.DriveFileId = model.Id(echoCtx.Param("driveFileId"))
@@ -351,7 +363,7 @@ func (this DriveFileRest) StreamDriveFile(echoCtx echo.Context) (err error) {
 	return echoCtx.Stream(http.StatusOK, mimeType, stream)
 }
 
-func (this DriveFileRest) GetDriveFileByParent(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) GetDriveFileByParent(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get drive files by parent"); e != nil {
 			err = e
@@ -375,7 +387,7 @@ func (this DriveFileRest) GetDriveFileByParent(echoCtx echo.Context) (err error)
 	return err
 }
 
-func (this DriveFileRest) SearchDriveFile(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) SearchDriveFile(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search drive files"); e != nil {
 			err = e
@@ -399,7 +411,7 @@ func (this DriveFileRest) SearchDriveFile(echoCtx echo.Context) (err error) {
 	return err
 }
 
-func (this DriveFileRest) SearchDriveFilesShared(echoCtx echo.Context) (err error) {
+func (this DriveFileRest) SearchDriveFilesShared(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search drive files shared"); e != nil {
 			err = e

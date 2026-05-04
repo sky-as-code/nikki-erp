@@ -39,6 +39,12 @@ const (
 	EventBusRedisPassword ConfigName = "CORE.EVENT.REDIS_PASSWORD"
 	EventBusRedisDB       ConfigName = "CORE.EVENT.REDIS_DB"
 
+	S3StorageRegionName  ConfigName = "CORE.S3_STORAGE.REGION_NAME"
+	S3StorageAccessToken ConfigName = "CORE.S3_STORAGE.ACCESS_TOKEN"
+	S3StorageSecretKey   ConfigName = "CORE.S3_STORAGE.SECRET_KEY"
+	S3StorageEndpoint    ConfigName = "CORE.S3_STORAGE.ENDPOINT"
+	S3StorageBucket      ConfigName = "CORE.S3_STORAGE.BUCKET"
+
 	// HTTP Client
 	HttpClientTimeout                  ConfigName = "CORE.HTTP_CLIENT.REQUEST_TIMEOUT"
 	HttpClientSkipVerifyServer         ConfigName = "CORE.HTTP_CLIENT.INSECURE_SKIP_VERIFY"

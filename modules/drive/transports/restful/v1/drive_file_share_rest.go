@@ -1,8 +1,8 @@
 package v1
 
 import (
+	"github.com/labstack/echo/v5"
 	"github.com/sky-as-code/nikki-erp/common/array"
-	"github.com/labstack/echo/v4"
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/common/fault"
@@ -31,7 +31,7 @@ type DriveFileShareRest struct {
 	DriveFileShareSvc shareIt.DriveFileShareService
 }
 
-func (this DriveFileShareRest) CreateDriveFileShare(echoCtx echo.Context) (err error) {
+func (this DriveFileShareRest) CreateDriveFileShare(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create drive file share"); e != nil {
 			err = e
@@ -55,7 +55,7 @@ func (this DriveFileShareRest) CreateDriveFileShare(echoCtx echo.Context) (err e
 	return err
 }
 
-func (this DriveFileShareRest) CreateBulkDriveFileShares(echoCtx echo.Context) (err error) {
+func (this DriveFileShareRest) CreateBulkDriveFileShares(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST create bulk drive file shares"); e != nil {
 			err = e
@@ -86,7 +86,7 @@ func (this DriveFileShareRest) CreateBulkDriveFileShares(echoCtx echo.Context) (
 	return err
 }
 
-func (this DriveFileShareRest) UpdateDriveFileShare(echoCtx echo.Context) (err error) {
+func (this DriveFileShareRest) UpdateDriveFileShare(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST update drive file share"); e != nil {
 			err = e
@@ -110,7 +110,7 @@ func (this DriveFileShareRest) UpdateDriveFileShare(echoCtx echo.Context) (err e
 	return err
 }
 
-func (this DriveFileShareRest) GetDriveFileShareById(echoCtx echo.Context) (err error) {
+func (this DriveFileShareRest) GetDriveFileShareById(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get drive file share by id"); e != nil {
 			err = e
@@ -133,7 +133,7 @@ func (this DriveFileShareRest) GetDriveFileShareById(echoCtx echo.Context) (err 
 	return err
 }
 
-func (this DriveFileShareRest) GetDriveFileShareByFileId(echoCtx echo.Context) (err error) {
+func (this DriveFileShareRest) GetDriveFileShareByFileId(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get drive file shares file id"); e != nil {
 			err = e
@@ -156,7 +156,7 @@ func (this DriveFileShareRest) GetDriveFileShareByFileId(echoCtx echo.Context) (
 	return err
 }
 
-func (this DriveFileShareRest) GetDriveFileAncestorOwnersByFileId(echoCtx echo.Context) (err error) {
+func (this DriveFileShareRest) GetDriveFileAncestorOwnersByFileId(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get ancestor owners by file id"); e != nil {
 			err = e
@@ -165,7 +165,10 @@ func (this DriveFileShareRest) GetDriveFileAncestorOwnersByFileId(echoCtx echo.C
 
 	var req GetDriveFileAncestorOwnersByFileIdRequest
 	if err = echoCtx.Bind(&req); err != nil {
-		return httpserver.HandleBindError(echoCtx, err)
+		return httpserver.JsonBadRequest(
+			echoCtx,
+			[]any{fault.NewAnonymousValidationError(fault.ErrorKey("err_malformed_request"), "malformed request")},
+		)
 	}
 	reqCtx := echoCtx.Request().Context().(crud.Context)
 	result, err := this.DriveFileShareSvc.GetDriveFileAncestorOwnersByFileId(reqCtx, req)
@@ -183,7 +186,7 @@ func (this DriveFileShareRest) GetDriveFileAncestorOwnersByFileId(echoCtx echo.C
 	return httpserver.JsonOk(echoCtx, response)
 }
 
-func (this DriveFileShareRest) GetDriveFileResolvedSharesByFileId(echoCtx echo.Context) (err error) {
+func (this DriveFileShareRest) GetDriveFileResolvedSharesByFileId(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get resolved shares by file id"); e != nil {
 			err = e
@@ -206,7 +209,7 @@ func (this DriveFileShareRest) GetDriveFileResolvedSharesByFileId(echoCtx echo.C
 	return err
 }
 
-func (this DriveFileShareRest) GetDriveFileUserShareDetails(echoCtx echo.Context) (err error) {
+func (this DriveFileShareRest) GetDriveFileUserShareDetails(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get file-user share details"); e != nil {
 			err = e
@@ -223,9 +226,9 @@ func (this DriveFileShareRest) GetDriveFileUserShareDetails(echoCtx echo.Context
 				item := DriveFileShareDto{
 					ModelBase:     s.ModelBase,
 					AuditableBase: s.AuditableBase,
-					FileRef:    s.FileRef,
-					UserRef:    s.UserRef,
-					Permission: s.Permission,
+					FileRef:       s.FileRef,
+					UserRef:       s.UserRef,
+					Permission:    s.Permission,
 				}
 				if s.User != nil {
 					u := DriveFileShareUserDto{}
@@ -244,7 +247,7 @@ func (this DriveFileShareRest) GetDriveFileUserShareDetails(echoCtx echo.Context
 	)
 }
 
-func (this DriveFileShareRest) GetDriveFileShareByUser(echoCtx echo.Context) (err error) {
+func (this DriveFileShareRest) GetDriveFileShareByUser(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST get drive file shares by user"); e != nil {
 			err = e
@@ -267,7 +270,7 @@ func (this DriveFileShareRest) GetDriveFileShareByUser(echoCtx echo.Context) (er
 	return err
 }
 
-func (this DriveFileShareRest) SearchDriveFileShare(echoCtx echo.Context) (err error) {
+func (this DriveFileShareRest) SearchDriveFileShare(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST search drive file shares"); e != nil {
 			err = e
@@ -290,7 +293,7 @@ func (this DriveFileShareRest) SearchDriveFileShare(echoCtx echo.Context) (err e
 	return err
 }
 
-func (this DriveFileShareRest) DeleteDriveFileShare(echoCtx echo.Context) (err error) {
+func (this DriveFileShareRest) DeleteDriveFileShare(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := fault.RecoverPanicFailedTo(recover(), "handle REST delete drive file share"); e != nil {
 			err = e

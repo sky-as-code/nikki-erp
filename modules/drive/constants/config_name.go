@@ -5,19 +5,19 @@ import (
 )
 
 const (
-	S3StorageRegionName  core_constants.ConfigName = "DRIVE_S3_STORAGE_REGION_NAME"
-	S3StorageAccessToken core_constants.ConfigName = "DRIVE_S3_STORAGE_ACCESS_TOKEN"
-	S3StorageSecretKey   core_constants.ConfigName = "DRIVE_S3_STORAGE_SECRET_KEY"
-	S3StorageEndpoint    core_constants.ConfigName = "DRIVE_S3_STORAGE_ENDPOINT"
-	S3StorageBucket      core_constants.ConfigName = "DRIVE_S3_STORAGE_BUCKET"
-	S3StorageBucketDrive core_constants.ConfigName = "DRIVE_S3_STORAGE_BUCKET_DRIVE"
+	S3StorageRegionName  core_constants.ConfigName = "DRIVE.S3_STORAGE.REGION_NAME"
+	S3StorageAccessToken core_constants.ConfigName = "DRIVE.S3_STORAGE.ACCESS_TOKEN"
+	S3StorageSecretKey   core_constants.ConfigName = "DRIVE.S3_STORAGE.SECRET_KEY"
+	S3StorageEndpoint    core_constants.ConfigName = "DRIVE.S3_STORAGE.ENDPOINT"
+	S3StorageBucket      core_constants.ConfigName = "DRIVE.S3_STORAGE.BUCKET"
+	S3StorageBucketDrive core_constants.ConfigName = "DRIVE.S3_STORAGE.BUCKET_DRIVE"
 
-	CrontabDeleteTrashedFile core_constants.ConfigName = "DRIVE_CRONTAB_DELETE_TRASHED_FILE"
+	CrontabDeleteTrashedFile core_constants.ConfigName = "DRIVE.CRONTAB.DELETE_TRASHED_FILE"
 )
 
 const (
-	RedisHost     core_constants.ConfigName = "DRIVE_REDIS_HOST"
-	RedisPost     core_constants.ConfigName = "DRIVE_REDIS_PORT"
-	RedisPassword core_constants.ConfigName = "DRIVE_REDIS_PASSWORD"
-	RedisDB       core_constants.ConfigName = "DRIVE_REDIS_DB"
+	RedisHost     core_constants.ConfigName = "DRIVE.REDIS.HOST"
+	RedisPost     core_constants.ConfigName = "DRIVE.REDIS.PORT"
+	RedisPassword core_constants.ConfigName = "DRIVE.REDIS.PASSWORD"
+	RedisDB       core_constants.ConfigName = "DRIVE.REDIS.DB"
 )

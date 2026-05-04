@@ -10,12 +10,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/apptrait"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate"
 	"github.com/sky-as-code/nikki-erp/modules/core"
+	"github.com/sky-as-code/nikki-erp/modules/drive2"
 	"github.com/sky-as-code/nikki-erp/modules/essential"
 
 	// "github.com/sky-as-code/nikki-erp/modules/helpdesk"
+	"github.com/sky-as-code/nikki-erp/modules/drive"
 	"github.com/sky-as-code/nikki-erp/modules/identity"
 	"github.com/sky-as-code/nikki-erp/modules/inventory"
-	"github.com/sky-as-code/nikki-erp/modules/drive"
 )
 
 type StaticModuleLoader struct {
@@ -48,6 +49,7 @@ func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 		inventory.ModuleSingleton,
 		// inventory.ModuleSingleton,
 		drive.ModuleSingleton,
+		drive2.ModuleSingleton,
 	}
 
 	return modules

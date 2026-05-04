@@ -272,9 +272,10 @@ type UpdateBulkParam[
 func UpdateBulk[
 	TDomain any,
 	TDomainPtr dyn.DynamicModelPtr[TDomain],
+	TDomainGetter dmodel.DynamicModelGetter,
 ](
 	ctx corectx.Context,
-	param UpdateBulkParam[TDomain, TDomainPtr, TDomainPtr],
+	param UpdateBulkParam[TDomain, TDomainPtr, TDomainGetter],
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 
 	dynamicRepo := param.BaseRepoGetter.GetBaseRepo()

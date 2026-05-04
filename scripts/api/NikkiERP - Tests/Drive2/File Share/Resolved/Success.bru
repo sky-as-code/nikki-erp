@@ -1,0 +1,35 @@
+meta {
+  name: Success
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{api_host}}/v1/drive2/files/:drive_file_id/shares/resolved
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ~page: 0
+  ~size: 20
+}
+
+params:path {
+  drive_file_id: {{drive2_file_id}}
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+tests {
+  test("Status is 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

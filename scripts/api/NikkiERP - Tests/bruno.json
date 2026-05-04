@@ -6,18 +6,10 @@
     "node_modules",
     ".git"
   ],
-  "size": 0.32716941833496094,
-  "filesCount": 529,
+  "size": 0.3373384475708008,
+  "filesCount": 607,
   "clientCertificates": {
     "enabled": true,
-    "certs": [
-      {
-        "domain": "localhost:4433",
-        "type": "cert",
-        "certFilePath": "..\\..\\cert\\pki\\client-cert\\active@nikki-erp.com.crt",
-        "keyFilePath": "..\\..\\cert\\pki\\client-cert\\active@nikki-erp.com.key",
-        "passphrase": ""
-      }
-    ]
+    "certs": []
   }
 }
