@@ -7,6 +7,16 @@ import (
 )
 
 const (
+	ProductCategoryResourceCode = "inventory_product_category"
+	ProductCategoryAuthScope    = "org"
+
+	ProductCategoryActionCreate = "create"
+	ProductCategoryActionDelete = "delete"
+	ProductCategoryActionUpdate = "update"
+	ProductCategoryActionView   = "view"
+)
+
+const (
 	ProductCategorySchemaName = "inventory.product_category"
 
 	ProductCategoryFieldId = basemodel.FieldId
@@ -72,18 +82,9 @@ func NewProductCategoryFrom(src dmodel.DynamicFields) *ProductCategory {
 }
 
 func (this ProductCategory) GetName() *model.LangJson {
-	v := this.GetFieldData().GetAny(ProdCatFieldName)
-	if v == nil {
-		return nil
-	}
-	lj := v.(model.LangJson)
-	return &lj
+	return this.GetFieldData().GetLangJson(ProdCatFieldName)
 }
 
 func (this *ProductCategory) SetName(v *model.LangJson) {
-	if v == nil {
-		this.GetFieldData().SetAny(ProdCatFieldName, nil)
-		return
-	}
-	this.GetFieldData().SetAny(ProdCatFieldName, *v)
+	this.GetFieldData().SetLangJson(ProdCatFieldName, v)
 }

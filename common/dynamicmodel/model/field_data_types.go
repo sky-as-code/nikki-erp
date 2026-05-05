@@ -846,7 +846,7 @@ func (this fieldDataTypeDecimal) TryConvert(val any, _ FieldDataTypeOptions) (va
 		scaled := applyDecimalScale(result, this.options)
 		return Value(scaled), nil
 	default:
-		return Value(nil), errors.New("fieldDataTypeDecimal.TryConvert: value must be decimal or string")
+		return Value(nil), errors.New("fieldDataTypeDecimal.TryConvert: value must be decimal, string, or []byte")
 	}
 }
 
@@ -1174,15 +1174,15 @@ func (this fieldDataTypeLangJson) validateScalar(value value) (value, *ft.Client
 		getLangJsonWhitelist(this.options),
 		this.options[FieldDataTypeOptSanitizeType] == SanitizeTypeHtml,
 	)
+	if err != nil {
+		return Value(nil), &ft.ClientErrorItem{
+			Key: "lang_json_sanitize_failed", Message: err.Error(), Vars: nil,
+		}
+	}
 	for key, val := range *sanitized {
 		if cErr := validateStringLength(val, this.options); cErr != nil {
 			cErr.Field = "." + key
 			return Value(nil), cErr
-		}
-	}
-	if err != nil {
-		return Value(nil), &ft.ClientErrorItem{
-			Key: "lang_json_sanitize_failed", Message: err.Error(), Vars: nil,
 		}
 	}
 	return Value(*sanitized), nil
@@ -1210,6 +1210,23 @@ func toLangJson(value any) (model.LangJson, *ft.ClientErrorItem) {
 			return model.LangJson{}, err
 		}
 		return model.LangJson(x), nil
+	case map[string]any:
+		langJson := model.LangJson{}
+		for k, v := range x {
+			str, err := toString(v)
+			if err != nil {
+				return model.LangJson{}, &ft.ClientErrorItem{
+					Key:     "incompatible_data_type",
+					Message: fmt.Sprintf("langJson value for key '%s' cannot be converted to string", k),
+					Vars:    nil,
+				}
+			}
+			langJson[model.LanguageCode(k)] = str
+		}
+		if err := ValidateNotEmpty(langJson); err != nil {
+			return model.LangJson{}, err
+		}
+		return langJson, nil
 	default:
 		return model.LangJson{}, &ft.ClientErrorItem{
 			Key:     "incompatible_data_type",
@@ -1228,7 +1245,7 @@ func (this fieldDataTypeLangJson) TryConvert(val any, _ FieldDataTypeOptions) (v
 		return Value(v), nil
 	case *model.LangJson:
 		if v == nil {
-			return Value(nil), errors.New("fieldDataTypeLangJson.TryConvert: langJson cannot be nil")
+			return Value(nil), nil
 		}
 		return Value(*v), nil
 	case map[string]string:
@@ -1794,6 +1811,17 @@ func tryConvertStringArrayValue(value any) (value, error) {
 			return Value(nil), errors.New("tryConvertStringArrayValue: value cannot be nil")
 		}
 		return Value(*typed), nil
+	case []any:
+		// Handle JSON unmarshaled data
+		result := make([]string, 0, len(typed))
+		for _, item := range typed {
+			str, ok := item.(string)
+			if !ok {
+				return Value(nil), errors.Errorf("tryConvertStringArrayValue: array element is not string, got %T", item)
+			}
+			result = append(result, str)
+		}
+		return Value(result), nil
 	default:
 		return Value(nil), errors.Errorf("tryConvertStringArrayValue: cannot convert %T to []string", value)
 	}
@@ -1810,6 +1838,17 @@ func tryConvertInt64ArrayValue(value any) (value, error) {
 			return Value(nil), errors.New("tryConvertInt64ArrayValue: value cannot be nil")
 		}
 		return Value(*typed), nil
+	case []any:
+		// Handle JSON unmarshaled data
+		result := make([]int64, 0, len(typed))
+		for _, item := range typed {
+			converted, err := toInt64(item)
+			if err != nil {
+				return Value(nil), err
+			}
+			result = append(result, converted)
+		}
+		return Value(result), nil
 	default:
 		return Value(nil), errors.Errorf("tryConvertInt64ArrayValue: cannot convert %T to []int64", value)
 	}
@@ -1987,13 +2026,30 @@ func scanPostgresLangJsonArrayBytes(raw []byte) (value, error) {
 
 func tryConvertLangJsonBytes(raw []byte) (value, error) {
 	if len(raw) == 0 {
-		return Value(nil), errors.New("fieldDataTypeLangJson.TryConvert: value cannot be empty")
+		return Value(nil), nil
 	}
+
+	// Primary: try as JSON object → map[string]string (canonical LangJson format).
 	var mapped map[string]string
-	if err := erpjson.Unmarshal(raw, &mapped); err != nil {
-		return Value(nil), err
+	if err := erpjson.Unmarshal(raw, &mapped); err == nil {
+		return Value(model.LangJson(mapped)), nil
 	}
-	return Value(model.LangJson(mapped)), nil
+
+	// Fallback 1: JSON object with mixed value types → extract string values only.
+	var anyMapped map[string]any
+	if err := erpjson.Unmarshal(raw, &anyMapped); err == nil {
+		langJson := make(model.LangJson, len(anyMapped))
+		for k, v := range anyMapped {
+			if str, ok := v.(string); ok {
+				langJson[model.LanguageCode(k)] = str
+			}
+		}
+		return Value(langJson), nil
+	}
+
+	// Fallback 2: plain text or JSON string stored in column – treat as nil so
+	// callers receive no value rather than an opaque scan error.
+	return Value(nil), nil
 }
 
 func tryConvertJsonMapBytes(raw []byte) (value, error) {

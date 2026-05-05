@@ -33,59 +33,11 @@ func (this *ProductServiceImpl) CreateAttribute(ctx corectx.Context, cmd itAttr.
 			return attribute, nil
 		},
 		ValidateExtra: func(ctx corectx.Context, attribute *domain.Attribute, vErrs *ft.ClientErrors) error {
-			// Check if product exists
-			productId := attribute.GetProductId()
-			if productId != nil {
-				productResult, err := this.GetProduct(ctx, itProduct.GetProductQuery{Id: *productId})
-				if err != nil {
-					return err
-				}
-				if !productResult.HasData {
-					vErrs.Append(*ft.NewValidationError(domain.AttrFieldProductId, "product.not_found", "product does not exist"))
-				}
+			// Validate product and enum values
+			if err := this.validateAttributeProduct(ctx, attribute, vErrs, true); err != nil {
+				return err
 			}
-
-			// Check if codeName is unique for this product
-			codeName := attribute.GetCodeName()
-			if codeName != nil && productId != nil {
-				existingAttr, err := this.findByCodeName(ctx, *productId, *codeName)
-				if err != nil {
-					return err
-				}
-				if existingAttr != nil {
-					vErrs.Append(*ft.NewValidationError(domain.AttrFieldCodeName, "attribute.code_name_exists", "attribute code name already exists for this product"))
-				}
-			}
-
-			// Validate enum logic
-			isEnum := attribute.GetIsEnum()
-			enumValue := attribute.GetEnumValue()
-			dataType := attribute.GetDataType()
-
-			if isEnum == nil || !*isEnum {
-				// If not enum, enumValue should be nil or empty
-				if len(enumValue) > 0 {
-					vErrs.Append(*ft.NewValidationError(domain.AttrFieldEnumValue, "attribute.enum_value_not_allowed", "enum value should be empty when isEnum is false"))
-				}
-				return nil
-			}
-
-			// If isEnum is true, validate enumValue based on dataType
-			if dataType == nil {
-				return nil
-			}
-
-			if *dataType == domain.AttributeDataTypeText {
-				if len(enumValue) == 0 {
-					vErrs.Append(*ft.NewValidationError(domain.AttrFieldEnumValue, "attribute.enum_value_required", "enum value is required when isEnum is true"))
-				}
-			} else if *dataType == domain.AttributeDataTypeDecimal {
-				if len(enumValue) == 0 {
-					vErrs.Append(*ft.NewValidationError(domain.AttrFieldEnumValue, "attribute.enum_value_required", "enum value is required when isEnum is true"))
-				}
-			} else if *dataType != domain.AttributeDataTypeBoolean && *dataType != domain.AttributeDataTypeReference {
-				vErrs.Append(*ft.NewValidationError(domain.AttrFieldDataType, "attribute.invalid_enum_type", "only text and number data types are allowed for enum attribute"))
-			}
+			this.validateAttributeEnumValues(attribute, vErrs)
 
 			return nil
 		},
@@ -98,62 +50,11 @@ func (this *ProductServiceImpl) UpdateAttribute(ctx corectx.Context, cmd itAttr.
 		DbRepoGetter: this.attrRepo,
 		Data:         cmd,
 		ValidateExtra: func(ctx corectx.Context, attribute *domain.Attribute, foundAttribute *domain.Attribute, vErrs *ft.ClientErrors) error {
-			// Check if product exists (if product ID is being changed)
-			productId := attribute.GetProductId()
-			if productId != nil {
-				productResult, err := this.GetProduct(ctx, itProduct.GetProductQuery{Id: *productId})
-				if err != nil {
-					return err
-				}
-				if !productResult.HasData {
-					vErrs.Append(*ft.NewValidationError(domain.AttrFieldProductId, "product.not_found", "product does not exist"))
-				}
+			// Validate product and enum values
+			if err := this.validateAttributeProduct(ctx, attribute, vErrs, false); err != nil {
+				return err
 			}
-
-			// Check if codeName is unique for this product (excluding current attribute)
-			codeName := attribute.GetCodeName()
-			attrId := attribute.GetId()
-			if codeName != nil && productId != nil {
-				existingAttr, err := this.findByCodeName(ctx, *productId, *codeName)
-				if err != nil {
-					return err
-				}
-				// If found, check if it's not the current attribute
-				if existingAttr != nil {
-					existingId := existingAttr.GetId()
-					if existingId != nil && attrId != nil && *existingId != *attrId {
-						vErrs.Append(*ft.NewValidationError(domain.AttrFieldCodeName, "attribute.code_name_exists", "attribute code name already exists for this product"))
-					}
-				}
-			}
-
-			// Validate enum logic (same as create)
-			isEnum := attribute.GetIsEnum()
-			enumValue := attribute.GetEnumValue()
-			dataType := attribute.GetDataType()
-
-			if isEnum == nil || !*isEnum {
-				if len(enumValue) > 0 {
-					vErrs.Append(*ft.NewValidationError(domain.AttrFieldEnumValue, "attribute.enum_value_not_allowed", "enum value should be empty when isEnum is false"))
-				}
-				return nil
-			}
-
-			if dataType == nil {
-				return nil
-			}
-
-			if *dataType == domain.AttributeDataTypeText {
-				if len(enumValue) == 0 {
-					vErrs.Append(*ft.NewValidationError(domain.AttrFieldEnumValue, "attribute.enum_value_required", "enum value is required when isEnum is true"))
-				}
-			} else if *dataType == domain.AttributeDataTypeDecimal {
-				if len(enumValue) == 0 {
-					vErrs.Append(*ft.NewValidationError(domain.AttrFieldEnumValue, "attribute.enum_value_required", "enum value is required when isEnum is true"))
-				}
-			} else if *dataType != domain.AttributeDataTypeBoolean && *dataType != domain.AttributeDataTypeReference {
-				vErrs.Append(*ft.NewValidationError(domain.AttrFieldDataType, "attribute.invalid_enum_type", "only text and number data types are allowed for enum attribute"))
-			}
+			this.validateAttributeEnumValues(attribute, vErrs)
 
 			return nil
 		},
@@ -169,18 +70,65 @@ func (this *ProductServiceImpl) DeleteAttribute(ctx corectx.Context, cmd itAttr.
 }
 
 func (this *ProductServiceImpl) GetAttribute(ctx corectx.Context, query itAttr.GetAttributeQuery) (*itAttr.GetAttributeResult, error) {
-	return corecrud.GetOne[domain.Attribute](ctx, corecrud.GetOneParam{
-		Action:       "get attribute",
-		DbRepoGetter: this.attrRepo,
-		Query:        dyn.GetOneQuery(query),
+	sanitized, cErrs := query.GetSchema().ValidateStruct(query)
+	if cErrs.Count() > 0 {
+		return &itAttr.GetAttributeResult{ClientErrors: cErrs}, nil
+	}
+	query = *(sanitized.(*itAttr.GetAttributeQuery))
+
+	graph := dmodel.NewSearchGraph()
+	graph.And(
+		*dmodel.NewSearchNode().Condition(dmodel.NewCondition(domain.AttrFieldProductId, dmodel.Equals, query.ProductId)),
+		*dmodel.NewSearchNode().Condition(dmodel.NewCondition("id", dmodel.Equals, query.Id)),
+	)
+	searchResult, err := this.attrRepo.Search(ctx, dyn.RepoSearchParam{
+		Graph:  graph,
+		Fields: query.Columns,
+		Page:   0,
+		Size:   1,
 	})
+	if err != nil {
+		return nil, err
+	}
+	if searchResult.ClientErrors.Count() > 0 {
+		return &itAttr.GetAttributeResult{ClientErrors: searchResult.ClientErrors}, nil
+	}
+
+	var result itAttr.GetAttributeResult
+	result.HasData = searchResult.HasData
+	if searchResult.HasData {
+		result.Data = searchResult.Data.Items[0]
+	}
+	return &result, nil
 }
 
 func (this *ProductServiceImpl) SearchAttributes(ctx corectx.Context, query itAttr.SearchAttributesQuery) (*itAttr.SearchAttributesResult, error) {
+	sanitized, cErrs := query.GetSchema().ValidateStruct(query)
+	if cErrs.Count() > 0 {
+		return &itAttr.SearchAttributesResult{ClientErrors: cErrs}, nil
+	}
+	query = *(sanitized.(*itAttr.SearchAttributesQuery))
+
+	cond := dmodel.NewCondition(domain.AttrFieldProductId, dmodel.Equals, query.ProductId)
+	graph := dmodel.NewSearchGraph()
+	if query.Graph != nil {
+		node := query.Graph.ToSearchNode()
+		graph.And(
+			*dmodel.NewSearchNode().Condition(cond),
+			*node,
+		)
+	} else {
+		graph.Condition(cond)
+	}
 	return corecrud.Search[domain.Attribute](ctx, corecrud.SearchParam{
 		Action:       "search attributes",
 		DbRepoGetter: this.attrRepo,
-		Query:        dyn.SearchQuery(query),
+		Query: dyn.SearchQuery{
+			Fields: query.Columns,
+			Graph:  graph,
+			Page:   query.Page,
+			Size:   query.Size,
+		},
 	})
 }
 
@@ -227,25 +175,64 @@ func (this *ProductServiceImpl) getNextSortIndex(ctx corectx.Context, productId 
 	return int(maxSortIndex + 1), nil
 }
 
-// findByCodeName finds an attribute by code name and product ID
-func (this *ProductServiceImpl) findByCodeName(ctx corectx.Context, productId model.Id, codeName string) (*domain.Attribute, error) {
-	graph := dmodel.NewSearchGraph().
-		NewCondition(domain.AttrFieldProductId, dmodel.Equals, productId).
-		NewCondition(domain.AttrFieldCodeName, dmodel.Equals, codeName)
-	searchResult, err := this.attrRepo.Search(ctx, dyn.RepoSearchParam{
-		Graph: graph,
-		Page:  0,
-		Size:  1,
-	})
+// validateAttributeProduct validates that the product exists and is not archived (for create)
+func (this *ProductServiceImpl) validateAttributeProduct(ctx corectx.Context, attribute *domain.Attribute, vErrs *ft.ClientErrors, checkArchived bool) error {
+	productId := attribute.GetProductId()
+	if productId == nil {
+		return nil
+	}
 
+	productResult, err := this.GetProduct(ctx, itProduct.GetProductQuery{Id: *productId})
 	if err != nil {
-		return nil, err
+		return err
+	}
+	if productResult == nil || !productResult.HasData {
+		vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldProductId, "product.not_found", "product does not exist"))
+		return nil
 	}
 
-	if !searchResult.HasData || len(searchResult.Data.Items) == 0 {
-		return nil, nil
+	if checkArchived && productResult.Data.IsArchived() != nil && *productResult.Data.IsArchived() {
+		vErrs.Append(*ft.NewValidationError(domain.AttrFieldProductId, "product.archived", "cannot add attribute to archived product"))
 	}
 
-	attr := &searchResult.Data.Items[0]
-	return attr, nil
+	return nil
+}
+
+// validateAttributeEnumValues validates that enum values match the data type
+func (this *ProductServiceImpl) validateAttributeEnumValues(attribute *domain.Attribute, vErrs *ft.ClientErrors) {
+	isEnum := attribute.GetIsEnum()
+	dataType := attribute.GetDataType()
+
+	// Only validate if is_enum is true
+	if isEnum == nil || !*isEnum {
+		return
+	}
+
+	if dataType == nil {
+		return
+	}
+
+	switch *dataType {
+	case domain.AttributeDataTypeNumber:
+		// If data type is number and is enum, enum_value_number must not be nil
+		enumValueNumber := attribute.GetEnumValueNumber()
+		if len(enumValueNumber) == 0 {
+			vErrs.Append(*ft.NewValidationError(
+				domain.AttrFieldEnumValueNumber,
+				"attribute.enum_value_number_required",
+				"enum_value_number is required when data_type is number and is_enum is true",
+			))
+		}
+
+	case domain.AttributeDataTypeText:
+		// If data type is text and is enum, enum_value_text must not be nil
+		enumValueText := attribute.GetEnumValueText()
+		if len(enumValueText) == 0 {
+			vErrs.Append(*ft.NewValidationError(
+				domain.AttrFieldEnumValueText,
+				"attribute.enum_value_text_required",
+				"enum_value_text is required when data_type is text and is_enum is true",
+			))
+		}
+	}
 }

@@ -12,11 +12,21 @@ import (
 type AttributeDataType string
 
 const (
-	AttributeDataTypeBoolean   = AttributeDataType("boolean")
-	AttributeDataTypeDecimal   = AttributeDataType("decimal")
-	AttributeDataTypeInteger   = AttributeDataType("integer")
-	AttributeDataTypeText      = AttributeDataType("text")
-	AttributeDataTypeReference = AttributeDataType("reference")
+	AttributeDataTypeBoolean = AttributeDataType("boolean")
+	AttributeDataTypeNumber  = AttributeDataType("number")
+	AttributeDataTypeUrl     = AttributeDataType("url")
+	AttributeDataTypeText    = AttributeDataType("text")
+	AttributeDataTypeUnit    = AttributeDataType("unit")
+)
+
+const (
+	AttributeResourceCode = "inventory_attribute"
+	AttributeAuthScope    = "org"
+
+	AttributeActionCreate = "create"
+	AttributeActionDelete = "delete"
+	AttributeActionUpdate = "update"
+	AttributeActionView   = "view"
 )
 
 const (
@@ -30,7 +40,8 @@ const (
 	AttrFieldIsRequired       = "is_required"
 	AttrFieldIsEnum           = "is_enum"
 	AttrFieldEnumValueSort    = "enum_value_sort"
-	AttrFieldEnumValue        = "enum_value"
+	AttrFieldEnumValueText    = "enum_value_text"
+	AttrFieldEnumValueNumber  = "enum_value_number"
 	AttrFieldAttributeGroupId = "attribute_group_id"
 	AttrFieldProductId        = "product_id"
 
@@ -51,6 +62,7 @@ func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Name(AttrFieldCodeName).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Code Name"}).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
+				Unique().
 				RequiredForCreate(),
 		).
 		Field(
@@ -72,10 +84,10 @@ func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Label(model.LangJson{model.LanguageCodeEnUs: "Data Type"}).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
 					string(AttributeDataTypeBoolean),
-					string(AttributeDataTypeDecimal),
-					string(AttributeDataTypeInteger),
+					string(AttributeDataTypeNumber),
+					string(AttributeDataTypeUrl),
 					string(AttributeDataTypeText),
-					string(AttributeDataTypeReference),
+					string(AttributeDataTypeUnit),
 				})).
 				RequiredForCreate(),
 		).
@@ -102,9 +114,15 @@ func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		Field(
 			dmodel.DefineField().
-				Name(AttrFieldEnumValue).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Enum Values"}).
+				Name(AttrFieldEnumValueText).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Enum Values Text"}).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH).ArrayType()),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(AttrFieldEnumValueNumber).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Enum Values Number"}).
+				DataType(dmodel.FieldDataTypeInt64(0, math.MaxInt64).ArrayType()),
 		).
 		Field(
 			dmodel.DefineField().
@@ -119,6 +137,9 @@ func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				DataType(dmodel.FieldDataTypeUlid()).
 				RequiredForCreate(),
 		).
+		Extend(basemodel.ArchivableModelSchemaBuilder()).
+		Extend(basemodel.VersionedModelSchemaBuilder()).
+		Extend(basemodel.AuditableModelSchemaBuilder()).
 		EdgeTo(
 			dmodel.Edge(AttrEdgeProduct).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Product"}).
@@ -235,8 +256,8 @@ func (this *Attribute) SetEnumValueSort(v *bool) {
 	this.GetFieldData().SetBool(AttrFieldEnumValueSort, v)
 }
 
-func (this Attribute) GetEnumValue() []model.LangJson {
-	v := this.GetFieldData().GetAny(AttrFieldEnumValue)
+func (this Attribute) GetEnumValueText() []model.LangJson {
+	v := this.GetFieldData().GetAny(AttrFieldEnumValueText)
 	if v == nil {
 		return nil
 	}
@@ -278,16 +299,62 @@ func (this Attribute) GetEnumValue() []model.LangJson {
 	return nil
 }
 
-func (this *Attribute) SetEnumValue(v []model.LangJson) {
+func (this *Attribute) SetEnumValueText(v []model.LangJson) {
 	if v == nil {
-		this.GetFieldData().SetAny(AttrFieldEnumValue, nil)
+		this.GetFieldData().SetAny(AttrFieldEnumValueText, nil)
 		return
 	}
 	anySlice := make([]any, len(v))
 	for i, lj := range v {
 		anySlice[i] = lj
 	}
-	this.GetFieldData().SetAny(AttrFieldEnumValue, anySlice)
+	this.GetFieldData().SetAny(AttrFieldEnumValueText, anySlice)
+}
+
+func (this Attribute) GetEnumValueNumber() []int64 {
+	v := this.GetFieldData().GetAny(AttrFieldEnumValueNumber)
+	if v == nil {
+		return nil
+	}
+	// From DB read: value is a JSON string; unmarshal it.
+	if s, ok := v.(string); ok {
+		var result []int64
+		if err := json.Unmarshal([]byte(s), &result); err != nil {
+			return nil
+		}
+		return result
+	}
+	// From in-memory validation: value is []any{int64, ...} or []interface{}
+	if items, ok := v.([]any); ok {
+		result := make([]int64, 0, len(items))
+		for _, item := range items {
+			// Try direct int64
+			if num, ok := item.(int64); ok {
+				result = append(result, num)
+			} else if num, ok := item.(int); ok {
+				result = append(result, int64(num))
+			} else if num, ok := item.(float64); ok {
+				// JSON numbers are unmarshaled as float64
+				result = append(result, int64(num))
+			} else if num, ok := item.(int32); ok {
+				result = append(result, int64(num))
+			}
+		}
+		return result
+	}
+	return nil
+}
+
+func (this *Attribute) SetEnumValueNumber(v []int64) {
+	if v == nil {
+		this.GetFieldData().SetAny(AttrFieldEnumValueNumber, nil)
+		return
+	}
+	anySlice := make([]any, len(v))
+	for i, num := range v {
+		anySlice[i] = num
+	}
+	this.GetFieldData().SetAny(AttrFieldEnumValueNumber, anySlice)
 }
 
 func (this Attribute) GetAttributeGroupId() *model.Id {

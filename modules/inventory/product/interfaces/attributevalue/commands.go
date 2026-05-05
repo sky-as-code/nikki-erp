@@ -2,6 +2,7 @@ package attributevalue
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	basemodel "github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -87,10 +88,36 @@ var searchAttributeValuesQueryType = cqrs.RequestType{
 	Action:    "search",
 }
 
-type SearchAttributeValuesQuery dyn.SearchQuery
+type SearchAttributeValuesQuery struct {
+	Columns     []string            `json:"columns" query:"columns"`
+	Graph       *dmodel.SearchGraph `json:"graph" query:"graph"`
+	Page        int                 `json:"page" query:"page"`
+	Size        int                 `json:"size" query:"size"`
+	ProductId   basemodel.Id        `json:"product_id" param:"product_id"`
+	AttributeId basemodel.Id        `json:"attribute_id" param:"attribute_id"`
+}
 
 func (SearchAttributeValuesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchAttributeValuesQueryType
+}
+
+func (SearchAttributeValuesQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"inventory.search_attribute_values_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(dyn.DefineFieldSearchColumns()).
+				Field(dyn.DefineFieldSearchGraph()).
+				Field(dyn.DefineFieldSearchPage()).
+				Field(dyn.DefineFieldSearchSize()).
+				Field(dmodel.DefineField().
+					Name("product_id").
+					DataType(dmodel.FieldDataTypeUlid())).
+				Field(dmodel.DefineField().
+					Name("attribute_id").
+					DataType(dmodel.FieldDataTypeUlid()))
+		},
+	)
 }
 
 type SearchAttributeValuesResultData = dyn.PagedResultData[domain.AttributeValue]
