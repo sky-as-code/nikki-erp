@@ -7,6 +7,16 @@ import (
 )
 
 const (
+	ProductCategoryResourceCode = "inventory_product_category"
+	ProductCategoryAuthScope    = "org"
+
+	ProductCategoryActionCreate = "create"
+	ProductCategoryActionDelete = "delete"
+	ProductCategoryActionUpdate = "update"
+	ProductCategoryActionView   = "view"
+)
+
+const (
 	ProductCategorySchemaName = "inventory.product_category"
 
 	ProductCategoryFieldId = basemodel.FieldId

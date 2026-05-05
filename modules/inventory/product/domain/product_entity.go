@@ -7,6 +7,17 @@ import (
 )
 
 const (
+	ProductResourceCode = "inventory_product"
+	ProductAuthScope    = "org"
+
+	ProductActionCreate      = "create"
+	ProductActionDelete      = "delete"
+	ProductActionUpdate      = "update"
+	ProductActionView        = "view"
+	ProductActionSetArchived = "set_archived"
+)
+
+const (
 	ProductSchemaName = "inventory.product"
 
 	ProdFieldId               = basemodel.FieldId
@@ -21,6 +32,7 @@ const (
 	ProdEdgeVariants        = "variants"
 	ProdEdgeAttributeGroups = "attribute_groups"
 	ProdEdgeAttributes      = "attributes"
+	ProdEdgeAttributeValues = "attribute_values"
 )
 
 func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -87,6 +99,11 @@ func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			dmodel.Edge(ProdEdgeAttributes).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Attributes"}).
 				Existing(AttributeSchemaName, AttrEdgeProduct),
+		).
+		EdgeFrom(
+			dmodel.Edge(ProdEdgeAttributeValues).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Attribute Values"}).
+				Existing(AttributeValueSchemaName, AttrValEdgeProduct),
 		)
 }
 

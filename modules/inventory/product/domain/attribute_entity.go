@@ -20,6 +20,16 @@ const (
 )
 
 const (
+	AttributeResourceCode = "inventory_attribute"
+	AttributeAuthScope    = "org"
+
+	AttributeActionCreate = "create"
+	AttributeActionDelete = "delete"
+	AttributeActionUpdate = "update"
+	AttributeActionView   = "view"
+)
+
+const (
 	AttributeSchemaName = "inventory.attribute"
 
 	AttrFieldId               = basemodel.FieldId

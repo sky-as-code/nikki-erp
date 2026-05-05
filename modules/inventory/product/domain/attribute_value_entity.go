@@ -13,9 +13,20 @@ import (
 )
 
 const (
+	AttributeValueResourceCode = "inventory_attribute_value"
+	AttributeValueAuthScope    = "org"
+
+	AttributeValueActionCreate = "create"
+	AttributeValueActionDelete = "delete"
+	AttributeValueActionUpdate = "update"
+	AttributeValueActionView   = "view"
+)
+
+const (
 	AttributeValueSchemaName = "inventory.attribute_value"
 
 	AttrValFieldId           = basemodel.FieldId
+	AttrValFieldProductId    = "product_id"
 	AttrValFieldAttributeId  = "attribute_id"
 	AttrValFieldValueText    = "value_text"
 	AttrValFieldValueInteger = "value_integer"
@@ -25,6 +36,7 @@ const (
 	AttrValFieldVariantCount = "variant_count"
 
 	AttrValEdgeAttribute = "attribute"
+	AttrValEdgeProduct   = "product"
 	AttrValEdgeVariants  = "variants"
 )
 
@@ -36,6 +48,13 @@ func AttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			basemodel.DefineFieldId(AttrValFieldAttributeId).
+				RequiredForCreate(),
+		).
+		Field(
+			dmodel.DefineField().
+				Name(AttrValFieldProductId).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Product"}).
+				DataType(dmodel.FieldDataTypeUlid()).
 				RequiredForCreate(),
 		).
 		ExclusiveRequiredFields(AttrValFieldValueText, AttrValFieldValueDecimal, AttrValFieldValueInteger, AttrValFieldValueBool, AttrValFieldValueRef).
@@ -85,6 +104,14 @@ func AttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				OnDelete(dmodel.RelationCascadeCascade),
 		).
 		EdgeTo(
+			dmodel.Edge(AttrValEdgeProduct).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Product"}).
+				ManyToOne(ProductSchemaName, dmodel.DynamicFields{
+					AttrValFieldProductId: basemodel.FieldId,
+				}).
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeTo(
 			dmodel.Edge(AttrValEdgeVariants).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Variants"}).
 				ManyToMany(VariantSchemaName, VarAttrValRelSchemaName, "attribute_value").
@@ -112,21 +139,20 @@ func (this *AttributeValue) SetAttributeId(v *model.Id) {
 	this.GetFieldData().SetModelId(AttrValFieldAttributeId, v)
 }
 
+func (this AttributeValue) GetProductId() *model.Id {
+	return this.GetFieldData().GetModelId(AttrValFieldProductId)
+}
+
+func (this *AttributeValue) SetProductId(v *model.Id) {
+	this.GetFieldData().SetModelId(AttrValFieldProductId, v)
+}
+
 func (this AttributeValue) GetValueText() *model.LangJson {
-	v := this.GetFieldData().GetAny(AttrValFieldValueText)
-	if v == nil {
-		return nil
-	}
-	lj := v.(model.LangJson)
-	return &lj
+	return this.GetFieldData().GetLangJson(AttrValFieldValueText)
 }
 
 func (this *AttributeValue) SetValueText(v *model.LangJson) {
-	if v == nil {
-		this.GetFieldData().SetAny(AttrValFieldValueText, nil)
-		return
-	}
-	this.GetFieldData().SetAny(AttrValFieldValueText, *v)
+	this.GetFieldData().SetLangJson(AttrValFieldValueText, v)
 }
 
 func (this AttributeValue) GetValueDecimal() *decimal.Decimal {

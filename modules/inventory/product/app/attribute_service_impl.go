@@ -70,18 +70,65 @@ func (this *ProductServiceImpl) DeleteAttribute(ctx corectx.Context, cmd itAttr.
 }
 
 func (this *ProductServiceImpl) GetAttribute(ctx corectx.Context, query itAttr.GetAttributeQuery) (*itAttr.GetAttributeResult, error) {
-	return corecrud.GetOne[domain.Attribute](ctx, corecrud.GetOneParam{
-		Action:       "get attribute",
-		DbRepoGetter: this.attrRepo,
-		Query:        dyn.GetOneQuery(query),
+	sanitized, cErrs := query.GetSchema().ValidateStruct(query)
+	if cErrs.Count() > 0 {
+		return &itAttr.GetAttributeResult{ClientErrors: cErrs}, nil
+	}
+	query = *(sanitized.(*itAttr.GetAttributeQuery))
+
+	graph := dmodel.NewSearchGraph()
+	graph.And(
+		*dmodel.NewSearchNode().Condition(dmodel.NewCondition(domain.AttrFieldProductId, dmodel.Equals, query.ProductId)),
+		*dmodel.NewSearchNode().Condition(dmodel.NewCondition("id", dmodel.Equals, query.Id)),
+	)
+	searchResult, err := this.attrRepo.Search(ctx, dyn.RepoSearchParam{
+		Graph:  graph,
+		Fields: query.Columns,
+		Page:   0,
+		Size:   1,
 	})
+	if err != nil {
+		return nil, err
+	}
+	if searchResult.ClientErrors.Count() > 0 {
+		return &itAttr.GetAttributeResult{ClientErrors: searchResult.ClientErrors}, nil
+	}
+
+	var result itAttr.GetAttributeResult
+	result.HasData = searchResult.HasData
+	if searchResult.HasData {
+		result.Data = searchResult.Data.Items[0]
+	}
+	return &result, nil
 }
 
 func (this *ProductServiceImpl) SearchAttributes(ctx corectx.Context, query itAttr.SearchAttributesQuery) (*itAttr.SearchAttributesResult, error) {
+	sanitized, cErrs := query.GetSchema().ValidateStruct(query)
+	if cErrs.Count() > 0 {
+		return &itAttr.SearchAttributesResult{ClientErrors: cErrs}, nil
+	}
+	query = *(sanitized.(*itAttr.SearchAttributesQuery))
+
+	cond := dmodel.NewCondition(domain.AttrFieldProductId, dmodel.Equals, query.ProductId)
+	graph := dmodel.NewSearchGraph()
+	if query.Graph != nil {
+		node := query.Graph.ToSearchNode()
+		graph.And(
+			*dmodel.NewSearchNode().Condition(cond),
+			*node,
+		)
+	} else {
+		graph.Condition(cond)
+	}
 	return corecrud.Search[domain.Attribute](ctx, corecrud.SearchParam{
 		Action:       "search attributes",
 		DbRepoGetter: this.attrRepo,
-		Query:        dyn.SearchQuery(query),
+		Query: dyn.SearchQuery{
+			Fields: query.Columns,
+			Graph:  graph,
+			Page:   query.Page,
+			Size:   query.Size,
+		},
 	})
 }
 
@@ -139,9 +186,8 @@ func (this *ProductServiceImpl) validateAttributeProduct(ctx corectx.Context, at
 	if err != nil {
 		return err
 	}
-
-	if !productResult.HasData {
-		vErrs.Append(*ft.NewValidationError(domain.AttrFieldProductId, "product.not_found", "product does not exist"))
+	if productResult == nil || !productResult.HasData {
+		vErrs.Append(*ft.NewBusinessViolation(domain.AttrFieldProductId, "product.not_found", "product does not exist"))
 		return nil
 	}
 

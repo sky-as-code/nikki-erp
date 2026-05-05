@@ -2,6 +2,7 @@ package variant
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -88,10 +89,32 @@ var searchVariantsQueryType = cqrs.RequestType{
 	Action:    "search",
 }
 
-type SearchVariantsQuery dyn.SearchQuery
+type SearchVariantsQuery struct {
+	Columns   []string            `json:"columns" query:"columns"`
+	Graph     *dmodel.SearchGraph `json:"graph" query:"graph"`
+	Page      int                 `json:"page" query:"page"`
+	Size      int                 `json:"size" query:"size"`
+	ProductId model.Id            `json:"product_id" param:"product_id"`
+}
 
 func (SearchVariantsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchVariantsQueryType
+}
+
+func (SearchVariantsQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"inventory.search_variants_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(dyn.DefineFieldSearchColumns()).
+				Field(dyn.DefineFieldSearchGraph()).
+				Field(dyn.DefineFieldSearchPage()).
+				Field(dyn.DefineFieldSearchSize()).
+				Field(dmodel.DefineField().
+					Name("product_id").
+					DataType(dmodel.FieldDataTypeUlid()))
+		},
+	)
 }
 
 type SearchVariantsResultData = dyn.PagedResultData[domain.Variant]

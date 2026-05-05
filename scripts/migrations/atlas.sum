@@ -1,4 +1,4 @@
-h1:t9EKJkzmXzD/I9lZJtbPxN8swrUEuGVoWmaXDmkHQYo=
+h1:V9QRmn5xbMJ9gMYLuA0xxfQq5HRq7zTup3oX/j4OB5w=
 0001000_core_schema.sql h1:ANNBW7DV6rtlxgg9YiGYhtKbulzi7Vc5wq5QxeF7oi0=
 0001001_essential_schema.sql h1:zJbTLeK3lXNZVx+vZYjMxe6Ntx2YlmKwsIeAkMljl9k=
 0002001_identity_schema.sql h1:bXxLhb257vAwduRjL/bxd259WEvvcBAVcu7SwUd0r50=
@@ -8,4 +8,5 @@ h1:t9EKJkzmXzD/I9lZJtbPxN8swrUEuGVoWmaXDmkHQYo=
 0003001_authenticate_schema.sql h1:xpzdtKPnBlInX14WHwg1472uxWboKR+B6VylPOPVM6c=
 0003002_authenticate_seeds.sql h1:6qeMyms/39/8hf9EAfn3EWXkRur5kdu7gP5QjGxnAq8=
 0004001_contacts_schema.sql h1:In3b+G5pXK1oY3DZZfheyd3rkcy0q7glX0F7mAoZAD0=
-0005001_inventory _schema.sql h1:4nPAiHN/krtsE/a/Ivv16DVKQD/eFOxF6mp12SscvuI=
+0005001_inventory _schema.sql h1:3kFP4rz5/w6IHsDSF/R+O+1rpSVgIPsVClDoYO9bn14=
+0005002_inventory _seeds.sql h1:fmKG0c1turArChwJfbGufmLrN8up9ggQmK+AXHIyxE0=
