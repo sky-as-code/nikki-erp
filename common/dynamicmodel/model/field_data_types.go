@@ -1245,7 +1245,7 @@ func (this fieldDataTypeLangJson) TryConvert(val any, _ FieldDataTypeOptions) (v
 		return Value(v), nil
 	case *model.LangJson:
 		if v == nil {
-			return Value(nil), errors.New("fieldDataTypeLangJson.TryConvert: langJson cannot be nil")
+			return Value(nil), nil
 		}
 		return Value(*v), nil
 	case map[string]string:
@@ -2026,13 +2026,30 @@ func scanPostgresLangJsonArrayBytes(raw []byte) (value, error) {
 
 func tryConvertLangJsonBytes(raw []byte) (value, error) {
 	if len(raw) == 0 {
-		return Value(nil), errors.New("fieldDataTypeLangJson.TryConvert: value cannot be empty")
+		return Value(nil), nil
 	}
+
+	// Primary: try as JSON object → map[string]string (canonical LangJson format).
 	var mapped map[string]string
-	if err := erpjson.Unmarshal(raw, &mapped); err != nil {
-		return Value(nil), err
+	if err := erpjson.Unmarshal(raw, &mapped); err == nil {
+		return Value(model.LangJson(mapped)), nil
 	}
-	return Value(model.LangJson(mapped)), nil
+
+	// Fallback 1: JSON object with mixed value types → extract string values only.
+	var anyMapped map[string]any
+	if err := erpjson.Unmarshal(raw, &anyMapped); err == nil {
+		langJson := make(model.LangJson, len(anyMapped))
+		for k, v := range anyMapped {
+			if str, ok := v.(string); ok {
+				langJson[model.LanguageCode(k)] = str
+			}
+		}
+		return Value(langJson), nil
+	}
+
+	// Fallback 2: plain text or JSON string stored in column – treat as nil so
+	// callers receive no value rather than an opaque scan error.
+	return Value(nil), nil
 }
 
 func tryConvertJsonMapBytes(raw []byte) (value, error) {

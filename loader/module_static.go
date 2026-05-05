@@ -9,6 +9,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/apptrait"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate"
+	"github.com/sky-as-code/nikki-erp/modules/contacts"
 	"github.com/sky-as-code/nikki-erp/modules/core"
 	"github.com/sky-as-code/nikki-erp/modules/essential"
 	"github.com/sky-as-code/nikki-erp/modules/settings"
@@ -39,10 +40,10 @@ func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 	modules := []modules.InCodeModule{
 		// Sort alphabetically. The order of initialization will be handled properly.
 		apptrait.ModuleSingleton,
+		essential.ModuleSingleton,
 		authenticate.ModuleSingleton,
 		core.ModuleSingleton,
-		// contacts.ModuleSingleton,
-		essential.ModuleSingleton,
+		contacts.ModuleSingleton,
 		// helpdesk.ModuleSingleton,
 		identity.ModuleSingleton,
 		inventory.ModuleSingleton,

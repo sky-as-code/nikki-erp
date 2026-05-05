@@ -145,10 +145,32 @@ func (this *ProductServiceImpl) GetVariant(ctx corectx.Context, query it.GetVari
 }
 
 func (this *ProductServiceImpl) SearchVariants(ctx corectx.Context, query it.SearchVariantsQuery) (*it.SearchVariantsResult, error) {
+	sanitized, cErrs := query.GetSchema().ValidateStruct(query)
+	if cErrs.Count() > 0 {
+		return &it.SearchVariantsResult{ClientErrors: cErrs}, nil
+	}
+	query = *(sanitized.(*it.SearchVariantsQuery))
+
+	cond := dmodel.NewCondition(domain.VarFieldProductId, dmodel.Equals, query.ProductId)
+	graph := dmodel.NewSearchGraph()
+	if query.Graph != nil {
+		node := query.Graph.ToSearchNode()
+		graph.And(
+			*dmodel.NewSearchNode().Condition(cond),
+			*node,
+		)
+	} else {
+		graph.Condition(cond)
+	}
 	result, err := corecrud.Search[domain.Variant](ctx, corecrud.SearchParam{
 		Action:       "search variants",
 		DbRepoGetter: this.variantRepo,
-		Query:        dyn.SearchQuery(query),
+		Query: dyn.SearchQuery{
+			Fields: query.Columns,
+			Graph:  graph,
+			Page:   query.Page,
+			Size:   query.Size,
+		},
 	})
 	if err != nil || result == nil || !result.HasData {
 		return result, err
@@ -326,14 +348,14 @@ func (this *ProductServiceImpl) ReplaceAttributeValuesForVariant(
 // findAttributeByCodeName finds an attribute by code name and product ID
 func (this *ProductServiceImpl) findAttributeByCodeName(ctx corectx.Context, productId model.Id, codeName string) (*domain.Attribute, error) {
 	graph := dmodel.NewSearchGraph().
-		NewCondition(domain.AttrFieldProductId, dmodel.Equals, productId).
 		NewCondition(domain.AttrFieldCodeName, dmodel.Equals, codeName)
 
-	searchResult, err := this.SearchAttributes(ctx, itAttribute.SearchAttributesQuery(dyn.SearchQuery{
-		Graph: graph,
-		Page:  0,
-		Size:  1,
-	}))
+	searchResult, err := this.SearchAttributes(ctx, itAttribute.SearchAttributesQuery{
+		ProductId: productId,
+		Graph:     graph,
+		Page:      0,
+		Size:      1,
+	})
 
 	if err != nil {
 		return nil, err
@@ -413,10 +435,10 @@ func (this *ProductServiceImpl) populateVariantAttributes(ctx corectx.Context, v
 	// Query attributes to get code names
 	attrGraph := dmodel.NewSearchGraph().NewCondition(domain.AttrFieldId, dmodel.In, anySlice(attributeIds)...)
 	attrResult, err := this.attrRepo.Search(ctx, dyn.RepoSearchParam{
-		Graph:   attrGraph,
-		Columns: []string{domain.AttrFieldId, domain.AttrFieldCodeName},
-		Page:    0,
-		Size:    100,
+		Graph:  attrGraph,
+		Fields: []string{domain.AttrFieldId, domain.AttrFieldCodeName},
+		Page:   0,
+		Size:   100,
 	})
 	if err != nil {
 		return err

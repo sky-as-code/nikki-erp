@@ -56,6 +56,7 @@ CREATE TABLE "inventory_attributes" (
 CREATE TABLE "inventory_attribute_values" (
   "id" character varying NOT NULL,
   "attribute_id" character varying NOT NULL,
+  "product_id" character varying NOT NULL,
   "value_text" jsonb NULL,
   "value_decimal" numeric NULL,
   "value_integer" bigint NULL,
@@ -63,7 +64,8 @@ CREATE TABLE "inventory_attribute_values" (
   "value_ref" character varying NULL,
   "variant_count" bigint NULL,
   PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_attribute_values_attribute_id_fkey" FOREIGN KEY ("attribute_id") REFERENCES "inventory_attributes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT "inventory_attribute_values_attribute_id_fkey" FOREIGN KEY ("attribute_id") REFERENCES "inventory_attributes" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT "inventory_attribute_values_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "inventory_products" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- Create "inventory_product_categories" table
 CREATE TABLE "inventory_product_categories" (

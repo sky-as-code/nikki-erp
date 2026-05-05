@@ -2,6 +2,7 @@ package attribute
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	basemodel "github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -59,10 +60,30 @@ var getAttributeQueryType = cqrs.RequestType{
 	Action:    "getAttribute",
 }
 
-type GetAttributeQuery dyn.GetOneQuery
+type GetAttributeQuery struct {
+	Id        basemodel.Id `json:"id" param:"id"`
+	ProductId basemodel.Id `json:"product_id" param:"product_id"`
+	Columns   []string     `json:"columns" query:"columns"`
+}
 
 func (GetAttributeQuery) CqrsRequestType() cqrs.RequestType {
 	return getAttributeQueryType
+}
+
+func (GetAttributeQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"inventory.get_attribute_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(dmodel.DefineField().
+					Name("id").
+					DataType(dmodel.FieldDataTypeUlid())).
+				Field(dmodel.DefineField().
+					Name("product_id").
+					DataType(dmodel.FieldDataTypeUlid())).
+				Field(dyn.DefineFieldSearchColumns())
+		},
+	)
 }
 
 type GetAttributeResult = dyn.OpResult[domain.Attribute]
@@ -87,10 +108,32 @@ var searchAttributesQueryType = cqrs.RequestType{
 	Action:    "search",
 }
 
-type SearchAttributesQuery dyn.SearchQuery
+type SearchAttributesQuery struct {
+	Columns   []string            `json:"columns" query:"columns"`
+	Graph     *dmodel.SearchGraph `json:"graph" query:"graph"`
+	Page      int                 `json:"page" query:"page"`
+	Size      int                 `json:"size" query:"size"`
+	ProductId basemodel.Id        `json:"product_id" param:"product_id"`
+}
 
 func (SearchAttributesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchAttributesQueryType
+}
+
+func (SearchAttributesQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"inventory.search_attributes_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(dyn.DefineFieldSearchColumns()).
+				Field(dyn.DefineFieldSearchGraph()).
+				Field(dyn.DefineFieldSearchPage()).
+				Field(dyn.DefineFieldSearchSize()).
+				Field(dmodel.DefineField().
+					Name("product_id").
+					DataType(dmodel.FieldDataTypeUlid()))
+		},
+	)
 }
 
 type SearchAttributesResultData = dyn.PagedResultData[domain.Attribute]

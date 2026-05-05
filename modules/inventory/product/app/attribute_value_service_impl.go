@@ -29,7 +29,10 @@ func (this *ProductServiceImpl) CreateAttributeValue(ctx corectx.Context, cmd it
 				return nil
 			}
 
-			attributeResult, err := this.GetAttribute(ctx, itAttr.GetAttributeQuery{Id: *attributeId})
+			attributeResult, err := this.GetAttribute(ctx, itAttr.GetAttributeQuery{
+				Id:        *attributeId,
+				ProductId: *attributeValue.GetProductId(),
+			})
 			if err != nil {
 				return err
 			}
@@ -76,7 +79,10 @@ func (this *ProductServiceImpl) UpdateAttributeValue(ctx corectx.Context, cmd it
 			// Check if attribute exists
 			attributeId := attributeValue.GetAttributeId()
 			if attributeId != nil {
-				attributeResult, err := this.GetAttribute(ctx, itAttr.GetAttributeQuery{Id: *attributeId})
+				attributeResult, err := this.GetAttribute(ctx, itAttr.GetAttributeQuery{
+					Id:        *attributeId,
+					ProductId: *attributeValue.GetProductId(),
+				})
 				if err != nil {
 					return err
 				}
@@ -136,10 +142,37 @@ func (this *ProductServiceImpl) GetAttributeValue(ctx corectx.Context, query itA
 }
 
 func (this *ProductServiceImpl) SearchAttributeValues(ctx corectx.Context, query itAttrVal.SearchAttributeValuesQuery) (*itAttrVal.SearchAttributeValuesResult, error) {
+	sanitized, cErrs := query.GetSchema().ValidateStruct(query)
+	if cErrs.Count() > 0 {
+		return &itAttrVal.SearchAttributeValuesResult{ClientErrors: cErrs}, nil
+	}
+	query = *(sanitized.(*itAttrVal.SearchAttributeValuesQuery))
+
+	prodCond := dmodel.NewCondition(domain.AttrValFieldProductId, dmodel.Equals, query.ProductId)
+	attrCond := dmodel.NewCondition(domain.AttrValFieldAttributeId, dmodel.Equals, query.AttributeId)
+	graph := dmodel.NewSearchGraph()
+	if query.Graph != nil {
+		node := query.Graph.ToSearchNode()
+		graph.And(
+			*dmodel.NewSearchNode().Condition(prodCond),
+			*dmodel.NewSearchNode().Condition(attrCond),
+			*node,
+		)
+	} else {
+		graph.And(
+			*dmodel.NewSearchNode().Condition(prodCond),
+			*dmodel.NewSearchNode().Condition(attrCond),
+		)
+	}
 	return corecrud.Search[domain.AttributeValue](ctx, corecrud.SearchParam{
 		Action:       "search attribute values",
 		DbRepoGetter: this.attrValueRepo,
-		Query:        dyn.SearchQuery(query),
+		Query: dyn.SearchQuery{
+			Fields: query.Columns,
+			Graph:  graph,
+			Page:   query.Page,
+			Size:   query.Size,
+		},
 	})
 }
 
@@ -163,9 +196,17 @@ func (this *ProductServiceImpl) findByAttributeAndValue(ctx corectx.Context, att
 		return nil, nil
 	}
 
-	graph := dmodel.NewSearchGraph().
-		NewCondition(domain.AttrValFieldAttributeId, dmodel.Equals, *attributeId).
-		NewCondition(fieldName, dmodel.Equals, value)
+	nodes := []dmodel.SearchNode{
+		*dmodel.NewSearchNode().NewCondition(domain.AttrValFieldAttributeId, dmodel.Equals, *attributeId),
+		*dmodel.NewSearchNode().NewCondition(fieldName, dmodel.Equals, value),
+	}
+
+	// Also restrict by product_id if present on the attribute value (denormalized).
+	if pId := attributeValue.GetProductId(); pId != nil {
+		nodes = append(nodes, *dmodel.NewSearchNode().NewCondition(domain.AttrValFieldProductId, dmodel.Equals, *pId))
+	}
+
+	graph := dmodel.NewSearchGraph().And(nodes...)
 
 	searchResult, err := this.attrValueRepo.Search(ctx, dyn.RepoSearchParam{
 		Graph: graph,
@@ -187,6 +228,7 @@ func (this *ProductServiceImpl) findByAttributeAndValue(ctx corectx.Context, att
 // BuildAttributeValue builds an AttributeValue domain object from the raw value and data type
 func (this *ProductServiceImpl) BuildAttributeValue(
 	attributeId model.Id,
+	productId *model.Id,
 	dataType domain.AttributeDataType,
 	value any,
 	codeName string,
@@ -194,6 +236,9 @@ func (this *ProductServiceImpl) BuildAttributeValue(
 ) *domain.AttributeValue {
 	attrValue := domain.NewAttributeValue()
 	attrValue.SetAttributeId(&attributeId)
+	if productId != nil {
+		attrValue.SetProductId(productId)
+	}
 
 	if err := attrValue.SetValueFromRaw(dataType, value); err != nil {
 		vErrs.Append(*ft.NewValidationError("attributes."+codeName, "invalid_value_type", err.Error()))
@@ -223,7 +268,7 @@ func (this *ProductServiceImpl) FindOrCreateAttributeValue(
 	}
 
 	// Build the attribute value based on data type
-	attrValue := this.BuildAttributeValue(*attributeId, *dataType, value, codeName, vErrs)
+	attrValue := this.BuildAttributeValue(*attributeId, attribute.GetProductId(), *dataType, value, codeName, vErrs)
 	if attrValue == nil {
 		return nil, nil
 	}
