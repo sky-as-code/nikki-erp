@@ -154,9 +154,10 @@ type CreateBulkParam[
 func CreateBulk[
 	TDomain any,
 	TDomainPtr dyn.DynamicModelPtr[TDomain],
+	TDomainGetter dmodel.DynamicModelGetter,
 ](
 	ctx corectx.Context,
-	param CreateBulkParam[TDomain, TDomainPtr, TDomainPtr],
+	param CreateBulkParam[TDomain, TDomainPtr, TDomainGetter],
 ) (*dyn.OpResult[[]TDomain], error) {
 
 	dynamicRepo := param.BaseRepoGetter.GetBaseRepo()
@@ -278,7 +279,6 @@ func UpdateBulk[
 	dynamicRepo := param.BaseRepoGetter.GetBaseRepo()
 	allClientErrs := ft.NewClientErrors()
 	allModels := make([]TDomainPtr, 0, len(param.Data))
-	anyNotExisting := false
 
 	for _, dmodelItem := range param.Data {
 		model := TDomainPtr(new(TDomain))
@@ -302,8 +302,7 @@ func UpdateBulk[
 		}
 
 		if !isExisting {
-			anyNotExisting = true
-			continue
+			allClientErrs.Append(*ft.NewAnonymousNotFoundError())
 		}
 
 		allModels = append(allModels, model)
@@ -316,21 +315,20 @@ func UpdateBulk[
 		}, nil
 	}
 
-	if anyNotExisting {
-		return &dyn.OpResult[dyn.MutateResultData]{HasData: false}, nil
-	}
-
 	var totalAffected int
 	var lastAt model.ModelDateTime
 	var lastEtag model.Etag
 
 	var tx database.DbTransaction
+	var isOwnedTx bool
 	if ctx.GetDbTranx() == nil {
 		var err error
 		tx, err = param.BaseRepoGetter.GetBaseRepo().BeginTransaction(ctx)
 		if err != nil {
 			return nil, err
 		}
+
+		isOwnedTx = true
 
 		ctx.SetDbTranx(tx)
 		defer tx.Rollback()
@@ -351,7 +349,7 @@ func UpdateBulk[
 		}
 	}
 
-	if tx != nil {
+	if isOwnedTx {
 		err := tx.Commit()
 		if err != nil {
 			return nil, err

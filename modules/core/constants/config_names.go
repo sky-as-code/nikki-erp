@@ -33,6 +33,17 @@ const (
 	EventBusRedisPassword ConfigName = "CORE.EVENT.REDIS_PASSWORD"
 	EventBusRedisDB       ConfigName = "CORE.EVENT.REDIS_DB"
 
+	// HTTP Client
+	HttpClientTimeout                ConfigName = "CORE.HTTP_CLIENT.REQUEST_TIMEOUT"
+	HttpClientSkipVerifyServer       ConfigName = "CORE.HTTP_CLIENT.INSECURE_SKIP_VERIFY"
+	HttpClientCustomTrustedCACert    ConfigName = "CORE.HTTP_CLIENT.TRUSTED_CA_CERT_FILE"
+	HttpClientIncludeSystemTrustedCA ConfigName = "CORE.HTTP_CLIENT.INCLUDE_SYSTEM_TRUSTED_CA"
+	HttpClientClientCertEnabled      ConfigName = "CORE.HTTP_CLIENT.CLIENT_CERT_ENABLED"
+	HttpClientClientCert             ConfigName = "CORE.HTTP_CLIENT.CLIENT_CERT"
+	HttpClientClientCertKey          ConfigName = "CORE.HTTP_CLIENT.CLIENT_CERT_KEY"
+	HttpClientClientP12              ConfigName = "CORE.HTTP_CLIENT.CLIENT_P12"
+	HttpClientClientP12Password      ConfigName = "CORE.HTTP_CLIENT.CLIENT_P12_PASSWORD"
+
 	// HTTP Server
 	HttpBasePath       ConfigName = "CORE.HTTP.BASE_PATH"
 	HttpHost           ConfigName = "CORE.HTTP.HOST"
@@ -47,6 +58,18 @@ const (
 	HttpCorsOrigins    ConfigName = "CORE.HTTP.CORS_ORIGINS"
 	HttpCorsHeaders    ConfigName = "CORE.HTTP.CORS_HEADERS"
 	HttpCorsMethods    ConfigName = "CORE.HTTP.CORS_METHODS"
+
+	//Pub sub Redis
+	PubSubRedisHost     ConfigName = "CORE.PUB_SUB.REDIS_HOST"
+	PubSubRedisPort     ConfigName = "CORE.PUB_SUB.REDIS_PORT"
+	PubSubRedisPassword ConfigName = "CORE.PUB_SUB.REDIS_PASSWORD"
+	PubSubRedisDB       ConfigName = "CORE.PUB_SUB.REDIS_DB"
+
+	//Pub sub Redis
+	DistributedLockRedisHost     ConfigName = "CORE.DISTRIBUTED_LOCK.REDIS_HOST"
+	DistributedLockRedisPort     ConfigName = "CORE.DISTRIBUTED_LOCK.REDIS_PORT"
+	DistributedLockRedisPassword ConfigName = "CORE.DISTRIBUTED_LOCK.REDIS_PASSWORD"
+	DistributedLockRedisDB       ConfigName = "CORE.DISTRIBUTED_LOCK.REDIS_DB"
 
 	// Request Guard
 	RequestGuardAccessTokenEnabled          ConfigName = "CORE.REQUEST_GUARD.ACCESS_TOKEN_ENABLED"
