@@ -10,13 +10,14 @@ get {
   auth: inherit
 }
 
+vars:pre-request {
+  variant_id: 01KK11JNA5NZY5RCPZXG2B15EK
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
+}
+
 script:post-response {
   const { etag } = res.getBody();
   etag && bru.setVar('etag', etag);
-}
-
-vars:pre-request {
-  variant_id: 01KK11JNA5NZY5RCPZXG2B15EK
 }
 
 settings {

@@ -5,19 +5,119 @@ meta {
 }
 
 post {
-  url: {{api_host}}/v1/contacts/parties
+  url: {{api_host}}/v1/{{org_id}}/contacts/parties
   body: json
   auth: inherit
 }
 
 body:json {
   {
-      "displayName": "{{$randomFullName}}",
-      "type": "company",
-      "orgId": "{{org_id}}"
+    "display_name": "{{party_display_name}}",
+    "legal_name": "{{party_legal_name}}",
+    "legal_address": "{{party_legal_address}}",
+    "tax_id": "{{party_tax_id}}",
+    "job_position": "{{party_job_position}}",
+    "title": "{{party_title}}",
+    "type": "{{party_type}}",
+    "note": "{{party_note}}",
+    "website": "{{party_website}}"
   }
+}
+
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
+  party_display_name: Nguyen Van A
+  party_legal_name: Nguyen Van A LLC
+  party_legal_address: 100 Nguyen Hue, District 1, Ho Chi Minh City
+  party_tax_id: 0312345678
+  party_job_position: Sales Manager
+  party_title: Mr.
+  party_type: company
+  party_note: Priority customer in Ho Chi Minh City.
+  party_website: https://example.com
+}
+
+script:pre-request {
+  const parties = [
+    {
+      displayName: "Nguyen Van A",
+      legalName: "Nguyen Van A LLC",
+      legalAddress: "100 Nguyen Hue, District 1, Ho Chi Minh City",
+      taxId: "0312345678",
+      jobPosition: "Sales Manager",
+      title: "Mr.",
+      type: "company",
+      note: "Priority customer in Ho Chi Minh City.",
+      website: "https://nguyenvana.vn"
+    },
+    {
+      displayName: "Tran Thi B",
+      legalName: "Tran Thi B Trading",
+      legalAddress: "25 Tran Hung Dao, District 5, Ho Chi Minh City",
+      taxId: "0312345679",
+      jobPosition: "Purchasing Lead",
+      title: "Ms.",
+      type: "individual",
+      note: "Handles purchasing and vendor contact.",
+      website: "https://tranthib.vn"
+    },
+    {
+      displayName: "Le Minh C",
+      legalName: "Le Minh C Joint Stock Company",
+      legalAddress: "12 Le Loi, Hai Chau, Da Nang",
+      taxId: "0401234567",
+      jobPosition: "Operations Director",
+      title: "Mr.",
+      type: "company",
+      note: "Main partner in central region.",
+      website: "https://leminhc.vn"
+    },
+    {
+      displayName: "Pham Thu D",
+      legalName: "Pham Thu D Service Co., Ltd",
+      legalAddress: "88 Vo Van Tan, District 3, Ho Chi Minh City",
+      taxId: "0319876543",
+      jobPosition: "HR Manager",
+      title: "Mrs.",
+      type: "individual",
+      note: "Supports staffing and recruitment requests.",
+      website: "https://phamthud.vn"
+    },
+    {
+      displayName: "Hoang Gia E",
+      legalName: "Hoang Gia E Manufacturing",
+      legalAddress: "9B Nguyen Trai, Thanh Xuan, Ha Noi",
+      taxId: "0102233445",
+      jobPosition: "General Director",
+      title: "Mr.",
+      type: "company",
+      note: "Manufacturing partner for custom products.",
+      website: "https://hoanggiae.vn"
+    }
+  ];
+  
+  const randomParty = parties[Math.floor(Math.random() * parties.length)];
+  
+  bru.setVar('party_display_name', randomParty.displayName || "Nguyen Van A");
+  bru.setVar('party_legal_name', randomParty.legalName || "Nguyen Van A LLC");
+  bru.setVar('party_legal_address', randomParty.legalAddress || "100 Nguyen Hue, District 1, Ho Chi Minh City");
+  bru.setVar('party_tax_id', randomParty.taxId || "0312345678");
+  bru.setVar('party_job_position', randomParty.jobPosition || "Sales Manager");
+  bru.setVar('party_title', randomParty.title || "Mr.");
+  bru.setVar('party_type', randomParty.type || "company");
+  bru.setVar('party_note', randomParty.note || "Priority customer in Ho Chi Minh City.");
+  bru.setVar('party_website', randomParty.website || "https://example.com");
+}
+
+script:post-response {
+  const body = res.getBody() || {};
+  const id = body.id || body.partyId;
+  const etag = body.etag;
+  id && bru.setVar('party_id', id);
+  etag && bru.setVar('etag', etag);
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

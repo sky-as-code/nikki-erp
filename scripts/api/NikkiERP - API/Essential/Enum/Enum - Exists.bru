@@ -1,0 +1,25 @@
+meta {
+  name: Enum - Exists
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/essential/enums/exists
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ids": [
+      "{{enum_id}}"
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

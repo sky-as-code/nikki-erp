@@ -1,117 +1,117 @@
 package contact
 
-import (
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/util"
-	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
-)
+// import (
+// 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+// 	"github.com/sky-as-code/nikki-erp/common/util"
+// 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
+// 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+// 	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+// )
 
-func init() {
-	var req cqrs.Request
-	req = (*CreateContactCommand)(nil)
-	req = (*DeleteContactCommand)(nil)
-	req = (*GetContactQuery)(nil)
-	req = (*SearchContactsQuery)(nil)
-	req = (*UpdateContactCommand)(nil)
-	req = (*ContactExistsQuery)(nil)
-	util.Unused(req)
-}
+// func init() {
+// 	var req cqrs.Request
+// 	req = (*CreateContactCommand)(nil)
+// 	req = (*DeleteContactCommand)(nil)
+// 	req = (*GetContactQuery)(nil)
+// 	req = (*SearchContactsQuery)(nil)
+// 	req = (*UpdateContactCommand)(nil)
+// 	req = (*ContactExistsQuery)(nil)
+// 	util.Unused(req)
+// }
 
-var createContactCommandType = cqrs.RequestType{
-	Module:    "essential",
-	Submodule: "contact",
-	Action:    "create",
-}
+// var createContactCommandType = cqrs.RequestType{
+// 	Module:    "essential",
+// 	Submodule: "contact",
+// 	Action:    "create",
+// }
 
-type CreateContactCommand struct {
-	models.Contact
-}
+// type CreateContactCommand struct {
+// 	domain.Contact
+// }
 
-func (CreateContactCommand) CqrsRequestType() cqrs.RequestType {
-	return createContactCommandType
-}
+// func (CreateContactCommand) CqrsRequestType() cqrs.RequestType {
+// 	return createContactCommandType
+// }
 
-func (CreateContactCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(models.ContactSchemaName)
-}
+// func (CreateContactCommand) GetSchema() *dmodel.ModelSchema {
+// 	return dmodel.GetSchema(domain.ContactSchemaName)
+// }
 
-type CreateContactResult = dyn.OpResult[models.Contact]
+// type CreateContactResult = dyn.OpResult[domain.Contact]
 
-var updateContactCommandType = cqrs.RequestType{
-	Module:    "essential",
-	Submodule: "contact",
-	Action:    "update",
-}
+// var updateContactCommandType = cqrs.RequestType{
+// 	Module:    "essential",
+// 	Submodule: "contact",
+// 	Action:    "update",
+// }
 
-type UpdateContactCommand struct {
-	models.Contact
-}
+// type UpdateContactCommand struct {
+// 	domain.Contact
+// }
 
-func (UpdateContactCommand) CqrsRequestType() cqrs.RequestType {
-	return updateContactCommandType
-}
+// func (UpdateContactCommand) CqrsRequestType() cqrs.RequestType {
+// 	return updateContactCommandType
+// }
 
-func (UpdateContactCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(models.ContactSchemaName)
-}
+// func (UpdateContactCommand) GetSchema() *dmodel.ModelSchema {
+// 	return dmodel.GetSchema(domain.ContactSchemaName)
+// }
 
-type UpdateContactResult = dyn.OpResult[dyn.MutateResultData]
+// type UpdateContactResult = dyn.OpResult[dyn.MutateResultData]
 
-var deleteContactCommandType = cqrs.RequestType{
-	Module:    "essential",
-	Submodule: "contact",
-	Action:    "delete",
-}
+// var deleteContactCommandType = cqrs.RequestType{
+// 	Module:    "essential",
+// 	Submodule: "contact",
+// 	Action:    "delete",
+// }
 
-type DeleteContactCommand dyn.DeleteOneCommand
+// type DeleteContactCommand dyn.DeleteOneCommand
 
-func (DeleteContactCommand) CqrsRequestType() cqrs.RequestType {
-	return deleteContactCommandType
-}
+// func (DeleteContactCommand) CqrsRequestType() cqrs.RequestType {
+// 	return deleteContactCommandType
+// }
 
-type DeleteContactResult = dyn.OpResult[dyn.MutateResultData]
+// type DeleteContactResult = dyn.OpResult[dyn.MutateResultData]
 
-var getContactQueryType = cqrs.RequestType{
-	Module:    "essential",
-	Submodule: "contact",
-	Action:    "get",
-}
+// var getContactQueryType = cqrs.RequestType{
+// 	Module:    "essential",
+// 	Submodule: "contact",
+// 	Action:    "get",
+// }
 
-type GetContactQuery dyn.GetOneQuery
+// type GetContactQuery dyn.GetOneQuery
 
-func (GetContactQuery) CqrsRequestType() cqrs.RequestType {
-	return getContactQueryType
-}
+// func (GetContactQuery) CqrsRequestType() cqrs.RequestType {
+// 	return getContactQueryType
+// }
 
-type GetContactResult = dyn.OpResult[models.Contact]
+// type GetContactResult = dyn.OpResult[domain.Contact]
 
-var searchContactsQueryType = cqrs.RequestType{
-	Module:    "essential",
-	Submodule: "contact",
-	Action:    "search",
-}
+// var searchContactsQueryType = cqrs.RequestType{
+// 	Module:    "essential",
+// 	Submodule: "contact",
+// 	Action:    "search",
+// }
 
-type SearchContactsQuery dyn.SearchQuery
+// type SearchContactsQuery dyn.SearchQuery
 
-func (SearchContactsQuery) CqrsRequestType() cqrs.RequestType {
-	return searchContactsQueryType
-}
+// func (SearchContactsQuery) CqrsRequestType() cqrs.RequestType {
+// 	return searchContactsQueryType
+// }
 
-type SearchContactsResultData = dyn.PagedResultData[models.Contact]
-type SearchContactsResult = dyn.OpResult[SearchContactsResultData]
+// type SearchContactsResultData = dyn.PagedResultData[domain.Contact]
+// type SearchContactsResult = dyn.OpResult[SearchContactsResultData]
 
-var contactExistsQueryType = cqrs.RequestType{
-	Module:    "essential",
-	Submodule: "contact",
-	Action:    "exists",
-}
+// var contactExistsQueryType = cqrs.RequestType{
+// 	Module:    "essential",
+// 	Submodule: "contact",
+// 	Action:    "exists",
+// }
 
-type ContactExistsQuery dyn.ExistsQuery
+// type ContactExistsQuery dyn.ExistsQuery
 
-func (ContactExistsQuery) CqrsRequestType() cqrs.RequestType {
-	return contactExistsQueryType
-}
+// func (ContactExistsQuery) CqrsRequestType() cqrs.RequestType {
+// 	return contactExistsQueryType
+// }
 
-type ContactExistsResult = dyn.OpResult[dyn.ExistsResultData]
+// type ContactExistsResult = dyn.OpResult[dyn.ExistsResultData]

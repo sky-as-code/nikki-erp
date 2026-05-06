@@ -1,0 +1,22 @@
+meta {
+  name: Model Metadata - Get By ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/essential/model-metadata/{{model_metadata_id}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('model_metadata_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

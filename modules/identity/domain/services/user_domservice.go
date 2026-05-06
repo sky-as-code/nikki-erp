@@ -10,8 +10,8 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
+	enum "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/enum"
 	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
 )

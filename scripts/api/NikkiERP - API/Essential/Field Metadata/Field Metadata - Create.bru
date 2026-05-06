@@ -1,0 +1,41 @@
+meta {
+  name: Field Metadata - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/essential/field-metadata
+  body: json
+  auth: inherit
+}
+
+script:pre-request {
+  const suffix = Math.random().toString(36).slice(2, 8);
+  bru.setVar('field_metadata_code', `field_${suffix}`.replace(/[^a-zA-Z0-9_]/g, '_'));
+}
+
+body:json {
+  {
+    "model_metadata_id": "{{model_metadata_id}}",
+    "name": {
+      "en-US": "Field {{$randomLoremWord}}"
+    },
+    "code": "{{field_metadata_code}}",
+    "data_type": "string",
+    "is_required": false,
+    "display_order": 0
+  }
+}
+
+script:post-response {
+  const { id, etag } = res.getBody();
+  id && bru.setVar('field_metadata_id', id);
+  etag && bru.setVar('field_metadata_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

@@ -1,0 +1,20 @@
+meta {
+  name: Relationship - Delete
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{api_host}}/v1/{{org_id}}/contacts/parties/{{party_id}}/relationships/{{relationship_id}}
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

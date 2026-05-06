@@ -1,0 +1,22 @@
+meta {
+  name: Module - Get By ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/essential/modules/{{module_id}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('module_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

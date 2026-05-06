@@ -1,0 +1,32 @@
+meta {
+  name: Tag - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/essential/tags
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "label": {
+      "en-US": "{{$randomCatchPhraseAdjective}} tag"
+    },
+    "type": "general"
+  }
+}
+
+script:post-response {
+  const { id, etag } = res.getBody();
+  id && bru.setVar('tag_id', id);
+  etag && bru.setVar('tag_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

@@ -1,0 +1,54 @@
+meta {
+  name: Relationship - Update
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{api_host}}/v1/{{org_id}}/contacts/parties/{{party_id}}/relationships/{{relationship_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "partyId": "{{party_id}}",
+    "targetPartyId": "{{target_party_id}}",
+    "type": "{{relationship_type}}",
+    "note": "{{relationship_note}}",
+    "etag": "{{etag}}"
+  }
+}
+
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
+  target_party_id: 01K5JKAX8FDGJB7088ZZ54910E
+  relationship_type: employee
+  relationship_note: Updated internal reporting relationship.
+}
+
+script:pre-request {
+  const relationships = [
+    { type: "employee", note: "Updated reporting line in the organization." },
+    { type: "spouse", note: "Updated family relationship metadata." },
+    { type: "parent", note: "Updated parent relationship for contact details." },
+    { type: "sibling", note: "Updated sibling relationship information." },
+    { type: "emergency", note: "Updated emergency contact relationship." },
+    { type: "subsidiary", note: "Updated subsidiary relationship in org structure." }
+  ];
+
+  const randomRelationship = relationships[Math.floor(Math.random() * relationships.length)];
+
+  bru.setVar('relationship_type', randomRelationship.type || "employee");
+  bru.setVar('relationship_note', randomRelationship.note || "Updated internal reporting relationship.");
+}
+
+script:post-response {
+  const { etag } = res.getBody() || {};
+  etag && bru.setVar('etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Module - Update
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{api_host}}/v1/essential/modules/{{module_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "label": {
+      "en-US": "Updated module {{$randomLoremWord}}"
+    },
+    "is_orphaned": false,
+    "version": "1.0.1",
+    "etag": "{{module_etag}}"
+  }
+}
+
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('module_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

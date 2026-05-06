@@ -3,10 +3,12 @@ package contacts
 import (
 	"errors"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/app"
 	modconstants "github.com/sky-as-code/nikki-erp/modules/contacts/constants"
+	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/transport"
 )
@@ -51,4 +53,13 @@ func (*ContactsModule) Init() error {
 	)
 
 	return err
+}
+
+// RegisterModels implements DynamicModule.
+func (*ContactsModule) RegisterModels() error {
+	return errors.Join(
+		dmodel.RegisterSchemaB(domain.PartySchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.CommChannelSchemaBuilder()),
+		dmodel.RegisterSchemaB(domain.RelationshipSchemaBuilder()),
+	)
 }

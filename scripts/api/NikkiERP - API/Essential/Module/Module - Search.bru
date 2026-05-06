@@ -1,0 +1,16 @@
+meta {
+  name: Module - Search
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{api_host}}/v1/essential/modules
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+

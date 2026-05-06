@@ -18,7 +18,7 @@ body:json {
     },
     "sku": "{{variant_sku}}",
     "barcode": "{{variant_barcode}}",
-    "proposedPrice": {{variant_price}},
+    "proposedPrice": "{{variant_price}}",
     "status": "{{variant_status}}",
     "attributes": {{variant_attributes}},
     "etag": "{{etag}}"
@@ -35,6 +35,7 @@ vars:pre-request {
   variant_price: 199000
   variant_status: active
   variant_attributes: {"color":{"vi-VN":"Đỏ","en-US":"Red"},"size":19}
+  variant_id: 01KJ87WNPCBRAP77BFR08WBN13
 }
 
 script:pre-request {
@@ -227,10 +228,6 @@ script:pre-request {
 script:post-response {
   const { etag } = res.getBody();
   etag && bru.setVar('etag', etag);
-}
-
-vars:pre-request {
-  variant_id: 01KJ87WNPCBRAP77BFR08WBN13
 }
 
 settings {

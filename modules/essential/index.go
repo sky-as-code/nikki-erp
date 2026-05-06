@@ -65,14 +65,12 @@ func (*EssentialModule) Init() error {
 // RegisterModels implements DynamicModule.
 func (*EssentialModule) RegisterModels() error {
 	return errors.Join(
-		dmodel.RegisterSchemaB(models.ModuleMetadataSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.ContactSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.ContactChannelSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.ContactRelationshipSchemaBuilder()),
-		dmodel.RegisterSchemaB(models.ModelMetadataSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.EnumSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.FieldMetadataSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ModuleMetadataSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ModelMetadataSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.LanguageSchemaBuilder()),
-		// Unit schemas
+		dmodel.RegisterSchemaB(models.TagSchemaBuilder()),
 		dmodel.RegisterSchemaB(models.UnitCategorySchemaBuilder()),
 		dmodel.RegisterSchemaB(models.UnitSchemaBuilder()),
 	)
