@@ -111,6 +111,28 @@ func GetSchema(name string) *ModelSchema {
 	return schemaRegistry.Get(name)
 }
 
+func GetFieldNames(name string) (fieldNames []string) {
+	schema := GetSchema(name)
+	columns := schema.Columns()
+	for _, col := range columns {
+		fieldNames = append(fieldNames, col.Name())
+	}
+
+	return
+}
+
+func GetEdgeNames(name string) (edgeNames []string) {
+	schema := GetSchema(name)
+	for _, rel := range schema.ToRelations() {
+		edgeNames = append(edgeNames, rel.Edge)
+	}
+	for _, rel := range schema.FromRelations() {
+		edgeNames = append(edgeNames, rel.Edge)
+	}
+
+	return
+}
+
 // MustGetSchema retrieves a registered schema by its name.
 func MustGetSchema(name string) *ModelSchema {
 	schema := schemaRegistry.Get(name)
