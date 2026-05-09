@@ -220,14 +220,14 @@ type FileStreamRequest interface {
 }
 
 type FileStreamRequestBase struct {
-	isDownload  bool   `query:"download"`
-	rangeHeader string `header:"Range"`
+	Download    bool   `query:"download"`
+	RangeHeader string `header:"Range"`
 }
 
 func (this FileStreamRequestBase) IsDownloadRequest() bool {
-	return this.isDownload
+	return this.Download
 }
 
 func (this FileStreamRequestBase) GetRangeHeader() string {
-	return this.rangeHeader
+	return this.RangeHeader
 }
