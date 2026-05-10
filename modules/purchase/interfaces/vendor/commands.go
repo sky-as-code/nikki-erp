@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
 func init() {
@@ -22,19 +22,23 @@ func init() {
 
 var createCommandType = cqrs.RequestType{Module: "purchase", Submodule: "vendor", Action: "create"}
 
-type CreateVendorCommand struct{ domain.Vendor }
+type CreateVendorCommand struct{ models.Vendor }
 
 func (CreateVendorCommand) CqrsRequestType() cqrs.RequestType { return createCommandType }
-func (CreateVendorCommand) GetSchema() *dmodel.ModelSchema    { return dmodel.GetSchema(domain.VendorSchemaName) }
+func (CreateVendorCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(models.VendorSchemaName)
+}
 
-type CreateVendorResult = dyn.OpResult[domain.Vendor]
+type CreateVendorResult = dyn.OpResult[models.Vendor]
 
 var updateCommandType = cqrs.RequestType{Module: "purchase", Submodule: "vendor", Action: "update"}
 
-type UpdateVendorCommand struct{ domain.Vendor }
+type UpdateVendorCommand struct{ models.Vendor }
 
 func (UpdateVendorCommand) CqrsRequestType() cqrs.RequestType { return updateCommandType }
-func (UpdateVendorCommand) GetSchema() *dmodel.ModelSchema    { return dmodel.GetSchema(domain.VendorSchemaName) }
+func (UpdateVendorCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(models.VendorSchemaName)
+}
 
 type UpdateVendorResult = dyn.OpResult[dyn.MutateResultData]
 
@@ -52,7 +56,7 @@ type GetVendorQuery dyn.GetOneQuery
 
 func (GetVendorQuery) CqrsRequestType() cqrs.RequestType { return getQueryType }
 
-type GetVendorResult = dyn.OpResult[domain.Vendor]
+type GetVendorResult = dyn.OpResult[models.Vendor]
 
 var searchQueryType = cqrs.RequestType{Module: "purchase", Submodule: "vendor", Action: "search"}
 
@@ -60,7 +64,7 @@ type SearchVendorsQuery dyn.SearchQuery
 
 func (SearchVendorsQuery) CqrsRequestType() cqrs.RequestType { return searchQueryType }
 
-type SearchVendorsResultData = dyn.PagedResultData[domain.Vendor]
+type SearchVendorsResultData = dyn.PagedResultData[models.Vendor]
 type SearchVendorsResult = dyn.OpResult[SearchVendorsResultData]
 
 var setArchivedCommandType = cqrs.RequestType{Module: "purchase", Submodule: "vendor", Action: "set_archived"}

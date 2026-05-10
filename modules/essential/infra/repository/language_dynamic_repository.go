@@ -12,7 +12,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 )
 
@@ -33,7 +33,7 @@ func NewLanguageDynamicRepository(param LanguageDynamicRepositoryParam) it.Langu
 			ConfigSvc:    param.ConfigSvc,
 			QueryBuilder: param.QueryBuilder,
 			Logger:       param.Logger,
-			Schema:       dmodel.MustGetSchema(domain.LanguageSchemaName),
+			Schema:       dmodel.MustGetSchema(models.LanguageSchemaName),
 		},
 	)
 	return &LanguageDynamicRepository{dynamicRepo: dynamicRepo}
@@ -51,29 +51,29 @@ func (this *LanguageDynamicRepository) BeginTransaction(ctx corectx.Context) (da
 	return this.dynamicRepo.BeginTransaction(ctx)
 }
 
-func (this *LanguageDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.Language) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *LanguageDynamicRepository) DeleteOne(ctx corectx.Context, keys models.Language) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
 }
 
-func (this *LanguageDynamicRepository) Exists(ctx corectx.Context, keys []domain.Language) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	dynamicKeys := array.Map(keys, func(key domain.Language) dmodel.DynamicFields {
+func (this *LanguageDynamicRepository) Exists(ctx corectx.Context, keys []models.Language) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	dynamicKeys := array.Map(keys, func(key models.Language) dmodel.DynamicFields {
 		return key.GetFieldData()
 	})
 	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
 }
 
-func (this *LanguageDynamicRepository) Insert(ctx corectx.Context, src domain.Language) (*dyn.OpResult[int], error) {
+func (this *LanguageDynamicRepository) Insert(ctx corectx.Context, src models.Language) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, src)
 }
 
-func (this *LanguageDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.Language], error) {
-	return baserepo.GetOne[domain.Language](ctx, this.dynamicRepo, param)
+func (this *LanguageDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[models.Language], error) {
+	return baserepo.GetOne[models.Language](ctx, this.dynamicRepo, param)
 }
 
-func (this *LanguageDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.Language]], error) {
-	return baserepo.Search[domain.Language](ctx, this.dynamicRepo, param)
+func (this *LanguageDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[models.Language]], error) {
+	return baserepo.Search[models.Language](ctx, this.dynamicRepo, param)
 }
 
-func (this *LanguageDynamicRepository) Update(ctx corectx.Context, src domain.Language) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *LanguageDynamicRepository) Update(ctx corectx.Context, src models.Language) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, src.GetFieldData())
 }

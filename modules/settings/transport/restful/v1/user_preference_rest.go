@@ -10,7 +10,7 @@ import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	domain "github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/userpref"
 )
 
@@ -43,7 +43,7 @@ func (this UserPreferenceRest) CreateUserPreference(echoCtx *echo.Context) (err 
 		func(request CreateUserPreferenceRequest) it.CreateUserPreferenceCommand {
 			return it.CreateUserPreferenceCommand(request)
 		},
-		func(data domain.UserPreference) CreateUserPreferenceResponse {
+		func(data models.UserPreference) CreateUserPreferenceResponse {
 			response := httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 			return *response
 		},
@@ -82,7 +82,7 @@ func (this UserPreferenceRest) GetUserPreference(echoCtx *echo.Context) (err err
 		func(request GetUserPreferenceRequest) it.GetUserPreferenceQuery {
 			return it.GetUserPreferenceQuery(request)
 		},
-		func(data domain.UserPreference) GetUserPreferenceResponse {
+		func(data models.UserPreference) GetUserPreferenceResponse {
 			return data.GetFieldData()
 		},
 		httpserver.JsonOk,
@@ -145,7 +145,7 @@ func (this UserPreferenceRest) UpdateUserPreference(echoCtx *echo.Context) (err 
 }
 
 func (this UserPreferenceRest) GetModelSchema(echoCtx *echo.Context) (err error) {
-	schema := dmodel.MustGetSchema(domain.UserPreferenceSchemaName)
+	schema := dmodel.MustGetSchema(models.UserPreferenceSchemaName)
 	echoCtx.JSON(http.StatusOK, schema.ToSimplized())
 	return nil
 }

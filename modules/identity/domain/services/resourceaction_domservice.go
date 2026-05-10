@@ -7,6 +7,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -22,12 +23,14 @@ func NewActionDomainService(resourceSvc itRes.ResourceDomainService) itAct.Actio
 }
 
 func (this *ResourceDomainServiceImpl) CreateAction(
-	ctx corectx.Context, cmd itAct.CreateActionCommand,
+	ctx corectx.Context, cmd itAct.CreateActionCommand, options ...corecrud.ServiceCreateOptions[*domain.Action],
 ) (*itAct.CreateActionResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.Action]{})
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.Action, *domain.Action]{
-		Action:         "create action",
-		BaseRepoGetter: this.actionRepo,
-		Data:           cmd,
+		Action:                 "create action",
+		BaseRepoGetter:         this.actionRepo,
+		Data:                   cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 		BeforeValidation: func(ctx corectx.Context, inputModel *domain.Action, vErrs *ft.ClientErrors) (*domain.Action, error) {
 			err := this.checkResourceExists(ctx, inputModel.MustGetResourceId(), vErrs)
 			if err != nil {
@@ -39,8 +42,9 @@ func (this *ResourceDomainServiceImpl) CreateAction(
 }
 
 func (this *ResourceDomainServiceImpl) DeleteAction(
-	ctx corectx.Context, cmd itAct.DeleteActionCommand,
+	ctx corectx.Context, cmd itAct.DeleteActionCommand, options ...corecrud.ServiceDeleteOptions,
 ) (_ *itAct.DeleteActionResult, err error) {
+	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "delete action"); e != nil {
 			err = e
@@ -65,9 +69,13 @@ func (this *ResourceDomainServiceImpl) DeleteAction(
 	action := domain.NewAction()
 	action.SetId(util.ToPtr(model.Id(cmd.ActionId)))
 	action.SetResourceId(&cmd.ResourceId)
-	delResult, err := this.actionRepo.DeleteOne(ctx, *action)
-
-	return delResult, err
+	if opts.AfterValidationSuccess != nil {
+		if _, cbErr := opts.AfterValidationSuccess(ctx, dyn.DeleteOneCommand{Id: cmd.ActionId}); cbErr != nil {
+			return nil, cbErr
+		}
+	}
+	delResult, delErr := this.actionRepo.DeleteOne(ctx, *action)
+	return delResult, delErr
 }
 
 func (this *ResourceDomainServiceImpl) ActionExists(
@@ -178,8 +186,9 @@ func (this *ResourceDomainServiceImpl) GetAction(
 }
 
 func (this *ResourceDomainServiceImpl) SearchActions(
-	ctx corectx.Context, query itAct.SearchActionsQuery,
+	ctx corectx.Context, query itAct.SearchActionsQuery, options ...corecrud.ServiceSearchOptions,
 ) (result *itAct.SearchActionsResult, err error) {
+	opts := safe.GetOptional(options, corecrud.ServiceSearchOptions{})
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "search actions"); e != nil {
 			err = e
@@ -212,8 +221,9 @@ func (this *ResourceDomainServiceImpl) SearchActions(
 		graph.Condition(cond)
 	}
 	return corecrud.Search[domain.Action](ctx, corecrud.SearchParam{
-		Action:       "search actions",
-		DbRepoGetter: this.actionRepo,
+		Action:                 "search actions",
+		DbRepoGetter:           this.actionRepo,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 		Query: dyn.SearchQuery{
 			Fields: query.Columns,
 			Graph:  graph,
@@ -224,12 +234,14 @@ func (this *ResourceDomainServiceImpl) SearchActions(
 }
 
 func (this *ResourceDomainServiceImpl) UpdateAction(
-	ctx corectx.Context, cmd itAct.UpdateActionCommand,
+	ctx corectx.Context, cmd itAct.UpdateActionCommand, options ...corecrud.ServiceUpdateOptions[*domain.Action],
 ) (*itAct.UpdateActionResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceUpdateOptions[*domain.Action]{})
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Action, *domain.Action]{
-		Action:       "update action",
-		DbRepoGetter: this.actionRepo,
-		Data:         cmd,
+		Action:                 "update action",
+		DbRepoGetter:           this.actionRepo,
+		Data:                   cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 		BeforeValidation: func(ctx corectx.Context, inputModel *domain.Action, vErrs *ft.ClientErrors) (*domain.Action, error) {
 			err := this.checkResourceExists(ctx, inputModel.MustGetResourceId(), vErrs)
 			if err != nil {

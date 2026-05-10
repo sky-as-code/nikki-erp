@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
 type FieldsResolver interface {
@@ -17,14 +18,18 @@ type FieldsResolver interface {
 }
 
 type UiSearchParam[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]] struct {
-	Action        string
+	Action string
+	// Default fields to use when `FieldResolver` cannot find `SearchName`.
+	// This happens when the user has not modified the default search view.
+	// No need to specify ID field because it is always included.
+	DefaultFields []string
+
+	// Always masked fields that are not allowed to be returned to the client.
+	MaskedFields []string
+
 	FieldResolver FieldsResolver
 	Schema        *dmodel.ModelSchema
-	// Name of the saved search view.
-	ExpectedSearchName string
-	// Default name to use when ExpectedSearchName is not specified.
-	DefaultSearchName string
-	SearchFn          SearchFn[TDomain]
+	SearchFn      SearchFn[TDomain]
 }
 
 type SearchFn[TDomain any] func(
@@ -43,15 +48,27 @@ func UiSearch[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 	desiredFields := []string{}
 	maskedFields := []string{}
 
+	if len(param.MaskedFields) > 0 {
+		maskedFields = append(maskedFields, param.MaskedFields...)
+	}
+
 	result, err := param.SearchFn(func(ctx corectx.Context, query dyn.SearchQuery) (dyn.SearchQuery, error) {
 		isClientSpecifiedFields := len(query.Fields) > 0
 
 		if !isClientSpecifiedFields {
-			uiFields, err := getListFields(ctx, param.FieldResolver, param.ExpectedSearchName)
-			if err != nil {
-				return query, err
+			if query.SearchName != nil && *query.SearchName == dyn.DefaultSearchName {
+				query.Fields = param.DefaultFields
+			} else if query.SearchName != nil {
+				uiFields, err := getListFields(ctx, param.FieldResolver, *query.SearchName)
+				if err != nil {
+					return query, err
+				}
+				if len(uiFields) > 0 {
+					query.Fields = uiFields
+				} else {
+					query.Fields = []string{basemodel.FieldId}
+				}
 			}
-			query.Fields = uiFields
 		}
 		desiredFields = query.Fields
 
@@ -88,10 +105,10 @@ func getListFields(ctx corectx.Context, fieldResolver FieldsResolver, uiName str
 		return nil, err
 	}
 	if uiFields.ClientErrors.Count() > 0 {
-		return nil, errors.Wrap(uiFields.ClientErrors.ToError(), "UiSearch")
+		return nil, errors.Wrap(uiFields.ClientErrors.ToError(), "getListFields")
 	}
 	if !uiFields.HasData {
-		// TODO: Set default fields
+		return nil, nil
 	}
 	return uiFields.Data, nil
 }

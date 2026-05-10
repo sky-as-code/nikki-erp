@@ -10,20 +10,22 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/requestforproposal"
 )
 
 type requestForProposalRestParams struct {
 	dig.In
-	Svc it.RequestForProposalService
+	Svc it.RequestForProposalAppService
 }
 
 func NewRequestForProposalRest(params requestForProposalRestParams) *RequestForProposalRest {
 	return &RequestForProposalRest{svc: params.Svc}
 }
 
-type RequestForProposalRest struct{ svc it.RequestForProposalService }
+type RequestForProposalRest struct {
+	svc it.RequestForProposalAppService
+}
 
 func (this RequestForProposalRest) CreateRequestForProposal(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -33,11 +35,11 @@ func (this RequestForProposalRest) CreateRequestForProposal(echoCtx *echo.Contex
 	}()
 	return httpserver.ServeRequestDynamic(echoCtx, this.svc.CreateRequestForProposal,
 		func(fields dmodel.DynamicFields) it.CreateRequestForProposalCommand {
-			cmd := it.CreateRequestForProposalCommand{RequestForProposal: *domain.NewRequestForProposal()}
+			cmd := it.CreateRequestForProposalCommand{RequestForProposal: *models.NewRequestForProposal()}
 			cmd.SetFieldData(fields)
 			return cmd
 		},
-		func(data domain.RequestForProposal) CreateRequestForProposalResponse {
+		func(data models.RequestForProposal) CreateRequestForProposalResponse {
 			return *httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 		},
 		httpserver.JsonCreated)
@@ -66,7 +68,7 @@ func (this RequestForProposalRest) GetRequestForProposal(echoCtx *echo.Context) 
 		func(request GetRequestForProposalRequest) it.GetRequestForProposalQuery {
 			return it.GetRequestForProposalQuery(request)
 		},
-		func(data domain.RequestForProposal) GetRequestForProposalResponse { return data.GetFieldData() }, httpserver.JsonOk)
+		func(data models.RequestForProposal) GetRequestForProposalResponse { return data.GetFieldData() }, httpserver.JsonOk)
 }
 func (this RequestForProposalRest) RequestForProposalExists(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -116,7 +118,7 @@ func (this RequestForProposalRest) UpdateRequestForProposal(echoCtx *echo.Contex
 	}()
 	return httpserver.ServeRequest2(echoCtx, this.svc.UpdateRequestForProposal,
 		func(request UpdateRequestForProposalRequest) it.UpdateRequestForProposalCommand {
-			cmd := it.UpdateRequestForProposalCommand{RequestForProposal: *domain.NewRequestForProposal()}
+			cmd := it.UpdateRequestForProposalCommand{RequestForProposal: *models.NewRequestForProposal()}
 			cmd.SetFieldData(request.DynamicFields)
 			cmd.SetId(util.ToPtr(model.Id(request.RequestForProposalId)))
 			return cmd

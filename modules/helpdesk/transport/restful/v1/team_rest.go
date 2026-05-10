@@ -10,14 +10,14 @@ import (
 
 type teamRestParams struct {
 	dig.In
-	Service it.TeamService
+	Service it.TeamAppService
 }
 
 func NewTeamRest(params teamRestParams) *TeamRest { return &TeamRest{Service: params.Service} }
 
 type TeamRest struct {
 	httpserver.RestBase
-	Service it.TeamService
+	Service it.TeamAppService
 }
 
 func (this TeamRest) CreateTeam(echoCtx *echo.Context) (err error) {

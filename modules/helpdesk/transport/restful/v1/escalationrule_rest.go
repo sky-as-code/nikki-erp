@@ -10,7 +10,7 @@ import (
 
 type escalationRuleRestParams struct {
 	dig.In
-	Service it.EscalationRuleService
+	Service it.EscalationRuleAppService
 }
 
 func NewEscalationRuleRest(params escalationRuleRestParams) *EscalationRuleRest {
@@ -19,7 +19,7 @@ func NewEscalationRuleRest(params escalationRuleRestParams) *EscalationRuleRest 
 
 type EscalationRuleRest struct {
 	httpserver.RestBase
-	Service it.EscalationRuleService
+	Service it.EscalationRuleAppService
 }
 
 func (this EscalationRuleRest) CreateEscalationRule(echoCtx *echo.Context) (err error) {

@@ -5,7 +5,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	c "github.com/sky-as-code/nikki-erp/modules/identity/constants"
-	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 )
@@ -46,10 +46,10 @@ func (this *OrganizationApplicationServiceImpl) GetOrg(ctx corectx.Context, quer
 	if cErr := assertPermission(ctx, "read", c.ResourceIdentityOrganization, c.ResourceScopeDomain); cErr != nil {
 		return &it.GetOrgResult{ClientErrors: *cErr}, nil
 	}
-	return corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[domain.Organization, *domain.Organization]{
+	return corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[models.Organization, *models.Organization]{
 		Action: "get organization",
 		Schema: this.orgRepo.GetBaseRepo().Schema(),
-		GetOneFn: func() (*dyn.OpResult[domain.Organization], error) {
+		GetOneFn: func() (*dyn.OpResult[models.Organization], error) {
 			return this.orgSvc.GetOrg(ctx, query)
 		},
 	})
@@ -73,13 +73,15 @@ func (this *OrganizationApplicationServiceImpl) SearchOrgs(ctx corectx.Context, 
 	if cErr := assertPermission(ctx, "read", c.ResourceIdentityOrganization, c.ResourceScopeDomain); cErr != nil {
 		return &it.SearchOrgsResult{ClientErrors: *cErr}, nil
 	}
-	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Organization, *domain.Organization]{
-		Action:            "search organizations",
-		FieldResolver:     this.userPrefSvc.(corecrud.FieldsResolver),
-		Schema:            this.orgRepo.GetBaseRepo().Schema(),
-		DefaultSearchName: "organization_list",
-		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.Organization]], error) {
-			return this.orgSvc.SearchOrgs(ctx, query)
+	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[models.Organization, *models.Organization]{
+		Action:        "search organizations",
+		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
+		Schema:        this.orgRepo.GetBaseRepo().Schema(),
+		DefaultFields: []string{models.OrgFieldSlug, models.OrgFieldDisplayName, models.OrgFieldLegalName},
+		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[models.Organization]], error) {
+			return this.orgSvc.SearchOrgs(ctx, query, corecrud.ServiceSearchOptions{
+				AfterValidationSuccess: fn,
+			})
 		},
 	})
 }

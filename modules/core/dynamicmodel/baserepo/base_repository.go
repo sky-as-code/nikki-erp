@@ -894,6 +894,11 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 					))
 					continue
 				}
+				for _, pair := range rel.EffectiveForeignKeys() {
+					if pair.FkColumn != "" {
+						mainSet[pair.FkColumn] = struct{}{}
+					}
+				}
 				destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
 				if destSchema == nil {
 					errs.Append(*ft.NewAnonymousValidationError(
@@ -912,15 +917,59 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 			mainSet[col] = struct{}{}
 			continue
 		}
-		parts, partErr := this.parseNestedColumn(col)
-		if partErr != nil {
-			errs.Append(*partErr)
+
+		if strings.Count(col, ".") > orm.MaxSelectGraphColumnDots {
+			errs.Append(*ft.NewValidationError(
+				col, ft.ErrorKey("err_graph_field_path_too_deep"),
+				fmt.Sprintf("field path exceeds maximum of %d dot separators", orm.MaxSelectGraphColumnDots),
+			))
 			continue
 		}
-		if edgeLeafSet[parts[0]] == nil {
-			edgeLeafSet[parts[0]] = make(map[string]struct{})
+		parts := strings.SplitN(col, ".", 2)
+		edge, leaf := parts[0], parts[1]
+		if edge == "" || leaf == "" || strings.Contains(leaf, "..") ||
+			strings.HasPrefix(leaf, ".") || strings.HasSuffix(leaf, ".") {
+			errs.Append(*ft.NewValidationError(
+				col, ft.ErrorKey("err_invalid_graph_field_path"),
+				"field path must be {edge}.{field}",
+			))
+			continue
 		}
-		edgeLeafSet[parts[0]][parts[1]] = struct{}{}
+
+		rel, ok := this.relationByEdge(edge)
+		if !ok {
+			errs.Append(*ft.NewValidationError(
+				edge, ft.ErrorKey("err_unknown_schema_field"), "edge is not defined on this schema",
+			))
+			continue
+		}
+		for _, pair := range rel.EffectiveForeignKeys() {
+			if pair.FkColumn != "" {
+				mainSet[pair.FkColumn] = struct{}{}
+			}
+		}
+
+		if strings.Count(leaf, ".") == 0 {
+			destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
+			if destSchema == nil {
+				errs.Append(*ft.NewAnonymousValidationError(
+					ft.ErrorKey("err_schema_not_found"), "edge destination schema not found", nil,
+				))
+				continue
+			}
+			f, hasField := destSchema.Column(leaf)
+			if !hasField || f.IsVirtualModelField() {
+				errs.Append(*ft.NewValidationError(
+					col, ft.ErrorKey("err_unknown_schema_field"), "field is not defined on edge schema",
+				))
+				continue
+			}
+		}
+
+		if edgeLeafSet[edge] == nil {
+			edgeLeafSet[edge] = make(map[string]struct{})
+		}
+		edgeLeafSet[edge][leaf] = struct{}{}
 	}
 	if errs.Count() > 0 {
 		return nestedSelectPlan{}, errs

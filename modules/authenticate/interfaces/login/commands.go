@@ -3,7 +3,7 @@ package login
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -62,12 +62,12 @@ var createLoginAttemptCommandType = cqrs.RequestType{
 
 func NewCreateLoginAttemptCommand() CreateLoginAttemptCommand {
 	return CreateLoginAttemptCommand{
-		LoginAttempt: *domain.NewLoginAttempt(),
+		LoginAttempt: *models.NewLoginAttempt(),
 	}
 }
 
 type CreateLoginAttemptCommand struct {
-	domain.LoginAttempt
+	models.LoginAttempt
 }
 
 func (CreateLoginAttemptCommand) CqrsRequestType() cqrs.RequestType {
@@ -75,11 +75,11 @@ func (CreateLoginAttemptCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (this CreateLoginAttemptCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.LoginAttemptSchemaName)
+	return dmodel.GetSchema(models.LoginAttemptSchemaName)
 }
 
 type CreateLoginAttemptResultData struct {
-	Attempt       domain.LoginAttempt `json:"attempt"`
+	Attempt       models.LoginAttempt `json:"attempt"`
 	PrincipalName string              `json:"principal_name"`
 }
 
@@ -92,7 +92,7 @@ var updateLoginAttemptCommandType = cqrs.RequestType{
 }
 
 type UpdateLoginAttemptCommand struct {
-	domain.LoginAttempt
+	models.LoginAttempt
 }
 
 func (UpdateLoginAttemptCommand) CqrsRequestType() cqrs.RequestType {
@@ -100,7 +100,7 @@ func (UpdateLoginAttemptCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (this UpdateLoginAttemptCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.LoginAttemptSchemaName)
+	return dmodel.GetSchema(models.LoginAttemptSchemaName)
 }
 
 type UpdateLoginAttemptResult = dyn.OpResult[dyn.MutateResultData]
@@ -113,7 +113,7 @@ var startLoginFlowCommandType = cqrs.RequestType{
 
 type StartLoginFlowCommand struct {
 	DeviceName    *string               `json:"device_name,omitempty"`
-	PrincipalType *domain.PrincipalType `json:"principal_type,omitempty"`
+	PrincipalType *models.PrincipalType `json:"principal_type,omitempty"`
 	Username      string                `json:"username"`
 }
 
@@ -126,9 +126,9 @@ func (this StartLoginFlowCommand) GetSchema() *dmodel.ModelSchema {
 		"authenticate.start_login_flow_command",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalDeviceNameField()).
-				Field(domain.DefinePrincipalTypeField("principal_type").Default(domain.PrincipalTypeNikkiUser)).
-				Field(domain.DefinePrincipalUsernameField("username").RequiredAlways())
+				Field(models.DefinePrincipalDeviceNameField()).
+				Field(models.DefinePrincipalTypeField("principal_type").Default(models.PrincipalTypeNikkiUser)).
+				Field(models.DefinePrincipalUsernameField("username").RequiredAlways())
 		},
 	)
 }
@@ -145,7 +145,7 @@ func (this GetAttemptQuery) CqrsRequestType() cqrs.RequestType {
 	return getAttemptByIdQueryType
 }
 
-type GetAttemptResult = dyn.OpResult[domain.LoginAttempt]
+type GetAttemptResult = dyn.OpResult[models.LoginAttempt]
 
 var refreshTokenCommandType = cqrs.RequestType{
 	Module:    "authenticate",

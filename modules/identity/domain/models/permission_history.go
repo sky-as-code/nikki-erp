@@ -1,13 +1,8 @@
 package models
 
 import (
-	"github.com/thoas/go-funk"
-	"go.bryk.io/pkg/errors"
-
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
-	entPermissionHistory "github.com/sky-as-code/nikki-erp/modules/authorize/infra/ent/permissionhistory"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
@@ -163,102 +158,30 @@ func (this *PermissionHistory) SetFieldData(data dmodel.DynamicFields) {
 
 type PermissionHistoryEffect string
 
-const (
-	PermissionHistoryEffectGrant  = PermissionHistoryEffect(entPermissionHistory.EffectGrant)
-	PermissionHistoryEffectRevoke = PermissionHistoryEffect(entPermissionHistory.EffectRevoke)
-)
-
-func (this PermissionHistoryEffect) Validate() error {
-	switch this {
-	case PermissionHistoryEffectGrant, PermissionHistoryEffectRevoke:
-		return nil
-	default:
-		return errors.Errorf("invalid history effect value: %s", this)
-	}
-}
-
-func (this PermissionHistoryEffect) String() string {
-	return string(this)
-}
-
-func WrapHistoryEffect(s string) *PermissionHistoryEffect {
-	st := PermissionHistoryEffect(s)
-	return &st
-}
-
-func WrapHistoryEffectEnt(s entPermissionHistory.Effect) *PermissionHistoryEffect {
-	st := PermissionHistoryEffect(s)
-	return &st
-}
-
-func PermissionHistoryEffectValidateRule(field **PermissionHistoryEffect) *val.FieldRules {
-	return val.Field(field,
-		val.NotEmpty,
-		val.OneOf(PermissionHistoryEffectGrant, PermissionHistoryEffectRevoke),
-	)
-}
-
 type PermissionHistoryReason string
 
 const (
-	PermissionHistoryReasonEntAdded   = PermissionHistoryReason(entPermissionHistory.ReasonEntAdded)
-	PermissionHistoryReasonEntRemoved = PermissionHistoryReason(entPermissionHistory.ReasonEntRemoved)
-	PermissionHistoryReasonEntDeleted = PermissionHistoryReason(entPermissionHistory.ReasonEntDeleted)
+	PermissionHistoryReasonEntAdded   = PermissionHistoryReason("ent_added")
+	PermissionHistoryReasonEntRemoved = PermissionHistoryReason("ent_removed")
+	PermissionHistoryReasonEntDeleted = PermissionHistoryReason("ent_deleted")
 
-	PermissionHistoryReasonEntAddedGroup   = PermissionHistoryReason(entPermissionHistory.ReasonEntAddedGroup)
-	PermissionHistoryReasonEntRemovedGroup = PermissionHistoryReason(entPermissionHistory.ReasonEntRemovedGroup)
-	PermissionHistoryReasonEntDeletedGroup = PermissionHistoryReason(entPermissionHistory.ReasonEntDeletedGroup)
+	PermissionHistoryReasonEntAddedGroup   = PermissionHistoryReason("ent_added_group")
+	PermissionHistoryReasonEntRemovedGroup = PermissionHistoryReason("ent_removed_group")
+	PermissionHistoryReasonEntDeletedGroup = PermissionHistoryReason("ent_deleted_group")
 
-	PermissionHistoryReasonEntAddedRole   = PermissionHistoryReason(entPermissionHistory.ReasonEntAddedRole)
-	PermissionHistoryReasonEntRemovedRole = PermissionHistoryReason(entPermissionHistory.ReasonEntRemovedRole)
-	PermissionHistoryReasonEntDeletedRole = PermissionHistoryReason(entPermissionHistory.ReasonEntDeletedRole)
+	PermissionHistoryReasonEntAddedRole   = PermissionHistoryReason("ent_added_role")
+	PermissionHistoryReasonEntRemovedRole = PermissionHistoryReason("ent_removed_role")
+	PermissionHistoryReasonEntDeletedRole = PermissionHistoryReason("ent_deleted_role")
 
-	PermissionHistoryReasonEntAddedRoleGroup   = PermissionHistoryReason(entPermissionHistory.ReasonEntAddedRoleGroup)
-	PermissionHistoryReasonEntRemovedRoleGroup = PermissionHistoryReason(entPermissionHistory.ReasonEntRemovedRoleGroup)
-	PermissionHistoryReasonEntDeletedRoleGroup = PermissionHistoryReason(entPermissionHistory.ReasonEntDeletedRoleGroup)
+	PermissionHistoryReasonEntAddedRoleGroup   = PermissionHistoryReason("ent_added_role_group")
+	PermissionHistoryReasonEntRemovedRoleGroup = PermissionHistoryReason("ent_removed_role_group")
+	PermissionHistoryReasonEntDeletedRoleGroup = PermissionHistoryReason("ent_deleted_role_group")
 
-	PermissionHistoryReasonRoleAdded   = PermissionHistoryReason(entPermissionHistory.ReasonRoleAdded)
-	PermissionHistoryReasonRoleRemoved = PermissionHistoryReason(entPermissionHistory.ReasonRoleRemoved)
-	PermissionHistoryReasonRoleDeleted = PermissionHistoryReason(entPermissionHistory.ReasonRoleDeleted)
+	PermissionHistoryReasonRoleAdded   = PermissionHistoryReason("role_added")
+	PermissionHistoryReasonRoleRemoved = PermissionHistoryReason("role_removed")
+	PermissionHistoryReasonRoleDeleted = PermissionHistoryReason("role_deleted")
 
-	PermissionHistoryReasonRoleAddedGroup   = PermissionHistoryReason(entPermissionHistory.ReasonRoleAddedGroup)
-	PermissionHistoryReasonRoleRemovedGroup = PermissionHistoryReason(entPermissionHistory.ReasonRoleRemovedGroup)
-	PermissionHistoryReasonRoleDeletedGroup = PermissionHistoryReason(entPermissionHistory.ReasonRoleDeletedGroup)
+	PermissionHistoryReasonRoleAddedGroup   = PermissionHistoryReason("role_added_group")
+	PermissionHistoryReasonRoleRemovedGroup = PermissionHistoryReason("role_removed_group")
+	PermissionHistoryReasonRoleDeletedGroup = PermissionHistoryReason("role_deleted_group")
 )
-
-var reasonValues = []any{
-	PermissionHistoryReasonEntAdded, PermissionHistoryReasonEntRemoved, PermissionHistoryReasonEntDeleted,
-	PermissionHistoryReasonEntAddedGroup, PermissionHistoryReasonEntRemovedGroup, PermissionHistoryReasonEntDeletedGroup,
-	PermissionHistoryReasonEntAddedRole, PermissionHistoryReasonEntRemovedRole, PermissionHistoryReasonEntDeletedRole,
-	PermissionHistoryReasonEntAddedRoleGroup, PermissionHistoryReasonEntRemovedRoleGroup, PermissionHistoryReasonEntDeletedRoleGroup,
-	PermissionHistoryReasonRoleAdded, PermissionHistoryReasonRoleRemoved, PermissionHistoryReasonRoleDeleted,
-	PermissionHistoryReasonRoleAddedGroup, PermissionHistoryReasonRoleRemovedGroup, PermissionHistoryReasonRoleDeletedGroup,
-}
-
-func (this PermissionHistoryReason) Validate() error {
-	if !funk.Contains(reasonValues, this) {
-		return errors.Errorf("invalid history reason value: %s", this)
-	}
-	return nil
-}
-
-func (this PermissionHistoryReason) String() string {
-	return string(this)
-}
-
-func WrapHistoryReason(s string) *PermissionHistoryReason {
-	st := PermissionHistoryReason(s)
-	return &st
-}
-
-func WrapHistoryReasonEnt(s entPermissionHistory.Reason) *PermissionHistoryReason {
-	st := PermissionHistoryReason(s)
-	return &st
-}
-
-func HistoryReasonValidateRule(field **PermissionHistoryReason) *val.FieldRules {
-	return val.Field(field,
-		val.NotEmpty,
-		val.OneOf(reasonValues...),
-	)
-}

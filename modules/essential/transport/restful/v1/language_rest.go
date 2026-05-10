@@ -9,20 +9,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 )
 
 type languageRestParams struct {
 	dig.In
-	LanguageSvc it.LanguageService
+	LanguageSvc it.LanguageAppService
 }
 
 func NewLanguageRest(params languageRestParams) *LanguageRest {
 	return &LanguageRest{svc: params.LanguageSvc}
 }
 
-type LanguageRest struct{ svc it.LanguageService }
+type LanguageRest struct{ svc it.LanguageAppService }
 
 func (this LanguageRest) CreateLanguage(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -36,7 +36,7 @@ func (this LanguageRest) CreateLanguage(echoCtx *echo.Context) (err error) {
 			cmd.SetFieldData(request.DynamicFields)
 			return cmd
 		},
-		func(data domain.Language) CreateLanguageResponse {
+		func(data models.Language) CreateLanguageResponse {
 			return *httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 		},
 		httpserver.JsonCreated)
@@ -62,7 +62,7 @@ func (this LanguageRest) GetLanguage(echoCtx *echo.Context) (err error) {
 	}()
 	return httpserver.ServeRequest2(echoCtx, this.svc.GetLanguage,
 		func(request GetLanguageRequest) it.GetLanguageQuery { return it.GetLanguageQuery(request) },
-		func(data domain.Language) GetLanguageResponse { return data.GetFieldData() },
+		func(data models.Language) GetLanguageResponse { return data.GetFieldData() },
 		httpserver.JsonOk)
 }
 

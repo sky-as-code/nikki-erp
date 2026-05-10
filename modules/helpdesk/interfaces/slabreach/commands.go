@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain"
+	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/models"
 )
 
 func init() {
@@ -21,14 +21,14 @@ func init() {
 
 var createSlaBreachCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "slabreach", Action: "createSlaBreach"}
 
-type CreateSlaBreachCommand struct{ domain.SlaBreach }
+type CreateSlaBreachCommand struct{ models.SlaBreach }
 
 func (CreateSlaBreachCommand) CqrsRequestType() cqrs.RequestType { return createSlaBreachCommandType }
 func (CreateSlaBreachCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.SlaBreachSchemaName)
+	return dmodel.GetSchema(models.SlaBreachSchemaName)
 }
 
-type CreateSlaBreachResult = dyn.OpResult[domain.SlaBreach]
+type CreateSlaBreachResult = dyn.OpResult[models.SlaBreach]
 
 var deleteSlaBreachCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "slabreach", Action: "deleteSlaBreach"}
 
@@ -44,7 +44,7 @@ type GetSlaBreachQuery dyn.GetOneQuery
 
 func (GetSlaBreachQuery) CqrsRequestType() cqrs.RequestType { return getSlaBreachQueryType }
 
-type GetSlaBreachResult = dyn.OpResult[domain.SlaBreach]
+type GetSlaBreachResult = dyn.OpResult[models.SlaBreach]
 
 var slaBreachExistsQueryType = cqrs.RequestType{Module: "helpdesk", Submodule: "slabreach", Action: "slaBreachExists"}
 
@@ -60,16 +60,16 @@ type SearchSlaBreachesQuery dyn.SearchQuery
 
 func (SearchSlaBreachesQuery) CqrsRequestType() cqrs.RequestType { return searchSlaBreachesQueryType }
 
-type SearchSlaBreachesResultData = dyn.PagedResultData[domain.SlaBreach]
+type SearchSlaBreachesResultData = dyn.PagedResultData[models.SlaBreach]
 type SearchSlaBreachesResult = dyn.OpResult[SearchSlaBreachesResultData]
 
 var updateSlaBreachCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "slabreach", Action: "updateSlaBreach"}
 
-type UpdateSlaBreachCommand struct{ domain.SlaBreach }
+type UpdateSlaBreachCommand struct{ models.SlaBreach }
 
 func (UpdateSlaBreachCommand) CqrsRequestType() cqrs.RequestType { return updateSlaBreachCommandType }
 func (UpdateSlaBreachCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.SlaBreachSchemaName)
+	return dmodel.GetSchema(models.SlaBreachSchemaName)
 }
 
 type UpdateSlaBreachResult = dyn.OpResult[dyn.MutateResultData]

@@ -8,6 +8,7 @@ import (
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 )
 
@@ -71,6 +72,25 @@ type GetUserQuery struct {
 
 func (GetUserQuery) CqrsRequestType() cqrs.RequestType {
 	return getUserByIdQueryType
+}
+
+func (GetUserQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"identity.get_user_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				ExclusiveRequiredFields(domain.UserFieldId, domain.UserFieldEmail).
+				Field(dmodel.DefineField().
+					Name(basemodel.FieldFields).
+					DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_FIELDS_LENGTH_MIN, model.MODEL_RULE_FIELDS_LENGTH_MAX).ArrayType())).
+				Field(dmodel.DefineField().
+					Name(basemodel.FieldId).
+					DataType(dmodel.FieldDataTypeUlid())).
+				Field(dmodel.DefineField().
+					Name(domain.UserFieldEmail).
+					DataType(dmodel.FieldDataTypeEmail()))
+		},
+	)
 }
 
 type GetUserResult = dyn.OpResult[dyn.SingleResultData[domain.User]]

@@ -23,7 +23,7 @@ func (this *LoginMethodPassword) SkipMethod() *itLogin.SkippedMethod {
 func (this *LoginMethodPassword) Execute(ctx corectx.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
 	var result *itPass.VerifyPasswordResult
 	var err error
-	err = deps.Invoke(func(passwordService itPass.PasswordService) error {
+	err = deps.Invoke(func(passwordService itPass.PasswordAppService) error {
 		result, err = passwordService.VerifyPassword(ctx, itPass.VerifyPasswordQuery{
 			PrincipalType: param.PrincipalType,
 			Username:      param.Username,

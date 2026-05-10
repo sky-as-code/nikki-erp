@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
 func init() {
@@ -26,7 +26,7 @@ var createContactCommandType = cqrs.RequestType{
 }
 
 type CreateContactCommand struct {
-	domain.Contact
+	models.Contact
 }
 
 func (CreateContactCommand) CqrsRequestType() cqrs.RequestType {
@@ -34,10 +34,10 @@ func (CreateContactCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (CreateContactCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.ContactSchemaName)
+	return dmodel.GetSchema(models.ContactSchemaName)
 }
 
-type CreateContactResult = dyn.OpResult[domain.Contact]
+type CreateContactResult = dyn.OpResult[models.Contact]
 
 var updateContactCommandType = cqrs.RequestType{
 	Module:    "essential",
@@ -46,7 +46,7 @@ var updateContactCommandType = cqrs.RequestType{
 }
 
 type UpdateContactCommand struct {
-	domain.Contact
+	models.Contact
 }
 
 func (UpdateContactCommand) CqrsRequestType() cqrs.RequestType {
@@ -54,7 +54,7 @@ func (UpdateContactCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (UpdateContactCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.ContactSchemaName)
+	return dmodel.GetSchema(models.ContactSchemaName)
 }
 
 type UpdateContactResult = dyn.OpResult[dyn.MutateResultData]
@@ -85,7 +85,7 @@ func (GetContactQuery) CqrsRequestType() cqrs.RequestType {
 	return getContactQueryType
 }
 
-type GetContactResult = dyn.OpResult[domain.Contact]
+type GetContactResult = dyn.OpResult[models.Contact]
 
 var searchContactsQueryType = cqrs.RequestType{
 	Module:    "essential",
@@ -99,7 +99,7 @@ func (SearchContactsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchContactsQueryType
 }
 
-type SearchContactsResultData = dyn.PagedResultData[domain.Contact]
+type SearchContactsResultData = dyn.PagedResultData[models.Contact]
 type SearchContactsResult = dyn.OpResult[SearchContactsResultData]
 
 var contactExistsQueryType = cqrs.RequestType{

@@ -12,7 +12,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/purchaseorder"
 )
 
@@ -28,7 +28,7 @@ type PurchaseOrderDynamicRepositoryParam struct {
 func NewPurchaseOrderDynamicRepository(param PurchaseOrderDynamicRepositoryParam) it.PurchaseOrderRepository {
 	repo := param.NewBaseRepoFn(dyn.NewBaseRepoParam{
 		Client: param.Client, ConfigSvc: param.ConfigSvc, QueryBuilder: param.QueryBuilder, Logger: param.Logger,
-		Schema: dmodel.MustGetSchema(domain.PurchaseOrderSchemaName),
+		Schema: dmodel.MustGetSchema(models.PurchaseOrderSchemaName),
 	})
 	return &PurchaseOrderDynamicRepository{dynamicRepo: repo}
 }
@@ -41,21 +41,21 @@ func (this *PurchaseOrderDynamicRepository) GetBaseRepo() dyn.BaseDynamicReposit
 func (this *PurchaseOrderDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
 	return this.dynamicRepo.BeginTransaction(ctx)
 }
-func (this *PurchaseOrderDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.PurchaseOrder) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *PurchaseOrderDynamicRepository) DeleteOne(ctx corectx.Context, keys models.PurchaseOrder) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
 }
-func (this *PurchaseOrderDynamicRepository) Exists(ctx corectx.Context, keys []domain.PurchaseOrder) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	return baserepo.Exists(ctx, this.dynamicRepo, array.Map(keys, func(k domain.PurchaseOrder) dmodel.DynamicFields { return k.GetFieldData() }))
+func (this *PurchaseOrderDynamicRepository) Exists(ctx corectx.Context, keys []models.PurchaseOrder) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	return baserepo.Exists(ctx, this.dynamicRepo, array.Map(keys, func(k models.PurchaseOrder) dmodel.DynamicFields { return k.GetFieldData() }))
 }
-func (this *PurchaseOrderDynamicRepository) Insert(ctx corectx.Context, input domain.PurchaseOrder) (*dyn.OpResult[int], error) {
+func (this *PurchaseOrderDynamicRepository) Insert(ctx corectx.Context, input models.PurchaseOrder) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, input)
 }
-func (this *PurchaseOrderDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.PurchaseOrder], error) {
-	return baserepo.GetOne[domain.PurchaseOrder](ctx, this.dynamicRepo, param)
+func (this *PurchaseOrderDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[models.PurchaseOrder], error) {
+	return baserepo.GetOne[models.PurchaseOrder](ctx, this.dynamicRepo, param)
 }
-func (this *PurchaseOrderDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.PurchaseOrder]], error) {
-	return baserepo.Search[domain.PurchaseOrder](ctx, this.dynamicRepo, param)
+func (this *PurchaseOrderDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[models.PurchaseOrder]], error) {
+	return baserepo.Search[models.PurchaseOrder](ctx, this.dynamicRepo, param)
 }
-func (this *PurchaseOrderDynamicRepository) Update(ctx corectx.Context, input domain.PurchaseOrder) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *PurchaseOrderDynamicRepository) Update(ctx corectx.Context, input models.PurchaseOrder) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, input.GetFieldData())
 }

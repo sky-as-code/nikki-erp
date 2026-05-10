@@ -9,6 +9,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -42,17 +43,19 @@ type RoleDomainServiceImpl struct {
 }
 
 func (this *RoleDomainServiceImpl) CreateRole(
-	ctx corectx.Context, cmd itRole.CreateRoleCommand,
+	ctx corectx.Context, cmd itRole.CreateRoleCommand, options ...corecrud.ServiceCreateOptions[*domain.Role],
 ) (*itRole.CreateRoleResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.Role]{})
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.Role, *domain.Role]{
-		Action:         "create role",
-		BaseRepoGetter: this.roleRepo,
-		Data:           cmd,
+		Action:                 "create role",
+		BaseRepoGetter:         this.roleRepo,
+		Data:                   cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
 func (this *RoleDomainServiceImpl) CreatePrivateRole(
-	ctx corectx.Context, cmd itRole.CreatePrivateRoleCommand,
+	ctx corectx.Context, cmd itRole.CreatePrivateRoleCommand, options ...corecrud.ServiceCreateOptions[*domain.Role],
 ) (*itRole.CreateRoleResult, error) {
 	sanitized, cErrs := cmd.GetSchema().ValidateStruct(cmd)
 	if cErrs.Count() > 0 {
@@ -78,7 +81,7 @@ func (this *RoleDomainServiceImpl) CreatePrivateRole(
 		})
 	}
 	createCmd := itRole.CreateRoleCommand{Role: *newRole}
-	createRes, err := this.CreateRole(ctx, createCmd)
+	createRes, err := this.CreateRole(ctx, createCmd, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,12 +92,14 @@ func (this *RoleDomainServiceImpl) CreatePrivateRole(
 }
 
 func (this *RoleDomainServiceImpl) DeleteRole(
-	ctx corectx.Context, cmd itRole.DeleteRoleCommand,
+	ctx corectx.Context, cmd itRole.DeleteRoleCommand, options ...corecrud.ServiceDeleteOptions,
 ) (*itRole.DeleteRoleResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:       "delete role",
-		DbRepoGetter: this.roleRepo,
-		Cmd:          dyn.DeleteOneCommand(cmd),
+		Action:                 "delete role",
+		DbRepoGetter:           this.roleRepo,
+		Cmd:                    dyn.DeleteOneCommand(cmd),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 		ValidateExtra: func(ctx corectx.Context, keyFields dmodel.DynamicFields, vErrs *ft.ClientErrors) error {
 			resRole, err := this.roleRepo.GetOne(ctx, dyn.RepoGetOneParam{
 				Filter: keyFields,
@@ -121,8 +126,9 @@ func (this *RoleDomainServiceImpl) DeleteRole(
 }
 
 func (this *RoleDomainServiceImpl) DeletePrivateRole(
-	ctx corectx.Context, cmd itRole.DeletePrivateRoleCommand,
+	ctx corectx.Context, cmd itRole.DeletePrivateRoleCommand, options ...corecrud.ServiceDeleteOptions,
 ) (*itRole.DeleteRoleResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
 	sanitized, cErrs := cmd.GetSchema().ValidateStruct(cmd)
 	if cErrs.Count() > 0 {
 		return &itRole.DeleteRoleResult{ClientErrors: cErrs}, nil
@@ -149,9 +155,10 @@ func (this *RoleDomainServiceImpl) DeletePrivateRole(
 
 	// TODO: Build query DELETE FROM (SELECT * FROM roles WHERE dedicated_group_id = $1 OR dedicated_user_id = $1 LIMIT 1)
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:       "delete private role",
-		DbRepoGetter: this.roleRepo,
-		Cmd:          dyn.DeleteOneCommand{Id: *delId},
+		Action:                 "delete private role",
+		DbRepoGetter:           this.roleRepo,
+		Cmd:                    dyn.DeleteOneCommand{Id: *delId},
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
@@ -337,12 +344,14 @@ func (this *RoleDomainServiceImpl) RoleExists(
 }
 
 func (this *RoleDomainServiceImpl) SearchRoles(
-	ctx corectx.Context, query itRole.SearchRolesQuery,
+	ctx corectx.Context, query itRole.SearchRolesQuery, options ...corecrud.ServiceSearchOptions,
 ) (*itRole.SearchRolesResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceSearchOptions{})
 	return corecrud.Search[domain.Role](ctx, corecrud.SearchParam{
-		Action:       "search roles",
-		DbRepoGetter: this.roleRepo,
-		Query:        dyn.SearchQuery(query),
+		Action:                 "search roles",
+		DbRepoGetter:           this.roleRepo,
+		Query:                  dyn.SearchQuery(query),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
@@ -353,11 +362,13 @@ func (this *RoleDomainServiceImpl) SetRoleIsArchived(
 }
 
 func (this *RoleDomainServiceImpl) UpdateRole(
-	ctx corectx.Context, cmd itRole.UpdateRoleCommand,
+	ctx corectx.Context, cmd itRole.UpdateRoleCommand, options ...corecrud.ServiceUpdateOptions[*domain.Role],
 ) (*itRole.UpdateRoleResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceUpdateOptions[*domain.Role]{})
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Role, *domain.Role]{
-		Action:       "update role",
-		DbRepoGetter: this.roleRepo,
-		Data:         cmd,
+		Action:                 "update role",
+		DbRepoGetter:           this.roleRepo,
+		Data:                   cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }

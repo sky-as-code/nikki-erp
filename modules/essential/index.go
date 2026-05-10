@@ -12,7 +12,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/essential/app"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
+	models "github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/essential/infra/repository"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 	"github.com/sky-as-code/nikki-erp/modules/essential/transport"
@@ -26,17 +28,22 @@ type EssentialModule struct {
 
 // LabelKey implements NikkiModule.
 func (*EssentialModule) LabelKey() string {
-	return "essentialzz.moduleLabel"
+	return "essential.moduleLabel"
 }
 
 // Name implements NikkiModule.
 func (*EssentialModule) Name() string {
-	return "essential"
+	return modconstants.EssentialModuleName
 }
 
 // Deps implements NikkiModule.
 func (*EssentialModule) Deps() []string {
 	return nil
+}
+
+// IsInternal implements InCodeModule.
+func (*EssentialModule) IsInternal() bool {
+	return false
 }
 
 // Version implements NikkiModule.
@@ -48,7 +55,8 @@ func (*EssentialModule) Version() semver.SemVer {
 func (*EssentialModule) Init() error {
 	err := errors.Join(
 		repo.InitRepositories(),
-		app.InitServices(),
+		services.InitDomainServices(),
+		app.InitApplicationServices(),
 		transport.InitTransport(),
 	)
 	return err
@@ -57,22 +65,22 @@ func (*EssentialModule) Init() error {
 // RegisterModels implements DynamicModule.
 func (*EssentialModule) RegisterModels() error {
 	return errors.Join(
-		dmodel.RegisterSchemaB(domain.ModuleMetadataSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.ContactSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.ContactChannelSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.ContactRelationshipSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.ModelMetadataSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.FieldMetadataSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.LanguageSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ModuleMetadataSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ContactSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ContactChannelSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ContactRelationshipSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.ModelMetadataSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.FieldMetadataSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.LanguageSchemaBuilder()),
 		// Unit schemas
-		dmodel.RegisterSchemaB(domain.UnitCategorySchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.UnitSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.UnitCategorySchemaBuilder()),
+		dmodel.RegisterSchemaB(models.UnitSchemaBuilder()),
 	)
 }
 
 // OnAppStarted implements NikkiModuleAppStarted.
 func (*EssentialModule) OnAppStarted() error {
-	return deps.Invoke(func(modules []modules.InCodeModule, moduleSvc it.ModuleService) error {
+	return deps.Invoke(func(modules []modules.InCodeModule, moduleSvc it.ModuleAppService) error {
 		ctx := corectx.NewRequestContext(context.Background())
 		_, err := moduleSvc.SyncModuleMetadata(ctx, modules)
 		return err

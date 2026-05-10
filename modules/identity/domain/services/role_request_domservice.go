@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -22,22 +23,26 @@ type RoleRequestDomainServiceImpl struct {
 }
 
 func (this *RoleRequestDomainServiceImpl) CreateRoleRequest(
-	ctx corectx.Context, cmd itRr.CreateRoleRequestCommand,
+	ctx corectx.Context, cmd itRr.CreateRoleRequestCommand, options ...corecrud.ServiceCreateOptions[*domain.RoleRequest],
 ) (*itRr.CreateRoleRequestResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.RoleRequest]{})
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.RoleRequest, *domain.RoleRequest]{
-		Action:         "create grant request",
-		BaseRepoGetter: this.roleRequestRepo,
-		Data:           cmd,
+		Action:                 "create grant request",
+		BaseRepoGetter:         this.roleRequestRepo,
+		Data:                   cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
 func (this *RoleRequestDomainServiceImpl) DeleteRoleRequest(
-	ctx corectx.Context, cmd itRr.DeleteRoleRequestCommand,
+	ctx corectx.Context, cmd itRr.DeleteRoleRequestCommand, options ...corecrud.ServiceDeleteOptions,
 ) (*itRr.DeleteRoleRequestResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:       "delete grant request",
-		DbRepoGetter: this.roleRequestRepo,
-		Cmd:          dyn.DeleteOneCommand(cmd),
+		Action:                 "delete grant request",
+		DbRepoGetter:           this.roleRequestRepo,
+		Cmd:                    dyn.DeleteOneCommand(cmd),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
@@ -62,21 +67,25 @@ func (this *RoleRequestDomainServiceImpl) RoleRequestExists(
 }
 
 func (this *RoleRequestDomainServiceImpl) SearchRoleRequests(
-	ctx corectx.Context, query itRr.SearchRoleRequestsQuery,
+	ctx corectx.Context, query itRr.SearchRoleRequestsQuery, options ...corecrud.ServiceSearchOptions,
 ) (*itRr.SearchRoleRequestsResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceSearchOptions{})
 	return corecrud.Search[domain.RoleRequest](ctx, corecrud.SearchParam{
-		Action:       "search grant requests",
-		DbRepoGetter: this.roleRequestRepo,
-		Query:        dyn.SearchQuery(query),
+		Action:                 "search grant requests",
+		DbRepoGetter:           this.roleRequestRepo,
+		Query:                  dyn.SearchQuery(query),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
 func (this *RoleRequestDomainServiceImpl) UpdateRoleRequest(
-	ctx corectx.Context, cmd itRr.UpdateRoleRequestCommand,
+	ctx corectx.Context, cmd itRr.UpdateRoleRequestCommand, options ...corecrud.ServiceUpdateOptions[*domain.RoleRequest],
 ) (*itRr.UpdateRoleRequestResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceUpdateOptions[*domain.RoleRequest]{})
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.RoleRequest, *domain.RoleRequest]{
-		Action:       "update grant request",
-		DbRepoGetter: this.roleRequestRepo,
-		Data:         cmd,
+		Action:                 "update grant request",
+		DbRepoGetter:           this.roleRequestRepo,
+		Data:                   cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }

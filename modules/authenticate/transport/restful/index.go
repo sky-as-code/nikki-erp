@@ -30,9 +30,9 @@ func initAuthnV1() error {
 	) {
 		v1 := route.Group("/v1/authn")
 
-		v1.POST("/login/start", loginRest.StartLoginFlow, m.PublicUnauthorized)
-		v1.POST("/login", loginRest.Authenticate, m.PublicUnauthorized)
-		v1.POST("/refresh", loginRest.RefreshToken, m.PublicUnauthorized)
+		v1.POST("/signin/start", loginRest.StartSignInFlow, m.PublicUnauthorized)
+		v1.POST("/signin/continue", loginRest.ContinueSignInFlow, m.PublicUnauthorized)
+		v1.POST("/signin/refresh", loginRest.RefreshToken, m.PublicUnauthorized)
 
 		v1.POST("/passwords/password", passwordRest.SetPassword, m.SmokeAuthz())
 		v1.POST("/passwords/passwordtmp", passwordRest.CreatePasswordTemp, m.SmokeAuthz())

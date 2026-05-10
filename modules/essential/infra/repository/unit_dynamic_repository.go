@@ -1,4 +1,4 @@
-﻿package repository
+package repository
 
 import (
 	"go.uber.org/dig"
@@ -12,7 +12,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/unit"
 )
 
@@ -33,7 +33,7 @@ func NewUnitDynamicRepository(param UnitDynamicRepositoryParam) it.UnitRepositor
 			ConfigSvc:    param.ConfigSvc,
 			QueryBuilder: param.QueryBuilder,
 			Logger:       param.Logger,
-			Schema:       dmodel.MustGetSchema(domain.UnitSchemaName),
+			Schema:       dmodel.MustGetSchema(models.UnitSchemaName),
 		},
 	)
 	return &UnitDynamicRepository{dynamicRepo: dynamicRepo}
@@ -51,36 +51,36 @@ func (this *UnitDynamicRepository) BeginTransaction(ctx corectx.Context) (databa
 	return this.dynamicRepo.BeginTransaction(ctx)
 }
 
-func (this *UnitDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.Unit) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *UnitDynamicRepository) DeleteOne(ctx corectx.Context, keys models.Unit) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
 }
 
-func (this *UnitDynamicRepository) Exists(ctx corectx.Context, keys []domain.Unit) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	dynamicKeys := array.Map(keys, func(key domain.Unit) dmodel.DynamicFields {
+func (this *UnitDynamicRepository) Exists(ctx corectx.Context, keys []models.Unit) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	dynamicKeys := array.Map(keys, func(key models.Unit) dmodel.DynamicFields {
 		return key.GetFieldData()
 	})
 	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
 }
 
 func (this *UnitDynamicRepository) Insert(
-	ctx corectx.Context, unit domain.Unit,
+	ctx corectx.Context, unit models.Unit,
 ) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, unit)
 }
 
 func (this *UnitDynamicRepository) GetOne(
 	ctx corectx.Context, param dyn.RepoGetOneParam,
-) (*dyn.OpResult[domain.Unit], error) {
-	return baserepo.GetOne[domain.Unit](ctx, this.dynamicRepo, param)
+) (*dyn.OpResult[models.Unit], error) {
+	return baserepo.GetOne[models.Unit](ctx, this.dynamicRepo, param)
 }
 
 func (this *UnitDynamicRepository) Search(
 	ctx corectx.Context, param dyn.RepoSearchParam,
-) (*dyn.OpResult[dyn.PagedResultData[domain.Unit]], error) {
-	return baserepo.Search[domain.Unit](ctx, this.dynamicRepo, param)
+) (*dyn.OpResult[dyn.PagedResultData[models.Unit]], error) {
+	return baserepo.Search[models.Unit](ctx, this.dynamicRepo, param)
 }
 
-func (this *UnitDynamicRepository) Update(ctx corectx.Context, unit domain.Unit) (
+func (this *UnitDynamicRepository) Update(ctx corectx.Context, unit models.Unit) (
 	*dyn.OpResult[dyn.MutateResultData], error,
 ) {
 	return baserepo.Update(ctx, this.dynamicRepo, unit.GetFieldData())

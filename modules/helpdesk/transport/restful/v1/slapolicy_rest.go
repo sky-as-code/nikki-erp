@@ -10,7 +10,7 @@ import (
 
 type slaPolicyRestParams struct {
 	dig.In
-	Service it.SlaPolicyService
+	Service it.SlaPolicyAppService
 }
 
 func NewSlaPolicyRest(params slaPolicyRestParams) *SlaPolicyRest {
@@ -19,7 +19,7 @@ func NewSlaPolicyRest(params slaPolicyRestParams) *SlaPolicyRest {
 
 type SlaPolicyRest struct {
 	httpserver.RestBase
-	Service it.SlaPolicyService
+	Service it.SlaPolicyAppService
 }
 
 func (this SlaPolicyRest) CreateSlaPolicy(echoCtx *echo.Context) (err error) {

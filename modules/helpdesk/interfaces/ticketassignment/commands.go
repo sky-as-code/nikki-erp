@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain"
+	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/models"
 )
 
 func init() {
@@ -21,16 +21,16 @@ func init() {
 
 var createTicketAssignmentCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketassignment", Action: "createTicketAssignment"}
 
-type CreateTicketAssignmentCommand struct{ domain.TicketAssignment }
+type CreateTicketAssignmentCommand struct{ models.TicketAssignment }
 
 func (CreateTicketAssignmentCommand) CqrsRequestType() cqrs.RequestType {
 	return createTicketAssignmentCommandType
 }
 func (CreateTicketAssignmentCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.TicketAssignmentSchemaName)
+	return dmodel.GetSchema(models.TicketAssignmentSchemaName)
 }
 
-type CreateTicketAssignmentResult = dyn.OpResult[domain.TicketAssignment]
+type CreateTicketAssignmentResult = dyn.OpResult[models.TicketAssignment]
 
 var deleteTicketAssignmentCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketassignment", Action: "deleteTicketAssignment"}
 
@@ -50,7 +50,7 @@ func (GetTicketAssignmentQuery) CqrsRequestType() cqrs.RequestType {
 	return getTicketAssignmentQueryType
 }
 
-type GetTicketAssignmentResult = dyn.OpResult[domain.TicketAssignment]
+type GetTicketAssignmentResult = dyn.OpResult[models.TicketAssignment]
 
 var ticketAssignmentExistsQueryType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketassignment", Action: "ticketAssignmentExists"}
 
@@ -70,18 +70,18 @@ func (SearchTicketAssignmentsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchTicketAssignmentsQueryType
 }
 
-type SearchTicketAssignmentsResultData = dyn.PagedResultData[domain.TicketAssignment]
+type SearchTicketAssignmentsResultData = dyn.PagedResultData[models.TicketAssignment]
 type SearchTicketAssignmentsResult = dyn.OpResult[SearchTicketAssignmentsResultData]
 
 var updateTicketAssignmentCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketassignment", Action: "updateTicketAssignment"}
 
-type UpdateTicketAssignmentCommand struct{ domain.TicketAssignment }
+type UpdateTicketAssignmentCommand struct{ models.TicketAssignment }
 
 func (UpdateTicketAssignmentCommand) CqrsRequestType() cqrs.RequestType {
 	return updateTicketAssignmentCommandType
 }
 func (UpdateTicketAssignmentCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.TicketAssignmentSchemaName)
+	return dmodel.GetSchema(models.TicketAssignmentSchemaName)
 }
 
 type UpdateTicketAssignmentResult = dyn.OpResult[dyn.MutateResultData]

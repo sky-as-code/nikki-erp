@@ -7,7 +7,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/settings/app"
-	domain "github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/settings/constants"
+	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	services "github.com/sky-as-code/nikki-erp/modules/settings/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/settings/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/settings/transport"
@@ -23,7 +24,7 @@ func (*SettingsModule) LabelKey() string {
 }
 
 func (*SettingsModule) Name() string {
-	return "settings"
+	return modconstants.SettingsModuleName
 }
 
 func (*SettingsModule) Deps() []string {
@@ -43,8 +44,12 @@ func (*SettingsModule) Init() error {
 	)
 }
 
+func (*SettingsModule) IsInternal() bool {
+	return false
+}
+
 func (*SettingsModule) RegisterModels() error {
 	return stdErr.Join(
-		dmodel.RegisterSchemaB(domain.UserPreferenceSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.UserPreferenceSchemaBuilder()),
 	)
 }

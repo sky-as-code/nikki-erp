@@ -10,14 +10,14 @@ import (
 
 type ticketRestParams struct {
 	dig.In
-	Service it.TicketService
+	Service it.TicketAppService
 }
 
 func NewTicketRest(params ticketRestParams) *TicketRest { return &TicketRest{Service: params.Service} }
 
 type TicketRest struct {
 	httpserver.RestBase
-	Service it.TicketService
+	Service it.TicketAppService
 }
 
 func (this TicketRest) CreateTicket(echoCtx *echo.Context) (err error) {

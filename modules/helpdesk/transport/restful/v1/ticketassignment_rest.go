@@ -10,7 +10,7 @@ import (
 
 type ticketAssignmentRestParams struct {
 	dig.In
-	Service it.TicketAssignmentService
+	Service it.TicketAssignmentAppService
 }
 
 func NewTicketAssignmentRest(params ticketAssignmentRestParams) *TicketAssignmentRest {
@@ -19,7 +19,7 @@ func NewTicketAssignmentRest(params ticketAssignmentRestParams) *TicketAssignmen
 
 type TicketAssignmentRest struct {
 	httpserver.RestBase
-	Service it.TicketAssignmentService
+	Service it.TicketAssignmentAppService
 }
 
 func (this TicketAssignmentRest) CreateTicketAssignment(echoCtx *echo.Context) (err error) {

@@ -6,6 +6,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -46,12 +47,14 @@ type EntitlementDomainServiceImpl struct {
 }
 
 func (this *EntitlementDomainServiceImpl) CreateEntitlement(
-	ctx corectx.Context, cmd itEnt.CreateEntitlementCommand,
+	ctx corectx.Context, cmd itEnt.CreateEntitlementCommand, options ...corecrud.ServiceCreateOptions[*domain.Entitlement],
 ) (*itEnt.CreateEntitlementResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.Entitlement]{})
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.Entitlement, *domain.Entitlement]{
 		Action:         "create entitlement",
 		BaseRepoGetter: this.entitlementRepo,
 		Data:           cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 		BeforeValidation: func(ctx corectx.Context, ent *domain.Entitlement, vErrs *ft.ClientErrors) (*domain.Entitlement, error) {
 			ent.CalculateExpression()
 			return ent, this.validateScope(ctx, ent, vErrs)
@@ -165,12 +168,14 @@ func (this *EntitlementDomainServiceImpl) fetchResourceForAction(
 }
 
 func (this *EntitlementDomainServiceImpl) DeleteEntitlement(
-	ctx corectx.Context, cmd itEnt.DeleteEntitlementCommand,
+	ctx corectx.Context, cmd itEnt.DeleteEntitlementCommand, options ...corecrud.ServiceDeleteOptions,
 ) (*itEnt.DeleteEntitlementResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:       "delete entitlement",
-		DbRepoGetter: this.entitlementRepo,
-		Cmd:          dyn.DeleteOneCommand(cmd),
+		Action:                 "delete entitlement",
+		DbRepoGetter:           this.entitlementRepo,
+		Cmd:                    dyn.DeleteOneCommand(cmd),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
@@ -209,12 +214,14 @@ func (this *EntitlementDomainServiceImpl) ManageEntitlementRoles(
 }
 
 func (this *EntitlementDomainServiceImpl) SearchEntitlements(
-	ctx corectx.Context, query itEnt.SearchEntitlementsQuery,
+	ctx corectx.Context, query itEnt.SearchEntitlementsQuery, options ...corecrud.ServiceSearchOptions,
 ) (*itEnt.SearchEntitlementsResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceSearchOptions{})
 	return corecrud.Search[domain.Entitlement](ctx, corecrud.SearchParam{
-		Action:       "search entitlements",
-		DbRepoGetter: this.entitlementRepo,
-		Query:        dyn.SearchQuery(query),
+		Action:                 "search entitlements",
+		DbRepoGetter:           this.entitlementRepo,
+		Query:                  dyn.SearchQuery(query),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
@@ -225,11 +232,13 @@ func (this *EntitlementDomainServiceImpl) SetEntitlementIsArchived(
 }
 
 func (this *EntitlementDomainServiceImpl) UpdateEntitlement(
-	ctx corectx.Context, cmd itEnt.UpdateEntitlementCommand,
+	ctx corectx.Context, cmd itEnt.UpdateEntitlementCommand, options ...corecrud.ServiceUpdateOptions[*domain.Entitlement],
 ) (*itEnt.UpdateEntitlementResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceUpdateOptions[*domain.Entitlement]{})
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Entitlement, *domain.Entitlement]{
-		Action:       "update entitlement",
-		DbRepoGetter: this.entitlementRepo,
-		Data:         cmd,
+		Action:                 "update entitlement",
+		DbRepoGetter:           this.entitlementRepo,
+		Data:                   cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }

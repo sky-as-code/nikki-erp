@@ -18,12 +18,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 )
 
-type BeforeValidationFn[T any] func(ctx corectx.Context, model T, vErrs *ft.ClientErrors) (T, error)
-type AfterValidationSuccessFn[T any] func(ctx corectx.Context, model T) (T, error)
-type CreateValidateExtraFn[T any] func(ctx corectx.Context, inputModel T, vErrs *ft.ClientErrors) error
-type UpdateValidateExtraFn[T any] func(ctx corectx.Context, inputModel T, foundModel T, vErrs *ft.ClientErrors) error
-type DeleteValidateExtraFn func(ctx corectx.Context, keyFields dmodel.DynamicFields, vErrs *ft.ClientErrors) error
-
 type CreateParam[
 	TDomain any,
 	TDomainPtr dyn.DynamicModelPtr[TDomain],
@@ -522,9 +516,10 @@ func clearDbTranx(ctx corectx.Context) {
 }
 
 type GetOneParam struct {
-	Action       string
-	DbRepoGetter dyn.DynamicModelRepository
-	Query        dyn.GetOneQuery
+	Action                 string
+	DbRepoGetter           dyn.DynamicModelRepository
+	Query                  dyn.GetOneQuery
+	AfterValidationSuccess AfterValidationSuccessFn[dyn.GetOneQuery]
 }
 
 func GetOne[
@@ -533,6 +528,13 @@ func GetOne[
 ](
 	ctx corectx.Context, param GetOneParam,
 ) (_ *dyn.OpResult[TDomain], err error) {
+	if param.AfterValidationSuccess != nil {
+		newQuery, err := param.AfterValidationSuccess(ctx, param.Query)
+		if err != nil {
+			return nil, errors.Wrap(err, "GetOne.AfterValidationSuccess")
+		}
+		param.Query = newQuery
+	}
 	result, err := getOneWithArchived[TDomain, TDomainPtr](ctx, param, nil)
 	return result, errors.Wrap(err, "GetOne")
 }
@@ -605,8 +607,7 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 		}
 	}()
 
-	querySchema := searchSchema()
-	sanitized, cErrs := querySchema.ValidateStruct(param.Query)
+	sanitized, cErrs := param.Query.GetSchema().ValidateStruct(param.Query)
 
 	if cErrs.Count() > 0 {
 		return &dyn.OpResult[dyn.PagedResultData[TDomain]]{ClientErrors: cErrs}, nil
@@ -631,15 +632,6 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 		Language: sanitizedQuery.Language,
 	})
 	return result, errors.Wrap(err, "Search")
-}
-
-func searchSchema() *dmodel.ModelSchema {
-	return dmodel.GetOrRegisterSchema(
-		"core.search_query",
-		func() *dmodel.ModelSchemaBuilder {
-			return dyn.SearchQuerySchemaBuilder()
-		},
-	)
 }
 
 func validateUniques(ctx corectx.Context, data dmodel.DynamicFields, dbRepo dyn.BaseDynamicRepository, vErrs *ft.ClientErrors) error {

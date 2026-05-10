@@ -9,14 +9,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/contact"
 )
 
 type contactRestParams struct {
 	dig.In
 
-	ContactSvc it.ContactService
+	ContactSvc it.ContactAppService
 }
 
 func NewContactRest(params contactRestParams) *ContactRest {
@@ -24,7 +24,7 @@ func NewContactRest(params contactRestParams) *ContactRest {
 }
 
 type ContactRest struct {
-	contactSvc it.ContactService
+	contactSvc it.ContactAppService
 }
 
 func (this ContactRest) CreateContact(echoCtx *echo.Context) (err error) {
@@ -42,7 +42,7 @@ func (this ContactRest) CreateContact(echoCtx *echo.Context) (err error) {
 			cmd.SetFieldData(request.DynamicFields)
 			return cmd
 		},
-		func(data domain.Contact) CreateContactResponse {
+		func(data models.Contact) CreateContactResponse {
 			return *httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 		},
 		httpserver.JsonCreated,
@@ -82,7 +82,7 @@ func (this ContactRest) GetContact(echoCtx *echo.Context) (err error) {
 		func(request GetContactRequest) it.GetContactQuery {
 			return it.GetContactQuery(request)
 		},
-		func(data domain.Contact) GetContactResponse {
+		func(data models.Contact) GetContactResponse {
 			return data.GetFieldData()
 		},
 		httpserver.JsonOk,

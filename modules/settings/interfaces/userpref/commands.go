@@ -6,7 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	domain "github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 )
 
 func init() {
@@ -23,7 +23,7 @@ func init() {
 var createUserPreferenceCommandType = cqrs.RequestType{Module: "settings", Submodule: "userPreference", Action: "create"}
 
 type CreateUserPreferenceCommand struct {
-	domain.UserPreference
+	models.UserPreference
 }
 
 func (CreateUserPreferenceCommand) CqrsRequestType() cqrs.RequestType {
@@ -31,10 +31,10 @@ func (CreateUserPreferenceCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (CreateUserPreferenceCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.UserPreferenceSchemaName)
+	return dmodel.GetSchema(models.UserPreferenceSchemaName)
 }
 
-type CreateUserPreferenceResult = dyn.OpResult[domain.UserPreference]
+type CreateUserPreferenceResult = dyn.OpResult[models.UserPreference]
 
 var deleteUserPreferenceCommandType = cqrs.RequestType{Module: "settings", Submodule: "userPreference", Action: "delete"}
 
@@ -52,7 +52,7 @@ type GetUserPreferenceQuery dyn.GetOneQuery
 
 func (GetUserPreferenceQuery) CqrsRequestType() cqrs.RequestType { return getUserPreferenceQueryType }
 
-type GetUserPreferenceResult = dyn.OpResult[domain.UserPreference]
+type GetUserPreferenceResult = dyn.OpResult[models.UserPreference]
 
 type GetUiSavedSearchQuery struct {
 	SearchName string   `json:"search_name"`
@@ -84,13 +84,13 @@ func (SearchUserPreferencesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchUserPreferencesQueryType
 }
 
-type SearchUserPreferencesResultData = dyn.PagedResultData[domain.UserPreference]
+type SearchUserPreferencesResultData = dyn.PagedResultData[models.UserPreference]
 type SearchUserPreferencesResult = dyn.OpResult[SearchUserPreferencesResultData]
 
 var updateUserPreferenceCommandType = cqrs.RequestType{Module: "settings", Submodule: "userPreference", Action: "update"}
 
 type UpdateUserPreferenceCommand struct {
-	domain.UserPreference
+	models.UserPreference
 }
 
 func (UpdateUserPreferenceCommand) CqrsRequestType() cqrs.RequestType {
@@ -98,7 +98,7 @@ func (UpdateUserPreferenceCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (UpdateUserPreferenceCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.UserPreferenceSchemaName)
+	return dmodel.GetSchema(models.UserPreferenceSchemaName)
 }
 
 type UpdateUserPreferenceResult = dyn.OpResult[dyn.MutateResultData]

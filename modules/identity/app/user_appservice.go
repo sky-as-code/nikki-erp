@@ -3,12 +3,11 @@ package app
 import (
 	"go.bryk.io/pkg/errors"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	c "github.com/sky-as-code/nikki-erp/modules/identity/constants"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/external"
 	itRole "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/role"
@@ -34,16 +33,6 @@ type UserApplicationServiceImpl struct {
 	userDomSvc  itUser.UserDomainService
 	userRepo    itUser.UserRepository
 	userPrefSvc itExt.UserPreferenceUiDomainService
-}
-
-func (this *UserApplicationServiceImpl) GetUserContext(ctx crud.Context, query itUser.GetUserContextQuery) (result any, err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "add or remove users"); e != nil {
-			err = e
-		}
-	}()
-
-	return nil, nil
 }
 
 func (this *UserApplicationServiceImpl) CreateUser(ctx corectx.Context, cmd itUser.CreateUserCommand) (*itUser.CreateUserResult, error) {
@@ -124,12 +113,15 @@ func (this *UserApplicationServiceImpl) SearchUsers(
 		return &itUser.SearchUsersResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.User, *domain.User]{
-		Action:            "search users",
-		FieldResolver:     this.userPrefSvc.(corecrud.FieldsResolver),
-		Schema:            this.userRepo.GetBaseRepo().Schema(),
-		DefaultSearchName: "user_list",
+		Action:        "search users",
+		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
+		Schema:        this.userRepo.GetBaseRepo().Schema(),
+		DefaultFields: []string{models.UserFieldAvatarUrl, models.UserFieldDisplayName, models.UserFieldEmail, models.UserFieldStatus},
+		MaskedFields:  []string{models.UserFieldPassword},
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.User]], error) {
-			return this.userDomSvc.SearchUsers(ctx, query)
+			return this.userDomSvc.SearchUsers(ctx, query, corecrud.ServiceSearchOptions{
+				AfterValidationSuccess: fn,
+			})
 		},
 	})
 }

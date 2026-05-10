@@ -4,7 +4,7 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	domain "github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/settings/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/settings/interfaces/userpref"
 )
 
@@ -21,7 +21,7 @@ type UserPreferenceDomainServiceImpl struct {
 func (this *UserPreferenceDomainServiceImpl) CreateUserPreference(
 	ctx corectx.Context, cmd it.CreateUserPreferenceCommand,
 ) (*it.CreateUserPreferenceResult, error) {
-	return corecrud.Create(ctx, corecrud.CreateParam[domain.UserPreference, *domain.UserPreference]{
+	return corecrud.Create(ctx, corecrud.CreateParam[models.UserPreference, *models.UserPreference]{
 		Action:         "create user preference",
 		BaseRepoGetter: this.repo,
 		Data:           cmd,
@@ -51,7 +51,7 @@ func (this *UserPreferenceDomainServiceImpl) UserPreferenceExists(
 func (this *UserPreferenceDomainServiceImpl) GetUserPreference(
 	ctx corectx.Context, query it.GetUserPreferenceQuery,
 ) (*it.GetUserPreferenceResult, error) {
-	return corecrud.GetOne[domain.UserPreference](ctx, corecrud.GetOneParam{
+	return corecrud.GetOne[models.UserPreference](ctx, corecrud.GetOneParam{
 		Action:       "get user preference",
 		DbRepoGetter: this.repo,
 		Query:        dyn.GetOneQuery(query),
@@ -61,7 +61,7 @@ func (this *UserPreferenceDomainServiceImpl) GetUserPreference(
 func (this *UserPreferenceDomainServiceImpl) SearchUserPreferences(
 	ctx corectx.Context, query it.SearchUserPreferencesQuery,
 ) (*it.SearchUserPreferencesResult, error) {
-	return corecrud.Search[domain.UserPreference](ctx, corecrud.SearchParam{
+	return corecrud.Search[models.UserPreference](ctx, corecrud.SearchParam{
 		Action:       "search user preferences",
 		DbRepoGetter: this.repo,
 		Query:        dyn.SearchQuery(query),
@@ -71,7 +71,7 @@ func (this *UserPreferenceDomainServiceImpl) SearchUserPreferences(
 func (this *UserPreferenceDomainServiceImpl) UpdateUserPreference(
 	ctx corectx.Context, cmd it.UpdateUserPreferenceCommand,
 ) (*it.UpdateUserPreferenceResult, error) {
-	return corecrud.Update(ctx, corecrud.UpdateParam[domain.UserPreference, *domain.UserPreference]{
+	return corecrud.Update(ctx, corecrud.UpdateParam[models.UserPreference, *models.UserPreference]{
 		Action:       "update user preference",
 		DbRepoGetter: this.repo,
 		Data:         cmd,

@@ -2,15 +2,12 @@ package user
 
 import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 )
 
 type UserDomainService interface {
-	GetUserContext(ctx crud.Context, query GetUserContextQuery) (any, error)
-
 	CreateUser(ctx corectx.Context, cmd CreateUserCommand, opts ...corecrud.ServiceCreateOptions[*domain.User]) (*CreateUserResult, error)
 	DeleteUser(ctx corectx.Context, cmd DeleteUserCommand, opts ...corecrud.ServiceDeleteOptions) (*DeleteUserResult, error)
 	GetEnabledUser(ctx corectx.Context, query GetUserQuery) (*dyn.OpResult[domain.User], error)

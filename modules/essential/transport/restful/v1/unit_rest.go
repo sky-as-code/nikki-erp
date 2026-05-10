@@ -1,4 +1,4 @@
-﻿package v1
+package v1
 
 import (
 	"github.com/labstack/echo/v5"
@@ -11,7 +11,7 @@ import (
 type unitRestParams struct {
 	dig.In
 
-	UnitSvc it.UnitService
+	UnitSvc it.UnitAppService
 }
 
 func NewUnitRest(params unitRestParams) *UnitRest {
@@ -21,7 +21,7 @@ func NewUnitRest(params unitRestParams) *UnitRest {
 }
 
 type UnitRest struct {
-	unitSvc it.UnitService
+	unitSvc it.UnitAppService
 }
 
 func (this UnitRest) Create(echoCtx *echo.Context) (err error) {

@@ -7,6 +7,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	c "github.com/sky-as-code/nikki-erp/modules/identity/constants"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	itAct "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/action"
 	itExt "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/external"
@@ -80,12 +81,14 @@ func (this *ResourceApplicationServiceImpl) SearchResources(ctx corectx.Context,
 		return &itRes.SearchResourcesResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Resource, *domain.Resource]{
-		Action:            "search resources",
-		FieldResolver:     this.userPrefSvc.(corecrud.FieldsResolver),
-		Schema:            this.resourceRepo.GetBaseRepo().Schema(),
-		DefaultSearchName: "resource_list",
+		Action:        "search resources",
+		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
+		Schema:        this.resourceRepo.GetBaseRepo().Schema(),
+		DefaultFields: []string{models.ResourceFieldName, models.ResourceFieldDescription},
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.Resource]], error) {
-			return this.resourceSvc.SearchResources(ctx, query)
+			return this.resourceSvc.SearchResources(ctx, query, corecrud.ServiceSearchOptions{
+				AfterValidationSuccess: fn,
+			})
 		},
 	})
 }

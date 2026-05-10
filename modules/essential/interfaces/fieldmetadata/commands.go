@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
 func init() {
@@ -21,26 +21,26 @@ func init() {
 
 var createFieldMetadataCommandType = cqrs.RequestType{Module: "essential", Submodule: "field_metadata", Action: "create"}
 
-type CreateFieldMetadataCommand struct{ domain.FieldMetadata }
+type CreateFieldMetadataCommand struct{ models.FieldMetadata }
 
 func (CreateFieldMetadataCommand) CqrsRequestType() cqrs.RequestType {
 	return createFieldMetadataCommandType
 }
 func (CreateFieldMetadataCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.FieldMetadataSchemaName)
+	return dmodel.GetSchema(models.FieldMetadataSchemaName)
 }
 
-type CreateFieldMetadataResult = dyn.OpResult[domain.FieldMetadata]
+type CreateFieldMetadataResult = dyn.OpResult[models.FieldMetadata]
 
 var updateFieldMetadataCommandType = cqrs.RequestType{Module: "essential", Submodule: "field_metadata", Action: "update"}
 
-type UpdateFieldMetadataCommand struct{ domain.FieldMetadata }
+type UpdateFieldMetadataCommand struct{ models.FieldMetadata }
 
 func (UpdateFieldMetadataCommand) CqrsRequestType() cqrs.RequestType {
 	return updateFieldMetadataCommandType
 }
 func (UpdateFieldMetadataCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.FieldMetadataSchemaName)
+	return dmodel.GetSchema(models.FieldMetadataSchemaName)
 }
 
 type UpdateFieldMetadataResult = dyn.OpResult[dyn.MutateResultData]
@@ -61,7 +61,7 @@ type GetFieldMetadataQuery dyn.GetOneQuery
 
 func (GetFieldMetadataQuery) CqrsRequestType() cqrs.RequestType { return getFieldMetadataQueryType }
 
-type GetFieldMetadataResult = dyn.OpResult[domain.FieldMetadata]
+type GetFieldMetadataResult = dyn.OpResult[models.FieldMetadata]
 
 var searchFieldMetadataQueryType = cqrs.RequestType{Module: "essential", Submodule: "field_metadata", Action: "search"}
 
@@ -71,7 +71,7 @@ func (SearchFieldMetadataQuery) CqrsRequestType() cqrs.RequestType {
 	return searchFieldMetadataQueryType
 }
 
-type SearchFieldMetadataResultData = dyn.PagedResultData[domain.FieldMetadata]
+type SearchFieldMetadataResultData = dyn.PagedResultData[models.FieldMetadata]
 type SearchFieldMetadataResult = dyn.OpResult[SearchFieldMetadataResultData]
 
 var fieldMetadataExistsQueryType = cqrs.RequestType{Module: "essential", Submodule: "field_metadata", Action: "exists"}

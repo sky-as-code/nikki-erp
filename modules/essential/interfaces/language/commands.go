@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
 func init() {
@@ -21,22 +21,22 @@ func init() {
 
 var createLanguageCommandType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "create"}
 
-type CreateLanguageCommand struct{ domain.Language }
+type CreateLanguageCommand struct{ models.Language }
 
 func (CreateLanguageCommand) CqrsRequestType() cqrs.RequestType { return createLanguageCommandType }
 func (CreateLanguageCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.LanguageSchemaName)
+	return dmodel.GetSchema(models.LanguageSchemaName)
 }
 
-type CreateLanguageResult = dyn.OpResult[domain.Language]
+type CreateLanguageResult = dyn.OpResult[models.Language]
 
 var updateLanguageCommandType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "update"}
 
-type UpdateLanguageCommand struct{ domain.Language }
+type UpdateLanguageCommand struct{ models.Language }
 
 func (UpdateLanguageCommand) CqrsRequestType() cqrs.RequestType { return updateLanguageCommandType }
 func (UpdateLanguageCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.LanguageSchemaName)
+	return dmodel.GetSchema(models.LanguageSchemaName)
 }
 
 type UpdateLanguageResult = dyn.OpResult[dyn.MutateResultData]
@@ -55,7 +55,7 @@ type GetLanguageQuery dyn.GetOneQuery
 
 func (GetLanguageQuery) CqrsRequestType() cqrs.RequestType { return getLanguageQueryType }
 
-type GetLanguageResult = dyn.OpResult[domain.Language]
+type GetLanguageResult = dyn.OpResult[models.Language]
 
 var searchLanguagesQueryType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "search"}
 
@@ -63,7 +63,7 @@ type SearchLanguagesQuery dyn.SearchQuery
 
 func (SearchLanguagesQuery) CqrsRequestType() cqrs.RequestType { return searchLanguagesQueryType }
 
-type SearchLanguagesResultData = dyn.PagedResultData[domain.Language]
+type SearchLanguagesResultData = dyn.PagedResultData[models.Language]
 type SearchLanguagesResult = dyn.OpResult[SearchLanguagesResultData]
 
 var languageExistsQueryType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "exists"}
