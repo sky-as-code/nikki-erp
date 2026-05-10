@@ -83,8 +83,8 @@ func (this *ProductServiceImpl) CreateProduct(ctx corectx.Context, cmd itProduct
 	if productId != nil {
 		variantCmd := itVariant.CreateVariantCommand{Variant: *domain.NewVariant()}
 		variantCmd.SetProductId(productId)
-		variantCmd.SetOrgId(result.Data.GetOrgId())
-		variantCmd.SetName(result.Data.GetName())
+		variantCmd.SetOrgId(cmd.GetOrgId())
+		variantCmd.SetName(cmd.GetName())
 		variantCmd.SetBarcode(&cmd.BarCode)
 		variantCmd.SetSku(&cmd.Sku)
 		variantCmd.SetProposedPrice(&cmd.ProposedPrice)

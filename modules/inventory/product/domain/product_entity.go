@@ -2,9 +2,19 @@ package domain
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/json"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+)
+
+const (
+	ProductResourceCode = "inventory_product"
+	ProductAuthScope    = "org"
+
+	ProductActionCreate      = "create"
+	ProductActionDelete      = "delete"
+	ProductActionUpdate      = "update"
+	ProductActionView        = "view"
+	ProductActionSetArchived = "set_archived"
 )
 
 const (
@@ -22,6 +32,7 @@ const (
 	ProdEdgeVariants        = "variants"
 	ProdEdgeAttributeGroups = "attribute_groups"
 	ProdEdgeAttributes      = "attributes"
+	ProdEdgeAttributeValues = "attribute_values"
 )
 
 func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -88,6 +99,11 @@ func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			dmodel.Edge(ProdEdgeAttributes).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Attributes"}).
 				Existing(AttributeSchemaName, AttrEdgeProduct),
+		).
+		EdgeFrom(
+			dmodel.Edge(ProdEdgeAttributeValues).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Attribute Values"}).
+				Existing(AttributeValueSchemaName, AttrValEdgeProduct),
 		)
 }
 
@@ -104,48 +120,19 @@ func NewProductFrom(src dmodel.DynamicFields) *Product {
 }
 
 func (this Product) GetName() *model.LangJson {
-	v := this.GetFieldData().GetAny(ProdFieldName)
-	if v == nil {
-		return nil
-	}
-	if strVal, ok := v.(string); ok {
-		var langJson model.LangJson
-		if err := json.UnmarshalStr(strVal, &langJson); err == nil {
-			return &langJson
-		}
-	}
-	return nil
+	return this.GetFieldData().GetLangJson(ProdFieldName)
 }
 
 func (this *Product) SetName(v *model.LangJson) {
-	if v == nil {
-		this.GetFieldData().SetAny(ProdFieldName, nil)
-		return
-	}
-	this.GetFieldData().SetAny(ProdFieldName, *v)
+	this.GetFieldData().SetLangJson(ProdFieldName, v)
 }
 
 func (this Product) GetDescription() *model.LangJson {
-	val := this.GetFieldData().GetAny(ProdFieldDescription)
-	if val == nil {
-		return nil
-	}
-
-	if strVal, ok := val.(string); ok {
-		var langJson model.LangJson
-		if err := json.UnmarshalStr(strVal, &langJson); err == nil {
-			return &langJson
-		}
-	}
-	return nil
+	return this.GetFieldData().GetLangJson(ProdFieldDescription)
 }
 
 func (this *Product) SetDescription(v *model.LangJson) {
-	if v == nil {
-		this.GetFieldData().SetAny(ProdFieldDescription, nil)
-		return
-	}
-	this.GetFieldData().SetAny(ProdFieldDescription, *v)
+	this.GetFieldData().SetLangJson(ProdFieldDescription, v)
 }
 
 func (this Product) GetThumbnailUrl() *string {
