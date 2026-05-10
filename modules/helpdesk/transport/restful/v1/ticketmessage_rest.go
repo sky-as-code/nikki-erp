@@ -10,7 +10,7 @@ import (
 
 type ticketMessageRestParams struct {
 	dig.In
-	Service it.TicketMessageService
+	Service it.TicketMessageAppService
 }
 
 func NewTicketMessageRest(params ticketMessageRestParams) *TicketMessageRest {
@@ -19,7 +19,7 @@ func NewTicketMessageRest(params ticketMessageRestParams) *TicketMessageRest {
 
 type TicketMessageRest struct {
 	httpserver.RestBase
-	Service it.TicketMessageService
+	Service it.TicketMessageAppService
 }
 
 func (this TicketMessageRest) CreateTicketMessage(echoCtx *echo.Context) (err error) {

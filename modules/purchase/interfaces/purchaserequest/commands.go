@@ -6,7 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
 func init() {
@@ -31,26 +31,26 @@ func init() {
 
 var createPurchaseRequestCommandType = cqrs.RequestType{Module: "purchase", Submodule: "purchaserequest", Action: "create"}
 
-type CreatePurchaseRequestCommand struct{ domain.PurchaseRequest }
+type CreatePurchaseRequestCommand struct{ models.PurchaseRequest }
 
 func (CreatePurchaseRequestCommand) CqrsRequestType() cqrs.RequestType {
 	return createPurchaseRequestCommandType
 }
 func (CreatePurchaseRequestCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.PurchaseRequestSchemaName)
+	return dmodel.GetSchema(models.PurchaseRequestSchemaName)
 }
 
-type CreatePurchaseRequestResult = dyn.OpResult[domain.PurchaseRequest]
+type CreatePurchaseRequestResult = dyn.OpResult[models.PurchaseRequest]
 
 var updatePurchaseRequestCommandType = cqrs.RequestType{Module: "purchase", Submodule: "purchaserequest", Action: "update"}
 
-type UpdatePurchaseRequestCommand struct{ domain.PurchaseRequest }
+type UpdatePurchaseRequestCommand struct{ models.PurchaseRequest }
 
 func (UpdatePurchaseRequestCommand) CqrsRequestType() cqrs.RequestType {
 	return updatePurchaseRequestCommandType
 }
 func (UpdatePurchaseRequestCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.PurchaseRequestSchemaName)
+	return dmodel.GetSchema(models.PurchaseRequestSchemaName)
 }
 
 type UpdatePurchaseRequestResult = dyn.OpResult[dyn.MutateResultData]
@@ -71,7 +71,7 @@ type GetPurchaseRequestQuery dyn.GetOneQuery
 
 func (GetPurchaseRequestQuery) CqrsRequestType() cqrs.RequestType { return getPurchaseRequestQueryType }
 
-type GetPurchaseRequestResult = dyn.OpResult[domain.PurchaseRequest]
+type GetPurchaseRequestResult = dyn.OpResult[models.PurchaseRequest]
 
 var searchPurchaseRequestsQueryType = cqrs.RequestType{Module: "purchase", Submodule: "purchaserequest", Action: "search"}
 
@@ -81,7 +81,7 @@ func (SearchPurchaseRequestsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchPurchaseRequestsQueryType
 }
 
-type SearchPurchaseRequestsResultData = dyn.PagedResultData[domain.PurchaseRequest]
+type SearchPurchaseRequestsResultData = dyn.PagedResultData[models.PurchaseRequest]
 type SearchPurchaseRequestsResult = dyn.OpResult[SearchPurchaseRequestsResultData]
 
 var setPurchaseRequestIsArchivedCommandType = cqrs.RequestType{

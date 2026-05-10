@@ -9,14 +9,14 @@ import (
 
 const (
 	MODEL_RULE_ID_ARR_MAX          = 100
-	MODEL_RULE_COL_LENGTH_MAX      = 50
-	MODEL_RULE_COL_LENGTH_MIN      = 2
 	MODEL_RULE_COMMENT_LENGTH      = 1000
 	MODEL_RULE_CURRENCY_SCALE      = 2
 	MODEL_RULE_CURRENCY_MAX        = math.MaxFloat64
 	MODEL_RULE_DESC_LENGTH         = 3000
 	MODEL_RULE_ETAG_MIN_LENGTH     = 7
 	MODEL_RULE_ETAG_MAX_LENGTH     = 30
+	MODEL_RULE_FIELDS_LENGTH_MAX   = 50
+	MODEL_RULE_FIELDS_LENGTH_MIN   = 2
 	MODEL_RULE_NON_NIKKI_ID_LENGTH = 50
 	MODEL_RULE_PAGE_INDEX_START    = 0
 	MODEL_RULE_PAGE_INDEX_END      = math.MaxInt16
@@ -37,3 +37,6 @@ const (
 )
 
 var ModelRuleCodeName = val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9_]+$`))
+
+// Logical installed-module id: short names (core, apptrait) or namespaced (nikkierp.identity).
+var ModelRuleModuleLogicalName = val.RegExp(regexp.MustCompile(`^[a-zA-Z0-9_.]+$`))

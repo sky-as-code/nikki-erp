@@ -696,6 +696,8 @@ func (this ModelField) ToSimplized() any {
 		IsRequiredForCreate bool           `json:"is_required_for_create"`
 		IsRequiredForUpdate bool           `json:"is_required_for_update"`
 		IsPrimaryKey        bool           `json:"is_primary_key"`
+		IsSystemField       bool           `json:"is_system_field"`
+		IsVirtualModelField bool           `json:"is_virtual_model_field"`
 		NoUpdate            bool           `json:"no_update"`
 		Rules               []*FieldRule   `json:"rules,omitempty"`
 		DefaultValue        *value         `json:"default_value,omitempty"`
@@ -708,6 +710,8 @@ func (this ModelField) ToSimplized() any {
 		IsRequiredForCreate: this.IsRequiredForCreate(),
 		IsRequiredForUpdate: this.IsRequiredForUpdate(),
 		IsPrimaryKey:        this.IsPrimaryKey(),
+		IsSystemField:       this.IsPrimaryKey() || this.IsVersioningKey() || this.IsTenantKey() || this.IsVirtualModelField(),
+		IsVirtualModelField: this.IsVirtualModelField(),
 		NoUpdate:            this.IsNoUpdate(),
 		Rules:               this.Rules(),
 		DefaultValue:        this.Default(),

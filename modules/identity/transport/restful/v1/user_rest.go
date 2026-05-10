@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -107,11 +108,13 @@ func (this UserRest) GetUserContext(echoCtx *echo.Context) (err error) {
 	user := models.NewUserFrom(reqCtx.GetUser())
 	echoCtx.JSON(http.StatusOK, GetUserContextResponse{
 		Id:           string(user.MustGetId()),
-		AvatarUrl:    user.MustGetAvatarUrl(),
+		AvatarUrl:    user.GetAvatarUrl(),
 		DisplayName:  user.MustGetDisplayName(),
 		Email:        user.MustGetEmail(),
 		Entitlements: userPerm.Entitlements.ToSlice(),
-		OrgIds:       userPerm.UserOrgIds.ToSlice(),
+		Orgs: array.Map(user.GetOrgs(), func(org models.Organization) dmodel.DynamicFields {
+			return org.GetFieldData()
+		}),
 	})
 	return nil
 }

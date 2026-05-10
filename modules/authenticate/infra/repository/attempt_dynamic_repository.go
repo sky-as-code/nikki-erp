@@ -5,7 +5,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
-	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -26,7 +26,7 @@ type AttemptDynamicRepositoryParam struct {
 }
 
 func NewAttemptDynamicRepository(param AttemptDynamicRepositoryParam) it.AttemptRepository {
-	schema := dmodel.MustGetSchema(domain.LoginAttemptSchemaName)
+	schema := dmodel.MustGetSchema(models.LoginAttemptSchemaName)
 	dynamicRepo := param.NewBaseRepoFn(
 		dyn.NewBaseRepoParam{
 			Client:       param.Client,
@@ -53,14 +53,14 @@ func (this *AttemptDynamicRepository) BeginTransaction(ctx corectx.Context) (dat
 
 func (this *AttemptDynamicRepository) GetOne(
 	ctx corectx.Context, param dyn.RepoGetOneParam,
-) (*dyn.OpResult[domain.LoginAttempt], error) {
-	return baserepo.GetOne[domain.LoginAttempt](ctx, this.dynamicRepo, param)
+) (*dyn.OpResult[models.LoginAttempt], error) {
+	return baserepo.GetOne[models.LoginAttempt](ctx, this.dynamicRepo, param)
 }
 
-func (this *AttemptDynamicRepository) Insert(ctx corectx.Context, attempt domain.LoginAttempt) (*dyn.OpResult[int], error) {
+func (this *AttemptDynamicRepository) Insert(ctx corectx.Context, attempt models.LoginAttempt) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, attempt)
 }
 
-func (this *AttemptDynamicRepository) Update(ctx corectx.Context, attempt domain.LoginAttempt) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *AttemptDynamicRepository) Update(ctx corectx.Context, attempt models.LoginAttempt) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, attempt.GetFieldData())
 }

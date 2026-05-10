@@ -2,6 +2,7 @@ package services
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -28,13 +29,15 @@ type ResourceDomainServiceImpl struct {
 }
 
 func (this *ResourceDomainServiceImpl) CreateResource(
-	ctx corectx.Context, cmd itRes.CreateResourceCommand,
+	ctx corectx.Context, cmd itRes.CreateResourceCommand, options ...corecrud.ServiceCreateOptions[*domain.Resource],
 ) (*itRes.CreateResourceResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.Resource]{})
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.Resource, *domain.Resource]{
 		Action:         "create resource",
 		BaseRepoGetter: this.resourceRepo,
 		Data:           cmd,
 		ValidateExtra:  validateNewResourceScope,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 func validateNewResourceScope(ctx corectx.Context, inputResrc *domain.Resource, vErrs *ft.ClientErrors) error {
@@ -46,12 +49,14 @@ func validateNewResourceScope(ctx corectx.Context, inputResrc *domain.Resource, 
 	return nil
 }
 func (this *ResourceDomainServiceImpl) DeleteResource(
-	ctx corectx.Context, cmd itRes.DeleteResourceCommand,
+	ctx corectx.Context, cmd itRes.DeleteResourceCommand, options ...corecrud.ServiceDeleteOptions,
 ) (*itRes.DeleteResourceResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:       "delete resource",
-		DbRepoGetter: this.resourceRepo,
-		Cmd:          dyn.DeleteOneCommand(cmd),
+		Action:                 "delete resource",
+		DbRepoGetter:           this.resourceRepo,
+		Cmd:                    dyn.DeleteOneCommand(cmd),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
@@ -76,23 +81,27 @@ func (this *ResourceDomainServiceImpl) GetResource(
 }
 
 func (this *ResourceDomainServiceImpl) SearchResources(
-	ctx corectx.Context, query itRes.SearchResourcesQuery,
+	ctx corectx.Context, query itRes.SearchResourcesQuery, options ...corecrud.ServiceSearchOptions,
 ) (*itRes.SearchResourcesResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceSearchOptions{})
 	return corecrud.Search[domain.Resource](ctx, corecrud.SearchParam{
-		Action:       "search resources",
-		DbRepoGetter: this.resourceRepo,
-		Query:        dyn.SearchQuery(query),
+		Action:                 "search resources",
+		DbRepoGetter:           this.resourceRepo,
+		Query:                  dyn.SearchQuery(query),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
 func (this *ResourceDomainServiceImpl) UpdateResource(
-	ctx corectx.Context, cmd itRes.UpdateResourceCommand,
+	ctx corectx.Context, cmd itRes.UpdateResourceCommand, options ...corecrud.ServiceUpdateOptions[*domain.Resource],
 ) (*itRes.UpdateResourceResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceUpdateOptions[*domain.Resource]{})
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Resource, *domain.Resource]{
-		Action:        "update resource",
-		DbRepoGetter:  this.resourceRepo,
-		Data:          cmd,
-		ValidateExtra: validateUpdateResourceScope,
+		Action:                 "update resource",
+		DbRepoGetter:           this.resourceRepo,
+		Data:                   cmd,
+		ValidateExtra:          validateUpdateResourceScope,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 

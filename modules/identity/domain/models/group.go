@@ -9,10 +9,10 @@ import (
 const (
 	GroupSchemaName = "identity.group"
 
-	GroupFieldId      = basemodel.FieldId
-	GroupFieldName    = "name"
-	GroupFieldDesc    = "description"
-	GroupFieldOwnerId = "owner_id"
+	GroupFieldId          = basemodel.FieldId
+	GroupFieldName        = "name"
+	GroupFieldDescription = "description"
+	GroupFieldOwnerId     = "owner_id"
 
 	GroupEdgeOwner                = "owner"
 	GroupEdgeRoles                = "roles"
@@ -71,7 +71,7 @@ func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		Field(
 			dmodel.DefineField().
-				Name(GroupFieldDesc).
+				Name(GroupFieldDescription).
 				Label(model.LangJson{model.LanguageCodeEnUs: "Description"}).
 				DataType(dmodel.FieldDataTypeLangJson(0, model.MODEL_RULE_DESC_LENGTH)),
 		).

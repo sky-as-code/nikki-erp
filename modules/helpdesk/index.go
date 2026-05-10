@@ -7,7 +7,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/helpdesk/app"
-	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/helpdesk/constants"
+	models "github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/helpdesk/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/helpdesk/transport"
 )
@@ -17,8 +19,9 @@ var ModuleSingleton modules.InCodeModule = &HelpdeskModule{}
 type HelpdeskModule struct{}
 
 func (*HelpdeskModule) LabelKey() string { return "helpdesk.moduleLabel" }
-func (*HelpdeskModule) Name() string     { return "helpdesk" }
+func (*HelpdeskModule) Name() string     { return modconstants.HelpdeskModuleName }
 func (*HelpdeskModule) Deps() []string   { return []string{} }
+func (*HelpdeskModule) IsInternal() bool { return false }
 func (*HelpdeskModule) Version() semver.SemVer {
 	return *semver.MustParseSemVer("v1.0.0")
 }
@@ -26,24 +29,25 @@ func (*HelpdeskModule) Version() semver.SemVer {
 func (*HelpdeskModule) Init() error {
 	return errors.Join(
 		repo.InitRepositories(),
-		app.InitServices(),
+		services.InitDomainServices(),
+		app.InitApplicationServices(),
 		transport.InitTransport(),
 	)
 }
 
 func (*HelpdeskModule) RegisterModels() error {
 	return errors.Join(
-		dmodel.RegisterSchemaB(domain.TicketCategoryRelSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.SlaPolicySchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.TeamSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.TicketCategorySchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.TicketSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.TicketActivitySchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.TicketMessageSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.TicketAssignmentSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.SlaBreachSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.TeamMembershipSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.EscalationRuleSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.TicketFeedbackSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.TicketCategoryRelSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SlaPolicySchemaBuilder()),
+		dmodel.RegisterSchemaB(models.TeamSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.TicketCategorySchemaBuilder()),
+		dmodel.RegisterSchemaB(models.TicketSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.TicketActivitySchemaBuilder()),
+		dmodel.RegisterSchemaB(models.TicketMessageSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.TicketAssignmentSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.SlaBreachSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.TeamMembershipSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.EscalationRuleSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.TicketFeedbackSchemaBuilder()),
 	)
 }

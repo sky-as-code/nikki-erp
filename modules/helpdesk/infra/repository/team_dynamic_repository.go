@@ -12,7 +12,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain"
+	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/helpdesk/interfaces/team"
 )
 
@@ -26,7 +26,7 @@ type TeamDynamicRepositoryParam struct {
 }
 
 func NewTeamDynamicRepository(param TeamDynamicRepositoryParam) it.TeamRepository {
-	dynamicRepo := param.NewBaseRepoFn(dyn.NewBaseRepoParam{Client: param.Client, ConfigSvc: param.ConfigSvc, QueryBuilder: param.QueryBuilder, Logger: param.Logger, Schema: dmodel.MustGetSchema(domain.TeamSchemaName)})
+	dynamicRepo := param.NewBaseRepoFn(dyn.NewBaseRepoParam{Client: param.Client, ConfigSvc: param.ConfigSvc, QueryBuilder: param.QueryBuilder, Logger: param.Logger, Schema: dmodel.MustGetSchema(models.TeamSchemaName)})
 	return &TeamDynamicRepository{dynamicRepo: dynamicRepo}
 }
 
@@ -38,22 +38,22 @@ func (this *TeamDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository { ret
 func (this *TeamDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
 	return this.dynamicRepo.BeginTransaction(ctx)
 }
-func (this *TeamDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.Team) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *TeamDynamicRepository) DeleteOne(ctx corectx.Context, keys models.Team) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
 }
-func (this *TeamDynamicRepository) Exists(ctx corectx.Context, keys []domain.Team) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	dynamicKeys := array.Map(keys, func(key domain.Team) dmodel.DynamicFields { return key.GetFieldData() })
+func (this *TeamDynamicRepository) Exists(ctx corectx.Context, keys []models.Team) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	dynamicKeys := array.Map(keys, func(key models.Team) dmodel.DynamicFields { return key.GetFieldData() })
 	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
 }
-func (this *TeamDynamicRepository) Insert(ctx corectx.Context, data domain.Team) (*dyn.OpResult[int], error) {
+func (this *TeamDynamicRepository) Insert(ctx corectx.Context, data models.Team) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, data)
 }
-func (this *TeamDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.Team], error) {
-	return baserepo.GetOne[domain.Team](ctx, this.dynamicRepo, param)
+func (this *TeamDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[models.Team], error) {
+	return baserepo.GetOne[models.Team](ctx, this.dynamicRepo, param)
 }
-func (this *TeamDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.Team]], error) {
-	return baserepo.Search[domain.Team](ctx, this.dynamicRepo, param)
+func (this *TeamDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[models.Team]], error) {
+	return baserepo.Search[models.Team](ctx, this.dynamicRepo, param)
 }
-func (this *TeamDynamicRepository) Update(ctx corectx.Context, data domain.Team) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *TeamDynamicRepository) Update(ctx corectx.Context, data models.Team) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, data.GetFieldData())
 }

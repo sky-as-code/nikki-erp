@@ -60,6 +60,8 @@ type GetOneQuery struct {
 	Fields []string `json:"fields" query:"fields"`
 }
 
+const DefaultSearchName = "default"
+
 type SearchQuery struct {
 	Fields []string `json:"fields" query:"fields"`
 	Page   int      `json:"page" query:"page"`
@@ -70,9 +72,18 @@ type SearchQuery struct {
 	Language *model.LanguageCode `json:"language" query:"language"`
 
 	// Determines the fields to be returned in the response.
-	// If not specified, the view "auto" will be used,
-	// which will return all fields that user has permission on.
-	View string `json:"view" query:"view"`
+	// If not specified, return all fields that user has permission on.
+	// Otherwise, return fields specified by the search name.
+	SearchName *string `json:"search_name" query:"search_name"`
+}
+
+func (SearchQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"core.crud_search_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return SearchQuerySchemaBuilder()
+		},
+	)
 }
 
 type OpResult[TData any] struct {

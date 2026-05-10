@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain"
+	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/models"
 )
 
 func init() {
@@ -21,16 +21,16 @@ func init() {
 
 var createTicketActivityCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketactivity", Action: "createTicketActivity"}
 
-type CreateTicketActivityCommand struct{ domain.TicketActivity }
+type CreateTicketActivityCommand struct{ models.TicketActivity }
 
 func (CreateTicketActivityCommand) CqrsRequestType() cqrs.RequestType {
 	return createTicketActivityCommandType
 }
 func (CreateTicketActivityCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.TicketActivitySchemaName)
+	return dmodel.GetSchema(models.TicketActivitySchemaName)
 }
 
-type CreateTicketActivityResult = dyn.OpResult[domain.TicketActivity]
+type CreateTicketActivityResult = dyn.OpResult[models.TicketActivity]
 
 var deleteTicketActivityCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketactivity", Action: "deleteTicketActivity"}
 
@@ -48,7 +48,7 @@ type GetTicketActivityQuery dyn.GetOneQuery
 
 func (GetTicketActivityQuery) CqrsRequestType() cqrs.RequestType { return getTicketActivityQueryType }
 
-type GetTicketActivityResult = dyn.OpResult[domain.TicketActivity]
+type GetTicketActivityResult = dyn.OpResult[models.TicketActivity]
 
 var ticketActivityExistsQueryType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketactivity", Action: "ticketActivityExists"}
 
@@ -68,18 +68,18 @@ func (SearchTicketActivitiesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchTicketActivitiesQueryType
 }
 
-type SearchTicketActivitiesResultData = dyn.PagedResultData[domain.TicketActivity]
+type SearchTicketActivitiesResultData = dyn.PagedResultData[models.TicketActivity]
 type SearchTicketActivitiesResult = dyn.OpResult[SearchTicketActivitiesResultData]
 
 var updateTicketActivityCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketactivity", Action: "updateTicketActivity"}
 
-type UpdateTicketActivityCommand struct{ domain.TicketActivity }
+type UpdateTicketActivityCommand struct{ models.TicketActivity }
 
 func (UpdateTicketActivityCommand) CqrsRequestType() cqrs.RequestType {
 	return updateTicketActivityCommandType
 }
 func (UpdateTicketActivityCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.TicketActivitySchemaName)
+	return dmodel.GetSchema(models.TicketActivitySchemaName)
 }
 
 type UpdateTicketActivityResult = dyn.OpResult[dyn.MutateResultData]

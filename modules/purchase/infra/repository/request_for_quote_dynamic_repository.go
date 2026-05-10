@@ -12,7 +12,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/requestforquote"
 )
 
@@ -28,7 +28,7 @@ type RequestForQuoteDynamicRepositoryParam struct {
 func NewRequestForQuoteDynamicRepository(param RequestForQuoteDynamicRepositoryParam) it.RequestForQuoteRepository {
 	repo := param.NewBaseRepoFn(dyn.NewBaseRepoParam{
 		Client: param.Client, ConfigSvc: param.ConfigSvc, QueryBuilder: param.QueryBuilder, Logger: param.Logger,
-		Schema: dmodel.MustGetSchema(domain.RequestForQuoteSchemaName),
+		Schema: dmodel.MustGetSchema(models.RequestForQuoteSchemaName),
 	})
 	return &RequestForQuoteDynamicRepository{dynamicRepo: repo}
 }
@@ -41,21 +41,21 @@ func (this *RequestForQuoteDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepos
 func (this *RequestForQuoteDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
 	return this.dynamicRepo.BeginTransaction(ctx)
 }
-func (this *RequestForQuoteDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.RequestForQuote) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *RequestForQuoteDynamicRepository) DeleteOne(ctx corectx.Context, keys models.RequestForQuote) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
 }
-func (this *RequestForQuoteDynamicRepository) Exists(ctx corectx.Context, keys []domain.RequestForQuote) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	return baserepo.Exists(ctx, this.dynamicRepo, array.Map(keys, func(k domain.RequestForQuote) dmodel.DynamicFields { return k.GetFieldData() }))
+func (this *RequestForQuoteDynamicRepository) Exists(ctx corectx.Context, keys []models.RequestForQuote) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	return baserepo.Exists(ctx, this.dynamicRepo, array.Map(keys, func(k models.RequestForQuote) dmodel.DynamicFields { return k.GetFieldData() }))
 }
-func (this *RequestForQuoteDynamicRepository) Insert(ctx corectx.Context, input domain.RequestForQuote) (*dyn.OpResult[int], error) {
+func (this *RequestForQuoteDynamicRepository) Insert(ctx corectx.Context, input models.RequestForQuote) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, input)
 }
-func (this *RequestForQuoteDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.RequestForQuote], error) {
-	return baserepo.GetOne[domain.RequestForQuote](ctx, this.dynamicRepo, param)
+func (this *RequestForQuoteDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[models.RequestForQuote], error) {
+	return baserepo.GetOne[models.RequestForQuote](ctx, this.dynamicRepo, param)
 }
-func (this *RequestForQuoteDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.RequestForQuote]], error) {
-	return baserepo.Search[domain.RequestForQuote](ctx, this.dynamicRepo, param)
+func (this *RequestForQuoteDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[models.RequestForQuote]], error) {
+	return baserepo.Search[models.RequestForQuote](ctx, this.dynamicRepo, param)
 }
-func (this *RequestForQuoteDynamicRepository) Update(ctx corectx.Context, input domain.RequestForQuote) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *RequestForQuoteDynamicRepository) Update(ctx corectx.Context, input models.RequestForQuote) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, input.GetFieldData())
 }

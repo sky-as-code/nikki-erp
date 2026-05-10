@@ -10,7 +10,7 @@ import (
 
 type slaBreachRestParams struct {
 	dig.In
-	Service it.SlaBreachService
+	Service it.SlaBreachAppService
 }
 
 func NewSlaBreachRest(params slaBreachRestParams) *SlaBreachRest {
@@ -19,7 +19,7 @@ func NewSlaBreachRest(params slaBreachRestParams) *SlaBreachRest {
 
 type SlaBreachRest struct {
 	httpserver.RestBase
-	Service it.SlaBreachService
+	Service it.SlaBreachAppService
 }
 
 func (this SlaBreachRest) CreateSlaBreach(echoCtx *echo.Context) (err error) {

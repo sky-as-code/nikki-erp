@@ -74,12 +74,14 @@ func (this *EntitlementApplicationServiceImpl) SearchEntitlements(ctx corectx.Co
 		return &it.SearchEntitlementsResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Entitlement, *domain.Entitlement]{
-		Action:            "search entitlements",
-		FieldResolver:     this.userPrefSvc.(corecrud.FieldsResolver),
-		Schema:            this.entitlementRepo.GetBaseRepo().Schema(),
-		DefaultSearchName: "entitlement_list",
+		Action:        "search entitlements",
+		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
+		Schema:        this.entitlementRepo.GetBaseRepo().Schema(),
+		DefaultFields: []string{domain.EntitlementFieldName, domain.EntitlementFieldDescription},
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.Entitlement]], error) {
-			return this.entitlementSvc.SearchEntitlements(ctx, query)
+			return this.entitlementSvc.SearchEntitlements(ctx, query, corecrud.ServiceSearchOptions{
+				AfterValidationSuccess: fn,
+			})
 		},
 	})
 }

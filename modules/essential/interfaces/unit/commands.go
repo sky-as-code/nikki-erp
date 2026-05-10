@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
 func init() {
@@ -26,7 +26,7 @@ var createUnitCommandType = cqrs.RequestType{
 }
 
 type CreateUnitCommand struct {
-	domain.Unit
+	models.Unit
 }
 
 func (CreateUnitCommand) CqrsRequestType() cqrs.RequestType {
@@ -34,10 +34,10 @@ func (CreateUnitCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (this CreateUnitCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.UnitSchemaName)
+	return dmodel.GetSchema(models.UnitSchemaName)
 }
 
-type CreateUnitResult = dyn.OpResult[domain.Unit]
+type CreateUnitResult = dyn.OpResult[models.Unit]
 
 var updateUnitCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -46,7 +46,7 @@ var updateUnitCommandType = cqrs.RequestType{
 }
 
 type UpdateUnitCommand struct {
-	domain.Unit
+	models.Unit
 }
 
 func (UpdateUnitCommand) CqrsRequestType() cqrs.RequestType {
@@ -54,7 +54,7 @@ func (UpdateUnitCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (this UpdateUnitCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.UnitSchemaName)
+	return dmodel.GetSchema(models.UnitSchemaName)
 }
 
 type UpdateUnitResult = dyn.OpResult[dyn.MutateResultData]
@@ -85,7 +85,7 @@ func (GetUnitQuery) CqrsRequestType() cqrs.RequestType {
 	return getUnitQueryType
 }
 
-type GetUnitResult = dyn.OpResult[domain.Unit]
+type GetUnitResult = dyn.OpResult[models.Unit]
 
 var searchUnitsQueryType = cqrs.RequestType{
 	Module:    "inventory",
@@ -99,7 +99,7 @@ func (SearchUnitsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchUnitsQueryType
 }
 
-type SearchUnitsResultData = dyn.PagedResultData[domain.Unit]
+type SearchUnitsResultData = dyn.PagedResultData[models.Unit]
 type SearchUnitsResult = dyn.OpResult[SearchUnitsResultData]
 
 var unitExistsQueryType = cqrs.RequestType{

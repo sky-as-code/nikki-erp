@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
 func init() {
@@ -26,7 +26,7 @@ var createUnitCategoryCommandType = cqrs.RequestType{
 }
 
 type CreateUnitCategoryCommand struct {
-	domain.UnitCategory
+	models.UnitCategory
 }
 
 func (CreateUnitCategoryCommand) CqrsRequestType() cqrs.RequestType {
@@ -34,10 +34,10 @@ func (CreateUnitCategoryCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (this CreateUnitCategoryCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.UnitCategorySchemaName)
+	return dmodel.GetSchema(models.UnitCategorySchemaName)
 }
 
-type CreateUnitCategoryResult = dyn.OpResult[domain.UnitCategory]
+type CreateUnitCategoryResult = dyn.OpResult[models.UnitCategory]
 
 var updateUnitCategoryCommandType = cqrs.RequestType{
 	Module:    "inventory",
@@ -46,7 +46,7 @@ var updateUnitCategoryCommandType = cqrs.RequestType{
 }
 
 type UpdateUnitCategoryCommand struct {
-	domain.UnitCategory
+	models.UnitCategory
 }
 
 func (UpdateUnitCategoryCommand) CqrsRequestType() cqrs.RequestType {
@@ -54,7 +54,7 @@ func (UpdateUnitCategoryCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (this UpdateUnitCategoryCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.UnitCategorySchemaName)
+	return dmodel.GetSchema(models.UnitCategorySchemaName)
 }
 
 type UpdateUnitCategoryResult = dyn.OpResult[dyn.MutateResultData]
@@ -88,7 +88,7 @@ func (GetUnitCategoryQuery) CqrsRequestType() cqrs.RequestType {
 	return getUnitCategoryQueryType
 }
 
-type GetUnitCategoryResult = dyn.OpResult[domain.UnitCategory]
+type GetUnitCategoryResult = dyn.OpResult[models.UnitCategory]
 
 var searchUnitCategoriesQueryType = cqrs.RequestType{
 	Module:    "inventory",
@@ -102,7 +102,7 @@ func (SearchUnitCategoriesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchUnitCategoriesQueryType
 }
 
-type SearchUnitCategoriesResultData = dyn.PagedResultData[domain.UnitCategory]
+type SearchUnitCategoriesResultData = dyn.PagedResultData[models.UnitCategory]
 type SearchUnitCategoriesResult = dyn.OpResult[SearchUnitCategoriesResultData]
 
 var unitCategoryExistsQueryType = cqrs.RequestType{

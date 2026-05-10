@@ -5,7 +5,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	c "github.com/sky-as-code/nikki-erp/modules/identity/constants"
-	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/orgunit"
 )
@@ -46,10 +46,10 @@ func (this *OrgUnitApplicationServiceImpl) GetOrgUnit(ctx corectx.Context, query
 	if cErr := assertPermission(ctx, "read", c.ResourceIdentityOrgUnit, c.ResourceScopeOrg); cErr != nil {
 		return &it.GetOrgUnitResult{ClientErrors: *cErr}, nil
 	}
-	return corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[domain.OrganizationalUnit, *domain.OrganizationalUnit]{
+	return corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[models.OrganizationalUnit, *models.OrganizationalUnit]{
 		Action: "get org unit",
 		Schema: this.orgUnitRepo.GetBaseRepo().Schema(),
-		GetOneFn: func() (*dyn.OpResult[domain.OrganizationalUnit], error) {
+		GetOneFn: func() (*dyn.OpResult[models.OrganizationalUnit], error) {
 			return this.orgUnitSvc.GetOrgUnit(ctx, query)
 		},
 	})
@@ -73,13 +73,15 @@ func (this *OrgUnitApplicationServiceImpl) SearchOrgUnits(ctx corectx.Context, q
 	if cErr := assertPermission(ctx, "read", c.ResourceIdentityOrgUnit, c.ResourceScopeOrg); cErr != nil {
 		return &it.SearchOrgUnitsResult{ClientErrors: *cErr}, nil
 	}
-	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.OrganizationalUnit, *domain.OrganizationalUnit]{
-		Action:            "search org units",
-		FieldResolver:     this.userPrefSvc.(corecrud.FieldsResolver),
-		Schema:            this.orgUnitRepo.GetBaseRepo().Schema(),
-		DefaultSearchName: "orgunit_list",
-		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.OrganizationalUnit]], error) {
-			return this.orgUnitSvc.SearchOrgUnits(ctx, query)
+	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[models.OrganizationalUnit, *models.OrganizationalUnit]{
+		Action:        "search org units",
+		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
+		Schema:        this.orgUnitRepo.GetBaseRepo().Schema(),
+		DefaultFields: []string{models.OrgUnitFieldName, models.OrgUnitFieldDescription},
+		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[models.OrganizationalUnit]], error) {
+			return this.orgUnitSvc.SearchOrgUnits(ctx, query, corecrud.ServiceSearchOptions{
+				AfterValidationSuccess: fn,
+			})
 		},
 	})
 }

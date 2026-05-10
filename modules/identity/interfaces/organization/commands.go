@@ -7,6 +7,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 )
 
@@ -63,13 +64,32 @@ var getOrgQueryType = cqrs.RequestType{
 }
 
 type GetOrgQuery struct {
-	Columns []string `json:"columns" query:"columns"`
-	Id      *string  `json:"id" param:"id"`
-	Slug    *string  `json:"slug"`
+	Fields []string `json:"fields" query:"fields"`
+	Id     *string  `json:"id" param:"id"`
+	Slug   *string  `json:"slug"`
 }
 
 func (GetOrgQuery) CqrsRequestType() cqrs.RequestType {
 	return getOrgQueryType
+}
+
+func (GetOrgQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"identity.get_org_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(dmodel.DefineField().
+					Name(basemodel.FieldFields).
+					DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_FIELDS_LENGTH_MIN, model.MODEL_RULE_FIELDS_LENGTH_MAX).ArrayType())).
+				ExclusiveRequiredFields(basemodel.FieldId, domain.OrgFieldSlug).
+				Field(dmodel.DefineField().
+					Name(basemodel.FieldId).
+					DataType(dmodel.FieldDataTypeUlid())).
+				Field(dmodel.DefineField().
+					Name(domain.OrgFieldSlug).
+					DataType(dmodel.FieldDataTypeEmail()))
+		},
+	)
 }
 
 type GetOrgResult = dyn.OpResult[dyn.SingleResultData[domain.Organization]]

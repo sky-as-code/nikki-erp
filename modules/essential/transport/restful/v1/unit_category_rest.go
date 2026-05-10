@@ -1,4 +1,4 @@
-﻿package v1
+package v1
 
 import (
 	"github.com/labstack/echo/v5"
@@ -11,7 +11,7 @@ import (
 type unitCategoryRestParams struct {
 	dig.In
 
-	UnitCategorySvc it.UnitCategoryService
+	UnitCategorySvc it.UnitCategoryAppService
 }
 
 func NewUnitCategoryRest(params unitCategoryRestParams) *UnitCategoryRest {
@@ -21,7 +21,7 @@ func NewUnitCategoryRest(params unitCategoryRestParams) *UnitCategoryRest {
 }
 
 type UnitCategoryRest struct {
-	unitCatSvc it.UnitCategoryService
+	unitCatSvc it.UnitCategoryAppService
 }
 
 func (this UnitCategoryRest) Create(echoCtx *echo.Context) (err error) {

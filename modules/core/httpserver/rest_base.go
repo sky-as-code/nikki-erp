@@ -123,6 +123,10 @@ type RestSearchResponse[TItem any] struct {
 	Total int     `json:"total"`
 	Page  int     `json:"page"`
 	Size  int     `json:"size"`
+
+	DesiredFields []string `json:"desired_fields"`
+	MaskedFields  []string `json:"masked_fields"`
+	SchemaEtag    string   `json:"schema_etag"`
 }
 
 func NewSearchResponseDyn[TItem dmodel.DynamicModelGetter](
@@ -131,10 +135,13 @@ func NewSearchResponseDyn[TItem dmodel.DynamicModelGetter](
 
 	items := dmodel.ExtractFieldsArr(data.Items)
 	return RestSearchResponse[dmodel.DynamicFields]{
-		Items: items,
-		Total: data.Total,
-		Page:  data.Page,
-		Size:  data.Size,
+		Items:         items,
+		Total:         data.Total,
+		Page:          data.Page,
+		Size:          data.Size,
+		DesiredFields: data.DesiredFields,
+		MaskedFields:  data.MaskedFields,
+		SchemaEtag:    data.SchemaEtag,
 	}
 }
 

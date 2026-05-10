@@ -4,6 +4,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -37,12 +38,14 @@ type OrgUnitDomainServiceImpl struct {
 }
 
 func (this *OrgUnitDomainServiceImpl) CreateOrgUnit(
-	ctx corectx.Context, cmd itHier.CreateOrgUnitCommand,
+	ctx corectx.Context, cmd itHier.CreateOrgUnitCommand, options ...corecrud.ServiceCreateOptions[*domain.OrganizationalUnit],
 ) (*itHier.CreateOrgUnitResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.OrganizationalUnit]{})
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.OrganizationalUnit, *domain.OrganizationalUnit]{
 		Action:         "create orgunit level",
 		BaseRepoGetter: this.orgUnitRepo,
 		Data:           cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 		ValidateExtra: func(ctx corectx.Context, inputModel *domain.OrganizationalUnit, vErrs *ft.ClientErrors) error {
 			this.applyOrgUnitPathForCreate(ctx, inputModel, vErrs)
 			return nil
@@ -95,12 +98,14 @@ func (this *OrgUnitDomainServiceImpl) appendOrgUnitPathFromParent(
 }
 
 func (this *OrgUnitDomainServiceImpl) DeleteOrgUnit(
-	ctx corectx.Context, cmd itHier.DeleteOrgUnitCommand,
+	ctx corectx.Context, cmd itHier.DeleteOrgUnitCommand, options ...corecrud.ServiceDeleteOptions,
 ) (*itHier.DeleteOrgUnitResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:       "delete orgunit level",
-		DbRepoGetter: this.orgUnitRepo,
-		Cmd:          dyn.DeleteOneCommand(cmd),
+		Action:                 "delete orgunit level",
+		DbRepoGetter:           this.orgUnitRepo,
+		Cmd:                    dyn.DeleteOneCommand(cmd),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
@@ -115,12 +120,14 @@ func (this *OrgUnitDomainServiceImpl) GetOrgUnit(
 }
 
 func (this *OrgUnitDomainServiceImpl) SearchOrgUnits(
-	ctx corectx.Context, query itHier.SearchOrgUnitsQuery,
+	ctx corectx.Context, query itHier.SearchOrgUnitsQuery, options ...corecrud.ServiceSearchOptions,
 ) (*itHier.SearchOrgUnitsResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceSearchOptions{})
 	return corecrud.Search[domain.OrganizationalUnit](ctx, corecrud.SearchParam{
-		Action:       "search orgunit levels",
-		DbRepoGetter: this.orgUnitRepo,
-		Query:        dyn.SearchQuery(query),
+		Action:                 "search orgunit levels",
+		DbRepoGetter:           this.orgUnitRepo,
+		Query:                  dyn.SearchQuery(query),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
@@ -135,12 +142,14 @@ func (this *OrgUnitDomainServiceImpl) OrgUnitExists(
 }
 
 func (this *OrgUnitDomainServiceImpl) UpdateOrgUnit(
-	ctx corectx.Context, cmd itHier.UpdateOrgUnitCommand,
+	ctx corectx.Context, cmd itHier.UpdateOrgUnitCommand, options ...corecrud.ServiceUpdateOptions[*domain.OrganizationalUnit],
 ) (*itHier.UpdateOrgUnitResult, error) {
-	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Group, *domain.Group]{
-		Action:       "update group",
-		DbRepoGetter: this.orgUnitRepo,
-		Data:         cmd,
+	opts := safe.GetOptional(options, corecrud.ServiceUpdateOptions[*domain.OrganizationalUnit]{})
+	return corecrud.Update(ctx, corecrud.UpdateParam[domain.OrganizationalUnit, *domain.OrganizationalUnit]{
+		Action:                 "update orgunit level",
+		DbRepoGetter:           this.orgUnitRepo,
+		Data:                   cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 

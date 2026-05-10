@@ -38,6 +38,11 @@ func (*IdentityModule) Deps() []string {
 	}
 }
 
+// IsInternal implements InCodeModule.
+func (*IdentityModule) IsInternal() bool {
+	return false
+}
+
 // Version implements InCodeModule.
 func (*IdentityModule) Version() semver.SemVer {
 	return *semver.MustParseSemVer("v1.0.0")

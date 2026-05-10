@@ -1,10 +1,13 @@
 package app
 
 import (
+	"fmt"
+
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	c "github.com/sky-as-code/nikki-erp/modules/identity/constants"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
@@ -74,12 +77,18 @@ func (this *GroupApplicationServiceImpl) SearchGroups(ctx corectx.Context, query
 		return &it.SearchGroupsResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Group, *domain.Group]{
-		Action:            "search groups",
-		FieldResolver:     this.userPrefSvc.(corecrud.FieldsResolver),
-		Schema:            this.groupRepo.GetBaseRepo().Schema(),
-		DefaultSearchName: "group_list",
+		Action:        "search groups",
+		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
+		Schema:        this.groupRepo.GetBaseRepo().Schema(),
+		DefaultFields: []string{
+			models.GroupFieldName,
+			models.GroupFieldDescription,
+			fmt.Sprintf("%s.%s", models.GroupEdgeOwner, models.UserFieldDisplayName),
+		},
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.Group]], error) {
-			return this.groupSvc.SearchGroups(ctx, query)
+			return this.groupSvc.SearchGroups(ctx, query, corecrud.ServiceSearchOptions{
+				AfterValidationSuccess: fn,
+			})
 		},
 	})
 }

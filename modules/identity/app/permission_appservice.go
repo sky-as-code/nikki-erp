@@ -86,6 +86,8 @@ func (this *PermissionApplicationServiceImpl) getEnabledUser(ctx corectx.Context
 			models.UserFieldOrgUnitId,
 			fmt.Sprintf("%s.%s", models.UserEdgeOrgUnit, models.OrgUnitFieldOrgId),
 			fmt.Sprintf("%s.%s", models.UserEdgeOrgs, models.OrgFieldId),
+			fmt.Sprintf("%s.%s", models.UserEdgeOrgs, models.OrgFieldDisplayName),
+			fmt.Sprintf("%s.%s", models.UserEdgeOrgs, models.OrgFieldSlug),
 		},
 	})
 	if err != nil {

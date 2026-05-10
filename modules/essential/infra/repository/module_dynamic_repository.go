@@ -14,7 +14,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 )
 
@@ -37,7 +37,7 @@ func NewModuleDynamicRepository(param ModuleDynamicRepositoryParam) it.ModuleRep
 			ConfigSvc:    param.ConfigSvc,
 			QueryBuilder: param.QueryBuilder,
 			Logger:       param.Logger,
-			Schema:       dmodel.MustGetSchema(domain.ModuleMetadataSchemaName),
+			Schema:       dmodel.MustGetSchema(models.ModuleMetadataSchemaName),
 		},
 	)
 	return &ModuleDynamicRepository{dynamicRepo: dynamicRepo}
@@ -74,40 +74,40 @@ func (this *ModuleDynamicRepository) ReleaseLock(ctx corectx.Context) error {
 }
 
 func (this *ModuleDynamicRepository) DeleteOne(
-	ctx corectx.Context, keys domain.ModuleMetadata,
+	ctx corectx.Context, keys models.ModuleMetadata,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
 }
 
 func (this *ModuleDynamicRepository) Exists(
-	ctx corectx.Context, keys []domain.ModuleMetadata,
+	ctx corectx.Context, keys []models.ModuleMetadata,
 ) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	dynamicKeys := array.Map(keys, func(key domain.ModuleMetadata) dmodel.DynamicFields {
+	dynamicKeys := array.Map(keys, func(key models.ModuleMetadata) dmodel.DynamicFields {
 		return key.GetFieldData()
 	})
 	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
 }
 
 func (this *ModuleDynamicRepository) Insert(
-	ctx corectx.Context, module domain.ModuleMetadata,
+	ctx corectx.Context, module models.ModuleMetadata,
 ) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, module)
 }
 
 func (this *ModuleDynamicRepository) GetOne(
 	ctx corectx.Context, param dyn.RepoGetOneParam,
-) (*dyn.OpResult[domain.ModuleMetadata], error) {
-	return baserepo.GetOne[domain.ModuleMetadata](ctx, this.dynamicRepo, param)
+) (*dyn.OpResult[models.ModuleMetadata], error) {
+	return baserepo.GetOne[models.ModuleMetadata](ctx, this.dynamicRepo, param)
 }
 
 func (this *ModuleDynamicRepository) Search(
 	ctx corectx.Context, param dyn.RepoSearchParam,
-) (*dyn.OpResult[dyn.PagedResultData[domain.ModuleMetadata]], error) {
-	return baserepo.Search[domain.ModuleMetadata](ctx, this.dynamicRepo, param)
+) (*dyn.OpResult[dyn.PagedResultData[models.ModuleMetadata]], error) {
+	return baserepo.Search[models.ModuleMetadata](ctx, this.dynamicRepo, param)
 }
 
 func (this *ModuleDynamicRepository) Update(
-	ctx corectx.Context, module domain.ModuleMetadata,
+	ctx corectx.Context, module models.ModuleMetadata,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, module.GetFieldData())
 }

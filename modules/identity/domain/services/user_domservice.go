@@ -3,12 +3,10 @@ package services
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
@@ -37,54 +35,6 @@ type UserDomainServiceImpl struct {
 	userRepo it.UserRepository
 	eventBus event.EventBus
 	cqrs     cqrs.CqrsBus
-}
-
-func (this *UserDomainServiceImpl) GetUserContext(ctx crud.Context, query it.GetUserContextQuery) (result any, err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "add or remove users"); e != nil {
-			err = e
-		}
-	}()
-
-	return nil, nil
-
-	// var dbUser *domain.User
-
-	// flow := val.StartValidationFlow()
-	// vErrs, err := flow.
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		*vErrs = query.Validate()
-	// 		return nil
-	// 	}).
-	// 	Step(func(vErrs *ft.ValidationErrors) error {
-	// 		// dbUser, err = this.userRepo.GetOne(ctx, dyn.RepoGetOneParam{
-	// 		// 	Filter: dmodel.DynamicFields{
-	// 		// 		basemodel.FieldId: query.UserId,
-	// 		// 	},
-	// 		// })
-	// 		// ft.PanicOnErr(err)
-	// 		return nil
-	// 	}).
-	// 	End()
-	// ft.PanicOnErr(err)
-
-	// // permission, err := this.getPermissionsForUser(ctx, &vErrs, query.UserId)
-	// // ft.PanicOnErr(err)
-
-	// if vErrs.Count() > 0 {
-	// 	return &it.GetUserContextResultData{
-	// 		ClientError: vErrs.ToClientError(),
-	// 	}, nil
-	// }
-
-	// return &it.GetUserContextResultData{
-	// 	Data: &it.GetUserContextResult{
-	// 		User: dbUser,
-	// 		// Permissions: &permission.Permissions,
-	// 		Permissions: nil,
-	// 	},
-	// 	HasData: true,
-	// }, nil
 }
 
 func (this *UserDomainServiceImpl) CreateUser(
@@ -126,8 +76,7 @@ func (this *UserDomainServiceImpl) GetEnabledUser(ctx corectx.Context, query it.
 }
 
 func (this *UserDomainServiceImpl) getUserWithArchived(ctx corectx.Context, query it.GetUserQuery, isArchived *bool) (*dyn.OpResult[domain.User], error) {
-	querySchema := getOneSchema()
-	sanitizedFields, cErrs := querySchema.ValidateStruct(query)
+	sanitizedFields, cErrs := query.GetSchema().ValidateStruct(query)
 	if cErrs.Count() > 0 {
 		return &dyn.OpResult[domain.User]{ClientErrors: cErrs}, nil
 	}
@@ -170,25 +119,6 @@ func (this *UserDomainServiceImpl) getUserWithArchived(ctx corectx.Context, quer
 	}
 
 	return result, nil
-}
-
-func getOneSchema() *dmodel.ModelSchema {
-	return dmodel.GetOrRegisterSchema(
-		"identity.get_user_query",
-		func() *dmodel.ModelSchemaBuilder {
-			return dmodel.DefineModel("_").
-				ExclusiveRequiredFields(domain.UserFieldId, domain.UserFieldEmail).
-				Field(dmodel.DefineField().
-					Name(basemodel.FieldColumns).
-					DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_COL_LENGTH_MIN, model.MODEL_RULE_COL_LENGTH_MAX).ArrayType())).
-				Field(dmodel.DefineField().
-					Name(basemodel.FieldId).
-					DataType(dmodel.FieldDataTypeUlid())).
-				Field(dmodel.DefineField().
-					Name(domain.UserFieldEmail).
-					DataType(dmodel.FieldDataTypeEmail()))
-		},
-	)
 }
 
 func (this *UserDomainServiceImpl) SearchUsers(

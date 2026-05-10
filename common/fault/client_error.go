@@ -7,6 +7,7 @@ import (
 	"text/template"
 
 	invopop "github.com/invopop/validation"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	"go.bryk.io/pkg/errors"
 )
 
@@ -115,10 +116,7 @@ const (
 )
 
 func NewAuthorizationError(key string, message string, vars ...map[string]any) *ClientErrorItem {
-	var msgVars map[string]any = nil
-	if len(vars) > 0 {
-		msgVars = vars[0]
-	}
+	msgVars := safe.GetOptional(vars, nil)
 
 	return &ClientErrorItem{
 		Key:     key,
@@ -133,10 +131,7 @@ func IsAuthorizationError(cErr ClientErrorItem) bool {
 }
 
 func NewBusinessViolation(field string, key string, message string, vars ...map[string]any) *ClientErrorItem {
-	var msgVars map[string]any = nil
-	if len(vars) > 0 {
-		msgVars = vars[0]
-	}
+	msgVars := safe.GetOptional(vars, nil)
 
 	return &ClientErrorItem{
 		Field:   field,
@@ -148,10 +143,7 @@ func NewBusinessViolation(field string, key string, message string, vars ...map[
 }
 
 func NewAnonymousBusinessViolation(key string, message string, vars ...map[string]any) *ClientErrorItem {
-	var msgVars map[string]any = nil
-	if len(vars) > 0 {
-		msgVars = vars[0]
-	}
+	msgVars := safe.GetOptional(vars, nil)
 
 	return &ClientErrorItem{
 		Key:     key,
@@ -162,10 +154,7 @@ func NewAnonymousBusinessViolation(key string, message string, vars ...map[strin
 }
 
 func NewValidationError(field string, key string, message string, vars ...map[string]any) *ClientErrorItem {
-	var msgVars map[string]any = nil
-	if len(vars) > 0 {
-		msgVars = vars[0]
-	}
+	msgVars := safe.GetOptional(vars, nil)
 
 	return &ClientErrorItem{
 		Field:   field,
@@ -177,10 +166,7 @@ func NewValidationError(field string, key string, message string, vars ...map[st
 }
 
 func NewAnonymousValidationError(key string, message string, vars ...map[string]any) *ClientErrorItem {
-	var msgVars map[string]any = nil
-	if len(vars) > 0 {
-		msgVars = vars[0]
-	}
+	msgVars := safe.GetOptional(vars, nil)
 
 	return &ClientErrorItem{
 		Key:     key,

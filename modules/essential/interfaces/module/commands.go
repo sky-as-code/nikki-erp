@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 )
 
 func init() {
@@ -26,7 +26,7 @@ var createModuleCommandType = cqrs.RequestType{
 }
 
 type CreateModuleCommand struct {
-	domain.ModuleMetadata
+	models.ModuleMetadata
 }
 
 func (CreateModuleCommand) CqrsRequestType() cqrs.RequestType {
@@ -34,10 +34,10 @@ func (CreateModuleCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (CreateModuleCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.ModuleMetadataSchemaName)
+	return dmodel.GetSchema(models.ModuleMetadataSchemaName)
 }
 
-type CreateModuleResult = dyn.OpResult[domain.ModuleMetadata]
+type CreateModuleResult = dyn.OpResult[models.ModuleMetadata]
 
 var updateModuleCommandType = cqrs.RequestType{
 	Module:    "essential",
@@ -46,7 +46,7 @@ var updateModuleCommandType = cqrs.RequestType{
 }
 
 type UpdateModuleCommand struct {
-	domain.ModuleMetadata
+	models.ModuleMetadata
 }
 
 func (UpdateModuleCommand) CqrsRequestType() cqrs.RequestType {
@@ -54,7 +54,7 @@ func (UpdateModuleCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 func (UpdateModuleCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.ModuleMetadataSchemaName)
+	return dmodel.GetSchema(models.ModuleMetadataSchemaName)
 }
 
 type UpdateModuleResult = dyn.OpResult[dyn.MutateResultData]
@@ -85,7 +85,7 @@ func (GetModuleQuery) CqrsRequestType() cqrs.RequestType {
 	return getModuleQueryType
 }
 
-type GetModuleResult = dyn.OpResult[domain.ModuleMetadata]
+type GetModuleResult = dyn.OpResult[models.ModuleMetadata]
 
 var searchModulesQueryType = cqrs.RequestType{
 	Module:    "essential",
@@ -99,7 +99,7 @@ func (SearchModulesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchModulesQueryType
 }
 
-type SearchModulesResultData = dyn.PagedResultData[domain.ModuleMetadata]
+type SearchModulesResultData = dyn.PagedResultData[models.ModuleMetadata]
 type SearchModulesResult = dyn.OpResult[SearchModulesResultData]
 
 var moduleExistsQueryType = cqrs.RequestType{

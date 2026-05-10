@@ -10,7 +10,7 @@ import (
 
 type ticketFeedbackRestParams struct {
 	dig.In
-	Service it.TicketFeedbackService
+	Service it.TicketFeedbackAppService
 }
 
 func NewTicketFeedbackRest(params ticketFeedbackRestParams) *TicketFeedbackRest {
@@ -19,7 +19,7 @@ func NewTicketFeedbackRest(params ticketFeedbackRestParams) *TicketFeedbackRest 
 
 type TicketFeedbackRest struct {
 	httpserver.RestBase
-	Service it.TicketFeedbackService
+	Service it.TicketFeedbackAppService
 }
 
 func (this TicketFeedbackRest) CreateTicketFeedback(echoCtx *echo.Context) (err error) {

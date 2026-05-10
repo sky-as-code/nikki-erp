@@ -34,10 +34,11 @@ type DomainModel interface {
 
 type InCodeModule interface {
 	Deps() []string
-	// LabelKey is the translation key.
+	// Deprecated: Use Name() instead.
 	LabelKey() string
 	Name() string
 	Init() error
+	IsInternal() bool
 	Version() semver.SemVer
 }
 
@@ -47,6 +48,7 @@ type DynamicModule interface {
 	LabelKey() string
 	Name() string
 	Init() error
+	IsInternal() bool
 	RegisterModels() error
 	Version() semver.SemVer
 }

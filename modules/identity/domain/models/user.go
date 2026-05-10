@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/thoas/go-funk"
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/array"
@@ -36,6 +37,7 @@ const (
 	UserFieldAvatarUrl   = "avatar_url"
 	UserFieldDisplayName = "display_name"
 	UserFieldEmail       = "email"
+	UserFieldPassword    = "password"
 	UserFieldIsOwner     = "is_owner"
 	UserFieldOrgUnitId   = "org_unit_id"
 	UserFieldStatus      = "status"
@@ -193,14 +195,6 @@ func (this *User) SetIsArchived(v *bool) {
 	this.GetFieldData().SetBool(basemodel.FieldIsArchived, v)
 }
 
-func (this User) MustGetAvatarUrl() string {
-	v := this.GetAvatarUrl()
-	if v == nil {
-		panic("avatar_url is nil")
-	}
-	return *v
-}
-
 func (this User) GetAvatarUrl() *string {
 	return this.GetFieldData().GetString(UserFieldAvatarUrl)
 }
@@ -289,10 +283,17 @@ func (this User) GetOrgs() []Organization {
 	if anyOrgs == nil {
 		return nil
 	}
-	orgs := array.Map(anyOrgs.([]dmodel.DynamicFields), func(org dmodel.DynamicFields) Organization {
-		return *NewOrganizationFrom(org)
+	orgs := funk.Map(anyOrgs, func(org any) Organization {
+		switch val := org.(type) {
+		case dmodel.DynamicFields:
+			return *NewOrganizationFrom(val)
+		case map[string]any:
+			return *NewOrganizationFrom(dmodel.DynamicFields(val))
+		default:
+			panic(errors.New("invalid organization type"))
+		}
 	})
-	return orgs
+	return orgs.([]Organization)
 }
 
 func (this User) GetOrgIds() []model.Id {

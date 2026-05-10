@@ -2,8 +2,8 @@ package services
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
@@ -27,22 +27,26 @@ type OrganizationDomainServiceImpl struct {
 }
 
 func (this *OrganizationDomainServiceImpl) CreateOrg(
-	ctx corectx.Context, cmd it.CreateOrgCommand,
+	ctx corectx.Context, cmd it.CreateOrgCommand, options ...corecrud.ServiceCreateOptions[*domain.Organization],
 ) (*it.CreateOrgResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceCreateOptions[*domain.Organization]{})
 	return corecrud.Create(ctx, corecrud.CreateParam[domain.Organization, *domain.Organization]{
-		Action:         "create organization",
-		BaseRepoGetter: this.orgRepo,
-		Data:           cmd,
+		Action:                 "create organization",
+		BaseRepoGetter:         this.orgRepo,
+		Data:                   cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
 func (this *OrganizationDomainServiceImpl) DeleteOrg(
-	ctx corectx.Context, cmd it.DeleteOrgCommand,
+	ctx corectx.Context, cmd it.DeleteOrgCommand, options ...corecrud.ServiceDeleteOptions,
 ) (*it.DeleteOrgResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
 	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:       "delete organization",
-		DbRepoGetter: this.orgRepo,
-		Cmd:          dyn.DeleteOneCommand(cmd),
+		Action:                 "delete organization",
+		DbRepoGetter:           this.orgRepo,
+		Cmd:                    dyn.DeleteOneCommand(cmd),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
@@ -55,9 +59,12 @@ func (this *OrganizationDomainServiceImpl) GetActiveOrg(ctx corectx.Context, que
 }
 
 func (this *OrganizationDomainServiceImpl) getOrgWithArchived(ctx corectx.Context, query it.GetOrgQuery, isArchived *bool) (*dyn.OpResult[domain.Organization], error) {
-	if query.Id == nil && query.Slug == nil {
-		return nil, ft.NewExclusiveFieldsError([]string{basemodel.FieldId, domain.OrgFieldSlug})
+	sanitizedFields, cErrs := query.GetSchema().ValidateStruct(query)
+	if cErrs.Count() > 0 {
+		return &dyn.OpResult[domain.Organization]{ClientErrors: cErrs}, nil
 	}
+	query = *(sanitizedFields.(*it.GetOrgQuery))
+
 	statusNode := dmodel.NewSearchNode()
 	if isArchived != nil {
 		statusNode.NewCondition(basemodel.FieldIsArchived, dmodel.Equals, *isArchived)
@@ -72,7 +79,7 @@ func (this *OrganizationDomainServiceImpl) getOrgWithArchived(ctx corectx.Contex
 	)
 	graph.Or()
 	searchquery := it.SearchOrgsQuery{
-		Fields: query.Columns,
+		Fields: query.Fields,
 		Graph:  graph,
 		Page:   0,
 		Size:   1,
@@ -92,26 +99,6 @@ func (this *OrganizationDomainServiceImpl) getOrgWithArchived(ctx corectx.Contex
 	}
 
 	return result, nil
-}
-
-func getOrgSchema() *dmodel.ModelSchema {
-	return dmodel.GetOrRegisterSchema(
-		"identity.get_org_query",
-		func() *dmodel.ModelSchemaBuilder {
-			return dmodel.DefineModel("_").
-				Field(dmodel.DefineField().
-					Name(basemodel.FieldColumns).
-					DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_COL_LENGTH_MIN, model.MODEL_RULE_COL_LENGTH_MAX).ArrayType())).
-				Field(dmodel.DefineField().
-					Name(basemodel.FieldId).
-					DataType(dmodel.FieldDataTypeUlid()),
-				// Note: Not Required()
-				).
-				Field(dmodel.DefineField().
-					Name(domain.OrgFieldSlug).
-					DataType(dmodel.FieldDataTypeEmail()))
-		},
-	)
 }
 
 func (this *OrganizationDomainServiceImpl) OrgExists(
@@ -158,12 +145,14 @@ func (this *OrganizationDomainServiceImpl) ManageOrgUsers(ctx corectx.Context, c
 }
 
 func (this *OrganizationDomainServiceImpl) SearchOrgs(
-	ctx corectx.Context, query it.SearchOrgsQuery,
+	ctx corectx.Context, query it.SearchOrgsQuery, options ...corecrud.ServiceSearchOptions,
 ) (*it.SearchOrgsResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceSearchOptions{})
 	return corecrud.Search[domain.Organization](ctx, corecrud.SearchParam{
-		Action:       "search organizations",
-		DbRepoGetter: this.orgRepo,
-		Query:        dyn.SearchQuery(query),
+		Action:                 "search organizations",
+		DbRepoGetter:           this.orgRepo,
+		Query:                  dyn.SearchQuery(query),
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }
 
@@ -172,11 +161,13 @@ func (this *OrganizationDomainServiceImpl) SetOrgIsArchived(ctx corectx.Context,
 }
 
 func (this *OrganizationDomainServiceImpl) UpdateOrg(
-	ctx corectx.Context, cmd it.UpdateOrgCommand,
+	ctx corectx.Context, cmd it.UpdateOrgCommand, options ...corecrud.ServiceUpdateOptions[*domain.Organization],
 ) (*it.UpdateOrgResult, error) {
+	opts := safe.GetOptional(options, corecrud.ServiceUpdateOptions[*domain.Organization]{})
 	return corecrud.Update(ctx, corecrud.UpdateParam[domain.Organization, *domain.Organization]{
-		Action:       "update organization",
-		DbRepoGetter: this.orgRepo,
-		Data:         cmd,
+		Action:                 "update organization",
+		DbRepoGetter:           this.orgRepo,
+		Data:                   cmd,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
 }

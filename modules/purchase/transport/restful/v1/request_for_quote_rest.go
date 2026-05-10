@@ -10,20 +10,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/requestforquote"
 )
 
 type requestForQuoteRestParams struct {
 	dig.In
-	Svc it.RequestForQuoteService
+	Svc it.RequestForQuoteAppService
 }
 
 func NewRequestForQuoteRest(params requestForQuoteRestParams) *RequestForQuoteRest {
 	return &RequestForQuoteRest{svc: params.Svc}
 }
 
-type RequestForQuoteRest struct{ svc it.RequestForQuoteService }
+type RequestForQuoteRest struct{ svc it.RequestForQuoteAppService }
 
 func (this RequestForQuoteRest) CreateRequestForQuote(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -33,11 +33,11 @@ func (this RequestForQuoteRest) CreateRequestForQuote(echoCtx *echo.Context) (er
 	}()
 	return httpserver.ServeRequestDynamic(echoCtx, this.svc.CreateRequestForQuote,
 		func(fields dmodel.DynamicFields) it.CreateRequestForQuoteCommand {
-			cmd := it.CreateRequestForQuoteCommand{RequestForQuote: *domain.NewRequestForQuote()}
+			cmd := it.CreateRequestForQuoteCommand{RequestForQuote: *models.NewRequestForQuote()}
 			cmd.SetFieldData(fields)
 			return cmd
 		},
-		func(data domain.RequestForQuote) CreateRequestForQuoteResponse {
+		func(data models.RequestForQuote) CreateRequestForQuoteResponse {
 			return *httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 		},
 		httpserver.JsonCreated)
@@ -66,7 +66,7 @@ func (this RequestForQuoteRest) GetRequestForQuote(echoCtx *echo.Context) (err e
 		func(request GetRequestForQuoteRequest) it.GetRequestForQuoteQuery {
 			return it.GetRequestForQuoteQuery(request)
 		},
-		func(data domain.RequestForQuote) GetRequestForQuoteResponse { return data.GetFieldData() }, httpserver.JsonOk)
+		func(data models.RequestForQuote) GetRequestForQuoteResponse { return data.GetFieldData() }, httpserver.JsonOk)
 }
 func (this RequestForQuoteRest) RequestForQuoteExists(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -117,7 +117,7 @@ func (this RequestForQuoteRest) UpdateRequestForQuote(echoCtx *echo.Context) (er
 	}()
 	return httpserver.ServeRequest2(echoCtx, this.svc.UpdateRequestForQuote,
 		func(request UpdateRequestForQuoteRequest) it.UpdateRequestForQuoteCommand {
-			cmd := it.UpdateRequestForQuoteCommand{RequestForQuote: *domain.NewRequestForQuote()}
+			cmd := it.UpdateRequestForQuoteCommand{RequestForQuote: *models.NewRequestForQuote()}
 			cmd.SetFieldData(request.DynamicFields)
 			cmd.SetId(util.ToPtr(model.Id(request.RequestForQuoteId)))
 			return cmd

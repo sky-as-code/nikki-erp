@@ -1,11 +1,13 @@
 package app
 
 import (
+	"fmt"
+
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	c "github.com/sky-as-code/nikki-erp/modules/identity/constants"
-	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/rolerequest"
 )
@@ -46,10 +48,10 @@ func (this *RoleRequestApplicationServiceImpl) GetRoleRequest(ctx corectx.Contex
 	if cErr := assertPermission(ctx, "read", c.ResourceAuthorizationGrantRequest, c.ResourceScopeDomain); cErr != nil {
 		return &it.GetRoleRequestResult{ClientErrors: *cErr}, nil
 	}
-	return corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[domain.RoleRequest, *domain.RoleRequest]{
+	return corecrud.UiGetOne(ctx, corecrud.UiGetOneParam[models.RoleRequest, *models.RoleRequest]{
 		Action: "get role request",
 		Schema: this.roleRequestRepo.GetBaseRepo().Schema(),
-		GetOneFn: func() (*dyn.OpResult[domain.RoleRequest], error) {
+		GetOneFn: func() (*dyn.OpResult[models.RoleRequest], error) {
 			return this.roleRequestSvc.GetRoleRequest(ctx, query)
 		},
 	})
@@ -66,13 +68,22 @@ func (this *RoleRequestApplicationServiceImpl) SearchRoleRequests(ctx corectx.Co
 	if cErr := assertPermission(ctx, "read", c.ResourceAuthorizationGrantRequest, c.ResourceScopeDomain); cErr != nil {
 		return &it.SearchRoleRequestsResult{ClientErrors: *cErr}, nil
 	}
-	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.RoleRequest, *domain.RoleRequest]{
-		Action:            "search role requests",
-		FieldResolver:     this.userPrefSvc.(corecrud.FieldsResolver),
-		Schema:            this.roleRequestRepo.GetBaseRepo().Schema(),
-		DefaultSearchName: "role_request_list",
-		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.RoleRequest]], error) {
-			return this.roleRequestSvc.SearchRoleRequests(ctx, query)
+	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[models.RoleRequest, *models.RoleRequest]{
+		Action:        "search role requests",
+		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
+		Schema:        this.roleRequestRepo.GetBaseRepo().Schema(),
+		DefaultFields: []string{
+			fmt.Sprintf("%s.%s", models.RoleReqEdgeRole, models.RoleFieldName),
+			fmt.Sprintf("%s.%s", models.RoleReqEdgeRequestor, models.UserFieldDisplayName),
+			fmt.Sprintf("%s.%s", models.RoleReqEdgeReceiverUser, models.UserFieldDisplayName),
+			fmt.Sprintf("%s.%s", models.RoleReqEdgeReceiverGroup, models.GroupFieldName),
+			models.RoleReqFieldStatus,
+			models.RoleReqFieldType,
+		},
+		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[models.RoleRequest]], error) {
+			return this.roleRequestSvc.SearchRoleRequests(ctx, query, corecrud.ServiceSearchOptions{
+				AfterValidationSuccess: fn,
+			})
 		},
 	})
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/config"
 	"github.com/sky-as-code/nikki-erp/modules"
+	c "github.com/sky-as-code/nikki-erp/modules/apptrait/constants"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	httpserverExt "github.com/sky-as-code/nikki-erp/modules/core/httpserver/external"
@@ -26,12 +27,17 @@ func (*AppTraitModule) LabelKey() string {
 
 // Name implements NikkiModule.
 func (*AppTraitModule) Name() string {
-	return "apptrait"
+	return c.AppTraitModuleName
 }
 
 // Deps implements NikkiModule.
 func (*AppTraitModule) Deps() []string {
 	return []string{}
+}
+
+// IsInternal implements InCodeModule.
+func (*AppTraitModule) IsInternal() bool {
+	return true
 }
 
 // Version implements NikkiModule.

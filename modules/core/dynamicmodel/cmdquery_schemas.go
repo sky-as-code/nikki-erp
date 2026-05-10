@@ -1,6 +1,8 @@
 package dynamicmodel
 
 import (
+	"regexp"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -52,7 +54,8 @@ func SearchQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(DefineFieldSearchColumns()).
 		Field(DefineFieldSearchGraph()).
 		Field(DefineFieldSearchPage()).
-		Field(DefineFieldSearchSize())
+		Field(DefineFieldSearchSize()).
+		Field(DefineFieldSearchName())
 }
 
 func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -73,8 +76,8 @@ func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
 
 func DefineFieldSearchColumns() *dmodel.FieldBuilder {
 	return dmodel.DefineField().
-		Name(basemodel.FieldColumns).
-		DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_COL_LENGTH_MIN, model.MODEL_RULE_COL_LENGTH_MAX).ArrayType()).
+		Name(basemodel.FieldFields).
+		DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_FIELDS_LENGTH_MIN, model.MODEL_RULE_FIELDS_LENGTH_MAX).ArrayType()).
 		Rule(dmodel.FieldRuleArrayLength(0, 20))
 }
 
@@ -96,4 +99,12 @@ func DefineFieldSearchGraph() *dmodel.FieldBuilder {
 	return dmodel.DefineField().
 		Name(basemodel.FieldGraph).
 		DataType(dmodel.FieldDataTypeModel())
+}
+
+func DefineFieldSearchName() *dmodel.FieldBuilder {
+	return dmodel.DefineField().
+		Name(basemodel.FieldSearchName).
+		DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH, dmodel.FieldDataTypeStringOpts{
+			Regex: regexp.MustCompile(`^[a-zA-Z0-9_\.]+$`),
+		}))
 }

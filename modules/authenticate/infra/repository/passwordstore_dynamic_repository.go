@@ -3,7 +3,7 @@ package repository
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
-	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/password"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -25,7 +25,7 @@ type PasswordStoreDynamicRepositoryParam struct {
 }
 
 func NewPasswordStoreDynamicRepository(param PasswordStoreDynamicRepositoryParam) it.PasswordStoreRepository {
-	schema := dmodel.MustGetSchema(domain.PasswordStoreSchemaName)
+	schema := dmodel.MustGetSchema(models.PasswordStoreSchemaName)
 	dynamicRepo := param.NewBaseRepoFn(
 		dyn.NewBaseRepoParam{
 			Client:       param.Client,
@@ -50,22 +50,22 @@ func (this *PasswordStoreDynamicRepository) BeginTransaction(ctx corectx.Context
 	return this.dynamicRepo.BeginTransaction(ctx)
 }
 
-func (this *PasswordStoreDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.PasswordStore) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *PasswordStoreDynamicRepository) DeleteOne(ctx corectx.Context, keys models.PasswordStore) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
 }
 
-func (this *PasswordStoreDynamicRepository) Insert(ctx corectx.Context, pass domain.PasswordStore) (*dyn.OpResult[int], error) {
+func (this *PasswordStoreDynamicRepository) Insert(ctx corectx.Context, pass models.PasswordStore) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, pass)
 }
 
 func (this *PasswordStoreDynamicRepository) Update(
-	ctx corectx.Context, pass domain.PasswordStore,
+	ctx corectx.Context, pass models.PasswordStore,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, pass.GetFieldData())
 }
 
 func (this *PasswordStoreDynamicRepository) GetOne(
 	ctx corectx.Context, param dyn.RepoGetOneParam,
-) (*dyn.OpResult[domain.PasswordStore], error) {
-	return baserepo.GetOne[domain.PasswordStore](ctx, this.dynamicRepo, param)
+) (*dyn.OpResult[models.PasswordStore], error) {
+	return baserepo.GetOne[models.PasswordStore](ctx, this.dynamicRepo, param)
 }

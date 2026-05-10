@@ -6,6 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/app"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/contacts/constants"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/transport"
 )
@@ -23,12 +24,17 @@ func (*ContactsModule) LabelKey() string {
 
 // Name implements NikkiModule.
 func (*ContactsModule) Name() string {
-	return "contacts"
+	return modconstants.ContactsModuleName
 }
 
 // Deps implements NikkiModule.
 func (*ContactsModule) Deps() []string {
 	return []string{}
+}
+
+// IsInternal implements InCodeModule.
+func (*ContactsModule) IsInternal() bool {
+	return false
 }
 
 // Version implements NikkiModule.

@@ -6,6 +6,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/inventory/constants"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product"
 	productDomain "github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 )
@@ -22,7 +23,7 @@ func (*InventoryModule) LabelKey() string {
 
 // Name implements NikkiModule.
 func (*InventoryModule) Name() string {
-	return "inventory"
+	return modconstants.InventoryModuleName
 }
 
 // Deps implements NikkiModule.
@@ -30,6 +31,11 @@ func (*InventoryModule) Deps() []string {
 	return []string{
 		"essential",
 	}
+}
+
+// IsInternal implements InCodeModule.
+func (*InventoryModule) IsInternal() bool {
+	return false
 }
 
 // Version implements NikkiModule.

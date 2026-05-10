@@ -10,6 +10,7 @@ import (
 
 	ds "github.com/sky-as-code/nikki-erp/common/datastructure"
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -100,7 +101,7 @@ func SmokeAuthorizeMiddleware() echo.MiddlewareFunc {
 				return err
 			}
 			if !resJwt.IsOk {
-				return echoCtx.JSON(http.StatusUnauthorized, resJwt.ClientError)
+				return echoCtx.JSON(http.StatusUnauthorized, ft.ClientErrors{*resJwt.ClientError})
 			}
 
 			reqCtx.WithValue(c.CtxKeyJwtClaims, resJwt.JwtClaims)

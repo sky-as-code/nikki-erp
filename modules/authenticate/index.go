@@ -7,7 +7,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/app"
-	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/authenticate/constants"
+	models "github.com/sky-as-code/nikki-erp/modules/authenticate/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/authenticate/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/authenticate/transport"
 )
@@ -25,7 +27,7 @@ func (*AuthenticateModule) LabelKey() string {
 
 // Name implements NikkiModule.
 func (*AuthenticateModule) Name() string {
-	return "authenticate"
+	return modconstants.AuthenticateModuleName
 }
 
 // Deps implements NikkiModule.
@@ -33,6 +35,11 @@ func (*AuthenticateModule) Deps() []string {
 	return []string{
 		"identity",
 	}
+}
+
+// IsInternal implements InCodeModule.
+func (*AuthenticateModule) IsInternal() bool {
+	return false
 }
 
 // Version implements NikkiModule.
@@ -44,7 +51,8 @@ func (*AuthenticateModule) Version() semver.SemVer {
 func (*AuthenticateModule) Init() error {
 	err := stdErr.Join(
 		repo.InitRepositories(),
-		app.InitServices(),
+		services.InitDomainServices(),
+		app.InitApplicationServices(),
 		transport.InitTransport(),
 	)
 
@@ -54,8 +62,8 @@ func (*AuthenticateModule) Init() error {
 // RegisterModels registers dynamic model schemas for this module.
 func (*AuthenticateModule) RegisterModels() error {
 	return stdErr.Join(
-		dmodel.RegisterSchemaB(domain.LoginAttemptSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.MethodSettingSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.PasswordStoreSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.LoginAttemptSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.MethodSettingSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.PasswordStoreSchemaBuilder()),
 	)
 }

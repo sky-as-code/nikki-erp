@@ -1,10 +1,13 @@
 package app
 
 import (
+	"fmt"
+
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	c "github.com/sky-as-code/nikki-erp/modules/identity/constants"
+	"github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/external"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/role"
@@ -74,12 +77,20 @@ func (this *RoleApplicationServiceImpl) SearchRoles(ctx corectx.Context, query i
 		return &it.SearchRolesResult{ClientErrors: *cErr}, nil
 	}
 	return corecrud.UiSearch(ctx, corecrud.UiSearchParam[domain.Role, *domain.Role]{
-		Action:            "search roles",
-		FieldResolver:     this.userPrefSvc.(corecrud.FieldsResolver),
-		Schema:            this.roleRepo.GetBaseRepo().Schema(),
-		DefaultSearchName: "role_list",
+		Action:        "search roles",
+		FieldResolver: this.userPrefSvc.(corecrud.FieldsResolver),
+		Schema:        this.roleRepo.GetBaseRepo().Schema(),
+		DefaultFields: []string{
+			models.RoleFieldName,
+			models.RoleFieldDescription,
+			models.RoleFieldIsPrivate,
+			fmt.Sprintf("%s.%s", models.RoleEdgeOwnerGroup, models.GroupFieldName),
+			fmt.Sprintf("%s.%s", models.RoleEdgeOwnerUser, models.UserFieldDisplayName),
+		},
 		SearchFn: func(fn corecrud.AfterValidationSuccessFn[dyn.SearchQuery]) (*dyn.OpResult[dyn.PagedResultData[domain.Role]], error) {
-			return this.roleSvc.SearchRoles(ctx, query)
+			return this.roleSvc.SearchRoles(ctx, query, corecrud.ServiceSearchOptions{
+				AfterValidationSuccess: fn,
+			})
 		},
 	})
 }

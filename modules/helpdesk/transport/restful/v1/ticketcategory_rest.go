@@ -10,7 +10,7 @@ import (
 
 type ticketCategoryRestParams struct {
 	dig.In
-	Service it.TicketCategoryService
+	Service it.TicketCategoryAppService
 }
 
 func NewTicketCategoryRest(params ticketCategoryRestParams) *TicketCategoryRest {
@@ -19,7 +19,7 @@ func NewTicketCategoryRest(params ticketCategoryRestParams) *TicketCategoryRest 
 
 type TicketCategoryRest struct {
 	httpserver.RestBase
-	Service it.TicketCategoryService
+	Service it.TicketCategoryAppService
 }
 
 func (this TicketCategoryRest) CreateTicketCategory(echoCtx *echo.Context) (err error) {

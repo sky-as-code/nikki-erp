@@ -1,22 +1,25 @@
 package v1
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
 )
 
 type moduleRestParams struct {
 	dig.In
 
-	ModuleSvc it.ModuleService
+	ModuleSvc it.ModuleAppService
 }
 
 func NewModuleRest(params moduleRestParams) *ModuleRest {
@@ -24,7 +27,7 @@ func NewModuleRest(params moduleRestParams) *ModuleRest {
 }
 
 type ModuleRest struct {
-	moduleSvc it.ModuleService
+	moduleSvc it.ModuleAppService
 }
 
 func (this ModuleRest) CreateModule(echoCtx *echo.Context) (err error) {
@@ -42,7 +45,7 @@ func (this ModuleRest) CreateModule(echoCtx *echo.Context) (err error) {
 			cmd.SetFieldData(request.DynamicFields)
 			return cmd
 		},
-		func(data domain.ModuleMetadata) CreateModuleResponse {
+		func(data models.ModuleMetadata) CreateModuleResponse {
 			return *httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 		},
 		httpserver.JsonCreated,
@@ -82,7 +85,7 @@ func (this ModuleRest) GetModule(echoCtx *echo.Context) (err error) {
 		func(request GetModuleRequest) it.GetModuleQuery {
 			return it.GetModuleQuery(request)
 		},
-		func(data domain.ModuleMetadata) GetModuleResponse {
+		func(data models.ModuleMetadata) GetModuleResponse {
 			return data.GetFieldData()
 		},
 		httpserver.JsonOk,
@@ -148,4 +151,10 @@ func (this ModuleRest) UpdateModule(echoCtx *echo.Context) (err error) {
 		httpserver.NewRestMutateResponse,
 		httpserver.JsonOk,
 	)
+}
+
+func (this ModuleRest) GetModelSchema(echoCtx *echo.Context) (err error) {
+	schema := dmodel.MustGetSchema(models.ModuleMetadataSchemaName)
+	echoCtx.JSON(http.StatusOK, schema.ToSimplized())
+	return nil
 }
