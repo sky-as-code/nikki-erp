@@ -1,20 +1,9 @@
--- Create "essential_contacts" table
-CREATE TABLE "essential_contacts" (
+-- Create "essential_enums" table
+CREATE TABLE "essential_enums" (
   "id" character varying NOT NULL,
-  "avatar_url" character varying NULL,
-  "display_name" character varying NOT NULL,
-  "legal_name" character varying NULL,
-  "legal_address" character varying NULL,
-  "tax_id" character varying NULL,
-  "job_position" character varying NULL,
-  "title" character varying NULL,
+  "label" jsonb NOT NULL,
+  "value" character varying NULL,
   "type" character varying NOT NULL,
-  "note" character varying NULL,
-  "nationality_id" character varying NULL,
-  "org_id" character varying NOT NULL,
-  "language_id" character varying NULL,
-  "website" character varying NULL,
-  "is_archived" boolean NOT NULL,
   "etag" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,
@@ -38,6 +27,20 @@ CREATE TABLE "essential_languages" (
   PRIMARY KEY ("id"),
   CONSTRAINT "essential_languages_iso_code_ukey" UNIQUE ("iso_code")
 );
+-- Create "essential_model_metadata" table
+CREATE TABLE "essential_model_metadata" (
+  "id" character varying NOT NULL,
+  "name" jsonb NOT NULL,
+  "code" character varying NOT NULL,
+  "code_prefix" character varying NULL,
+  "code_last_seq" integer NOT NULL,
+  "padding" integer NOT NULL,
+  "is_archived" boolean NOT NULL,
+  "etag" character varying NOT NULL,
+  "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NULL,
+  PRIMARY KEY ("id")
+);
 -- Create "essential_modules" table
 CREATE TABLE "essential_modules" (
   "id" character varying NOT NULL,
@@ -52,46 +55,11 @@ CREATE TABLE "essential_modules" (
   PRIMARY KEY ("id"),
   CONSTRAINT "essential_modules_name_ukey" UNIQUE ("name")
 );
--- Create "essential_contact_channels" table
-CREATE TABLE "essential_contact_channels" (
+-- Create "essential_tags" table
+CREATE TABLE "essential_tags" (
   "id" character varying NOT NULL,
-  "org_id" character varying NOT NULL,
-  "contact_id" character varying NOT NULL,
+  "label" jsonb NOT NULL,
   "type" character varying NOT NULL,
-  "value" character varying NULL,
-  "value_json" jsonb NULL,
-  "note" character varying NULL,
-  "is_archived" boolean NOT NULL,
-  "etag" character varying NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "essential_contact_channels_contact_id_fkey" FOREIGN KEY ("contact_id") REFERENCES "essential_contacts" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
-);
--- Create "essential_contact_relationships" table
-CREATE TABLE "essential_contact_relationships" (
-  "id" character varying NOT NULL,
-  "contact_id" character varying NOT NULL,
-  "target_contact_id" character varying NOT NULL,
-  "type" character varying NOT NULL,
-  "note" character varying NULL,
-  "is_archived" boolean NOT NULL,
-  "etag" character varying NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "essential_contact_relationships_contact_id_fkey" FOREIGN KEY ("contact_id") REFERENCES "essential_contacts" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION,
-  CONSTRAINT "essential_contact_relationships_target_contact_id_fkey" FOREIGN KEY ("target_contact_id") REFERENCES "essential_contacts" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
-);
--- Create "essential_model_metadata" table
-CREATE TABLE "essential_model_metadata" (
-  "id" character varying NOT NULL,
-  "name" jsonb NOT NULL,
-  "code" character varying NOT NULL,
-  "code_prefix" character varying NULL,
-  "code_last_seq" integer NOT NULL,
-  "padding" integer NOT NULL,
-  "is_archived" boolean NOT NULL,
   "etag" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,

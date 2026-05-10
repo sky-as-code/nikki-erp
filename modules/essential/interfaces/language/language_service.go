@@ -18,4 +18,8 @@ type LanguageAppService interface {
 	GetLanguage(ctx corectx.Context, query GetLanguageQuery) (*GetLanguageResult, error)
 	SearchLanguages(ctx corectx.Context, query SearchLanguagesQuery) (*SearchLanguagesResult, error)
 	UpdateLanguage(ctx corectx.Context, cmd UpdateLanguageCommand) (*UpdateLanguageResult, error)
+	// GetCurrentLangCode(ctx context.Context) (*GetCurrentLangCodeResult, error)
+	// GetCurrentLanguage(ctx context.Context) (*GetCurrentLanguageResult, error)
+	// ListEnabledLangCodes(ctx context.Context, query ListEnabledLangCodesQuery) (*ListEnabledLangCodesResult, error)
+	// ListLanguages(ctx context.Context, query ListLanguagesQuery) (*ListLanguagesResult, error)
 }

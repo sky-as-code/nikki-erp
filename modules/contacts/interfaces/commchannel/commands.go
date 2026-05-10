@@ -1,14 +1,12 @@
 package commchannel
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
-	enum "github.com/sky-as-code/nikki-erp/modules/core/enum/interfaces"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 func init() {
@@ -17,9 +15,9 @@ func init() {
 	req = (*CreateCommChannelCommand)(nil)
 	req = (*UpdateCommChannelCommand)(nil)
 	req = (*DeleteCommChannelCommand)(nil)
-	req = (*GetCommChannelByIdQuery)(nil)
-	req = (*GetCommChannelsByPartyQuery)(nil)
+	req = (*GetCommChannelQuery)(nil)
 	req = (*SearchCommChannelsQuery)(nil)
+	req = (*CommChannelExistsQuery)(nil)
 	util.Unused(req)
 }
 
@@ -30,40 +28,18 @@ var createCommChannelCommandType = cqrs.RequestType{
 }
 
 type CreateCommChannelCommand struct {
-	OrgId     model.Id              `json:"orgId"`
-	Note      *string               `json:"note,omitempty"`
-	PartyId   model.Id              `json:"partyId"`
-	Type      *string               `json:"type"`
-	Value     *string               `json:"value,omitempty"`
-	ValueJson *domain.ValueJsonData `json:"valueJson,omitempty"`
+	domain.CommChannel
 }
 
 func (CreateCommChannelCommand) CqrsRequestType() cqrs.RequestType {
 	return createCommChannelCommandType
 }
 
-func (this CreateCommChannelCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.Type,
-			val.NotNil,
-			val.When(this.Type != nil,
-				val.NotEmpty,
-				val.OneOf("Phone", "Zalo", "Facebook", "Email", "Post"),
-			),
-		),
-		val.Field(&this.Value,
-			val.When(this.Value != nil,
-				val.NotEmpty,
-				val.Length(1, 255),
-			),
-		),
-		model.IdValidateRule(&this.PartyId, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (this CreateCommChannelCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.CommChannelSchemaName)
 }
 
-type CreateCommChannelResult = crud.OpResult[*domain.CommChannel]
+type CreateCommChannelResult = dyn.OpResult[domain.CommChannel]
 
 var updateCommChannelCommandType = cqrs.RequestType{
 	Module:    "contacts",
@@ -72,40 +48,18 @@ var updateCommChannelCommandType = cqrs.RequestType{
 }
 
 type UpdateCommChannelCommand struct {
-	Id        model.Id              `param:"id" json:"id"`
-	Note      *string               `json:"note,omitempty"`
-	PartyId   model.Id              `param:"partyId" json:"partyId"`
-	Type      *string               `json:"type,omitempty"`
-	Value     *string               `json:"value,omitempty"`
-	ValueJson *domain.ValueJsonData `json:"valueJson,omitempty"`
-	Etag      model.Etag            `json:"etag"`
+	domain.CommChannel
 }
 
 func (UpdateCommChannelCommand) CqrsRequestType() cqrs.RequestType {
 	return updateCommChannelCommandType
 }
 
-func (this UpdateCommChannelCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-		val.Field(&this.Type,
-			val.When(this.Type != nil,
-				val.NotEmpty,
-				val.OneOf("Phone", "Zalo", "Facebook", "Email", "Post"),
-			),
-		),
-		val.Field(&this.Value,
-			val.When(this.Value != nil,
-				val.NotEmpty,
-				val.Length(1, 255),
-			),
-		),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (this UpdateCommChannelCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.CommChannelSchemaName)
 }
 
-type UpdateCommChannelResult = crud.OpResult[*domain.CommChannel]
+type UpdateCommChannelResult = dyn.OpResult[dyn.MutateResultData]
 
 var deleteCommChannelCommandType = cqrs.RequestType{
 	Module:    "contacts",
@@ -113,86 +67,30 @@ var deleteCommChannelCommandType = cqrs.RequestType{
 	Action:    "delete",
 }
 
-type DeleteCommChannelCommand struct {
-	Id model.Id `json:"id" param:"id"`
-}
+type DeleteCommChannelCommand dyn.DeleteOneCommand
 
 func (DeleteCommChannelCommand) CqrsRequestType() cqrs.RequestType {
 	return deleteCommChannelCommandType
 }
 
-func (this DeleteCommChannelCommand) ToDomainModel() *domain.CommChannel {
-	user := &domain.CommChannel{}
-	user.Id = &this.Id
-	return user
-}
+type DeleteCommChannelResult = dyn.OpResult[dyn.MutateResultData]
 
-func (this DeleteCommChannelCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type DeleteCommChannelResult = crud.DeletionResult
-
-var getCommChannelByIdQueryType = cqrs.RequestType{
+var getCommChannelQueryType = cqrs.RequestType{
 	Module:    "contacts",
 	Submodule: "comm_channel",
-	Action:    "getCommChannelById",
+	Action:    "getCommChannel",
 }
 
-type GetCommChannelByIdQuery struct {
-	Id        model.Id `param:"id" json:"id"`
-	WithParty bool     `json:"withParty" query:"withParty"`
+type GetCommChannelQuery struct {
+	Columns []string `json:"columns" query:"columns"`
+	Id      *string  `json:"id" param:"id"`
 }
 
-func (GetCommChannelByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return getCommChannelByIdQueryType
+func (GetCommChannelQuery) CqrsRequestType() cqrs.RequestType {
+	return getCommChannelQueryType
 }
 
-func (this GetCommChannelByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type GetCommChannelByIdResult = crud.OpResult[*domain.CommChannel]
-
-var getCommChannelsByPartyQueryType = cqrs.RequestType{
-	Module:    "contacts",
-	Submodule: "comm_channel",
-	Action:    "getCommChannelsByParty",
-}
-
-type GetCommChannelsByPartyQuery struct {
-	PartyId   model.Id   `param:"partyId" json:"partyId"`
-	Type      *enum.Enum `json:"type,omitempty" query:"type"`
-	WithParty bool       `json:"withParty" query:"withParty"`
-}
-
-func (GetCommChannelsByPartyQuery) CqrsRequestType() cqrs.RequestType {
-	return getCommChannelsByPartyQueryType
-}
-
-func (this GetCommChannelsByPartyQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.PartyId, true),
-		val.Field(&this.Type,
-			val.When(this.Type != nil,
-				val.NotEmpty,
-				val.OneOf("Phone", "Zalo", "Facebook", "Email", "Post"),
-			),
-		),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type GetCommChannelsByPartyResult = crud.OpResult[[]*domain.CommChannel]
+type GetCommChannelResult = dyn.OpResult[domain.CommChannel]
 
 var searchCommChannelsQueryType = cqrs.RequestType{
 	Module:    "contacts",
@@ -201,18 +99,46 @@ var searchCommChannelsQueryType = cqrs.RequestType{
 }
 
 type SearchCommChannelsQuery struct {
-	crud.SearchQuery
+	Columns []string            `json:"columns" query:"columns"`
+	Graph   *dmodel.SearchGraph `json:"graph" query:"graph"`
+	Page    int                 `json:"page" query:"page"`
+	Size    int                 `json:"size" query:"size"`
+	PartyId model.Id            `json:"party_id" param:"party_id"`
 }
 
 func (SearchCommChannelsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchCommChannelsQueryType
 }
 
-func (this SearchCommChannelsQuery) Validate() ft.ValidationErrors {
-	rules := this.SearchQuery.ValidationRules()
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (SearchCommChannelsQuery) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetOrRegisterSchema(
+		"contacts.search_comm_channels_query",
+		func() *dmodel.ModelSchemaBuilder {
+			return dmodel.DefineModel("_").
+				Field(dyn.DefineFieldSearchColumns()).
+				Field(dyn.DefineFieldSearchGraph()).
+				Field(dyn.DefineFieldSearchPage()).
+				Field(dyn.DefineFieldSearchSize()).
+				Field(dmodel.DefineField().
+					Name("party_id").
+					DataType(dmodel.FieldDataTypeUlid()))
+		},
+	)
 }
 
-type SearchCommChannelsResultData = crud.PagedResult[domain.CommChannel]
-type SearchCommChannelsResult = crud.OpResult[*SearchCommChannelsResultData]
+type SearchCommChannelsResultData = dyn.PagedResultData[domain.CommChannel]
+type SearchCommChannelsResult = dyn.OpResult[SearchCommChannelsResultData]
+
+var commChannelExistsQueryType = cqrs.RequestType{
+	Module:    "contacts",
+	Submodule: "comm_channel",
+	Action:    "exists",
+}
+
+type CommChannelExistsQuery dyn.ExistsQuery
+
+func (CommChannelExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return commChannelExistsQueryType
+}
+
+type CommChannelExistsResult = dyn.OpResult[dyn.ExistsResultData]

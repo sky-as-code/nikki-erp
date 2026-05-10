@@ -1,0 +1,33 @@
+meta {
+  name: Enum - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/essential/enums
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "label": {
+      "en-US": "{{$randomCatchPhraseAdjective}} enum"
+    },
+    "value": "{{$randomLoremWord}}",
+    "type": "status"
+  }
+}
+
+script:post-response {
+  const { id, etag } = res.getBody();
+  id && bru.setVar('enum_id', id);
+  etag && bru.setVar('enum_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

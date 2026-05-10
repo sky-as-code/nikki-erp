@@ -1,0 +1,34 @@
+meta {
+  name: Field Metadata - Update
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{api_host}}/v1/essential/field-metadata/{{field_metadata_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": {
+      "en-US": "Updated Field {{$randomLoremWord}}"
+    },
+    "data_type": "string",
+    "is_required": false,
+    "display_order": 0,
+    "etag": "{{field_metadata_etag}}"
+  }
+}
+
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('field_metadata_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

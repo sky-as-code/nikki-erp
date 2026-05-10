@@ -1,13 +1,12 @@
 package party
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
-	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 func init() {
@@ -16,9 +15,9 @@ func init() {
 	req = (*CreatePartyCommand)(nil)
 	req = (*UpdatePartyCommand)(nil)
 	req = (*DeletePartyCommand)(nil)
-	req = (*GetPartyByIdQuery)(nil)
-	req = (*GetPartyByDisplayNameQuery)(nil)
+	req = (*GetPartyQuery)(nil)
 	req = (*SearchPartiesQuery)(nil)
+	req = (*PartyExistsQuery)(nil)
 	util.Unused(req)
 }
 
@@ -29,44 +28,18 @@ var createPartyCommandType = cqrs.RequestType{
 }
 
 type CreatePartyCommand struct {
-	OrgId        model.Id  `json:"orgId" param:"orgId"`
-	AvatarUrl    *string   `json:"avatarUrl,omitempty"`
-	DisplayName  string    `json:"displayName"`
-	LegalName    *string   `json:"legalName,omitempty"`
-	LegalAddress *string   `json:"legalAddress,omitempty"`
-	TaxId        *string   `json:"taxId,omitempty"`
-	JobPosition  *string   `json:"jobPosition,omitempty"`
-	Title        *string   `json:"title,omitempty"`
-	Type         string    `json:"type"`
-	Note         *string   `json:"note,omitempty"`
-	Nationality  *model.Id `json:"nationality,omitempty"`
-	Language     *model.Id `json:"language,omitempty"`
-	Website      *string   `json:"website,omitempty"`
+	domain.Party
 }
 
 func (CreatePartyCommand) CqrsRequestType() cqrs.RequestType {
 	return createPartyCommandType
 }
 
-func (this CreatePartyCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.DisplayName,
-			val.NotEmpty,
-			val.Length(1, 50),
-		),
-		val.Field(&this.Type,
-			val.NotEmpty,
-			val.OneOf("individual", "company"),
-		),
-
-		model.IdPtrValidateRule(&this.Nationality, true),
-		model.IdPtrValidateRule(&this.Language, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (this CreatePartyCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.PartySchemaName)
 }
 
-type CreatePartyResult = crud.OpResult[*domain.Party]
+type CreatePartyResult = dyn.OpResult[domain.Party]
 
 var updatePartyCommandType = cqrs.RequestType{
 	Module:    "contacts",
@@ -75,51 +48,18 @@ var updatePartyCommandType = cqrs.RequestType{
 }
 
 type UpdatePartyCommand struct {
-	Id           model.Id   `param:"id" json:"id"`
-	AvatarUrl    *string    `json:"avatarUrl,omitempty"`
-	DisplayName  *string    `json:"displayName,omitempty"`
-	LegalName    *string    `json:"legalName,omitempty"`
-	LegalAddress *string    `json:"legalAddress,omitempty"`
-	TaxId        *string    `json:"taxId,omitempty"`
-	JobPosition  *string    `json:"jobPosition,omitempty"`
-	Title        *string    `json:"title,omitempty"`
-	Type         *string    `json:"type,omitempty"`
-	Note         *string    `json:"note,omitempty"`
-	Nationality  *model.Id  `json:"nationality,omitempty"`
-	Org          *model.Id  `json:"org,omitempty" param:"org"`
-	Language     *model.Id  `json:"language,omitempty"`
-	Website      *string    `json:"website,omitempty"`
-	Etag         model.Etag `json:"etag"`
+	domain.Party
 }
 
 func (UpdatePartyCommand) CqrsRequestType() cqrs.RequestType {
 	return updatePartyCommandType
 }
 
-func (this UpdatePartyCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-		val.Field(&this.DisplayName,
-			val.When(this.DisplayName != nil,
-				val.NotEmpty,
-				val.Length(1, 50),
-			),
-		),
-		val.Field(&this.Type,
-			val.When(this.Type != nil,
-				val.NotEmpty,
-				val.OneOf("individual", "company"),
-			),
-		),
-
-		model.IdPtrValidateRule(&this.Nationality, true),
-		model.IdPtrValidateRule(&this.Language, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
+func (this UpdatePartyCommand) GetSchema() *dmodel.ModelSchema {
+	return dmodel.GetSchema(domain.PartySchemaName)
 }
 
-type UpdatePartyResult = crud.OpResult[*domain.Party]
+type UpdatePartyResult = dyn.OpResult[dyn.MutateResultData]
 
 var deletePartyCommandType = cqrs.RequestType{
 	Module:    "contacts",
@@ -127,84 +67,31 @@ var deletePartyCommandType = cqrs.RequestType{
 	Action:    "delete",
 }
 
-type DeletePartyCommand struct {
-	Id model.Id `json:"id" param:"id"`
-}
+type DeletePartyCommand dyn.DeleteOneCommand
 
 func (DeletePartyCommand) CqrsRequestType() cqrs.RequestType {
 	return deletePartyCommandType
 }
 
-func (this DeletePartyCommand) ToDomainModel() *domain.Party {
-	party := &domain.Party{}
-	party.Id = &this.Id
-	return party
-}
+type DeletePartyResult = dyn.OpResult[dyn.MutateResultData]
 
-func (this DeletePartyCommand) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type DeletePartyResult = crud.DeletionResult
-
-var getPartyByIdQueryType = cqrs.RequestType{
+var getPartyQueryType = cqrs.RequestType{
 	Module:    "contacts",
 	Submodule: "party",
-	Action:    "getPartyById",
+	Action:    "getParty",
 }
 
-type GetPartyByIdQuery struct {
-	Id                model.Id `param:"id" json:"id"`
-	WithCommChannels  bool     `json:"withCommChannels" query:"withCommChannels"`
-	WithRelationships bool     `json:"withRelationships" query:"withRelationships"`
+type GetPartyQuery struct {
+	Columns     []string  `json:"columns" query:"columns"`
+	Id          *model.Id `json:"id" param:"id"`
+	DisplayName *string   `json:"displayName" query:"displayName"`
 }
 
-func (GetPartyByIdQuery) CqrsRequestType() cqrs.RequestType {
-	return getPartyByIdQueryType
+func (GetPartyQuery) CqrsRequestType() cqrs.RequestType {
+	return getPartyQueryType
 }
 
-func (this GetPartyByIdQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		model.IdValidateRule(&this.Id, true),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type GetPartyByIdResult = crud.OpResult[*domain.Party]
-
-var getPartyByDisplayNameQueryType = cqrs.RequestType{
-	Module:    "contacts",
-	Submodule: "party",
-	Action:    "getPartyByDisplayName",
-}
-
-type GetPartyByDisplayNameQuery struct {
-	DisplayName       string `param:"displayName" json:"displayName"`
-	WithCommChannels  bool   `json:"withCommChannels" query:"withCommChannels"`
-	WithRelationships bool   `json:"withRelationships" query:"withRelationships"`
-}
-
-func (GetPartyByDisplayNameQuery) CqrsRequestType() cqrs.RequestType {
-	return getPartyByDisplayNameQueryType
-}
-
-func (this GetPartyByDisplayNameQuery) Validate() ft.ValidationErrors {
-	rules := []*val.FieldRules{
-		val.Field(&this.DisplayName,
-			val.NotEmpty,
-			val.Length(1, 50),
-		),
-	}
-
-	return val.ApiBased.ValidateStruct(&this, rules...)
-}
-
-type GetPartyByDisplayNameResult = crud.OpResult[*domain.Party]
+type GetPartyResult = dyn.OpResult[domain.Party]
 
 var searchPartiesQueryType = cqrs.RequestType{
 	Module:    "contacts",
@@ -212,22 +99,25 @@ var searchPartiesQueryType = cqrs.RequestType{
 	Action:    "search",
 }
 
-type SearchPartiesQuery struct {
-	crud.SearchQuery
-	Type              *string `json:"type" query:"type"`
-	WithCommChannels  bool    `json:"withCommChannels" query:"withCommChannels"`
-	WithRelationships bool    `json:"withRelationships" query:"withRelationships"`
-}
+type SearchPartiesQuery dyn.SearchQuery
 
 func (SearchPartiesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchPartiesQueryType
 }
 
-func (this SearchPartiesQuery) Validate() ft.ValidationErrors {
-	rules := this.SearchQuery.ValidationRules()
+type SearchPartiesResultData = dyn.PagedResultData[domain.Party]
+type SearchPartiesResult = dyn.OpResult[SearchPartiesResultData]
 
-	return val.ApiBased.ValidateStruct(&this, rules...)
+var partyExistsQueryType = cqrs.RequestType{
+	Module:    "contacts",
+	Submodule: "party",
+	Action:    "exists",
 }
 
-type SearchPartiesResultData = crud.PagedResult[domain.Party]
-type SearchPartiesResult = crud.OpResult[*SearchPartiesResultData]
+type PartyExistsQuery dyn.ExistsQuery
+
+func (PartyExistsQuery) CqrsRequestType() cqrs.RequestType {
+	return partyExistsQueryType
+}
+
+type PartyExistsResult = dyn.OpResult[dyn.ExistsResultData]

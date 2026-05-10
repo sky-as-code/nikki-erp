@@ -1,0 +1,16 @@
+meta {
+  name: Field Metadata - Delete
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{api_host}}/v1/essential/field-metadata/{{field_metadata_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+

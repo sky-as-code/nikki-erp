@@ -27,8 +27,9 @@ func initPartyHandlers() error {
 			cqrs.NewHandler(handler.CreateParty),
 			cqrs.NewHandler(handler.UpdateParty),
 			cqrs.NewHandler(handler.DeleteParty),
-			cqrs.NewHandler(handler.GetPartyById),
+			cqrs.NewHandler(handler.GetParty),
 			cqrs.NewHandler(handler.SearchParties),
+			cqrs.NewHandler(handler.PartyExists),
 		)
 	})
 }
@@ -41,6 +42,11 @@ func initRelationshipHandlers() error {
 		return cqrsBus.SubscribeRequests(
 			ctx,
 			cqrs.NewHandler(handler.CreateRelationship),
+			cqrs.NewHandler(handler.UpdateRelationship),
+			cqrs.NewHandler(handler.DeleteRelationship),
+			cqrs.NewHandler(handler.GetRelationship),
+			cqrs.NewHandler(handler.SearchRelationships),
+			cqrs.NewHandler(handler.RelationshipExists),
 		)
 	})
 }
@@ -55,8 +61,9 @@ func initCommChannelHandlers() error {
 			cqrs.NewHandler(handler.CreateCommChannel),
 			cqrs.NewHandler(handler.UpdateCommChannel),
 			cqrs.NewHandler(handler.DeleteCommChannel),
-			cqrs.NewHandler(handler.GetCommChannelById),
+			cqrs.NewHandler(handler.GetCommChannel),
 			cqrs.NewHandler(handler.SearchCommChannels),
+			cqrs.NewHandler(handler.CommChannelExists),
 		)
 	})
 }
