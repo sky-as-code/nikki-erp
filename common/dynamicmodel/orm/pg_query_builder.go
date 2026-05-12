@@ -528,7 +528,15 @@ func (this *PgQueryBuilder) appendPlannerM2MTenantWheres(sb *sqlbuilder.SelectBu
 func (this *PgQueryBuilder) applyFromWithJoins(
 	sb *sqlbuilder.SelectBuilder, schema *dmodel.ModelSchema, planner *joinPlanner,
 ) {
-	if planner == nil || !planner.usesJoins() {
+	if planner == nil {
+		sb.From(this.tableExpression(schema))
+		return
+	}
+	if !planner.usesJoins() {
+		if planner.rootAlias != "" {
+			sb.From(fmt.Sprintf("%s AS %s", this.tableExpression(schema), planner.rootAlias))
+			return
+		}
 		sb.From(this.tableExpression(schema))
 		return
 	}
@@ -1046,6 +1054,10 @@ func (this *PgQueryBuilder) conditionExpression(
 	}
 	value = derefConditionOperand(value)
 	valueArr = derefConditionOperands(valueArr)
+
+	if operator == dmodel.Linked || operator == dmodel.NotLinked {
+		return this.linkedNotLinkedEdgePredicate(ctx, schema, fieldName, operator, value)
+	}
 
 	field, quotedField, err := this.prepareColNameForGraph(ctx, schema, fieldName)
 	if err != nil {

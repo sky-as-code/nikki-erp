@@ -346,12 +346,66 @@ func (p *joinPlanner) selectExprForColumn(requested string) (string, error) {
 	return fmt.Sprintf("%s AS %s", ref, pgQuote(aliasLabel)), nil
 }
 
+func isLinkedEdgeOnlyCondition(cond dmodel.Condition) bool {
+	if len(cond) < 2 {
+		return false
+	}
+	field := strings.TrimSpace(cond.Field())
+	if field == "" || strings.Contains(field, ".") {
+		return false
+	}
+	op := cond.Operator()
+	return op == dmodel.Linked || op == dmodel.NotLinked
+}
+
+func graphRequiresRootAliasForLinkedNotLinked(graph *dmodel.SearchGraph) bool {
+	if graph == nil {
+		return false
+	}
+	if isLinkedEdgeOnlyCondition(graph.GetCondition()) {
+		return true
+	}
+	for i := range graph.GetAnd() {
+		if searchNodeRequiresLinkedNotLinkedRootAlias(&graph.GetAnd()[i]) {
+			return true
+		}
+	}
+	for i := range graph.GetOr() {
+		if searchNodeRequiresLinkedNotLinkedRootAlias(&graph.GetOr()[i]) {
+			return true
+		}
+	}
+	return false
+}
+
+func searchNodeRequiresLinkedNotLinkedRootAlias(node *dmodel.SearchNode) bool {
+	if node == nil {
+		return false
+	}
+	if isLinkedEdgeOnlyCondition(node.GetCondition()) {
+		return true
+	}
+	for i := range node.GetAnd() {
+		if searchNodeRequiresLinkedNotLinkedRootAlias(&node.GetAnd()[i]) {
+			return true
+		}
+	}
+	for i := range node.GetOr() {
+		if searchNodeRequiresLinkedNotLinkedRootAlias(&node.GetOr()[i]) {
+			return true
+		}
+	}
+	return false
+}
+
 func collectGraphFieldPaths(graph *dmodel.SearchGraph, into map[string]struct{}) error {
 	if graph == nil {
 		return nil
 	}
-	if err := noteGraphFieldName(graph.GetCondition().Field(), MaxSearchGraphConditionDots, into); err != nil {
-		return err
+	if graph.GetCondition().Field() != "" && !isLinkedEdgeOnlyCondition(graph.GetCondition()) {
+		if err := noteGraphFieldName(graph.GetCondition().Field(), MaxSearchGraphConditionDots, into); err != nil {
+			return err
+		}
 	}
 	if err := walkSearchNodesForFields(graph.GetAnd(), into); err != nil {
 		return err
@@ -373,8 +427,10 @@ func collectGraphFieldPaths(graph *dmodel.SearchGraph, into map[string]struct{})
 func walkSearchNodesForFields(nodes []dmodel.SearchNode, into map[string]struct{}) error {
 	for i := range nodes {
 		node := &nodes[i]
-		if err := noteGraphFieldName(node.GetCondition().Field(), MaxSearchGraphConditionDots, into); err != nil {
-			return err
+		if node.GetCondition().Field() != "" && !isLinkedEdgeOnlyCondition(node.GetCondition()) {
+			if err := noteGraphFieldName(node.GetCondition().Field(), MaxSearchGraphConditionDots, into); err != nil {
+				return err
+			}
 		}
 		if err := walkSearchNodesForFields(node.GetAnd(), into); err != nil {
 			return err
@@ -447,6 +503,9 @@ func (this *PgQueryBuilder) planGraphJoins(
 		if err := planner.ensureFullPath(path, maxDotsFor(path)); err != nil {
 			return nil, err
 		}
+	}
+	if graph != nil && graphRequiresRootAliasForLinkedNotLinked(graph) {
+		planner.ensureRootAliased()
 	}
 	return planner, nil
 }
