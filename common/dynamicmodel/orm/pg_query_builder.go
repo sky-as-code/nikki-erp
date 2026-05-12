@@ -446,6 +446,9 @@ func (this *PgQueryBuilder) SqlCountGraph(
 func (this *PgQueryBuilder) buildSqlCountGraph(
 	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
 ) (string, ft.ClientErrors, error) {
+	if anySelectColumnDistinct(opts.Columns) {
+		return this.buildSqlCountGraphAsDistinctSubquery(schema, registry, graph, opts)
+	}
 	planner, err := this.planGraphJoins(schema, registry, graph, opts)
 	if err != nil {
 		return "", nil, err
@@ -476,6 +479,43 @@ func (this *PgQueryBuilder) buildSqlCountGraph(
 	return out, nil, nil
 }
 
+// buildSqlCountGraphAsDistinctSubquery: COUNT(*) over (SELECT DISTINCT <list columns> …), same grain as list.
+func (this *PgQueryBuilder) buildSqlCountGraphAsDistinctSubquery(
+	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
+) (string, ft.ClientErrors, error) {
+	planner, err := this.planGraphJoins(schema, registry, graph, opts)
+	if err != nil {
+		return "", nil, err
+	}
+	ctx := &graphSelectCtx{planner: planner, language: opts.Language}
+	inner := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	inner.Distinct()
+	if err := this.applySelectColumns(inner, planner, opts.Columns); err != nil {
+		return "", nil, err
+	}
+	this.applyFromWithJoins(inner, schema, planner)
+	this.appendPlannerM2MTenantWheres(inner, planner)
+	if graph != nil {
+		predicate, graphCErrs, err := this.graphExpression(
+			ctx, schema, inner, graph.GetCondition(), graph.GetAnd(), graph.GetOr())
+		if err != nil {
+			return "", nil, err
+		}
+		if len(graphCErrs) > 0 {
+			return "", graphCErrs, nil
+		}
+		if len(predicate) > 0 {
+			inner.Where(predicate)
+		}
+	}
+	raw, args := inner.Build()
+	innerSQL, ierr := interpolate(raw, args)
+	if ierr != nil {
+		return "", nil, errors.Wrap(ierr, "buildSqlCountGraphAsDistinctSubquery")
+	}
+	return fmt.Sprintf("SELECT COUNT(*) FROM (%s) AS _distinct_count", innerSQL), nil, nil
+}
+
 func (this *PgQueryBuilder) appendPlannerM2MTenantWheres(sb *sqlbuilder.SelectBuilder, planner *joinPlanner) {
 	if planner == nil {
 		return
@@ -495,7 +535,7 @@ func (this *PgQueryBuilder) applyFromWithJoins(
 	planner.ensureRootAliased()
 	sb.From(fmt.Sprintf("%s AS %s", this.tableExpression(schema), planner.rootAlias))
 	for _, j := range planner.joins {
-		sb.Join(j.tableWithAlias, j.onExpr)
+		sb.JoinWithOption(sqlbuilder.LeftJoin, j.tableWithAlias, j.onExpr)
 	}
 }
 
