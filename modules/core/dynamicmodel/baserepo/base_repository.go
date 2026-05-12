@@ -460,7 +460,7 @@ func (this *BaseDynamicRepositoryImpl) CountM2m(
 		filter.Merge(constraints)
 	}
 	graph := filterToAndGraph(filter)
-	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph, nil)
+	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -771,7 +771,8 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 	page := param.Page
 	size := param.Size
 	var total int
-	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language)
+	total, countClientErrs, err := this.countRowsMatchingGraph(
+		ctx, merged, param.Language, this.ensurePrimaryKeyColumns(param.Columns))
 	if err != nil {
 		return nil, err
 	}
@@ -817,7 +818,7 @@ func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
 	}
 	merged := this.injectTenantIntoGraph(ctx, param.Graph)
-	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language)
+	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language, plan.MainColumns)
 	if err != nil {
 		return nil, err
 	}
@@ -1262,16 +1263,21 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByAnyFilter(
 }
 
 func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraph(
-	ctx corectx.Context, graph *dmodel.SearchGraph, language *model.LanguageCode,
+	ctx corectx.Context, graph *dmodel.SearchGraph, language *model.LanguageCode, selectColumns []string,
 ) (int, ft.ClientErrors, error) {
-	return this.countRowsMatchingGraphOnSchema(ctx, this.schema, graph, language)
+	return this.countRowsMatchingGraphOnSchema(ctx, this.schema, graph, language, selectColumns)
 }
 
 func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraphOnSchema(
 	ctx corectx.Context, schema *dmodel.ModelSchema, graph *dmodel.SearchGraph, language *model.LanguageCode,
+	selectColumns []string,
 ) (int, ft.ClientErrors, error) {
+	opts := orm.SqlSelectGraphOpts{Language: language}
+	if len(selectColumns) > 0 {
+		opts.Columns = orm.ToSelectColumns(selectColumns)
+	}
 	qbRes, qbClientErrs, err := this.queryBuilder.SqlCountGraph(
-		schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{Language: language})
+		schema, dmodel.GetSchemaRegistry(), graph, opts)
 	if err != nil {
 		return 0, nil, err
 	}
