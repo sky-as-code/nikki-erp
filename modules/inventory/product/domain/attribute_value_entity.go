@@ -23,7 +23,7 @@ const (
 )
 
 const (
-	AttributeValueSchemaName = "inventory.attribute_value"
+	AttributeValueSchemaName = "inventory_attribute_value"
 
 	AttrValFieldId           = basemodel.FieldId
 	AttrValFieldProductId    = "product_id"
@@ -42,7 +42,7 @@ const (
 
 func AttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(AttributeValueSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Attribute Value"}).
+		Label(model.NewLangJsonRefSf("%s.label", AttributeValueSchemaName)).
 		TableName("inventory_attribute_values").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -53,7 +53,7 @@ func AttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(AttrValFieldProductId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Product"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrValFieldProductId)).
 				DataType(dmodel.FieldDataTypeUlid()).
 				RequiredForCreate(),
 		).
@@ -61,37 +61,37 @@ func AttributeValueSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(AttrValFieldValueText).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Text Value"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrValFieldValueText)).
 				DataType(dmodel.FieldDataTypeLangJson(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrValFieldValueDecimal).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Decimal Value"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrValFieldValueDecimal)).
 				DataType(dmodel.FieldDataTypeDecimal("0", fmt.Sprint(model.MODEL_RULE_CURRENCY_MAX), model.MODEL_RULE_CURRENCY_SCALE)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrValFieldValueInteger).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Integer Value"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrValFieldValueInteger)).
 				DataType(dmodel.FieldDataTypeInt64(0, math.MaxInt64)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrValFieldValueBool).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Boolean Value"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrValFieldValueBool)).
 				DataType(dmodel.FieldDataTypeBoolean()),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrValFieldValueRef).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Reference Value"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrValFieldValueRef)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrValFieldVariantCount).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Variant Count"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrValFieldVariantCount)).
 				DataType(dmodel.FieldDataTypeInt64(0, math.MaxInt16)).
 				Default(0),
 		).

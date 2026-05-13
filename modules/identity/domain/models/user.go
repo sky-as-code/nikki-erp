@@ -31,7 +31,7 @@ const (
 )
 
 const (
-	UserSchemaName = "identity.user"
+	UserSchemaName = "identity_user"
 
 	UserFieldId          = basemodel.FieldId
 	UserFieldAvatarUrl   = "avatar_url"
@@ -54,27 +54,27 @@ const (
 
 func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserSchemaName).
-		Label(model.LangJson{"en-US": "User"}).
+		Label(model.NewLangJsonRefSf("%s.label", UserSchemaName)).
 		TableName("ident_users").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().
 				Name(UserFieldAvatarUrl).
-				Label(model.LangJson{"en-US": "Avatar URL"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UserFieldAvatarUrl)).
 				DataType(dmodel.FieldDataTypeUrl()),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(UserFieldDisplayName).
-				Label(model.LangJson{"en-US": "Display Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UserFieldDisplayName)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(UserFieldEmail).
-				Label(model.LangJson{"en-US": "Email"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UserFieldEmail)).
 				DataType(dmodel.FieldDataTypeEmail()).
 				RequiredForCreate().
 				Unique(),
@@ -82,7 +82,7 @@ func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(UserFieldStatus).
-				Label(model.LangJson{"en-US": "Status"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UserFieldStatus)).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
 					string(UserStatusDraft), string(UserStatusInvited), string(UserStatusActive), string(UserStatusSuspended), string(UserStatusTerminated),
 				})).
@@ -92,13 +92,13 @@ func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(UserFieldIsOwner).
-				Label(model.LangJson{"en-US": "Is Owner"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UserFieldIsOwner)).
 				DataType(dmodel.FieldDataTypeBoolean()).
 				Unique(), // Only one owner per deployment
 		).
 		Field(
 			basemodel.DefineFieldId(UserFieldOrgUnitId).
-				Label(model.LangJson{"en-US": "Organizational Unit"}),
+				Label(model.NewLangJsonRefSf("fields.%s", UserFieldOrgUnitId)),
 		).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).
 		Extend(basemodel.VersionedModelSchemaBuilder()).

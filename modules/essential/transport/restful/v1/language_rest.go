@@ -66,6 +66,18 @@ func (this LanguageRest) GetLanguage(echoCtx *echo.Context) (err error) {
 		httpserver.JsonOk)
 }
 
+func (this LanguageRest) GetLanguageJson(echoCtx *echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get language json"); e != nil {
+			err = e
+		}
+	}()
+	return httpserver.ServeRequest2(echoCtx, this.svc.GetLanguageJson,
+		func(request GetLanguageJsonRequest) it.GetLanguageJsonQuery { return it.GetLanguageJsonQuery(request) },
+		func(data map[string]any) GetLanguageJsonResponse { return data },
+		httpserver.JsonOk)
+}
+
 func (this LanguageRest) LanguageExists(echoCtx *echo.Context) (err error) {
 	defer func() {
 		if e := ft.RecoverPanicFailedTo(recover(), "handle REST language exists"); e != nil {

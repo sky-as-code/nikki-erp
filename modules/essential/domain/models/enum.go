@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	EnumSchemaName = "essential.enum"
+	EnumSchemaName = "essential_enum"
 
 	EnumFieldId    = basemodel.FieldId
 	EnumFieldEtag  = basemodel.FieldEtag
@@ -18,27 +18,27 @@ const (
 
 func EnumSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(EnumSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Enum"}).
+		Label(model.NewLangJsonRefSf("%s.label", EnumSchemaName)).
 		TableName("essential_enums").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().
 				Name(EnumFieldLabel).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Label"}).
+				Label(model.NewLangJsonRefSf("fields.%s", EnumFieldLabel)).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(EnumFieldValue).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Value"}).
+				Label(model.NewLangJsonRefSf("fields.%s", EnumFieldValue)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(EnumFieldType).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Type"}).
+				Label(model.NewLangJsonRefSf("fields.%s", EnumFieldType)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
 				RequiredForCreate(),
 		).

@@ -25,7 +25,7 @@ func WrapUnitStatus(s string) *UnitStatus {
 }
 
 const (
-	UnitSchemaName = "essential.unit"
+	UnitSchemaName = "essential_unit"
 
 	UnitFieldId         = basemodel.FieldId
 	UnitFieldName       = "name"
@@ -41,7 +41,7 @@ const (
 
 func UnitSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UnitSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Unit"}).
+		Label(model.NewLangJsonRefSf("%s.label", UnitSchemaName)).
 		TableName("essential_units").
 		CompositeUnique(UnitFieldSymbol, UnitFieldOrgId).
 		ShouldBuildDb().
@@ -49,21 +49,21 @@ func UnitSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(UnitFieldName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UnitFieldName)).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(UnitFieldSymbol).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Symbol"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UnitFieldSymbol)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(UnitFieldStatus).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Status"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UnitFieldStatus)).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
 					string(UnitStatusDraft),
 					string(UnitStatusActive),
@@ -74,27 +74,27 @@ func UnitSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(UnitFieldBaseUnit).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Base Unit"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UnitFieldBaseUnit)).
 				Description(model.LangJson{model.LanguageCodeEnUs: "Reference to the base unit for unit conversion"}).
 				DataType(dmodel.FieldDataTypeUlid()),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(UnitFieldMultiplier).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Multiplier"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UnitFieldMultiplier)).
 				Description(model.LangJson{model.LanguageCodeEnUs: "Conversion multiplier relative to base unit"}).
 				DataType(dmodel.FieldDataTypeInt64(1, math.MaxInt16)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(UnitFieldCategoryId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Category"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UnitFieldCategoryId)).
 				DataType(dmodel.FieldDataTypeUlid()),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(UnitFieldOrgId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Organization"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UnitFieldOrgId)).
 				DataType(dmodel.FieldDataTypeUlid()).
 				RequiredForCreate(),
 		).

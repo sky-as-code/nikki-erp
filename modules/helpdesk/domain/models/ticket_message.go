@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	TicketMessageSchemaName = "helpdesk.ticket_message"
+	TicketMessageSchemaName = "helpdesk_ticket_message"
 
 	TicketMessageFieldTicketId       = "ticket_id"
 	TicketMessageFieldSenderType     = "sender_type"
@@ -19,7 +19,7 @@ const (
 
 func TicketMessageSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(TicketMessageSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Ticket message"}).
+		Label(model.NewLangJsonRefSf("%s.label", TicketMessageSchemaName)).
 		TableName("helpdesk_ticket_messages").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

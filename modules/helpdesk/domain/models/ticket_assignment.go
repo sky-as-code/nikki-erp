@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	TicketAssignmentSchemaName = "helpdesk.ticket_assignment"
+	TicketAssignmentSchemaName = "helpdesk_ticket_assignment"
 
 	TicketAssignmentFieldTicketId     = "ticket_id"
 	TicketAssignmentFieldAgentId      = "agent_id"
@@ -19,7 +19,7 @@ const (
 
 func TicketAssignmentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(TicketAssignmentSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Ticket assignment"}).
+		Label(model.NewLangJsonRefSf("%s.label", TicketAssignmentSchemaName)).
 		TableName("helpdesk_ticket_assignments").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

@@ -20,7 +20,7 @@ const (
 )
 
 const (
-	RoleRequestSchemaName = "authz.grant_request"
+	RoleRequestSchemaName = "authz_grant_request"
 
 	RoleReqFieldId              = basemodel.FieldId
 	RoleReqFieldAttachmentUrl   = "attachment_url"
@@ -45,7 +45,7 @@ const (
 
 func RoleRequestSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(RoleRequestSchemaName).
-		Label(model.LangJson{"en-US": "Grant Request"}).
+		Label(model.NewLangJsonRefSf("%s.label", RoleRequestSchemaName)).
 		TableName("authz_grant_requests").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

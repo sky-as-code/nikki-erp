@@ -196,7 +196,7 @@ package impl
 // 		vErrs.Appendf("id", "%s not found", entityName)
 // 		return nil
 // 	} else if *dbEnum.Etag != *enum.Etag {
-// 		vErrs.Appendf("etag", "%s has been modified by another process", entityName)
+// 		vErrs.Appendf("etag", "%s has been modified by someone else", entityName)
 // 		return nil
 // 	}
 // 	return nil

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	RoleGroupAssignmentSchemaName = "authz.role_group_assignment"
+	RoleGroupAssignmentSchemaName = "authz_role_group_assignment"
 
 	RoleGroupAssignFieldId              = basemodel.FieldId
 	RoleGroupAssignFieldRoleId          = "role_id"
@@ -22,7 +22,7 @@ const (
 
 func RoleGroupAssignmentSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(RoleGroupAssignmentSchemaName).
-		Label(model.LangJson{"en-US": "Role-Group Assignment"}).
+		Label(model.NewLangJsonRefSf("%s.label", RoleGroupAssignmentSchemaName)).
 		TableName("authz_role_group_assignments").
 		ShouldBuildDb().
 		CompositeUnique(RoleGroupAssignFieldRoleId, RoleGroupAssignFieldReceiverGroupId).

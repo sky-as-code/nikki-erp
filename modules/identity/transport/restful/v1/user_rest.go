@@ -8,8 +8,11 @@ import (
 
 	"github.com/sky-as-code/nikki-erp/common/array"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
+	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	itCore "github.com/sky-as-code/nikki-erp/modules/core/language/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/user"
@@ -115,6 +118,29 @@ func (this UserRest) GetUserContext(echoCtx *echo.Context) (err error) {
 		Orgs: array.Map(user.GetOrgs(), func(org models.Organization) dmodel.DynamicFields {
 			return org.GetFieldData()
 		}),
+		AccountSettings: map[string]any{
+			"language": itCore.Language{
+				Id:                 util.ToPtr("01JZYF7DT3ASR4PXAX4HP4BVGZ"),
+				Name:               util.ToPtr("Tiếng Việt"),
+				IsoCode:            util.ToPtr(model.LanguageCode("vi-VN")),
+				Direction:          util.ToPtr("ltr"),
+				DecimalSeparator:   util.ToPtr("."),
+				ThousandsSeparator: util.ToPtr(","),
+				DateFormat:         util.ToPtr("dd/MM/yyyy"),
+				TimeFormat:         util.ToPtr("HH:mm:ss"),
+				ShortTimeFormat:    util.ToPtr("HH:mm"),
+				FirstDayOfWeek:     util.ToPtr("monday"),
+			},
+			"timezone": "Asia/Ho_Chi_Minh",
+			"supported_languages": []string{
+				"en-US",
+				"vi-VN",
+			},
+			"theme_mode": "light",
+		},
+		SystemSettings: map[string]any{
+			"app_name": "Nikki ERP",
+		},
 	})
 	return nil
 }

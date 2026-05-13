@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	RequestForProposalSchemaName  = "purchase.request_for_proposal"
+	RequestForProposalSchemaName  = "purchase_request_for_proposal"
 	RequestForProposalFieldId     = basemodel.FieldId
 	RequestForProposalFieldCode   = "code"
 	RequestForProposalFieldStatus = "status"
@@ -15,7 +15,7 @@ const (
 
 func RequestForProposalSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(RequestForProposalSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Request for proposal"}).
+		Label(model.NewLangJsonRefSf("%s.label", RequestForProposalSchemaName)).
 		TableName("purchase_request_for_proposals").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

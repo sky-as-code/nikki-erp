@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	TeamSchemaName = "helpdesk.team"
+	TeamSchemaName = "helpdesk_team"
 
 	TeamFieldName      = "name"
 	TeamFieldOrgId     = "org_id"
@@ -17,7 +17,7 @@ const (
 
 func TeamSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(TeamSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Team"}).
+		Label(model.NewLangJsonRefSf("%s.label", TeamSchemaName)).
 		TableName("helpdesk_teams").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

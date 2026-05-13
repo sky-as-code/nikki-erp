@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	GroupSchemaName = "identity.group"
+	GroupSchemaName = "identity_group"
 
 	GroupFieldId          = basemodel.FieldId
 	GroupFieldName        = "name"
@@ -32,7 +32,7 @@ const (
 )
 
 const (
-	GrpUsrRelSchemaName = "identity.group_user_rel"
+	GrpUsrRelSchemaName = "identity_group_user_rel"
 
 	GrpUsrRelFieldId      = basemodel.FieldId
 	GrpUsrRelFieldGroupId = "group_id"
@@ -57,14 +57,14 @@ func GroupUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 
 func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(GroupSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "User group"}).
+		Label(model.NewLangJsonRefSf("%s.label", GroupSchemaName)).
 		TableName("ident_groups").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().
 				Name(GroupFieldName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", GroupFieldName)).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
 				RequiredForCreate().
 				Unique(),
@@ -72,7 +72,7 @@ func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(GroupFieldDescription).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Description"}).
+				Label(model.NewLangJsonRefSf("fields.%s", GroupFieldDescription)).
 				DataType(dmodel.FieldDataTypeLangJson(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(

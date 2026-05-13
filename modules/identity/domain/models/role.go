@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	RoleSchemaName = "authz.role"
+	RoleSchemaName = "authz_role"
 
 	RoleFieldId                = "id"
 	RoleFieldName              = "name"
@@ -31,7 +31,7 @@ const (
 
 func RoleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(RoleSchemaName).
-		Label(model.LangJson{"en-US": "Role"}).
+		Label(model.NewLangJsonRefSf("%s.label", RoleSchemaName)).
 		TableName("authz_roles").
 		PartialUnique(RoleFieldName, RoleFieldOrgId).
 		ShouldBuildDb().

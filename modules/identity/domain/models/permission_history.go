@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	PermissionHistorySchemaName = "authz.permission_history"
+	PermissionHistorySchemaName = "authz_permission_history"
 
 	PermHistoryFieldApproverId      = "approver_id"
 	PermHistoryFieldApproverEmail   = "approver_email"
@@ -36,7 +36,7 @@ var permissionHistoryReasonValues = []string{
 
 func PermissionHistorySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(PermissionHistorySchemaName).
-		Label(model.LangJson{"en-US": "Permission History"}).
+		Label(model.NewLangJsonRefSf("%s.label", PermissionHistorySchemaName)).
 		TableName("authz_permission_histories").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

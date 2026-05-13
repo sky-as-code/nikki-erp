@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	TicketCategorySchemaName    = "helpdesk.ticket_category"
-	TicketCategoryRelSchemaName = "helpdesk.ticket_category_rel"
+	TicketCategorySchemaName    = "helpdesk_ticket_category"
+	TicketCategoryRelSchemaName = "helpdesk_ticket_category_rel"
 
 	TicketCategoryFieldName               = "name"
 	TicketCategoryFieldParentId           = "parent_id"
@@ -20,7 +20,7 @@ const (
 
 func TicketCategorySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(TicketCategorySchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Ticket category"}).
+		Label(model.NewLangJsonRefSf("%s.label", TicketCategorySchemaName)).
 		TableName("helpdesk_ticket_categories").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

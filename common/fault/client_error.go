@@ -1,14 +1,14 @@
 package fault
 
 import (
-	"bytes"
 	stdErr "errors"
 	"fmt"
-	"text/template"
+
+	"go.bryk.io/pkg/errors"
 
 	invopop "github.com/invopop/validation"
 	"github.com/sky-as-code/nikki-erp/common/safe"
-	"go.bryk.io/pkg/errors"
+	"github.com/sky-as-code/nikki-erp/common/template"
 )
 
 // Deprecated: Use ClientErrorItem instead
@@ -28,15 +28,7 @@ func (this *ValidationErrorItem) String() string {
 	if len(this.Vars) == 0 {
 		return this.Message
 	}
-	tmpl, err := template.New("validation").Parse(this.Message)
-	if err != nil {
-		return this.Message
-	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, this.Vars); err != nil {
-		return this.Message
-	}
-	return buf.String()
+	return template.Interpolate(this.Message, this.Vars)
 }
 
 // Deprecated: Use ClientErrors instead
@@ -209,13 +201,7 @@ func (this *ClientErrorItem) ToError() error {
 	}
 	msg := this.Message
 	if msg != "" && len(this.Vars) > 0 {
-		tmpl, err := template.New("ClientErrorItem").Parse(this.Message)
-		if err == nil {
-			var buf bytes.Buffer
-			if err2 := tmpl.Execute(&buf, this.Vars); err2 == nil {
-				msg = buf.String()
-			}
-		}
+		msg = template.Interpolate(this.Message, this.Vars)
 	} else if msg == "" {
 		msg = "unknown error"
 	}
@@ -238,18 +224,11 @@ func (this ClientErrorItem) String() string {
 	if len(this.Vars) == 0 {
 		return this.Message
 	}
-	tmpl, err := template.New("ClientErrorItem").Parse(this.Message)
-	if err != nil {
-		return this.Message
-	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, this.Vars); err != nil {
-		return this.Message
-	}
+	out := template.Interpolate(this.Message, this.Vars)
 	if this.Key != "" {
-		return fmt.Sprintf("%s: %s", this.Field, buf.String())
+		return fmt.Sprintf("%s: %s", this.Field, out)
 	}
-	return buf.String()
+	return out
 }
 
 // Deprecated: Use ClientErrors instead

@@ -14,7 +14,7 @@ type OtpCode string
 var OtpCodePattern = regexp.MustCompile(`^\d+$`)
 
 const (
-	PasswordStoreSchemaName = "authenticate.password_store"
+	PasswordStoreSchemaName = "authenticate_password_store"
 
 	PasswordStoreFieldId                   = basemodel.FieldId
 	PasswordStoreFieldPrincipalType        = "principal_type"
@@ -31,56 +31,56 @@ const (
 
 func PasswordStoreSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(PasswordStoreSchemaName).
-		Label(model.LangJson{"en-US": "Password Store"}).
+		Label(model.NewLangJsonRefSf("%s.label", PasswordStoreSchemaName)).
 		TableName("authn_password_stores").
 		ShouldBuildDb().
 		CompositeUnique(PasswordStoreFieldPrincipalType, PasswordStoreFieldPrincipalId).
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			DefinePrincipalTypeField(PasswordStoreFieldPrincipalType).
-				Label(model.LangJson{"en-US": "Principal type"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PasswordStoreFieldPrincipalType)).
 				RequiredForCreate(),
 		).
 		Field(
 			basemodel.DefineFieldId(PasswordStoreFieldPrincipalId).
-				Label(model.LangJson{"en-US": "Principal ID"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PasswordStoreFieldPrincipalId)).
 				RequiredForCreate(),
 		).
 		Field(
 			DefinePasswordTextField(PasswordStoreFieldPassword).
-				Label(model.LangJson{"en-US": "Password"}),
+				Label(model.NewLangJsonRefSf("fields.%s", PasswordStoreFieldPassword)),
 		).
 		Field(
 			dmodel.DefineField().Name(PasswordStoreFieldPasswordExpiresAt).
-				Label(model.LangJson{"en-US": "Password expired at"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PasswordStoreFieldPasswordExpiresAt)).
 				DataType(dmodel.FieldDataTypeDateTime()),
 		).
 		Field(
 			dmodel.DefineField().Name(PasswordStoreFieldPasswordUpdatedAt).
-				Label(model.LangJson{"en-US": "Password updated at"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PasswordStoreFieldPasswordUpdatedAt)).
 				DataType(dmodel.FieldDataTypeDateTime()),
 		).
 		Field(
 			DefinePasswordTextField(PasswordStoreFieldPasswordTmp).
-				Label(model.LangJson{"en-US": "Temporary password"}),
+				Label(model.NewLangJsonRefSf("fields.%s", PasswordStoreFieldPasswordTmp)),
 		).
 		Field(
 			dmodel.DefineField().Name(PasswordStoreFieldPasswordTmpExpiresAt).
-				Label(model.LangJson{"en-US": "Temporary password expired at"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PasswordStoreFieldPasswordTmpExpiresAt)).
 				DataType(dmodel.FieldDataTypeDateTime()),
 		).
 		Field(
 			DefinePasswordOtpField(PasswordStoreFieldPasswordOtp).
-				Label(model.LangJson{"en-US": "OTP secret"}),
+				Label(model.NewLangJsonRefSf("fields.%s", PasswordStoreFieldPasswordOtp)),
 		).
 		Field(
 			dmodel.DefineField().Name(PasswordStoreFieldPasswordOtpExpiresAt).
-				Label(model.LangJson{"en-US": "OTP expired at"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PasswordStoreFieldPasswordOtpExpiresAt)).
 				DataType(dmodel.FieldDataTypeDateTime()),
 		).
 		Field(
 			DefinePasswordOtpRecoveryField(PasswordStoreFieldPasswordOtpRecovery).
-				Label(model.LangJson{"en-US": "OTP recovery"}),
+				Label(model.NewLangJsonRefSf("fields.%s", PasswordStoreFieldPasswordOtpRecovery)),
 		)
 }
 

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	ActionSchemaName = "authz.action"
+	ActionSchemaName = "authz_action"
 
 	ActionFieldId          = "id"
 	ActionFieldName        = "name"
@@ -23,7 +23,7 @@ const (
 
 func ActionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ActionSchemaName).
-		Label(model.LangJson{"en-US": "Action"}).
+		Label(model.NewLangJsonRefSf("%s.label", ActionSchemaName)).
 		TableName("authz_actions").
 		CompositeUnique(ActionFieldResourceId, ActionFieldName).
 		CompositeUnique(ActionFieldResourceId, ActionFieldCode).

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	ModelMetadataSchemaName = "essential.model_metadata"
+	ModelMetadataSchemaName = "essential_model_metadata"
 
 	ModelMetadataFieldId          = basemodel.FieldId
 	ModelMetadataFieldName        = "name"
@@ -23,12 +23,12 @@ const (
 
 func ModelMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ModelMetadataSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Model Metadata"}).
+		Label(model.NewLangJsonRefSf("%s.label", ModelMetadataSchemaName)).
 		TableName("essential_model_metadata").
 		ShouldBuildDb().
 		Field(
 			basemodel.DefineFieldId(ModelMetadataFieldId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "ID"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ModelMetadataFieldId)).
 				UseTypeDefault().
 				PrimaryKey(),
 		).

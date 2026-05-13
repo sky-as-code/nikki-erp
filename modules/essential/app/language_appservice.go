@@ -1,7 +1,9 @@
 package app
 
 import (
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	langjson "github.com/sky-as-code/nikki-erp/modules/essential/infra/langJson"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/language"
 )
 
@@ -27,6 +29,26 @@ func (this *LanguageApplicationServiceImpl) LanguageExists(ctx corectx.Context, 
 
 func (this *LanguageApplicationServiceImpl) GetLanguage(ctx corectx.Context, query it.GetLanguageQuery) (*it.GetLanguageResult, error) {
 	return this.languageSvc.GetLanguage(ctx, query)
+}
+
+func (this *LanguageApplicationServiceImpl) GetLanguageJson(ctx corectx.Context, query it.GetLanguageJsonQuery) (*it.GetLanguageJsonResult, error) {
+	_ = ctx
+	byModule := langjson.ByLanguageCodeAndModule[query.LanguageCode]
+	if byModule == nil {
+		cerrs := ft.NewClientErrors()
+		cerrs.Append(*ft.NewNotFoundError("language_code"))
+		return &it.GetLanguageJsonResult{ClientErrors: *cerrs}, nil
+	}
+	data, ok := byModule[query.ModuleName]
+	if !ok {
+		cerrs := ft.NewClientErrors()
+		cerrs.Append(*ft.NewNotFoundError("module_name"))
+		return &it.GetLanguageJsonResult{ClientErrors: *cerrs}, nil
+	}
+	if query.ModuleName == langjson.CommonModuleName {
+		data = langjson.MergedCommonMessages(byModule)
+	}
+	return &it.GetLanguageJsonResult{Data: data, HasData: true}, nil
 }
 
 func (this *LanguageApplicationServiceImpl) SearchLanguages(ctx corectx.Context, query it.SearchLanguagesQuery) (*it.SearchLanguagesResult, error) {

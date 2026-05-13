@@ -16,12 +16,12 @@ const (
 )
 
 const (
-	ResourceAuthorizationResource     = "authz.resource"
-	ResourceAuthorizationRole         = "authz.role"
-	ResourceAuthorizationGrantRequest = "authz.grant_request"
-	ResourceAuthorizationEntitlement  = "authz.entitlement"
-	ResourceIdentityUser              = "identity.user"
-	ResourceIdentityGroup             = "identity.group"
-	ResourceIdentityOrganization      = "identity.org"
-	ResourceIdentityOrgUnit           = "identity.orgunit"
+	ResourceAuthorizationResource     = "authz_resource"
+	ResourceAuthorizationRole         = "authz_role"
+	ResourceAuthorizationGrantRequest = "authz_grant_request"
+	ResourceAuthorizationEntitlement  = "authz_entitlement"
+	ResourceIdentityUser              = "identity_user"
+	ResourceIdentityGroup             = "identity_group"
+	ResourceIdentityOrganization      = "identity_org"
+	ResourceIdentityOrgUnit           = "identity_orgunit"
 )

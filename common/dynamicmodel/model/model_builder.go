@@ -417,7 +417,7 @@ func (this *FieldBuilder) Label(label model.LangJson) *FieldBuilder {
 }
 
 func (this *FieldBuilder) LabelRef(key string) *FieldBuilder {
-	return this.Label(model.LangJson{model.LabelRefLanguageCode: key})
+	return this.Label(model.LangJson{model.LanguageCodeRef: key})
 }
 
 func (this *FieldBuilder) Name(name string) *FieldBuilder {

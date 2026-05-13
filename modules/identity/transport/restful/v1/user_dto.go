@@ -20,12 +20,14 @@ type GetUserRequest = it.GetUserQuery
 type GetUserResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
 
 type GetUserContextResponse struct {
-	Id           string                 `json:"id"`
-	AvatarUrl    *string                `json:"avatar_url"`
-	DisplayName  string                 `json:"display_name"`
-	Email        string                 `json:"email"`
-	Entitlements []string               `json:"entitlements"`
-	Orgs         []dmodel.DynamicFields `json:"orgs"`
+	Id              string                 `json:"id"`
+	AvatarUrl       *string                `json:"avatar_url"`
+	DisplayName     string                 `json:"display_name"`
+	Email           string                 `json:"email"`
+	Entitlements    []string               `json:"entitlements"`
+	Orgs            []dmodel.DynamicFields `json:"orgs"`
+	AccountSettings map[string]any         `json:"account_settings"`
+	SystemSettings  map[string]any         `json:"system_settings"`
 }
 
 type UserExistsRequest = it.UserExistsQuery

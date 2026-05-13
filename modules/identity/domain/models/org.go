@@ -20,7 +20,7 @@ const (
 )
 
 const (
-	OrganizationSchemaName = "identity.org"
+	OrganizationSchemaName = "identity_org"
 
 	OrgFieldId          = basemodel.FieldId
 	OrgFieldAddress     = "address"
@@ -35,7 +35,7 @@ const (
 )
 
 const (
-	OrgUsrRelSchemaName = "identity.org_user_rel"
+	OrgUsrRelSchemaName = "identity_org_user_rel"
 
 	OrgUsrRelFieldId     = basemodel.FieldId
 	OrgUsrRelFieldUserId = "user_id"
@@ -61,20 +61,20 @@ func OrgUserRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 
 func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(OrganizationSchemaName).
-		Label(model.LangJson{"en-US": "Organization"}).
+		Label(model.NewLangJsonRefSf("%s.label", OrganizationSchemaName)).
 		TableName("ident_organizations").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().
 				Name(OrgFieldAddress).
-				Label(model.LangJson{"en-US": "Address"}).
+				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldAddress)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(OrgFieldDisplayName).
-				Label(model.LangJson{"en-US": "Display Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldDisplayName)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
 				RequiredForCreate().
 				Unique(),
@@ -82,19 +82,19 @@ func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(OrgFieldLegalName).
-				Label(model.LangJson{"en-US": "Legal Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldLegalName)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(OrgFieldPhoneNumber).
-				Label(model.LangJson{"en-US": "Phone"}).
+				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldPhoneNumber)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(OrgFieldSlug).
-				Label(model.LangJson{"en-US": "Slug"}).
+				Label(model.NewLangJsonRefSf("fields.%s", OrgFieldSlug)).
 				DataType(dmodel.FieldDataTypeSlug()).
 				RequiredForCreate().
 				Unique(),

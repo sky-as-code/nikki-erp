@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	OrganizationalUnitSchemaName = "identity.orgunit"
+	OrganizationalUnitSchemaName = "identity_orgunit"
 
 	OrgUnitFieldId          = basemodel.FieldId
 	OrgUnitFieldName        = "name"
@@ -36,7 +36,7 @@ const (
 
 func OrganizationalUnitSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(OrganizationalUnitSchemaName).
-		Label(model.LangJson{"en-US": "Organizational Unit"}).
+		Label(model.NewLangJsonRefSf("%s.label", OrganizationalUnitSchemaName)).
 		TableName("ident_org_units").
 		CompositeUnique(OrgUnitFieldName, OrgUnitFieldOrgId).
 		ShouldBuildDb().
@@ -44,7 +44,7 @@ func OrganizationalUnitSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(OrgUnitFieldName).
-				Label(model.LangJson{"en-US": "Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", OrgUnitFieldName)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
 				RequiredForCreate().
 				Unique(),
@@ -52,13 +52,13 @@ func OrganizationalUnitSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(OrgUnitFieldDescription).
-				Label(model.LangJson{"en-US": "Description"}).
+				Label(model.NewLangJsonRefSf("fields.%s", OrgUnitFieldDescription)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(OrgUnitFieldPath).
-				Label(model.LangJson{"en-US": "Path"}).
+				Label(model.NewLangJsonRefSf("fields.%s", OrgUnitFieldPath)).
 				DataType(dmodel.FieldDataTypeUlid().ArrayType()).
 				Description(model.LangJson{"en-US": "Path from org Id, to root and parent orgunit level IDs, and finally to this level ID (inclusive)"}).
 				RequiredForCreate().

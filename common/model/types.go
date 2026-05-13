@@ -144,7 +144,7 @@ func IsBCP47LanguageCode(src string) bool {
 }
 
 func ToBCP47LanguageCode(src string) (string, error) {
-	if src == LabelRefLanguageCode {
+	if src == LanguageCodeRef {
 		return src, nil
 	}
 	src = strings.ReplaceAll(src, "_", "-")
@@ -166,9 +166,9 @@ const (
 	LanguageCodeEnUs    = LanguageCode("en-US")
 	LanguageCodeViVn    = LanguageCode("vi-VN")
 	DefaultLanguageCode = LanguageCodeEnUs
-	// When this Label Reference is specified in a LangJson, all other keys are ignored.
+	// When this Reference Key is specified in a LangJson, all other keys are ignored.
 	//
-	LabelRefLanguageCode = LanguageCode("$ref")
+	LanguageCodeRef = LanguageCode("$ref")
 )
 
 var langCodeRules = []val.Rule{
@@ -180,7 +180,7 @@ var langCodeRules = []val.Rule{
 			code = safe.GetVal(codePtr, "")
 		}
 
-		if code != LabelRefLanguageCode && !IsBCP47LanguageCode(code) {
+		if code != LanguageCodeRef && !IsBCP47LanguageCode(code) {
 			return errors.New("must be a valid BCP47-compliant language code with region part")
 		}
 		return nil
@@ -195,6 +195,14 @@ func LanguageCodePtrValidateRule(field **LanguageCode, isRequired bool) *val.Fie
 	return val.Field(field, rules...)
 }
 
+func NewLangJsonRef(key TranslationKey) LangJson {
+	return LangJson{LanguageCodeRef: key}
+}
+
+func NewLangJsonRefSf(keyFormat string, args ...any) LangJson {
+	return NewLangJsonRef(fmt.Sprintf(keyFormat, args...))
+}
+
 type LangJson map[LanguageCode]string
 
 // SanitizeClone sanitizes the LangJson by removing the keys that are not in the whitelist and sanitizing the values.
@@ -206,7 +214,7 @@ func (this LangJson) SanitizeClone(whitelistLangs []LanguageCode, isRichText boo
 		if err != nil {
 			return nil, 0, err
 		}
-		if len(labelStr) == 0 || (len(whitelistLangs) > 0 && stdLabelCode != LabelRefLanguageCode && !array.Contains(whitelistLangs, stdLabelCode)) {
+		if len(labelStr) == 0 || (len(whitelistLangs) > 0 && stdLabelCode != LanguageCodeRef && !array.Contains(whitelistLangs, stdLabelCode)) {
 			continue
 		}
 		if isRichText {
@@ -235,7 +243,7 @@ func (this LangJson) IsEqual(target LangJson) bool {
 }
 
 func (this LangJson) TranslationKey() TranslationKey {
-	key, hasKey := this[LabelRefLanguageCode]
+	key, hasKey := this[LanguageCodeRef]
 	if !hasKey {
 		return ""
 	}
@@ -246,17 +254,17 @@ func (this LangJson) TranslationKey() TranslationKey {
 //
 // WARNING: It clears all other keys in this LangJson.
 func (this LangJson) SetTranslationKey(key TranslationKey) {
-	this[LabelRefLanguageCode] = key
+	this[LanguageCodeRef] = key
 	// Delete all other keys
 	for k := range this {
-		if k != LabelRefLanguageCode {
+		if k != LanguageCodeRef {
 			delete(this, k)
 		}
 	}
 }
 
 func (this LangJson) RemoveTranslationKey() {
-	delete(this, LabelRefLanguageCode)
+	delete(this, LanguageCodeRef)
 }
 
 func LangJsonPtrValidateRule(field **LangJson, isRequired bool, minLength int, maxLength int) *val.FieldRules {
@@ -276,7 +284,7 @@ func LangJsonPtrValidateRule(field **LangJson, isRequired bool, minLength int, m
 		for langCode := range *fieldValue {
 			allKeys[langCode] = langCode
 
-			if langCode == LabelRefLanguageCode {
+			if langCode == LanguageCodeRef {
 				mapRules = append(mapRules, val.Key(langCode, translationKeyRules))
 			} else {
 				mapRules = append(mapRules, val.Key(langCode, keyRules...))

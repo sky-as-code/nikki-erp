@@ -296,7 +296,7 @@ func (this *RoleDomainServiceImpl) validateAddsBelongToRoleOrg(
 		if len(path) == 0 || path[0] != string(*roleOrgID) {
 			out = append(out, *ft.NewBusinessViolation(
 				"add", "entitlement_org_mismatch",
-				`Entitlement's org_unit_id {{.org_unit_id}} must belong to the role's org_id {{.org_id}}`,
+				`Entitlement's org_unit_id {{org_unit_id}} must belong to the role's org_id {{org_id}}`,
 				map[string]any{"org_unit_id": string(*ouID), "org_id": string(*roleOrgID)},
 			))
 		}

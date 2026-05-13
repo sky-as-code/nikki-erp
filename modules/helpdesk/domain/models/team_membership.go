@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	TeamMembershipSchemaName = "helpdesk.team_membership"
+	TeamMembershipSchemaName = "helpdesk_team_membership"
 
 	TeamMembershipFieldTeamId = "team_id"
 	TeamMembershipFieldUserId = "user_id"
@@ -16,7 +16,7 @@ const (
 
 func TeamMembershipSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(TeamMembershipSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Team membership"}).
+		Label(model.NewLangJsonRefSf("%s.label", TeamMembershipSchemaName)).
 		TableName("helpdesk_team_memberships").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

@@ -11,7 +11,7 @@ func NewNotFoundError(field string) *ClientErrorItem {
 func NewNotFoundValError[T any](values []T) *ClientErrorItem {
 	return NewAnonymousBusinessViolation(
 		ErrorKey("err_value_not_found"),
-		"Value(s) could not be found: {.values}",
+		"Value(s) could not be found: {{values}}",
 		map[string]any{
 			"values": values,
 		},
@@ -29,16 +29,16 @@ func NewEtagMismatchedError() *ClientErrorItem {
 	return NewBusinessViolation(
 		"etag",
 		ErrorKey("err_etag_mismatched"),
-		"This data has been modified by another process",
+		"This data has been modified by someone else",
 	)
 }
 
 func NewExclusiveFieldsError(conflictFields []string) *ClientErrorItem {
 	return NewAnonymousBusinessViolation(
 		ErrorKey("err_exclusive_fields"),
-		"The following fields are exclusive: {.excFields}",
+		"Only one of these fields can have a value: {{fields}}",
 		map[string]any{
-			"excFields": conflictFields,
+			"fields": conflictFields,
 		},
 	)
 }
@@ -46,9 +46,9 @@ func NewExclusiveFieldsError(conflictFields []string) *ClientErrorItem {
 func NewExclusiveFieldsMissingError(missingFields []string) *ClientErrorItem {
 	return NewAnonymousBusinessViolation(
 		ErrorKey("err_exclusive_fields_missing"),
-		"One of these fields (not all of them) is required: {.excFields}",
+		"One of these fields (not all of them) is required: {{fields}}",
 		map[string]any{
-			"excFields": missingFields,
+			"fields": missingFields,
 		},
 	)
 }
@@ -56,7 +56,7 @@ func NewExclusiveFieldsMissingError(missingFields []string) *ClientErrorItem {
 func NewOverlappedFieldsError(overlappedFields []string) *ClientErrorItem {
 	return NewAnonymousBusinessViolation(
 		ErrorKey("err_overlapped_fields"),
-		"These fields must not have overlapping values: {.fields}",
+		"These fields must not have overlapping values: {{fields}}",
 		map[string]any{
 			"fields": overlappedFields,
 		},
@@ -65,8 +65,8 @@ func NewOverlappedFieldsError(overlappedFields []string) *ClientErrorItem {
 
 func NewInsufficientPermissionsError(requiredEntitlements []string) *ClientErrorItem {
 	return NewAuthorizationError(
-		ErrorKey("err_insufficient_permissions", "authorize"),
-		"Insufficient permissions. Request following entitlement(s) to perform this action: {.entitlements}",
+		ErrorKey("err_insufficient_permissions"),
+		"Insufficient permissions. Request following entitlement(s) to perform this action: {{entitlements}}",
 		map[string]any{
 			"entitlements": requiredEntitlements,
 		},

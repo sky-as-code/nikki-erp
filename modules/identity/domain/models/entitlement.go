@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	EntitlementSchemaName = "authz.entitlement"
+	EntitlementSchemaName = "authz_entitlement"
 
 	EntitlementFieldId          = "id"
 	EntitlementFieldDescription = "description"
@@ -40,7 +40,7 @@ const (
 
 func EntitlementSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(EntitlementSchemaName).
-		Label(model.LangJson{"en-US": "Entitlement"}).
+		Label(model.NewLangJsonRefSf("%s.label", EntitlementSchemaName)).
 		TableName("authz_entitlements").
 		CompositeUnique(EntitlementFieldRoleId, EntitlementFieldName).
 		CompositeUnique(EntitlementFieldRoleId, EntitlementFieldExpression).

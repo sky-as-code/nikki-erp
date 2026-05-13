@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	UnitCategorySchemaName = "essential.unit_category"
+	UnitCategorySchemaName = "essential_unit_category"
 
 	UnitCatFieldId    = basemodel.FieldId
 	UnitCatFieldName  = "name"
@@ -18,7 +18,7 @@ const (
 
 func UnitCategorySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UnitCategorySchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Unit Category"}).
+		Label(model.NewLangJsonRefSf("%s.label", UnitCategorySchemaName)).
 		TableName("essential_unit_categories").
 		CompositeUnique(UnitCatFieldName, UnitCatFieldOrgId).
 		ShouldBuildDb().
@@ -26,14 +26,14 @@ func UnitCategorySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(UnitCatFieldName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UnitCatFieldName)).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(UnitCatFieldOrgId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Organization"}).
+				Label(model.NewLangJsonRefSf("fields.%s", UnitCatFieldOrgId)).
 				DataType(dmodel.FieldDataTypeUlid()).
 				RequiredForCreate(),
 		).

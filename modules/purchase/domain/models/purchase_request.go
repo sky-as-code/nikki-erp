@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	PurchaseRequestSchemaName     = "purchase.purchase_request"
-	PurchaseRequestItemSchemaName = "purchase.purchase_request_item"
+	PurchaseRequestSchemaName     = "purchase_purchase_request"
+	PurchaseRequestItemSchemaName = "purchase_purchase_request_item"
 
 	PurchaseRequestFieldId                    = basemodel.FieldId
 	PurchaseRequestFieldCode                  = "code"
@@ -47,7 +47,7 @@ const (
 
 func PurchaseRequestSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(PurchaseRequestSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Purchase request"}).
+		Label(model.NewLangJsonRefSf("%s.label", PurchaseRequestSchemaName)).
 		TableName("purchase_requests").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -94,7 +94,7 @@ func PurchaseRequestSchemaBuilder() *dmodel.ModelSchemaBuilder {
 
 func PurchaseRequestItemSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(PurchaseRequestItemSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Purchase request item"}).
+		Label(model.NewLangJsonRefSf("%s.label", PurchaseRequestItemSchemaName)).
 		TableName("purchase_request_items").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

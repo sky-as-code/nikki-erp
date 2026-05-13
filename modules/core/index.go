@@ -15,8 +15,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpclient"
 	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/core/i18n"
-	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent"
+	"github.com/sky-as-code/nikki-erp/modules/core/language"
 )
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
@@ -63,26 +62,10 @@ func (*CoreModule) Init() error {
 		deps.Invoke(coredyn.InitSubModule),
 		deps.Invoke(http.InitSubModule),
 		deps.Invoke(httpclient.InitSubModule),
-		deps.Register(newCoreClient),
 
 		// These submodules expose network APIs
-		deps.Invoke(i18n.InitSubModule),
+		deps.Invoke(language.InitSubModule),
 	)
 
 	return err
-}
-
-func newCoreClient(clientOpts *db.EntClientOptions) *ent.Client {
-	var client *ent.Client
-	if clientOpts.DebugEnabled {
-		client = ent.NewClient(ent.Driver(clientOpts.Driver), ent.Debug())
-	}
-	client = ent.NewClient(ent.Driver(clientOpts.Driver))
-
-	err := client.DB().Ping()
-	if err != nil {
-		panic(err)
-	}
-
-	return client
 }

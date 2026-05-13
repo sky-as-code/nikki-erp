@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	TicketFeedbackSchemaName = "helpdesk.ticket_feedback"
+	TicketFeedbackSchemaName = "helpdesk_ticket_feedback"
 
 	TicketFeedbackFieldTicketId = "ticket_id"
 	TicketFeedbackFieldRating   = "rating"
@@ -16,7 +16,7 @@ const (
 
 func TicketFeedbackSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(TicketFeedbackSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Ticket feedback"}).
+		Label(model.NewLangJsonRefSf("%s.label", TicketFeedbackSchemaName)).
 		TableName("helpdesk_ticket_feedbacks").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

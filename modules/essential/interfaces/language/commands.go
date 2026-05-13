@@ -57,6 +57,13 @@ func (GetLanguageQuery) CqrsRequestType() cqrs.RequestType { return getLanguageQ
 
 type GetLanguageResult = dyn.OpResult[models.Language]
 
+type GetLanguageJsonQuery struct {
+	LanguageCode string `json:"language_code" query:"language_code"`
+	ModuleName   string `json:"module_name" query:"module_name"`
+}
+
+type GetLanguageJsonResult = dyn.OpResult[map[string]any]
+
 var searchLanguagesQueryType = cqrs.RequestType{Module: "essential", Submodule: "language", Action: "search"}
 
 type SearchLanguagesQuery dyn.SearchQuery

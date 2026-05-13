@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	UserPermissionSchemaName = "authz.user_permission"
+	UserPermissionSchemaName = "authz_user_permission"
 
 	UserPermFieldUserId                = "user_id"
 	UserPermFieldEntExpression         = "ent_expression"
@@ -37,7 +37,7 @@ const (
 
 func UserPermissionSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserPermissionSchemaName).
-		Label(model.LangJson{"en-US": "User Permission"}).
+		Label(model.NewLangJsonRefSf("%s.label", UserPermissionSchemaName)).
 		TableName("authz_user_permissions").
 		CompositeUnique(UserPermFieldUserId, UserPermFieldEntExpression).
 		ShouldBuildDb().

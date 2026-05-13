@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ModuleMetadataSchemaName = "essential.module_metadata"
+	ModuleMetadataSchemaName = "essential_module_metadata"
 
 	ModuleMetadataFieldId         = basemodel.FieldId
 	ModuleMetadataFieldName       = "name"
@@ -22,34 +22,34 @@ const (
 
 func ModuleMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ModuleMetadataSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Module Metadata"}).
+		Label(model.NewLangJsonRefSf("%s.label", ModuleMetadataSchemaName)).
 		TableName("essential_modules").
 		CompositeUnique(ModuleMetadataFieldName).
 		ShouldBuildDb().
 		Field(
 			basemodel.DefineFieldId(ModuleMetadataFieldId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "ID"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldId)).
 				UseTypeDefault().
 				PrimaryKey(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(ModuleMetadataFieldName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldName)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(ModuleMetadataFieldLabel).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Label"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldLabel)).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(ModuleMetadataFieldIsOrphaned).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Is Orphaned"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldIsOrphaned)).
 				DataType(dmodel.FieldDataTypeBoolean()).
 				RequiredForCreate().
 				Default(false),
@@ -57,7 +57,7 @@ func ModuleMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(ModuleMetadataFieldIsInternal).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Is Internal"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldIsInternal)).
 				DataType(dmodel.FieldDataTypeBoolean()).
 				RequiredForCreate().
 				NoUpdate(),
@@ -65,7 +65,7 @@ func ModuleMetadataSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(ModuleMetadataFieldVersion).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Version"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ModuleMetadataFieldVersion)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
 				RequiredForCreate(),
 		).

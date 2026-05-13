@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ResourceSchemaName = "authz.resource"
+	ResourceSchemaName = "authz_resource"
 
 	ResourceFieldId          = basemodel.FieldId
 	ResourceFieldName        = "name"
@@ -34,7 +34,7 @@ const (
 
 func ResourceSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ResourceSchemaName).
-		Label(model.LangJson{"en-US": "Resource"}).
+		Label(model.NewLangJsonRefSf("%s.label", ResourceSchemaName)).
 		TableName("authz_resources").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
