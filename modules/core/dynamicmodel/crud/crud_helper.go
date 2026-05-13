@@ -76,6 +76,7 @@ func Create[
 				*vErrs = clientErrs
 			} else {
 				fieldData = result
+				newModel.SetFieldData(fieldData)
 			}
 			return nil
 		}).
@@ -173,7 +174,7 @@ func CreateBulk[
 					return nil
 				}
 				result, err := param.BeforeValidation(ctx, newModel, vErrs)
-				if err == nil {
+				if err == nil && result != nil && result != newModel {
 					fieldData = result.GetFieldData()
 				}
 				return err
@@ -184,6 +185,7 @@ func CreateBulk[
 					*vErrs = clientErrs
 				} else {
 					fieldData = result
+					newModel.SetFieldData(fieldData)
 				}
 				return nil
 			}).
