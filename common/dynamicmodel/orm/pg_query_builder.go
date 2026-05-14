@@ -1264,6 +1264,32 @@ func (this *PgQueryBuilder) resolveOrderField(
 	return ctx.planner.resolveFieldSqlRef(fieldName, MaxOrderGraphFieldDots)
 }
 
+// parseNikkiDateTimeInput converts string (RFC3339 Z) or int64 (Unix milliseconds) to ModelDateTime
+// when the schema column is nikkiDateTime; otherwise returns value unchanged.
+func parseNikkiDateTimeInput(fieldName, columnType string, value any) (any, ft.ClientErrors, error) {
+	if columnType != dmodel.FieldDataTypeNameModelDateTime {
+		return value, nil, nil
+	}
+	v, ok := unwrapValue(reflect.ValueOf(value))
+	if !ok {
+		return value, nil, nil
+	}
+	switch v.Kind() {
+	case reflect.String:
+		mt, err := cmodel.ParseModelDateTime(v.String())
+		if err != nil {
+			return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(
+				fieldName, "RFC3339 UTC datetime (Z)")}, nil
+		}
+		return mt, nil, nil
+	case reflect.Int64:
+		t := time.UnixMilli(v.Int()).UTC()
+		return cmodel.WrapModelDateTime(t), nil, nil
+	default:
+		return value, nil, nil
+	}
+}
+
 func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (any, ft.ClientErrors, error) {
 	if field.IsVirtualModelField() {
 		return nil, clientErrorsVirtualFieldUnavailable(field.Name()), nil
@@ -1277,6 +1303,14 @@ func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (a
 		}
 		return nil, nil, errors.Errorf("convertValue: field '%s' does not allow NULL", field.Name())
 	}
+	parsed, parseCErrs, parseErr := parseNikkiDateTimeInput(field.Name(), field.ColumnType(), value)
+	if parseErr != nil {
+		return nil, nil, parseErr
+	}
+	if len(parseCErrs) > 0 {
+		return nil, parseCErrs, nil
+	}
+	value = parsed
 	v, ok := unwrapValue(reflect.ValueOf(value))
 	if !ok {
 		if field.IsNullable() {
