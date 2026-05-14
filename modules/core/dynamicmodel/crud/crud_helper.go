@@ -971,3 +971,42 @@ func checkExistenceAndEtag(
 	}
 	return true, dbRecord, nil
 }
+
+func SearchAll[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](ctx corectx.Context, param SearchParam) (*dyn.OpResult[[]TDomain], error) {
+	page := 0
+	size := model.MODEL_RULE_PAGE_MAX_SIZE
+	res := &dyn.OpResult[[]TDomain]{}
+
+	for {
+		queryRes, err := Search[TDomain, TDomainPtr](ctx, SearchParam{
+			Action:       param.Action,
+			DbRepoGetter: param.DbRepoGetter,
+			Query: dyn.SearchQuery{
+				Columns: param.Query.Columns,
+				Graph:   param.Query.Graph,
+				Page:    page,
+				Size:    size,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if queryRes.ClientErrors.Count() > 0 {
+			res.ClientErrors = queryRes.ClientErrors
+			return res, nil
+		}
+
+		res.Data = append(res.Data, queryRes.Data.Items...)
+
+		if len(res.Data) >= queryRes.Data.Total {
+			break
+		}
+
+		page++
+	}
+
+	res.HasData = true
+
+	return res, nil
+}
