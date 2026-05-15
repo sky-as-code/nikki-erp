@@ -772,7 +772,7 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 	size := param.Size
 	var total int
 	total, countClientErrs, err := this.countRowsMatchingGraph(
-		ctx, merged, param.Language, this.ensurePrimaryKeyColumns(param.Columns))
+		ctx, merged, param.Language, this.ensurePrimaryKeyColumns(param.Fields))
 	if err != nil {
 		return nil, err
 	}
