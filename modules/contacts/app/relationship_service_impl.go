@@ -122,7 +122,7 @@ func (this *RelationshipServiceImpl) SearchRelationships(ctx corectx.Context, qu
 		Action:       "search relationships",
 		DbRepoGetter: this.relationshipRepo,
 		Query: dyn.SearchQuery{
-			Fields: query.Columns,
+			Columns: query.Columns,
 			Graph:  graph,
 			Page:   query.Page,
 			Size:   query.Size,

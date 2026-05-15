@@ -16,6 +16,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/httpclient"
 	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/core/i18n"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent"
 )
 
@@ -64,6 +65,7 @@ func (*CoreModule) Init() error {
 		deps.Invoke(http.InitSubModule),
 		deps.Invoke(httpclient.InitSubModule),
 		deps.Register(newCoreClient),
+		deps.Invoke(infra.InitSubModule),
 
 		// These submodules expose network APIs
 		deps.Invoke(i18n.InitSubModule),

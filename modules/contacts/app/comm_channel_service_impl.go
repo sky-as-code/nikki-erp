@@ -107,7 +107,7 @@ func (this *CommChannelServiceImpl) SearchCommChannels(ctx corectx.Context, quer
 		Action:       "search communication channels",
 		DbRepoGetter: this.commChannelRepo,
 		Query: dyn.SearchQuery{
-			Fields: query.Columns,
+			Columns: query.Columns,
 			Graph:  graph,
 			Page:   query.Page,
 			Size:   query.Size,

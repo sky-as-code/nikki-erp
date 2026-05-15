@@ -982,10 +982,10 @@ func SearchAll[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](ctx corectx
 			Action:       param.Action,
 			DbRepoGetter: param.DbRepoGetter,
 			Query: dyn.SearchQuery{
-				Columns: param.Query.Columns,
-				Graph:   param.Query.Graph,
-				Page:    page,
-				Size:    size,
+				Fields: param.Query.Fields,
+				Graph:  param.Query.Graph,
+				Page:   page,
+				Size:   size,
 			},
 		})
 		if err != nil {
