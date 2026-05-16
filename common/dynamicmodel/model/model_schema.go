@@ -488,6 +488,10 @@ type ModelRelation struct {
 	InversePeerEdgeName   string          `json:"inverse_peer_edge_name,omitempty"`
 	OnDelete              RelationCascade `json:"on_delete"`
 	OnUpdate              RelationCascade `json:"on_update"`
+	// IsInverse marks relations resolved from EdgeFrom. The FK columns in ForeignKeys reference the
+	// destination table's columns, not this schema's own columns. This distinction is needed for
+	// correct JOIN direction, hydrate filters, and FK dependency ordering.
+	IsInverse bool `json:"is_inverse,omitempty"`
 
 	M2mThroughModel      *ModelSchema `json:"through_model,omitempty"`
 	M2mThroughSchemaName string       `json:"through_table_name,omitempty"`

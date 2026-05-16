@@ -888,19 +888,15 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 		if strings.Count(col, ".") == 0 {
 			field, ok := this.schema.Field(col)
 			if ok && field.IsVirtualModelField() {
-				rel, hasRel := this.relationByEdge(col)
-				if !hasRel {
-					errs.Append(*ft.NewValidationError(
-						col, ft.ErrorKey("err_unknown_schema_field"), "edge is not defined on this schema",
-					))
-					continue
-				}
-				for _, pair := range rel.EffectiveForeignKeys() {
-					if pair.FkColumn != "" {
-						mainSet[pair.FkColumn] = struct{}{}
-					}
-				}
-				destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
+			rel, hasRel := this.relationByEdge(col)
+			if !hasRel {
+				errs.Append(*ft.NewValidationError(
+					col, ft.ErrorKey("err_unknown_schema_field"), "edge is not defined on this schema",
+				))
+				continue
+			}
+			addFkColumnsToMainSet(mainSet, rel)
+			destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
 				if destSchema == nil {
 					errs.Append(*ft.NewAnonymousValidationError(
 						ft.ErrorKey("err_schema_not_found"), "edge destination schema not found", nil,
@@ -944,11 +940,7 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 			))
 			continue
 		}
-		for _, pair := range rel.EffectiveForeignKeys() {
-			if pair.FkColumn != "" {
-				mainSet[pair.FkColumn] = struct{}{}
-			}
-		}
+		addFkColumnsToMainSet(mainSet, rel)
 
 		if strings.Count(leaf, ".") == 0 {
 			destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
@@ -1033,6 +1025,23 @@ func physicalColumnNames(schema *dmodel.ModelSchema) []string {
 	return out
 }
 
+// addFkColumnsToMainSet ensures the main SELECT includes the local columns needed to
+// hydrate this edge. For forward relations the FK column is local; for inverse relations
+// the referenced column (typically the PK) is the local column used for the join.
+func addFkColumnsToMainSet(mainSet map[string]struct{}, rel dmodel.ModelRelation) {
+	for _, pair := range rel.EffectiveForeignKeys() {
+		if rel.IsInverse {
+			if pair.ReferencedColumn != "" {
+				mainSet[pair.ReferencedColumn] = struct{}{}
+			}
+		} else {
+			if pair.FkColumn != "" {
+				mainSet[pair.FkColumn] = struct{}{}
+			}
+		}
+	}
+}
+
 func (this *BaseDynamicRepositoryImpl) relationByEdge(edge string) (dmodel.ModelRelation, bool) {
 	for _, rel := range this.schema.Relations() {
 		if rel.Edge == edge {
@@ -1115,11 +1124,19 @@ func (this *BaseDynamicRepositoryImpl) filterForSingleEdge(
 ) (dmodel.DynamicFields, bool) {
 	filter := make(dmodel.DynamicFields)
 	for _, pair := range rel.EffectiveForeignKeys() {
-		srcVal, ok := srcRow[pair.FkColumn]
-		if !ok || srcVal == nil {
-			return nil, false
+		if rel.IsInverse {
+			srcVal, ok := srcRow[pair.ReferencedColumn]
+			if !ok || srcVal == nil {
+				return nil, false
+			}
+			filter[pair.FkColumn] = srcVal
+		} else {
+			srcVal, ok := srcRow[pair.FkColumn]
+			if !ok || srcVal == nil {
+				return nil, false
+			}
+			filter[pair.ReferencedColumn] = srcVal
 		}
-		filter[pair.ReferencedColumn] = srcVal
 	}
 	return filter, true
 }

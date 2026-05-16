@@ -203,10 +203,15 @@ func buildDepGraph(
 
 // fkDependencies returns canonical names of schemas that must be created before s,
 // based on FK-owning relations (many:one, one:one) whose destination is in the registry.
+// Inverse relations (EdgeFrom) are excluded because the FK column lives on the destination
+// table, not on this schema's table.
 func fkDependencies(s *ModelSchema, known map[string]bool) []string {
 	var deps []string
 	appendDeps := func(rels []ModelRelation) {
 		for _, rel := range rels {
+			if rel.IsInverse {
+				continue
+			}
 			if isFkOwnerRelation(rel.RelationType) && known[rel.DestSchemaName] {
 				deps = append(deps, rel.DestSchemaName)
 			}
