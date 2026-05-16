@@ -131,7 +131,12 @@ func (p *joinPlanner) joinOnExpr(
 	parentAlias, destAlias string, _, _ *dmodel.ModelSchema, rel dmodel.ModelRelation,
 ) (string, error) {
 	switch rel.RelationType {
-	case dmodel.RelationTypeManyToOne, dmodel.RelationTypeOneToOne:
+	case dmodel.RelationTypeManyToOne:
+		return joinExprManyToOneOrOneToOne(parentAlias, destAlias, rel), nil
+	case dmodel.RelationTypeOneToOne:
+		if rel.IsInverse {
+			return joinExprOneToMany(parentAlias, destAlias, rel), nil
+		}
 		return joinExprManyToOneOrOneToOne(parentAlias, destAlias, rel), nil
 	case dmodel.RelationTypeOneToMany:
 		return joinExprOneToMany(parentAlias, destAlias, rel), nil

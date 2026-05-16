@@ -295,6 +295,7 @@ func invertPeerRelation(pending ModelRelation, fwd ModelRelation, forwardOwnerSc
 		ForeignKeys:    pairs,
 		OnDelete:       fwd.OnDelete,
 		OnUpdate:       fwd.OnUpdate,
+		IsInverse:      true,
 	}
 	switch fwd.RelationType {
 	case RelationTypeManyToOne:
