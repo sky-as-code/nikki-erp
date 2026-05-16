@@ -71,6 +71,10 @@ func Create[
 			return errors.Wrap(err, "Create.BeforeValidation")
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
+			schema.InjectServiceFields(ctx, fieldData, false)
+			return nil
+		}).
+		Step(func(vErrs *ft.ClientErrors) error {
 			result, clientErrs := schema.Validate(fieldData)
 			if clientErrs != nil {
 				*vErrs = clientErrs
@@ -178,6 +182,10 @@ func CreateBulk[
 					fieldData = result.GetFieldData()
 				}
 				return err
+			}).
+			Step(func(vErrs *ft.ClientErrors) error {
+				schema.InjectServiceFields(ctx, fieldData, false)
+				return nil
 			}).
 			Step(func(vErrs *ft.ClientErrors) error {
 				result, clientErrs := schema.Validate(fieldData)
@@ -799,6 +807,10 @@ func runUpdateValidationFlow[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain
 				inputModel.SetFieldData(result.GetFieldData())
 			}
 			return errors.Wrap(err, "Update.BeforeValidation")
+		}).
+		Step(func(vErrs *ft.ClientErrors) error {
+			schema.InjectServiceFields(ctx, inputModel.GetFieldData(), true)
+			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
 			result, clientErrs := schema.Validate(inputModel.GetFieldData(), true)
