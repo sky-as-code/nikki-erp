@@ -71,6 +71,14 @@ func (this *DynamicModelBase) SetOrgId(v *model.Id) {
 	this.GetFieldData().SetModelId(FieldOrgId, v)
 }
 
+func (this DynamicModelBase) GetCreatedAt() *model.ModelDateTime {
+	return this.GetFieldData().GetModelDateTime(FieldCreatedAt)
+}
+
+func (this DynamicModelBase) GetUpdatedAt() *model.ModelDateTime {
+	return this.GetFieldData().GetModelDateTime(FieldUpdatedAt)
+}
+
 func (this DynamicModelBase) MarshalJSON() ([]byte, error) {
 	if this.fields == nil {
 		return []byte("{}"), nil
