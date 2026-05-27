@@ -120,6 +120,15 @@ func (SearchVariantsQuery) GetSchema() *dmodel.ModelSchema {
 type SearchVariantsResultData = dyn.PagedResultData[domain.Variant]
 type SearchVariantsResult = dyn.OpResult[SearchVariantsResultData]
 
+type SearchAllVariantsQuery dyn.SearchQuery
+
+func (SearchAllVariantsQuery) CqrsRequestType() cqrs.RequestType {
+	return searchVariantsQueryType
+}
+
+type SearchAllVariantsResultData = dyn.PagedResultData[domain.Variant]
+type SearchAllVariantsResult = dyn.OpResult[SearchAllVariantsResultData]
+
 var updateVariantCommandType = cqrs.RequestType{
 	Module:    "inventory",
 	Submodule: "variant",
