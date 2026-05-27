@@ -166,3 +166,19 @@ func (this Product) GetTagIds() *string {
 func (this *Product) SetTagIds(v *string) {
 	this.GetFieldData().SetString(ProdFieldTagIds, v)
 }
+
+func (this *Product) GetCategories() []*ProductCategory {
+	data := this.GetFieldData().GetAny(ProdEdgeCategories)
+	raws, ok := data.([]dmodel.DynamicFields)
+	if !ok {
+		return nil
+	}
+
+	res := []*ProductCategory{}
+	for _, raw := range raws {
+		cat := NewProductCategoryFrom(raw)
+		res = append(res, cat)
+	}
+
+	return res
+}
