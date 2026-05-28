@@ -8,7 +8,6 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
-	d "github.com/sky-as-code/nikki-erp/modules/identity/domain"
 	v1 "github.com/sky-as-code/nikki-erp/modules/identity/transport/restful/v1"
 )
 
@@ -43,42 +42,45 @@ func initIdentityV1() error {
 	) error {
 		routeV1 := route.Group("/v1/identity")
 
-		routeV1.DELETE("/users/:id", userRest.DeleteUser, m.Authorized(d.UserActionDelete, d.UserResourceCode, d.UserAuthScope))
-		routeV1.GET("/users/schema", userRest.GetModelSchema)
-		routeV1.GET("/users/:id", userRest.GetUser, m.Authorized(d.UserActionView, d.UserResourceCode, d.UserAuthScope))
-		routeV1.GET("/users", userRest.SearchUsers, m.Authorized(d.UserActionView, d.UserResourceCode, d.UserAuthScope))
-		routeV1.POST("/users/exists", userRest.UserExists, m.Authorized(d.UserActionView, d.UserResourceCode, d.UserAuthScope))
-		routeV1.POST("/users/:id/archived", userRest.SetUserIsArchived, m.Authorized(d.UserActionSetArchived, d.UserResourceCode, d.UserAuthScope))
-		routeV1.POST("/users", userRest.CreateUser, m.Authorized(d.UserActionCreate, d.UserResourceCode, d.UserAuthScope))
-		routeV1.PUT("/users/:id", userRest.UpdateUser, m.Authorized(d.UserActionUpdate, d.UserResourceCode, d.UserAuthScope))
+		routeV1.DELETE("/groups/:id", groupRest.DeleteGroup, m.SmokeAuthz())
+		routeV1.GET("/groups/meta/schema", groupRest.GetModelSchema, m.SmokeAuthz())
+		routeV1.GET("/groups/:id", groupRest.GetGroup, m.SmokeAuthz())
+		routeV1.GET("/groups", groupRest.SearchGroups, m.SmokeAuthz())
+		routeV1.POST("/groups/exists", groupRest.GroupExists, m.SmokeAuthz())
+		routeV1.POST("/groups/:group_id/manage-users", groupRest.ManageGroupUsers, m.SmokeAuthz())
+		routeV1.POST("/groups", groupRest.CreateGroup, m.SmokeAuthz())
+		routeV1.PATCH("/groups/:id", groupRest.UpdateGroup, m.SmokeAuthz())
 
-		routeV1.DELETE("/groups/:id", groupRest.DeleteGroup, m.Authorized(d.GroupActionDelete, d.GroupResourceCode, d.GroupAuthScope))
-		routeV1.GET("/groups/schema", groupRest.GetModelSchema)
-		routeV1.GET("/groups/:id", groupRest.GetGroup, m.Authorized(d.GroupActionView, d.GroupResourceCode, d.GroupAuthScope))
-		routeV1.GET("/groups", groupRest.SearchGroups, m.Authorized(d.GroupActionView, d.GroupResourceCode, d.GroupAuthScope))
-		routeV1.POST("/groups/exists", groupRest.GroupExists, m.Authorized(d.GroupActionView, d.GroupResourceCode, d.GroupAuthScope))
-		routeV1.POST("/groups/:group_id/manage-users", groupRest.ManageGroupUsers, m.Authorized(d.GroupActionManageUsers, d.GroupResourceCode, d.GroupAuthScope))
-		routeV1.POST("/groups", groupRest.CreateGroup, m.Authorized(d.GroupActionCreate, d.GroupResourceCode, d.GroupAuthScope))
-		routeV1.PUT("/groups/:id", groupRest.UpdateGroup, m.Authorized(d.GroupActionUpdate, d.GroupResourceCode, d.GroupAuthScope))
+		routeV1.DELETE("/organizations/:id", orgRest.DeleteOrg, m.SmokeAuthz())
+		routeV1.GET("/organizations/meta/schema", orgRest.GetModelSchema, m.SmokeAuthz())
+		routeV1.GET("/organizations/:id", orgRest.GetOrg, m.SmokeAuthz())
+		routeV1.GET("/organizations", orgRest.SearchOrgs, m.SmokeAuthz())
+		routeV1.POST("/organizations/exists", orgRest.OrgExists, m.SmokeAuthz())
+		routeV1.POST("/organizations/:id/archived", orgRest.SetOrgIsArchived, m.SmokeAuthz())
+		routeV1.POST("/organizations/:org_id/manage-users", orgRest.ManageOrgUsers, m.SmokeAuthz())
+		routeV1.POST("/organizations", orgRest.CreateOrg, m.SmokeAuthz())
+		routeV1.PATCH("/organizations/:id", orgRest.UpdateOrg, m.SmokeAuthz())
 
-		routeV1.DELETE("/organizations/:id", orgRest.DeleteOrg, m.Authorized(d.OrgActionDelete, d.OrgResourceCode, d.OrgAuthScope))
-		routeV1.GET("/organizations/schema", orgRest.GetModelSchema)
-		routeV1.GET("/organizations/:id", orgRest.GetOrg, m.Authorized(d.OrgActionView, d.OrgResourceCode, d.OrgAuthScope))
-		routeV1.GET("/organizations", orgRest.SearchOrgs, m.Authorized(d.OrgActionView, d.OrgResourceCode, d.OrgAuthScope))
-		routeV1.POST("/organizations/exists", orgRest.OrgExists, m.Authorized(d.OrgActionView, d.OrgResourceCode, d.OrgAuthScope))
-		routeV1.POST("/organizations/:id/archived", orgRest.SetOrgIsArchived, m.Authorized(d.OrgActionSetArchived, d.OrgResourceCode, d.OrgAuthScope))
-		routeV1.POST("/organizations/:org_id/manage-users", orgRest.ManageOrgUsers, m.Authorized(d.OrgActionManageUsers, d.OrgResourceCode, d.OrgAuthScope))
-		routeV1.POST("/organizations", orgRest.CreateOrg, m.Authorized(d.OrgActionCreate, d.OrgResourceCode, d.OrgAuthScope))
-		routeV1.PUT("/organizations/:id", orgRest.UpdateOrg, m.Authorized(d.OrgActionUpdate, d.OrgResourceCode, d.OrgAuthScope))
+		routeV1.DELETE("/orgunits/:id", orgunitRest.DeleteOrgUnit, m.SmokeAuthz())
+		routeV1.GET("/orgunits/meta/schema", orgunitRest.GetModelSchema, m.SmokeAuthz())
+		routeV1.GET("/orgunits/:id", orgunitRest.GetOrgUnit, m.SmokeAuthz())
+		routeV1.GET("/orgunits", orgunitRest.SearchOrgUnits, m.SmokeAuthz())
+		routeV1.POST("/orgunits/:id/exists", orgunitRest.OrgUnitExists, m.SmokeAuthz())
+		routeV1.POST("/orgunits/:orgunit_id/manage-users", orgunitRest.ManageOrgUnitUsers, m.SmokeAuthz())
+		routeV1.POST("/orgunits", orgunitRest.CreateOrgUnit, m.SmokeAuthz())
+		routeV1.PATCH("/orgunits/:id", orgunitRest.UpdateOrgUnit, m.SmokeAuthz())
 
-		routeV1.DELETE("/orgunits/:id", orgunitRest.DeleteOrgUnit, m.Authorized(d.OrgUnitActionDelete, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
-		routeV1.GET("/orgunits/schema", orgunitRest.GetModelSchema)
-		routeV1.GET("/orgunits/:id", orgunitRest.GetOrgUnit, m.Authorized(d.OrgUnitActionView, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
-		routeV1.GET("/orgunits", orgunitRest.SearchOrgUnits, m.Authorized(d.OrgUnitActionView, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
-		routeV1.POST("/orgunits/:id/exists", orgunitRest.OrgUnitExists, m.Authorized(d.OrgUnitActionView, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
-		routeV1.POST("/orgunits/:orgunit_id/manage-users", orgunitRest.ManageOrgUnitUsers, m.Authorized(d.OrgUnitActionManageUsers, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
-		routeV1.POST("/orgunits", orgunitRest.CreateOrgUnit, m.Authorized(d.OrgUnitActionCreate, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
-		routeV1.PUT("/orgunits/:id", orgunitRest.UpdateOrgUnit, m.Authorized(d.OrgUnitActionUpdate, d.OrgUnitResourceCode, d.OrgUnitAuthScope))
+		routeV1.GET("/me/context", userRest.GetUserContext, m.SmokeAuthz())
+
+		routeV1.DELETE("/users/:id", userRest.DeleteUser, m.SmokeAuthz())
+		routeV1.GET("/users/meta/schema", userRest.GetModelSchema, m.SmokeAuthz())
+		routeV1.GET("/users/:id", userRest.GetUser, m.SmokeAuthz())
+		routeV1.GET("/users", userRest.SearchUsers, m.SmokeAuthz())
+		routeV1.POST("/users/exists", userRest.UserExists, m.SmokeAuthz())
+		routeV1.POST("/users/:id/archived", userRest.SetUserIsArchived, m.SmokeAuthz())
+		routeV1.POST("/users", userRest.CreateUser, m.SmokeAuthz())
+		// JSON Merge Patch (RFC 7396) semantics.
+		routeV1.PATCH("/users/:id", userRest.UpdateUser, m.SmokeAuthz())
 
 		return nil
 	})

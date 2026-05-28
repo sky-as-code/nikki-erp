@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain"
+	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/models"
 )
 
 func init() {
@@ -22,14 +22,14 @@ func init() {
 
 var createSlaPolicyCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "slapolicy", Action: "createSlaPolicy"}
 
-type CreateSlaPolicyCommand struct{ domain.SlaPolicy }
+type CreateSlaPolicyCommand struct{ models.SlaPolicy }
 
 func (CreateSlaPolicyCommand) CqrsRequestType() cqrs.RequestType { return createSlaPolicyCommandType }
 func (CreateSlaPolicyCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.SlaPolicySchemaName)
+	return dmodel.GetSchema(models.SlaPolicySchemaName)
 }
 
-type CreateSlaPolicyResult = dyn.OpResult[domain.SlaPolicy]
+type CreateSlaPolicyResult = dyn.OpResult[models.SlaPolicy]
 
 var deleteSlaPolicyCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "slapolicy", Action: "deleteSlaPolicy"}
 
@@ -45,7 +45,7 @@ type GetSlaPolicyQuery dyn.GetOneQuery
 
 func (GetSlaPolicyQuery) CqrsRequestType() cqrs.RequestType { return getSlaPolicyQueryType }
 
-type GetSlaPolicyResult = dyn.OpResult[domain.SlaPolicy]
+type GetSlaPolicyResult = dyn.OpResult[models.SlaPolicy]
 
 var slaPolicyExistsQueryType = cqrs.RequestType{Module: "helpdesk", Submodule: "slapolicy", Action: "slaPolicyExists"}
 
@@ -61,16 +61,16 @@ type SearchSlaPoliciesQuery dyn.SearchQuery
 
 func (SearchSlaPoliciesQuery) CqrsRequestType() cqrs.RequestType { return searchSlaPoliciesQueryType }
 
-type SearchSlaPoliciesResultData = dyn.PagedResultData[domain.SlaPolicy]
+type SearchSlaPoliciesResultData = dyn.PagedResultData[models.SlaPolicy]
 type SearchSlaPoliciesResult = dyn.OpResult[SearchSlaPoliciesResultData]
 
 var updateSlaPolicyCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "slapolicy", Action: "updateSlaPolicy"}
 
-type UpdateSlaPolicyCommand struct{ domain.SlaPolicy }
+type UpdateSlaPolicyCommand struct{ models.SlaPolicy }
 
 func (UpdateSlaPolicyCommand) CqrsRequestType() cqrs.RequestType { return updateSlaPolicyCommandType }
 func (UpdateSlaPolicyCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.SlaPolicySchemaName)
+	return dmodel.GetSchema(models.SlaPolicySchemaName)
 }
 
 type UpdateSlaPolicyResult = dyn.OpResult[dyn.MutateResultData]

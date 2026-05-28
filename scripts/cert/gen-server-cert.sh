@@ -34,3 +34,7 @@ openssl x509 -req \
   -days $DAYS \
   -extfile $SDIR/openssl-server-cert.cnf \
   -extensions v3_server
+
+cat $PKI_DIR/$CN.crt $CWD/pki/server-ca/$CA_CN.crt > $PKI_DIR/$CN-chain.crt && \
+rm $PKI_DIR/$CN.crt && \
+mv $PKI_DIR/$CN-chain.crt $PKI_DIR/$CN.crt

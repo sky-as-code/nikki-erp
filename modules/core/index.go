@@ -8,18 +8,17 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/core/authtoken"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	coreconstants "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	"github.com/sky-as-code/nikki-erp/modules/core/cron_job"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/enum"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpclient"
 	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/core/i18n"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/ent"
-	"github.com/sky-as-code/nikki-erp/modules/core/tag"
 )
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
@@ -30,7 +29,7 @@ type CoreModule struct {
 
 // Name implements NikkiModule.
 func (*CoreModule) Name() string {
-	return "core"
+	return coreconstants.CoreModuleName
 }
 
 // LabelKey implements NikkiModule.
@@ -43,6 +42,11 @@ func (*CoreModule) Deps() []string {
 	return []string{
 		"apptrait",
 	}
+}
+
+// IsInternal implements InCodeModule.
+func (*CoreModule) IsInternal() bool {
+	return true
 }
 
 // Version implements NikkiModule.
@@ -62,10 +66,7 @@ func (*CoreModule) Init() error {
 		deps.Invoke(http.InitSubModule),
 		deps.Invoke(httpclient.InitSubModule),
 		deps.Register(newCoreClient),
-		deps.Invoke(enum.InitSubModule),
-		deps.Invoke(tag.InitSubModule),
 		deps.Invoke(infra.InitSubModule),
-		deps.Invoke(cron_job.InitSubModule),
 
 		// These submodules expose network APIs
 		deps.Invoke(i18n.InitSubModule),

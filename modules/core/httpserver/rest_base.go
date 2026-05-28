@@ -103,11 +103,31 @@ func (this *RestDeleteResponse) FromNonEntity(src any) {
 	model.MustCopy(src, this)
 }
 
+type RestGetOneResponse[TItem any] struct {
+	Item TItem              `json:"item"`
+	Meta dyn.SingleMetaData `json:"meta"`
+}
+
+func NewGetOneResponseDyn[TItem dmodel.DynamicModelGetter](
+	data dyn.SingleResultData[TItem],
+) RestGetOneResponse[dmodel.DynamicFields] {
+
+	item := data.Item.GetFieldData()
+	return RestGetOneResponse[dmodel.DynamicFields]{
+		Item: item,
+		Meta: data.Meta,
+	}
+}
+
 type RestSearchResponse[TItem any] struct {
 	Items []TItem `json:"items"`
 	Total int     `json:"total"`
 	Page  int     `json:"page"`
 	Size  int     `json:"size"`
+
+	DesiredFields []string `json:"desired_fields"`
+	MaskedFields  []string `json:"masked_fields"`
+	SchemaEtag    string   `json:"schema_etag"`
 }
 
 func NewSearchResponseDyn[TItem dmodel.DynamicModelGetter](
@@ -116,10 +136,13 @@ func NewSearchResponseDyn[TItem dmodel.DynamicModelGetter](
 
 	items := dmodel.ExtractFieldsArr(data.Items)
 	return RestSearchResponse[dmodel.DynamicFields]{
-		Items: items,
-		Total: data.Total,
-		Page:  data.Page,
-		Size:  data.Size,
+		Items:         items,
+		Total:         data.Total,
+		Page:          data.Page,
+		Size:          data.Size,
+		DesiredFields: data.DesiredFields,
+		MaskedFields:  data.MaskedFields,
+		SchemaEtag:    data.SchemaEtag,
 	}
 }
 
@@ -140,6 +163,7 @@ type deletedEntity interface {
 	GetDeletedAt() *time.Time
 }
 
+// Deprecated: Use RestMutateResponse instead.
 type RestDeleteResponse2 struct {
 	AffectedCount int    `json:"affected_count"`
 	AffectedAt    string `json:"affected_at"`
@@ -196,14 +220,14 @@ type FileStreamRequest interface {
 }
 
 type FileStreamRequestBase struct {
-	isDownload  bool   `query:"download"`
-	rangeHeader string `header:"Range"`
+	Download    bool   `query:"download"`
+	RangeHeader string `header:"Range"`
 }
 
 func (this FileStreamRequestBase) IsDownloadRequest() bool {
-	return this.isDownload
+	return this.Download
 }
 
 func (this FileStreamRequestBase) GetRangeHeader() string {
-	return this.rangeHeader
+	return this.RangeHeader
 }

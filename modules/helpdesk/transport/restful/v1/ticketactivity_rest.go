@@ -10,7 +10,7 @@ import (
 
 type ticketActivityRestParams struct {
 	dig.In
-	Service it.TicketActivityService
+	Service it.TicketActivityAppService
 }
 
 func NewTicketActivityRest(params ticketActivityRestParams) *TicketActivityRest {
@@ -19,7 +19,7 @@ func NewTicketActivityRest(params ticketActivityRestParams) *TicketActivityRest 
 
 type TicketActivityRest struct {
 	httpserver.RestBase
-	Service it.TicketActivityService
+	Service it.TicketActivityAppService
 }
 
 func (this TicketActivityRest) CreateTicketActivity(echoCtx *echo.Context) (err error) {

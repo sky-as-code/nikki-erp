@@ -13,8 +13,8 @@ import (
 type loginRestParams struct {
 	dig.In
 
-	AttemptSvc it.AttemptService
-	LoginSvc   it.LoginService
+	AttemptSvc it.AttemptAppService
+	LoginSvc   it.LoginAppService
 }
 
 func NewLoginRest(params loginRestParams) *LoginRest {
@@ -26,13 +26,13 @@ func NewLoginRest(params loginRestParams) *LoginRest {
 
 type LoginRest struct {
 	httpserver.RestBase
-	attemptSvc it.AttemptService
-	loginSvc   it.LoginService
+	attemptSvc it.AttemptAppService
+	loginSvc   it.LoginAppService
 }
 
-func (this LoginRest) StartLoginFlow(echoCtx *echo.Context) (err error) {
+func (this LoginRest) StartSignInFlow(echoCtx *echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST start login flow"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST start sign in flow"); e != nil {
 			err = e
 		}
 	}()
@@ -59,9 +59,9 @@ func (this LoginRest) StartLoginFlow(echoCtx *echo.Context) (err error) {
 	)
 }
 
-func (this LoginRest) Authenticate(echoCtx *echo.Context) (err error) {
+func (this LoginRest) ContinueSignInFlow(echoCtx *echo.Context) (err error) {
 	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST authenticate"); e != nil {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST continue sign in flow"); e != nil {
 			err = e
 		}
 	}()

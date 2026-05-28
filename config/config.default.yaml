@@ -25,6 +25,17 @@ CORE:
     MAX_IDLE_CONNS: 100
     MAX_OPEN_CONNS: 1000
     CONN_MAX_LIFETIME_SECS: 3600
+  DISTRIBUTED_LOCK:
+    REDIS_HOST: localhost
+    # A comma-separated list of Redis hosts for cluster mode
+    # REDIS_HOSTS:
+    # Redis port, applied for all hosts in REDIS_HOSTS
+    REDIS_PORT: 6379
+    # Regis database. See: https://redis.io/docs/latest/commands/select/
+    REDIS_DB: 1
+    # Redis password can be specified in env var CORE_EVENT_REDIS_PASSWORD or
+    # in config item CORE.EVENT.REDIS_PASSWORD_FILE which contains a secret file path.
+    REDIS_PASSWORD: ""
   EVENT:
     REDIS_HOST: localhost
     # A comma-separated list of Redis hosts for cluster mode
@@ -64,9 +75,11 @@ CORE:
     # Allowed headers for Cross-Origin Resource Sharing
     CORS_HEADERS: "Accept,Authorization,Content-Type,Origin"
     # Allowed methods for Cross-Origin Resource Sharing
-    CORS_METHODS: "OPTIONS,HEAD,GET,POST,PUT,DELETE"
+    CORS_METHODS: "OPTIONS,HEAD,GET,POST,PATCH,DELETE"
     MTLS_ENABLED: true
     MTLS_CLIENT_CA_CERT_FILE: "scripts/cert/pki/client-ca/nikkierp-client-ca.crt"
+    MTLS_CLIENT_CERT_FILE: "scripts/cert/pki/client-cert/nikkierp-client-cert.crt"
+    MTLS_CLIENT_KEY_FILE: "scripts/cert/pki/client-cert/nikkierp-client-cert.key"
   HTTP_CLIENT:
     # Milisecond
     REQUEST_TIMEOUT: 30000
@@ -74,7 +87,7 @@ CORE:
     # Skip verify third server cert
     INSECURE_SKIP_VERIFY: false
     INCLUDE_SYSTEM_TRUSTED_CA: true
-    TRUSTED_CA_CERTS_FILE:
+    TRUSTED_CA_CERT_FILE: ""
 
     CLIENT_CERT_ENABLED: false
     # Client cert file config is either Key-pair or P12
@@ -85,6 +98,17 @@ CORE:
     # P12 and password
     CLIENT_P12_FILE: ""
     CLIENT_P12_PASSWORD: ""
+  PUB_SUB:
+    REDIS_HOST: localhost
+    # A comma-separated list of Redis hosts for cluster mode
+    # REDIS_HOSTS:
+    # Redis port, applied for all hosts in REDIS_HOSTS
+    REDIS_PORT: 6379
+    # Regis database. See: https://redis.io/docs/latest/commands/select/
+    REDIS_DB: 1
+    # Redis password can be specified in env var CORE_EVENT_REDIS_PASSWORD or
+    # in config item CORE.EVENT.REDIS_PASSWORD_FILE which contains a secret file path.
+    REDIS_PASSWORD: ""
   TOKEN:
     # Secret key for JWT token signing and verification
     # IMPORTANT: Override this in local.env or production environment

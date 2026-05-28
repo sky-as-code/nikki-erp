@@ -1,6 +1,8 @@
 package dynamicmodel
 
 import (
+	"regexp"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -19,7 +21,7 @@ func ExistsQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 			Name("ids").
 			DataType(dmodel.FieldDataTypeUlid().ArrayType()).
 			Rule(dmodel.FieldRuleArrayLength(1, 50)).
-			Required())
+			RequiredAlways())
 }
 
 func GetOneQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -27,7 +29,7 @@ func GetOneQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldId).
 			DataType(dmodel.FieldDataTypeUlid()).
-			Required()).
+			RequiredAlways()).
 		Field(DefineFieldSearchColumns())
 }
 
@@ -36,7 +38,7 @@ func ManageAssocsSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldId).
 			DataType(dmodel.FieldDataTypeUlid()).
-			Required()).
+			RequiredAlways()).
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldAssociations).
 			DataType(dmodel.FieldDataTypeUlid().ArrayType()).
@@ -52,7 +54,8 @@ func SearchQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(DefineFieldSearchColumns()).
 		Field(DefineFieldSearchGraph()).
 		Field(DefineFieldSearchPage()).
-		Field(DefineFieldSearchSize())
+		Field(DefineFieldSearchSize()).
+		Field(DefineFieldSearchName())
 }
 
 func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -60,7 +63,7 @@ func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldId).
 			DataType(dmodel.FieldDataTypeUlid()).
-			Required()).
+			RequiredAlways()).
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldEtag).
 			DataType(dmodel.FieldDataTypeEtag()).
@@ -68,13 +71,13 @@ func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(dmodel.DefineField().
 			Name(basemodel.FieldIsArchived).
 			DataType(dmodel.FieldDataTypeBoolean()).
-			Required())
+			RequiredAlways())
 }
 
 func DefineFieldSearchColumns() *dmodel.FieldBuilder {
 	return dmodel.DefineField().
-		Name(basemodel.FieldColumns).
-		DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_COL_LENGTH_MIN, model.MODEL_RULE_COL_LENGTH_MAX).ArrayType()).
+		Name(basemodel.FieldFields).
+		DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_FIELDS_LENGTH_MIN, model.MODEL_RULE_FIELDS_LENGTH_MAX).ArrayType()).
 		Rule(dmodel.FieldRuleArrayLength(0, 50))
 }
 
@@ -96,4 +99,12 @@ func DefineFieldSearchGraph() *dmodel.FieldBuilder {
 	return dmodel.DefineField().
 		Name(basemodel.FieldGraph).
 		DataType(dmodel.FieldDataTypeModel())
+}
+
+func DefineFieldSearchName() *dmodel.FieldBuilder {
+	return dmodel.DefineField().
+		Name(basemodel.FieldSearchName).
+		DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH, dmodel.FieldDataTypeStringOpts{
+			Regex: regexp.MustCompile(`^[a-zA-Z0-9_\.]+$`),
+		}))
 }

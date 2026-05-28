@@ -1,0 +1,33 @@
+meta {
+  name: Enum - Update
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{api_host}}/v1/essential/enums/{{enum_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "label": {
+      "en-US": "{{$randomCatchPhraseAdjective}} enum updated"
+    },
+    "value": "{{$randomLoremWord}}",
+    "type": "status",
+    "etag": "{{enum_etag}}"
+  }
+}
+
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('enum_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

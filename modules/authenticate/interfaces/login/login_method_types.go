@@ -2,14 +2,14 @@ package login
 
 import (
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain/models"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 )
 
 type FindByIdParam = GetAttemptQuery
 
 type LoginParam struct {
-	PrincipalType domain.PrincipalType `json:"principal_type"`
+	PrincipalType models.PrincipalType `json:"principal_type"`
 	Username      string               `json:"username"`
 	Password      string               `json:"password"`
 }

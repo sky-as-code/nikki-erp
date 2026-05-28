@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain"
+	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/models"
 )
 
 func init() {
@@ -21,16 +21,16 @@ func init() {
 
 var createTicketFeedbackCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketfeedback", Action: "createTicketFeedback"}
 
-type CreateTicketFeedbackCommand struct{ domain.TicketFeedback }
+type CreateTicketFeedbackCommand struct{ models.TicketFeedback }
 
 func (CreateTicketFeedbackCommand) CqrsRequestType() cqrs.RequestType {
 	return createTicketFeedbackCommandType
 }
 func (CreateTicketFeedbackCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.TicketFeedbackSchemaName)
+	return dmodel.GetSchema(models.TicketFeedbackSchemaName)
 }
 
-type CreateTicketFeedbackResult = dyn.OpResult[domain.TicketFeedback]
+type CreateTicketFeedbackResult = dyn.OpResult[models.TicketFeedback]
 
 var deleteTicketFeedbackCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketfeedback", Action: "deleteTicketFeedback"}
 
@@ -48,7 +48,7 @@ type GetTicketFeedbackQuery dyn.GetOneQuery
 
 func (GetTicketFeedbackQuery) CqrsRequestType() cqrs.RequestType { return getTicketFeedbackQueryType }
 
-type GetTicketFeedbackResult = dyn.OpResult[domain.TicketFeedback]
+type GetTicketFeedbackResult = dyn.OpResult[models.TicketFeedback]
 
 var ticketFeedbackExistsQueryType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketfeedback", Action: "ticketFeedbackExists"}
 
@@ -68,18 +68,18 @@ func (SearchTicketFeedbacksQuery) CqrsRequestType() cqrs.RequestType {
 	return searchTicketFeedbacksQueryType
 }
 
-type SearchTicketFeedbacksResultData = dyn.PagedResultData[domain.TicketFeedback]
+type SearchTicketFeedbacksResultData = dyn.PagedResultData[models.TicketFeedback]
 type SearchTicketFeedbacksResult = dyn.OpResult[SearchTicketFeedbacksResultData]
 
 var updateTicketFeedbackCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "ticketfeedback", Action: "updateTicketFeedback"}
 
-type UpdateTicketFeedbackCommand struct{ domain.TicketFeedback }
+type UpdateTicketFeedbackCommand struct{ models.TicketFeedback }
 
 func (UpdateTicketFeedbackCommand) CqrsRequestType() cqrs.RequestType {
 	return updateTicketFeedbackCommandType
 }
 func (UpdateTicketFeedbackCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.TicketFeedbackSchemaName)
+	return dmodel.GetSchema(models.TicketFeedbackSchemaName)
 }
 
 type UpdateTicketFeedbackResult = dyn.OpResult[dyn.MutateResultData]

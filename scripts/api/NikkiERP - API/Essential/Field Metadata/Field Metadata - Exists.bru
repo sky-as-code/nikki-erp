@@ -1,0 +1,25 @@
+meta {
+  name: Field Metadata - Exists
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/essential/field-metadata/exists
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ids": [
+      "{{field_metadata_id}}"
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

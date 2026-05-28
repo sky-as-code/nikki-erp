@@ -11,10 +11,10 @@ type CreateRoleRequestRequest = it.CreateRoleRequestCommand
 type CreateRoleRequestResponse = httpserver.RestCreateResponse
 
 type DeleteRoleRequestRequest = it.DeleteRoleRequestCommand
-type DeleteRoleRequestResponse = httpserver.RestDeleteResponse2
+type DeleteRoleRequestResponse = httpserver.RestMutateResponse
 
 type GetRoleRequestRequest = it.GetRoleRequestQuery
-type GetRoleRequestResponse = dmodel.DynamicFields
+type GetRoleRequestResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
 
 type RoleRequestExistsRequest = it.RoleRequestExistsQuery
 type RoleRequestExistsResponse = dyn.ExistsResultData

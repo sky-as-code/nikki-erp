@@ -19,9 +19,9 @@ const (
 	errBodySnippetMax       = 2048
 )
 
-type HTTPCaller struct {
-	baseURL string
-	client  *client.HTTPClient
+type HttpCaller struct {
+	baseUrl string
+	client  *client.HttpClient
 	logger  logging.LoggerService
 }
 
@@ -39,8 +39,8 @@ type Response struct {
 	Body       []byte      `json:"body"`
 }
 
-func NewHTTPCaller(baseURL string, client *client.HTTPClient, logger logging.LoggerService) *HTTPCaller {
-	trimmed := strings.TrimSpace(baseURL)
+func NewHttpCaller(baseUrl string, client *client.HttpClient, logger logging.LoggerService) *HttpCaller {
+	trimmed := strings.TrimSpace(baseUrl)
 	if trimmed == "" {
 		panic("base url is required")
 	}
@@ -59,12 +59,12 @@ func NewHTTPCaller(baseURL string, client *client.HTTPClient, logger logging.Log
 	}
 
 	normalized := strings.TrimRight(u.String(), "/")
-	return &HTTPCaller{client: client, baseURL: normalized, logger: logger}
+	return &HttpCaller{client: client, baseUrl: normalized, logger: logger}
 }
 
-func joinBasePathQuery(baseURL, path string, query url.Values) (string, error) {
+func joinBasePathQuery(baseUrl, path string, query url.Values) (string, error) {
 	elem := strings.TrimPrefix(strings.TrimSpace(path), "/")
-	fullURL, err := url.JoinPath(baseURL, elem)
+	fullURL, err := url.JoinPath(baseUrl, elem)
 	if err != nil {
 		return "", errors.Wrap(err, "join url path")
 	}
@@ -102,8 +102,8 @@ func errBodySnippet(b []byte) string {
 	return string(b[:errBodySnippetMax]) + "..."
 }
 
-func (this *HTTPCaller) exec(ctx context.Context, req *Request, acceptJSON bool) (int, http.Header, []byte, error) {
-	fullURL, err := joinBasePathQuery(this.baseURL, req.Path, req.Query)
+func (this *HttpCaller) exec(ctx context.Context, req *Request, acceptJSON bool) (int, http.Header, []byte, error) {
+	fullURL, err := joinBasePathQuery(this.baseUrl, req.Path, req.Query)
 	if err != nil {
 		return 0, nil, nil, err
 	}
@@ -154,7 +154,7 @@ func (this *HTTPCaller) exec(ctx context.Context, req *Request, acceptJSON bool)
 	return httpResp.StatusCode, httpResp.Header, respBody, nil
 }
 
-func (this *HTTPCaller) Do(ctx context.Context, req *Request) (*Response, error) {
+func (this *HttpCaller) Do(ctx context.Context, req *Request) (*Response, error) {
 	status, hdr, respBody, err := this.exec(ctx, req, true)
 	if err != nil {
 		return nil, err
@@ -171,7 +171,7 @@ func (this *HTTPCaller) Do(ctx context.Context, req *Request) (*Response, error)
 	return out, nil
 }
 
-func (this *HTTPCaller) LogRequest(req *Request, res *Response) {
+func (this *HttpCaller) LogRequest(req *Request, res *Response) {
 	this.logger.Info("[HTTP Caller] Send request", logging.Attr{
 		"method":          req.Method,
 		"path":            req.Path,

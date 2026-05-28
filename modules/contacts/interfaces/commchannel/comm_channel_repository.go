@@ -1,28 +1,17 @@
 package commchannel
 
 import (
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/common/orm"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/domain"
-	"github.com/sky-as-code/nikki-erp/modules/core/crud"
+	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
+	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 )
 
 type CommChannelRepository interface {
-	Create(ctx crud.Context, commChannel *domain.CommChannel) (*domain.CommChannel, error)
-	DeleteHard(ctx crud.Context, param DeleteParam) (int, error)
-	FindById(ctx crud.Context, param FindByIdParam) (*domain.CommChannel, error)
-	ParseSearchGraph(criteria *string) (*orm.Predicate, []orm.OrderOption, ft.ValidationErrors)
-	Search(ctx crud.Context, param SearchParam) (*crud.PagedResult[domain.CommChannel], error)
-	Update(ctx crud.Context, commChannel *domain.CommChannel, prevEtag model.Etag) (*domain.CommChannel, error)
-}
-
-type DeleteParam = DeleteCommChannelCommand
-type FindByIdParam = GetCommChannelByIdQuery
-type FindByPartyParam = GetCommChannelsByPartyQuery
-type SearchParam struct {
-	Predicate *orm.Predicate
-	Order     []orm.OrderOption
-	Page      int
-	Size      int
+	dyn.DynamicModelRepository
+	DeleteOne(ctx corectx.Context, keys domain.CommChannel) (*dyn.OpResult[dyn.MutateResultData], error)
+	Exists(ctx corectx.Context, keys []domain.CommChannel) (*dyn.OpResult[dyn.RepoExistsResult], error)
+	Insert(ctx corectx.Context, commChannel domain.CommChannel) (*dyn.OpResult[int], error)
+	GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.CommChannel], error)
+	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.CommChannel]], error)
+	Update(ctx corectx.Context, commChannel domain.CommChannel) (*dyn.OpResult[dyn.MutateResultData], error)
 }

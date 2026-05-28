@@ -446,6 +446,9 @@ func (this *PgQueryBuilder) SqlCountGraph(
 func (this *PgQueryBuilder) buildSqlCountGraph(
 	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
 ) (string, ft.ClientErrors, error) {
+	if anySelectColumnDistinct(opts.Columns) {
+		return this.buildSqlCountGraphAsDistinctSubquery(schema, registry, graph, opts)
+	}
 	planner, err := this.planGraphJoins(schema, registry, graph, opts)
 	if err != nil {
 		return "", nil, err
@@ -476,6 +479,43 @@ func (this *PgQueryBuilder) buildSqlCountGraph(
 	return out, nil, nil
 }
 
+// buildSqlCountGraphAsDistinctSubquery: COUNT(*) over (SELECT DISTINCT <list columns> …), same grain as list.
+func (this *PgQueryBuilder) buildSqlCountGraphAsDistinctSubquery(
+	schema *dmodel.ModelSchema, registry *dmodel.SchemaRegistry, graph *dmodel.SearchGraph, opts SqlSelectGraphOpts,
+) (string, ft.ClientErrors, error) {
+	planner, err := this.planGraphJoins(schema, registry, graph, opts)
+	if err != nil {
+		return "", nil, err
+	}
+	ctx := &graphSelectCtx{planner: planner, language: opts.Language}
+	inner := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	inner.Distinct()
+	if err := this.applySelectColumns(inner, planner, opts.Columns); err != nil {
+		return "", nil, err
+	}
+	this.applyFromWithJoins(inner, schema, planner)
+	this.appendPlannerM2MTenantWheres(inner, planner)
+	if graph != nil {
+		predicate, graphCErrs, err := this.graphExpression(
+			ctx, schema, inner, graph.GetCondition(), graph.GetAnd(), graph.GetOr())
+		if err != nil {
+			return "", nil, err
+		}
+		if len(graphCErrs) > 0 {
+			return "", graphCErrs, nil
+		}
+		if len(predicate) > 0 {
+			inner.Where(predicate)
+		}
+	}
+	raw, args := inner.Build()
+	innerSQL, ierr := interpolate(raw, args)
+	if ierr != nil {
+		return "", nil, errors.Wrap(ierr, "buildSqlCountGraphAsDistinctSubquery")
+	}
+	return fmt.Sprintf("SELECT COUNT(*) FROM (%s) AS _distinct_count", innerSQL), nil, nil
+}
+
 func (this *PgQueryBuilder) appendPlannerM2MTenantWheres(sb *sqlbuilder.SelectBuilder, planner *joinPlanner) {
 	if planner == nil {
 		return
@@ -488,14 +528,22 @@ func (this *PgQueryBuilder) appendPlannerM2MTenantWheres(sb *sqlbuilder.SelectBu
 func (this *PgQueryBuilder) applyFromWithJoins(
 	sb *sqlbuilder.SelectBuilder, schema *dmodel.ModelSchema, planner *joinPlanner,
 ) {
-	if planner == nil || !planner.usesJoins() {
+	if planner == nil {
+		sb.From(this.tableExpression(schema))
+		return
+	}
+	if !planner.usesJoins() {
+		if planner.rootAlias != "" {
+			sb.From(fmt.Sprintf("%s AS %s", this.tableExpression(schema), planner.rootAlias))
+			return
+		}
 		sb.From(this.tableExpression(schema))
 		return
 	}
 	planner.ensureRootAliased()
 	sb.From(fmt.Sprintf("%s AS %s", this.tableExpression(schema), planner.rootAlias))
 	for _, j := range planner.joins {
-		sb.Join(j.tableWithAlias, j.onExpr)
+		sb.JoinWithOption(sqlbuilder.LeftJoin, j.tableWithAlias, j.onExpr)
 	}
 }
 
@@ -1007,6 +1055,10 @@ func (this *PgQueryBuilder) conditionExpression(
 	value = derefConditionOperand(value)
 	valueArr = derefConditionOperands(valueArr)
 
+	if operator == dmodel.Linked || operator == dmodel.NotLinked {
+		return this.linkedNotLinkedEdgePredicate(ctx, schema, fieldName, operator, value)
+	}
+
 	field, quotedField, err := this.prepareColNameForGraph(ctx, schema, fieldName)
 	if err != nil {
 		return "", nil, err
@@ -1212,6 +1264,32 @@ func (this *PgQueryBuilder) resolveOrderField(
 	return ctx.planner.resolveFieldSqlRef(fieldName, MaxOrderGraphFieldDots)
 }
 
+// parseNikkiDateTimeInput converts string (RFC3339 Z) or int64 (Unix milliseconds) to ModelDateTime
+// when the schema column is nikkiDateTime; otherwise returns value unchanged.
+func parseNikkiDateTimeInput(fieldName, columnType string, value any) (any, ft.ClientErrors, error) {
+	if columnType != dmodel.FieldDataTypeNameModelDateTime {
+		return value, nil, nil
+	}
+	v, ok := unwrapValue(reflect.ValueOf(value))
+	if !ok {
+		return value, nil, nil
+	}
+	switch v.Kind() {
+	case reflect.String:
+		mt, err := cmodel.ParseModelDateTime(v.String())
+		if err != nil {
+			return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(
+				fieldName, "RFC3339 UTC datetime (Z)")}, nil
+		}
+		return mt, nil, nil
+	case reflect.Int64:
+		t := time.UnixMilli(v.Int()).UTC()
+		return cmodel.WrapModelDateTime(t), nil, nil
+	default:
+		return value, nil, nil
+	}
+}
+
 func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (any, ft.ClientErrors, error) {
 	if field.IsVirtualModelField() {
 		return nil, clientErrorsVirtualFieldUnavailable(field.Name()), nil
@@ -1225,6 +1303,14 @@ func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (a
 		}
 		return nil, nil, errors.Errorf("convertValue: field '%s' does not allow NULL", field.Name())
 	}
+	parsed, parseCErrs, parseErr := parseNikkiDateTimeInput(field.Name(), field.ColumnType(), value)
+	if parseErr != nil {
+		return nil, nil, parseErr
+	}
+	if len(parseCErrs) > 0 {
+		return nil, parseCErrs, nil
+	}
+	value = parsed
 	v, ok := unwrapValue(reflect.ValueOf(value))
 	if !ok {
 		if field.IsNullable() {

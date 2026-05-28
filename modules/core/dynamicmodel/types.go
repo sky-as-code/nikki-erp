@@ -63,12 +63,12 @@ type RepoExistsResult struct {
 }
 
 type RepoGetOneParam struct {
-	Filter  dmodel.DynamicFields
-	Columns []string
+	Filter dmodel.DynamicFields
+	Fields []string
 }
 
 type RepoSearchParam struct {
-	Columns  []string
+	Fields   []string
 	Filter   []dmodel.DynamicFields
 	Page     int
 	Size     int

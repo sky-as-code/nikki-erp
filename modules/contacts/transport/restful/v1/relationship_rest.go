@@ -4,7 +4,6 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
-	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/contacts/interfaces/relationship"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 )
@@ -26,29 +25,52 @@ type RelationshipRest struct {
 	RelationshipSvc relationship.RelationshipService
 }
 
-func (this *RelationshipRest) RegisterRoutes(apiGroup *echo.Group) {
-	group := apiGroup.Group("/relationships")
-
-	group.POST("", this.CreateRelationship)
+func (this RelationshipRest) CreateRelationship(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeCreate(
+		"create relationship",
+		echoCtx,
+		&relationship.CreateRelationshipCommand{},
+		this.RelationshipSvc.CreateRelationship,
+	)
 }
 
-func (this RelationshipRest) CreateRelationship(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST create relationship"); e != nil {
-			err = e
-		}
-	}()
-	err = httpserver.ServeRequest(
-		echoCtx, this.RelationshipSvc.CreateRelationship,
-		func(request CreateRelationshipRequest) relationship.CreateRelationshipCommand {
-			return relationship.CreateRelationshipCommand(request)
-		},
-		func(result relationship.CreateRelationshipResult) CreateRelationshipResponse {
-			response := CreateRelationshipResponse{}
-			response.FromEntity(result.Data)
-			return response
-		},
-		httpserver.JsonCreated,
+func (this RelationshipRest) UpdateRelationship(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeUpdate(
+		"update relationship",
+		echoCtx,
+		&relationship.UpdateRelationshipCommand{},
+		this.RelationshipSvc.UpdateRelationship,
 	)
-	return err
+}
+
+func (this RelationshipRest) DeleteRelationship(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeGeneralMutate(
+		"delete relationship",
+		echoCtx,
+		this.RelationshipSvc.DeleteRelationship,
+	)
+}
+
+func (this RelationshipRest) GetRelationship(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeGetOne(
+		"get relationship",
+		echoCtx,
+		this.RelationshipSvc.GetRelationship,
+	)
+}
+
+func (this RelationshipRest) SearchRelationships(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeSearch(
+		"search relationships",
+		echoCtx,
+		this.RelationshipSvc.SearchRelationships,
+	)
+}
+
+func (this RelationshipRest) RelationshipExists(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeExists(
+		"relationship exists",
+		echoCtx,
+		this.RelationshipSvc.RelationshipExists,
+	)
 }

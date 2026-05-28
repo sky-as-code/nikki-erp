@@ -1,0 +1,47 @@
+meta {
+  name: Language - Create
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{api_host}}/v1/essential/languages
+  body: json
+  auth: inherit
+}
+
+script:pre-request {
+  const letters = 'abcdefghijklmnopqrstuvwxyz';
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const a = letters[Math.floor(Math.random() * letters.length)];
+  const b = letters[Math.floor(Math.random() * letters.length)];
+  const A = upper[Math.floor(Math.random() * upper.length)];
+  const B = upper[Math.floor(Math.random() * upper.length)];
+  bru.setVar('language_iso_code', `${a}${b}_${A}${B}`);
+}
+
+body:json {
+  {
+    "name": "Test Language {{$randomLoremWord}}",
+    "iso_code": "{{language_iso_code}}",
+    "direction": "ltr",
+    "decimal_separator": ".",
+    "thousands_separator": ",",
+    "date_format": "2006-01-02",
+    "time_format": "15:04:05",
+    "short_time_format": "15:04",
+    "first_day_of_week": "monday"
+  }
+}
+
+script:post-response {
+  const { id, etag } = res.getBody();
+  id && bru.setVar('language_id', id);
+  etag && bru.setVar('language_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

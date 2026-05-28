@@ -1,15 +1,13 @@
 package app
 
-import (
-	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-)
+import deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 
-func InitServices() error {
+func InitApplicationServices() error {
 	return deps.Register(
-		NewPurchaseOrderServiceImpl,
-		NewPurchaseRequestServiceImpl,
-		NewRequestForProposalServiceImpl,
-		NewRequestForQuoteServiceImpl,
-		NewVendorServiceImpl,
+		NewPurchaseOrderApplicationServiceImpl,
+		NewPurchaseRequestApplicationServiceImpl,
+		NewRequestForProposalApplicationServiceImpl,
+		NewRequestForQuoteApplicationServiceImpl,
+		NewVendorApplicationServiceImpl,
 	)
 }

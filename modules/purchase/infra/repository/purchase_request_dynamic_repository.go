@@ -12,7 +12,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/purchaserequest"
 )
 
@@ -33,7 +33,7 @@ func NewPurchaseRequestDynamicRepository(param PurchaseRequestDynamicRepositoryP
 			ConfigSvc:    param.ConfigSvc,
 			QueryBuilder: param.QueryBuilder,
 			Logger:       param.Logger,
-			Schema:       dmodel.MustGetSchema(domain.PurchaseRequestSchemaName),
+			Schema:       dmodel.MustGetSchema(models.PurchaseRequestSchemaName),
 		},
 	)
 	return &PurchaseRequestDynamicRepository{dynamicRepo: dynamicRepo}
@@ -52,40 +52,40 @@ func (this *PurchaseRequestDynamicRepository) BeginTransaction(ctx corectx.Conte
 }
 
 func (this *PurchaseRequestDynamicRepository) DeleteOne(
-	ctx corectx.Context, keys domain.PurchaseRequest,
+	ctx corectx.Context, keys models.PurchaseRequest,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
 }
 
 func (this *PurchaseRequestDynamicRepository) Exists(
-	ctx corectx.Context, keys []domain.PurchaseRequest,
+	ctx corectx.Context, keys []models.PurchaseRequest,
 ) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	dynamicKeys := array.Map(keys, func(key domain.PurchaseRequest) dmodel.DynamicFields {
+	dynamicKeys := array.Map(keys, func(key models.PurchaseRequest) dmodel.DynamicFields {
 		return key.GetFieldData()
 	})
 	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
 }
 
 func (this *PurchaseRequestDynamicRepository) Insert(
-	ctx corectx.Context, input domain.PurchaseRequest,
+	ctx corectx.Context, input models.PurchaseRequest,
 ) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, input)
 }
 
 func (this *PurchaseRequestDynamicRepository) GetOne(
 	ctx corectx.Context, param dyn.RepoGetOneParam,
-) (*dyn.OpResult[domain.PurchaseRequest], error) {
-	return baserepo.GetOne[domain.PurchaseRequest](ctx, this.dynamicRepo, param)
+) (*dyn.OpResult[models.PurchaseRequest], error) {
+	return baserepo.GetOne[models.PurchaseRequest](ctx, this.dynamicRepo, param)
 }
 
 func (this *PurchaseRequestDynamicRepository) Search(
 	ctx corectx.Context, param dyn.RepoSearchParam,
-) (*dyn.OpResult[dyn.PagedResultData[domain.PurchaseRequest]], error) {
-	return baserepo.Search[domain.PurchaseRequest](ctx, this.dynamicRepo, param)
+) (*dyn.OpResult[dyn.PagedResultData[models.PurchaseRequest]], error) {
+	return baserepo.Search[models.PurchaseRequest](ctx, this.dynamicRepo, param)
 }
 
 func (this *PurchaseRequestDynamicRepository) Update(
-	ctx corectx.Context, input domain.PurchaseRequest,
+	ctx corectx.Context, input models.PurchaseRequest,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, input.GetFieldData())
 }

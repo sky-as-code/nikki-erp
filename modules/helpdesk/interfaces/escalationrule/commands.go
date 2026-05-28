@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain"
+	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/models"
 )
 
 func init() {
@@ -21,16 +21,16 @@ func init() {
 
 var createEscalationRuleCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "escalationrule", Action: "createEscalationRule"}
 
-type CreateEscalationRuleCommand struct{ domain.EscalationRule }
+type CreateEscalationRuleCommand struct{ models.EscalationRule }
 
 func (CreateEscalationRuleCommand) CqrsRequestType() cqrs.RequestType {
 	return createEscalationRuleCommandType
 }
 func (CreateEscalationRuleCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.EscalationRuleSchemaName)
+	return dmodel.GetSchema(models.EscalationRuleSchemaName)
 }
 
-type CreateEscalationRuleResult = dyn.OpResult[domain.EscalationRule]
+type CreateEscalationRuleResult = dyn.OpResult[models.EscalationRule]
 
 var deleteEscalationRuleCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "escalationrule", Action: "deleteEscalationRule"}
 
@@ -48,7 +48,7 @@ type GetEscalationRuleQuery dyn.GetOneQuery
 
 func (GetEscalationRuleQuery) CqrsRequestType() cqrs.RequestType { return getEscalationRuleQueryType }
 
-type GetEscalationRuleResult = dyn.OpResult[domain.EscalationRule]
+type GetEscalationRuleResult = dyn.OpResult[models.EscalationRule]
 
 var escalationRuleExistsQueryType = cqrs.RequestType{Module: "helpdesk", Submodule: "escalationrule", Action: "escalationRuleExists"}
 
@@ -68,18 +68,18 @@ func (SearchEscalationRulesQuery) CqrsRequestType() cqrs.RequestType {
 	return searchEscalationRulesQueryType
 }
 
-type SearchEscalationRulesResultData = dyn.PagedResultData[domain.EscalationRule]
+type SearchEscalationRulesResultData = dyn.PagedResultData[models.EscalationRule]
 type SearchEscalationRulesResult = dyn.OpResult[SearchEscalationRulesResultData]
 
 var updateEscalationRuleCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "escalationrule", Action: "updateEscalationRule"}
 
-type UpdateEscalationRuleCommand struct{ domain.EscalationRule }
+type UpdateEscalationRuleCommand struct{ models.EscalationRule }
 
 func (UpdateEscalationRuleCommand) CqrsRequestType() cqrs.RequestType {
 	return updateEscalationRuleCommandType
 }
 func (UpdateEscalationRuleCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.EscalationRuleSchemaName)
+	return dmodel.GetSchema(models.EscalationRuleSchemaName)
 }
 
 type UpdateEscalationRuleResult = dyn.OpResult[dyn.MutateResultData]

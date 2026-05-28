@@ -1,8 +1,6 @@
 package constants
 
-const (
-	AuthenticateModuleName = "authenticate"
-)
+const AuthenticateModuleName = "authenticate"
 
 const (
 	ActionView   = "View"

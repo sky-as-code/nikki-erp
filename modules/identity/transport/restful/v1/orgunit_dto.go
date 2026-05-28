@@ -11,10 +11,10 @@ type CreateOrgUnitRequest = it.CreateOrgUnitCommand
 type CreateOrgUnitResponse = httpserver.RestCreateResponse
 
 type DeleteOrgUnitRequest = it.DeleteOrgUnitCommand
-type DeleteOrgUnitResponse = httpserver.RestDeleteResponse2
+type DeleteOrgUnitResponse = httpserver.RestMutateResponse
 
 type GetOrgUnitRequest = it.GetOrgUnitQuery
-type GetOrgUnitResponse = dmodel.DynamicFields
+type GetOrgUnitResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
 
 type OrgUnitExistsRequest = it.OrgUnitExistsQuery
 type OrgUnitExistsResponse = dyn.ExistsResultData

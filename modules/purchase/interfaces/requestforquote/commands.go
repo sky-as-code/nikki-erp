@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 )
 
 func init() {
@@ -22,22 +22,22 @@ func init() {
 
 var createCommandType = cqrs.RequestType{Module: "purchase", Submodule: "requestforquote", Action: "create"}
 
-type CreateRequestForQuoteCommand struct{ domain.RequestForQuote }
+type CreateRequestForQuoteCommand struct{ models.RequestForQuote }
 
 func (CreateRequestForQuoteCommand) CqrsRequestType() cqrs.RequestType { return createCommandType }
 func (CreateRequestForQuoteCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.RequestForQuoteSchemaName)
+	return dmodel.GetSchema(models.RequestForQuoteSchemaName)
 }
 
-type CreateRequestForQuoteResult = dyn.OpResult[domain.RequestForQuote]
+type CreateRequestForQuoteResult = dyn.OpResult[models.RequestForQuote]
 
 var updateCommandType = cqrs.RequestType{Module: "purchase", Submodule: "requestforquote", Action: "update"}
 
-type UpdateRequestForQuoteCommand struct{ domain.RequestForQuote }
+type UpdateRequestForQuoteCommand struct{ models.RequestForQuote }
 
 func (UpdateRequestForQuoteCommand) CqrsRequestType() cqrs.RequestType { return updateCommandType }
 func (UpdateRequestForQuoteCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.RequestForQuoteSchemaName)
+	return dmodel.GetSchema(models.RequestForQuoteSchemaName)
 }
 
 type UpdateRequestForQuoteResult = dyn.OpResult[dyn.MutateResultData]
@@ -56,7 +56,7 @@ type GetRequestForQuoteQuery dyn.GetOneQuery
 
 func (GetRequestForQuoteQuery) CqrsRequestType() cqrs.RequestType { return getQueryType }
 
-type GetRequestForQuoteResult = dyn.OpResult[domain.RequestForQuote]
+type GetRequestForQuoteResult = dyn.OpResult[models.RequestForQuote]
 
 var searchQueryType = cqrs.RequestType{Module: "purchase", Submodule: "requestforquote", Action: "search"}
 
@@ -64,7 +64,7 @@ type SearchRequestForQuotesQuery dyn.SearchQuery
 
 func (SearchRequestForQuotesQuery) CqrsRequestType() cqrs.RequestType { return searchQueryType }
 
-type SearchRequestForQuotesResultData = dyn.PagedResultData[domain.RequestForQuote]
+type SearchRequestForQuotesResultData = dyn.PagedResultData[models.RequestForQuote]
 type SearchRequestForQuotesResult = dyn.OpResult[SearchRequestForQuotesResultData]
 
 var setArchivedCommandType = cqrs.RequestType{Module: "purchase", Submodule: "requestforquote", Action: "set_archived"}

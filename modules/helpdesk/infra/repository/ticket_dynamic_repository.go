@@ -12,7 +12,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain"
+	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/helpdesk/interfaces/ticket"
 )
 
@@ -26,7 +26,7 @@ type TicketDynamicRepositoryParam struct {
 }
 
 func NewTicketDynamicRepository(param TicketDynamicRepositoryParam) it.TicketRepository {
-	dynamicRepo := param.NewBaseRepoFn(dyn.NewBaseRepoParam{Client: param.Client, ConfigSvc: param.ConfigSvc, QueryBuilder: param.QueryBuilder, Logger: param.Logger, Schema: dmodel.MustGetSchema(domain.TicketSchemaName)})
+	dynamicRepo := param.NewBaseRepoFn(dyn.NewBaseRepoParam{Client: param.Client, ConfigSvc: param.ConfigSvc, QueryBuilder: param.QueryBuilder, Logger: param.Logger, Schema: dmodel.MustGetSchema(models.TicketSchemaName)})
 	return &TicketDynamicRepository{dynamicRepo: dynamicRepo}
 }
 
@@ -38,22 +38,22 @@ func (this *TicketDynamicRepository) GetBaseRepo() dyn.BaseDynamicRepository { r
 func (this *TicketDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
 	return this.dynamicRepo.BeginTransaction(ctx)
 }
-func (this *TicketDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.Ticket) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *TicketDynamicRepository) DeleteOne(ctx corectx.Context, keys models.Ticket) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
 }
-func (this *TicketDynamicRepository) Exists(ctx corectx.Context, keys []domain.Ticket) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	dynamicKeys := array.Map(keys, func(key domain.Ticket) dmodel.DynamicFields { return key.GetFieldData() })
+func (this *TicketDynamicRepository) Exists(ctx corectx.Context, keys []models.Ticket) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	dynamicKeys := array.Map(keys, func(key models.Ticket) dmodel.DynamicFields { return key.GetFieldData() })
 	return baserepo.Exists(ctx, this.dynamicRepo, dynamicKeys)
 }
-func (this *TicketDynamicRepository) Insert(ctx corectx.Context, data domain.Ticket) (*dyn.OpResult[int], error) {
+func (this *TicketDynamicRepository) Insert(ctx corectx.Context, data models.Ticket) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, data)
 }
-func (this *TicketDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.Ticket], error) {
-	return baserepo.GetOne[domain.Ticket](ctx, this.dynamicRepo, param)
+func (this *TicketDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[models.Ticket], error) {
+	return baserepo.GetOne[models.Ticket](ctx, this.dynamicRepo, param)
 }
-func (this *TicketDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.Ticket]], error) {
-	return baserepo.Search[domain.Ticket](ctx, this.dynamicRepo, param)
+func (this *TicketDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[models.Ticket]], error) {
+	return baserepo.Search[models.Ticket](ctx, this.dynamicRepo, param)
 }
-func (this *TicketDynamicRepository) Update(ctx corectx.Context, data domain.Ticket) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *TicketDynamicRepository) Update(ctx corectx.Context, data models.Ticket) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, data.GetFieldData())
 }

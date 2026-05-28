@@ -64,6 +64,7 @@ func initPermissionHandlers() error {
 		return cqrsBus.SubscribeRequests(
 			ctx,
 			cqrs.NewHandler(handler.IsAuthorized),
+			cqrs.NewHandler(handler.GetUserEntitlements),
 		)
 	})
 }

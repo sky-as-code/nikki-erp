@@ -11,10 +11,10 @@ type CreateResourceRequest = it.CreateResourceCommand
 type CreateResourceResponse = httpserver.RestCreateResponse
 
 type DeleteResourceRequest = it.DeleteResourceCommand
-type DeleteResourceResponse = httpserver.RestDeleteResponse2
+type DeleteResourceResponse = httpserver.RestMutateResponse
 
 type GetResourceRequest = it.GetResourceQuery
-type GetResourceResponse = dmodel.DynamicFields
+type GetResourceResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
 
 type ResourceExistsRequest = it.ResourceExistsQuery
 type ResourceExistsResponse = dyn.ExistsResultData

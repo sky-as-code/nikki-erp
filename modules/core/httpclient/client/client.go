@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
@@ -14,32 +13,31 @@ import (
 )
 
 const (
-	DefaultHTTPTimeout = 30 * time.Second
+	DefaultHttpTimeout = 30 * time.Second
 )
 
-type HTTPClient struct {
+type HttpClient struct {
 	http.Client
 }
 
-func NewCoreHTTPClient(cfg config.ConfigService) *HTTPClient {
-	httpClientConfig := HTTPClientConfig{
+func NewCoreHttpClient(cfg config.ConfigService) *HttpClient {
+	httpClientConfig := HttpClientConfig{
 		Timeout: cfg.GetInt64(constants.HttpClientTimeout),
-		TLSConfig: TLSConfig{
-			InsecureSkipVerify:     cfg.GetBool(constants.HttpClientSkipVerifyServer),
-			IncludeSystemTrustedCA: cfg.GetBool(constants.HttpClientIncludeSystemTrustedCA),
-			CustomTrustedCAs:       cfg.GetStrArr(constants.HttpClientCustomTrustedCACertPaths),
+		TlsConfig: TlsConfig{
+			InsecureSkipVerify:     cfg.GetBool(constants.HttpClientSkipVerifyServer, false),
+			IncludeSystemTrustedCa: cfg.GetBool(constants.HttpClientIncludeSystemTrustedCA, true),
+			CustomTrustedCa:        cfg.GetStr(constants.HttpClientCustomTrustedCACert, ""),
 		},
 		ClientCertConfig: ClientCertConfig{
-			Enabled: cfg.GetBool(constants.HttpClientClientCertEnabled),
+			Enabled:     cfg.GetBool(constants.HttpClientClientCertEnabled, false),
+			Cert:        cfg.GetStr(constants.HttpClientClientCert, ""),
+			PrivateKey:  cfg.GetStr(constants.HttpClientClientCertKey, ""),
+			P12Raw:      cfg.GetStr(constants.HttpClientClientP12, ""),
+			P12Password: cfg.GetStr(constants.HttpClientClientP12Password, ""),
 		},
 	}
 
-	if httpClientConfig.ClientCertConfig.Enabled {
-		httpClientConfig.ClientCertConfig.Cert = cfg.GetStr(constants.HttpClientClientCert)
-		httpClientConfig.ClientCertConfig.PrivateKey = cfg.GetStr(constants.HttpClientClientCertKey)
-	}
-
-	c, err := NewHTTPClient(&httpClientConfig)
+	c, err := NewHttpClient(&httpClientConfig)
 	if err != nil {
 		panic(err)
 	}
@@ -47,16 +45,16 @@ func NewCoreHTTPClient(cfg config.ConfigService) *HTTPClient {
 	return c
 }
 
-func NewHTTPClient(cfg *HTTPClientConfig) (*HTTPClient, error) {
+func NewHttpClient(cfg *HttpClientConfig) (*HttpClient, error) {
 	rootClient, err := httpClientFromConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &HTTPClient{*rootClient}, nil
+	return &HttpClient{*rootClient}, nil
 }
 
-func httpClientFromConfig(cfg *HTTPClientConfig) (*http.Client, error) {
+func httpClientFromConfig(cfg *HttpClientConfig) (*http.Client, error) {
 	if cfg == nil {
 		return nil, errors.New("missing config")
 	}
@@ -64,14 +62,14 @@ func httpClientFromConfig(cfg *HTTPClientConfig) (*http.Client, error) {
 	tlsClientCfg := &tls.Config{}
 
 	// ========== TLS Config ===============
-	if cfg.TLSConfig.InsecureSkipVerify {
+	if cfg.TlsConfig.InsecureSkipVerify {
 		tlsClientCfg.InsecureSkipVerify = true
 	} else {
 		var err error
 		var certPool = x509.NewCertPool()
 
 		//  Loads System trusted CAs
-		if cfg.TLSConfig.IncludeSystemTrustedCA {
+		if cfg.TlsConfig.IncludeSystemTrustedCa {
 			certPool, err = x509.SystemCertPool()
 			if err != nil {
 				return nil, err
@@ -79,13 +77,8 @@ func httpClientFromConfig(cfg *HTTPClientConfig) (*http.Client, error) {
 		}
 
 		// Appends custom CAs
-		for _, caPath := range cfg.TLSConfig.CustomTrustedCAs {
-			caCert, err := os.ReadFile(caPath)
-			if err != nil {
-				return nil, err
-			}
-
-			certPool.AppendCertsFromPEM(caCert)
+		if cfg.TlsConfig.CustomTrustedCa != "" {
+			certPool.AppendCertsFromPEM([]byte(cfg.TlsConfig.CustomTrustedCa))
 		}
 
 		tlsClientCfg.RootCAs = certPool
@@ -107,7 +100,7 @@ func httpClientFromConfig(cfg *HTTPClientConfig) (*http.Client, error) {
 		TLSClientConfig: tlsClientCfg,
 	}
 
-	timeout := DefaultHTTPTimeout
+	timeout := DefaultHttpTimeout
 	if cfg.Timeout != 0 {
 		timeout = time.Duration(cfg.Timeout) * time.Millisecond
 	}

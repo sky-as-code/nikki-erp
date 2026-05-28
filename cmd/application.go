@@ -13,8 +13,11 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/dynamicmodel/orm"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules"
+	apptraitconstants "github.com/sky-as-code/nikki-erp/modules/apptrait/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	coreconstants "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	essentialconstants "github.com/sky-as-code/nikki-erp/modules/essential/constants"
 )
 
 type ModuleLoader interface {
@@ -132,8 +135,14 @@ func (this *Application) buildDependencyGraph(moduleMap map[string]modules.InCod
 	for _, mod := range this.modules {
 		modName := mod.Name()
 		deps := mod.Deps()
-		if modName != "apptrait" && modName != "core" {
-			deps = append(deps, "core")
+		if modName != apptraitconstants.AppTraitModuleName &&
+			modName != coreconstants.CoreModuleName &&
+			modName != essentialconstants.EssentialModuleName {
+			deps = append(deps, essentialconstants.EssentialModuleName)
+		}
+		if modName != apptraitconstants.AppTraitModuleName &&
+			modName != coreconstants.CoreModuleName {
+			deps = append(deps, coreconstants.CoreModuleName)
 		}
 		for _, dep := range deps {
 			if _, exists := moduleMap[dep]; !exists {

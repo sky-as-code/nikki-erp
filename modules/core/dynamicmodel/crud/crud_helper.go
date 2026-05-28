@@ -18,13 +18,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 )
 
-type BeforeValidationFn[T any] func(ctx corectx.Context, model T, vErrs *ft.ClientErrors) (T, error)
-type AfterValidationSuccessFn[T any] func(ctx corectx.Context, model T) (T, error)
-type AfterDeleteValidationSuccessFn func(ctx corectx.Context) error
-type CreateValidateExtraFn[T any] func(ctx corectx.Context, inputModel T, vErrs *ft.ClientErrors) error
-type UpdateValidateExtraFn[T any] func(ctx corectx.Context, inputModel T, foundModel T, vErrs *ft.ClientErrors) error
-type DeleteValidateExtraFn func(ctx corectx.Context, keyFields dmodel.DynamicFields, vErrs *ft.ClientErrors) error
-
 type CreateParam[
 	TDomain any,
 	TDomainPtr dyn.DynamicModelPtr[TDomain],
@@ -78,11 +71,16 @@ func Create[
 			return errors.Wrap(err, "Create.BeforeValidation")
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
+			schema.InjectServiceFields(ctx, fieldData, false)
+			return nil
+		}).
+		Step(func(vErrs *ft.ClientErrors) error {
 			result, clientErrs := schema.Validate(fieldData)
 			if clientErrs != nil {
 				*vErrs = clientErrs
 			} else {
 				fieldData = result
+				newModel.SetFieldData(fieldData)
 			}
 			return nil
 		}).
@@ -180,10 +178,14 @@ func CreateBulk[
 					return nil
 				}
 				result, err := param.BeforeValidation(ctx, newModel, vErrs)
-				if err == nil {
+				if err == nil && result != nil && result != newModel {
 					fieldData = result.GetFieldData()
 				}
 				return err
+			}).
+			Step(func(vErrs *ft.ClientErrors) error {
+				schema.InjectServiceFields(ctx, fieldData, false)
+				return nil
 			}).
 			Step(func(vErrs *ft.ClientErrors) error {
 				result, clientErrs := schema.Validate(fieldData)
@@ -191,6 +193,7 @@ func CreateBulk[
 					*vErrs = clientErrs
 				} else {
 					fieldData = result
+					newModel.SetFieldData(fieldData)
 				}
 				return nil
 			}).
@@ -375,7 +378,7 @@ type DeleteOneParam struct {
 	DbRepoGetter           dyn.DynamicModelRepository
 	Cmd                    dyn.DeleteOneCommand
 	ValidateExtra          DeleteValidateExtraFn
-	AfterValidationSuccess AfterDeleteValidationSuccessFn
+	AfterValidationSuccess AfterValidationSuccessFn[dyn.DeleteOneCommand]
 }
 
 func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *dyn.OpResult[dyn.MutateResultData], err error) {
@@ -402,10 +405,11 @@ func DeleteOne(ctx corectx.Context, param DeleteOneParam) (result *dyn.OpResult[
 		}
 	}
 	if param.AfterValidationSuccess != nil {
-		err := param.AfterValidationSuccess(ctx)
+		newCmd, err := param.AfterValidationSuccess(ctx, cmd)
 		if err != nil {
 			return nil, errors.Wrap(err, "DeleteOne.AfterValidationSuccess")
 		}
+		cmd = newCmd
 	}
 
 	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
@@ -521,9 +525,10 @@ func clearDbTranx(ctx corectx.Context) {
 }
 
 type GetOneParam struct {
-	Action       string
-	DbRepoGetter dyn.DynamicModelRepository
-	Query        dyn.GetOneQuery
+	Action                 string
+	DbRepoGetter           dyn.DynamicModelRepository
+	Query                  dyn.GetOneQuery
+	AfterValidationSuccess AfterValidationSuccessFn[dyn.GetOneQuery]
 }
 
 func GetOne[
@@ -532,6 +537,13 @@ func GetOne[
 ](
 	ctx corectx.Context, param GetOneParam,
 ) (_ *dyn.OpResult[TDomain], err error) {
+	if param.AfterValidationSuccess != nil {
+		newQuery, err := param.AfterValidationSuccess(ctx, param.Query)
+		if err != nil {
+			return nil, errors.Wrap(err, "GetOne.AfterValidationSuccess")
+		}
+		param.Query = newQuery
+	}
 	result, err := getOneWithArchived[TDomain, TDomainPtr](ctx, param, nil)
 	return result, errors.Wrap(err, "GetOne")
 }
@@ -573,8 +585,8 @@ func getOneWithArchived[
 	}
 	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
 	result, err := baserepo.GetOne[TDomain, TDomainPtr](ctx, dynamicRepo, dyn.RepoGetOneParam{
-		Filter:  filter,
-		Columns: sanitizedQuery.Columns,
+		Filter: filter,
+		Fields: sanitizedQuery.Fields,
 	})
 	return result, err
 }
@@ -589,9 +601,10 @@ func getOneSchema() *dmodel.ModelSchema {
 }
 
 type SearchParam struct {
-	Action       string
-	DbRepoGetter dyn.DynamicModelRepository
-	Query        dyn.SearchQuery
+	Action                 string
+	DbRepoGetter           dyn.DynamicModelRepository
+	Query                  dyn.SearchQuery
+	AfterValidationSuccess AfterValidationSuccessFn[dyn.SearchQuery]
 }
 
 func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
@@ -603,32 +616,31 @@ func Search[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 		}
 	}()
 
-	querySchema := searchSchema()
-	sanitized, cErrs := querySchema.ValidateStruct(param.Query)
+	sanitized, cErrs := param.Query.GetSchema().ValidateStruct(param.Query)
 
 	if cErrs.Count() > 0 {
 		return &dyn.OpResult[dyn.PagedResultData[TDomain]]{ClientErrors: cErrs}, nil
 	}
 
 	sanitizedQuery := *(sanitized.(*dyn.SearchQuery))
+
+	if param.AfterValidationSuccess != nil {
+		newQuery, err := param.AfterValidationSuccess(ctx, sanitizedQuery)
+		if err != nil {
+			return nil, errors.Wrap(err, "Search.AfterValidationSuccess")
+		}
+		sanitizedQuery = newQuery
+	}
+
 	dynamicRepo := param.DbRepoGetter.GetBaseRepo()
 	result, err := baserepo.Search[TDomain, TDomainPtr](ctx, dynamicRepo, dyn.RepoSearchParam{
-		Columns:  sanitizedQuery.Columns,
+		Fields:   sanitizedQuery.Fields,
 		Page:     sanitizedQuery.Page,
 		Size:     sanitizedQuery.Size,
 		Graph:    sanitizedQuery.Graph,
 		Language: sanitizedQuery.Language,
 	})
 	return result, errors.Wrap(err, "Search")
-}
-
-func searchSchema() *dmodel.ModelSchema {
-	return dmodel.GetOrRegisterSchema(
-		"core.search_query",
-		func() *dmodel.ModelSchemaBuilder {
-			return dyn.SearchQuerySchemaBuilder()
-		},
-	)
 }
 
 func validateUniques(ctx corectx.Context, data dmodel.DynamicFields, dbRepo dyn.BaseDynamicRepository, vErrs *ft.ClientErrors) error {
@@ -796,6 +808,10 @@ func runUpdateValidationFlow[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain
 				inputModel.SetFieldData(result.GetFieldData())
 			}
 			return errors.Wrap(err, "Update.BeforeValidation")
+		}).
+		Step(func(vErrs *ft.ClientErrors) error {
+			schema.InjectServiceFields(ctx, inputModel.GetFieldData(), true)
+			return nil
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
 			result, clientErrs := schema.Validate(inputModel.GetFieldData(), true)
@@ -967,4 +983,43 @@ func checkExistenceAndEtag(
 		vErrs.Append(*ft.NewEtagMismatchedError())
 	}
 	return true, dbRecord, nil
+}
+
+func SearchAll[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](ctx corectx.Context, param SearchParam) (*dyn.OpResult[[]TDomain], error) {
+	page := 0
+	size := model.MODEL_RULE_PAGE_MAX_SIZE
+	res := &dyn.OpResult[[]TDomain]{}
+
+	for {
+		queryRes, err := Search[TDomain, TDomainPtr](ctx, SearchParam{
+			Action:       param.Action,
+			DbRepoGetter: param.DbRepoGetter,
+			Query: dyn.SearchQuery{
+				Fields: param.Query.Fields,
+				Graph:  param.Query.Graph,
+				Page:   page,
+				Size:   size,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if queryRes.ClientErrors.Count() > 0 {
+			res.ClientErrors = queryRes.ClientErrors
+			return res, nil
+		}
+
+		res.Data = append(res.Data, queryRes.Data.Items...)
+
+		if len(res.Data) >= queryRes.Data.Total {
+			break
+		}
+
+		page++
+	}
+
+	res.HasData = true
+
+	return res, nil
 }

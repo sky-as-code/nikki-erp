@@ -12,7 +12,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/requestforproposal"
 )
 
@@ -28,7 +28,7 @@ type RequestForProposalDynamicRepositoryParam struct {
 func NewRequestForProposalDynamicRepository(param RequestForProposalDynamicRepositoryParam) it.RequestForProposalRepository {
 	repo := param.NewBaseRepoFn(dyn.NewBaseRepoParam{
 		Client: param.Client, ConfigSvc: param.ConfigSvc, QueryBuilder: param.QueryBuilder, Logger: param.Logger,
-		Schema: dmodel.MustGetSchema(domain.RequestForProposalSchemaName),
+		Schema: dmodel.MustGetSchema(models.RequestForProposalSchemaName),
 	})
 	return &RequestForProposalDynamicRepository{dynamicRepo: repo}
 }
@@ -41,21 +41,21 @@ func (this *RequestForProposalDynamicRepository) GetBaseRepo() dyn.BaseDynamicRe
 func (this *RequestForProposalDynamicRepository) BeginTransaction(ctx corectx.Context) (database.DbTransaction, error) {
 	return this.dynamicRepo.BeginTransaction(ctx)
 }
-func (this *RequestForProposalDynamicRepository) DeleteOne(ctx corectx.Context, keys domain.RequestForProposal) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *RequestForProposalDynamicRepository) DeleteOne(ctx corectx.Context, keys models.RequestForProposal) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
 }
-func (this *RequestForProposalDynamicRepository) Exists(ctx corectx.Context, keys []domain.RequestForProposal) (*dyn.OpResult[dyn.RepoExistsResult], error) {
-	return baserepo.Exists(ctx, this.dynamicRepo, array.Map(keys, func(k domain.RequestForProposal) dmodel.DynamicFields { return k.GetFieldData() }))
+func (this *RequestForProposalDynamicRepository) Exists(ctx corectx.Context, keys []models.RequestForProposal) (*dyn.OpResult[dyn.RepoExistsResult], error) {
+	return baserepo.Exists(ctx, this.dynamicRepo, array.Map(keys, func(k models.RequestForProposal) dmodel.DynamicFields { return k.GetFieldData() }))
 }
-func (this *RequestForProposalDynamicRepository) Insert(ctx corectx.Context, input domain.RequestForProposal) (*dyn.OpResult[int], error) {
+func (this *RequestForProposalDynamicRepository) Insert(ctx corectx.Context, input models.RequestForProposal) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, input)
 }
-func (this *RequestForProposalDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[domain.RequestForProposal], error) {
-	return baserepo.GetOne[domain.RequestForProposal](ctx, this.dynamicRepo, param)
+func (this *RequestForProposalDynamicRepository) GetOne(ctx corectx.Context, param dyn.RepoGetOneParam) (*dyn.OpResult[models.RequestForProposal], error) {
+	return baserepo.GetOne[models.RequestForProposal](ctx, this.dynamicRepo, param)
 }
-func (this *RequestForProposalDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[domain.RequestForProposal]], error) {
-	return baserepo.Search[domain.RequestForProposal](ctx, this.dynamicRepo, param)
+func (this *RequestForProposalDynamicRepository) Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[models.RequestForProposal]], error) {
+	return baserepo.Search[models.RequestForProposal](ctx, this.dynamicRepo, param)
 }
-func (this *RequestForProposalDynamicRepository) Update(ctx corectx.Context, input domain.RequestForProposal) (*dyn.OpResult[dyn.MutateResultData], error) {
+func (this *RequestForProposalDynamicRepository) Update(ctx corectx.Context, input models.RequestForProposal) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, input.GetFieldData())
 }

@@ -9,7 +9,7 @@ import (
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
 )
 
-func NewGroupHandler(groupSvc it.GroupService, logger logging.LoggerService) *GroupHandler {
+func NewGroupHandler(groupSvc it.GroupDomainService, logger logging.LoggerService) *GroupHandler {
 	return &GroupHandler{
 		Logger:   logger,
 		GroupSvc: groupSvc,
@@ -18,7 +18,7 @@ func NewGroupHandler(groupSvc it.GroupService, logger logging.LoggerService) *Gr
 
 type GroupHandler struct {
 	Logger   logging.LoggerService
-	GroupSvc it.GroupService
+	GroupSvc it.GroupDomainService
 }
 
 // func (this *GroupHandler) CreateGroup(ctx context.Context, packet *cqrs.RequestPacket[it.CreateGroupCommand]) (

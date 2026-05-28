@@ -16,6 +16,13 @@ func SetDefaultValue[T any](target **T, defaultValue T) {
 	}
 }
 
+func GetOptional[T any](optionalParams []T, defaultValue T) T {
+	if len(optionalParams) > 0 {
+		return optionalParams[0]
+	}
+	return defaultValue
+}
+
 func GetVal[T any](source *T, fallbackValue T) T {
 	if source != nil {
 		return *source

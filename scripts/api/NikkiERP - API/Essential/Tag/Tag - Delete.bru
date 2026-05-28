@@ -1,0 +1,16 @@
+meta {
+  name: Tag - Delete
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{api_host}}/v1/essential/tags/{{tag_id}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}
+

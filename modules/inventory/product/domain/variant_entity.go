@@ -18,6 +18,16 @@ const (
 )
 
 const (
+	VariantResourceCode = "inventory_variant"
+	VariantAuthScope    = "org"
+
+	VariantActionCreate = "create"
+	VariantActionDelete = "delete"
+	VariantActionUpdate = "update"
+	VariantActionView   = "view"
+)
+
+const (
 	VarAttrValRelSchemaName       = "inventory.variant_attr_val_rel"
 	VarAttrValRelFieldVariantId   = "variant_id"
 	VarAttrValRelFieldAttrValueId = "attribute_value_id"
@@ -49,6 +59,7 @@ const (
 	VarFieldProposedPrice = "proposed_price"
 	VarFieldStatus        = "status"
 	VarFieldImageUrl      = "image_url"
+	VarFieldAttributes    = "attributes"
 
 	VarEdgeProduct         = "product"
 	VarEdgeAttributeValues = "attribute_values"
@@ -148,22 +159,11 @@ func (this *Variant) SetProductId(v *model.Id) {
 }
 
 func (this Variant) GetName() *model.LangJson {
-	v := this.GetFieldData().GetAny(VarFieldName)
-	if v == nil {
-		return nil
-	}
-	if langJson, ok := v.(model.LangJson); ok {
-		return &langJson
-	}
-	return nil
+	return this.GetFieldData().GetLangJson(VarFieldName)
 }
 
 func (this *Variant) SetName(v *model.LangJson) {
-	if v == nil {
-		this.GetFieldData().SetAny(VarFieldName, nil)
-		return
-	}
-	this.GetFieldData().SetAny(VarFieldName, *v)
+	this.GetFieldData().SetLangJson(VarFieldName, v)
 }
 
 func (this Variant) GetSku() *string {
@@ -183,20 +183,11 @@ func (this *Variant) SetBarcode(v *string) {
 }
 
 func (this Variant) GetProposedPrice() *decimal.Decimal {
-	v := this.GetFieldData().GetAny(VarFieldProposedPrice)
-	if v == nil {
-		return nil
-	}
-	d := v.(decimal.Decimal)
-	return &d
+	return this.GetFieldData().GetDecimal(VarFieldProposedPrice)
 }
 
 func (this *Variant) SetProposedPrice(v *decimal.Decimal) {
-	if v == nil {
-		this.GetFieldData().SetAny(VarFieldProposedPrice, nil)
-		return
-	}
-	this.GetFieldData().SetAny(VarFieldProposedPrice, *v)
+	this.GetFieldData().SetDecimal(VarFieldProposedPrice, v)
 }
 
 func (this Variant) GetStatus() *VariantStatus {
@@ -223,4 +214,19 @@ func (this Variant) GetImageUrl() *string {
 
 func (this *Variant) SetImageUrl(v *string) {
 	this.GetFieldData().SetString(VarFieldImageUrl, v)
+}
+
+func (this Variant) GetAttributes() map[string]any {
+	v := this.GetFieldData().GetAny(VarFieldAttributes)
+	if v == nil {
+		return nil
+	}
+	if attrMap, ok := v.(map[string]any); ok {
+		return attrMap
+	}
+	return nil
+}
+
+func (this *Variant) SetAttributes(v map[string]any) {
+	this.GetFieldData().SetAny(VarFieldAttributes, v)
 }

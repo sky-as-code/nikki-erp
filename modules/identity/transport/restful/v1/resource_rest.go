@@ -8,14 +8,14 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/resource"
 )
 
 type resourceRestParams struct {
 	dig.In
 
-	ResourceSvc it.ResourceService
+	ResourceSvc it.ResourceAppService
 }
 
 func NewResourceRest(params resourceRestParams) *ResourceRest {
@@ -24,11 +24,11 @@ func NewResourceRest(params resourceRestParams) *ResourceRest {
 
 type ResourceRest struct {
 	httpserver.RestBase
-	ResourceSvc it.ResourceService
+	ResourceSvc it.ResourceAppService
 }
 
 func (this ResourceRest) CreateResource(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeCreate(
+	return httpserver.ServeCreate[CreateResourceRequest, CreateResourceResponse, domain.Resource](
 		"create resource",
 		echoCtx,
 		&it.CreateResourceCommand{},
@@ -37,7 +37,7 @@ func (this ResourceRest) CreateResource(echoCtx *echo.Context) (err error) {
 }
 
 func (this ResourceRest) DeleteResource(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[DeleteResourceRequest, DeleteResourceResponse](
 		"delete resource",
 		echoCtx,
 		this.ResourceSvc.DeleteResource,
@@ -45,7 +45,7 @@ func (this ResourceRest) DeleteResource(echoCtx *echo.Context) (err error) {
 }
 
 func (this ResourceRest) GetResource(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGetOne(
+	return httpserver.ServeGetOne2[GetResourceRequest, GetResourceResponse, domain.Resource](
 		"get resource",
 		echoCtx,
 		this.ResourceSvc.GetResource,
@@ -53,7 +53,7 @@ func (this ResourceRest) GetResource(echoCtx *echo.Context) (err error) {
 }
 
 func (this ResourceRest) ResourceExists(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeExists(
+	return httpserver.ServeExists[ResourceExistsRequest, ResourceExistsResponse](
 		"resource exists",
 		echoCtx,
 		this.ResourceSvc.ResourceExists,
@@ -61,7 +61,7 @@ func (this ResourceRest) ResourceExists(echoCtx *echo.Context) (err error) {
 }
 
 func (this ResourceRest) SearchResources(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch(
+	return httpserver.ServeSearch[SearchResourcesRequest, SearchResourcesResponse, domain.Resource](
 		"search resources",
 		echoCtx,
 		this.ResourceSvc.SearchResources,
@@ -69,7 +69,7 @@ func (this ResourceRest) SearchResources(echoCtx *echo.Context) (err error) {
 }
 
 func (this ResourceRest) UpdateResource(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeUpdate(
+	return httpserver.ServeUpdate[UpdateResourceRequest, UpdateResourceResponse](
 		"update resource",
 		echoCtx,
 		&it.UpdateResourceCommand{},

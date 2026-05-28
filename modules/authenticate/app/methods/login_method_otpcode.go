@@ -2,7 +2,7 @@ package methods
 
 import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain/models"
 	itLogin "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/login"
 	itPass "github.com/sky-as-code/nikki-erp/modules/authenticate/interfaces/password"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -24,11 +24,11 @@ func (this *LoginMethodOtpCode) SkipMethod() *itLogin.SkippedMethod {
 func (this *LoginMethodOtpCode) Execute(ctx corectx.Context, param itLogin.LoginParam) (*itLogin.ExecuteResult, error) {
 	var result *itPass.VerifyPasswordResult
 	var err error
-	err = deps.Invoke(func(passwordSvc itPass.PasswordService) error {
+	err = deps.Invoke(func(passwordSvc itPass.PasswordAppService) error {
 		result, err = passwordSvc.VerifyOtpCode(ctx, itPass.VerifyPasswordOtpQuery{
 			PrincipalType: param.PrincipalType,
 			Username:      param.Username,
-			OtpCode:       domain.OtpCode(param.Password),
+			OtpCode:       models.OtpCode(param.Password),
 		})
 		return err
 	})

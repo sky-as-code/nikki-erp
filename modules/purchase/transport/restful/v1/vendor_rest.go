@@ -10,20 +10,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/vendor"
 )
 
 type vendorRestParams struct {
 	dig.In
-	Svc it.VendorService
+	Svc it.VendorAppService
 }
 
 func NewVendorRest(params vendorRestParams) *VendorRest {
 	return &VendorRest{svc: params.Svc}
 }
 
-type VendorRest struct{ svc it.VendorService }
+type VendorRest struct{ svc it.VendorAppService }
 
 func (this VendorRest) CreateVendor(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -33,11 +33,11 @@ func (this VendorRest) CreateVendor(echoCtx *echo.Context) (err error) {
 	}()
 	return httpserver.ServeRequestDynamic(echoCtx, this.svc.CreateVendor,
 		func(fields dmodel.DynamicFields) it.CreateVendorCommand {
-			cmd := it.CreateVendorCommand{Vendor: *domain.NewVendor()}
+			cmd := it.CreateVendorCommand{Vendor: *models.NewVendor()}
 			cmd.SetFieldData(fields)
 			return cmd
 		},
-		func(data domain.Vendor) CreateVendorResponse {
+		func(data models.Vendor) CreateVendorResponse {
 			return *httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 		},
 		httpserver.JsonCreated)
@@ -61,7 +61,7 @@ func (this VendorRest) GetVendor(echoCtx *echo.Context) (err error) {
 	}()
 	return httpserver.ServeRequest2(echoCtx, this.svc.GetVendor,
 		func(request GetVendorRequest) it.GetVendorQuery { return it.GetVendorQuery(request) },
-		func(data domain.Vendor) GetVendorResponse { return data.GetFieldData() }, httpserver.JsonOk)
+		func(data models.Vendor) GetVendorResponse { return data.GetFieldData() }, httpserver.JsonOk)
 }
 func (this VendorRest) VendorExists(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -82,7 +82,9 @@ func (this VendorRest) SearchVendors(echoCtx *echo.Context) (err error) {
 	}()
 	return httpserver.ServeRequest2(echoCtx, this.svc.SearchVendors,
 		func(request SearchVendorsRequest) it.SearchVendorsQuery { return it.SearchVendorsQuery(request) },
-		func(data it.SearchVendorsResultData) SearchVendorsResponse { return httpserver.NewSearchResponseDyn(data) },
+		func(data it.SearchVendorsResultData) SearchVendorsResponse {
+			return httpserver.NewSearchResponseDyn(data)
+		},
 		httpserver.JsonOk, true)
 }
 func (this VendorRest) SetVendorIsArchived(echoCtx *echo.Context) (err error) {
@@ -105,7 +107,7 @@ func (this VendorRest) UpdateVendor(echoCtx *echo.Context) (err error) {
 	}()
 	return httpserver.ServeRequest2(echoCtx, this.svc.UpdateVendor,
 		func(request UpdateVendorRequest) it.UpdateVendorCommand {
-			cmd := it.UpdateVendorCommand{Vendor: *domain.NewVendor()}
+			cmd := it.UpdateVendorCommand{Vendor: *models.NewVendor()}
 			cmd.SetFieldData(request.DynamicFields)
 			cmd.SetId(util.ToPtr(model.Id(request.VendorId)))
 			return cmd

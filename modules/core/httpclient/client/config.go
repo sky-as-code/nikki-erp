@@ -1,18 +1,18 @@
 package client
 
-type HTTPClientConfig struct {
+type HttpClientConfig struct {
 	Timeout int64 // milisecond
 
-	TLSConfig TLSConfig
+	TlsConfig TlsConfig
 
 	// for mTLS
 	ClientCertConfig ClientCertConfig
 }
 
-type TLSConfig struct {
+type TlsConfig struct {
 	InsecureSkipVerify     bool // Skip verify server, default is false
-	IncludeSystemTrustedCA bool
-	CustomTrustedCAs       []string // CAs cert paths
+	IncludeSystemTrustedCa bool
+	CustomTrustedCa        string // CA cert
 }
 
 // ClientCert is either P12 or Key-pair

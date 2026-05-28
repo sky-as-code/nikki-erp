@@ -1,0 +1,22 @@
+meta {
+  name: Enum - Get By ID
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{api_host}}/v1/essential/enums/{{enum_id}}
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('enum_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

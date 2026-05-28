@@ -12,14 +12,14 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/action"
 )
 
 type actionRestParams struct {
 	dig.In
 
-	ActionSvc it.ActionService
+	ActionSvc it.ActionAppService
 }
 
 func NewActionRest(params actionRestParams) *ActionRest {
@@ -28,7 +28,7 @@ func NewActionRest(params actionRestParams) *ActionRest {
 
 type ActionRest struct {
 	httpserver.RestBase
-	ActionSvc it.ActionService
+	ActionSvc it.ActionAppService
 }
 
 func (this ActionRest) CreateAction(echoCtx *echo.Context) (err error) {
@@ -38,7 +38,7 @@ func (this ActionRest) CreateAction(echoCtx *echo.Context) (err error) {
 		}
 	}()
 
-	return httpserver.ServeRequest2(
+	return httpserver.ServeRequest2[CreateActionRequest, CreateActionResponse, it.CreateActionCommand, domain.Action](
 		echoCtx,
 		this.ActionSvc.CreateAction,
 		func(request CreateActionRequest) it.CreateActionCommand {
@@ -56,54 +56,27 @@ func (this ActionRest) CreateAction(echoCtx *echo.Context) (err error) {
 }
 
 func (this ActionRest) DeleteAction(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST delete action"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(
+	return httpserver.ServeGeneralMutate[DeleteActionRequest, DeleteActionResponse](
+		"delete action",
 		echoCtx,
 		this.ActionSvc.DeleteAction,
-		func(request DeleteActionRequest) it.DeleteActionCommand {
-			return it.DeleteActionCommand(request)
-		},
-		func(data dyn.MutateResultData) DeleteActionResponse {
-			return httpserver.NewRestDeleteResponse2(data)
-		},
-		httpserver.JsonOk,
 	)
 }
 
 func (this ActionRest) GetAction(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST get action"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(
+	return httpserver.ServeGetOne2[GetActionRequest, GetActionResponse, domain.Action](
+		"get action",
 		echoCtx,
 		this.ActionSvc.GetAction,
-		func(request GetActionRequest) it.GetActionQuery {
-			return it.GetActionQuery(request)
-		},
-		func(data domain.Action) GetActionResponse {
-			return data.GetFieldData()
-		},
-		httpserver.JsonOk,
 	)
 }
 
 func (this ActionRest) ActionExists(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST action exists"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(
+	return httpserver.ServeRequest2[ActionExistsRequest, ActionExistsResponse, it.ActionExistsQuery, dyn.ExistsResultData](
 		echoCtx,
 		this.ActionSvc.ActionExists,
 		func(request ActionExistsRequest) it.ActionExistsQuery {
-			return it.ActionExistsQuery(request)
+			return request
 		},
 		func(data dyn.ExistsResultData) ActionExistsResponse {
 			return ActionExistsResponse(data)
@@ -113,21 +86,10 @@ func (this ActionRest) ActionExists(echoCtx *echo.Context) (err error) {
 }
 
 func (this ActionRest) SearchActions(echoCtx *echo.Context) (err error) {
-	defer func() {
-		if e := ft.RecoverPanicFailedTo(recover(), "handle REST search actions"); e != nil {
-			err = e
-		}
-	}()
-	return httpserver.ServeRequest2(
+	return httpserver.ServeSearch[SearchActionsRequest, SearchActionsResponse, domain.Action](
+		"search actions",
 		echoCtx,
 		this.ActionSvc.SearchActions,
-		func(request SearchActionsRequest) it.SearchActionsQuery {
-			return it.SearchActionsQuery(request)
-		},
-		func(data it.SearchActionsResultData) SearchActionsResponse {
-			return httpserver.NewSearchResponseDyn(data)
-		},
-		httpserver.JsonOk,
 	)
 }
 
@@ -137,7 +99,7 @@ func (this ActionRest) UpdateAction(echoCtx *echo.Context) (err error) {
 			err = e
 		}
 	}()
-	return httpserver.ServeRequest2(
+	return httpserver.ServeRequest2[UpdateActionRequest, UpdateActionResponse, it.UpdateActionCommand, dyn.MutateResultData](
 		echoCtx,
 		this.ActionSvc.UpdateAction,
 		func(request UpdateActionRequest) it.UpdateActionCommand {

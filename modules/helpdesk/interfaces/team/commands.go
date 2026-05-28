@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain"
+	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/models"
 )
 
 func init() {
@@ -22,14 +22,14 @@ func init() {
 
 var createTeamCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "team", Action: "createTeam"}
 
-type CreateTeamCommand struct{ domain.Team }
+type CreateTeamCommand struct{ models.Team }
 
 func (CreateTeamCommand) CqrsRequestType() cqrs.RequestType { return createTeamCommandType }
 func (CreateTeamCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.TeamSchemaName)
+	return dmodel.GetSchema(models.TeamSchemaName)
 }
 
-type CreateTeamResult = dyn.OpResult[domain.Team]
+type CreateTeamResult = dyn.OpResult[models.Team]
 
 var deleteTeamCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "team", Action: "deleteTeam"}
 
@@ -45,7 +45,7 @@ type GetTeamQuery dyn.GetOneQuery
 
 func (GetTeamQuery) CqrsRequestType() cqrs.RequestType { return getTeamQueryType }
 
-type GetTeamResult = dyn.OpResult[domain.Team]
+type GetTeamResult = dyn.OpResult[models.Team]
 
 var teamExistsQueryType = cqrs.RequestType{Module: "helpdesk", Submodule: "team", Action: "teamExists"}
 
@@ -61,16 +61,16 @@ type SearchTeamsQuery dyn.SearchQuery
 
 func (SearchTeamsQuery) CqrsRequestType() cqrs.RequestType { return searchTeamsQueryType }
 
-type SearchTeamsResultData = dyn.PagedResultData[domain.Team]
+type SearchTeamsResultData = dyn.PagedResultData[models.Team]
 type SearchTeamsResult = dyn.OpResult[SearchTeamsResultData]
 
 var updateTeamCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "team", Action: "updateTeam"}
 
-type UpdateTeamCommand struct{ domain.Team }
+type UpdateTeamCommand struct{ models.Team }
 
 func (UpdateTeamCommand) CqrsRequestType() cqrs.RequestType { return updateTeamCommandType }
 func (UpdateTeamCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.TeamSchemaName)
+	return dmodel.GetSchema(models.TeamSchemaName)
 }
 
 type UpdateTeamResult = dyn.OpResult[dyn.MutateResultData]

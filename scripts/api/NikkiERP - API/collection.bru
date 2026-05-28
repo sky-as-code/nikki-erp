@@ -6,6 +6,10 @@ auth {
   mode: none
 }
 
+vars:pre-request {
+  accessToken: 
+}
+
 script:pre-request {
   // Generate a 6-char alphanumeric string
   function randomString(length = 6) {

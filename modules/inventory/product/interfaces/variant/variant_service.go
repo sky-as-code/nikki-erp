@@ -11,5 +11,6 @@ type VariantService interface {
 	VariantExists(ctx corectx.Context, query VariantExistsQuery) (*VariantExistsResult, error)
 	GetVariant(ctx corectx.Context, query GetVariantQuery) (*GetVariantResult, error)
 	SearchVariants(ctx corectx.Context, query SearchVariantsQuery) (*SearchVariantsResult, error)
+	SearchAllVariants(ctx corectx.Context, query SearchAllVariantsQuery) (*SearchAllVariantsResult, error)
 	UpdateVariant(ctx corectx.Context, cmd UpdateVariantCommand) (*dyn.OpResult[dyn.MutateResultData], error)
 }

@@ -2,8 +2,11 @@ package pubsub
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/sky-as-code/nikki-erp/modules/core/config"
+	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -12,16 +15,20 @@ type RedisPubSub struct {
 	redisClient *redis.Client
 }
 
-func NewRedisPubSub(logger logging.LoggerService, redisClient *redis.Client) (Publisher, Subcriber) {
+func NewRedisPubSub(logger logging.LoggerService, cfg config.ConfigService) (Publisher, Subcriber) {
 	r := &RedisPubSub{
-		logger:      logger,
-		redisClient: redisClient,
+		logger: logger,
+		redisClient: redis.NewClient(&redis.Options{
+			Addr:     fmt.Sprintf("%s:%s", cfg.GetStr(c.PubSubRedisHost), cfg.GetStr(c.PubSubRedisPort)),
+			Password: cfg.GetStr(c.PubSubRedisPassword),
+			DB:       cfg.GetInt(c.PubSubRedisDB),
+		}),
 	}
 
 	return r, r
 }
 
-func (this *RedisPubSub) Publish(ctx context.Context, channel string, message any) error {
+func (this *RedisPubSub) Publish(ctx context.Context, channel string, message []byte) error {
 	this.logger.Debug("Publishing message to topic", logging.Attr{"topic": channel, "message": message})
 	return this.redisClient.Publish(ctx, channel, message).Err()
 }

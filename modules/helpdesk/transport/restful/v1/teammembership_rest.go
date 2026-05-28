@@ -10,7 +10,7 @@ import (
 
 type teamMembershipRestParams struct {
 	dig.In
-	Service it.TeamMembershipService
+	Service it.TeamMembershipAppService
 }
 
 func NewTeamMembershipRest(params teamMembershipRestParams) *TeamMembershipRest {
@@ -19,7 +19,7 @@ func NewTeamMembershipRest(params teamMembershipRestParams) *TeamMembershipRest 
 
 type TeamMembershipRest struct {
 	httpserver.RestBase
-	Service it.TeamMembershipService
+	Service it.TeamMembershipAppService
 }
 
 func (this TeamMembershipRest) CreateTeamMembership(echoCtx *echo.Context) (err error) {

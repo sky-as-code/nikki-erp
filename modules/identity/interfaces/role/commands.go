@@ -6,7 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
@@ -58,11 +58,11 @@ func (CreatePrivateRoleCommand) GetSchema() *dmodel.ModelSchema {
 				Field(dmodel.DefineField().
 					Name("owner_id").
 					DataType(dmodel.FieldDataTypeUlid()).
-					Required()).
+					RequiredAlways()).
 				Field(dmodel.DefineField().
 					Name("owner_type").
 					DataType(dmodel.FieldDataTypeEnumString([]string{"group", "user"})).
-					Required())
+					RequiredAlways())
 		},
 	)
 }
@@ -95,7 +95,7 @@ func (DeletePrivateRoleCommand) GetSchema() *dmodel.ModelSchema {
 				Field(dmodel.DefineField().
 					Name("owner_id").
 					DataType(dmodel.FieldDataTypeUlid()).
-					Required())
+					RequiredAlways())
 		},
 	)
 }
@@ -108,7 +108,7 @@ type GetRoleQuery dyn.GetOneQuery
 
 func (GetRoleQuery) CqrsRequestType() cqrs.RequestType { return getRoleQueryType }
 
-type GetRoleResult = dyn.OpResult[domain.Role]
+type GetRoleResult = dyn.OpResult[dyn.SingleResultData[domain.Role]]
 
 var roleExistsQueryType = cqrs.RequestType{Module: "identity", Submodule: "role", Action: "roleExists"}
 
@@ -190,7 +190,7 @@ func (ManageRoleAssignmentsCommand) GetSchema() *dmodel.ModelSchema {
 				Field(dmodel.DefineField().
 					Name("owner_type").
 					DataType(dmodel.FieldDataTypeEnumString([]string{"group", "user"})).
-					Required())
+					RequiredAlways())
 		},
 	)
 }

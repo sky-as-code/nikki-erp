@@ -8,14 +8,14 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 )
 
 type organizationRestParams struct {
 	dig.In
 
-	OrgSvc it.OrganizationService
+	OrgSvc it.OrganizationAppService
 }
 
 func NewOrganizationRest(params organizationRestParams) *OrganizationRest {
@@ -26,11 +26,11 @@ func NewOrganizationRest(params organizationRestParams) *OrganizationRest {
 
 type OrganizationRest struct {
 	httpserver.RestBase
-	OrgSvc it.OrganizationService
+	OrgSvc it.OrganizationAppService
 }
 
 func (this OrganizationRest) CreateOrg(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeCreate(
+	return httpserver.ServeCreate[CreateOrgRequest, CreateOrgResponse, domain.Organization](
 		"create organization",
 		echoCtx,
 		&it.CreateOrgCommand{},
@@ -39,7 +39,7 @@ func (this OrganizationRest) CreateOrg(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrganizationRest) DeleteOrg(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[DeleteOrgRequest, DeleteOrgResponse](
 		"delete organization",
 		echoCtx,
 		this.OrgSvc.DeleteOrg,
@@ -47,7 +47,7 @@ func (this OrganizationRest) DeleteOrg(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrganizationRest) GetOrg(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGetOne(
+	return httpserver.ServeGetOne2[GetOrgRequest, GetOrgResponse, domain.Organization](
 		"get organization",
 		echoCtx,
 		this.OrgSvc.GetOrg,
@@ -55,7 +55,7 @@ func (this OrganizationRest) GetOrg(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrganizationRest) ManageOrgUsers(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[ManageOrgUsersRequest, ManageOrgUsersResponse](
 		"manage org users",
 		echoCtx,
 		this.OrgSvc.ManageOrgUsers,
@@ -63,7 +63,7 @@ func (this OrganizationRest) ManageOrgUsers(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrganizationRest) OrgExists(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeExists(
+	return httpserver.ServeExists[OrgExistsRequest, OrgExistsResponse](
 		"organization exists",
 		echoCtx,
 		this.OrgSvc.OrgExists,
@@ -71,7 +71,7 @@ func (this OrganizationRest) OrgExists(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrganizationRest) SearchOrgs(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeSearch(
+	return httpserver.ServeSearch[SearchOrgsRequest, SearchOrgsResponse, domain.Organization](
 		"search organizations",
 		echoCtx,
 		this.OrgSvc.SearchOrgs,
@@ -79,7 +79,7 @@ func (this OrganizationRest) SearchOrgs(echoCtx *echo.Context) (err error) {
 }
 
 func (this OrganizationRest) SetOrgIsArchived(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeGeneralMutate(
+	return httpserver.ServeGeneralMutate[SetOrgIsArchivedRequest, SetOrgIsArchivedResponse](
 		"set organization is_archived",
 		echoCtx,
 		this.OrgSvc.SetOrgIsArchived,
@@ -87,7 +87,7 @@ func (this OrganizationRest) SetOrgIsArchived(echoCtx *echo.Context) (err error)
 }
 
 func (this OrganizationRest) UpdateOrg(echoCtx *echo.Context) (err error) {
-	return httpserver.ServeUpdate(
+	return httpserver.ServeUpdate[UpdateOrgRequest, UpdateOrgResponse](
 		"update organization",
 		echoCtx,
 		&it.UpdateOrgCommand{},

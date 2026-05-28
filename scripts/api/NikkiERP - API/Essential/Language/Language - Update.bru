@@ -1,0 +1,36 @@
+meta {
+  name: Language - Update
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{api_host}}/v1/essential/languages/{{language_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Updated Test Language {{$randomLoremWord}}",
+    "direction": "ltr",
+    "decimal_separator": ".",
+    "thousands_separator": ",",
+    "date_format": "2006-01-02",
+    "time_format": "15:04:05",
+    "short_time_format": "15:04",
+    "first_day_of_week": "monday",
+    "etag": "{{language_etag}}"
+  }
+}
+
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('language_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

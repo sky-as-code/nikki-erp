@@ -5,19 +5,51 @@ meta {
 }
 
 post {
-  url: {{api_host}}/v1/contacts/parties/relationships
+  url: {{api_host}}/v1/{{org_id}}/contacts/parties/{{party_id}}/relationships
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "partyId" : "{{party_id}}",
-    "targetPartyId" : "01K5JKAX8FDGJB7088ZZ54910E",
-    "type": "employee"
+    "target_party_id": "{{target_party_id}}",
+    "type": "{{relationship_type}}",
+    "note": "{{relationship_note}}"
   }
+}
+
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
+  target_party_id: 01KQX97XFWPT07QSKVHRBP5JDX
+  relationship_type: employee
+  relationship_note: Internal reporting relationship.
+}
+
+script:pre-request {
+  const relationships = [
+    { type: "employee", note: "Employee reports to target party." },
+    { type: "spouse", note: "Family relationship information." },
+    { type: "parent", note: "Parent relationship for emergency contact." },
+    { type: "sibling", note: "Sibling relationship metadata." },
+    { type: "emergency", note: "Emergency contact relationship." },
+    { type: "subsidiary", note: "Subsidiary relationship in organization tree." }
+  ];
+  
+  const randomRelationship = relationships[Math.floor(Math.random() * relationships.length)];
+  
+  bru.setVar('relationship_type', randomRelationship.type || "employee");
+  bru.setVar('relationship_note', randomRelationship.note || "Internal reporting relationship.");
+}
+
+script:post-response {
+  const body = res.getBody() || {};
+  const id = body.id || body.relationshipId;
+  const etag = body.etag;
+  id && bru.setVar('relationship_id', id);
+  etag && bru.setVar('etag', etag);
 }
 
 settings {
   encodeUrl: true
+  timeout: 0
 }

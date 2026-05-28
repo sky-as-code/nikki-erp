@@ -8,10 +8,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 )
 
-// type BaseRepoGetter interface {
-// 	GetBaseRepo() dyn.BaseDynamicRepository
-// }
-
 func GetOne[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](
 	ctx corectx.Context, dynamicRepo dyn.BaseDynamicRepository, param dyn.RepoGetOneParam,
 ) (*dyn.OpResult[TDomain], error) {

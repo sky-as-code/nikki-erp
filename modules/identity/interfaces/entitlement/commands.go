@@ -6,7 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
@@ -60,7 +60,7 @@ type GetEntitlementQuery dyn.GetOneQuery
 
 func (GetEntitlementQuery) CqrsRequestType() cqrs.RequestType { return getEntitlementQueryType }
 
-type GetEntitlementResult = dyn.OpResult[domain.Entitlement]
+type GetEntitlementResult = dyn.OpResult[dyn.SingleResultData[domain.Entitlement]]
 
 var entitlementExistsQueryType = cqrs.RequestType{
 	Module: "identity", Submodule: "entitlement", Action: "entitlementExists",

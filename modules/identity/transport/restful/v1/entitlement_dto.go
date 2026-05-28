@@ -11,10 +11,10 @@ type CreateEntitlementRequest = it.CreateEntitlementCommand
 type CreateEntitlementResponse = httpserver.RestCreateResponse
 
 type DeleteEntitlementRequest = it.DeleteEntitlementCommand
-type DeleteEntitlementResponse = httpserver.RestDeleteResponse2
+type DeleteEntitlementResponse = httpserver.RestMutateResponse
 
 type GetEntitlementRequest = it.GetEntitlementQuery
-type GetEntitlementResponse = dmodel.DynamicFields
+type GetEntitlementResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
 
 type EntitlementExistsRequest = it.EntitlementExistsQuery
 type EntitlementExistsResponse = dyn.ExistsResultData

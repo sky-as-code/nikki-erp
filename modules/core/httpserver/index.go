@@ -5,8 +5,8 @@ import (
 )
 
 func InitSubModule() error {
-	err := deps.Register(func(params httpServerParams) httpServerResult {
-		return initHttpServer(params)
-	})
+	err := deps.Register(
+		initHttpServer,
+	)
 	return err
 }

@@ -6,6 +6,15 @@ func Contains[TSrc any](array []TSrc, item TSrc) bool {
 	return funk.Contains(array, item)
 }
 
+func ContainsIf[TSrc any](array []TSrc, predicate func(TSrc) bool) bool {
+	for _, item := range array {
+		if predicate(item) {
+			return true
+		}
+	}
+	return false
+}
+
 func Map[TSrc any, TDest any](array []TSrc, mapper func(TSrc) TDest) []TDest {
 	return funk.Map(array, mapper).([]TDest)
 }

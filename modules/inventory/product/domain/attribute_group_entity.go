@@ -9,6 +9,16 @@ import (
 )
 
 const (
+	AttributeGroupResourceCode = "inventory_attribute_group"
+	AttributeGroupAuthScope    = "org"
+
+	AttributeGroupActionCreate = "create"
+	AttributeGroupActionDelete = "delete"
+	AttributeGroupActionUpdate = "update"
+	AttributeGroupActionView   = "view"
+)
+
+const (
 	AttributeGroupSchemaName = "inventory.attribute_group"
 
 	AttrGrpFieldId        = basemodel.FieldId

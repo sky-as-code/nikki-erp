@@ -12,7 +12,7 @@ import (
 type passwordRestParam struct {
 	dig.In
 
-	PasswordSvc it.PasswordService
+	PasswordSvc it.PasswordAppService
 }
 
 func NewPasswordRest(params passwordRestParam) *PasswordRest {
@@ -23,7 +23,7 @@ func NewPasswordRest(params passwordRestParam) *PasswordRest {
 
 type PasswordRest struct {
 	httpserver.RestBase
-	passwordSvc it.PasswordService
+	passwordSvc it.PasswordAppService
 }
 
 func (this PasswordRest) CreatePasswordOtp(echoCtx *echo.Context) (err error) {

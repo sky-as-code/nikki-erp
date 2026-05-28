@@ -11,16 +11,16 @@ type CreateOrgRequest = it.CreateOrgCommand
 type CreateOrgResponse = httpserver.RestCreateResponse
 
 type DeleteOrgRequest = it.DeleteOrgCommand
-type DeleteOrgResponse = httpserver.RestDeleteResponse2
+type DeleteOrgResponse = httpserver.RestMutateResponse
 
 type GetOrgRequest = it.GetOrgQuery
-type GetOrgResponse = dmodel.DynamicFields
+type GetOrgResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
 
 type OrgExistsRequest = it.OrgExistsQuery
 type OrgExistsResponse = dyn.ExistsResultData
 
 type ManageOrgUsersRequest = it.ManageOrgUsersCommand
-type ManageOrgsResponse = httpserver.RestMutateResponse
+type ManageOrgUsersResponse = httpserver.RestMutateResponse
 
 type SearchOrgsRequest = it.SearchOrgsQuery
 type SearchOrgsResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]

@@ -1,0 +1,25 @@
+meta {
+  name: Tag - Exists
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_host}}/v1/essential/tags/exists
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "ids": [
+      "{{tag_id}}"
+    ]
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

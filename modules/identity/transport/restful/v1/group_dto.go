@@ -11,10 +11,10 @@ type CreateGroupRequest = it.CreateGroupCommand
 type CreateGroupResponse = httpserver.RestCreateResponse
 
 type DeleteGroupRequest = it.DeleteGroupCommand
-type DeleteGroupResponse = httpserver.RestDeleteResponse2
+type DeleteGroupResponse = httpserver.RestMutateResponse
 
 type GetGroupRequest = it.GetGroupQuery
-type GetGroupResponse = dmodel.DynamicFields
+type GetGroupResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
 
 type GroupExistsRequest = it.GroupExistsQuery
 type GroupExistsResponse = dyn.ExistsResultData

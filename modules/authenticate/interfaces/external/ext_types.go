@@ -1,7 +1,7 @@
 package external
 
 import (
-	identDomain "github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	identModels "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 	itGrp "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/group"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/organization"
 	itOrgUnit "github.com/sky-as-code/nikki-erp/modules/identity/interfaces/orgunit"
@@ -9,16 +9,16 @@ import (
 )
 
 const (
-	UserStatusInvited = identDomain.UserStatusInvited
-	UserStatusActive  = identDomain.UserStatusActive
+	UserStatusInvited = identModels.UserStatusInvited
+	UserStatusActive  = identModels.UserStatusActive
 )
 
-type UserExtService = itUsr.UserService
-type OrganizationExtService = itOrg.OrganizationService
-type OrgUnitExtService = itOrgUnit.OrgUnitService
-type GroupExtService = itGrp.GroupService
+type UserExtService = itUsr.UserDomainService
+type OrganizationExtService = itOrg.OrganizationDomainService
+type OrgUnitExtService = itOrgUnit.OrgUnitDomainService
+type GroupExtService = itGrp.GroupDomainService
 
 type GetOrgQuery = itOrg.GetOrgQuery
 type GetUserQuery = itUsr.GetUserQuery
 
-type Organization = identDomain.Organization
+type Organization = identModels.Organization

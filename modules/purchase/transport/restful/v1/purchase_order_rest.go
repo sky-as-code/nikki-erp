@@ -10,20 +10,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/purchaseorder"
 )
 
 type purchaseOrderRestParams struct {
 	dig.In
-	Svc it.PurchaseOrderService
+	Svc it.PurchaseOrderAppService
 }
 
 func NewPurchaseOrderRest(params purchaseOrderRestParams) *PurchaseOrderRest {
 	return &PurchaseOrderRest{svc: params.Svc}
 }
 
-type PurchaseOrderRest struct{ svc it.PurchaseOrderService }
+type PurchaseOrderRest struct{ svc it.PurchaseOrderAppService }
 
 func (this PurchaseOrderRest) CreatePurchaseOrder(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -33,11 +33,11 @@ func (this PurchaseOrderRest) CreatePurchaseOrder(echoCtx *echo.Context) (err er
 	}()
 	return httpserver.ServeRequestDynamic(echoCtx, this.svc.CreatePurchaseOrder,
 		func(fields dmodel.DynamicFields) it.CreatePurchaseOrderCommand {
-			cmd := it.CreatePurchaseOrderCommand{PurchaseOrder: *domain.NewPurchaseOrder()}
+			cmd := it.CreatePurchaseOrderCommand{PurchaseOrder: *models.NewPurchaseOrder()}
 			cmd.SetFieldData(fields)
 			return cmd
 		},
-		func(data domain.PurchaseOrder) CreatePurchaseOrderResponse {
+		func(data models.PurchaseOrder) CreatePurchaseOrderResponse {
 			return *httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 		},
 		httpserver.JsonCreated)
@@ -66,7 +66,7 @@ func (this PurchaseOrderRest) GetPurchaseOrder(echoCtx *echo.Context) (err error
 		func(request GetPurchaseOrderRequest) it.GetPurchaseOrderQuery {
 			return it.GetPurchaseOrderQuery(request)
 		},
-		func(data domain.PurchaseOrder) GetPurchaseOrderResponse { return data.GetFieldData() }, httpserver.JsonOk)
+		func(data models.PurchaseOrder) GetPurchaseOrderResponse { return data.GetFieldData() }, httpserver.JsonOk)
 }
 func (this PurchaseOrderRest) PurchaseOrderExists(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -114,7 +114,7 @@ func (this PurchaseOrderRest) UpdatePurchaseOrder(echoCtx *echo.Context) (err er
 	}()
 	return httpserver.ServeRequest2(echoCtx, this.svc.UpdatePurchaseOrder,
 		func(request UpdatePurchaseOrderRequest) it.UpdatePurchaseOrderCommand {
-			cmd := it.UpdatePurchaseOrderCommand{PurchaseOrder: *domain.NewPurchaseOrder()}
+			cmd := it.UpdatePurchaseOrderCommand{PurchaseOrder: *models.NewPurchaseOrder()}
 			cmd.SetFieldData(request.DynamicFields)
 			cmd.SetId(util.ToPtr(model.Id(request.PurchaseOrderId)))
 			return cmd

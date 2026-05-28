@@ -7,7 +7,9 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/app"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	modconstants "github.com/sky-as-code/nikki-erp/modules/purchase/constants"
+	models "github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/purchase/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/purchase/transport"
 )
@@ -22,11 +24,18 @@ func (*PurchaseModule) LabelKey() string {
 }
 
 func (*PurchaseModule) Name() string {
-	return "purchase"
+	return modconstants.PurchaseModuleName
 }
 
 func (*PurchaseModule) Deps() []string {
-	return []string{"essential", "inventory"}
+	return []string{
+		"essential",
+		"inventory",
+	}
+}
+
+func (*PurchaseModule) IsInternal() bool {
+	return false
 }
 
 func (*PurchaseModule) Version() semver.SemVer {
@@ -36,19 +45,20 @@ func (*PurchaseModule) Version() semver.SemVer {
 func (*PurchaseModule) Init() error {
 	return errors.Join(
 		repo.InitRepositories(),
-		app.InitServices(),
+		services.InitDomainServices(),
+		app.InitApplicationServices(),
 		transport.InitTransport(),
 	)
 }
 
 func (*PurchaseModule) RegisterModels() error {
 	return errors.Join(
-		dmodel.RegisterSchemaB(domain.PurchaseOrderSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.PurchaseOrderItemSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.PurchaseRequestSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.RequestForProposalSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.RequestForQuoteSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.VendorSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.PurchaseOrderSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.PurchaseOrderItemSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.PurchaseRequestSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.RequestForProposalSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.RequestForQuoteSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.VendorSchemaBuilder()),
 	)
 }
 

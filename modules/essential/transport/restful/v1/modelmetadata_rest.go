@@ -9,20 +9,20 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/essential/domain"
+	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/modelmetadata"
 )
 
 type modelMetadataRestParams struct {
 	dig.In
-	ModelMetadataSvc it.ModelMetadataService
+	ModelMetadataSvc it.ModelMetadataAppService
 }
 
 func NewModelMetadataRest(params modelMetadataRestParams) *ModelMetadataRest {
 	return &ModelMetadataRest{svc: params.ModelMetadataSvc}
 }
 
-type ModelMetadataRest struct{ svc it.ModelMetadataService }
+type ModelMetadataRest struct{ svc it.ModelMetadataAppService }
 
 func (this ModelMetadataRest) CreateModelMetadata(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -36,7 +36,7 @@ func (this ModelMetadataRest) CreateModelMetadata(echoCtx *echo.Context) (err er
 			cmd.SetFieldData(request.DynamicFields)
 			return cmd
 		},
-		func(data domain.ModelMetadata) CreateModelMetadataResponse {
+		func(data models.ModelMetadata) CreateModelMetadataResponse {
 			return *httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 		},
 		httpserver.JsonCreated)
@@ -68,7 +68,7 @@ func (this ModelMetadataRest) GetModelMetadata(echoCtx *echo.Context) (err error
 		func(request GetModelMetadataRequest) it.GetModelMetadataQuery {
 			return it.GetModelMetadataQuery(request)
 		},
-		func(data domain.ModelMetadata) GetModelMetadataResponse { return data.GetFieldData() },
+		func(data models.ModelMetadata) GetModelMetadataResponse { return data.GetFieldData() },
 		httpserver.JsonOk)
 }
 

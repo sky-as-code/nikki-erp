@@ -5,25 +5,123 @@ meta {
 }
 
 post {
-  url: {{api_host}}/v1/contacts/parties/channels
+  url: {{api_host}}/v1/{{org_id}}/contacts/parties/{{party_id}}/channels
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "orgId": "{{org_id}}",
-    "partyId": "{{party_id}}",
-    "type": "post",
-    "valueJson" : {
-      "numberStreet": "297 An Duong Vuong",
-      "district": "Quan 5",
-      "country" : "Ho Chi Minh",
-      "note": "Gan Truong Hoc Su Pham"
+    "type": "{{channel_type}}",
+    "value": "{{channel_value}}",
+    "note": "{{channel_note}}",
+    "value_json": {
+      "number_street": "{{channel_street}}",
+      "ward": "{{channel_ward}}",
+      "district": "{{channel_district}}",
+      "city": "{{channel_city}}",
+      "country": "{{channel_country}}"
     }
   }
 }
 
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
+  channel_type: email
+  channel_value: contact@example.com
+  channel_note: Main contact channel for this party.
+  channel_street: 297 An Duong Vuong
+  channel_ward: Ward 3
+  channel_district: District 5
+  channel_city: Ho Chi Minh City
+  channel_country: Viet Nam
+}
+
+script:pre-request {
+  const channels = [
+    {
+      type: "phone",
+      value: "+84901234567",
+      note: "Primary hotline number.",
+      address: {
+        street: "12 Le Loi",
+        ward: "Ben Nghe",
+        district: "District 1",
+        city: "Ho Chi Minh City",
+        country: "Viet Nam"
+      }
+    },
+    {
+      type: "email",
+      value: "support@partner.vn",
+      note: "Support mailbox for daily operations.",
+      address: {
+        street: "25 Tran Hung Dao",
+        ward: "Ward 2",
+        district: "District 5",
+        city: "Ho Chi Minh City",
+        country: "Viet Nam"
+      }
+    },
+    {
+      type: "zalo",
+      value: "zalo.me/0901234567",
+      note: "Fast response via Zalo channel.",
+      address: {
+        street: "88 Vo Van Tan",
+        ward: "Ward 6",
+        district: "District 3",
+        city: "Ho Chi Minh City",
+        country: "Viet Nam"
+      }
+    },
+    {
+      type: "facebook",
+      value: "facebook.com/partner.page",
+      note: "Social media communication channel.",
+      address: {
+        street: "9B Nguyen Trai",
+        ward: "Khuong Trung",
+        district: "Thanh Xuan",
+        city: "Ha Noi",
+        country: "Viet Nam"
+      }
+    },
+    {
+      type: "post",
+      value: "Address delivery channel",
+      note: "Postal address for physical documents.",
+      address: {
+        street: "297 An Duong Vuong",
+        ward: "Ward 3",
+        district: "District 5",
+        city: "Ho Chi Minh City",
+        country: "Viet Nam"
+      }
+    }
+  ];
+  
+  const randomChannel = channels[Math.floor(Math.random() * channels.length)];
+  
+  bru.setVar('channel_type', randomChannel.type || "email");
+  bru.setVar('channel_value', randomChannel.value || "contact@example.com");
+  bru.setVar('channel_note', randomChannel.note || "Main contact channel for this party.");
+  bru.setVar('channel_street', randomChannel.address?.street || "297 An Duong Vuong");
+  bru.setVar('channel_ward', randomChannel.address?.ward || "Ward 3");
+  bru.setVar('channel_district', randomChannel.address?.district || "District 5");
+  bru.setVar('channel_city', randomChannel.address?.city || "Ho Chi Minh City");
+  bru.setVar('channel_country', randomChannel.address?.country || "Viet Nam");
+}
+
+script:post-response {
+  const body = res.getBody() || {};
+  const id = body.id || body.channelId;
+  const etag = body.etag;
+  id && bru.setVar('channel_id', id);
+  etag && bru.setVar('etag', etag);
+}
+
 settings {
   encodeUrl: true
+  timeout: 0
 }

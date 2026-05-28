@@ -28,6 +28,13 @@ func (this Set[T]) Add(item T) {
 	this[item] = struct{}{}
 }
 
+// AddMany adds item to the set.
+func (this Set[T]) AddMany(items ...T) {
+	for _, item := range items {
+		this[item] = struct{}{}
+	}
+}
+
 // Remove removes item from the set. It does nothing if item does not exist in the set.
 func (this Set[T]) Remove(item T) {
 	delete(this, item)
@@ -102,8 +109,6 @@ func NewSet[T comparable]() Set[T] {
 // CreateSet creates new set with given values.
 func NewSetFrom[T comparable](items ...T) Set[T] {
 	set := NewSet[T]()
-	for _, k := range items {
-		set.Add(k)
-	}
+	set.AddMany(items...)
 	return set
 }

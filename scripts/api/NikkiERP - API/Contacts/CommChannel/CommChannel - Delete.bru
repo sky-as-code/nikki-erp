@@ -5,11 +5,16 @@ meta {
 }
 
 delete {
-  url: {{api_host}}/v1/contacts/parties/channels/{{channel_id}}
+  url: {{api_host}}/v1/{{org_id}}/contacts/parties/{{party_id}}/channels/{{channel_id}}
   body: none
   auth: inherit
 }
 
+vars:pre-request {
+  org_id: 01JWNY20G23KD4RV5VWYABQYHD
+}
+
 settings {
   encodeUrl: true
+  timeout: 0
 }

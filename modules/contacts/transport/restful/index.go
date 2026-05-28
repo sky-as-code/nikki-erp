@@ -14,7 +14,7 @@ func InitRestfulHandlers() error {
 		v1.NewCommChannelRest,
 	)
 	return deps.Invoke(func(route *echo.Group, partyRest *v1.PartyRest, relationshipRest *v1.RelationshipRest, commChannelRest *v1.CommChannelRest) {
-		v1 := route.Group("/v1/contacts")
+		v1 := route.Group("/v1/:org_id/contacts")
 		initV1(v1, partyRest, relationshipRest, commChannelRest)
 	})
 }
@@ -22,15 +22,19 @@ func InitRestfulHandlers() error {
 func initV1(route *echo.Group, partyRest *v1.PartyRest, relationshipRest *v1.RelationshipRest, commChannelRest *v1.CommChannelRest) {
 	route.POST("/parties", partyRest.CreateParty)
 	route.DELETE("/parties/:id", partyRest.DeleteParty)
-	route.GET("/parties/:id", partyRest.GetPartyById)
+	route.GET("/parties/:id", partyRest.GetParty)
 	route.GET("/parties", partyRest.SearchParties)
 	route.PUT("/parties/:id", partyRest.UpdateParty)
 
-	route.POST("/parties/relationships", relationshipRest.CreateRelationship)
+	route.POST("/parties/:party_id/relationships", relationshipRest.CreateRelationship)
+	route.DELETE("/parties/:party_id/relationships/:id", relationshipRest.DeleteRelationship)
+	route.GET("/parties/:party_id/relationships/:id", relationshipRest.GetRelationship)
+	route.GET("/parties/:party_id/relationships", relationshipRest.SearchRelationships)
+	route.PUT("/parties/:party_id/relationships/:id", relationshipRest.UpdateRelationship)
 
-	route.POST("/parties/channels", commChannelRest.CreateCommChannel)
-	route.DELETE("/parties/channels/:id", commChannelRest.DeleteCommChannel)
-	route.GET("/parties/channels/:id", commChannelRest.GetCommChannelById)
-	route.GET("/parties/channels", commChannelRest.SearchCommChannels)
-	route.PUT("/parties/channels/:id", commChannelRest.UpdateCommChannel)
+	route.POST("/parties/:party_id/channels", commChannelRest.CreateCommChannel)
+	route.DELETE("/parties/:party_id/channels/:id", commChannelRest.DeleteCommChannel)
+	route.GET("/parties/:party_id/channels/:id", commChannelRest.GetCommChannel)
+	route.GET("/parties/:party_id/channels", commChannelRest.SearchCommChannels)
+	route.PUT("/parties/:party_id/channels/:id", commChannelRest.UpdateCommChannel)
 }

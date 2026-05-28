@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
@@ -69,18 +70,26 @@ func (this value) IsEmpty() bool {
 	return this.val == nil
 }
 
+func (this value) MarshalText() ([]byte, error) {
+	if this.val == nil {
+		return nil, nil
+	}
+	return []byte(fmt.Sprint(*this.val)), nil
+}
+
 type ModelSchema struct {
 	// Persistent fields
 	name                string
-	tableName           string
-	label               model.LangJson
-	description         model.LangJson
-	fieldsOrder         []string
 	compositeUniques    [][]string
+	description         model.LangJson
+	etag                model.Etag
+	fieldsOrder         []string
+	label               model.LangJson
 	partialUniques      [][]string
 	partialUniqueGroups []PartialUniqueGroupParam
 	searchIndexGroups   []SearchIndexGroupParam
 	primaryKeys         []string
+	tableName           string
 	tenantKey           *string
 
 	// Computed fields
@@ -99,10 +108,10 @@ type ModelSchema struct {
 	// m2mPeerByEdge maps relation edge name to the same resolved M2M metadata as m2mPeerByDest.
 	m2mPeerByEdge map[string]*M2mPeerLink
 
-	// exclusiveFieldGroups: each inner slice lists any number of field names (minimum two per group)
+	// exclusiveRequiredFieldGroups: each inner slice lists any number of field names (minimum two per group)
 	// where exactly one must be non-empty in validated input. Zero or more than one non-empty
 	// in that group yields client errors. Schemas may define multiple groups.
-	exclusiveFieldGroups [][]string
+	exclusiveRequiredFieldGroups [][]string
 }
 
 // M2mPeerLink holds junction and FK-prefix metadata for a finalized many-to-many edge from the
@@ -137,6 +146,10 @@ func (this ModelSchema) Name() string {
 	return this.name
 }
 
+func (this ModelSchema) Etag() model.Etag {
+	return this.etag
+}
+
 func (this ModelSchema) Label() model.LangJson {
 	return this.label
 }
@@ -147,6 +160,10 @@ func (this ModelSchema) Description() model.LangJson {
 
 func (this ModelSchema) Fields() map[string]*ModelField {
 	return this.fields
+}
+
+func (this ModelSchema) FieldNames() []string {
+	return this.fieldsOrder
 }
 
 func (this ModelSchema) ToRelations() []ModelRelation {
@@ -354,8 +371,20 @@ func (this *ModelSchema) Validate(input DynamicFields, forEdit ...bool) (Dynamic
 	return result, nil
 }
 
+func (this *ModelSchema) InjectServiceFields(ctx context.Context, result DynamicFields, forEdit bool) {
+	for _, field := range this.fields {
+		if !field.IsServiceInjected() || field.injectFn == nil {
+			continue
+		}
+		val := field.injectFn(ctx, forEdit)
+		if val != nil {
+			result[field.name] = val
+		}
+	}
+}
+
 func (this *ModelSchema) appendExclusiveFieldErrors(errs *ft.ClientErrors, result DynamicFields) {
-	for _, group := range this.exclusiveFieldGroups {
+	for _, group := range this.exclusiveRequiredFieldGroups {
 		if len(group) < 2 {
 			continue
 		}
@@ -404,16 +433,18 @@ func (this *ModelSchema) ToSimplized() any {
 
 	return struct {
 		Name          string         `json:"name"`
-		Label         model.LangJson `json:"label"`
-		ToRelations   []any          `json:"to_relations"`
-		FromRelations []any          `json:"from_relations"`
+		Etag          string         `json:"etag"`
 		Fields        map[string]any `json:"fields"`
+		Label         model.LangJson `json:"label"`
+		FromRelations []any          `json:"from_relations,omitempty"`
+		ToRelations   []any          `json:"to_relations,omitempty"`
 	}{
 		Name:          this.Name(),
+		Etag:          string(this.Etag()),
+		Fields:        simplizedFields,
 		Label:         this.Label(),
 		ToRelations:   array.Map(this.ToRelations(), func(relation ModelRelation) any { return relation.ToSimplized() }),
 		FromRelations: array.Map(this.FromRelations(), func(relation ModelRelation) any { return relation.ToSimplized() }),
-		Fields:        simplizedFields,
 	}
 }
 
@@ -457,6 +488,10 @@ type ModelRelation struct {
 	InversePeerEdgeName   string          `json:"inverse_peer_edge_name,omitempty"`
 	OnDelete              RelationCascade `json:"on_delete"`
 	OnUpdate              RelationCascade `json:"on_update"`
+	// IsInverse marks relations resolved from EdgeFrom. The FK columns in ForeignKeys reference the
+	// destination table's columns, not this schema's own columns. This distinction is needed for
+	// correct JOIN direction, hydrate filters, and FK dependency ordering.
+	IsInverse bool `json:"is_inverse,omitempty"`
 
 	M2mThroughModel      *ModelSchema `json:"through_model,omitempty"`
 	M2mThroughSchemaName string       `json:"through_table_name,omitempty"`
@@ -471,10 +506,10 @@ type ModelRelation struct {
 
 func (this ModelRelation) ToSimplized() any {
 	return struct {
-		Edge           string       `json:"edge"`
-		SrcField       string       `json:"src_field"`
-		DestSchemaName string       `json:"dest_schema_name"`
-		RelationType   RelationType `json:"relation_type"`
+		Edge           string       `json:"edge,omitempty"`
+		SrcField       string       `json:"src_field,omitempty"`
+		DestSchemaName string       `json:"dest_schema_name,omitempty"`
+		RelationType   RelationType `json:"relation_type,omitempty"`
 	}{
 		Edge:           this.Edge,
 		SrcField:       this.SrcField,
@@ -497,6 +532,7 @@ type ModelField struct {
 	label           model.LangJson
 	dataType        FieldDataType
 	description     model.LangJson
+	placeholder     model.LangJson
 	isAutoGenerated bool
 	// Determines the "NOT NULL" constraint for the database column,
 	// and causes the field to be required for create operations.
@@ -504,6 +540,9 @@ type ModelField struct {
 	// Causes the field to be required for update operations,
 	// but doesn't affect the generated CREATE SQL query.
 	isRequiredForUpdate bool
+	// Indicates that the field value is injected by the system.
+	isServiceInjected bool
+	injectFn          func(ctx context.Context, forEdit bool) any
 	// Causes the field to be required when the other field is present.
 	requiredWithFieldName string
 	isVersioningKey       bool
@@ -553,6 +592,14 @@ func (this *ModelField) IsVersioningKey() bool {
 
 func (this *ModelField) IsAutoGenerated() bool {
 	return this.isAutoGenerated
+}
+
+func (this *ModelField) IsServiceInjected() bool {
+	return this.isServiceInjected
+}
+
+func (this *ModelField) InjectFn() func(ctx context.Context, forEdit bool) any {
+	return this.injectFn
 }
 
 func (this *ModelField) IsRequiredForCreate() bool {
@@ -669,26 +716,30 @@ func (this *ModelField) applyFieldRulesForValue(value any) *ft.ClientErrorItem {
 
 func (this ModelField) ToSimplized() any {
 	return struct {
-		Name                string         `json:"name"`
-		Label               model.LangJson `json:"label"`
-		DataType            string         `json:"data_type"`
-		Description         model.LangJson `json:"description"`
+		Name                string         `json:"name,omitempty"`
+		Label               model.LangJson `json:"label,omitempty"`
+		DataType            any            `json:"data_type,omitempty"`
+		Description         model.LangJson `json:"description,omitempty"`
 		IsAutoGenerated     bool           `json:"is_auto_generated"`
 		IsRequiredForCreate bool           `json:"is_required_for_create"`
 		IsRequiredForUpdate bool           `json:"is_required_for_update"`
 		IsPrimaryKey        bool           `json:"is_primary_key"`
+		IsSystemField       bool           `json:"is_system_field"`
+		IsVirtualModelField bool           `json:"is_virtual_model_field"`
 		NoUpdate            bool           `json:"no_update"`
-		Rules               []*FieldRule   `json:"rules"`
-		DefaultValue        *value         `json:"default_value"`
+		Rules               []*FieldRule   `json:"rules,omitempty"`
+		DefaultValue        *value         `json:"default_value,omitempty"`
 	}{
 		Name:                this.Name(),
 		Label:               this.Label(),
-		DataType:            this.DataType().String(),
+		DataType:            this.DataType().ToSimplized(),
 		Description:         this.Description(),
 		IsAutoGenerated:     this.IsAutoGenerated(),
 		IsRequiredForCreate: this.IsRequiredForCreate(),
 		IsRequiredForUpdate: this.IsRequiredForUpdate(),
 		IsPrimaryKey:        this.IsPrimaryKey(),
+		IsSystemField:       this.IsPrimaryKey() || this.IsVersioningKey() || this.IsTenantKey() || this.IsVirtualModelField(),
+		IsVirtualModelField: this.IsVirtualModelField(),
 		NoUpdate:            this.IsNoUpdate(),
 		Rules:               this.Rules(),
 		DefaultValue:        this.Default(),

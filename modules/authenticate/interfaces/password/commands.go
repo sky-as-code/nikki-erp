@@ -4,7 +4,7 @@ import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
-	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain"
+	"github.com/sky-as-code/nikki-erp/modules/authenticate/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
@@ -17,7 +17,7 @@ var createPasswordOtpCommandType = cqrs.RequestType{
 }
 
 type CreatePasswordOtpCommand struct {
-	PrincipalType domain.PrincipalType `json:"principal_type"`
+	PrincipalType models.PrincipalType `json:"principal_type"`
 	PrincipalId   model.Id             `json:"principal_id"`
 }
 
@@ -30,8 +30,8 @@ func (CreatePasswordOtpCommand) GetSchema() *dmodel.ModelSchema {
 		"authenticate.create_password_otp_command",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(basemodel.DefineFieldId("principal_id").Required())
+				Field(models.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(basemodel.DefineFieldId("principal_id").RequiredAlways())
 		},
 	)
 }
@@ -50,9 +50,9 @@ var confirmPasswordOtpCommandType = cqrs.RequestType{
 }
 
 type ConfirmPasswordOtpCommand struct {
-	PrincipalType domain.PrincipalType `json:"principal_type"`
+	PrincipalType models.PrincipalType `json:"principal_type"`
 	PrincipalId   model.Id             `json:"principal_id"`
-	OtpCode       domain.OtpCode       `json:"otp_code"`
+	OtpCode       models.OtpCode       `json:"otp_code"`
 }
 
 func (ConfirmPasswordOtpCommand) CqrsRequestType() cqrs.RequestType {
@@ -64,9 +64,9 @@ func (ConfirmPasswordOtpCommand) GetSchema() *dmodel.ModelSchema {
 		"authenticate.confirm_password_otp_command",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(basemodel.DefineFieldId("principal_id").Required()).
-				Field(domain.DefinePasswordOtpField("otp_code").Required())
+				Field(models.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(basemodel.DefineFieldId("principal_id").RequiredAlways()).
+				Field(models.DefinePasswordOtpField("otp_code").RequiredAlways())
 		},
 	)
 }
@@ -84,8 +84,8 @@ var createPasswordTempCommandType = cqrs.RequestType{
 }
 
 type CreatePasswordTempCommand struct {
-	PrincipalType domain.PrincipalType `json:"subject_type"`
-	SendChannel   domain.SendChannel   `json:"send_channel"`
+	PrincipalType models.PrincipalType `json:"subject_type"`
+	SendChannel   models.SendChannel   `json:"send_channel"`
 	Username      string               `json:"username"`
 }
 
@@ -98,9 +98,9 @@ func (CreatePasswordTempCommand) GetSchema() *dmodel.ModelSchema {
 		"authenticate.create_password_temp_command",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(domain.DefinePasswordSendChannelField("principal_id").Required()).
-				Field(domain.DefinePasswordOtpField("otp_code").Required())
+				Field(models.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(models.DefinePasswordSendChannelField("principal_id").RequiredAlways()).
+				Field(models.DefinePasswordOtpField("otp_code").RequiredAlways())
 		},
 	)
 }
@@ -118,7 +118,7 @@ var setPasswordCommandType = cqrs.RequestType{
 }
 
 type SetPasswordCommand struct {
-	PrincipalType   domain.PrincipalType `json:"principal_type"`
+	PrincipalType   models.PrincipalType `json:"principal_type"`
 	PrincipalId     model.Id             `json:"principal_id"`
 	CurrentPassword *string              `json:"current_password"`
 	NewPassword     string               `json:"new_password"`
@@ -133,10 +133,10 @@ func (SetPasswordCommand) GetSchema() *dmodel.ModelSchema {
 		"authenticate.set_password_command",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(basemodel.DefineFieldId("principal_id").Required()).
-				Field(domain.DefinePasswordTextField("current_password")).
-				Field(domain.DefinePasswordTextField("new_password").Required())
+				Field(models.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(basemodel.DefineFieldId("principal_id").RequiredAlways()).
+				Field(models.DefinePasswordTextField("current_password")).
+				Field(models.DefinePasswordTextField("new_password").RequiredAlways())
 		},
 	)
 }
@@ -150,7 +150,7 @@ var verifyPasswordQueryType = cqrs.RequestType{
 }
 
 type VerifyPasswordQuery struct {
-	PrincipalType domain.PrincipalType `json:"principal_type"`
+	PrincipalType models.PrincipalType `json:"principal_type"`
 	Username      string               `json:"username"`
 	Password      string               `json:"password"`
 }
@@ -164,9 +164,9 @@ func (VerifyPasswordQuery) GetSchema() *dmodel.ModelSchema {
 		"authenticate.verify_password_query",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(domain.DefinePrincipalUsernameField("username").Required()).
-				Field(domain.DefinePasswordTextField("password").Required())
+				Field(models.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(models.DefinePrincipalUsernameField("username").RequiredAlways()).
+				Field(models.DefinePasswordTextField("password").RequiredAlways())
 		},
 	)
 }
@@ -184,9 +184,9 @@ var verifyPasswordOtpQueryType = cqrs.RequestType{
 }
 
 type VerifyPasswordOtpQuery struct {
-	PrincipalType domain.PrincipalType `json:"principal_type"`
+	PrincipalType models.PrincipalType `json:"principal_type"`
 	Username      string               `json:"username"`
-	OtpCode       domain.OtpCode       `json:"otp_code"`
+	OtpCode       models.OtpCode       `json:"otp_code"`
 }
 
 func (VerifyPasswordOtpQuery) CqrsRequestType() cqrs.RequestType {
@@ -198,9 +198,9 @@ func (VerifyPasswordOtpQuery) GetSchema() *dmodel.ModelSchema {
 		"authenticate.verify_password_otp_query",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(domain.DefinePrincipalTypeField("principal_type").Required()).
-				Field(domain.DefinePrincipalUsernameField("username").Required()).
-				Field(domain.DefinePasswordOtpField("otp_code").Required())
+				Field(models.DefinePrincipalTypeField("principal_type").RequiredAlways()).
+				Field(models.DefinePrincipalUsernameField("username").RequiredAlways()).
+				Field(models.DefinePasswordOtpField("otp_code").RequiredAlways())
 		},
 	)
 }

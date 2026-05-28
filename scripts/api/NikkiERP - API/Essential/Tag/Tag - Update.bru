@@ -1,0 +1,32 @@
+meta {
+  name: Tag - Update
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{api_host}}/v1/essential/tags/{{tag_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "label": {
+      "en-US": "{{$randomCatchPhraseAdjective}} tag updated"
+    },
+    "type": "general",
+    "etag": "{{tag_etag}}"
+  }
+}
+
+script:post-response {
+  const { etag } = res.getBody();
+  etag && bru.setVar('tag_etag', etag);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+

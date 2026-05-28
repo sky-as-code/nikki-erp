@@ -27,6 +27,10 @@ const (
 	NotIn         Operator = "not_in"
 	IsSet         Operator = "is_set"
 	IsNotSet      Operator = "not_set"
+	// Linked / NotLinked: only for graph conditions on a many edge (one:many, many:many).
+	// Field is the edge name (no dot). Value is the peer / child row primary key to test linkage.
+	Linked    Operator = "linked"
+	NotLinked Operator = "not_linked"
 )
 
 type Condition []any

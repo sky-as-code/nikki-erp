@@ -10,13 +10,13 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/purchase/domain"
+	"github.com/sky-as-code/nikki-erp/modules/purchase/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/purchase/interfaces/purchaserequest"
 )
 
 type purchaseRequestRestParams struct {
 	dig.In
-	PurchaseRequestSvc it.PurchaseRequestService
+	PurchaseRequestSvc it.PurchaseRequestAppService
 }
 
 func NewPurchaseRequestRest(params purchaseRequestRestParams) *PurchaseRequestRest {
@@ -24,7 +24,7 @@ func NewPurchaseRequestRest(params purchaseRequestRestParams) *PurchaseRequestRe
 }
 
 type PurchaseRequestRest struct {
-	svc it.PurchaseRequestService
+	svc it.PurchaseRequestAppService
 }
 
 func (this PurchaseRequestRest) CreatePurchaseRequest(echoCtx *echo.Context) (err error) {
@@ -37,11 +37,11 @@ func (this PurchaseRequestRest) CreatePurchaseRequest(echoCtx *echo.Context) (er
 		echoCtx,
 		this.svc.CreatePurchaseRequest,
 		func(requestFields dmodel.DynamicFields) it.CreatePurchaseRequestCommand {
-			cmd := it.CreatePurchaseRequestCommand{PurchaseRequest: *domain.NewPurchaseRequest()}
+			cmd := it.CreatePurchaseRequestCommand{PurchaseRequest: *models.NewPurchaseRequest()}
 			cmd.SetFieldData(requestFields)
 			return cmd
 		},
-		func(data domain.PurchaseRequest) CreatePurchaseRequestResponse {
+		func(data models.PurchaseRequest) CreatePurchaseRequestResponse {
 			return *httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 		},
 		httpserver.JsonCreated,
@@ -75,7 +75,7 @@ func (this PurchaseRequestRest) GetPurchaseRequest(echoCtx *echo.Context) (err e
 		func(request GetPurchaseRequestRequest) it.GetPurchaseRequestQuery {
 			return it.GetPurchaseRequestQuery(request)
 		},
-		func(data domain.PurchaseRequest) GetPurchaseRequestResponse { return data.GetFieldData() },
+		func(data models.PurchaseRequest) GetPurchaseRequestResponse { return data.GetFieldData() },
 		httpserver.JsonOk,
 	)
 }
@@ -137,7 +137,7 @@ func (this PurchaseRequestRest) UpdatePurchaseRequest(echoCtx *echo.Context) (er
 	}()
 	return httpserver.ServeRequest2(echoCtx, this.svc.UpdatePurchaseRequest,
 		func(request UpdatePurchaseRequestRequest) it.UpdatePurchaseRequestCommand {
-			cmd := it.UpdatePurchaseRequestCommand{PurchaseRequest: *domain.NewPurchaseRequest()}
+			cmd := it.UpdatePurchaseRequestCommand{PurchaseRequest: *models.NewPurchaseRequest()}
 			cmd.SetFieldData(request.DynamicFields)
 			cmd.SetId(util.ToPtr(model.Id(request.PurchaseRequestId)))
 			return cmd

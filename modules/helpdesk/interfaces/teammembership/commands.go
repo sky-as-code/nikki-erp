@@ -5,7 +5,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain"
+	"github.com/sky-as-code/nikki-erp/modules/helpdesk/domain/models"
 )
 
 func init() {
@@ -21,16 +21,16 @@ func init() {
 
 var createTeamMembershipCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "teammembership", Action: "createTeamMembership"}
 
-type CreateTeamMembershipCommand struct{ domain.TeamMembership }
+type CreateTeamMembershipCommand struct{ models.TeamMembership }
 
 func (CreateTeamMembershipCommand) CqrsRequestType() cqrs.RequestType {
 	return createTeamMembershipCommandType
 }
 func (CreateTeamMembershipCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.TeamMembershipSchemaName)
+	return dmodel.GetSchema(models.TeamMembershipSchemaName)
 }
 
-type CreateTeamMembershipResult = dyn.OpResult[domain.TeamMembership]
+type CreateTeamMembershipResult = dyn.OpResult[models.TeamMembership]
 
 var deleteTeamMembershipCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "teammembership", Action: "deleteTeamMembership"}
 
@@ -48,7 +48,7 @@ type GetTeamMembershipQuery dyn.GetOneQuery
 
 func (GetTeamMembershipQuery) CqrsRequestType() cqrs.RequestType { return getTeamMembershipQueryType }
 
-type GetTeamMembershipResult = dyn.OpResult[domain.TeamMembership]
+type GetTeamMembershipResult = dyn.OpResult[models.TeamMembership]
 
 var teamMembershipExistsQueryType = cqrs.RequestType{Module: "helpdesk", Submodule: "teammembership", Action: "teamMembershipExists"}
 
@@ -68,18 +68,18 @@ func (SearchTeamMembershipsQuery) CqrsRequestType() cqrs.RequestType {
 	return searchTeamMembershipsQueryType
 }
 
-type SearchTeamMembershipsResultData = dyn.PagedResultData[domain.TeamMembership]
+type SearchTeamMembershipsResultData = dyn.PagedResultData[models.TeamMembership]
 type SearchTeamMembershipsResult = dyn.OpResult[SearchTeamMembershipsResultData]
 
 var updateTeamMembershipCommandType = cqrs.RequestType{Module: "helpdesk", Submodule: "teammembership", Action: "updateTeamMembership"}
 
-type UpdateTeamMembershipCommand struct{ domain.TeamMembership }
+type UpdateTeamMembershipCommand struct{ models.TeamMembership }
 
 func (UpdateTeamMembershipCommand) CqrsRequestType() cqrs.RequestType {
 	return updateTeamMembershipCommandType
 }
 func (UpdateTeamMembershipCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetSchema(domain.TeamMembershipSchemaName)
+	return dmodel.GetSchema(models.TeamMembershipSchemaName)
 }
 
 type UpdateTeamMembershipResult = dyn.OpResult[dyn.MutateResultData]

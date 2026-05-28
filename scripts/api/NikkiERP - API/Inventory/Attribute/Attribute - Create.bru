@@ -12,34 +12,211 @@ post {
 
 body:json {
   {
-    "code_name": "color",
+    "code_name": "{{attr_code_name}}",
     "display_name": {
-      "vi-VN": "Màu sắc",
-      "en-US": "Color"
+      "vi-VN": "{{attr_display_name_vi}}",
+      "en-US": "{{attr_display_name_en}}"
     },
-    "data_type": "text",
-    "is_required": true,
-    "is_enum": true,
-    "enum_value": [
-      {
-        "en-US": "Red",
-        "vi-VN": "Đỏ"
-      },
-      {
-        "en-US": "Yellow",
-        "vi-VN": "Vàng"
-      },
-      {
-        "en-US": "Blue",
-        "vi-VN": "Xanh"
-      }
-    ],
-    "enum_value_sort": true
+    "data_type": "{{attr_data_type}}",
+    "is_required": {{attr_is_required}},
+    "is_enum": {{attr_is_enum}},
+    "enum_value_text": {{attr_enum_value_text}},
+    "enum_value_number": {{attr_enum_value_number}},
+    "enum_value_sort": {{attr_enum_value_sort}}
   }
 }
 
 vars:pre-request {
   org_id: 01JWNY20G23KD4RV5VWYABQYHD
+  attr_code_name: color
+  attr_display_name_vi: Màu sắc
+  attr_display_name_en: Color
+  attr_data_type: text
+  attr_is_required: true
+  attr_is_enum: true
+  attr_enum_value_text: [{"en-US": "Red", "vi-VN": "Đỏ"}]
+  attr_enum_value_number: null
+  attr_enum_value_sort: true
+}
+
+script:pre-request {
+  // Danh sách thuộc tính với cặp ngôn ngữ en-US và vi-VN
+  const attributes = [
+    {
+      codeName: "color",
+      displayName: { en: "Color", vi: "Màu sắc" },
+      dataType: "text",
+      isRequired: true,
+      isEnum: true,
+      enumValueText: [
+        { "en-US": "Red", "vi-VN": "Đỏ" },
+        { "en-US": "Blue", "vi-VN": "Xanh dương" },
+        { "en-US": "Green", "vi-VN": "Xanh lá" },
+        { "en-US": "Yellow", "vi-VN": "Vàng" },
+        { "en-US": "Black", "vi-VN": "Đen" },
+        { "en-US": "White", "vi-VN": "Trắng" }
+      ],
+      enumValueNumber: null,
+      enumValueSort: true
+    },
+    {
+      codeName: "size",
+      displayName: { en: "Size", vi: "Kích cỡ" },
+      dataType: "number",
+      isRequired: true,
+      isEnum: true,
+      enumValueText: null,
+      enumValueNumber: [18, 19, 20, 21, 30, 32, 42, 43],
+      enumValueSort: true
+    },
+    {
+      codeName: "material",
+      displayName: { en: "Material", vi: "Chất liệu" },
+      dataType: "text",
+      isRequired: true,
+      isEnum: true,
+      enumValueText: [
+        { "en-US": "Cotton", "vi-VN": "Cotton" },
+        { "en-US": "Polyester", "vi-VN": "Polyester" },
+        { "en-US": "Silk", "vi-VN": "Lụa" },
+        { "en-US": "Wool", "vi-VN": "Len" },
+        { "en-US": "Leather", "vi-VN": "Da" }
+      ],
+      enumValueNumber: null,
+      enumValueSort: true
+    },
+    {
+      codeName: "weight",
+      displayName: { en: "Weight (kg)", vi: "Trọng lượng (kg)" },
+      dataType: "number",
+      isRequired: false,
+      isEnum: true,
+      enumValueText: null,
+      enumValueNumber: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0],
+      enumValueSort: true
+    },
+    {
+      codeName: "length",
+      displayName: { en: "Length (cm)", vi: "Chiều dài (cm)" },
+      dataType: "number",
+      isRequired: false,
+      isEnum: false,
+      enumValueText: null,
+      enumValueNumber: null,
+      enumValueSort: false
+    },
+    {
+      codeName: "width",
+      displayName: { en: "Width (cm)", vi: "Chiều rộng (cm)" },
+      dataType: "number",
+      isRequired: false,
+      isEnum: false,
+      enumValueText: null,
+      enumValueNumber: null,
+      enumValueSort: false
+    },
+    {
+      codeName: "height",
+      displayName: { en: "Height (cm)", vi: "Chiều cao (cm)" },
+      dataType: "number",
+      isRequired: false,
+      isEnum: false,
+      enumValueText: null,
+      enumValueNumber: null,
+      enumValueSort: false
+    },
+    {
+      codeName: "brand",
+      displayName: { en: "Brand", vi: "Thương hiệu" },
+      dataType: "text",
+      isRequired: false,
+      isEnum: true,
+      enumValueText: [
+        { "en-US": "Nike", "vi-VN": "Nike" },
+        { "en-US": "Adidas", "vi-VN": "Adidas" },
+        { "en-US": "Puma", "vi-VN": "Puma" },
+        { "en-US": "Reebok", "vi-VN": "Reebok" }
+      ],
+      enumValueNumber: null,
+      enumValueSort: true
+    },
+    {
+      codeName: "warranty",
+      displayName: { en: "Warranty (months)", vi: "Bảo hành (tháng)" },
+      dataType: "number",
+      isRequired: false,
+      isEnum: true,
+      enumValueText: null,
+      enumValueNumber: [6, 12, 24, 36],
+      enumValueSort: true
+    },
+    {
+      codeName: "origin",
+      displayName: { en: "Origin Country", vi: "Xuất xứ" },
+      dataType: "text",
+      isRequired: false,
+      isEnum: true,
+      enumValueText: [
+        { "en-US": "Vietnam", "vi-VN": "Việt Nam" },
+        { "en-US": "China", "vi-VN": "Trung Quốc" },
+        { "en-US": "USA", "vi-VN": "Hoa Kỳ" },
+        { "en-US": "Japan", "vi-VN": "Nhật Bản" },
+        { "en-US": "Korea", "vi-VN": "Hàn Quốc" }
+      ],
+      enumValueNumber: null,
+      enumValueSort: true
+    },
+    {
+      codeName: "condition",
+      displayName: { en: "Condition", vi: "Tình trạng" },
+      dataType: "text",
+      isRequired: true,
+      isEnum: true,
+      enumValueText: [
+        { "en-US": "New", "vi-VN": "Mới" },
+        { "en-US": "Like New", "vi-VN": "Như mới" },
+        { "en-US": "Used", "vi-VN": "Đã qua sử dụng" },
+        { "en-US": "Refurbished", "vi-VN": "Tân trang" }
+      ],
+      enumValueNumber: null,
+      enumValueSort: false
+    },
+    {
+      codeName: "capacity",
+      displayName: { en: "Capacity (L)", vi: "Dung tích (L)" },
+      dataType: "number",
+      isRequired: false,
+      isEnum: true,
+      enumValueText: null,
+      enumValueNumber: [1, 2, 5, 10, 20],
+      enumValueSort: true
+    }
+  ];
+  
+  // Random chọn một thuộc tính
+  const randomAttr = attributes[Math.floor(Math.random() * attributes.length)];
+  
+  // Set variables với giá trị mặc định
+  bru.setVar('attr_code_name', randomAttr.codeName || "color");
+  bru.setVar('attr_display_name_en', randomAttr.displayName.en || "Color");
+  bru.setVar('attr_display_name_vi', randomAttr.displayName.vi || "Màu sắc");
+  bru.setVar('attr_data_type', randomAttr.dataType || "text");
+  bru.setVar('attr_is_required', randomAttr.isRequired);
+  bru.setVar('attr_is_enum', randomAttr.isEnum);
+  
+  // Set enum values based on data type
+  if (randomAttr.dataType === 'text' && randomAttr.isEnum && randomAttr.enumValueText) {
+    bru.setVar('attr_enum_value_text', JSON.stringify(randomAttr.enumValueText));
+    bru.setVar('attr_enum_value_number', null);
+  } else if (randomAttr.dataType === 'number' && randomAttr.isEnum && randomAttr.enumValueNumber) {
+    bru.setVar('attr_enum_value_text', null);
+    bru.setVar('attr_enum_value_number', JSON.stringify(randomAttr.enumValueNumber));
+  } else {
+    bru.setVar('attr_enum_value_text', null);
+    bru.setVar('attr_enum_value_number', null);
+  }
+  
+  bru.setVar('attr_enum_value_sort', randomAttr.enumValueSort);
 }
 
 script:post-response {

@@ -1,12 +1,11 @@
 package apptrait
 
 import (
-	stdErr "errors"
-
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/common/semver"
 	"github.com/sky-as-code/nikki-erp/config"
 	"github.com/sky-as-code/nikki-erp/modules"
+	c "github.com/sky-as-code/nikki-erp/modules/apptrait/constants"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	httpserverExt "github.com/sky-as-code/nikki-erp/modules/core/httpserver/external"
@@ -28,12 +27,17 @@ func (*AppTraitModule) LabelKey() string {
 
 // Name implements NikkiModule.
 func (*AppTraitModule) Name() string {
-	return "apptrait"
+	return c.AppTraitModuleName
 }
 
 // Deps implements NikkiModule.
 func (*AppTraitModule) Deps() []string {
 	return []string{}
+}
+
+// IsInternal implements InCodeModule.
+func (*AppTraitModule) IsInternal() bool {
+	return true
 }
 
 // Version implements NikkiModule.
@@ -43,13 +47,13 @@ func (*AppTraitModule) Version() semver.SemVer {
 
 // Init implements NikkiModule.
 func (*AppTraitModule) Init() error {
-	err := stdErr.Join(
-		deps.Register(httpserverExt.NewPermissionExtServiceImpl),
-		deps.Register(requestguard.NewStaticRequestGuardServiceImpl),
-		deps.Register(config.GetDefaultConfigYaml),
-		deps.Register(func() dyn.NewBaseDynamicRepositoryFn {
+	err := deps.Register(
+		config.GetDefaultConfigYaml,
+		httpserverExt.NewPermissionExtServiceImpl,
+		requestguard.NewStaticRequestGuardServiceImpl,
+		func() dyn.NewBaseDynamicRepositoryFn {
 			return baserepo.NewBaseDynamicRepository
-		}),
+		},
 	)
 
 	return err

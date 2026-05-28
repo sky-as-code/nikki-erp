@@ -6,6 +6,6 @@ import (
 )
 
 func InitSubModule() error {
-	err := deps.Register(client.NewCoreHTTPClient)
+	err := deps.Register(client.NewCoreHttpClient)
 	return err
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
-	"github.com/sky-as-code/nikki-erp/modules/identity/domain"
+	domain "github.com/sky-as-code/nikki-erp/modules/identity/domain/models"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 )
@@ -51,9 +51,9 @@ func (DeleteActionCommand) GetSchema() *dmodel.ModelSchema {
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
 				Field(basemodel.DefineFieldId("action_code").
-					Required()).
+					RequiredAlways()).
 				Field(basemodel.DefineFieldId("resource_id").
-					Required())
+					RequiredAlways())
 		},
 	)
 }
@@ -76,15 +76,15 @@ func (GetActionQuery) GetSchema() *dmodel.ModelSchema {
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
 				Field(basemodel.DefineFieldId("action_id").
-					Required()).
+					RequiredAlways()).
 				Field(basemodel.DefineFieldId("resource_id").
-					Required()).
+					RequiredAlways()).
 				Field(dyn.DefineFieldSearchColumns())
 		},
 	)
 }
 
-type GetActionResult = dyn.OpResult[domain.Action]
+type GetActionResult = dyn.OpResult[dyn.SingleResultData[domain.Action]]
 
 var actionExistsQueryType = cqrs.RequestType{Module: "authorize", Submodule: "action", Action: "actionExists"}
 
@@ -101,9 +101,9 @@ func (ActionExistsQuery) GetSchema() *dmodel.ModelSchema {
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
 				Field(basemodel.DefineFieldIdArr("action_ids").
-					Required()).
+					RequiredAlways()).
 				Field(basemodel.DefineFieldId("resource_id").
-					Required())
+					RequiredAlways())
 		},
 	)
 }
@@ -132,7 +132,7 @@ func (SearchActionsQuery) GetSchema() *dmodel.ModelSchema {
 				Field(dyn.DefineFieldSearchPage()).
 				Field(dyn.DefineFieldSearchSize()).
 				Field(basemodel.DefineFieldId("resource_id").
-					Required())
+					RequiredAlways())
 		},
 	)
 }
