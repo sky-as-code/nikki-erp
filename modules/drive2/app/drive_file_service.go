@@ -134,6 +134,12 @@ func (this *DriveFileServiceImpl) UpdateDriveFileMetadata(ctx corectx.Context, c
 
 func (this *DriveFileServiceImpl) UpdateBulkDriveFileMetadata(ctx corectx.Context, cmd it.UpdateBulkDriveFileMetadataCommand) (*it.UpdateBulkDriveFileMetadataResult, error) {
 	data := make([]domain.DriveFile, 0, len(cmd.DriveFiles))
+	for _, item := range cmd.DriveFiles {
+		fieldData := item.GetFieldData()
+		df := domain.NewDriveFileFrom(fieldData)
+		data = append(data, *df)
+	}
+
 	return crud.UpdateBulk(ctx, crud.UpdateBulkParam[domain.DriveFile, *domain.DriveFile, domain.DriveFile]{
 		Action:         "Update drive file metadata",
 		BaseRepoGetter: this.driveFileRepo,
@@ -166,8 +172,8 @@ func (this *DriveFileServiceImpl) UpdateDriveFileContent(ctx corectx.Context, cm
 		Action:       "Get drive file",
 		DbRepoGetter: this.driveFileRepo,
 		Query: dynamicmodel.GetOneQuery{
-			Id:      lo.FromPtr(cmd.GetId()),
-			Columns: []string{domain.DriveFileFieldStorageKey},
+			Id:     lo.FromPtr(cmd.GetId()),
+			Fields: []string{domain.DriveFileFieldStorageKey},
 		},
 	})
 	if err != nil {
@@ -245,8 +251,8 @@ func (this *DriveFileServiceImpl) DeleteDriveFile(ctx corectx.Context, cmd it.De
 		Action:       "Get drive file",
 		DbRepoGetter: this.driveFileRepo,
 		Query: dynamicmodel.GetOneQuery{
-			Id:      lo.FromPtr(&cmd.DriveFileId),
-			Columns: []string{domain.DriveFileFieldStorageKey, domain.DriveFileFieldIsFolder},
+			Id:     lo.FromPtr(&cmd.DriveFileId),
+			Fields: []string{domain.DriveFileFieldStorageKey, domain.DriveFileFieldIsFolder},
 		},
 	})
 	if err != nil {

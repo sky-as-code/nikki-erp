@@ -6,7 +6,6 @@ import (
 	"github.com/labstack/echo/v5"
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
-	commonMiddleware "github.com/sky-as-code/nikki-erp/common/middleware"
 	v1 "github.com/sky-as-code/nikki-erp/modules/drive/transports/restful/v1"
 )
 
@@ -40,7 +39,7 @@ func initV1(
 	driveFileRest *v1.DriveFileRest,
 	driveFileShareRest *v1.DriveFileShareRest,
 ) {
-	protected := route.Group("", commonMiddleware.RequireAuthMiddleware())
+	protected := route.Group("")
 
 	// Drive files
 	protected.POST("/files", driveFileRest.CreateDriveFile)

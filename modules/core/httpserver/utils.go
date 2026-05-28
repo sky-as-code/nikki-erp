@@ -16,7 +16,6 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/crud"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -625,16 +624,16 @@ func ServeUpdate[
 	)
 }
 
-func GetUserEmailFromContext(ctx corectx.Context) (string, error) {
-	claims, ok := ctx.Value(middlewares.CtxKeyJwtClaims).(jwt.Claims)
-	if !ok {
-		return "", errors.New("User not login")
-	}
-
-	userInfo, err := claims.GetSubject()
-	if err != nil {
-		return "", err
-	}
-	userEmail := strings.Split(userInfo, ":")[0]
-	return userEmail, nil
-}
+// func GetUserEmailFromContext(ctx corectx.Context) (string, error) {
+// 	claims, ok := ctx.Value(middlewares.CtxKeyJwtClaims).(jwt.Claims)
+// 	if !ok {
+// 		return "", errors.New("User not login")
+// 	}
+//
+// 	userInfo, err := claims.GetSubject()
+// 	if err != nil {
+// 		return "", err
+// 	}
+// 	userEmail := strings.Split(userInfo, ":")[0]
+// 	return userEmail, nil
+// }

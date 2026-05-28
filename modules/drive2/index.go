@@ -17,6 +17,11 @@ var ModuleSingleton modules.InCodeModule = &DriveModule{}
 
 type DriveModule struct{}
 
+// IsInternal implements [modules.InCodeModule].
+func (d *DriveModule) IsInternal() bool {
+	return false
+}
+
 func (*DriveModule) LabelKey() string {
 	return "drive2.moduleLabel"
 }

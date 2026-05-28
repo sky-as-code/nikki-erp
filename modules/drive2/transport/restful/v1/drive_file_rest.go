@@ -9,7 +9,7 @@ import (
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/middleware"
+	// "github.com/sky-as-code/nikki-erp/common/middleware"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -33,9 +33,9 @@ type DriveFileRest struct {
 	driveFileSvc it.DriveFileService
 }
 
-func userIdFromEcho(echoCtx *echo.Context) model.Id {
-	return model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
-}
+// func userIdFromEcho(echoCtx *echo.Context) model.Id {
+// 	return model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
+// }
 
 func (this DriveFileRest) CreateDriveFile(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -145,7 +145,7 @@ func (this DriveFileRest) DeleteDriveFile(echoCtx *echo.Context) (err error) {
 		echoCtx,
 		this.driveFileSvc.DeleteDriveFile,
 		func(cmd DeleteDriveFileRequest) DeleteDriveFileRequest {
-			cmd.UserId = userIdFromEcho(echoCtx)
+			// cmd.UserId = userIdFromEcho(echoCtx)
 			return cmd
 		},
 		httpserver.NewRestMutateResponse,
@@ -163,7 +163,7 @@ func (this DriveFileRest) MoveDriveFileToTrash(echoCtx *echo.Context) (err error
 		echoCtx,
 		this.driveFileSvc.MoveDriveFileToTrash,
 		func(cmd MoveDriveFileToTrashRequest) MoveDriveFileToTrashRequest {
-			cmd.UserId = userIdFromEcho(echoCtx)
+			// cmd.UserId = userIdFromEcho(echoCtx)
 			return cmd
 		},
 		func(data domain.DriveFile) dmodel.DynamicFields {
@@ -183,7 +183,7 @@ func (this DriveFileRest) RestoreDriveFile(echoCtx *echo.Context) (err error) {
 		echoCtx,
 		this.driveFileSvc.RestoreDriveFile,
 		func(cmd RestoreDriveFileRequest) RestoreDriveFileRequest {
-			cmd.UserId = userIdFromEcho(echoCtx)
+			// cmd.UserId = userIdFromEcho(echoCtx)
 			return cmd
 		},
 		func(data domain.DriveFile) dmodel.DynamicFields {
@@ -203,7 +203,7 @@ func (this DriveFileRest) MoveDriveFile(echoCtx *echo.Context) (err error) {
 		echoCtx,
 		this.driveFileSvc.MoveDriveFile,
 		func(cmd MoveDriveFileRequest) MoveDriveFileRequest {
-			cmd.UserId = userIdFromEcho(echoCtx)
+			// cmd.UserId = userIdFromEcho(echoCtx)
 			return cmd
 		},
 		func(data domain.DriveFile) dmodel.DynamicFields {
@@ -226,7 +226,7 @@ func (this DriveFileRest) GetDriveFileAncestors(echoCtx *echo.Context) (err erro
 			[]any{ft.NewAnonymousValidationError(ft.ErrorKey("err_malformed_request"), "malformed request")},
 		)
 	}
-	query.UserId = userIdFromEcho(echoCtx)
+	// query.UserId = userIdFromEcho(echoCtx)
 	reqCtx := echoCtx.Request().Context().(corectx.Context)
 	result, err := this.driveFileSvc.GetDriveFileAncestors(reqCtx, query)
 	if err != nil {
@@ -252,7 +252,7 @@ func (this DriveFileRest) GetDriveFileById(echoCtx *echo.Context) (err error) {
 		"drive2 get drive file by id",
 		echoCtx,
 		func(ctx corectx.Context, q GetDriveFileByIdRequest) (*it.GetDriveFileByIdResult, error) {
-			q.UserId = userIdFromEcho(echoCtx)
+			// q.UserId = userIdFromEcho(echoCtx)
 			return this.driveFileSvc.GetDriveFileById(ctx, q)
 		},
 	)
@@ -274,7 +274,7 @@ func (this DriveFileRest) StreamDriveFile(echoCtx *echo.Context) (err error) {
 	if query.DriveFileId == "" {
 		query.DriveFileId = model.Id(echoCtx.Param("drive_file_id"))
 	}
-	query.UserId = userIdFromEcho(echoCtx)
+	// query.UserId = userIdFromEcho(echoCtx)
 	reqCtx := echoCtx.Request().Context().(corectx.Context)
 	driveFile, stream, err := this.driveFileSvc.DownloadDriveFile(reqCtx, query)
 	if err != nil {
@@ -320,7 +320,7 @@ func (this DriveFileRest) GetDriveFileByParent(echoCtx *echo.Context) (err error
 		"drive2 get drive files by parent",
 		echoCtx,
 		func(ctx corectx.Context, q GetDriveFileByParentRequest) (*it.GetDriveFileByParentResult, error) {
-			q.UserId = userIdFromEcho(echoCtx)
+			// q.UserId = userIdFromEcho(echoCtx)
 			return this.driveFileSvc.GetDriveFileByParent(ctx, q)
 		},
 	)
@@ -336,7 +336,7 @@ func (this DriveFileRest) SearchDriveFile(echoCtx *echo.Context) (err error) {
 		"drive2 search drive files",
 		echoCtx,
 		func(ctx corectx.Context, q SearchDriveFileRequest) (*it.SearchDriveFileResult, error) {
-			q.UserId = userIdFromEcho(echoCtx)
+			// q.UserId = userIdFromEcho(echoCtx)
 			return this.driveFileSvc.SearchDriveFile(ctx, q)
 		},
 	)
@@ -352,7 +352,7 @@ func (this DriveFileRest) SearchDriveFilesShared(echoCtx *echo.Context) (err err
 		"drive2 search drive files shared",
 		echoCtx,
 		func(ctx corectx.Context, q SearchDriveFilesSharedRequest) (*it.SearchDriveFilesSharedResult, error) {
-			q.UserId = userIdFromEcho(echoCtx)
+			// q.UserId = userIdFromEcho(echoCtx)
 			return this.driveFileSvc.SearchDriveFilesShared(ctx, q)
 		},
 	)

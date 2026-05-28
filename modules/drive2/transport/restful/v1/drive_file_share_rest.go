@@ -6,8 +6,8 @@ import (
 	"go.uber.org/dig"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
-	"github.com/sky-as-code/nikki-erp/common/middleware"
-	"github.com/sky-as-code/nikki-erp/common/model"
+	// "github.com/sky-as-code/nikki-erp/common/middleware"
+	// "github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/drive2/domain"
@@ -29,9 +29,9 @@ type DriveFileShareRest struct {
 	DriveFileShareSvc shareIt.DriveFileShareService
 }
 
-func shareActorUserId(echoCtx *echo.Context) model.Id {
-	return model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
-}
+// func shareActorUserId(echoCtx *echo.Context) model.Id {
+// return model.Id(middleware.GetUserIdFromContext(echoCtx.Request().Context()))
+// }
 
 func (this DriveFileShareRest) CreateDriveFileShare(echoCtx *echo.Context) (err error) {
 	defer func() {
@@ -43,7 +43,7 @@ func (this DriveFileShareRest) CreateDriveFileShare(echoCtx *echo.Context) (err 
 		echoCtx,
 		this.DriveFileShareSvc.CreateDriveFileShare,
 		func(cmd CreateDriveFileShareRequest) CreateDriveFileShareRequest {
-			cmd.UserId = shareActorUserId(echoCtx)
+			// cmd.UserId = shareActorUserId(echoCtx)
 			return cmd
 		},
 		func(data domain.DriveFileShare) *httpserver.RestCreateResponse {
@@ -63,7 +63,7 @@ func (this DriveFileShareRest) CreateBulkDriveFileShares(echoCtx *echo.Context) 
 		echoCtx,
 		this.DriveFileShareSvc.CreateBulkDriveFileShares,
 		func(cmd CreateBulkDriveFileShareRequest) CreateBulkDriveFileShareRequest {
-			cmd.UserId = shareActorUserId(echoCtx)
+			// cmd.UserId = shareActorUserId(echoCtx)
 			return cmd
 		},
 		func(rows []domain.DriveFileShare) []httpserver.RestCreateResponse {
@@ -87,7 +87,7 @@ func (this DriveFileShareRest) UpdateDriveFileShare(echoCtx *echo.Context) (err 
 		echoCtx,
 		this.DriveFileShareSvc.UpdateDriveFileShare,
 		func(cmd UpdateDriveFileShareRequest) UpdateDriveFileShareRequest {
-			cmd.UserId = shareActorUserId(echoCtx)
+			// cmd.UserId = shareActorUserId(echoCtx)
 			return cmd
 		},
 		httpserver.NewRestMutateResponse,
@@ -217,7 +217,7 @@ func (this DriveFileShareRest) DeleteDriveFileShare(echoCtx *echo.Context) (err 
 		echoCtx,
 		this.DriveFileShareSvc.DeleteDriveFileShare,
 		func(cmd DeleteDriveFileShareRequest) DeleteDriveFileShareRequest {
-			cmd.UserId = shareActorUserId(echoCtx)
+			// cmd.UserId = shareActorUserId(echoCtx)
 			return cmd
 		},
 		httpserver.NewRestMutateResponse,
