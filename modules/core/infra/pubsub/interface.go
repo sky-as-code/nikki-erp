@@ -3,7 +3,7 @@ package pubsub
 import "context"
 
 type Publisher interface {
-	Publish(ctx context.Context, channel string, message any) error
+	Publish(ctx context.Context, channel string, message []byte) error
 }
 
 type Subcriber interface {
