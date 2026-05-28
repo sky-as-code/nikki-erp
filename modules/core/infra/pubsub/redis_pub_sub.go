@@ -28,7 +28,7 @@ func NewRedisPubSub(logger logging.LoggerService, cfg config.ConfigService) (Pub
 	return r, r
 }
 
-func (this *RedisPubSub) Publish(ctx context.Context, channel string, message any) error {
+func (this *RedisPubSub) Publish(ctx context.Context, channel string, message []byte) error {
 	this.logger.Debug("Publishing message to topic", logging.Attr{"topic": channel, "message": message})
 	return this.redisClient.Publish(ctx, channel, message).Err()
 }
