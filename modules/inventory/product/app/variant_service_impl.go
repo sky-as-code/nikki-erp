@@ -7,8 +7,10 @@ import (
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
+	itMedia "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/media"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
 )
@@ -140,6 +142,9 @@ func (this *ProductServiceImpl) GetVariant(ctx corectx.Context, query it.GetVari
 	if err := this.populateVariantAttributes(ctx, &result.Data); err != nil {
 		return nil, err
 	}
+	if err := this.populateVariantThumbnail(ctx, &result.Data); err != nil {
+		return nil, err
+	}
 
 	return result, nil
 }
@@ -182,6 +187,9 @@ func (this *ProductServiceImpl) SearchVariants(ctx corectx.Context, query it.Sea
 			return nil, err
 		}
 	}
+	if err := this.populateVariantsThumbnail(ctx, result.Data.Items); err != nil {
+		return nil, err
+	}
 
 	return result, nil
 }
@@ -206,6 +214,9 @@ func (this *ProductServiceImpl) SearchAllVariants(ctx corectx.Context, query it.
 		if err := this.populateVariantAttributes(ctx, &result.Data.Items[i]); err != nil {
 			return nil, err
 		}
+	}
+	if err := this.populateVariantsThumbnail(ctx, result.Data.Items); err != nil {
+		return nil, err
 	}
 
 	return result, nil
@@ -488,6 +499,150 @@ func (this *ProductServiceImpl) populateVariantAttributes(ctx corectx.Context, v
 
 	variant.SetAttributes(attributesMap)
 	return nil
+}
+
+func (this *ProductServiceImpl) UploadVariantImage(ctx corectx.Context, cmd it.UploadVariantImageCommand) (*it.UploadVariantImageResult, error) {
+	res := &it.UploadVariantImageResult{}
+	getVarRes, err := corecrud.GetOne[domain.Variant](ctx, corecrud.GetOneParam{
+		Action:       "get variant",
+		DbRepoGetter: this.variantRepo,
+		Query:        dyn.GetOneQuery{Id: cmd.VariantId},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if getVarRes.ClientErrors.Count() > 0 {
+		res.ClientErrors = getVarRes.ClientErrors
+		return res, nil
+	}
+
+	if !getVarRes.HasData {
+		res.ClientErrors = ft.ClientErrors{*ft.NewNotFoundError("id")}
+		return res, nil
+	}
+
+	variant := getVarRes.Data
+	productId := variant.GetProductId()
+	if productId == nil || *productId != cmd.ProductId {
+		res.ClientErrors = ft.ClientErrors{*ft.NewNotFoundError("id")}
+		return res, nil
+	}
+
+	oldMediaRef := variant.GetMediaRef()
+	if oldMediaRef != nil && *oldMediaRef != "" {
+		delRes, delErr := this.mediaSvc.Delete(ctx, itMedia.DeleteMediaCommand{Id: model.Id(*oldMediaRef)})
+		if delErr != nil {
+			return nil, delErr
+		}
+		if delRes.ClientErrors.Count() > 0 {
+			return delRes, nil
+		}
+	}
+
+	uploadRes, err := this.mediaSvc.Upload(ctx, itMedia.UploadMediaCommand{
+		Source:     "inventory/variant",
+		File:       cmd.File,
+		FileHeader: cmd.FileHeader,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if uploadRes.ClientErrors.Count() > 0 {
+		res.ClientErrors = uploadRes.ClientErrors
+		return res, nil
+	}
+
+	if !uploadRes.HasData {
+		return res, nil
+	}
+
+	media := uploadRes.Data
+	variant.SetMediaRef(media.GetId())
+
+	return this.UpdateVariant(ctx, it.UpdateVariantCommand{Variant: variant})
+}
+
+func (this *ProductServiceImpl) populateVariantThumbnail(ctx corectx.Context, variant *domain.Variant) error {
+	mediaRef := variant.GetMediaRef()
+	if mediaRef == nil || *mediaRef == "" {
+		return nil
+	}
+
+	mediaRes, err := this.mediaSvc.GetMedia(ctx, itMedia.GetMediaQuery{
+		Id:     model.Id(*mediaRef),
+		Fields: []string{domain.InventoryMediaFieldStorageKey, domain.InventoryMediaFieldMediaType},
+	})
+	if err != nil {
+		return err
+	}
+	if !mediaRes.HasData {
+		return nil
+	}
+
+	variant.SetThumbnail(mediaRes.Data.GetFieldData())
+	return nil
+}
+
+func (this *ProductServiceImpl) populateVariantsThumbnail(ctx corectx.Context, variants []domain.Variant) error {
+	mediaIds := collectVariantMediaIds(variants)
+	if len(mediaIds) == 0 {
+		return nil
+	}
+
+	graph := dmodel.NewSearchGraph().NewCondition(basemodel.FieldId, dmodel.In, anySlice(mediaIds)...)
+	searchRes, err := this.mediaSvc.SearchMedia(ctx, itMedia.SearchMediaQuery{
+		Fields: []string{domain.InventoryMediaFieldStorageKey, domain.InventoryMediaFieldMediaType},
+		Graph:  graph,
+		Page:   0,
+		Size:   len(mediaIds),
+	})
+	if err != nil {
+		return err
+	}
+	if !searchRes.HasData {
+		return nil
+	}
+
+	mediaById := make(map[model.Id]dmodel.DynamicFields, len(searchRes.Data.Items))
+	for _, item := range searchRes.Data.Items {
+		if id := item.GetId(); id != nil {
+			mediaById[*id] = item.GetFieldData()
+		}
+	}
+
+	for i := range variants {
+		mediaRef := variants[i].GetMediaRef()
+		if mediaRef == nil || *mediaRef == "" {
+			continue
+		}
+		if media, ok := mediaById[model.Id(*mediaRef)]; ok {
+			variants[i].SetThumbnail(media)
+		}
+	}
+
+	return nil
+}
+
+func collectVariantMediaIds(variants []domain.Variant) []model.Id {
+	seen := make(map[model.Id]struct{})
+	ids := make([]model.Id, 0)
+
+	for _, variant := range variants {
+		mediaRef := variant.GetMediaRef()
+		if mediaRef == nil || *mediaRef == "" {
+			continue
+		}
+		id := model.Id(*mediaRef)
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+
+	return ids
 }
 
 // anySlice converts a slice of model.Id to a slice of any

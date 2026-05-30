@@ -14,5 +14,6 @@ func InitSubModule() error {
 		distributedlock.NewRedisDistributedLock,
 		pubsub.NewRedisPubSub,
 		redisclient.NewRedisClient,
+		filestorage.NewS3Adapter,
 	)
 }

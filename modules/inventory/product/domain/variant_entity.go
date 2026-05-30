@@ -58,7 +58,8 @@ const (
 	VarFieldBarcode       = "barcode"
 	VarFieldProposedPrice = "proposed_price"
 	VarFieldStatus        = "status"
-	VarFieldImageUrl      = "image_url"
+	VarFieldMediaRef   = "media_ref"
+	VarFieldThumbnail  = "thumbnail"
 	VarFieldAttributes    = "attributes"
 
 	VarEdgeProduct         = "product"
@@ -116,8 +117,8 @@ func VariantSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		Field(
 			dmodel.DefineField().
-				Name(VarFieldImageUrl).
-				Label(model.NewLangJsonRefSf("fields.%s", VarFieldImageUrl)).
+				Name(VarFieldMediaRef).
+				Label(model.NewLangJsonRefSf("fields.%s", VarFieldMediaRef)).
 				DataType(dmodel.FieldDataTypeUrl()),
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
@@ -208,12 +209,24 @@ func (this *Variant) SetStatus(v *VariantStatus) {
 	this.GetFieldData().SetString(VarFieldStatus, &s)
 }
 
-func (this Variant) GetImageUrl() *string {
-	return this.GetFieldData().GetString(VarFieldImageUrl)
+func (this Variant) GetMediaRef() *string {
+	return this.GetFieldData().GetString(VarFieldMediaRef)
 }
 
-func (this *Variant) SetImageUrl(v *string) {
-	this.GetFieldData().SetString(VarFieldImageUrl, v)
+func (this *Variant) SetMediaRef(v *string) {
+	this.GetFieldData().SetString(VarFieldMediaRef, v)
+}
+
+func (this Variant) GetThumbnail() dmodel.DynamicFields {
+	raw, ok := this.GetFieldData().GetAny(VarFieldThumbnail).(dmodel.DynamicFields)
+	if !ok {
+		return nil
+	}
+	return raw
+}
+
+func (this *Variant) SetThumbnail(v dmodel.DynamicFields) {
+	this.GetFieldData().SetAny(VarFieldThumbnail, v)
 }
 
 func (this Variant) GetAttributes() map[string]any {
