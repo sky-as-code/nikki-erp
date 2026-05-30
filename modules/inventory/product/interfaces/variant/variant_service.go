@@ -13,4 +13,5 @@ type VariantService interface {
 	SearchVariants(ctx corectx.Context, query SearchVariantsQuery) (*SearchVariantsResult, error)
 	SearchAllVariants(ctx corectx.Context, query SearchAllVariantsQuery) (*SearchAllVariantsResult, error)
 	UpdateVariant(ctx corectx.Context, cmd UpdateVariantCommand) (*dyn.OpResult[dyn.MutateResultData], error)
+	UploadVariantImage(ctx corectx.Context, cmd UploadVariantImageCommand) (*UploadVariantImageResult, error)
 }

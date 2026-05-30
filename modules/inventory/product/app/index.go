@@ -8,6 +8,7 @@ import (
 
 func InitServices() error {
 	err := errors.Join(
+		deps.Register(NewInventoryMediaServiceImpl),
 		deps.Register(NewAttributeService),
 		deps.Register(NewAttributeGroupService),
 		deps.Register(NewAttributeValueService),

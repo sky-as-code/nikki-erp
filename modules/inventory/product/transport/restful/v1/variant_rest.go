@@ -4,6 +4,8 @@ import (
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
+	"github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	itVariant "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
 )
@@ -72,5 +74,34 @@ func (this VariantRest) Exists(echoCtx *echo.Context) (err error) {
 		"variant exists",
 		echoCtx,
 		this.VariantSvc.VariantExists,
+	)
+}
+
+func (this VariantRest) UploadImage(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeRequestFormData(echoCtx,
+		this.VariantSvc.UploadVariantImage,
+		func(req UploadVariantImageRequest) itVariant.UploadVariantImageCommand {
+			cmd := itVariant.UploadVariantImageCommand{
+				ProductId: req.ProductId,
+				VariantId: req.VariantId,
+			}
+
+			if req.FileHeader != nil {
+				file, openErr := req.FileHeader.Open()
+				if openErr != nil {
+					panic(httpserver.JsonBadRequest(echoCtx,
+						fault.ClientErrors{*fault.NewValidationError("file", "file_error", openErr.Error())}))
+				}
+				defer file.Close()
+				cmd.File = file
+				cmd.FileHeader = req.FileHeader
+			}
+
+			return cmd
+		},
+		func(data dynamicmodel.MutateResultData) UploadVariantImageResponse {
+			return httpserver.NewRestMutateResponse(data)
+		},
+		httpserver.JsonCreated,
 	)
 }
