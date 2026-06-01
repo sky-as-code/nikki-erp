@@ -1,16 +1,19 @@
 package app
 
 import (
+	"time"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/objectkey"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/upload"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
-	itMedia "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/media"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 	it "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
 )
@@ -142,7 +145,7 @@ func (this *ProductServiceImpl) GetVariant(ctx corectx.Context, query it.GetVari
 	if err := this.populateVariantAttributes(ctx, &result.Data); err != nil {
 		return nil, err
 	}
-	if err := this.populateVariantThumbnail(ctx, &result.Data); err != nil {
+	if err := this.populateVariantImageUrl(ctx, &result.Data); err != nil {
 		return nil, err
 	}
 
@@ -187,7 +190,7 @@ func (this *ProductServiceImpl) SearchVariants(ctx corectx.Context, query it.Sea
 			return nil, err
 		}
 	}
-	if err := this.populateVariantsThumbnail(ctx, result.Data.Items); err != nil {
+	if err := this.populateVariantsImageUrl(ctx, result.Data.Items); err != nil {
 		return nil, err
 	}
 
@@ -215,7 +218,7 @@ func (this *ProductServiceImpl) SearchAllVariants(ctx corectx.Context, query it.
 			return nil, err
 		}
 	}
-	if err := this.populateVariantsThumbnail(ctx, result.Data.Items); err != nil {
+	if err := this.populateVariantsImageUrl(ctx, result.Data.Items); err != nil {
 		return nil, err
 	}
 
@@ -529,120 +532,95 @@ func (this *ProductServiceImpl) UploadVariantImage(ctx corectx.Context, cmd it.U
 		return res, nil
 	}
 
-	oldMediaRef := variant.GetMediaRef()
-	if oldMediaRef != nil && *oldMediaRef != "" {
-		delRes, delErr := this.mediaSvc.Delete(ctx, itMedia.DeleteMediaCommand{Id: model.Id(*oldMediaRef)})
-		if delErr != nil {
-			return nil, delErr
-		}
-		if delRes.ClientErrors.Count() > 0 {
-			return delRes, nil
+	if key := variant.GetImageKey(); key != nil && *key != "" {
+		if err := this.storage.Remove(ctx.InnerContext(), *key); err != nil {
+			return nil, err
 		}
 	}
 
-	uploadRes, err := this.mediaSvc.Upload(ctx, itMedia.UploadMediaCommand{
-		Source:     "inventory/variant",
-		File:       cmd.File,
-		FileHeader: cmd.FileHeader,
-	})
+	if cmd.File == nil {
+		return res, nil
+	}
+
+	storageKey, err := objectkey.BuildFromFileHeader("inventory/variant", cmd.FileHeader)
 	if err != nil {
 		return nil, err
 	}
 
-	if uploadRes.ClientErrors.Count() > 0 {
-		res.ClientErrors = uploadRes.ClientErrors
-		return res, nil
+	mediaType, uploadReader, err := upload.SniffContentTypeAndRewind(cmd.File, cmd.FileHeader)
+	if err != nil {
+		return nil, err
 	}
 
-	if !uploadRes.HasData {
-		return res, nil
+	size := int64(0)
+	if cmd.FileHeader != nil {
+		size = cmd.FileHeader.Size
+	}
+	if err = this.storage.Put(
+		ctx.InnerContext(),
+		storageKey,
+		uploadReader,
+		filestorage.NewPutOptions(mediaType, size),
+	); err != nil {
+		return nil, err
 	}
 
-	media := uploadRes.Data
-	variant.SetMediaRef(media.GetId())
+	variant.SetImageKey(&storageKey)
 
 	return this.UpdateVariant(ctx, it.UpdateVariantCommand{Variant: variant})
 }
 
-func (this *ProductServiceImpl) populateVariantThumbnail(ctx corectx.Context, variant *domain.Variant) error {
-	mediaRef := variant.GetMediaRef()
-	if mediaRef == nil || *mediaRef == "" {
+func (this *ProductServiceImpl) populateVariantImageUrl(ctx corectx.Context, variant *domain.Variant) error {
+	key := variant.GetImageKey()
+	if key == nil || *key == "" {
 		return nil
 	}
 
-	mediaRes, err := this.mediaSvc.GetMedia(ctx, itMedia.GetMediaQuery{
-		Id:     model.Id(*mediaRef),
-		Fields: []string{domain.InventoryMediaFieldStorageKey, domain.InventoryMediaFieldMediaType},
-	})
+	url, err := this.storage.GeneratePresignedURL(ctx.InnerContext(), *key, time.Hour)
 	if err != nil {
 		return err
 	}
-	if !mediaRes.HasData {
-		return nil
-	}
 
-	variant.SetThumbnail(mediaRes.Data.GetFieldData())
+	variant.SetImageUrl(&url)
 	return nil
 }
 
-func (this *ProductServiceImpl) populateVariantsThumbnail(ctx corectx.Context, variants []domain.Variant) error {
-	mediaIds := collectVariantMediaIds(variants)
-	if len(mediaIds) == 0 {
+func (this *ProductServiceImpl) populateVariantsImageUrl(ctx corectx.Context, variants []domain.Variant) error {
+	seen := make(map[string]struct{})
+	uniqueKeys := make([]string, 0)
+
+	for i := range variants {
+		key := variants[i].GetImageKey()
+		if key == nil || *key == "" {
+			continue
+		}
+		if _, exists := seen[*key]; exists {
+			continue
+		}
+		seen[*key] = struct{}{}
+		uniqueKeys = append(uniqueKeys, *key)
+	}
+
+	if len(uniqueKeys) == 0 {
 		return nil
 	}
 
-	graph := dmodel.NewSearchGraph().NewCondition(basemodel.FieldId, dmodel.In, anySlice(mediaIds)...)
-	searchRes, err := this.mediaSvc.SearchMedia(ctx, itMedia.SearchMediaQuery{
-		Fields: []string{domain.InventoryMediaFieldStorageKey, domain.InventoryMediaFieldMediaType},
-		Graph:  graph,
-		Page:   0,
-		Size:   len(mediaIds),
-	})
+	urls, err := filestorage.GeneratePresignedBulk(ctx.InnerContext(), this.storage, uniqueKeys, time.Hour)
 	if err != nil {
 		return err
-	}
-	if !searchRes.HasData {
-		return nil
-	}
-
-	mediaById := make(map[model.Id]dmodel.DynamicFields, len(searchRes.Data.Items))
-	for _, item := range searchRes.Data.Items {
-		if id := item.GetId(); id != nil {
-			mediaById[*id] = item.GetFieldData()
-		}
 	}
 
 	for i := range variants {
-		mediaRef := variants[i].GetMediaRef()
-		if mediaRef == nil || *mediaRef == "" {
+		key := variants[i].GetImageKey()
+		if key == nil || *key == "" {
 			continue
 		}
-		if media, ok := mediaById[model.Id(*mediaRef)]; ok {
-			variants[i].SetThumbnail(media)
+		if url, ok := urls[*key]; ok {
+			variants[i].SetImageUrl(&url)
 		}
 	}
 
 	return nil
-}
-
-func collectVariantMediaIds(variants []domain.Variant) []model.Id {
-	seen := make(map[model.Id]struct{})
-	ids := make([]model.Id, 0)
-
-	for _, variant := range variants {
-		mediaRef := variant.GetMediaRef()
-		if mediaRef == nil || *mediaRef == "" {
-			continue
-		}
-		id := model.Id(*mediaRef)
-		if _, exists := seen[id]; exists {
-			continue
-		}
-		seen[id] = struct{}{}
-		ids = append(ids, id)
-	}
-
-	return ids
 }
 
 // anySlice converts a slice of model.Id to a slice of any

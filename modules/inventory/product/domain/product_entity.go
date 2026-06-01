@@ -20,14 +20,14 @@ const (
 const (
 	ProductSchemaName = "inventory.product"
 
-	ProdFieldId                = basemodel.FieldId
-	ProdFieldName              = "name"
-	ProdFieldDescription       = "description"
-	ProdFieldThumbnailMediaRef = "media_ref"
-	ProdFieldThumbnail         = "thumbnail"
-	ProdFieldUnitId            = "unit_id"
-	ProdFieldDefaultVariantId  = "default_variant_id"
-	ProdFieldTagIds            = "tag_ids"
+	ProdFieldId               = basemodel.FieldId
+	ProdFieldName             = "name"
+	ProdFieldDescription      = "description"
+	ProdFieldThumbnailKey     = "thumbnail_key"
+	ProdFieldThumbnailUrl     = "thumbnail_url"
+	ProdFieldUnitId           = "unit_id"
+	ProdFieldDefaultVariantId = "default_variant_id"
+	ProdFieldTagIds           = "tag_ids"
 
 	ProdEdgeCategories      = "categories"
 	ProdEdgeVariants        = "variants"
@@ -59,9 +59,9 @@ func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		Field(
 			dmodel.DefineField().
-				Name(ProdFieldThumbnailMediaRef).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Thumbnail Media"}).
-				DataType(dmodel.FieldDataTypeUlid()),
+				Name(ProdFieldThumbnailKey).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Thumbnail Key"}).
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
 			basemodel.DefineFieldId(ProdFieldUnitId).
@@ -136,28 +136,24 @@ func (this *Product) SetDescription(v *model.LangJson) {
 	this.GetFieldData().SetLangJson(ProdFieldDescription, v)
 }
 
+func (this Product) GetThumbnailKey() *string {
+	return this.GetFieldData().GetString(ProdFieldThumbnailKey)
+}
+
+func (this *Product) SetThumbnailKey(v *string) {
+	this.GetFieldData().SetString(ProdFieldThumbnailKey, v)
+}
+
+func (this Product) GetThumbnailUrl() *string {
+	return this.GetFieldData().GetString(ProdFieldThumbnailUrl)
+}
+
+func (this *Product) SetThumbnailUrl(v *string) {
+	this.GetFieldData().SetString(ProdFieldThumbnailUrl, v)
+}
+
 func (this Product) GetUnitId() *model.Id {
 	return this.GetFieldData().GetModelId(ProdFieldUnitId)
-}
-
-func (this Product) GetThumbnailMediaRef() *string {
-	return this.GetFieldData().GetString(ProdFieldThumbnailMediaRef)
-}
-
-func (this *Product) SetThumbnailMediaRef(v *string) {
-	this.GetFieldData().SetString(ProdFieldThumbnailMediaRef, v)
-}
-
-func (this Product) GetThumbnail() dmodel.DynamicFields {
-	raw, ok := this.GetFieldData().GetAny(ProdFieldThumbnail).(dmodel.DynamicFields)
-	if !ok {
-		return nil
-	}
-	return raw
-}
-
-func (this *Product) SetThumbnail(v dmodel.DynamicFields) {
-	this.GetFieldData().SetAny(ProdFieldThumbnail, v)
 }
 
 func (this *Product) SetUnitId(v *model.Id) {

@@ -1,26 +1,10 @@
--- Create "inventory_media" table
-CREATE TABLE "inventory_media" (
-  "id" character varying NOT NULL,
-  "storage_key" character varying NOT NULL,
-  "media_type" character varying NOT NULL,
-  "resource" character varying NOT NULL,
-  "pending_delete" boolean NOT NULL,
-  "etag" character varying NOT NULL,
-  "created_at" timestamptz NOT NULL,
-  "updated_at" timestamptz NULL,
-  "is_archived" boolean NOT NULL,
-  "created_by" character varying NULL,
-  "updated_by" character varying NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "inventory_media_storage_key_ukey" UNIQUE ("storage_key")
-);
 -- Create "inventory_products" table
 CREATE TABLE "inventory_products" (
   "id" character varying NOT NULL,
   "org_id" character varying NOT NULL,
   "name" jsonb NOT NULL,
   "description" jsonb NULL,
-  "media_ref" character varying NULL,
+  "thumbnail_key" character varying NULL,
   "unit_id" character varying NULL,
   "default_variant_id" character varying NULL,
   "tag_ids" character varying NULL,
@@ -112,7 +96,7 @@ CREATE TABLE "inventory_variants" (
   "barcode" character varying NULL,
   "proposed_price" numeric NULL,
   "status" character varying NULL,
-  "media_ref" character varying NULL,
+  "image_key" character varying NULL,
   "etag" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NULL,

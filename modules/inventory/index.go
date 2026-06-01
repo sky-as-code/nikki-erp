@@ -64,6 +64,5 @@ func (*InventoryModule) RegisterModels() error {
 		dmodel.RegisterSchemaB(productDomain.AttributeValueSchemaBuilder()),
 		dmodel.RegisterSchemaB(productDomain.VariantSchemaBuilder()),
 		dmodel.RegisterSchemaB(productDomain.VariantAttrValRelSchemaBuilder()),
-		dmodel.RegisterSchemaB(productDomain.InventoryMediaSchemaBuilder()),
 	)
 }

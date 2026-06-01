@@ -8,7 +8,6 @@ import (
 
 func InitRepositories() error {
 	return stdErr.Join(
-		deps.Register(NewInventoryMediaDynamicRepository),
 		deps.Register(NewProductDynamicRepository),
 		deps.Register(NewProductCategoryDynamicRepository),
 		deps.Register(NewAttributeDynamicRepository),
