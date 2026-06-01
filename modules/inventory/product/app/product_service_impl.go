@@ -1,22 +1,23 @@
 package app
 
 import (
+	"time"
+
 	"go.uber.org/dig"
 
-	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/basemodel"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/objectkey"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/upload"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 	itAttr "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
 	itAttrGrp "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributegroup"
 	itAttrVal "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attributevalue"
 	ext "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/external"
-	itMedia "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/media"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
 	itVariant "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/variant"
 )
@@ -30,7 +31,7 @@ type ProductServiceParam struct {
 	AttrValRepo itAttrVal.AttributeValueRepository
 	ProductRepo itProduct.ProductRepository
 	VariantRepo itVariant.VariantRepository
-	MediaSvc    itMedia.InventoryMediaService
+	Storage     filestorage.FileStorageAdapter
 	UnitSvc     ext.UnitExtService
 }
 
@@ -47,7 +48,7 @@ func newProductServiceImpl(param ProductServiceParam) *ProductServiceImpl {
 		productRepo:   param.ProductRepo,
 		variantRepo:   param.VariantRepo,
 		unitSvc:       param.UnitSvc,
-		mediaSvc:      param.MediaSvc,
+		storage:       param.Storage,
 	}
 }
 
@@ -59,7 +60,7 @@ type ProductServiceImpl struct {
 	productRepo   itProduct.ProductRepository
 	variantRepo   itVariant.VariantRepository
 	unitSvc       ext.UnitExtService
-	mediaSvc      itMedia.InventoryMediaService
+	storage       filestorage.FileStorageAdapter
 }
 
 func (this *ProductServiceImpl) CreateProduct(ctx corectx.Context, cmd itProduct.CreateProductCommand) (*itProduct.CreateProductResult, error) {
@@ -155,7 +156,7 @@ func (this *ProductServiceImpl) GetProduct(ctx corectx.Context, query itProduct.
 		return result, err
 	}
 
-	if err := this.populateProductThumbnailMedia(ctx, &result.Data); err != nil {
+	if err := this.populateProductThumbnailUrl(ctx, &result.Data); err != nil {
 		return nil, err
 	}
 
@@ -180,7 +181,7 @@ func (this *ProductServiceImpl) SearchProducts(ctx corectx.Context, query itProd
 		return result, err
 	}
 
-	if err := this.populateProductsThumbnailMedia(ctx, result.Data.Items); err != nil {
+	if err := this.populateProductsThumbnailUrl(ctx, result.Data.Items); err != nil {
 		return nil, err
 	}
 
@@ -193,8 +194,10 @@ func (this *ProductServiceImpl) SetProductIsArchived(ctx corectx.Context, cmd it
 
 func (this *ProductServiceImpl) UploadProductThumnail(ctx corectx.Context, cmd itProduct.UploadProductThumbnailCommand) (*itProduct.UploadProductThumbnailResult, error) {
 	res := &itProduct.UploadProductThumbnailResult{}
-	getProdRes, err := this.GetProduct(ctx, itProduct.GetProductQuery{
-		Id: cmd.ProductId,
+	getProdRes, err := corecrud.GetOne[domain.Product](ctx, corecrud.GetOneParam{
+		Action:       "get product",
+		DbRepoGetter: this.productRepo,
+		Query:        dyn.GetOneQuery{Id: cmd.ProductId},
 	})
 	if err != nil {
 		return nil, err
@@ -211,122 +214,95 @@ func (this *ProductServiceImpl) UploadProductThumnail(ctx corectx.Context, cmd i
 	}
 
 	product := getProdRes.Data
-	oldMediaRef := product.GetThumbnailMediaRef()
-
-	if oldMediaRef != nil && *oldMediaRef != "" {
-		delRes, delErr := this.mediaSvc.Delete(ctx, itMedia.DeleteMediaCommand{Id: model.Id(*oldMediaRef)})
-		if delErr != nil {
-			return nil, delErr
-		}
-		if delRes.ClientErrors.Count() > 0 {
-			return delRes, nil
+	if key := product.GetThumbnailKey(); key != nil && *key != "" {
+		if err := this.storage.Remove(ctx.InnerContext(), *key); err != nil {
+			return nil, err
 		}
 	}
 
-	uploadRes, err := this.mediaSvc.Upload(ctx, itMedia.UploadMediaCommand{
-		Source:     "inventory/product",
-		File:       cmd.File,
-		FileHeader: cmd.FileHeader,
-	})
+	if cmd.File == nil {
+		return res, nil
+	}
+
+	storageKey, err := objectkey.BuildFromFileHeader("inventory/product", cmd.FileHeader)
 	if err != nil {
 		return nil, err
 	}
 
-	if uploadRes.ClientErrors.Count() > 0 {
-		res.ClientErrors = uploadRes.ClientErrors
-		return res, nil
+	mediaType, uploadReader, err := upload.SniffContentTypeAndRewind(cmd.File, cmd.FileHeader)
+	if err != nil {
+		return nil, err
 	}
 
-	if !uploadRes.HasData {
-		return res, nil
+	size := int64(0)
+	if cmd.FileHeader != nil {
+		size = cmd.FileHeader.Size
+	}
+	if err = this.storage.Put(
+		ctx.InnerContext(),
+		storageKey,
+		uploadReader,
+		filestorage.NewPutOptions(mediaType, size),
+	); err != nil {
+		return nil, err
 	}
 
-	media := uploadRes.Data
-
-	product.SetThumbnailMediaRef(media.GetId())
+	product.SetThumbnailKey(&storageKey)
 
 	return this.UpdateProduct(ctx, itProduct.UpdateProductCommand{
 		Product: product,
 	})
 }
 
-func (this *ProductServiceImpl) populateProductThumbnailMedia(ctx corectx.Context, product *domain.Product) error {
-	mediaRef := product.GetThumbnailMediaRef()
-	if mediaRef == nil || *mediaRef == "" {
+func (this *ProductServiceImpl) populateProductThumbnailUrl(ctx corectx.Context, product *domain.Product) error {
+	key := product.GetThumbnailKey()
+	if key == nil || *key == "" {
 		return nil
 	}
 
-	mediaRes, err := this.mediaSvc.GetMedia(ctx, itMedia.GetMediaQuery{
-		Id:     model.Id(*mediaRef),
-		Fields: []string{domain.InventoryMediaFieldStorageKey, domain.InventoryMediaFieldMediaType},
-	})
+	url, err := this.storage.GeneratePresignedURL(ctx.InnerContext(), *key, time.Hour)
 	if err != nil {
 		return err
 	}
-	if !mediaRes.HasData {
-		return nil
-	}
 
-	product.SetThumbnail(mediaRes.Data.GetFieldData())
+	product.SetThumbnailUrl(&url)
 	return nil
 }
 
-func (this *ProductServiceImpl) populateProductsThumbnailMedia(ctx corectx.Context, products []domain.Product) error {
-	mediaIds := collectThumbnailMediaIds(products)
-	if len(mediaIds) == 0 {
+func (this *ProductServiceImpl) populateProductsThumbnailUrl(ctx corectx.Context, products []domain.Product) error {
+	seen := make(map[string]struct{})
+	uniqueKeys := make([]string, 0)
+
+	for i := range products {
+		key := products[i].GetThumbnailKey()
+		if key == nil || *key == "" {
+			continue
+		}
+		if _, exists := seen[*key]; exists {
+			continue
+		}
+		seen[*key] = struct{}{}
+		uniqueKeys = append(uniqueKeys, *key)
+	}
+
+	if len(uniqueKeys) == 0 {
 		return nil
 	}
 
-	graph := dmodel.NewSearchGraph().NewCondition(basemodel.FieldId, dmodel.In, anySlice(mediaIds)...)
-	searchRes, err := this.mediaSvc.SearchMedia(ctx, itMedia.SearchMediaQuery{
-		Fields: []string{domain.InventoryMediaFieldStorageKey, domain.InventoryMediaFieldMediaType},
-		Graph:  graph,
-		Page:   0,
-		Size:   len(mediaIds),
-	})
+	urls, err := filestorage.GeneratePresignedBulk(ctx.InnerContext(), this.storage, uniqueKeys, time.Hour)
 	if err != nil {
 		return err
-	}
-	if !searchRes.HasData {
-		return nil
-	}
-
-	mediaById := make(map[model.Id]dmodel.DynamicFields, len(searchRes.Data.Items))
-	for _, item := range searchRes.Data.Items {
-		if id := item.GetId(); id != nil {
-			mediaById[*id] = item.GetFieldData()
-		}
 	}
 
 	for i := range products {
-		mediaRef := products[i].GetThumbnailMediaRef()
-		if mediaRef == nil || *mediaRef == "" {
+		key := products[i].GetThumbnailKey()
+		if key == nil || *key == "" {
 			continue
 		}
-		if media, ok := mediaById[model.Id(*mediaRef)]; ok {
-			products[i].SetThumbnail(media)
+		if url, ok := urls[*key]; ok {
+			products[i].SetThumbnailUrl(&url)
 		}
 	}
 
 	return nil
-}
-
-func collectThumbnailMediaIds(products []domain.Product) []model.Id {
-	seen := make(map[model.Id]struct{})
-	ids := make([]model.Id, 0)
-
-	for _, product := range products {
-		mediaRef := product.GetThumbnailMediaRef()
-		if mediaRef == nil || *mediaRef == "" {
-			continue
-		}
-		id := model.Id(*mediaRef)
-		if _, exists := seen[id]; exists {
-			continue
-		}
-		seen[id] = struct{}{}
-		ids = append(ids, id)
-	}
-
-	return ids
 }
