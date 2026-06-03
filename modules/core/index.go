@@ -16,6 +16,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/httpclient"
 	http "github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	"github.com/sky-as-code/nikki-erp/modules/core/language"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra"
+	"github.com/sky-as-code/nikki-erp/modules/core/job"
 )
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
@@ -62,6 +64,9 @@ func (*CoreModule) Init() error {
 		deps.Invoke(coredyn.InitSubModule),
 		deps.Invoke(http.InitSubModule),
 		deps.Invoke(httpclient.InitSubModule),
+		deps.Invoke(infra.InitSubModule),
+		deps.Invoke(job.InitSubModule),
+		deps.Register(newCoreClient),
 
 		// These submodules expose network APIs
 		deps.Invoke(language.InitSubModule),
