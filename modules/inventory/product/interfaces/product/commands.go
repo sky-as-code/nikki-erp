@@ -1,8 +1,11 @@
 package product
 
 import (
+	"mime/multipart"
+
 	"github.com/shopspring/decimal"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
@@ -135,3 +138,11 @@ func (this UpdateProductCommand) GetSchema() *dmodel.ModelSchema {
 }
 
 type UpdateProductResult = dyn.OpResult[dyn.MutateResultData]
+
+type UploadProductThumbnailCommand struct {
+	ProductId  model.Id
+	File       multipart.File        `json:"-" form:"-"`
+	FileHeader *multipart.FileHeader `json:"-" form:"-"`
+}
+
+type UploadProductThumbnailResult = dyn.OpResult[dyn.MutateResultData]

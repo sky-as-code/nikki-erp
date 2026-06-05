@@ -47,6 +47,7 @@ func initProductV1() error {
 		routeV1.POST("/products/:id/archived", productRest.SetIsArchived)
 		routeV1.POST("/products", productRest.Create)
 		routeV1.PUT("/products/:id", productRest.Update)
+		routeV1.PUT("/products/:id/thumbnail", productRest.UploadThumbnail)
 
 		// Register nested resource routes manually
 		// Attributes (nested under products)
@@ -76,6 +77,7 @@ func initProductV1() error {
 		routeV1.POST("/products/:product_id/variants/exists", variantRest.Exists)
 		routeV1.POST("/products/:product_id/variants", variantRest.Create)
 		routeV1.PUT("/products/:product_id/variants/:id", variantRest.Update)
+		routeV1.PUT("/products/:product_id/variants/:id/image", variantRest.UploadImage)
 
 		// Standalone variant search
 		routeV1.GET("/variants", variantRest.Search)

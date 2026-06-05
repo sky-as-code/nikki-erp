@@ -9,6 +9,7 @@ import (
 
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
+	"github.com/sky-as-code/nikki-erp/modules/core/job"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 )
 
@@ -29,6 +30,8 @@ func Main(param MainParam) {
 	isCreateSql := flag.Bool("createsql", false, "Generate CREATE SQL for model schemas and write to stdout")
 	module := flag.String("module", "", "Module name (required when -createsql is set)")
 	dialect := flag.String("dialect", "", "SQL dialect (required when -createsql is set)")
+	job := flag.String("job", "", "Run job")
+	jobArgs := flag.String("jobArgs", "", "Job Args")
 	flag.Parse()
 
 	if *isCreateSql {
@@ -40,6 +43,15 @@ func Main(param MainParam) {
 
 	app := param.CreateAppFn(logging.Logger())
 	app.Start()
+
+	if *job != "" {
+		if jobArgs != nil && *jobArgs != "" {
+			runHandleJob(*job, jobArgs)
+		} else {
+			runHandleJob(*job, nil)
+		}
+		return
+	}
 
 	var server *httpserver.HttpServer
 	go func() {
@@ -72,6 +84,17 @@ func runCreateSql(createAppFn CreateAppFn, module string, dialect string) {
 	app := createAppFn(nil)
 	sql := app.GenSql(module, dialect)
 	fmt.Print(sql)
+}
+
+func runHandleJob(jobName string, jobArgs *string) {
+	err := deps.Invoke(func(jobManager *job.JobManager) error {
+		jobManager.HandleJob(jobName, jobArgs)
+		return nil
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: failed to run job %q: %v\n", jobName, err)
+		os.Exit(1)
+	}
 }
 
 func awaitOsTerminateSignal() chan os.Signal {

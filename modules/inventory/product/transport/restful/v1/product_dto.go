@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"mime/multipart"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
@@ -12,6 +14,13 @@ type CreateProductResponse = httpserver.RestCreateResponse
 
 type UpdateProductRequest = itProduct.UpdateProductCommand
 type UpdateProductResponse = httpserver.RestMutateResponse
+
+type UploadProductThumbnailRequest struct {
+	ProductId  string                `param:"id"`
+	FileHeader *multipart.FileHeader `json:"-" form-file:"file"`
+}
+
+type UploadProductThumbnailResponse = httpserver.RestMutateResponse
 
 type DeleteProductRequest = itProduct.DeleteProductCommand
 type DeleteProductResponse = httpserver.RestDeleteResponse2

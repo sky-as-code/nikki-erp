@@ -1,12 +1,17 @@
 package app
 
 import (
+	"time"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/objectkey"
+	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/upload"
 	"github.com/sky-as-code/nikki-erp/modules/inventory/product/domain"
 	itAttribute "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/attribute"
 	itProduct "github.com/sky-as-code/nikki-erp/modules/inventory/product/interfaces/product"
@@ -140,6 +145,9 @@ func (this *ProductServiceImpl) GetVariant(ctx corectx.Context, query it.GetVari
 	if err := this.populateVariantAttributes(ctx, &result.Data); err != nil {
 		return nil, err
 	}
+	if err := this.populateVariantImageUrl(ctx, &result.Data); err != nil {
+		return nil, err
+	}
 
 	return result, nil
 }
@@ -182,6 +190,9 @@ func (this *ProductServiceImpl) SearchVariants(ctx corectx.Context, query it.Sea
 			return nil, err
 		}
 	}
+	if err := this.populateVariantsImageUrl(ctx, result.Data.Items); err != nil {
+		return nil, err
+	}
 
 	return result, nil
 }
@@ -206,6 +217,9 @@ func (this *ProductServiceImpl) SearchAllVariants(ctx corectx.Context, query it.
 		if err := this.populateVariantAttributes(ctx, &result.Data.Items[i]); err != nil {
 			return nil, err
 		}
+	}
+	if err := this.populateVariantsImageUrl(ctx, result.Data.Items); err != nil {
+		return nil, err
 	}
 
 	return result, nil
@@ -487,6 +501,125 @@ func (this *ProductServiceImpl) populateVariantAttributes(ctx corectx.Context, v
 	}
 
 	variant.SetAttributes(attributesMap)
+	return nil
+}
+
+func (this *ProductServiceImpl) UploadVariantImage(ctx corectx.Context, cmd it.UploadVariantImageCommand) (*it.UploadVariantImageResult, error) {
+	res := &it.UploadVariantImageResult{}
+	getVarRes, err := corecrud.GetOne[domain.Variant](ctx, corecrud.GetOneParam{
+		Action:       "get variant",
+		DbRepoGetter: this.variantRepo,
+		Query:        dyn.GetOneQuery{Id: cmd.VariantId},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if getVarRes.ClientErrors.Count() > 0 {
+		res.ClientErrors = getVarRes.ClientErrors
+		return res, nil
+	}
+
+	if !getVarRes.HasData {
+		res.ClientErrors = ft.ClientErrors{*ft.NewNotFoundError("id")}
+		return res, nil
+	}
+
+	variant := getVarRes.Data
+	productId := variant.GetProductId()
+	if productId == nil || *productId != cmd.ProductId {
+		res.ClientErrors = ft.ClientErrors{*ft.NewNotFoundError("id")}
+		return res, nil
+	}
+
+	if key := variant.GetImageKey(); key != nil && *key != "" {
+		if err := this.storage.Remove(ctx.InnerContext(), *key); err != nil {
+			return nil, err
+		}
+	}
+
+	if cmd.File == nil {
+		return res, nil
+	}
+
+	storageKey, err := objectkey.BuildFromFileHeader("inventory/variant", cmd.FileHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	mediaType, uploadReader, err := upload.SniffContentTypeAndRewind(cmd.File, cmd.FileHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	size := int64(0)
+	if cmd.FileHeader != nil {
+		size = cmd.FileHeader.Size
+	}
+	if err = this.storage.Put(
+		ctx.InnerContext(),
+		storageKey,
+		uploadReader,
+		filestorage.NewPutOptions(mediaType, size),
+	); err != nil {
+		return nil, err
+	}
+
+	variant.SetImageKey(&storageKey)
+
+	return this.UpdateVariant(ctx, it.UpdateVariantCommand{Variant: variant})
+}
+
+func (this *ProductServiceImpl) populateVariantImageUrl(ctx corectx.Context, variant *domain.Variant) error {
+	key := variant.GetImageKey()
+	if key == nil || *key == "" {
+		return nil
+	}
+
+	url, err := this.storage.GeneratePresignedURL(ctx.InnerContext(), *key, time.Hour)
+	if err != nil {
+		return err
+	}
+
+	variant.SetImageUrl(&url)
+	return nil
+}
+
+func (this *ProductServiceImpl) populateVariantsImageUrl(ctx corectx.Context, variants []domain.Variant) error {
+	seen := make(map[string]struct{})
+	uniqueKeys := make([]string, 0)
+
+	for i := range variants {
+		key := variants[i].GetImageKey()
+		if key == nil || *key == "" {
+			continue
+		}
+		if _, exists := seen[*key]; exists {
+			continue
+		}
+		seen[*key] = struct{}{}
+		uniqueKeys = append(uniqueKeys, *key)
+	}
+
+	if len(uniqueKeys) == 0 {
+		return nil
+	}
+
+	urls, err := filestorage.GeneratePresignedBulk(ctx.InnerContext(), this.storage, uniqueKeys, time.Hour)
+	if err != nil {
+		return err
+	}
+
+	for i := range variants {
+		key := variants[i].GetImageKey()
+		if key == nil || *key == "" {
+			continue
+		}
+		if url, ok := urls[*key]; ok {
+			variants[i].SetImageUrl(&url)
+		}
+	}
+
 	return nil
 }
 

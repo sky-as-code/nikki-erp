@@ -58,6 +58,7 @@ const (
 	VarFieldBarcode       = "barcode"
 	VarFieldProposedPrice = "proposed_price"
 	VarFieldStatus        = "status"
+	VarFieldImageKey      = "image_key"
 	VarFieldImageUrl      = "image_url"
 	VarFieldAttributes    = "attributes"
 
@@ -116,9 +117,9 @@ func VariantSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		Field(
 			dmodel.DefineField().
-				Name(VarFieldImageUrl).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Image URL"}).
-				DataType(dmodel.FieldDataTypeUrl()),
+				Name(VarFieldImageKey).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Image Key"}).
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
@@ -206,6 +207,14 @@ func (this *Variant) SetStatus(v *VariantStatus) {
 	}
 	s := string(*v)
 	this.GetFieldData().SetString(VarFieldStatus, &s)
+}
+
+func (this Variant) GetImageKey() *string {
+	return this.GetFieldData().GetString(VarFieldImageKey)
+}
+
+func (this *Variant) SetImageKey(v *string) {
+	this.GetFieldData().SetString(VarFieldImageKey, v)
 }
 
 func (this Variant) GetImageUrl() *string {
