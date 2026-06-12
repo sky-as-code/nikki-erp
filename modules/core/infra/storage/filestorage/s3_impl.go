@@ -127,7 +127,7 @@ func (this *s3Adapter) Remove(ctx context.Context, objectKey string) error {
 	return err
 }
 
-func (this *s3Adapter) GeneratePresignedURL(ctx context.Context, objectKey string, expr time.Duration) (string, error) {
+func (this *s3Adapter) GeneratePresignedUrl(ctx context.Context, objectKey string, expr time.Duration) (string, error) {
 	req, err := this.presign.PresignGetObject(
 		ctx,
 		&s3.GetObjectInput{
