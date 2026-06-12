@@ -1331,6 +1331,17 @@ func (this *PgQueryBuilder) convertValue(field *dmodel.ModelField, value any) (a
 		return string(raw), nil, nil
 	}
 
+	if columnCategoryFor(field.ColumnType()) == columnTime {
+		t, timeErr := modelTimeFromReflect(v)
+		if timeErr != nil {
+			return nil, ft.ClientErrors{*dmodel.NewInvalidDataTypeErr(field.Name())}, errors.Wrapf(
+				timeErr, "convertValue: field '%s'", field.Name(),
+			)
+		}
+
+		return t, nil, nil
+	}
+
 	return v.Interface(), nil, nil
 }
 
