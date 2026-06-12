@@ -10,7 +10,7 @@ type FileStorageAdapter interface {
 	Put(ctx context.Context, objectKey string, r io.Reader, opts *PutOptions) error
 	Open(ctx context.Context, objectKey string, rangeHeader string) (*StreamObjectResult, error)
 	Remove(ctx context.Context, objectKey string) error
-	GeneratePresignedURL(ctx context.Context, objectKey string, expr time.Duration) (string, error)
+	GeneratePresignedUrl(ctx context.Context, objectKey string, expr time.Duration) (string, error)
 }
 
 type PutOptions struct {

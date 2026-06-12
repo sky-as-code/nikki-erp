@@ -22,7 +22,7 @@ func GeneratePresignedBulk(ctx context.Context, a FileStorageAdapter, keys []str
 	var err error
 
 	for _, key := range keys {
-		res[key], err = a.GeneratePresignedURL(ctx, key, expr)
+		res[key], err = a.GeneratePresignedUrl(ctx, key, expr)
 		if err != nil {
 			return nil, err
 		}
