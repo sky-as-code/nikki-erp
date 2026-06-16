@@ -65,7 +65,14 @@ const (
 	PubSubRedisPassword ConfigName = "CORE.PUB_SUB.REDIS_PASSWORD"
 	PubSubRedisDB       ConfigName = "CORE.PUB_SUB.REDIS_DB"
 
-	//Pub sub Redis
+	//Pub sub VerneMq
+	PubSubVerneHost     ConfigName = "CORE.PUB_SUB.VERNE_HOST"
+	PubSubVernePort     ConfigName = "CORE.PUB_SUB.VERNE_PORT"
+	PubSubVerneScheme   ConfigName = "CORE.PUB_SUB.VERNE_SCHEME"
+	PubSubVerneUsername ConfigName = "CORE.PUB_SUB.VERNE_USERNAME"
+	PubSubVernePassword ConfigName = "CORE.PUB_SUB.VERNE_PASSWORD"
+
+	//Distributed Redis
 	DistributedLockRedisHost     ConfigName = "CORE.DISTRIBUTED_LOCK.REDIS_HOST"
 	DistributedLockRedisPort     ConfigName = "CORE.DISTRIBUTED_LOCK.REDIS_PORT"
 	DistributedLockRedisPassword ConfigName = "CORE.DISTRIBUTED_LOCK.REDIS_PASSWORD"
