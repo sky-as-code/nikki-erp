@@ -25,8 +25,8 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@nikki-erp.com
       PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     ports:
@@ -65,14 +65,34 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./rabbitmq_enabled_plugins:/etc/rabbitmq/enabled_plugins
     ports:
-      - "5672:5672"   # AMQP port
+      - "5672:5672" # AMQP port
       - "15672:15672" # Management UI port
-      - "1883:1883"   # MQTT port
+      - "1883:1883" # MQTT port
     healthcheck:
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - nikki_net
+
+  vernemq:
+    image: vernemq/vernemq:2.1.1-alpine
+    container_name: nikki_vernemq
+    environment:
+      DOCKER_VERNEMQ_ACCEPT_EULA: "yes"
+      DOCKER_VERNEMQ_ALLOW_ANONYMOUS: "off"
+      VERNE_USER: "nikki_username"
+      VERNE_PASSWORD: "nikki_password"
+    ports:
+      - "1884:1883" # MQTT Default Port
+      - "8883:8883" # MQTT over SSL/TLS
+      - "8080:8080" # MQTT over WebSockets
+    volumes:
+      - vernemq-data:/vernemq/data
+      - vernemq-log:/vernemq/log
+      - ./init-verne.sh:/init-verne.sh
+    entrypoint: ["/bin/sh", "/init-verne.sh"]
     networks:
       - nikki_net
 
@@ -86,3 +106,5 @@ volumes:
   keydb_data:
   redis_data:
   rabbitmq_data:
+  vernemq-data:
+  vernemq-log:
