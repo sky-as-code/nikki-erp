@@ -30,7 +30,7 @@ const (
 )
 
 const (
-	AttributeSchemaName = "inventory.attribute"
+	AttributeSchemaName = "inventory_attribute"
 
 	AttrFieldId               = basemodel.FieldId
 	AttrFieldCodeName         = "code_name"
@@ -52,7 +52,7 @@ const (
 
 func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(AttributeSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Attribute"}).
+		Label(model.NewLangJsonRefSf("%s.label", AttributeSchemaName)).
 		TableName("inventory_attributes").
 		CompositeUnique(AttrFieldCodeName, AttrFieldProductId).
 		ShouldBuildDb().
@@ -60,7 +60,7 @@ func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(AttrFieldCodeName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Code Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrFieldCodeName)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
 				Unique().
 				RequiredForCreate(),
@@ -68,20 +68,20 @@ func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(AttrFieldDisplayName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Display Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrFieldDisplayName)).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrFieldSortIndex).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Sort Index"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrFieldSortIndex)).
 				DataType(dmodel.FieldDataTypeInt64(0, math.MaxInt16)).
 				Default(0),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrFieldDataType).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Data Type"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrFieldDataType)).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
 					string(AttributeDataTypeBoolean),
 					string(AttributeDataTypeNumber),
@@ -94,46 +94,46 @@ func AttributeSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(AttrFieldIsRequired).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Is Required"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrFieldIsRequired)).
 				DataType(dmodel.FieldDataTypeBoolean()).
 				Default(false),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrFieldIsEnum).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Is Enum"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrFieldIsEnum)).
 				DataType(dmodel.FieldDataTypeBoolean()).
 				Default(false),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrFieldEnumValueSort).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Enum Value Sort"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrFieldEnumValueSort)).
 				DataType(dmodel.FieldDataTypeBoolean()).
 				Default(false),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrFieldEnumValueText).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Enum Values Text"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrFieldEnumValueText)).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH).ArrayType()),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrFieldEnumValueNumber).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Enum Values Number"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrFieldEnumValueNumber)).
 				DataType(dmodel.FieldDataTypeInt64(0, math.MaxInt64).ArrayType()),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrFieldAttributeGroupId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Attribute Group"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrFieldAttributeGroupId)).
 				DataType(dmodel.FieldDataTypeUlid()),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrFieldProductId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Product"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrFieldProductId)).
 				DataType(dmodel.FieldDataTypeUlid()).
 				RequiredForCreate(),
 		).

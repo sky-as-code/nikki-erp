@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	PurchaseOrderSchemaName     = "purchase.purchase_order"
-	PurchaseOrderItemSchemaName = "purchase.purchase_order_item"
+	PurchaseOrderSchemaName     = "purchase_purchase_order"
+	PurchaseOrderItemSchemaName = "purchase_purchase_order_item"
 
 	PurchaseOrderFieldId            = basemodel.FieldId
 	PurchaseOrderFieldCode          = "code"
@@ -24,7 +24,7 @@ const (
 
 func PurchaseOrderSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(PurchaseOrderSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Purchase order"}).
+		Label(model.NewLangJsonRefSf("%s.label", PurchaseOrderSchemaName)).
 		TableName("purchase_orders").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -42,7 +42,7 @@ func PurchaseOrderSchemaBuilder() *dmodel.ModelSchemaBuilder {
 
 func PurchaseOrderItemSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(PurchaseOrderItemSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Purchase order item"}).
+		Label(model.NewLangJsonRefSf("%s.label", PurchaseOrderItemSchemaName)).
 		TableName("purchase_order_items").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -59,7 +59,7 @@ func PurchaseOrderItemSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Extend(basemodel.VersionedModelSchemaBuilder()).
 		Extend(basemodel.AuditableModelSchemaBuilder()).
 		EdgeTo(dmodel.Edge(PurchaseOrderItemEdgeProduct).
-			ManyToOne("inventory.product", dmodel.DynamicFields{PurchaseOrderItemFieldProductId: basemodel.FieldId}).
+			ManyToOne("inventory_product", dmodel.DynamicFields{PurchaseOrderItemFieldProductId: basemodel.FieldId}).
 			OnDelete(dmodel.RelationCascadeNoAction))
 }
 

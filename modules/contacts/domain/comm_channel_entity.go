@@ -28,7 +28,7 @@ const (
 )
 
 const (
-	CommChannelSchemaName = "contacts.comm_channel"
+	CommChannelSchemaName = "contacts_comm_channel"
 
 	CommChannelFieldId         = basemodel.FieldId
 	CommChannelFieldEtag       = basemodel.FieldEtag
@@ -45,7 +45,7 @@ const (
 
 func CommChannelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(CommChannelSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Communication Channel"}).
+		Label(model.NewLangJsonRefSf("%s.label", CommChannelSchemaName)).
 		TableName("contacts_comm_channels").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -53,18 +53,18 @@ func CommChannelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(CommChannelFieldNote).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Note"}).
+				Label(model.NewLangJsonRefSf("fields.%s", CommChannelFieldNote)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
 			basemodel.DefineFieldId(CommChannelFieldPartyId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Party"}).
+				Label(model.NewLangJsonRefSf("fields.%s", CommChannelFieldPartyId)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(CommChannelFieldType).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Type"}).
+				Label(model.NewLangJsonRefSf("fields.%s", CommChannelFieldType)).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
 					string(CommChannelTypePhone),
 					string(CommChannelTypeZalo),
@@ -77,13 +77,13 @@ func CommChannelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(CommChannelFieldValue).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Value"}).
+				Label(model.NewLangJsonRefSf("fields.%s", CommChannelFieldValue)).
 				DataType(dmodel.FieldDataTypeString(0, 255)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(CommChannelFieldValueJson).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Value JSON"}).
+				Label(model.NewLangJsonRefSf("fields.%s", CommChannelFieldValueJson)).
 				DataType(dmodel.FieldDataTypeJsonMap()),
 		).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).

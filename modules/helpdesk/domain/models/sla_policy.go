@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	SlaPolicySchemaName = "helpdesk.sla_policy"
+	SlaPolicySchemaName = "helpdesk_sla_policy"
 
 	SlaPolicyFieldName                 = "name"
 	SlaPolicyFieldFirstResponseMinutes = "first_response_minutes"
@@ -18,7 +18,7 @@ const (
 
 func SlaPolicySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(SlaPolicySchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Sla policy"}).
+		Label(model.NewLangJsonRefSf("%s.label", SlaPolicySchemaName)).
 		TableName("helpdesk_sla_policies").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

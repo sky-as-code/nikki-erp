@@ -28,7 +28,7 @@ const (
 )
 
 const (
-	VarAttrValRelSchemaName       = "inventory.variant_attr_val_rel"
+	VarAttrValRelSchemaName       = "inventory_variant_attr_val_rel"
 	VarAttrValRelFieldVariantId   = "variant_id"
 	VarAttrValRelFieldAttrValueId = "attribute_value_id"
 )
@@ -49,7 +49,7 @@ func VariantAttrValRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 }
 
 const (
-	VariantSchemaName = "inventory.variant"
+	VariantSchemaName = "inventory_variant"
 
 	VarFieldId            = basemodel.FieldId
 	VarFieldProductId     = "product_id"
@@ -67,46 +67,46 @@ const (
 
 func VariantSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(VariantSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Variant"}).
+		Label(model.NewLangJsonRefSf("%s.label", VariantSchemaName)).
 		TableName("inventory_variants").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Extend(basemodel.OrgIdModelSchemaBuilder()).
 		Field(
 			basemodel.DefineFieldId(VarFieldProductId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Product"}).
+				Label(model.NewLangJsonRefSf("fields.%s", VarFieldProductId)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(VarFieldName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", VarFieldName)).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(VarFieldSku).
-				Label(model.LangJson{model.LanguageCodeEnUs: "SKU"}).
+				Label(model.NewLangJsonRefSf("fields.%s", VarFieldSku)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_TINY_NAME_LENGTH)).
 				Unique(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(VarFieldBarcode).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Barcode"}).
+				Label(model.NewLangJsonRefSf("fields.%s", VarFieldBarcode)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_TINY_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(VarFieldProposedPrice).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Proposed Price"}).
+				Label(model.NewLangJsonRefSf("fields.%s", VarFieldProposedPrice)).
 				DataType(dmodel.FieldDataTypeDecimal("0", fmt.Sprint(model.MODEL_RULE_CURRENCY_MAX), model.MODEL_RULE_CURRENCY_SCALE)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(VarFieldStatus).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Status"}).
+				Label(model.NewLangJsonRefSf("fields.%s", VarFieldStatus)).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
 					string(VariantStatusDraft),
 					string(VariantStatusActive),
@@ -117,7 +117,7 @@ func VariantSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(VarFieldImageUrl).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Image URL"}).
+				Label(model.NewLangJsonRefSf("fields.%s", VarFieldImageUrl)).
 				DataType(dmodel.FieldDataTypeUrl()),
 		).
 		Extend(basemodel.VersionedModelSchemaBuilder()).

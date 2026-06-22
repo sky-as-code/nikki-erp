@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/authorize/roles?page=0&size=4&graph={"if":["name", "=", "Identity module User Manager"]}
+  url: {{api_host}}/v1/iam/roles?page=0&size=4&graph={"if":["name", "=", "Identity module User Manager"]}
   body: none
   auth: inherit
 }

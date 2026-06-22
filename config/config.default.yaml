@@ -128,6 +128,6 @@ CORE:
     REFRESH_TOKEN_EXPIRY_MINUTES: 30
     SESSION_BLACKLIST_ENABLED: false
 
-AUTHENTICATE:
+IAM:
   # Number of seconds before a login attempt expires
   LOGIN_ATTEMPT_DURATION_SECS: 300

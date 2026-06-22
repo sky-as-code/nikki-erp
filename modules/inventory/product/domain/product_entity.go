@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	ProductSchemaName = "inventory.product"
+	ProductSchemaName = "inventory_product"
 
 	ProdFieldId               = basemodel.FieldId
 	ProdFieldName             = "name"
@@ -37,7 +37,7 @@ const (
 
 func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ProductSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Product"}).
+		Label(model.NewLangJsonRefSf("%s.label", ProductSchemaName)).
 		TableName("inventory_products").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -45,7 +45,7 @@ func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(ProdFieldName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ProdFieldName)).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
 				Unique().
 				RequiredForCreate(),
@@ -53,27 +53,27 @@ func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(ProdFieldDescription).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Description"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ProdFieldDescription)).
 				DataType(dmodel.FieldDataTypeLangJson(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(ProdFieldThumbnailUrl).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Thumbnail URL"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ProdFieldThumbnailUrl)).
 				DataType(dmodel.FieldDataTypeUrl()),
 		).
 		Field(
 			basemodel.DefineFieldId(ProdFieldUnitId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Unit"}),
+				Label(model.NewLangJsonRefSf("fields.%s", ProdFieldUnitId)),
 		).
 		Field(
 			basemodel.DefineFieldId(ProdFieldDefaultVariantId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Default Variant"}),
+				Label(model.NewLangJsonRefSf("fields.%s", ProdFieldDefaultVariantId)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(ProdFieldTagIds).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Tag IDs"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ProdFieldTagIds)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
 		).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).

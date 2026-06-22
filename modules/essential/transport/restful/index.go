@@ -32,79 +32,121 @@ func InitRestfulHandlers() error {
 func initEssentialV1() error {
 	return deps.Invoke(func(
 		route *echo.Group,
-		// contactRest *v1.ContactRest,
-		enumRest *v1.EnumRest,
-		unitRest *v1.UnitRest,
-		unitCategoryRest *v1.UnitCategoryRest,
-		fieldMetadataRest *v1.FieldMetadataRest,
-		languageRest *v1.LanguageRest,
-		modelMetadataRest *v1.ModelMetadataRest,
-		moduleRest *v1.ModuleRest,
-		tagRest *v1.TagRest,
 	) error {
 		routeV1 := route.Group("/v1/essential")
+		return stdErr.Join(
+			initEnumV1(routeV1),
+			initFieldMetadataV1(routeV1),
+			initLanguageV1(routeV1),
+			initModelMetadataV1(routeV1),
+			initModuleV1(routeV1),
+			initTagV1(routeV1),
+			initUnitV1(routeV1),
+			initUnitCategoryV1(routeV1),
+		)
+	})
+}
 
-		// routeV1.DELETE("/contacts/:id", contactRest.DeleteContact)
-		// routeV1.GET("/contacts/:id", contactRest.GetContact)
-		// routeV1.GET("/contacts", contactRest.SearchContacts)
-		// routeV1.POST("/contacts/exists", contactRest.ContactExists)
-		// routeV1.POST("/contacts", contactRest.CreateContact)
-		// routeV1.PUT("/contacts/:id", contactRest.UpdateContact)
+func initEnumV1(route *echo.Group) error {
+	return deps.Invoke(func(
+		enumRest *v1.EnumRest,
+	) {
+		route.DELETE("/enums/:id", enumRest.Delete)
+		route.GET("/enums/:id", enumRest.GetOne)
+		route.GET("/enums", enumRest.Search)
+		route.POST("/enums/exists", enumRest.Exists)
+		route.POST("/enums", enumRest.Create)
+		route.PUT("/enums/:id", enumRest.Update)
+	})
+}
 
-		routeV1.DELETE("/enums/:id", enumRest.Delete)
-		routeV1.GET("/enums/:id", enumRest.GetOne)
-		routeV1.GET("/enums", enumRest.Search)
-		routeV1.POST("/enums/exists", enumRest.Exists)
-		routeV1.POST("/enums", enumRest.Create)
-		routeV1.PUT("/enums/:id", enumRest.Update)
+func initFieldMetadataV1(route *echo.Group) error {
+	return deps.Invoke(func(
+		fieldMetadataRest *v1.FieldMetadataRest,
+	) {
+		route.DELETE("/field-metadata/:id", fieldMetadataRest.DeleteFieldMetadata)
+		route.GET("/field-metadata/:id", fieldMetadataRest.GetFieldMetadata)
+		route.GET("/field-metadata", fieldMetadataRest.SearchFieldMetadata)
+		route.POST("/field-metadata/exists", fieldMetadataRest.FieldMetadataExists)
+		route.POST("/field-metadata", fieldMetadataRest.CreateFieldMetadata)
+		route.PUT("/field-metadata/:id", fieldMetadataRest.UpdateFieldMetadata)
+	})
+}
 
-		routeV1.DELETE("/field-metadata/:id", fieldMetadataRest.DeleteFieldMetadata)
-		routeV1.GET("/field-metadata/:id", fieldMetadataRest.GetFieldMetadata)
-		routeV1.GET("/field-metadata", fieldMetadataRest.SearchFieldMetadata)
-		routeV1.POST("/field-metadata/exists", fieldMetadataRest.FieldMetadataExists)
-		routeV1.POST("/field-metadata", fieldMetadataRest.CreateFieldMetadata)
-		routeV1.PUT("/field-metadata/:id", fieldMetadataRest.UpdateFieldMetadata)
+func initLanguageV1(route *echo.Group) error {
+	return deps.Invoke(func(
+		languageRest *v1.LanguageRest,
+	) {
+		route.DELETE("/languages/:id", languageRest.DeleteLanguage)
+		route.GET("/languages/json", languageRest.GetLanguageJson)
+		route.GET("/languages/:id", languageRest.GetLanguage)
+		route.GET("/languages", languageRest.SearchLanguages)
+		route.POST("/languages/exists", languageRest.LanguageExists)
+		route.POST("/languages", languageRest.CreateLanguage)
+		route.PUT("/languages/:id", languageRest.UpdateLanguage)
+	})
+}
 
-		routeV1.DELETE("/languages/:id", languageRest.DeleteLanguage)
-		routeV1.GET("/languages/:id", languageRest.GetLanguage)
-		routeV1.GET("/languages", languageRest.SearchLanguages)
-		routeV1.POST("/languages/exists", languageRest.LanguageExists)
-		routeV1.POST("/languages", languageRest.CreateLanguage)
-		routeV1.PUT("/languages/:id", languageRest.UpdateLanguage)
+func initModelMetadataV1(route *echo.Group) error {
+	return deps.Invoke(func(
+		modelMetadataRest *v1.ModelMetadataRest,
+	) {
+		route.DELETE("/model-metadata/:id", modelMetadataRest.DeleteModelMetadata)
+		route.GET("/model-metadata/:id", modelMetadataRest.GetModelMetadata)
+		route.GET("/model-metadata", modelMetadataRest.SearchModelMetadata)
+		route.POST("/model-metadata/exists", modelMetadataRest.ModelMetadataExists)
+		route.POST("/model-metadata", modelMetadataRest.CreateModelMetadata)
+		route.PUT("/model-metadata/:id", modelMetadataRest.UpdateModelMetadata)
+	})
+}
 
-		routeV1.DELETE("/model-metadata/:id", modelMetadataRest.DeleteModelMetadata)
-		routeV1.GET("/model-metadata/:id", modelMetadataRest.GetModelMetadata)
-		routeV1.GET("/model-metadata", modelMetadataRest.SearchModelMetadata)
-		routeV1.POST("/model-metadata/exists", modelMetadataRest.ModelMetadataExists)
-		routeV1.POST("/model-metadata", modelMetadataRest.CreateModelMetadata)
-		routeV1.PUT("/model-metadata/:id", modelMetadataRest.UpdateModelMetadata)
+func initModuleV1(route *echo.Group) error {
+	return deps.Invoke(func(
+		moduleRest *v1.ModuleRest,
+	) {
+		route.DELETE("/modules/:id", moduleRest.DeleteModule)
+		route.GET("/modules/meta/schema", moduleRest.GetModelSchema)
+		route.GET("/modules/:id", moduleRest.GetModule)
+		route.GET("/modules", moduleRest.SearchModules)
+		route.POST("/modules/exists", moduleRest.ModuleExists)
+		route.POST("/modules", moduleRest.CreateModule)
+		route.PUT("/modules/:id", moduleRest.UpdateModule)
+	})
+}
 
-		routeV1.DELETE("/modules/:id", moduleRest.DeleteModule)
-		routeV1.GET("/modules/:id", moduleRest.GetModule)
-		routeV1.GET("/modules", moduleRest.SearchModules)
-		routeV1.POST("/modules/exists", moduleRest.ModuleExists)
-		routeV1.POST("/modules", moduleRest.CreateModule)
-		routeV1.PUT("/modules/:id", moduleRest.UpdateModule)
+func initTagV1(route *echo.Group) error {
+	return deps.Invoke(func(
+		tagRest *v1.TagRest,
+	) {
+		route.DELETE("/tags/:id", tagRest.Delete)
+		route.GET("/tags/:id", tagRest.GetOne)
+		route.GET("/tags", tagRest.Search)
+		route.POST("/tags/exists", tagRest.Exists)
+		route.POST("/tags", tagRest.Create)
+		route.PUT("/tags/:id", tagRest.Update)
+	})
+}
 
-		routeV1.DELETE("/tags/:id", tagRest.Delete)
-		routeV1.GET("/tags/:id", tagRest.GetOne)
-		routeV1.GET("/tags", tagRest.Search)
-		routeV1.POST("/tags/exists", tagRest.Exists)
-		routeV1.POST("/tags", tagRest.Create)
-		routeV1.PUT("/tags/:id", tagRest.Update)
+func initUnitV1(route *echo.Group) error {
+	return deps.Invoke(func(
+		unitRest *v1.UnitRest,
+	) {
+		route.DELETE("/units/:id", unitRest.Delete, m.SmokeAuthz())
+		route.GET("/units/:id", unitRest.GetOne, m.SmokeAuthz())
+		route.POST("/units/:id/exists", unitRest.Exists, m.SmokeAuthz())
+		route.POST("/units/:id", unitRest.Create, m.SmokeAuthz())
+		route.PUT("/units/:id", unitRest.Update, m.SmokeAuthz())
+	})
+}
 
-		routeV1.DELETE("/units/:id", unitRest.Delete, m.SmokeAuthz())
-		routeV1.GET("/units/:id", unitRest.GetOne, m.SmokeAuthz())
-		routeV1.POST("/units/:id/exists", unitRest.Exists, m.SmokeAuthz())
-		routeV1.POST("/units/:id", unitRest.Create, m.SmokeAuthz())
-		routeV1.PUT("/units/:id", unitRest.Update, m.SmokeAuthz())
-
-		routeV1.DELETE("/units-categories/:id", unitCategoryRest.Delete)
-		routeV1.GET("/units-categories/:id", unitCategoryRest.GetOne)
-		routeV1.POST("/units-categories/:id/exists", unitCategoryRest.Exists)
-		routeV1.POST("/units-categories/:id", unitCategoryRest.Create)
-		routeV1.PUT("/units-categories/:id", unitCategoryRest.Update)
-
-		return nil
+func initUnitCategoryV1(route *echo.Group) error {
+	return deps.Invoke(func(
+		unitCategoryRest *v1.UnitCategoryRest,
+	) {
+		route.DELETE("/units-categories/:id", unitCategoryRest.Delete)
+		route.GET("/units-categories/:id", unitCategoryRest.GetOne)
+		route.POST("/units-categories/:id/exists", unitCategoryRest.Exists)
+		route.POST("/units-categories/:id", unitCategoryRest.Create)
+		route.PUT("/units-categories/:id", unitCategoryRest.Update)
 	})
 }

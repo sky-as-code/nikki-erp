@@ -37,7 +37,7 @@ func (this *PermissionExtServiceImpl) IsAuthorized(ctx corectx.Context, query Is
 }
 
 var isAuthorizedQueryType = cqrs.RequestType{
-	Module:    "authorize",
+	Module:    "iam",
 	Submodule: "permission",
 	Action:    "isAuthorized",
 }

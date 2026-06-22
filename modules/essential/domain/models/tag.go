@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	TagSchemaName = "essential.tag"
+	TagSchemaName = "essential_tag"
 
 	TagFieldId    = basemodel.FieldId
 	TagFieldEtag  = basemodel.FieldEtag
@@ -17,21 +17,21 @@ const (
 
 func TagSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(TagSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Tag"}).
+		Label(model.NewLangJsonRefSf("%s.label", TagSchemaName)).
 		TableName("essential_tags").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			dmodel.DefineField().
 				Name(TagFieldLabel).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Label"}).
+				Label(model.NewLangJsonRefSf("fields.%s", TagFieldLabel)).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(TagFieldType).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Type"}).
+				Label(model.NewLangJsonRefSf("fields.%s", TagFieldType)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_TINY_NAME_LENGTH)).
 				RequiredForCreate(),
 		).

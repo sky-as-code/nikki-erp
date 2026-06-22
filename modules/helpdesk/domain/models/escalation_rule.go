@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	EscalationRuleSchemaName = "helpdesk.escalation_rule"
+	EscalationRuleSchemaName = "helpdesk_escalation_rule"
 
 	EscalationRuleFieldSlaPolicyId      = "sla_policy_id"
 	EscalationRuleFieldAfterMinutes     = "after_minutes"
@@ -18,7 +18,7 @@ const (
 
 func EscalationRuleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(EscalationRuleSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Escalation rule"}).
+		Label(model.NewLangJsonRefSf("%s.label", EscalationRuleSchemaName)).
 		TableName("helpdesk_escalation_rules").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

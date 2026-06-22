@@ -25,7 +25,7 @@ const (
 )
 
 const (
-	PartySchemaName = "contacts.party"
+	PartySchemaName = "contacts_party"
 
 	PartyFieldId            = basemodel.FieldId
 	PartyFieldEtag          = basemodel.FieldEtag
@@ -51,7 +51,7 @@ const (
 
 func PartySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(PartySchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Party"}).
+		Label(model.NewLangJsonRefSf("%s.label", PartySchemaName)).
 		TableName("contacts_parties").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -59,51 +59,51 @@ func PartySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(PartyFieldAvatarUrl).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Avatar URL"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldAvatarUrl)).
 				DataType(dmodel.FieldDataTypeUrl()),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(PartyFieldDisplayName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Display Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldDisplayName)).
 				DataType(dmodel.FieldDataTypeString(1, 50)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(PartyFieldLegalName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Legal Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldLegalName)).
 				DataType(dmodel.FieldDataTypeString(0, 100)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(PartyFieldLegalAddress).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Legal Address"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldLegalAddress)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_LONG_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(PartyFieldTaxId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Tax ID"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldTaxId)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_SHORT_NAME_LENGTH)).
 				Unique(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(PartyFieldJobPosition).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Job Position"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldJobPosition)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_SHORT_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(PartyFieldTitle).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Title"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldTitle)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_TINY_NAME_LENGTH)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(PartyFieldType).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Type"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldType)).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
 					string(PartyTypeIndividual),
 					string(PartyTypeCompany),
@@ -114,21 +114,21 @@ func PartySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(PartyFieldNote).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Note"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldNote)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
 			basemodel.DefineFieldId(PartyFieldNationalityId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Nationality"}),
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldNationalityId)),
 		).
 		Field(
 			basemodel.DefineFieldId(PartyFieldLanguageId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Language"}),
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldLanguageId)),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(PartyFieldWebsite).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Website"}).
+				Label(model.NewLangJsonRefSf("fields.%s", PartyFieldWebsite)).
 				DataType(dmodel.FieldDataTypeUrl()).
 				Unique(),
 		).

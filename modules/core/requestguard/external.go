@@ -11,7 +11,7 @@ import (
  * Copied from nikkierp/modules/identity/interfaces/permission/commands.go
  */
 var getUserEntQueryType = cqrs.RequestType{
-	Module:    "authorize",
+	Module:    "iam",
 	Submodule: "permission",
 	Action:    "getUserEntitlements",
 }

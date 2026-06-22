@@ -19,7 +19,7 @@ const (
 )
 
 const (
-	AttributeGroupSchemaName = "inventory.attribute_group"
+	AttributeGroupSchemaName = "inventory_attribute_group"
 
 	AttrGrpFieldId        = basemodel.FieldId
 	AttrGrpFieldName      = "name"
@@ -32,7 +32,7 @@ const (
 
 func AttributeGroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(AttributeGroupSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Attribute Group"}).
+		Label(model.NewLangJsonRefSf("%s.label", AttributeGroupSchemaName)).
 		TableName("inventory_attribute_groups").
 		CompositeUnique(AttrGrpFieldName, AttrGrpFieldProductId).
 		ShouldBuildDb().
@@ -40,21 +40,21 @@ func AttributeGroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(AttrGrpFieldName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrGrpFieldName)).
 				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_SHORT_NAME_LENGTH)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrGrpFieldIndex).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Index"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrGrpFieldIndex)).
 				DataType(dmodel.FieldDataTypeInt64(0, math.MaxInt16)).
 				Default(0),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(AttrGrpFieldProductId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Product"}).
+				Label(model.NewLangJsonRefSf("fields.%s", AttrGrpFieldProductId)).
 				DataType(dmodel.FieldDataTypeUlid()).
 				RequiredForCreate(),
 		).

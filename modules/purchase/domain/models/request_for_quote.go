@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	RequestForQuoteSchemaName  = "purchase.request_for_quote"
+	RequestForQuoteSchemaName  = "purchase_request_for_quote"
 	RequestForQuoteFieldId     = basemodel.FieldId
 	RequestForQuoteFieldCode   = "code"
 	RequestForQuoteFieldStatus = "status"
@@ -15,7 +15,7 @@ const (
 
 func RequestForQuoteSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(RequestForQuoteSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Request for quote"}).
+		Label(model.NewLangJsonRefSf("%s.label", RequestForQuoteSchemaName)).
 		TableName("purchase_request_for_quotes").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

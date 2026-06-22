@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	SlaBreachSchemaName = "helpdesk.sla_breach"
+	SlaBreachSchemaName = "helpdesk_sla_breach"
 
 	SlaBreachFieldTicketId    = "ticket_id"
 	SlaBreachFieldSlaPolicyId = "sla_policy_id"
@@ -17,7 +17,7 @@ const (
 
 func SlaBreachSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(SlaBreachSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Sla breach"}).
+		Label(model.NewLangJsonRefSf("%s.label", SlaBreachSchemaName)).
 		TableName("helpdesk_sla_breaches").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

@@ -16,7 +16,7 @@ func NewInvalidDataTypeErr(field string, typeName ...string) *ft.ClientErrorItem
 	if len(typeName) > 0 && typeName[0] != "" {
 		msgVars = map[string]any{"typeName": typeName[0]}
 	}
-	return ft.NewValidationError(field, "common.err_invalid_data_type", "invalid data type, must be a {{.typeName}}", msgVars)
+	return ft.NewValidationError(field, "common.err_invalid_data_type", "invalid data type, must be a {{typeName}}", msgVars)
 }
 
 func NewMissingFieldErr(field string) *ft.ClientErrorItem {
@@ -35,10 +35,10 @@ func ValidateMax(value any, opts any) *ft.ClientErrorItem {
 	}
 	val, err := toComparableValue(value)
 	if err != nil {
-		return ft.NewAnonymousValidationError("common.err_invalid_value_type_number", "invalid value type, must be a number", nil)
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_invalid_value_type_number"), "invalid value type, must be a number", nil)
 	}
 	if !isLessOrEqual(val, maxVal) {
-		return ft.NewAnonymousValidationError("common.err_greater_than_max", "must not be greater than {{.max}}", map[string]any{"max": fmt.Sprint(opts)})
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_greater_than_max"), "must not be greater than {{max}}", map[string]any{"max": fmt.Sprint(opts)})
 	}
 	return nil
 }
@@ -54,7 +54,7 @@ func ValidateMin(value any, opts any) *ft.ClientErrorItem {
 		return ft.NewAnonymousValidationError(ft.ErrorKey("err_invalid_value_type_number"), "invalid value type, must be a number", nil)
 	}
 	if !isGreaterOrEqual(val, minVal) {
-		return ft.NewAnonymousValidationError(ft.ErrorKey("err_less_than_min"), "must not be less than {{.min}}", map[string]any{"min": fmt.Sprint(opts)})
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_less_than_min"), "must not be less than {{min}}", map[string]any{"min": fmt.Sprint(opts)})
 	}
 	return nil
 }
@@ -74,7 +74,7 @@ func ValidateArrayLength(value any, opts any) *ft.ClientErrorItem {
 	}
 	n := rv.Len()
 	if n < minLen || n > maxLen {
-		return ft.NewAnonymousValidationError(ft.ErrorKey("err_invalid_array_length"), "array length must be between {{.min}} and {{.max}}", map[string]any{"min": minLen, "max": maxLen})
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_invalid_array_length"), "array length must be between {{min}} and {{max}}", map[string]any{"min": minLen, "max": maxLen})
 	}
 	return nil
 }
@@ -97,7 +97,7 @@ func ValidateOneOf(value any, opts any) *ft.ClientErrorItem {
 	for i, v := range values {
 		parts[i] = fmt.Sprint(v)
 	}
-	return ft.NewAnonymousValidationError(ft.ErrorKey("err_not_one_of"), "must be one of: {{.allowed}}", map[string]any{"allowed": strings.Join(parts, ", ")})
+	return ft.NewAnonymousValidationError(ft.ErrorKey("err_not_one_of"), "must be one of: {{allowed}}", map[string]any{"allowed": strings.Join(parts, ", ")})
 }
 
 // --- Data type validation helpers ---

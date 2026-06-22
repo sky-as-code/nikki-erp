@@ -17,14 +17,14 @@ const (
 )
 
 const (
-	ProductCategorySchemaName = "inventory.product_category"
+	ProductCategorySchemaName = "inventory_product_category"
 
 	ProductCategoryFieldId = basemodel.FieldId
 	ProdCatFieldName       = "name"
 
 	ProdCatEdgeProducts = "products"
 
-	ProdCatRelSchemaName             = "inventory.product_category_rel"
+	ProdCatRelSchemaName             = "inventory_product_category_rel"
 	ProdCatRelFieldProductId         = "product_id"
 	ProdCatRelFieldProductCategoryId = "product_category_id"
 )
@@ -46,7 +46,7 @@ func ProductCategoryRelSchemaBuilder() *dmodel.ModelSchemaBuilder {
 
 func ProductCategorySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(ProductCategorySchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Product Category"}).
+		Label(model.NewLangJsonRefSf("%s.label", ProductCategorySchemaName)).
 		TableName("inventory_product_categories").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -55,7 +55,7 @@ func ProductCategorySchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(ProdCatFieldName).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Name"}).
+				Label(model.NewLangJsonRefSf("fields.%s", ProdCatFieldName)).
 				DataType(dmodel.FieldDataTypeLangJson(1, model.MODEL_RULE_LONG_NAME_LENGTH)).
 				RequiredForCreate(),
 		).

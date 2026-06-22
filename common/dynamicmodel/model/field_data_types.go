@@ -453,7 +453,7 @@ func validateStringLength(s string, options FieldDataTypeOptions) *ft.ClientErro
 	if length < min || length > max {
 		return ft.NewAnonymousValidationError(
 			ft.ErrorKey("err_invalid_string_length"),
-			"string length must be between {{.min}} and {{.max}}",
+			"string length must be between {{min}} and {{max}}",
 			map[string]any{"min": min, "max": max},
 		)
 	}
@@ -699,7 +699,7 @@ func (this fieldDataTypeInt64) validateScalar(val value) (value, *ft.ClientError
 	if len(limits) == 2 && (n < limits[0] || n > limits[1]) {
 		return Value(nil), ft.NewAnonymousValidationError(
 			ft.ErrorKey("err_invalid_number_range"),
-			"value must be between {{.min}} and {{.max}}",
+			"value must be between {{min}} and {{max}}",
 			map[string]any{"min": limits[0], "max": limits[1]},
 		)
 	}
@@ -752,7 +752,7 @@ func (this fieldDataTypeInt32) validateScalar(val value) (value, *ft.ClientError
 	if len(limits) == 2 && (n < limits[0] || n > limits[1]) {
 		return Value(nil), ft.NewAnonymousValidationError(
 			ft.ErrorKey("err_invalid_number_range"),
-			"value must be between {{.min}} and {{.max}}",
+			"value must be between {{min}} and {{max}}",
 			map[string]any{"min": limits[0], "max": limits[1]},
 		)
 	}
@@ -808,7 +808,7 @@ func (this fieldDataTypeDecimal) validateScalar(val value) (value, *ft.ClientErr
 	if len(minMax) == 2 && (n.LessThan(minMax[0]) || n.GreaterThan(minMax[1])) {
 		return Value(nil), ft.NewAnonymousValidationError(
 			ft.ErrorKey("err_invalid_number_range"),
-			"value must be between {{.min}} and {{.max}}",
+			"value must be between {{min}} and {{max}}",
 			map[string]any{"min": minMax[0].String(), "max": minMax[1].String()},
 		)
 	}
@@ -1386,7 +1386,7 @@ func (this fieldDataTypeLangCode) validateScalar(value value) (value, *ft.Client
 		return Value(nil), clientErr
 	}
 	s := (*sanitized.Get()).(string)
-	if s != model.LabelRefLanguageCode && !model.IsBCP47LanguageCode(s) {
+	if s != model.LanguageCodeRef && !model.IsBCP47LanguageCode(s) {
 		return Value(nil), &ft.ClientErrorItem{
 			Key:     "invalid_language_code",
 			Message: "must be a valid BCP47-compliant language code with region part",

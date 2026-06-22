@@ -27,6 +27,7 @@ func DefineModel(name string) *ModelSchemaBuilder {
 		shouldBuildDb: false,
 	}
 	builder.Name(name)
+	builder.Label(model.NewLangJsonRefSf("%s.label", name))
 	return builder
 }
 
@@ -417,11 +418,12 @@ func (this *FieldBuilder) Label(label model.LangJson) *FieldBuilder {
 }
 
 func (this *FieldBuilder) LabelRef(key string) *FieldBuilder {
-	return this.Label(model.LangJson{model.LabelRefLanguageCode: key})
+	return this.Label(model.LangJson{model.LanguageCodeRef: key})
 }
 
 func (this *FieldBuilder) Name(name string) *FieldBuilder {
 	this.field.name = strings.TrimSpace(name)
+	this.Label(model.NewLangJsonRefSf("fields.%s", name))
 	return this
 }
 

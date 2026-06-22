@@ -27,7 +27,7 @@ const (
 )
 
 const (
-	LanguageSchemaName = "essential.language"
+	LanguageSchemaName = "essential_language"
 
 	LanguageFieldId                 = basemodel.FieldId
 	LanguageFieldName               = "name"
@@ -43,7 +43,7 @@ const (
 
 func LanguageSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(LanguageSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Language"}).
+		Label(model.NewLangJsonRefSf("%s.label", LanguageSchemaName)).
 		TableName("essential_languages").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).

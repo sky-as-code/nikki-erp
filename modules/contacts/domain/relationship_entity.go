@@ -29,7 +29,7 @@ const (
 )
 
 const (
-	RelationshipSchemaName = "contacts.relationship"
+	RelationshipSchemaName = "contacts_relationship"
 
 	RelationshipFieldId            = basemodel.FieldId
 	RelationshipFieldEtag          = basemodel.FieldEtag
@@ -45,24 +45,24 @@ const (
 
 func RelationshipSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(RelationshipSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Relationship"}).
+		Label(model.NewLangJsonRefSf("%s.label", RelationshipSchemaName)).
 		TableName("contacts_relationships").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(
 			basemodel.DefineFieldId(RelationshipFieldPartyId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Party"}).
+				Label(model.NewLangJsonRefSf("fields.%s", RelationshipFieldPartyId)).
 				RequiredForCreate(),
 		).
 		Field(
 			basemodel.DefineFieldId(RelationshipFieldTargetPartyId).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Target Party"}).
+				Label(model.NewLangJsonRefSf("fields.%s", RelationshipFieldTargetPartyId)).
 				RequiredForCreate(),
 		).
 		Field(
 			dmodel.DefineField().
 				Name(RelationshipFieldType).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Type"}).
+				Label(model.NewLangJsonRefSf("fields.%s", RelationshipFieldType)).
 				DataType(dmodel.FieldDataTypeEnumString([]string{
 					string(RelationshipTypeEmployee),
 					string(RelationshipTypeSpouse),
@@ -76,7 +76,7 @@ func RelationshipSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		Field(
 			dmodel.DefineField().
 				Name(RelationshipFieldNote).
-				Label(model.LangJson{model.LanguageCodeEnUs: "Note"}).
+				Label(model.NewLangJsonRefSf("fields.%s", RelationshipFieldNote)).
 				DataType(dmodel.FieldDataTypeString(0, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Extend(basemodel.ArchivableModelSchemaBuilder()).

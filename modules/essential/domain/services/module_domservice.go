@@ -14,7 +14,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
-	i18n "github.com/sky-as-code/nikki-erp/modules/core/i18n/interfaces"
+	itLang "github.com/sky-as-code/nikki-erp/modules/core/language/interfaces"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
 	"github.com/sky-as-code/nikki-erp/modules/essential/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/module"
@@ -308,8 +308,8 @@ func (this *ModuleDomainServiceImpl) validateAndNormalizeModuleFields(
 }
 
 func (this *ModuleDomainServiceImpl) getEnabledLanguages(ctx corectx.Context) ([]model.LanguageCode, error) {
-	query := i18n.ListEnabledLangCodesQuery{}
-	result := i18n.ListEnabledLangCodesResult{}
+	query := itLang.ListEnabledLangCodesQuery{}
+	result := itLang.ListEnabledLangCodesResult{}
 	err := this.cqrsBus.Request(ctx, query, &result)
 	if err != nil {
 		return nil, err
@@ -351,7 +351,7 @@ func (this *ModuleDomainServiceImpl) syncCreateModule(
 	installedModule modules.InCodeModule,
 ) error {
 	label := make(model.LangJson)
-	label[model.LabelRefLanguageCode] = installedModule.LabelKey()
+	label[model.LanguageCodeRef] = installedModule.LabelKey()
 
 	cmd := it.CreateModuleCommand{*models.NewModuleMetadata()}
 	cmd.SetLabel(&label)

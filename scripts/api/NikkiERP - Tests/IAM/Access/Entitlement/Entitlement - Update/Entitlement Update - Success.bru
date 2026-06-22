@@ -1,0 +1,90 @@
+meta {
+  name: Entitlement Update - Success
+  type: http
+  seq: 1
+}
+
+patch {
+  url: {{api_host}}/v1/iam/entitlements/{{entitlement_id}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+      "description": "description",
+      "etag": "{{etag}}"
+  }
+}
+
+script:pre-request {
+  let payload;
+  try {
+      payload = req.getBody();
+  } catch (e) {
+      console.error("❌ Failed to parse:", e);
+      return;
+  }
+  
+  // Optionally randomize description for better coverage
+  const randDesc = `Updated description ${Math.floor(Math.random() * 1000)}`;
+  payload.description = randDesc;
+  
+  console.log("✅ Final request payload for update:", payload);
+  
+}
+
+script:post-response {
+  // ✅ Check status code
+  let isStatusValid = false;
+  test("Status code is 200", function () {
+      isStatusValid = res.getStatus() === 200;
+      expect(isStatusValid).to.be.true;
+  });
+  
+  // ✅ Parse JSON response
+  let body;
+  let isJsonValid = true;
+  try {
+      body = res.getBody();
+      console.log("📥 Response body:", body);
+  } catch (err) {
+      isJsonValid = false;
+      expect.fail("❌ Response is not valid JSON");
+  }
+  
+  // ✅ Validate response structure (id, etag, updatedAt)
+  let isStructureValid = false;
+  if (isStatusValid && isJsonValid) {
+      test("Response contains required fields", function () {
+          const requiredFields = ["id", "etag", "updatedAt"];
+          requiredFields.forEach(field => {
+              expect(body).to.have.property(field);
+          });
+          isStructureValid = true;
+      });
+  
+      // ✅ Set variable: etag
+      if (typeof body.etag === "string" && body.etag.length > 0) {
+          bru.setVar("etag", body.etag);
+          console.log("✅ etag set to:", body.etag);
+      } else {
+          console.warn("⚠️ etag missing or invalid");
+      }
+  
+      // ✅ Set variable: entitlement_id
+      if (typeof body.id === "string" && body.id.length > 0) {
+          bru.setVar("entitlement_id", body.id);
+          console.log("✅ entitlement_id set to:", body.id);
+      } else {
+          console.warn("⚠️ id missing or invalid");
+      }
+  } else {
+      console.warn("⚠️ Skipped validation or variable setting due to invalid status/JSON");
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

@@ -13,7 +13,7 @@ const (
 )
 
 const (
-	UserPreferenceSchemaName = "settings.user_preference"
+	UserPreferenceSchemaName = "settings_user_preference"
 
 	UserPrefFieldId    = "id"
 	UserPrefFieldCode  = "code"
@@ -22,7 +22,7 @@ const (
 
 func UserPreferenceSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserPreferenceSchemaName).
-		Label(model.LangJson{"en-US": "User Preference"}).
+		Label(model.NewLangJsonRefSf("%s.label", UserPreferenceSchemaName)).
 		TableName("settings_user_preferences").
 		CompositeUnique(UserPrefFieldCode).
 		ShouldBuildDb().

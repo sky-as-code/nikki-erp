@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	VendorSchemaName = "purchase.vendor"
+	VendorSchemaName = "purchase_vendor"
 
 	VendorFieldId           = basemodel.FieldId
 	VendorFieldStatus       = "status"
@@ -21,7 +21,7 @@ const (
 
 func VendorSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(VendorSchemaName).
-		Label(model.LangJson{model.LanguageCodeEnUs: "Vendor"}).
+		Label(model.NewLangJsonRefSf("%s.label", VendorSchemaName)).
 		TableName("purchase_vendors").
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
