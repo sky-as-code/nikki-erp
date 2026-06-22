@@ -158,7 +158,7 @@ func jwtInvalidFailure() *VerifyRequestResult {
 	return &VerifyRequestResult{
 		IsOk: false,
 		ClientError: ft.NewAuthorizationError(
-			ft.ErrorKey("err_invalid_access_token", "authorize"),
+			ft.ErrorKey("err_invalid_access_token"),
 			"Invalid or expired access token.",
 		),
 	}
@@ -168,7 +168,7 @@ func jwtMalformedFailure() *VerifyRequestResult {
 	return &VerifyRequestResult{
 		IsOk: false,
 		ClientError: ft.NewAuthorizationError(
-			ft.ErrorKey("err_malformed_access_token", "authorize"),
+			ft.ErrorKey("err_malformed_access_token"),
 			"Malformed access token.",
 		),
 	}

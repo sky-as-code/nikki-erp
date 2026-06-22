@@ -1,10 +1,8 @@
-h1:93zvfar6Wrbat9w94hBATT5VICQrTOiddwftie8koWo=
+h1:6LaoTs9utq1NTRYtpdVeT0aB2f2kqjyAmPDqpCG4Nc4=
 0001001_essential_schema.sql h1:TqQUsjDlS8F/3QGgJvPT7j8LG73pC5t1bjXQwYOVbZo=
-0002001_identity_schema.sql h1:OE1vrfGBuPqdq6GQ4RKIKkM4mc7iV9QZsOtuDWDjSbM=
-0002002_identity_seeds.sql h1:8SojhuepcyCU8W5MYmCfQVDNmyts3GxBiGkJNCDgxPg=
-0002003_authorize_views.sql h1:Z/bejyyHeIqJ48WFV8DRagcpQpzBR2W0t3ecX2hsD7o=
-0002004_authorize_seeds.sql h1:tZ9EBnrt5PoGeHucd6Be+KSlDLOzNnEsw6orSxb45HQ=
-0003001_authenticate_schema.sql h1:TeATKRoE5LZ6333WsrOJfLFOsAmtOfUvWE1ZTIatpZU=
-0003002_authenticate_seeds.sql h1:7dGwCRkjdDx8Z++5Ac7vRnQXGlEEId7RjfqIvJGD/ew=
-0004001_contacts_schema.sql h1:lRLRJoSF+rBU9nOh88sqnYGeFvfWkWmktnucdrR9Cx8=
-0005001_inventory _schema.sql h1:gqdzg1h7Fm4OKtPXb96urvRTDtYCHgaC/ax0d5ENcCA=
+0002001_iam_identity_schema.sql h1:beDlNwJmu8PD0qL+Pyyg1aUCu8wJlss1mSV09b8/r6U=
+0002002_iam_identity_seeds.sql h1:0ZL1WhCFIuhLfGCPpAYz1kJ2m4RZ3C+ce8k6P+KiFoQ=
+0002003_iam_authorize_views.sql h1:lzhbMD5gr4gSYXsDTwSLAx2amXZtFxPuVs6jYGc/PPI=
+0002004_iam_authorize_seeds.sql h1:uXkLzwWh21hcV1+zf/S9wwhzuVXK/+8T+WiYqGUotZQ=
+0004001_contacts_schema.sql h1:yW1dPM+3CW+YUgB05/JFHEop1B3FJj25ZNQuHg7/B44=
+0005001_inventory _schema.sql h1:7TKynYfliSOHUSHtEjOTXaFBrS5WWnMAPp4/Wxyz8wE=

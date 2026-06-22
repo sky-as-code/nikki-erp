@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/identity/users?graph={"if":["groups.id", "=", "{{group_id}}"]}&withGroups=true
+  url: {{api_host}}/v1/iam/users?graph={"if":["groups.id", "=", "{{group_id}}"]}&withGroups=true
   body: none
   auth: inherit
 }

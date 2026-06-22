@@ -35,10 +35,10 @@ func ValidateMax(value any, opts any) *ft.ClientErrorItem {
 	}
 	val, err := toComparableValue(value)
 	if err != nil {
-		return ft.NewAnonymousValidationError("common.err_invalid_value_type_number", "invalid value type, must be a number", nil)
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_invalid_value_type_number"), "invalid value type, must be a number", nil)
 	}
 	if !isLessOrEqual(val, maxVal) {
-		return ft.NewAnonymousValidationError("common.err_greater_than_max", "must not be greater than {{max}}", map[string]any{"max": fmt.Sprint(opts)})
+		return ft.NewAnonymousValidationError(ft.ErrorKey("err_greater_than_max"), "must not be greater than {{max}}", map[string]any{"max": fmt.Sprint(opts)})
 	}
 	return nil
 }

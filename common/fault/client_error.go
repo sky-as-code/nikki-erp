@@ -170,9 +170,9 @@ func NewAnonymousValidationError(key string, message string, vars ...map[string]
 
 func ErrorKey(key string, moduleName ...string) string {
 	if len(moduleName) > 0 && moduleName[0] != "" {
-		return fmt.Sprintf("%s.%s", moduleName[0], key)
+		return fmt.Sprintf("%s:%s", moduleName[0], key)
 	}
-	return fmt.Sprintf("common.%s", key)
+	return fmt.Sprintf("common:%s", key)
 }
 
 type ClientErrorItem struct {

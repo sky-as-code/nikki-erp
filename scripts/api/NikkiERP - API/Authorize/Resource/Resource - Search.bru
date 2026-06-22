@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/authorize/resources?page=0&size=3&withActions=true&graph={"if":["name", "=", "IdentityUser"]}
+  url: {{api_host}}/v1/iam/resources?page=0&size=3&withActions=true&graph={"if":["name", "=", "IdentityUser"]}
   body: none
   auth: inherit
 }

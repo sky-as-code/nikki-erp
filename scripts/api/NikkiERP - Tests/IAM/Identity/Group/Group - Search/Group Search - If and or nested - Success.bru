@@ -1,0 +1,27 @@
+meta {
+  name: Group Search - If and or nested - Success
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{api_host}}/v1/iam/groups?graph={"or":[{"if":["name", "*", "Manager"]},{"and":[{"if": ["description", "*", "quas"]},{"if": ["is_archived", "=", false]}]}]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"or":[{"if":["name", "*", "Manager"]},{"and":[{"if": ["description", "*", "quas"]},{"if": ["is_archived", "=", false]}]}]}
+}
+
+script:post-response {
+  const pkg = require('./scripts/search-success');
+  
+  pkg.testSearch(50);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

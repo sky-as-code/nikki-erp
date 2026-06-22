@@ -1,0 +1,27 @@
+meta {
+  name: User Search - If and - Success
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{api_host}}/v1/iam/users?graph={"and":[{"if":["display_name", "*", "admin"]},{"if": ["email", "$", ".com"]}]}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  graph: {"and":[{"if":["display_name", "*", "admin"]},{"if": ["email", "$", ".com"]}]}
+}
+
+script:post-response {
+  const pkg = require('./scripts/search-success');
+  
+  pkg.testSearch(50);
+  
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

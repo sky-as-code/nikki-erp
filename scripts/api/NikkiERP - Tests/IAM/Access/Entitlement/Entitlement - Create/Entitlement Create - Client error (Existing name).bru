@@ -1,0 +1,52 @@
+meta {
+  name: Entitlement Create - Client error (Existing name)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{api_host}}/v1/iam/entitlements
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "{{entitlement_name}}",
+    "actionId": "{{action_id}}",
+    "actionExpr": "{{resource_name}}:{{action_name}}",
+    "resourceId": "{{resource_id}}",
+    "subjectType": "custom",
+    "subjectRef": "custom",
+    "createdBy": "{{user_id}}"
+  }
+}
+
+script:post-response {
+  test("Status code is 400", function () {
+      expect(res.getStatus()).to.equal(400);
+  });
+  
+  let body;
+  try {
+      body = res.getBody();
+  } catch (e) {
+      console.error("❌ Failed to parse response JSON:", e);
+  }
+  
+  test("Response has validation_error code", function () {
+      expect(body).to.have.property("code", "validation_error");
+  });
+  
+  test("Error message should say entitlement name already exists", function () {
+      expect(body.details).to.have.property("entitlement_name");
+      expect(body.details.entitlement_name.toLowerCase()).to.include("already exists");
+  });
+  
+  console.log("✅ Duplicate name test response:", body);
+  
+}
+
+settings {
+  encodeUrl: true
+}

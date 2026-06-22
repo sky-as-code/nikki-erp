@@ -27,6 +27,7 @@ func DefineModel(name string) *ModelSchemaBuilder {
 		shouldBuildDb: false,
 	}
 	builder.Name(name)
+	builder.Label(model.NewLangJsonRefSf("%s.label", name))
 	return builder
 }
 
@@ -422,6 +423,7 @@ func (this *FieldBuilder) LabelRef(key string) *FieldBuilder {
 
 func (this *FieldBuilder) Name(name string) *FieldBuilder {
 	this.field.name = strings.TrimSpace(name)
+	this.Label(model.NewLangJsonRefSf("fields.%s", name))
 	return this
 }
 
