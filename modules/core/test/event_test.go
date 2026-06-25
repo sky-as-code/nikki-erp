@@ -126,7 +126,7 @@ func (h *TestHandler) GetStats() (int, []string) {
 }
 
 func TestRedisEventBusSubscribe(t *testing.T) {
-	eventBus, err := event.NewRedisEventBus(event.EventBusParams{
+	eventBus, err := event.NewEventBus(event.EventBusParams{
 		Config: &TestConfig{},
 		Logger: NewTestLogger(),
 	})
@@ -174,7 +174,7 @@ func TestRedisEventBusSubscribe(t *testing.T) {
 }
 
 func TestRedisEventBusPublish(t *testing.T) {
-	eventBus, err := event.NewRedisEventBus(event.EventBusParams{
+	eventBus, err := event.NewEventBus(event.EventBusParams{
 		Config: &TestConfig{},
 		Logger: NewTestLogger(),
 	})

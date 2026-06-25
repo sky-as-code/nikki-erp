@@ -4,15 +4,12 @@ import (
 	"context"
 	stdErrors "errors"
 	"fmt"
-	"log/slog"
 	"reflect"
 	"sync"
 	"time"
 
-	"github.com/ThreeDotsLabs/watermill"
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 	"github.com/ThreeDotsLabs/watermill/message"
-	"github.com/ThreeDotsLabs/watermill/pubsub/gochannel"
 	"go.bryk.io/pkg/errors"
 	"go.bryk.io/pkg/ulid"
 	"go.uber.org/dig"
@@ -25,6 +22,7 @@ import (
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/message/transports"
 )
 
 const MetaCorrelationId = "correlation_id"
@@ -39,10 +37,11 @@ type CqrsBusParams struct {
 
 	Config config.ConfigService
 	Logger logging.LoggerService
+
+	Transport *transports.MessageTransport `name:"go-channel"`
 }
 
 func NewWatermillCqrsBus(params CqrsBusParams) (CqrsBus, error) {
-	pubSub := goChannelPubSub(params.Logger)
 	marshaler := cqrs.JSONMarshaler{
 		GenerateName: cqrs.NamedStruct(cqrs.StructName),
 	}
@@ -50,23 +49,11 @@ func NewWatermillCqrsBus(params CqrsBusParams) (CqrsBus, error) {
 
 	return &WatermillCqrsBus{
 		logger:     params.Logger,
-		publisher:  pubSub,
-		subscriber: pubSub,
+		publisher:  params.Transport.Publisher,
+		subscriber: params.Transport.Subscriber,
 		marshaler:  marshaler,
 		maxTimeout: time.Duration(maxTimeoutSec) * time.Second,
 	}, nil
-}
-
-func goChannelPubSub(logger logging.LoggerService) *gochannel.GoChannel {
-	slogger := logger.InnerLogger().(*slog.Logger)
-
-	watermill.NewSlogLoggerWithLevelMapping(slogger, map[slog.Level]slog.Level{
-		// Watermill does not have a trace level, so we map it to warn,
-		// so that we will call watermillLogger().Trace() to print warnings.
-		watermill.LevelTrace: slog.LevelWarn,
-	})
-
-	return gochannel.NewGoChannel(gochannel.Config{}, watermill.NewSlogLogger(slogger))
 }
 
 type WatermillCqrsBus struct {

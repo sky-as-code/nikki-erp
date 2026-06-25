@@ -8,8 +8,8 @@ else
 fi
 
 set -a
-PKI_DIR="$CWD/pki/server-cert"
-PROFILE="$CWD/profiles/server-cert$ENV_SUFFIX.env.sh"
+PKI_DIR="$CWD/pki/verne-server-cert"
+PROFILE="$CWD/profiles/verne-server-cert$ENV_SUFFIX.env.sh"
 source $PROFILE
 set +a
 
@@ -23,18 +23,18 @@ openssl genpkey \
 openssl req -new \
   -key $PKI_DIR/$CN.key \
   -out $PKI_DIR/$CN.csr \
-  -config $SDIR/openssl-server-cert.cnf
+  -config $SDIR/openssl-verne-server-cert.cnf
 
 openssl x509 -req \
   -in $PKI_DIR/$CN.csr \
-  -CA $CWD/pki/server-ca/$CA_CN.crt \
-  -CAkey $CWD/pki/server-ca/$CA_CN.key \
+  -CA $CWD/pki/verne-server-ca/$CA_CN.crt \
+  -CAkey $CWD/pki/verne-server-ca/$CA_CN.key \
   -CAcreateserial \
   -out $PKI_DIR/$CN.crt \
   -days $DAYS \
-  -extfile $SDIR/openssl-server-cert.cnf \
+  -extfile $SDIR/openssl-verne-server-cert.cnf \
   -extensions v3_server
 
-cat $PKI_DIR/$CN.crt $CWD/pki/server-ca/$CA_CN.crt > $PKI_DIR/$CN-chain.crt && \
+cat $PKI_DIR/$CN.crt $CWD/pki/verne-server-ca/$CA_CN.crt > $PKI_DIR/$CN-chain.crt && \
 rm $PKI_DIR/$CN.crt && \
 mv $PKI_DIR/$CN-chain.crt $PKI_DIR/$CN.crt

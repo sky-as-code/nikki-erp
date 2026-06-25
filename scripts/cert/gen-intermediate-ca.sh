@@ -3,8 +3,15 @@ set -e
 
 TYPE=$1
 
-if [[ "$TYPE" != "client-ca" && "$TYPE" != "server-ca" ]]; then
-  echo "Invalid type '$TYPE'. Allowed values: client-ca, server-ca." >&2
+ALLOWED_CA_TYPE=(
+	"client-ca"
+	"server-ca"
+	"verne-client-ca"
+	"verne-server-ca"
+)
+
+if [[ ! "${ALLOWED_CA_TYPE[*]}" =~ "$TYPE" ]]; then
+  echo "Invalid type '$TYPE'. Allowed values: ${ALLOWED_CA_TYPE[@]}." >&2
   exit 1
 fi
 

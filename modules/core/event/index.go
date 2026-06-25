@@ -5,5 +5,7 @@ import (
 )
 
 func InitSubModule() error {
-	return deps.Register(NewRedisEventBus)
+	return deps.Register(
+		NewEventBus,
+	)
 }

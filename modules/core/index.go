@@ -18,6 +18,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/language"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra"
 	"github.com/sky-as-code/nikki-erp/modules/core/job"
+	"github.com/sky-as-code/nikki-erp/modules/core/message"
 )
 
 // ModuleSingleton is the exported symbol that will be looked up by the plugin loader
@@ -56,7 +57,9 @@ func (*CoreModule) Version() semver.SemVer {
 // Init implements NikkiModule.
 func (*CoreModule) Init() error {
 	err := errors.Join(
+		deps.Invoke(infra.InitSubModule),
 		deps.Invoke(config.InitSubModule),
+		deps.Invoke(message.InitSubModule),
 		deps.Invoke(cqrs.InitSubModule),
 		deps.Invoke(authtoken.InitSubModule),
 		deps.Invoke(event.InitSubModule),
