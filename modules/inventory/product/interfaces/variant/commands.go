@@ -106,7 +106,7 @@ func (SearchVariantsQuery) GetSchema() *dmodel.ModelSchema {
 		"inventory.search_variants_query",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(dyn.DefineFieldSearchColumns()).
+				Field(dyn.DefineFieldSearchFields()).
 				Field(dyn.DefineFieldSearchGraph()).
 				Field(dyn.DefineFieldSearchPage()).
 				Field(dyn.DefineFieldSearchSize()).

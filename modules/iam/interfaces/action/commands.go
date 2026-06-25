@@ -79,7 +79,7 @@ func (GetActionQuery) GetSchema() *dmodel.ModelSchema {
 					RequiredAlways()).
 				Field(basemodel.DefineFieldId("resource_id").
 					RequiredAlways()).
-				Field(dyn.DefineFieldSearchColumns())
+				Field(dyn.DefineFieldSearchFields())
 		},
 	)
 }
@@ -127,7 +127,7 @@ func (SearchActionsQuery) GetSchema() *dmodel.ModelSchema {
 		"iam.search_actions_query",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(dyn.DefineFieldSearchColumns()).
+				Field(dyn.DefineFieldSearchFields()).
 				Field(dyn.DefineFieldSearchGraph()).
 				Field(dyn.DefineFieldSearchPage()).
 				Field(dyn.DefineFieldSearchSize()).
