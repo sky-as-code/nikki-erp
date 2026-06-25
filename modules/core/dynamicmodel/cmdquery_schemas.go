@@ -30,7 +30,7 @@ func GetOneQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 			Name(basemodel.FieldId).
 			DataType(dmodel.FieldDataTypeUlid()).
 			RequiredAlways()).
-		Field(DefineFieldSearchColumns())
+		Field(DefineFieldSearchFields())
 }
 
 func ManageAssocsSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -51,7 +51,7 @@ func ManageAssocsSchemaBuilder() *dmodel.ModelSchemaBuilder {
 
 func SearchQuerySchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel("_").
-		Field(DefineFieldSearchColumns()).
+		Field(DefineFieldSearchFields()).
 		Field(DefineFieldSearchGraph()).
 		Field(DefineFieldSearchPage()).
 		Field(DefineFieldSearchSize()).
@@ -74,7 +74,7 @@ func SetArchivedCommandSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			RequiredAlways())
 }
 
-func DefineFieldSearchColumns() *dmodel.FieldBuilder {
+func DefineFieldSearchFields() *dmodel.FieldBuilder {
 	return dmodel.DefineField().
 		Name(basemodel.FieldFields).
 		DataType(dmodel.FieldDataTypeString(model.MODEL_RULE_FIELDS_LENGTH_MIN, model.MODEL_RULE_FIELDS_LENGTH_MAX).ArrayType()).

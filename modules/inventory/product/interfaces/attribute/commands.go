@@ -81,7 +81,7 @@ func (GetAttributeQuery) GetSchema() *dmodel.ModelSchema {
 				Field(dmodel.DefineField().
 					Name("product_id").
 					DataType(dmodel.FieldDataTypeUlid())).
-				Field(dyn.DefineFieldSearchColumns())
+				Field(dyn.DefineFieldSearchFields())
 		},
 	)
 }
@@ -125,7 +125,7 @@ func (SearchAttributesQuery) GetSchema() *dmodel.ModelSchema {
 		"inventory.search_attributes_query",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(dyn.DefineFieldSearchColumns()).
+				Field(dyn.DefineFieldSearchFields()).
 				Field(dyn.DefineFieldSearchGraph()).
 				Field(dyn.DefineFieldSearchPage()).
 				Field(dyn.DefineFieldSearchSize()).

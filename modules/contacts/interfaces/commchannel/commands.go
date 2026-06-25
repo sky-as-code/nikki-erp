@@ -99,7 +99,7 @@ var searchCommChannelsQueryType = cqrs.RequestType{
 }
 
 type SearchCommChannelsQuery struct {
-	Columns []string            `json:"columns" query:"columns"`
+	Fields  []string            `json:"fields" query:"fields"`
 	Graph   *dmodel.SearchGraph `json:"graph" query:"graph"`
 	Page    int                 `json:"page" query:"page"`
 	Size    int                 `json:"size" query:"size"`
@@ -115,7 +115,7 @@ func (SearchCommChannelsQuery) GetSchema() *dmodel.ModelSchema {
 		"contacts.search_comm_channels_query",
 		func() *dmodel.ModelSchemaBuilder {
 			return dmodel.DefineModel("_").
-				Field(dyn.DefineFieldSearchColumns()).
+				Field(dyn.DefineFieldSearchFields()).
 				Field(dyn.DefineFieldSearchGraph()).
 				Field(dyn.DefineFieldSearchPage()).
 				Field(dyn.DefineFieldSearchSize()).
