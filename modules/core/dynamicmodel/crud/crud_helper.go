@@ -71,11 +71,16 @@ func Create[
 			return errors.Wrap(err, "Create.BeforeValidation")
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
+			schema.InjectServiceFields(ctx, fieldData, false)
+			return nil
+		}).
+		Step(func(vErrs *ft.ClientErrors) error {
 			result, clientErrs := schema.Validate(fieldData)
 			if clientErrs != nil {
 				*vErrs = clientErrs
 			} else {
 				fieldData = result
+				newModel.SetFieldData(fieldData)
 			}
 			return nil
 		}).
@@ -173,10 +178,14 @@ func CreateBulk[
 					return nil
 				}
 				result, err := param.BeforeValidation(ctx, newModel, vErrs)
-				if err == nil {
+				if err == nil && result != nil && result != newModel {
 					fieldData = result.GetFieldData()
 				}
 				return err
+			}).
+			Step(func(vErrs *ft.ClientErrors) error {
+				schema.InjectServiceFields(ctx, fieldData, false)
+				return nil
 			}).
 			Step(func(vErrs *ft.ClientErrors) error {
 				result, clientErrs := schema.Validate(fieldData)
@@ -184,6 +193,7 @@ func CreateBulk[
 					*vErrs = clientErrs
 				} else {
 					fieldData = result
+					newModel.SetFieldData(fieldData)
 				}
 				return nil
 			}).
@@ -799,6 +809,10 @@ func runUpdateValidationFlow[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain
 			return errors.Wrap(err, "Update.BeforeValidation")
 		}).
 		Step(func(vErrs *ft.ClientErrors) error {
+			schema.InjectServiceFields(ctx, inputModel.GetFieldData(), true)
+			return nil
+		}).
+		Step(func(vErrs *ft.ClientErrors) error {
 			result, clientErrs := schema.Validate(inputModel.GetFieldData(), true)
 			if clientErrs != nil {
 				*vErrs = clientErrs
@@ -968,4 +982,43 @@ func checkExistenceAndEtag(
 		vErrs.Append(*ft.NewEtagMismatchedError())
 	}
 	return true, dbRecord, nil
+}
+
+func SearchAll[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](ctx corectx.Context, param SearchParam) (*dyn.OpResult[[]TDomain], error) {
+	page := 0
+	size := model.MODEL_RULE_PAGE_MAX_SIZE
+	res := &dyn.OpResult[[]TDomain]{}
+
+	for {
+		queryRes, err := Search[TDomain, TDomainPtr](ctx, SearchParam{
+			Action:       param.Action,
+			DbRepoGetter: param.DbRepoGetter,
+			Query: dyn.SearchQuery{
+				Fields: param.Query.Fields,
+				Graph:  param.Query.Graph,
+				Page:   page,
+				Size:   size,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if queryRes.ClientErrors.Count() > 0 {
+			res.ClientErrors = queryRes.ClientErrors
+			return res, nil
+		}
+
+		res.Data = append(res.Data, queryRes.Data.Items...)
+
+		if len(res.Data) >= queryRes.Data.Total {
+			break
+		}
+
+		page++
+	}
+
+	res.HasData = true
+
+	return res, nil
 }

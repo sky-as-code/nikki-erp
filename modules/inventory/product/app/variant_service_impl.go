@@ -186,6 +186,31 @@ func (this *ProductServiceImpl) SearchVariants(ctx corectx.Context, query it.Sea
 	return result, nil
 }
 
+func (this *ProductServiceImpl) SearchAllVariants(ctx corectx.Context, query it.SearchAllVariantsQuery) (*it.SearchAllVariantsResult, error) {
+	result, err := corecrud.Search[domain.Variant](ctx, corecrud.SearchParam{
+		Action:       "search all variants",
+		DbRepoGetter: this.variantRepo,
+		Query: dyn.SearchQuery{
+			Fields: query.Fields,
+			Graph:  query.Graph,
+			Page:   query.Page,
+			Size:   query.Size,
+		},
+	})
+	if err != nil || result == nil || !result.HasData {
+		return result, err
+	}
+
+	// Populate attributes field for each variant
+	for i := range result.Data.Items {
+		if err := this.populateVariantAttributes(ctx, &result.Data.Items[i]); err != nil {
+			return nil, err
+		}
+	}
+
+	return result, nil
+}
+
 func (this *ProductServiceImpl) VariantExists(ctx corectx.Context, query it.VariantExistsQuery) (*it.VariantExistsResult, error) {
 	return corecrud.Exists(ctx, corecrud.ExistsParam{
 		Action:       "variant exists",

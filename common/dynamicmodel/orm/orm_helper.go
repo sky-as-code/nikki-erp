@@ -275,7 +275,7 @@ func validateForeignKeyPairsForRelation(
 func validateSingleForeignKeyPair(
 	owner, dest *model.ModelSchema, relation model.ModelRelation, pair model.ForeignKeyColumnPair,
 ) error {
-	fkSchema, refSchema := fkAndReferencedSchemas(owner, dest, relation.RelationType)
+	fkSchema, refSchema := fkAndReferencedSchemas(owner, dest, relation)
 	fkField, ok := fkSchema.Field(pair.FkColumn)
 	if !ok {
 		return errors.Errorf(
@@ -307,10 +307,15 @@ func validateSingleForeignKeyPair(
 }
 
 func fkAndReferencedSchemas(
-	owner, dest *model.ModelSchema, relType model.RelationType,
+	owner, dest *model.ModelSchema, rel model.ModelRelation,
 ) (fkSchema *model.ModelSchema, refSchema *model.ModelSchema) {
-	switch relType {
-	case model.RelationTypeManyToOne, model.RelationTypeOneToOne:
+	switch rel.RelationType {
+	case model.RelationTypeManyToOne:
+		return owner, dest
+	case model.RelationTypeOneToOne:
+		if rel.IsInverse {
+			return dest, owner
+		}
 		return owner, dest
 	case model.RelationTypeOneToMany:
 		return dest, owner

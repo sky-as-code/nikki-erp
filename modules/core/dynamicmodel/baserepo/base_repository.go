@@ -460,7 +460,7 @@ func (this *BaseDynamicRepositoryImpl) CountM2m(
 		filter.Merge(constraints)
 	}
 	graph := filterToAndGraph(filter)
-	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph, nil)
+	total, countClientErrs, err := this.countRowsMatchingGraphOnSchema(ctx, link.ThroughSchema, graph, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -771,7 +771,8 @@ func (this *BaseDynamicRepositoryImpl) Search(ctx corectx.Context, param dyn.Rep
 	page := param.Page
 	size := param.Size
 	var total int
-	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language)
+	total, countClientErrs, err := this.countRowsMatchingGraph(
+		ctx, merged, param.Language, this.ensurePrimaryKeyColumns(param.Fields))
 	if err != nil {
 		return nil, err
 	}
@@ -817,7 +818,7 @@ func (this *BaseDynamicRepositoryImpl) searchWithNestedColumns(
 		return &dyn.OpResult[dyn.PagedResultData[dmodel.DynamicFields]]{ClientErrors: cErrs}, nil
 	}
 	merged := this.injectTenantIntoGraph(ctx, param.Graph)
-	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language)
+	total, countClientErrs, err := this.countRowsMatchingGraph(ctx, merged, param.Language, plan.MainColumns)
 	if err != nil {
 		return nil, err
 	}
@@ -887,19 +888,15 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 		if strings.Count(col, ".") == 0 {
 			field, ok := this.schema.Field(col)
 			if ok && field.IsVirtualModelField() {
-				rel, hasRel := this.relationByEdge(col)
-				if !hasRel {
-					errs.Append(*ft.NewValidationError(
-						col, ft.ErrorKey("err_unknown_schema_field"), "edge is not defined on this schema",
-					))
-					continue
-				}
-				for _, pair := range rel.EffectiveForeignKeys() {
-					if pair.FkColumn != "" {
-						mainSet[pair.FkColumn] = struct{}{}
-					}
-				}
-				destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
+			rel, hasRel := this.relationByEdge(col)
+			if !hasRel {
+				errs.Append(*ft.NewValidationError(
+					col, ft.ErrorKey("err_unknown_schema_field"), "edge is not defined on this schema",
+				))
+				continue
+			}
+			addFkColumnsToMainSet(mainSet, rel)
+			destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
 				if destSchema == nil {
 					errs.Append(*ft.NewAnonymousValidationError(
 						ft.ErrorKey("err_schema_not_found"), "edge destination schema not found", nil,
@@ -943,11 +940,7 @@ func (this *BaseDynamicRepositoryImpl) buildNestedSelectPlan(columns []string) (
 			))
 			continue
 		}
-		for _, pair := range rel.EffectiveForeignKeys() {
-			if pair.FkColumn != "" {
-				mainSet[pair.FkColumn] = struct{}{}
-			}
-		}
+		addFkColumnsToMainSet(mainSet, rel)
 
 		if strings.Count(leaf, ".") == 0 {
 			destSchema := dmodel.GetSchemaRegistry().Get(rel.DestSchemaName)
@@ -1032,6 +1025,23 @@ func physicalColumnNames(schema *dmodel.ModelSchema) []string {
 	return out
 }
 
+// addFkColumnsToMainSet ensures the main SELECT includes the local columns needed to
+// hydrate this edge. For forward relations the FK column is local; for inverse relations
+// the referenced column (typically the PK) is the local column used for the join.
+func addFkColumnsToMainSet(mainSet map[string]struct{}, rel dmodel.ModelRelation) {
+	for _, pair := range rel.EffectiveForeignKeys() {
+		if rel.IsInverse {
+			if pair.ReferencedColumn != "" {
+				mainSet[pair.ReferencedColumn] = struct{}{}
+			}
+		} else {
+			if pair.FkColumn != "" {
+				mainSet[pair.FkColumn] = struct{}{}
+			}
+		}
+	}
+}
+
 func (this *BaseDynamicRepositoryImpl) relationByEdge(edge string) (dmodel.ModelRelation, bool) {
 	for _, rel := range this.schema.Relations() {
 		if rel.Edge == edge {
@@ -1114,11 +1124,19 @@ func (this *BaseDynamicRepositoryImpl) filterForSingleEdge(
 ) (dmodel.DynamicFields, bool) {
 	filter := make(dmodel.DynamicFields)
 	for _, pair := range rel.EffectiveForeignKeys() {
-		srcVal, ok := srcRow[pair.FkColumn]
-		if !ok || srcVal == nil {
-			return nil, false
+		if rel.IsInverse {
+			srcVal, ok := srcRow[pair.ReferencedColumn]
+			if !ok || srcVal == nil {
+				return nil, false
+			}
+			filter[pair.FkColumn] = srcVal
+		} else {
+			srcVal, ok := srcRow[pair.FkColumn]
+			if !ok || srcVal == nil {
+				return nil, false
+			}
+			filter[pair.ReferencedColumn] = srcVal
 		}
-		filter[pair.ReferencedColumn] = srcVal
 	}
 	return filter, true
 }
@@ -1262,16 +1280,21 @@ func (this *BaseDynamicRepositoryImpl) selectRowsByAnyFilter(
 }
 
 func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraph(
-	ctx corectx.Context, graph *dmodel.SearchGraph, language *model.LanguageCode,
+	ctx corectx.Context, graph *dmodel.SearchGraph, language *model.LanguageCode, selectColumns []string,
 ) (int, ft.ClientErrors, error) {
-	return this.countRowsMatchingGraphOnSchema(ctx, this.schema, graph, language)
+	return this.countRowsMatchingGraphOnSchema(ctx, this.schema, graph, language, selectColumns)
 }
 
 func (this *BaseDynamicRepositoryImpl) countRowsMatchingGraphOnSchema(
 	ctx corectx.Context, schema *dmodel.ModelSchema, graph *dmodel.SearchGraph, language *model.LanguageCode,
+	selectColumns []string,
 ) (int, ft.ClientErrors, error) {
+	opts := orm.SqlSelectGraphOpts{Language: language}
+	if len(selectColumns) > 0 {
+		opts.Columns = orm.ToSelectColumns(selectColumns)
+	}
 	qbRes, qbClientErrs, err := this.queryBuilder.SqlCountGraph(
-		schema, dmodel.GetSchemaRegistry(), graph, orm.SqlSelectGraphOpts{Language: language})
+		schema, dmodel.GetSchemaRegistry(), graph, opts)
 	if err != nil {
 		return 0, nil, err
 	}

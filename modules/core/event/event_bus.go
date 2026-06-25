@@ -95,9 +95,15 @@ func (bus *RedisEventBus) PublishRequest(ctx context.Context, request EventReque
 		err = ft.RecoverPanicFailedTo(recover(), "publish event")
 	}()
 
-	// Marshal the event
-	msg, err := bus.marshaler.Marshal(request.message.Payload)
-	ft.PanicOnErr(err)
+	var msg *message.Message
+	if request.message != nil && len(request.message.Payload) > 0 {
+		// Payload is already JSON bytes; do not json.Marshal([]byte) again (would base64-encode).
+		msg = message.NewMessage(watermill.NewUUID(), request.message.Payload)
+	} else {
+		var err error
+		msg, err = bus.marshaler.Marshal(request.message.Payload)
+		ft.PanicOnErr(err)
+	}
 
 	// Set metadata
 	msg.Metadata.Set(MetaEventTopic, request.eventTopic)
@@ -206,7 +212,9 @@ func (bus *RedisEventBus) SubscribeRequest(ctx context.Context, request EventReq
 				msg.Ack()
 				err := bus.marshaler.Unmarshal(msg, result)
 				if err != nil {
-					return
+					bus.logger.Error("event bus unmarshal failed",
+						fmt.Errorf("topic %s: %w", request.eventTopic, err))
+					continue
 				}
 
 				requestChan <- result
