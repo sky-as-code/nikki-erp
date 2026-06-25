@@ -10,7 +10,6 @@ import (
 
 func InitSubModule() error {
 	return deps_inject.Register(
-		filestorage.NewS3Adapter,
 		distributedlock.NewRedisDistributedLock,
 		pubsub.NewRedisPubSub,
 		redisclient.NewRedisClient,

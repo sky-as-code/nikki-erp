@@ -260,7 +260,7 @@ func (this *ProductServiceImpl) populateProductThumbnailUrl(ctx corectx.Context,
 		return nil
 	}
 
-	url, err := this.storage.GeneratePresignedURL(ctx.InnerContext(), *key, time.Hour)
+	url, err := this.storage.GeneratePresignedUrl(ctx.InnerContext(), *key, time.Hour)
 	if err != nil {
 		return err
 	}
