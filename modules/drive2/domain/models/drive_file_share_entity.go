@@ -1,4 +1,4 @@
-package domain
+package models
 
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"

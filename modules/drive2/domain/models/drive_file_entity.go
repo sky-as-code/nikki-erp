@@ -1,10 +1,11 @@
-package domain
+package models
 
 import (
 	"math"
 	"regexp"
 	"strings"
 
+	"github.com/samber/lo"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	"github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -374,4 +375,49 @@ func (this DriveFile) GetEtag() *model.Etag {
 
 func (this *DriveFile) SetEtag(v *model.Etag) {
 	this.GetFieldData().SetEtag(basemodel.FieldEtag, v)
+}
+
+func (this *DriveFile) GetChildren() []*DriveFile {
+	raw := this.GetFieldData().GetAny(DriveFileEdgeChildren)
+	if raw == nil {
+		return nil
+	}
+
+	if children, ok := raw.([]*DriveFile); ok {
+		return children
+	}
+
+	fieldRows, ok := raw.([]dmodel.DynamicFields)
+	if !ok {
+		return nil
+	}
+
+	out := make([]*DriveFile, len(fieldRows))
+	for idx := range fieldRows {
+		out[idx] = NewDriveFileFrom(fieldRows[idx])
+	}
+
+	return out
+}
+
+func (this *DriveFile) SetChildren(children []*DriveFile) {
+	this.GetFieldData().SetAny(DriveFileEdgeChildren, children)
+}
+
+func (d *DriveFile) BuildTree(children []*DriveFile) {
+	children = append(children, d)
+
+	childrenMap := lo.SliceToMap(children, func(driveFile *DriveFile) (model.Id, *DriveFile) {
+		return lo.FromPtr(driveFile.GetId()), driveFile
+	})
+
+	for _, driveFile := range children {
+		if driveFile.GetParentFileRef() != nil {
+			if parent, ok := childrenMap[*driveFile.GetParentFileRef()]; ok {
+				pChildren := parent.GetChildren()
+				pChildren = append(pChildren, driveFile)
+				parent.SetChildren(pChildren)
+			}
+		}
+	}
 }

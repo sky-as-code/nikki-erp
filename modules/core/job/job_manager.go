@@ -31,7 +31,7 @@ func (this *JobManager) Register(jobName string, handleFn JobHandleFn, jobTimeou
 
 	job := Job{
 		handleFn: handleFn,
-		timeout:  constants.BackgroudJobTimeout,
+		timeout:  constants.BackgroundJobTimeout,
 	}
 
 	if len(jobTimeout) > 0 {

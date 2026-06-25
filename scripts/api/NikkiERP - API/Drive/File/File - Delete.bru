@@ -1,0 +1,20 @@
+meta {
+  name: File - Delete
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{api_host}}/v1/drive2/files/:driveFileId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  driveFileId: 01KTR7HP7VCCGGNPGM9D6YKZZB
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

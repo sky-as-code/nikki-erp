@@ -1,11 +1,11 @@
 package drive_file_share
 
 import (
-	"github.com/sky-as-code/nikki-erp/modules/drive2/domain"
+	domainModel "github.com/sky-as-code/nikki-erp/modules/drive2/domain/models"
 )
 
-func (this *CreateDriveFileShareCommand) ToDomainModel() *domain.DriveFileShare {
-	d := domain.NewDriveFileShare()
+func (this *CreateDriveFileShareCommand) ToDomainModel() *domainModel.DriveFileShare {
+	d := domainModel.NewDriveFileShare()
 	f := this.FileRef
 	u := this.UserRef
 	d.SetFileRef(&f)
@@ -14,10 +14,10 @@ func (this *CreateDriveFileShareCommand) ToDomainModel() *domain.DriveFileShare 
 	return d
 }
 
-func (this CreateBulkDriveFileShareCommand) ToDomainModels() []*domain.DriveFileShare {
-	models := make([]*domain.DriveFileShare, 0, len(this.UserRefs))
+func (this CreateBulkDriveFileShareCommand) ToDomainModels() []*domainModel.DriveFileShare {
+	models := make([]*domainModel.DriveFileShare, 0, len(this.UserRefs))
 	for _, userRef := range this.UserRefs {
-		d := domain.NewDriveFileShare()
+		d := domainModel.NewDriveFileShare()
 		f := this.FileRef
 		d.SetFileRef(&f)
 		d.SetUserRef(&userRef)
@@ -27,8 +27,8 @@ func (this CreateBulkDriveFileShareCommand) ToDomainModels() []*domain.DriveFile
 	return models
 }
 
-func (this UpdateDriveFileShareCommand) ToDomainModel() *domain.DriveFileShare {
-	d := domain.NewDriveFileShare()
+func (this UpdateDriveFileShareCommand) ToDomainModel() *domainModel.DriveFileShare {
+	d := domainModel.NewDriveFileShare()
 	id := this.Id
 	d.SetId(&id)
 	etag := this.Etag
@@ -37,8 +37,8 @@ func (this UpdateDriveFileShareCommand) ToDomainModel() *domain.DriveFileShare {
 	return d
 }
 
-func (this DeleteDriveFileShareCommand) ToDomainModel() *domain.DriveFileShare {
-	d := domain.NewDriveFileShare()
+func (this DeleteDriveFileShareCommand) ToDomainModel() *domainModel.DriveFileShare {
+	d := domainModel.NewDriveFileShare()
 	id := this.DriveFileShareId
 	d.SetId(&id)
 	return d

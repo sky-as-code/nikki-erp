@@ -10,7 +10,7 @@ import (
 	// "github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/drive2/domain"
+	"github.com/sky-as-code/nikki-erp/modules/drive2/domain/models"
 	shareIt "github.com/sky-as-code/nikki-erp/modules/drive2/interfaces/drive_file_share"
 )
 
@@ -46,7 +46,7 @@ func (this DriveFileShareRest) CreateDriveFileShare(echoCtx *echo.Context) (err 
 			// cmd.UserId = shareActorUserId(echoCtx)
 			return cmd
 		},
-		func(data domain.DriveFileShare) *httpserver.RestCreateResponse {
+		func(data models.DriveFileShare) *httpserver.RestCreateResponse {
 			return httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 		},
 		httpserver.JsonCreated,
@@ -66,7 +66,7 @@ func (this DriveFileShareRest) CreateBulkDriveFileShares(echoCtx *echo.Context) 
 			// cmd.UserId = shareActorUserId(echoCtx)
 			return cmd
 		},
-		func(rows []domain.DriveFileShare) []httpserver.RestCreateResponse {
+		func(rows []models.DriveFileShare) []httpserver.RestCreateResponse {
 			out := make([]httpserver.RestCreateResponse, 0, len(rows))
 			for i := range rows {
 				out = append(out, *httpserver.NewRestCreateResponseDyn(rows[i].GetFieldData()))

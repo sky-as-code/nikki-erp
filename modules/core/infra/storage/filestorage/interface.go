@@ -10,6 +10,7 @@ type FileStorageAdapter interface {
 	Put(ctx context.Context, objectKey string, r io.Reader, opts *PutOptions) error
 	Open(ctx context.Context, objectKey string, rangeHeader string) (*StreamObjectResult, error)
 	Remove(ctx context.Context, objectKey string) error
+	RemoveBulk(ctx context.Context, objectKeys []string) (deletedKeys []string, failedKeys []string, err error)
 	GeneratePresignedURL(ctx context.Context, objectKey string, expr time.Duration) (string, error)
 }
 

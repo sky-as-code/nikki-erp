@@ -11,7 +11,6 @@ func InitServices() error {
 		deps.Register(
 			NewDriveFileService,
 			NewDriveFileShareService,
-			NewDriveFilePermissionService,
 			NewDriveFileSignedUrlService,
 		),
 	)

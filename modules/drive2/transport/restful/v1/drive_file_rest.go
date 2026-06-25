@@ -1,27 +1,22 @@
 package v1
 
 import (
-	"fmt"
-	"net/http"
-
 	"github.com/labstack/echo/v5"
 	"go.uber.org/dig"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
-	// "github.com/sky-as-code/nikki-erp/common/middleware"
-	"github.com/sky-as-code/nikki-erp/common/model"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
-	"github.com/sky-as-code/nikki-erp/modules/drive2/domain"
+	"github.com/sky-as-code/nikki-erp/modules/drive2/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/drive2/interfaces/drive_file"
 )
 
 type driveFileRestParams struct {
 	dig.In
 
-	DriveFileSvc it.DriveFileService
+	DriveFileSvc it.DriveFileAppService
 }
 
 func NewDriveFileRest(params driveFileRestParams) *DriveFileRest {
@@ -30,7 +25,7 @@ func NewDriveFileRest(params driveFileRestParams) *DriveFileRest {
 
 type DriveFileRest struct {
 	httpserver.RestBase
-	driveFileSvc it.DriveFileService
+	driveFileSvc it.DriveFileAppService
 }
 
 // func userIdFromEcho(echoCtx *echo.Context) model.Id {
@@ -49,7 +44,7 @@ func (this DriveFileRest) CreateDriveFile(echoCtx *echo.Context) (err error) {
 		func(req CreateDriveFileRequest) it.CreateDriveFileCommand {
 			cmd := it.CreateDriveFileCommand{}
 
-			cmd.DriveFile = *domain.NewDriveFile()
+			cmd.DriveFile = *models.NewDriveFile()
 			cmd.SetName(&req.Name)
 			cmd.SetIsFolder(&req.IsFolder)
 			cmd.SetParentFileRef(req.ParentFileRef)
@@ -69,7 +64,7 @@ func (this DriveFileRest) CreateDriveFile(echoCtx *echo.Context) (err error) {
 
 			return cmd
 		},
-		func(data domain.DriveFile) CreateDriveFileResponse {
+		func(data models.DriveFile) CreateDriveFileResponse {
 			response := httpserver.NewRestCreateResponseDyn(data.GetFieldData())
 			return *response
 		},
@@ -91,8 +86,8 @@ func (this DriveFileRest) UpdateDriveFileMetadata(echoCtx *echo.Context) (err er
 			cmd.SetId(&id)
 			return cmd
 		},
-		func(data dynamicmodel.MutateResultData) dynamicmodel.MutateResultData {
-			return data
+		func(data dynamicmodel.MutateResultData) httpserver.RestMutateResponse {
+			return httpserver.NewRestMutateResponse(data)
 		},
 		httpserver.JsonOk,
 	)
@@ -110,10 +105,9 @@ func (this DriveFileRest) UpdateDriveFileContent(echoCtx *echo.Context) (err err
 		func(req UpdateDriveFileContentRequest) it.UpdateDriveFileContentCommand {
 			cmd := it.UpdateDriveFileContentCommand{}
 
-			dFile := domain.NewDriveFile()
+			dFile := models.NewDriveFile()
 			dFile.SetId(&req.Id)
 			dFile.SetEtag(&req.Etag)
-			dFile.SetName(&req.Name)
 			cmd.DriveFile = *dFile
 
 			if req.FileHeader != nil {
@@ -166,8 +160,8 @@ func (this DriveFileRest) MoveDriveFileToTrash(echoCtx *echo.Context) (err error
 			// cmd.UserId = userIdFromEcho(echoCtx)
 			return cmd
 		},
-		func(data domain.DriveFile) dmodel.DynamicFields {
-			return data.GetFieldData()
+		func(data dynamicmodel.MutateResultData) httpserver.RestMutateResponse {
+			return httpserver.NewRestMutateResponse(data)
 		},
 		httpserver.JsonOk,
 	)
@@ -186,7 +180,7 @@ func (this DriveFileRest) RestoreDriveFile(echoCtx *echo.Context) (err error) {
 			// cmd.UserId = userIdFromEcho(echoCtx)
 			return cmd
 		},
-		func(data domain.DriveFile) dmodel.DynamicFields {
+		func(data models.DriveFile) dmodel.DynamicFields {
 			return data.GetFieldData()
 		},
 		httpserver.JsonOk,
@@ -206,7 +200,7 @@ func (this DriveFileRest) MoveDriveFile(echoCtx *echo.Context) (err error) {
 			// cmd.UserId = userIdFromEcho(echoCtx)
 			return cmd
 		},
-		func(data domain.DriveFile) dmodel.DynamicFields {
+		func(data models.DriveFile) dmodel.DynamicFields {
 			return data.GetFieldData()
 		},
 		httpserver.JsonOk,
@@ -264,50 +258,28 @@ func (this DriveFileRest) StreamDriveFile(echoCtx *echo.Context) (err error) {
 			err = e
 		}
 	}()
-	var query GetDriveFileByIdRequest
-	if err = echoCtx.Bind(&query); err != nil {
-		return httpserver.JsonBadRequest(
-			echoCtx,
-			[]any{ft.NewAnonymousValidationError(ft.ErrorKey("err_malformed_request"), "malformed request")},
-		)
-	}
-	if query.DriveFileId == "" {
-		query.DriveFileId = model.Id(echoCtx.Param("drive_file_id"))
-	}
-	// query.UserId = userIdFromEcho(echoCtx)
-	reqCtx := echoCtx.Request().Context().(corectx.Context)
-	driveFile, stream, err := this.driveFileSvc.DownloadDriveFile(reqCtx, query)
-	if err != nil {
-		return httpserver.HandleServiceError(echoCtx, err)
-	}
-	if stream == nil {
-		return httpserver.JsonBadRequest(echoCtx, &ft.ClientError{
-			Code:    "not_found",
-			Details: ft.ValidationErrors{"drive_file_id": "drive file not found or not downloadable"},
-		})
-	}
-	defer stream.Close()
-	fname := "file"
-	if driveFile != nil {
-		if n := driveFile.GetName(); n != nil {
-			fname = *n
-		}
-	}
-	disposition := "inline"
-	if query.IsDownload {
-		disposition = "attachment"
-	}
-	echoCtx.Response().Header().Set(
-		echo.HeaderContentDisposition,
-		fmt.Sprintf("%s; filename=%q", disposition, fname),
+
+	return httpserver.ServeStreamFile(
+		echoCtx, this.driveFileSvc.DownloadDriveFile,
+		func(req StreamKioskMediaRequest) it.DownloadDriveFileQuery {
+			query := it.DownloadDriveFileQuery{
+				Id:    req.Id,
+				Range: req.RangeHeader,
+			}
+
+			return query
+		},
+		func(data it.DownloadDriveFileResultData) httpserver.GetFileStreamResponse {
+			return httpserver.GetFileStreamResponse{
+				Name:          data.Filename,
+				MimeType:      data.MineType,
+				Body:          data.File,
+				ContentLength: data.ContentLength,
+				ContentRange:  data.ContentRange,
+			}
+		},
+		"file",
 	)
-	mimeType := "application/octet-stream"
-	if driveFile != nil {
-		if m := driveFile.GetMime(); m != nil && *m != "" {
-			mimeType = *m
-		}
-	}
-	return echoCtx.Stream(http.StatusOK, mimeType, stream)
 }
 
 func (this DriveFileRest) GetDriveFileByParent(echoCtx *echo.Context) (err error) {

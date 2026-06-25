@@ -1,0 +1,33 @@
+meta {
+  name: File - Create Folder
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_host}}/v1/drive2/files
+  body: multipartForm
+  auth: inherit
+}
+
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+body:multipart-form {
+  name: folder5
+  is_folder: true
+  visibility: owner
+  parent_file_ref: 01KVYXJB37B5GY3YGGQ8YT0WMX
+}
+
+tests {
+  test("Status is 201", function() {
+      expect(res.getStatus()).to.equal(201);
+  });
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

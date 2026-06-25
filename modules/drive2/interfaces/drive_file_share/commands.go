@@ -6,13 +6,13 @@ import (
 	val "github.com/sky-as-code/nikki-erp/common/validator"
 	"github.com/sky-as-code/nikki-erp/modules/core/crud"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
-	"github.com/sky-as-code/nikki-erp/modules/drive2/domain"
+	"github.com/sky-as-code/nikki-erp/modules/drive2/domain/models"
 )
 
 type CreateDriveFileShareCommand struct {
 	FileRef    model.Id            `json:"-" param:"drive_file_id"`
 	UserRef    model.Id            `json:"user_ref"`
-	Permission domain.DriveFilePerm `json:"permission"`
+	Permission models.DriveFilePerm `json:"permission"`
 	UserId     model.Id            `json:"-"`
 }
 
@@ -25,12 +25,12 @@ func (this CreateDriveFileShareCommand) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type CreateDriveFileShareResult = dyn.OpResult[domain.DriveFileShare]
+type CreateDriveFileShareResult = dyn.OpResult[models.DriveFileShare]
 
 type CreateBulkDriveFileShareCommand struct {
 	FileRef    model.Id            `json:"-" param:"drive_file_id"`
 	UserRefs   []model.Id          `json:"user_refs"`
-	Permission domain.DriveFilePerm `json:"permission"`
+	Permission models.DriveFilePerm `json:"permission"`
 	UserId     model.Id            `json:"-"`
 }
 
@@ -43,13 +43,13 @@ func (this CreateBulkDriveFileShareCommand) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type CreateBulkDriveFileShareResult = dyn.OpResult[[]domain.DriveFileShare]
+type CreateBulkDriveFileShareResult = dyn.OpResult[[]models.DriveFileShare]
 
 type UpdateDriveFileShareCommand struct {
 	DriveFileId model.Id `json:"-" param:"drive_file_id"`
 	Id          model.Id `json:"drive_file_share_id" param:"drive_file_share_id"`
 	Etag        model.Etag              `json:"etag"`
-	Permission  domain.DriveFilePerm `json:"permission"`
+	Permission  models.DriveFilePerm `json:"permission"`
 	UserId      model.Id              `json:"-"`
 }
 
@@ -76,7 +76,7 @@ func (this GetDriveFileShareByIdQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetDriveFileShareByIdResult = dyn.OpResult[domain.DriveFileShare]
+type GetDriveFileShareByIdResult = dyn.OpResult[models.DriveFileShare]
 
 type GetDriveFileShareByFileIdQuery struct {
 	crud.SearchQuery `json:",inline"`
@@ -90,7 +90,7 @@ func (this GetDriveFileShareByFileIdQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetDriveFileShareByFileIdResultData = dyn.PagedResultData[domain.DriveFileShare]
+type GetDriveFileShareByFileIdResultData = dyn.PagedResultData[models.DriveFileShare]
 type GetDriveFileShareByFileIdResult = dyn.OpResult[GetDriveFileShareByFileIdResultData]
 
 type GetDriveFileAncestorOwnersByFileIdQuery struct {
@@ -104,7 +104,7 @@ func (this GetDriveFileAncestorOwnersByFileIdQuery) Validate() ft.ValidationErro
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetDriveFileAncestorOwnersByFileIdResult = dyn.OpResult[[]domain.DriveFileShare]
+type GetDriveFileAncestorOwnersByFileIdResult = dyn.OpResult[[]models.DriveFileShare]
 
 type GetDriveFileResolvedSharesByFileIdQuery struct {
 	crud.SearchQuery `json:",inline"`
@@ -121,7 +121,7 @@ func (this *GetDriveFileResolvedSharesByFileIdQuery) SetDefaults() {
 	this.SearchQuery.SetDefaults()
 }
 
-type GetDriveFileResolvedSharesByFileIdResultData = dyn.PagedResultData[domain.DriveFileShare]
+type GetDriveFileResolvedSharesByFileIdResultData = dyn.PagedResultData[models.DriveFileShare]
 type GetDriveFileResolvedSharesByFileIdResult = dyn.OpResult[GetDriveFileResolvedSharesByFileIdResultData]
 
 type GetDriveFileUserShareDetailsQuery struct {
@@ -144,9 +144,9 @@ type DriveFileUserShareDetail struct {
 	UpdatedAt   *model.ModelDateTime       `json:"updated_at,omitempty"`
 	FileRef     model.Id                   `json:"file_ref"`
 	UserRef     model.Id                   `json:"user_ref"`
-	Permission  domain.DriveFilePerm       `json:"permission"`
-	User        *domain.DriveFileShareUser  `json:"user,omitempty"`
-	File        *domain.DriveFileShareFile `json:"file,omitempty"`
+	Permission  models.DriveFilePerm       `json:"permission"`
+	User        *models.DriveFileShareUser  `json:"user,omitempty"`
+	File        *models.DriveFileShareFile `json:"file,omitempty"`
 }
 
 type GetDriveFileUserShareDetailsResult = dyn.OpResult[[]DriveFileUserShareDetail]
@@ -162,7 +162,7 @@ func (this GetDriveFileShareByUserQuery) Validate() ft.ValidationErrors {
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type GetDriveFileShareByUserResultData = dyn.PagedResultData[domain.DriveFileShare]
+type GetDriveFileShareByUserResultData = dyn.PagedResultData[models.DriveFileShare]
 type GetDriveFileShareByUserResult = dyn.OpResult[GetDriveFileShareByUserResultData]
 
 type ListDriveFileSharesByFileRefsAndUserQuery struct {
@@ -178,7 +178,7 @@ func (this ListDriveFileSharesByFileRefsAndUserQuery) Validate() ft.ValidationEr
 	return val.ApiBased.ValidateStruct(&this, rules...)
 }
 
-type ListDriveFileSharesByFileRefsAndUserResult = dyn.OpResult[[]domain.DriveFileShare]
+type ListDriveFileSharesByFileRefsAndUserResult = dyn.OpResult[[]models.DriveFileShare]
 
 type SearchDriveFileShareQuery struct {
 	crud.SearchQuery
@@ -193,7 +193,7 @@ func (this *SearchDriveFileShareQuery) SetDefaults() {
 	this.SearchQuery.SetDefaults()
 }
 
-type SearchDriveFileShareResultData = dyn.PagedResultData[domain.DriveFileShare]
+type SearchDriveFileShareResultData = dyn.PagedResultData[models.DriveFileShare]
 type SearchDriveFileShareResult = dyn.OpResult[SearchDriveFileShareResultData]
 
 type DeleteDriveFileShareCommand struct {

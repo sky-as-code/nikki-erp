@@ -1,0 +1,20 @@
+meta {
+  name: File - Stream File
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{api_host}}/v1/drive2/files/:driveFileId/stream
+  body: none
+  auth: inherit
+}
+
+params:path {
+  driveFileId: 01KVYXAZASAX1VYYZX4WZP1WMC
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

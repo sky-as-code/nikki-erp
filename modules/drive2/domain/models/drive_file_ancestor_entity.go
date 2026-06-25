@@ -1,4 +1,4 @@
-package domain
+package models
 
 import (
 	"math"
@@ -16,7 +16,8 @@ const (
 	DriveFileAncestorFieldAncestorRef = "ancestor_ref"
 	DriveFileAncestorFieldDepth       = "depth"
 
-	DriveFileAncestorEdgeDriveFile = "drive_file"
+	DriveFileAncestorEdgeDriveFile    = "drive_file"
+	DriveFileAncestorEdgeAncestorFile = "ancestor_file"
 )
 
 func DriveFileAncestorSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -53,6 +54,14 @@ func DriveFileAncestorSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Label(model.LangJson{model.LanguageCodeEnUs: "Drive file"}).
 				ManyToOne(DriveFileSchemaName, dmodel.DynamicFields{
 					DriveFileAncestorFieldFileRef: DriveFileFieldId,
+				}).
+				OnDelete(dmodel.RelationCascadeCascade),
+		).
+		EdgeTo(
+			dmodel.Edge(DriveFileAncestorEdgeAncestorFile).
+				Label(model.LangJson{model.LanguageCodeEnUs: "Ancestor file"}).
+				ManyToOne(DriveFileSchemaName, dmodel.DynamicFields{
+					DriveFileAncestorFieldAncestorRef: DriveFileFieldId,
 				}).
 				OnDelete(dmodel.RelationCascadeCascade),
 		)
@@ -100,4 +109,16 @@ func (this DriveFileAncestor) GetDepth() *int64 {
 
 func (this *DriveFileAncestor) SetDepth(v *int64) {
 	this.GetFieldData().SetInt64(DriveFileAncestorFieldDepth, v)
+}
+
+func (this DriveFileAncestor) GetAncestorFile() *DriveFile {
+	raw := this.GetFieldData().GetAny(DriveFileAncestorEdgeAncestorFile)
+	if raw == nil {
+		return nil
+	}
+	fields, ok := raw.(dmodel.DynamicFields)
+	if !ok {
+		return nil
+	}
+	return NewDriveFileFrom(fields)
 }

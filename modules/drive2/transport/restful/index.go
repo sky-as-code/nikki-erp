@@ -37,17 +37,17 @@ func initDriveRest() error {
 func initV1(
 	route *echo.Group,
 	driveFileRest *v1.DriveFileRest,
-	driveFileShareRest *v1.DriveFileShareRest,
+	_ *v1.DriveFileShareRest,
 ) {
 	protected := route.Group("")
 
 	// Drive files
 	protected.POST("/files", driveFileRest.CreateDriveFile)
-	protected.PUT("/files/:id", driveFileRest.UpdateDriveFileMetadata)
-	// protected.PUT("/files/:driveFileId/content", driveFileRest.UpdateDriveFileContent)
-	// protected.DELETE("/files/:driveFileId", driveFileRest.DeleteDriveFile)
-	// protected.PUT("/files/:driveFileId/move-to-trash", driveFileRest.MoveDriveFileToTrash)
-	// protected.PUT("/files/:driveFileId/restore", driveFileRest.RestoreDriveFile)
+	protected.PATCH("/files/:id", driveFileRest.UpdateDriveFileMetadata)
+	protected.PUT("/files/:id/content", driveFileRest.UpdateDriveFileContent)
+	protected.DELETE("/files/:driveFileId", driveFileRest.DeleteDriveFile)
+	protected.PUT("/files/:driveFileId/move-to-trash", driveFileRest.MoveDriveFileToTrash)
+	protected.PUT("/files/:driveFileId/restore", driveFileRest.RestoreDriveFile)
 	// protected.PUT("/files/:driveFileId/move", driveFileRest.MoveDriveFile)
 	// protected.GET("/files/:driveFileId/ancestors", driveFileRest.GetDriveFileAncestors)
 	// protected.GET("/files/root", driveFileRest.GetDriveFileByParent)
@@ -55,7 +55,7 @@ func initV1(
 	// protected.GET("/files/:driveFileId", driveFileRest.GetDriveFileById)
 	//
 	// // Public stream (no auth); TODO: signed URL / token — permission check disabled in DownloadDriveFile for now.
-	// route.GET("/files/:driveFileId/stream", driveFileRest.StreamDriveFile)
+	route.GET("/files/:driveFileId/stream", driveFileRest.StreamDriveFile)
 	//
 	// protected.GET("/files/:driveFileId/children", driveFileRest.GetDriveFileByParent)
 	// protected.GET("/files", driveFileRest.SearchDriveFile)

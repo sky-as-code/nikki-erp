@@ -5,14 +5,12 @@ import (
 )
 
 const (
-	S3StorageRegionName  core_constants.ConfigName = "DRIVE.S3_STORAGE.REGION_NAME"
-	S3StorageAccessToken core_constants.ConfigName = "DRIVE.S3_STORAGE.ACCESS_TOKEN"
-	S3StorageSecretKey   core_constants.ConfigName = "DRIVE.S3_STORAGE.SECRET_KEY"
-	S3StorageEndpoint    core_constants.ConfigName = "DRIVE.S3_STORAGE.ENDPOINT"
-	S3StorageBucket      core_constants.ConfigName = "DRIVE.S3_STORAGE.BUCKET"
-	S3StorageBucketDrive core_constants.ConfigName = "DRIVE.S3_STORAGE.BUCKET_DRIVE"
-
-	CrontabDeleteTrashedFile core_constants.ConfigName = "DRIVE.CRONTAB.DELETE_TRASHED_FILE"
+	S3StorageRegionName  core_constants.ConfigName = "CORE.S3_STORAGE.REGION_NAME"
+	S3StorageAccessToken core_constants.ConfigName = "CORE.S3_STORAGE.ACCESS_TOKEN"
+	S3StorageSecretKey   core_constants.ConfigName = "CORE.S3_STORAGE.SECRET_KEY"
+	S3StorageEndpoint    core_constants.ConfigName = "CORE.S3_STORAGE.ENDPOINT"
+	S3StorageBucket      core_constants.ConfigName = "CORE.S3_STORAGE.BUCKET"
+	S3StorageBucketDrive core_constants.ConfigName = "CORE.S3_STORAGE.BUCKET_DRIVE"
 )
 
 const (

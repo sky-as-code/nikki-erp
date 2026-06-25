@@ -14,7 +14,7 @@ import (
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/baserepo"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
-	"github.com/sky-as-code/nikki-erp/modules/drive2/domain"
+	"github.com/sky-as-code/nikki-erp/modules/drive2/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/drive2/interfaces/drive_file_ancestor"
 )
 
@@ -37,7 +37,7 @@ func NewDriveFileAncestorDynamicRepository(param DriveFileAncestorDynamicReposit
 			ConfigSvc:    param.ConfigSvc,
 			QueryBuilder: param.QueryBuilder,
 			Logger:       param.Logger,
-			Schema:       dmodel.MustGetSchema(domain.DriveFileAncestorSchemaName),
+			Schema:       dmodel.MustGetSchema(models.DriveFileAncestorSchemaName),
 		},
 	)
 	return &DriveFileAncestorDynamicRepository{dynamicRepo: dynamicRepo}
@@ -56,37 +56,37 @@ func (this *DriveFileAncestorDynamicRepository) BeginTransaction(ctx corectx.Con
 }
 
 func (this *DriveFileAncestorDynamicRepository) Insert(
-	ctx corectx.Context, row domain.DriveFileAncestor,
+	ctx corectx.Context, row models.DriveFileAncestor,
 ) (*dyn.OpResult[int], error) {
 	return baserepo.Insert(ctx, this.dynamicRepo, row)
 }
 
 func (this *DriveFileAncestorDynamicRepository) InsertBulk(
-	ctx corectx.Context, rows []domain.DriveFileAncestor,
+	ctx corectx.Context, rows []models.DriveFileAncestor,
 ) (*dyn.OpResult[int], error) {
 	return baserepo.InsertBulk(ctx, this.dynamicRepo, rows)
 }
 
 func (this *DriveFileAncestorDynamicRepository) Update(
-	ctx corectx.Context, row domain.DriveFileAncestor,
+	ctx corectx.Context, row models.DriveFileAncestor,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.Update(ctx, this.dynamicRepo, row.GetFieldData())
 }
 
 func (this *DriveFileAncestorDynamicRepository) GetOne(
 	ctx corectx.Context, param dyn.RepoGetOneParam,
-) (*dyn.OpResult[domain.DriveFileAncestor], error) {
-	return baserepo.GetOne[domain.DriveFileAncestor](ctx, this.dynamicRepo, param)
+) (*dyn.OpResult[models.DriveFileAncestor], error) {
+	return baserepo.GetOne[models.DriveFileAncestor](ctx, this.dynamicRepo, param)
 }
 
 func (this *DriveFileAncestorDynamicRepository) Search(
 	ctx corectx.Context, param dyn.RepoSearchParam,
-) (*dyn.OpResult[dyn.PagedResultData[domain.DriveFileAncestor]], error) {
-	return baserepo.Search[domain.DriveFileAncestor](ctx, this.dynamicRepo, param)
+) (*dyn.OpResult[dyn.PagedResultData[models.DriveFileAncestor]], error) {
+	return baserepo.Search[models.DriveFileAncestor](ctx, this.dynamicRepo, param)
 }
 
 func (this *DriveFileAncestorDynamicRepository) DeleteOne(
-	ctx corectx.Context, keys domain.DriveFileAncestor,
+	ctx corectx.Context, keys models.DriveFileAncestor,
 ) (*dyn.OpResult[dyn.MutateResultData], error) {
 	return baserepo.DeleteOne(ctx, this.dynamicRepo, keys.GetFieldData())
 }
@@ -98,7 +98,7 @@ func (this *DriveFileAncestorDynamicRepository) DeleteByFileRefs(
 		return 0, nil
 	}
 	table := this.dynamicRepo.Schema().TableName()
-	col := domain.DriveFileAncestorFieldFileRef
+	col := models.DriveFileAncestorFieldFileRef
 	q := fmt.Sprintf(`DELETE FROM %s WHERE %s = $1`, table, col)
 	cli := this.dynamicRepo.ExtractClient(ctx)
 	for _, fid := range fileRefs {

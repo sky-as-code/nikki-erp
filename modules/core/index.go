@@ -10,7 +10,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	coreconstants "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
-	"github.com/sky-as-code/nikki-erp/modules/core/cron_job"
 	db "github.com/sky-as-code/nikki-erp/modules/core/database"
 	coredyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	"github.com/sky-as-code/nikki-erp/modules/core/event"

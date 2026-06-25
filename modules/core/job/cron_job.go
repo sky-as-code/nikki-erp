@@ -29,7 +29,7 @@ func (this *CronJob) Register(crontab string,
 					this.logger.Errorf("[CRONJOB] %s panicked: %v", jobName, r)
 				}
 			}()
-			jobTimeout := constants.BackgroudJobTimeout
+			jobTimeout := constants.BackgroundJobTimeout
 			if len(timeout) > 0 {
 				jobTimeout = timeout[0]
 			}

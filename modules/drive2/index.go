@@ -8,7 +8,8 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules"
 	"github.com/sky-as-code/nikki-erp/modules/drive2/adapter"
 	app "github.com/sky-as-code/nikki-erp/modules/drive2/app"
-	"github.com/sky-as-code/nikki-erp/modules/drive2/domain"
+	"github.com/sky-as-code/nikki-erp/modules/drive2/domain/models"
+	domainSvc "github.com/sky-as-code/nikki-erp/modules/drive2/domain/services"
 	repo "github.com/sky-as-code/nikki-erp/modules/drive2/infra/repository"
 	transport "github.com/sky-as-code/nikki-erp/modules/drive2/transport"
 )
@@ -42,6 +43,7 @@ func (*DriveModule) Init() error {
 	return errors.Join(
 		adapter.InitAdapters(),
 		repo.InitRepositories(),
+		domainSvc.InitDomainServices(),
 		app.InitServices(),
 		transport.InitTransport(),
 	)
@@ -49,8 +51,8 @@ func (*DriveModule) Init() error {
 
 func (*DriveModule) RegisterModels() error {
 	return errors.Join(
-		dmodel.RegisterSchemaB(domain.DriveFileSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.DriveFileShareSchemaBuilder()),
-		dmodel.RegisterSchemaB(domain.DriveFileAncestorSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.DriveFileSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.DriveFileShareSchemaBuilder()),
+		dmodel.RegisterSchemaB(models.DriveFileAncestorSchemaBuilder()),
 	)
 }

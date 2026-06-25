@@ -127,6 +127,61 @@ func (this *s3Adapter) Remove(ctx context.Context, objectKey string) error {
 	return err
 }
 
+const s3DeleteObjectsMaxKeys = 1000
+
+func (this *s3Adapter) RemoveBulk(
+	ctx context.Context, objectKeys []string,
+) (deletedKeys []string, failedKeys []string, err error) {
+	if len(objectKeys) == 0 {
+		return []string{}, []string{}, nil
+	}
+
+	deletedKeys = make([]string, 0, len(objectKeys))
+	failedKeys = make([]string, 0)
+
+	for start := 0; start < len(objectKeys); start += s3DeleteObjectsMaxKeys {
+		end := start + s3DeleteObjectsMaxKeys
+		if end > len(objectKeys) {
+			end = len(objectKeys)
+		}
+		chunk := objectKeys[start:end]
+		objects := make([]types.ObjectIdentifier, len(chunk))
+		for idx, key := range chunk {
+			objects[idx] = types.ObjectIdentifier{Key: aws.String(key)}
+		}
+
+		output, delErr := this.client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+			Bucket: aws.String(this.bucket),
+			Delete: &types.Delete{
+				Objects: objects,
+				Quiet:   aws.Bool(false),
+			},
+		})
+		if delErr != nil {
+			return deletedKeys, failedKeys, delErr
+		}
+
+		for _, item := range output.Deleted {
+			if item.Key != nil {
+				deletedKeys = append(deletedKeys, *item.Key)
+			}
+		}
+		for _, item := range output.Errors {
+			if item.Key == nil {
+				continue
+			}
+			msg := ""
+			if item.Message != nil {
+				msg = *item.Message
+			}
+			this.logger.Errorf("S3 bulk delete failed key=%s reason=%s", *item.Key, msg)
+			failedKeys = append(failedKeys, *item.Key)
+		}
+	}
+
+	return deletedKeys, failedKeys, nil
+}
+
 func (this *s3Adapter) GeneratePresignedURL(ctx context.Context, objectKey string, expr time.Duration) (string, error) {
 	req, err := this.presign.PresignGetObject(
 		ctx,

@@ -1,4 +1,4 @@
-package domain
+package models
 
 // Các kiểu enum dùng string cố định (không iota), giá trị khớp bản drive/enum + cột string trên DB.
 
