@@ -5,8 +5,6 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/distributedlock"
 	mqttclient "github.com/sky-as-code/nikki-erp/modules/core/infra/mqtt"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
-
-	// "github.com/sky-as-code/nikki-erp/modules/core/infra/pubsub"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/redisclient"
 	"github.com/sky-as-code/nikki-erp/modules/core/infra/storage/filestorage"
 )
@@ -18,7 +16,6 @@ func InitSubModule() error {
 		distributedlock.NewRedisDistributedLock,
 		// pubsub.NewRedisPubSub,
 		redisclient.NewRedisClient,
-		filestorage.NewS3Adapter,
 		pubsub.NewVerneMq,
 	)
 }

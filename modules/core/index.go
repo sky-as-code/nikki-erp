@@ -67,7 +67,6 @@ func (*CoreModule) Init() error {
 		deps.Invoke(coredyn.InitSubModule),
 		deps.Invoke(http.InitSubModule),
 		deps.Invoke(httpclient.InitSubModule),
-		deps.Invoke(infra.InitSubModule),
 		deps.Invoke(job.InitSubModule),
 
 		// These submodules expose network APIs

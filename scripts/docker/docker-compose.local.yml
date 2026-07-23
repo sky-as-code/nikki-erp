@@ -83,16 +83,30 @@ services:
       DOCKER_VERNEMQ_ACCEPT_EULA: "yes"
       DOCKER_VERNEMQ_ALLOW_ANONYMOUS: "off"
       VERNE_USER: "nikki_username"
-      VERNE_PASSWORD: "nikki_password"
+      VERNE_PASSWORD_FILE: "/vernemq/passwd"
+
+      DOCKER_VERNEMQ_LISTENER__TCP__DEFAULT: "0.0.0.0:1883"
+      DOCKER_VERNEMQ_LISTENER__SSL__DEFAULT: "0.0.0.0:8883"
+
+      DOCKER_VERNEMQ_LISTENER__SSL__CAFILE: "/vernemq/certs/nikki-verne-client-ca.crt"
+      DOCKER_VERNEMQ_LISTENER__SSL__CERTFILE: "/vernemq/certs/verne.nikkierp.com.crt"
+      DOCKER_VERNEMQ_LISTENER__SSL__KEYFILE: "/vernemq/certs/verne.nikkierp.com.key"
+
+      DOCKER_VERNEMQ_LISTENER__SSL__DEFAULT__ALLOW_ANONYMOUS_OVERRIDE: "on"
+      DOCKER_VERNEMQ_LISTENER__SSL__REQUIRE_CERTIFICATE: "on"
+      DOCKER_VERNEMQ_LISTENER__SSL__USE_IDENTITY_AS_USERNAME: "on"
+      DOCKER_VERNEMQ_PLUGINS__VMQ_PASSWD: "on"
     ports:
-      - "1884:1883" # MQTT Default Port
-      - "8883:8883" # MQTT over SSL/TLS
-      - "8080:8080" # MQTT over WebSockets
+      - "1884:1883"
+      - "8883:8883"
+      - "8081:8080"
     volumes:
       - vernemq-data:/vernemq/data
       - vernemq-log:/vernemq/log
-      - ./init-verne.sh:/init-verne.sh
-    entrypoint: ["/bin/sh", "/init-verne.sh"]
+      - ./vernemq/certs:/vernemq/certs:ro
+      - ./vernemq/init.sh:/init.verne.sh
+      - ./vernemq/passwd:/vernemq/passwd
+    entrypoint: ["/bin/sh", "/init.verne.sh"]
     networks:
       - nikki_net
 
