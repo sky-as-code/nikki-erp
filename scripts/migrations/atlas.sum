@@ -1,8 +1,9 @@
-h1:6LaoTs9utq1NTRYtpdVeT0aB2f2kqjyAmPDqpCG4Nc4=
-0001001_essential_schema.sql h1:TqQUsjDlS8F/3QGgJvPT7j8LG73pC5t1bjXQwYOVbZo=
-0002001_iam_identity_schema.sql h1:beDlNwJmu8PD0qL+Pyyg1aUCu8wJlss1mSV09b8/r6U=
-0002002_iam_identity_seeds.sql h1:0ZL1WhCFIuhLfGCPpAYz1kJ2m4RZ3C+ce8k6P+KiFoQ=
-0002003_iam_authorize_views.sql h1:lzhbMD5gr4gSYXsDTwSLAx2amXZtFxPuVs6jYGc/PPI=
-0002004_iam_authorize_seeds.sql h1:uXkLzwWh21hcV1+zf/S9wwhzuVXK/+8T+WiYqGUotZQ=
-0004001_contacts_schema.sql h1:yW1dPM+3CW+YUgB05/JFHEop1B3FJj25ZNQuHg7/B44=
-0005001_inventory _schema.sql h1:7TKynYfliSOHUSHtEjOTXaFBrS5WWnMAPp4/Wxyz8wE=
+h1:rNpHDX6GCnD3vutMWV79+XMXIuHSdnO7Ot9Bz4HU2ls=
+0001001_essential_schema.sql h1:MTIQ2qBOhb/F9UYS1XQ1kAi6ytSvNz0BHGf4J96YTJI=
+0002001_iam_identity_schema.sql h1:cO20cCVs4wpqz7MuvnobvXxS8v1l5PaP++7kqf4oqxg=
+0002002_iam_identity_seeds.sql h1:TCU16uJhaG+x+89NXFN/Y1nBlJ5nMmFDpLww3Fa8Pb8=
+0002003_iam_authorize_views.sql h1:HkqpOGsWW9oBKzaZPkjDGMCkZ7Zt5oqLw6H5KSfwpVU=
+0002004_iam_authorize_seeds.sql h1:wZ+rlQOkEAIOiNPJ6wLqgY5QG20wa0Fn+hF9gSeBr34=
+0004001_contacts_schema.sql h1:WhHJbuAJBhZLPwR2gTWzrYqqZdvEQu0laqhaNiXLtdM=
+0005001_inventory _schema.sql h1:koestqQvafllqshWfMOfUG1Wh+jlWNlfQy94hXP/VLE=
+0005002_inventory_seed.sql h1:VIDWm4CpUt49pGjUM9veORJbL8O1ZEAdItq6FELyb2w=

@@ -112,4 +112,3 @@ CREATE TABLE "inventory_variant_attr_val_rel" (
   CONSTRAINT "inventory_variant_attr_val_rel_attribute_value_id_fkey" FOREIGN KEY ("attribute_value_id") REFERENCES "inventory_attribute_values" ("id") ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT "inventory_variant_attr_val_rel_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "inventory_variants" ("id") ON UPDATE NO ACTION ON DELETE CASCADE
 );
-

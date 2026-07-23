@@ -23,6 +23,7 @@ const (
 	ProdFieldId               = basemodel.FieldId
 	ProdFieldName             = "name"
 	ProdFieldDescription      = "description"
+	ProdFieldThumbnailKey     = "thumbnail_key"
 	ProdFieldThumbnailUrl     = "thumbnail_url"
 	ProdFieldUnitId           = "unit_id"
 	ProdFieldDefaultVariantId = "default_variant_id"
@@ -58,9 +59,9 @@ func ProductSchemaBuilder() *dmodel.ModelSchemaBuilder {
 		).
 		Field(
 			dmodel.DefineField().
-				Name(ProdFieldThumbnailUrl).
-				Label(model.NewLangJsonRefSf("fields.%s", ProdFieldThumbnailUrl)).
-				DataType(dmodel.FieldDataTypeUrl()),
+				Name(ProdFieldThumbnailKey).
+				Label(model.NewLangJsonRefSf("fields.%s", ProdFieldThumbnailKey)).
+				DataType(dmodel.FieldDataTypeString(1, model.MODEL_RULE_DESC_LENGTH)),
 		).
 		Field(
 			basemodel.DefineFieldId(ProdFieldUnitId).
@@ -133,6 +134,14 @@ func (this Product) GetDescription() *model.LangJson {
 
 func (this *Product) SetDescription(v *model.LangJson) {
 	this.GetFieldData().SetLangJson(ProdFieldDescription, v)
+}
+
+func (this Product) GetThumbnailKey() *string {
+	return this.GetFieldData().GetString(ProdFieldThumbnailKey)
+}
+
+func (this *Product) SetThumbnailKey(v *string) {
+	this.GetFieldData().SetString(ProdFieldThumbnailKey, v)
 }
 
 func (this Product) GetThumbnailUrl() *string {
