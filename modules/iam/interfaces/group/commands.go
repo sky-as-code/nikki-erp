@@ -17,6 +17,7 @@ func init() {
 	req = (*GetGroupQuery)(nil)
 	req = (*GroupExistsQuery)(nil)
 	req = (*ManageGroupUsersCommand)(nil)
+	req = (*ManageGroupRoleAssignmentsCommand)(nil)
 	req = (*UpdateGroupCommand)(nil)
 	util.Unused(req)
 }
@@ -100,6 +101,24 @@ func (ManageGroupUsersCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 type ManageGroupUsersResult = dyn.OpResult[dyn.MutateResultData]
+
+var manageGroupRoleAssignmentsCommandType = cqrs.RequestType{
+	Module:    "iam",
+	Submodule: "group",
+	Action:    "manageGroupRoleAssignments",
+}
+
+type ManageGroupRoleAssignmentsCommand struct {
+	GroupId model.Id                    `json:"group_id" param:"group_id"`
+	Add     datastructure.Set[model.Id] `json:"add"`
+	Remove  datastructure.Set[model.Id] `json:"remove"`
+}
+
+func (ManageGroupRoleAssignmentsCommand) CqrsRequestType() cqrs.RequestType {
+	return manageGroupRoleAssignmentsCommandType
+}
+
+type ManageGroupRoleAssignmentsResult = dyn.OpResult[dyn.MutateResultData]
 
 var searchGroupsQueryType = cqrs.RequestType{
 	Module:    "iam",

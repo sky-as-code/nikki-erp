@@ -13,6 +13,7 @@ type PermissionRepository interface {
 
 	MatchPermisions(ctx corectx.Context, param RepoMatchUserPermParam) (*dyn.OpResult[[]models.UserPermission], error)
 	RebuildUserPermission(ctx corectx.Context, userId model.Id) error
+	RebuildUserPermissionsForGroup(ctx corectx.Context, groupId model.Id) error
 	RebuildAllUserPermissions(ctx corectx.Context) error
 	// ListByUser(ctx corectx.Context, param RepoListByUserParam) (*dyn.OpResult[[]models.UserPermission], error)
 	Search(ctx corectx.Context, param dyn.RepoSearchParam) (*dyn.OpResult[dyn.PagedResultData[models.UserPermission]], error)

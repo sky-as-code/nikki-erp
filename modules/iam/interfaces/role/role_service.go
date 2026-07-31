@@ -9,9 +9,7 @@ import (
 
 type RoleDomainService interface {
 	CreateRole(ctx corectx.Context, cmd CreateRoleCommand, opts ...corecrud.ServiceCreateOptions[*domain.Role]) (*CreateRoleResult, error)
-	CreatePrivateRole(ctx corectx.Context, cmd CreatePrivateRoleCommand, opts ...corecrud.ServiceCreateOptions[*domain.Role]) (*CreateRoleResult, error)
 	DeleteRole(ctx corectx.Context, cmd DeleteRoleCommand, opts ...corecrud.ServiceDeleteOptions) (*DeleteRoleResult, error)
-	DeletePrivateRole(ctx corectx.Context, cmd DeletePrivateRoleCommand, opts ...corecrud.ServiceDeleteOptions) (*DeleteRoleResult, error)
 	GetRole(ctx corectx.Context, query GetRoleQuery) (*dyn.OpResult[domain.Role], error)
 	ManageRoleEntitlements(ctx corectx.Context, cmd ManageRoleEntitlementsCommand) (
 		*ManageRoleEntitlementsResult, error,

@@ -1,8 +1,6 @@
 package services
 
 import (
-	"fmt"
-
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/datastructure"
@@ -54,43 +52,6 @@ func (this *RoleDomainServiceImpl) CreateRole(
 	})
 }
 
-func (this *RoleDomainServiceImpl) CreatePrivateRole(
-	ctx corectx.Context, cmd itRole.CreatePrivateRoleCommand, options ...corecrud.ServiceCreateOptions[*domain.Role],
-) (*itRole.CreateRoleResult, error) {
-	sanitized, cErrs := cmd.GetSchema().ValidateStruct(cmd)
-	if cErrs.Count() > 0 {
-		return &itRole.CreateRoleResult{ClientErrors: cErrs}, nil
-	}
-	cmd = *(sanitized.(*itRole.CreatePrivateRoleCommand))
-
-	var newRole *domain.Role
-	ownerId := string(cmd.OwnerId)
-	if cmd.OwnerType == "user" {
-		newRole = domain.NewRoleFrom(dmodel.DynamicFields{
-			domain.RoleFieldName:          fmt.Sprintf("Private role for user %s", ownerId),
-			domain.RoleFieldIsPrivate:     true,
-			domain.RoleFieldOwnerUserId:   ownerId,
-			domain.RoleFieldIsRequestable: false, // Important!
-		})
-	} else {
-		newRole = domain.NewRoleFrom(dmodel.DynamicFields{
-			domain.RoleFieldName:          fmt.Sprintf("Private role for group %s", ownerId),
-			domain.RoleFieldIsPrivate:     true,
-			domain.RoleFieldOwnerGroupId:  ownerId,
-			domain.RoleFieldIsRequestable: false, // Important!
-		})
-	}
-	createCmd := itRole.CreateRoleCommand{Role: *newRole}
-	createRes, err := this.CreateRole(ctx, createCmd, options...)
-	if err != nil {
-		return nil, err
-	}
-	if createRes.ClientErrors.Count() > 0 {
-		return createRes, nil
-	}
-	return createRes, nil
-}
-
 func (this *RoleDomainServiceImpl) DeleteRole(
 	ctx corectx.Context, cmd itRole.DeleteRoleCommand, options ...corecrud.ServiceDeleteOptions,
 ) (*itRole.DeleteRoleResult, error) {
@@ -117,60 +78,12 @@ func (this *RoleDomainServiceImpl) DeleteRole(
 			if *resRole.Data.IsPrivate() {
 				return ft.NewAnonymousBusinessViolation(
 					ft.ErrorKey("iam", "err_private_role_deletion_not_allowed"),
-					"private role deletion is not allowed, it's automatically removed when its owner is deleted.",
+					"private role deletion is not allowed.",
 				)
 			}
 			return nil
 		},
 	})
-}
-
-func (this *RoleDomainServiceImpl) DeletePrivateRole(
-	ctx corectx.Context, cmd itRole.DeletePrivateRoleCommand, options ...corecrud.ServiceDeleteOptions,
-) (*itRole.DeleteRoleResult, error) {
-	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
-	sanitized, cErrs := cmd.GetSchema().ValidateStruct(cmd)
-	if cErrs.Count() > 0 {
-		return &itRole.DeleteRoleResult{ClientErrors: cErrs}, nil
-	}
-	cmd = *(sanitized.(*itRole.DeletePrivateRoleCommand))
-
-	searchRes, err := this.roleRepo.Search(ctx, dyn.RepoSearchParam{
-		Graph:  privateRoleOwnerSearchGraph(cmd.OwnerId),
-		Fields: []string{basemodel.FieldId},
-		Page:   0,
-		Size:   1,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if searchRes.ClientErrors.Count() > 0 {
-		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: searchRes.ClientErrors}, nil
-	}
-	if !searchRes.HasData {
-		return &dyn.OpResult[dyn.MutateResultData]{HasData: false}, nil
-	}
-
-	delId := searchRes.Data.Items[0].GetId()
-
-	// TODO: Build query DELETE FROM (SELECT * FROM roles WHERE dedicated_group_id = $1 OR dedicated_user_id = $1 LIMIT 1)
-	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:                 "delete private role",
-		DbRepoGetter:           this.roleRepo,
-		Cmd:                    dyn.DeleteOneCommand{Id: *delId},
-		AfterValidationSuccess: opts.AfterValidationSuccess,
-	})
-}
-
-func privateRoleOwnerSearchGraph(ownerId model.Id) *dmodel.SearchGraph {
-	oid := string(ownerId)
-	userNode := dmodel.NewSearchNode().NewCondition(domain.RoleFieldOwnerUserId, dmodel.Equals, oid)
-	groupNode := dmodel.NewSearchNode().NewCondition(domain.RoleFieldOwnerGroupId, dmodel.Equals, oid)
-	nodeIsPrivate := dmodel.NewSearchNode().NewCondition(domain.RoleFieldIsPrivate, dmodel.Equals, true)
-	nodeOwner := dmodel.NewSearchNode().Or(*userNode, *groupNode)
-	graph := dmodel.NewSearchGraph()
-	graph.And(*nodeIsPrivate, *nodeOwner)
-	return graph
 }
 
 func (this *RoleDomainServiceImpl) GetRole(
@@ -313,25 +226,6 @@ func entitlementIdsSearchGraph(ids []model.Id) *dmodel.SearchGraph {
 	graph.Condition(dmodel.NewCondition(basemodel.FieldId, dmodel.In, ops...))
 	return graph
 }
-
-// func (this *RoleDomainServiceImpl) ManageRoleAssignments(
-// 	ctx corectx.Context, cmd itRole.ManageRoleEntitlementsCommand,
-// ) (*itRole.ManageRoleEntitlementsResult, error) {
-// 	sanitizedCmd, cErrs := corecrud.Validate(cmd)
-// 	if cErrs.Count() > 0 {
-// 		return &itRole.ManageRoleEntitlementsResult{ClientErrors: cErrs}, nil
-// 	}
-
-// 	return corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
-// 		Action:             "manage role assignments",
-// 		DbRepoGetter:       this.roleRepo,
-// 		DestSchemaName:     domain.RoleAssignmentSchemaName,
-// 		SrcId:              cmd.RoleId,
-// 		SrcIdFieldForError: "role_id",
-// 		AssociatedIds:      cmd.Add,
-// 		DisassociatedIds:   cmd.Remove,
-// 	})
-// }
 
 func (this *RoleDomainServiceImpl) RoleExists(
 	ctx corectx.Context, query itRole.RoleExistsQuery,

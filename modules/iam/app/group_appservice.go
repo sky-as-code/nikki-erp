@@ -65,11 +65,24 @@ func (this *GroupApplicationServiceImpl) GroupExists(ctx corectx.Context, query 
 	return this.groupSvc.GroupExists(ctx, query)
 }
 
+func (this *GroupApplicationServiceImpl) ManageGroupRoleAssignments(
+	ctx corectx.Context, cmd it.ManageGroupRoleAssignmentsCommand,
+) (*it.ManageGroupRoleAssignmentsResult, error) {
+	if cErr := assertPermission(ctx, "manage_role_assignments", c.ResourceIamGroup, c.ResourceScopeOrg); cErr != nil {
+		return &it.ManageGroupRoleAssignmentsResult{ClientErrors: *cErr}, nil
+	}
+	return corecrud.ExecInTranx(ctx, this.groupRepo, func(tranxCtx corectx.Context) (*it.ManageGroupRoleAssignmentsResult, error) {
+		return this.groupSvc.ManageGroupRoleAssignments(tranxCtx, cmd)
+	})
+}
+
 func (this *GroupApplicationServiceImpl) ManageGroupUsers(ctx corectx.Context, cmd it.ManageGroupUsersCommand) (*it.ManageGroupUsersResult, error) {
 	if cErr := assertPermission(ctx, "manage_users", c.ResourceIamGroup, c.ResourceScopeOrg); cErr != nil {
 		return &it.ManageGroupUsersResult{ClientErrors: *cErr}, nil
 	}
-	return this.groupSvc.ManageGroupUsers(ctx, cmd)
+	return corecrud.ExecInTranx(ctx, this.groupRepo, func(tranxCtx corectx.Context) (*it.ManageGroupUsersResult, error) {
+		return this.groupSvc.ManageGroupUsers(tranxCtx, cmd)
+	})
 }
 
 func (this *GroupApplicationServiceImpl) SearchGroups(ctx corectx.Context, query it.SearchGroupsQuery) (*it.SearchGroupsResult, error) {

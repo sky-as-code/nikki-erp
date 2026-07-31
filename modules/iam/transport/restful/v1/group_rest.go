@@ -62,6 +62,14 @@ func (this GroupRest) GroupExists(echoCtx *echo.Context) (err error) {
 	)
 }
 
+func (this GroupRest) ManageGroupRoleAssignments(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeGeneralMutate[ManageGroupRoleAssignmentsRequest, ManageGroupRoleAssignmentsResponse](
+		"manage group role assignments",
+		echoCtx,
+		this.GroupSvc.ManageGroupRoleAssignments,
+	)
+}
+
 func (this GroupRest) ManageGroupUsers(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeGeneralMutate[ManageGroupUsersRequest, ManageGroupUsersResponse](
 		"manage group users",

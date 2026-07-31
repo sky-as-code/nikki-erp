@@ -3,6 +3,7 @@ package services
 import (
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
+	"github.com/sky-as-code/nikki-erp/common/model"
 	"github.com/sky-as-code/nikki-erp/common/safe"
 	"github.com/sky-as-code/nikki-erp/common/util"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -13,18 +14,21 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/event"
 	enum "github.com/sky-as-code/nikki-erp/modules/essential/interfaces/enum"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
+	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
 func NewUserDomainServiceImpl(
 	enumSvc enum.EnumService,
 	userRepo it.UserRepository,
+	permRepo itPerm.PermissionRepository,
 	cqrsBus cqrs.CqrsBus,
 	eventBus event.EventBus,
 ) it.UserDomainService {
 	return &UserDomainServiceImpl{
 		enumSvc:  enumSvc,
 		userRepo: userRepo,
+		permRepo: permRepo,
 		cqrs:     cqrsBus,
 		eventBus: eventBus,
 	}
@@ -33,8 +37,42 @@ func NewUserDomainServiceImpl(
 type UserDomainServiceImpl struct {
 	enumSvc  enum.EnumService
 	userRepo it.UserRepository
+	permRepo itPerm.PermissionRepository
 	eventBus event.EventBus
 	cqrs     cqrs.CqrsBus
+}
+
+// ManageUserRoleAssignments assigns/removes roles to/from a user, then refreshes that user's
+// denormalized permissions so authorization reflects the change immediately.
+func (this *UserDomainServiceImpl) ManageUserRoleAssignments(
+	ctx corectx.Context, cmd it.ManageUserRoleAssignmentsCommand,
+) (*it.ManageUserRoleAssignmentsResult, error) {
+	result, err := corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
+		Action:             "manage user role assignments",
+		DbRepoGetter:       this.userRepo,
+		DestSchemaName:     domain.RoleSchemaName,
+		SrcId:              cmd.UserId,
+		SrcIdFieldForError: "user_id",
+		AssociatedIds:      cmd.Add,
+		DisassociatedIds:   cmd.Remove,
+		BeforeInsert: func(ctx corectx.Context, dbRecords []dmodel.DynamicFields) error {
+			for _, record := range dbRecords {
+				assignmentId, err := model.NewId()
+				if err != nil {
+					return err
+				}
+				record[domain.RoleUserAssignFieldId] = *assignmentId
+			}
+			return nil
+		},
+	})
+	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
+		return result, err
+	}
+	if err := this.permRepo.RebuildUserPermission(ctx, cmd.UserId); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (this *UserDomainServiceImpl) CreateUser(

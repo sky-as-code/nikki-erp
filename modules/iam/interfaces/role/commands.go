@@ -21,7 +21,6 @@ func init() {
 	req = (*UpdateRoleCommand)(nil)
 	req = (*SetRoleIsArchivedCommand)(nil)
 	req = (*ManageRoleEntitlementsCommand)(nil)
-	req = (*DeletePrivateRoleCommand)(nil)
 	util.Unused(req)
 }
 
@@ -37,36 +36,6 @@ func (CreateRoleCommand) GetSchema() *dmodel.ModelSchema {
 	return dmodel.GetSchema(domain.RoleSchemaName)
 }
 
-var createPrivateRoleCommandType = cqrs.RequestType{
-	Module: "iam", Submodule: "role", Action: "createPrivateRole",
-}
-
-type CreatePrivateRoleCommand struct {
-	OwnerId   model.Id `json:"owner_id" param:"owner_id"`
-	OwnerType string   `json:"owner_type" param:"owner_type"`
-}
-
-func (CreatePrivateRoleCommand) CqrsRequestType() cqrs.RequestType {
-	return createPrivateRoleCommandType
-}
-
-func (CreatePrivateRoleCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetOrRegisterSchema(
-		"iam.create_private_role_command",
-		func() *dmodel.ModelSchemaBuilder {
-			return dmodel.DefineModel("_").
-				Field(dmodel.DefineField().
-					Name("owner_id").
-					DataType(dmodel.FieldDataTypeUlid()).
-					RequiredAlways()).
-				Field(dmodel.DefineField().
-					Name("owner_type").
-					DataType(dmodel.FieldDataTypeEnumString([]string{"group", "user"})).
-					RequiredAlways())
-		},
-	)
-}
-
 type CreateRoleResult = dyn.OpResult[domain.Role]
 
 var deleteRoleCommandType = cqrs.RequestType{Module: "iam", Submodule: "role", Action: "deleteRole"}
@@ -74,31 +43,6 @@ var deleteRoleCommandType = cqrs.RequestType{Module: "iam", Submodule: "role", A
 type DeleteRoleCommand dyn.DeleteOneCommand
 
 func (DeleteRoleCommand) CqrsRequestType() cqrs.RequestType { return deleteRoleCommandType }
-
-var deletePrivateRoleCommandType = cqrs.RequestType{
-	Module: "iam", Submodule: "role", Action: "deletePrivateRole",
-}
-
-type DeletePrivateRoleCommand struct {
-	OwnerId model.Id `json:"owner_id" param:"owner_id"`
-}
-
-func (DeletePrivateRoleCommand) CqrsRequestType() cqrs.RequestType {
-	return deletePrivateRoleCommandType
-}
-
-func (DeletePrivateRoleCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetOrRegisterSchema(
-		"iam.delete_private_role_command",
-		func() *dmodel.ModelSchemaBuilder {
-			return dmodel.DefineModel("_").
-				Field(dmodel.DefineField().
-					Name("owner_id").
-					DataType(dmodel.FieldDataTypeUlid()).
-					RequiredAlways())
-		},
-	)
-}
 
 type DeleteRoleResult = dyn.OpResult[dyn.MutateResultData]
 
@@ -166,33 +110,3 @@ func (ManageRoleEntitlementsCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 type ManageRoleEntitlementsResult = dyn.OpResult[dyn.MutateResultData]
-
-var manageRoleAssignmentsCommandType = cqrs.RequestType{
-	Module: "iam", Submodule: "role", Action: "manageRoleAssignments",
-}
-
-type ManageRoleAssignmentsCommand struct {
-	RoleId    model.Id                    `json:"role_id" param:"role_id"`
-	Add       datastructure.Set[model.Id] `json:"add"`
-	Remove    datastructure.Set[model.Id] `json:"remove"`
-	OwnerType string                      `json:"owner_type" param:"owner_type"`
-}
-
-func (ManageRoleAssignmentsCommand) CqrsRequestType() cqrs.RequestType {
-	return manageRoleAssignmentsCommandType
-}
-
-func (ManageRoleAssignmentsCommand) GetSchema() *dmodel.ModelSchema {
-	return dmodel.GetOrRegisterSchema(
-		"iam.manage_role_assignments_command",
-		func() *dmodel.ModelSchemaBuilder {
-			return dmodel.DefineModel("_").
-				Field(dmodel.DefineField().
-					Name("owner_type").
-					DataType(dmodel.FieldDataTypeEnumString([]string{"group", "user"})).
-					RequiredAlways())
-		},
-	)
-}
-
-type ManageRoleAssignmentsResult = dyn.OpResult[dyn.MutateResultData]

@@ -19,6 +19,9 @@ type GetGroupResponse = httpserver.RestGetOneResponse[dmodel.DynamicFields]
 type GroupExistsRequest = it.GroupExistsQuery
 type GroupExistsResponse = dyn.ExistsResultData
 
+type ManageGroupRoleAssignmentsRequest = it.ManageGroupRoleAssignmentsCommand
+type ManageGroupRoleAssignmentsResponse = httpserver.RestMutateResponse
+
 type ManageGroupUsersRequest = it.ManageGroupUsersCommand
 type ManageGroupUsersResponse = httpserver.RestMutateResponse
 

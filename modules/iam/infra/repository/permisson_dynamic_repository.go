@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"fmt"
+
 	"go.uber.org/dig"
 
 	"github.com/sky-as-code/nikki-erp/common/array"
@@ -64,7 +66,19 @@ func (this *PermissionDynamicRepository) RebuildUserPermission(ctx corectx.Conte
 }
 
 func (this *PermissionDynamicRepository) RebuildAllUserPermissions(ctx corectx.Context) error {
-	return this.dynamicRepo.ExecFunc(ctx, "iam_rebuild_user_perm", nil)
+	return this.dynamicRepo.ExecFunc(ctx, "iam_rebuild_all_user_perms")
+}
+
+// RebuildUserPermissionsForGroup rebuilds permissions of every member of the group in a single
+// round-trip. It joins the ambient transaction when the context carries one.
+func (this *PermissionDynamicRepository) RebuildUserPermissionsForGroup(ctx corectx.Context, groupId model.Id) error {
+	relTable := dmodel.MustGetSchema(models.GrpUsrRelSchemaName).TableName()
+	sqlQuery := fmt.Sprintf(
+		`SELECT iam_rebuild_user_perm(%s) FROM %s WHERE %s = $1`,
+		models.GrpUsrRelFieldUserId, relTable, models.GrpUsrRelFieldGroupId,
+	)
+	_, err := this.dynamicRepo.ExtractClient(ctx).Exec(ctx.InnerContext(), sqlQuery, groupId)
+	return err
 }
 
 func (this *PermissionDynamicRepository) MatchPermisions(ctx corectx.Context, param itPerm.RepoMatchUserPermParam) (*dyn.OpResult[[]models.UserPermission], error) {
