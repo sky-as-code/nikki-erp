@@ -50,7 +50,7 @@ func initIamDirectoryV1() error {
 		routeV1.GET("/groups/:id", groupRest.GetGroup, m.SmokeAuthz())
 		routeV1.GET("/groups", groupRest.SearchGroups, m.SmokeAuthz())
 		routeV1.POST("/groups/exists", groupRest.GroupExists, m.SmokeAuthz())
-		routeV1.POST("/groups/:group_id/manage-role-assignments", groupRest.ManageGroupRoleAssignments, m.SmokeAuthz())
+		routeV1.POST("/groups/:group_id/roles", groupRest.ManageGroupRoleAssignments, m.SmokeAuthz())
 		routeV1.POST("/groups/:group_id/manage-users", groupRest.ManageGroupUsers, m.SmokeAuthz())
 		routeV1.POST("/groups", groupRest.CreateGroup, m.SmokeAuthz())
 		routeV1.PATCH("/groups/:id", groupRest.UpdateGroup, m.SmokeAuthz())
@@ -83,7 +83,7 @@ func initIamDirectoryV1() error {
 		routeV1.GET("/users", userRest.SearchUsers, m.SmokeAuthz())
 		routeV1.POST("/users/exists", userRest.UserExists, m.SmokeAuthz())
 		routeV1.POST("/users/:id/archived", userRest.SetUserIsArchived, m.SmokeAuthz())
-		routeV1.POST("/users/:user_id/manage-role-assignments", userRest.ManageUserRoleAssignments, m.SmokeAuthz())
+		routeV1.POST("/users/:user_id/roles", userRest.ManageUserRoleAssignments, m.SmokeAuthz())
 		routeV1.POST("/users", userRest.CreateUser, m.SmokeAuthz())
 		// JSON Merge Patch (RFC 7396) semantics.
 		routeV1.PATCH("/users/:id", userRest.UpdateUser, m.SmokeAuthz())
@@ -130,8 +130,16 @@ func initIamAuthorizationV1() error {
 		v1.POST("/entitlements", entitlementRest.CreateEntitlement, m.SmokeAuthz())
 		v1.PUT("/entitlements/:id", entitlementRest.UpdateEntitlement, m.SmokeAuthz())
 
+		// Roles assigned to one principal. Registered here rather than in the directory block
+		// because they read the role schema and need roleRest, the same way
+		// GET /resources/:resource_id/actions is served by actionRest.
+		v1.GET("/users/:user_id/roles", roleRest.SearchUserRoles, m.SmokeAuthz())
+		v1.GET("/groups/:group_id/roles", roleRest.SearchGroupRoles, m.SmokeAuthz())
+
 		v1.DELETE("/roles/:id", roleRest.DeleteRole, m.SmokeAuthz())
 		v1.GET("/roles/meta/schema", roleRest.GetModelSchema, m.SmokeAuthz())
+		// Must precede /roles/:id so "describe" is not bound as an id.
+		v1.GET("/roles/describe", roleRest.DescribeRoles, m.SmokeAuthz())
 		v1.GET("/roles/:id", roleRest.GetRole, m.SmokeAuthz())
 		v1.GET("/roles", roleRest.SearchRoles, m.SmokeAuthz())
 		v1.PATCH("/roles/:id", roleRest.UpdateRole, m.SmokeAuthz())

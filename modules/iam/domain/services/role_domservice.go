@@ -15,6 +15,7 @@ import (
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itEnt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/entitlement"
+	itOrgz "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/orgunit"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 )
@@ -22,6 +23,8 @@ import (
 func NewRoleDomainServiceImpl(
 	roleRepo itRole.RoleRepository,
 	entitlementRepo itEnt.EntitlementRepository,
+	orgRepo itOrgz.OrganizationRepository,
+	orgUnitRepo itOrg.OrgUnitRepository,
 	orgUnitSvc itOrg.OrgUnitDomainService,
 	cqrsBus cqrs.CqrsBus,
 ) itRole.RoleDomainService {
@@ -29,6 +32,8 @@ func NewRoleDomainServiceImpl(
 		cqrsBus:         cqrsBus,
 		roleRepo:        roleRepo,
 		entitlementRepo: entitlementRepo,
+		orgRepo:         orgRepo,
+		orgUnitRepo:     orgUnitRepo,
 		orgUnitSvc:      orgUnitSvc,
 	}
 }
@@ -37,7 +42,11 @@ type RoleDomainServiceImpl struct {
 	cqrsBus         cqrs.CqrsBus
 	roleRepo        itRole.RoleRepository
 	entitlementRepo itEnt.EntitlementRepository
-	orgUnitSvc      itOrg.OrgUnitDomainService
+	// orgRepo and orgUnitRepo exist only to resolve entitlement scope display names in
+	// DescribeRoles; role CRUD does not touch them.
+	orgRepo     itOrgz.OrganizationRepository
+	orgUnitRepo itOrg.OrgUnitRepository
+	orgUnitSvc  itOrg.OrgUnitDomainService
 }
 
 func (this *RoleDomainServiceImpl) CreateRole(
@@ -247,6 +256,85 @@ func (this *RoleDomainServiceImpl) SearchRoles(
 		Query:                  dyn.SearchQuery(query),
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
+}
+
+func (this *RoleDomainServiceImpl) SearchUserRoles(
+	ctx corectx.Context, query itRole.SearchUserRolesQuery, options ...corecrud.ServiceSearchOptions,
+) (result *itRole.SearchUserRolesResult, err error) {
+	opts := safe.GetOptional(options, corecrud.ServiceSearchOptions{})
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "search user roles"); e != nil {
+			err = e
+		}
+	}()
+	sanitized, cErrs := query.GetSchema().ValidateStruct(query)
+	if cErrs.Count() > 0 {
+		return &itRole.SearchUserRolesResult{ClientErrors: cErrs}, nil
+	}
+	query = *(sanitized.(*itRole.SearchUserRolesQuery))
+
+	return corecrud.Search[domain.Role](ctx, corecrud.SearchParam{
+		Action:                 "search user roles",
+		DbRepoGetter:           this.roleRepo,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
+		Query: dyn.SearchQuery{
+			Fields: assignedRoleFields(query.Fields),
+			Graph:  assignmentGraph(domain.RoleEdgeAssignedUsers, query.UserId, query.Graph),
+			Page:   query.Page,
+			Size:   query.Size,
+		},
+	})
+}
+
+func (this *RoleDomainServiceImpl) SearchGroupRoles(
+	ctx corectx.Context, query itRole.SearchGroupRolesQuery, options ...corecrud.ServiceSearchOptions,
+) (result *itRole.SearchGroupRolesResult, err error) {
+	opts := safe.GetOptional(options, corecrud.ServiceSearchOptions{})
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "search group roles"); e != nil {
+			err = e
+		}
+	}()
+	sanitized, cErrs := query.GetSchema().ValidateStruct(query)
+	if cErrs.Count() > 0 {
+		return &itRole.SearchGroupRolesResult{ClientErrors: cErrs}, nil
+	}
+	query = *(sanitized.(*itRole.SearchGroupRolesQuery))
+
+	return corecrud.Search[domain.Role](ctx, corecrud.SearchParam{
+		Action:                 "search group roles",
+		DbRepoGetter:           this.roleRepo,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
+		Query: dyn.SearchQuery{
+			Fields: assignedRoleFields(query.Fields),
+			Graph:  assignmentGraph(domain.RoleEdgeAssignedGroups, query.GroupId, query.Graph),
+			Page:   query.Page,
+			Size:   query.Size,
+		},
+	})
+}
+
+// assignedRoleFields defaults an assigned-role listing to the id and name the assignment UI
+// needs, while still honouring an explicit field list from the caller.
+func assignedRoleFields(fields []string) []string {
+	if len(fields) > 0 {
+		return fields
+	}
+	return []string{basemodel.FieldId, domain.RoleFieldName}
+}
+
+// assignmentGraph ANDs "assigned to this principal" onto the caller's own graph. `linked` is
+// the operator for membership on a many edge: role<->user and role<->group are both
+// many-to-many through a junction table, so no column equality can express it.
+func assignmentGraph(edge string, principalId model.Id, caller *dmodel.SearchGraph) *dmodel.SearchGraph {
+	cond := dmodel.NewCondition(edge, dmodel.Linked, principalId)
+	graph := dmodel.NewSearchGraph()
+	if caller == nil {
+		graph.Condition(cond)
+		return graph
+	}
+	graph.And(*dmodel.NewSearchNode().Condition(cond), *caller.ToSearchNode())
+	return graph
 }
 
 func (this *RoleDomainServiceImpl) SetRoleIsArchived(

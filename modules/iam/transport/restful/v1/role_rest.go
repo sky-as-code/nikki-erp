@@ -7,6 +7,7 @@ import (
 	"go.uber.org/dig"
 
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
+	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/modules/core/httpserver"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	it "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
@@ -73,6 +74,42 @@ func (this RoleRest) SearchRoles(echoCtx *echo.Context) (err error) {
 		"search roles",
 		echoCtx,
 		this.RoleSvc.SearchRoles,
+	)
+}
+
+// SearchUserRoles serves GET /users/:user_id/roles. It lives on RoleRest rather than UserRest
+// because it searches the role schema, mirroring how GET /resources/:resource_id/actions is
+// served by ActionRest.
+func (this RoleRest) SearchUserRoles(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeSearch[SearchUserRolesRequest, SearchUserRolesResponse, domain.Role](
+		"search user roles",
+		echoCtx,
+		this.RoleSvc.SearchUserRoles,
+	)
+}
+
+func (this RoleRest) SearchGroupRoles(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeSearch[SearchGroupRolesRequest, SearchGroupRolesResponse, domain.Role](
+		"search group roles",
+		echoCtx,
+		this.RoleSvc.SearchGroupRoles,
+	)
+}
+
+func (this RoleRest) DescribeRoles(echoCtx *echo.Context) (err error) {
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "handle REST describe roles"); e != nil {
+			err = e
+		}
+	}()
+	// skipNotFoundError: an empty role list is a valid answer, not a 404.
+	return httpserver.ServeRequest2[DescribeRolesRequest, DescribeRolesResponse](
+		echoCtx,
+		this.RoleSvc.DescribeRoles,
+		httpserver.ItsMeMario,
+		httpserver.ItsMeMario,
+		httpserver.JsonOk,
+		true,
 	)
 }
 
