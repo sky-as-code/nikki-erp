@@ -112,6 +112,16 @@ type ModelSchema struct {
 	// where exactly one must be non-empty in validated input. Zero or more than one non-empty
 	// in that group yields client errors. Schemas may define multiple groups.
 	exclusiveRequiredFieldGroups [][]string
+
+	// recordLabelField: the field whose value identifies a record to a human. It is the primary text
+	// shown wherever a record of this model stands in for itself rather than being fully displayed:
+	// relation pickers, search results, breadcrumbs. Clients that must label a record read this
+	// rather than guessing at a conventional field name.
+	recordLabelField string
+
+	// recordSubLabelField: an optional secondary field rendered beneath the main label, to tell apart
+	// records that share one — an email under a display name, for instance. Empty when unneeded.
+	recordSubLabelField string
 }
 
 // M2mPeerLink holds junction and FK-prefix metadata for a finalized many-to-many edge from the
@@ -156,6 +166,18 @@ func (this ModelSchema) Label() model.LangJson {
 
 func (this ModelSchema) Description() model.LangJson {
 	return this.description
+}
+
+// RecordLabelField is the field identifying a record of this model to a human. Empty when the
+// schema has not declared one, in which case a client must fall back to the primary key.
+func (this ModelSchema) RecordLabelField() string {
+	return this.recordLabelField
+}
+
+// RecordSubLabelField is the optional secondary field shown beneath the main label. Empty when
+// the schema declares none.
+func (this ModelSchema) RecordSubLabelField() string {
+	return this.recordSubLabelField
 }
 
 func (this ModelSchema) Fields() map[string]*ModelField {
@@ -432,19 +454,25 @@ func (this *ModelSchema) ToSimplized() any {
 	}
 
 	return struct {
-		Name          string         `json:"name"`
-		Etag          string         `json:"etag"`
-		Fields        map[string]any `json:"fields"`
-		Label         model.LangJson `json:"label"`
-		FromRelations []any          `json:"from_relations,omitempty"`
-		ToRelations   []any          `json:"to_relations,omitempty"`
+		Name                         string         `json:"name"`
+		Etag                         string         `json:"etag"`
+		ExclusiveRequiredFieldGroups [][]string     `json:"exclusive_required_field_groups,omitempty"`
+		RecordLabelField             string         `json:"record_label_field,omitempty"`
+		RecordSubLabelField          string         `json:"record_sub_label_field,omitempty"`
+		Fields                       map[string]any `json:"fields"`
+		Label                        model.LangJson `json:"label"`
+		FromRelations                []any          `json:"from_relations,omitempty"`
+		ToRelations                  []any          `json:"to_relations,omitempty"`
 	}{
-		Name:          this.Name(),
-		Etag:          string(this.Etag()),
-		Fields:        simplizedFields,
-		Label:         this.Label(),
-		ToRelations:   array.Map(this.ToRelations(), func(relation ModelRelation) any { return relation.ToSimplized() }),
-		FromRelations: array.Map(this.FromRelations(), func(relation ModelRelation) any { return relation.ToSimplized() }),
+		Name:                         this.Name(),
+		Etag:                         string(this.Etag()),
+		ExclusiveRequiredFieldGroups: this.exclusiveRequiredFieldGroups,
+		RecordLabelField:             this.recordLabelField,
+		RecordSubLabelField:          this.recordSubLabelField,
+		Fields:                       simplizedFields,
+		Label:                        this.Label(),
+		ToRelations:                  array.Map(this.ToRelations(), func(relation ModelRelation) any { return relation.ToSimplized() }),
+		FromRelations:                array.Map(this.FromRelations(), func(relation ModelRelation) any { return relation.ToSimplized() }),
 	}
 }
 

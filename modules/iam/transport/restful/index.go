@@ -8,6 +8,8 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	v1 "github.com/sky-as-code/nikki-erp/modules/iam/transport/restful/v1"
 )
 
@@ -76,6 +78,11 @@ func initIamDirectoryV1() error {
 
 		routeV1.GET("/me/context", userRest.GetUserContext, m.SmokeAuthz())
 
+		// User is the pilot resource of the dynamic resource engine. Its engine-served
+		// endpoints live at /v1/iam/iam_user and coexist with the hand-written /v1/iam/users
+		// ones below, which stay the supported API until the migration is decided.
+		registerUserEngineRoutes(routeV1)
+
 		routeV1.DELETE("/users/:id", userRest.DeleteUser, m.SmokeAuthz())
 		routeV1.GET("/users/meta/schema", userRest.GetModelSchema, m.SmokeAuthz())
 		// routeV1.GET("/users/getOne", userRest.GetUser, m.SmokeAuthz())
@@ -90,6 +97,17 @@ func initIamDirectoryV1() error {
 
 		return nil
 	})
+}
+
+// registerUserEngineRoutes exposes the user resource engine over HTTP.
+// It is a no-op when the engine is missing, so that a build which drops the pilot
+// still serves the hand-written user endpoints.
+func registerUserEngineRoutes(routeV1 *echo.Group) {
+	userEngine, exists := dynamicresource.Registry().GetEngine(models.UserSchemaName)
+	if !exists {
+		return
+	}
+	userEngine.RestApi().RegisterRoutes(routeV1, m.SmokeAuthz())
 }
 
 func initIamAuthorizationV1() error {

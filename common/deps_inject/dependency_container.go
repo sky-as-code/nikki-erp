@@ -6,6 +6,8 @@ import (
 	"go.uber.org/dig"
 )
 
+// See dig's documentation for usage: https://pkg.go.dev/go.uber.org/dig
+
 var container *dig.Container = dig.New()
 
 func Container() *dig.Container {
@@ -21,6 +23,12 @@ func Register(constructors ...any) error {
 		}
 	}
 	return err
+}
+
+// RegisterNamed registers a constructor whose result is retrievable only by the given name.
+// Consumers must declare a dig.In param struct field tagged `name:"<name>"`.
+func RegisterNamed(name string, constructor any) error {
+	return container.Provide(constructor, dig.Name(name))
 }
 
 func Invoke(function any) error {

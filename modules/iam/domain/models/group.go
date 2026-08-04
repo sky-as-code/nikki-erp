@@ -59,6 +59,7 @@ func GroupSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(GroupSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", GroupSchemaName)).
 		TableName("iam_groups").
+		RecordLabelField(GroupFieldName).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(

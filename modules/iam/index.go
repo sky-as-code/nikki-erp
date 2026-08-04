@@ -34,6 +34,7 @@ func (*IamModule) Name() string {
 // Deps implements InCodeModule.
 func (*IamModule) Deps() []string {
 	return []string{
+		"dynamicresource",
 		"settings",
 	}
 }
@@ -50,6 +51,11 @@ func (*IamModule) Version() semver.SemVer {
 
 // Init implements InCodeModule.
 func (*IamModule) Init() error {
+	// The resource engines must exist before the transport layer registers their routes.
+	if err := initDynamicEngines(); err != nil {
+		return err
+	}
+
 	err := errors.Join(
 		external.InitExternalServices(),
 		repo.InitRepositories(),
