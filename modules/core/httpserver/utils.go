@@ -192,6 +192,80 @@ func ServeRequestDynamic[THttpResp any, TSvcCommand any, TSvcResultData any](
 	return jsonSuccessFn(echoCtx, response)
 }
 
+type ModelBinding interface {
+	SetFieldData(dmodel.DynamicFields)
+}
+
+func ServeRequestFormDataDynamic[TBinding ModelBinding, THttpResp any, TSvcCommand, TSvcResultData any](
+	echoCtx *echo.Context,
+	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
+	requestToCommandFn func(request TBinding) TSvcCommand,
+	resultToResponseFn func(resultData TSvcResultData) THttpResp,
+	jsonSuccessFn func(*echo.Context, any) error,
+	skipNotFoundError ...bool,
+) error {
+	var request TBinding
+	var bindingObj any
+
+	t := reflect.TypeOf(request)
+
+	switch t.Kind() {
+	case reflect.Struct:
+		bindingObj = &request
+
+	case reflect.Pointer:
+		if t.Elem().Kind() != reflect.Struct {
+			// case **SomeType
+			panic("TBinding must be a struct or *struct")
+		}
+
+		// allocate
+		request = reflect.New(t.Elem()).Interface().(TBinding)
+		bindingObj = request
+	default:
+		panic("TBinding must be a struct or *struct")
+	}
+
+	reqFields := make(map[string]any)
+	if err := echoCtx.Bind(&reqFields); err != nil {
+		_, isHttpErr := err.(*echo.HTTPError)
+		if isHttpErr {
+			return JsonBadRequest(
+				echoCtx,
+				[]any{ft.NewAnonymousValidationError(ft.ErrorKey("err_malformed_request"), "malformed request")},
+			)
+		}
+		return err
+	}
+
+	request.SetFieldData(reqFields)
+
+	err := BindFormFile(echoCtx, bindingObj)
+	if err != nil {
+		return err
+	}
+
+	cmd := requestToCommandFn(request)
+	reqCtx := echoCtx.Request().Context().(corectx.Context)
+	result, err := serviceFn(reqCtx, cmd)
+
+	if err != nil {
+		return err
+	}
+
+	if result.ClientErrors != nil && result.ClientErrors.Count() > 0 {
+		return JsonBadRequest(echoCtx, result.ClientErrors)
+	}
+
+	if !result.HasData && (len(skipNotFoundError) == 0 || !skipNotFoundError[0]) {
+		cErrs := ft.ClientErrors{*ft.NewAnonymousNotFoundError()}
+		return JsonBadRequest(echoCtx, cErrs)
+	}
+
+	response := resultToResponseFn(result.Data)
+	return jsonSuccessFn(echoCtx, response)
+}
+
 func ServeRequestFormData[TBinding any, THttpResp any, TSvcCommand, TSvcResultData any](
 	echoCtx *echo.Context,
 	serviceFn func(ctx corectx.Context, cmd TSvcCommand) (*dyn.OpResult[TSvcResultData], error),
@@ -201,18 +275,33 @@ func ServeRequestFormData[TBinding any, THttpResp any, TSvcCommand, TSvcResultDa
 	skipNotFoundError ...bool,
 ) error {
 	var request TBinding
+	var bindingObj any
 
-	requestType := reflect.TypeOf(request)
-	if requestType.Kind() != reflect.Struct {
-		panic("TBinding must be a struct")
+	t := reflect.TypeOf(request)
+
+	switch t.Kind() {
+	case reflect.Struct:
+		bindingObj = &request
+
+	case reflect.Pointer:
+		if t.Elem().Kind() != reflect.Struct {
+			// case **SomeType
+			panic("TBinding must be a struct or *struct")
+		}
+
+		// allocate
+		request = reflect.New(t.Elem()).Interface().(TBinding)
+		bindingObj = request
+	default:
+		panic("TBinding must be a struct or *struct")
 	}
 
-	err := echoCtx.Bind(&request)
+	err := echoCtx.Bind(bindingObj)
 	if err != nil {
 		return err
 	}
 
-	err = BindFormFile(echoCtx, &request)
+	err = BindFormFile(echoCtx, bindingObj)
 	if err != nil {
 		return err
 	}
