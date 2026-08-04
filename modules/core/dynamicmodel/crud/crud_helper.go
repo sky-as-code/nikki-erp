@@ -984,22 +984,13 @@ func checkExistenceAndEtag(
 	return true, dbRecord, nil
 }
 
-func SearchAll[TDomain any, TDomainPtr dyn.DynamicModelPtr[TDomain]](ctx corectx.Context, param SearchParam) (*dyn.OpResult[[]TDomain], error) {
+func SearchAll[TDomain any](pagedFn func(page int, size int) (*dyn.OpResult[dyn.PagedResultData[TDomain]], error)) (*dyn.OpResult[[]TDomain], error) {
 	page := 0
 	size := model.MODEL_RULE_PAGE_MAX_SIZE
 	res := &dyn.OpResult[[]TDomain]{}
 
 	for {
-		queryRes, err := Search[TDomain, TDomainPtr](ctx, SearchParam{
-			Action:       param.Action,
-			DbRepoGetter: param.DbRepoGetter,
-			Query: dyn.SearchQuery{
-				Fields: param.Query.Fields,
-				Graph:  param.Query.Graph,
-				Page:   page,
-				Size:   size,
-			},
-		})
+		queryRes, err := pagedFn(page, size)
 		if err != nil {
 			return nil, err
 		}
