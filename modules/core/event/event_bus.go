@@ -4,15 +4,12 @@ import (
 	"context"
 	stdErrors "errors"
 	"fmt"
-	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/ThreeDotsLabs/watermill"
-	"github.com/ThreeDotsLabs/watermill-redisstream/pkg/redisstream"
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 	"github.com/ThreeDotsLabs/watermill/message"
-	"github.com/redis/go-redis/v9"
 	"go.bryk.io/pkg/errors"
 	"go.uber.org/dig"
 
@@ -20,6 +17,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	c "github.com/sky-as-code/nikki-erp/modules/core/constants"
 	"github.com/sky-as-code/nikki-erp/modules/core/logging"
+	"github.com/sky-as-code/nikki-erp/modules/core/message/transports"
 )
 
 const (
@@ -35,53 +33,23 @@ type EventBusParams struct {
 
 	Config config.ConfigService
 	Logger logging.LoggerService
+
+	Transport *transports.MessageTransport `name:"mqtt"`
 }
 
-func NewRedisEventBus(params EventBusParams) (EventBus, error) {
-	host := params.Config.GetStr(c.EventBusRedisHost)
-	port := params.Config.GetStr(c.EventBusRedisPort)
-	password := params.Config.GetStr(c.EventBusRedisPassword)
-	db := params.Config.GetInt(c.EventBusRedisDB)
-
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", host, port),
-		Password: password,
-		DB:       db,
-	})
-
-	publisher, err := redisstream.NewPublisher(
-		redisstream.PublisherConfig{
-			Client: redisClient,
-		},
-		watermill.NewSlogLogger(params.Logger.InnerLogger().(*slog.Logger)),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create Redis publisher")
-	}
-
-	subscriber, err := redisstream.NewSubscriber(
-		redisstream.SubscriberConfig{
-			Client:        redisClient,
-			ConsumerGroup: "event_bus_consumer_group",
-		},
-		watermill.NewSlogLogger(params.Logger.InnerLogger().(*slog.Logger)),
-	)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create Redis subscriber")
-	}
-
+func NewEventBus(params EventBusParams) (EventBus, error) {
 	maxTimeoutSec := params.Config.GetInt(c.EventRequestTimeoutSecs, DefaultEventTimeoutSecs)
 
-	return &RedisEventBus{
+	return &EventBusImpl{
 		logger:     params.Logger,
-		publisher:  publisher,
-		subscriber: subscriber,
+		publisher:  params.Transport.Publisher,
+		subscriber: params.Transport.Subscriber,
 		maxTimeout: time.Duration(maxTimeoutSec) * time.Second,
 		marshaler:  cqrs.JSONMarshaler{GenerateName: cqrs.NamedStruct(cqrs.StructName)},
 	}, nil
 }
 
-type RedisEventBus struct {
+type EventBusImpl struct {
 	logger        logging.LoggerService
 	publisher     message.Publisher
 	subscriber    message.Subscriber
@@ -90,7 +58,7 @@ type RedisEventBus struct {
 	marshaler     cqrs.CommandEventMarshaler
 }
 
-func (bus *RedisEventBus) PublishRequest(ctx context.Context, request EventRequest) (err error) {
+func (bus *EventBusImpl) PublishRequest(ctx context.Context, request EventRequest) (err error) {
 	defer func() {
 		err = ft.RecoverPanicFailedTo(recover(), "publish event")
 	}()
@@ -118,7 +86,7 @@ func (bus *RedisEventBus) PublishRequest(ctx context.Context, request EventReque
 	return nil
 }
 
-func (bus *RedisEventBus) PublishRequestWaitReply(ctx context.Context, request EventRequest, DataReply any) (reply *Reply[any], err error) {
+func (bus *EventBusImpl) PublishRequestWaitReply(ctx context.Context, request EventRequest, DataReply any) (reply *Reply[any], err error) {
 	ctx, cancelSubscription := context.WithCancel(ctx)
 
 	defer func() {
@@ -138,7 +106,7 @@ func (bus *RedisEventBus) PublishRequestWaitReply(ctx context.Context, request E
 	}
 }
 
-func (bus *RedisEventBus) subscribeReply(ctx context.Context, request EventRequest, result any, cancelSubscription context.CancelFunc) (<-chan *Reply[any], <-chan error) {
+func (bus *EventBusImpl) subscribeReply(ctx context.Context, request EventRequest, result any, cancelSubscription context.CancelFunc) (<-chan *Reply[any], <-chan error) {
 	replyChan := make(chan *Reply[any])
 	errChan := make(chan error)
 
@@ -177,7 +145,7 @@ func (bus *RedisEventBus) subscribeReply(ctx context.Context, request EventReque
 	return replyChan, errChan
 }
 
-func (bus *RedisEventBus) SubscribeRequest(ctx context.Context, request EventRequest, result any) (requestChan chan any, err error) {
+func (bus *EventBusImpl) SubscribeRequest(ctx context.Context, request EventRequest, result any) (requestChan chan any, err error) {
 	defer func() {
 		err = ft.RecoverPanicFailedTo(recover(), "publish reply")
 	}()
@@ -230,7 +198,7 @@ func (bus *RedisEventBus) SubscribeRequest(ctx context.Context, request EventReq
 }
 
 // PublishReply publishes a reply to the specified reply topic
-func (bus *RedisEventBus) PublishReply(ctx context.Context, request EventRequest, reply *Reply[any]) (err error) {
+func (bus *EventBusImpl) PublishReply(ctx context.Context, request EventRequest, reply *Reply[any]) (err error) {
 	defer func() {
 		err = ft.RecoverPanicFailedTo(recover(), "publish reply")
 	}()
@@ -251,7 +219,7 @@ func (bus *RedisEventBus) PublishReply(ctx context.Context, request EventRequest
 }
 
 // Close closes the event bus and all its subscriptions
-func (bus *RedisEventBus) Close() error {
+func (bus *EventBusImpl) Close() error {
 	defer func() {
 		if r := recover(); r != nil {
 			err := fmt.Errorf("panic in Close: %v", r)

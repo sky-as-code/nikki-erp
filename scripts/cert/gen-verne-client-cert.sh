@@ -2,8 +2,8 @@
 set -e
 
 set -a
-PKI_DIR="$CWD/pki/client-cert"
-PROFILE="$CWD/profiles/client-cert.env.sh"
+PKI_DIR="$CWD/pki/verne-client-cert"
+PROFILE="$CWD/profiles/verne-client-cert.env.sh"
 source $PROFILE
 set +a
 
@@ -17,19 +17,19 @@ openssl genpkey \
 openssl req -new \
   -key $PKI_DIR/$CN.key \
   -out $PKI_DIR/$CN.csr \
-  -config $SDIR/openssl-client-cert.cnf
+  -config $SDIR/openssl-verne-client-cert.cnf
 
 openssl x509 -req \
   -in $PKI_DIR/$CN.csr \
-  -CA $CWD/pki/client-ca/$CA_CN.crt \
-  -CAkey $CWD/pki/client-ca/$CA_CN.key \
+  -CA $CWD/pki/verne-client-ca/$CA_CN.crt \
+  -CAkey $CWD/pki/verne-client-ca/$CA_CN.key \
   -CAcreateserial \
   -out $PKI_DIR/$CN.crt \
   -days $DAYS \
-  -extfile $SDIR/openssl-client-cert.cnf \
+  -extfile $SDIR/openssl-verne-client-cert.cnf \
   -extensions v3_client
 
-cat $PKI_DIR/$CN.crt $CWD/pki/client-ca/$CA_CN.crt > $PKI_DIR/$CN-chain.crt && \
+cat $PKI_DIR/$CN.crt $CWD/pki/verne-client-ca/$CA_CN.crt > $PKI_DIR/$CN-chain.crt && \
 rm $PKI_DIR/$CN.crt && \
 mv $PKI_DIR/$CN-chain.crt $PKI_DIR/$CN.crt
 

@@ -35,7 +35,7 @@ CORE:
     REDIS_DB: 1
     # Redis password can be specified in env var CORE_EVENT_REDIS_PASSWORD or
     # in config item CORE.EVENT.REDIS_PASSWORD_FILE which contains a secret file path.
-    REDIS_PASSWORD: ""
+    REDIS_PASSWORD: "nikki_password"
   EVENT:
     REDIS_HOST: localhost
     # A comma-separated list of Redis hosts for cluster mode
@@ -99,7 +99,13 @@ CORE:
     REDIS_DB: 1
     # Redis password can be specified in env var CORE_EVENT_REDIS_PASSWORD or
     # in config item CORE.EVENT.REDIS_PASSWORD_FILE which contains a secret file path.
-    REDIS_PASSWORD: ""
+    REDIS_PASSWORD: "nikki_password"
+
+    VERNE_HOST: localhost
+    VERNE_PORT: 1884
+    VERNE_SCHEME: tcp
+    VERNE_USERNAME: "nikki_username"
+    VERNE_PASSWORD: "nikki_passwd"
   TOKEN:
     # Secret key for JWT token signing and verification
     # IMPORTANT: Override this in local.env or production environment
@@ -114,6 +120,8 @@ CORE:
     # If using HS256, ACCESS_TOKEN_SHA256_SECRET must be specified.
     # If using RS256, ACCESS_TOKEN_RSA_PUBLIC_KEY and ACCESS_TOKEN_RSA_PRIVATE_KEY must be specified.
     ACCESS_TOKEN_ALGORITHM: "EdDSA"
+    # Comma separated list of target API Gateways: extapi | intapi
+    ACCESS_TOKEN_AUDIENCE: "extapi"
     ACCESS_TOKEN_EXPIRY_MINUTES: 3
     ACCESS_TOKEN_ISSUER: "nikki-erp"
     ACCESS_TOKEN_HTTP_HEADER_NAME: "Authorization"
