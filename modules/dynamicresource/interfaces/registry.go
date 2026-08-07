@@ -1,5 +1,16 @@
 package interfaces
 
+// NewEngineOptions customizes an engine at creation time.
+// The zero value is valid and reproduces the default engine behavior.
+type NewEngineOptions struct {
+	// DefaultSearchFields is the field list a search returns when it specifies neither
+	// fields nor a resolvable view. When empty, every column of the schema is returned.
+	//
+	// Primary key fields are always included by the query builder, so listing them here
+	// is redundant.
+	DefaultSearchFields []string
+}
+
 // DynamicResourceEngineRegistry owns every resource engine of the running application.
 // It is a process-wide singleton, reached through dynamicresource.Registry().
 //
@@ -10,7 +21,8 @@ package interfaces
 type DynamicResourceEngineRegistry interface {
 	// NewEngine creates and registers an engine for the given dynamic-model schema name.
 	// It fails when the schema is unknown or an engine for it already exists.
-	NewEngine(schemaName string) (DynamicResourceEngine, error)
+	// Only the first NewEngineOptions is used, the rest are ignored.
+	NewEngine(schemaName string, options ...NewEngineOptions) (DynamicResourceEngine, error)
 
 	// GetEngine returns the engine registered for the given schema name.
 	GetEngine(schemaName string) (DynamicResourceEngine, bool)

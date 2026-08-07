@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -131,4 +132,119 @@ func TestDefineBuiltinActions(t *testing.T) {
 		ActionName:  it.ActionCreate,
 		MainProcess: noopProcess,
 	}))
+}
+
+func TestActionTypeHttpMethod(t *testing.T) {
+	assert.Equal(t, http.MethodPost, it.ActionTypeCreate.HttpMethod())
+	assert.Equal(t, http.MethodDelete, it.ActionTypeDelete.HttpMethod())
+	assert.Equal(t, http.MethodGet, it.ActionTypeRead.HttpMethod())
+	assert.Equal(t, http.MethodPatch, it.ActionTypeUpdatePatch.HttpMethod())
+	assert.Equal(t, http.MethodPut, it.ActionTypeUpdateReplace.HttpMethod())
+
+	// Create and Generic deliberately share POST: Generic is for operations on a resource
+	// that create nothing, such as "exists" or "send_invitation".
+	assert.Equal(t, http.MethodPost, it.ActionTypeGeneric.HttpMethod())
+
+	assert.Equal(t, "", it.ActionType("Nonsense").HttpMethod())
+	assert.False(t, it.ActionType("Nonsense").IsValid())
+	assert.True(t, it.ActionTypeGeneric.IsValid())
+}
+
+func TestDefineActionRequiresActionTypeWithRestPath(t *testing.T) {
+	engine := newTestEngine()
+
+	err := engine.DefineAction(it.DynamicActionDefinition{
+		ActionName:  "no_type",
+		RestPath:    ":id/thing",
+		MainProcess: noopProcess,
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "requires an ActionType")
+}
+
+func TestDefineActionRejectsInvalidActionType(t *testing.T) {
+	engine := newTestEngine()
+
+	err := engine.DefineAction(it.DynamicActionDefinition{
+		ActionName:  "bad_type",
+		ActionType:  it.ActionType("Patch"),
+		RestPath:    ":id",
+		MainProcess: noopProcess,
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid ActionType")
+}
+
+// The word separator in a RestPath is "_", so a hyphen earns a message that says so
+// rather than a bare regex mismatch.
+func TestDefineActionRejectsHyphenatedRestPath(t *testing.T) {
+	engine := newTestEngine()
+
+	err := engine.DefineAction(it.DynamicActionDefinition{
+		ActionName:  "hyphenated",
+		ActionType:  it.ActionTypeGeneric,
+		RestPath:    ":id/send-invitation",
+		MainProcess: noopProcess,
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "hyphens are not allowed")
+}
+
+func TestDefineActionRejectsMalformedRestPath(t *testing.T) {
+	engine := newTestEngine()
+
+	err := engine.DefineAction(it.DynamicActionDefinition{
+		ActionName:  "malformed",
+		ActionType:  it.ActionTypeRead,
+		RestPath:    "/leading/slash",
+		MainProcess: noopProcess,
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "malformed RestPath")
+}
+
+// Echo's Group.Add panics on a duplicate route, so a clash must surface here as a wiring
+// error instead of taking the process down at startup.
+func TestDefineActionRejectsDuplicateRoute(t *testing.T) {
+	engine := newTestEngine()
+
+	assert.NoError(t, engine.DefineAction(it.DynamicActionDefinition{
+		ActionName:  "first",
+		ActionType:  it.ActionTypeGeneric,
+		RestPath:    ":id/archived",
+		MainProcess: noopProcess,
+	}))
+
+	// A different action type that maps to the same HTTP method still collides.
+	err := engine.DefineAction(it.DynamicActionDefinition{
+		ActionName:  "second",
+		ActionType:  it.ActionTypeCreate,
+		RestPath:    ":id/archived",
+		MainProcess: noopProcess,
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "already taken by action 'first'")
+
+	// The same path under a different method is free.
+	assert.NoError(t, engine.DefineAction(it.DynamicActionDefinition{
+		ActionName:  "third",
+		ActionType:  it.ActionTypeRead,
+		RestPath:    ":id/archived",
+		MainProcess: noopProcess,
+	}))
+}
+
+// An action with neither ActionType nor RestPath stays off the REST surface, which is how
+// get_by_unique and any engine-only action are declared.
+func TestDefineActionAllowsUnexposedAction(t *testing.T) {
+	engine := newTestEngine()
+
+	assert.NoError(t, engine.DefineAction(it.DynamicActionDefinition{
+		ActionName:  "engine_only",
+		MainProcess: noopProcess,
+	}))
+
+	definition, exists := engine.Action("engine_only")
+	assert.True(t, exists)
+	assert.Equal(t, it.ActionType(""), definition.ActionType)
 }

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"sort"
+	"strings"
 	"sync"
 
 	"go.bryk.io/pkg/errors"
@@ -103,6 +104,9 @@ func (this *DynamicResourceEngineImpl) DefineAction(definition it.DynamicActionD
 	if definition.MainProcess == nil {
 		return errors.Errorf("action '%s' requires a MainProcess function", definition.ActionName)
 	}
+	if err := validateRestFields(definition); err != nil {
+		return err
+	}
 
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
@@ -113,7 +117,70 @@ func (this *DynamicResourceEngineImpl) DefineAction(definition it.DynamicActionD
 			definition.ActionName, this.ResourceName(),
 		)
 	}
+	if err := this.assertRouteFree(definition); err != nil {
+		return err
+	}
 	this.actions[definition.ActionName] = definition
+	return nil
+}
+
+// validateRestFields checks the REST surface of a definition. An action opts into the REST
+// surface by setting ActionType or RestPath; doing so makes a valid ActionType mandatory,
+// because it is what decides the HTTP method.
+func validateRestFields(definition it.DynamicActionDefinition) error {
+	if definition.ActionType == "" && definition.RestPath == "" {
+		return nil
+	}
+	if definition.ActionType == "" {
+		return errors.Errorf(
+			"action '%s' declares a RestPath and therefore requires an ActionType",
+			definition.ActionName,
+		)
+	}
+	if !definition.ActionType.IsValid() {
+		return errors.Errorf(
+			"action '%s' has invalid ActionType '%s'",
+			definition.ActionName, definition.ActionType,
+		)
+	}
+	if definition.RestPath == "" {
+		return nil
+	}
+	if strings.Contains(definition.RestPath, "-") {
+		return errors.Errorf(
+			"action '%s' has RestPath '%s': the word separator is '_', hyphens are not allowed",
+			definition.ActionName, definition.RestPath,
+		)
+	}
+	if !it.RestPathRegex.MatchString(definition.RestPath) {
+		return errors.Errorf(
+			"action '%s' has malformed RestPath '%s'",
+			definition.ActionName, definition.RestPath,
+		)
+	}
+	return nil
+}
+
+// assertRouteFree rejects a second action claiming an already-taken (method, path) pair.
+// Echo's Group.Add panics on a duplicate route, so catching the clash here turns a startup
+// panic into a wiring error naming both actions. Callers must hold the lock.
+func (this *DynamicResourceEngineImpl) assertRouteFree(definition it.DynamicActionDefinition) error {
+	if definition.ActionType == "" {
+		return nil
+	}
+
+	method := definition.ActionType.HttpMethod()
+	for name, existing := range this.actions {
+		if name == definition.ActionName || existing.ActionType == "" {
+			continue
+		}
+		if existing.ActionType.HttpMethod() == method && existing.RestPath == definition.RestPath {
+			return errors.Errorf(
+				"action '%s' claims route '%s /%s' already taken by action '%s' on resource '%s'",
+				definition.ActionName, method, definition.RestPath, name, this.ResourceName(),
+			)
+		}
+	}
 	return nil
 }
 
@@ -134,7 +201,15 @@ func (this *DynamicResourceEngineImpl) ModifyAction(delta it.DynamicActionDelta)
 		)
 	}
 
-	this.actions[delta.ActionName] = mergeActionDelta(definition, delta)
+	merged := mergeActionDelta(definition, delta)
+	if err := validateRestFields(merged); err != nil {
+		return err
+	}
+	if err := this.assertRouteFree(merged); err != nil {
+		return err
+	}
+
+	this.actions[delta.ActionName] = merged
 	return nil
 }
 
@@ -162,6 +237,15 @@ func (this *DynamicResourceEngineImpl) ActionNames() []string {
 func mergeActionDelta(
 	definition it.DynamicActionDefinition, delta it.DynamicActionDelta,
 ) it.DynamicActionDefinition {
+	if delta.ActionType != "" {
+		definition.ActionType = delta.ActionType
+	}
+	if delta.RestPath != "" {
+		definition.RestPath = delta.RestPath
+	}
+	if delta.RestHandler != nil {
+		definition.RestHandler = delta.RestHandler
+	}
 	if delta.ParamSchema != nil {
 		definition.ParamSchema = delta.ParamSchema
 	}

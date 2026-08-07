@@ -1,6 +1,11 @@
 package interfaces
 
 import (
+	"net/http"
+	"regexp"
+
+	"github.com/labstack/echo/v5"
+
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
@@ -21,6 +26,59 @@ const (
 	ActionExists      = "exists"
 	ActionGetSchema   = "get_schema"
 )
+
+// ActionType classifies an action for the REST engine, which maps it to an HTTP method.
+// It is mandatory as soon as an action declares a RestPath, and ignored otherwise.
+type ActionType string
+
+const (
+	ActionTypeCreate        = ActionType("Create")
+	ActionTypeDelete        = ActionType("Delete")
+	ActionTypeRead          = ActionType("Read")
+	ActionTypeUpdatePatch   = ActionType("UpdatePatch")
+	ActionTypeUpdateReplace = ActionType("UpdateReplace")
+
+	// ActionTypeGeneric is for actions whose semantics are none of the CRUD verbs —
+	// an operation on a resource, such as "exists" or "send_invitation".
+	// It maps to POST so the action may carry a request body.
+	ActionTypeGeneric = ActionType("Generic")
+)
+
+func (this ActionType) String() string {
+	return string(this)
+}
+
+// IsValid reports whether the value is one of the six declared action types.
+func (this ActionType) IsValid() bool {
+	switch this {
+	case ActionTypeCreate, ActionTypeDelete, ActionTypeRead,
+		ActionTypeUpdatePatch, ActionTypeUpdateReplace, ActionTypeGeneric:
+		return true
+	}
+	return false
+}
+
+// HttpMethod maps the action type to the HTTP verb the REST engine registers it under.
+// It returns an empty string for an invalid type; callers validate before registering.
+func (this ActionType) HttpMethod() string {
+	switch this {
+	case ActionTypeCreate, ActionTypeGeneric:
+		return http.MethodPost
+	case ActionTypeDelete:
+		return http.MethodDelete
+	case ActionTypeRead:
+		return http.MethodGet
+	case ActionTypeUpdatePatch:
+		return http.MethodPatch
+	case ActionTypeUpdateReplace:
+		return http.MethodPut
+	}
+	return ""
+}
+
+// RestPathRegex accepts slash-separated segments of [a-zA-Z0-9_], where a segment may be an
+// Echo path param (":name"). Hyphens are deliberately excluded: the word separator is "_".
+var RestPathRegex = regexp.MustCompile(`^:?[a-zA-Z0-9_]+(/:?[a-zA-Z0-9_]+)*$`)
 
 // Permission action codes, matching what the IAM application services assert.
 const (
@@ -80,6 +138,20 @@ type DynamicActionDefinition struct {
 	// ActionName is mandatory and unique within the engine.
 	ActionName string
 
+	// ActionType decides the HTTP method the REST engine registers this action under.
+	// Mandatory as soon as RestPath is set, and ignored when the action is not exposed.
+	ActionType ActionType
+
+	// RestPath is the route path relative to the engine's RoutePath(), and may carry Echo
+	// path params (":id"). An empty string means the resource base path itself.
+	// Segments are [a-zA-Z0-9_]: the word separator is "_", hyphens are rejected.
+	// Leave both this and ActionType unset to keep the action off the REST surface.
+	RestPath string
+
+	// RestHandler optionally replaces the generic handler. When set, it owns request
+	// binding and response shaping, and the engine only registers the route for it.
+	RestHandler echo.HandlerFunc
+
 	// ParamSchema is optional. When provided, params are validated against it and only
 	// then are BeforeValidation and AfterValidationSuccess invoked.
 	ParamSchema func() *dmodel.ModelSchema
@@ -112,6 +184,13 @@ type DynamicActionDefinition struct {
 type DynamicActionDelta struct {
 	// ActionName is mandatory and must name an existing action.
 	ActionName string
+
+	// ActionType, RestPath and RestHandler are plain values: a zero value keeps the existing
+	// one. Withdrawing an action from the REST surface is therefore not expressible through
+	// a delta — routes are registered once at startup, so there is nothing to withdraw from.
+	ActionType  ActionType
+	RestPath    string
+	RestHandler echo.HandlerFunc
 
 	ParamSchema func() *dmodel.ModelSchema
 

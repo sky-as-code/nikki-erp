@@ -87,7 +87,15 @@ func (this *engineRegistry) setCoreDeps(deps coreDeps) {
 
 // NewEngine builds an engine for the given schema, wires its three subengines and its
 // built-in actions, then registers it. Call it from a feature module's Init().
-func (this *engineRegistry) NewEngine(schemaName string) (it.DynamicResourceEngine, error) {
+// Only the first NewEngineOptions is used, the rest are ignored.
+func (this *engineRegistry) NewEngine(
+	schemaName string, options ...it.NewEngineOptions,
+) (it.DynamicResourceEngine, error) {
+	engineOpts := it.NewEngineOptions{}
+	if len(options) > 0 {
+		engineOpts = options[0]
+	}
+
 	schema := dmodel.GetSchema(schemaName)
 	if schema == nil {
 		return nil, errors.Errorf("no dynamic model schema named '%s'", schemaName)
@@ -108,7 +116,7 @@ func (this *engineRegistry) NewEngine(schemaName string) (it.DynamicResourceEngi
 	coreDeps := this.deps
 	this.mutex.Unlock()
 
-	newEngine, err := buildEngine(schema, coreDeps)
+	newEngine, err := buildEngine(schema, coreDeps, engineOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +130,9 @@ func (this *engineRegistry) NewEngine(schemaName string) (it.DynamicResourceEngi
 	return newEngine, nil
 }
 
-func buildEngine(schema *dmodel.ModelSchema, deps coreDeps) (it.DynamicResourceEngine, error) {
+func buildEngine(
+	schema *dmodel.ModelSchema, deps coreDeps, options it.NewEngineOptions,
+) (it.DynamicResourceEngine, error) {
 	repository := engine.NewDynamicResourceRepository(engine.NewRepositoryParam{
 		Client:        deps.Client,
 		ConfigSvc:     deps.ConfigSvc,
@@ -132,8 +142,9 @@ func buildEngine(schema *dmodel.ModelSchema, deps coreDeps) (it.DynamicResourceE
 		Schema:        schema,
 	})
 	service := engine.NewDynamicResourceService(engine.NewServiceParam{
-		Schema:     schema,
-		Repository: repository,
+		Schema:        schema,
+		Repository:    repository,
+		DefaultFields: options.DefaultSearchFields,
 	})
 
 	newEngine := engine.NewDynamicResourceEngine(engine.NewEngineParam{

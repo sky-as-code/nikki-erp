@@ -10,6 +10,7 @@ import (
 	c "github.com/sky-as-code/nikki-erp/modules/iam/constants"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/services"
+	"github.com/sky-as-code/nikki-erp/modules/iam/dynamicengines"
 	"github.com/sky-as-code/nikki-erp/modules/iam/infra/external"
 	repo "github.com/sky-as-code/nikki-erp/modules/iam/infra/repository"
 	"github.com/sky-as-code/nikki-erp/modules/iam/transport"
@@ -52,7 +53,7 @@ func (*IamModule) Version() semver.SemVer {
 // Init implements InCodeModule.
 func (*IamModule) Init() error {
 	// The resource engines must exist before the transport layer registers their routes.
-	if err := initDynamicEngines(); err != nil {
+	if err := dynamicengines.InitDynamicEngines(); err != nil {
 		return err
 	}
 

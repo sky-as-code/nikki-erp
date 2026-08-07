@@ -2,6 +2,8 @@ package engine
 
 import (
 	"encoding/json"
+	"maps"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -27,6 +29,69 @@ const (
 
 func noParams(_ *echo.Context) (dmodel.DynamicFields, error) {
 	return dmodel.DynamicFields{}, nil
+}
+
+// echoBindParams assembles action params the way echo.Bind does, and serves every action a
+// feature module defines without a binding of its own. Data is bound in this order, each
+// step overwriting the previous:
+//
+//  1. path parameters
+//  2. query parameters (GET and DELETE only)
+//  3. request body
+//
+// Path and query values arrive as strings; the pipeline's schema validation converts them
+// when the action declares a ParamSchema.
+func echoBindParams(echoCtx *echo.Context) (dmodel.DynamicFields, error) {
+	params := dmodel.DynamicFields{}
+	mergePathParams(echoCtx, params)
+
+	method := echoCtx.Request().Method
+	if method == http.MethodGet || method == http.MethodDelete {
+		mergeQueryParams(echoCtx, params)
+	}
+
+	if hasRequestBody(echoCtx) {
+		body, err := rawBodyParams(echoCtx)
+		if err != nil {
+			return nil, err
+		}
+		maps.Copy(params, body)
+	}
+	return params, nil
+}
+
+// mergePathParams copies the route path params into params. Echo reuses a pooled backing
+// slice for PathValues, so entries past the matched count carry an empty Name and are skipped.
+func mergePathParams(echoCtx *echo.Context, params dmodel.DynamicFields) {
+	for _, pathValue := range echoCtx.PathValues() {
+		if pathValue.Name != "" {
+			params[pathValue.Name] = pathValue.Value
+		}
+	}
+}
+
+// mergeQueryParams copies the query string into params, keeping a repeated key as a []string.
+func mergeQueryParams(echoCtx *echo.Context, params dmodel.DynamicFields) {
+	for name, values := range echoCtx.QueryParams() {
+		switch len(values) {
+		case 0:
+			continue
+		case 1:
+			params[name] = values[0]
+		default:
+			params[name] = values
+		}
+	}
+}
+
+// hasRequestBody reports whether the request carries a body worth binding, so that a
+// bodyless POST does not fail on an EOF from the JSON decoder.
+func hasRequestBody(echoCtx *echo.Context) bool {
+	request := echoCtx.Request()
+	if request.Body == nil || request.ContentLength == 0 {
+		return false
+	}
+	return request.Header.Get(echo.HeaderContentType) != ""
 }
 
 // rawBodyParams binds the request body as-is, without filtering it against the schema.

@@ -19,29 +19,42 @@ func DefineBuiltinActions(engine it.DynamicResourceEngine) error {
 	return stdErr.Join(
 		engine.DefineAction(it.DynamicActionDefinition{
 			ActionName:  it.ActionCreate,
+			ActionType:  it.ActionTypeCreate,
+			RestPath:    "",
 			Permission:  it.PermissionCreate,
 			MainProcess: processCreate,
 		}),
 		engine.DefineAction(it.DynamicActionDefinition{
 			ActionName:  it.ActionUpdate,
+			ActionType:  it.ActionTypeUpdatePatch,
+			RestPath:    ":id",
 			Permission:  it.PermissionUpdate,
 			MainProcess: processUpdate,
 		}),
 		engine.DefineAction(it.DynamicActionDefinition{
 			ActionName:  it.ActionDelete,
+			ActionType:  it.ActionTypeDelete,
+			RestPath:    ":id",
 			Permission:  it.PermissionDelete,
 			MainProcess: processDelete,
 		}),
+		// Archiving is a POST operation that is neither a create nor an update, hence Generic.
 		engine.DefineAction(it.DynamicActionDefinition{
 			ActionName:  it.ActionSetArchived,
+			ActionType:  it.ActionTypeGeneric,
+			RestPath:    ":id/archived",
 			Permission:  it.PermissionSetArchived,
 			MainProcess: processSetArchived,
 		}),
 		engine.DefineAction(it.DynamicActionDefinition{
 			ActionName:  it.ActionGetById,
+			ActionType:  it.ActionTypeRead,
+			RestPath:    ":id",
 			Permission:  it.PermissionRead,
 			MainProcess: processGetById,
 		}),
+		// get_by_unique has no REST route: its unique keys vary per resource, so it is
+		// reachable through ExecuteAction only.
 		engine.DefineAction(it.DynamicActionDefinition{
 			ActionName:  it.ActionGetByUnique,
 			Permission:  it.PermissionRead,
@@ -49,16 +62,23 @@ func DefineBuiltinActions(engine it.DynamicResourceEngine) error {
 		}),
 		engine.DefineAction(it.DynamicActionDefinition{
 			ActionName:  it.ActionSearch,
+			ActionType:  it.ActionTypeRead,
+			RestPath:    "",
 			Permission:  it.PermissionRead,
 			MainProcess: processSearch,
 		}),
+		// exists carries a query in its body, so it is a POST that creates nothing: Generic.
 		engine.DefineAction(it.DynamicActionDefinition{
 			ActionName:  it.ActionExists,
+			ActionType:  it.ActionTypeGeneric,
+			RestPath:    "exists",
 			Permission:  it.PermissionRead,
 			MainProcess: processExists,
 		}),
 		engine.DefineAction(it.DynamicActionDefinition{
 			ActionName:  it.ActionGetSchema,
+			ActionType:  it.ActionTypeRead,
+			RestPath:    "meta/schema",
 			Permission:  it.PermissionRead,
 			MainProcess: processGetSchema,
 		}),
