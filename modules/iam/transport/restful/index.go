@@ -8,6 +8,8 @@ import (
 	deps "github.com/sky-as-code/nikki-erp/common/deps_inject"
 	"github.com/sky-as-code/nikki-erp/modules/core/cqrs"
 	m "github.com/sky-as-code/nikki-erp/modules/core/httpserver/middlewares"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
+	"github.com/sky-as-code/nikki-erp/modules/iam/dynamicengines"
 	v1 "github.com/sky-as-code/nikki-erp/modules/iam/transport/restful/v1"
 )
 
@@ -50,6 +52,7 @@ func initIamDirectoryV1() error {
 		routeV1.GET("/groups/:id", groupRest.GetGroup, m.SmokeAuthz())
 		routeV1.GET("/groups", groupRest.SearchGroups, m.SmokeAuthz())
 		routeV1.POST("/groups/exists", groupRest.GroupExists, m.SmokeAuthz())
+		routeV1.POST("/groups/:group_id/roles", groupRest.ManageGroupRoleAssignments, m.SmokeAuthz())
 		routeV1.POST("/groups/:group_id/manage-users", groupRest.ManageGroupUsers, m.SmokeAuthz())
 		routeV1.POST("/groups", groupRest.CreateGroup, m.SmokeAuthz())
 		routeV1.PATCH("/groups/:id", groupRest.UpdateGroup, m.SmokeAuthz())
@@ -75,18 +78,38 @@ func initIamDirectoryV1() error {
 
 		routeV1.GET("/me/context", userRest.GetUserContext, m.SmokeAuthz())
 
+		// User is the pilot resource of the dynamic resource engine. Its engine-served
+		// endpoints live at /v1/iam/iam_user and coexist with the hand-written /v1/iam/users
+		// ones below, which stay the supported API until the migration is decided.
+		registerEngineRoutes(routeV1)
+
 		routeV1.DELETE("/users/:id", userRest.DeleteUser, m.SmokeAuthz())
 		routeV1.GET("/users/meta/schema", userRest.GetModelSchema, m.SmokeAuthz())
+		// routeV1.GET("/users/getOne", userRest.GetUser, m.SmokeAuthz())
 		routeV1.GET("/users/:id", userRest.GetUser, m.SmokeAuthz())
 		routeV1.GET("/users", userRest.SearchUsers, m.SmokeAuthz())
 		routeV1.POST("/users/exists", userRest.UserExists, m.SmokeAuthz())
 		routeV1.POST("/users/:id/archived", userRest.SetUserIsArchived, m.SmokeAuthz())
+		routeV1.POST("/users/:user_id/roles", userRest.ManageUserRoleAssignments, m.SmokeAuthz())
 		routeV1.POST("/users", userRest.CreateUser, m.SmokeAuthz())
 		// JSON Merge Patch (RFC 7396) semantics.
 		routeV1.PATCH("/users/:id", userRest.UpdateUser, m.SmokeAuthz())
 
 		return nil
 	})
+}
+
+// registerEngineRoutes exposes every IAM resource engine over HTTP.
+// A missing engine is skipped, so that a build which drops one still serves
+// the hand-written endpoints of that resource.
+func registerEngineRoutes(routeV1 *echo.Group) {
+	for _, schemaName := range dynamicengines.EngineSchemaNames() {
+		engine, exists := dynamicresource.Registry().GetEngine(schemaName)
+		if !exists {
+			continue
+		}
+		engine.RestApi().RegisterRoutes(routeV1, m.SmokeAuthz())
+	}
 }
 
 func initIamAuthorizationV1() error {
@@ -101,41 +124,55 @@ func initIamAuthorizationV1() error {
 	) {
 		v1 := route.Group("/v1/iam")
 
-		v1.DELETE("/resources/:resource_id/actions/:action_id", actionRest.DeleteAction)
-		v1.GET("/resources/actions/schema", resourceRest.GetModelSchema)
-		v1.GET("/resources/:resource_id/actions/:action_id", actionRest.GetAction)
-		v1.GET("/resources/:resource_id/actions", actionRest.SearchActions)
-		v1.POST("/resources/:resource_id/actions/exists", actionRest.ActionExists)
-		v1.POST("/resources/:resource_id/actions", actionRest.CreateAction)
-		v1.PUT("/resources/:resource_id/actions/:action_id", actionRest.UpdateAction)
+		v1.DELETE("/resources/:resource_id/actions/:action_id", actionRest.DeleteAction, m.SmokeAuthz())
+		v1.GET("/resources/actions/schema", resourceRest.GetModelSchema, m.SmokeAuthz())
+		v1.GET("/resources/:resource_id/actions/:action_id", actionRest.GetAction, m.SmokeAuthz())
+		v1.GET("/resources/:resource_id/actions", actionRest.SearchActions, m.SmokeAuthz())
+		v1.POST("/resources/:resource_id/actions/exists", actionRest.ActionExists, m.SmokeAuthz())
+		v1.POST("/resources/:resource_id/actions", actionRest.CreateAction, m.SmokeAuthz())
+		v1.PUT("/resources/:resource_id/actions/:action_id", actionRest.UpdateAction, m.SmokeAuthz())
 
-		v1.DELETE("/resources/:id", resourceRest.DeleteResource)
-		v1.GET("/resources/schema", resourceRest.GetModelSchema)
-		v1.GET("/resources/:id", resourceRest.GetResource)
-		v1.GET("/resources", resourceRest.SearchResources)
-		v1.POST("/resources/exists", resourceRest.ResourceExists)
-		v1.POST("/resources", resourceRest.CreateResource)
-		v1.PUT("/resources/:id", resourceRest.UpdateResource)
+		v1.DELETE("/resources/:id", resourceRest.DeleteResource, m.SmokeAuthz())
+		v1.GET("/resources/schema", resourceRest.GetModelSchema, m.SmokeAuthz())
+		v1.GET("/resources/:id", resourceRest.GetResource, m.SmokeAuthz())
+		v1.GET("/resources", resourceRest.SearchResources, m.SmokeAuthz())
+		v1.POST("/resources/exists", resourceRest.ResourceExists, m.SmokeAuthz())
+		v1.POST("/resources", resourceRest.CreateResource, m.SmokeAuthz())
+		v1.PUT("/resources/:id", resourceRest.UpdateResource, m.SmokeAuthz())
 
-		v1.DELETE("/entitlements/:id", entitlementRest.DeleteEntitlement)
-		v1.GET("/entitlements/schema", entitlementRest.GetModelSchema)
-		v1.GET("/entitlements/:id", entitlementRest.GetEntitlement)
-		v1.GET("/entitlements", entitlementRest.SearchEntitlements)
-		v1.POST("/entitlements/:entitlement_id/manage-roles", entitlementRest.ManageEntitlementRoles)
-		v1.POST("/entitlements/:id/archived", entitlementRest.SetEntitlementIsArchived)
-		v1.POST("/entitlements/exists", entitlementRest.EntitlementExists)
-		v1.POST("/entitlements", entitlementRest.CreateEntitlement)
-		v1.PUT("/entitlements/:id", entitlementRest.UpdateEntitlement)
+		v1.DELETE("/entitlements/:id", entitlementRest.DeleteEntitlement, m.SmokeAuthz())
+		v1.GET("/entitlements/schema", entitlementRest.GetModelSchema, m.SmokeAuthz())
+		v1.GET("/entitlements/:id", entitlementRest.GetEntitlement, m.SmokeAuthz())
+		v1.GET("/entitlements", entitlementRest.SearchEntitlements, m.SmokeAuthz())
+		v1.POST("/entitlements/:entitlement_id/manage-roles", entitlementRest.ManageEntitlementRoles, m.SmokeAuthz())
+		v1.POST("/entitlements/:id/archived", entitlementRest.SetEntitlementIsArchived, m.SmokeAuthz())
+		v1.POST("/entitlements/exists", entitlementRest.EntitlementExists, m.SmokeAuthz())
+		v1.POST("/entitlements", entitlementRest.CreateEntitlement, m.SmokeAuthz())
+		v1.PUT("/entitlements/:id", entitlementRest.UpdateEntitlement, m.SmokeAuthz())
 
-		v1.DELETE("/roles/:id", roleRest.DeleteRole)
-		v1.GET("/roles/schema", roleRest.GetModelSchema)
-		v1.GET("/roles/:id", roleRest.GetRole)
-		v1.GET("/roles", roleRest.SearchRoles)
-		v1.POST("/roles/:role_id/manage-entitlements", roleRest.ManageRoleEntitlements)
-		v1.POST("/roles/:id/archived", roleRest.SetRoleIsArchived)
-		v1.POST("/roles/exists", roleRest.RoleExists)
-		v1.POST("/roles", roleRest.CreateRole)
-		v1.PUT("/roles/:id", roleRest.UpdateRole)
+		// Roles assigned to one principal. Registered here rather than in the directory block
+		// because they read the role schema and need roleRest, the same way
+		// GET /resources/:resource_id/actions is served by actionRest.
+		v1.GET("/users/:user_id/roles", roleRest.SearchUserRoles, m.SmokeAuthz())
+		v1.GET("/groups/:group_id/roles", roleRest.SearchGroupRoles, m.SmokeAuthz())
+
+		v1.DELETE("/roles/:id", roleRest.DeleteRole, m.SmokeAuthz())
+		v1.GET("/roles/meta/schema", roleRest.GetModelSchema, m.SmokeAuthz())
+		// Must precede /roles/:id so "describe" is not bound as an id.
+		v1.GET("/roles/describe", roleRest.DescribeRoles, m.SmokeAuthz())
+		v1.GET("/roles/:id", roleRest.GetRole, m.SmokeAuthz())
+		v1.GET("/roles", roleRest.SearchRoles, m.SmokeAuthz())
+		v1.PATCH("/roles/:id", roleRest.UpdateRole, m.SmokeAuthz())
+		v1.POST("/roles/:role_id/manage-entitlements", roleRest.ManageRoleEntitlements, m.SmokeAuthz())
+		v1.POST("/roles/:id/archived", roleRest.SetRoleIsArchived, m.SmokeAuthz())
+		v1.POST("/roles/exists", roleRest.RoleExists, m.SmokeAuthz())
+		v1.POST("/roles", roleRest.CreateRole, m.SmokeAuthz())
+
+		// Deprecated aliases kept for existing clients; the canonical shapes above match
+		// the shared frontend RestApi client and the directory resources. Remove once no
+		// client depends on them.
+		v1.GET("/roles/schema", roleRest.GetModelSchema, m.SmokeAuthz())
+		v1.PUT("/roles/:id", roleRest.UpdateRole, m.SmokeAuthz())
 
 		// v1.DELETE("/grant-requests/:id", roleRequestRest.DeleteRoleRequest)
 		// v1.GET("/grant-requests/:id", roleRequestRest.GetRoleRequest)

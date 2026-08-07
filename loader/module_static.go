@@ -10,6 +10,7 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/apptrait"
 	"github.com/sky-as-code/nikki-erp/modules/contacts"
 	"github.com/sky-as-code/nikki-erp/modules/core"
+	"github.com/sky-as-code/nikki-erp/modules/dynamicresource"
 	"github.com/sky-as-code/nikki-erp/modules/essential"
 	"github.com/sky-as-code/nikki-erp/modules/iam"
 	"github.com/sky-as-code/nikki-erp/modules/settings"
@@ -42,6 +43,7 @@ func (this StaticModuleLoader) getStaticModules() []modules.InCodeModule {
 		essential.ModuleSingleton,
 		core.ModuleSingleton,
 		contacts.ModuleSingleton,
+		dynamicresource.ModuleSingleton,
 		// helpdesk.ModuleSingleton,
 		iam.ModuleSingleton,
 		inventory.ModuleSingleton,

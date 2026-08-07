@@ -672,6 +672,7 @@ func (this *BaseDynamicRepositoryImpl) insertJunctionRows(ctx corectx.Context,
 			return nil, err
 		}
 	}
+	fillJunctionRowDefaults(link.ThroughSchema, rows)
 	sqlRes, qbClientErrs, err := this.queryBuilder.SqlInsertBulk(link.ThroughSchema, rows, true)
 	if err != nil {
 		return nil, err
@@ -748,6 +749,26 @@ func (this *BaseDynamicRepositoryImpl) materializeM2mJunctionRow(
 		row[dmodel.PrefixedThroughColumn(link.DestFieldPrefix, k)] = assoc.DestKeys[k]
 	}
 	return row
+}
+
+// fillJunctionRowDefaults populates the through-schema columns a junction row does not carry,
+// such as `created_at`. M2M rows are materialized from the association keys alone and never go
+// through ModelSchema.Validate, which is what applies field defaults for a normal insert.
+// Columns with no usable default are left absent, exactly as before.
+func fillJunctionRowDefaults(throughSchema *dmodel.ModelSchema, rows []dmodel.DynamicFields) {
+	for _, row := range rows {
+		for _, field := range throughSchema.Columns() {
+			name := field.Name()
+			if val, ok := row[name]; ok && val != nil {
+				continue
+			}
+			defaulted, vErr := field.Validate(nil)
+			if vErr != nil || defaulted.IsEmpty() {
+				continue
+			}
+			row[name] = *defaulted.Get()
+		}
+	}
 }
 
 func appendMissingKeyErrors(errs *ft.ClientErrors, fieldPrefix string, keys dmodel.DynamicFields, required []string) {

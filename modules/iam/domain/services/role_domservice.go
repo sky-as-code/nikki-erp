@@ -1,8 +1,6 @@
 package services
 
 import (
-	"fmt"
-
 	"go.bryk.io/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/common/datastructure"
@@ -17,6 +15,7 @@ import (
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itEnt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/entitlement"
+	itOrgz "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/organization"
 	itOrg "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/orgunit"
 	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 )
@@ -24,6 +23,8 @@ import (
 func NewRoleDomainServiceImpl(
 	roleRepo itRole.RoleRepository,
 	entitlementRepo itEnt.EntitlementRepository,
+	orgRepo itOrgz.OrganizationRepository,
+	orgUnitRepo itOrg.OrgUnitRepository,
 	orgUnitSvc itOrg.OrgUnitDomainService,
 	cqrsBus cqrs.CqrsBus,
 ) itRole.RoleDomainService {
@@ -31,6 +32,8 @@ func NewRoleDomainServiceImpl(
 		cqrsBus:         cqrsBus,
 		roleRepo:        roleRepo,
 		entitlementRepo: entitlementRepo,
+		orgRepo:         orgRepo,
+		orgUnitRepo:     orgUnitRepo,
 		orgUnitSvc:      orgUnitSvc,
 	}
 }
@@ -39,7 +42,11 @@ type RoleDomainServiceImpl struct {
 	cqrsBus         cqrs.CqrsBus
 	roleRepo        itRole.RoleRepository
 	entitlementRepo itEnt.EntitlementRepository
-	orgUnitSvc      itOrg.OrgUnitDomainService
+	// orgRepo and orgUnitRepo exist only to resolve entitlement scope display names in
+	// DescribeRoles; role CRUD does not touch them.
+	orgRepo     itOrgz.OrganizationRepository
+	orgUnitRepo itOrg.OrgUnitRepository
+	orgUnitSvc  itOrg.OrgUnitDomainService
 }
 
 func (this *RoleDomainServiceImpl) CreateRole(
@@ -52,43 +59,6 @@ func (this *RoleDomainServiceImpl) CreateRole(
 		Data:                   cmd,
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
-}
-
-func (this *RoleDomainServiceImpl) CreatePrivateRole(
-	ctx corectx.Context, cmd itRole.CreatePrivateRoleCommand, options ...corecrud.ServiceCreateOptions[*domain.Role],
-) (*itRole.CreateRoleResult, error) {
-	sanitized, cErrs := cmd.GetSchema().ValidateStruct(cmd)
-	if cErrs.Count() > 0 {
-		return &itRole.CreateRoleResult{ClientErrors: cErrs}, nil
-	}
-	cmd = *(sanitized.(*itRole.CreatePrivateRoleCommand))
-
-	var newRole *domain.Role
-	ownerId := string(cmd.OwnerId)
-	if cmd.OwnerType == "user" {
-		newRole = domain.NewRoleFrom(dmodel.DynamicFields{
-			domain.RoleFieldName:          fmt.Sprintf("Private role for user %s", ownerId),
-			domain.RoleFieldIsPrivate:     true,
-			domain.RoleFieldOwnerUserId:   ownerId,
-			domain.RoleFieldIsRequestable: false, // Important!
-		})
-	} else {
-		newRole = domain.NewRoleFrom(dmodel.DynamicFields{
-			domain.RoleFieldName:          fmt.Sprintf("Private role for group %s", ownerId),
-			domain.RoleFieldIsPrivate:     true,
-			domain.RoleFieldOwnerGroupId:  ownerId,
-			domain.RoleFieldIsRequestable: false, // Important!
-		})
-	}
-	createCmd := itRole.CreateRoleCommand{Role: *newRole}
-	createRes, err := this.CreateRole(ctx, createCmd, options...)
-	if err != nil {
-		return nil, err
-	}
-	if createRes.ClientErrors.Count() > 0 {
-		return createRes, nil
-	}
-	return createRes, nil
 }
 
 func (this *RoleDomainServiceImpl) DeleteRole(
@@ -117,60 +87,12 @@ func (this *RoleDomainServiceImpl) DeleteRole(
 			if *resRole.Data.IsPrivate() {
 				return ft.NewAnonymousBusinessViolation(
 					ft.ErrorKey("iam", "err_private_role_deletion_not_allowed"),
-					"private role deletion is not allowed, it's automatically removed when its owner is deleted.",
+					"private role deletion is not allowed.",
 				)
 			}
 			return nil
 		},
 	})
-}
-
-func (this *RoleDomainServiceImpl) DeletePrivateRole(
-	ctx corectx.Context, cmd itRole.DeletePrivateRoleCommand, options ...corecrud.ServiceDeleteOptions,
-) (*itRole.DeleteRoleResult, error) {
-	opts := safe.GetOptional(options, corecrud.ServiceDeleteOptions{})
-	sanitized, cErrs := cmd.GetSchema().ValidateStruct(cmd)
-	if cErrs.Count() > 0 {
-		return &itRole.DeleteRoleResult{ClientErrors: cErrs}, nil
-	}
-	cmd = *(sanitized.(*itRole.DeletePrivateRoleCommand))
-
-	searchRes, err := this.roleRepo.Search(ctx, dyn.RepoSearchParam{
-		Graph:  privateRoleOwnerSearchGraph(cmd.OwnerId),
-		Fields: []string{basemodel.FieldId},
-		Page:   0,
-		Size:   1,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if searchRes.ClientErrors.Count() > 0 {
-		return &dyn.OpResult[dyn.MutateResultData]{ClientErrors: searchRes.ClientErrors}, nil
-	}
-	if !searchRes.HasData {
-		return &dyn.OpResult[dyn.MutateResultData]{HasData: false}, nil
-	}
-
-	delId := searchRes.Data.Items[0].GetId()
-
-	// TODO: Build query DELETE FROM (SELECT * FROM roles WHERE dedicated_group_id = $1 OR dedicated_user_id = $1 LIMIT 1)
-	return corecrud.DeleteOne(ctx, corecrud.DeleteOneParam{
-		Action:                 "delete private role",
-		DbRepoGetter:           this.roleRepo,
-		Cmd:                    dyn.DeleteOneCommand{Id: *delId},
-		AfterValidationSuccess: opts.AfterValidationSuccess,
-	})
-}
-
-func privateRoleOwnerSearchGraph(ownerId model.Id) *dmodel.SearchGraph {
-	oid := string(ownerId)
-	userNode := dmodel.NewSearchNode().NewCondition(domain.RoleFieldOwnerUserId, dmodel.Equals, oid)
-	groupNode := dmodel.NewSearchNode().NewCondition(domain.RoleFieldOwnerGroupId, dmodel.Equals, oid)
-	nodeIsPrivate := dmodel.NewSearchNode().NewCondition(domain.RoleFieldIsPrivate, dmodel.Equals, true)
-	nodeOwner := dmodel.NewSearchNode().Or(*userNode, *groupNode)
-	graph := dmodel.NewSearchGraph()
-	graph.And(*nodeIsPrivate, *nodeOwner)
-	return graph
 }
 
 func (this *RoleDomainServiceImpl) GetRole(
@@ -314,25 +236,6 @@ func entitlementIdsSearchGraph(ids []model.Id) *dmodel.SearchGraph {
 	return graph
 }
 
-// func (this *RoleDomainServiceImpl) ManageRoleAssignments(
-// 	ctx corectx.Context, cmd itRole.ManageRoleEntitlementsCommand,
-// ) (*itRole.ManageRoleEntitlementsResult, error) {
-// 	sanitizedCmd, cErrs := corecrud.Validate(cmd)
-// 	if cErrs.Count() > 0 {
-// 		return &itRole.ManageRoleEntitlementsResult{ClientErrors: cErrs}, nil
-// 	}
-
-// 	return corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
-// 		Action:             "manage role assignments",
-// 		DbRepoGetter:       this.roleRepo,
-// 		DestSchemaName:     domain.RoleAssignmentSchemaName,
-// 		SrcId:              cmd.RoleId,
-// 		SrcIdFieldForError: "role_id",
-// 		AssociatedIds:      cmd.Add,
-// 		DisassociatedIds:   cmd.Remove,
-// 	})
-// }
-
 func (this *RoleDomainServiceImpl) RoleExists(
 	ctx corectx.Context, query itRole.RoleExistsQuery,
 ) (*itRole.RoleExistsResult, error) {
@@ -353,6 +256,85 @@ func (this *RoleDomainServiceImpl) SearchRoles(
 		Query:                  dyn.SearchQuery(query),
 		AfterValidationSuccess: opts.AfterValidationSuccess,
 	})
+}
+
+func (this *RoleDomainServiceImpl) SearchUserRoles(
+	ctx corectx.Context, query itRole.SearchUserRolesQuery, options ...corecrud.ServiceSearchOptions,
+) (result *itRole.SearchUserRolesResult, err error) {
+	opts := safe.GetOptional(options, corecrud.ServiceSearchOptions{})
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "search user roles"); e != nil {
+			err = e
+		}
+	}()
+	sanitized, cErrs := query.GetSchema().ValidateStruct(query)
+	if cErrs.Count() > 0 {
+		return &itRole.SearchUserRolesResult{ClientErrors: cErrs}, nil
+	}
+	query = *(sanitized.(*itRole.SearchUserRolesQuery))
+
+	return corecrud.Search[domain.Role](ctx, corecrud.SearchParam{
+		Action:                 "search user roles",
+		DbRepoGetter:           this.roleRepo,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
+		Query: dyn.SearchQuery{
+			Fields: assignedRoleFields(query.Fields),
+			Graph:  assignmentGraph(domain.RoleEdgeAssignedUsers, query.UserId, query.Graph),
+			Page:   query.Page,
+			Size:   query.Size,
+		},
+	})
+}
+
+func (this *RoleDomainServiceImpl) SearchGroupRoles(
+	ctx corectx.Context, query itRole.SearchGroupRolesQuery, options ...corecrud.ServiceSearchOptions,
+) (result *itRole.SearchGroupRolesResult, err error) {
+	opts := safe.GetOptional(options, corecrud.ServiceSearchOptions{})
+	defer func() {
+		if e := ft.RecoverPanicFailedTo(recover(), "search group roles"); e != nil {
+			err = e
+		}
+	}()
+	sanitized, cErrs := query.GetSchema().ValidateStruct(query)
+	if cErrs.Count() > 0 {
+		return &itRole.SearchGroupRolesResult{ClientErrors: cErrs}, nil
+	}
+	query = *(sanitized.(*itRole.SearchGroupRolesQuery))
+
+	return corecrud.Search[domain.Role](ctx, corecrud.SearchParam{
+		Action:                 "search group roles",
+		DbRepoGetter:           this.roleRepo,
+		AfterValidationSuccess: opts.AfterValidationSuccess,
+		Query: dyn.SearchQuery{
+			Fields: assignedRoleFields(query.Fields),
+			Graph:  assignmentGraph(domain.RoleEdgeAssignedGroups, query.GroupId, query.Graph),
+			Page:   query.Page,
+			Size:   query.Size,
+		},
+	})
+}
+
+// assignedRoleFields defaults an assigned-role listing to the id and name the assignment UI
+// needs, while still honouring an explicit field list from the caller.
+func assignedRoleFields(fields []string) []string {
+	if len(fields) > 0 {
+		return fields
+	}
+	return []string{basemodel.FieldId, domain.RoleFieldName}
+}
+
+// assignmentGraph ANDs "assigned to this principal" onto the caller's own graph. `linked` is
+// the operator for membership on a many edge: role<->user and role<->group are both
+// many-to-many through a junction table, so no column equality can express it.
+func assignmentGraph(edge string, principalId model.Id, caller *dmodel.SearchGraph) *dmodel.SearchGraph {
+	cond := dmodel.NewCondition(edge, dmodel.Linked, principalId)
+	graph := dmodel.NewSearchGraph()
+	if caller == nil {
+		graph.Condition(cond)
+		return graph
+	}
+	graph.And(*dmodel.NewSearchNode().Condition(cond), *caller.ToSearchNode())
+	return graph
 }
 
 func (this *RoleDomainServiceImpl) SetRoleIsArchived(

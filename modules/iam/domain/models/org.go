@@ -63,6 +63,8 @@ func OrganizationSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(OrganizationSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", OrganizationSchemaName)).
 		TableName("iam_organizations").
+		RecordLabelField(OrgFieldDisplayName).
+		RecordSubLabelField(OrgFieldSlug).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(

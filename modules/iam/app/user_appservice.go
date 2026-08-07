@@ -1,8 +1,6 @@
 package app
 
 import (
-	"go.bryk.io/pkg/errors"
-
 	corectx "github.com/sky-as-code/nikki-erp/modules/core/context"
 	dyn "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel"
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
@@ -10,18 +8,15 @@ import (
 	"github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itExt "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/external"
-	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
 	itUser "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/user"
 )
 
 func NewUserApplicationServiceImpl(
-	roleSvc itRole.RoleDomainService,
 	userDomSvc itUser.UserDomainService,
 	userRepo itUser.UserRepository,
 	userPrefSvc itExt.UserPreferenceUiDomainService,
 ) itUser.UserAppService {
 	return &UserApplicationServiceImpl{
-		roleSvc:     roleSvc,
 		userDomSvc:  userDomSvc,
 		userRepo:    userRepo,
 		userPrefSvc: userPrefSvc,
@@ -29,7 +24,6 @@ func NewUserApplicationServiceImpl(
 }
 
 type UserApplicationServiceImpl struct {
-	roleSvc     itRole.RoleDomainService
 	userDomSvc  itUser.UserDomainService
 	userRepo    itUser.UserRepository
 	userPrefSvc itExt.UserPreferenceUiDomainService
@@ -41,46 +35,14 @@ func (this *UserApplicationServiceImpl) CreateUser(ctx corectx.Context, cmd itUs
 			ClientErrors: *cErr,
 		}, nil
 	}
-	return corecrud.ExecInTranx(ctx, this.userRepo, func(tranxCtx corectx.Context) (*itUser.CreateUserResult, error) {
-		result, err := this.userDomSvc.CreateUser(tranxCtx, cmd)
-		if err != nil {
-			return nil, err
-		}
-		if result.ClientErrors.Count() > 0 {
-			return result, nil
-		}
-		return this.createPrivateRole(tranxCtx, result)
-	})
-}
-
-func (this *UserApplicationServiceImpl) createPrivateRole(tranxCtx corectx.Context, usrResult *itUser.CreateUserResult) (*itUser.CreateUserResult, error) {
-	oid := string(*usrResult.Data.GetId())
-	roleRes, rErr := this.roleSvc.CreatePrivateRole(tranxCtx, itRole.CreatePrivateRoleCommand{OwnerId: oid, OwnerType: "user"})
-	if rErr != nil {
-		return nil, rErr
-	}
-	if roleRes.ClientErrors.Count() > 0 {
-		return nil, errors.Wrap(roleRes.ClientErrors.ToError(), "createPrivateRole")
-	}
-	return usrResult, nil
+	return this.userDomSvc.CreateUser(ctx, cmd)
 }
 
 func (this *UserApplicationServiceImpl) DeleteUser(ctx corectx.Context, cmd itUser.DeleteUserCommand) (*itUser.DeleteUserResult, error) {
 	if cErr := assertPermission(ctx, "delete", c.ResourceIamUser, c.ResourceScopeOrg); cErr != nil {
 		return &itUser.DeleteUserResult{ClientErrors: *cErr}, nil
 	}
-	return this.userDomSvc.DeleteUser(ctx, cmd, corecrud.ServiceDeleteOptions{
-		AfterValidationSuccess: func(tranxCtx corectx.Context, cmd dyn.DeleteOneCommand) (dyn.DeleteOneCommand, error) {
-			privRes, pErr := this.roleSvc.DeletePrivateRole(tranxCtx, itRole.DeletePrivateRoleCommand{OwnerId: cmd.Id})
-			if pErr != nil {
-				return cmd, pErr
-			}
-			if privRes.ClientErrors.Count() > 0 {
-				return cmd, errors.Wrap(privRes.ClientErrors.ToError(), "deletePrivateRole")
-			}
-			return cmd, nil
-		},
-	})
+	return this.userDomSvc.DeleteUser(ctx, cmd)
 }
 
 func (this *UserApplicationServiceImpl) GetUser(ctx corectx.Context, query itUser.GetUserQuery) (*itUser.GetUserResult, error) {
@@ -103,6 +65,17 @@ func (this *UserApplicationServiceImpl) GetEnabledUser(ctx corectx.Context, quer
 		GetOneFn: func() (*dyn.OpResult[domain.User], error) {
 			return this.userDomSvc.GetEnabledUser(ctx, query)
 		},
+	})
+}
+
+func (this *UserApplicationServiceImpl) ManageUserRoleAssignments(
+	ctx corectx.Context, cmd itUser.ManageUserRoleAssignmentsCommand,
+) (*itUser.ManageUserRoleAssignmentsResult, error) {
+	if cErr := assertPermission(ctx, "manage_role_assignments", c.ResourceIamUser, c.ResourceScopeOrg); cErr != nil {
+		return &itUser.ManageUserRoleAssignmentsResult{ClientErrors: *cErr}, nil
+	}
+	return corecrud.ExecInTranx(ctx, this.userRepo, func(tranxCtx corectx.Context) (*itUser.ManageUserRoleAssignmentsResult, error) {
+		return this.userDomSvc.ManageUserRoleAssignments(tranxCtx, cmd)
 	})
 }
 

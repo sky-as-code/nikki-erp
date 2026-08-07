@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/iam/roles/{{role_id}}?columns=name&columns=is_archived&columns=is_requestable
+  url: {{api_host}}/v1/iam/iam_role/{{role_id}}?columns=name&columns=is_archived&columns=is_requestable
   body: none
   auth: inherit
 }

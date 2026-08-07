@@ -10,25 +10,25 @@ import (
 	corecrud "github.com/sky-as-code/nikki-erp/modules/core/dynamicmodel/crud"
 	domain "github.com/sky-as-code/nikki-erp/modules/iam/domain/models"
 	itGrp "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/group"
-	itRole "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/role"
+	itPerm "github.com/sky-as-code/nikki-erp/modules/iam/interfaces/permission"
 )
 
 func NewGroupDomainServiceImpl(
 	groupRepo itGrp.GroupRepository,
-	roleSvc itRole.RoleDomainService,
+	permRepo itPerm.PermissionRepository,
 	cqrsBus cqrs.CqrsBus,
 ) itGrp.GroupDomainService {
 	return &GroupDomainServiceImpl{
 		cqrsBus:   cqrsBus,
 		groupRepo: groupRepo,
-		roleSvc:   roleSvc,
+		permRepo:  permRepo,
 	}
 }
 
 type GroupDomainServiceImpl struct {
 	cqrsBus   cqrs.CqrsBus
 	groupRepo itGrp.GroupRepository
-	roleSvc   itRole.RoleDomainService
+	permRepo  itPerm.PermissionRepository
 }
 
 func (this *GroupDomainServiceImpl) CreateGroup(
@@ -78,10 +78,43 @@ func (this *GroupDomainServiceImpl) GetGroup(
 	})
 }
 
+// ManageGroupRoleAssignments assigns/removes roles to/from a group, then refreshes the
+// denormalized permissions of every member so authorization reflects the change immediately.
+func (this *GroupDomainServiceImpl) ManageGroupRoleAssignments(
+	ctx corectx.Context, cmd itGrp.ManageGroupRoleAssignmentsCommand,
+) (*itGrp.ManageGroupRoleAssignmentsResult, error) {
+	result, err := corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
+		Action:             "manage group role assignments",
+		DbRepoGetter:       this.groupRepo,
+		DestSchemaName:     domain.RoleSchemaName,
+		SrcId:              cmd.GroupId,
+		SrcIdFieldForError: "group_id",
+		AssociatedIds:      cmd.Add,
+		DisassociatedIds:   cmd.Remove,
+		BeforeInsert: func(ctx corectx.Context, dbRecords []dmodel.DynamicFields) error {
+			for _, record := range dbRecords {
+				assignmentId, err := model.NewId()
+				if err != nil {
+					return err
+				}
+				record[domain.RoleGroupAssignFieldId] = *assignmentId
+			}
+			return nil
+		},
+	})
+	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
+		return result, err
+	}
+	if err := this.permRepo.RebuildUserPermissionsForGroup(ctx, cmd.GroupId); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func (this *GroupDomainServiceImpl) ManageGroupUsers(
 	ctx corectx.Context, cmd itGrp.ManageGroupUsersCommand,
 ) (result *itGrp.ManageGroupUsersResult, err error) {
-	return corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
+	result, err = corecrud.ManageM2m(ctx, corecrud.ManageM2mParam{
 		Action:             "manage group users",
 		DbRepoGetter:       this.groupRepo,
 		DestSchemaName:     domain.UserSchemaName,
@@ -100,6 +133,16 @@ func (this *GroupDomainServiceImpl) ManageGroupUsers(
 			return nil
 		},
 	})
+	if err != nil || result.ClientErrors.Count() > 0 || !result.HasData {
+		return result, err
+	}
+	// Membership changes alter which of the group's roles apply to whom.
+	for _, userId := range append(cmd.Add.ToSlice(), cmd.Remove.ToSlice()...) {
+		if err := this.permRepo.RebuildUserPermission(ctx, userId); err != nil {
+			return nil, err
+		}
+	}
+	return result, nil
 }
 
 func (this *GroupDomainServiceImpl) SearchGroups(

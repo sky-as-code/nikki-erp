@@ -109,6 +109,14 @@ func (this *ModelSchemaBuilder) Extend(builder *ModelSchemaBuilder) *ModelSchema
 	this.schema.searchIndexGroups = append(this.schema.searchIndexGroups, builder.schema.searchIndexGroups...)
 	this.schema.exclusiveRequiredFieldGroups = append(
 		this.schema.exclusiveRequiredFieldGroups, builder.schema.exclusiveRequiredFieldGroups...)
+	// Inherited only when this schema has not declared its own, so a concrete model always wins
+	// over whatever a base builder happens to name.
+	if this.schema.recordLabelField == "" {
+		this.schema.recordLabelField = builder.schema.recordLabelField
+	}
+	if this.schema.recordSubLabelField == "" {
+		this.schema.recordSubLabelField = builder.schema.recordSubLabelField
+	}
 	return this
 }
 
@@ -129,6 +137,21 @@ func (this *ModelSchemaBuilder) ExclusiveRequiredFields(fieldNames ...string) *M
 	}
 	group := append([]string{}, fieldNames...)
 	this.schema.exclusiveRequiredFieldGroups = append(this.schema.exclusiveRequiredFieldGroups, group)
+	return this
+}
+
+// RecordLabelField declares the field that identifies a record of this model to a human — the text
+// a client shows wherever a record stands in for itself, such as a relation picker or a breadcrumb.
+// The named field must exist on the schema when Build runs.
+func (this *ModelSchemaBuilder) RecordLabelField(fieldName string) *ModelSchemaBuilder {
+	this.schema.recordLabelField = fieldName
+	return this
+}
+
+// RecordSubLabelField declares an optional secondary field, shown beneath the main label to tell
+// apart records that share one. The named field must exist on the schema when Build runs.
+func (this *ModelSchemaBuilder) RecordSubLabelField(fieldName string) *ModelSchemaBuilder {
+	this.schema.recordSubLabelField = fieldName
 	return this
 }
 
@@ -305,6 +328,9 @@ func (this *ModelSchemaBuilder) Build() *ModelSchema {
 	if err := validateRequiredWithFields(schema); err != nil {
 		panic(errors.Wrap(err, "Build"))
 	}
+	if err := validateRecordLabelFields(schema); err != nil {
+		panic(errors.Wrap(err, "Build"))
+	}
 	if this.shouldBuildDb {
 		ft.PanicOnErr(populateDbMetadata(schema))
 	}
@@ -322,6 +348,26 @@ func validateExclusiveFieldGroups(schema *ModelSchema) error {
 					"exclusive field group %d: field %q is not defined on schema %q",
 					gi, name, schema.name)
 			}
+		}
+	}
+	return nil
+}
+
+// validateRecordLabelFields checks that a declared record label points at a real field. Declaring
+// one is not yet required: most schemas predate the property, so an absent label is legal and
+// leaves clients to fall back to the primary key.
+func validateRecordLabelFields(schema *ModelSchema) error {
+	declared := map[string]string{
+		"recordLabelField":    schema.recordLabelField,
+		"recordSubLabelField": schema.recordSubLabelField,
+	}
+	for property, fieldName := range declared {
+		if fieldName == "" {
+			continue
+		}
+		if _, ok := schema.Field(fieldName); !ok {
+			return errors.Errorf(
+				"%s: field %q is not defined on schema %q", property, fieldName, schema.name)
 		}
 	}
 	return nil

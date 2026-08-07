@@ -53,6 +53,8 @@ const (
 func UserSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(UserSchemaName).
 		TableName("iam_users").
+		RecordLabelField(UserFieldDisplayName).
+		RecordSubLabelField(UserFieldEmail).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
 		Field(

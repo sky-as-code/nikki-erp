@@ -30,6 +30,9 @@ type GetUserContextResponse struct {
 	SystemSettings  map[string]any         `json:"system_settings"`
 }
 
+type ManageUserRoleAssignmentsRequest = it.ManageUserRoleAssignmentsCommand
+type ManageUserRoleAssignmentsResponse = httpserver.RestMutateResponse
+
 type UserExistsRequest = it.UserExistsQuery
 type UserExistsResponse = dyn.ExistsResultData
 

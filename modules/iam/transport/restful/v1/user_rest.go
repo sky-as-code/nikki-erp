@@ -59,6 +59,14 @@ func (this UserRest) GetUser(echoCtx *echo.Context) (err error) {
 	)
 }
 
+func (this UserRest) ManageUserRoleAssignments(echoCtx *echo.Context) (err error) {
+	return httpserver.ServeGeneralMutate[ManageUserRoleAssignmentsRequest, ManageUserRoleAssignmentsResponse](
+		"manage user role assignments",
+		echoCtx,
+		this.UserSvc.ManageUserRoleAssignments,
+	)
+}
+
 func (this UserRest) SearchUsers(echoCtx *echo.Context) (err error) {
 	return httpserver.ServeSearch[SearchUsersRequest, SearchUsersResponse, domain.User](
 		"search users",

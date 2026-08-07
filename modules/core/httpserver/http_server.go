@@ -43,7 +43,7 @@ func initHttpServer(params httpServerParams) httpServerResult {
 
 	httpServer.Use(middleware.RequestLogger())
 	httpServer.Use(middleware.Recover())
-	httpServer.Use(m.RequestContextMiddleware3)
+	httpServer.Use(m.RequestContextMiddleware)
 	applyGlobalLazywares(&httpServer)
 	httpServer.UseLazy(m.Lazyware(m.CorsEchoMiddleware))
 	// httpServer.Use(m.EnsureAuthorized)

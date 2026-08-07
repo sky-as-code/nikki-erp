@@ -1,6 +1,7 @@
 package user
 
 import (
+	"github.com/sky-as-code/nikki-erp/common/datastructure"
 	dmodel "github.com/sky-as-code/nikki-erp/common/dynamicmodel/model"
 	ft "github.com/sky-as-code/nikki-erp/common/fault"
 	"github.com/sky-as-code/nikki-erp/common/model"
@@ -18,6 +19,7 @@ func init() {
 	req = (*CreateUserCommand)(nil)
 	req = (*DeleteUserCommand)(nil)
 	req = (*GetUserQuery)(nil)
+	req = (*ManageUserRoleAssignmentsCommand)(nil)
 	req = (*SearchUsersQuery)(nil)
 	req = (*UpdateUserCommand)(nil)
 	req = (*UserExistsQuery)(nil)
@@ -57,6 +59,24 @@ func (DeleteUserCommand) CqrsRequestType() cqrs.RequestType {
 }
 
 type DeleteUserResult = dyn.OpResult[dyn.MutateResultData]
+
+var manageUserRoleAssignmentsCommandType = cqrs.RequestType{
+	Module:    "iam",
+	Submodule: "user",
+	Action:    "manageUserRoleAssignments",
+}
+
+type ManageUserRoleAssignmentsCommand struct {
+	UserId model.Id                    `json:"user_id" param:"user_id"`
+	Add    datastructure.Set[model.Id] `json:"add"`
+	Remove datastructure.Set[model.Id] `json:"remove"`
+}
+
+func (ManageUserRoleAssignmentsCommand) CqrsRequestType() cqrs.RequestType {
+	return manageUserRoleAssignmentsCommandType
+}
+
+type ManageUserRoleAssignmentsResult = dyn.OpResult[dyn.MutateResultData]
 
 var getUserByIdQueryType = cqrs.RequestType{
 	Module:    "iam",

@@ -32,10 +32,11 @@ const (
 	//EntitlementFieldAttributeValue   = "attribute_value"   // '{AD Group Name}' (AD)
 	// For example: Map between Active Directory Group and Nikki ERP Entitlement
 
-	EntitlementEdgeAction  = "action"
-	EntitlementEdgeOrg     = "org"
-	EntitlementEdgeOrgUnit = "org_unit"
-	EntitlementEdgeRole    = "role"
+	EntitlementEdgeAction   = "action"
+	EntitlementEdgeOrg      = "org"
+	EntitlementEdgeOrgUnit  = "org_unit"
+	EntitlementEdgeResource = "resource"
+	EntitlementEdgeRole     = "role"
 )
 
 func EntitlementSchemaBuilder() *dmodel.ModelSchemaBuilder {
@@ -108,6 +109,17 @@ func EntitlementSchemaBuilder() *dmodel.ModelSchemaBuilder {
 				Label(model.LangJson{"en-US": "Action"}).
 				ManyToOne(ActionSchemaName, dmodel.DynamicFields{
 					EntitlementFieldActionId: ActionFieldId,
+				}).
+				OnDelete(dmodel.RelationCascadeNoAction),
+		).
+		// resource_id existed as a bare column long before this edge. Declaring it lets a
+		// caller select `resource.name` in one dot, which is all MaxSelectGraphColumnDots
+		// allows, so entitlements can be rendered without a second round trip per row.
+		EdgeTo(
+			dmodel.Edge(EntitlementEdgeResource).
+				Label(model.LangJson{"en-US": "Resource"}).
+				ManyToOne(ResourceSchemaName, dmodel.DynamicFields{
+					EntitlementFieldResourceId: ResourceFieldId,
 				}).
 				OnDelete(dmodel.RelationCascadeNoAction),
 		).

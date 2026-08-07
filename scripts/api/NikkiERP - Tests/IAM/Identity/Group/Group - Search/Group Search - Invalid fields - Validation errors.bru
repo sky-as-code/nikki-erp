@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/iam/groups?page=1&size=100&graph={"if":["fake-field", "=", "Owner"]}
+  url: {{api_host}}/v1/iam/iam_group?page=1&size=100&graph={"if":["fake-field", "=", "Owner"]}
   body: none
   auth: inherit
 }

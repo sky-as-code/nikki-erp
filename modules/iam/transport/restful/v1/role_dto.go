@@ -25,6 +25,15 @@ type RoleExistsResponse = dyn.ExistsResultData
 type SearchRolesRequest = it.SearchRolesQuery
 type SearchRolesResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
 
+type SearchUserRolesRequest = it.SearchUserRolesQuery
+type SearchUserRolesResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
+
+type SearchGroupRolesRequest = it.SearchGroupRolesQuery
+type SearchGroupRolesResponse = httpserver.RestSearchResponse[dmodel.DynamicFields]
+
+type DescribeRolesRequest = it.DescribeRolesQuery
+type DescribeRolesResponse = it.DescribeRolesResultData
+
 type SetRoleIsArchivedRequest = it.SetRoleIsArchivedCommand
 type SetRoleIsArchivedResponse = httpserver.RestMutateResponse
 

@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/iam/users/{{seed_user_id}}?columns=email&columns=groups
+  url: {{api_host}}/v1/iam/iam_user/{{seed_user_id}}?columns=email&columns=groups
   body: none
   auth: inherit
 }

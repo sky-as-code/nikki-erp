@@ -33,6 +33,7 @@ func RoleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 	return dmodel.DefineModel(RoleSchemaName).
 		Label(model.NewLangJsonRefSf("%s.label", RoleSchemaName)).
 		TableName("iam_roles").
+		RecordLabelField(RoleFieldName).
 		PartialUnique(RoleFieldName, RoleFieldOrgId).
 		ShouldBuildDb().
 		Extend(basemodel.BaseModelSchemaBuilder()).
@@ -53,7 +54,7 @@ func RoleSchemaBuilder() *dmodel.ModelSchemaBuilder {
 			basemodel.DefineFieldId(RoleFieldOwnerUserId).
 				Description(model.LangJson{"en-US": "Only this user can approve grant requests for this role"}),
 		).
-		ExclusiveRequiredFields(RoleFieldOwnerGroupId, RoleFieldOwnerUserId).
+		// ExclusiveRequiredFields(RoleFieldOwnerGroupId, RoleFieldOwnerUserId).
 		Field(
 			dmodel.DefineField().Name(RoleFieldIsPrivate).
 				DataType(dmodel.FieldDataTypeBoolean()).

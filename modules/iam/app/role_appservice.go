@@ -95,6 +95,29 @@ func (this *RoleApplicationServiceImpl) SearchRoles(ctx corectx.Context, query i
 	})
 }
 
+// SearchUserRoles and SearchGroupRoles list the roles assigned to one principal. They are
+// scoped reads of the role schema, so they gate on the same permission as SearchRoles.
+func (this *RoleApplicationServiceImpl) SearchUserRoles(ctx corectx.Context, query it.SearchUserRolesQuery) (*it.SearchUserRolesResult, error) {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamRole, c.ResourceScopeDomain); cErr != nil {
+		return &it.SearchUserRolesResult{ClientErrors: *cErr}, nil
+	}
+	return this.roleSvc.SearchUserRoles(ctx, query)
+}
+
+func (this *RoleApplicationServiceImpl) SearchGroupRoles(ctx corectx.Context, query it.SearchGroupRolesQuery) (*it.SearchGroupRolesResult, error) {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamRole, c.ResourceScopeDomain); cErr != nil {
+		return &it.SearchGroupRolesResult{ClientErrors: *cErr}, nil
+	}
+	return this.roleSvc.SearchGroupRoles(ctx, query)
+}
+
+func (this *RoleApplicationServiceImpl) DescribeRoles(ctx corectx.Context, query it.DescribeRolesQuery) (*it.DescribeRolesResult, error) {
+	if cErr := assertPermission(ctx, "read", c.ResourceIamRole, c.ResourceScopeDomain); cErr != nil {
+		return &it.DescribeRolesResult{ClientErrors: *cErr}, nil
+	}
+	return this.roleSvc.DescribeRoles(ctx, query)
+}
+
 func (this *RoleApplicationServiceImpl) SetRoleIsArchived(ctx corectx.Context, cmd it.SetRoleIsArchivedCommand) (*it.SetRoleIsArchivedResult, error) {
 	if cErr := assertPermission(ctx, "set_archived", c.ResourceIamRole, c.ResourceScopeDomain); cErr != nil {
 		return &it.SetRoleIsArchivedResult{ClientErrors: *cErr}, nil
