@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/pkg/errors"
 
 	"github.com/sky-as-code/nikki-erp/modules/core/config"
 	"github.com/sky-as-code/nikki-erp/modules/core/constants"
@@ -89,9 +90,10 @@ func (this *s3Adapter) Put(ctx context.Context, objectKey string, r io.Reader, o
 
 	_, err := this.uploader.Upload(ctx, in)
 	if err != nil {
-		this.logger.Errorf("S3 upload failed key=%s: %v", objectKey, err)
+		return errors.Wrap(err, "s3 uploader Upload error")
 	}
-	return err
+
+	return nil
 }
 
 func (this *s3Adapter) Open(ctx context.Context, objectKey string, rangeHeader string) (*StreamObjectResult, error) {
@@ -106,9 +108,9 @@ func (this *s3Adapter) Open(ctx context.Context, objectKey string, rangeHeader s
 
 	out, err := this.client.GetObject(ctx, input)
 	if err != nil {
-		this.logger.Errorf("S3 get object failed key=%s: %v", objectKey, err)
-		return nil, err
+		return nil, errors.Wrapf(err, "s3 client GetObject failed with input=%v", input)
 	}
+
 	return &StreamObjectResult{
 		Body:          out.Body,
 		ContentLength: out.ContentLength,
@@ -117,27 +119,30 @@ func (this *s3Adapter) Open(ctx context.Context, objectKey string, rangeHeader s
 }
 
 func (this *s3Adapter) Remove(ctx context.Context, objectKey string) error {
-	_, err := this.client.DeleteObject(ctx, &s3.DeleteObjectInput{
+	input := &s3.DeleteObjectInput{
 		Bucket: aws.String(this.bucket),
 		Key:    aws.String(objectKey),
-	})
-	if err != nil {
-		this.logger.Errorf("S3 delete failed key=%s: %v", objectKey, err)
 	}
+	_, err := this.client.DeleteObject(ctx, input)
+	if err != nil {
+		return errors.Wrapf(err, "s3 client DeleteObject failed with input=%v", input)
+	}
+
 	return err
 }
 
 func (this *s3Adapter) GeneratePresignedUrl(ctx context.Context, objectKey string, expr time.Duration) (string, error) {
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(this.bucket),
+		Key:    aws.String(objectKey),
+	}
 	req, err := this.presign.PresignGetObject(
 		ctx,
-		&s3.GetObjectInput{
-			Bucket: aws.String(this.bucket),
-			Key:    aws.String(objectKey),
-		},
+		input,
 		s3.WithPresignExpires(expr),
 	)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "s3 presign client PresignGetObject failed with input=%s", input)
 	}
 
 	return req.URL, nil
