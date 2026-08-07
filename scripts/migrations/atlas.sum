@@ -1,8 +1,9 @@
-h1:tRV/iRmFTzNOh2uFKHFGiPn6Gm4oCngBsU9Scl21Fig=
+h1:BSJM/WEM+ATjksU6M3WSCN7Q2vgIiWp/Wqh3z2URLfk=
 0001001_essential_schema.sql h1:TqQUsjDlS8F/3QGgJvPT7j8LG73pC5t1bjXQwYOVbZo=
 0002001_iam_identity_schema.sql h1:beDlNwJmu8PD0qL+Pyyg1aUCu8wJlss1mSV09b8/r6U=
 0002002_iam_identity_seeds.sql h1:0ZL1WhCFIuhLfGCPpAYz1kJ2m4RZ3C+ce8k6P+KiFoQ=
 0002003_iam_authorize_views.sql h1:lzhbMD5gr4gSYXsDTwSLAx2amXZtFxPuVs6jYGc/PPI=
 0002004_iam_authorize_seeds.sql h1:aqf0oXN74PBOD4Q93WgijKrmitYb/83swb0bbfJgYQ4=
 0004001_contacts_schema.sql h1:EgKlI9sxmhNJsZmpQg335z6Wt2GesoslFQhWRwZ9TFA=
-0005001_inventory _schema.sql h1:ZMBUBLfpGkzQNZYur2HaiHVPVL2t7VZBdkCSw5cMIVQ=
+0005001_inventory _schema.sql h1:6kVN+rtWrTjiFSFVLJfJ2W7dAsjO8p8eS1DWIhL7b1I=
+0005002_inventory_seed.sql h1:Or+9loHlqe9DneGXssFE/Lq2p3Y94e5YvykhLxypdrk=
