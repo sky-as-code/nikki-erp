@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/iam/groups?graph={"if": ["users.org_unit_id", "is_set"]}&columns=name&columns=users.display_name
+  url: {{api_host}}/v1/iam/iam_group?graph={"if": ["users.org_unit_id", "is_set"]}&columns=name&columns=users.display_name
   body: none
   auth: inherit
 }

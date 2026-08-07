@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{api_host}}/v1/iam/users?graph={"and":[{"if":["display_name", "*", "admin"]},{"if": ["email", "$", ".com"]}]}
+  url: {{api_host}}/v1/iam/iam_user?graph={"and":[{"if":["display_name", "*", "admin"]},{"if": ["email", "$", ".com"]}]}
   body: none
   auth: inherit
 }
