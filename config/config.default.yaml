@@ -106,6 +106,12 @@ CORE:
     VERNE_SCHEME: tcp
     VERNE_USERNAME: "nikki_username"
     VERNE_PASSWORD: "nikki_passwd"
+  S3_STORAGE:
+    REGION_NAME: "hcm"
+    ACCESS_TOKEN: "access-token"
+    SECRET_KEY: "secret-key"
+    ENDPOINT: "https://hcm.ss.bfcplatform.vn"
+    BUCKET: ""
   TOKEN:
     # Secret key for JWT token signing and verification
     # IMPORTANT: Override this in local.env or production environment
